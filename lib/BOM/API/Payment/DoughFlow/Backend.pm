@@ -94,7 +94,7 @@ sub comment {
     my $c = shift;
 
     my %fields;
-    my @vars = qw/payment_processor/;
+    my @vars = qw/payment_processor payment_method/;
     push @vars, qw/transaction_id created_by/ if $c->type eq 'deposit';                         # ip_address
     foreach my $var (@vars) {
         $fields{$var} = $c->request_parameters->{$var};
@@ -189,11 +189,12 @@ sub write_transaction_line {
 
     return $c->throw(403, "Unable to lock the account. Please try again after one minute.") unless $freeze_status;
 
-    my $currency_code  = $c->request_parameters->{currency_code};
-    my $transaction_id = $c->request_parameters->{transaction_id};
-    my $trace_id       = $c->request_parameters->{trace_id};
-    my $amount         = $c->request_parameters->{amount};
-    my $processor      = $c->request_parameters->{payment_processor};
+    my $currency_code     = $c->request_parameters->{currency_code};
+    my $transaction_id    = $c->request_parameters->{transaction_id};
+    my $trace_id          = $c->request_parameters->{trace_id};
+    my $amount            = $c->request_parameters->{amount};
+    my $payment_processor = $c->request_parameters->{payment_processor};
+    my $payment_method    = $c->request_parameters->{payment_method};
 
     if (
         my $rejection = $c->check_predicates({
@@ -201,7 +202,7 @@ sub write_transaction_line {
                 transaction_id => $transaction_id,
                 trace_id       => $trace_id,
                 amount         => $amount,
-                processor      => $processor,
+                processor      => $payment_processor,
             }))
     {
         return $c->status_bad_request($rejection);
@@ -210,9 +211,8 @@ sub write_transaction_line {
     my $bonus = $c->request_parameters->{bonus}                                    || 0;
     my $fee   = $c->request_parameters->{fee} && $c->request_parameters->{fee} + 0 || 0;
 
-    my $payment_processor = $c->request_parameters->{payment_processor};
-    my $created_by        = $c->request_parameters->{created_by};
-    my $ip_address        = $c->request_parameters->{ip_address};
+    my $created_by = $c->request_parameters->{created_by};
+    my $ip_address = $c->request_parameters->{ip_address};
 
     my %payment_args = (
         currency          => $currency_code,
@@ -222,6 +222,7 @@ sub write_transaction_line {
         created_by        => $created_by,
         trace_id          => $trace_id,
         payment_processor => $payment_processor,
+        payment_method    => $payment_method,
         transaction_id    => $transaction_id,
         ip_address        => $ip_address,
         payment_fee       => $fee,

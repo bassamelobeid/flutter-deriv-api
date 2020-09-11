@@ -26,8 +26,8 @@ repeat code to collect metrics.
 sub _process_doughflow_request {
     my ($c, $type) = @_;
     my $tags = [
-        "payment_processor:$c->request_parameters->{payment_processor}", "language:$c->request_parameters->{udef1}",
-        "brand:$c->request_parameters->{udef2}",
+        "payment_processor:$c->request_parameters->{payment_processor}", "payment_method:$c->request_parameters->{payment_method}",
+        "language:$c->request_parameters->{udef1}",                      "brand:$c->request_parameters->{udef2}",
     ];
 
     my $response = _doughflow_backend($c, $type);

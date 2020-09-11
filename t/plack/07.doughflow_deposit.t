@@ -117,4 +117,31 @@ subtest 'datadog metric collected' => sub {
     like($datadog_args[0], qr/bom.paymentapi.doughflow.deposit.success/, 'datadog collected metrics');
 };
 
+subtest 'payment params' => sub {
+
+    my %params = (
+        trace_id          => 1236,
+        transaction_id    => int(rand(999999)),
+        payment_processor => 'NuTeller',
+        payment_method    => 'Bananas',
+    );
+
+    deposit(
+        loginid => $loginid,
+        %params
+    );
+
+    my $res = $client_db->db->dbic->dbh->selectrow_hashref(
+        qq/select p.remark, d.*
+        from payment.doughflow d 
+        join payment.payment p on p.id = d.payment_id and p.payment_gateway_code = 'doughflow'
+        where d.trace_id = $params{trace_id};/
+    );
+
+    for my $k (keys %params) {
+        like $res->{remark}, qr/$k=$params{$k}/, "$k in remark";
+        is $res->{$k}, $params{$k}, "$k saved in doughflow table";
+    }
+};
+
 done_testing();

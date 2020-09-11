@@ -3,6 +3,8 @@ use warnings;
 use FindBin qw/$Bin/;
 use lib "$Bin/lib";
 use Test::More;
+use Test::MockModule;
+
 use APIHelper qw(balance deposit update_payout request decode_json);
 use BOM::User::Client;
 
@@ -19,7 +21,7 @@ my $user = BOM::User->create(
 $user->add_client($cli);
 my $r = deposit(
     loginid => $loginid,
-    amount  => 3
+    amount  => 4
 );
 is($r->code,    201,       'correct status code');
 is($r->message, 'Created', 'Correct message');
@@ -81,7 +83,7 @@ $r = update_payout(
     amount   => 1
 );
 is($r->code, 200, 'correct status code');
-is balance($loginid) + 0, 1, 'withdraw successful';
+is balance($loginid) + 0, 2, 'withdraw successful';
 
 $r = update_payout(
     loginid  => $loginid,
@@ -91,6 +93,34 @@ $r = update_payout(
     fee      => '0.00',
 );
 is($r->code, 200, 'correct status code');
-is balance($loginid) + 0, 0, 'withdraw successful';
+is balance($loginid) + 0, 1, 'withdraw successful';
+
+subtest 'payment params' => sub {
+
+    my %params = (
+        trace_id          => 104,
+        payment_processor => 'Amazon',
+        payment_method    => 'Seashells',
+    );
+
+    update_payout(
+        loginid => $loginid,
+        status  => 'inprogress',
+        amount  => 1,
+        %params
+    );
+
+    my $res = $cli->db->dbic->dbh->selectrow_hashref(
+        qq/select p.remark, d.*
+        from payment.doughflow d 
+        join payment.payment p on p.id = d.payment_id and p.payment_gateway_code = 'doughflow'
+        where d.trace_id = $params{trace_id};/
+    );
+
+    for my $k (keys %params) {
+        like $res->{remark}, qr/$k=$params{$k}/, "$k in remark";
+        is $res->{$k}, $params{$k}, "$k saved in doughflow table";
+    }
+};
 
 done_testing();
