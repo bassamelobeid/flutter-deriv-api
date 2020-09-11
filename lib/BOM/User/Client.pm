@@ -3695,6 +3695,7 @@ sub payment_doughflow {
     $doughflow_values{trace_id}          ||= 0;
     $doughflow_values{created_by}        ||= $staff;
     $doughflow_values{payment_processor} ||= 'unspecified';
+    $doughflow_values{payment_method} = $args{payment_method};
 
     my @bind_params =
         ($account->id, $amount, $payment_type, $staff, $remark, Encode::encode_utf8($json->encode(\%doughflow_values)), $payment_fee,);
