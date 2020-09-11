@@ -2,20 +2,16 @@ package BOM::Config::PaymentAgent;
 
 use strict;
 use warnings;
+
 use BOM::Config;
 use LandingCompany::Registry;
 use Exporter;
 our @EXPORT_OK = qw(get_transfer_min_max);
 
-=head1 
+=head1 get_transfer_min_max
  
 This module is designed as a spot to centralise Configurations settings for payment
 agents that require some logic over just reading the config yml file
-
-
-
-
-
 
 =head2 get_transfer_min_max
 
