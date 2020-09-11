@@ -12,17 +12,18 @@ use DataDog::DogStatsd::Helper qw/stats_inc/;
 use BOM::Database::ClientDB;
 use BOM::Platform::Event::Emitter;
 use BOM::CTC::Currency;
+use BOM::CTC::Database;
 use BOM::CTC::Constants qw(:transaction :datadog);
 use BOM::CTC::Helper;
 use BOM::Event::Utility qw(exception_logged);
 
-my $clientdb;
+my $cryptodb_dbic;
 my $collectordb;
 
-sub clientdb {
-    return $clientdb //= do {
-        my $clientdbi = BOM::Database::ClientDB->new({broker_code => 'CR'});
-        $clientdbi->db->dbic;
+sub cryptodb {
+    return $cryptodb_dbic //= do {
+        my $cryptodb = BOM::CTC::Database->new();
+        $cryptodb->cryptodb_dbic();
     };
 }
 
@@ -65,7 +66,7 @@ sub set_transaction_fee {
     # we are specifying the currency here just for performance purpose, since for the other currencies
     # this value is supposed to be correct, we check using the fee_currency because of the ERC20 contracts;
     if ($transaction->{type} eq 'send' && $transaction->{fee_currency} eq 'ETH' && $transaction->{fee}) {
-        clientdb()->run(
+        cryptodb()->run(
             ping => sub {
                 my $sth = $_->prepare('select payment.ctc_update_transaction_fee(?, ?, ?)');
                 $sth->execute($transaction->{hash}, $transaction->{currency}, $currency->get_unformatted_fee($transaction->{fee}));
@@ -125,7 +126,7 @@ sub set_pending_transaction {
         # since this is only for deposits we don't care about the `from` address
         # also, the subscription daemon takes care about the multiple receivers
         # transactions, so in this daemon we are going to always receive just 1 to 1 transactions.
-        my $payment_rows = clientdb()->run(
+        my $payment_rows = cryptodb()->run(
             fixup => sub {
                 my $sth = $_->prepare('select * from payment.ctc_get_deposit_by_address_and_currency(?,?)');
                 $sth->execute($address, $currency_code);
@@ -295,7 +296,7 @@ sub insert_new_deposit {
             return 0;
         }
 
-        my $result = clientdb()->run(
+        my $result = cryptodb()->run(
             ping => sub {
                 my $sth = $_->prepare('SELECT payment.ctc_insert_new_deposit_address(?, ?, ?, ?, ?)');
                 $sth->execute($payment[0]->{address}, $currency_code, $client_loginid, $transaction->{fee}, $transaction->{hash});
@@ -326,7 +327,7 @@ sub update_transaction_status_to_pending {
     my ($transaction, $address) = @_;
     my $currency_code = $transaction->{currency};
 
-    my $result = clientdb()->run(
+    my $result = cryptodb()->run(
         ping => sub {
             $_->selectrow_array(
                 'SELECT payment.ctc_set_deposit_pending(?, ?, ?, ?)',

@@ -18,6 +18,7 @@ use BOM::Test;
 use BOM::CTC::Helper;
 use BOM::CTC::Currency::LTC;
 use BOM::CTC::Currency::BTC;
+use BOM::CTC::Database;
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_events_redis);
 use BOM::Platform::Event::Emitter;
 use IO::Async::Loop;
@@ -52,15 +53,11 @@ top_up my $client = create_client('CR'), 'ETH', 10;
 
 $user->add_client($client);
 
-my $currency = BOM::CTC::Currency->new(
-    currency_code => 'ETH',
-    broker_code   => 'CR'
-);
+my $currency = BOM::CTC::Currency->new(currency_code => 'ETH');
 
 my $helper = BOM::CTC::Helper->new(client => $client);
 
-my $clientdb = BOM::Database::ClientDB->new({broker_code => 'CR'});
-my $dbic     = $clientdb->db->dbic;
+my $dbic = BOM::CTC::Database->new()->cryptodb_dbic();
 
 subtest "change_address_status" => sub {
 
@@ -138,9 +135,6 @@ subtest "change_address_status" => sub {
     $response = BOM::Event::Actions::CryptoSubscription::set_pending_transaction($transaction);
     is $response, 1, "Able to set pending two pending transactions to the same address with an different hash";
 
-    my $clientdb = BOM::Database::ClientDB->new({broker_code => 'CR'});
-    my $dbic     = $clientdb->db->dbic;
-
     my $start = Time::HiRes::time;
     my $rows  = $dbic->run(
         fixup => sub {
@@ -160,10 +154,7 @@ subtest "change_address_status" => sub {
     my @tx3 = grep { $_->{blockchain_txn} eq $transaction_hash4 } @address_entries;
     is @tx3, 1, "Correct hash for the third pending deposit";
 
-    my $currency = BOM::CTC::Currency->new(
-        currency_code => $transaction->{currency},
-        broker_code   => 'CR'
-    );
+    my $currency = BOM::CTC::Currency->new(currency_code => $transaction->{currency});
     is $currency->get_latest_checked_block('deposit'), 10, "correct latest block number got";
 
     $mock_subscription->mock(
@@ -320,7 +311,7 @@ sub _set_withdrawal_verified {
     my ($txn_db_id) = @_;
     my $app_config = BOM::Config::Runtime->instance->app_config;
 
-    $helper->dbic->run(
+    $dbic->run(
         fixup => sub {
             $_->selectrow_array('SELECT payment.ctc_set_withdrawal_verified(?, ?::JSONB, ?, ?)', undef, $txn_db_id, '{"":0}', undef, undef);
         });
@@ -335,9 +326,9 @@ sub _insert_withdrawal_transaction {
 
     _set_withdrawal_verified($txn_db_id);
 
-    $helper->dbic->run(ping => sub { $_->selectrow_array('SELECT payment_id FROM payment.ctc_process_withdrawal(?)', undef, $txn_db_id) });
+    $dbic->run(ping => sub { $_->selectrow_array('SELECT payment_id FROM payment.ctc_process_withdrawal(?)', undef, $txn_db_id) });
 
-    return $helper->dbic->run(
+    return $dbic->run(
         ping => sub {
             my $sth = $_->prepare('UPDATE payment.cryptocurrency SET blockchain_txn = ? , status = ? WHERE address = ? AND blockchain_txn IS NULL');
             $sth->execute($transaction->{hash}, 'PROCESSING', $address);
@@ -346,7 +337,7 @@ sub _insert_withdrawal_transaction {
 
 sub _fetch_withdrawal_transaction {
     my ($blockchain_txn) = @_;
-    return $helper->dbic->run(
+    return $dbic->run(
         fixup => sub {
             my $sth = $_->prepare(q{SELECT * FROM payment.cryptocurrency where blockchain_txn = ?});
             $sth->execute($blockchain_txn);
