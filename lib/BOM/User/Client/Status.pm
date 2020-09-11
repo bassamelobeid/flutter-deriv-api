@@ -314,7 +314,7 @@ Gets all the clients set status's from the database.
 
 Returns a hashref of status's and their properties  keyed by the status name 
 eg. 
-    
+
     {
         age_verification => {
                 staff_name => 'fred', 

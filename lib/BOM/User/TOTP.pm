@@ -20,9 +20,9 @@ BOM::User::TOTP - Time-Based One Time Password (TOTP) which uses a secret key an
 =head1 METHODS
 
 =head2 generate_key
-    
+
 Generates a random secret of length 16 and returns it.
-    
+
 =cut
 
 sub generate_key {

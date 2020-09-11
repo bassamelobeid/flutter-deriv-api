@@ -9,8 +9,8 @@ use namespace::clean;
 
 =head1 NAME
 
- BOM::User::Client::PaymentTransaction - A class that stores a payment transation.
- Any object of the class represents a transaction created by a payment action.
+BOM::User::Client::PaymentTransaction - A class that stores a payment transation.
+Any object of the class represents a transaction created by a payment action.
 
 =head1 SYNOPSIS
 

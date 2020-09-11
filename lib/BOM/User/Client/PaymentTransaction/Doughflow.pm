@@ -11,9 +11,9 @@ use namespace::clean;
 
 =head1 NAME
 
- BOM::User::Client::PaymentTransaction::Doughflow - A class that stores a Doughflow payment transaction.
- Any object of the class represents a transaction created by a doughflow payment action.
- It is a subclass of L<BOM::User::Client::PaymentTransaction>.
+BOM::User::Client::PaymentTransaction::Doughflow - A class that stores a Doughflow payment transaction.
+Any object of the class represents a transaction created by a doughflow payment action.
+It is a subclass of L<BOM::User::Client::PaymentTransaction>.
 
 
 =head1 SYNOPSIS

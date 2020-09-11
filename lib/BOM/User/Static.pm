@@ -7,8 +7,6 @@ use warnings;
 
 BOM::User::Static
 
-=head1 SYNOPSIS
-
 =head1 DESCRIPTION
 
 This class provides static configurations like error mapping and generic message mapping;

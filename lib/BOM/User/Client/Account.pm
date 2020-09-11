@@ -31,7 +31,7 @@ has 'db' => (
 
 my $json = JSON::MaybeXS->new;
 
-=head2
+=head2 BUILD
 
 BUILD
 

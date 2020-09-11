@@ -215,10 +215,13 @@ Get my enabled client objects, in loginid order but with reals up first.  Use th
 =over 4
 
 =item * C<include_disabled> - e.g. include_disabled=>1  will include disableds otherwise not.
+
 =item * C<include_duplicated> - e.g. include_duplicated=>1  will include duplicated otherwise not.
 
 =back
+
 Returns client objects array
+
 =cut
 
 sub clients {

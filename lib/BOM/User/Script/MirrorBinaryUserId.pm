@@ -45,6 +45,18 @@ use POSIX qw/strftime/;
 our $DEBUG;    ## no critic
 use constant TMOUT => 10;
 
+=head2 log_msg
+
+=over 4
+
+=item * C<$level>
+
+=item * C<$msg>
+
+=back
+
+=cut
+
 sub log_msg {
     my ($level, $msg) = @_;
     print STDERR strftime('%F %T', localtime), ": (PID $$) ", $msg, "\n"
@@ -52,6 +64,12 @@ sub log_msg {
 
     return;
 }
+
+=head2 userdb
+
+Returns a db connection
+
+=cut
 
 sub userdb {
 
@@ -92,6 +110,18 @@ SQL
         }
     }
 }
+
+=head2 do_one
+
+=over 4
+
+=item * C<userdb>
+
+=back
+
+returns the number of removed rows
+
+=cut
 
 sub do_one {
     my $userdb = shift;
@@ -143,6 +173,12 @@ sub run_once {
 
     return;
 }
+
+=head2 run
+
+returns undef
+
+=cut
 
 sub run {
     log_msg 1, "started";

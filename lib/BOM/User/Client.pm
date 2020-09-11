@@ -1023,7 +1023,6 @@ sub default_account {
 
 =head2 account
 
-
 C<< $account = $self->account($currency) >>
 
 If one does not exist it creates an account entry assigns it a currency symbol
@@ -1034,8 +1033,7 @@ Takes the following parameters.
 
 =over 4
 
-=item * C<currency> - (optional) An alphanumeric string with 2-20 characters as defined in L<ISO 4217|https://en.wikipedia.org/wiki/ISO_4217> where L<ISO 4217> applicable for some currencies (i.e. fiat). An account will be created based on the given string, if it does not exist.
-=back
+=item * C<currency> - (optional) An alphanumeric string with 2-20 characters as defined in L<ISO 4217|https://en.wikipedia.org/wiki/ISO_4217> where C<ISO 4217> applicable for some currencies (i.e. fiat). An account will be created based on the given string, if it does not exist.
 
 =back
 
@@ -1993,6 +1991,8 @@ Takes the following arguments as named parameters:
 =item * C<id> - advertiser id. Defaults to $self->p2p_advertiser_info->{id}.
 
 =item * C<days> - number of days to aggregrate statistics. Default: 30.
+
+=back
 
 Returns a hashref.
 
@@ -3111,6 +3111,8 @@ Takes the following arguments as named parameters:
 
 No return value.
 
+=back
+
 =cut
 
 sub _p2p_order_stats_record {
@@ -3202,6 +3204,8 @@ Takes the following arguments as named parameters:
 =item * C<$loginid> - loginid of advertiser
 
 =item * C<days> - period to generate stats in days
+
+=back
 
 Returns hashref.
 

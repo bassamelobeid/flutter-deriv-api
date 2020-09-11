@@ -113,8 +113,6 @@ sub set_countries {
 
 Will deliver countries saved against particular payment agent.
 
-=back
-
 Returns a arrayref of country codes saved against a payment_agent.
 
 =cut
