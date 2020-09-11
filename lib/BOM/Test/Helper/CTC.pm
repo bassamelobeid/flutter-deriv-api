@@ -9,10 +9,9 @@ use Test::MockModule;
 use Path::Tiny;
 use LandingCompany::Registry;
 
-use BOM::CTC::Helper;
 use BOM::CTC::Currency;
 use BOM::Config::CurrencyConfig;
-use BOM::Database::ClientDB;
+use BOM::CTC::Database;
 use Syntax::Keyword::Try;
 
 our @EXPORT_OK = qw( wait_miner deploy_test_contract set_pending );
@@ -52,8 +51,6 @@ set transaction as pending in payment.cryptocurrency
 
 =over
 
-=item * C<broker_code> - broker_code
-
 =item * C<address> - blockchain address
 
 =item * C<currency_code> - currency code
@@ -67,10 +64,9 @@ set transaction as pending in payment.cryptocurrency
 =cut
 
 sub set_pending {
-    my ($broker_code, $address, $currency_code, $amount, $transaction) = @_;
+    my ($address, $currency_code, $amount, $transaction) = @_;
 
-    my $clientdb = BOM::Database::ClientDB->new({broker_code => $broker_code});
-    my $dbic     = $clientdb->db->dbic;
+    my $dbic = BOM::CTC::Database->new()->cryptodb_dbic();
     # since we are using bom-events for subscription we need to set
     # the transaction to pending manually here.
     try {
