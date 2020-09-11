@@ -95,7 +95,7 @@ subtest 'hour_end_markup_start_now_contract' => sub {
         $args->{date_pricing} = Date::Utility->new('2018-09-19 00:57:00');
         $c                    = produce_contract($args);
         cmp_ok $c->ask_price, '==', 6.5, 'correct ask price';
-        cmp_ok $c->pricing_engine->risk_markup->peek_amount('hour_end_markup'), '==', 0.1, 'correct end hour markup';
+        cmp_ok $c->pricing_engine->risk_markup->peek_amount('hour_end_markup'), '==', 0.1, 'Maximum end hour markup is charged';
         # Monday morning
         $args->{date_start}   = Date::Utility->new('2018-09-24 00:01:00');
         $args->{date_pricing} = Date::Utility->new('2018-09-24 00:01:00');
@@ -107,19 +107,19 @@ subtest 'hour_end_markup_start_now_contract' => sub {
         $args->{date_pricing} = Date::Utility->new('2018-10-16 01:01:00');
         $c                    = produce_contract($args);
         cmp_ok $c->ask_price, '==', 6.5, 'correct ask price';
-        cmp_ok $c->pricing_engine->risk_markup->peek_amount('hour_end_markup'), '==', 0.1, 'correct end hour markup';
+        cmp_ok $c->pricing_engine->risk_markup->peek_amount('hour_end_markup'), '==', 0.1, 'Maximum end hour markup is charged';
 
         $args->{date_start}   = Date::Utility->new('2018-10-16 01:06:00');
         $args->{date_pricing} = Date::Utility->new('2018-10-16 01:06:00');
         $c                    = produce_contract($args);
-        is($c->pricing_engine->risk_markup->peek_amount('hour_end_markup'), undef, 'No hour end markup');
+        is($c->pricing_engine->risk_markup->peek_amount('hour_end_markup'), undef, 'No hour end markup charged for minute > 5');
 
         # Winter on EU
         $args->{date_start}   = Date::Utility->new('2018-11-16 16:01:00');
         $args->{date_pricing} = Date::Utility->new('2018-11-16 16:01:00');
         $c                    = produce_contract($args);
         cmp_ok $c->ask_price, '==', 6.92, 'correct ask price';
-        is($c->pricing_engine->risk_markup->peek_amount('hour_end_markup'), undef, 'No hour end markup');
+        is($c->pricing_engine->risk_markup->peek_amount('hour_end_markup'), undef, 'No hour end markup as London Fix markup is applied');
 
     };
 };
@@ -132,26 +132,26 @@ subtest 'hour_end_markup_extra_test_after_logic_change' => sub {
         $args->{date_pricing} = Date::Utility->new('2018-10-16 01:01:00');
         my $c = produce_contract($args);
         cmp_ok $c->ask_price, '==', 6.5, 'correct ask price';
-        cmp_ok $c->pricing_engine->risk_markup->peek_amount('hour_end_markup'), '==', 0.1, 'correct end hour markup';
+        cmp_ok $c->pricing_engine->risk_markup->peek_amount('hour_end_markup'), '==', 0.1, 'Maximum end hour markup is charged';
 
         # Summer on AU , hour equal 7 or 19
         $args->{date_start}   = Date::Utility->new('2018-10-16 19:01:00');
         $args->{date_pricing} = Date::Utility->new('2018-10-16 19:01:00');
         $c                    = produce_contract($args);
         cmp_ok $c->ask_price, '==', 7.5, 'correct ask price';
-        cmp_ok $c->pricing_engine->risk_markup->peek_amount('hour_end_markup'), '==', 0.2, 'correct end hour markup';
+        cmp_ok $c->pricing_engine->risk_markup->peek_amount('hour_end_markup'), '==', 0.2, 'Maximum end hour markup is charged';
 
         #duration 30m
         $args->{duration} = '30m';
         $c = produce_contract($args);
         cmp_ok $c->ask_price, '==', 7.5, 'correct ask price';
-        cmp_ok $c->pricing_engine->risk_markup->peek_amount('hour_end_markup'), '==', 0.2, 'correct end hour markup summer 30m';
+        cmp_ok $c->pricing_engine->risk_markup->peek_amount('hour_end_markup'), '==', 0.2, 'Maximum end hour markup is charged';
 
         #some more
         $args->{duration} = '70m';
         $c = produce_contract($args);
-        cmp_ok $c->ask_price, '==', 5.89, 'correct ask price';
-        is($c->pricing_engine->risk_markup->peek_amount('hour_end_markup'), undef, 'No hour end markup');
+        cmp_ok $c->ask_price, '==', 5.9, 'correct ask price';
+        is($c->pricing_engine->risk_markup->peek_amount('hour_end_markup'), undef, 'Hour end markup applies only to contract duration <= 30m');
 
         # Winter on EU
         $args->{duration}     = '10m';
@@ -159,26 +159,26 @@ subtest 'hour_end_markup_extra_test_after_logic_change' => sub {
         $args->{date_pricing} = Date::Utility->new('2018-11-16 16:01:00');
         $c                    = produce_contract($args);
         cmp_ok $c->ask_price, '==', 6.92, 'correct ask price';
-        is($c->pricing_engine->risk_markup->peek_amount('hour_end_markup'), undef, 'No hour end markup');
+        is($c->pricing_engine->risk_markup->peek_amount('hour_end_markup'), undef, 'No hour end markup as London Fix markup is applied');
 
         # Winter on EU, hour equal 8 or 20
         $args->{date_start}   = Date::Utility->new('2018-11-16 20:01:00');
         $args->{date_pricing} = Date::Utility->new('2018-11-16 20:01:00');
         $c                    = produce_contract($args);
         cmp_ok $c->ask_price, '==', 7.5, 'correct ask price';
-        cmp_ok $c->pricing_engine->risk_markup->peek_amount('hour_end_markup'), '==', 0.2, 'correct end hour markup';
+        cmp_ok $c->pricing_engine->risk_markup->peek_amount('hour_end_markup'), '==', 0.2, 'Maximum end hour markup is charged';
 
         #duration 30m
         $args->{duration} = '30m';
         $c = produce_contract($args);
         cmp_ok $c->ask_price, '==', 7.5, 'correct ask price';
-        cmp_ok $c->pricing_engine->risk_markup->peek_amount('hour_end_markup'), '==', 0.2, 'correct end hour markup winter 30m';
+        cmp_ok $c->pricing_engine->risk_markup->peek_amount('hour_end_markup'), '==', 0.2, 'Maximum end hour markup is charged';
 
         #some more
         $args->{duration} = '70m';
         $c = produce_contract($args);
         cmp_ok $c->ask_price, '==', 5.89, 'correct ask price';
-        is($c->pricing_engine->risk_markup->peek_amount('hour_end_markup'), undef, 'No hour end markup');
+        is($c->pricing_engine->risk_markup->peek_amount('hour_end_markup'), undef, 'Hour end markup applies only to contract duration <= 30m');
     };
 };
 
