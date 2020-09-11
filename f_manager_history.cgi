@@ -91,10 +91,7 @@ print "<span style='color:red; font-weight:bold; font-size:14px'>PAYMENT AGENT</
 
 # We either choose the dropdown currency from transaction page or use the client currency for quick jump
 my $currency         = $client->currency;
-my $currency_wrapper = BOM::CTC::Currency->new(
-    currency_code => $client->currency,
-    broker_code   => $broker,
-);
+my $currency_wrapper = BOM::CTC::Currency->new(currency_code => $client->currency);
 if (my $currency_dropdown = request()->param('currency_dropdown')) {
     $currency = $currency_dropdown unless $currency_dropdown eq 'default';
 }
@@ -229,7 +226,7 @@ my $render_crypto_transactions = sub {
         limit   => $limit,
         offset  => $offset,
     );
-    my @trxns = get_crypto_transactions($broker, $trx_type, %params)->@*;
+    my @trxns = get_crypto_transactions($trx_type, %params)->@*;
 
     my $exchange_rate;
     try {

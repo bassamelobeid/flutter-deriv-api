@@ -4,7 +4,7 @@ use strict;
 use warnings;
 
 use BOM::Config::Redis;
-use BOM::Database::ClientDB;
+use BOM::CTC::Database;
 
 use constant {PRIORITIZE_KEY_TTL => 300};
 
@@ -87,8 +87,6 @@ Get withdrawal total values for all C<LOCKED> transactions of a crypto currency.
 
 =over
 
-=item * C<broker> - Broker code
-
 =item * C<currency> - Currency code to check the withdrawals for
 
 =back
@@ -106,10 +104,9 @@ Returns a hashref including the following keys:
 =cut
 
 sub get_crypto_withdrawal_pending_total {
-    my ($broker, $currency) = @_;
+    my ($currency) = @_;
 
-    my $clientdb = BOM::Database::ClientDB->new({broker_code => $broker});
-    my $dbic     = $clientdb->db->dbic;
+    my $dbic = BOM::CTC::Database->new()->cryptodb_dbic();
 
     my ($pending_withdrawal_amount, $pending_estimated_fee) = $dbic->run(
         fixup => sub {
@@ -136,8 +133,6 @@ sub get_crypto_withdrawal_pending_total {
 Get crypto currency transactions from DB based on the given parameters.
 
 =over 4
-
-=item * C<broker> - Broker code
 
 =item * C<trx_type> - The transaction type. Valid values are C<deposit> and C<withdrawal>
 
@@ -166,13 +161,13 @@ Returns an arrayref list of transactions that meet the criteria. If nothing foun
 =cut
 
 sub get_crypto_transactions {
-    my ($broker, $trx_type, %params) = @_;
+    my ($trx_type, %params) = @_;
 
     my $function_name = $trx_type eq 'deposit' ? 'payment.ctc_bo_get_deposit' : 'payment.ctc_bo_get_withdrawal';
 
-    my $clientdb = BOM::Database::ClientDB->new({broker_code => $broker});
+    my $dbic = BOM::CTC::Database->new()->cryptodb_dbic();
 
-    return $clientdb->db->dbic->run(
+    return $dbic->run(
         fixup => sub {
             $_->selectall_arrayref(
                 "SELECT * FROM $function_name(?, ?, ?, ?, ?, ?)",

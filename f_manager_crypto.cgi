@@ -29,7 +29,7 @@ use BOM::Backoffice::Request qw(request);
 use BOM::Backoffice::Sysinit ();
 use BOM::Backoffice::Script::ValidateStaffPaymentLimit;
 use BOM::CTC::Utility;
-use BOM::Database::ClientDB;
+use BOM::CTC::Database;
 use BOM::DualControl;
 use LandingCompany::Registry;
 use f_brokerincludeall;
@@ -129,16 +129,12 @@ my $show_all_pendings = request()->param('show_all_pendings');
 # show only one step authorised
 my $show_one_authorised = request()->param('show_one_authorised');
 
-my $clientdb = BOM::Database::ClientDB->new({broker_code => $broker});
-my $dbic     = $clientdb->db->dbic;
-
 code_exit_BO("Invalid currency.")
     if $currency !~ /^[a-zA-Z0-9]{2,20}$/;
 
-my $currency_wrapper = BOM::CTC::Currency->new(
-    currency_code => $currency,
-    broker_code   => $broker
-);
+my $currency_wrapper = BOM::CTC::Currency->new(currency_code => $currency);
+
+my $dbic = BOM::CTC::Database->new()->cryptodb_dbic();
 
 my $main_address           = $currency_wrapper->account_config->{account}->{address};
 my $blockchain_address     = $currency_wrapper->get_address_blockchain_url();
@@ -264,7 +260,7 @@ my $pending_withdrawal_amount = request()->param('pending_withdrawal_amount');
 
 my $pending_estimated_fee;
 if ($view_action eq 'withdrawals') {
-    my $withdrawal_sum = get_crypto_withdrawal_pending_total($broker, $currency);
+    my $withdrawal_sum = get_crypto_withdrawal_pending_total($currency);
     $pending_withdrawal_amount = $withdrawal_sum->{pending_withdrawal_amount};
     $pending_estimated_fee     = $withdrawal_sum->{pending_estimated_fee};
 }
