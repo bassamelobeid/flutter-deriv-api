@@ -1290,6 +1290,23 @@ sub is_parameters_predefined {
     return 0;
 }
 
+my %count = (
+    frxAUDJPY => 2,
+    frxAUDUSD => 2,
+    frxEURGBP => 2,
+    frxUSDJPY => 3,
+    frxEURUSD => 3,
+    frxEURJPY => 3,
+    frxGBPJPY => 3,
+    frxUSDCAD => 3,
+    frxGBPUSD => 3,
+);
+
+sub barrier_count_for_underlying {
+    my $symbol = shift;
+    return $count{$symbol} // 2;
+}
+
 sub barrier_tier {
     my $self = shift;
 
@@ -1302,7 +1319,7 @@ sub barrier_tier {
     my $barrier       = $self->barrier->as_absolute;
     my $current_spot  = $self->current_spot;
     my $diff          = $current_spot - $barrier;
-    my $barrier_count = BOM::Product::Contract::PredefinedParameters::barrier_count_for_underlying($self->underlying->symbol);
+    my $barrier_count = $self->barrier_count_for_underlying($self->underlying->symbol);
 
     my $pip_size_at = $self->underlying->symbol =~ /JPY/ ? 0.01 : 0.0001;
     # multi-barriers are set 5 pips apart from each other.

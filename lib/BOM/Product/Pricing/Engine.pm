@@ -23,8 +23,7 @@ use Math::Util::CalculatedValue::Validatable;
 use YAML::XS qw(LoadFile);
 
 my %engine_compatibility = (
-    basic         => LoadFile('/home/git/regentmarkets/bom/config/intraday_engine_compatibility/basic.yml'),
-    multi_barrier => LoadFile('/home/git/regentmarkets/bom/config/intraday_engine_compatibility/multi_barrier.yml'),
+    basic => LoadFile('/home/git/regentmarkets/bom/config/intraday_engine_compatibility/basic.yml'),
 );
 
 =head1 ATTRIBUTES

@@ -84,23 +84,4 @@ my $current_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     epoch      => $now->epoch
 });
 
-subtest 'test prices across barriers' => sub {
-    foreach my $d ([130.581, 979], [130.485, 1000], [130.381, 1000], [130.301, 1000], [130.221, 1000]) {
-        my $c = produce_contract({
-            bet_type             => 'CALLE',
-            currency             => 'JPY',
-            date_start           => $now,
-            date_pricing         => $now,
-            product_type         => 'multi_barrier',
-            trading_period_start => $now->epoch,
-            date_expiry          => Date::Utility->new('2017-08-07 10:00:00'),
-            barrier              => $d->[0],
-            payout               => 1000,
-            underlying           => $underlying,
-            current_tick         => $current_tick,
-        });
-        is $c->ask_price, $d->[1], "price is $d->[1] for barrier $d->[0] shortcode " . $c->shortcode;
-    }
-};
-
 done_testing();

@@ -52,7 +52,6 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
             }]});
 
 my $now = Date::Utility->new;
-BOM::Test::Data::Utility::UnitTestMarketData::create_predefined_parameters_for('frxUSDJPY', $now);
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
     {
@@ -143,33 +142,6 @@ subtest 'payout' => sub {
         });
         cmp_ok $c->ask_price, '==', $c->otm_threshold * $payout, $underlying . ' daily non atm contract price is floor to otm threshold';
     }
-
-    $c = produce_contract({
-        bet_type             => 'CALL',
-        underlying           => 'frxUSDJPY',
-        barrier              => 'S50000P',
-        duration             => '1h',
-        currency             => 'JPY',
-        payout               => 1000,
-        product_type         => 'multi_barrier',
-        trading_period_start => time,
-        current_tick         => $current_tick,
-    });
-
-    cmp_ok $c->ask_price, '==', 0.05 * 1000, 'Forex intraday non atm contract for multibarrier is floored to 5%';
-
-    $c = produce_contract({
-        bet_type             => 'CALL',
-        underlying           => 'frxUSDJPY',
-        barrier              => 'S5000000P',
-        duration             => '2d',
-        currency             => 'JPY',
-        payout               => 1000,
-        product_type         => 'multi_barrier',
-        trading_period_start => time,
-        current_tick         => $current_tick,
-    });
-    cmp_ok $c->ask_price, '==', 0.05 * 1000, 'Forex daily non atm contract for multibarrier is floored to 5%';
 
     $c = produce_contract({
         bet_type     => 'CALL',
@@ -427,31 +399,6 @@ subtest 'new commission structure' => sub {
             is $c->payout, roundcommon(0.01, $data->{payout}), 'correct payout amount';
         }
     }
-};
-
-subtest 'commission for multibarrier' => sub {
-    my $fake_theo = Math::Util::CalculatedValue::Validatable->new({
-        name        => 'theo_probability',
-        description => 'test theo',
-        set_by      => 'test',
-        base_amount => 0.5,
-    });
-    my $args = {
-        bet_type         => 'CALL',
-        underlying       => 'frxUSDJPY',
-        barrier          => 'S0P',
-        duration         => '1d',
-        amount           => 1000,
-        amount_type      => 'payout',
-        currency         => 'USD',
-        theo_probability => $fake_theo,
-        current_tick     => $current_tick,
-    };
-    my $c = produce_contract($args);
-    is $c->commission_markup->amount, $c->base_commission, 'at 1000 USD commission markup is base commission';
-    $args->{amount} = 1001;
-    $c = produce_contract($args);
-    ok $c->commission_markup->amount > $c->base_commission, 'at 1001 USD commission markup is more than base commission';
 };
 
 sub test_flexible_commission {

@@ -486,33 +486,6 @@ subtest 'invalid barrier offset for double barrier contracts' => sub {
 
 };
 
-subtest 'missing trading_period_start' => sub {
-    my $now        = Date::Utility->new($fake_tick->epoch);
-    my $bet_params = {
-        bet_type             => 'CALLE',
-        date_start           => $now,
-        date_pricing         => $now,
-        duration             => '20m',
-        barrier              => 'S20P',
-        underlying           => 'frxUSDJPY',
-        currency             => 'USD',
-        payout               => 10,
-        product_type         => 'multi_barrier',
-        trading_period_start => $now->epoch,
-        current_tick         => $fake_tick,
-    };
-
-    my $c = produce_contract($bet_params);
-    lives_ok { $c->ask_price } 'create a multi_barrier contract without exception';
-
-    delete $bet_params->{trading_period_start};
-    my $exception = exception {
-        produce_contract($bet_params);
-    };
-    isa_ok $exception, 'BOM::Product::Exception';
-    is $exception->error_code, "MissingTradingPeriodStart", 'error code is MissingTradingPeriodStart';
-};
-
 subtest "Minimum multiplier for very small numbers should not be shown in scientific notation" => sub {
     my $bet_params = {
         bet_type   => 'LBHIGHLOW',

@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 7;
+use Test::More tests => 4;
 use Test::Warnings;
 use Test::Exception;
 use Date::Utility;
@@ -155,34 +155,6 @@ subtest 'put_call_parity_IH_basic' => sub {
     }
 };
 
-subtest 'put_call_parity_IH_multi_barrier' => sub {
-
-    my @shortcode = (
-        "CALLE_FRXUSDJPY_1000_1488326400_1488326520F_114000000_0", "CALLE_FRXUSDJPY_10_1488326400_1488327300F_114000000_0",
-        "CALLE_FRXUSDJPY_10_1488326400_1488327300F_114000000_0",   "CALLE_FRXUSDJPY_10_1488326400_1488344400F_114000000_0",
-        "CALLE_FRXUSDJPY_10_1488326400_1488369600F_114000000_0",   "CALLE_FRXUSDJPY_10_1488326400_1488384000F_114000000_0",
-        "CALLE_FRXUSDJPY_10_1488326402_1488412799F_114000000_0",
-        "ONETOUCH_FRXUSDJPY_1000_1488326400_1488344400F_114200000_0", "ONETOUCH_FRXUSDJPY_1000_1488326400_1488326700F_114130000_0",
-
-    );
-
-    foreach my $shortcode (@shortcode) {
-
-        my $c1 = produce_contract($shortcode, 'JPY');
-        my $p  = $c1->build_parameters;
-        $p->{date_pricing}         = $c1->date_start;
-        $p->{product_type}         = 'multi_barrier';
-        $p->{trading_period_start} = time;
-        # test was done with the assumption of 10% pricing vol
-        $p->{pricing_vol} = 0.1;
-        my $c = produce_contract($p);
-        isa_ok $c->pricing_engine, 'BOM::Product::Pricing::Engine::Intraday::Forex';
-        my $call_theo_prob = $c->pricing_engine->base_probability->amount;
-        my $put_theo_prob  = $c->opposite_contract->pricing_engine->base_probability->amount;
-        is $call_theo_prob + $put_theo_prob, '1', "put call parity hold for " . $c->shortcode;
-    }
-};
-
 subtest 'put_call_parity_slope_basic' => sub {
 
     my @shortcode = (
@@ -215,36 +187,6 @@ subtest 'put_call_parity_slope_basic' => sub {
     }
 };
 
-subtest 'put_call_parity_slope_multi_barrier' => sub {
-
-    my @shortcode = (
-        "CALLE_FRXUSDJPY_1000_1488326400_1519938000F_114000000_0",
-        "CALLE_FRXUSDJPY_10_1488326400_1491091199F_114000000_0",
-        "CALLE_FRXUSDJPY_10_1488326400_1496361599F_114000000_0",
-        "CALLE_FRXUSDJPY_10_1488326400_1514581200F_114000000_0",
-        "EXPIRYRANGE_FRXUSDJPY_10_1488326400_1519938000F_114300000_113800000",
-        "EXPIRYRANGE_FRXUSDJPY_10_1488326400_1491091199F_115000000_113500000",
-        "EXPIRYRANGE_FRXUSDJPY_10_1488326400_1496361599F_115500000_113500000",
-        "EXPIRYRANGE_FRXUSDJPY_10_1488326400_1514581200F_118000000_113500000",
-    );
-
-    foreach my $shortcode (@shortcode) {
-
-        my $c1 = produce_contract($shortcode, 'JPY');
-        my $p  = $c1->build_parameters;
-        $p->{date_pricing}         = $c1->date_start;
-        $p->{product_type}         = 'multi_barrier';
-        $p->{trading_period_start} = time;
-        my $c = produce_contract($p);
-        isa_ok $c->pricing_engine, 'Pricing::Engine::EuropeanDigitalSlope';
-        my $call_theo_prob  = $c->pricing_engine->_base_probability;
-        my $put_theo_prob   = $c->opposite_contract->pricing_engine->_base_probability;
-        my $discounted_prob = roundcommon(0.001, exp(-$c->discount_rate * $c->timeinyears->amount));
-        is roundcommon(0.001, $call_theo_prob + $put_theo_prob), $discounted_prob, "put call parity hold for " . $c->shortcode;
-
-    }
-};
-
 subtest 'put_call_parity_vv_basic' => sub {
     # For vv, the theo_prob are not sum up to the discounted probability because one is price with pay out at hit[one touch] and another one is pay out at end [notouch]
     my @shortcode = (
@@ -268,33 +210,6 @@ subtest 'put_call_parity_vv_basic' => sub {
             is roundcommon(0.1, $contract_theo_prob + $opposite_contract_theo_prob), $discounted_prob,
                 "put call parity hold for " . $c->shortcode . " with payout currency $currency";
         }
-    }
-};
-
-subtest 'put_call_parity_vv_multi_barrier' => sub {
-
-    my @shortcode = (
-        "ONETOUCH_FRXUSDJPY_1000_1488326400_1519938000F_114500000_0",      "ONETOUCH_FRXUSDJPY_1000_1488326400_1491091199F_115000000_0",
-        "ONETOUCH_FRXUSDJPY_1000_1488326400_1496361599F_116000000_0",      "ONETOUCH_FRXUSDJPY_1000_1488326400_1514581200F_118000000_0",
-        "RANGE_FRXUSDJPY_1000_1488326400_1519938000F_114500000_113500000", "RANGE_FRXUSDJPY_1000_1488326400_1491091199F_115500000_113500000",
-        "RANGE_FRXUSDJPY_1000_1488326400_1496361599F_116000000_113500000", "RANGE_FRXUSDJPY_1000_1488326400_1514581200F_118000000_113500000",
-    );
-
-    foreach my $shortcode (@shortcode) {
-
-        my $c1 = produce_contract($shortcode, 'JPY');
-        my $p  = $c1->build_parameters;
-        $p->{date_pricing}         = $c1->date_start;
-        $p->{product_type}         = 'multi_barrier';
-        $p->{trading_period_start} = time;
-        my $c = produce_contract($p);
-        isa_ok $c->pricing_engine, 'BOM::Product::Pricing::Engine::VannaVolga::Calibrated';
-        my $contract_theo_prob          = $c->pricing_engine->base_probability->amount;
-        my $opposite_contract_theo_prob = $c->opposite_contract->pricing_engine->base_probability->amount;
-
-        my $discounted_prob = roundcommon(0.1, exp(-$c->discount_rate * $c->timeinyears->amount));
-        is roundcommon(0.1, $contract_theo_prob + $opposite_contract_theo_prob), $discounted_prob, "put call parity hold for " . $c->shortcode;
-
     }
 };
 

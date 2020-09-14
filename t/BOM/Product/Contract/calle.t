@@ -254,25 +254,6 @@ subtest 'call pricing engine equal tie markup' => sub {
 
     lives_ok {
         my $c = produce_contract({
-            bet_type             => 'CALLE',
-            date_start           => $now,
-            date_pricing         => $now,
-            duration             => '20m',
-            barrier              => 'S20P',
-            underlying           => 'frxUSDJPY',
-            currency             => 'USD',
-            payout               => 10,
-            product_type         => 'multi_barrier',
-            trading_period_start => $now->epoch,
-            current_tick         => $ct,
-        });
-        ok $c->pricing_engine->apply_equal_tie_markup, 'can apply_equal_tie_markup';
-        cmp_ok $c->pricing_engine->risk_markup->peek_amount('equal_tie_markup'), '==', 0.02, 'correct equal tie markup';
-    }
-    'correct equal tie markup for USDJPY';
-
-    lives_ok {
-        my $c = produce_contract({
             bet_type     => 'CALL',
             date_start   => $now,
             date_pricing => $now,
@@ -356,27 +337,6 @@ subtest 'call pricing engine equal tie markup' => sub {
         cmp_ok $c->debug_information->{risk_markup}{parameters}{equal_tie_markup}, '==', 0.00, 'correct equal tie markup';
     }
     'correct equal tie markup for AUDCAD';
-
-    lives_ok {
-        my $c = produce_contract({
-            bet_type             => 'CALLE',
-            date_start           => $now,
-            date_pricing         => $now,
-            duration             => '7d',
-            barrier              => 'S20P',
-            underlying           => 'frxUSDJPY',
-            currency             => 'USD',
-            payout               => 10,
-            product_type         => 'multi_barrier',
-            trading_period_start => $now->epoch,
-            current_tick         => $ct,
-        });
-        ok $c->pricing_engine->apply_equal_tie_markup, 'can apply_equal_tie_markup';
-        ok $c->ask_price, 'can ask price';
-        cmp_ok $c->debug_information->{risk_markup}{parameters}{equal_tie_markup}, '==', 0.00, 'correct equal tie markup';
-
-    }
-    'correct equal tie markup for USDJPY';
 
     lives_ok {
         my $c = produce_contract({

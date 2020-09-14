@@ -367,20 +367,6 @@ subtest 'date start blackouts' => sub {
     $bet_params->{duration}   = '4h59m59s';
     $c                        = produce_contract($bet_params);
     ok $c->is_valid_to_buy, 'valid to buy for random';
-    $bet_params->{underlying}           = 'frxAUDUSD';
-    $bet_params->{barrier}              = 76.8999;
-    $bet_params->{product_type}         = 'multi_barrier';
-    $bet_params->{trading_period_start} = time;
-    Cache::RedisDB->flushall;
-    BOM::Test::Data::Utility::FeedTestDatabase->instance->truncate_tables;
-    BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-        underlying => 'frxAUDUSD',
-        epoch      => Date::Utility->new('2015-01-01 00:00:00')->epoch,
-    });
-    my $mocked_hl = Test::MockModule->new('BOM::Product::Contract::PredefinedParameters');
-    $mocked_hl->mock('_get_expired_barriers', sub { [] });
-    $c = produce_contract($bet_params);
-    ok !$c->is_valid_to_buy, 'invalid to buy contracts expiring after 18:15GMT';
 };
 
 subtest 'date_expiry blackouts' => sub {

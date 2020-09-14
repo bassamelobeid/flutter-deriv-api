@@ -24,7 +24,6 @@ require UNIVERSAL::require;
 use BOM::MarketData qw(create_underlying_db);
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
-use BOM::Product::Role::Multibarrier;
 
 use Exporter qw(import export_to_level);
 
@@ -170,12 +169,6 @@ sub _validate_input_parameters {
         error_args => ['date_start'],
         details    => {field => 'date_start'},
     ) unless $params->{date_start};    # date_expiry is validated in BOM::Product::Categorizer
-
-    BOM::Product::Exception->throw(
-        error_code => 'MissingTradingPeriodStart',
-        error_args => ['trading_period_start'],
-        details    => {field => 'trading_period_start'},
-    ) if (($params->{product_type} // '') eq 'multi_barrier' and not $params->{trading_period_start});
 
     if ($params->{category}->has_user_defined_expiry) {
         my $start  = Date::Utility->new($params->{date_start});
