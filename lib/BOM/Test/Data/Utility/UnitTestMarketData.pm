@@ -35,7 +35,6 @@ use Quant::Framework::EconomicEventCalendar;
 use Quant::Framework::Utils::Test;
 use Quant::Framework::Asset;
 
-use BOM::Product::Contract::PredefinedParameters qw(generate_trading_periods generate_barriers_for_window);
 use BOM::Product::ContractFinder;
 
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
@@ -202,60 +201,6 @@ sub create_doc {
     }
 
     return $obj;
-}
-
-sub create_predefined_parameters_for {
-    my ($symbol, $date) = @_;
-
-    my $tp          = create_trading_periods($symbol, $date);
-    my @start_times = sort { $a <=> $b } uniq map { $_->{date_start}->{epoch} } @$tp;
-    BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-            underlying => $symbol,
-            epoch      => $_,
-            quote      => 100,
-        }) for (@start_times);
-    create_predefined_barriers($symbol, $_, $date) for (@$tp);
-    my $barrier_by_category = create_predefined_barriers_by_contract_category($symbol, $date);
-
-    return ($tp, $barrier_by_category);
-}
-
-sub create_predefined_barriers_by_contract_category {
-    my ($symbol, $date) = @_;
-
-    my $data      = BOM::Product::ContractFinder->new(for_date => $date)->multi_barrier_contracts_by_category_for({symbol => $symbol});
-    my @redis_key = BOM::Product::Contract::PredefinedParameters::barrier_by_category_key($symbol);
-    BOM::Config::Chronicle::get_chronicle_writer()->set(@redis_key, $data, $date, 1, 300);    # cached for 5 minutes
-
-    return $data;
-}
-
-sub create_trading_periods {
-    my ($symbol, $date) = @_;
-
-    my $periods   = BOM::Product::Contract::PredefinedParameters::generate_trading_periods($symbol, $date);
-    my @redis_key = BOM::Product::Contract::PredefinedParameters::trading_period_key($symbol, $date);
-
-    # 1 - to save to chronicle database
-    # ttl - set to 5 minutes
-    BOM::Config::Chronicle::get_chronicle_writer()->set(@redis_key, [grep { defined } @$periods], $date, 1, 300);
-
-    return $periods;
-}
-
-sub create_predefined_barriers {
-    my ($symbol, $trading_window, $date) = @_;
-
-    $date //= Date::Utility->new;
-    my $barriers = BOM::Product::Contract::PredefinedParameters::generate_barriers_for_window($symbol, $trading_window);
-    return unless $barriers;
-    my @redis_key = BOM::Product::Contract::PredefinedParameters::predefined_barriers_key($symbol, $trading_window);
-
-    # 1 - to save to chronicle database
-    # ttl - set to 5 minutes
-    BOM::Config::Chronicle::get_chronicle_writer()->set(@redis_key, $barriers, $date, 1, 300);
-
-    return $barriers;
 }
 
 sub import {

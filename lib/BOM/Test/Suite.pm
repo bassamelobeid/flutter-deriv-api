@@ -405,10 +405,6 @@ sub _setup_market_data {
         $redis->zadd($key, $_->{epoch}, $encoder->encode($_)) for @$ticks;
     }
 
-    for my $d (grep { $_->{symbol} && $_->{symbol} =~ /^frx/ } @$data) {
-        BOM::Test::Data::Utility::UnitTestMarketData::create_trading_periods($d->{symbol}, Date::Utility->new);
-    }
-
     populate_exchange_rates();
     return;
 }
