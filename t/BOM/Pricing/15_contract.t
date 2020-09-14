@@ -235,38 +235,6 @@ subtest 'get_ask_when_date_expiry_smaller_than_date_start' => sub {
         'Expiry time cannot be equal to start time.',
         'errors response is correct when date_expiry = date_start with payout_type is stake'
     );
-    $params = {
-        'amount_type' => 'payout',
-        'date_start'  => 0,
-        'currency'    => 'USD',
-        'barriers'    => [
-            {barrier => '126.144'},
-            {barrier => '126.194'},
-            {barrier => '126.244'},
-            {barrier => '126.294'},
-            {barrier => '126.344'},
-            {barrier => '126.394'},
-            {barrier => '126.444'}
-        ],
-        'bet_types'      => ['CALL', 'PUT'],
-        'underlying'     => 'R_50',
-        'proposal_array' => 1,
-        'duration'       => '1s',
-        'amount'         => 1000,
-        'country_code'   => 'jp'
-    };
-
-    my $mocked_batch = Test::MockModule->new('BOM::Product::Contract::Batch');
-    # just to simulate offerings error on proposal array
-    $mocked_batch->mock('ask_prices', sub { die });
-    $result = BOM::Pricing::v3::Contract::_get_ask($params);
-    is($result->{error}{code}, 'OfferingsValidationError', 'throw useful error because there is no asiand_intraday_fixed_expiry now');
-    is(
-        $result->{error}{message_to_client},
-        'Trading is not offered for this duration.',
-        'throw useful error because there is no asiand_intraday_fixed_expiry now'
-    );
-
 };
 
 subtest 'send_ask - invalid symbol' => sub {

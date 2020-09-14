@@ -17,9 +17,6 @@ use BOM::Config::Redis;
 
 use utf8;
 
-my $mock = Test::MockModule->new('BOM::Product::Contract::PredefinedParameters');
-$mock->mock('_get_predefined_highlow', sub { (100, 90) });
-
 set_absolute_time(Date::Utility->new('2017-11-20 00:00:00')->epoch);
 my ($t, $rpc_ct);
 my $method = 'contracts_for';
@@ -69,24 +66,6 @@ subtest "Request $method" => sub {
             });
         });
 
-    BOM::Test::Data::Utility::UnitTestMarketData::create_predefined_parameters_for('frxUSDJPY', Date::Utility->new);
-
-    $params[1]{args}{product_type}    = 'multi_barrier';
-    $params[1]{args}{contracts_for}   = 'frxUSDJPY';
-    $params[1]{args}{landing_company} = 'svg';
-
-    $result = $rpc_ct->call_ok(@params)->has_no_system_error->has_no_error->result;
-    is_deeply [sort keys %{$result}],
-        [sort qw/ available close open hit_count spot feed_license stash/],
-        'It should return contracts_for object for svg';
-    ok @{$result->{available}}, 'It should return available contracts only for svg';
-    ok !grep { $_->{contract_type} =~ /^(CALL|PUTE|EXPIRYMISSE|EXPIRYRANGE)$/ } @{$result->{available}};
-
-    is $result->{available}->[0]->{available_barriers}->[3], '500.000';
-
-    $params[1]{args}{contracts_for} = 'invalid symbol';
-    $rpc_ct->call_ok(@params)->has_no_system_error->has_error->error_code_is('InvalidSymbol', 'It should return error if symbol does not exist')
-        ->error_message_is('This contract is not offered in your country.', 'It should return error if symbol does not exist');
 };
 
 done_testing();
