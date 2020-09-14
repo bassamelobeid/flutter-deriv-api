@@ -121,6 +121,14 @@ sub expire_order {
     return $client->db->dbic->dbh->do("UPDATE p2p.p2p_order SET expire_time = NOW() - INTERVAL '1 day' WHERE id = $order_id");
 }
 
+sub ready_to_refund {
+    my ($client, $order_id, $days_needed) = @_;
+    $days_needed //= BOM::Config::Runtime->instance->app_config->payments->p2p->refund_timeout;
+
+    return $client->db->dbic->dbh->do("UPDATE p2p.p2p_order SET status='timed-out', expire_time = NOW() - INTERVAL ? WHERE id = ?",
+        undef, sprintf('%d days', $days_needed), $order_id);
+}
+
 sub set_order_status {
     my ($client, $order_id, $new_status) = @_;
 
