@@ -33,12 +33,18 @@ BEGIN {
 is_deeply(\%stats, {}, 'start with no metrics');
 is_deeply(\%tags,  {}, 'start with no tags');
 
+# This module is used by BOM::Pricing::Queue.
+# And we want to switch redis database AFTER this module is load in the compiling phrase
+# But in this script BOM::Pricing::Queue is loaded at run time phrase.
+# So we need to use it obviously. Please refer BOM::Test INIT block
+# This line is put here with `require` command to make thing clearer and maintenance easier
+use Net::Async::Redis;
 # Load this *after* our stats setup, so that the datadog override is in place
 require BOM::Pricing::Queue;
 
 # use a separate redis client for this test
-my $redis        = RedisDB->new(YAML::XS::LoadFile($ENV{BOM_TEST_REDIS_REPLICATED} // '/etc/rmg/redis-pricer.yml')->{write}->%*);
-my $redis_shared = RedisDB->new(YAML::XS::LoadFile($ENV{BOM_TEST_REDIS_REPLICATED} // '/etc/rmg/redis-pricer-shared.yml')->{write}->%*);
+my $redis        = RedisDB->new(YAML::XS::LoadFile('/etc/rmg/redis-pricer.yml')->{write}->%*);
+my $redis_shared = RedisDB->new(YAML::XS::LoadFile('/etc/rmg/redis-pricer-shared.yml')->{write}->%*);
 
 my $loop  = IO::Async::Loop->new;
 my $queue = new_ok('BOM::Pricing::Queue', [internal_ip => '1.2.3.4'], 'New BOM::Pricing::Queue processor');
