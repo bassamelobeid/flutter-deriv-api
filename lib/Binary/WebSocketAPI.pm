@@ -319,15 +319,23 @@ sub startup {
             skip_check_sanity => qr/password/,
             rpc_failure_cb    => sub {
                 my ($c, $res, $req_storage, $error) = @_;
-                my $details = 'URL: ' . ($req_storage->{req_url} // 'n/a');
-                if ($error) {
-                    $details .= ', code: ' . ($error->{code} // 'n/a') . ', response: ' . $error->{message};
+                if (
+                       defined $error
+                    && ref $error eq 'HASH'
+                    && (
+                        !exists $error->{type}
+                        || (   $error->{type} ne "Timeout"
+                            && $error->{type} ne "WrongResponse")))
+                {
+                    my $details = 'URL: ' . ($req_storage->{req_url} // 'n/a');
+                    if ($error->{code} || $error->{message}) {
+                        $details .= ', code: ' . ($error->{code} // 'n/a') . ', response: ' . $error->{message} // 'n/a';
+                    }
+                    # we don't log WrongResponse and Timeouts as we have metrics for them
+                    # this exception should be removed when we have properly
+                    # handled CallError
+                    $log->info(($error->{type} // 'n/a') . " [" . $req_storage->{msg_type} . "], details: $details");
                 }
-                # we don't log WrongResponse as we have metrics for them
-                # this exception should be removed when we have properly
-                # handled WrongResponse
-                $log->info(($error->{type} // '') . " [" . $req_storage->{msg_type} . "], details: $details")
-                    unless ($error->{type} // '') eq 'WrongResponse';
                 DataDog::DogStatsd::Helper::stats_inc(
                     "bom_websocket_api.v_3.rpc.error.count",
                     {
