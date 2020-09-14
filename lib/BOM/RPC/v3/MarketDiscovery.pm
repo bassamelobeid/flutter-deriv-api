@@ -46,8 +46,7 @@ rpc active_symbols => sub {
     my $active_symbols = [];    # API response expects an array eventhough it is empty
     return $active_symbols unless $product_type;
 
-    my $method        = $product_type eq 'basic' ? 'basic_offerings_for_country' : 'multi_barrier_offerings_for_country';
-    my $offerings_obj = $landing_company->$method($country_code, BOM::Config::Runtime->instance->get_offerings_config,);
+    my $offerings_obj = $landing_company->basic_offerings_for_country($country_code, BOM::Config::Runtime->instance->get_offerings_config,);
 
     die 'Could not retrieve offerings for landing_company[' . $landing_company_name . '] product_type[' . $product_type . ']' unless ($offerings_obj);
 
@@ -59,11 +58,7 @@ rpc active_symbols => sub {
     if (my $cached_symbols = Cache::RedisDB->get($namespace, $key)) {
         $active_symbols = $cached_symbols;
     } else {
-        # For multi_barrier product_type, we can only offer major forex pairs as of now.
-        my @all_active =
-              $product_type eq 'multi_barrier'
-            ? $offerings_obj->query({submarket => 'major_pairs'}, ['underlying_symbol'])
-            : $offerings_obj->values_for_key('underlying_symbol');
+        my @all_active = $offerings_obj->values_for_key('underlying_symbol');
         # symbols would be active if we allow forward starting contracts on them.
         my %forward_starting = map { $_ => 1 } $offerings_obj->query({start_type => 'forward'}, ['underlying_symbol']);
         foreach my $symbol (@all_active) {
