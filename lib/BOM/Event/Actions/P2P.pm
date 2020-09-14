@@ -186,6 +186,60 @@ sub order_updated {
     );
 }
 
+=head2 timeout_refund
+
+When an order hangs for 30 days with no dispute raised. The funds should be moved back to seller.
+An email regarding this refund should be sent to both parties.
+
+It takes a hash argument as:
+
+=over 4
+
+=item * C<order_id>: the id of the order
+
+=item * C<client_loginid>: the client loginid who placed the order
+
+=back
+
+Returns, C<1> on success, C<0> otherwise.
+
+=cut
+
+sub timeout_refund {
+    my $data = shift;
+
+    my ($client, $updated_order);
+    try {
+        $data->{$_} or die "Missing required attribute $_" for qw(client_loginid order_id);
+        my ($loginid, $order_id) = @{$data}{qw(client_loginid order_id)};
+
+        $client = BOM::User::Client->new({loginid => $loginid});
+
+        $updated_order = $client->p2p_timeout_refund(
+            id     => $order_id,
+            source => $data->{source} // DEFAULT_SOURCE,
+            staff  => $data->{staff} // DEFAULT_STAFF,
+        );
+    } catch {
+        my $err = $@;
+        $log->info('Fail to process order_refund: ' . $err, $data);
+        exception_logged();
+    }
+
+    return 0 unless $updated_order;
+
+    stats_inc('p2p.order.timeout_refund');
+
+    BOM::Platform::Event::Emitter::emit(
+        p2p_order_updated => {
+            client_loginid => $client->loginid,
+            order_id       => $updated_order->{id},
+            order_event    => 'timeout_refund',
+        });
+
+    return 1;
+}
+
 =head2 order_expired
 
 An order reached our predefined timeout without being confirmed by both sides or

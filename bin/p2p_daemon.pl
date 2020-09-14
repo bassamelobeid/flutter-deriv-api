@@ -76,10 +76,13 @@ my %dbs;
             last if $app_config->system->suspend->p2p || !$app_config->payments->p2p->enabled;
             $log->debug('P2P: Checking for expired orders');
             try {
-                my $sth = $dbs{$broker}->prepare('SELECT id, client_loginid FROM p2p.order_list_expired()');
-                $sth->execute();
+                my $sth = $dbs{$broker}->prepare('SELECT id, client_loginid FROM p2p.order_list_expired() WHERE status IN (?,?)');
+                # Seems a waste to fetch and send `timed-out` orders through the events queue just to be discarded by `bom-users`
+                $sth->execute(qw(pending buyer-confirmed));
+                
                 while (my $order_data = $sth->fetchrow_hashref) {
                     $log->debugf('P2P: Emitting event to mark order as expired for order %s', $order_data->{id});
+
                     BOM::Platform::Event::Emitter::emit(
                         p2p_order_expired => {
                             client_loginid => $order_data->{client_loginid},
@@ -89,8 +92,29 @@ my %dbs;
                 }
                 $sth->finish;
             }
-            catch {
-                $log->warnf('Fail to get expired orders from client db %s: %s', $broker, $@);
+            catch ($error) {
+                $log->warnf('Failed to get expired P2P orders from client db %s: %s', $broker, $error);
+                delete $dbs{$broker};
+            }
+            next unless $dbs{$broker};
+            $log->debug('P2P: Checking for ready to refund orders');
+            try {
+                # The days needed to reach the refund are dynamically configured (default 30 days)
+                my $days_to_refund = $app_config->payments->p2p->refund_timeout;
+                my $sth = $dbs{$broker}->prepare('SELECT id, client_loginid FROM p2p.order_list_refundable(?)');
+                $sth->execute($days_to_refund);
+
+                while (my $order_data = $sth->fetchrow_hashref) {
+                    $log->debugf('P2P: Emitting event to move funds back, order %s', $order_data->{id});
+                    BOM::Platform::Event::Emitter::emit(
+                        p2p_timeout_refund => {
+                            client_loginid => $order_data->{client_loginid},
+                            order_id       => $order_data->{id},
+                        });
+                }
+            }
+            catch ($error) {
+                $log->warnf('Failed to get expired P2P orders from client db %s: %s', $broker, $error);
                 delete $dbs{$broker};
             }
         }

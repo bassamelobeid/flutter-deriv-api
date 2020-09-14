@@ -63,6 +63,9 @@ my %EVENT_PROPERTIES = (
     p2p_order_cancelled => [qw(loginid  user_role order_type  order_id amount currency buyer_user_id buyer_nickname seller_user_id seller_nickname )],
     p2p_order_expired =>
         [qw(loginid user_role order_type  order_id amount currency buyer_has_confirmed seller_user_id seller_nickname buyer_user_id buyer_nickname)],
+    p2p_order_timeout_refund => [
+        qw(loginid user_role order_type  order_id amount currency exchange_rate local_currency seller_user_id seller_nickname buyer_user_id buyer_nickname)
+    ],
 );
 
 my $loop = IO::Async::Loop->new;
@@ -555,6 +558,65 @@ sub p2p_order_expired {
 
                 buyer_has_confirmed => $buyer_has_confirmed // 0,
 
+                buyer_user_id   => $parties->{buyer}->{binary_user_id},
+                buyer_nickname  => $parties->{buyer_nickname} // '',
+                seller_user_id  => $parties->{seller}->{binary_user_id},
+                seller_nickname => $parties->{seller_nickname} // '',
+            }
+        ),
+    );
+}
+
+=head2 p2p_order_timeout_refund
+
+Sends to segment the order refunded tracking event for both parties involved. 
+It takes the following arguments:
+
+=over 4
+
+=item * C<order> The order info
+
+=item * C<parties> The parties involved info
+
+=back
+
+Returns, a Future needing both tracking events.
+
+=cut
+
+sub p2p_order_timeout_refund {
+    my %args = @_;
+    my ($order, $parties) = @args{qw(order parties)};
+
+    return Future->needs_all(
+        track_event(
+            event      => 'p2p_order_timeout_refund',
+            properties => {
+                loginid         => $parties->{buyer}->loginid,
+                user_role       => 'buyer',
+                order_type      => $order->{type},
+                order_id        => $order->{id},
+                exchange_rate   => $order->{rate_display},
+                amount          => $order->{amount_display},
+                currency        => $order->{account_currency},
+                local_currency  => $order->{local_currency},
+                buyer_user_id   => $parties->{buyer}->{binary_user_id},
+                buyer_nickname  => $parties->{buyer_nickname} // '',
+                seller_user_id  => $parties->{seller}->{binary_user_id},
+                seller_nickname => $parties->{seller_nickname} // '',
+            }
+        ),
+        track_event(
+            event      => 'p2p_order_timeout_refund',
+            properties => {
+                loginid         => $parties->{seller}->loginid,
+                user_role       => 'seller',
+                order_type      => $order->{type},
+                order_id        => $order->{id},
+                exchange_rate   => $order->{rate_display},
+                amount          => $order->{amount_display},
+                currency        => $order->{account_currency},
+                local_currency  => $order->{local_currency},
                 buyer_user_id   => $parties->{buyer}->{binary_user_id},
                 buyer_nickname  => $parties->{buyer_nickname} // '',
                 seller_user_id  => $parties->{seller}->{binary_user_id},

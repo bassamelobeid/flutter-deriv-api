@@ -115,7 +115,7 @@ subtest 'process' => sub {
                 crypto_subscription authenticated_with_scans qualifying_payment_check payment_deposit login signup transfer_between_accounts profile_change
                 p2p_advertiser_created p2p_advertiser_updated
                 p2p_advert_created p2p_advert_updated
-                p2p_order_created p2p_order_updated p2p_order_expired
+                p2p_order_created p2p_order_updated p2p_order_expired p2p_timeout_refund
                 affiliate_sync_initiated withdrawal_limit_reached
                 api_token_created api_token_deleted
                 app_registered app_updated app_deleted set_financial_assessment self_exclude_set crypto_withdrawal aml_client_status_update
