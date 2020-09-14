@@ -2025,8 +2025,10 @@ sub sell_expired_contracts {
         $sold = $fmb_helper->batch_sell_bet;
         BOM::Transaction::Utility::delete_contract_parameters($_->{id}, $client) for (@bets_to_sell);
     } catch {
-        my $e = $@;
-        warn(ref $e eq 'ARRAY' ? "@$e" : "$e");
+        my $e         = $@;
+        my $bet_count = scalar @$bets;
+        my $message   = ref $e eq 'ARRAY' ? "@$e" : "$e";
+        warn($message . " (bet_count = $bet_count)");
         $sold = [];
     }
 
