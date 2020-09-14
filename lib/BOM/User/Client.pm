@@ -2433,44 +2433,6 @@ sub p2p_order_cancel {
     return $update;
 }
 
-=head2 p2p_expire_order
-
-Expire order in different states.
-Method returns order data in case if state of order was changed.
-
-=cut
-
-sub p2p_expire_order {
-    my ($self, %param) = @_;
-
-    my $id    = $param{id} // die "no id provided to p2p_expire_order";
-    my $order = $self->_p2p_orders(id => $id)->[0];
-    die +{error_code => 'OrderNotFound'} unless $order;
-
-    my $status = $order->{status};
-
-    if ($status eq 'pending') {
-        my $escrow = $self->p2p_escrow;
-        die +{error_code => 'EscrowNotFound'} unless $escrow;
-
-        my $txn_time    = Date::Utility->new->datetime;
-        my $is_refunded = 1;                              # order will have refunded status
-
-        my $result = $self->db->dbic->txn(
-            fixup => sub {
-                $_->selectrow_hashref('SELECT * FROM p2p.order_refund(?, ?, ?, ?, ?, ?)',
-                    undef, $order->{id}, $escrow->loginid, $param{source}, $param{staff}, $is_refunded, $txn_time);
-            });
-        $self->_p2p_order_stats_record('ORDER_REFUNDED', $result);
-        return $result;
-    } elsif ($status eq 'buyer-confirmed') {
-        return $self->db->dbic->run(
-            fixup => sub {
-                $_->selectrow_hashref('SELECT * FROM p2p.order_update(?, ?, ?)', undef, $id, 'timed-out', undef);
-            });
-    }
-}
-
 =head2 p2p_chat_create
 
 Creates a sendbird chat channel for an order, and users if required.
@@ -2609,6 +2571,97 @@ sub p2p_escrow {
     }
 
     return undef;
+}
+
+=head1 Non-RPC P2P methods
+
+The methods below are not called by RPC and, therefore, they are not needed to die in the 'P2P way'.
+
+=head2 p2p_timeout_refund
+
+Moves back the funds to the seller.
+The order should be in the state C<timed-out> and at least 30 days (by default but configurable) should have passed since C<expire_time>.
+
+It takes a hash argument as:
+
+=over 4
+
+=item * C<id>: the id of the order
+
+=item * C<source>: the calling source
+
+=item * C<staff>: the calling staff
+
+=back
+
+Returns, the order itself with updated status C<refunded> on success, otherwise an exception is thrown.
+
+=cut
+
+sub p2p_timeout_refund {
+    my ($self, %param) = @_;
+
+    my $id          = $param{id} // die "no id provided to p2p_timeout_refund";
+    my $order       = $self->_p2p_orders(id => $id)->[0];
+    my $days_needed = BOM::Config::Runtime->instance->app_config->payments->p2p->refund_timeout;
+
+    # Note for non-rpc methods we don't craft the P2P error object
+    die sprintf('P2P Order not found: %d',     $id) unless $order;
+    die sprintf('Cannot refund P2P order: %d', $id) unless $order->{status} eq 'timed-out';
+
+    my $expire_time = Date::Utility->new($order->{expire_time});
+    # There are 86,400 seconds in a day
+    # Check whether we've reached the days required to move the funds back
+    die sprintf('P2P Order is not ready to refund: %d', $id) if Date::Utility::days_between(Date::Utility->new, $expire_time) < $days_needed;
+
+    my $escrow = $self->p2p_escrow;
+    die 'Escrow not found' unless $escrow;
+
+    my $txn_time = Date::Utility->new->datetime;
+    $self->db->dbic->txn(
+        fixup => sub {
+            $_->do('SELECT p2p.order_refund(?, ?, ?, ?, ?, ?)', undef, $order->{id}, $escrow->loginid, $param{source}, $param{staff}, 1, $txn_time);
+        });
+
+    return $self->_p2p_orders(id => $id)->[0];
+}
+
+=head2 p2p_expire_order
+
+Expire order in different states.
+Method returns order data in case if state of order was changed.
+
+=cut
+
+sub p2p_expire_order {
+    my ($self, %param) = @_;
+
+    my $id    = $param{id} // die "no id provided to p2p_expire_order";
+    my $order = $self->_p2p_orders(id => $id)->[0];
+    die +{error_code => 'OrderNotFound'} unless $order;
+
+    my $status = $order->{status};
+
+    if ($status eq 'pending') {
+        my $escrow = $self->p2p_escrow;
+        die +{error_code => 'EscrowNotFound'} unless $escrow;
+
+        my $txn_time    = Date::Utility->new->datetime;
+        my $is_refunded = 1;                              # order will have refunded status
+
+        my $result = $self->db->dbic->txn(
+            fixup => sub {
+                $_->selectrow_hashref('SELECT * FROM p2p.order_refund(?, ?, ?, ?, ?, ?)',
+                    undef, $order->{id}, $escrow->loginid, $param{source}, $param{staff}, $is_refunded, $txn_time);
+            });
+        $self->_p2p_order_stats_record('ORDER_REFUNDED', $result);
+        return $result;
+    } elsif ($status eq 'buyer-confirmed') {
+        return $self->db->dbic->run(
+            fixup => sub {
+                $_->selectrow_hashref('SELECT * FROM p2p.order_update(?, ?, ?)', undef, $id, 'timed-out', undef);
+            });
+    }
 }
 
 =head1 Private P2P methods
