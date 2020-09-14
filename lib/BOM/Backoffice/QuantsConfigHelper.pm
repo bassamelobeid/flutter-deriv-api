@@ -396,7 +396,7 @@ sub get_config_input {
                 });
             my %supported_contract_types =
                 map { $_ => 1 }
-                map { $_->values_for_key('contract_type') } ($lc->basic_offerings($o_config), $lc->multi_barrier_offerings($o_config));
+                map { $_->values_for_key('contract_type') } ($lc->basic_offerings($o_config));
             return [grep { $supported_contract_types{$_->[0]} } @$output];
         }
 
@@ -407,12 +407,12 @@ sub get_config_input {
                 });
             my %supported_underlying_symbols =
                 map { $_ => 1 }
-                map { $_->values_for_key('underlying_symbol') } ($lc->basic_offerings($o_config), $lc->multi_barrier_offerings($o_config));
+                map { $_->values_for_key('underlying_symbol') } ($lc->basic_offerings($o_config));
             return [grep { $supported_underlying_symbols{$_->[0]} } @$output];
         }
     }
 
-    my @input = uniq(map { $_->values_for_key($key) } ($lc->basic_offerings($o_config), $lc->multi_barrier_offerings($o_config)));
+    my @input = uniq(map { $_->values_for_key($key) } ($lc->basic_offerings($o_config)));
 
     if ($key eq 'expiry_type') {
         @input = grep { $_ ne 'no_expiry' } @input;

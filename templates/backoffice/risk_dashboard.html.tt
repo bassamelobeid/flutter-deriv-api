@@ -4,7 +4,6 @@
   <ul>
     <li><a href="#rd-summary">Client Summary</a></li>
     <li><a href="#rd-pivot">Pivot</a></li>
-    <li><a href="#rd-multibarrier">Multibarrier's Exposures Report</a></li>
     <li><a href="#rd-exposure">Company's Exposure</a></li>
     <li><a href="#rd-multiplier">Multipliers Open Profit & Loss</a></li>
   </ul>
@@ -54,9 +53,6 @@
 <div id="rd-pivot">
 <p> Latest report generated at [% generated_time %] </p>
 [% INCLUDE 'backoffice/risk_dashboard_pivot.html.tt' pivot = open_bets.pivot %]
-</div>
-<div id="rd-multibarrier"> 
-[% INCLUDE 'backoffice/risk_dashboard_multibarrier.html.tt' data = multibarrier %] 
 </div>
 <div id="rd-exposure">
 [% INCLUDE 'backoffice/risk_dashboard_exposure_monitoring.html.tt' data = exposures_report %]

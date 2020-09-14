@@ -37,7 +37,6 @@ use BOM::Config::Runtime;
 use BOM::Backoffice::Request;
 use List::MoreUtils qw(uniq);
 use BOM::Product::ContractFactory qw( produce_contract );
-use BOM::Product::Contract::PredefinedParameters;
 use ExchangeRates::CurrencyConverter qw(in_usd);
 use BOM::MarketData qw(create_underlying);
 use LandingCompany::Registry;
@@ -403,69 +402,6 @@ sub _payment_and_profit_report {
         },
         watched => \@watched,
     };
-}
-
-sub multibarrierreport {
-    my $self      = shift;
-    my @open_bets = @{$self->_open_bets_at_end};
-    my $multibarrier;
-    my $symbol;
-    foreach my $open_contract (@open_bets) {
-        my $contract = produce_contract($open_contract->{short_code}, $open_contract->{currency_code});
-        next if not $contract->can("trading_period_start");
-        next if not $contract->is_intraday;
-
-        my @available_barrier = @{$contract->predefined_contracts->{available_barriers}};
-
-        # Rearrange the index of the barrier from  the median of the barrier list (ie the ATM barrier)
-        my %reindex_barrier_list = map { $available_barrier[$_] => $_ - (int @available_barrier / 2) } (0 .. $#available_barrier);
-        my $barrier_index        = $reindex_barrier_list{$contract->barrier->as_absolute};
-        my $spot                 = $contract->current_spot;
-        my ($closest_barrier_to_spot) =
-            map { $_->{barrier} } sort { $a->{diff} <=> $b->{diff} } map { {barrier => $_, diff => abs($spot - $_)} } @available_barrier;
-        my $spot_index = $reindex_barrier_list{$closest_barrier_to_spot};
-        $multibarrier->{$contract->date_expiry->datetime}->{$contract->bet_type}->{barrier}->{$barrier_index}->{$contract->underlying->symbol} +=
-            financialrounding('price', 'USD', in_usd($open_contract->{payout_price}, $open_contract->{currency_code}));
-        push @{$symbol->{$contract->date_expiry->datetime}}, $contract->underlying->symbol;
-
-        $multibarrier->{$contract->date_expiry->datetime}->{spot}->{$contract->underlying->symbol} = $spot_index;
-    }
-    my $final;
-    foreach my $expiry (sort keys %{$multibarrier}) {
-        my $max = 0;
-
-        for (-3 ... 3) {
-            $final->{$expiry}->{PUT}->{barrier}->{$_}   = {};
-            $final->{$expiry}->{CALLE}->{barrier}->{$_} = {};
-            foreach my $symbol (uniq @{$symbol->{$expiry}}) {
-                my $CALL = $multibarrier->{$expiry}->{CALLE}->{barrier}->{$_}->{$symbol} // 0;
-                my $PUT  = $multibarrier->{$expiry}->{PUT}->{barrier}->{$_}->{$symbol}   // 0;
-                $final->{$expiry}->{CALLE}->{barrier}->{$_}->{$symbol}->{'isSpot'} = 1
-                    if defined $multibarrier->{$expiry}->{spot}->{$symbol} && $multibarrier->{$expiry}->{spot}->{$symbol} == $_;
-                $final->{$expiry}->{PUT}->{barrier}->{$_}->{$symbol}->{'isSpot'} = 1
-                    if defined $multibarrier->{$expiry}->{spot}->{$symbol} && $multibarrier->{$expiry}->{spot}->{$symbol} == $_;
-                if ($CALL > 0 or $PUT > 0) {
-                    if ($CALL > $PUT) {
-                        $final->{$expiry}->{CALLE}->{barrier}->{$_}->{$symbol}->{value} = $CALL - $PUT;
-                        $final->{$expiry}->{PUT}->{barrier}->{$_}->{$symbol}->{value}   = 0;
-                        $max = ($CALL - $PUT) > $max ? $CALL - $PUT : $max;
-                        my $isOTM = $multibarrier->{$expiry}->{spot}->{$symbol} < $_ ? 1 : 0;
-                        $final->{$expiry}->{CALLE}->{barrier}->{$_}->{$symbol}->{isOTM} = $isOTM;
-                    } else {
-                        $final->{$expiry}->{PUT}->{barrier}->{$_}->{$symbol}->{value}   = $PUT - $CALL;
-                        $final->{$expiry}->{CALLE}->{barrier}->{$_}->{$symbol}->{value} = 0;
-                        my $isOTM = $multibarrier->{$expiry}->{spot}->{$symbol} > $_ ? 1 : 0;
-                        $final->{$expiry}->{PUT}->{barrier}->{$_}->{$symbol}->{isOTM} = $isOTM;
-                        $max = ($PUT - $CALL) > $max ? $PUT - $CALL : $max;
-                    }
-                }
-            }
-        }
-        $final->{$expiry}->{max} = $max;
-    }
-
-    $final->{generated_time} = $self->_report_mapper->get_last_generated_historical_marked_to_market_time;
-    return $final;
 }
 
 sub open_contract_exposures {
