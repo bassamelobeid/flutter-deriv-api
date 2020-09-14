@@ -8,7 +8,6 @@ use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
-use BOM::Product::Contract::PredefinedParameters qw(generate_trading_periods);
 use BOM::MarketData qw(create_underlying);
 use BOM::Config::Chronicle;
 use FindBin qw/$Bin/;
@@ -30,8 +29,6 @@ BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
         quote      => 100,
     }) for ($now->minus_time_interval('366d')->epoch, $now->epoch);
 
-my $tp = BOM::Test::Data::Utility::UnitTestMarketData::create_trading_periods('frxUSDJPY', $now);
-BOM::Test::Data::Utility::UnitTestMarketData::create_predefined_barriers('frxUSDJPY', $_) for @$tp;
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_delta',
     {
@@ -39,7 +36,6 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         recorded_date => $now
     });
 
-BOM::Test::Data::Utility::UnitTestMarketData::create_trading_periods('frxEURUSD', $now);
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'volsurface_delta',
     {
@@ -74,44 +70,6 @@ ok($contracts_for->{contracts_for});
 ok($contracts_for->{contracts_for}->{available});
 is($contracts_for->{contracts_for}->{feed_license}, 'realtime', 'Correct license for contracts_for');
 test_schema('contracts_for', $contracts_for);
-
-$contracts_for = $t->await::contracts_for({
-    contracts_for => 'frxUSDJPY',
-    product_type  => 'multi_barrier'
-});
-
-my $trading_calendar = Quant::Framework->new->trading_calendar(BOM::Config::Chronicle::get_chronicle_reader());
-my $market_closed    = !$trading_calendar->is_open(create_underlying('frxUSDJPY')->exchange);
-my $time_hhmmss      = Date::Utility->new->time_hhmmss;
-if ($time_hhmmss ge '18:15:00' || $time_hhmmss lt '00:15:00' || $market_closed) {
-    is $contracts_for->{error}{code}, 'InvalidSymbol', 'frxUSDJPY multi barrier is unavailable at this time';
-} else {
-    subtest 'contracts_for multi_barrier' => sub {
-        my $contracts_for_mb = $t->await::contracts_for({
-            contracts_for => 'frxUSDJPY',
-            product_type  => 'multi_barrier'
-        });
-        ok($contracts_for_mb->{contracts_for});
-        ok($contracts_for_mb->{contracts_for}->{available});
-        is($contracts_for_mb->{contracts_for}->{feed_license}, 'realtime', 'Correct license for contracts_for');
-        test_schema('contracts_for', $contracts_for_mb);
-
-        # test contracts_for EURUSD for forward_starting_options
-        my $expected_blackouts = [['11:00:00', '13:00:00'], ['20:00:00', '23:59:59']];
-
-        my $contracts_for_eurusd = $t->await::contracts_for({contracts_for => 'frxEURUSD'});
-        ok($contracts_for_eurusd->{contracts_for});
-        ok($contracts_for_eurusd->{contracts_for}->{available});
-        is($contracts_for_eurusd->{contracts_for}->{feed_license}, 'realtime', 'Correct license for contracts_for');
-
-        foreach my $contract (@{$contracts_for_eurusd->{contracts_for}->{'available'}}) {
-            next if $contract->{'start_type'} ne 'forward';
-            cmp_deeply $contract->{'forward_starting_options'}[0]{'blackouts'}, $expected_blackouts, "expected blackouts";
-        }
-
-        test_schema('contracts_for', $contracts_for_eurusd);
-    }
-}
 
 my $trading_times = $t->await::trading_times({trading_times => Date::Utility->new->date_yyyymmdd});
 ok($trading_times->{trading_times});

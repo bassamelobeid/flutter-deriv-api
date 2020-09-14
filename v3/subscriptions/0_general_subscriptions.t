@@ -53,8 +53,6 @@ $loop->add(
                         $symbol = $params->contract->underlying->symbol;
                     } elsif ($params->ticks_history) {
                         $symbol = $params->ticks_history->underlying->symbol;
-                    } elsif ($params->proposal_array) {
-                        $symbol = $params->proposal_array->underlying->symbol;
                     } elsif ($params->underlying) {
                         $symbol = $params->underlying->symbol;
                     } else {
