@@ -8,6 +8,7 @@ use Test::Exception;
 use Test::FailWarnings;
 
 use BOM::Product::ContractFactory qw(produce_contract);
+use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 
 my $offerings = LandingCompany::Registry::get('virtual')->basic_offerings({
     loaded_revision => 1,
