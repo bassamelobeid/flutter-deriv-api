@@ -184,12 +184,14 @@ subtest 'create account failed' => sub {
     subtest 'insufficient info' => sub {
         # create real acc
         my %details = %client_details;
-        delete $details{first_name};
+        $details{residence} = 'id';
+        my @missing_properties = qw(first_name last_name);
+        delete $details{$_} for @missing_properties;
 
         my $res = $t->await::new_account_real(\%details);
 
-        is($res->{error}->{code}, 'InputValidationFailed', 'not enough info');
-        is_deeply($res->{error}->{details}, {first_name => 'Missing property.'}, "error info ok");
+        is($res->{error}->{code}, 'InsufficientAccountDetails', 'Not enough info');
+        is_deeply($res->{error}->{details}, {missing => [@missing_properties]}, 'All missing required properties are listed');
         is($res->{new_account_real}, undef, 'NO account created');
     };
 
