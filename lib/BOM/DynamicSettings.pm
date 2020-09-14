@@ -274,7 +274,7 @@ sub get_settings_by_group {
                 payments.transfer_between_accounts.exchange_rate_expiry.crypto
                 )
         ],
-        # these settings are configured in separate pages. No need to reconfure them in Dynamic Settings/Others.
+        # these settings are configured in separate pages. No need to reconfigure them in Dynamic Settings/Others.
         exclude => [qw(
                 payments.transfer_between_accounts.fees.default.fiat_fiat
                 payments.transfer_between_accounts.fees.default.fiat_crypto
@@ -294,6 +294,7 @@ sub get_settings_by_group {
                 payments.p2p.available_for_countries
                 payments.p2p.restricted_countries
                 payments.p2p.available_for_currencies
+                payments.p2p.refund_timeout
                 )]};
 
     my $app_config = BOM::Config::Runtime->instance->app_config;

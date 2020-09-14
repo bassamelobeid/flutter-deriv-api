@@ -25,7 +25,7 @@ code_exit_BO('<p style="color:red;"><b>Both IT and Quants permissions are requir
     unless BOM::Backoffice::Auth0::has_authorisation(['Quants']) && BOM::Backoffice::Auth0::has_authorisation(['IT']);
 
 BrokerPresentation('P2P DYNAMIC SETTINGS');
-
+# Make sure to add these keys and any new keys in DynamicSettings.pm exclude
 my @setting_keys = qw(
     payments.p2p.enabled
     payments.p2p.available
@@ -39,6 +39,7 @@ my @setting_keys = qw(
     payments.p2p.available_for_countries
     payments.p2p.restricted_countries
     payments.p2p.available_for_currencies
+    payments.p2p.refund_timeout
 );
 
 if (request()->http_method eq 'POST' and request()->params->{save}) {
