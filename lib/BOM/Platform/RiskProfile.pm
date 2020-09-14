@@ -273,12 +273,11 @@ sub get_turnover_limit_parameters {
                     $params->{symbols} = [split ',', $_->{underlying_symbol}];
                 } elsif ($_->{submarket}) {
                     $params->{symbols} =
-                        [$svg_lc->default_offerings($offerings_config)
+                        [$svg_lc->basic_offerings($offerings_config)
                             ->query({submarket => [split ',', $_->{submarket} =~ s/\s//gr]}, ['underlying_symbol'],)];
                 } elsif ($_->{market}) {
                     $params->{symbols} = [
-                        $svg_lc->default_offerings($offerings_config)->query({market => [split ',', $_->{market} =~ s/\s//gr]}, ['underlying_symbol'])
-                    ];
+                        $svg_lc->basic_offerings($offerings_config)->query({market => [split ',', $_->{market} =~ s/\s//gr]}, ['underlying_symbol'])];
                 }
             } catch {
                 my $err = $@;
@@ -290,7 +289,7 @@ sub get_turnover_limit_parameters {
             try {
                 if ($_->{contract_category}) {
                     $params->{bet_type} =
-                        [$svg_lc->default_offerings($offerings_config)->query({contract_category => $_->{contract_category}}, ['contract_type'])];
+                        [$svg_lc->basic_offerings($offerings_config)->query({contract_category => $_->{contract_category}}, ['contract_type'])];
                 }
             } catch {
                 my $err = $@;
@@ -436,8 +435,8 @@ sub get_current_profile_definitions {
         my $lc_obj           = LandingCompany::Registry::get($landing_company);
         $offerings_obj =
               $country_code
-            ? $lc_obj->default_offerings_for_country($country_code, $offerings_config)
-            : $lc_obj->default_offerings($offerings_config);
+            ? $lc_obj->basic_offerings_for_country($country_code, $offerings_config)
+            : $lc_obj->basic_offerings($offerings_config);
 
         @markets =
             map { Finance::Asset::Market::Registry->get($_) } $offerings_obj->values_for_key('market');

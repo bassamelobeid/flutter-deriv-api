@@ -205,12 +205,12 @@ subtest 'Handling errors for companies with no offering' => sub {
         underlying_risk_profile_setter => $ul->risk_profile_setter,
     );
     my $landing_company_mock = Test::MockModule->new('LandingCompany');
-    $landing_company_mock->mock(default_offerings => sub { die 'LANDING_COMPANY_DOES_NOT_HAVE_OFFERINGS' });
+    $landing_company_mock->mock(basic_offerings => sub { die 'LANDING_COMPANY_DOES_NOT_HAVE_OFFERINGS' });
     my $param = $rp->get_turnover_limit_parameters;
     is_deeply $param->[0]{symbols},  [], 'No symbols for companies without offerings';
     is_deeply $param->[0]{bet_type}, [], 'No bet types for companies without offerings';
 
-    $landing_company_mock->mock(default_offerings => sub { die 'UNEXPECTED_PRODUCT_TYPE' });
+    $landing_company_mock->mock(basic_offerings => sub { die 'UNEXPECTED_PRODUCT_TYPE' });
     throws_ok { $rp->get_turnover_limit_parameters } qr/^UNEXPECTED_PRODUCT_TYPE/, 'Only exception without offerings is handled';
 };
 
