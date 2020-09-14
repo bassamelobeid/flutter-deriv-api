@@ -14,7 +14,7 @@ tidy:
 	find . -name '*.tidyup' -delete
 
 test:
-	@$(PROVE) -I./t --exec '/etc/rmg/bin/perl -I. -MTest::Warnings' t/BOM
+	@$(PROVE) -I./t t/BOM
 
 syntax:
 	@$(PROVE) -I./t --exec '/etc/rmg/bin/perl -I. -MTest::Warnings -MMojo::JSON::MaybeXS' $(wildcard t/0*.t)
