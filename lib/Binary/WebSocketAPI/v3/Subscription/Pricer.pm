@@ -29,7 +29,7 @@ Please refer to L<Binary::WebSocketAPI::v3::Subscription>
 
 =head2 cache
 
-a hash that be used to cache something, like proposal_array_subscription in Pricer::ProposalArrayItem, contract_parameters in Proposal
+a hash that be used to cache something, like  contract_parameters in Proposal
 
 =cut
 
@@ -96,7 +96,7 @@ sub handle_message {
 
     my $c = $self->c;
     unless ($c->tx) {
-        for my $subclass (qw(Proposal ProposalOpenContract ProposalArray)) {
+        for my $subclass (qw(Proposal ProposalOpenContract)) {
             my $class = __PACKAGE__ . "::$subclass";
             $class->unregister_class($c);
         }
@@ -235,7 +235,7 @@ sub _create_error_message {
     my ($self, $type, $response) = @_;
     my ($err_code, $err_message, $err_details);
     my $c = $self->c;
-    Binary::WebSocketAPI::v3::Subscription->unregister_by_uuid($c, $self->cache->{proposal_array_subscription} || $self->uuid());
+    Binary::WebSocketAPI::v3::Subscription->unregister_by_uuid($c, $self->uuid());
 
     if ($response->{error}) {
         $err_code    = $response->{error}->{code};

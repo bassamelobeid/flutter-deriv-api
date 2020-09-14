@@ -52,7 +52,6 @@ sub forget_all {
             proposal_open_contract
             balance
             transaction
-            proposal_array
             website_status
             p2p_order
             p2p_advertiser
@@ -77,7 +76,7 @@ sub forget_all {
                 # we don't want uuid of transaction subscriptions if the type is 'proposal_open_contract'
                 # TODO I guess we need add 'buy' type also
                 _forget_transaction_subscription($c, 'sell');
-            } elsif ($type eq 'proposal' or $type eq 'proposal_array') {
+            } elsif ($type eq 'proposal') {
                 @removed_ids{@{_forget_all_pricing_subscriptions($c, $type)}} = ();
             } elsif ($type eq 'p2p_order') {
                 @removed_ids{@{_forget_p2p_order_subscription($c)}} = ();

@@ -95,13 +95,6 @@ ProposalArray will not subscribe a real channel, it is only for storing informat
 ProposalArray will receive an array of barriers, and it will split them to smaller chunks. Every chunk will 
 be a ProposalArrayItem object. Every object will have several barriers.
 
-## The flow of proposal array 
-![Proposal Array Flow](proposal_array.msc.png)
-
-# Proposal Array Item subscription
-PropsalArrayItem will run a job to collect all items and return to client
-## The flow of Proposal Array Item subscription
-![ProposalArrayItem](proposal_array_item.msc.png)
 
 # Relationship between subscriptions.
 ![Relationship between subscriptions](relation.dot.png)

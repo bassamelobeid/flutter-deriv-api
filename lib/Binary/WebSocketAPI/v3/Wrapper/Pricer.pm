@@ -29,22 +29,15 @@ use Binary::WebSocketAPI::v3::Wrapper::System;
 use Binary::WebSocketAPI::v3::Wrapper::Transaction;
 use Binary::WebSocketAPI::v3::Subscription::Pricer::Proposal;
 use Binary::WebSocketAPI::v3::Subscription::Pricer::ProposalOpenContract;
-use Binary::WebSocketAPI::v3::Subscription::Pricer::ProposalArray;
-use Binary::WebSocketAPI::v3::Subscription::Pricer::ProposalArrayItem;
 
 # Number of RPC requests a single active websocket call
-# can issue in parallel. Used for proposal_array.
+# can issue in parallel.
 use constant PARALLEL_RPC_COUNT => 4;
 
 # How long we'll wait for all component requests to complete
 # Since this is pricing code, anything more than a few seconds
 # isn't going to be much use to anyone.
 use constant PARALLEL_RPC_TIMEOUT => 20;
-
-# We split proposal_array calls into batches so that we don't
-# overload a single RPC server - this controls how many barriers
-# we expect to be reasonable for each call.
-use constant BARRIERS_PER_BATCH => 16;
 
 # Sanity check - if we have more than this many barriers, reject
 # the request entirely.
@@ -94,273 +87,6 @@ sub proposal {
                 return $api_response;
             },
         });
-    return;
-}
-
-=head2 proposal_array
-
-Deprecated API call. TODO: (JB) This will be refactored to support multiplier.
-
-Pricing proposals for multiple barriers.
-
-Issues a separate RPC request for each barrier, then collates the results
-in a single response back to the client.
-
-=cut
-
-# perlcritic seems to be confused about the fmap block, hence this workaround
-sub proposal_array {    ## no critic(Subroutines::RequireArgUnpacking)
-    my ($c, $req_storage) = @_;
-
-    my $msg_type       = 'proposal_array';
-    my $barriers_order = {};
-    my @barriers       = @{$req_storage->{args}->{barriers}};
-
-    if (@barriers > BARRIER_LIMIT) {
-        my $error = $c->new_error('proposal_array', 'TooManyBarriers', $c->l('Too many barriers were requested.'));
-        $c->send({json => $error}, $req_storage);
-        return;
-    }
-
-    if (!_unique_barriers(\@barriers)) {
-        my $error = $c->new_error('proposal_array', 'DuplicatedBarriers', $c->l('Duplicate barriers not allowed.'));
-        $c->send({json => $error}, $req_storage);
-        return;
-    }
-
-    # We can end up with 10 barriers or more, and each one has a CPU cost, so we limit each
-    # request and distribute between RPC servers and pricers.
-    my $barrier_chunks = [List::UtilsBy::bundle_by { [@_] } BARRIERS_PER_BATCH, @barriers];
-
-    my $copy_args      = {%{$req_storage->{args}}};
-    my @contract_types = ref($copy_args->{contract_type}) ? @{$copy_args->{contract_type}} : $copy_args->{contract_type};
-
-    $copy_args->{skip_streaming} =
-        1;    # only for proposal_array: do not create redis subscription, we need only information stored in subscription object
-    my $channel_info = _pricing_channel_for_proposal($c, $copy_args, {}, 'ProposalArray');
-    my $uuid         = $channel_info->{uuid};
-    unless ($uuid) {
-        my $error = $c->new_error('proposal_array', 'AlreadySubscribed', $c->l('You are already subscribed to [_1].', 'proposal_array'));
-        $c->send({json => $error}, $req_storage);
-        return;
-    }
-    weaken(my $subscription = $channel_info->{subscription});
-    $subscription->req_args($req_storage->{args});
-
-    for my $index ($#$barrier_chunks) {
-        my $barrier = $barrier_chunks->[$index];
-        $barriers_order->{make_barrier_key($barrier->[0])} = $index;
-    }
-
-    my $create_price_channel = sub {
-        my ($c, $rpc_response, $req_storage) = @_;
-        my $cache = {
-            proposal_array_subscription => $subscription->uuid,
-        };
-        # Apply contract parameters - we will use them for Price::Calculator calls to determine
-        # the actual price from the theo_probability value the pricers return
-        for my $contract_type (keys %{$rpc_response->{proposals}}) {
-            for my $barrier (@{$rpc_response->{proposals}{$contract_type}}) {
-                my $barrier_key = make_barrier_key($barrier->{error} ? $barrier->{error}->{details} : $barrier);
-                my $entry       = {
-                    %{$rpc_response->{contract_parameters}},
-                    longcode  => $barrier->{longcode},
-                    ask_price => $barrier->{ask_price},
-                };
-                delete @{$entry}{qw(proposals barriers)};
-                $entry->{error}{details}{longcode} ||= $entry->{longcode} if $entry->{error};
-                $cache->{$contract_type}{$barrier_key} = {
-                    contract_parameters => $entry,
-                };
-            }
-        }
-
-        $req_storage->{uuid} = _pricing_channel_for_proposal($c, $req_storage->{args}, $cache, 'ProposalArrayItem')->{uuid};
-
-        if ($req_storage->{uuid}) {
-            my $barriers = $req_storage->{args}{barriers}[0];
-            my $idx      = make_barrier_key($barriers);
-            warn "unknown idx " . $idx . ", available: " . join ',', sort keys %$barriers_order unless exists $barriers_order->{$idx};
-            ${$subscription->seq}[$barriers_order->{$idx}] = $req_storage->{uuid};
-            # creating this key to be used by forget_all, undef - not to allow proposal_array message to be sent before real data received
-            $subscription->proposals->{$req_storage->{uuid}} = undef;
-        } else {
-            # `_pricing_channel_for_proposal` does not generated uuid.
-            # it could be rare case when 2 proposal_array calls are performed in one connection
-            # and they have similar but not the same barriers, so some chunks became the same
-            # in this case `proposal_array` RPC hook `response` will send error message to client and will stop processing this call
-            # so subscription should be removed.
-            $subscription->unregister;
-        }
-    };
-
-# Process a few RPC calls at a time.
-
-    Variable::Disposition::retain_future(
-        Future->wait_any(
-            # Upper limit on total time taken - we don't really
-            # care how long individual requests take, but we do
-            # expect all the calls to complete in a reasonable time
-            Future::Mojo->new_timer(PARALLEL_RPC_TIMEOUT)->transform(
-                done => sub {
-                    return +{error => $c->l('Request timed out')};
-                }
-            ),
-            Future::Utils::fmap {
-                my $barriers = shift;
-
-                # The format is [ 123.4, 128.1, ... ] for single-barrier contracts,
-                # with hashrefs [ { barrier => 121.8, barrier2 => 127.4 }, ... ] for 2-barrier
-                $barriers = [map { ; $_->{barrier} } @$barriers] unless grep { ; $_->{barrier2} } @$barriers;
-
-                # Shallow copy of $args since we want to override a few top-level keys for the RPC calls
-                my $args = {%{$req_storage->{args}}};
-                $args->{contract_type} = [@contract_types];
-                $args->{barriers}      = $barriers;
-
-                my $f = Future::Mojo->new;
-                $c->call_rpc({
-                        schema_receive    => $req_storage->{schema_receive},
-                        schema_receive_v3 => $req_storage->{schema_receive_v3},
-                        args              => $args,
-                        method            => 'send_ask',
-                        msg_type          => 'proposal',
-                        call_params       => {
-                            token                 => $c->stash('token'),
-                            language              => $c->stash('language'),
-                            app_markup_percentage => $c->stash('app_markup_percentage'),
-                            landing_company       => $c->landing_company_name,
-                            country_code          => $c->stash('country_code'),
-                            proposal_array        => 1,
-                        },
-                        error => sub {
-                            my $c = shift;
-                            Binary::WebSocketAPI::v3::Wrapper::System::forget_one($c, $uuid);
-                        },
-                        success  => $create_price_channel,
-                        response => sub {
-                            my ($rpc_response, $api_response, $req_storage) = @_;
-                            if ($rpc_response->{error}) {
-                                $f->done($api_response);
-                                return;
-                            }
-
-                            # here $api_response and $req_storage are `proposal` call's data, not the original `proposal_array`
-                            # so uuid here is corresponding `proposal` stream's uuid.
-                            # uuid for `proposal_array` is created on the beginning of `sub proposal_array`
-                            if (my $uuid = $req_storage->{uuid}) {
-                                $api_response->{proposal}->{id} = $uuid;
-                            } else {
-                                $api_response =
-                                    $c->new_error('proposal', 'AlreadySubscribed', $c->l('You are already subscribed to [_1].', 'proposal'));
-                            }
-                            $f->done($api_response);
-                            return;
-                        },
-                    });
-                $f;
-            }
-            foreach    => $barrier_chunks,
-            concurrent => min(0 + @$barrier_chunks, PARALLEL_RPC_COUNT),
-        )->on_ready(
-            sub {
-                my $f = shift;
-                try {
-                    # should not throw 'cos we do not $future->fail
-                    my @result = $f->get;
-
-                    # If any request failed, report the error and skip any further processing
-                    # Note that this is an RPC-level error or WrongResponse: contract validation
-                    # failures for an individual barrier will be reported at the type => [ barrier ]
-                    # level.
-                    if (my ($err) = grep { ; $_->{error} } @result) {
-                        my $res = {
-                            json => {
-                                echo_req => $req_storage->{args},
-                                error    => $err->{error},
-                                msg_type => $msg_type,
-                                map { ; $_ => $req_storage->{args}{$_} } grep { $req_storage->{args}{$_} } qw(req_id passthrough),
-                            }};
-                        $c->send($res) if $c and $c->tx;    # connection could be gone
-                        return;
-                    }
-
-                    # Merge the results from all calls. We prepare the data structure first...
-                    my %proposal_array;
-                    @proposal_array{@contract_types} = map { ; [] } @contract_types;
-
-                    # ... then fit the received results into it
-                    my @pending_barriers = @barriers;
-                    for my $res (map { ; $_->{proposal} } @result) {
-                        my @expected_barriers = splice @pending_barriers, 0, min(@pending_barriers, BARRIERS_PER_BATCH);
-                        if (exists $res->{proposals}) {
-                            for my $contract_type (keys %{$res->{proposals}}) {
-                                my @prices = @{$res->{proposals}{$contract_type}};
-                                for my $price (@prices) {
-                                    if (exists $price->{error}) {
-                                        $price->{error}{message} = $c->l(delete $price->{error}{message_to_client});
-                                        $price->{error}{details}{longcode} = $c->l(delete $price->{longcode});
-                                        $price->{error}{details}{display_value} += 0;
-                                        $price->{error}{details}{payout}        += 0;
-                                        delete $price->{error}{details}{supplied_barrier};
-                                        delete $price->{error}{details}{supplied_barrier2};
-                                    } else {
-                                        $price->{longcode} = $c->l($price->{longcode});
-                                        $price->{payout}   = $req_storage->{args}{amount};
-                                        delete $price->{theo_probability};
-                                        delete $price->{supplied_barrier};
-                                        delete $price->{supplied_barrier2};
-                                    }
-                                }
-                                warn "Barrier mismatch - expected " . @expected_barriers . " but had " . @prices unless @prices == @expected_barriers;
-                                push @{$proposal_array{$contract_type}}, @prices;
-                            }
-                        } else {
-                            # We've already done the check for top-level { error => { ... } } by this point,
-                            # so if we don't have the proposals key then something very unexpected happened.
-                            warn "Invalid entry in proposal_array response - " . $json->encode($res);
-                            $c->send({
-                                    json => $c->wsp_error(
-                                        $msg_type, 'ProposalArrayFailure', $c->l('Sorry, an error occurred while processing your request.'))}
-                            ) if $c and $c->tx;
-                            return;
-                        }
-                    }
-
-                    delete @{$_}{qw(msg_type passthrough)} for @result;
-
-                    # Return a single result back to the client.
-                    my $res = {
-                        json => {
-                            echo_req       => $req_storage->{args},
-                            proposal_array => {
-                                proposals => \%proposal_array,
-                                $uuid ? (id => $uuid) : (),
-                            },
-                            ($req_storage->{args}->{subscribe} and $uuid) ? (subscription => {id => $uuid}) : (),
-                            msg_type => $msg_type,
-                            map { ; $_ => $req_storage->{args}{$_} } grep { $req_storage->{args}{$_} } qw(req_id passthrough),
-                        }};
-                    $c->send($res) if $c and $c->tx;    # connection could be gone
-                } catch {
-                    my $e = $@;
-                    warn "proposal_array exception - $e";
-                    $c->send(
-                        {json => $c->wsp_error($msg_type, 'ProposalArrayFailure', $c->l('Sorry, an error occurred while processing your request.'))})
-                        if $c and $c->tx;
-                }
-            }));
-
-# Send nothing back to the client yet. We'll push a response
-# once the RPC calls complete or time out
-    return;
-}
-
-sub proposal_array_deprecated {
-    my ($c, $req_storage) = @_;
-
-    my $dep_error = $c->new_error('proposal_array', 'Deprecated', $c->l('This API call is deprecated.'));
-    $c->send({json => $dep_error}, $req_storage);
     return;
 }
 
@@ -563,7 +289,7 @@ sub _serialized_args {
     return 'PRICER_KEYS::' . Encode::encode_utf8($json->encode([map { !defined($_) ? $_ : ref($_) ? $_ : "$_" } @arr]));
 }
 
-# This function is for Porposal, ProposalArray and ProposalArrayItem
+# This function is for Proposal
 # TODO rename this function
 sub _pricing_channel_for_proposal {
     my ($c, $args, $cache, $class) = @_;
@@ -714,7 +440,7 @@ sub _unique_barriers {
 sub make_barrier_key {
     my ($barrier) = @_;
     return $barrier unless ref $barrier;
-    # In proposal_array we use barriers to order proposals[] array responses.
+
     # Even if it's a relative barrier, for that Contract->handle_batch_contract also sends the supplied barrier back.
     if (exists $barrier->{supplied_barrier}) {
         return join ':', $barrier->{supplied_barrier}, $barrier->{supplied_barrier2} // ();
@@ -757,7 +483,7 @@ sub _skip_streaming {
     return 1 if $args->{skip_streaming};
     my $skip_symbols = ($skip_symbol_list{$args->{symbol}}) ? 1 : 0;
     my $atm_callput_contract =
-        ($args->{contract_type} =~ /^(CALL|PUT|CALLE|PUTE)$/ and not($args->{barrier} or ($args->{proposal_array} and $args->{barriers})))
+        ($args->{contract_type} =~ /^(CALL|PUT|CALLE|PUTE)$/ and not($args->{barrier}))
         ? 1
         : 0;
 

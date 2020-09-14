@@ -482,7 +482,7 @@ sub forget_all {
     my $c = shift;
     # TODO I guess 'buy' type should be added here.
     Binary::WebSocketAPI::v3::Wrapper::System::_forget_transaction_subscription($c, $_)  for qw(balance transaction sell);
-    Binary::WebSocketAPI::v3::Wrapper::System::_forget_all_pricing_subscriptions($c, $_) for qw(proposal proposal_open_contract proposal_array);
+    Binary::WebSocketAPI::v3::Wrapper::System::_forget_all_pricing_subscriptions($c, $_) for qw(proposal proposal_open_contract);
     Binary::WebSocketAPI::v3::Wrapper::System::_forget_feed_subscription($c, $_)         for qw(ticks candles);
     Binary::WebSocketAPI::v3::Wrapper::System::_forget_all_website_status($c);
 
