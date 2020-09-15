@@ -92,7 +92,8 @@ subtest 'config' => sub {
         low_barrier  => 'S-100P',
         currency     => 'USD',
         payout       => 100,
-        date_pricing => $now
+        date_pricing => $now,
+        date_start   => $now
     });
 
     is $c->longcode->[0], 'Win up to [_7] [_6] if [_1]\'s exit tick is between [_5] and [_4] at [_3] after [_2].';
@@ -113,8 +114,8 @@ subtest 'config' => sub {
 
     SKIP: {
         skip 'no forex feed available over weekend/holiday', 1 unless $trading_calendar->is_open($exchange);
-        is $c->ask_price, 54.24, 'correct ask price';
-        is $c->bid_price, 50.57, 'correct bid price';
+        is $c->ask_price, 65.13, 'correct ask price';
+        is $c->bid_price, '61.00', 'correct bid price';
     }
 };
 
