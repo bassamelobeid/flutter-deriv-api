@@ -4,8 +4,8 @@ use warnings;
 use Test::MockTime;
 use Test::More qw(no_plan);
 use Test::Fatal qw(lives_ok);
+use Test::MockModule;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
-
 use BOM::User::Client;
 use BOM::User;
 
@@ -37,5 +37,11 @@ is($client_mx->is_verification_required(check_authentication_status => 1),
 $client_mx->status->set('unwelcome', 'system', 'testing');
 is($client_mx->is_verification_required(check_authentication_status => 1),
     1, "check_authentication_status in gb and no id_online and unwelcome still require verification");
+
+my $mock_lc = Test::MockModule->new('LandingCompany');
+$mock_lc->mock('skip_authentication', sub { 1 });
+
+is($client_mx->is_verification_required(check_authentication_status => 1),
+    0, 'authentication not required if landing company skip_authentication flag is set');
 
 done_testing();

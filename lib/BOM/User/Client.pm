@@ -1470,6 +1470,8 @@ sub is_verification_required {
 
     return 0 if $self->is_virtual;
 
+    return 0 if $self->landing_company->skip_authentication;
+
     return 0 if $self->fully_authenticated and $self->status->age_verification;
 
     if ($args{check_authentication_status}) {
