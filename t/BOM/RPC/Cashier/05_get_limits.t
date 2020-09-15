@@ -142,33 +142,39 @@ subtest 'CR - USD' => sub {
         $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, 'result is ok');
     };
 
+    # Set expected results to reflect withdrawn amount of USD 1000
+    my $expected_auth_result = {
+        stash => {
+            app_markup_percentage      => 0,
+            valid_source               => 1,
+            source_bypass_verification => 0
+        },
+        'account_balance'                     => formatnumber('amount', 'USD', $client->get_limit_for_account_balance),
+        'open_positions'                      => $client->get_limit_for_open_positions,
+        'payout'                              => formatnumber('price', 'USD', $client->get_limit_for_payout),
+        'market_specific'                     => BOM::Platform::RiskProfile::get_current_profile_definitions($client),
+        'num_of_days'                         => $limits->{for_days},
+        'num_of_days_limit'                   => formatnumber('price', 'USD', 99999999),
+        'lifetime_limit'                      => formatnumber('price', 'USD', 99999999),
+        'withdrawal_since_inception_monetary' => '1000.00',
+        'withdrawal_for_x_days_monetary'      => '1000.00',
+        'remainder'                           => formatnumber('price', 'USD', 99998999),
+        'daily_transfers'                     => $transfer_limits,
+    };
+
+    subtest 'skip_authentication' => sub {
+        my $mock_lc = Test::MockModule->new('LandingCompany');
+        $mock_lc->mock('skip_authentication', sub { 1 });
+        $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_auth_result, 'result is ok for non-KYC landing company');
+    };
+
     # Test for authenticated accounts
     subtest 'authenticated' => sub {
         # Set client status to authenticated and save
         $client->set_authentication('ID_DOCUMENT')->status('pass');
         $client->save;
 
-        # Set expected results to reflect withdrawn amount of USD 1000
-        my $expected_result = {
-            stash => {
-                app_markup_percentage      => 0,
-                valid_source               => 1,
-                source_bypass_verification => 0
-            },
-            'account_balance'                     => formatnumber('amount', 'USD', $client->get_limit_for_account_balance),
-            'open_positions'                      => $client->get_limit_for_open_positions,
-            'payout'                              => formatnumber('price', 'USD', $client->get_limit_for_payout),
-            'market_specific'                     => BOM::Platform::RiskProfile::get_current_profile_definitions($client),
-            'num_of_days'                         => $limits->{for_days},
-            'num_of_days_limit'                   => formatnumber('price', 'USD', 99999999),
-            'lifetime_limit'                      => formatnumber('price', 'USD', 99999999),
-            'withdrawal_since_inception_monetary' => '1000.00',
-            'withdrawal_for_x_days_monetary'      => '1000.00',
-            'remainder'                           => formatnumber('price', 'USD', 99998999),
-            'daily_transfers'                     => $transfer_limits,
-        };
-
-        $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, 'result is ok for fully authenticated client');
+        $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_auth_result, 'result is ok for fully authenticated client');
     };
 
     # Test for expired documents

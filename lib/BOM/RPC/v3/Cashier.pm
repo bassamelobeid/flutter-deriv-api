@@ -408,7 +408,7 @@ rpc get_limits => sub {
     my $lifetimelimit         = $wl_config->{lifetime_limit};
     my $withdrawal_limit_curr = $wl_config->{currency};
 
-    if ($client->fully_authenticated) {
+    if ($client->fully_authenticated or $client->landing_company->skip_authentication) {
         $numdayslimit  = 99999999;
         $lifetimelimit = 99999999;
     }

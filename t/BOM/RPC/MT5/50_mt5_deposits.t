@@ -443,7 +443,9 @@ subtest 'labuan withdrawal' => sub {
 
     my $mocked_client = Test::MockModule->new(ref($test_client));
     $mocked_client->mock('has_valid_documents', sub { 1 });
-
+    
+    BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
+    
     $c->call_ok($method, $params)->has_no_error('Withdrawal allowed from labuan mt5 without FA before first deposit');
     cmp_ok $test_client->default_account->balance, '==', 820 + 150 + 50, "Correct balance after withdrawal";
 
@@ -478,6 +480,21 @@ subtest 'labuan withdrawal' => sub {
     BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
     $c->call_ok($method, $params)->has_no_error('Withdrawal unlocked for labuan mt5 after financial assessment');
     cmp_ok $test_client->default_account->balance, '==', 820 + 150 + 100, "Correct balance after withdrawal";
+
+    BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
+   
+    $mocked_client->mock('fully_authenticated', sub { 0 });
+    $params->{args}->{from_mt5} = 'MTR' . $ACCOUNTS{'real\labuan_financial_stp'};
+    
+    $c->call_ok($method, $params)->has_error('request failed when client not authenticated')
+        ->error_code_is('MT5WithdrawalError', 'error code is MT5WithdrawalError')
+        ->error_message_like(qr/Please authenticate your \w+? account to proceed with the fund transfer/);
+
+    my $mock_lc = Test::MockModule->new('LandingCompany');
+    $mock_lc->mock(skip_authentication => sub { 1 });
+    $c->call_ok($method, $params)->has_no_error('Withdrawal allowed when landing company has no KYC');
+    cmp_ok $test_client->default_account->balance, '==', 820 + 150 + 150, "Correct balance after withdrawal";
+    $mock_lc->unmock_all();
 
     $mocked_client->unmock_all;
     $account_mock->unmock;
@@ -527,7 +544,7 @@ subtest 'mf_withdrawal' => sub {
 
     BOM::RPC::v3::MT5::Account::reset_throttler($test_mf_client->loginid);
 
-    $c->call_ok($method, $params_mf)->has_no_error('no error for mt5_withdrawal');
+    $c->call_ok($method, $params_mf)->has_no_error('no error for mt5_withdrawal when client authenticated');
 
     cmp_ok $test_mf_client->default_account->balance, '==', 350, "Correct balance after withdrawal";
 
@@ -614,12 +631,12 @@ subtest 'labuan deposit' => sub {
 
     my $account_mock = Test::MockModule->new('BOM::RPC::v3::MT5::Account');
     $account_mock->mock('_fetch_mt5_lc', sub { return LandingCompany::Registry::get('labuan'); });
-    BOM::RPC::v3::MT5::Account::reset_throttler($loginid);
 
+    BOM::RPC::v3::MT5::Account::reset_throttler($loginid);
     my $mocked_client = Test::MockModule->new(ref($test_client));
     $mocked_client->mock('has_valid_documents', sub { 1 });
     $c->call_ok($method, $params)->has_no_error('Deposit allowed to enable labuan mt5 account');
-    cmp_ok $test_client->default_account->balance, '==', 1050, "Correct balance after deposit";
+    cmp_ok $test_client->default_account->balance, '==', 1100, "Correct balance after deposit";
 
     BOM::RPC::v3::MT5::Account::reset_throttler($loginid);
     $manager_module->mock(
@@ -649,11 +666,11 @@ subtest 'labuan deposit' => sub {
     $c->call_ok($method, $params)->has_error('client is disable')
         ->error_code_is('MT5DepositLocked', 'Deposit is locked when mt5 account is disabled for labuan');
 
-    cmp_ok $test_client->default_account->balance, '==', 1050, "Balance has not changed because mt5 account is locked";
+    cmp_ok $test_client->default_account->balance, '==', 1100, "Balance has not changed because mt5 account is locked";
     $manager_module->unmock('get_user', 'get_group');
     # Using enable rights 482 should enable transfer.
     $c->call_ok($method, $params)->has_no_error('Deposit allowed when mt5 account gets enabled');
-    cmp_ok $test_client->default_account->balance, '==', 1030, "Correct balance after deposit";
+    cmp_ok $test_client->default_account->balance, '==', 1080, "Correct balance after deposit";
 
 };
 

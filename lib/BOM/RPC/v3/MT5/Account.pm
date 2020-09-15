@@ -322,7 +322,10 @@ async_rpc "mt5_new_account",
             and $countries_instance->is_tax_detail_mandatory($residence)
             and not $client->status->crs_tin_information);
     }
-    if ($account_type ne 'demo' and $company_name eq 'labuan' and not $client->fully_authenticated()) {
+    if (    $account_type ne 'demo'
+        and $company_name eq 'labuan'
+        and not $client->fully_authenticated)
+    {
         $client->status->set('allow_document_upload', 'system', 'MT5_ACCOUNT_IS_CREATED');
         return create_error_future('AuthenticateAccount', {params => $client->loginid});
     }
@@ -1569,7 +1572,7 @@ sub _mt5_validate_and_get_amount {
             my $client_currency = $client->account ? $client->account->currency_code() : undef;
             my $brand           = Brands->new(name => request()->brand);
 
-            # check for fully authenticated only if it's not gaming account
+            # check for fully authenticated only if it's not gaming account and landing company requires KYC.
             # as of now we only support gaming for binary brand, in future if we
             # support for champion please revisit this
             return create_error_future(
@@ -1580,7 +1583,8 @@ sub _mt5_validate_and_get_amount {
                 })
                 if ($action eq 'withdrawal'
                 and ($mt5_group // '') !~ /^real\\svg/
-                and not $client->fully_authenticated);
+                and not $client->fully_authenticated
+                and not $client->landing_company->skip_authentication);
 
             return create_error_future(
                 'WithdrawalLocked',
