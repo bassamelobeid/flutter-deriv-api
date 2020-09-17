@@ -223,7 +223,7 @@ sub startup {
         rpc_redis => {
             type      => 'consumer_groups',
             redis_uri => $backend_rpc_redis->url->to_string,
-            timeout   => 5,
+            timeout   => $app->config->{rpc_queue_response_timeout},
         },
     };
 
