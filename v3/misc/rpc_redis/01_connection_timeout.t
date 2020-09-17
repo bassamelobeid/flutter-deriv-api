@@ -68,7 +68,7 @@ subtest 'Consumer service unavailability' => sub {
 
     ok $response = send_request($request, 'states_list'), 'Response received after stopping Consumer';
     ok $response->{error}, 'Response contains error paramater';
-    is $response->{error}->{code}, 'RequestTimeout', 'Response error is RequestTimeout as our expectation';
+    is $response->{error}->{code}, 'WrongResponse', 'Response error is WrongResponse because of timeout and as our expectation';
 
     my $stream_len = $redis->execute("XLEN", "general");
     is $stream_len, 1, 'Request streamed by Producer even without Consumer presence';
