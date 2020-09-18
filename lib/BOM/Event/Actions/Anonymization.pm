@@ -210,7 +210,7 @@ sub _anonymize {
                     if ($prove->has_saved_xml || ($client->status->proveid_requested && !$client->status->proveid_pending));
             }
             # Set client status to disabled to prevent user from doing any future actions
-            $client->status->set('disabled', 'system', 'Anonymized client');
+            $client->status->setnx('disabled', 'system', 'Anonymized client');
 
             # Remove all user tokens
             my $token = BOM::Platform::Token::API->new;

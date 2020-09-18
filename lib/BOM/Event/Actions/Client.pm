@@ -595,7 +595,7 @@ async sub client_verification {
                             # if all of the account doesn't have any balance, disable them
                             for my $each_siblings (keys %{$siblings}) {
                                 my $current_client = BOM::User::Client->new({loginid => $each_siblings});
-                                $current_client->status->set('disabled', 'system', 'Onfido - client is underage');
+                                $current_client->status->setnx('disabled', 'system', 'Onfido - client is underage');
                             }
 
                             # need to send email to client
@@ -1112,18 +1112,18 @@ SQL
 sub _update_client_status {
     my (%args) = @_;
 
-    my $client = $args{client};
+    my $client      = $args{client};
+    my $status_code = $args{status};
 
-    $log->debugf('Updating status on %s to %s (%s)', $client->loginid, $args{status}, $args{message});
+    $log->debugf('Updating status on %s to %s (%s)', $client->loginid, $status_code, $args{message});
 
     # to push FE notification when advertiser becomes approved via db trigger
     BOM::Platform::Event::Emitter::emit('p2p_advertiser_updated', {client_loginid => $client->loginid});
 
-    _email_client_age_verified($client) if $args{status} eq 'age_verification';
+    _email_client_age_verified($client) if $status_code eq 'age_verification';
 
-    $client->status->set($args{status}, 'system', $args{message});
+    $client->status->setnx($status_code, 'system', $args{message});
 
-    $client->status->set($args{status}, 'system', $args{message});
     # We should sync age verification between allowed landing companies.
     if ($args{sync}) {
         my @allowed_lc_to_sync = @{$client->landing_company->allowed_landing_companies_for_age_verification_sync};
@@ -1132,7 +1132,7 @@ sub _update_client_status {
             map { [$client->user->clients_for_landing_company($_)]->[0] // () } @allowed_lc_to_sync;
         push @clients_to_update, $client;
         foreach my $cli (@clients_to_update) {
-            $cli->status->set($args{status}, 'system', $args{message});
+            $cli->status->setnx($status_code, 'system', $args{message});
         }
     }
     return;
@@ -1536,7 +1536,7 @@ sub social_responsibility_check {
             # Client cannot trade or deposit without a financial assessment check
             # Hence, they will be put under unwelcome
             $client->status->set('unwelcome', 'system', 'Social responsibility thresholds breached - Pending fill of financial assessment')
-                unless $client->financial_assessment();
+                unless ($client->financial_assessment() or $client->status->unwelcome);
 
             my $tt = Template::AutoFilter->new({
                 ABSOLUTE => 1,
@@ -2005,7 +2005,7 @@ async sub payment_deposit {
 
     my $payment_processor = $args->{payment_processor};
     if ($payment_processor and uc($payment_processor) =~ m/QIWI/) {
-        $client->status->set('transfers_blocked', 'SYSTEM', 'Internal account transfers are blocked because of QIWI deposit');
+        $client->status->setnx('transfers_blocked', 'SYSTEM', 'Internal account transfers are blocked because of QIWI deposit');
         $client->save;
     }
 
@@ -2038,7 +2038,7 @@ sub withdrawal_limit_reached {
     }
 
     # allow client to upload documents
-    $client->status->set('allow_document_upload', 'system', 'WITHDRAWAL_LIMIT_REACHED') unless ($client->status->allow_document_upload);
+    $client->status->setnx('allow_document_upload', 'system', 'WITHDRAWAL_LIMIT_REACHED');
 
     return;
 }
@@ -2251,7 +2251,7 @@ sub _set_all_sibling_status {
         my $c = BOM::User::Client->new({loginid => $each_loginid});
 
         try {
-            $c->status->set($status, 'system', $args->{message});
+            $c->status->setnx($status, 'system', $args->{message});
         } catch {
             my $e = $@;
             $log->errorf('Failed to set %s as %s : %s', $each_loginid, $status, $e);
