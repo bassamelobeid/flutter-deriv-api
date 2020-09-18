@@ -39,7 +39,7 @@ WLDAUD: &smart_fx
       spot:
         euro_atm:
           max: 10h
-          min: 3m
+          min: 1m
   callputequal:
     intraday:
       spot:

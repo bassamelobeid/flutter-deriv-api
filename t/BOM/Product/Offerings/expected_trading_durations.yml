@@ -437,7 +437,7 @@
         name: ticks
       - display_name: Minutes
         max: 600
-        min: 3
+        min: 1
         name: m
       - display_name: Hours
         max: 10
