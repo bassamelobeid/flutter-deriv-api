@@ -136,7 +136,7 @@ subtest "withdraw vs Balance" => sub {
 
 # Test for CR withdrawal limits
 subtest 'CR withdrawal' => sub {
-    plan tests => 6;
+    plan tests => 7;
 
     # CR withdrawals in USD
     subtest 'in USD, unauthenticated' => sub {
@@ -155,6 +155,7 @@ subtest 'CR withdrawal' => sub {
         $client->smart_payment(%deposit, amount => 10500);
         throws_ok { $client->validate_payment(%withdrawal, amount => -10001) } qr/exceeds withdrawal limit/,
             'Non-Authed CR withdrawal greater than USD10K';
+            
         lives_ok { $client->validate_payment(%withdrawal, amount => -10000) } 'Non-Authed CR withdrawal USD10K';
 
         lives_ok { $client->validate_payment(%withdrawal, amount => -9999) } 'Non-Authed CR withdrawal USD9999';
@@ -240,6 +241,18 @@ subtest 'CR withdrawal' => sub {
         $client->set_authentication('ID_DOCUMENT')->status('pass');
         my $var = $client->smart_payment(%deposit_btc, amount => 0.01434048);
         lives_ok { $client->validate_payment(%withdrawal_btc, amount => -0.01434048) } 'Authed CR withdraw full BTC amount';
+    };
+    
+    subtest 'LC skip authentication' => sub {
+        my $client = new_client('USD');
+        $client->smart_payment(%deposit, amount => 100_000);
+        throws_ok { $client->validate_payment(%withdrawal, amount => -100_000) } qr/exceeds withdrawal limit/,
+            'Cannot withdraw USD 100K usually';
+            
+        my $mock_lc = Test::MockModule->new('LandingCompany');
+        $mock_lc->mock('skip_authentication', sub { 1 });
+        
+        lives_ok { $client->validate_payment(%withdrawal, amount => -100_000) } 'Can withdraw 100k when LC has skip_authentication flag';
     };
 };
 

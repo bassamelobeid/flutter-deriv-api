@@ -3383,6 +3383,8 @@ sub validate_payment {
         # disable withdrawal limit for rpc/internal_transfer_exclude_limit
         return 1 if $args{internal_transfer};
 
+        return 1 if $self->landing_company->skip_authentication;
+
         my $lc = $self->landing_company->short;
         my $lc_limits;
         my $withdrawal_limits = BOM::Config::payment_limits()->{withdrawal_limits};
