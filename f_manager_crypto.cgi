@@ -552,9 +552,9 @@ if ($view_action eq 'withdrawals') {
     }
 
     my @hdr = (
-        'Client ID',        'Type',   'Address',     'Amount',       'Amount USD',      'Fee',
-        'Protocol Cost',    'Status', 'Status date', 'Payment date', 'Blockchain date', 'Confirmations',
-        'Transaction Hash', 'Errors'
+        'Client ID',     'Type',   'Address',     'Amount',          'Amount USD',    'Fee',
+        'Protocol Cost', 'Status', 'Status date', 'Blockchain date', 'Confirmations', 'Transaction Hash',
+        'Errors'
     );
     my $filename = join '-', $start_date->date_yyyymmdd, $end_date->date_yyyymmdd, $currency;
 
@@ -591,7 +591,7 @@ EOF
         print '<td style="text-align:right;">' . encode_entities($_) . '</td>' for ($amount, '$' . $usd_amount, $fee, $protocol_cost);
         print '<td>' . encode_entities($_) . '</td>' for map { $_ // '' } @{$db_tran}{qw(status)};
         print '<td sorttable_customkey="' . (sprintf "%012d", $_ ? Date::Utility->new($_)->epoch : 0) . '">' . encode_entities($_) . '</td>'
-            for map { $_ // '' } @{$db_tran}{qw(status_date database_date blockchain_date)};
+            for map { $_ // '' } @{$db_tran}{qw(status_date blockchain_date)};
         print '<td><span style="color: ' . ($_ + 0 >= 3 ? 'green' : 'gray') . '">' . encode_entities($_) . '</td>'
             for map { $_ // 0 } @{$db_tran}{qw(confirmations)};
         print '<td>';
