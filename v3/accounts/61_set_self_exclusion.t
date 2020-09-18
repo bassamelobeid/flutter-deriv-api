@@ -26,7 +26,7 @@ my $t = build_wsapi_test();
 
 my $email       = 'test-binary' . rand(999) . '@binary.com';
 my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code => 'CR',
+    broker_code => 'MLT',
 });
 $test_client->email($email);
 $test_client->save;
