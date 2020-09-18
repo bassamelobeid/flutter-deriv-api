@@ -1631,7 +1631,7 @@ sub validate_common_account_details {
     my $residence = $self->residence;
     try {
         if ($args->{date_of_birth}) {
-            _validate_dob($args->{date_of_birth}, $residence);
+            $self->_validate_dob($args->{date_of_birth}, $residence);
         }
 
         ## The secret question can start out as an empty string, but cannot be changed to empty
@@ -1675,7 +1675,7 @@ sub validate_common_account_details {
 
         die "No promotion code was provided\n" if (trim($args->{promo_code_status}) and not(trim($args->{promo_code}) // $self->promo_code));
 
-        _validate_non_pep_time($args->{non_pep_declaration_time}) if $args->{non_pep_declaration_time};
+        $self->_validate_non_pep_time($args->{non_pep_declaration_time}) if $args->{non_pep_declaration_time};
 
         return undef;
     } catch {
@@ -1686,7 +1686,7 @@ sub validate_common_account_details {
 }
 
 sub _validate_dob {
-    my ($dob, $residence) = @_;
+    my ($self, $dob, $residence) = @_;
 
     my $dob_date = eval { Date::Utility->new($dob) };
     die "InvalidDateOfBirth\n" unless $dob_date;
@@ -1704,7 +1704,7 @@ sub _validate_dob {
 }
 
 sub _validate_non_pep_time {
-    my ($non_pep_time) = @_;
+    my ($self, $non_pep_time) = @_;
 
     my $non_pep_date = eval { Date::Utility->new($non_pep_time) };
     die "InvalidNonPepTime\n" unless $non_pep_date;
@@ -2029,7 +2029,7 @@ sub p2p_advert_create {
     $param{country}          = $self->residence;
     $param{account_currency} = $self->currency;
 
-    _validate_advert_amounts(%param);
+    $self->_validate_advert_amounts(%param);
 
     my $active_adverts_count = $self->_p2p_adverts(
         advertiser_id => $advertiser_info->{id},
@@ -3111,7 +3111,7 @@ Validates advert amounts for p2p_advert_create.
 =cut
 
 sub _validate_advert_amounts {
-    my %param = @_;
+    my ($self, %param) = @_;
 
     if (my @invalid_fields = grep { ($param{$_} // 0) <= 0 } (qw(amount max_order_amount min_order_amount rate))) {
         die +{
