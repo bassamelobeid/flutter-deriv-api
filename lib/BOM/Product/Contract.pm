@@ -823,11 +823,12 @@ sub _build_exit_tick {
         my @ticks_since_start = @{$self->ticks_for_tick_expiry};
         # We wait for the n-th tick to settle tick expiry contract.
         # But the maximum waiting period is 5 minutes.
-        if (@ticks_since_start == $tick_number) {
-            $exit_tick = $ticks_since_start[-1];
-            $self->date_expiry(Date::Utility->new($exit_tick->epoch));
-            $self->is_valid_exit_tick(1);
-        }
+        return undef unless @ticks_since_start == $tick_number;
+        $exit_tick = $ticks_since_start[-1];
+
+        return undef if $exit_tick->epoch > $self->date_pricing->epoch;
+        $self->date_expiry(Date::Utility->new($exit_tick->epoch));
+        $self->is_valid_exit_tick(1);
     } elsif ($self->is_after_expiry) {
         # For a daily contract or a contract expired at the close of trading, the valid exit tick should be the daily close else should be the tick at expiry date
         # IMPORTANT NOTE: $self->_tick_accessor does not support ->closing_tick_on();

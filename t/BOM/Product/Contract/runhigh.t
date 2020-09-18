@@ -99,7 +99,7 @@ subtest 'runhigh - expiration check' => sub {
     is $c->value, 0, 'expired worthless 2 out of the 4 ticks are identical in a 5-tick contract';
     _create_ticks($now->epoch, [100, 101, 102, 103, 104, 105]);    # [entry_tick, first_tick ...]
     $args->{duration} = '5t';
-    $c = produce_contract($args);
+    $c = produce_contract({%$args, date_pricing => $now->plus_time_interval('6s')});
     ok $c->is_expired, 'expired';
     is $c->value, 100, 'expired with full payout if the next 5 ticks are higher than the previous tick';
 };

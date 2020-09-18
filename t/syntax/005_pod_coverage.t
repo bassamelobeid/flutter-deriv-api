@@ -90,10 +90,7 @@ my $allowed_naked_packages = {
     'BOM::Product::Contract::Lbfloatcall'                         => 3,
 };
 
-my $ignored_packages = [
-    'BOM::Product::Contract',
-    'BOM::Product::ContractPricer',
-];
+my $ignored_packages = ['BOM::Product::Contract', 'BOM::Product::ContractPricer',];
 
 Test::Pod::CoverageChange::pod_coverage_syntax_ok('lib', $allowed_naked_packages, $ignored_packages);
 

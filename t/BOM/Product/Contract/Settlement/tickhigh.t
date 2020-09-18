@@ -70,7 +70,7 @@ subtest 'tick expiry' => sub {
             [99.1,  $now->epoch + 4, $symbol],
             [98.1,  $now->epoch + 5, $symbol],
         );
-        my $c = produce_contract({%$args, date_pricing => $now->plus_time_interval('2s')});
+        my $c = produce_contract({%$args, date_pricing => $now->plus_time_interval('5s')});
         is $c->entry_tick->quote, 100.1, 'entry tick is 100.1';
         ok !$c->hit_tick, 'hit tick is undefined';
         is $c->highest_tick->quote, 100.1, 'highest tick is 100.1';
@@ -89,7 +89,7 @@ subtest 'tick expiry' => sub {
             [99.1,   $now->epoch + 4, $symbol],
             [98.1,   $now->epoch + 5, $symbol],
         );
-        my $c = produce_contract({%$args, date_pricing => $now->plus_time_interval('2s')});
+        my $c = produce_contract({%$args, date_pricing => $now->plus_time_interval('5s')});
         is $c->entry_tick->quote, 100.01, 'entry tick is 100.01';
         ok !$c->hit_tick, 'hit tick is undefined';
         is $c->highest_tick->quote, 100.1, 'highest tick is 100.1';
@@ -108,7 +108,7 @@ subtest 'tick expiry' => sub {
             [100.21, $now->epoch + 4, $symbol],
             [98.1,   $now->epoch + 5, $symbol],
         );
-        my $c = produce_contract({%$args, date_pricing => $now->plus_time_interval('2s')});
+        my $c = produce_contract({%$args, date_pricing => $now->plus_time_interval('5s')});
         is $c->entry_tick->quote,   100.01, 'entry tick is 100.01';
         is $c->hit_tick->quote,     100.11, 'hit tick is 100.11';
         is $c->highest_tick->quote, 100.21, 'highest tick is 100.21';

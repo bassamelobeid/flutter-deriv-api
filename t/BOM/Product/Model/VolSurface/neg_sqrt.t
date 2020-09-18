@@ -83,7 +83,7 @@ subtest 'no negative square root error' => sub {
 
     my $smile = $surface->get_smile($from, $to);
     is $smile->{25}, 0.0600873459163745, 'Smile for delta 25 is correct.';
-    is $smile->{50}, 0.060705607996543, 'Smile for delta 50 is correct.';
+    is $smile->{50}, 0.060705607996543,  'Smile for delta 50 is correct.';
     is $smile->{75}, 0.0634877873573012, 'Smile for delta 75 is correct.';
 
 };

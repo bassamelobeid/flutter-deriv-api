@@ -67,7 +67,7 @@ subtest 'Test for condition where last tick is the highest' => sub {
     }
 
     lives_ok {
-        $args->{date_pricing} = $now->plus_time_interval('4s');
+        $args->{date_pricing} = $now->plus_time_interval('5s');
         ok !$c->exit_tick, 'first tick is next tick';
         BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
             underlying => 'R_100',
@@ -82,7 +82,7 @@ subtest 'Test for condition where last tick is the highest' => sub {
     'check that first tick is the winning tick';
 
     lives_ok {
-        $args->{date_pricing} = $now->plus_time_interval('4s');
+        $args->{date_pricing} = $now->plus_time_interval('5s');
         $c = produce_contract({%$args, selected_tick => 2});
         is $c->exit_tick->quote, 100.1, 'correct exit tick';
         ok $c->is_expired, 'expired';
@@ -91,7 +91,7 @@ subtest 'Test for condition where last tick is the highest' => sub {
     'second tick is losing tick';
 
     lives_ok {
-        $args->{date_pricing} = $now->plus_time_interval('4s');
+        $args->{date_pricing} = $now->plus_time_interval('5s');
         $c = produce_contract({%$args, selected_tick => 3});
         is $c->exit_tick->quote, 100.1, 'correct exit tick';
         ok $c->is_expired, 'expired';
@@ -100,7 +100,7 @@ subtest 'Test for condition where last tick is the highest' => sub {
     'third tick is losing tick';
 
     lives_ok {
-        $args->{date_pricing} = $now->plus_time_interval('4s');
+        $args->{date_pricing} = $now->plus_time_interval('5s');
         $c = produce_contract({%$args, selected_tick => 4});
         is $c->exit_tick->quote, 100.1, 'correct exit tick';
         ok $c->is_expired, 'expired';
@@ -109,7 +109,7 @@ subtest 'Test for condition where last tick is the highest' => sub {
     'fourth tick is losing tick';
 
     lives_ok {
-        $args->{date_pricing} = $now->plus_time_interval('4s');
+        $args->{date_pricing} = $now->plus_time_interval('5s');
         $c = produce_contract({%$args, selected_tick => 5});
         is $c->exit_tick->quote, 100.1, 'correct exit tick';
         ok $c->is_expired, 'expired';
