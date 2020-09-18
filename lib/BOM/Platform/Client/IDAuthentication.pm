@@ -128,7 +128,7 @@ sub proveid {
 
     if (@invalid_matches) {
         my $msg = join(", ", @invalid_matches);
-        $client->status->set('disabled', 'system', "Experian categorizes this client as $msg.");
+        $client->status->setnx('disabled', 'system', "Experian categorizes this client as $msg.");
         $self->_notify_cs("Account $loginid disabled following Experian results",
             "Experian results has marked this client as $msg and an email has been sent out to the client requesting for Proof of Identification.");
         return $self->_request_id_authentication();
@@ -140,21 +140,21 @@ sub proveid {
     my $name_address_match = ($kyc_summary->findnodes("FullNameAndAddress/Count"))[0]->textContent();
 
     if ($dob_match >= NEEDED_MATCHES_FOR_AGE_VERIFICATION) {
-        $client->status->set('age_verification', 'system', "Experian results are sufficient to mark client as age verified.");
+        $client->status->setnx('age_verification', 'system', "Experian results are sufficient to mark client as age verified.");
         my $vr_acc = BOM::User::Client->new({loginid => $client->user->bom_virtual_loginid});
         $vr_acc->status->clear_unwelcome;
-        $vr_acc->status->set('age_verification', 'system', 'Experian results are sufficient to mark client as age verified.');
+        $vr_acc->status->setnx('age_verification', 'system', 'Experian results are sufficient to mark client as age verified.');
         if ($name_address_match >= NEEDED_MATCHES_FOR_ONLINE_AUTH) {
             $client->set_authentication('ID_ONLINE')->status('pass');
             $client->save();
             $client->update_status_after_auth_fa();
         } else {
-            $client->status->set('unwelcome', 'system', "Experian results are insufficient to enable deposits.");
+            $client->status->setnx('unwelcome', 'system', "Experian results are insufficient to enable deposits.");
 
             $self->_request_id_authentication();
         }
     } else {
-        $client->status->set('unwelcome', 'system', "Experian results are insufficient to mark client as age verified.");
+        $client->status->setnx('unwelcome', 'system', "Experian results are insufficient to mark client as age verified.");
 
         $self->_request_id_authentication();
     }
@@ -209,7 +209,7 @@ sub _fetch_proveid {
 
     my $result;
     try {
-        $client->status->set('proveid_requested', 'system', 'ProveID request has been made for this account.');
+        $client->status->setnx('proveid_requested', 'system', 'ProveID request has been made for this account.');
 
         $result = BOM::Platform::ProveID->new(client => $self->client)->get_result;
     } catch {
@@ -222,8 +222,8 @@ sub _fetch_proveid {
         }
 
         # We set this flag for when the ProveID request fails and "cron_download_missing_192_pdf_reports.pl" will retry ProveID requests for these accounts every 1 hours
-        $client->status->set('proveid_pending', 'system', 'Experian request failed and will be attempted again within 1 hour.');
-        $client->status->set('unwelcome',       'system', 'FailedExperian - Experian request failed and will be attempted again within 1 hour.');
+        $client->status->setnx('proveid_pending', 'system', 'Experian request failed and will be attempted again within 1 hour.');
+        $client->status->setnx('unwelcome',       'system', 'FailedExperian - Experian request failed and will be attempted again within 1 hour.');
 
         my $brand   = request()->brand;
         my $loginid = $self->client->loginid;
@@ -337,7 +337,7 @@ sub _process_not_found {
     my $self   = shift;
     my $client = $self->client;
 
-    $client->status->set('unwelcome', 'system', 'No entry for this client found in Experian database.');
+    $client->status->setnx('unwelcome', 'system', 'No entry for this client found in Experian database.');
     $client->status->clear_proveid_pending;
     $self->_request_id_authentication();
 

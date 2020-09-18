@@ -54,7 +54,7 @@ subtest 'Age Verified' => sub {
         subtest "$broker client" => sub {
             my $client = $clients_1{$broker};
 
-            $client->status->set('age_verification', 'Darth Vader', 'Test Case');
+            $client->status->setnx('age_verification', 'Darth Vader', 'Test Case');
             ok $client->status->age_verification, "Age verified by other sources";
 
             ok !$client->has_valid_documents, "Client Does not have a valid document";
@@ -148,7 +148,7 @@ subtest 'Valid document of Duplicate sibling account should validate its active 
     ok $mf_client->status->duplicate_account, "MF Account is set as duplicate_account";
     my $mf_client_2 = create_client('MF');
     $user_client_mf->add_client($mf_client_2);
-    $mf_client_2->status->set('age_verification', 'Darth Vader', 'Test Case');
+    $mf_client_2->status->setnx('age_verification', 'Darth Vader', 'Test Case');
     ok $mf_client_2->status->age_verification, "Age verified by other sources";
 
     my ($doc) = $mf_client_2->add_client_authentication_document({

@@ -116,8 +116,6 @@ subtest 'MLT accounts' => sub {
         my $v = BOM::Platform::Client::IDAuthentication->new(client => $c);
         ok $v->client->is_first_deposit_pending, 'First deposit tracking for MLT account';
 
-        $v->client->status->set("age_verification");
-
         $v->run_authentication;
 
         ok !$v->client->fully_authenticated, 'Not fully authenticated';
