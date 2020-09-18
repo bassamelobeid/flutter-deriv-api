@@ -347,7 +347,7 @@ sub _change_status {
     if ($action eq 'set') {
         $client->status->set($status, 'system', 'for test');
     } else {
-        $client->status->clear($status);
+        $client->status->_clear($status);
     }
     return;
 }
