@@ -280,7 +280,7 @@ sub publish {
 
     $redis_client //= redis_feed_master;
 
-    $log->debugf('Publishing a %s, %s', $method, join ", ", map { $_ . ': ' . $payload->{$_} } sort keys $payload->%*);
+    $log->debugf('Publishing a %s, %s', $method, join ", ", map { $_ . ': ' . ($payload->{$_} // 'undef') } sort keys $payload->%*);
 
     return $redis_client->then(
         $self->$curry::weak(

@@ -44,6 +44,13 @@ rpc_response {
         payment_info               => $_->p2p_advertiser->payment_info,
         chat_token                 => $_->p2p_advertiser->chat_token,
         chat_user_id               => $_->p2p_advertiser->chat_user_id,
+        buy_orders_count           => $_->p2p_advertiser->buy_orders_count,
+        cancel_time_avg            => $_->p2p_advertiser->cancel_time_avg,
+        completion_rate            => $_->p2p_advertiser->completion_rate,
+        release_time_avg           => $_->p2p_advertiser->release_time_avg,
+        sell_orders_count          => $_->p2p_advertiser->sell_orders_count,
+        total_orders_count         => $_->p2p_advertiser->total_orders_count,
+
     };
 };
 
@@ -62,6 +69,12 @@ publish p2p => sub {
             payment_info               => $_->p2p_advertiser->payment_info,
             chat_token                 => $_->p2p_advertiser->chat_token,
             chat_user_id               => $_->p2p_advertiser->chat_user_id,
+            buy_orders_count           => $_->p2p_advertiser->buy_orders_count,
+            cancel_time_avg            => $_->p2p_advertiser->cancel_time_avg,
+            completion_rate            => $_->p2p_advertiser->completion_rate,
+            release_time_avg           => $_->p2p_advertiser->release_time_avg,
+            sell_orders_count          => $_->p2p_advertiser->sell_orders_count,
+            total_orders_count         => $_->p2p_advertiser->total_orders_count,
             },
     };
 };
