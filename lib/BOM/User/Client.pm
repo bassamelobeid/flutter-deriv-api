@@ -919,15 +919,11 @@ sub get_limit {
 sub currency {
     my $self = shift;
 
-    return 'USD' if $self->is_virtual;
-
     if (my $account = $self->default_account) {
         return $account->currency_code();
     }
 
-    return 'GBP' if $self->residence eq 'gb';
-    return 'AUD' if $self->landing_company->short eq 'svg' and $self->residence eq 'au';
-    return $self->landing_company->legal_default_currency;
+    return $self->landing_company->get_default_currency($self->residence);
 }
 
 =head2 local_currency
@@ -3493,7 +3489,7 @@ sub deposit_virtual_funds {
     $self->is_virtual || die "not a virtual client\n";
 
     my $landing_company                 = $self->landing_company;
-    my $currency                        = $landing_company->legal_default_currency // 'USD';
+    my $currency                        = $self->currency // 'USD';
     my $virtual_account_default_balance = $landing_company->virtual_account_default_balance // 10000;
 
     # default_account not exists when first time init virtual balance
