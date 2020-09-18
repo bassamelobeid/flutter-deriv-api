@@ -112,7 +112,7 @@ my $action = request()->param('action');
 # Address is retrieved from Search view for `Address` option.
 my $address = request()->param('address');
 # Show new addresses in recon?
-my $show_new_addresses = request()->param('include_new');
+my $show_new_addresses = request()->param('include_new') // '';
 my $fee_recon          = request()->param('fee_recon');
 # view type is a filter option which is used to sort transactions
 # based on their status:it might be either pending, verified, rejected,
@@ -285,6 +285,7 @@ $tt2->process(
         staff                     => $staff,
         pending_withdrawal_amount => $pending_withdrawal_amount,
         main_address              => $main_address,
+        include_new               => $show_new_addresses,
     }) || die $tt2->error();
 
 # Exchange rate should be populated according to supported cryptocurrencies.
@@ -544,7 +545,7 @@ if ($view_action eq 'withdrawals') {
         code_exit_BO();
     }
 
-    my @recon_list = $currency_wrapper->recon_report($start_date, $end_date, $fee_recon);
+    my @recon_list = $currency_wrapper->recon_report($start_date, $end_date, $fee_recon, $show_new_addresses);
 
     unless (scalar @recon_list) {
         code_exit_BO("Empty reconciliation report. There is no record to display.");
@@ -570,17 +571,15 @@ EOF
 
     TRAN:
     for my $db_tran (@recon_list) {
-        next TRAN if $db_tran->is_status_in(qw(NEW MIGRATED)) and not $show_new_addresses;
         print '<tr>';
         print '<td>' . encode_entities($_) . '</td>' for map { $_ && $_ ne '' ? $_ : '' } @{$db_tran}{qw(account transaction_type)};
 
         my $address         = $db_tran->{to} || $db_tran->{from};
         my $encoded_address = encode_entities($address);
         print '<td><a href="' . $address_uri . $encoded_address . '" target="_blank">' . $encoded_address . '</a></td>';
-
-        my $amount     = $db_tran->{amount};
+        my $amount     = $db_tran->{amount} // 0;
         my $currency   = $fee_recon ? $currency_wrapper->parent_currency : $currency;
-        my $usd_amount = formatnumber('amount', 'USD', financialrounding('price', 'USD', in_usd($db_tran->{amount}, $currency)));
+        my $usd_amount = formatnumber('amount', 'USD', financialrounding('price', 'USD', in_usd($amount, $currency)));
 
         # for recon only, we can't consider fee as a 8 decimal places value
         # for ethereum the fees values has more than that, and since we can't

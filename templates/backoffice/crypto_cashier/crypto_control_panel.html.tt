@@ -13,7 +13,7 @@
         <button type="submit" name="view_action" value="reconcil">Reconciliation</button>
         <input type="text" name="start_date" class="datepick" value="[% start_date %]" required pattern="\d{4}-\d{2}-\d{2}" size="12" data-lpignore="true" />
         <input type="text" name="end_date" class="datepick" value="[% end_date %]" required pattern="\d{4}-\d{2}-\d{2}" size="12" data-lpignore="true" />
-        <input type="checkbox" name="include_new" id="include_new"><label for="include_new">Show new addresses</label>
+        <input type="checkbox" name="include_new" id="include_new" [% IF include_new %] checked [% END %]><label for="include_new">Show new addresses</label>
         [% IF currency == 'UST' %]<input type="checkbox" name="fee_recon" id="fee_recon"><label for="fee_recon">Show BTC recon</label>[% END %]
     <br><br>
 <!-- Search -->
