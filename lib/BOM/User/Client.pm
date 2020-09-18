@@ -370,7 +370,6 @@ sub set_authentication {
             authentication_method_code => $method,
             status                     => 'pending'
         });
-        $self->status->clear_allow_document_upload;
         $self->get_authentication($method);
     }
 }
@@ -3923,7 +3922,7 @@ sub payment_affiliate_reward {
         {});    # <- TODO: affiliate_reward table is redundant
 
     if (exists $self->{mlt_affiliate_first_deposit} and $self->{mlt_affiliate_first_deposit}) {
-        $self->status->set('cashier_locked', 'system', 'MLT client received an affiliate reward as first deposit');
+        $self->status->setnx('cashier_locked', 'system', 'MLT client received an affiliate reward as first deposit');
 
         delete $self->{mlt_affiliate_first_deposit};
     }

@@ -19,11 +19,13 @@ subtest 'Setter' => sub {
     subtest 'Set new' => sub {
         $res = $client->status->set('age_verification', 'test_name', 'test_reason');
         ok($res, 'New insert succeeds');
+        $client->status->clear_age_verification;
     };
 
     subtest 'Set existing with new details' => sub {
         $res = $client->status->set('age_verification', 'test_name2', 'test_reason2');
         ok($res, 'Existing with new details succeeds');
+        $client->status->clear_age_verification;
     };
 
     subtest 'Set existing with same details' => sub {
@@ -51,6 +53,13 @@ subtest 'Setter' => sub {
             qr/foreign key constraint/, 'Warns with invalid status_code';
         }
         qr/foreign key constraint/, 'Dies with invalid status_code';
+    };
+
+    subtest 'Overriding status reason fails' => sub {
+        throws_ok {
+            $res = $client->status->set('age_verification');
+        }
+        qr/cannot override existing status reason/, 'Dies with cannot override existing status reason';
     };
 };
 

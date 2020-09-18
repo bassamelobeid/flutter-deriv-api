@@ -221,7 +221,7 @@ subtest 'User Login' => sub {
         throws_ok { $status = $user->login(); } qr/requires password argument/;
     };
     subtest 'cannot login if disabled' => sub {
-        $client_vr->status->set('disabled', 'system', 'testing');
+        $client_vr->status->setnx('disabled', 'system', 'testing');
         $status = $user->login(%args);
         ok !$status->{success}, 'All account disabled, user cannot login';
         ok $status->{error} =~ /account is unavailable/;

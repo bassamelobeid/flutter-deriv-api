@@ -7,6 +7,8 @@ use Moo;
 use List::Util qw/uniqstr any/;
 use namespace::clean;
 use Class::Method::Modifiers qw( install_modifier );
+use Carp qw( croak );
+
 has client_loginid => (
     is       => 'ro',
     required => 1,
@@ -128,6 +130,49 @@ sub _build_is_login_disallowed {
 set is used to assign a status_code to the associated client.
 Returns true if successful, or dies.
 
+Takes four arguments:
+
+=over 4
+
+=item * status_code
+
+=item * staff_name (optional)
+
+=item * reason (optional)
+
+=item * set_if_not_exist_flag (optional)
+
+=back
+
+=cut
+
+sub set {
+    my ($self, $status_code, $staff_name, $reason, $set_if_not_exist_flag) = @_;
+    my $loginid = $self->client_loginid;
+    die 'status_code is required' unless $status_code;
+
+    # If there's a reason set already, any attempt to change it should fail.
+    # It is also needed to throw the error in the related database function otherwise we might have a race condition.
+    if ($self->_get($status_code)) {
+        return 1 if $set_if_not_exist_flag;
+        croak "cannot override existing status reason for $status_code";
+    }
+
+    $self->dbic->run(
+        ping => sub {
+            $_->do('SELECT betonmarkets.set_client_status(?,?,?,?)', undef, $loginid, $status_code, $staff_name, $reason);
+        });
+
+    delete $self->{$status_code};
+    $self->_clear_composite_cache_elements();
+
+    return 1;
+}
+
+=head2 setnx
+
+Only set the status_code if it does not already exist.
+
 Takes three arguments:
 
 =over 4
@@ -140,22 +185,13 @@ Takes three arguments:
 
 =back
 
+Returns L<BOM::User::Client::Status::set>
+
 =cut
 
-sub set {
+sub setnx {
     my ($self, $status_code, $staff_name, $reason) = @_;
-    my $loginid = $self->client_loginid;
-    die 'status_code is required' unless $status_code;
-
-    $self->dbic->run(
-        ping => sub {
-            $_->do('SELECT betonmarkets.set_client_status(?,?,?,?)', undef, $loginid, $status_code, $staff_name, $reason);
-        });
-
-    delete $self->{$status_code};
-    $self->_clear_composite_cache_elements();
-
-    return 1;
+    return $self->set($status_code, $staff_name, $reason, 1);
 }
 
 =head2 multi_set_clear

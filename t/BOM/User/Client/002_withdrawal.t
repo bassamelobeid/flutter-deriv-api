@@ -121,7 +121,7 @@ subtest 'Client-specific' => sub {
     throws_ok { $client->validate_payment(%withdrawal) } qr/Your cashier is locked/, 'Client withdrawals have been locked.';
     $client->status->clear_cashier_locked;
 
-    $client->status->set('disabled', 'calum', 'reason?');
+    $client->status->setnx('disabled', 'calum', 'reason?');
     throws_ok { $client->validate_payment(%withdrawal) } qr/Your account is disabled/, 'Client withdrawals have been locked.';
     $client->status->clear_disabled;
 };
@@ -236,7 +236,7 @@ subtest 'CR withdrawal' => sub {
     # Testing an odd case for validate_payment
     subtest 'BTC authenticated, full withdrawal' => sub {
         my $client = new_client('BTC');
-        $client->status->set('age_verification', 'system', 'Successfully authenticated identity via Experian Prove ID',);
+        $client->status->setnx('age_verification', 'system', 'Successfully authenticated identity via Experian Prove ID');
         $client->set_authentication('ID_DOCUMENT')->status('pass');
         my $var = $client->smart_payment(%deposit_btc, amount => 0.01434048);
         lives_ok { $client->validate_payment(%withdrawal_btc, amount => -0.01434048) } 'Authed CR withdraw full BTC amount';
