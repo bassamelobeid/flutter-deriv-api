@@ -18,12 +18,13 @@
     <tr>
         <th class="selection_display_text">None selected</th>
         <td>
-            <form action="[% controller_url %]" onsubmit="return confirm('Do you really want to continue?');" method="POST">
-            <input type="hidden" name="currency" value="[%currency%]"/>
-            <input type="hidden" name="view_action" value="withdrawals"/>
-            <input type="hidden" class="checked_ids" name="checked_ids" value=""/>
-            <input type="submit" name="action" value='bulkVerify'/>
-        </form>
+            <form action="[% controller_url %]" onsubmit="return bulkConfirm();" method="POST">
+                <input type="hidden" name="currency" value="[%currency%]" />
+                <input type="hidden" name="view_action" value="withdrawals" />
+                <input type="hidden" class="selected_transactions" name="selected_transactions" value="" />
+                <input type="hidden" name="action" value='bulkVerify' />
+                <input type="submit" value='Bulk Verify' />
+            </form>
         </td>
     </tr>
 </table>
@@ -38,6 +39,9 @@
         font-weight:bold;
         text-align: center;
         background-color: #FFFF00;
+    }
+    table tr.selected, table tr.selected:hover {
+        background: #D0E3C4 !important;
     }
 </style>
 <table class="hover collapsed alternate" border="1" width="100%">
@@ -123,9 +127,11 @@
                 [% IF view_action == 'search' %]
                     <th>Status</th>
                 [% END %]
-                [% IF view_type == 'pending' %]<td></td>[% END %]
-                <th>BlockchainInfo</th>
-                <th>PaymentInfo</th>
+                [% IF view_type == 'pending' && view_action == 'withdrawals' %]
+                    <th></th>
+                [% END %]
+                <th>Blockchain Info</th>
+                <th>Payment Info</th>
                 <th>Date</th>
                 [% IF view_action == 'withdrawals' || view_action == 'search' %]
                     <th>Verification</th>
@@ -135,16 +141,16 @@
         </thead>
         <tbody>
         [% FOREACH trx IN transactions %]
-            <tr id=[% 'row_' _ trx.id %] data-selected=0>
+            <tr id="[% 'row_' _ trx.id %]">
                 [% IF view_action == 'search' %]
-                    <td valign="top"><table><tbody>
+                    <td valign="top">
                         <b>[% trx.transaction_type FILTER ucfirst %]: </b>
                         [% IF trx.status == 'LOCKED' %]PENDING[% ELSE %][% trx.status %][% END %]
-                    </tbody></table></td>
+                    </td>
                 [% END %]
-                [% IF view_type == 'pending' && trx.transaction_type == 'withdrawal' %]
+                [% IF view_type == 'pending' && trx.transaction_type == 'withdrawal' && view_action == 'withdrawals' %]
                     <td>
-                        <input type="checkbox" name="bulk_select" value=[%trx.id%] data-amount=[% trx.amount %] onClick=highlight_selected("row_[%trx.id%]") />
+                        <input type="checkbox" value="[% trx.id %]" data-amount="[% trx.amount %]" onclick="bulkToggleSelected(this)" />
                     </td>
                 [% END %]
                 <td valign="top">
@@ -210,9 +216,10 @@
                             <input type="hidden" name="loginid" value="[% trx.client_loginid %]"/>
                             <input type="hidden" name="view_action" value="withdrawals"/>
                             <br/>
-                            <label for="set_remark">Set Remark:</label>
-                            <br/>
-                            <textarea id="set_remark" name="set_remark" placeholder="Replaces current remark"></textarea>
+                            <label>
+                                Set Remark:<br/>
+                                <textarea name="set_remark" placeholder="Replaces current remark" data-trxid="[% trx.id %]" onchange="bulkUpdateRemark(this)"></textarea>
+                            </label>
                             <br/>
                             <input type="submit" name="action" value="Save"/>
                             [% IF trx.is_withdrawal_locked %]
@@ -249,7 +256,6 @@
     </table>
 
     [% IF view_type == 'pending' && view_action == 'withdrawals' %]
-        <br>
         [% PROCESS bulk_verify_controls %]
     [% END %]
     <br>
@@ -323,41 +329,88 @@ function viewFiatLogin(elem, loginID, brokerCode, fetchURL) {
     });
 }
 
-function highlight_selected(row_selected) {
-    var row_selected = document.getElementById(row_selected);
-    var is_selected = row_selected.getAttribute('data-selected');
+// ----- Bulk Verify -----
+const selected_transactions = {};
 
-    if(is_selected == 0){
-        row_selected.style="background-color: #D0E3C4 !important";
-        row_selected.setAttribute('data-selected', 1);
+function bulkToggleSelected(el_chk) {
+    const trx_id      = el_chk.value;
+    const is_selected = el_chk.checked;
+    const el_row      = el_chk.closest('tr');
+
+    el_row.classList[is_selected ? 'add' : 'remove']('selected');
+
+    if (is_selected) {
+        selected_transactions[trx_id] = {
+            amount: el_chk.getAttribute('data-amount'),
+            remark: el_row.querySelector('textarea[name="set_remark"]').value.trim(),
+        };
     } else {
-        row_selected.style.backgroundColor= null;
-        row_selected.setAttribute('data-selected', 0);
+        delete selected_transactions[trx_id];
     }
 
-    var checkboxes = document.getElementsByName('bulk_select');
-    var checkboxesChecked = [];
-    var numberOfSelectedBox = 0;
-    var totalAmount = 0;
+    bulkUpdateForm();
+}
 
-    for (var i=0; i<checkboxes.length; i++) {
-       if (checkboxes[i].checked) {
-          numberOfSelectedBox += 1;
-          checkboxesChecked.push({id:checkboxes[i].value, amount:checkboxes[i].getAttribute('data-amount')});
-          totalAmount = totalAmount + parseFloat(checkboxes[i].getAttribute('data-amount'));
-       }
+function bulkUpdateRemark(el_remark) {
+    const trx_id = el_remark.getAttribute('data-trxid');
+
+    if (selected_transactions[trx_id]) {
+        selected_transactions[trx_id].remark = el_remark.value.trim();
+        bulkUpdateForm();
     }
-    // get decimal value from the amount
-    var decimal_place = checkboxes[0].getAttribute('data-amount').split(".")[1].length || 0;
-    var message_text = numberOfSelectedBox.toString() + " transaction(s) selected. Total amount is: " + totalAmount.toFixed(decimal_place) + " [%currency%]";
+}
+
+function bulkUpdateForm() {
     // Populate hidden value
-    document.querySelectorAll('.checked_ids').forEach((el_hidden) => {
-        el_hidden.value = JSON.stringify(checkboxesChecked);
+    document.querySelectorAll('.selected_transactions').forEach((el_hidden) => {
+        el_hidden.value = JSON.stringify(selected_transactions);
     });
-    //update the text
+
+    // Update the message
+    const bulk_data    = bulkCalculate();
+    const message_text = bulk_data.trx_count
+        ? `\${bulk_data.trx_count} transaction\${bulk_data.trx_count > 1 ? 's' : ''} selected (\${bulk_data.remarks_count} remark\${bulk_data.remarks_count > 1 ? 's' : ''}). Total amount is: \${bulk_data.total_amount} [% currency %]`
+        : 'None selected';
     document.querySelectorAll('.selection_display_text').forEach((el_selection_text) => {
         el_selection_text.innerHTML = message_text;
     });
+}
+
+function bulkCalculate() {
+    const trx_ids_list = Object.keys(selected_transactions);
+
+    let decimal_places;
+    let total_amount  = 0;
+    let remarks_count = 0;
+
+    trx_ids_list.forEach((trx_id) => {
+        if (typeof decimal_places === 'undefined') {
+            decimal_places = (selected_transactions[trx_id].amount.split('.')[1] || '').length;
+        }
+        total_amount  += parseFloat(selected_transactions[trx_id].amount);
+        remarks_count += selected_transactions[trx_id].remark.length ? 1 : 0;
+    });
+
+    return {
+        remarks_count,
+        trx_count   : trx_ids_list.length,
+        total_amount: total_amount.toFixed(decimal_places),
+    };
+}
+
+function bulkConfirm() {
+    const bulk_data = bulkCalculate();
+
+    if (!bulk_data.trx_count) {
+        alert('Error: No transaction selected.');
+        return false;
+    }
+
+    return confirm(
+        `Do you really want to do Bulk Verification as below?
+  - Selected transactions: \${bulk_data.trx_count} (remarks: \${bulk_data.remarks_count})
+  - Total Amount: \${bulk_data.total_amount} [% currency %]`
+    );
 }
 
 </script>

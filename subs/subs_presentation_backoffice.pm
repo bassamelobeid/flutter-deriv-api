@@ -227,11 +227,6 @@ sub vk_BOtopPRES    #this sub executed in BrokerPresentation
             link => 'f_clientloginid',
             text => 'Client Management'
         },
-        {
-            link    => 'login',
-            text    => 'Log Out',
-            options => {whattodo => 'logout'}
-        },
         {text => 'Misc. Tools'},
         {
             link => 'f_investigative',
@@ -244,6 +239,12 @@ sub vk_BOtopPRES    #this sub executed in BrokerPresentation
         {
             link => 'crypto_admin',
             text => 'Crypto Tools'
+        },
+        {text => 'Log Out'},
+        {
+            link    => 'login',
+            text    => 'Log Out',
+            options => {whattodo => 'logout'}
         },
     );
     my $current_script = request()->http_handler->script_name;
