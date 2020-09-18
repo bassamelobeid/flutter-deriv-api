@@ -72,16 +72,22 @@ subtest 'advertiser Registration' => sub {
     ok my $adv = $adv_client->p2p_advertiser_create(%params), 'create advertiser';
 
     my $expected = {
-        id               => $adv->{id},
-        is_listed        => bool(1),
-        is_approved      => bool(0),
-        created_time     => bool(1),
-        chat_user_id     => 'dummy',
-        chat_token       => 'dummy',
-        daily_buy        => num(0),
-        daily_sell       => num(0),
-        daily_buy_limit  => num(100),
-        daily_sell_limit => num(100),
+        id                 => $adv->{id},
+        is_listed          => bool(1),
+        is_approved        => bool(0),
+        created_time       => bool(1),
+        chat_user_id       => 'dummy',
+        chat_token         => 'dummy',
+        daily_buy          => num(0),
+        daily_sell         => num(0),
+        daily_buy_limit    => num(100),
+        daily_sell_limit   => num(100),
+        buy_orders_count   => num(0),
+        cancel_time_avg    => undef,
+        completion_rate    => undef,
+        release_time_avg   => undef,
+        sell_orders_count  => num(0),
+        total_orders_count => num(0),
         %params
     };
 

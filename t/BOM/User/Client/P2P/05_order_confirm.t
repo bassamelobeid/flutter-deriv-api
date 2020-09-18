@@ -15,17 +15,9 @@ use Test::Deep;
 
 BOM::Test::Helper::P2P::bypass_sendbird();
 
-my %last_event;
+my @emitted_events;
 my $mock_events = Test::MockModule->new('BOM::Platform::Event::Emitter');
-$mock_events->mock(
-    'emit',
-    sub {
-        my ($type, $data) = @_;
-        %last_event = (
-            type => $type,
-            data => $data
-        );
-    });
+$mock_events->mock('emit' => sub { push @emitted_events, [@_] });
 
 my @test_cases = (
     #Sell orders client confirmation:
@@ -402,7 +394,7 @@ for my $test_case (@test_cases) {
 
         BOM::Test::Helper::P2P::set_order_status($client, $order->{id}, $test_case->{init_status});
 
-        %last_event = ();
+        @emitted_events = ();
         my $loginid;
         my $err = exception {
             if ($test_case->{who_confirm} eq 'client') {
@@ -428,20 +420,26 @@ for my $test_case (@test_cases) {
         is($order_data->{advert_details}{type}, $test_case->{type}, 'advert type is correct');
 
         if ($test_case->{error}) {
-            ok !%last_event, 'p2p_order_updated event not emitted';
+            ok !@emitted_events, 'no events emitted';
         } else {
-            cmp_deeply(
-                \%last_event,
-                {
-                    type => 'p2p_order_updated',
-                    data => {
+            my @expected_events = ([
+                    'p2p_order_updated',
+                    {
                         client_loginid => $loginid,
                         order_id       => $order->{id},
                         order_event    => 'confirmed'
                     }
-                },
-                'p2p_order_updated event is emitted'
+                ],
             );
+            if ($test_case->{status} =~ /^(completed|cancelled|refunded)$/) {
+                push @expected_events,
+                    (
+                    ['p2p_advertiser_updated', {client_loginid => $client->loginid}],
+                    ['p2p_advertiser_updated', {client_loginid => $advertiser->loginid}],
+                    );
+            }
+
+            cmp_deeply(\@emitted_events, bag(@expected_events), 'expected events emitted');
         }
 
         BOM::Test::Helper::P2P::reset_escrow();

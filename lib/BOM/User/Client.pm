@@ -2954,6 +2954,8 @@ Takes and returns single advertiser.
 sub _advertiser_details {
     my ($self, $advertiser) = @_;
 
+    my $stats_days = 30;    # days for stats, per websocket fields description
+
     my $details = {
         id                         => $advertiser->{id},
         name                       => $advertiser->{name},
@@ -2961,6 +2963,7 @@ sub _advertiser_details {
         is_approved                => $advertiser->{is_approved},
         is_listed                  => $advertiser->{is_listed},
         default_advert_description => $advertiser->{default_advert_description} // '',
+        $self->_p2p_advertiser_stats_get($advertiser->{client_loginid}, $stats_days)->%*,
     };
 
     # only advertiser themself can see these fields
@@ -3240,6 +3243,13 @@ sub _p2p_order_stats_record {
     # clean up time storage, they won't be needed again for this order because it's either compelete or cancelled
     $redis->hdel(P2P_STATS_REDIS_PREFIX . '::ORDER_CREATION_TIMES', $order->{id});
     $redis->hdel(P2P_STATS_REDIS_PREFIX . '::BUY_CONFIRM_TIMES',    $order->{id});
+
+    for my $loginid ($order->{advertiser_loginid}, $order->{client_loginid}) {
+        BOM::Platform::Event::Emitter::emit(
+            p2p_advertiser_updated => {
+                client_loginid => $loginid,
+            });
+    }
 
     return;
 }
