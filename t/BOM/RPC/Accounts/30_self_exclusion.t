@@ -72,14 +72,14 @@ my $user_mlt_mf = BOM::User->create(
 $user_mlt_mf->add_client($test_client_mlt);
 $user_mlt_mf->add_client($test_client_mf);
 
-my $test_client_cr_3 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR'});
-$test_client_cr_3->email('cr3@binary.com');
-$test_client_cr_3->save;
-my $user_cr_3 = BOM::User->create(
+my $test_client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR'});
+$test_client_cr->email('cr3@binary.com');
+$test_client_cr->save;
+my $user_cr = BOM::User->create(
     email    => 'sample3@binary.com',
     password => $hash_pwd
 );
-$user_cr_3->add_client($test_client_cr_3);
+$user_cr->add_client($test_client_cr);
 
 my $m              = BOM::Platform::Token::API->new;
 my $token          = $m->create_token($test_loginid, 'test token');
@@ -87,9 +87,18 @@ my $token_disabled = $m->create_token($test_client_disabled->loginid, 'test toke
 my $token_vr       = $m->create_token($test_client_vr->loginid, 'test token');
 my $token_mlt      = $m->create_token($test_client_mlt->loginid, 'test token');
 
-my $token_cr_3 = $m->create_token($test_client_cr_3->loginid, 'test token');
-my $t          = Test::Mojo->new('BOM::RPC::Transport::HTTP');
-my $c          = Test::BOM::RPC::Client->new(ua => $t->app->ua);
+my $token_cr = $m->create_token($test_client_cr->loginid, 'test token');
+my $t        = Test::Mojo->new('BOM::RPC::Transport::HTTP');
+my $c        = Test::BOM::RPC::Client->new(ua => $t->app->ua);
+
+my @field_names =
+    qw/max_balance max_turnover max_losses max_7day_turnover max_7day_losses max_30day_losses max_30day_turnover max_open_bets session_duration_limit/;
+
+my %arg_values = (
+    max_open_bets => $test_client_cr->get_limit_for_open_positions,
+    timeout_until => Date::Utility->new->plus_time_interval('1d')->epoch,
+    exclude_until => Date::Utility->new->plus_time_interval('7mo')->date,
+);
 
 my $method = 'set_self_exclusion';
 subtest 'get and set self_exclusion' => sub {
@@ -302,6 +311,7 @@ subtest 'get and set self_exclusion' => sub {
         exclude_until          => $exclude_until,
         timeout_until          => $timeout_until->epoch,
     };
+
     is($c->tcall($method, $params)->{status}, 1, 'update self_exclusion ok');
     my $msg = mailbox_search(
         email   => 'compliance@binary.com',
@@ -414,7 +424,7 @@ subtest 'get and set self_exclusion' => sub {
     like($msg->{body}, qr/$mt5_loginid/, 'email content is ok');
     delete $params->{args};
     delete $emitted->{self_exclude_set};
-    $params->{token} = $token_cr_3;
+    $params->{token} = $token_cr;
     $params->{args}  = {
         set_self_exclusion     => 1,
         max_balance            => 9998,
@@ -426,6 +436,128 @@ subtest 'get and set self_exclusion' => sub {
     };
     is($c->tcall($method, $params)->{status}, 1,     'update self_exclusion ok');
     is($emitted->{self_exclude_set},          undef, 'self_exclude_set event not emitted because email_consent is not set for user');
+};
+
+subtest 'Set self-exclusion - CR clients' => sub {
+    my $method = 'set_self_exclusion';
+    my $params = {
+        token => $token_cr,
+        args  => {},
+    };
+    my $get_params = {
+        token => $token_cr,
+    };
+
+    #clear self-exclusions
+    $test_client_cr->set_exclusion->exclude_until(undef);
+    $test_client_cr->set_exclusion->timeout_until(undef);
+    $test_client_cr->save;
+
+    for my $field (qw/exclude_until timeout_until/) {
+        my $value = $arg_values{$field};
+        $params->{args}->{$field} = $value;
+        is $c->tcall($method, $params)->{status}, 1, "RPC called successfully with value $value - $field";
+        is $c->tcall('get_self_exclusion', $get_params)->{$field}, $value, "get_self_exclusion returns the same value $value - $field";
+
+        like $c->tcall($method, $params)->{error}->{message_to_client}, qr/Sorry, but you have self-excluded yourself from the website until/,
+            "set_self_exclusion fails if client is excluded - $field";
+        is $c->tcall('get_self_exclusion', $get_params)->{$field}, $value, "get_self_exclusion returns the same value $value - $field";
+
+        # remove exclude_until to proceed with tests
+        $test_client_cr->set_exclusion->$field(undef);
+        $test_client_cr->save;
+
+        delete $params->{args}->{$field};
+    }
+
+    for my $field (@field_names) {
+        $params->{args}->{$field} = 'abcd';
+        is_deeply $c->tcall($method, $params)->{error},
+            {
+            code              => 'InputValidationFailed',
+            details           => {$field => 'Please input a valid number.'},
+            message_to_client => "Input validation failed: $field."
+            },
+            'Correct error for invalid number';
+
+        $params->{args}->{$field} = -1;
+        is_deeply $c->tcall($method, $params)->{error},
+            {
+            code              => 'InputValidationFailed',
+            details           => {$field => 'Please input a valid number.'},
+            message_to_client => "Input validation failed: $field."
+            },
+            "Correct error for negative value - $field";
+
+        my $base_value = $arg_values{$field} // 1001;
+        for my $value ($base_value, $base_value - 1, $base_value + 1, 0) {
+            $params->{args}->{$field} = $value;
+            is $c->tcall($method, $params)->{status}, 1, "RPC called successfully with value $value - $field";
+
+            is $c->tcall('get_self_exclusion', $get_params)->{$field} // 0, $value, "get_self_exclusion returns the same value $value - $field";
+        }
+        delete $params->{args}->{$field};
+    }
+};
+
+subtest 'Set self-exclusion - regulated landing companies' => sub {
+    my $mock_lc = Test::MockModule->new('LandingCompany');
+    $mock_lc->mock(is_eu => sub { return 1 });
+
+    my $method = 'set_self_exclusion';
+    my $params = {
+        token => $token_cr,
+        args  => {},
+    };
+    my $get_params = {
+        token => $token_cr,
+    };
+
+    foreach my $field (@field_names) {
+        my $value = $arg_values{$field} // 1001;
+
+        $params->{args}->{$field} = $value;
+        is $c->tcall($method, $params)->{status}, 1, "RPC called successfully with value $value - $field";
+        is $c->tcall('get_self_exclusion', $get_params)->{$field} // 0, $value, "get_self_exclusion returns the same value $value - $field";
+
+        my $value_minus = $value - 1;
+        my $minimum = $field =~ 'max_open_bets|session_duration_limit' ? 1 : 0;
+        $params->{args}->{$field} = $value_minus;
+        is $c->tcall($method, $params)->{status}, 1, "RPC called successfully with value minus one - $field";
+        is $c->tcall('get_self_exclusion', $get_params)->{$field} // 0, $value_minus, "get_self_exclusion returns value $value_minus - $field";
+
+        $params->{args}->{$field} = $value;
+
+        is_deeply $c->tcall($method, $params)->{error},
+            {
+            code              => 'SetSelfExclusionError',
+            details           => $field,
+            message_to_client => "Please enter a number between $minimum and $value_minus."
+            },
+            "RPC fails if called with value $value again - $field";
+        is $c->tcall('get_self_exclusion', $get_params)->{$field} // 0, $value_minus, "get_self_exclusion returns the previous value - $field";
+
+        delete $params->{args}->{$field};
+    }
+
+    for my $field (qw/exclude_until timeout_until/) {
+        my $value = $arg_values{$field};
+        $params->{args}->{$field} = $value;
+        is $c->tcall($method, $params)->{status}, 1, "RPC called successfully with value $value - $field";
+        is $c->tcall('get_self_exclusion', $get_params)->{$field}, $value, "get_self_exclusion returns the same value $value - $field";
+
+        like $c->tcall($method, $params)->{error}->{message_to_client}, qr/Sorry, but you have self-excluded yourself from the website until/,
+            "set_self_exclusion fails if client is excluded - $field";
+        is $c->tcall('get_self_exclusion', $get_params)->{$field}, $value, "get_self_exclusion returns the same value $value - $field";
+
+        # remove exclude_until to proceed with tests
+        $test_client_cr->set_exclusion->$field(undef);
+        $test_client_cr->save;
+
+        delete $params->{args}->{$field};
+    }
+
+    $mock_lc->unmock_all;
 };
 
 done_testing();

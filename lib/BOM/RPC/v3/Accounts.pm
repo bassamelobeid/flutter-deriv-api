@@ -15,7 +15,7 @@ use JSON::MaybeXS;
 use Syntax::Keyword::Try;
 use WWW::OneAll;
 use Date::Utility;
-use List::Util qw(any sum0 first min uniq);
+use List::Util qw(any sum0 first min uniq none);
 use Digest::SHA qw(hmac_sha256_hex);
 use Text::Trim qw(trim);
 
@@ -1674,19 +1674,26 @@ rpc set_self_exclusion => sub {
     my $client = $params->{client};
     return BOM::RPC::v3::Utility::permission_error() if $client->is_virtual;
 
-    my $lim = $client->get_self_exclusion_until_date;
+    my $is_regulated = $client->landing_company->is_eu;
+
+    my $excluded_until = $client->get_self_exclusion_until_date;
     return BOM::RPC::v3::Utility::create_error({
             code              => 'SelfExclusion',
             message_to_client => localize(
                 'Sorry, but you have self-excluded yourself from the website until [_1]. If you are unable to place a trade or deposit after your self-exclusion period, please contact the Customer Support team for assistance.',
-                $lim
+                $excluded_until
             ),
-        }) if $lim;
+        }) if $excluded_until;
+
+    my %args = %{$params->{args}};
 
     # get old from above sub _get_self_exclusion_details
     my $self_exclusion = _get_self_exclusion_details($client);
 
-    ## validate
+    # Max balance and Max open bets are given default values, if not set by client
+    $self_exclusion->{max_balance}   //= $client->get_limit_for_account_balance;
+    $self_exclusion->{max_open_bets} //= $client->get_limit_for_open_positions;
+
     my $error_sub = sub {
         my ($error, $field) = @_;
         return BOM::RPC::v3::Utility::create_error({
@@ -1697,208 +1704,161 @@ rpc set_self_exclusion => sub {
         });
     };
 
-    my %args = %{$params->{args}};
+    my $validation_error_sub = sub {
+        my ($field, $message, $detail) = @_;
+        return BOM::RPC::v3::Utility::create_error({
+                code              => 'InputValidationFailed',
+                message_to_client => $message // localize("Input validation failed: [_1].", $field),
+                message           => '',
+                details           => {
+                    $field => $detail // localize("Please input a valid number."),
+                },
+            });
+    };
 
-    my $decimals = Format::Util::Numbers::get_precision_config()->{price}->{$client->currency};
-    foreach my $field (qw/max_balance max_turnover max_losses max_7day_turnover max_7day_losses max_30day_losses max_30day_turnover max_deposit/) {
-        if ($args{$field} and $args{$field} !~ /^\d{0,20}(?:\.\d{0,$decimals})?$/) {
-            return BOM::RPC::v3::Utility::create_error({
-                    code              => 'InputValidationFailed',
-                    message_to_client => localize("Input validation failed: [_1].", $field),
-                    details           => {
-                        $field => "Please input a valid number.",
-                    },
-                });
-        }
-    }
+    ## validate
+    my %fields = (
+        numerical => {(
+                map { $_ => {is_integer => 0} }
+                    (qw/max_balance max_turnover max_losses max_7day_turnover max_7day_losses max_30day_losses max_30day_turnover max_deposit/)
+            ),
+            max_open_bets => {
+                is_integer => 1,
+            },
+            session_duration_limit => {
+                is_integer => 1,
+                max        => {
+                    value   => 6 * 7 * 24 * 60,                                                   # a six-week interval in minutes
+                    message => localize('Session duration limit cannot be more than 6 weeks.'),
+                },
+            },
+            timeout_until => {
+                is_integer => 1,
+                min        => {
+                    value   => time(),
+                    message => localize('Timeout time must be greater than current time.'),
+                },
+                max => {
+                    value   => time() + 6 * 7 * 24 * 60 * 60,                                     # six weeks later's epoch
+                    message => localize('Timeout time cannot be more than 6 weeks.'),
+                },
+            },
+        },
+        date => {
+            exclude_until => {
+                after_today => {
+                    message => localize('Exclude time must be after today.'),
+                },
+                min => {
+                    value   => Date::Utility->new->plus_time_interval('6mo'),
+                    message => localize('Exclude time cannot be less than 6 months.'),
+                },
+                max => {
+                    value   => Date::Utility->new->plus_time_interval('5y'),
+                    message => localize('Exclude time cannot be for more than five years.'),
+                }
+            },
+            max_deposit_end_date => {
+                min => {
+                    value   => Date::Utility->new,
+                    message => localize('Deposit exclusion period must be after today.'),
+                },
+                max => {
+                    value   => Date::Utility->new->plus_time_interval('5y'),
+                    message => localize('Deposit exclusion period cannot be for more than five years.'),
+                }
+            },
+        },
+    );
 
-    # at least one setting should present in request
-    my $args_count = 0;
-    foreach my $field (
-        qw/max_balance max_turnover max_losses max_7day_turnover max_7day_losses max_30day_losses max_30day_turnover max_open_bets session_duration_limit exclude_until timeout_until max_deposit max_deposit_end_date/
-        )
-    {
-        $args_count++ if defined $args{$field};
-    }
+    my @all_fields = map { keys $fields{$_}->%* } (qw /numerical date/);
+
     return BOM::RPC::v3::Utility::create_error({
             code              => 'SetSelfExclusionError',
-            message_to_client => localize('Please provide at least one self-exclusion setting.')}) unless $args_count;
+            message_to_client => localize('Please provide at least one self-exclusion setting.'),
+        }) if none { defined $args{$_} } @all_fields;
 
-    foreach my $field (
-        qw/max_balance max_turnover max_losses max_7day_turnover max_7day_losses max_30day_losses max_30day_turnover max_open_bets session_duration_limit max_deposit/
-        )
-    {
-        # Client input
-        my $val = $args{$field};
+    my $decimals = Format::Util::Numbers::get_precision_config()->{price}->{$client->currency};
+    for my $field (keys $fields{numerical}->%*) {
+        my $value = $args{$field};
 
-        # The minimum is 1 in case of open bets (1 for other cases)
-        my $min = $field eq 'max_open_bets' ? 1 : 0;
+        next unless defined $value;
 
-        # Validate the client input
-        my $is_valid = 0;
+        my $field_settings = $fields{numerical}->{$field};
 
-        # Max balance and Max open bets are given default values, if not set by client
-        if ($field eq 'max_balance') {
-            $self_exclusion->{$field} //= $client->get_limit_for_account_balance;
-        } elsif ($field eq 'max_open_bets') {
-            $self_exclusion->{$field} //= $client->get_limit_for_open_positions;
-        }
+        my $regex = $field_settings->{is_integer} ? qr/^\d+$/ : qr/^\d{0,20}(?:\.\d{0,$decimals})?$/;
+        return $validation_error_sub->($field) unless $value =~ $regex;
 
-        if ($val and $val > 0) {
-            $is_valid = 1;
-            if ($self_exclusion->{$field} and $val > $self_exclusion->{$field}) {
-                $is_valid = 0;
-            }
-        }
+        # zero value is unconditionally accepatable for unregulated landing companies (limit removal)
+        next if not $is_regulated and 0 == $value;
 
-        next if $is_valid;
+        my ($min, $max) = @$field_settings{qw/min max/};
+        return $error_sub->($min->{message}, $field) if $min and $value < $min->{value};
+        return $error_sub->($max->{message}, $field) if $max and $value > $max->{value};
 
-        if (defined $val and $self_exclusion->{$field}) {
-            return $error_sub->(localize('Please enter a number between [_1] and [_2].', $min, $self_exclusion->{$field}), $field);
-        } else {
-            delete $args{$field};
-        }
+        # the rest is applied on regulated landing companies only.
+        next unless $is_regulated;
 
-    }
-
-    if (my $session_duration_limit = $args{session_duration_limit}) {
-        if ($session_duration_limit > 1440 * 42) {
-            return $error_sub->(localize('Session duration limit cannot be more than 6 weeks.'), 'session_duration_limit');
+        # in regulated landing companies, clients are not allowed to extend or remove their self-exclusion settings
+        if ($self_exclusion->{$field}) {
+            $min = $field_settings->{is_integer} ? 1 : 0;
+            return $error_sub->(localize('Please enter a number between [_1] and [_2].', $min, $self_exclusion->{$field}), $field)
+                unless $value > 0 and $value <= $self_exclusion->{$field};
         }
     }
 
-    my $exclude_until = $args{exclude_until};
-    if (defined $exclude_until && $exclude_until =~ /^\d{4}\-\d{2}\-\d{2}$/) {
-        my $now       = Date::Utility->new;
-        my $six_month = Date::Utility->new->plus_time_interval('6mo');
-        my ($exclusion_end, $exclusion_end_error);
-        try {
-            $exclusion_end = Date::Utility->new($exclude_until);
-        } catch {
-            log_exception();
-            $exclusion_end_error = 1;
-        }
-        return $error_sub->(localize('Exclusion time conversion error.'), 'exclude_until') if $exclusion_end_error;
+    for my $field (keys $fields{date}->%*) {
+        my $value = $args{$field};
 
-        # checking for the exclude until date which must be larger than today's date
-        if (not $exclusion_end->is_after($now)) {
-            return $error_sub->(localize('Exclude time must be after today.'), 'exclude_until');
-        }
+        next unless defined $value;
 
-        # checking for the exclude until date could not be less than 6 months
-        elsif ($exclusion_end->epoch < $six_month->epoch) {
-            return $error_sub->(localize('Exclude time cannot be less than 6 months.'), 'exclude_until');
-        }
+        # empty value is unconditionally accepatable for unregulated landing companies (limit removal)
+        next unless $is_regulated or $value;
 
-        # checking for the exclude until date could not be more than 5 years
-        elsif ($exclusion_end->days_between($now) > 365 * 5 + 1) {
-            return $error_sub->(localize('Exclude time cannot be for more than five years.'), 'exclude_until');
-        }
-    } else {
-        delete $args{exclude_until};
+        my $field_settings = $fields{date}->{$field};
+
+        my $field_date = eval { Date::Utility->new($value) };
+
+        return $validation_error_sub->($field, localize('Exclusion time conversion error.'), localize('Invalid date format.')) unless $field_date;
+
+        return $error_sub->($field_settings->{after_today}->{message}, $field) if $field_date->is_before(Date::Utility->new);
+
+        my $min = $field_settings->{min};
+        return $error_sub->($min->{message}, $field) if $min->{value} and $field_date->is_before($min->{value});
+
+        my $max = $field_settings->{max};
+        return $error_sub->($max->{message}, $field) if $max->{value} and $field_date->is_after($max->{value});
     }
 
-    my $max_deposit_end_date = $args{max_deposit_end_date};
-    my $max_deposit          = $args{max_deposit};
-    if (defined $max_deposit_end_date && defined $max_deposit && $max_deposit_end_date =~ /^\d{4}\-\d{2}\-\d{2}$/) {
-        my $now = Date::Utility->new;
-        my ($exclusion_end, $exclusion_end_error);
-        try {
-            $exclusion_end = Date::Utility->new($max_deposit_end_date);
-        } catch {
-            log_exception();
-            $exclusion_end_error = 1;
-        }
-        return $error_sub->(localize('Exclusion time conversion error.'), 'max_deposit_end_date') if $exclusion_end_error;
-
-        # checking for the exclude until date which must be larger than today's date
-        if ($exclusion_end->is_before($now)) {
-            return $error_sub->(localize('Deposit exclusion period must be after today.'), 'max_deposit_end_date');
-        }
-
-        # checking for the deposit exclusion period could not be more than 5 years
-        elsif ($exclusion_end->days_between($now) > 365 * 5 + 1) {
-            return $error_sub->(localize('Deposit exclusion period cannot be for more than five years.'), 'max_deposit_end_date');
-        }
-    } else {
-        delete $args{max_deposit_end_date};
-        delete $args{max_deposit};
-    }
-
-    my $timeout_until = $args{timeout_until};
-    if (defined $timeout_until and $timeout_until =~ /^\d+$/) {
-        my $now           = Date::Utility->new;
-        my $exclusion_end = Date::Utility->new($timeout_until);
-        my $six_week      = Date::Utility->new(time() + 6 * 7 * 86400);
-
-        # checking for the timeout until which must be larger than current time
-        if ($exclusion_end->is_before($now)) {
-            return $error_sub->(localize('Timeout time must be greater than current time.'), 'timeout_until');
-        }
-
-        if ($exclusion_end->is_after($six_week)) {
-            return $error_sub->(localize('Timeout time cannot be more than 6 weeks.'), 'timeout_until');
-        }
-    } else {
-        delete $args{timeout_until};
-    }
-
-    if ($max_deposit xor $max_deposit_end_date) {
+    if ($args{max_deposit} xor $args{max_deposit_end_date}) {
         return $error_sub->(
             localize('Both [_1] and [_2] must be provided to activate deposit limit.', 'max_deposit', 'max_deposit_end_date'),
             'max_deposit'
         );
     }
 
-    if ($args{max_open_bets}) {
-        $client->set_exclusion->max_open_bets($args{max_open_bets});
+    for my $field (@all_fields) {
+        $client->set_exclusion->$field($args{$field} || undef)
+            if exists $args{$field};
     }
 
-    if ($args{max_balance}) {
-        $client->set_exclusion->max_balance($args{max_balance});
-    }
-
-    if ($args{max_turnover}) {
-        $client->set_exclusion->max_turnover($args{max_turnover});
-    }
-    if ($args{max_losses}) {
-        $client->set_exclusion->max_losses($args{max_losses});
-    }
-    if ($args{max_7day_turnover}) {
-        $client->set_exclusion->max_7day_turnover($args{max_7day_turnover});
-    }
-    if ($args{max_7day_losses}) {
-        $client->set_exclusion->max_7day_losses($args{max_7day_losses});
-    }
-    if ($args{max_30day_turnover}) {
-        $client->set_exclusion->max_30day_turnover($args{max_30day_turnover});
-        if ($client->residence eq 'gb' or $client->landing_company->check_max_turnover_limit_is_set)
-        {    # RTS 12 - Financial Limits - UK Clients and MLT clients
-            $client->status->clear_max_turnover_limit_not_set;
-        }
-    }
-    if ($args{max_30day_losses}) {
-        $client->set_exclusion->max_30day_losses($args{max_30day_losses});
-    }
-
-    if ($args{session_duration_limit}) {
-        $client->set_exclusion->session_duration_limit($args{session_duration_limit});
-    }
-    if ($args{timeout_until}) {
-        $client->set_exclusion->timeout_until($args{timeout_until});
-    }
-    if ($args{exclude_until}) {
-        $client->set_exclusion->exclude_until($args{exclude_until});
-    }
-    if ($max_deposit_end_date && $max_deposit) {
+    if ($args{max_deposit}) {
         $client->set_exclusion->max_deposit_begin_date(Date::Utility->new->date);
-        $client->set_exclusion->max_deposit_end_date($args{max_deposit_end_date});
-        $client->set_exclusion->max_deposit($args{max_deposit});
+    } elsif (defined $args{max_deposit}) {
+        $client->set_exclusion->max_deposit_begin_date(undef);
+        $client->set_exclusion->max_deposit_end_date(undef);
+        $client->set_exclusion->max_deposit(undef);
     }
+
+    $client->save();
+
+    # RTS 12 - Financial Limits - max turover limit is mandatory for UK Clients and MLT clients
+    # If the limit is set, restrictions can be lifted by removing the pertaining status.
+    $client->status->clear_max_turnover_limit_not_set()
+        if $args{max_30day_turnover} and ($client->residence eq 'gb' or $client->landing_company->check_max_turnover_limit_is_set);
 
     $args{customerio_suspended} = 0;
-    if ($args{exclude_until} && $client->user->email_consent) {
-
+    if (defined $args{exclude_until} && $client->user->email_consent) {
         BOM::Config::Runtime->instance->app_config->check_for_update();
         $args{customerio_suspended} = BOM::Config::Runtime->instance->app_config->system->suspend->customerio;
 
@@ -1906,8 +1866,8 @@ rpc set_self_exclusion => sub {
             loginid              => $client->loginid,
             self_excluded        => 1,
             customerio_suspended => $args{customerio_suspended}};
-        warn 'emit self_exclude_set  event failed.'
-            unless BOM::Platform::Event::Emitter::emit('self_exclude_set', $data_subscription);
+
+        BOM::Platform::Event::Emitter::emit('self_exclude_set', $data_subscription);
     }
 
 # Need to send email in 2 circumstances:
@@ -1921,8 +1881,6 @@ rpc set_self_exclusion => sub {
         warn 'Compliance email regarding self exclusion from the website failed to send.'
             unless send_self_exclusion_notification($client, 'self_exclusion', \%args);
     }
-
-    $client->save();
 
     return {status => 1};
 };
