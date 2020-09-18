@@ -32,7 +32,7 @@ Reason : <select id="untrusted_reasonlist" name="untrusted_reason">
     [% END %]
     </optgroup>
 [% END %]
-</select>
+</select> <span> &nbsp Editing status reason is not allowed, you need to delete the existing and create new one </span>
 <br />
 <input type="text" size="92" name="additional_info" placeholder="Please specify here (optional)" data-lpignore="true" />
 <input type="hidden" name="broker" value="[% broker %]">

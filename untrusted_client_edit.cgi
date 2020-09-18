@@ -81,8 +81,8 @@ foreach my $login_id (split(/\s+/, $clientID)) {
         if ($action eq 'insert_data') {
             $printline = execute_set_status({
                     %common_args_for_execute_method,
-                    override => sub {
-                        $client->status->set('duplicate_account', $clerk, $reason);
+                    status_code => 'duplicate_account',
+                    override    => sub {
                         my $m = BOM::Platform::Token::API->new;
                         $m->remove_by_loginid($client->loginid);
                     }
@@ -168,11 +168,15 @@ sub execute_set_status {
     my $file_name        = $params->{file_name};
 
     try {
-        if ($params->{override}) {
-            $params->{override}->();
-        } else {
-            $client->status->set($params->{status_code}, $params->{clerk}, $params->{reason});
+        my $status_code = $params->{status_code};
+        if ($status_code) {
+            return
+                "<font color=red><b>ERROR :</font></b>&nbsp;&nbsp;<b>$encoded_login_id $encoded_reason ($encoded_clerk)</b>&nbsp;&nbsp;has not been saved, cannot override existing status reason</b>"
+                if $client->status->$status_code;
+            $client->status->set($status_code, $params->{clerk}, $params->{reason});
         }
+
+        $params->{override}->() if $params->{override};
 
         return
             "<font color=green><b>SUCCESS :</font></b>&nbsp;&nbsp;<b>$encoded_login_id $encoded_reason ($encoded_clerk)</b>&nbsp;&nbsp;has been saved to  <b>$file_name</b>";

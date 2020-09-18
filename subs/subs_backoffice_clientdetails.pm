@@ -553,7 +553,6 @@ sub build_client_warning_message {
         . '<th>STATUS</th>'
         . '<th>REASON/INFO</th>'
         . '<th>STAFF</th>'
-        . '<th>EDIT</th>'
         . '<th colspan="2">REMOVE</th>'
         . '<th>SYNC</th>'
         . '</tr></thead><tbody>';
@@ -578,9 +577,6 @@ sub build_client_warning_message {
                 . '</b></td>'
                 . '<td><b>'
                 . $output_rows->{'clerk'}
-                . '</b></td>'
-                . '<td><b>'
-                . $output_rows->{'editlink'}
                 . '</b></td>'
                 . '<td><b>'
                 . $output_rows->{'removelink'}

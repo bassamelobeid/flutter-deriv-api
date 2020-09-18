@@ -458,8 +458,11 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
         # Remove existing status to make the auth methods mutually exclusive
         $_->delete for @{$client->client_authentication_method};
 
-        $client->set_authentication('ID_NOTARIZED')->status('pass')
-            if $auth_method eq 'ID_NOTARIZED';
+        if ($auth_method eq 'ID_NOTARIZED') {
+            $client->set_authentication('ID_NOTARIZED')->status('pass');
+            $client->status->clear_allow_document_upload;
+        }
+
         my $already_passed_id_document =
               $client->get_authentication('ID_DOCUMENT')
             ? $client->get_authentication('ID_DOCUMENT')->status
@@ -469,6 +472,7 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
         {    #Authenticated with scans, front end lets this get run again even if already set.
 
             $client->set_authentication('ID_DOCUMENT')->status('pass');
+            $client->status->clear_allow_document_upload;
             BOM::Platform::Event::Emitter::emit('authenticated_with_scans', {loginid => $loginid});
         }
 
@@ -480,11 +484,13 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
             && !($already_passed_id_online eq 'pass'))
         {
             $client->set_authentication('ID_ONLINE')->status('pass');
+            $client->status->clear_allow_document_upload;
         }
 
         if ($auth_method eq 'NEEDS_ACTION') {
             $client->set_authentication('ID_DOCUMENT')->status('needs_action');
-            $client->status->set('allow_document_upload', $clerk, 'MARKED_AS_NEEDS_ACTION');
+            # 'Needs Action' shouldn't replace the locks from the account because we'll lose the request authentication reason
+            $client->status->setnx('allow_document_upload', $clerk, 'MARKED_AS_NEEDS_ACTION');
 
             # if client is marked as needs action then we need to inform
             # CS for new POA document hence we need to remove any
@@ -503,8 +509,7 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
         push @clients_to_update, $client;
         foreach my $client_to_update (@clients_to_update) {
             if ($input{'age_verification'} eq 'yes') {
-                $client_to_update->status->set('age_verification', $clerk, 'Age verified client from Backoffice.')
-                    unless $client_to_update->status->age_verification;
+                $client_to_update->status->setnx('age_verification', $clerk, 'Age verified client from Backoffice.');
             } else {
                 $client_to_update->status->clear_age_verification;
             }
@@ -683,7 +688,7 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
             && update_needed($client, $cli, 'pa_withdrawal_explicitly_allowed', \%clients_updated))
         {
             if ($input{pa_withdrawal_explicitly_allowed}) {
-                $cli->status->set('pa_withdrawal_explicitly_allowed', $clerk, 'allow withdrawal through payment agent');
+                $cli->status->setnx('pa_withdrawal_explicitly_allowed', $clerk, 'allow withdrawal through payment agent');
             } else {
                 $cli->status->clear_pa_withdrawal_explicitly_allowed;
             }
@@ -1459,7 +1464,7 @@ sub _residence_change_validation {
         my $client = $all_clients[0];
 
         if ($new_residence eq 'gb') {
-            $client->status->set('unwelcome', 'SYSTEM', 'Pending proof of age');
+            $client->status->setnx('unwelcome', 'SYSTEM', 'Pending proof of age');
         } else {
             $client->status->clear_unwelcome if $client->status->unwelcome;
         }
