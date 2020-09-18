@@ -264,7 +264,7 @@ subtest 'withdraw' => sub {
     $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('ASK_EMAIL_VERIFY', 'Withdrawal needs verification token')
         ->error_message_is('Verify your withdraw request.', 'Withdrawal needs verification token');
 
-    $client_mx->status->set('tnc_approval', 'system', 'some dummy value');
+    $client_mx->status->setnx('tnc_approval', 'system', 'some dummy value');
 
     $params->{args}->{verification_code} = BOM::Platform::Token->new({
             email       => $client_mx->email,
@@ -278,7 +278,7 @@ subtest 'withdraw' => sub {
         'Terms and condition check is skipped for withdrawal, currency check comes after that.')
         ->error_message_is('Please set the currency.', 'Correct error message as terms and condition check is skipped for withdrawal.');
 
-    $client_mx->status->set('tnc_approval', 'system', $current_tnc_version);
+    $client_mx->status->setnx('tnc_approval', 'system', $current_tnc_version);
 
     $params->{args}->{verification_code} = BOM::Platform::Token->new({
             email       => $client_mx->email,

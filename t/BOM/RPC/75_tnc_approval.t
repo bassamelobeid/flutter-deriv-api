@@ -43,6 +43,7 @@ $res = BOM::RPC::v3::Accounts::get_settings({
     language => 'EN'
 });
 is $res->{client_tnc_status}, 'version 1', 'version 1';
+$test_client->status->clear_tnc_approval;
 
 # switch to version 2
 $version = 2;

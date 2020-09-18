@@ -47,8 +47,9 @@ test_sendrecv_params 'cashier/test_send_deposit.json', 'cashier/test_receive_ukg
 test_sendrecv_params 'tnc_approval/test_send_ukgc.json', 'tnc_approval/test_receive.json', _get_stashed('new_account_real/oauth_token');
 
 # PAYMENT SCOPE CALLS (MX)
-$suite->change_status(_get_stashed('new_account_real/client_id'), 'set', 'age_verification');
-$suite->change_status(_get_stashed('new_account_real/client_id'), 'set', 'max_turnover_limit_not_set');
+$suite->change_status(_get_stashed('new_account_real/client_id'), 'set',   'age_verification');
+$suite->change_status(_get_stashed('new_account_real/client_id'), 'clear', 'max_turnover_limit_not_set');
+$suite->change_status(_get_stashed('new_account_real/client_id'), 'set',   'max_turnover_limit_not_set');
 test_sendrecv_params 'cashier/test_send_deposit.json', 'cashier/test_receive_max_turnover.json', _get_stashed('new_account_real/oauth_token');
 # set_self_exclusion for max_30day_turnover should remove max_turnover_limit_not_set status,
 # if we make call from here it will try to connect to doughflow, enable this when we can test doughflow
