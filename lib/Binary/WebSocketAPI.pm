@@ -33,7 +33,7 @@ use Scalar::Util qw(weaken);
 use Time::Duration::Concise;
 use YAML::XS qw(LoadFile);
 use URI;
-use List::Util qw( first );
+use List::Util qw( first any );
 use Syntax::Keyword::Try;
 
 # to block apps from certain operations_domains (red, green etc ) enter the color/name of the domain to the list
@@ -170,10 +170,10 @@ sub startup {
             ) if exists $BLOCK_ORIGINS{$uri->host};
 
             my $client_ip = $c->client_ip;
-            #TODO is this brand that brand ? can be used to create a Brands object?
-            #brand should be validate rather than accepting any 10-character string
-            my $brand_name   = defang($c->req->param('brand')) // 'binary';
-            my $binary_brand = Brands->new(name => $brand_name);
+
+            my $brand_name   = defang($c->req->param('brand')) // '';
+            my $valid_brand  = any { $_ eq $brand_name } @Brands::VAlID_BRANDS;
+            my $binary_brand = $valid_brand ? Brands->new(name => $brand_name) : Brands->new_from_app_id($app_id);
 
             if ($c->tx and $c->tx->req and $c->tx->req->headers->header('REMOTE_ADDR')) {
                 $client_ip = $c->tx->req->headers->header('REMOTE_ADDR');
@@ -200,12 +200,8 @@ sub startup {
                 user_agent           => $user_agent,
                 ua_fingerprint       => md5_hex(($app_id // 0) . ($client_ip // '') . ($user_agent // '')),
                 ($app_id) ? (source => $app_id) : (),
-                brand => (($brand_name =~ /^\w{1,10}$/) ? $brand_name : $binary_brand->name),
-            );
-
-            my $source_type = $binary_brand->is_app_whitelisted($app_id) ? 'official' : 'unofficial';
-            $c->stash(
-                source_type => $source_type,
+                brand       => $binary_brand->name,
+                source_type => $binary_brand->is_app_whitelisted($app_id) ? 'official' : 'unofficial',
             );
         });
 

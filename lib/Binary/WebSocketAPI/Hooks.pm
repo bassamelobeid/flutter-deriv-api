@@ -119,7 +119,8 @@ sub log_call_timing_before_forward {
 
 sub log_call_timing {
     my ($c, $req_storage) = @_;
-    my $tags = ["rpc:$req_storage->{method}", "brand:" . $c->stash('brand'), "source_type:" . $c->stash('source_type'),];
+    my $tags =
+        ["rpc:$req_storage->{method}", "brand:" . $c->stash('brand'), "source_type:" . $c->stash('source_type'), "app_id:" . $c->stash('source'),];
 
     # extra tagging for buy for better visualization
     push @$tags, 'market:' . $c->stash('market') if $req_storage->{method} eq 'buy' and $c->stash('market');
