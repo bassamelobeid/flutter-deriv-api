@@ -233,8 +233,8 @@ subtest "change_address_status" => sub {
         $client->set_default_account('BTC');
         $dbic->run(
             ping => sub {
-                my $sth = $_->prepare('SELECT payment.ctc_insert_new_deposit_address(?, ?, ?, ?, ?)');
-                $sth->execute($tx->{address}, $tx->{currency}, $client->loginid, $tx->{fee}, $tx->{hash})
+                my $sth = $_->prepare('SELECT payment.ctc_insert_new_deposit_address(?, ?, ?, ?)');
+                $sth->execute($tx->{address}, $tx->{currency}, $client->loginid, $tx->{hash})
                     or die $sth->errstr;
             });
         $response = BOM::Event::Actions::CryptoSubscription::update_transaction_status_to_pending($tx, $tx->{address});

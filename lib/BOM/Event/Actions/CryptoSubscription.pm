@@ -298,8 +298,8 @@ sub insert_new_deposit {
 
         my $result = cryptodb()->run(
             ping => sub {
-                my $sth = $_->prepare('SELECT payment.ctc_insert_new_deposit_address(?, ?, ?, ?, ?)');
-                $sth->execute($payment[0]->{address}, $currency_code, $client_loginid, $transaction->{fee}, $transaction->{hash});
+                my $sth = $_->prepare('SELECT payment.ctc_insert_new_deposit_address(?, ?, ?, ?)');
+                $sth->execute($payment[0]->{address}, $currency_code, $client_loginid, $transaction->{hash});
             });
 
         # this is just a safe check in case we get some error from the database
