@@ -25,6 +25,7 @@ use Date::Utility;
 use ExchangeRates::CurrencyConverter qw/convert_currency in_usd/;
 use JSON::MaybeXS ();
 use Encode;
+use DataDog::DogStatsd::Helper qw(stats_inc);
 
 use Rose::DB::Object::Util qw(:all);
 use Rose::Object::MakeMethods::Generic scalar => ['self_exclusion_cache'];
@@ -3477,7 +3478,7 @@ sub validate_payment {
 }
 
 sub deposit_virtual_funds {
-    my ($self, $source, $remark) = @_;
+    my ($self, $source) = @_;
     $self->is_virtual || die "not a virtual client\n";
 
     my $landing_company                 = $self->landing_company;
@@ -3485,23 +3486,20 @@ sub deposit_virtual_funds {
     my $virtual_account_default_balance = $landing_company->virtual_account_default_balance // 10000;
 
     # default_account not exists when first time init virtual balance
-    my $amount = $self->default_account ? $virtual_account_default_balance - $self->default_account->balance : $virtual_account_default_balance;
-    # if amount is 0, means no need topup balance
-    if ($amount) {
-        try {
-            $self->payment_legacy_payment(
-                currency     => $currency,
-                amount       => $amount,
-                payment_type => 'virtual_credit',
-                remark       => $remark // 'Reset to default virtual money account balance.',
-                source       => $source,
-            );
-        } catch ($e) {
-            # ignore know error violates check constraint "check_no_negative_balance"
-            die $e unless $e =~ /check_no_negative_balance/;
-            $amount = 0;
-        };
+    my $account = $self->set_default_account($currency);
+
+    my $amount = $self->db->dbic->run(
+        fixup => sub {
+            my $sth = $_->prepare('SELECT (pmnt).amount FROM payment.set_balance($1 ,$2 , $3)');
+            $sth->execute($account->id, $virtual_account_default_balance, $source);
+            return $sth->fetchrow_array;
+        });
+
+    unless (defined $amount) {
+        $amount = 0;
+        stats_inc('bom_user.deposit_virtual.null');
     }
+
     return ($currency, $amount);
 }
 
