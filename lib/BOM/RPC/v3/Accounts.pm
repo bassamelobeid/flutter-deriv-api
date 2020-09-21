@@ -2097,6 +2097,9 @@ rpc tnc_approval => sub {
             or ($client_tnc_status->{reason} ne $current_tnc_version))
         {
             try {
+                # For TNC Approval status, the reason is rather relevant to be updated.
+                # Due to validation in status setter, we must clear it before updating.
+                $client->status->clear_tnc_approval;
                 $client->status->set('tnc_approval', 'system', $current_tnc_version);
             } catch {
                 log_exception();
