@@ -16,7 +16,7 @@ use Finance::Exchange;
 use BOM::Config::Runtime;
 use BOM::Config::QuantsConfig;
 use BOM::Config::Chronicle;
-use Pricing::Engine::Intraday::Forex::Base;
+use Pricing::Engine::BlackScholes;
 use Pricing::Engine::Markup::EconomicEventsSpotRisk;
 use Pricing::Engine::Markup::EqualTie;
 use Pricing::Engine::Markup::CustomCommission;
@@ -27,6 +27,7 @@ use Pricing::Engine::Markup::RollOverMarkup;
 use Pricing::Engine::Markup::IntradayForexRisk;
 use Pricing::Engine::Markup::ModelArbitrage;
 use Math::Util::CalculatedValue::Validatable;
+use Math::Business::BlackScholes::Binaries::Greeks::Vega;
 
 =head2 POTENTIAL_ARBITRAGE_DURATION
 
@@ -35,6 +36,7 @@ Intraday switches model when duration exceeds 5 hours. This markup applies to co
 =cut
 
 use constant POTENTIAL_ARBITRAGE_DURATION => 17940;
+use constant HISTORICAL_VOL_MEANREV       => 0.10;
 
 =head2 tick_source
 
@@ -94,31 +96,6 @@ has [qw(base_probability probability long_term_prediction intraday_vanilla_delta
     lazy_build => 1,
 );
 
-has base_engine => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
-sub _build_base_engine {
-    my $self = shift;
-
-    my $bet          = $self->bet;
-    my $pricing_args = $bet->_pricing_args;
-    my %args         = (
-        ticks                => $self->ticks_for_trend,
-        strikes              => [$pricing_args->{barrier1}],
-        vol                  => $pricing_args->{iv},
-        contract_type        => $bet->pricing_code,
-        payout_type          => 'binary',
-        underlying_symbol    => $bet->underlying->symbol,
-        long_term_prediction => $self->long_term_prediction->amount,
-        discount_rate        => 0,
-        mu                   => 0,
-        (map { $_ => $pricing_args->{$_} } qw(spot t payouttime_code)));
-
-    return Pricing::Engine::Intraday::Forex::Base->new(%args,);
-}
-
 has apply_equal_tie_markup => (
     is         => 'ro',
     lazy_build => 1,
@@ -134,9 +111,32 @@ sub _build_apply_equal_tie_markup {
 }
 
 sub _build_base_probability {
-    my $self = shift;
+    my $self         = shift;
+    my $pricing_args = $self->bet->_pricing_args;
 
-    return $self->base_engine->base_probability;
+    my $blackscholes = Pricing::Engine::BlackScholes->new(
+        strikes         => [$pricing_args->{barrier1}],
+        spot            => $pricing_args->{spot},
+        discount_rate   => 0,
+        t               => $pricing_args->{t},
+        mu              => 0,
+        vol             => $pricing_args->{iv},
+        payouttime_code => $pricing_args->{payouttime_code},
+        payout_type     => 'binary',
+        contract_type   => $self->bet->pricing_code,
+    );
+
+    my $base_probability = Math::Util::CalculatedValue::Validatable->new({
+        name        => 'base_probability',
+        description => 'BS pricing based on realized vols',
+        set_by      => __PACKAGE__,
+        base_amount => $blackscholes->theo_probability,
+        minimum     => 0,
+    });
+
+    $base_probability->include_adjustment('add', $self->_intraday_vega_correction);
+
+    return $base_probability;
 }
 
 =head1 probability
@@ -403,6 +403,51 @@ sub get_compatible {
     my ($class, $to_load, $metadata) = @_;
 
     return BOM::Product::Pricing::Engine->is_compatible($to_load, $metadata) ? $class : undef;
+}
+
+has [qw(_intraday_vega_correction _intraday_vega)] => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+sub _build__intraday_vega {
+    my $self = shift;
+
+    my $formula = "Math::Business::BlackScholes::Binaries::Greeks::Vega"->can(lc $self->bet->pricing_code)
+        or die "Vega has no method for " . $self->bet->pricing_code;
+
+    my $pricing_args = $self->bet->_pricing_args;
+    my $formula_args = [
+        $pricing_args->{spot},
+        $pricing_args->{barrier1},
+        $pricing_args->{t},
+        0,    # discount_rate
+        0,    # mu
+        $pricing_args->{iv},
+        $pricing_args->{payouttime_code}];
+    my $v = Math::Util::CalculatedValue::Validatable->new({
+        name        => 'intraday_vega',
+        description => "the vega to use for pricing this bet",
+        set_by      => __PACKAGE__,
+        base_amount => $formula->(@{$formula_args}),
+    });
+
+    return $v;
+}
+
+sub _build__intraday_vega_correction {
+    my $self = shift;
+
+    my $vc = Math::Util::CalculatedValue::Validatable->new({
+        name        => 'intraday_vega_correction',
+        description => 'correction for uncertainty of vol',
+        set_by      => __PACKAGE__,
+        base_amount => HISTORICAL_VOL_MEANREV,
+    });
+
+    $vc->include_adjustment('multiply', $self->_intraday_vega);
+    $vc->include_adjustment('multiply', $self->long_term_prediction);
+    return $vc;
 }
 
 no Moose;
