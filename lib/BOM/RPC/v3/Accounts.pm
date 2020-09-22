@@ -15,6 +15,7 @@ use JSON::MaybeXS;
 use Syntax::Keyword::Try;
 use WWW::OneAll;
 use Date::Utility;
+use Array::Utils qw(intersect);
 use List::Util qw(any sum0 first min uniq none);
 use Digest::SHA qw(hmac_sha256_hex);
 use Text::Trim qw(trim);
@@ -1154,8 +1155,9 @@ rpc get_settings => sub {
         country   => $country,
         residence => $country
         , # Everywhere else in our responses to FE, we pass the residence key instead of country. However, we need to still pass in country for backwards compatibility.
-        country_code  => $country_code,
-        email_consent => ($user and $user->{email_consent}) ? 1 : 0,
+        country_code     => $country_code,
+        email_consent    => ($user and $user->{email_consent}) ? 1 : 0,
+        immutable_fields => [$client->immutable_fields()],
         (
               ($user and BOM::Config::third_party()->{elevio}{account_secret})
             ? (user_hash => hmac_sha256_hex($user->email, BOM::Config::third_party()->{elevio}{account_secret}))
@@ -1214,8 +1216,8 @@ rpc set_settings => sub {
     my $countries_instance = request()->brand->countries_instance();
     my ($residence, $allow_copiers) =
         ($args->{residence}, $args->{allow_copiers});
-    my $tax_residence             = $args->{'tax_residence'}             // '';
-    my $tax_identification_number = $args->{'tax_identification_number'} // '';
+    my $tax_residence             = $args->{'tax_residence'}             // $current_client->tax_residence             // '';
+    my $tax_identification_number = $args->{'tax_identification_number'} // $current_client->tax_identification_number // '';
 
     if ($current_client->is_virtual) {
         # Virtual client can update
@@ -1248,11 +1250,15 @@ rpc set_settings => sub {
                     code              => 'RestrictedCountry',
                     message_to_client => localize('The supplied tax residence "[_1]" is in a restricted country.', $bad_residence)});
         }
-        $error = $current_client->validate_fields_immutable($args);
-        if ($error) {
+
+        for my $field ($current_client->immutable_fields) {
+            next unless defined($args->{$field});
+            next if $args->{$field} eq $current_client->$field;
+
             return BOM::RPC::v3::Utility::create_error({
-                    code              => 'PermissionDenied',
-                    message_to_client => localize($ImmutableFieldError{$error->{details}})});
+                code              => 'PermissionDenied',
+                message_to_client => $ImmutableFieldError{$field} // localize('Permission denied.'),
+            });
         }
 
         $error = $current_client->validate_common_account_details($args) || $current_client->check_duplicate_account($args);
