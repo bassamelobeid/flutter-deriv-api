@@ -13,16 +13,17 @@ use Syntax::Keyword::Try;
 use Email::Address::UseXS;
 use Email::Stuffer;
 use Date::Utility;
-use List::Util qw(all first any min max);
-use Array::Utils qw(array_minus intersect);
+use List::Util qw/all first min any uniq max/;
 use Locale::Country::Extra;
+use Format::Util::Numbers qw(roundcommon);
 use Text::Trim qw(trim);
-use BOM::Platform::Context qw(localize request);
+use BOM::Platform::Context qw/ localize request /;
 use YAML::XS qw(LoadFile);
 use Path::Tiny;
-use Format::Util::Numbers qw(roundcommon financialrounding formatnumber);
-use ExchangeRates::CurrencyConverter qw(convert_currency in_usd);
-use JSON::MaybeXS;
+use Format::Util::Numbers qw/financialrounding formatnumber/;
+use Date::Utility;
+use ExchangeRates::CurrencyConverter qw/convert_currency in_usd/;
+use JSON::MaybeXS ();
 use Encode;
 use DataDog::DogStatsd::Helper qw(stats_inc);
 
@@ -31,19 +32,16 @@ use Rose::Object::MakeMethods::Generic scalar => ['self_exclusion_cache'];
 
 use LandingCompany::Registry;
 
-use BOM::Platform::S3Client;
-use BOM::Platform::Event::Emitter;
-use BOM::Platform::Client::CashierValidation;
 use BOM::Platform::Account::Real::default;
-use BOM::Platform::Event::Emitter;
+use BOM::Database::ClientDB;
 use BOM::User::Client::PaymentAgent;
 use BOM::User::Client::Status;
 use BOM::User::Client::Account;
 use BOM::User::Phone;
 use BOM::User::FinancialAssessment qw(is_section_complete decode_fa);
 use BOM::User::Utility;
+use BOM::Platform::Event::Emitter;
 use BOM::Database::UserDB;
-use BOM::Database::ClientDB;
 use BOM::Database::DataMapper::Account;
 use BOM::Database::DataMapper::Payment;
 use BOM::Database::DataMapper::Transaction;
@@ -55,6 +53,11 @@ use BOM::Config::CurrencyConfig;
 
 use BOM::User::Client::PaymentNotificationQueue;
 use BOM::User::Client::PaymentTransaction::Doughflow;
+use BOM::Database::ClientDB;
+
+use BOM::Platform::S3Client;
+use BOM::Platform::Event::Emitter;
+use BOM::Platform::Client::CashierValidation;
 
 use Carp qw(croak);
 
@@ -88,18 +91,14 @@ sub DOCUMENT_TYPE_CATEGORIES {
 use constant P2P_TOKEN_MIN_EXPIRY => 2 * 60 * 60;    # 2 hours
 
 use constant {
-    MT5_REGEX                           => qr/^MT[DR]?(?=\d+$)/,
-    VIRTUAL_REGEX                       => qr/^VR/,
-    PROFILE_FIELDS_IMMUTABLE_AFTER_AUTH => [
-        sort qw/account_opening_reason citizen date_of_birth first_name last_name place_of_birth
-            residence salutation secret_answer secret_question tax_residence tax_identification_number /,
-    ],
+    MT5_REGEX     => qr/^MT[DR]?(?=\d+$)/,
+    VIRTUAL_REGEX => qr/^VR/,
 };
 
 # this email address should not be added into brand as it is specific to internal system
 my $SUBJECT_RE = qr/(New Sign-Up|Update Address)/;
 
-my $META = __PACKAGE__->meta;    # rose::db::object::manager meta rules. Knows our db structure
+my $META = __PACKAGE__->meta;                        # rose::db::object::manager meta rules. Knows our db structure
 
 my $json = JSON::MaybeXS->new;
 
@@ -1717,38 +1716,49 @@ sub _validate_non_pep_time {
 
 =pod
 
-=head2 immutable_fields
+=head2 validate_fields_immutable
 
-Returns a list of profile fields that cannot be changed regarding client's status and landing company settings (unless they are null).
+check if any fields_immutable is changed
+
+=over 4
+
+=item * $args
+
+Hashref of the input fields
+
+=back
+
+Return {
+    error   => C<error_code>
+    details => C<field>
+}
 
 =cut
 
-sub immutable_fields {
-    my $self = shift;
+sub validate_fields_immutable {
+    my ($self, $args) = @_;
 
-    return qw/residence/ if $self->is_virtual;
+    #fields not allow to change once been set
+    my @fields_immutable =
+        qw/place_of_birth date_of_birth salutation first_name last_name citizen account_opening_reason secret_answer secret_question tax_residence tax_identification_number/;
 
-    my @immutable = grep { $self->$_ } PROFILE_FIELDS_IMMUTABLE_AFTER_AUTH->@*;
-
-    return @immutable if $self->fully_authenticated();
-
-    # the remaining part is for un-authenticated clients only
-
-    my @siblings = $self->user ? $self->user->clients : ($self);
-
-    # initialzed to the list of all available fields, to be shrinked by forthcoming intersecitions
-    my @changeable = @immutable;
-
-    for my $sibling (@siblings) {
-        next if $sibling->is_virtual;
-
-        my $company_settings       = $sibling->landing_company->changeable_fields;
-        my $chnageable_before_auth = $company_settings->{only_before_auth} // [];
-
-        @changeable = intersect(@changeable, @$chnageable_before_auth);
+    for my $field (@fields_immutable) {
+        #if the input field value is differnt from self setting, means it is been changed
+        if ($args->{$field} and $self->$field and ($args->{$field} ne $self->$field)) {
+            if ($self->landing_company->is_field_changeable_before_auth($field)) {
+                return {
+                    error   => 'NoChangeAfterAuth',
+                    details => $field
+                } if $self->fully_authenticated();
+            } else {
+                return {
+                    error   => 'ImmutableField',
+                    details => $field
+                };
+            }
+        }
     }
-
-    return array_minus(@immutable, @changeable);
+    return undef;
 }
 
 =pod
