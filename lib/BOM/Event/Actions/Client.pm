@@ -1123,6 +1123,16 @@ sub _update_client_status {
     _email_client_age_verified($client) if $status_code eq 'age_verification';
 
     $client->status->setnx($status_code, 'system', $args{message});
+    # gb residents cant use demo account while not age verified.
+    # should remove unwelcome status once respective MX or MF marked
+    # as age verified.
+    if ($args{status} eq 'age_verification' and $client->residence eq 'gb') {
+        my $vr_acc = BOM::User::Client->new({loginid => $client->user->bom_virtual_loginid});
+        if ($vr_acc->status->unwelcome and $vr_acc->status->unwelcome->{reason} eq 'Pending proof of age') {
+            $vr_acc->status->clear_unwelcome;
+            $vr_acc->status->set('age_verification', 'system', $args{message}) unless $vr_acc->status->age_verification;
+        }
+    }
 
     # We should sync age verification between allowed landing companies.
     if ($args{sync}) {
