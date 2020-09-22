@@ -443,9 +443,9 @@ subtest 'labuan withdrawal' => sub {
 
     my $mocked_client = Test::MockModule->new(ref($test_client));
     $mocked_client->mock('has_valid_documents', sub { 1 });
-    
+
     BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
-    
+
     $c->call_ok($method, $params)->has_no_error('Withdrawal allowed from labuan mt5 without FA before first deposit');
     cmp_ok $test_client->default_account->balance, '==', 820 + 150 + 50, "Correct balance after withdrawal";
 
@@ -482,10 +482,10 @@ subtest 'labuan withdrawal' => sub {
     cmp_ok $test_client->default_account->balance, '==', 820 + 150 + 100, "Correct balance after withdrawal";
 
     BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
-   
+
     $mocked_client->mock('fully_authenticated', sub { 0 });
     $params->{args}->{from_mt5} = 'MTR' . $ACCOUNTS{'real\labuan_financial_stp'};
-    
+
     $c->call_ok($method, $params)->has_error('request failed when client not authenticated')
         ->error_code_is('MT5WithdrawalError', 'error code is MT5WithdrawalError')
         ->error_message_like(qr/Please authenticate your \w+? account to proceed with the fund transfer/);

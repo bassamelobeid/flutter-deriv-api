@@ -222,8 +222,8 @@ subtest 'get account status' => sub {
                             "further_resubmissions_allowed" => 0,
                             services                        => {
                                 onfido => {
-                                    is_country_supported => 0,
-                                    documents_supported  => []}}
+                                    is_country_supported => 1,
+                                    documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport']}}
                         },
                         needs_verification => [],
                     }
@@ -260,8 +260,8 @@ subtest 'get account status' => sub {
                             "further_resubmissions_allowed" => 0,
                             services                        => {
                                 onfido => {
-                                    is_country_supported => 0,
-                                    documents_supported  => []}}
+                                    is_country_supported => 1,
+                                    documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport']}}
                         },
                         needs_verification => ["document", "identity"],
                     }
@@ -296,8 +296,8 @@ subtest 'get account status' => sub {
                             "further_resubmissions_allowed" => 0,
                             services                        => {
                                 onfido => {
-                                    is_country_supported => 0,
-                                    documents_supported  => []}}
+                                    is_country_supported => 1,
+                                    documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport']}}
                         },
                         needs_verification => [],
                     }
@@ -330,8 +330,8 @@ subtest 'get account status' => sub {
                             "further_resubmissions_allowed" => 0,
                             services                        => {
                                 onfido => {
-                                    is_country_supported => 0,
-                                    documents_supported  => []}}
+                                    is_country_supported => 1,
+                                    documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport']}}
                         },
                         needs_verification => [],
                     }
@@ -373,8 +373,8 @@ subtest 'get account status' => sub {
                             "further_resubmissions_allowed" => 0,
                             services                        => {
                                 onfido => {
-                                    is_country_supported => 0,
-                                    documents_supported  => []}}
+                                    is_country_supported => 1,
+                                    documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport']}}
                         },
                         needs_verification => [],
                     }
@@ -409,8 +409,8 @@ subtest 'get account status' => sub {
                             "further_resubmissions_allowed" => 0,
                             services                        => {
                                 onfido => {
-                                    is_country_supported => 0,
-                                    documents_supported  => []}}
+                                    is_country_supported => 1,
+                                    documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport']}}
                         },
                         needs_verification => [],
                     }
@@ -442,8 +442,8 @@ subtest 'get account status' => sub {
                             "further_resubmissions_allowed" => 0,
                             services                        => {
                                 onfido => {
-                                    is_country_supported => 0,
-                                    documents_supported  => []}}
+                                    is_country_supported => 1,
+                                    documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport']}}
                         },
                         needs_verification => [],
                     }
@@ -477,8 +477,8 @@ subtest 'get account status' => sub {
                             "further_resubmissions_allowed" => 0,
                             services                        => {
                                 onfido => {
-                                    is_country_supported => 0,
-                                    documents_supported  => []}}
+                                    is_country_supported => 1,
+                                    documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport']}}
                         },
                         needs_verification => ["document", "identity"],
                     }
@@ -511,8 +511,8 @@ subtest 'get account status' => sub {
                             "further_resubmissions_allowed" => 0,
                             services                        => {
                                 onfido => {
-                                    is_country_supported => 0,
-                                    documents_supported  => []}}
+                                    is_country_supported => 1,
+                                    documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport']}}
                         },
                         needs_verification => ["document"],
                     }
@@ -546,8 +546,8 @@ subtest 'get account status' => sub {
                             "further_resubmissions_allowed" => 0,
                             services                        => {
                                 onfido => {
-                                    is_country_supported => 0,
-                                    documents_supported  => []}}
+                                    is_country_supported => 1,
+                                    documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport']}}
                         },
                         needs_verification => [],
                     }
@@ -582,8 +582,8 @@ subtest 'get account status' => sub {
                             "further_resubmissions_allowed" => 0,
                             services                        => {
                                 onfido => {
-                                    is_country_supported => 0,
-                                    documents_supported  => []}}
+                                    is_country_supported => 1,
+                                    documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport']}}
                         },
                         needs_verification => ["document", "identity"],
                     }
@@ -621,8 +621,8 @@ subtest 'get account status' => sub {
                             "further_resubmissions_allowed" => 0,
                             services                        => {
                                 onfido => {
-                                    is_country_supported => 0,
-                                    documents_supported  => []}}
+                                    is_country_supported => 1,
+                                    documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport']}}
                         },
                         needs_verification => [],
                     }
@@ -657,8 +657,8 @@ subtest 'get account status' => sub {
                             "further_resubmissions_allowed" => 0,
                             services                        => {
                                 onfido => {
-                                    is_country_supported => 0,
-                                    documents_supported  => []}}
+                                    is_country_supported => 1,
+                                    documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport']}}
                         },
                         needs_verification => [],
                     }
@@ -696,8 +696,8 @@ subtest 'get account status' => sub {
                             "further_resubmissions_allowed" => 0,
                             services                        => {
                                 onfido => {
-                                    is_country_supported => 0,
-                                    documents_supported  => []}}
+                                    is_country_supported => 1,
+                                    documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport']}}
                         },
                         needs_verification => [],
                     }
@@ -737,8 +737,8 @@ subtest 'get account status' => sub {
                             "further_resubmissions_allowed" => 0,
                             services                        => {
                                 onfido => {
-                                    is_country_supported => 0,
-                                    documents_supported  => []}}
+                                    is_country_supported => 1,
+                                    documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport']}}
                         },
                         needs_verification => [],
                     }
@@ -778,8 +778,8 @@ subtest 'get account status' => sub {
                             "further_resubmissions_allowed" => 0,
                             services                        => {
                                 onfido => {
-                                    is_country_supported => 0,
-                                    documents_supported  => []}}
+                                    is_country_supported => 1,
+                                    documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport', 'Residence Permit', 'Visa']}}
                         },
                         needs_verification => ["document", "identity"],
                     }
@@ -813,8 +813,8 @@ subtest 'get account status' => sub {
                             "further_resubmissions_allowed" => 0,
                             services                        => {
                                 onfido => {
-                                    is_country_supported => 0,
-                                    documents_supported  => []}}
+                                    is_country_supported => 1,
+                                    documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport', 'Residence Permit', 'Visa']}}
                         },
                         needs_verification => [],
                     }
@@ -848,8 +848,8 @@ subtest 'get account status' => sub {
                             "further_resubmissions_allowed" => 0,
                             services                        => {
                                 onfido => {
-                                    is_country_supported => 0,
-                                    documents_supported  => []}}
+                                    is_country_supported => 1,
+                                    documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport', 'Residence Permit', 'Visa']}}
                         },
                         needs_verification => ["document", "identity"],
                     }
@@ -886,8 +886,18 @@ subtest 'get account status' => sub {
                             "further_resubmissions_allowed" => 0,
                             services                        => {
                                 onfido => {
-                                    is_country_supported => 0,
-                                    documents_supported  => []}}
+                                    is_country_supported => 1,
+                                    documents_supported  => [
+                                        'Asylum Registration Card',
+                                        'Certificate of Naturalisation',
+                                        'Driving Licence',
+                                        'Home Office Letter',
+                                        'Immigration Status Document',
+                                        'National Identity Card',
+                                        'Passport',
+                                        'Residence Permit',
+                                        'Visa'
+                                    ]}}
                         },
                         needs_verification => ["document", "identity"],
                     }
@@ -928,8 +938,18 @@ subtest 'get account status' => sub {
                             "further_resubmissions_allowed" => 0,
                             services                        => {
                                 onfido => {
-                                    is_country_supported => 0,
-                                    documents_supported  => []}}
+                                    is_country_supported => 1,
+                                    documents_supported  => [
+                                        'Asylum Registration Card',
+                                        'Certificate of Naturalisation',
+                                        'Driving Licence',
+                                        'Home Office Letter',
+                                        'Immigration Status Document',
+                                        'National Identity Card',
+                                        'Passport',
+                                        'Residence Permit',
+                                        'Visa'
+                                    ]}}
                         },
                         needs_verification => ["document"],
                     }
@@ -977,8 +997,8 @@ subtest 'get account status' => sub {
                                 "further_resubmissions_allowed" => 0,
                                 services                        => {
                                     onfido => {
-                                        is_country_supported => 0,
-                                        documents_supported  => []}}
+                                        is_country_supported => 1,
+                                        documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport']}}
                             },
                             needs_verification => [],
                         }
@@ -1048,8 +1068,8 @@ subtest 'get account status' => sub {
                                 further_resubmissions_allowed => 0,
                                 services                      => {
                                     onfido => {
-                                        is_country_supported => 0,
-                                        documents_supported  => []}}
+                                        is_country_supported => 1,
+                                        documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport']}}
                             },
                             needs_verification => ["document", "identity"],
                         }
@@ -1114,8 +1134,8 @@ subtest 'get account status' => sub {
                             further_resubmissions_allowed => 0,
                             services                      => {
                                 onfido => {
-                                    documents_supported  => [],
-                                    is_country_supported => 0
+                                    documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport'],
+                                    is_country_supported => 1
                                 },
                             },
                         },
@@ -1171,8 +1191,8 @@ subtest 'get account status' => sub {
                                 further_resubmissions_allowed => 0,
                                 services                      => {
                                     onfido => {
-                                        is_country_supported => 0,
-                                        documents_supported  => []}}
+                                        is_country_supported => 1,
+                                        documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport']}}
                             },
                             needs_verification => ["document"],
                         }
@@ -1228,8 +1248,8 @@ subtest 'get account status' => sub {
                                     further_resubmissions_allowed => 0,
                                     services                      => {
                                         onfido => {
-                                            is_country_supported => 0,
-                                            documents_supported  => []}}
+                                            is_country_supported => 1,
+                                            documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport']}}
                                 },
                                 needs_verification => ["document"]}
                         },
@@ -1279,8 +1299,8 @@ subtest 'get account status' => sub {
                                     further_resubmissions_allowed => 0,
                                     services                      => {
                                         onfido => {
-                                            is_country_supported => 0,
-                                            documents_supported  => []}}
+                                            is_country_supported => 1,
+                                            documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport']}}
                                 },
                                 document => {
                                     status                          => "none",
@@ -1325,8 +1345,8 @@ subtest 'get account status' => sub {
                             further_resubmissions_allowed => 0,
                             services                      => {
                                 onfido => {
-                                    is_country_supported => 0,
-                                    documents_supported  => []}}
+                                    is_country_supported => 1,
+                                    documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport']}}
                         },
                         needs_verification => ["document", "identity"]}
                 },
@@ -1335,6 +1355,106 @@ subtest 'get account status' => sub {
         };
     };
 
+};
+
+my $test_client_onfido = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    broker_code => 'CR',
+    residence   => 'aq',
+});
+$test_client_onfido->email('sample_onfido@binary.com');
+$test_client_onfido->set_default_account('USD');
+$test_client_onfido->save;
+
+my $user_onfido = BOM::User->create(
+    email    => 'sample_onfido@binary.com',
+    password => $hash_pwd
+);
+
+$user_onfido->add_client($test_client_onfido);
+
+my $test_client_onfido2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    broker_code    => 'CR',
+    place_of_birth => 'id',
+    residence      => 'aq',
+});
+$test_client_onfido2->email('sample_onfido2@binary.com');
+$test_client_onfido2->set_default_account('USD');
+$test_client_onfido2->save;
+
+my $user_onfido2 = BOM::User->create(
+    email    => 'sample_onfido2@binary.com',
+    password => $hash_pwd
+);
+
+$user_onfido2->add_client($test_client_onfido2);
+
+my $token_cr_onfido  = $m->create_token($test_client_onfido->loginid,  'test token');
+my $token_cr_onfido2 = $m->create_token($test_client_onfido2->loginid, 'test token');
+
+subtest "Test onfido is_country_supported" => sub {
+    my $result = $c->tcall($method, {token => $token_cr_onfido});
+    cmp_deeply(
+        $result,
+        {
+            currency_config => {
+                "USD" => {
+                    is_deposit_suspended    => 0,
+                    is_withdrawal_suspended => 0,
+                }
+            },
+            status                        => noneof(qw(authenticated)),
+            risk_classification           => 'low',
+            prompt_client_to_authenticate => '0',
+            authentication                => {
+                document => {
+                    status                          => "none",
+                    "further_resubmissions_allowed" => 0,
+                },
+                identity => {
+                    status                          => "none",
+                    "further_resubmissions_allowed" => 0,
+                    services                        => {
+                        onfido => {
+                            is_country_supported => 0,
+                            documents_supported  => []}}
+                },
+                needs_verification => [],
+            }
+        },
+        'Onfido-unsupported country correct response'
+    );
+
+    $result = $c->tcall($method, {token => $token_cr_onfido2});
+    cmp_deeply(
+        $result,
+        {
+            currency_config => {
+                "USD" => {
+                    is_deposit_suspended    => 0,
+                    is_withdrawal_suspended => 0,
+                }
+            },
+            status                        => noneof(qw(authenticated)),
+            risk_classification           => 'low',
+            prompt_client_to_authenticate => '0',
+            authentication                => {
+                document => {
+                    status                          => "none",
+                    "further_resubmissions_allowed" => 0,
+                },
+                identity => {
+                    status                          => "none",
+                    "further_resubmissions_allowed" => 0,
+                    services                        => {
+                        onfido => {
+                            is_country_supported => 1,
+                            documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport']}}
+                },
+                needs_verification => [],
+            }
+        },
+        'is_country_supported uses POB as priority when checking'
+    );
 };
 
 done_testing();

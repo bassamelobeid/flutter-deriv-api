@@ -859,7 +859,7 @@ sub _get_authentication {
     $authentication_object->{document}{further_resubmissions_allowed} =
         $redis->get(POA_ALLOW_RESUBMISSION_KEY_PREFIX . $client->binary_user_id) // 0;
 
-    my $country_code = uc($client->place_of_birth // '');
+    my $country_code = uc($client->place_of_birth || $client->residence // '');
     $authentication_object->{identity}{services}{onfido}{is_country_supported} = BOM::Config::Onfido::is_country_supported($country_code);
     $authentication_object->{identity}{services}{onfido}{documents_supported} =
         BOM::Config::Onfido::supported_documents_for_country($country_code);
