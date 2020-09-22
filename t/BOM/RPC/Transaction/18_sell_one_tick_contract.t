@@ -1,6 +1,7 @@
 use strict;
 use warnings;
 
+use Test::MockTime::HiRes qw(set_absolute_time);
 use Test::Most;
 use Test::Mojo;
 
@@ -16,7 +17,6 @@ use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use Date::Utility;
 use Postgres::FeedDB;
 use BOM::Transaction;
-use Test::MockTime::HiRes qw(set_absolute_time);
 use BOM::Test::Data::Utility::UnitTestMarketData;
 
 my $expected_result = {
