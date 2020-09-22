@@ -481,6 +481,20 @@ subtest 'buy advert/sell order' => sub {
     is $order->{contact_info}, $contact, 'contact_info';
 };
 
+subtest 'dispute a order' => sub {
+    BOM::Test::Helper::P2P::set_order_disputable($client_client, $order->{id});
+    $t->await::authorize({authorize => $token_client});
+    $resp = $t->await::p2p_order_dispute({
+            p2p_order_dispute => 1,
+            dispute_reason    => 'buyer_not_paid',
+            id                => $order->{id}});
+    test_schema('p2p_order_dispute', $resp);
+
+    is $resp->{p2p_order_dispute}{id}, $order->{id}, 'order id';
+    is $resp->{p2p_order_dispute}{dispute_details}{dispute_reason}, 'buyer_not_paid', 'Dispute reason properly set';
+    is $resp->{p2p_order_dispute}{dispute_details}{disputer_loginid}, $client_client->loginid, 'Client is the disputer';
+};
+
 subtest 'p2p_advert_update' => sub {
 
     $t->await::authorize({authorize => $token_advertiser});
