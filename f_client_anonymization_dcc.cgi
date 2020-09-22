@@ -45,7 +45,7 @@ if ($batch_file) {
     if ($ENV{CONTENT_LENGTH} > MAX_FILE_SIZE) {
         code_exit_BO("ERROR: " . encode_entities($batch_file) . " is too large.");
     }
-    my $csv   = Text::CSV->new({binary => 1});
+    my $csv   = Text::CSV->new();
     my $lines = $csv->getline_all($file);
     $code = BOM::DualControl->new({
             staff           => $clerk,

@@ -90,7 +90,7 @@ if ($transaction_type eq 'Anonymize client') {
     if ($bulk_upload = $input->{bulk_anonymization}) {
         try {
             $file  = $cgi->upload('bulk_anonymization');
-            $csv   = Text::CSV->new({binary => 1});
+            $csv   = Text::CSV->new();
             $lines = $csv->getline_all($file);
         } catch {
             code_exit_BO(_get_display_message("ERROR: " . $@)) if $@;
