@@ -1817,8 +1817,9 @@ use constant {
         buy  => 'sell',
         sell => 'buy',
     },
+    P2P_ORDER_DISPUTED_AT  => 'P2P::ORDER::DISPUTED_AT',
     P2P_STATS_REDIS_PREFIX => 'P2P::ADVERTISER_STATS',
-    P2P_STATS_TTL_IN_DAYS  => 120,                       # days after which to prune redis stats
+    P2P_STATS_TTL_IN_DAYS  => 120,                         # days after which to prune redis stats
 };
 
 =head2 p2p_advertiser_create
@@ -2561,6 +2562,64 @@ sub p2p_escrow {
     return undef;
 }
 
+=head2 p2p_create_order_dispute
+
+Flags the order of $param{id} as disputed.
+Client should be either buyer or seller for this order.
+Only applies to the following states: C<timed-out>, C<pending>, C<buyer-confirmed>.
+Although for C<pending> and C<buyer-confirmed> it should be already expired.
+If successful, a redis hash is set to keep the dispute time.
+
+It takes the following named arguments:
+
+=over 4
+
+=item * C<id> - the p2p order id being disputed
+
+=item * C<dispute_reason> - the dispute reason (predefined at websocket layer, although DB field is TEXT)
+
+=back 
+
+Returns the content of the order as parsed by C<_order_details>.
+
+=cut
+
+sub p2p_create_order_dispute {
+    my ($self, %param) = @_;
+
+    my $id             = $param{id} // die +{error_code => 'OrderNotFound'};
+    my $dispute_reason = $param{dispute_reason};
+    my $order          = $self->_p2p_orders(id => $id)->[0];
+    die +{error_code => 'OrderNotFound'} unless $order;
+
+    my $side = _order_ownership_type($self, $order);
+    die +{error_code => 'OrderNotFound'} unless $side;
+
+    # Some reasons may apply only to buyer/seller
+    my $buyer = 1;
+    $buyer = 0 if $side eq 'advertiser' and $order->{type} eq 'buy';
+    $buyer = 0 if $side eq 'client'     and $order->{type} eq 'sell';
+    die +{error_code => 'InvalidReasonForBuyer'}  if $buyer     and $dispute_reason eq 'buyer_not_paid';
+    die +{error_code => 'InvalidReasonForSeller'} if not $buyer and $dispute_reason eq 'seller_not_released';
+
+    # We allow buyer-confirmed due to FE relying on expire_time to show complain button.
+    die +{error_code => 'OrderUnderDispute'} if $order->{status} eq 'disputed';
+    die +{error_code => 'InvalidFinalStateForDispute'}
+        if grep { $order->{status} eq $_ } qw/completed refunded cancelled dispute-completed dispute-refunded/;
+    die +{error_code => 'InvalidStateForDispute'} unless grep { $order->{status} eq $_ } qw/timed-out buyer-confirmed/;
+    # Confirm the order is expired
+    die +{error_code => 'InvalidStateForDispute'} unless $order->{is_expired};
+
+    my $updated_order = $self->db->dbic->run(
+        fixup => sub {
+            $_->selectrow_hashref('SELECT * FROM p2p.create_order_dispute(?, ?, ?)', undef, $id, $dispute_reason, $self->loginid);
+        });
+
+    my $p2p_redis = BOM::Config::Redis->redis_p2p_write();
+    $p2p_redis->hset(P2P_ORDER_DISPUTED_AT, $order->{id}, Date::Utility->new()->epoch);
+    return $self->_order_details([$updated_order])->[0];
+}
+
 =head1 Non-RPC P2P methods
 
 The methods below are not called by RPC and, therefore, they are not needed to die in the 'P2P way'.
@@ -2899,6 +2958,7 @@ sub _p2p_validate_buyer_confirm {
 
     die +{error_code => 'OrderAlreadyConfirmedBuyer'}    if $order->{status} eq 'buyer-confirmed';
     die +{error_code => 'OrderAlreadyConfirmedTimedout'} if $order->{status} eq 'timed-out';
+    die +{error_code => 'OrderUnderDispute'}             if $order->{status} eq 'disputed';
     die +{error_code => 'OrderConfirmCompleted'}         if $order->{status} ne 'pending';
 
     return;
@@ -2925,7 +2985,7 @@ sub _p2p_validate_seller_confirm {
     my ($self, $order) = @_;
 
     die +{error_code => 'OrderNotConfirmedPending'} if $order->{status} eq 'pending';
-    die +{error_code => 'OrderConfirmCompleted'}    if $order->{status} !~ /^(buyer-confirmed|timed-out)$/;
+    die +{error_code => 'OrderConfirmCompleted'}    if $order->{status} !~ /^(buyer-confirmed|timed-out|disputed)$/;
 
     return;
 }
@@ -3049,6 +3109,12 @@ sub _order_details {
     my @results;
 
     for my $order (@$list) {
+        # The following mapping for dispute statuses is temporary
+        # when FE implements these statuses this mapping could be dropped
+        $order->{status} = 'timed-out' if $order->{status} eq 'disputed';
+        $order->{status} = 'refunded'  if $order->{status} eq 'dispute-refunded';
+        $order->{status} = 'completed' if $order->{status} eq 'dispute-completed';
+
         my $result = +{
             account_currency   => $order->{account_currency},
             created_time       => Date::Utility->new($order->{created_time})->epoch,
@@ -3087,7 +3153,12 @@ sub _order_details {
                 type           => $order->{advert_type},
                 payment_method => $order->{advert_payment_method},
             },
+            dispute_details => {
+                dispute_reason   => $order->{dispute_reason},
+                disputer_loginid => $order->{disputer_loginid},
+            },
         };
+
         push @results, $result;
     }
 

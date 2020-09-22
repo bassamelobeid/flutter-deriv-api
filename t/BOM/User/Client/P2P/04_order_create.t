@@ -162,6 +162,10 @@ subtest 'Creating new buy order' => sub {
             last_name  => 'smith',
             loginid    => $advertiser->loginid,
         },
+        dispute_details => {
+            dispute_reason   => undef,
+            disputer_loginid => undef,
+        },
     };
     cmp_deeply($new_order, $expected_order, 'order_create expected response');
     cmp_deeply($client->p2p_order_list, [$expected_order], 'order_list() returns correct info');
