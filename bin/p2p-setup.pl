@@ -10,7 +10,8 @@ p2p-setup.pl - prepares environment for P2P testing.
 
     p2p-setup.pl
     p2p-setup.pl -r     # resets the list of clients allowed to access P2P
-    p2p-setup.pl -o     # creates an order
+    p2p-setup.pl -o     # creates some orders
+    p2p-setup.pl -d     # create some disputed orders
 
 =head1 DESCRIPTION
 
@@ -63,6 +64,7 @@ $SIG{__DIE__} = sub {
 GetOptions(
     "r|reset-clients" => \(my $reset_clients = 0),
     "s|sendbird" => \(my $use_sendbird = 0),
+    "d|disputes" => \(my $disputes = 0),
     "o|order" => \(my $create_order = 0),
 );
 
@@ -286,7 +288,6 @@ my $advert_sell = $advertiser->p2p_advert_create(
 );
 
 # ===== Orders Create =====
-
 if ($create_order) {
     section_title('Creating Buy Order');
 
@@ -333,6 +334,27 @@ if ($create_order) {
     );
 
     $log->infof('Sell Order info: %s', $order_sell);
+}
+
+# ===== Create disputes =====
+if ($disputes) {
+    section_title('Creating Disputes');
+
+    for((1..3)) {
+        my $order_buy = $client->p2p_order_create(
+            advert_id => $advert_sell->{id},
+            amount    => $advert_sell->{min_order_amount}
+        );
+
+        $client->db->dbic->dbh->do("UPDATE p2p.p2p_order SET status = 'timed-out',  expire_time = NOW() - INTERVAL '1 day' WHERE id = " . $order_buy->{id});
+
+        my $response = $client->p2p_create_order_dispute(
+            id                   => $order_buy->{id},
+            dispute_reason       => 'seller_release_none',
+        );
+
+        $log->infof('Dispute info: %s', $response);
+    }
 }
 
 section_title('Success!');
