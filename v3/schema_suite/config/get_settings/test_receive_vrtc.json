@@ -1,4 +1,4 @@
-   {
+{
    "$schema" : "http://json-schema.org/draft-04/schema#",
    "description" : null,
    "type" : "object",
@@ -10,16 +10,13 @@
    ],
    "properties" : {
       "get_settings" : {
-         "type" : "object",
-         "additionalProperties" : null,
          "required" : [
             "email_consent",
             "country",
             "email",
-            "country_code",
-            "user_hash",
-            "immutable_fields"
+            "country_code"
          ],
+         "type" : "object",
          "properties" : {
             "email_consent" : {
                "pattern" : "^(0|1)$",
@@ -29,25 +26,12 @@
                "type" : "string",
                "pattern" : "^[_1]$"
             },
-            "residence" : {
-               "type" : "string",
-               "pattern" : "^[_1]$"
-            },
             "email" : {
                "type" : "string"
             },
             "country_code" : {
                "type" : "string",
                "pattern" : "^[_2]$"
-            },
-            "user_hash": {
-               "type": "string"
-            },
-            "immutable_fields" : {
-               "type" : "array",
-               "items" : {
-                  "type" : "string"
-               }
             }
          }
       },
