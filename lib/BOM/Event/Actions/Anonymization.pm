@@ -176,6 +176,8 @@ Possible error_codes for now are:
 
 =item * anonymizationFailed
 
+=item * activeClient
+
 =back
 
 =cut
@@ -187,39 +189,41 @@ sub _anonymize {
         my $client = BOM::User::Client->new({loginid => $loginid});
         return "clientNotFound" unless ($client);
         $user = $client->user;
+        return "userNotFound" unless $user;
         return "userAlreadyAnonymized" if $user->email =~ /\@deleted\.binary\.user$/;
         return "activeClient" unless ($user->valid_to_anonymize);
-        @clients_hashref = $client->anonymize_associated_user_return_list_of_siblings();
-        return "userNotFound" unless (@clients_hashref);
+        @clients_hashref = $client->user->clients;
         # Anonymize data for all the user's clients
         foreach my $cli (@clients_hashref) {
-            $client = BOM::User::Client->new({loginid => $cli->{v_loginid}});
-            return "clientNotFound" unless ($client);
-
             # Skip mt5 because we dont want to anonymize third parties yet
-            next if $client->is_mt5;
+            next if $cli->is_mt5;
+            # Skip if client already anonymized
+            next if $cli->email =~ /\@deleted\.binary\.user$/;
             # Delete documents from S3 because after anonymization the filename will be changed.
-            $client->remove_client_authentication_docs_from_S3();
+            $cli->remove_client_authentication_docs_from_S3();
             # Remove Experian reports if any
-            if ($client->residence eq 'gb') {
+            if ($cli->residence eq 'gb') {
                 my $prove = BOM::Platform::ProveID->new(
-                    client        => $client,
+                    client        => $cli,
                     search_option => 'ProveID_KYC'
                 );
-                BOM::Platform::ProveID->new(client => $client)->delete_existing_reports()
-                    if ($prove->has_saved_xml || ($client->status->proveid_requested && !$client->status->proveid_pending));
+                BOM::Platform::ProveID->new(client => $cli)->delete_existing_reports()
+                    if ($prove->has_saved_xml || ($cli->status->proveid_requested && !$cli->status->proveid_pending));
             }
             # Set client status to disabled to prevent user from doing any future actions
-            $client->status->setnx('disabled', 'system', 'Anonymized client');
+
+            $cli->status->setnx('disabled', 'system', 'Anonymized client');
 
             # Remove all user tokens
             my $token = BOM::Platform::Token::API->new;
-            $token->remove_by_loginid($client->loginid);
+            $token->remove_by_loginid($cli->loginid);
 
-            $client->anonymize_client();
+            $cli->anonymize_client();
         }
-    } catch {
+        return "userNotFound" unless $client->anonymize_associated_user_return_list_of_siblings();
+    } catch ($error) {
         exception_logged();
+        $log->errorf('Anonymization failed: %s', $error);
         return "anonymizationFailed";
     }
     return "successful";
