@@ -28,6 +28,7 @@ sub get_self_exclusion_form {
         $limit_7day_losses,   $limit_session_duration, $limit_exclude_until, $limit_30day_turnover, $limit_30day_losses,
         $limit_timeout_until, $limit_max_deposit,      $limit_max_deposit_end_date
     );
+
     my $self_exclusion = $client->get_self_exclusion;
     my $se_map         = '{}';
     if ($self_exclusion) {
@@ -839,7 +840,7 @@ sub get_payment_agent_registration_form {
         },
         'validation' => [{
                 'type'    => 'regexp',
-                'regexp'  => '^(?![+-])(?:[1-9]\d*|0)?(?:.\d+)?$',
+                'regexp'  => '^(?![+-])(?:[1-9][0-9]*|0)?(?:\.[0-9]+)?$',
                 'err_msg' => 'Please enter a positive numeric value.',
             },
         ],
@@ -862,7 +863,7 @@ sub get_payment_agent_registration_form {
         },
         'validation' => [{
                 'type'    => 'regexp',
-                'regexp'  => '^(?![+-])(?:[1-9]\d*|0)?(?:.\d+)?$',
+                'regexp'  => '^(?![+-])(?:[1-9][0-9]*|0)?(?:\.[0-9]+)?$',
                 'err_msg' => 'Please enter a positive numeric value.',
             },
         ],
