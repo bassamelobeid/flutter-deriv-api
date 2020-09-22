@@ -330,6 +330,7 @@ sub actions_config {
         ['p2p_advertiser_adverts'],
         ['p2p_advertiser_stats'],
         ['p2p_chat_create'],
+        ['p2p_order_dispute'],
     ];
 }
 

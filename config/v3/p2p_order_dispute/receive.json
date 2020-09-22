@@ -1,16 +1,16 @@
 {
     "$schema": "http://json-schema.org/draft-04/schema#",
-    "title": "P2P Order Create (response)",
-    "description": "The information about the created P2P order.",
+    "title": "P2P Order Dispute (response)",
+    "description": "Result of the P2P order disputing.",
     "type": "object",
     "required": [
         "echo_req",
         "msg_type"
     ],
     "properties": {
-        "p2p_order_create": {
-            "title": "p2p_order_create",
-            "description": "Information of the creates P2P order.",
+        "p2p_order_dispute": {
+            "title": "p2p_order_dispute",
+            "description": "Details of the disputed order.",
             "type": "object",
             "additionalProperties": false,
             "required": [
@@ -94,7 +94,10 @@
                     "properties": {
                         "first_name": {
                             "description": "The advertiser's first name.",
-                            "type": "string"
+                            "type": [
+                                "null",
+                                "string"
+                            ]
                         },
                         "id": {
                             "description": "The advertiser's unique identifier.",
@@ -102,7 +105,10 @@
                         },
                         "last_name": {
                             "description": "The advertiser's last name.",
-                            "type": "string"
+                            "type": [
+                                "null",
+                                "string"
+                            ]
                         },
                         "loginid": {
                             "description": "The advertiser's account identifier.",
@@ -141,7 +147,10 @@
                     "properties": {
                         "first_name": {
                             "description": "The client's first name.",
-                            "type": "string"
+                            "type": [
+                                "null",
+                                "string"
+                            ]
                         },
                         "id": {
                             "description": "The client's unique P2P identifier.",
@@ -149,7 +158,10 @@
                         },
                         "last_name": {
                             "description": "The client's last name.",
-                            "type": "string"
+                            "type": [
+                                "null",
+                                "string"
+                            ]
                         },
                         "loginid": {
                             "description": "The client's account identifier.",
@@ -181,17 +193,11 @@
                     "properties": {
                         "dispute_reason": {
                             "description": "The dispute reason",
-                            "type": [
-                                "null",
-                                "string"
-                            ]
+                            "type": "string"
                         },
                         "disputer_loginid": {
                             "description": "The loginid of the client who's raising the dispute",
-                            "type": [
-                                "null",
-                                "string"
-                            ]
+                            "type": "string"
                         }
                     }
                 },
@@ -240,35 +246,27 @@
                     "type": "string"
                 },
                 "status": {
-                    "description": "The status of the created order.",
+                    "description": "Current order status.",
                     "type": "string",
                     "enum": [
-                        "pending"
+                        "pending",
+                        "buyer-confirmed",
+                        "cancelled",
+                        "timed-out",
+                        "blocked",
+                        "refunded",
+                        "completed",
+                        "disputed",
+                        "dispute-refunded",
+                        "dispute-completed"
                     ]
                 },
                 "type": {
-                    "description": "Type of the order.",
+                    "description": "Whether this is a buy or a sell.",
                     "type": "string",
                     "enum": [
                         "buy",
                         "sell"
-                    ]
-                }
-            }
-        },
-        "subscription": {
-            "title": "Subscription information",
-            "description": "For subscription requests only.",
-            "type": "object",
-            "required": [
-                "id"
-            ],
-            "properties": {
-                "id": {
-                    "description": "A per-connection unique identifier. Can be passed to the `forget` API call to unsubscribe.",
-                    "type": "string",
-                    "examples": [
-                        "c84a793b-8a87-7999-ce10-9b22f7ceead3"
                     ]
                 }
             }
@@ -281,7 +279,7 @@
             "description": "Action name of the request made.",
             "type": "string",
             "enum": [
-                "p2p_order_create"
+                "p2p_order_dispute"
             ]
         },
         "req_id": {
