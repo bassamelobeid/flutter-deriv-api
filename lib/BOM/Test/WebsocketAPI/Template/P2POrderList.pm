@@ -75,7 +75,10 @@ rpc_response {
                     last_name  => $_->p2p_order->client_last_name,
                     loginid    => $_->p2p_order->client_loginid,
                 },
-            }]};
+                dispute_details => {
+                    dispute_reason   => $_->p2p_order->dispute_reason,
+                    disputer_loginid => $_->p2p_order->disputer_loginid,
+                }}]};
 };
 
 publish p2p => sub {
@@ -123,6 +126,10 @@ publish p2p => sub {
                 last_name  => $_->p2p_order->client_last_name,
                 loginid    => $_->p2p_order->client_loginid,
             },
+            dispute_details => {
+                dispute_reason   => $_->p2p_order->dispute_reason,
+                disputer_loginid => $_->p2p_order->disputer_loginid,
+            }
             },
     };
 };

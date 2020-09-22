@@ -128,6 +128,8 @@ struct P2POrder => [qw(
         payment_info
         payment_method
         chat_channel_url
+        dispute_reason
+        disputer_loginid
         )];
 
 struct P2PAdvertiser => [qw(
@@ -327,6 +329,8 @@ for my $type (qw(buy sell)) {
             payment_info          => 'Payment Information',
             payment_method        => 'bank_transfer',
             chat_channel_url      => 'chatty channel',
+            dispute_reason        => undef,
+            disputer_loginid      => undef,
         );
     }
 }

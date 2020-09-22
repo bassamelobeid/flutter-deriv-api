@@ -173,6 +173,24 @@ sub bypass_sendbird {
         });
 }
 
+=head2 set_order_disputable
+
+Given a p2p order, it updates any requirement needed to be ready for dispute.
+
+=cut
+
+sub set_order_disputable {
+    my ($client, $order_id) = @_;
+
+    expire_order($client, $order_id);
+
+    # Status needs to be `timed-out`
+    $client->db->dbic->run(
+        fixup => sub {
+            $_->selectrow_hashref('SELECT * FROM p2p.order_update(?, ?)', undef, $order_id, 'timed-out');
+        });
+}
+
 sub purge_redis {
     BOM::Config::Redis->redis_p2p_write()->flushdb();
 }
