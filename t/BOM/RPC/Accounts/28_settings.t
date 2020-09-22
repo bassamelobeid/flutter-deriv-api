@@ -248,7 +248,6 @@ subtest 'get settings' => sub {
             'user_hash'                      => hmac_sha256_hex($user_cr->email, BOM::Config::third_party()->{elevio}->{account_secret}),
             'has_secret_answer'              => 1,
             'non_pep_declaration'            => 1,
-            'immutable_fields'               => ['residence', 'secret_answer', 'secret_question'],
         });
 
     $params->{token} = $token;
@@ -258,13 +257,12 @@ subtest 'get settings' => sub {
     is_deeply(
         $c->tcall($method, $params),
         {
-            'email'            => 'abcd@binary.com',
-            'country'          => 'Indonesia',
-            'residence'        => 'Indonesia',
-            'country_code'     => 'id',
-            'email_consent'    => '0',
-            'user_hash'        => hmac_sha256_hex($user2->email, BOM::Config::third_party()->{elevio}->{account_secret}),
-            'immutable_fields' => ['residence']
+            'email'         => 'abcd@binary.com',
+            'country'       => 'Indonesia',
+            'residence'     => 'Indonesia',
+            'country_code'  => 'id',
+            'email_consent' => '0',
+            'user_hash'     => hmac_sha256_hex($user2->email, BOM::Config::third_party()->{elevio}->{account_secret}),
         },
         'vr client return less messages when it does not have real sibling'
     );
@@ -301,59 +299,46 @@ subtest 'get settings' => sub {
             'user_hash'                      => hmac_sha256_hex($user->email, BOM::Config::third_party()->{elevio}->{account_secret}),
             'has_secret_answer'              => 1,
             'non_pep_declaration'            => 0,
-            'immutable_fields'               => ['residence'],
         },
         'vr client return real account information when it has sibling'
     );
 
     $params->{token} = $token_cr_3;
     $result = $c->tcall($method, $params);
-    my $expected = {
-        'country'                        => 'Indonesia',
-        'residence'                      => 'Indonesia',
-        'salutation'                     => 'MR',
-        'is_authenticated_payment_agent' => '1',
-        'country_code'                   => 'id',
-        'date_of_birth'                  => '267408000',
-        'address_state'                  => 'LA',
-        'address_postcode'               => '232323',
-        'phone'                          => '+15417543010',
-        'last_name'                      => 'pItT',
-        'email'                          => 'sample@binary.com',
-        'address_line_2'                 => '301',
-        'address_city'                   => 'Beverly Hills',
-        'address_line_1'                 => 'Civic Center',
-        'first_name'                     => 'bRaD',
-        'email_consent'                  => '0',
-        'allow_copiers'                  => '0',
-        'client_tnc_status'              => '',
-        'place_of_birth'                 => undef,
-        'tax_residence'                  => undef,
-        'tax_identification_number'      => undef,
-        'account_opening_reason'         => undef,
-        'request_professional_status'    => 0,
-        'citizen'                        => 'at',
-        'user_hash'                      => hmac_sha256_hex($user_cr->email, BOM::Config::third_party()->{elevio}->{account_secret}),
-        'has_secret_answer'              => 1,
-        'non_pep_declaration'            => 1,
-        'immutable_fields'               => ['residence', 'secret_answer', 'secret_question'],
-    };
-    is_deeply($result, $expected, 'return 1 for authenticated payment agent');
+    is_deeply(
+        $result,
+        {
+            'country'                        => 'Indonesia',
+            'residence'                      => 'Indonesia',
+            'salutation'                     => 'MR',
+            'is_authenticated_payment_agent' => '1',
+            'country_code'                   => 'id',
+            'date_of_birth'                  => '267408000',
+            'address_state'                  => 'LA',
+            'address_postcode'               => '232323',
+            'phone'                          => '+15417543010',
+            'last_name'                      => 'pItT',
+            'email'                          => 'sample@binary.com',
+            'address_line_2'                 => '301',
+            'address_city'                   => 'Beverly Hills',
+            'address_line_1'                 => 'Civic Center',
+            'first_name'                     => 'bRaD',
+            'email_consent'                  => '0',
+            'allow_copiers'                  => '0',
+            'client_tnc_status'              => '',
+            'place_of_birth'                 => undef,
+            'tax_residence'                  => undef,
+            'tax_identification_number'      => undef,
+            'account_opening_reason'         => undef,
+            'request_professional_status'    => 0,
+            'citizen'                        => 'at',
+            'user_hash'                      => hmac_sha256_hex($user_cr->email, BOM::Config::third_party()->{elevio}->{account_secret}),
+            'has_secret_answer'              => 1,
+            'non_pep_declaration'            => 1,
+        },
+        'return 1 for authenticated payment agent'
+    );
 
-    $test_client_cr_3->set_authentication('ID_DOCUMENT')->status('pass');
-    $test_client_cr_3->save;
-    ok $test_client_cr_3->fully_authenticated, 'client is authenticated';
-    $result = $c->tcall($method, $params);
-    $expected->{immutable_fields} =
-        ['citizen', 'date_of_birth', 'first_name', 'last_name', 'residence', 'salutation', 'secret_answer', 'secret_question'];
-    is_deeply($result, $expected, 'immutable fields changed after authentication');
-    $test_client_cr_3->set_authentication('ID_DOCUMENT')->status('fail');
-    $test_client_cr_3->save;
-
-    ok !$test_client_cr_3->fully_authenticated, 'authentication is removed';
-    $result = $c->tcall($method, $params);
-    $expected->{immutable_fields} = ['residence', 'secret_answer', 'secret_question'];
-    is_deeply($result, $expected, 'immutable fields changed back to pre-authentication list');
 };
 
 $method = 'set_settings';
