@@ -51,7 +51,7 @@ my %event_queue_mapping = (
     bulk_anonymization          => 'ANONYMIZATION_QUEUE',
 );
 
-my $config = LoadFile($ENV{BOM_TEST_REDIS_EVENTS} // '/etc/rmg/redis-events.yml');
+my $config = LoadFile('/etc/rmg/redis-events.yml');
 
 my $connections = {};
 

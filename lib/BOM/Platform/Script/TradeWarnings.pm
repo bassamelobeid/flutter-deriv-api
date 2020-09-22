@@ -108,7 +108,7 @@ sub _db {
 }
 
 sub _redis {
-    my $config = YAML::XS::LoadFile($ENV{BOM_TEST_REDIS_REPLICATED} // '/etc/rmg/chronicle.yml');
+    my $config = YAML::XS::LoadFile('/etc/rmg/chronicle.yml');
     return RedisDB->new(
         host     => $config->{write}->{host},
         port     => $config->{write}->{port},

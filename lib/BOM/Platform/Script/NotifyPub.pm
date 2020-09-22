@@ -145,7 +145,7 @@ sub _db {
 }
 
 sub _redis {
-    my $config = YAML::XS::LoadFile($ENV{BOM_TEST_REDIS_TRANSACTION} // '/etc/rmg/redis-transaction.yml');
+    my $config = YAML::XS::LoadFile('/etc/rmg/redis-transaction.yml');
     # NOTICE
     # RedisDB has a weird behavior: Regardless the published string is encoded to utf8  or not, the listener always get the string that encoded to utf8.
     # Please revert to https://trello.com/c/SjSUWoQ1/7669-48-encoding-on-notifypub
