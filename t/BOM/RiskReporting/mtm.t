@@ -8,6 +8,8 @@ use Test::MockModule;
 use Test::Warnings qw/warning/;
 use File::Spec;
 use Path::Tiny;
+use Log::Any::Test;
+use Log::Any qw($log);
 
 use Email::Address::UseXS;
 use BOM::Test::Email qw/mailbox_clear mailbox_search/;
@@ -72,7 +74,7 @@ foreach my $symbol (keys %date_string) {
 }
 
 subtest 'realtime report generation' => sub {
-    plan tests => 11;
+    plan tests => 13;
 
     mailbox_clear();
 
@@ -159,8 +161,20 @@ subtest 'realtime report generation' => sub {
     $mocked_system->mock('on_production', sub { 1 });
 
     my $results;
+    my $marked = BOM::RiskReporting::MarkedToModel->new(
+        end         => $now,
+        send_alerts => 0
+    );
+
+    # It's quite hard to test this function in unit test env, because there's only one clientdb
+    # When we create db in BOM::Database::ClientDB we specifically select svg as domain name for unit tests
+    my $client_dbs  = $marked->all_client_dbs;
+    my $domain_name = $client_dbs->[0]{domain};
+    is(@$client_dbs, 1,     'There is one database for unit tests');
+    is($domain_name, 'svg', 'Unit test database name');
+
     warning {
-        lives_ok { $results = BOM::RiskReporting::MarkedToModel->new(end => $now, send_alerts => 0)->generate } 'Report generation does not die.';
+        lives_ok { $results = $marked->generate } 'Report generation does not die.';
     };
 
     note 'This may not be checking what you think.  It can not tell when things sold.';
@@ -185,7 +199,22 @@ subtest 'realtime report generation' => sub {
         my $is_sold = $fmb->is_sold // 0;
         is($is_sold, $is_sold[$index], "fmb $fmbs[$index]{fmb_id} is_sold value should be $is_sold[$index]");
     }
+
     done_testing;
 };
+
+subtest 'Client db connection failure' => sub {
+    my $mocked_client = Test::MockModule->new('BOM::Database::ClientDB');
+    $mocked_client->mock('new', sub { die 'Connection failed' });
+
+    my $marked = BOM::RiskReporting::MarkedToModel->new();
+
+    my $client_dbs = $marked->all_client_dbs;
+    my @msgs       = grep { $_->{level} eq 'error' } $log->msgs->@*;
+    is(scalar @msgs, 5, 'Connection fails on all 5 brokers');
+    $log->contains_ok(qr/Clientdb connection failed. Skipping CR/, 'CR is among skipped dbs');
+    done_testing;
+};
+
 done_testing;
 

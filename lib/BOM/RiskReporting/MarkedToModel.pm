@@ -43,19 +43,36 @@ use BOM::Backoffice::Request;
 use ExchangeRates::CurrencyConverter qw (in_usd);
 use BOM::Transaction;
 use BOM::Transaction::Utility;
+use List::Util qw(max);
+use Log::Any qw($log);
+use Log::Any::Adapter ('Stderr', log_level => $ENV{RISKD_LOG_LEVEL} // 'info');
 
 use constant SECONDS_PAST_CONTRACT_EXPIRY => 15;
 
 # This report will only be run on the MLS.
 sub generate {
-    my $self = shift;
-
+    my $self         = shift;
     my $pricing_date = $self->end;
+    my $client_dbs   = $self->all_client_dbs;
+    die 'No client db is available' if scalar @$client_dbs == 0;
 
-    my $open_bets_ref = $self->live_open_bets;
-    my @keys          = keys %{$open_bets_ref};
+    my %open_bets = ();
+    for my $client_db (@$client_dbs) {
+        $log->tracef('Getting contracts on %s', $client_db->{database});
+        my $db_open_bets = $self->open_bets_of($client_db);
+        @open_bets{keys %$db_open_bets} = values %$db_open_bets;
+    }
 
-    my $open_bets_expired_ref;
+    my $settlement_result = $self->check_open_bets(\%open_bets, $pricing_date);
+
+    $log->debugf('Settlement result: %s', $settlement_result);
+    return $settlement_result;
+}
+
+sub check_open_bets {
+    my ($self, $open_bets_ref, $pricing_date) = @_;
+    my @keys                  = keys %$open_bets_ref;
+    my $open_bets_expired_ref = {};
 
     my $howmany = scalar @keys;
     my %totals  = (
@@ -78,9 +95,8 @@ sub generate {
     # Before starting pricing we'd like to make sure we'll have the ticks we need.
     # They'll all still be priced at that second, though.
     # Let's nap!
-    while ($pricing_date->epoch + 5 > time) {
-        sleep 1;
-    }
+    sleep max(5 - (time - $pricing_date->epoch), 0);
+
     my $dbic = $self->_db->dbic;
     try {
         # There is side-effect in block, so I use ping mode here.

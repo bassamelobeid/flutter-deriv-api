@@ -22,6 +22,8 @@ use ExchangeRates::CurrencyConverter qw(in_usd);
 
 use LandingCompany::Registry;
 use Format::Util::Numbers qw/financialrounding/;
+use Log::Any qw($log);
+use Syntax::Keyword::Try;
 
 local $\ = undef;    # Sigh.
 
@@ -41,6 +43,19 @@ has send_alerts => (
 
 has client => (
     is => 'rw',
+);
+
+=head2 client_dbs
+
+A hash reference of all client dbs. It's been created by going through the brokers.
+Multiple brokers on the same clientdb are excluded.
+
+=cut
+
+has all_client_dbs => (
+    is         => 'ro',
+    isa        => 'ArrayRef',
+    lazy_build => 1,
 );
 
 sub _db_broker_code {
@@ -104,15 +119,50 @@ sub _db_write {
         })->db;
 }
 
-has live_open_bets => (
-    isa        => 'HashRef',
-    is         => 'ro',
-    lazy_build => 1,
-);
+sub _build_all_client_dbs {
+    my $clients_dbs       = [];
+    my @all_brokers_codes = LandingCompany::Registry::all_broker_codes();
+    my %visited_brokers;
+    @visited_brokers{@all_brokers_codes} = ();
 
-sub _build_live_open_bets {
-    my $self = shift;
-    return $self->_db->dbic->run(fixup => sub { $_->selectall_hashref(qq{ SELECT * FROM accounting.get_live_open_bets() }, 'id') });
+    for my $broker (@all_brokers_codes) {
+        # Here we want to get unique clientdbs of all brokers
+        # There might be more than one broker on a client db
+        next unless exists $visited_brokers{$broker};
+        next if LandingCompany::Registry->get_by_broker($broker)->is_virtual;
+
+        my ($clientdb, $brokers_on_this_db);
+        try {
+            $clientdb = BOM::Database::ClientDB->new({
+                    broker_code => $broker,
+                    operation   => 'replica'
+                }
+                )->db
+                || die "Client db creation returned undefined on $broker";
+            $brokers_on_this_db =
+                $clientdb->dbic->run(fixup => sub { $_->selectall_hashref('SELECT * FROM betonmarkets.broker_code', 'broker_code') });
+        } catch {
+            $log->errorf('Clientdb connection failed. Skipping %s: %s', $broker, $@);
+            delete $visited_brokers{$broker};
+            next;
+        }
+        delete @visited_brokers{keys %$brokers_on_this_db};
+        push(@$clients_dbs, $clientdb);
+    }
+    return $clients_dbs;
+}
+
+=head2 open_bets_of
+
+Accpets a broker name and returns all open bets on the broker's clientdb
+
+=cut
+
+sub open_bets_of {
+    my ($self, $client_db) = @_;
+    my $query  = q{ SELECT * FROM get_live_open_bets() };
+    my $result = $client_db->dbic->run(fixup => sub { $_->selectall_hashref($query, 'id') });
+    return $result;
 }
 
 sub historical_open_bets {

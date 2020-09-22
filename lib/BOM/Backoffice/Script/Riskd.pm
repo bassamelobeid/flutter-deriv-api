@@ -11,6 +11,9 @@ use BOM::RiskReporting::MarkedToModel;
 use DataDog::DogStatsd::Helper qw(stats_gauge);
 use Syntax::Keyword::Try;
 
+use Log::Any qw($log);
+use Log::Any::Adapter ('Stderr', log_level => $ENV{RISKD_LOG_LEVEL} // 'info');
+
 use constant INTERVAL => 37;
 
 has rest_period => (
@@ -51,6 +54,7 @@ sub run {
         %old_msgs = %msgs;
         %msgs     = ();
         try {
+            $log->trace('Running Riskd::generate', scalar localtime);
             BOM::RiskReporting::MarkedToModel->new->generate;
             $self->send_log('MTM');
         } catch {
