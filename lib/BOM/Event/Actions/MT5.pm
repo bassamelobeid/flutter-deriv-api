@@ -38,21 +38,6 @@ use BOM::User::Utility qw(parse_mt5_group);
 use constant DAYS_TO_EXPIRE => 14;
 use constant SECONDS_IN_DAY => 86400;
 
-{
-    my $redis_mt5user;
-
-    # Provides an instance for communicating with the Onfido web API.
-    # Since we're adding this to our event loop, it's a singleton - we
-    # don't want to leak memory by creating new ones for every event.
-    sub _redis_mt5user_write {
-        return $redis_mt5user //= do {
-            my $loop = IO::Async::Loop->new;
-            $loop->add(my $redis = Net::Async::Redis->new(uri => BOM::Config::Redis::redis_config('mt5_user', 'write')->{uri}));
-            $redis;
-        }
-    }
-}
-
 =head2 sync_info
 
 Sync user information to MT5
