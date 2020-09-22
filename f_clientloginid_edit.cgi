@@ -500,6 +500,12 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
 
         $client->save;
         $client->update_status_after_auth_fa();
+        # Remove unwelcome status from MX client once it fully authenticated
+        $client->status->clear_unwelcome
+            if ($client->residence eq 'gb'
+            and $client->landing_company->short eq 'iom'
+            and $client->fully_authenticated
+            and $client->status->unwelcome);
     }
     if ($input{age_verification} and not $client->is_virtual) {
         my @allowed_lc_to_sync = @{$client->landing_company->allowed_landing_companies_for_age_verification_sync};
@@ -514,6 +520,18 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
                 $client_to_update->status->clear_age_verification;
             }
         }
+        # gb residents cant use demo account while not age verified.
+        # should remove unwelcome status once respective MX or MF marked
+        # as age verified.
+        my $vr_acc = BOM::User::Client->new({loginid => $client->user->bom_virtual_loginid});
+        if (    $client->residence eq 'gb'
+            and $vr_acc->status->unwelcome
+            and $vr_acc->status->unwelcome->{reason} eq 'Pending proof of age')
+        {
+            $vr_acc->status->clear_unwelcome;
+            $vr_acc->status->set('age_verification', $clerk, 'Age verified client from Backoffice.') unless $vr_acc->status->age_verification;
+        }
+
     }
     if (exists $input{professional_client}) {
         try {
