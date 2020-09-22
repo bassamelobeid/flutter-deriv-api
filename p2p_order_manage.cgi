@@ -15,6 +15,7 @@ use Date::Utility;
 use BOM::Config::Runtime;
 use BOM::Config;
 use Scalar::Util qw(looks_like_number);
+use BOM::Platform::Event::Emitter;
 
 my $cgi = CGI->new;
 
@@ -25,8 +26,14 @@ my $p2p_write      = BOM::Backoffice::Auth0::has_authorisation(['P2PWrite']);
 my $config         = BOM::Config::third_party();
 my $sendbird_token = $config->{sendbird}->{api_token};
 
-my %input  = %{request()->params};
-my $broker = request()->broker_code;
+my %input           = %{request()->params};
+my $broker          = request()->broker_code;
+my %dispute_reasons = (
+    seller_not_released => 'Seller did not release funds',
+    buyer_overpaid      => 'Buyer paid too much',
+    buyer_underpaid     => 'Buyer paid less',
+    buyer_not_paid      => 'Buyer has not made any payment',
+);
 
 my $db = BOM::Database::ClientDB->new({
         broker_code => $broker,
@@ -45,14 +52,13 @@ $chat_page = 1 unless $chat_page > 0;    # The default page is 1 so math is well
 Bar('P2P Order details/management');
 
 if (my $action = $input{action} and $p2p_write) {
-
     try {
         my ($status, $currency) = $db->run(
             fixup => sub {
                 $_->selectrow_array('SELECT status, account_currency FROM p2p.order_list(?,NULL,NULL,NULL)', undef, $input{order_id});
             });
 
-        die "Order is in $status status and cannot be resolved now.\n" unless $status eq 'timed-out';
+        die "Order is in $status status and cannot be resolved now.\n" unless $status eq 'disputed';
         $escrow = get_escrow($broker, $currency);
         die "No escrow account is defined for $currency.\n" unless $escrow;
 
@@ -62,18 +68,53 @@ if (my $action = $input{action} and $p2p_write) {
         if ($action eq 'refund') {
             $db->run(
                 fixup => sub {
-                    $_->do('SELECT p2p.order_refund(?, ?, ?, ?, ?, ?)', undef, $input{order_id}, $escrow, 4, $staff, 't', $txn_time);
+                    $_->do('SELECT p2p.order_refund(?, ?, ?, ?, ?, ?, ?)', undef, $input{order_id}, $escrow, 4, $staff, 't', $txn_time, 1);
                 });
         }
 
         if ($action eq 'complete') {
             $db->run(
                 fixup => sub {
-                    $_->do('SELECT p2p.order_complete(?, ?, ?, ?, ?)', undef, $input{order_id}, $escrow, 4, $staff, $txn_time);
+                    $_->do('SELECT p2p.order_complete(?, ?, ?, ?, ?, ?)', undef, $input{order_id}, $escrow, 4, $staff, $txn_time, 1);
                 });
         }
+        BOM::Platform::Event::Emitter::emit(
+            p2p_order_updated => {
+                client_loginid => $input{disputer_loginid},
+                order_id       => $input{order_id},
+                order_event    => $action,
+            });
     } catch {
         my $error = ref $@ eq 'ARRAY' ? join ', ', $@->@* : $@;
+        print '<p style="color:red; font-weight:bold;">' . $error . '</p>';
+    }
+}
+
+if ($input{dispute} and $p2p_write) {
+    try {
+        my ($status) = $db->run(
+            fixup => sub {
+                $_->selectrow_array('SELECT status FROM p2p.order_list(?,NULL,NULL,NULL)', undef, $input{order_id});
+            });
+
+        die "Order is in $status status and cannot be disputed now.\n" unless $status eq 'timed-out';
+        die "Invalid dispute reason.\n" unless exists $dispute_reasons{$input{reason}};
+        my $client = BOM::User::Client->new({loginid => $input{disputer}});
+        $client->p2p_create_order_dispute(
+            id             => $input{order_id},
+            dispute_reason => $input{reason});
+
+        BOM::Platform::Event::Emitter::emit(
+            p2p_order_updated => {
+                client_loginid => $client->loginid,
+                order_id       => $input{order_id},
+                order_event    => 'dispute',
+            });
+    } catch {
+        my $error = $@;
+        $error = join ', ', $@->@* if ref $@ eq 'ARRAY';
+        $error = $@->{error_code}  if ref $@ eq 'HASH' && defined $@->{error_code};
+
         print '<p style="color:red; font-weight:bold;">' . $error . '</p>';
     }
 }
@@ -97,6 +138,11 @@ if (my $id = $input{order_id}) {
             $order->{buyer}           = $order->{advertiser_loginid};
             $order->{seller}          = $order->{client_loginid};
         }
+        $order->{disputer_loginid} //= '[none]';
+        $order->{dispute_reason} = $dispute_reasons{$order->{dispute_reason} // ''} // '[no predefined reason]';
+        $order->{disputer_role}  = '[not under dispute]';
+        $order->{disputer_role}  = $order->{client_role} if $order->{disputer_loginid} eq $order->{client_loginid};
+        $order->{disputer_role}  = $order->{advertiser_role} if $order->{disputer_loginid} eq $order->{advertiser_loginid};
         $order->{client_id}   //= '[not an advertiser]';
         $order->{client_name} //= '[not an advertiser]';
         $order->{$_} = Date::Utility->new($order->{$_})->datetime_ddmmmyy_hhmmss for qw( created_time expire_time );
@@ -153,6 +199,7 @@ BOM::Backoffice::Request::template()->process(
         chat_messages_next => scalar @{$chat_messages} < $chat_messages_limit ? undef : $chat_page + 1,    # When undef link won't be show
         chat_messages_prev => $chat_page > 1 ? $chat_page - 1 : undef,                                     # When undef link won't be show
         sendbird_token     => $sendbird_token,
+        dispute_reasons    => \%dispute_reasons,
     });
 code_exit_BO();
 
