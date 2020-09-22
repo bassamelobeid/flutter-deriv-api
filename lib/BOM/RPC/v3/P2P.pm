@@ -137,6 +137,11 @@ our %ERROR_MAP = do {
         CounterpartyNotAdvertiserForChat => localize('Chat is not possible because the other client is not yet registered on the P2P system.'),
         CreateChatError                  => localize('An error occurred when creating the chat. Please try again later.'),
         AdvertiserCannotListAds          => localize("You cannot list adverts because you've not been approved as an advertiser yet."),
+        InvalidStateForDispute           => localize('Please wait until the order expires to raise a dispute.'),
+        InvalidReasonForBuyer            => localize("This reason doesn't apply to your case. Please choose another reason."),
+        InvalidReasonForSeller           => localize("This reason doesn't apply to your case. Please choose another reason."),
+        OrderUnderDispute                => localize('This order is under dispute.'),
+        InvalidFinalStateForDispute      => localize('This order is complete and can no longer be disputed.'),
     );
 };
 
@@ -724,6 +729,47 @@ p2p_rpc p2p_chat_create => sub {
 
     my $client = $args{client};
     return $client->p2p_chat_create($args{params}{args}->%*);
+};
+
+=head2 p2p_order_dispute
+
+Flag the order as disputed.
+
+Takes the following named parameters:
+
+=over 4
+
+=item * C<id> - p2p order id
+
+=item * C<dispute_reason> - dispute reason
+
+=back
+
+Returns, a C<hashref> containing the updated order data.
+
+=cut
+
+p2p_rpc p2p_order_dispute => sub {
+    my %args = @_;
+
+    my ($client, $params) = @args{qw/client params/};
+
+    my $order_id       = $params->{args}{id};
+    my $dispute_reason = $params->{args}{dispute_reason};
+
+    my $order = $client->p2p_create_order_dispute(
+        id             => $order_id,
+        dispute_reason => $dispute_reason,
+    );
+
+    BOM::Platform::Event::Emitter::emit(
+        p2p_order_updated => {
+            client_loginid => $client->loginid,
+            order_id       => $order_id,
+            order_event    => 'dispute',
+        });
+
+    return $order;
 };
 
 # Check to see if the client can has access to p2p API calls or not?

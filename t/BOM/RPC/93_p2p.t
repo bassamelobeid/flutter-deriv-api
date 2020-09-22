@@ -598,6 +598,175 @@ subtest 'Sell orders' => sub {
     BOM::Test::Helper::P2P::reset_escrow();
 };
 
+subtest 'Order dispute (type buy)' => sub {
+    BOM::Test::Helper::P2P::create_escrow();
+    my ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert(type => 'sell');
+    my ($client,     $order)  = BOM::Test::Helper::P2P::create_order(advert_id => $advert->{id});
+
+    my $client_token     = BOM::Platform::Token::API->new->create_token($client->loginid,     'test token');
+    my $advertiser_token = BOM::Platform::Token::API->new->create_token($advertiser->loginid, 'test token2');
+    BOM::Test::Helper::P2P::set_order_disputable($client, $order->{id});
+    $params->{token} = $client_token;
+    $params->{args}  = {
+        id             => $order->{id},
+        dispute_reason => 'seller_not_released',
+    };
+    my $res = $c->call_ok(p2p_order_dispute => $params)->has_no_system_error->has_no_error->result;
+    # Please note the dispute statuses mapping at bom-user, this SHOULD be disputed when FE implements
+    is $res->{status}, 'timed-out', 'Order status is disputed';
+    is $res->{dispute_details}->{dispute_reason}, 'seller_not_released', 'Dispute reason is properly set';
+    is $res->{dispute_details}->{disputer_loginid}, $client->loginid, 'Client is the disputer';
+
+    subtest 'Error scenarios for dispute' => sub {
+        $params->{args} = {id => $order->{id} * -1};
+        $c->call_ok('p2p_order_dispute', $params)->has_no_system_error->has_error->error_code_is('OrderNotFound', 'Dispute non-existent order');
+
+        $params->{args} = {
+            id             => $order->{id},
+            dispute_reason => 'buyer_not_paid',
+        };
+        $c->call_ok('p2p_order_dispute', $params)->has_no_system_error->has_error->error_code_is('InvalidReasonForBuyer', 'Invalid reason for buyer');
+
+        $params->{args} = {
+            id             => $order->{id},
+            dispute_reason => 'seller_not_released',
+        };
+        $params->{token} = $advertiser_token;
+        $c->call_ok('p2p_order_dispute', $params)
+            ->has_no_system_error->has_error->error_code_is('InvalidReasonForSeller', 'Invalid reason for seller');
+
+        BOM::Test::Helper::P2P::set_order_disputable($client, $order->{id});
+        my $user_third_party = BOM::User->create(
+            email    => 'some@strange.com',
+            password => 'test'
+        );
+        my $third_party = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+            broker_code => 'CR',
+            email       => 'some@strange.com'
+        });
+        $user_third_party->add_client($third_party);
+        $third_party->set_default_account('USD');
+
+        my $token_third_party = BOM::Platform::Token::API->new->create_token($third_party->loginid, 'third party token');
+        $params->{token} = $token_third_party;
+        $params->{args}  = {
+            id             => $order->{id},
+            dispute_reason => 'seller_not_released'
+        };
+
+        $c->call_ok('p2p_order_dispute', $params)->has_no_system_error->has_error->error_code_is('OrderNotFound', 'Invalid client');
+        $params->{token} = $client_token;
+        $params->{args}  = {
+            id             => $order->{id},
+            dispute_reason => 'seller_not_released'
+        };
+
+        BOM::Test::Helper::P2P::set_order_status($client, $order->{id}, 'pending');
+        $c->call_ok('p2p_order_dispute', $params)
+            ->has_no_system_error->has_error->error_code_is('InvalidStateForDispute', 'Invalid state for dispute');
+
+        BOM::Test::Helper::P2P::set_order_status($client, $order->{id}, 'cancelled');
+        $c->call_ok('p2p_order_dispute', $params)
+            ->has_no_system_error->has_error->error_code_is('InvalidFinalStateForDispute', 'Invalid final state for dispute');
+
+        BOM::Test::Helper::P2P::set_order_status($client, $order->{id}, 'disputed');
+        $c->call_ok('p2p_order_dispute', $params)
+            ->has_no_system_error->has_error->error_code_is('OrderUnderDispute', 'Order is already under dispute');
+
+        BOM::Test::Helper::P2P::set_order_status($client, $order->{id}, 'completed');
+        $c->call_ok('p2p_order_dispute', $params)
+            ->has_no_system_error->has_error->error_code_is('InvalidFinalStateForDispute', 'Invalid final state for dispute');
+
+    };
+
+    BOM::Test::Helper::P2P::reset_escrow();
+};
+
+subtest 'Dispute edge cases' => sub {
+    # FE relies on expire time to show the complain button
+    # So `buyer-confirmed` status may raise a dispute when order is expired
+
+    for my $status (qw/buyer-confirmed/) {
+        subtest $status => sub {
+            BOM::Test::Helper::P2P::create_escrow();
+            my ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert(type => 'sell');
+            my ($client,     $order)  = BOM::Test::Helper::P2P::create_order(advert_id => $advert->{id});
+
+            my $client_token = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token');
+            BOM::Test::Helper::P2P::set_order_disputable($client, $order->{id});    # This expires the order
+            BOM::Test::Helper::P2P::set_order_status($client, $order->{id}, $status);
+            $params->{token} = $client_token;
+            $params->{args}  = {
+                id             => $order->{id},
+                dispute_reason => 'buyer_overpaid',
+            };
+            my $res = $c->call_ok(p2p_order_dispute => $params)->has_no_system_error->has_no_error->result;
+            # Please note the dispute statuses mapping at bom-user, this SHOULD be disputed when FE implements
+            is $res->{status}, 'timed-out', 'Order status is disputed';
+            is $res->{dispute_details}->{dispute_reason}, 'buyer_overpaid', 'Dispute reason is properly set';
+            is $res->{dispute_details}->{disputer_loginid}, $client->loginid, 'Client is the disputer';
+        }
+    }
+};
+
+subtest 'Order dispute (type sell)' => sub {
+    BOM::Test::Helper::P2P::create_escrow();
+    my $amount = 100;
+    my ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert(
+        amount => $amount,
+        type   => 'buy'
+    );
+    my ($client, $order) = BOM::Test::Helper::P2P::create_order(
+        advert_id => $advert->{id},
+        balance   => $amount
+    );
+
+    my $advertiser_token = BOM::Platform::Token::API->new->create_token($advertiser->loginid, 'test token');
+
+    $params->{token} = $advertiser_token;
+    $params->{args}  = {
+        id             => $order->{id},
+        dispute_reason => 'buyer_overpaid',
+    };
+
+    BOM::Test::Helper::P2P::set_order_disputable($client, $order->{id});
+    my $res = $c->call_ok(p2p_order_dispute => $params)->has_no_system_error->has_no_error->result;
+    # Please note the dispute statuses mapping at bom-user, this SHOULD be disputed when FE implements
+    is $res->{status}, 'timed-out', 'Order status is disputed';
+    is $res->{dispute_details}->{dispute_reason}, 'buyer_overpaid', 'Dispute reason is properly set';
+    is $res->{dispute_details}->{disputer_loginid}, $advertiser->loginid, 'Advertiser is the disputer';
+
+    BOM::Test::Helper::P2P::reset_escrow();
+};
+
+subtest 'Advertiser stats' => sub {
+    BOM::Test::Helper::P2P::create_escrow();
+    my $amount = 100;
+
+    my ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert(type => 'sell');
+    my ($client,     $order)  = BOM::Test::Helper::P2P::create_order(
+        advert_id => $advert->{id},
+        balance   => $amount
+    );
+
+    my $advertiser_token = BOM::Platform::Token::API->new->create_token($advertiser->loginid, 'test token');
+
+    $params->{token} = $advertiser_token;
+    $params->{args}  = {
+        id             => $order->{id},
+        dispute_reason => 'buyer_overpaid',
+    };
+
+    BOM::Test::Helper::P2P::set_order_disputable($client, $order->{id});
+    my $res = $c->call_ok(p2p_order_dispute => $params)->has_no_system_error->has_no_error->result;
+    # Please note the dispute statuses mapping at bom-user, this SHOULD be disputed when FE implements
+    is $res->{status}, 'timed-out', 'Order status is disputed';
+    is $res->{dispute_details}->{dispute_reason}, 'buyer_overpaid', 'Dispute reason is properly set';
+    is $res->{dispute_details}->{disputer_loginid}, $advertiser->loginid, 'Advertiser is the disputer';
+
+    BOM::Test::Helper::P2P::reset_escrow();
+};
+
 subtest 'Advertiser stats' => sub {
     BOM::Test::Helper::P2P::create_escrow();
 
@@ -629,6 +798,75 @@ subtest 'Advertiser stats' => sub {
     cmp_deeply($res_adv, $res_cli, 'stats match when requested in different ways');
 
     BOM::Test::Helper::P2P::reset_escrow();
+};
+
+subtest 'P2P Order Info' => sub {
+    BOM::Test::Helper::P2P::create_escrow();
+    my $amount = 100;
+    my ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert(
+        amount => $amount,
+        type   => 'buy'
+    );
+    my ($client, $order) = BOM::Test::Helper::P2P::create_order(
+        advert_id => $advert->{id},
+        balance   => $amount
+    );
+
+    my $client_token = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token');
+    $params->{token} = $client_token;
+    $params->{args}  = {
+        id => $order->{id},
+    };
+
+    my $res = $c->call_ok(p2p_order_info => $params)->has_no_system_error->has_no_error->result;
+    cmp_deeply $res,
+        {
+        chat_channel_url => '',
+        rate_display     => '1.00',
+        local_currency   => 'myr',
+        amount           => '100.00',
+        client_details   => {
+            last_name  => 'pItT',
+            name       => 'test advertiser 39',
+            id         => re('\d+'),
+            first_name => 'bRaD',
+            loginid    => 'CR10055'
+        },
+        price_display  => 100,
+        expiry_time    => re('\d+'),
+        amount_display => '100.00',
+        advert_details => {
+            payment_method => 'bank_transfer',
+            id             => re('\d+'),
+            description    => 'Test advert',
+            type           => 'buy'
+        },
+        payment_info       => 'Bank: 123456',
+        created_time       => re('\d+'),
+        is_incoming        => 0,
+        advertiser_details => {
+            loginid    => 'CR10054',
+            id         => re('\d+'),
+            first_name => 'bRaD',
+            last_name  => 'pItT',
+            name       => 'test advertiser 38'
+        },
+        contact_info     => 'Tel: 123456',
+        type             => 'sell',
+        status           => 'pending',
+        id               => re('\d+'),
+        price            => 100,
+        account_currency => 'USD',
+        rate             => 1,
+        dispute_details  => {
+            disputer_loginid => undef,
+            dispute_reason   => undef
+        },
+        stash => {
+            source_bypass_verification => 0,
+            app_markup_percentage      => '0',
+            valid_source               => 1
+        }};
 };
 
 # restore app config
