@@ -11,6 +11,7 @@ use Text::Markdown;
 use BOM::Platform::Email qw(send_email);
 use BOM::Platform::Context qw(localize request);
 use BOM::Platform::ProveID;
+use BOM::Config::Redis;
 use feature 'state';
 
 has client => (
@@ -18,8 +19,9 @@ has client => (
     required => 1
 );
 
-use constant NEEDED_MATCHES_FOR_ONLINE_AUTH      => 2;
-use constant NEEDED_MATCHES_FOR_AGE_VERIFICATION => 1;
+use constant NEEDED_MATCHES_FOR_ONLINE_AUTH       => 2;
+use constant NEEDED_MATCHES_FOR_AGE_VERIFICATION  => 1;
+use constant ONFIDO_ALLOW_RESUBMISSION_KEY_PREFIX => 'ONFIDO::ALLOW_RESUBMISSION::ID::';
 
 =head2 run_validation
 
@@ -148,9 +150,9 @@ sub proveid {
             $client->set_authentication('ID_ONLINE')->status('pass');
             $client->save();
             $client->update_status_after_auth_fa();
+            $client->status->clear_unwelcome if $client->status->unwelcome;
         } else {
             $client->status->setnx('unwelcome', 'system', "Experian results are insufficient to enable deposits.");
-
             $self->_request_id_authentication();
         }
     } else {
@@ -183,7 +185,7 @@ sub _age_verified {
 
 =head2 _fully_auth_check
 
-Checks if client is fully authenticated, if not, set client as unwelcome
+Checks if client is fully authenticated and remove unwelcome, if not, set client as unwelcome
 
 =cut
 
@@ -191,8 +193,11 @@ sub _fully_auth_check {
     my $self   = shift;
     my $client = $self->client;
 
-    $client->status->set("unwelcome", "system", "Client was not fully authenticated before making first deposit") unless $client->fully_authenticated;
-
+    if ($client->fully_authenticated) {
+        $client->status->clear_unwelcome if $client->status->unwelcome;
+    } else {
+        $client->status->set("unwelcome", "system", "Client was not fully authenticated before making first deposit");
+    }
     return undef;
 }
 
@@ -261,6 +266,9 @@ sub _request_id_authentication {
     my $self   = shift;
     my $client = $self->client;
 
+    # Allow Onfido ressubmission
+    my $redis = BOM::Config::Redis::redis_replicated_write();
+    $redis->set(ONFIDO_ALLOW_RESUBMISSION_KEY_PREFIX . $client->binary_user_id, 1);
     my $client_name   = join(' ', $client->salutation, $client->first_name, $client->last_name);
     my $brand         = request()->brand;
     my $support_email = $brand->emails('support');

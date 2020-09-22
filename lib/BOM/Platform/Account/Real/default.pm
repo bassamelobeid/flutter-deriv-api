@@ -59,7 +59,11 @@ sub copy_status_from_siblings {
             my $reason = $client->status->$status ? $client->status->$status->{reason} : 'Sync upon signup';
 
             $cur_client->status->set($status, 'system', $reason . ' - copied from ' . $client->loginid);
-
+            if ($cur_client->residence eq 'gb' and $status eq 'age_verification') {
+                my $vr_acc = BOM::User::Client->new({loginid => $cur_client->user->bom_virtual_loginid});
+                $vr_acc->status->clear_unwelcome;
+                $vr_acc->status->set('age_verification', 'system', $reason . ' - copied from ' . $client->loginid);
+            }
         }
     }
 }
