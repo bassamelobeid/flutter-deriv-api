@@ -5,6 +5,7 @@ use Test::More;
 use feature 'state';
 use BOM::Event::Actions::P2P;
 
+use RedisDB;
 use BOM::Test;
 use BOM::Config::Runtime;
 use Data::Dumper;
@@ -66,7 +67,14 @@ my @data_for_notification_tests = ({
 
 for my $test_data (@data_for_notification_tests) {
     subtest 'Notification for ' . $test_data->{event} => sub {
-        my $p2p_redis = BOM::Config::Redis->redis_p2p();
+        # Separate connection is needed, because BOM::User::Client will execute the same redis
+        # which is not allowed when waiting for replies on the same connection
+        my $connection_config = BOM::Config::redis_p2p_config()->{p2p}{read};
+        my $p2p_redis = RedisDB->new(
+            host => $connection_config->{host},
+            port => $connection_config->{port},
+            ($connection_config->{password} ? ('password' => $connection_config->{password}) : ()));
+        
         #Yes, this's really need, because when we're trying to get_reply,
         # and after time out, auto reconnecting for some reason doesn't work
         $p2p_redis->_connect();
@@ -79,13 +87,13 @@ for my $test_data (@data_for_notification_tests) {
                 details => $test_data->{data},
             },
             $test_data->{event});
-        eval { $p2p_redis->get_reply for (1 .. 2) };
+        eval { $p2p_redis->get_reply for (1 .. $test_data->{expected}->@*) };
         my @notifications = map {
             eval { decode_json_utf8($_) }
                 || undef
         } @got_notification;
 
-        is_deeply(\@notifications, $test_data->{expected}, 'No notification about an order');
+        is_deeply(\@notifications, $test_data->{expected}, 'Got expected payload');
     };
 }
 
