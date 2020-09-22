@@ -45,7 +45,7 @@ sub _daemon_run {
     my $redis = BOM::Config::Redis::redis_expiryq_write;
     my $expiryq = ExpiryQueue->new(redis => $redis);
     while (1) {
-        my $now       = time;
+        my $now       = Time::HiRes::time;
         my $next_time = $now + 1;                     # we want this to execute every second
         my $iterator  = $expiryq->dequeue_expired_contract();
         # Outer `while` to live through possible redis disconnects/restarts
@@ -78,11 +78,7 @@ sub _daemon_run {
 
                 if (not $is_sold or $is_sold->{number_of_sold_bets} == 0) {
                     $info->{sell_failure}++;
-                    my $cid = $expiryq->get_queue_id($info);
-                    if ($info->{sell_failure} <= 5) {
-                        my $future_epoch = $now + 2;
-                        $redis->rpush('EXPIRYQUEUE::SELL_FAILURE_' . $future_epoch, $cid);
-                    }
+                    $expiryq->update_failure_queue($info) if ($info->{sell_failure} <= 5);
                 }
             };    # No catch, let MtM pick up the pieces.
         }
@@ -97,10 +93,8 @@ for (my $i = 1; $i < $threads_number; $i++) {
         push @pids, $pid;
     } else {
         @pids = ();
-        _daemon_run();
+        last;
     }
 }
 
-print "parent $$ starts processing by himself";
 _daemon_run();
-
