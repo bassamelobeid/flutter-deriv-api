@@ -17,13 +17,13 @@ test:
 	@$(PROVE) -I./t t/BOM
 
 syntax:
-	@$(PROVE) -I./t --exec '/etc/rmg/bin/perl -I. -MTest::Warnings -MMojo::JSON::MaybeXS' $(wildcard t/0*.t)
+	@$(PROVE) -I./t $(wildcard t/0*.t)
 
 localize:
-	@$(PROVE) -I./t --exec '/etc/rmg/bin/perl -I. -MTest::Warnings' t/localize.t
+	@$(PROVE) -I./t t/localize.t
 
 pod_test:
-	@$(PROVE) t/*pod*.t
+	@$(PROVE) --norc t/*pod*.t
 
 i18n:
 	xgettext.pl \
