@@ -10,7 +10,7 @@ use Data::Dumper;
 use Finance::Asset;
 # we need this import here so the market-data db will be fresh for the test
 use BOM::Test::Data::Utility::UnitTestMarketData qw( :init );
-
+use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use Date::Utility;
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use BOM::Test::Data::Utility::UnitTestMarketData qw( :init );
@@ -60,11 +60,13 @@ foreach my $f (grep { -d } glob "$v/*") {
     my $str  = path("$f/example.json")->slurp_utf8;
     my $send = $json->decode($str);
     $t->send_ok({json => $send}, "send request for $test_name");
+    my $pid;
+
     if ($f eq "$v/ticks") {
         # upcoming $t->message_ok for 'ticks' WS API call subscribes to DISTRIBUTOR_FEED::R_50 channel
         # all messages posted before this call and after it bails out on timeout are ignored
         # so fork here allows to populate channel while subscription is on
-        my $pid = fork;
+        $pid = fork;
         die "Failed fork for testing 'ticks' WS API call: $@" unless defined $pid;
         unless ($pid) {
             # disable end test of Test::Warnings in child process
@@ -77,6 +79,9 @@ foreach my $f (grep { -d } glob "$v/*") {
         }
     }
     $t->message_ok("$test_name got a response");
+    if ($f eq "$v/ticks") {
+        kill TERM => $pid;
+    }
     $str = path("$f/receive.json")->slurp_utf8;
     my $validator = JSON::Validator->new($json->decode($str));
     $validator->schema($json->decode($str));

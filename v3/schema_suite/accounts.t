@@ -225,9 +225,9 @@ test_sendrecv_params 'payout_currencies/test_send.json',      'payout_currencies
 fail_test_sendrecv_params 'payout_currencies/test_send.json', 'payout_currencies/test_receive_vrt.json', 'EUR', 1;
 test_sendrecv 'cashier/test_send_deposit.json',               'cashier/test_receive_ukgc_error.json';
 test_sendrecv 'tnc_approval/test_send_ukgc.json',             'tnc_approval/test_receive.json';
-$suite->change_status($suite->get_stashed('authorize/authorize/loginid'), 'set', 'age_verification');
+$suite->change_status($suite->get_stashed('authorize/authorize/loginid'), 'set',   'age_verification');
 $suite->change_status($suite->get_stashed('authorize/authorize/loginid'), 'clear', 'max_turnover_limit_not_set');
-$suite->change_status($suite->get_stashed('authorize/authorize/loginid'), 'set', 'max_turnover_limit_not_set');
+$suite->change_status($suite->get_stashed('authorize/authorize/loginid'), 'set',   'max_turnover_limit_not_set');
 test_sendrecv 'cashier/test_send_deposit.json', 'cashier/test_receive_max_turnover.json';
 # set_self_exclusion for max_30day_turnover should remove max_turnover_limit_not_set status
 test_sendrecv 'set_self_exclusion/test_send.json', 'set_self_exclusion/test_receive.json';
