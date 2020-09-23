@@ -112,8 +112,8 @@ subtest 'london_fix_markup' => sub {
         $args->{date_start}   = Date::Utility->new('2018-10-16 15:05:00');
         $args->{date_pricing} = Date::Utility->new('2018-10-16 15:05:00');
         $c                    = produce_contract($args);
-        cmp_ok $c->ask_price, '==', 6.56, 'correct ask price';
-        is($c->pricing_engine->risk_markup->peek_amount('london_fix_markup'), 0.106066017177982, 'correct london fix markup for CALL');
+        cmp_ok $c->ask_price, '==', 5.5, 'correct ask price';
+        is($c->pricing_engine->risk_markup->peek_amount('london_fix_markup'), undef, 'no london fix markup for CALL at minute 05');
 
         $args->{date_start}   = Date::Utility->new('2018-10-16 15:06:00');
         $args->{date_pricing} = Date::Utility->new('2018-10-16 15:06:00');
@@ -157,9 +157,7 @@ subtest 'london_fix_markup' => sub {
         $args->{date_start}   = Date::Utility->new('2018-11-16 16:05:00');
         $args->{date_pricing} = Date::Utility->new('2018-11-16 16:05:00');
         $c                    = produce_contract($args);
-        cmp_ok $c->ask_price, '==', 6.56, 'correct ask price';
-        cmp_ok roundcommon(0.001, $c->pricing_engine->risk_markup->peek_amount('london_fix_markup')), '==', 0.106, 'correct london fix markup';
-        cmp_ok roundcommon(0.001, $c->pricing_engine->risk_markup->peek_amount('london_fix_x1')),     '==', 1,     'correct london fix markup';
+        cmp_ok $c->ask_price, '==', 5.5, 'correct ask price';
 
         $args->{date_start}   = Date::Utility->new('2018-11-16 16:06:00');
         $args->{date_pricing} = Date::Utility->new('2018-11-16 16:06:00');

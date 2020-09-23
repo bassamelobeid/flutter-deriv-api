@@ -8,6 +8,7 @@ use Test::Warnings;
 use Test::Exception;
 use Date::Utility;
 
+use Format::Util::Numbers qw/roundcommon/;
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
@@ -134,18 +135,102 @@ subtest 'hour_end_markup_extra_test_after_logic_change' => sub {
         cmp_ok $c->ask_price, '==', 6.5, 'correct ask price';
         cmp_ok $c->pricing_engine->risk_markup->peek_amount('hour_end_markup'), '==', 0.1, 'Maximum end hour markup is charged';
 
-        # Summer on AU , hour equal 7 or 19
-        $args->{date_start}   = Date::Utility->new('2018-10-16 19:01:00');
-        $args->{date_pricing} = Date::Utility->new('2018-10-16 19:01:00');
+        $args->{date_start}   = Date::Utility->new('2018-10-16 18:49:59');
+        $args->{date_pricing} = Date::Utility->new('2018-10-16 18:49:59');
+        $c                    = produce_contract($args);
+        cmp_ok $c->ask_price, '==', 5.9, 'correct ask price';
+
+        #Summer on AU, date start is between 18:50 and 19:00
+        $args->{date_start}   = Date::Utility->new('2018-10-16 18:50:00');
+        $args->{date_pricing} = Date::Utility->new('2018-10-16 18:50:00');
+        $c                    = produce_contract($args);
+        cmp_ok $c->ask_price, '==', 5.9, 'correct ask price';
+        cmp_ok roundcommon(0.00001,$c->pricing_engine->risk_markup->peek_amount('mean_reversion_markup')), '==', 0.03999, 'Mean reversion markup is charged';
+
+        $args->{date_start}   = Date::Utility->new('2018-10-16 18:55:00');
+        $args->{date_pricing} = Date::Utility->new('2018-10-16 18:55:00');
+        $c                    = produce_contract($args);
+        cmp_ok $c->ask_price, '==', 6.93, 'correct ask price';
+        cmp_ok roundcommon(0.00001, $c->pricing_engine->risk_markup->peek_amount('hour_end_markup')), '==', 0.14286, 'Maximum end hour markup is charged';
+        cmp_ok $c->pricing_engine->risk_markup->peek_amount('X1'),                  '==', 1,   'correct X1';
+
+        $args->{date_start}   = Date::Utility->new('2018-10-16 18:57:00');
+        $args->{date_pricing} = Date::Utility->new('2018-10-16 18:57:00');
         $c                    = produce_contract($args);
         cmp_ok $c->ask_price, '==', 7.5, 'correct ask price';
         cmp_ok $c->pricing_engine->risk_markup->peek_amount('hour_end_markup'), '==', 0.2, 'Maximum end hour markup is charged';
+        cmp_ok $c->pricing_engine->risk_markup->peek_amount('X1'),                  '==', 1,   'correct X1';
+
+        $args->{date_start}   = Date::Utility->new('2018-10-16 19:00:00');
+        $args->{date_pricing} = Date::Utility->new('2018-10-16 19:00:00');
+        $c                    = produce_contract($args);
+        cmp_ok $c->ask_price, '==', 7.5, 'correct ask price';
+        cmp_ok $c->pricing_engine->risk_markup->peek_amount('hour_end_markup'), '==', 0.2, 'Maximum end hour markup is charged';
+        cmp_ok $c->pricing_engine->risk_markup->peek_amount('X1'),                  '==', 1,   'correct X1';
+
+        # Summer on AU , hour equal 7 or 19
+        $args->{date_start}   = Date::Utility->new('2018-10-16 19:02:00');
+        $args->{date_pricing} = Date::Utility->new('2018-10-16 19:02:00');
+        $c                    = produce_contract($args);
+        cmp_ok $c->ask_price, '==', 7.5, 'correct ask price';
+        cmp_ok $c->pricing_engine->risk_markup->peek_amount('hour_end_markup'), '==', 0.2, 'Maximum end hour markup is charged';
+        cmp_ok $c->pricing_engine->risk_markup->peek_amount('X1'),                  '==', 1,   'correct X1';
+
+        $args->{duration}     = '30m';
+        $c                    = produce_contract($args);
+        cmp_ok $c->ask_price, '==', 7.5, 'correct ask price';
+        cmp_ok $c->pricing_engine->risk_markup->peek_amount('hour_end_markup'), '==', 0.2, 'Maximum end hour markup is charged';
+        cmp_ok $c->pricing_engine->risk_markup->peek_amount('X1'),                  '==', 1,   'correct X1';
+
+        $args->{duration}     = '40m';
+        $c                    = produce_contract($args);
+        cmp_ok $c->ask_price, '==', 6.83, 'correct ask price';
+        cmp_ok roundcommon(0.00001, $c->pricing_engine->risk_markup->peek_amount('hour_end_markup')), '==', 0.13333, 'end hour markup is charged';
+        cmp_ok $c->pricing_engine->risk_markup->peek_amount('X1'),                  '==', 1,   'correct X1';
+
+        $args->{duration}     = '50m';
+        $c                    = produce_contract($args);
+        cmp_ok $c->ask_price, '==', 6.16, 'correct ask price';
+        cmp_ok roundcommon(0.00001, $c->pricing_engine->risk_markup->peek_amount('hour_end_markup')), '==', 0.06667, 'hour end  markup is charged';
+        cmp_ok $c->pricing_engine->risk_markup->peek_amount('X1'),                  '==', 1,   'correct X1';
+
+        $args->{duration}     = '60m';
+        $c                    = produce_contract($args);
+        cmp_ok $c->ask_price, '==', 5.9, 'correct ask price';
+        cmp_ok roundcommon(0.00001, $c->pricing_engine->risk_markup->peek_amount('mean_reversion_markup')), '==', 0.03997, 'Mean rev markup is charged';
+        
+
+        $args->{duration}     = '70m';
+        $c                    = produce_contract($args);
+        cmp_ok $c->ask_price, '==', 5.9, 'correct ask price';
+        
+        
+
+        $args->{duration}     = '10m';
+        $args->{date_start}   = Date::Utility->new('2018-10-16 19:03:00');
+        $args->{date_pricing} = Date::Utility->new('2018-10-16 19:03:00'); 
+        $c                    = produce_contract($args);
+        cmp_ok $c->ask_price, '==', 6.83, 'correct ask price';
+        cmp_ok roundcommon(0.00001, $c->pricing_engine->risk_markup->peek_amount('hour_end_markup')), '==', 0.13333, 'Maximum end hour markup is charged';
+        cmp_ok $c->pricing_engine->risk_markup->peek_amount('X1'),                  '==', 1,   'correct X1';
+
+        # Summer on AU , date start between 19:01 to 19:05
+        $args->{date_start}   = Date::Utility->new('2018-10-16 19:05:00');
+        $args->{date_pricing} = Date::Utility->new('2018-10-16 19:05:00');
+        $c                    = produce_contract($args);
+        cmp_ok $c->ask_price, '==', 5.9, 'correct ask price';
+        cmp_ok $c->pricing_engine->risk_markup->peek_amount('mean_reversion_markup'), '==', 0.0399850462270067, 'Maximum end hour markup is charged';
+
+        $args->{date_start}   = Date::Utility->new('2018-10-16 19:05:01');
+        $args->{date_pricing} = Date::Utility->new('2018-10-16 19:05:01');
+        $c                    = produce_contract($args);
+        cmp_ok $c->ask_price, '==', 5.9, 'correct ask price';
 
         #duration 30m
         $args->{duration} = '30m';
         $c = produce_contract($args);
-        cmp_ok $c->ask_price, '==', 7.5, 'correct ask price';
-        cmp_ok $c->pricing_engine->risk_markup->peek_amount('hour_end_markup'), '==', 0.2, 'Maximum end hour markup is charged';
+        cmp_ok $c->ask_price, '==', 5.9, 'correct ask price';
+        cmp_ok roundcommon(0.00001, $c->pricing_engine->risk_markup->peek_amount('mean_reversion_markup')), '==', 0.03998, 'Mean reversion markup is charged';
 
         #some more
         $args->{duration} = '70m';
@@ -178,7 +263,7 @@ subtest 'hour_end_markup_extra_test_after_logic_change' => sub {
         $args->{duration} = '70m';
         $c = produce_contract($args);
         cmp_ok $c->ask_price, '==', 5.89, 'correct ask price';
-        is($c->pricing_engine->risk_markup->peek_amount('hour_end_markup'), undef, 'Hour end markup applies only to contract duration <= 30m');
+        
     };
 };
 

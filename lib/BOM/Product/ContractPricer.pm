@@ -267,9 +267,6 @@ sub _build_hour_end_markup_parameters {
 
     return {} unless ($self->market->name eq 'forex' or $self->market->name eq 'commodities');
 
-    # Do not apply hour end markup if duration is greater than 30 mins
-    return {} if ($self->timeindays->amount * 24 * 60) > 30;
-
     # For forward starting, only applies it if the contract bought at 15 mins before the date_start, other that that it is hard for client to exploit the edge
     return {} if ($self->is_forward_starting && ($self->date_start->epoch - $self->date_pricing->epoch) > 15 * 60);
 
@@ -292,7 +289,7 @@ sub _build_hour_end_markup_parameters {
     my $refer_end   = max($adj_args->{hour_end_end}, $adj_args->{london_fix_end});
 
     # Do not apply markup if it is not between Hour-End or London Fix interval
-    return {} if $start_minute > $refer_end and $start_minute < $refer_start;
+    return {} if $start_minute >= $refer_end and $start_minute < $refer_start;
 
     my $high_low_lookback_from;
 
