@@ -54,6 +54,7 @@ use Time::HiRes;
 use File::Temp;
 use Digest::MD5;
 use BOM::Event::Utility qw(exception_logged);
+use BOM::Platform::Redis;
 
 # For smartystreets datadog stats_timing
 $Future::TIMES = 1;
@@ -92,6 +93,7 @@ use constant ONFIDO_UNSUPPORTED_COUNTRY_EMAIL_PER_USER_TIMEOUT => $ENV{ONFIDO_UN
 use constant ONFIDO_AGE_EMAIL_PER_USER_TIMEOUT                 => $ENV{ONFIDO_AGE_EMAIL_PER_USER_TIMEOUT} // 24 * 60 * 60;
 use constant ONFIDO_AGE_BELOW_EIGHTEEN_EMAIL_PER_USER_PREFIX   => 'ONFIDO::AGE::BELOW::EIGHTEEN::EMAIL::PER::USER::';
 use constant ONFIDO_ADDRESS_REQUIRED_FIELDS                    => qw(address_postcode residence);
+use constant ONFIDO_UPLOAD_TIMEOUT_SECONDS                     => 30;
 
 use constant POA_ALLOW_RESUBMISSION_KEY_PREFIX => 'POA::ALLOW_RESUBMISSION::ID::';
 
@@ -797,6 +799,17 @@ async sub onfido_doc_ready_for_upload {
     my $file_id;
     my $new_file_name;
 
+    my $redis_events_write = _redis_events_write();
+    await $redis_events_write->connect;
+
+    # If the following key exists, the document is already being uploaded,
+    # so we can safely drop this event.
+    my $lock_key     = join q{-} => ('ONFIDO_UPLOAD_BAG', $client_loginid, $file_checksum, $doc_type);
+    my $acquire_lock = BOM::Platform::Redis::acquire_lock($lock_key, ONFIDO_UPLOAD_TIMEOUT_SECONDS);
+    # A test is expecting this log warning though.
+    $log->warn("Document already exists") unless $acquire_lock;
+    return unless $acquire_lock;
+
     try {
         $upload_info = $client->db->dbic->run(
             ping => sub {
@@ -809,34 +822,26 @@ async sub onfido_doc_ready_for_upload {
                 );
             });
 
-        my $redis_events_write = _redis_events_write();
-        await $redis_events_write->connect;
+        if ($upload_info) {
+            ($file_id, $new_file_name) = @{$upload_info}{qw/file_id file_name/};
 
-        unless ($upload_info) {
+            # This redis key allow further date/numbers update
+            await $redis_events_write->setex(ONFIDO_DOCUMENT_ID_PREFIX . $doc_id, ONFIDO_PENDING_REQUEST_TIMEOUT, $file_id);
+
+            $log->debugf("Starting to upload file_id: $file_id to S3 ");
+            $s3_uploaded = await $s3_client->upload($new_file_name, $tmp_filename, $file_checksum);
+
+        } else {
             $log->warn("Document already exists");
-            return;
         }
 
-        ($file_id, $new_file_name) = @{$upload_info}{qw/file_id file_name/};
-
-        # This redis key allow further date/numbers update
-        await $redis_events_write->setex(ONFIDO_DOCUMENT_ID_PREFIX . $doc_id, ONFIDO_PENDING_REQUEST_TIMEOUT, $file_id);
-
-        $log->debugf("Starting to upload file_id: $file_id to S3 ");
-        $s3_uploaded = await $s3_client->upload($new_file_name, $tmp_filename, $file_checksum);
-    } catch {
-        my $error = $@;
-        $log->errorf("Error in creating record in db and uploading Onfido document to S3 for %s : %s", $client->loginid, $error);
-        exception_logged();
-    }
-
-    if ($s3_uploaded) {
-        $log->debugf("Successfully uploaded file_id: $file_id to S3 ");
-        try {
+        if ($s3_uploaded) {
+            $log->debugf("Successfully uploaded file_id: $file_id to S3 ");
             my $finish_upload_result = $client->db->dbic->run(
                 ping => sub {
                     $_->selectrow_array('SELECT * FROM betonmarkets.finish_document_upload(?)', undef, $file_id);
                 });
+
             die "Db returned unexpected file_id on finish. Expected $file_id but got $finish_upload_result. Please check the record"
                 unless $finish_upload_result == $file_id;
 
@@ -844,21 +849,22 @@ async sub onfido_doc_ready_for_upload {
                 loginid => $client->loginid,
                 file_id => $file_id
             );
-            unless ($document_info) {
-                $log->errorf('Could not get document %s from database for client %s', $file_id, $client->loginid);
-                return;
-            }
 
-            await BOM::Event::Services::Track::document_upload({
-                loginid    => $client->loginid,
-                properties => $document_info
-            });
-        } catch {
-            my $error = $@;
-            $log->errorf("Error in updating db for %s : %s", $client->loginid, $error);
-            exception_logged();
+            if ($document_info) {
+                await BOM::Event::Services::Track::document_upload({
+                    loginid    => $client->loginid,
+                    properties => $document_info
+                });
+            } else {
+                $log->errorf('Could not get document %s from database for client %s', $file_id, $client->loginid);
+            }
         }
+    } catch ($error) {
+        $log->errorf("Error in creating record in db and uploading Onfido document to S3 for %s : %s", $client->loginid, $error);
+        exception_logged();
     }
+
+    BOM::Platform::Redis::release_lock($lock_key);
 
     return;
 }
