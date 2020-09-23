@@ -420,7 +420,7 @@ async_rpc "mt5_new_account",
                     if ($client->myaffiliates_token and $account_type ne 'demo') {
                         my $agent_login = _get_mt5_account_from_affiliate_token($client->myaffiliates_token);
                         $args->{agent} = $agent_login if $agent_login;
-                        $log->infof("Unable to link %s MT5 account with myaffiliates token %s", $client->loginid, $client->myaffiliates_token)
+                        $log->debugf("Unable to link %s MT5 account with myaffiliates token %s", $client->loginid, $client->myaffiliates_token)
                             unless $agent_login;
                     }
 
