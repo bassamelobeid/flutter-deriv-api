@@ -133,7 +133,7 @@ has symbol_with_non_atm_offering => (
 
 sub _build_symbol_with_non_atm_offering {
 
-    my @non_atm_symbol = LandingCompany::Registry::get('svg')->basic_offerings(BOM::Config::Runtime->instance->get_offerings_config)
+    my @non_atm_symbol = LandingCompany::Registry::get_default()->basic_offerings(BOM::Config::Runtime->instance->get_offerings_config)
         ->query({barrier_category => ['euro_non_atm', 'american']}, ['underlying_symbol']);
 
     return \@non_atm_symbol;
