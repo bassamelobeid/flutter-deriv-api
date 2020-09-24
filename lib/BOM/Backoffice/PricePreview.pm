@@ -64,7 +64,7 @@ sub calculate_prices {
     $args->{expiry_option} ||= 'end_of_day';
     $args->{pricing_date} =~ s/\s+//g if $args->{pricing_date};
     # default to svg since it does not matter
-    my $offerings_obj = LandingCompany::Registry::get('svg')->basic_offerings(BOM::Config::Runtime->instance->get_offerings_config);
+    my $offerings_obj = LandingCompany::Registry::get_default()->basic_offerings(BOM::Config::Runtime->instance->get_offerings_config);
     my @underlying_symbols =
           $args->{symbol} eq 'ALL'
         ? $offerings_obj->query({submarket => ['major_pairs', 'minor_pairs']}, ['underlying_symbol'])
