@@ -55,6 +55,29 @@ sub get_trading_activity {
         });
 }
 
+=item get_multiplier_commission
+
+get clients' multiplier contracts trading activity for particular date for myaffiliates reports.
+
+=cut
+
+sub get_multiplier_commission {
+    my ($self, $args) = @_;
+    my $dbic = $self->db->dbic;
+
+    my $sql = q{
+        SELECT * FROM get_myaffiliate_clients_multiplier_trading_activity($1, $2, $3)
+    };
+
+    return $dbic->run(
+        sub {
+            my $sth = $_->prepare($sql);
+            $sth->execute($args->{date}, $args->{include_apps}, $args->{exclude_apps});
+
+            return $sth->fetchall_arrayref;
+        });
+}
+
 no Moose;
 __PACKAGE__->meta->make_immutable;
 
