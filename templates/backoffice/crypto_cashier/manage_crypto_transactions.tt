@@ -150,7 +150,7 @@
                 [% END %]
                 [% IF view_type == 'pending' && trx.transaction_type == 'withdrawal' && view_action == 'withdrawals' %]
                     <td>
-                        <input type="checkbox" value="[% trx.id %]" data-amount="[% trx.amount %]" onclick="bulkToggleSelected(this)" />
+                       <input type="checkbox" value="[% trx.id %]" data-amount="[% trx.amount %]" data-client_loginid="[% trx.client_loginid %]" onclick="bulkToggleSelected(this)" />
                     </td>
                 [% END %]
                 <td valign="top">
@@ -342,6 +342,7 @@ function bulkToggleSelected(el_chk) {
     if (is_selected) {
         selected_transactions[trx_id] = {
             amount: el_chk.getAttribute('data-amount'),
+            client_loginid: el_chk.getAttribute('data-client_loginid'),
             remark: el_row.querySelector('textarea[name="set_remark"]').value.trim(),
         };
     } else {
