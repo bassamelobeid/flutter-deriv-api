@@ -144,7 +144,7 @@ sub _currencies_config {
     my $transfer_fees       = BOM::Config::CurrencyConfig::transfer_between_accounts_fees();
 
     # Get available currencies
-    my @all_currencies = keys %{LandingCompany::Registry::get('svg')->legal_allowed_currencies};
+    my @all_currencies = LandingCompany::Registry::all_currencies();
 
     my $suspended_currencies = BOM::Config::CurrencyConfig::get_suspended_crypto_currencies();
 
@@ -185,10 +185,9 @@ Returns a HASH.
 
 sub _crypto_config {
 
-    my @all_currencies = keys %{LandingCompany::Registry::get('svg')->legal_allowed_currencies};
+    my @all_crypto_currencies = LandingCompany::Registry::all_crypto_currencies();
     my %crypto_config;
-    for my $currency (@all_currencies) {
-        next unless LandingCompany::Registry::get_currency_type($currency) eq 'crypto';
+    for my $currency (@all_crypto_currencies) {
 
         # To check if Exchange Rate is present currently [ Ex: IDK ]
         my $converted = eval {

@@ -161,7 +161,11 @@ rpc "payout_currencies",
     # If the client has not yet selected currency - we will use list from his landing company
     # or we may have a landing company even if we're not logged in - typically this
     # is obtained from the GeoIP country code lookup. If we have one, use it.
-    my $lc = $client ? $client->landing_company : LandingCompany::Registry::get($params->{landing_company_name} || 'svg');
+    my $client_landing_company =
+        (defined $params->{landing_company_name})
+        ? LandingCompany::Registry::get($params->{landing_company_name})
+        : LandingCompany::Registry::get_default();
+    my $lc = $client ? $client->landing_company : $client_landing_company;
 
     # ... but we fall back to `svg` as a useful default, since it has most
     # currencies enabled.
@@ -874,7 +878,8 @@ sub _get_authentication {
     my %needs_verification_hash = ();
 
     my $poi_structure = sub {
-        $authentication_object->{identity}{expiry_date} = $poi_minimum_expiry_date if $poi_minimum_expiry_date and $is_document_expiry_check_required;
+        $authentication_object->{identity}{expiry_date} = $poi_minimum_expiry_date
+            if $poi_minimum_expiry_date and $is_document_expiry_check_required;
 
         $authentication_object->{identity}{status} = 'pending' if $is_poi_pending;
         # check for expiry
@@ -887,7 +892,8 @@ sub _get_authentication {
     };
 
     my $poa_structure = sub {
-        $authentication_object->{document}{expiry_date} = $poa_minimum_expiry_date if $poa_minimum_expiry_date and $is_document_expiry_check_required;
+        $authentication_object->{document}{expiry_date} = $poa_minimum_expiry_date
+            if $poa_minimum_expiry_date and $is_document_expiry_check_required;
 
         # check for expiry
         if ($is_poa_already_expired and $is_document_expiry_check_required) {

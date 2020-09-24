@@ -31,7 +31,7 @@ the configuration file. A symbol can be disabled by still valid.
 sub is_invalid_symbol {
     my $symbol = shift;
 
-    my $offerings_obj = LandingCompany::Registry::get('svg')->basic_offerings(BOM::Config::Runtime->instance->get_offerings_config);
+    my $offerings_obj = LandingCompany::Registry::get_default()->basic_offerings(BOM::Config::Runtime->instance->get_offerings_config);
     unless ($symbol && $offerings_obj->offerings->{$symbol}) {
 
         my @offerings = keys %{$offerings_obj->offerings};
