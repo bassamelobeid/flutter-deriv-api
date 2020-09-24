@@ -172,7 +172,7 @@ sub startup {
             my $client_ip = $c->client_ip;
 
             my $brand_name   = defang($c->req->param('brand')) // '';
-            my $valid_brand  = any { $_ eq $brand_name } @Brands::VAlID_BRANDS;
+            my $valid_brand  = any { $_ eq $brand_name } Brands::allowed_names()->@*;
             my $binary_brand = $valid_brand ? Brands->new(name => $brand_name) : Brands->new_from_app_id($app_id);
 
             if ($c->tx and $c->tx->req and $c->tx->req->headers->header('REMOTE_ADDR')) {
