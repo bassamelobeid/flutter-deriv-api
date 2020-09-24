@@ -17,6 +17,7 @@ my $allowed_naked_packages = {
     'BOM::MyAffiliates::ActivityReporter'          => 3,
     'BOM::MyAffiliates::PaymentToAccountManager'   => 8,
     'BOM::MyAffiliates::TurnoverReporter'          => 3,
+    'BOM::MyAffiliates::MultiplierReporter'        => 4,
     'BOM::MyAffiliatesApp::Controller'             => 5,
 };
 
