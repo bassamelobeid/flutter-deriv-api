@@ -502,6 +502,20 @@ quants:
               isa: Num
               default: 100
               global: 1
+    multiplier_affiliate_commission:
+      description: "Affiliate commission for multiplier contracts"
+      isa: section
+      contains:
+        financial:
+          description: "Financial contracts multiplier affiliate commission"
+          isa: Num
+          default: 0
+          global: 1
+        non_financial:
+          description: "Non-financial multiplier contracts affiliate commission"
+          isa: Num
+          default: 0
+          global: 1
     suspend_deal_cancellation:
       description: "Allow suspension of deal cancellation by market."
       isa: section
