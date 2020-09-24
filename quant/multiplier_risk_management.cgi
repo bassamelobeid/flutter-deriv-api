@@ -36,6 +36,16 @@ BOM::Backoffice::Request::template()->process(
         definitions => $limit_defs,
     }) || die BOM::Backoffice::Request::template()->error;
 
+Bar("Multiplier Affiliate Commission");
+
+BOM::Backoffice::Request::template()->process(
+    'backoffice/multiplier_affiliate_commission.html.tt',
+    {
+        multiplier_upload_url => request()->url_for('backoffice/quant/market_data_mgmt/update_multiplier_config.cgi'),
+        existing_config       => _get_existing_commission_config(),
+        disabled              => $disabled_write,
+    }) || die BOM::Backoffice::Request::template()->error;
+
 Bar("Per symbol configuration");
 
 BOM::Backoffice::Request::template()->process(
@@ -64,6 +74,16 @@ BOM::Backoffice::Request::template()->process(
         existing_volume_limits => _get_existing_client_volume_limits(),
         multiplier_upload_url  => request()->url_for('backoffice/quant/market_data_mgmt/update_multiplier_config.cgi'),
     }) || die BOM::Backoffice::Request::template()->error;
+
+sub _get_existing_commission_config {
+
+    my $app_config = BOM::Config::Runtime->instance->app_config;
+
+    return {
+        financial     => $app_config->get('quants.multiplier_affiliate_commission.financial'),
+        non_financial => $app_config->get('quants.multiplier_affiliate_commission.non_financial')};
+
+}
 
 sub _get_existing_multiplier_config {
     my $qc        = BOM::Config::QuantsConfig->new(chronicle_reader => BOM::Config::Chronicle::get_chronicle_reader());

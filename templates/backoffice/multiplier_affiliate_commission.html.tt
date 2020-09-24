@@ -1,0 +1,50 @@
+<form id='multiplier_affiliate_commission'>
+<fieldset  [% IF disabled %] disabled title='no write access' [% END %]>
+<table>
+    <tr>
+        <td>Financial Product Commission: </td>
+        <td><input type="text" name="financial_commission" value="[% existing_config.financial %]" ></input></td>
+    </tr>
+    <tr>
+        <td>Non-Financial Product Commission: </td>
+        <td><input type="text" name="non_financial_commission" value="[% existing_config.non_financial %]" name="non_financial"></input></td>
+    </tr>
+    <tr>
+        <td><input type="button" onClick="SaveMultiplierAffiliateCommission()" value="Update Commission"></td>
+        <td class="save_multiplier_affiliate_commission"></td>
+    </tr>
+</table>
+</form>
+
+
+<script>
+var multiplier_upload_url = "[% multiplier_upload_url | none %]";
+
+function SaveMultiplierAffiliateCommission(){
+
+    var el = \$('#multiplier_affiliate_commission');
+
+    var result = el.find('.save_multiplier_affiliate_commission');
+    var financial = el.find('input[name="financial_commission"]').val();
+    var non_financial = el.find('input[name="non_financial_commission"]').val();
+
+    result.text('processing ...').css('color', 'black');
+
+    \$.ajax({
+        url: multiplier_upload_url,
+        data: {
+            save_multiplier_affiliate_commission: 1,
+            financial: financial,
+            non_financial: non_financial
+        },
+        success: function(data) {
+            var config = \$.parseJSON(data);
+            if (config.error) {
+                result.text(config.error).css('color', 'red');
+            } else {
+                result.text('saved').css('color', 'green');
+            }
+        }
+    });
+}
+</script>

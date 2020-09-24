@@ -61,6 +61,40 @@ if ($r->param('save_multiplier_config')) {
     print encode_json_utf8($output);
 }
 
+if ($r->param('save_multiplier_affiliate_commission')) {
+
+    my $app_config = BOM::Config::Runtime->instance->app_config;
+    $app_config->chronicle_writer(BOM::Config::Chronicle::get_chronicle_writer());
+
+    my $output;
+    my $financial;
+    my $non_financial;
+    try {
+        $financial     = $r->param('financial');
+        $non_financial = $r->param('non_financial');
+
+        die "Commission must be within the range [0,1)" if ($financial < 0 or $financial >= 1) or ($non_financial < 0 or $non_financial >= 1);
+
+        $app_config->set({'quants.multiplier_affiliate_commission.financial'     => $financial});
+        $app_config->set({'quants.multiplier_affiliate_commission.non_financial' => $non_financial});
+
+        BOM::Backoffice::QuantsAuditLog::log(
+            $staff,
+            "ChangeAffiliateMultiplierCommission",
+            'financial : '
+                . $financial
+                . ', non-financial :
+            ' . $non_financial
+        );
+
+        $output = {success => 1};
+    } catch {
+        $output = {error => "$@"};
+    }
+
+    print encode_json_utf8($output);
+}
+
 if ($r->param('save_multiplier_user_limit')) {
     my $app_config = BOM::Config::Runtime->instance->app_config;
     $app_config->chronicle_writer(BOM::Config::Chronicle::get_chronicle_writer());
