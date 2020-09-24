@@ -144,22 +144,18 @@ sub transfer_between_accounts_limits {
 
     my $currency_limits = {};
     foreach my $currency (@all_currencies) {
-        my $min = $configs_json->{$currency} // $configs->{"payments.transfer_between_accounts.minimum.default"};
+        my ($min, $max);
 
+        $min = $configs_json->{$currency} // $configs->{"payments.transfer_between_accounts.minimum.default"};
         $min = eval { 0 + financialrounding('amount', $currency, convert_currency($min, 'USD', $currency)); };
 
-        my $max = eval {
+        $max = eval {
             0 + financialrounding('amount', $currency,
                 convert_currency($configs->{'payments.transfer_between_accounts.maximum.' . $max_config}, 'USD', $currency));
         };
 
-        if (is_valid_crypto_currency($currency) && is_crypto_currency_suspended($currency)) {
-            $min = 0 unless $min;
-            $max = 0 unless $max;
-        }
-
-        $currency_limits->{$currency}->{min} = $min if $min;
-        $currency_limits->{$currency}->{max} = $max if $max;
+        $currency_limits->{$currency}->{min} = $min // 0;
+        $currency_limits->{$currency}->{max} = $max // 0;
     }
 
     $currency_limits->{revision} = $loaded_revision;

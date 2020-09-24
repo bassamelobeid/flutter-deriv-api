@@ -100,7 +100,7 @@ subtest 'transfer_between_accounts_limits' => sub {
 
         $transfer_limits = BOM::Config::CurrencyConfig::transfer_between_accounts_limits(1);
 
-        is($transfer_limits->{GBP}->{max}, undef, "No error thrown when there is no exchange rate");
+        is($transfer_limits->{GBP}->{max}, 0, "Default Value is 0 when there is no exchange rate");
 
         $mock_convert_currency->unmock_all();
     };
