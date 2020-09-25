@@ -869,6 +869,34 @@ subtest 'P2P Order Info' => sub {
         }};
 };
 
+subtest 'RestrictedCountry error before PermissionDenied' => sub {
+    BOM::Test::Helper::P2P::create_escrow();
+    my $amount = 100;
+    my ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert(
+        amount => $amount,
+        type   => 'buy'
+    );
+    my ($client, $order) = BOM::Test::Helper::P2P::create_order(
+        advert_id => $advert->{id},
+        balance   => $amount
+    );
+
+    my $client_token = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token');
+    $params->{token} = $client_token;
+    $params->{args}  = {
+        id => $advertiser->{id},
+    };
+
+    # Set unwelcome to client
+    $client->status->set('unwelcome');
+    # Set restricted country and client residence to py
+    $app_config->payments->p2p->restricted_countries(['py']);
+    $client->residence('py');
+    $client->save;
+    my $res = $c->call_ok(p2p_advertiser_info => $params)->has_no_system_error->result;
+    is $res->{error}->{code}, 'RestrictedCountry', 'The expected error code is RestrictedCountry';
+};
+
 # restore app config
 $app_config->system->suspend->p2p($p2p_suspend);
 $app_config->payments->p2p->enabled($p2p_enable);

@@ -789,8 +789,6 @@ sub _check_client_access {
 
     die +{error_code => 'UnavailableOnVirtual'} if $client->is_virtual;
 
-    die +{error_code => 'PermissionDenied'} if $client->status->has_any(@{RESTRICTED_CLIENT_STATUSES()});
-
     # Allow user to pass if payments.p2p.available is checked or client login id is in payments.p2p.clients
     die +{error_code => 'P2PDisabled'}
         unless $app_config->payments->p2p->available || any { $_ eq $client->loginid } $app_config->payments->p2p->clients->@*;
@@ -812,6 +810,7 @@ sub _check_client_access {
 
     die "NoCountry\n" unless $client->residence;
 
+    die +{error_code => 'PermissionDenied'} if $client->status->has_any(@{RESTRICTED_CLIENT_STATUSES()});
 }
 
 1;
