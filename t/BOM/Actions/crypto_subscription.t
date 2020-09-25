@@ -307,24 +307,19 @@ subtest "change_address_status" => sub {
     is $updated_transaction->{txn_fee}, 0.000247621;
 };
 
-sub _set_withdrawal_verified {
-    my ($txn_db_id) = @_;
-    my $app_config = BOM::Config::Runtime->instance->app_config;
-
-    $dbic->run(
-        fixup => sub {
-            $_->selectrow_array('SELECT payment.ctc_set_withdrawal_verified(?, ?::JSONB, ?, ?)', undef, $txn_db_id, '{"":0}', undef, undef);
-        });
-}
-
 sub _insert_withdrawal_transaction {
     my $transaction = shift;
 
     my $address = $transaction->{to};
 
-    my $txn_db_id = $helper->insert_new_withdraw($address, $transaction->{currency}, $client->loginid, $transaction->{amount}, 0);
-
-    _set_withdrawal_verified($txn_db_id);
+    my $txn_db_id = $dbic->run(
+        ping => sub {
+            $_->selectrow_array(
+                'SELECT payment.ctc_insert_new_withdraw(?, ?, ?, ?::JSONB, ?, ?)',
+                undef, $address, $transaction->{currency},
+                $client->loginid, '{"":0}', $transaction->{amount}, 0
+            );
+        });
 
     $dbic->run(ping => sub { $_->selectrow_array('SELECT payment_id FROM payment.ctc_process_withdrawal(?)', undef, $txn_db_id) });
 

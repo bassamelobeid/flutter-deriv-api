@@ -70,11 +70,11 @@ for my $test_data (@data_for_notification_tests) {
         # Separate connection is needed, because BOM::User::Client will execute the same redis
         # which is not allowed when waiting for replies on the same connection
         my $connection_config = BOM::Config::redis_p2p_config()->{p2p}{read};
-        my $p2p_redis = RedisDB->new(
+        my $p2p_redis         = RedisDB->new(
             host => $connection_config->{host},
             port => $connection_config->{port},
             ($connection_config->{password} ? ('password' => $connection_config->{password}) : ()));
-        
+
         #Yes, this's really need, because when we're trying to get_reply,
         # and after time out, auto reconnecting for some reason doesn't work
         $p2p_redis->_connect();
