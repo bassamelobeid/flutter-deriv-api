@@ -72,25 +72,22 @@ my %dbs;
                 $log->warnf('Fail to connect to client db %s: %s', $broker, $@);
             }
             next unless $dbs{$broker};
-            # Stopquering db when feature is disabled
+            # Stop quering db when feature is disabled
             last if $app_config->system->suspend->p2p || !$app_config->payments->p2p->enabled;
             $log->debug('P2P: Checking for expired orders');
             try {
-                my $sth = $dbs{$broker}->prepare('SELECT id, client_loginid FROM p2p.order_list_expired() WHERE status IN (?,?)');
-                # Seems a waste to fetch and send `timed-out` orders through the events queue just to be discarded by `bom-users`
-                $sth->execute(qw(pending buyer-confirmed));
+                my $orders = $dbs{$broker}->selectall_arrayref('SELECT id, client_loginid FROM p2p.order_list_expired()', {Slice => {}});
                 
-                while (my $order_data = $sth->fetchrow_hashref) {
-                    $log->debugf('P2P: Emitting event to mark order as expired for order %s', $order_data->{id});
+                for my $order (@$orders) {
+                    $log->debugf('P2P: Emitting event to mark order as expired for order %s', $order->{id});
 
                     BOM::Platform::Event::Emitter::emit(
                         p2p_order_expired => {
-                            client_loginid => $order_data->{client_loginid},
-                            order_id       => $order_data->{id},
+                            client_loginid => $order->{client_loginid},
+                            order_id       => $order->{id},
                             expiry_started => [Time::HiRes::gettimeofday],
                         });
                 }
-                $sth->finish;
             }
             catch ($error) {
                 $log->warnf('Failed to get expired P2P orders from client db %s: %s', $broker, $error);
