@@ -143,12 +143,16 @@ struct P2PAdvertiser => [qw(
         payment_info
         chat_token
         chat_user_id
+        buy_completion_rate
         buy_orders_count
         cancel_time_avg
-        completion_rate
         release_time_avg
+        sell_completion_rate
         sell_orders_count
         total_orders_count
+        total_completion_rate
+        basic_verification
+        full_verification
         )];
 
 my $history_count = 10;
@@ -350,12 +354,16 @@ for my $name (qw(ad_man bob@test.com)) {
         payment_info               => 'Paypal user@example.com',
         chat_user_id               => 'chatty user',
         chat_token                 => 'chatty token',
+        buy_completion_rate        => undef,
         buy_orders_count           => 0,
         cancel_time_avg            => undef,
-        completion_rate            => undef,
         release_time_avg           => undef,
+        sell_completion_rate       => undef,
         sell_orders_count          => 0,
         total_orders_count         => 0,
+        total_completion_rate      => undef,
+        basic_verification         => 0,
+        full_verification          => 0,
         );
 }
 
