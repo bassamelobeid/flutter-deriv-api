@@ -3359,10 +3359,19 @@ sub _p2p_advertiser_stats_get {
         sell_orders_count  => $redis->zcount($key_prefix . '::ORDER_COMPLETED::SELL', $start_ts, '+inf'),
         cancel_time_avg    => @cancel_times ? sprintf("%.0f", List::Util::sum(@cancel_times) / @cancel_times) : undef,
         release_time_avg   => @release_times ? sprintf("%.0f", List::Util::sum(@release_times) / @release_times) : undef,
+        basic_verification => $self->status->age_verification ? 1 : 0,
+        full_verification  => $self->fully_authenticated ? 1 : 0,
     };
 
-    my $total = $stats->{buy_orders_count} + $redis->zcount($key_prefix . '::ORDER_REFUNDED::BUY', $start_ts, '+inf');
-    $stats->{completion_rate} = $total ? sprintf("%.2f", ($stats->{buy_orders_count} / $total) * 100) : undef;
+    my $buy_total = $stats->{buy_orders_count} + $redis->zcount($key_prefix . '::ORDER_REFUNDED::BUY', $start_ts, '+inf');
+    $stats->{buy_completion_rate} = $buy_total ? sprintf("%.2f", ($stats->{buy_orders_count} / $buy_total) * 100) : undef;
+
+    my $sell_total = $stats->{sell_orders_count};    # in future will inlclude disputed orders resolved in favour of buyer
+    $stats->{sell_completion_rate} = $sell_total ? sprintf("%.2f", ($stats->{sell_orders_count} / $sell_total) * 100) : undef;
+
+    my $overall_total     = $buy_total + $sell_total;
+    my $overall_completed = $stats->{buy_orders_count} + $stats->{sell_orders_count};
+    $stats->{total_completion_rate} = $overall_total ? sprintf("%.2f", ($overall_completed / $overall_total) * 100) : undef;
 
     return $stats;
 }

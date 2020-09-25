@@ -24,12 +24,16 @@ BOM::Test::Helper::P2P::purge_redis();    # can fail in circle-ci without this
 my ($advertiser, $client, $advert, $order);
 
 my %default_stats = (
-    'buy_orders_count'   => 0,
-    'sell_orders_count'  => 0,
-    'total_orders_count' => 0,
-    'cancel_time_avg'    => undef,
-    'release_time_avg'   => undef,
-    'completion_rate'    => undef,
+    'buy_orders_count'        => 0,
+    'sell_orders_count'       => 0,
+    'total_orders_count'      => 0,
+    'cancel_time_avg'         => undef,
+    'release_time_avg'        => undef,
+    'total_completion_rate'   => undef,
+    'buy_completion_rate'     => undef,
+    'sell_completion_rate'    => undef,
+    'basic_verification'      => 0,
+    'full_verification'       => 0,
 );
 my @stats_keys = keys %default_stats;
 my $stats_cli  = {%default_stats};
@@ -45,11 +49,20 @@ subtest 'errors' => sub {
     cmp_deeply($cli->_p2p_advertiser_stats_get($cli->loginid, 30), {%default_stats}, 'stats for non advertiser');
 };
 
-subtest 'sell ads' => sub {
-
+subtest 'verification' => sub {
     ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert(type => 'sell');
     check_stats($advertiser, $stats_adv, 'stats for new advertiser');
 
+    $advertiser->status->set('age_verification', 'system', 'testing');
+    $stats_adv->{basic_verification} = 1;
+    check_stats($advertiser, $stats_adv, 'age verified sets basic verification');
+
+    $advertiser->set_authentication('ID_ONLINE')->status('pass');
+    $stats_adv->{full_verification} = 1;
+    check_stats($advertiser, $stats_adv, 'POA sets basic verification');
+};
+
+subtest 'sell ads' => sub {
     set_fixed_time('2000-01-01 00:00:00', '%Y-%m-%d %H:%M:%S');
 
     ($client, $order) = BOM::Test::Helper::P2P::create_order(
@@ -67,10 +80,11 @@ subtest 'sell ads' => sub {
 
     set_fixed_time('2000-01-01 00:01:40', '%Y-%m-%d %H:%M:%S');    # +40s
     $advertiser->p2p_order_confirm(id => $order->{id});
-    $stats_adv->{total_orders_count} = ++$stats_cli->{total_orders_count};
-    $stats_adv->{sell_orders_count}  = ++$stats_cli->{buy_orders_count};
-    $stats_adv->{release_time_avg}   = 100;
-    $stats_cli->{completion_rate}    = '100.00';
+    $stats_adv->{total_orders_count}   = ++$stats_cli->{total_orders_count};
+    $stats_adv->{sell_orders_count}    = ++$stats_cli->{buy_orders_count};
+    $stats_adv->{release_time_avg}     = 100;
+    $stats_adv->{sell_completion_rate} = $stats_adv->{total_completion_rate} = '100.00';
+    $stats_cli->{buy_completion_rate}  = $stats_cli->{total_completion_rate} = '100.00';
     check_stats($advertiser, $stats_adv, 'advertiser stats after seller confim');
     check_stats($client,     $stats_cli, 'client stats after seller confirm');
 
@@ -84,8 +98,8 @@ subtest 'sell ads' => sub {
 
     set_fixed_time('2000-01-01 00:02:00', '%Y-%m-%d %H:%M:%S');    # +20s
     $client->p2p_order_cancel(id => $order->{id});
-    $stats_cli->{cancel_time_avg} = 20;
-    $stats_cli->{completion_rate} = '50.00';
+    $stats_cli->{cancel_time_avg}     = 20;
+    $stats_cli->{buy_completion_rate} = $stats_cli->{total_completion_rate} = '50.00';
     check_stats($advertiser, $stats_adv, 'advertiser stats after order cancelled');
     check_stats($client,     $stats_cli, 'client stats after order cancelled');
 
@@ -96,8 +110,8 @@ subtest 'sell ads' => sub {
     );
     set_fixed_time('2000-01-01 00:02:30', '%Y-%m-%d %H:%M:%S');    # +30s
     $client->p2p_order_cancel(id => $order->{id});
-    $stats_cli->{cancel_time_avg} = 25;
-    $stats_cli->{completion_rate} = '33.33';
+    $stats_cli->{cancel_time_avg}     = 25;
+    $stats_cli->{buy_completion_rate} = $stats_cli->{total_completion_rate} = '33.33';
     check_stats($advertiser, $stats_adv, 'advertiser stats after 2nd order cancelled');
     check_stats($client,     $stats_cli, 'client stats after 2nd order cancelled');
 
@@ -108,7 +122,7 @@ subtest 'sell ads' => sub {
     );
     set_fixed_time('2000-01-01 00:04:30', '%Y-%m-%d %H:%M:%S');    # +2h
     $client->p2p_expire_order(id => $order->{id});
-    $stats_cli->{completion_rate} = '25.00';
+    $stats_cli->{buy_completion_rate} = $stats_cli->{total_completion_rate} = '25.00';
     check_stats($advertiser, $stats_adv, 'advertiser stats after order expired');
     check_stats($client,     $stats_cli, 'client stats after order expired');
 
@@ -121,11 +135,11 @@ subtest 'sell ads' => sub {
     $client->p2p_order_confirm(id => $order->{id});
     set_fixed_time('2000-03-01 00:00:05', '%Y-%m-%d %H:%M:%S');    # +5s
     $advertiser->p2p_order_confirm(id => $order->{id});
-    $stats_cli->{total_orders_count} = ++$stats_adv->{total_orders_count};
-    $stats_cli->{buy_orders_count}   = $stats_adv->{sell_orders_count} = 1;
-    $stats_adv->{release_time_avg}   = 5;
-    $stats_cli->{cancel_time_avg}    = undef;
-    $stats_cli->{completion_rate}    = '100.00';
+    $stats_cli->{total_orders_count}  = ++$stats_adv->{total_orders_count};
+    $stats_cli->{buy_orders_count}    = $stats_adv->{sell_orders_count} = 1;
+    $stats_adv->{release_time_avg}    = 5;
+    $stats_cli->{cancel_time_avg}     = undef;
+    $stats_cli->{buy_completion_rate} = $stats_cli->{total_completion_rate} = '100.00';
     check_stats($advertiser, $stats_adv, 'advertiser stats in future');
     check_stats($client,     $stats_cli, 'client stats in future');
 };
@@ -150,10 +164,11 @@ subtest 'buy ads' => sub {
 
     set_fixed_time('2000-03-01 00:01:00', '%Y-%m-%d %H:%M:%S');    # +55s
     $client->p2p_order_confirm(id => $order->{id});
-    $stats_cli->{total_orders_count} = ++$stats_adv->{total_orders_count};
-    $stats_cli->{sell_orders_count}  = ++$stats_adv->{buy_orders_count};
-    $stats_cli->{release_time_avg}   = 55;
-    $stats_adv->{completion_rate}    = '100.00';
+    $stats_cli->{total_orders_count}   = ++$stats_adv->{total_orders_count};
+    $stats_cli->{sell_orders_count}    = ++$stats_adv->{buy_orders_count};
+    $stats_cli->{release_time_avg}     = 55;
+    $stats_cli->{sell_completion_rate} = $stats_cli->{total_completion_rate} = '100.00';
+    $stats_adv->{buy_completion_rate}  = $stats_adv->{total_completion_rate} = '100.00';
     check_stats($advertiser, $stats_adv, 'advertiser stats after seller confirm');
     check_stats($client,     $stats_cli, 'client stats after seller confirm');
 
@@ -164,8 +179,9 @@ subtest 'buy ads' => sub {
     );
     set_fixed_time('2000-03-01 00:01:10', '%Y-%m-%d %H:%M:%S');    # +10s
     $advertiser->p2p_order_cancel(id => $order->{id});
-    $stats_adv->{cancel_time_avg} = 10;
-    $stats_adv->{completion_rate} = '50.00';
+    $stats_adv->{cancel_time_avg}         = 10;
+    $stats_adv->{total_completion_rate} = '66.67';
+    $stats_adv->{buy_completion_rate}     = '50.00';
     check_stats($advertiser, $stats_adv, 'advertiser stats after order cancelled');
     check_stats($client,     $stats_cli, 'client stats after order cancelled');
 
@@ -175,7 +191,8 @@ subtest 'buy ads' => sub {
         amount    => 1
     );
     $advertiser->p2p_expire_order(id => $order->{id});
-    $stats_adv->{completion_rate} = '33.33';
+    $stats_adv->{total_completion_rate} = '50.00';
+    $stats_adv->{buy_completion_rate}     = '33.33';
     check_stats($advertiser, $stats_adv, 'advertiser stats after order expired');
     check_stats($client,     $stats_cli, 'client stats after order expired');
 };
