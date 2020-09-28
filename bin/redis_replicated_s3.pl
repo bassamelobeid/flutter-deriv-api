@@ -51,7 +51,7 @@ These options are available:
 EOF
 
 my @redis_keys = ('interest', 'dividend', 'economic', 'volatility', 'correlation', 'partial_trading', 'holidays', 'app_settings');
-my $config = LoadFile($s3_config);
+my $config     = LoadFile($s3_config);
 
 my $loop = IO::Async::Loop->new;
 my $s3   = Net::Async::Webservice::S3->new(
@@ -73,8 +73,7 @@ sub upload_redis {
             key   => $file_name,
             value => $content
         )->get;
-    }
-    catch {
+    } catch {
         die "Failed to upload redis dump data to S3. Error is $@.";
     }
 }
@@ -98,6 +97,9 @@ sub download_redis {
 
         my $category = $parts[0];
         my $key      = $parts[1];
+        # we have $doc_key like economic_events_cache_snapshot that doesn't follow the naming convention.
+        # skip this for now.
+        next unless $key;
 
         $writer->set($category, $key, $doc, $timestamp);
         print "updated $category :: $key\n";
