@@ -221,7 +221,10 @@ my $display_transactions = sub {
         # We should prevent verifying the withdrawal transaction by the payment team
         # if the client withdrawal is locked
         my $client = BOM::User::Client->new({loginid => $trx->{client_loginid}});
-        $trx->{is_withdrawal_locked} = $client->status->withdrawal_locked if $trx->{transaction_type} eq 'withdrawal';
+        $trx->{is_withdrawal_locked} =
+            ($client->status->withdrawal_locked || $client->status->cashier_locked || $client->status->no_withdrawal_or_trading)
+            if $trx->{transaction_type} eq 'withdrawal';
+
         $trx->{client_status} =
               $client->fully_authenticated      ? 'Fully Authenticated'
             : $client->status->age_verification ? 'Age Verified'
