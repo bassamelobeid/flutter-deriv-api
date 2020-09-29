@@ -10,7 +10,7 @@ use BOM::User::Client;
 my $login_id = 'CR0009';
 
 subtest 'Almost all accessor/modifiers' => sub {
-    plan tests => 20;
+    plan tests => 17;
 
     my $client = BOM::User::Client::get_instance({'loginid' => $login_id});
     note "broker_code ", $client->broker_code;
@@ -70,18 +70,6 @@ subtest 'Almost all accessor/modifiers' => sub {
     $client->set_exclusion->session_duration_limit(20);
 
     is($client->self_exclusion->session_duration_limit, 20, "the client session duration is 20 minutes.");
-
-    $client->self_exclusion->max_deposit_daily(11);
-
-    is $client->self_exclusion->max_deposit_daily, 11, 'daily deposit limit  is correct';
-
-    $client->self_exclusion->max_deposit_7day(111);
-
-    is $client->self_exclusion->max_deposit_7day, 111, '7-day deposit limit  is correct';
-
-    $client->self_exclusion->max_deposit_30day(1111);
-
-    is $client->self_exclusion->max_deposit_30day, 1111, '30-day deposit limit  is correct';
 
     $client->save();
 
