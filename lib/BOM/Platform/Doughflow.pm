@@ -32,21 +32,22 @@ sub get_sportsbook {
         return 'test';
     }
 
-    my $landing_company = LandingCompany::Registry->get_by_broker($broker)->short;
+    my $landing_company = LandingCompany::Registry->get_by_broker($broker);
+    my $landing_company_name = $landing_company->name;
 
-    # remove full-stops, to make sportsbook name short enough for DF (30 chars Max)
-    $landing_company =~ s/\.//g;
+    unless (is_deriv_sportsbooks_enabled()) {
+        # TODO: remove this check once Doughflow's side is live
+        # for backward compatibility, we keep sportsbook prefixes as 'Binary'
+        my %mapping = (
+            svg         => 'Binary (CR) SA',
+            malta       => 'Binary (Europe) Ltd',
+            iom         => 'Binary (IOM) Ltd',
+            maltainvest => 'Binary Investments Ltd',
+        );
+        $landing_company_name = $mapping{$landing_company->short};
+    }
 
-    # for backward compatibility, we keep sportsbook prefixes as 'Binary'
-    my %mapping = (
-        svg         => 'Binary (CR) SA',
-        malta       => 'Binary (Europe) Ltd',
-        iom         => 'Binary (IOM) Ltd',
-        maltainvest => 'Binary Investments Ltd',
-    );
-    $landing_company = $mapping{$landing_company};
-
-    $sportsbook = $landing_company . ' ' . $currency;
+    $sportsbook = $landing_company_name . ' ' . $currency;
 
     return $sportsbook;
 }
@@ -72,6 +73,20 @@ sub get_doughflow_language_code_for {
     }
 
     return $code;
+}
+
+=head2 is_deriv_sportsbooks_enabled
+
+Returns true if doughflow Deriv sportsbooks is enabled, false otherwise
+
+=cut
+
+# TODO: remove this check once Doughflow's side is live
+sub is_deriv_sportsbooks_enabled {
+    my $self = shift;
+
+    # is doughflow Deriv sportsbook enabled?
+    return !BOM::Config::Runtime->instance->app_config->system->suspend->doughflow_deriv_sportsbooks;
 }
 
 1;
