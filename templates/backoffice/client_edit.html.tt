@@ -390,15 +390,28 @@ window.addEventListener('DOMContentLoaded', init_text_validations, false);
         <td class="label"></td>
         <td><button name="run_onfido_check" type="submit" value="1">Run Onfido Check</button></td>
     </tr>
-    [% END %]
-    <tr>
-        <td class="label">Allow POI Resubmission : </td>
-        <td> <input type="checkbox" style="vertical-align:middle" name="allow_onfido_resubmission" value="1" [% IF onfido_resubmission %] checked="checked" [% END %]> </td>
-    </tr>
-    <tr>
-        <td class="label">Resubmission Counter: </td>
-        <td> [% onfido_resubmission_counter %]</td>
-    </tr>
+
+    [% END %]    
+    <tr>                                                                         
+        <td class="label" style="vertical-align:middle">Allow POI Resubmission : </td>
+        <td> <input type="checkbox" onclick="toggle_checkbox(this)" name="allow_onfido_resubmission" value="1" [% IF onfido_resubmission %] checked="checked" [% END %] /> 
+        <span id="allow_onfido_resubmission_toggle" [% IF onfido_resubmission %] style="display:inline" [% ELSE %]  style="display:none" [% END %] >
+        <label for="poi_reasons">REASON:</label>   
+        <select name="poi_reason" onchange="kyc_reason_changed()">
+                <option value="unselected"  [% IF onfido_resubmission && onfido_resubmission=="unselected" %] selected [% END %] > Please Select </option>
+                [% FOREACH option IN poi_reasons %]
+                  <option value="[% option.index %]" [% IF onfido_resubmission && onfido_resubmission==option.index %] selected [% END %] >[% option.reason %]</option>
+                [% END %]
+                <option value="other"  [% IF onfido_resubmission && onfido_resubmission=="other" %] selected [% END %] > Other </option>
+            </select>
+        </span>
+        </td>
+    </tr>                                                                          
+    <tr>                                                                         
+        <td class="label">Resubmission Counter: </td>                            
+        <td> [% onfido_resubmission_counter %]</td>                              
+    </tr>                                                                        
+
     <tr>
         <td class="label">ID Authentication : </td>
         [%
@@ -483,7 +496,17 @@ window.addEventListener('DOMContentLoaded', init_text_validations, false);
     </tr>
 <tr>
         <td class="label" style="vertical-align:middle">Allow POA Resubmission : </td>
-        <td> <input type="checkbox" name="allow_poa_resubmission" value="1" [% IF poa_resubmission_allowed %] checked="checked" [% END %]>
+        <td> <input type="checkbox" onclick="toggle_checkbox(this)" name="allow_poa_resubmission" value="1" [% IF poa_resubmission_allowed %] checked="checked" [% END %]>
+        <span id="allow_poa_resubmission_toggle" [% IF poa_resubmission_allowed %] style="display:inline" [% ELSE %]  style="display:none" [% END %] >
+        <label for="poa_reasons">REASON:</label>   
+        <select name="poa_reason" onchange="kyc_reason_changed()" >
+                <option value="unselected"  [% IF poa_resubmission_allowed && poa_resubmission_allowed=="unselected" %] selected [% END %] > Please Select </option>
+                [% FOREACH option IN poa_reasons %]
+                  <option value="[% option.index %]" [% IF poa_resubmission_allowed && poa_resubmission_allowed==option.index %] selected [% END %] >[% option.reason %]</option>
+                [% END %]
+                <option value="other"  [% IF poa_resubmission_allowed && poa_resubmission_allowed=="other" %] selected [% END %] > Other </option>
+            </select>
+        </span>
         </td>
     </tr>
     <tr>
@@ -499,6 +522,10 @@ window.addEventListener('DOMContentLoaded', init_text_validations, false);
                 </select>
             [% END %]
         </td>
+    </tr>
+    <tr title="if poi/poa resubmission is checked by checking this and after clicking the save button, an email will be sent to the client to resubmit documents">
+        <td class="label" style="vertical-align:middle"> KYC EMAIL : </td>
+        <td> <input type="checkbox"  style="vertical-align:middle" name="kyc_email_checkbox" value="1" /> </td>
     </tr>
     <tr>
         <td class="small_header" colspan="2">#Communication Addresses</td>
@@ -710,6 +737,25 @@ function update_age_verification(auth_status) {
     }
     else {
         age_verification_element.classList.remove('data-changed');
+    }
+}
+
+function toggle_checkbox(checkbox) {
+    if (checkbox.checked){
+         document.getElementById(checkbox.name + "_toggle").style.display = "inline";
+           } else {
+        document.getElementById(checkbox.name + "_toggle").style.display = "none";
+    }
+}
+
+function kyc_reason_changed() {
+    document.getElementsByName("kyc_email_checkbox")[0].disabled = false;
+    let poi_selection = document.getElementsByName("poi_reason")[0].value;
+    let poa_selection = document.getElementsByName("poa_reason")[0].value;
+     if ((poi_selection == "other" || poi_selection == "unselected")
+        && (poa_selection == "other" || poa_selection == "unselected")) {
+     document.getElementsByName("kyc_email_checkbox")[0].checked = false;
+     document.getElementsByName("kyc_email_checkbox")[0].disabled = true;
     }
 }
 

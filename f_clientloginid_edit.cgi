@@ -92,14 +92,34 @@ my $loginid         = $client->loginid;
 
 # Enabling onfido resubmission
 my $redis = BOM::Config::Redis::redis_replicated_write();
-$redis->set(ONFIDO_ALLOW_RESUBMISSION_KEY_PREFIX . $client->binary_user_id, 1) if $input{allow_onfido_resubmission};
-$redis->del(ONFIDO_ALLOW_RESUBMISSION_KEY_PREFIX . $client->binary_user_id)
-    if defined $input{allow_onfido_resubmission} && !$input{allow_onfido_resubmission};
 
+# POI resubmission logic
+if ($input{allow_onfido_resubmission}) {
+    $redis->set(ONFIDO_ALLOW_RESUBMISSION_KEY_PREFIX . $client->binary_user_id, $input{poi_reason} // "unselected");
+} elsif (defined $input{allow_onfido_resubmission}) {    # resubmission is unchecked
+    $redis->del(ONFIDO_ALLOW_RESUBMISSION_KEY_PREFIX . $client->binary_user_id);
+} elsif ($input{poi_reason}) {
+    # The 'XX' means only set the key if it already exists. We update the reason to the new selection if it already exists (means resubmission is still checked).
+    $redis->set(ONFIDO_ALLOW_RESUBMISSION_KEY_PREFIX . $client->binary_user_id, $input{poi_reason}, 'XX');
+}
+
+# POA resubmission logic
 if ($input{allow_poa_resubmission}) {
-    $redis->set(POA_ALLOW_RESUBMISSION_KEY_PREFIX . $client->binary_user_id, 1);
-} else {
-    $redis->del(POA_ALLOW_RESUBMISSION_KEY_PREFIX . $client->binary_user_id) if defined $input{allow_poa_resubmission};
+    $redis->set(POA_ALLOW_RESUBMISSION_KEY_PREFIX . $client->binary_user_id, $input{poa_reason} // "unselected");
+} elsif (defined $input{allow_poa_resubmission}) {       # resubmission is unchecked
+    $redis->del(POA_ALLOW_RESUBMISSION_KEY_PREFIX . $client->binary_user_id);
+} elsif ($input{poa_reason}) {
+    # The 'XX' means only set the key if it already exists. We update the reason to the new selection if it already exists (means resubmission is still checked).
+    $redis->set(POA_ALLOW_RESUBMISSION_KEY_PREFIX . $client->binary_user_id, $input{poa_reason}, 'XX');
+}
+
+if ($input{kyc_email_checkbox}) {
+    my $poi_reason = $input{poi_reason} || $redis->get(ONFIDO_ALLOW_RESUBMISSION_KEY_PREFIX . $client->binary_user_id);
+    $poi_reason = undef if $poi_reason && ($poi_reason eq "unselected" || $poi_reason eq "other");
+    my $poa_reason = $input{poa_reason} || $redis->get(POA_ALLOW_RESUBMISSION_KEY_PREFIX . $client->binary_user_id);
+    $poa_reason = undef if $poa_reason && ($poa_reason eq "unselected" || $poa_reason eq "other");
+
+    notify_resubmission_of_poi_poa_documents($loginid, $poi_reason, $poa_reason) if ($poi_reason || $poa_reason);
 }
 
 if (defined $input{run_onfido_check}) {

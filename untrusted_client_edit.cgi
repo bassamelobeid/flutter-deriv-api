@@ -106,9 +106,11 @@ foreach my $login_id (split(/\s+/, $clientID)) {
         }
     } else {
         my $status_code = get_untrusted_type_by_linktype($client_status_type)->{code};
-
         if ($action eq 'insert_data') {
             $printline = execute_set_status({%common_args_for_execute_method, status_code => $status_code});
+            if ($status_code eq 'allow_document_upload' && $reason eq 'Pending payout request') {
+                notify_submission_of_documents_for_pending_payout($client);
+            }
         } elsif ($action eq 'remove_status') {
             $printline = execute_remove_status({%common_args_for_execute_method, status_code => $status_code});
         }
@@ -216,3 +218,32 @@ sub print_error_and_exit {
     print "<br /><font color=red><b>ERROR : $error_msg</b></font><br /><br />";
     code_exit_BO();
 }
+
+sub notify_submission_of_documents_for_pending_payout {
+    my ($client) = @_;
+    my $brand = Brands->new(name => 'deriv');
+
+    my $req = BOM::Platform::Context::Request->new(
+        brand_name => $brand->name,
+        app_id     => $client->source,
+    );
+    BOM::Platform::Context::request($req);
+
+    my $email_subject = 'Verify your identity and address for your Deriv or Binary account';
+    my $due_date      = Date::Utility->today->plus_time_interval('3d');
+    my $email_data    = {
+        name => $client->first_name,
+        date => join(' ', $due_date->day_of_month, $due_date->month_as_string, $due_date->year),
+    };
+    send_email({
+        to                    => $client->email,
+        subject               => $email_subject,
+        template_name         => 'pending_payout',
+        template_args         => $email_data,
+        template_loginid      => $client->loginid,
+        email_content_is_html => 1,
+        use_email_template    => 1,
+        use_event             => 1,
+    });
+}
+

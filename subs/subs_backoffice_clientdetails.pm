@@ -25,6 +25,7 @@ use BOM::Database::DataMapper::Account;
 use BOM::Database::DataMapper::Payment;
 use BOM::User::Utility;
 use BOM::Platform::Locale;
+use BOM::Platform::Context;
 use BOM::Platform::S3Client;
 use BOM::Platform::Client::DoughFlowClient;
 use BOM::Backoffice::FormAccounts;
@@ -51,6 +52,74 @@ my %doc_type_categories = BOM::User::Client::DOCUMENT_TYPE_CATEGORIES();
 my @expirable_doctypes  = @{$doc_type_categories{POI}{doc_types}};
 my @poi_doctypes        = @{$doc_type_categories{POI}{doc_types_appreciated}};
 my @no_date_doctypes    = qw(other);
+
+my $POI_REASONS = {
+    cropped => {
+        reason => 'cropped',
+    },
+    expired => {
+        reason => 'expired',
+    },
+    blurred => {
+        reason => 'blurred',
+    },
+    type_is_not_valid => {
+        reason => 'type is not valid',
+    },
+    selfie_is_not_valid => {
+        reason => 'selfie is not valid',
+    },
+    nimc_no_dob => {
+        reason => 'nimc or no dob',
+    },
+    different_person_name => {
+        reason => 'different person/name',
+    },
+    missing_one_side => {
+        reason => 'missing one side',
+    },
+    suspicious => {
+        reason => 'suspicious',
+    },
+};
+my $POA_REASONS = {
+    old => {
+        reason => 'old',
+    },
+    cropped => {
+        reason => 'cropped',
+    },
+    blurred => {
+        reason => 'blurred/flashlight',
+    },
+    screenshot => {
+        reason => 'screenshot',
+    },
+    envelope => {
+        reason => 'envelope',
+    },
+    different_name => {
+        reason => 'different name',
+    },
+    different_address => {
+        reason => 'different address',
+    },
+    capitec_stat_no_match => {
+        reason => 'capitec stat no match',
+    },
+    suspicious => {
+        reason => 'suspicious',
+    },
+    password_protected => {
+        reason => 'password protected',
+    },
+    unsupported_format => {
+        reason => 'unsupported format',
+    },
+    irrelevant_documnets => {
+        reason => 'irrelevant documents',
+    },
+};
 
 sub get_document_type_category_mapping {
     my %type_category_mapping;
@@ -336,6 +405,16 @@ sub print_client_details {
         $client->default_account
         ? formatnumber('amount', $client->default_account->currency_code, client_balance($client))
         : '--- no currency selected';
+
+    my @poi_reasons_tpl =
+        map  { {index => $_, reason => $POI_REASONS->{$_}->{reason}} }
+        sort { $POI_REASONS->{$a}->{reason} cmp $POI_REASONS->{$b}->{reason} }
+        keys $POI_REASONS->%*;
+    my @poa_reasons_tpl =
+        map  { {index => $_, reason => $POA_REASONS->{$_}->{reason}} }
+        sort { $POA_REASONS->{$a}->{reason} cmp $POA_REASONS->{$b}->{reason} }
+        keys $POA_REASONS->%*;
+
     my $template_param = {
         balance              => $balance,
         client               => $client,
@@ -394,6 +473,8 @@ sub print_client_details {
         is_staff_compliance                => BOM::Backoffice::Auth0::has_authorisation(['Compliance']),
         onfido_resubmission_counter        => $onfido_resubmission_counter // 0,
         account_opening_reasons            => ACCOUNT_OPENING_REASONS,
+        poi_reasons                        => \@poi_reasons_tpl,
+        poa_reasons                        => \@poa_reasons_tpl,
     };
 
     return BOM::Backoffice::Request::template()->process('backoffice/client_edit.html.tt', $template_param, undef, {binmode => ':utf8'})
@@ -657,7 +738,12 @@ sub get_untrusted_client_reason {
         payment => {
             name    => 'Payments / transactions',
             reasons => [
-                'PA withdrawal activation', 'Payment related', 'Sharing payment method', 'Duplicate account - currency change', 'Duplicate account',
+                'PA withdrawal activation',
+                'Payment related',
+                'Sharing payment method',
+                'Duplicate account - currency change',
+                'Duplicate account',
+                'Pending payout request',
             ],
         },
         affiliate => {
@@ -1668,6 +1754,41 @@ sub get_limit_expiration_date {
         });
     return undef if !defined $latest_modified_date;
     return Date::Utility->new($latest_modified_date)->plus_time_interval(($added_day // 0) . 'd')->date;
+}
+
+sub notify_resubmission_of_poi_poa_documents {
+    my ($loginid, $poi_selection, $poa_selection) = @_;
+
+    return unless ($poi_selection or $poa_selection);
+
+    my $client = BOM::User::Client->new({loginid => $loginid});
+    my $brand  = Brands->new(name => 'deriv');
+
+    my $req = BOM::Platform::Context::Request->new(
+        brand_name => $brand->name,
+        app_id     => $client->source,
+    );
+    BOM::Platform::Context::request($req);
+
+    my $email_subject = 'Please update your Deriv or Binary account details';
+    my $email_data    = {
+        name           => $client->first_name,
+        poi_remark     => $poi_selection,
+        poa_remark     => $poa_selection,
+        client_loginid => $client->loginid,
+        brand_name     => ucfirst $brand->name,
+    };
+
+    send_email({
+        to                    => $client->email,
+        subject               => $email_subject,
+        template_name         => 'poi_poa_resubmission',
+        template_args         => $email_data,
+        template_loginid      => $client->loginid,
+        email_content_is_html => 1,
+        use_email_template    => 1,
+        use_event             => 1,
+    });
 }
 
 =head2 get_dynamic_settings_list
