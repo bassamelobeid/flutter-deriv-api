@@ -750,6 +750,11 @@ system:
           isa: Bool
           default: 0
           global: 1
+        doughflow_deriv_sportsbooks:
+          description: "Suspend Deriv sportbooks"
+          isa: Bool
+          default: 1
+          global: 1
     directory:
       description: "Configuration for system wide directories"
       isa: section
