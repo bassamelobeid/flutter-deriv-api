@@ -48,7 +48,7 @@ my %file_details = (
     },
     lookbacks => {
         filename => module_path('BOM::Product::Contract::Lbfloatcall'),
-        hash     => 'bdb2fe052c1cacdb17ef4a725cd612f72fe2a409'
+        hash     => 'e3e68e78cbf2796e0a84fcc0d931ed061ddf783b'
     },
     highlowtick => {
         filename => module_path('BOM::Product::Contract::Tickhigh'),

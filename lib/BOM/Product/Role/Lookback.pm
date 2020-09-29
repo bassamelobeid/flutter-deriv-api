@@ -134,4 +134,10 @@ override shortcode => sub {
     return uc join '_', @shortcode_elements;
 };
 
+my $ERROR_MAPPING = BOM::Product::Static::get_error_mapping();
+
+sub waiting_for_settlement_error_message {
+    return $ERROR_MAPPING->{WaitForContractSettlement};
+}
+
 1;

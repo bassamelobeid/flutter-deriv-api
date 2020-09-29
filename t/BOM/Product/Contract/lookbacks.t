@@ -105,6 +105,21 @@ subtest 'lbfloatcall' => sub {
     is $error->error_code, "BarrierNotAllowed";
 
     delete $args->{barrier};
+
+    my $mocked_role = Test::MockModule->new('BOM::Product::Contract::Lbfloatcall');
+    $mocked_role->mock(
+        'get_ohlc_for_period',
+        sub {
+            return {
+                high => 102.0,
+                low  => 101,
+            };
+        });
+
+    my $error_contract = produce_contract($args);
+    ok $error_contract->is_expired, 'call is expired';
+    ok $error_contract->waiting_for_settlement_tick, 'waiting for settlement tick';
+
 };
 
 subtest 'lbfloatput' => sub {
@@ -137,6 +152,20 @@ subtest 'lbfloatput' => sub {
     $c                          = produce_contract($args);
     cmp_ok $c->date_pricing->epoch, '>', $c->date_expiry->epoch, 'after expiry';
     ok $c->is_expired, 'expired';
+
+    my $mocked_role = Test::MockModule->new('BOM::Product::Contract::Lbfloatput');
+    $mocked_role->mock(
+        'get_ohlc_for_period',
+        sub {
+            return {
+                high => 99.1,
+                low  => 99,
+            };
+        });
+
+    my $error_contract = produce_contract($args);
+    ok $error_contract->is_expired, 'call is expired';
+    ok $error_contract->waiting_for_settlement_tick, 'waiting for settlement tick';
 };
 
 subtest 'lbhighlow' => sub {
@@ -169,6 +198,20 @@ subtest 'lbhighlow' => sub {
     $c                          = produce_contract($args);
     cmp_ok $c->date_pricing->epoch, '>', $c->date_expiry->epoch, 'after expiry';
     ok $c->is_expired, 'expired';
+
+    my $mocked_role = Test::MockModule->new('BOM::Product::Contract::Lbhighlow');
+    $mocked_role->mock(
+        'get_ohlc_for_period',
+        sub {
+            return {
+                high => 99.1,
+                low  => 99,
+            };
+        });
+
+    my $error_contract = produce_contract($args);
+    ok $error_contract->is_expired, 'call is expired';
+    ok $error_contract->waiting_for_settlement_tick, 'waiting for settlement tick';
 };
 
 subtest 'invalid amount_type' => sub {

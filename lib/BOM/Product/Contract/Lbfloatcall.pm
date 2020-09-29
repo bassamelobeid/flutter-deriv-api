@@ -21,18 +21,17 @@ sub check_expiry_conditions {
 
     if ($self->exit_tick and $self->is_valid_exit_tick) {
         my ($low) = @{$self->get_ohlc_for_period()}{qw(low)};
-        if (defined $low) {
+        #The hypothesis we have right now is, since exit tick came from Redis and OHLC is from db,
+        #when we request the OHLC, the exit tick is not part of the OHLC yet in the DB.
+        if (defined $low and $self->exit_tick->quote >= $low) {
             my $value = ($self->exit_tick->quote - $low) * $self->multiplier;
             $self->value($value);
-
-            warn "Negative value for lookback: "
-                . $self->shortcode . " low:"
-                . $low
-                . " exit tick:"
-                . $self->exit_tick->quote
-                . " exit tick epoch: "
-                . $self->exit_tick->epoch
-                if $value < 0;
+        } else {
+            $self->waiting_for_settlement_tick(1);
+            $self->_add_error({
+                message           => "Inconsistent OHLC.",
+                message_to_client => [$self->waiting_for_settlement_error_message()],
+            });
         }
     }
 
