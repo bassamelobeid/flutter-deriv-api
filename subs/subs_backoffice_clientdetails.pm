@@ -1746,7 +1746,7 @@ sub get_limit_expiration_date {
     return undef unless ($db and $loginid and $limit_name);
     return undef
         unless any { $_ eq $limit_name }
-    qw/max_balance max_turnover max_losses max_7day_turnover max_7day_losses max_30day_turnover max_30day_losses max_open_bets session_duration_limit max_deposit/;
+    qw/max_balance max_turnover max_losses max_7day_turnover max_7day_losses max_30day_turnover max_30day_losses max_open_bets session_duration_limit max_deposit_daily max_deposit_7day max_deposit_30day/;
 
     my $latest_modified_date = $db->run(
         ping => sub {

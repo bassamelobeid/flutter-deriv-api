@@ -35,7 +35,8 @@ if ($client->is_virtual) {
 }
 
 # some limits are not updatable in regulated landing companies
-my $regulated_lc = $client->landing_company->is_eu;
+my $regulated_lc          = $client->landing_company->is_eu;
+my $deposit_limit_enabled = $client->landing_company->deposit_limit_enabled;
 
 my $broker = $client->broker;
 
@@ -114,7 +115,7 @@ sub make_row {
 # to generate existing limits
 if (my $self_exclusion = $client->get_self_exclusion) {
     my $info;
-    $info .= '<tr><td><strong>Limit name</strong></td><td><strong>Limit value</strong></td><td><strong>Expiration date</strong></td></tr>';
+    $info .= '<tr><th>Limit name</th><th>Limit value</th><th>Expiration date</th></tr>';
     $info .= make_row(
         'Maximum account cash balance',
         $client->currency,
@@ -129,6 +130,11 @@ if (my $self_exclusion = $client->get_self_exclusion) {
         make_row('Daily limit on losses', $client->currency, $self_exclusion->max_losses, get_limit_expiration_date($db, $loginid, 'max_losses', 1))
         if $self_exclusion->max_losses;
     $info .= make_row(
+        'Daily deposit limit',
+        $client->currency,
+        $self_exclusion->max_deposit_daily,
+        get_limit_expiration_date($db, $loginid, 'max_deposit_daily', 1)) if $deposit_limit_enabled and $self_exclusion->max_deposit_daily;
+    $info .= make_row(
         '7-Day turnover limit',
         $client->currency,
         $self_exclusion->max_7day_turnover,
@@ -139,6 +145,11 @@ if (my $self_exclusion = $client->get_self_exclusion) {
         $self_exclusion->max_7day_losses,
         get_limit_expiration_date($db, $loginid, 'max_7day_losses', 7)) if $self_exclusion->max_7day_losses;
     $info .= make_row(
+        '7-Day deposit limit',
+        $client->currency,
+        $self_exclusion->max_deposit_7day,
+        get_limit_expiration_date($db, $loginid, 'max_deposit_7day', 7)) if $deposit_limit_enabled and $self_exclusion->max_deposit_7day;
+    $info .= make_row(
         '30-Day turnover limit',
         $client->currency,
         $self_exclusion->max_30day_turnover,
@@ -148,6 +159,11 @@ if (my $self_exclusion = $client->get_self_exclusion) {
         $client->currency,
         $self_exclusion->max_30day_losses,
         get_limit_expiration_date($db, $loginid, 'max_30day_losses', 30)) if $self_exclusion->max_30day_losses;
+    $info .= make_row(
+        '30-Day deposit limit',
+        $client->currency,
+        $self_exclusion->max_deposit_30day,
+        get_limit_expiration_date($db, $loginid, 'max_deposit_30day', 30)) if $deposit_limit_enabled and $self_exclusion->max_deposit_30day;
 
     $info .=
         make_row('Maximum number of open positions', $self_exclusion->max_open_bets, '', get_limit_expiration_date($db, $loginid, 'max_open_bets', 1))
@@ -163,28 +179,6 @@ if (my $self_exclusion = $client->get_self_exclusion) {
 
     $info .= make_row('Website Timeout until', '', '', Date::Utility->new($self_exclusion->timeout_until)->datetime_yyyymmdd_hhmmss)
         if $self_exclusion->timeout_until;
-
-    $info .= make_row(
-        'Maximum deposit limit',
-        $client->currency,
-        $self_exclusion->max_deposit,
-        Date::Utility->new($self_exclusion->max_deposit_end_date)->date
-    ) if $self_exclusion->max_deposit;
-
-    if ($self_exclusion->max_deposit) {
-        my $begin_date =
-            $self_exclusion->max_deposit_begin_date
-            ? Date::Utility->new($self_exclusion->max_deposit_begin_date)->date
-            : '<span style="color:red">EMPTY<span>';
-        my $fix_url = request()->url_for(
-            'backoffice/f_setting_selfexclusion.cgi',
-            {
-                loginid        => $loginid,
-                fix_begin_date => 1
-            });
-        my $fix_link = ($regulated_lc || $self_exclusion->max_deposit_begin_date) ? '' : "<a href = '$fix_url'> Click to fix </a>";
-        $info .= make_row('Maximum deposit limit start date', $begin_date, $fix_link, '');
-    }
 
     if ($info) {
         $page .= '<h3>Currently set values are:</h3><table cellspacing="0" cellpadding="5" border="1" class="GreyCandy">' . $info . '</table>';
@@ -229,28 +223,15 @@ unless ($regulated_lc) {
     $client->set_exclusion->max_7day_losses(looks_like_number($v) ? $v : undef);
     $v = request()->param('30DAYLOSSLIMIT');
     $client->set_exclusion->max_30day_losses(looks_like_number($v) ? $v : undef);
+}
 
-    my $form_max_deposit_date   = request()->param('MAXDEPOSITDATE') || undef;
-    my $form_max_deposit_amount = request()->param('MAXDEPOSIT')     || undef;
-
-# user will not be allowed to set a max deposit without an expiry time
-    if ($form_max_deposit_date xor defined $form_max_deposit_amount) {
-        code_exit_BO("Max deposit and Max deposit end date must be set together");
-    }
-
-    if ($form_max_deposit_date) {
-        my $max_deposit_date = Date::Utility->new($form_max_deposit_date);
-        my $now              = Date::Utility->new;
-        code_exit_BO("Cannot set a Max deposit end date in the past") if $max_deposit_date->is_before($now);
-        code_exit_BO("Max deposit is not a number") unless (looks_like_number($form_max_deposit_amount));
-        $client->set_exclusion->max_deposit($form_max_deposit_amount);
-        $client->set_exclusion->max_deposit_end_date($max_deposit_date->date);
-        $client->set_exclusion->max_deposit_begin_date(Date::Utility->new->date);
-    } else {
-        $client->set_exclusion->max_deposit_end_date(undef);
-        $client->set_exclusion->max_deposit_begin_date(undef);
-        $client->set_exclusion->max_deposit(undef);
-    }
+if ($deposit_limit_enabled) {
+    $v = request()->param('DAILYDEPOSITLIMIT');
+    $client->set_exclusion->max_deposit_daily(looks_like_number($v) ? $v : undef);
+    $v = request()->param('7DAYDEPOSITLIMIT');
+    $client->set_exclusion->max_deposit_7day(looks_like_number($v) ? $v : undef);
+    $v = request()->param('30DAYDEPOSITLIMIT');
+    $client->set_exclusion->max_deposit_30day(looks_like_number($v) ? $v : undef);
 }
 
 my $form_exclusion_until_date = request()->param('EXCLUDEUNTIL') || undef;
@@ -284,10 +265,13 @@ $client->set_exclusion->timeout_until($timeout_until);
 if ($client->save) {
     #print message inform Client everything is ok
     print "<p class=\"aligncenter\">Thank you. the client settings have been updated.</p>";
-    print qq{<a href='$client_details_link'>&laquo; return to client details</a>};
 } else {
     print "<p class=\"aligncenter\">Sorry, the client settings have not been updated, please try it again.</p>";
     warn("Error: cannot write to self_exclusion table $!");
 }
+
+my $self_exclusion_link = request()->url_for('backoffice/f_setting_selfexclusion.cgi', {loginid => $loginid});
+print qq{<a href='$client_details_link'>&laquo; return to client details</a>};
+print qq{<br/><a href='$self_exclusion_link'>&laquo; back to self-exclusion settings</a>};
 
 code_exit_BO;
