@@ -231,7 +231,15 @@ Takes the following parameters:
 
 =back
 
-Returns a L<Future> which will resolve once the batches are submitted.
+Returns a list of two elements:
+
+=over 4
+
+=item number of submitted bids jobs
+
+=item number of submitted asks jobs
+
+=back
 
 =cut
 
@@ -255,6 +263,8 @@ async sub submit_jobs {
     await $self->redis->lpush('pricer_jobs', @bids) if @bids;
     await $self->redis->lpush('pricer_jobs', @asks) if @asks;
     $log->debug('pricer_jobs queue updated.');
+
+    return scalar(@bids), scalar(@asks);
 }
 
 =head2 process
@@ -282,7 +292,6 @@ async sub process {
     # so those batches are grouped.
     my @all_keys;
     my $cursor = 0;
-    my $deleted;
     KEY_BATCH: {
         do {
             my $details = await $self->redis->scan(
@@ -290,17 +299,9 @@ async sub process {
                 match => 'PRICER_KEYS::*',
                 count => $self->keys_per_batch,
             );
+
             ($cursor, my $keys) = $details->@*;
-
-            # Track these for metrics processing later
             push @all_keys, $keys->@*;
-
-            # Defer the delete until after we have the first batch
-            # of keys - might as well give pricers as much opportunity
-            # to finish up as possible
-            await $self->redis->del('pricer_jobs') unless $deleted++;
-
-            await $self->submit_jobs($keys);
 
             # We may have a *lot* of keys, and the processing time here
             # could vary significantly. We can't assume that we get through
@@ -308,15 +309,24 @@ async sub process {
             # be, so we check for that here.
             my $now = Time::HiRes::time();
             if (($now - $start) > 0.8 * $self->pricing_interval) {
-                $log->error('Too many keys, we have used 80% of the pricing interval so we are bailing out');
+                $log->error('Too many keys, we have used 80% of the pricing interval for getting keys so we are processing what we have');
                 last KEY_BATCH;
             }
         } while $cursor;
     }
 
+    # Defer the delete until we have full list
+    # of keys - might as well give pricers as much opportunity
+    # to finish up as possible
+    await $self->redis->del('pricer_jobs');
+
+    my ($num_bids, $num_asks) = await $self->submit_jobs(\@all_keys);
+
     $log->trace('pricer_jobs queue updating...');
 
     stats_gauge('pricer_daemon.queue.size', 0 + @all_keys, {tags => ['tag:' . $self->internal_ip]});
+    stats_gauge('pricer_daemon.queue.bid.size', $num_bids, {tags => ['tag:' . $self->internal_ip]});
+    stats_gauge('pricer_daemon.queue.ask.size', $num_asks, {tags => ['tag:' . $self->internal_ip]});
 
     # It's not essential to have every iteration recorded, so if
     # the previous update is still running then we would skip this
