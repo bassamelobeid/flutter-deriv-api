@@ -1803,7 +1803,7 @@ sub _validate_transfer_between_accounts {
 
         } else {
 
-            my $lifetime_transfer_amount = $current_client->lifetime_internal_withdrawals();
+            my $lifetime_transfer_amount = $client_from->lifetime_internal_withdrawals();
 
             $is_over_transfer_limit = 1 if (($lifetime_transfer_amount + $amount) > $limit_amount);
         }

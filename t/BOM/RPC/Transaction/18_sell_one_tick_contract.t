@@ -31,7 +31,6 @@ my $expected_result = {
     },
 };
 
-
 my ($client, $client_token, $oauth_token);
 my ($t, $rpc_ct);
 my $method = 'sell_expired';

@@ -521,7 +521,7 @@ subtest 'Set self-exclusion - regulated landing companies' => sub {
         is $c->tcall('get_self_exclusion', $get_params)->{$field} // 0, $value, "get_self_exclusion returns the same value $value - $field";
 
         my $value_minus = $value - 1;
-        my $minimum = $field =~ 'max_open_bets|session_duration_limit' ? 1 : 0;
+        my $minimum     = $field =~ 'max_open_bets|session_duration_limit' ? 1 : 0;
         $params->{args}->{$field} = $value_minus;
         is $c->tcall($method, $params)->{status}, 1, "RPC called successfully with value minus one - $field";
         is $c->tcall('get_self_exclusion', $get_params)->{$field} // 0, $value_minus, "get_self_exclusion returns value $value_minus - $field";
