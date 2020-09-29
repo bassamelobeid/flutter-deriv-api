@@ -729,29 +729,31 @@ sub get_self_exclusion {
     return $excl;
 }
 
-sub get_limits_for_max_deposit {
+=head2 get_deposit_limits
+
+Returns self-exclusion limits for max deposit as a hashref containing these keys:
+
+=over
+
+=item * C<daily> - daily max deposit limit
+
+=item * C<7day> - 7-day max  deposit limit
+
+=item * C<30day> - 30-day max deposit limit
+
+=back
+
+=cut
+
+sub get_deposit_limits {
     my $self = shift;
 
     my $excl = $self->get_self_exclusion;
-    return undef unless $excl;
+    return {} unless $excl;
 
-    my $max_deposit = $excl->max_deposit;
-    my $begin_date  = $excl->max_deposit_begin_date;
-    my $end_date    = $excl->max_deposit_end_date;
-    my $today       = Date::Utility->new;
+    my %result = map { $excl->{"max_deposit_$_"} ? ($_ => $excl->{"max_deposit_$_"}) : () } qw(daily 7day 30day);
 
-    undef $end_date if $end_date and Date::Utility->new($end_date)->is_before($today);
-    undef $begin_date  unless $end_date;
-    undef $max_deposit unless $end_date;
-
-    # No limits if any of the fields are missing
-    return undef unless $max_deposit and $begin_date and $end_date;
-
-    return +{
-        max_deposit => $max_deposit,
-        begin       => $begin_date->date,
-        end         => $end_date->date
-    };
+    return \%result;
 }
 
 =head2 get_limit_for_account_banace
@@ -3218,6 +3220,47 @@ sub _p2p_rate_format {
     return sprintf('%0.0' . P2P_RATE_PRECISION . 'f', shift()) =~ s/(?<=\.\d{2})(\d*?)0*$/$1/r;
 }
 
+=head2 _check_deposit_limits
+
+Checks the amount to be deposited against client's daily, weekly, and monthly deposit limits.
+
+=cut
+
+sub _check_deposit_limits {
+    my ($self, $amount) = @_;
+
+    return unless $self->landing_company->deposit_limit_enabled;
+
+    my $deposit_limits = $self->get_deposit_limits();
+
+    my %limit_days_to_name = (
+        1  => 'daily',
+        7  => '7day',
+        30 => '30day',
+    );
+
+    my $period_end = Date::Utility->new;
+
+    for my $limit_days (sort { $a <=> $b } keys %limit_days_to_name) {
+        my $limit_name   = $limit_days_to_name{$limit_days};
+        my $limit_amount = $deposit_limits->{$limit_name};
+
+        next unless defined $limit_amount;
+
+        # Call get_total_deposit and validate against limits
+        my $period_start = $period_end->minus_time_interval("${limit_days}d");
+
+        my ($deposit_over_period) = $self->db->dbic->run(
+            fixup => sub {
+                return $_->selectrow_array('SELECT payment.get_total_deposit(?,?,?,?)',
+                    undef, $self->loginid, $period_start->datetime, $period_end->datetime, '{mt5_transfer}');
+            }) // 0;
+
+        die "Deposit exceeds $limit_name limit [$limit_amount]. Aggregated deposit over period [$deposit_over_period]. Current amount [$amount].\n"
+            if ($deposit_over_period + $amount) > $limit_amount;
+    }
+}
+
 =head2 _p2p_order_stats_record
 
 Records P2P advertiser statistics from an order event.
@@ -3411,31 +3454,7 @@ sub validate_payment {
         die sprintf("Balance would exceed limit [%s %s] for [%s] \n", $currency, $max_balance, $self->loginid)
             if ($amount + $accbal) > $max_balance;
 
-        if ($self->landing_company->short eq 'iom') {
-            my $max_deposit_limits = $self->get_limits_for_max_deposit();
-
-            # Call get_total_deposit and validate against limits
-            if ($max_deposit_limits) {
-                my $deposit_over_period = 0;
-                my $payment_arrayref    = $self->db->dbic->run(
-                    ping => sub {
-                        my $sth = $_->prepare('SELECT payment.get_total_deposit(?,?,?,?)');
-                        $sth->execute(
-                            $self->loginid,
-                            $max_deposit_limits->{begin},
-                            $max_deposit_limits->{end},
-                            "{mt5_transfer}"    # exclude mt5 transfers
-                        );
-                        return $sth->fetchrow_arrayref;
-                    });
-                if ($payment_arrayref && $payment_arrayref->[0]) {
-                    $deposit_over_period = $payment_arrayref->[0];
-                }
-                die
-                    "Deposit exceeds limit [$max_deposit_limits->{max_deposit}]. Aggregated deposit over period [$deposit_over_period]. Current amount [$amount].\n"
-                    if ($deposit_over_period + $amount) > $max_deposit_limits->{max_deposit};
-            }
-        }
+        $self->_check_deposit_limits($amount);
     }
 
     if ($action_type eq 'withdrawal') {
