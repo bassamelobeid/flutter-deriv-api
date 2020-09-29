@@ -14,26 +14,23 @@
       "max_open_bets",
       "max_turnover",
       "max_7day_turnover",
-      "max_deposit",
-      "max_7day_deposit",
-      "max_30day_deposit",
       "stash"
    ],
    "properties" : {
       "max_7day_turnover" : {
-         "type" : "number",
-         "enum" : [1203123]
+         "pattern" : "^1203123$",
+         "type" : "string"
       },
       "stash" : {
          "type" : "object"
       },
       "max_losses" : {
-         "type" : "number",
-         "enum" : [129381231]
+         "type" : "string",
+         "pattern" : "^129381231$"
       },
       "max_7day_losses" : {
-         "type" : "number",
-         "enum" : [129837123]
+         "pattern" : "^129837123$",
+         "type" : "string"
       },
       "session_duration_limit" : {
          "enum" : [
@@ -42,8 +39,8 @@
          "type" : "integer"
       },
       "max_turnover" : {
-         "type" : "number",
-         "enum" : [123123]
+         "pattern" : "^123123$",
+         "type" : "string"
       },
       "max_open_bets" : {
          "type" : "integer",
@@ -52,28 +49,16 @@
          ]
       },
       "max_30day_turnover" : {
-         "type" : "number",
-         "enum" : [12837123]
+         "pattern" : "^12837123$",
+         "type" : "string"
       },
       "max_30day_losses" : {
-         "type" : "number",
-         "enum" : [19834234]
+         "pattern" : "^19834234$",
+         "type" : "string"
       },
       "max_balance" : {
-         "type" : "number",
-         "enum" : [25000]
-      },
-      "max_deposit" : {
-         "type" : "number",
-         "enum" : [11]
-      },
-      "max_7day_deposit" : {
-         "type" : "number",
-         "enum" : [111]
-      },
-      "max_30day_deposit" : {
-         "type" : "number",
-         "enum" : [1111]
+         "pattern" : "^25000$",
+         "type" : "string"
       }
    }
 }

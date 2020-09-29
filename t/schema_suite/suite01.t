@@ -103,11 +103,11 @@ test_sendrecv_params 'get_financial_assessment/test_send.json', 'get_financial_a
     _get_stashed('new_account_real/oauth_token'),       _get_stashed('set_financial_assessment/total_score'),
     _get_stashed('set_financial_assessment/cfd_score'), _get_stashed('set_financial_assessment/financial_information_score'),
     _get_stashed('set_financial_assessment/trading_score');
-test_sendrecv_params 'set_settings/test_send.json',          'set_settings/test_receive.json',       _get_stashed('new_account_real/oauth_token');
-test_sendrecv_params 'set_self_exclusion/test_send_cr.json', 'set_self_exclusion/test_receive.json', _get_stashed('new_account_real/oauth_token');
+test_sendrecv_params 'set_settings/test_send.json',       'set_settings/test_receive.json',       _get_stashed('new_account_real/oauth_token');
+test_sendrecv_params 'set_self_exclusion/test_send.json', 'set_self_exclusion/test_receive.json', _get_stashed('new_account_real/oauth_token');
 
 # READ SCOPE CALLS (CR)
-test_sendrecv_params 'get_self_exclusion/test_send.json', 'get_self_exclusion/test_receive_cr.json', _get_stashed('new_account_real/oauth_token');
+test_sendrecv_params 'get_self_exclusion/test_send.json', 'get_self_exclusion/test_receive.json', _get_stashed('new_account_real/oauth_token');
 fail_test_sendrecv_params 'get_self_exclusion/test_send.json', 'get_self_exclusion/test_receive_to_fail.json',
     _get_stashed('new_account_real/oauth_token');
 
@@ -125,11 +125,9 @@ test_sendrecv_params 'authorize/test_send.json', 'authorize/test_receive_mlt.jso
     _get_stashed('new_account_real/oauth_token'), 'cz', 'test\\\\+mlt@binary.com';
 test_sendrecv_params 'payout_currencies/test_send.json', 'payout_currencies/test_receive.json',
     _get_stashed('authorize/stash/token'), '(USD|EUR|GBP)', 3;
-test_sendrecv_params 'set_self_exclusion/test_send.json', 'set_self_exclusion/test_receive.json', _get_stashed('authorize/stash/token');
 
 # READ SCOPE CALLS (MLT)
-test_sendrecv_params 'reality_check/test_send.json',      'reality_check/test_receive.json',      _get_stashed('authorize/stash/token');
-test_sendrecv_params 'get_self_exclusion/test_send.json', 'get_self_exclusion/test_receive.json', _get_stashed('authorize/stash/token');
+test_sendrecv_params 'reality_check/test_send.json', 'reality_check/test_receive.json', _get_stashed('authorize/stash/token');
 
 # FINANCIAL ACCOUNT OPENING (MF)
 test_sendrecv_params 'new_account_maltainvest/test_send.json', 'new_account_maltainvest/test_receive_error.json',
