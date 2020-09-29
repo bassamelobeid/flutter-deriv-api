@@ -71,13 +71,22 @@ my $email_field_labels         = {
     max_balance            => 'Maximum account cash balance',
     max_turnover           => 'Daily turnover limit',
     max_losses             => 'Daily limit on losses',
+    max_deposit            => 'Daily limit on deposit',
     max_7day_turnover      => '7-day turnover limit',
     max_7day_losses        => '7-day limit on losses',
+    max_7day_deposit       => '7-day limit on deposit',
     max_30day_turnover     => '30-day turnover limit',
     max_30day_losses       => '30-day limit on losses',
+    max_30day_deposit      => '30-day limit on deposit',
     max_open_bets          => 'Maximum number of open positions',
     session_duration_limit => 'Session duration limit, in minutes',
-    timeout_until          => 'Time out until'
+};
+
+# max deposit limits are named differently in websocket API and database
+my $max_deposit_key_mapping = {
+    max_deposit       => 'max_deposit_daily',
+    max_7day_deposit  => 'max_deposit_7day',
+    max_30day_deposit => 'max_deposit_30day',
 };
 
 our %ImmutableFieldError = do {
@@ -1628,31 +1637,20 @@ sub _get_self_exclusion_details {
     return $get_self_exclusion if $client->is_virtual;
 
     my $self_exclusion = $client->get_self_exclusion;
-    if ($self_exclusion) {
-        $get_self_exclusion->{max_balance} = $self_exclusion->max_balance
-            if $self_exclusion->max_balance;
-        $get_self_exclusion->{max_turnover} = $self_exclusion->max_turnover
-            if $self_exclusion->max_turnover;
-        $get_self_exclusion->{max_open_bets} = $self_exclusion->max_open_bets
-            if $self_exclusion->max_open_bets;
-        $get_self_exclusion->{max_losses} = $self_exclusion->max_losses
-            if $self_exclusion->max_losses;
-        $get_self_exclusion->{max_7day_losses} = $self_exclusion->max_7day_losses
-            if $self_exclusion->max_7day_losses;
-        $get_self_exclusion->{max_7day_turnover} = $self_exclusion->max_7day_turnover
-            if $self_exclusion->max_7day_turnover;
-        $get_self_exclusion->{max_30day_losses} = $self_exclusion->max_30day_losses
-            if $self_exclusion->max_30day_losses;
-        $get_self_exclusion->{max_30day_turnover} = $self_exclusion->max_30day_turnover
-            if $self_exclusion->max_30day_turnover;
-        $get_self_exclusion->{session_duration_limit} = $self_exclusion->session_duration_limit
-            if $self_exclusion->session_duration_limit;
 
-        if (my $until = $self_exclusion->max_deposit_end_date) {
-            $until = Date::Utility->new($until);
-            if (Date::Utility::today()->days_between($until) < 0 && $self_exclusion->max_deposit) {
-                $get_self_exclusion->{max_deposit}          = $self_exclusion->max_deposit;
-                $get_self_exclusion->{max_deposit_end_date} = $until->date;
+    if ($self_exclusion) {
+        for my $setting (
+            qw/max_balance max_turnover max_open_bets max_losses max_7day_losses
+            max_7day_turnover max_30day_losses max_30day_turnover session_duration_limit/
+            )
+        {
+            $get_self_exclusion->{$setting} = $self_exclusion->$setting + 0 if $self_exclusion->$setting;
+        }
+
+        if ($client->landing_company->deposit_limit_enabled) {
+            for my $api_key (qw/max_deposit max_7day_deposit max_30day_deposit/) {
+                my $db_key = $max_deposit_key_mapping->{$api_key};
+                $get_self_exclusion->{$api_key} = $self_exclusion->$db_key + 0 if $self_exclusion->$db_key;
             }
         }
 
@@ -1722,11 +1720,21 @@ rpc set_self_exclusion => sub {
             });
     };
 
+    for my $max_deposit_field (qw/max_deposit max_7day_deposit max_30day_deposit/) {
+        return BOM::RPC::v3::Utility::create_error({
+                code              => 'SetSelfExclusionError',
+                message_to_client => localize('Sorry, but setting your maximum deposit limit is unavailable in your country.'),
+                message           => '',
+                details           => $max_deposit_field
+            }) if $args{$max_deposit_field} and not $client->landing_company->deposit_limit_enabled;
+    }
+
     ## validate
     my %fields = (
         numerical => {(
-                map { $_ => {is_integer => 0} }
-                    (qw/max_balance max_turnover max_losses max_7day_turnover max_7day_losses max_30day_losses max_30day_turnover max_deposit/)
+                map { $_ => {is_integer => 0} } (
+                    qw/max_balance max_turnover max_losses max_deposit max_7day_turnover max_7day_losses max_7day_deposit max_30day_losses max_30day_turnover max_30day_deposit/
+                )
             ),
             max_open_bets => {
                 is_integer => 1,
@@ -1762,16 +1770,6 @@ rpc set_self_exclusion => sub {
                 max => {
                     value   => Date::Utility->new->plus_time_interval('5y'),
                     message => localize('Exclude time cannot be for more than five years.'),
-                }
-            },
-            max_deposit_end_date => {
-                min => {
-                    value   => Date::Utility->new,
-                    message => localize('Deposit exclusion period must be after today.'),
-                },
-                max => {
-                    value   => Date::Utility->new->plus_time_interval('5y'),
-                    message => localize('Deposit exclusion period cannot be for more than five years.'),
                 }
             },
         },
@@ -1836,24 +1834,10 @@ rpc set_self_exclusion => sub {
         return $error_sub->($max->{message}, $field) if $max->{value} and $field_date->is_after($max->{value});
     }
 
-    if ($args{max_deposit} xor $args{max_deposit_end_date}) {
-        return $error_sub->(
-            localize('Both [_1] and [_2] must be provided to activate deposit limit.', 'max_deposit', 'max_deposit_end_date'),
-            'max_deposit'
-        );
-    }
-
     for my $field (@all_fields) {
-        $client->set_exclusion->$field($args{$field} || undef)
+        my $db_field = $max_deposit_key_mapping->{$field} // $field;
+        $client->set_exclusion->$db_field($args{$field} || undef)
             if exists $args{$field};
-    }
-
-    if ($args{max_deposit}) {
-        $client->set_exclusion->max_deposit_begin_date(Date::Utility->new->date);
-    } elsif (defined $args{max_deposit}) {
-        $client->set_exclusion->max_deposit_begin_date(undef);
-        $client->set_exclusion->max_deposit_end_date(undef);
-        $client->set_exclusion->max_deposit(undef);
     }
 
     $client->save();
@@ -1899,7 +1883,7 @@ sub send_self_exclusion_notification {
     if ($type eq 'malta_with_mt5') {
         $message = "An MT5 account holder under the Deriv (Europe) Limited landing company has set account limits.\n";
         @fields_to_email =
-            qw/max_balance max_turnover max_losses max_7day_turnover max_7day_losses max_30day_losses max_30day_turnover max_open_bets session_duration_limit exclude_until timeout_until max_deposit max_deposit_end_date/;
+            qw/max_balance max_turnover max_losses max_deposit max_7day_turnover max_7day_losses max_7day_deposit max_30day_losses max_30day_turnover max_30day_deposit max_deposit_daily max_deposit_7day max_deposit_30day max_open_bets session_duration_limit exclude_until timeout_until/;
     } elsif ($type eq 'self_exclusion') {
         $message         = "A user has excluded themselves from the website.\n";
         @fields_to_email = qw/exclude_until/;

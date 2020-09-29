@@ -16,6 +16,8 @@ use Test::BOM::RPC::Accounts;
 
 BOM::Test::Helper::Token::cleanup_redis_tokens();
 
+my $mock_lc = Test::MockModule->new('LandingCompany');
+
 my $email       = 'abc@binary.com';
 my $password    = 'jskjd8292922';
 my $hash_pwd    = BOM::User::Password::hashpw($password);
@@ -113,6 +115,8 @@ subtest 'get and set self_exclusion' => sub {
             $emitted->{$type} = $data;
         });
 
+    $mock_lc->mock('deposit_limit_enabled' => sub { return 1 });
+
     is(
         $c->tcall(
             $method,
@@ -150,6 +154,9 @@ subtest 'get and set self_exclusion' => sub {
         max_open_bets      => 50,
         max_turnover       => undef,    # null should be OK to pass
         max_7day_losses    => 0,        # 0 is ok to pass but not saved
+        max_deposit        => 10,
+        max_7day_deposit   => 10,
+        max_30day_deposit  => 10,
     };
 
     # Test for Maximum bets
@@ -188,12 +195,28 @@ subtest 'get and set self_exclusion' => sub {
     $params->{args}{max_balance} = 9999.99;
     is($c->tcall($method, $params)->{status}, 1, 'allow two decimals in max balance');
 
+    #test for deposit limits
+    for (qw(max_deposit max_7day_deposit max_30day_deposit)) {
+        $params->{args}->{$_} = 11;
+        is_deeply(
+            $c->tcall($method, $params)->{error},
+            {
+                'message_to_client' => "Please enter a number between 0 and 10.",
+                'details'           => $_,
+                'code'              => 'SetSelfExclusionError'
+            });
+        $params->{args}->{$_} = 10;
+    }
+
     delete $params->{args};
     is_deeply(
         $c->tcall('get_self_exclusion', $params),
         {
-            'max_open_bets' => '50',
-            'max_balance'   => '9999.99'
+            'max_open_bets'   => '50',
+            'max_balance'     => '9999.99',
+            max_deposit       => 10,
+            max_7day_deposit  => 10,
+            max_30day_deposit => 10,
         },
         'get self_exclusion ok'
     );
@@ -338,6 +361,8 @@ subtest 'get and set self_exclusion' => sub {
     is $self_excl->timeout_until, $timeout_until->epoch, 'timeout_until is right';
     is $self_excl->session_duration_limit, 1440, 'all good';
 
+    $mock_lc->unmock_all;
+
     ## Section: Check self-exclusion notification emails for compliance, related to
     ##  clients under Deriv (Europe) Limited, are sent under correct circumstances.
     mailbox_clear();
@@ -436,6 +461,53 @@ subtest 'get and set self_exclusion' => sub {
     };
     is($c->tcall($method, $params)->{status}, 1,     'update self_exclusion ok');
     is($emitted->{self_exclude_set},          undef, 'self_exclude_set event not emitted because email_consent is not set for user');
+};
+
+subtest 'deposit limits disabled' => sub {
+    $test_client->set_exclusion->max_deposit_daily(undef);
+    $test_client->set_exclusion->max_deposit_7day(undef);
+    $test_client->set_exclusion->max_deposit_30day(undef);
+    $test_client->set_exclusion->exclude_until(undef);
+    $test_client->set_exclusion->timeout_until(undef);
+    $test_client->save();
+
+    my $params = {
+        token => $token,
+    };
+
+    for my $name (qw(max_deposit max_7day_deposit max_30day_deposit)) {
+        $mock_lc->mock('deposit_limit_enabled' => sub { return 0 });
+
+        $params->{args}->{$name} = 100;
+
+        is_deeply(
+            $c->tcall($method, $params)->{error},
+            {
+                'message_to_client' => "Sorry, but setting your maximum deposit limit is unavailable in your country.",
+                'details'           => $name,
+                'code'              => 'SetSelfExclusionError'
+            },
+            'Correct error result if deposit limits are disabled'
+        );
+
+        $mock_lc->mock('deposit_limit_enabled' => sub { return 1 });
+
+        my $result = $c->tcall($method, $params);
+        is $result->{error}, undef, 'No error if deposit limits are enabled';
+
+        delete $params->{args}->{$name};
+    }
+
+    $mock_lc->mock('deposit_limit_enabled' => sub { return 0 });
+    delete $params->{args};
+    is $c->tcall('get_self_exclusion', $params)->{max_deposit}, undef, 'No deposit limits are returned if they are disabled';
+
+    $mock_lc->mock('deposit_limit_enabled' => sub { return 1 });
+    is_deeply [$c->tcall('get_self_exclusion', $params)->@{qw(max_deposit max_7day_deposit max_30day_deposit)}],
+        [100, 100, 100],
+        'Correct limits when deposit limits are enabled';
+
+    $mock_lc->unmock('deposit_limit_enabled');
 };
 
 subtest 'Set self-exclusion - CR clients' => sub {

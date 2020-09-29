@@ -10,9 +10,6 @@
       "max_30day_turnover": 12837123,
       "max_30day_losses": 19834234,
       "max_open_bets": 25,
-      "session_duration_limit": 12934,
-      "max_deposit": 11,
-      "max_7day_deposit": 111,
-      "max_30day_deposit": 1111
+      "session_duration_limit": 12934
     }
 }
