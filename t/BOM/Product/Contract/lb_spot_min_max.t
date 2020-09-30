@@ -58,32 +58,14 @@ my $bet_params = {
     multiplier   => 1,
 };
 
-#setup raw cache for R_100
-my $single_data = {
-    'symbol' => 'R_100',
-    'epoch'  => $now->epoch - 1,
-    'quote'  => '100',
-};
 my $decimate_cache = BOM::Market::DataDecimate->new({market => 'synthetic_index'});
 
-my $key = $decimate_cache->_make_key('R_100', 0);
-$decimate_cache->_update($decimate_cache->redis_write, $key, $now->epoch - 1, $decimate_cache->encoder->encode($single_data));
-
-$single_data = {
-    'symbol' => 'R_100',
-    'epoch'  => $now->epoch,
-    'quote'  => '101',
-};
-
-$decimate_cache->_update($decimate_cache->redis_write, $key, $now->epoch, $decimate_cache->encoder->encode($single_data));
-
-$single_data = {
-    'symbol' => 'R_100',
-    'epoch'  => $now->epoch + 1,
-    'quote'  => '103',
-};
-
-$decimate_cache->_update($decimate_cache->redis_write, $key, $now->epoch + 1, $decimate_cache->encoder->encode($single_data));
+#setup raw cache for R_100
+$decimate_cache->data_cache_back_populate_raw('R_100', [
+    { 'symbol' => 'R_100', 'quote'  => '100', 'epoch'  => $now->epoch - 1 },
+    { 'symbol' => 'R_100', 'quote'  => '101', 'epoch'  => $now->epoch },
+    { 'symbol' => 'R_100', 'quote'  => '103', 'epoch'  => $now->epoch + 1 },
+]);
 
 subtest 'spot min max lbfloatcall' => sub {
 

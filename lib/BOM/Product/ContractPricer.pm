@@ -341,7 +341,8 @@ sub spot_min_max {
         my $backprice    = (defined $self->underlying->for_date or $self->date_pricing->is_after($self->date_expiry)) ? 1 : 0;
         my $decimate     = BOM::Market::DataDecimate->new({market => $self->market->name});
         my $use_decimate = $self->category_code eq 'lookback' ? 0 : $duration <= 900 ? 0 : 1;
-        my $ticks        = $decimate->get({
+
+        my $min_max = $decimate->spot_min_max({
             underlying  => $self->underlying,
             start_epoch => $from_epoch,
             end_epoch   => $to_epoch,
@@ -349,9 +350,7 @@ sub spot_min_max {
             decimate    => $use_decimate,
         });
 
-        my @quotes = map { $_->{quote} } @$ticks;
-        $low  = min(@quotes);
-        $high = max(@quotes);
+        ($low, $high) = @$min_max;
     }
 
     my $high_low = {
