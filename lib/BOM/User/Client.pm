@@ -1596,7 +1596,7 @@ sub format_input_details {
     );
 
     try {
-        $args->{$_} = $format{$_}->($args->{$_}) for grep { exists $format{$_} } keys %$args;
+        $args->{$_} = $format{$_}->($args->{$_}) for grep { $args->{$_} && exists $format{$_} } keys %$args;
         return undef;
     } catch {
         chomp(my $err = $@);
@@ -2588,7 +2588,7 @@ It takes the following named arguments:
 
 =item * C<dispute_reason> - the dispute reason (predefined at websocket layer, although DB field is TEXT)
 
-=back 
+=back
 
 Returns the content of the order as parsed by C<_order_details>.
 
