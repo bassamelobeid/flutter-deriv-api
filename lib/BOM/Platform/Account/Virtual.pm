@@ -5,6 +5,7 @@ use warnings;
 
 use Syntax::Keyword::Try;
 use LandingCompany::Registry;
+use List::Util qw(any first);
 
 use BOM::User;
 use BOM::User::Password;
@@ -28,9 +29,10 @@ sub create_account {
     } elsif ($residence && $brand_country_instance->restricted_country($residence)) {
         return {error => 'invalid residence'};
     }
+
     # set virtual company if residence is provided otherwise use brand name to infer the broker code
-    my $default_virtual = $brand_name eq 'champion' ? 'champion-virtual' : 'virtual';
-    return {error => 'InvalidBrand'} unless grep { $brand_name eq $_ } LandingCompany::Registry::get($default_virtual)->allowed_for_brands->@*;
+    my $virtual_company_for_brand = _virtual_company_for_brand($brand_name);
+    return {error => 'InvalidBrand'} unless $virtual_company_for_brand;
 
     #return error if date_first_contact is in future or invalid
     # date_first_contact is used by marketing to record when users first touched a binary.com site.
@@ -81,7 +83,8 @@ sub create_account {
             $signup_device      ? (signup_device      => $signup_device)      : (),
             $args->{utm_data}   ? (utm_data           => $args->{utm_data})   : (),
         );
-        my $landing_company = $residence ? $brand_country_instance->virtual_company_for_country($residence) : $default_virtual;
+
+        my $landing_company = $residence ? $brand_country_instance->virtual_company_for_country($residence) : $virtual_company_for_brand->short;
         my $broker_code     = LandingCompany::Registry::get($landing_company)->broker_codes->[0];
         $client = $user->create_client(
             broker_code        => $broker_code,
@@ -111,6 +114,29 @@ sub create_account {
         client => $client,
         user   => $user,
     };
+}
+
+=head2 _virtual_company_for_brand
+
+Finds the virtual landing company that is allowed for a specific brand.
+
+=over 4
+
+=item * C<brand_name> - Name of the brand to find the virtual landing company for
+
+=back
+
+Returns the virtual landing company object that is allowed for the given brand, if not found: C<undef>.
+
+=cut
+
+sub _virtual_company_for_brand {
+    my ($brand_name) = @_;
+
+    return first {
+        $_->is_virtual && any { /^$brand_name$/ } $_->allowed_for_brands->@*
+    }
+    LandingCompany::Registry::all();
 }
 
 1;

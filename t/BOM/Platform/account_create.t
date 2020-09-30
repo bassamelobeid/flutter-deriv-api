@@ -174,6 +174,21 @@ subtest 'create account' => sub {
     }
     'create VR acc without residence and password';
 
+    subtest virtual_company_for_brand => sub {
+        my %expected = (
+            binary      => 'virtual',
+            deriv       => 'virtual',
+            derivcrypto => 'samoa-virtual',
+            champion    => 'champion-virtual',
+        );
+
+        for my $brand_name (sort keys %expected) {
+            is(BOM::Platform::Account::Virtual::_virtual_company_for_brand($brand_name)->short,
+                $expected{$brand_name}, "Got correct virtual company for $brand_name brand");
+        }
+        ok !BOM::Platform::Account::Virtual::_virtual_company_for_brand('INVALID_BRAND'), 'Invalid brand';
+    };
+
     subtest date_first_contact => sub {
         my $vr_acc_n = BOM::Platform::Account::Virtual::create_account({
                 details => {

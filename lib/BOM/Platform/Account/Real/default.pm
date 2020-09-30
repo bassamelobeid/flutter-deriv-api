@@ -190,7 +190,7 @@ sub validate_account_details {
         salutation                => '',
         first_name                => '',
         last_name                 => '',
-        date_of_birth             => '',
+        date_of_birth             => undef,
         residence                 => '',
         address_line_1            => '',
         address_line_2            => '',
