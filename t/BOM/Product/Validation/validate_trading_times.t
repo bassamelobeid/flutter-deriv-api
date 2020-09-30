@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 5;
+use Test::More tests => 6;
 use Test::Warnings;
 
 use BOM::Product::ContractFactory qw(produce_contract);
@@ -276,4 +276,48 @@ subtest 'too many holiday for multiday indices contracts' => sub {
     $bet_params->{barrier} = 'S0P';
     $c = produce_contract($bet_params);
     ok $c->is_valid_to_buy, 'valid to buy';
+};
+
+subtest 'sell multiday on weekend' => sub {
+    my $pricing_date = $weekday->plus_time_interval('5d');
+    BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+            underlying => 'frxUSDJPY',
+            epoch      => $_,
+            quote      => 100
+        }) for ($pricing_date->epoch, $pricing_date->epoch + 1);
+    my $bet_params = {
+        underlying   => 'frxUSDJPY',
+        bet_type     => 'CALL',
+        barrier      => 'S0P',
+        payout       => 100,
+        date_start   => $weekday,        #monday
+        date_pricing => $pricing_date,
+        duration     => '10d',
+        currency     => 'USD',
+    };
+    my $c = produce_contract($bet_params);
+    ok !$c->is_valid_to_sell, 'invalid to sell';
+    is $c->primary_validation_error->{message_to_client}->[0],
+        'This market is presently closed. Try out the Synthetic Indices which are always open.', 'market is presently closed';
+
+    $bet_params = {
+        underlying   => 'frxUSDJPY',
+        bet_type     => 'MULTUP',
+        stake        => 100,
+        multiplier   => 50,
+        date_start   => $weekday,        #monday
+        date_pricing => $pricing_date,
+        currency     => 'USD',
+        limit_order  => {
+        stop_out => {
+            order_type   => 'stop_out',
+            order_amount => -100,
+            order_date   => $weekday->epoch,
+            basis_spot   => '100.00',
+        }},
+    };
+    $c = produce_contract($bet_params);
+    ok !$c->is_valid_to_sell, 'invalid to sell';
+    is $c->primary_validation_error->{message_to_client}->[0],
+        'This market is presently closed. Try out the Synthetic Indices which are always open.', 'market is presently closed';
 };

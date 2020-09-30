@@ -497,11 +497,11 @@ sub _validate_trading_times {
     my $exchange             = $underlying->exchange;
     my $calendar             = $self->trading_calendar;
     my $date_expiry          = $self->date_expiry;
-    my $date_start           = $self->date_start;
+    my $effective_start      = $self->effective_start;
     my $synthetic_index_flag = 1;
     my (@markets, $lc);
 
-    if (not($calendar->trades_on($exchange, $date_start) and $calendar->is_open_at($exchange, $date_start))) {
+    if (not($calendar->trades_on($exchange, $effective_start) and $calendar->is_open_at($exchange, $effective_start))) {
         if ($args->{landing_company}) {
             $lc = LandingCompany::Registry::get($args->{landing_company});
             if ($lc and $args->{country_code}) {
@@ -520,7 +520,7 @@ sub _validate_trading_times {
         }
 
         return {
-            message => 'underlying is closed at start ' . "[symbol: " . $underlying->symbol . "] " . "[start: " . $date_start->datetime . "]",
+            message => 'underlying is closed at start ' . "[symbol: " . $underlying->symbol . "] " . "[start: " . $effective_start->datetime . "]",
             message_to_client => [$ERROR_MAPPING->{$error_code}],
             details           => {field => $self->is_forward_starting ? 'date_start' : 'symbol'},
         };
@@ -543,7 +543,7 @@ sub _validate_trading_times {
                 message_to_client => [$ERROR_MAPPING->{TradingHoursExpiry}],
                 details           => {field => defined($self->duration) ? 'duration' : 'date_expiry'},
             };
-        } elsif ($underlying->intradays_must_be_same_day and $calendar->closing_on($exchange, $date_start)->epoch < $date_expiry->epoch) {
+        } elsif ($underlying->intradays_must_be_same_day and $calendar->closing_on($exchange, $effective_start)->epoch < $date_expiry->epoch) {
             return {
                 message           => "Intraday duration must expire on same day [symbol: " . $underlying->symbol . "]",
                 message_to_client => [$ERROR_MAPPING->{SameTradingDayExpiry}],
@@ -552,9 +552,9 @@ sub _validate_trading_times {
         }
     } elsif ($self->expiry_daily and not $self->is_atm_bet) {
         # For definite ATM contracts we do not have to check for upcoming holidays.
-        my $trading_days  = $calendar->trading_days_between($exchange, $date_start, $date_expiry);
-        my $holiday_days  = $calendar->holiday_days_between($exchange, $date_start, $date_expiry);
-        my $calendar_days = $date_expiry->days_between($date_start);
+        my $trading_days  = $calendar->trading_days_between($exchange, $effective_start, $date_expiry);
+        my $holiday_days  = $calendar->holiday_days_between($exchange, $effective_start, $date_expiry);
+        my $calendar_days = $date_expiry->days_between($effective_start);
 
         if ($underlying->market->equity and $trading_days <= 4 and $holiday_days >= 2) {
             my $safer_expiry = $date_expiry;
