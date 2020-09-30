@@ -30,6 +30,8 @@ use Sereal::Decoder;
 use DataDog::DogStatsd::Helper qw(stats_gauge);
 use Time::Duration::Concise;
 
+use constant SPOT_SEPARATOR => '::';
+
 sub get {
     my ($self, $args) = @_;
 
@@ -42,6 +44,37 @@ sub get {
         $ticks = $self->tick_cache_get($args);
     }
     return $ticks;
+}
+
+sub spot_min_max {
+    my ($self, $args) = @_;
+
+    # THE RELEASE NEEDS TO BE BACKWARD COMPATIBLE.
+    # TRELLO: https://trello.com/c/zh59tmHk
+    #
+    # IT TAKES 12h FOR FEED-POPULATOR TO FILL THE NEW FORMAT,
+    # ONCE THAT IS DONE, A FOLLOW UP CARD WILL UNCOMMENT BELOW SNIPPET.
+
+    #################################### START UNCOMMENT
+    # my $use_decimate = $args->{decimate} // 1;
+    # unless ($args->{backprice}) {
+    #     my $symbol   = $args->{underlying}->symbol;
+    #     my $start    = $args->{start_epoch};
+    #     my $end      = $args->{end_epoch};
+    #     my $key_spot = $self->_make_key($symbol, $use_decimate, 1);
+
+    #     my @quotes = sort { $a <=> $b } map {
+    #         my ($quote, undef) = split SPOT_SEPARATOR;
+    #         $quote
+    #     } @{$self->redis_read->zrangebyscore($key_spot, $start, $end)};
+
+    #     return [$quotes[0], $quotes[-1]];
+    # }
+    #################################### END UNCOMMENT
+
+    my $ticks  = $self->get($args);
+    my @quotes = map { $_->{quote} } @$ticks;
+    return [min(@quotes), max(@quotes)];
 }
 
 sub decimate_cache_get {
@@ -129,68 +162,20 @@ sub tick_cache_get_num_ticks {
     });
 }
 
-=head2 sampling_frequency
-
-=head2 data_cache_size
-
-=head2 decimate_cache_size
-
-=cut
-
 has sampling_frequency => (
     is      => 'ro',
     isa     => 'Time::Duration::Concise',
-    default => sub {
-        Time::Duration::Concise->new(interval => '15s');
-    },
-);
-
-# size is the number of ticks
-has data_cache_size => (
-    is      => 'ro',
-    lazy    => 1,
-    builder => '_build_data_cache_size',
-);
-
-sub _build_data_cache_size {
-    my $self = shift;
-
-# We added 1 min here as a buffer,
-# Now both forex and synthetic_index is 31 mins.
-    my $cache_size = 31 * 60;
-
-    return $cache_size;
-}
-
-has decimate_cache_size => (
-    is      => 'ro',
-    default => 2880,
-);
+    default => sub { return Time::Duration::Concise->new(interval => '15s'); });
 
 has decimate_retention_interval => (
     is      => 'ro',
     isa     => 'Time::Duration::Concise',
-    lazy    => 1,
-    builder => '_build_decimate_retention_interval',
-);
-
-sub _build_decimate_retention_interval {
-    my $self     = shift;
-    my $interval = int($self->decimate_cache_size / (60 / $self->sampling_frequency->seconds));
-    return Time::Duration::Concise->new(interval => $interval . 'm');
-}
+    default => sub { return Time::Duration::Concise->new(interval => '12h'); });
 
 has raw_retention_interval => (
     is      => 'ro',
     isa     => 'Time::Duration::Concise',
-    lazy    => 1,
-    builder => '_build_raw_retention_interval',
-);
-
-sub _build_raw_retention_interval {
-    my $interval = int(shift->data_cache_size / 60);
-    return Time::Duration::Concise->new(interval => $interval . 'm');
-}
+    default => sub { return Time::Duration::Concise->new(interval => '31m'); });
 
 has decoder => (
     is      => 'ro',
@@ -237,55 +222,17 @@ sub _build_redis_write {
 =cut
 
 sub _make_key {
-    my ($self, $symbol, $decimate) = @_;
-
-    my @bits = ("DECIMATE", $symbol);
-    if ($decimate) {
-        push @bits, ($self->sampling_frequency->as_concise_string, 'DEC');
-    } else {
-        push @bits, ($self->raw_retention_interval->as_concise_string, 'FULL');
-    }
-
+    my ($self, $symbol, $is_decimate, $is_spot) = @_;
+    my $interval =
+          $is_decimate
+        ? $self->sampling_frequency->as_concise_string
+        : $self->raw_retention_interval->as_concise_string;
+    my @bits = ('DECIMATE', $symbol, $interval, $is_decimate ? 'DEC' : 'FULL');
+    # we keep two redis zsets, one containting the tick object (_FULL, _DEC),
+    # and another containting only the "spot" value (_FULL_SPOT, _DEC_SPOT).
+    # queyring and decoding the second one is faster.
+    push @bits, 'SPOT' if $is_spot;
     return join('_', @bits);
-}
-
-=head2 _update
-=cut 
-
-sub _update {
-    my ($self, $redis, $key, $score, $value) = @_;
-
-    return $redis->zadd($key, $score, $value);
-}
-
-=head2 clean_up_raw
-
-Clean up old feed-raw data up to end_epoch - retention interval. For raw feed, retention interval is 31m for forex and 5h for synthetic_index.
-	
-=cut	
-
-sub clean_up_raw {
-    my ($self, $key, $end_epoch) = @_;
-
-    $self->redis_write->zremrangebyscore($key, 0, $end_epoch - $self->raw_retention_interval->seconds);
-
-    stats_gauge('feed_raw.count.' . $key, $self->redis_write->zcard($key));
-    return undef;
-}
-
-=head2 clean_up_decimate   
-
-Clean up old feed-decimate data up to end_epoch - retention interval. For decimate feed, retention interval is 12h.
-
-=cut    
-
-sub clean_up_decimate {
-    my ($self, $key, $end_epoch) = @_;
-
-    $self->redis_write->zremrangebyscore($key, 0, $end_epoch - $self->decimate_retention_interval->seconds);
-
-    stats_gauge('feed_decimate.count.' . $key, $self->redis_write->zcard($key));
-    return undef;
 }
 
 =head2 _get_decimate_from_cache
@@ -356,14 +303,22 @@ sub data_cache_insert_raw {
 
     $data = $data->as_hash if blessed($data);
 
-    my %to_store = %$data;
+    my $tick = {%$data};
+    $tick->{count} //= 1;    # These are all single data;
 
-    $to_store{count} = 1;    # These are all single data;
-    my $key = $self->_make_key($to_store{symbol}, 0);
+    $self->_upsert($tick->{symbol}, $tick, 0);
+    $self->_clean_up($tick->{symbol}, $tick->{epoch}, 0);
 
-    $self->_update($self->redis_write, $key, $data->{epoch}, $self->encoder->encode(\%to_store));
-    $self->clean_up_raw($key, $to_store{epoch});
+    return undef;
+}
 
+sub data_cache_back_populate_raw {
+    my ($self, $symbol, $ticks) = @_;
+
+    foreach my $tick (@$ticks) {
+        $tick = $tick->as_hash if blessed($tick);
+        $self->_upsert($symbol, $tick, 0);
+    }
     return undef;
 }
 
@@ -373,38 +328,50 @@ sub data_cache_insert_raw {
 sub data_cache_insert_decimate {
     my ($self, $symbol, $boundary) = @_;
 
-    my $raw_key      = $self->_make_key($symbol, 0);
-    my $decimate_key = $self->_make_key($symbol, 1);
+    my $key_raw      = $self->_make_key($symbol, 0, 0);
+    my $key_decimate = $self->_make_key($symbol, 1, 0);
 
     if (
         my @datas =
         map { $self->decoder->decode($_) }
-        @{$self->redis_read->zrangebyscore($raw_key, $boundary - ($self->sampling_frequency->seconds - 1), $boundary)})
+        @{$self->redis_read->zrangebyscore($key_raw, $boundary - ($self->sampling_frequency->seconds - 1), $boundary)})
     {
         #do resampling
         my $decimate_data = Data::Decimate::decimate($self->sampling_frequency->seconds, \@datas);
 
         foreach my $tick (@$decimate_data) {
-            $self->_update($self->redis_write, $decimate_key, $tick->{decimate_epoch}, $self->encoder->encode($tick));
+            $self->_upsert($symbol, $tick, 1);
         }
     } elsif (
         my @decimate_data =
         map { $self->decoder->decode($_) }
-        reverse @{$self->redis_read->zrevrangebyscore($decimate_key, $boundary - $self->sampling_frequency->seconds, 0, 'LIMIT', 0, 1)})
+        reverse @{$self->redis_read->zrevrangebyscore($key_decimate, $boundary - $self->sampling_frequency->seconds, 0, 'LIMIT', 0, 1)})
     {
         my $single_data = $decimate_data[0];
         $single_data->{decimate_epoch} = $boundary;
         $single_data->{count}          = 0;
         my $time_diff = $boundary - $single_data->{epoch};
 
-        stats_gauge('feed_decimate.time_diff.' . $decimate_key, $time_diff);
+        stats_gauge('feed_decimate.time_diff.' . $key_decimate, $time_diff);
 
         my $update = ($time_diff > $self->raw_retention_interval->seconds) ? 0 : 1;
-        $self->_update($self->redis_write, $decimate_key, $single_data->{decimate_epoch}, $self->encoder->encode($single_data)) if $update;
+        $self->_upsert($symbol, $single_data, 1) if $update;
     }
 
-    $self->clean_up_decimate($decimate_key, $boundary);
+    $self->_clean_up($symbol, $boundary, 1);
 
+    return undef;
+}
+
+sub data_cache_back_populate_decimate {
+    my ($self, $symbol, $ticks) = @_;
+
+    my @sorted_ticks  = sort { $a->{epoch} <=> $b->{epoch} } @$ticks;
+    my $decimate_data = Data::Decimate::decimate($self->sampling_frequency->seconds, \@sorted_ticks);
+
+    foreach my $single_data (@$decimate_data) {
+        $self->_upsert($symbol, $single_data, 1);
+    }
     return undef;
 }
 
@@ -414,7 +381,7 @@ sub data_cache_insert_decimate {
 sub get_latest_tick_epoch {
     my ($self, $symbol, $decimated, $start, $end) = @_;
 
-    my $key = $self->_make_key($symbol, $decimated);
+    my $key = $self->_make_key($symbol, $decimated, 0);
 
     my $last_tick_epoch = do {
         my $timestamp     = 0;
@@ -432,6 +399,47 @@ sub get_latest_tick_epoch {
     };
 
     return $last_tick_epoch;
+}
+
+=head2 _upsert
+update or insert
+=cut 
+
+sub _upsert {
+    my ($self, $symbol, $tick_data, $is_decimate) = @_;
+
+    my $tick = {%$tick_data};
+    delete $tick->{ohlc};
+
+    my $epoch = $is_decimate ? $tick->{decimate_epoch} : $tick->{epoch};
+
+    my $key      = $self->_make_key($symbol, $is_decimate, 0);
+    my $key_spot = $self->_make_key($symbol, $is_decimate, 1);
+
+    my $value      = $self->encoder->encode($tick);
+    my $value_spot = join(SPOT_SEPARATOR, $tick->{quote}, $epoch);
+
+    $self->redis_write->zadd($key,      $epoch, $value);
+    $self->redis_write->zadd($key_spot, $epoch, $value_spot);
+
+    return undef;
+}
+
+=head2 _clean_up
+Clean up old feed-raw or feed-decimate data up to end_epoch - retention interval.
+raw-feed retention interval is 31m for forex and 5h for synthetic_index.
+decimate-feed retention interval is 12h.
+=cut
+
+sub _clean_up {
+    my ($self, $symbol, $end_epoch, $is_decimate) = @_;
+    my $interval = $is_decimate ? $self->decimate_retention_interval->seconds : $self->raw_retention_interval->seconds;
+
+    my $key      = $self->_make_key($symbol, $is_decimate, 0);
+    my $key_spot = $self->_make_key($symbol, $is_decimate, 1);
+
+    $self->redis_write->zremrangebyscore($key,      0, $end_epoch - $interval);
+    $self->redis_write->zremrangebyscore($key_spot, 0, $end_epoch - $interval);
 }
 
 no Moose;

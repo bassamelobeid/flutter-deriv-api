@@ -44,8 +44,6 @@ EOF
 
     foreach my $ul (@uls) {
 
-        my $decimate_key = $decimate_cache->_make_key($ul->symbol, 1);
-
         my $last_non_zero_decimated_tick = $decimate_cache->get_latest_tick_epoch($ul->symbol, 1, $start, $end);
         my $last_decimate_epoch          = max($start, $last_non_zero_decimated_tick + 1);
 
@@ -60,16 +58,7 @@ EOF
             end_time   => $end,
         });
 
-        my @rev_ticks     = reverse @$ticks;
-        my $decimate_data = Data::Decimate::decimate($decimate_cache->sampling_frequency->seconds, \@rev_ticks);
-
-        foreach my $single_data (@$decimate_data) {
-            $decimate_cache->_update(
-                $decimate_cache->redis_write,
-                $decimate_key,
-                $single_data->{decimate_epoch},
-                $decimate_cache->encoder->encode($single_data));
-        }
+        $decimate_cache->data_cache_back_populate_decimate($ul->symbol, $ticks);
     }
 
     print "Decimating realtime data...\n";
