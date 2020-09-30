@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title><%= l('Log in') %> | <%= ucfirst($website_domain) %> </title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+        <link rel="shortcut icon" href="https://<%= $website_domain %>/icons/icon-48x48.png"/>
+        <link rel="apple-touch-icon" sizes="48x48" href="https://<%= $website_domain %>/icons/icon-48x48.png"/>
+        <link rel="apple-touch-icon" sizes="72x72" href="https://<%= $website_domain %>/icons/icon-72x72.png"/>
+        <link rel="apple-touch-icon" sizes="96x96" href="https://<%= $website_domain %>/icons/icon-96x96.png"/>
+        <link rel="apple-touch-icon" sizes="144x144" href="https://<%= $website_domain %>/icons/icon-144x144.png"/>
+        <link rel="apple-touch-icon" sizes="192x192" href="https://<%= $website_domain %>/icons/icon-192x192.png"/>
+        <link rel="apple-touch-icon" sizes="256x256" href="https://<%= $website_domain %>/icons/icon-256x256.png"/>
+        <link rel="apple-touch-icon" sizes="384x384" href="https://<%= $website_domain %>/icons/icon-384x384.png"/>
+        <link rel="apple-touch-icon" sizes="512x512" href="https://<%= $website_domain %>/icons/icon-512x512.png"/>
+
+        <style type="text/css">
+            @import url("https://fonts.googleapis.com/css?family=IBM+Plex+Sans:300,600&display=swap");
+            /*---------- variables ---------- */
+            :root {
+                /* colors */
+                --color-black: #0e0e0e;
+                --color-black-2: #2a2a2a;
+                --color-black-3: #333333;
+                --color-black-4: #182039;
+                --color-white: #ffffff;
+                --color-red: #ff444f;
+                --color-red-1: #dd573a;
+                --color-red-2: #ffc9cc;
+                --color-red-3: #d43e47;
+                --color-grey: #c2c2c2;
+                --color-grey-1: #999999;
+                --color-grey-2: #666565;
+                --color-grey-3: #f2f2f2;
+                --color-grey-4: #f2f3f4;
+                --color-grey-5: #d6dadb;
+                --color-grey-6: #777777;
+                --color-grey-7: #f3f3f3;
+                --color-green: #85acb0;
+                --color-blue: #4c76be;
+                --color-blue-2: #365899;
+                --color-yellow: #fff2df;
+
+                /* sizes */
+                --text-size-xxxs: 1rem;
+                --text-size-xxs: 1.2rem;
+                --text-size-xsm: 1.3rem;
+                --text-size-xs: 1.4rem;
+                --text-size-s: 1.6rem;
+                --text-size-sm: 2rem;
+                --text-size-m: 2.4rem;
+                --text-size-l: 3.2rem;
+                --text-size-xl: 4.8rem;
+                --text-size-xxl: 6.4rem;
+            }
+            html {
+                font-size: 62.5%;
+            }
+            body,
+            * {
+                font-family: "IBM Plex Sans", sans-serif;
+            }
+            body {
+                margin: 0;
+                background-color: rgba(245, 247, 250, 0.64);
+                letter-spacing: 0.15px;
+            }
+            header {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                height: 73px;
+                margin-bottom: 4rem;
+                background-color: var(--color-black);
+            }
+            header #logo {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                max-width: 100%;
+            }
+            a {
+                color: var(--color-red);
+                font-size: var(--text-size-xs);
+                line-height: 1.5;
+                text-decoration: none;
+            }
+            a:hover {
+                cursor: pointer;
+                text-decoration: underline;
+            }
+            p {
+                color: var(--color-black-3);
+                font-weight: normal;
+                font-size: var(--text-size-xs);
+                line-height: 1.5;
+                margin: 0;
+            }
+            p.secondary {
+                color: var(--color-grey);
+            }
+            p.error {
+                color: var(--color-red);
+                font-size: var(--text-size-xxs);
+                align-self: flex-start;
+                padding-left: 0.8rem;
+            }
+
+            h1,
+            h2,
+            h3 {
+                font-weight: bold;
+                line-height: 1.25;
+                width: 100%;
+                margin-top: 0;
+            }
+            h1 {
+                font-size: var(--text-size-xxl);
+            }
+
+            h2 {
+                font-size: var(--text-size-xl);
+            }
+
+            h3 {
+                font-size: var(--text-size-l);
+            }
+
+            h4 {
+                font-size: var(--text-size-m);
+            }
+
+            /*---------- form, input, button ---------- */
+            #container {
+                display: flex;
+                flex-direction: column;
+                align-items: start;
+                max-width: 40.6rem;
+                margin: auto;
+                text-align: left;
+                padding: 40px;
+                background-color: var(--color-white);
+                border-radius: 6px;
+                box-shadow: 0 16px 20px 0 rgba(0, 0, 0, 0.05), 0 0 20px 0 rgba(0, 0, 0, 0.05);
+            }
+            form {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                width: 100%;
+                margin: 0 auto 3.2rem;
+            }
+            form .input-group {
+                margin-top: 1.4rem;
+                height: 3.8rem;
+            }
+            form .input-group:first-child {
+                margin-top: 0;
+            }
+            form a {
+                align-self: center;
+            }
+
+            div.input-group {
+                width: 100%;
+                height: max-content;
+            }
+            div.input-wrapper {
+                position: relative;
+                border: 1px solid var(--color-grey-5);
+                border-radius: 4px;
+            }
+            div.input-error {
+                min-height: 1.8rem;
+            }
+            div.input-wrapper:hover {
+                border-color: var(--color-grey-1);
+            }
+            div.input-wrapper.has_error {
+                border-color: var(--color-red);
+            }
+            div.input-wrapper.has_error input ~ label {
+                color: var(--color-red);
+            }
+            div.input-wrapper .input-button {
+                position: absolute;
+                top: 0;
+                right: 10px;
+                width: 17px;
+                height: 100%;
+                background-repeat: no-repeat;
+                background-position: center center;
+                cursor: pointer;
+                display: none;
+            }
+            div.input-wrapper #btnToggle.icon_hidden {
+                background-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNiIgaGVpZ2h0PSIxNiIgdmlld0JveD0iMCAwIDE2IDE2Ij4KICAgIDxnIGZpbGw9Im5vbmUiIGZpbGwtcnVsZT0iZXZlbm9kZCI+CiAgICAgICAgPHBhdGggZD0iTTAgMGgxNnYxNkgweiIvPgogICAgICAgIDxwYXRoIGZpbGw9IiM5OTkiIGZpbGwtcnVsZT0ibm9uemVybyIgZD0iTTE0LjE3NyAyLjExOGEuNS41IDAgMSAxIC42NDYuNzY0bC0yLjA0OCAxLjczMkE3LjkyNSA3LjkyNSAwIDAgMSAxNS4zMzMgOGMtMS4xNTMgMi45MjctNCA1LTcuMzMzIDVhNy44MyA3LjgzIDAgMCAxLTMuOTA4LTEuMDM4bC0yLjI2OSAxLjkyYS41LjUgMCAxIDEtLjY0Ni0uNzY0bDIuMDQ3LTEuNzMzQTcuOTI1IDcuOTI1IDAgMCAxIC42NjcgOEMxLjgyIDUuMDczIDQuNjY3IDMgOCAzYTcuODMgNy44MyAwIDAgMSAzLjkwOSAxLjAzOHptLTIuMjY1IDMuMjI2TDEwLjU4IDYuNDcyYy4yNjcuNDQ4LjQyLjk3LjQyIDEuNTI4IDAgMS42NTMtMS4zNDcgMy0zIDMtLjczNiAwLTEuNDEtLjI2Ny0xLjkzMy0uNzA4bC0xLjEwNi45MzVDNS44OCAxMS43MjcgNi45MTQgMTIgOCAxMmMyLjU4NSAwIDQuODc4LTEuNTUgNi00YTcuMDQ2IDcuMDQ2IDAgMCAwLTIuMDg4LTIuNjU2ek04IDRDNS40MjIgNCAzLjEyMiA1LjU1IDIgOGE3LjA1IDcuMDUgMCAwIDAgMi4wODYgMi42NTZMNS40MiA5LjUyOEEyLjk4IDIuOTggMCAwIDEgNSA4YzAtMS42NTMgMS4zNDctMyAzLTMgLjczNiAwIDEuNDExLjI2NyAxLjkzNC43MDlsMS4xMDUtLjkzNUE2LjMzNiA2LjMzNiAwIDAgMCA4IDR6bTEuODAyIDMuMTNMNi44NDUgOS42MzNBMiAyIDAgMCAwIDkuODAyIDcuMTN6TTggNmEyIDIgMCAwIDAtMS44MDIgMi44N2wyLjk1Ny0yLjUwM0ExLjk5IDEuOTkgMCAwIDAgOCA2eiIvPgogICAgPC9nPgo8L3N2Zz4K");
+            }
+            div.input-wrapper #btnToggle.icon_visible {
+                background-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNiIgaGVpZ2h0PSIxNiIgdmlld0JveD0iMCAwIDE2IDE2Ij4KICAgIDxnIGZpbGw9Im5vbmUiIGZpbGwtcnVsZT0iZXZlbm9kZCI+CiAgICAgICAgPHBhdGggZD0iTTAgMGgxNnYxNkgweiIvPgogICAgICAgIDxwYXRoIGZpbGw9IiM5OTkiIGZpbGwtcnVsZT0ibm9uemVybyIgZD0iTTggNGMyLjU3OCAwIDQuODc4IDEuNTUgNiA0LTEuMTIyIDIuNDUtMy40MTUgNC02IDRzLTQuODc4LTEuNTUtNi00YzEuMTIyLTIuNDUgMy40MjItNCA2LTRtMC0xQzQuNjY3IDMgMS44MiA1LjA3My42NjcgOGMxLjE1MyAyLjkyNyA0IDUgNy4zMzMgNXM2LjE4LTIuMDczIDcuMzMzLTVjLTEuMTUzLTIuOTI3LTQtNS03LjMzMy01em0wIDNhMiAyIDAgMSAxLS4wMDEgNC4wMDFBMiAyIDAgMCAxIDggNm0wLTFDNi4zNDcgNSA1IDYuMzQ3IDUgOHMxLjM0NyAzIDMgMyAzLTEuMzQ3IDMtMy0xLjM0Ny0zLTMtM3oiLz4KICAgIDwvZz4KPC9zdmc+Cg==");
+            }
+            input[type=password]::-ms-reveal,
+            input[type=password]::-ms-clear {
+              display: none;
+            }
+            input {
+                background: none;
+                color: var(--color-black-3);
+                font-size: var(--text-size-s);
+                padding: 1rem 1rem 1rem 0.8rem;
+                width: calc(100% - 1.8rem);
+                display: block;
+                border: none;
+                border-radius: 0;
+            }
+            input::-webkit-input-placeholder {
+                opacity: 0;
+                -webkit-transition: opacity 0.25s;
+                -o-transition: opacity 0.25s;
+                transition: opacity 0.25s;
+                padding-left: 0.3rem;
+            }
+            input::-moz-placeholder {
+                opacity: 0;
+                -webkit-transition: opacity 0.25s;
+                -o-transition: opacity 0.25s;
+                transition: opacity 0.25s;
+                padding-left: 0.3rem;
+            }
+            input:-ms-input-placeholder {
+                opacity: 0;
+                -webkit-transition: opacity 0.25s;
+                -o-transition: opacity 0.25s;
+                transition: opacity 0.25s;
+                padding-left: 0.3rem;
+            }
+            input::-ms-input-placeholder {
+                opacity: 0;
+                -webkit-transition: opacity 0.25s;
+                -o-transition: opacity 0.25s;
+                transition: opacity 0.25s;
+                padding-left: 0.3rem;
+            }
+            input ~ label {
+                color: var(--color-grey-1);
+                font-size: var(--text-size-xs);
+                position: absolute;
+                pointer-events: none;
+                left: 1.1rem;
+                top: 1rem;
+                transition: 0.25s ease all;
+                transform-origin: top left;
+            }
+            input:focus {
+                outline: none;
+            }
+            input:focus::-webkit-input-placeholder {
+                opacity: 0.4;
+            }
+            input:focus::-moz-placeholder {
+                opacity: 0.4;
+            }
+            input:focus:-ms-input-placeholder {
+                opacity: 0.4;
+            }
+            input:focus::-ms-input-placeholder {
+                opacity: 0.4;
+            }
+            input:focus::placeholder {
+                opacity: 0.4;
+            }
+            input:focus ~ label,
+            label.raised-label,
+            input:not(:focus):not(:invalid) ~ label {
+                background-color: var(--color-white);
+                -webkit-transform: translate(-4px, -1.8rem) scale(0.71);
+                -ms-transform: translate(-4px, -1.8rem) scale(0.71);
+                transform: translate(-4px, -1.8rem) scale(0.71);
+                padding: 0 4px;
+                -webkit-transform-origin: top left;
+                -ms-transform-origin: top left;
+                transform-origin: top left;
+            }
+            /* somehow this `input:-webkit-autofill` was not picked on focus in Edge
+            if we add it with other classes as above. it worked separately. */
+            input:-webkit-autofill ~ label {
+                background-color: var(--color-white);
+                -webkit-transform: translate(0, -1.8rem) scale(0.75);
+                padding: 0 4px;
+                -webkit-transform-origin: top left;
+            }
+            input[style*="background"] ~ .input-button {
+                right: 32px;
+            }
+            input:not(:placeholder-shown) ~ .input-button {
+                display: block;
+            }
+            button {
+                border-radius: 4px;
+                padding: 1rem 1.6rem;
+                font-size: 1.4rem;
+                transition: all 0.25s;
+                font-weight: bold;
+            }
+            button:hover {
+                cursor: pointer;
+            }
+            button:focus,
+            button:active {
+                outline: none;
+            }
+            button:active {
+                transform: scale(0.95);
+            }
+            button > * {
+                pointer-events: none;
+            }
+            button.primary {
+                border: 2px solid var(--color-red);
+                color: var(--color-red);
+                background: transparent;
+            }
+            button.primary:hover {
+                background-color: var(--color-red);
+                color: var(--color-white);
+            }
+            button.secondary {
+                border: 2px solid var(--color-red);
+                color: var(--color-white);
+                background: var(--color-red);
+            }
+            button.secondary:hover {
+                background-color: var(--color-red-3);
+                border-color: var(--color-red-3);
+            }
+            button.tertiary {
+                border: 2px solid var(--color-grey-1);
+                color: var(--color-black);
+                background: transparent;
+            }
+            button.tertiary:hover {
+                background-color: rgba(0, 0, 0, 0.08);
+            }
+
+            #lost-password {
+                align-self: flex-start;
+                margin-bottom: 3rem;
+            }
+
+            #lost-password-container {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                width: 100%;
+                flex-direction: column;
+            }
+
+            #lost-password-container button[type="submit"] {
+                margin-left: auto;
+                border: none;
+                width: 100%;
+                height: 4rem;
+            }
+
+            #oa_social_login_container {
+                margin: 1.6rem auto;
+                width: 100%;
+            }
+            #oa_social_login_container iframe {
+                height: 40px !important;
+            }
+            #oa_social_login_container iframe #social_login {
+                background: black !important;
+            }
+            p.error-oneall {
+                color: var(--color-red);
+                font-size: var(--text-size-s);
+            }
+            .title-text {
+                margin-top: 0;
+                margin-bottom: 0.8rem;
+                line-height: 3.6rem;
+            }
+            .subtitle-text {
+                display: flex;
+                font-size: var(--text-size-s);
+                color: var(--color-black-3);
+                margin-bottom: 1.6rem;
+                align-items: center;
+            }
+            .derivcrypto-url {
+                background-color: var(--color-grey-3);
+                border-radius: var(--text-size-s);
+                margin-left: 0.8rem;
+                line-height: 0;
+            }
+            .derivcrypto-logo {
+                margin-right: 10px;
+            }
+            .derivcrypto-logo svg {
+                vertical-align: middle;
+            }
+            .center-text {
+                text-align: center;
+            }
+            .note-container {
+                background-color: rgba(242, 243, 244, 0.56);
+                display: flex;
+                padding: 0.8em;
+                margin-bottom: 2.5rem;
+                align-items: center;
+                border-radius: 4px;
+            }
+            .note-wrapper {
+                text-align: left;
+                display: flex;
+                flex-direction: column;
+                min-height: 42px;
+            }
+            .note-title {
+                font-size: var(--text-size-xs);
+                color: var(--color-grey-2);
+                text-align: left;
+                font-weight: normal;
+                margin: 0;
+                line-height: 21px;
+            }
+            .note-text {
+                color: var(--color-grey-2);
+                font-size: var(--text-size-xxxs);
+            }
+            .separator {
+                width: 100%;
+                border-top: 1px solid var(--color-grey-5);
+            }
+            .social-text {
+                color: var(--color-grey-6);
+                width: fit-content;
+                margin: auto;
+                transform: translateY(-11px);
+                background: var(--color-white);
+                padding: 0 2.2rem;
+            }
+            .account-link {
+                font-size: var(--text-size-s);
+            }
+            .account-text {
+                color: var(--color-black-3);
+                font-size: var(--text-size-s);
+                width: 100%;
+                text-align: center;
+                margin-top: 1.6rem;
+            }
+            .hide {
+                display: none;
+            }
+            @media (max-width: 368px) {
+                html {
+                    font-size: 55%;
+                }
+                .subtitle-text {
+                    flex-direction: column;
+                }
+                .deriv-url {
+                    margin-top: 0.8rem;
+                    margin-left: 0;
+                }
+            }
+
+            /*---------- Scopes confirmation page ---------- */
+            .scope-confirms#container {
+                max-width: 50rem;
+            }
+            .scope-title {
+                margin-bottom: 0.8rem;
+            }
+            .scope-subtitle {
+                font-size: var(--text-size-sm);
+            }
+            .scopes {
+                margin-top: 2.4rem;
+                margin-bottom: 3.2rem;
+                padding: 2.4rem;
+                background: var(--color-grey-7);
+            }
+            .scopes ul {
+                text-align: left;
+                margin: 0;
+                padding: 0;
+                padding-left: 2rem;
+            }
+            .scopes li {
+                color: var(--color-black-3);
+                font-size: var(--text-size-s);
+                padding: 1rem 0;
+            }
+            .scope-confirms #btnCancel {
+                margin-right: 0.8rem;
+            }
+        </style>
+
+        <script type="text/javascript">
+            var oa = document.createElement('script');
+            oa.type = 'text/javascript';
+            oa.async = false;
+            oa.src = '//deriv.api.oneall.com/socialize/library.js?lang=<%= ($r->language eq "ZH_CN" || $r->language eq "ZH_TW") ? "zh" : lc($r->language) %>';
+            var s = document.getElementsByTagName('script')[0];
+            s.parentNode.insertBefore(oa, s);
+        </script>
+    </head>
+    <body class="oauth">
+        <header>
+            <a id="logo" href="https://<%= $website_domain %>/">
+                <svg xmlns="http://www.w3.org/2000/svg" width="200" height="73" viewBox="0 0 200 73">
+                    <defs>
+                        <linearGradient id="a" x1="50%" x2="50%" y1="0%" y2="100%">
+                            <stop offset="0%" stop-color="#FF6544"/>
+                            <stop offset="100%" stop-color="#FF4449"/>
+                        </linearGradient>
+                    </defs>
+                    <g fill="none" fill-rule="evenodd">
+                        <g fill-rule="nonzero">
+                            <path fill="url(#a)" d="M6.13 0v.03L16.314 13.5 0 26.97V27h16.474c4.807 0 8.979-3.373 10.06-8.136l1.363-6.008a10.63 10.63 0 0 0-1.98-8.894A10.261 10.261 0 0 0 17.84 0H6.13z" transform="translate(20 23)"/>
+                            <path fill="#B51A31" d="M36.308 36.527L29.144 50H20z"/>
+                            <path fill="#FFF" d="M159.883 23l3.62 18.88L173.67 23h6.254L164.58 50h-5.123l-5.977-27h6.402zm-89.952 0c8.279 0 13.01 5.782 11.702 13.327l-.013.076C80.31 43.95 73.57 49.81 65.282 49.81H55L59.647 23h10.284zm57.22 0c3.352 0 5.784.959 7.203 2.72 1.21 1.492 1.64 3.6 1.197 6.127l-.013.077c-.742 4.326-3.51 7.047-7.082 8.311l4.778 9.574h-6.78l-6.31-13.793h4.364c2.826 0 4.712-1.541 5.103-3.791l.014-.076c.438-2.523-1.07-3.826-3.895-3.826h-5.754l-3.727 21.486h-5.8L115.096 23h12.054zm21.62 0l-4.647 26.809h-5.802L142.972 23h5.8zm-39.4 0l-.912 5.247H94.336l-.945 5.438h9.118l-.91 5.247h-9.117l-.976 5.625h14.313l-.91 5.247H84.834L89.481 23h19.89zm-40.363 5.324h-4.481l-2.804 16.161h4.484c4.744 0 8.51-3.255 9.334-8.005l.013-.077c.824-4.747-1.799-8.08-6.546-8.08z"/>
+                        </g>
+                    </g>
+                </svg>
+            </a>
+        </header>
+
+        <%= content %>
+
+        <!-- Google Tag Manager -->
+        <script>
+            (function (w, d, s, l, i) {
+                w[l] = w[l] || []; w[l].push({
+                    'gtm.start':
+                        new Date().getTime(), event: 'gtm.js'
+                }); var f = d.getElementsByTagName(s)[0],
+                    j = d.createElement(s), dl = l != 'dataLayer' ? '&l=' + l : ''; j.async = true; j.src =
+                        'https://www.googletagmanager.com/gtm.js?id=' + i + dl; f.parentNode.insertBefore(j, f);
+            })(window, document, 'script', 'dataLayer', 'GTM-NF7884S');
+        </script>
+        <!-- End Google Tag Manager -->
+    </body>
+</html>
