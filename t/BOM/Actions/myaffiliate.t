@@ -39,7 +39,9 @@ my $mock_myaffiliate = Test::MockModule->new('BOM::MyAffiliates');
 
 # at MyAffiliates we are maintaining separate CLIENT_ID for deriv & binary.
 #the affiliates that are associated with deriv have CLIENT_ID prefixed with deriv_
-my $customers    = [{"CLIENT_ID" => $test_client->loginid}, {"CLIENT_ID" => 'deriv_' . $test_client_deriv->loginid}];
+my $mtr_loginid = $test_client->loginid;
+$mtr_loginid =~ s/^CR/MTR/;
+my $customers    = [{"CLIENT_ID" => $test_client->loginid}, {"CLIENT_ID" => 'deriv_' . $test_client_deriv->loginid}, {"CLIENT_ID" => $mtr_loginid}];
 my $affiliate_id = 1234;
 $mock_myaffiliate->mock(
     'get_customers' => sub {

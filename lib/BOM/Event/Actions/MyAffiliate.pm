@@ -120,9 +120,11 @@ sub _get_clean_loginids {
     my $my_affiliate   = BOM::MyAffiliates->new();
     my $customers      = $my_affiliate->get_customers(AFFILIATE_ID => $affiliate_id);
 
-    my @login_ids = map { $_->{CLIENT_ID} || () } @$customers;
-    s/^deriv_//g for @login_ids;
-    return \@login_ids;
+    return [
+        grep { !/${BOM::User->MT5_REGEX}/ }
+        map  { s/^deriv_//r }
+        map  { $_->{CLIENT_ID} || () } @$customers
+    ];
 }
 
 1;
