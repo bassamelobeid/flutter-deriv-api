@@ -1363,10 +1363,8 @@ subtest 'MT5' => sub {
     $params->{args}{amount}       = 180;
     _test_events_prepare();
 
+    # MT5 (fiat) <=> CR (fiat) is allowed even if the client is transfers_blocked
     $test_client->status->set('transfers_blocked', 'system', 'testing transfers_blocked for real -> mt5');
-    $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_message_is("Transfers are not allowed for these accounts.\n",
-        'real->MT5 transfers blocked error message');
-    $test_client->status->clear_transfers_blocked;
 
     $rpc_ct->call_ok($method, $params)->has_no_error("Real account -> real MT5 ok");
     _test_events_tba(1, $test_client, $params->{args}{account_to});
@@ -1405,10 +1403,6 @@ subtest 'MT5' => sub {
     $params->{args}{amount}       = 150;                                             # this is the only withdrawal amount allowed by mock MT5
 
     _test_events_prepare();
-    $test_client->status->set('transfers_blocked', 'system', 'testing transfers_blocked for mt5 -> real');
-    $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_message_is('Transfers are not allowed for these accounts.',
-        'MT5->real transfers blocked error message');
-    $test_client->status->clear_transfers_blocked;
 
     $rpc_ct->call_ok($method, $params)->has_no_error("Real MT5 -> real account ok");
     _test_events_tba(
@@ -1444,6 +1438,8 @@ subtest 'MT5' => sub {
         },
         'expected data in result'
     );
+
+    $test_client->status->clear_transfers_blocked;
 
     cmp_ok $test_client->default_account->balance, '==', 970, 'real money account balance increased';
     #set cashier locked status to make sure for MT5 -> Real transfer it is failed.

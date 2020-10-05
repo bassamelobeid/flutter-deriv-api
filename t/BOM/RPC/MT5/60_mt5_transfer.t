@@ -232,10 +232,6 @@ subtest 'multi currency transfers' => sub {
         $c->call_ok('mt5_withdrawal', $withdraw_params)->has_error->error_message_is('Your account is restricted to withdrawals only.');
         $client_eur->status->clear_unwelcome;
 
-        $client_eur->status->set('transfers_blocked', 'system', 'transfers is blocked because of qiwi');
-        $c->call_ok('mt5_withdrawal', $withdraw_params)->has_error->error_message_is('Transfers are not allowed for these accounts.');
-        $client_eur->status->clear_transfers_blocked;
-
         $c->call_ok('mt5_withdrawal', $withdraw_params)->has_no_error('withdraw USD->EUR with current rate - no error');
         ok(defined $c->result->{binary_transaction_id}, 'withdraw USD->EUR with current rate - has transaction id');
         is financialrounding('amount', 'EUR', $client_eur->account->balance),
@@ -418,6 +414,52 @@ subtest 'multi currency transfers' => sub {
         BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
         $c->call_ok('mt5_withdrawal', $withdraw_params)->has_error('withdraw USD->UST with rate >1 hour old - has error')
             ->error_code_is('MT5WithdrawalError', 'withdraw USD->UST with rate >1 hour old - correct error code');
+    };
+
+    subtest 'MT5 Transfers with transfers_blocked status tests' => sub {
+        $client_ust->status->set('transfers_blocked', 'system', 'transfers is blocked because of qiwi deposit');
+        $deposit_params->{args}->{from_binary} = $withdraw_params->{args}->{to_binary} = $client_ust->loginid;
+        $redis->hmset(
+            'exchange_rates::UST_USD',
+            quote => $UST_USD,
+            epoch => time
+        );
+
+        $c->call_ok('mt5_deposit', $deposit_params)->has_error('CR (crypto) -> MT5 (USD), Blocked if the client is transfers_blocked')
+            ->error_message_is('Transfers are not allowed for these accounts.');
+        $c->call_ok('mt5_withdrawal', $withdraw_params)->has_error('MT5 (USD) -> CR (crypto), Blocked if the client is transfers_blocked')
+            ->error_message_is('Transfers are not allowed for these accounts.');
+
+        my $mock_landing = Test::MockModule->new('LandingCompany::Registry');
+        $mock_landing->mock(
+            get_currency_type => sub {
+                return 'crypto';
+            });
+        $c->call_ok('mt5_deposit',    $deposit_params)->has_no_error('CR (crypto) -> MT5 (crypto), Allowed even if the client is transfers_blocked');
+        $c->call_ok('mt5_withdrawal', $withdraw_params)->has_no_error('MT5 (crypto) -> CR (crypto), Allowed even if the client is transfers_blocked');
+        $mock_landing->unmock('get_currency_type');
+        is LandingCompany::Registry::get_currency_type('USD'), 'fiat', 'confirm umock for the next tests';
+
+        $client_eur->status->set('transfers_blocked', 'system', 'transfers is blocked because of qiwi deposit');
+        $manager_module->mock(
+            'deposit',
+            sub {
+                is financialrounding('amount', 'USD', shift->{amount}),
+                    financialrounding('amount', 'USD', $eur_test_amount * $EUR_USD * $after_fiat_fee),
+                    'Correct forex fee for USD<->EUR';
+                return Future->done({success => 1});
+            });
+        $deposit_params->{args}->{from_binary} = $withdraw_params->{args}->{to_binary} = $client_eur->loginid;
+        $redis->hmset(
+            'exchange_rates::EUR_USD',
+            quote => $EUR_USD,
+            epoch => time - (3600 * 12));
+
+        $c->call_ok('mt5_withdrawal', $withdraw_params)->has_no_error('MT5 (USD) -> CR (fiat), Allowed even if the client is transfers_blocked');
+        $c->call_ok('mt5_deposit',    $deposit_params)->has_no_error('CR (fiat) -> MT5 (USD), Allowed even if the client is transfers_blocked');
+
+        $client_ust->status->clear_transfers_blocked;
+        $client_eur->status->clear_transfers_blocked;
     };
 
     $mock_fees->unmock('transfer_between_accounts_fees');

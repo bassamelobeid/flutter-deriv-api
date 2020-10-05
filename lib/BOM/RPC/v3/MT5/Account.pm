@@ -1157,7 +1157,7 @@ async_rpc "mt5_deposit",
             try {
                 $fm_client->validate_payment(
                     currency          => $fm_client->default_account->currency_code(),
-                    amount            => -$amount,
+                    amount            => -1 * $amount,
                     internal_transfer => 1,
                 );
             } catch {
@@ -1284,12 +1284,6 @@ async_rpc "mt5_withdrawal",
         if BOM::RPC::v3::Utility::verify_experimental_email_whitelisted($client, $client->currency);
 
     my $to_client = BOM::User::Client->new({loginid => $to_loginid});
-
-    return create_error_future(
-        'TransfersBlocked',
-        {
-            override_code => $error_code,
-            message       => localize("Transfers are not allowed for these accounts.")}) if $to_client->status->transfers_blocked;
 
     return _mt5_validate_and_get_amount($client, $to_loginid, $fm_mt5, $amount, $error_code, $currency_check)->then(
         sub {
@@ -1616,6 +1610,9 @@ sub _mt5_validate_and_get_amount {
             return create_error_future('TransferSuspended', {override_code => $error_code})
                 if BOM::Config::Runtime->instance->app_config->system->suspend->transfer_between_accounts
                 and (($source_currency_type // '') ne ($mt5_currency_type // ''));
+
+            return create_error_future('TransfersBlocked', {message => localize("Transfers are not allowed for these accounts.")})
+                if ($client->status->transfers_blocked && ($mt5_currency_type ne $source_currency_type));
 
             unless ((LandingCompany::Registry::get_currency_type($client_currency) ne 'crypto')
                 || $mt5_currency eq $client_currency

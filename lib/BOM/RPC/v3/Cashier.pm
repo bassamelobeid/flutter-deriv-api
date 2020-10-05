@@ -1762,6 +1762,9 @@ sub _validate_transfer_between_accounts {
         return _transfer_between_accounts_error(localize('Sorry, transfers are currently unavailable. Please try again later.'));
     }
 
+    return _transfer_between_accounts_error(localize("Transfers are not allowed for these accounts."))
+        if (($client_from->status->transfers_blocked || $client_to->status->transfers_blocked) && $from_currency_type ne $to_currency_type);
+
     # check for internal transactions number limits
     my $daily_transfer_limit = BOM::Config::Runtime->instance->app_config->payments->transfer_between_accounts->limits->between_accounts;
     my $daily_transfer_count = $current_client->user->daily_transfer_count();
