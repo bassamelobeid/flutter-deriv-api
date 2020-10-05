@@ -74,7 +74,7 @@ sub after_register_client {
 
     unless ($client->is_virtual) {
         $client->status->set('tnc_approval', 'system', BOM::Config::Runtime->instance->app_config->cgi->terms_conditions_version);
-        copy_status_from_siblings($client, $user, ['no_trading', 'withdrawal_locked', 'age_verification']);
+        copy_status_from_siblings($client, $user, ['no_trading', 'withdrawal_locked', 'age_verification', 'transfers_blocked']);
     }
 
     BOM::Platform::Client::Sanctions->new({

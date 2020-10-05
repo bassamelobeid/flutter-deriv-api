@@ -340,6 +340,7 @@ subtest 'create account' => sub {
         });
         my ($real_client, $user) = @{$real_acc}{'client', 'user'};
         $real_client->status->set('withdrawal_locked', 'system', 'transfer over 1k');
+        $real_client->status->set('transfers_blocked', 'system', 'qiwi deposit');
 
         my $real_acc_new = BOM::Platform::Account::Real::default::create_account({
             from_client => $vr_client,
@@ -349,6 +350,7 @@ subtest 'create account' => sub {
         my $real_client_new = @{$real_acc_new}{'client'};
 
         ok $real_client_new->status->withdrawal_locked, "withdrawal_locked status copied to new real client upon creation";
+        ok $real_client_new->status->transfers_blocked, "transfers_blocked status is copied to new real client upon creation";
 
         my $client_vr_new = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
             broker_code => 'VRTC',
