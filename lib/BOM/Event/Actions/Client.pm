@@ -2021,8 +2021,11 @@ async sub payment_deposit {
 
     my $payment_processor = $args->{payment_processor};
     if ($payment_processor and uc($payment_processor) =~ m/QIWI/) {
-        $client->status->setnx('transfers_blocked', 'SYSTEM', 'Internal account transfers are blocked because of QIWI deposit');
-        $client->save;
+        _set_all_sibling_status({
+            loginid => $loginid,
+            status  => 'transfers_blocked',
+            message => "Internal account transfers are blocked because of QIWI deposit into $loginid"
+        });
     }
 
     return;
