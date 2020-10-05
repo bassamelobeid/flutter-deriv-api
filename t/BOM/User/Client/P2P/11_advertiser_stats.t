@@ -24,16 +24,16 @@ BOM::Test::Helper::P2P::purge_redis();    # can fail in circle-ci without this
 my ($advertiser, $client, $advert, $order);
 
 my %default_stats = (
-    'buy_orders_count'        => 0,
-    'sell_orders_count'       => 0,
-    'total_orders_count'      => 0,
-    'cancel_time_avg'         => undef,
-    'release_time_avg'        => undef,
-    'total_completion_rate'   => undef,
-    'buy_completion_rate'     => undef,
-    'sell_completion_rate'    => undef,
-    'basic_verification'      => 0,
-    'full_verification'       => 0,
+    'buy_orders_count'      => 0,
+    'sell_orders_count'     => 0,
+    'total_orders_count'    => 0,
+    'cancel_time_avg'       => undef,
+    'release_time_avg'      => undef,
+    'total_completion_rate' => undef,
+    'buy_completion_rate'   => undef,
+    'sell_completion_rate'  => undef,
+    'basic_verification'    => 0,
+    'full_verification'     => 0,
 );
 my @stats_keys = keys %default_stats;
 my $stats_cli  = {%default_stats};
@@ -179,9 +179,9 @@ subtest 'buy ads' => sub {
     );
     set_fixed_time('2000-03-01 00:01:10', '%Y-%m-%d %H:%M:%S');    # +10s
     $advertiser->p2p_order_cancel(id => $order->{id});
-    $stats_adv->{cancel_time_avg}         = 10;
+    $stats_adv->{cancel_time_avg}       = 10;
     $stats_adv->{total_completion_rate} = '66.67';
-    $stats_adv->{buy_completion_rate}     = '50.00';
+    $stats_adv->{buy_completion_rate}   = '50.00';
     check_stats($advertiser, $stats_adv, 'advertiser stats after order cancelled');
     check_stats($client,     $stats_cli, 'client stats after order cancelled');
 
@@ -192,7 +192,7 @@ subtest 'buy ads' => sub {
     );
     $advertiser->p2p_expire_order(id => $order->{id});
     $stats_adv->{total_completion_rate} = '50.00';
-    $stats_adv->{buy_completion_rate}     = '33.33';
+    $stats_adv->{buy_completion_rate}   = '33.33';
     check_stats($advertiser, $stats_adv, 'advertiser stats after order expired');
     check_stats($client,     $stats_cli, 'client stats after order expired');
 };

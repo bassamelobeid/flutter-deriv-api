@@ -824,6 +824,9 @@ sub total_trades {
 
     my $total = 0;
     for my $client (@clients) {
+        # Check if client has no currency code
+        next unless $client->account;
+
         my $count = $client->db->dbic->run(
             fixup => sub {
                 $_->selectrow_hashref(
