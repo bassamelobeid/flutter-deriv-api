@@ -55,7 +55,6 @@ use File::Temp;
 use Digest::MD5;
 use BOM::Event::Utility qw(exception_logged);
 use BOM::Platform::Redis;
-use Brands;
 
 # For smartystreets datadog stats_timing
 $Future::TIMES = 1;
@@ -2413,103 +2412,4 @@ sub _clear_cached_context {
     _redis_replicated_write()->del(ONFIDO_APPLICANT_CONTEXT_HOLDER_KEY . $applicant_id);
 }
 
-=head2 shared_payment_method_found
-
-Triggered when clients with shared payment method are found.
-Both clients should be flagged with cashier_locked and shared_payment_method.
-Both clients must be emailed due to this situation.
-Both clients must pass POI (handled at bom-user) and POO (handled manually by cs).
-
-It takes the following arguments:
-
-=over 4
-
-=item * C<client_loginid> the client sharing a payment method
-
-=item * C<shared_loginid> the 'other' client sharing the payment method
-
-=item * C<staff> (optional) the staff name to call status setter
-
-=back
-
-Returns, undef.
-
-=cut
-
-async sub shared_payment_method_found {
-    my ($args) = @_;
-    my $client_loginid = $args->{client_loginid} or die 'No client login ID specified';
-    my $shared_loginid = $args->{shared_loginid} or die 'No shared client login ID specified';
-
-    my $client = BOM::User::Client->new({loginid => $client_loginid})
-        or die 'Could not instantiate client for login ID ' . $client_loginid;
-
-    my $shared = BOM::User::Client->new({loginid => $shared_loginid})
-        or die 'Could not instantiate shared client for login ID ' . $shared_loginid;
-
-    # Lock the cashier and set shared PM to both clients
-    $args->{staff} //= 'system';
-    $client->status->setnx('cashier_locked', $args->{staff}, 'Shared payment method found');
-    $client->status->clear_shared_payment_method;
-    $client->status->setnx('shared_payment_method', $args->{staff}, 'Sharing with: ' . $shared_loginid);
-    # This may be dropped when POI/POA refactoring is done
-    $client->status->setnx('allow_document_upload', $args->{staff}, 'Shared payment method found') unless $client->status->age_verification;
-
-    $shared->status->setnx('cashier_locked', $args->{staff}, 'Shared payment method found');
-    $shared->status->clear_shared_payment_method;
-    $shared->status->setnx('shared_payment_method', $args->{staff}, 'Sharing with: ' . $client_loginid);
-    # This may be dropped when POI/POA refactoring is done
-    $shared->status->setnx('allow_document_upload', $args->{staff}, 'Shared payment method found') unless $shared->status->age_verification;
-
-    # Send email to both clients
-    _send_shared_payment_method_email($client);
-    _send_shared_payment_method_email($shared);
-
-    return;
-}
-
-=head2 _send_shared_payment_method_email
-
-Notifies the client via email regarding the shared payment methods situation it's involved.
-
-It takes the following arguments:
-
-=over 4
-
-=item * C<client> the client sharing a payment method
-
-=back
-
-Returns, undef.
-
-=cut
-
-sub _send_shared_payment_method_email {
-    my $client            = shift;
-    my $client_first_name = $client->first_name;
-    my $client_last_name  = $client->last_name;
-    my $lang              = lc(request()->language // 'en');
-    my $email             = $client->email;
-
-    # Each client may come from a different brand
-    # this switches the template accordingly
-    my $brand = Brands->new_from_app_id($client->source);
-    request(BOM::Platform::Context::Request->new(brand_name => $brand->name));
-
-    send_email({
-            from          => $brand->emails('authentications'),
-            to            => $email,
-            subject       => localize('Shared Payment Method account [_1]', $client->loginid),
-            template_name => 'shared_payment_method',
-            template_args => {
-                client_first_name => $client_first_name,
-                client_last_name  => $client_last_name,
-                lang              => $lang,
-                ask_poi           => !$client->status->age_verification,
-            },
-            use_email_template => 1,
-        });
-
-    return;
-}
 1;
