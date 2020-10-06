@@ -9,7 +9,7 @@ use BOM::Config::Chronicle;
 use Date::Utility;
 use Getopt::Long qw(GetOptions :config no_auto_abbrev no_ignore_case);
 use IO::Async::Loop;
-use JSON;
+use JSON::MaybeXS;
 use Net::Async::Webservice::S3;
 use Path::Tiny;
 use Syntax::Keyword::Try;
@@ -91,7 +91,7 @@ sub download_redis {
 
         my $doc_key = $parts[0];
         my $doc     = $parts[1];
-        $doc = JSON::from_json($doc);
+        $doc = JSON->new->allow_nonref->decode($doc);
 
         @parts = split /::/, $doc_key;
 

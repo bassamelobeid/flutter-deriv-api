@@ -7,7 +7,7 @@ no indirect;
 use BOM::Config::Redis;
 use Getopt::Long qw(GetOptions :config no_auto_abbrev no_ignore_case);
 use IO::Async::Loop;
-use JSON;
+use JSON::MaybeXS;
 use Net::Async::Webservice::S3;
 use Path::Tiny;
 use Syntax::Keyword::Try;
