@@ -632,8 +632,8 @@ subtest 'deal cancellation with fx' => sub {
         cancellation => '1h',
     };
     my $c = produce_contract($args);
-    is $c->ask_price,          101.1, 'ask price is 101.1';
-    is $c->cancellation_price, '1.10',   'cost of cancellation is 1.180';
+    is $c->ask_price,          101.1,  'ask price is 101.1';
+    is $c->cancellation_price, '1.10', 'cost of cancellation is 1.180';
 };
 
 subtest 'commission multiplier' => sub {
@@ -741,7 +741,7 @@ subtest 'deal cancellation with TP and blackout condition' => sub {
         'You may use either take profit or deal cancellation, but not both. Please select either one.', 'message to client';
 
     delete $args->{limit_order};
-    $now = Date::Utility->new('2020-06-04 21:00:00');
+    $now = Date::Utility->new('2020-11-02 21:00:00');
     BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks([100, $now->epoch, 'R_100']);
     $args->{date_start} = $args->{date_pricing} = $now;
     $c = produce_contract($args);
@@ -754,8 +754,8 @@ subtest 'deal cancellation with TP and blackout condition' => sub {
     ok !$c->is_valid_to_buy, 'invalid to buy';
     is $c->primary_validation_error->message, 'deal cancellation blackout period', 'message';
     is $c->primary_validation_error->message_to_client->[0], 'Deal cancellation is not available from [_1] to [_2].', 'message to client';
-    is $c->primary_validation_error->message_to_client->[1], '2020-06-04 21:00:00',                                   'message to client';
-    is $c->primary_validation_error->message_to_client->[2], '2020-06-04 23:59:59',                                   'message to client';
+    is $c->primary_validation_error->message_to_client->[1], '2020-11-02 21:00:00',                                   'message to client';
+    is $c->primary_validation_error->message_to_client->[2], '2020-11-02 23:59:59',                                   'message to client';
 };
 
 subtest 'variable deal cancellation price with variable stop out level' => sub {
@@ -801,6 +801,85 @@ subtest 'variable deal cancellation price with variable stop out level' => sub {
     $c = produce_contract($args);
     my $c2 = $c->cancellation_price;
     ok $c1 > $c2, 'price should be lower if contract is more likely to stop out';
+};
+
+subtest 'rollover blackout' => sub {
+    subtest 'is valid to buy' => sub {
+        my $non_dst = Date::Utility->new('2020-03-02 22:00:01');
+        BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks([100, $non_dst->epoch, 'R_100']);
+        my $args = {
+            bet_type     => 'MULTUP',
+            underlying   => 'R_100',
+            date_start   => $non_dst,
+            date_pricing => $non_dst,
+            amount_type  => 'stake',
+            amount       => 100,
+            multiplier   => 200,
+            currency     => 'USD',
+        };
+        my $c = produce_contract($args);
+        ok $c->is_valid_to_buy, 'valid to buy for synthetic indices';
+
+        BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks([100, $non_dst->epoch, 'frxUSDJPY']);
+        $args->{underlying} = 'frxUSDJPY';
+        $args->{multiplier} = 200;
+
+        $c = produce_contract($args);
+        ok !$c->is_valid_to_buy, 'not valid to buy';
+        is $c->primary_validation_error->message, 'multiplier option blackout period during volsurface rollover', 'blackout period for multiplier';
+        is $c->primary_validation_error->message_to_client->[0], 'Trading is not available from [_1] to [_2].';
+        is $c->primary_validation_error->message_to_client->[1], '21:55:00';
+        is $c->primary_validation_error->message_to_client->[2], '22:30:00';
+
+        my $after_rollover = Date::Utility->new('2020-03-02 22:30:01');
+        $args->{date_pricing} = $args->{date_start} = $after_rollover;
+        BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks([100, $after_rollover->epoch, 'frxUSDJPY']);
+        $c = produce_contract($args);
+        ok $c->is_valid_to_buy, 'valid to buy after blackout';
+
+        my $dst = Date::Utility->new('2020-03-09 21:00:01');
+        $args->{date_pricing} = $args->{date_start} = $dst;
+        BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks([100, $dst->epoch, 'frxUSDJPY']);
+
+        $c = produce_contract($args);
+        ok !$c->is_valid_to_buy, 'not valid to buy';
+        is $c->primary_validation_error->message, 'multiplier option blackout period during volsurface rollover', 'blackout period for multiplier';
+        is $c->primary_validation_error->message_to_client->[0], 'Trading is not available from [_1] to [_2].';
+        is $c->primary_validation_error->message_to_client->[1], '20:55:00';
+        is $c->primary_validation_error->message_to_client->[2], '21:30:00';
+
+        $after_rollover = Date::Utility->new('2020-03-09 21:30:01');
+        $args->{date_pricing} = $args->{date_start} = $after_rollover;
+        BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks([100, $after_rollover->epoch, 'frxUSDJPY']);
+        $c = produce_contract($args);
+        ok $c->is_valid_to_buy, 'valid to buy after blackout';
+    };
+
+    subtest 'is valid to sell' => sub {
+        my $non_dst = Date::Utility->new('2020-03-02 22:00:01');
+        my $ds      = $non_dst->minus_time_interval('1s');
+        BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks([101.02, $ds->epoch, 'frxUSDJPY'], [100, $non_dst->epoch, 'frxUSDJPY']);
+        my $args = {
+            bet_type     => 'MULTUP',
+            underlying   => 'frxUSDJPY',
+            date_start   => $ds,
+            date_pricing => $non_dst,
+            amount_type  => 'stake',
+            amount       => 100,
+            multiplier   => 200,
+            currency     => 'USD',
+            limit_order  => {
+                stop_out => {
+                    order_type   => 'stop_out',
+                    order_amount => -100,
+                    order_date   => $ds->epoch,
+                    basis_spot   => '100.00',
+                }
+            },
+        };
+        my $c = produce_contract($args);
+        ok $c->is_valid_to_sell, 'valid to sell during blackout for forex ';
+    };
 };
 
 done_testing();

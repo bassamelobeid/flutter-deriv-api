@@ -808,8 +808,30 @@ sub _validation_methods {
     # - trading times (if market is open)
     # - feed (if feed is too old)
     return [
-        qw(_validate_offerings _validate_input_parameters _validate_trading_times _validate_feed _validate_commission _validate_multiplier_range _validate_maximum_stake _validate_orders _validate_cancellation)
+        qw(_validate_offerings _validate_input_parameters _validate_trading_times _validate_blackout_start _validate_feed _validate_commission _validate_multiplier_range _validate_maximum_stake _validate_orders _validate_cancellation)
     ];
+}
+
+sub _validate_blackout_start {
+    my $self = shift;
+
+    # Due to uncertainty around volsurface rollover time, we want to disable buy 5 minutes before rollover and 30 minutes after rollover.
+    # Only applicable for forex.
+    return if $self->underlying->market->name ne 'forex';
+
+    my $rollover       = $self->volsurface->rollover_date($self->date_start);
+    my $blackout_start = $rollover->minus_time_interval('5m');
+    my $blackout_end   = $rollover->plus_time_interval('30m');
+
+    if ($self->date_start->is_after($blackout_start) and $self->date_start->is_before($blackout_end)) {
+        return {
+            message           => 'multiplier option blackout period during volsurface rollover',
+            message_to_client => [$ERROR_MAPPING->{TradingNotAvailable}, $blackout_start->time_hhmmss, $blackout_end->time_hhmmss],
+            details           => {field => 'date_start'},
+        };
+    }
+
+    return;
 }
 
 sub _validate_cancellation {
