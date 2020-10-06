@@ -34,7 +34,12 @@ if ($input{upload_coinpayment_html}) {
     my $tree = HTML::TreeBuilder->new;
     $tree->parse_file($file);
 
-    my @rows = $tree->look_down(
+    my $table = $tree->look_down(
+        _tag => 'table',
+        id   => 'cstable',
+    ) or die "Could not find table";
+
+    my @rows = $table->look_down(
         _tag => 'tr',
     ) or die "Couldn't find any coinpayment data rows";
 
@@ -46,9 +51,11 @@ if ($input{upload_coinpayment_html}) {
         $i++;
         next if $i == 1;
 
-        my $line  = {};
-        my @cells = $_->content_list;
-        die("Expected 5 cells but got " . 0 + @cells) unless @cells == 5;
+        my $line        = {};
+        my @cells       = $_->content_list;
+        my $no_of_cells = scalar(@cells);
+        next if (defined $no_of_cells and $no_of_cells == 1 and $cells[0]->as_text =~ qr/Page/);
+        die("Expecting 5 cells but got " . $no_of_cells) unless (defined $no_of_cells and $no_of_cells == 5);
 
         my $date_time          = $cells[0]->as_text;
         my @datetime_breakdown = split(' ', $date_time);
