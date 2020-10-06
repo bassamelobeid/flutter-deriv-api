@@ -15,6 +15,18 @@ BOM::Config::Runtime->instance->app_config->payments->p2p->escrow([]);
 BOM::Test::Helper::P2P::bypass_sendbird();
 my $days_needed = BOM::Config::Runtime->instance->app_config->payments->p2p->refund_timeout;
 
+my %last_event;
+my $mock_events = Test::MockModule->new('BOM::Platform::Event::Emitter');
+$mock_events->mock(
+    'emit',
+    sub {
+        my ($type, $data) = @_;
+        %last_event = (
+            type => $type,
+            data => $data
+        );
+    });
+
 subtest 'Move funds back (order type buy)' => sub {
     my $escrow = BOM::Test::Helper::P2P::create_escrow();
     my $amount = 100;
@@ -42,6 +54,19 @@ subtest 'Move funds back (order type buy)' => sub {
         id     => $order->{id},
         source => 5,
         staff  => 'AUTOEXPIRY',
+    );
+
+    cmp_deeply(
+        \%last_event,
+        {
+            type => 'p2p_order_updated',
+            data => {
+                client_loginid => $client->loginid,
+                order_id       => $result->{id},
+                order_event    => 'timeout_refund'
+            }
+        },
+        'p2p_order_updated event emitted'
     );
 
     is $result->{status}, 'refunded', 'The order has been refunded';

@@ -14,11 +14,24 @@ use BOM::Test::Helper::P2P;
 use BOM::Config::Runtime;
 use Test::Fatal;
 use Test::Exception;
+use Test::MockModule;
 
 populate_exchange_rates();
 
 BOM::Config::Runtime->instance->app_config->payments->p2p->escrow([]);
 BOM::Test::Helper::P2P::bypass_sendbird();
+
+my %last_event;
+my $mock_events = Test::MockModule->new('BOM::Platform::Event::Emitter');
+$mock_events->mock(
+    'emit',
+    sub {
+        my ($type, $data) = @_;
+        %last_event = (
+            type => $type,
+            data => $data
+        );
+    });
 
 subtest 'Order dispute (type buy)' => sub {
     my %ad_params = (
@@ -57,6 +70,19 @@ subtest 'Order dispute (type buy)' => sub {
         disputer_loginid => $client->loginid,
         dispute_reason   => 'seller_not_released',
     };
+
+    cmp_deeply(
+        \%last_event,
+        {
+            type => 'p2p_order_updated',
+            data => {
+                client_loginid => $client->loginid,
+                order_id       => $new_order->{id},
+                order_event    => 'dispute'
+            }
+        },
+        'p2p_order_updated event emitted'
+    );
 
     # Please note the dispute statuses mapping, this SHOULD be disputed when FE implements
     is $response->{status}, 'timed-out', 'Order is disputed';
@@ -418,6 +444,19 @@ subtest 'Returning dispute fields' => sub {
     BOM::Test::Helper::P2P::set_order_status($client, $new_order->{id}, 'pending');
     $response = $client->p2p_expire_order(
         id => $new_order->{id},
+    );
+
+    cmp_deeply(
+        \%last_event,
+        {
+            type => 'p2p_order_updated',
+            data => {
+                client_loginid => $client->loginid,
+                order_id       => $response->{id},
+                order_event    => 'expired'
+            }
+        },
+        'p2p_order_updated event emitted'
     );
 
     cmp_deeply($response->{dispute_reason},   $expected_response->{dispute_reason},   'order_expire expected dispute_reason after cancel');

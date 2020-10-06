@@ -2644,6 +2644,14 @@ sub p2p_create_order_dispute {
 
     my $p2p_redis = BOM::Config::Redis->redis_p2p_write();
     $p2p_redis->hset(P2P_ORDER_DISPUTED_AT, $order->{id}, Date::Utility->new()->epoch);
+
+    BOM::Platform::Event::Emitter::emit(
+        p2p_order_updated => {
+            client_loginid => $self->loginid,
+            order_id       => $id,
+            order_event    => 'dispute',
+        });
+
     return $self->_order_details([$updated_order])->[0];
 }
 
@@ -2697,6 +2705,15 @@ sub p2p_timeout_refund {
             $_->do('SELECT p2p.order_refund(?, ?, ?, ?, ?, ?)', undef, $order->{id}, $escrow->loginid, $param{source}, $param{staff}, 1, $txn_time);
         });
 
+    stats_inc('p2p.order.timeout_refund');
+
+    BOM::Platform::Event::Emitter::emit(
+        p2p_order_updated => {
+            client_loginid => $self->loginid,
+            order_id       => $order->{id},
+            order_event    => 'timeout_refund',
+        });
+
     return $self->_p2p_orders(id => $id)->[0];
 }
 
@@ -2716,6 +2733,7 @@ sub p2p_expire_order {
 
     my $status = $order->{status};
 
+    my $result;
     if ($status eq 'pending') {
         my $escrow = $self->p2p_escrow;
         die +{error_code => 'EscrowNotFound'} unless $escrow;
@@ -2723,19 +2741,32 @@ sub p2p_expire_order {
         my $txn_time    = Date::Utility->new->datetime;
         my $is_refunded = 1;                              # order will have refunded status
 
-        my $result = $self->db->dbic->txn(
+        $result = $self->db->dbic->txn(
             fixup => sub {
                 $_->selectrow_hashref('SELECT * FROM p2p.order_refund(?, ?, ?, ?, ?, ?)',
                     undef, $order->{id}, $escrow->loginid, $param{source}, $param{staff}, $is_refunded, $txn_time);
             });
         $self->_p2p_order_stats_record('ORDER_REFUNDED', $result);
-        return $result;
     } elsif ($status eq 'buyer-confirmed') {
-        return $self->db->dbic->run(
+        $result = $self->db->dbic->run(
             fixup => sub {
                 $_->selectrow_hashref('SELECT * FROM p2p.order_update(?, ?, ?)', undef, $id, 'timed-out', undef);
             });
     }
+
+    if ($result) {
+
+        stats_inc('p2p.order.expired');
+
+        BOM::Platform::Event::Emitter::emit(
+            p2p_order_updated => {
+                client_loginid => $self->loginid,
+                order_id       => $result->{id},
+                order_event    => 'expired',
+            });
+    }
+
+    return $result;
 }
 
 =head1 Private P2P methods
