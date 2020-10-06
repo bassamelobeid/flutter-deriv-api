@@ -22,7 +22,7 @@ use IO::Async::Loop;
 use JSON::MaybeUTF8 qw(encode_json_utf8 decode_json_utf8);
 use Locale::Codes::Country qw(country_code2code);
 use Time::HiRes;
-use List::Util qw(all);
+use List::Util qw(all any);
 
 use BOM::Platform::Context qw(localize);
 use BOM::RPC::v3::Services;
@@ -85,7 +85,6 @@ sub onfido_service_token {
     return _get_onfido_applicant($client, $onfido)->then(
         sub {
             my $applicant = shift;
-
             return Future->done({
                     error => BOM::RPC::v3::Utility::create_error({
                             code              => 'ApplicantError',
@@ -110,12 +109,67 @@ sub onfido_service_token {
         }
     )->else(
         sub {
+            # We just care about http failures
+
+            my ($response) = grep { (ref $_ // '') =~ /HTTP::Response/ } @_;
+            my $validation_error = _get_onfido_validation_error($response);
+
+            return Future->done({error => BOM::RPC::v3::Utility::create_error($validation_error)})
+                if $validation_error;
+
             return Future->done({
                     error => BOM::RPC::v3::Utility::create_error({
                             code              => 'ApplicantError',
                             message_to_client => localize('Cannot create applicant for [_1].', $loginid),
                         })});
         });
+}
+
+=head2 _get_onfido_validation_error
+
+Parses the Onfido response when status code 422 happens.
+
+Note the tricky onfido response structure for validations errors:
+
+{"error":{"type":"validation_error","message":"There was a validation error on this request","fields":{"addresses":[{"postcode":["invalid postcode"]}]}}}
+
+Detecting the following errors:
+
+=over 4
+
+=item * C<InvalidPostalCode>, when there is a `postcode` error in at least one of the addresses
+
+=back
+
+It takes the following argument:
+
+=over 4
+
+=item * C<response> - C<Http::Response> the http response from Onfido
+
+=back
+
+Returns the { code, message_to_client } hashref for the `create_error` method 
+when a validation error is detected, C<undef> otherwise.
+
+=cut    
+
+sub _get_onfido_validation_error {
+    my $response = shift;
+    return undef unless $response;
+    return undef unless (ref $response // '') eq 'HTTP::Response';
+    return undef unless $response->code == 422;
+
+    my $json      = decode_json_utf8($response->content);
+    my $addresses = $json->{error}{fields}{addresses} // [];
+
+    return +{
+        code              => 'InvalidPostalCode',
+        message_to_client => localize('Your postal code is invalid.'),
+        }
+        if any { defined $_->{postcode} } $addresses->@*;
+
+    return undef;
 }
 
 =head2 _get_onfido_applicant
