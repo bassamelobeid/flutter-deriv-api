@@ -3,11 +3,11 @@ mini:
     merlin:
         NUM:
             UPORDOWN:
-                avg: 0.0116
+                avg: 0.0118
                 max: 0.0306
             ONETOUCH:
-                avg: 0.0127
-                max: 0.0238
+                avg: 0.0129
+                max: 0.0242
             NOTOUCH:
                 avg: 0.0091
                 max: 0.0539
@@ -23,7 +23,7 @@ mini:
                 max: 0.0327
             ONETOUCH:
                 avg: 0.0131
-                max: 0.0259
+                max: 0.0263
             NOTOUCH:
                 avg: 0.0102
                 max: 0.059
@@ -32,7 +32,7 @@ mini:
                 max: 0.0788
             RANGE:
                 avg: 0.0141
-                max: 0.1755
+                max: 0.177
     sdfx:
         MAJOR_BASE:
             ONETOUCH:
@@ -62,11 +62,11 @@ mini:
                 max: 0.0671
         MINOR_BASE:
             UPORDOWN:
-                avg: 0.0348
+                avg: 0.0349
                 max: 0.1824
             ONETOUCH:
-                avg: 0.0231
-                max: 0.1476
+                avg: 0.0232
+                max: 0.1487
             NOTOUCH:
                 avg: 0.0132
                 max: 0.0524
@@ -106,7 +106,7 @@ mini:
                 max: 0.0182
         SPC:
             ONETOUCH:
-                avg: 0.0222
+                avg: 0.0223
                 max: 0.0642
             CALL:
                 avg: 0.0025
@@ -129,7 +129,7 @@ mini:
     ovra:
         BASE:
             NT:
-                avg: 0.0068
+                avg: 0.0071
                 max: 0.1183
             Digital:
                 avg: 0.0057
@@ -138,14 +138,14 @@ mini:
                 avg: 0.0133
                 max: 0.1443
             DNT:
-                avg: 0.0057
+                avg: 0.0058
                 max: 0.3567
             DOT:
                 avg: 0.0131
                 max: 0.297
         NUM:
             NT:
-                avg: 0.006
+                avg: 0.0064
                 max: 0.087
             Digital:
                 avg: 0.0057
@@ -154,7 +154,7 @@ mini:
                 avg: 0.0133
                 max: 0.1451
             DNT:
-                avg: 0.0050
+                avg: 0.0053
                 max: 0.2326
             DOT:
                 avg: 0.0131
