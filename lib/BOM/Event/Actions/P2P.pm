@@ -220,24 +220,14 @@ sub timeout_refund {
             source => $data->{source} // DEFAULT_SOURCE,
             staff  => $data->{staff} // DEFAULT_STAFF,
         );
+        return 1 if $updated_order;
     } catch {
         my $err = $@;
         $log->info('Fail to process order_refund: ' . $err, $data);
         exception_logged();
     }
 
-    return 0 unless $updated_order;
-
-    stats_inc('p2p.order.timeout_refund');
-
-    BOM::Platform::Event::Emitter::emit(
-        p2p_order_updated => {
-            client_loginid => $client->loginid,
-            order_id       => $updated_order->{id},
-            order_event    => 'timeout_refund',
-        });
-
-    return 1;
+    return 0;
 }
 
 =head2 order_expired
@@ -268,24 +258,14 @@ sub order_expired {
             source => $data->{source} // DEFAULT_SOURCE,
             staff  => $data->{staff} // DEFAULT_STAFF,
         );
+        return 1 if $updated_order;
     } catch {
         my $err = $@;
         $log->info('Fail to process order_expired: ' . $err, $data);
         exception_logged();
     }
 
-    return 0 unless $updated_order;
-
-    stats_inc('p2p.order.expired');
-
-    BOM::Platform::Event::Emitter::emit(
-        p2p_order_updated => {
-            client_loginid => $client->loginid,
-            order_id       => $updated_order->{id},
-            order_event    => 'expired',
-        });
-
-    return 1;
+    return 0;
 }
 
 =head2 _track_p2p_order_event

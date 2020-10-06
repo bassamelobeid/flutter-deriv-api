@@ -6,8 +6,6 @@ use warnings;
 use Log::Any qw($log);
 use Syntax::Keyword::Try;
 
-use BOM::Platform::Event::Emitter;
-use BOM::Event::Process;
 use BOM::Event::QueueHandler;
 
 use IO::Async::Loop;
