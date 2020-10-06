@@ -4,7 +4,7 @@ use strict;
 use warnings;
 no indirect;
 
-use JSON;
+use JSON::MaybeXS;
 use IPC::Run3;
 use Syntax::Keyword::Try;
 use Data::UUID;
