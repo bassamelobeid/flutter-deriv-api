@@ -98,6 +98,24 @@ if ($r->param('update_limit')) {
         }
     }
 
+    my $start_time = $r->param('start_time');
+    if ($start_time) {
+        code_exit_BO("invalid start_time, $start_time") unless _is_valid_time($start_time);
+        $ref{start_time} = $start_time;
+    }
+    my $end_time = $r->param('end_time');
+    if ($end_time) {
+        code_exit_BO("invalid end_time, $end_time") unless _is_valid_time($end_time);
+        code_exit_BO("end_time is in the past, $end_time")
+            unless Date::Utility->new($end_time)->is_after(Date::Utility->new);
+        $ref{end_time} = $end_time;
+    }
+    if ($start_time && $end_time) {
+        if (Date::Utility->new($end_time)->is_before(Date::Utility->new($start_time))) {
+            code_exit_BO("invalid range end_time < start_time ($end_time < $start_time)");
+        }
+    }
+
     my $uniq_key = substr(md5_hex(sort { $a cmp $b } values %ref), 0, 16);
 
     # if we just want to add client into watchlist, custom conditions is not needed
@@ -151,6 +169,7 @@ if ($r->param('update_limit')) {
         $ref{updated_on}                       = Date::Utility->new->date;
         $current_product_profiles->{$uniq_key} = \%ref;
         send_notification_email(\%ref, 'Disable') if ($profile and $profile eq 'no_business');
+        $current_product_profiles = _filter_past_limits($current_product_profiles);
         $app_config->set({'quants.custom_product_profiles' => $json->encode($current_product_profiles)});
 
         $args_content = join(q{, }, map { qq{$_ => $ref{$_}} } keys %ref);
@@ -287,6 +306,31 @@ sub send_notification_email {
     });
     return;
 
+}
+
+sub _is_valid_time {
+    my $time = shift;
+    try {
+        my $tim_obj = Date::Utility->new($time);
+        return 1;
+    } catch {
+        return 0;
+    }
+    return 0;
+}
+
+sub _filter_past_limits {
+    my $limits = shift;
+    my $now    = Date::Utility->new;
+
+    my $filtered = {};
+    for my $key (keys %$limits) {
+        my $limit = $limits->{$key};
+        unless ($limit->{end_time} && $now->is_after(Date::Utility->new($limit->{end_time}))) {
+            $filtered->{$key} = $limit;
+        }
+    }
+    return $filtered;
 }
 
 code_exit_BO();

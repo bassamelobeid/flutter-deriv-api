@@ -73,6 +73,22 @@
             <td> e.g. Why do you limit this client</td>
         </tr>
         <tr>
+            <td>Start time:</td>
+            <td>
+                <input type="text" name="start_time" class="datepick" size="20" maxlength="19"
+                       pattern="^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\$" data-lpignore="true" />
+            </td>
+            <td> e.g '2018-01-02 09:00', optional start time for the limit - format is YYYY-MM-DD HH:MI:SS </td>
+        </tr>
+        <tr>
+            <td>End time:</td>
+            <td>
+                <input type="text" name="end_time" class="datepick" size="20" maxlength="19"
+                       pattern="^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\$" data-lpignore="true" />
+            </td>
+            <td> e.g '2018-01-02 21:00', optional end time for the limit - format is YYYY-MM-DD HH:MI:SS </td>
+        </tr>
+        <tr>
             <td><input type="submit" name="update_limit" value="Update"></td>
         </tr>
     </table>
@@ -117,3 +133,16 @@
     </table>
     </fieldset>
 </form>
+
+<script>
+    initDatePickers = function(){
+        \$('.datepick')
+        .not('.date-picker-inited')
+        .datepicker({dateFormat: "yy-mm-dd 00:00:00"})
+        .addClass('date-picker-inited');
+    };
+
+    \$(document).ready(function() {
+        initDatePickers();
+    });
+</script>
