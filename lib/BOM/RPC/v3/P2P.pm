@@ -100,9 +100,16 @@ our %ERROR_MAP = do {
         AdvertiserNotListed     => localize("This advertiser is currently inactive. Please check again later or choose another advertiser."),
         AdvertiserNotRegistered => localize("Please apply to be an advertiser. If you've already applied, please contact our Customer Support team."),
         AdvertMaxExceeded       => localize("You've reached the maximum ad limit. Please deactivate some ads."),
-        AdvertNotFound          => localize("We can't find the ad. Please review the details or try another ad."),
-        AdvertOwnerNotApproved  => localize("This advertiser has not been approved yet. Please choose another advertiser."),
-        AlreadyRegistered       => localize("You are already an advertiser."),
+        AdvertMaxExceededSameType =>
+            localize("You've reached the maximum of [_1] active ads for this currency pair and order type. Please delete an ad to place a new one."),
+        DuplicateAdvert =>
+            localize("You have another active ad with the same rate for this currency pair and order type. Please set a different rate."),
+        AdvertSameLimits => localize(
+            "Please change the minimum and/or maximum order limit for this ad. The range between these limits must not overlap with another active ad you created for this currency pair and order type."
+        ),
+        AdvertNotFound                => localize("We can't find the ad. Please review the details or try another ad."),
+        AdvertOwnerNotApproved        => localize("This advertiser has not been approved yet. Please choose another advertiser."),
+        AlreadyRegistered             => localize("You are already an advertiser."),
         ClientDailyOrderLimitExceeded => localize("You may only place [_1] orders every 24 hours. Please try again later."),
         EscrowNotFound =>
             localize("Advertising for this currency is currently unavailable. Please contact our Customer Support team or try again later."),
