@@ -6,7 +6,7 @@ use warnings;
 
 use Scalar::Util 'looks_like_number';
 use Syntax::Keyword::Try;
-use JSON::MaybeXS;
+use JSON::MaybeUTF8 qw(:v1);
 use Date::Utility;
 
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
@@ -68,7 +68,7 @@ if ($input{save}) {
                     delete $pc->{_json}{$_};
                 }
             }
-            $pc->promo_code_config(JSON::MaybeXS->new->encode($pc->{_json}));
+            $pc->promo_code_config(encode_json_text($pc->{_json}));
             $pc->save;
         };
         push @messages, ($@ || 'Save completed');
@@ -76,7 +76,7 @@ if ($input{save}) {
 }
 
 if ($pc) {
-    $pc->{_json} ||= eval { JSON::from_json($pc->promo_code_config) } || {};
+    $pc->{_json} ||= eval { decode_json_text(($pc->promo_code_config)) } || {};
     $pc->{$_} = Date::Utility->new($pc->$_)->date_yyyymmdd for grep { $pc->$_ } qw/start_date expiry_date/;
 }
 
