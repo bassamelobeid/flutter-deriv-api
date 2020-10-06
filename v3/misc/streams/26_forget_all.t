@@ -3,8 +3,7 @@ use warnings;
 use Test::More;
 use Test::Deep;
 use Test::MockTime qw/:all/;
-use Encode;
-use JSON::MaybeXS;
+use JSON::MaybeUTF8 qw(encode_json_text encode_json_utf8);
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
 use BOM::Test::Helper qw/test_schema build_wsapi_test/;
@@ -43,7 +42,7 @@ initialize_realtime_ticks_db();
             bid    => $i + 1,
             ohlc   => $ohlc_sample,
         };
-        BOM::Config::Redis::redis_replicated_write()->publish("DISTRIBUTOR_FEED::$symbol", Encode::encode_utf8(JSON::MaybeXS->new->encode($payload)));
+        BOM::Config::Redis::redis_replicated_write()->publish("DISTRIBUTOR_FEED::$symbol", encode_json_utf8($payload));
     }
 
     my $t = build_wsapi_test();
@@ -76,9 +75,9 @@ initialize_realtime_ticks_db();
             my $msg = $type eq 'ticks' ? $req_tick : $req_candle;
             # two subscriptions should work
             if ($type eq 'ticks') {
-                note("ticks 1 json :: " . encode_json($t->await::tick($msg)));
+                note("ticks 1 json :: " . encode_json_text($t->await::tick($msg)));
             } else {
-                note("candles 1 json :: " . encode_json($t->await::candles($msg)));
+                note("candles 1 json :: " . encode_json_text($t->await::candles($msg)));
             }
         }
         my $failed_res = $t->await::forget_all({forget_all => 'tick'});
@@ -88,7 +87,7 @@ initialize_realtime_ticks_db();
         is $failed_res->{error}->{code}, 'InputValidationFailed', "Correct error code for invalid array";
 
         my $res = $t->await::forget_all({forget_all => $types});
-        note("forget_all json :: " . encode_json($res->{forget_all}));
+        note("forget_all json :: " . encode_json_text($res->{forget_all}));
         ok $res->{forget_all}, "Manage to forget_all: " . join(', ', @$types) or diag explain $res;
         is scalar(@{$res->{forget_all}}), scalar(@$types), "Forget the relevant tick channel";
     }

@@ -12,7 +12,7 @@ BEGIN {
     $ENV{PERL_FUTURE_DEBUG} = 1;
 }
 
-use JSON::MaybeXS qw/decode_json encode_json/;
+use JSON::MaybeUTF8 qw/decode_json_utf8 encode_json_utf8/;
 use BOM::Test::Helper qw/build_wsapi_test create_test_user/;
 use Digest::MD5 qw/md5_hex/;
 use Net::Async::Webservice::S3;
@@ -104,8 +104,8 @@ subtest 'Invalid s3 config' => sub {
 };
 
 subtest 'binary frame should be sent correctly' => sub {
-    my $res = await_binary(encode_json({ping => 1}));
-    ok $res->{ping}, 'Encoded json should be treated as json';
+    my $res = await_binary(encode_json_utf8({ping => 1}));
+    ok $res->{ping}, 'The response should be a JSON string and can be decoded';
 
     $res = await_binary((pack 'N', 1));
     my $error = $res->{error};
@@ -550,7 +550,7 @@ sub await_binary {
     get_response($ws->send_ok({binary => $frame}));
 }
 
-sub get_response { decode_json(shift->message_ok->message->[1]) }
+sub get_response { decode_json_utf8(shift->message_ok->message->[1]) }
 
 done_testing();
 
