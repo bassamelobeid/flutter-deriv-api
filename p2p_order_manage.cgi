@@ -47,7 +47,8 @@ my $db_collector = BOM::Database::ClientDB->new({
 my ($order, $escrow, $transactions, $chat_messages);
 my $chat_messages_limit = 20;
 my $chat_page           = int($input{p} // 1);
-$chat_page = 1 unless $chat_page > 0;    # The default page is 1 so math is well adjusted
+$chat_page = 1
+    unless $chat_page > 0;    # The default page is 1 so math is well adjusted
 
 Bar('P2P Order details/management');
 
@@ -58,7 +59,8 @@ if (my $action = $input{action} and $p2p_write) {
                 $_->selectrow_array('SELECT status, account_currency FROM p2p.order_list(?,NULL,NULL,NULL)', undef, $input{order_id});
             });
 
-        die "Order is in $status status and cannot be resolved now.\n" unless $status eq 'disputed';
+        die "Order is in $status status and cannot be resolved now.\n"
+            unless $status eq 'disputed';
         $escrow = get_escrow($broker, $currency);
         die "No escrow account is defined for $currency.\n" unless $escrow;
 
@@ -97,23 +99,20 @@ if ($input{dispute} and $p2p_write) {
                 $_->selectrow_array('SELECT status FROM p2p.order_list(?,NULL,NULL,NULL)', undef, $input{order_id});
             });
 
-        die "Order is in $status status and cannot be disputed now.\n" unless $status eq 'timed-out';
-        die "Invalid dispute reason.\n" unless exists $dispute_reasons{$input{reason}};
+        die "Order is in $status status and cannot be disputed now.\n"
+            unless $status eq 'timed-out';
+        die "Invalid dispute reason.\n"
+            unless exists $dispute_reasons{$input{reason}};
         my $client = BOM::User::Client->new({loginid => $input{disputer}});
         $client->p2p_create_order_dispute(
             id             => $input{order_id},
             dispute_reason => $input{reason});
 
-        BOM::Platform::Event::Emitter::emit(
-            p2p_order_updated => {
-                client_loginid => $client->loginid,
-                order_id       => $input{order_id},
-                order_event    => 'dispute',
-            });
     } catch {
         my $error = $@;
         $error = join ', ', $@->@* if ref $@ eq 'ARRAY';
-        $error = $@->{error_code}  if ref $@ eq 'HASH' && defined $@->{error_code};
+        $error = $@->{error_code}
+            if ref $@ eq 'HASH' && defined $@->{error_code};
 
         print '<p style="color:red; font-weight:bold;">' . $error . '</p>';
     }
@@ -141,8 +140,10 @@ if (my $id = $input{order_id}) {
         $order->{disputer_loginid} //= '[none]';
         $order->{dispute_reason} = $dispute_reasons{$order->{dispute_reason} // ''} // '[no predefined reason]';
         $order->{disputer_role}  = '[not under dispute]';
-        $order->{disputer_role}  = $order->{client_role} if $order->{disputer_loginid} eq $order->{client_loginid};
-        $order->{disputer_role}  = $order->{advertiser_role} if $order->{disputer_loginid} eq $order->{advertiser_loginid};
+        $order->{disputer_role}  = $order->{client_role}
+            if $order->{disputer_loginid} eq $order->{client_loginid};
+        $order->{disputer_role} = $order->{advertiser_role}
+            if $order->{disputer_loginid} eq $order->{advertiser_loginid};
         $order->{client_id}   //= '[not an advertiser]';
         $order->{client_name} //= '[not an advertiser]';
         $order->{$_} = Date::Utility->new($order->{$_})->datetime_ddmmmyy_hhmmss for qw( created_time expire_time );
@@ -196,10 +197,14 @@ BOM::Backoffice::Request::template()->process(
         transactions       => $transactions,
         p2p_write          => $p2p_write,
         chat_messages      => $chat_messages,
-        chat_messages_next => scalar @{$chat_messages} < $chat_messages_limit ? undef : $chat_page + 1,    # When undef link won't be show
-        chat_messages_prev => $chat_page > 1 ? $chat_page - 1 : undef,                                     # When undef link won't be show
-        sendbird_token     => $sendbird_token,
-        dispute_reasons    => \%dispute_reasons,
+        chat_messages_next => scalar @{$chat_messages} < $chat_messages_limit
+        ? undef
+        : $chat_page + 1,    # When undef link won't be show
+        chat_messages_prev => $chat_page > 1
+        ? $chat_page - 1
+        : undef,             # When undef link won't be show
+        sendbird_token  => $sendbird_token,
+        dispute_reasons => \%dispute_reasons,
     });
 code_exit_BO();
 
@@ -225,10 +230,14 @@ sub prep_chat_message {
     my ($chat, $order) = @_;
     $chat->{chat_user} = $chat->{chat_user_id};
     $chat->{chat_role} = 'other';
-    $chat->{chat_user} = $order->{client_loginid} if $order->{client_chat_user_id} eq $chat->{chat_user_id};
-    $chat->{chat_user} = $order->{advertiser_loginid} if $order->{advertiser_chat_user_id} eq $chat->{chat_user_id};
-    $chat->{chat_role} = $order->{client_role} if $order->{client_chat_user_id} eq $chat->{chat_user_id};
-    $chat->{chat_role} = $order->{advertiser_role} if $order->{advertiser_chat_user_id} eq $chat->{chat_user_id};
+    $chat->{chat_user} = $order->{client_loginid}
+        if $order->{client_chat_user_id} eq $chat->{chat_user_id};
+    $chat->{chat_user} = $order->{advertiser_loginid}
+        if $order->{advertiser_chat_user_id} eq $chat->{chat_user_id};
+    $chat->{chat_role} = $order->{client_role}
+        if $order->{client_chat_user_id} eq $chat->{chat_user_id};
+    $chat->{chat_role} = $order->{advertiser_role}
+        if $order->{advertiser_chat_user_id} eq $chat->{chat_user_id};
 
     return $chat;
 }
@@ -238,6 +247,7 @@ sub get_escrow {
     my @escrow_list = BOM::Config::Runtime->instance->app_config->payments->p2p->escrow->@*;
     foreach my $loginid (@escrow_list) {
         my $c = BOM::User::Client->new({loginid => $loginid});
-        return $c->loginid if $c->broker eq $broker && $c->currency eq $currency;
+        return $c->loginid
+            if $c->broker eq $broker && $c->currency eq $currency;
     }
 }
