@@ -188,7 +188,8 @@ sub _build_raw_custom_profiles {
     $product_profiles_compiled = $json->decode($product_profiles_txt = $$ptr)                  # copy and compile
         unless $$ptr eq $product_profiles_txt;
 
-    return $product_profiles_compiled;
+    my $now = Date::Utility->new;
+    return $self->_filter_product_limits_for_date($product_profiles_compiled, $now);
 }
 
 # this one is the risk profile including the client profile
@@ -315,7 +316,13 @@ sub custom_client_profiles {
     $custom_limits_compiled = $json->decode($custom_limits_txt = $$ptr)                       # copy and compile
         unless $$ptr eq $custom_limits_txt;
 
-    return $custom_limits_compiled->{$loginid};
+    return unless $custom_limits_compiled->{$loginid};
+
+    my $now    = Date::Utility->new;
+    my %limits = %{$custom_limits_compiled->{$loginid}};
+    $limits{custom_limits} = $self->_filter_product_limits_for_date($limits{custom_limits}, $now);
+
+    return \%limits;
 }
 
 sub get_client_profiles {
@@ -493,7 +500,7 @@ sub get_commission {
 }
 
 my %_no_condition;
-@_no_condition{qw(name risk_profile updated_by updated_on non_binary_contract_limit commission)} = ();
+@_no_condition{qw(name risk_profile updated_by updated_on non_binary_contract_limit commission start_time end_time)} = ();
 
 sub _match_conditions {
     my ($self, $custom, $additional_info) = @_;
@@ -510,6 +517,21 @@ sub _match_conditions {
     }
 
     return $real_tests_performed;                                                                   # all conditions match
+}
+
+sub _filter_product_limits_for_date {
+    my ($self, $profiles, $date) = @_;
+
+    my $filtered = {};
+    for my $key (keys %$profiles) {
+        my $profile = $profiles->{$key};
+        unless (($profile->{start_time} && $date->is_before(Date::Utility->new($profile->{start_time})))
+            || ($profile->{end_time} && $date->is_after(Date::Utility->new($profile->{end_time}))))
+        {
+            $filtered->{$key} = $profile;
+        }
+    }
+    return $filtered;
 }
 
 no Moose;

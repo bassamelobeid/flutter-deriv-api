@@ -121,6 +121,23 @@ subtest 'comma separated entries' => sub {
     $args{symbol}      = 'R_100';
 };
 
+subtest 'profiles are filtered based on start_time and end_time' => sub {
+    BOM::Config::Runtime->instance->app_config->quants->custom_product_profiles(
+        '{ "xxx": { "underlying_symbol": "R_100", "risk_profile": "low_risk", "name": "X", "start_time" : "2000-01-01", "end_time" : "2999-01-01"},
+           "yyy": { "underlying_symbol": "R_100", "risk_profile": "no_business", "name": "Y", "start_time" : "2000-01-01", "end_time" : "2000-01-02"} }'
+    );
+    is $args{symbol}, 'R_100', 'symbol is R_100';
+    my $rp = BOM::Platform::RiskProfile->new(%args);
+    is $rp->get_risk_profile, 'low_risk', 'risk profile for R_100 is low_risk';
+
+    BOM::Config::Runtime->instance->app_config->quants->custom_product_profiles(
+        '{ "yyy": { "underlying_symbol": "R_100", "risk_profile": "no_business", "name": "Y", "start_time" : "2000-01-01", "end_time" : "2000-01-02"},
+           "zzz": { "underlying_symbol": "R_100", "risk_profile": "high_risk", "name": "Z"} }'
+    );
+    $rp = BOM::Platform::RiskProfile->new(%args);
+    is $rp->get_risk_profile, 'high_risk', 'risk profile for R_100 is low_risk';
+};
+
 subtest 'custom client profile' => sub {
     note("set volatility index to no business for client XYZ");
     BOM::Config::Runtime->instance->app_config->quants->custom_client_profiles(
