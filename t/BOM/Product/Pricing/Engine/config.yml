@@ -185,7 +185,7 @@ expected_result:
       price_engine: BOM::Product::Pricing::Engine::VannaVolga::Calibrated
       risk_markup: 0.0944528863336886
       spot: 6685.31
-      theo_prob: 0.805063632375407
+      theo_prob: 0.8048
       total_markup: 0.147
     RANGE:
       ask_prob: 0.1
@@ -238,7 +238,7 @@ expected_result:
       price_engine: BOM::Product::Pricing::Engine::VannaVolga::Calibrated
       risk_markup: 0.0628299436646919
       spot: 9518.2
-      theo_prob: 0.61995621572241
+      theo_prob: 0.6199
       total_markup: 0.0726
     RANGE:
       ask_prob: 0.457
@@ -281,7 +281,7 @@ expected_result:
       price_engine: BOM::Product::Pricing::Engine::VannaVolga::Calibrated
       risk_markup: 0.0840852956662092
       spot: 1.3803
-      theo_prob: 0.743538626845709
+      theo_prob: 0.7462
       total_markup: 0.121
     RANGE:
       ask_prob: 0.2778
@@ -292,7 +292,7 @@ expected_result:
       price_engine: BOM::Product::Pricing::Engine::VannaVolga::Calibrated
       risk_markup: 0.0131524473152999
       spot: 1.3803
-      theo_prob: 0.242390265933659
+      theo_prob: 0.2420
       total_markup: 0.0385
   frxUSDJPY:
     CALL:
@@ -324,7 +324,7 @@ expected_result:
       price_engine: BOM::Product::Pricing::Engine::VannaVolga::Calibrated
       risk_markup: 0.0208152957576505
       spot: 102.454
-      theo_prob: 0.344705550367174
+      theo_prob: 0.3443
       total_markup: 0.0425
     RANGE:
       ask_prob: 0.2729
@@ -335,7 +335,7 @@ expected_result:
       price_engine: BOM::Product::Pricing::Engine::VannaVolga::Calibrated
       risk_markup: 0.0548749519196148
       spot: 102.454
-      theo_prob: 0.285992671878552
+      theo_prob: 0.2835
       total_markup: 0.0784
 index:
   OTC_FCHI:

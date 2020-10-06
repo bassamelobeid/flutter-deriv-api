@@ -70,7 +70,7 @@ subtest 'touch' => sub {
         is $c->code,         'ONETOUCH';
         is $c->pricing_code, 'ONETOUCH';
 
-        is $c->ask_price, 9.32;
+        is $c->ask_price, 9.28;
         is roundcommon(0.001, $c->pricing_vol), 0.193;
 
         is $c->sentiment, 'high_vol';

@@ -76,8 +76,8 @@ subtest 'touch notouch' => sub {
         my $c = produce_contract($args);
         isa_ok $c, 'BOM::Product::Contract::Onetouch';
 
-        cmp_ok $c->ask_price,  '==', 18.11;
-        cmp_ok $c->theo_price, '==', 14.61;
+        cmp_ok $c->ask_price,  '==', 17.72;
+        cmp_ok $c->theo_price, '==', 14.22;
     }
     'touch barrier too far';
 
@@ -97,8 +97,8 @@ subtest 'touch notouch' => sub {
         my $c = produce_contract($args);
         isa_ok $c, 'BOM::Product::Contract::Notouch';
 
-        cmp_ok $c->ask_price,  '==', 89.21;
-        cmp_ok $c->theo_price, '==', 85.71;
+        cmp_ok $c->ask_price,  '==', 89.6;
+        cmp_ok $c->theo_price, '==', 86.1;
     }
     'no touch barrier too far';
 
@@ -125,8 +125,8 @@ subtest 'range upordown' => sub {
         my $c = produce_contract($args);
         isa_ok $c, 'BOM::Product::Contract::Range';
 
-        cmp_ok $c->ask_price,  '==', 83.34;
-        cmp_ok $c->theo_price, '==', 79.84;
+        cmp_ok $c->ask_price,  '==', 84.44;
+        cmp_ok $c->theo_price, '==', 80.94;
     }
     'range both barrier too far';
 
@@ -137,7 +137,7 @@ subtest 'range upordown' => sub {
         isa_ok $c, 'BOM::Product::Contract::Range';
 
         cmp_ok $c->ask_price,  '==', 5;
-        cmp_ok $c->theo_price, '==', 0.13;
+        cmp_ok $c->theo_price, '==', 0.14;
     }
     'range one barrier too far and one barrier too close';
 
@@ -162,8 +162,8 @@ subtest 'range upordown' => sub {
         my $c = produce_contract($args);
         isa_ok $c, 'BOM::Product::Contract::Upordown';
 
-        cmp_ok $c->ask_price,  '==', 24.3;
-        cmp_ok $c->theo_price, '==', 20.8;
+        cmp_ok $c->ask_price,  '==', 23.2;
+        cmp_ok $c->theo_price, '==', 19.7;
     }
     'upordown both barrier too far';
 
@@ -174,7 +174,7 @@ subtest 'range upordown' => sub {
         isa_ok $c, 'BOM::Product::Contract::Upordown';
 
         cmp_ok $c->ask_price,  '==', 100;
-        cmp_ok $c->theo_price, '==', 99.88;
+        cmp_ok $c->theo_price, '==', 99.87;
     }
     'uprodown one barrier too far and one barrier too close';
 };

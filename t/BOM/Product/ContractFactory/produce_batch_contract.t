@@ -137,7 +137,7 @@ subtest 'produce_batch_contract - error check' => sub {
     my $batch      = produce_batch_contract($args);
     my $ask_prices = $batch->ask_prices;
     ok !$ask_prices->{RANGE}->{'100.200-99.800'}->{error}{message_to_client};
-    is $ask_prices->{UPORDOWN}->{'100.200-99.800'}->{ask_price}, 2.62, 'ask price is 2.62 for barriers 100.200 & 99.800';
+    ok $ask_prices->{UPORDOWN}->{'100.200-99.800'}->{error}{message_to_client};
     ok !$ask_prices->{RANGE}->{'100.250-98.750'}->{error}{message_to_client};
     ok !$ask_prices->{UPORDOWN}->{'100.250-98.750'}->{error}{message_to_client};
 
