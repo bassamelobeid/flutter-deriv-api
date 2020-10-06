@@ -33,7 +33,7 @@ use BOM::Config::QuantsConfig;
 use BOM::Config::Chronicle;
 
 use constant HEADERS => qw(
-    date client_loginid commission
+    date client_loginid trade_commission commission
 );
 
 has '+include_headers' => (
@@ -59,11 +59,13 @@ sub activity {
     push @output, $self->format_data($self->headers_data()) if ($self->include_headers and keys %{$result});
 
     foreach my $loginid (sort keys %{$result}) {
-
         my $csv           = Text::CSV->new;
-        my @output_fields = ($when->date_yyyymmdd, $self->prefix_field($loginid));
+        my @output_fields = (
+            $when->date_yyyymmdd,
+            $self->prefix_field($loginid),
+            formatnumber('amount', 'USD', $result->{$loginid}{trade_commission}),
+            formatnumber('amount', 'USD', $result->{$loginid}{commission}));
 
-        push @output_fields, formatnumber('amount', 'USD', $result->{$loginid});
         $csv->combine(@output_fields);
         push @output, $self->format_data($csv->string);
     }
@@ -72,7 +74,6 @@ sub activity {
 }
 
 sub computation {
-
     my $self = shift;
 
     my $app_config = BOM::Config::Runtime->instance->app_config;
@@ -96,22 +97,18 @@ sub computation {
     my $info_map;
 
     foreach my $info (@$commission) {
-
         $info_map = {map { $info_list[$_] => @$info[$_] } 0 .. (scalar @$info - 1)};
-
-        $result->{$info_map->{loginid}} //= 0;
-
-        my $quant_config;
-        my $cancellation_commission;
-
         if ($info_map->{is_cancellation} == 0) {
-            $result->{$info_map->{loginid}} += $info_map->{value} * $trade_commission->{$info_map->{market_type}};
+            $result->{$info_map->{loginid}}{trade_commission} += $info_map->{value};
+            $result->{$info_map->{loginid}}{commission}       += $info_map->{value} * $trade_commission->{$info_map->{market_type}};
         } else {
+            my $quant_config = BOM::Config::QuantsConfig->new(chronicle_reader => BOM::Config::Chronicle::get_chronicle_reader());
+            my $commission_rate =
+                $quant_config->get_config('multiplier_config::' . $info_map->{underlying_symbol})->{cancellation_commission};
+            my $cancellation_commission = $info_map->{value} * $commission_rate;
 
-            $quant_config            = BOM::Config::QuantsConfig->new(chronicle_reader => BOM::Config::Chronicle::get_chronicle_reader());
-            $cancellation_commission = $quant_config->get_config('multiplier_config::' . $info_map->{underlying_symbol})->{cancellation_commission};
-
-            $result->{$info_map->{loginid}} += $info_map->{value} * $cancellation_commission * $trade_commission->{$info_map->{market_type}};
+            $result->{$info_map->{loginid}}{trade_commission} += $cancellation_commission;
+            $result->{$info_map->{loginid}}{commission}       += $cancellation_commission * $trade_commission->{$info_map->{market_type}};
         }
 
     }

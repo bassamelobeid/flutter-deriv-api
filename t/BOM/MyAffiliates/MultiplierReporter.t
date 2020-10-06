@@ -101,8 +101,11 @@ subtest 'Multiple Contracts Commission', sub {
 
     my $output = $reporter->computation();
 
-    my $expected_output =
-        {$client_1->{loginid} => $buy_price * $synthetic_multiplier * $synthetic_commission * $trade_commission->{non_financial} * DUPLICATE};
+    my $expected_output = {
+        $client_1->{loginid} => {
+            commission       => $buy_price * $synthetic_multiplier * $synthetic_commission * $trade_commission->{non_financial} * DUPLICATE,
+            trade_commission => $buy_price * $synthetic_multiplier * $synthetic_commission * DUPLICATE
+        }};
 
     cmp_deeply($output, $expected_output, 'Client 1 : Non-financial contract without DC');
 
@@ -110,8 +113,9 @@ subtest 'Multiple Contracts Commission', sub {
 
     $output = $reporter->computation();
 
-    $expected_output->{$client_1->{loginid}} +=
+    $expected_output->{$client_1->{loginid}}{commission} +=
         $buy_price * $synthetic_multiplier * $synthetic_commission * $trade_commission->{non_financial} * DUPLICATE;
+    $expected_output->{$client_1->{loginid}}{trade_commission} += $buy_price * $synthetic_multiplier * $synthetic_commission * DUPLICATE;
 
     cmp_deeply($output, $expected_output, 'Client 1 : Non-financial contract without DC');
 
@@ -119,8 +123,10 @@ subtest 'Multiple Contracts Commission', sub {
 
     $output = $reporter->computation();
 
-    $expected_output->{$client_1->{loginid}} +=
+    $expected_output->{$client_1->{loginid}}{commission} +=
         $synthetic_cancellation_price * $dc_commission->{'R_10'}->{cancellation_commission} * $trade_commission->{non_financial} * DUPLICATE;
+    $expected_output->{$client_1->{loginid}}{trade_commission} +=
+        $synthetic_cancellation_price * $dc_commission->{'R_10'}->{cancellation_commission} * DUPLICATE;
 
     cmp_deeply($output, $expected_output, 'Client 1 : Non-financial contract with DC');
 
@@ -128,8 +134,9 @@ subtest 'Multiple Contracts Commission', sub {
 
     $output = $reporter->computation();
 
-    $expected_output->{$client_2->{loginid}} =
+    $expected_output->{$client_2->{loginid}}{commission} =
         $buy_price * $synthetic_multiplier * $synthetic_commission * $trade_commission->{non_financial} * DUPLICATE;
+    $expected_output->{$client_2->{loginid}}{trade_commission} = $buy_price * $synthetic_multiplier * $synthetic_commission * DUPLICATE;
 
     cmp_deeply($output, $expected_output, 'Client 2 : Non-financial contract without DC');
 
@@ -137,8 +144,9 @@ subtest 'Multiple Contracts Commission', sub {
 
     $output = $reporter->computation();
 
-    $expected_output->{$client_2->{loginid}} +=
+    $expected_output->{$client_2->{loginid}}{commission} +=
         $buy_price * $forex_multiplier * $forex_commission * $trade_commission->{financial} * DUPLICATE;
+    $expected_output->{$client_2->{loginid}}{trade_commission} += $buy_price * $forex_multiplier * $forex_commission * DUPLICATE;
 
     cmp_deeply($output, $expected_output, 'Client 2 : Financial contract without DC');
 
@@ -146,8 +154,10 @@ subtest 'Multiple Contracts Commission', sub {
 
     $output = $reporter->computation();
 
-    $expected_output->{$client_2->{loginid}} +=
+    $expected_output->{$client_2->{loginid}}{commission} +=
         $forex_cancellation_price * $dc_commission->{'frxUSDJPY'}->{cancellation_commission} * $trade_commission->{financial} * DUPLICATE;
+    $expected_output->{$client_2->{loginid}}{trade_commission} +=
+        $forex_cancellation_price * $dc_commission->{'frxUSDJPY'}->{cancellation_commission} * DUPLICATE;
 
     cmp_deeply($output, $expected_output, 'Client 2 : Financial contract with DC');
 
