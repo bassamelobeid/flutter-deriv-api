@@ -49,6 +49,12 @@ foreach my $pair (@ticks_to_add) {
         epoch      => $pair->[0],
         quote      => $pair->[1],
     });
+
+    $close_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+        underlying => 'R_75',
+        epoch      => $pair->[0],
+        quote      => $pair->[1],
+    });
 }
 
 my $args = {
@@ -212,6 +218,20 @@ subtest 'lbhighlow' => sub {
     my $error_contract = produce_contract($args);
     ok $error_contract->is_expired, 'call is expired';
     ok $error_contract->waiting_for_settlement_tick, 'waiting for settlement tick';
+};
+
+subtest 'multiplier for crypto' => sub {
+    $args->{currency} = 'BTC';
+    $args->{multiplier} = 0.00005;
+    $args->{underlying} = 'R_75';
+
+    my $c = produce_contract($args);
+    my $expected_shortcode = 'LBHIGHLOW_R_75_0.00005_1425945600_1426118399';
+    is $c->shortcode, $expected_shortcode, 'correct shortcode';
+
+    $args->{underlying} = 'R_100';
+    $args->{currency} = 'USD';
+    $args->{multiplier} = 1;
 };
 
 subtest 'invalid amount_type' => sub {

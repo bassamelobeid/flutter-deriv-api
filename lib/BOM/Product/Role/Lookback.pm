@@ -5,7 +5,8 @@ with 'BOM::Product::Role::NonBinary';
 
 use Time::Duration::Concise;
 use List::Util qw(min max first);
-use Format::Util::Numbers qw/financialrounding/;
+use Format::Util::Numbers qw(financialrounding);
+use Math::BigFloat;
 use LandingCompany::Commission qw(get_underlying_base_commission);
 use LandingCompany::Registry;
 
@@ -129,7 +130,10 @@ override shortcode => sub {
     # TODO We expect to have a valid bet_type, but there may be codepaths which don't set this correctly yet.
     my $contract_type = $self->bet_type // $self->code;
 
-    my @shortcode_elements = ($contract_type, $self->underlying->symbol, $self->multiplier, $shortcode_date_start, $shortcode_date_expiry);
+    my $decimal_place = abs(Math::BigFloat->new($self->multiplier)->exponent());
+    my $multiplier    = sprintf '%.*f', $decimal_place, $self->multiplier;
+
+    my @shortcode_elements = ($contract_type, $self->underlying->symbol, $multiplier, $shortcode_date_start, $shortcode_date_expiry);
 
     return uc join '_', @shortcode_elements;
 };
