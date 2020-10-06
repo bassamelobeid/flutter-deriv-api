@@ -119,15 +119,20 @@ sub log_call_timing_before_forward {
 
 sub log_call_timing {
     my ($c, $req_storage) = @_;
-    my $tags =
-        ["rpc:$req_storage->{method}", "brand:" . $c->stash('brand'), "source_type:" . $c->stash('source_type'), "app_id:" . $c->stash('source'),];
+
+    my %tags = (
+        rpc => $req_storage->{method},
+        map { $_ => $c->stash($_) } qw/brand source_type/
+    );
 
     # extra tagging for buy for better visualization
-    push @$tags, 'market:' . $c->stash('market') if $req_storage->{method} eq 'buy' and $c->stash('market');
+    $tags{market} = $c->stash('market') if $req_storage->{method} eq 'buy' and $c->stash('market');
+
     DataDog::DogStatsd::Helper::stats_timing(
         'bom_websocket_api.v_3.rpc.call.timing',
         1000 * Time::HiRes::tv_interval($req_storage->{tv}),
-        {tags => $tags});
+        {tags => [map { join ':', $_ => $tags{$_} } sort(keys %tags)]},
+    );
     return;
 }
 
