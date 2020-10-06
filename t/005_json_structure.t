@@ -6,8 +6,8 @@ use Test::Exception;
 use Test::Warnings;
 
 use Getopt::Long;
-use JSON::MaybeUTF8 qw(:v1);
-use JSON::PP;
+use JSON::MaybeUTF8 qw(decode_json_utf8);
+use JSON::MaybeXS;
 use List::Util qw(first all);
 use Path::Tiny;
 use Scalar::Util qw(looks_like_number);
@@ -122,7 +122,7 @@ sub sort_elements {
 }
 
 subtest 'general formatting and order' => sub {
-    my $json = JSON::PP->new;
+    my $json = JSON::MaybeXS->new;
 
     $json = $json->canonical(0)->pretty(1)->indent(1)->indent_length(4)->space_before(0)->space_after(1);
 
