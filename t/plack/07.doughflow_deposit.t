@@ -27,8 +27,9 @@ $user->add_loginid($loginid);
 subtest 'Successful attempt' => sub {
     my $start_balance = balance $loginid;
     my $req           = deposit(
-        loginid  => $loginid,
-        trace_id => 1234
+        loginid        => $loginid,
+        trace_id       => 1234,
+        transaction_id => 94575934,
     );
 
     is $req->code,      201,                                  'Correct created status code';

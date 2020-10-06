@@ -4,7 +4,7 @@ use strict;
 use warnings;
 
 use Exporter 'import';
-our @EXPORT_OK = qw( request auth_request decode_json deposit withdrawal_validate update_payout balance new_client);
+our @EXPORT_OK = qw(request auth_request decode_json deposit withdrawal_validate create_payout update_payout balance new_client);
 
 use Encode;
 use FindBin qw/$Bin/;
@@ -155,16 +155,44 @@ balance request helper.
 =cut
 
 sub balance {
-    my ($loginid) = @_;
-    my $r = request(
+    my $loginid  = shift;
+    my %override = (shift // {})->%*;
+    my $r        = request(
         'GET',
         '/account',
         {
             client_loginid => $loginid,
             currency_code  => 'USD',
+            %override,
         });
     my $account = decode_json($r->content);
-    return $account->{balance};
+
+    return $account->{balance} * 1.0;
+}
+
+=pod
+
+create_payout request helper
+
+=cut
+
+sub create_payout {
+    my %override = @_;
+    request(
+        'POST',
+        '/transaction/payment/doughflow/create_payout',
+        {
+            amount         => 1,
+            client_loginid => delete $override{loginid},
+            siteid         => 1,
+            created_by     => 'derek',
+            currency_code  => 'USD',
+            trace_id       => 123,
+            ip_address     => '127.0.0.1',
+            payment_method => 'WebMonkey',
+            %override,
+        },
+        {'Content-Type' => 'text/xml'});
 }
 
 =pod

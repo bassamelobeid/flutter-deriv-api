@@ -27,8 +27,10 @@ has 'type' => (
 
 # maps our internal type names to the transaction type names we store in the db
 my %type_mapping = (
+    payout_created    => 'withdrawal_hold',
     payout_inprogress => 'withdrawal',
     payout_rejected   => 'withdrawal_reversal',
+    payout_cancelled  => 'withdrawal_reversal',
 );
 
 =head2 _handle_qualifying_payments
@@ -122,7 +124,7 @@ sub validate_params {
 
     my @required = qw/reference_number currency_code/;
     if ($method eq 'POST' || $type eq 'deposit_validate' || $type eq 'withdrawal_validate') {
-        @required = qw/amount currency_code payment_processor/;
+        @required = qw/amount currency_code/;
         push @required, 'trace_id' if $method eq 'POST';
     }
 
@@ -196,13 +198,51 @@ sub write_transaction_line {
     my $payment_processor = $c->request_parameters->{payment_processor};
     my $payment_method    = $c->request_parameters->{payment_method};
 
+    my $doughflow_datamapper = BOM::Database::DataMapper::Payment::DoughFlow->new({
+        client_loginid => $c->user->loginid,
+        currency_code  => $currency_code
+    });
+
+    # this probably is not going to be necessary most of the time
+    # but this check for each payout at this point is the safest way to do it
+    if ($c->type eq 'payout_inprogress') {
+        # if the payout has been created when freezing funds were enabled, the client has been already debited
+        # return 200 and allow the process to continue, no further processing is needed
+        if (
+            $doughflow_datamapper->is_duplicate_payment({
+                    transaction_type => $type_mapping{payout_created},
+                    trace_id         => $trace_id,
+                    transaction_id   => $transaction_id,
+                }))
+        {
+            return {
+                status      => 0,
+                description => 'success'
+            };
+        }
+    }
+
+    if ($c->type eq 'payout_cancelled') {
+        my $match_count = $doughflow_datamapper->get_doughflow_withdrawal_count_by_trace_id($trace_id);
+
+        # if the client hasn't been debited yet
+        return {
+            status      => 0,
+            description => 'success'
+            }
+            if (
+            $match_count == 0 ||    # the client hasn't been debited yet
+            $match_count == 2       # the payment has been already reversed
+            );
+    }
+
     if (
         my $rejection = $c->check_predicates({
-                currency_code  => $currency_code,
-                transaction_id => $transaction_id,
-                trace_id       => $trace_id,
-                amount         => $amount,
-                processor      => $payment_processor,
+                currency_code     => $currency_code,
+                transaction_id    => $transaction_id,
+                trace_id          => $trace_id,
+                amount            => $amount,
+                payment_processor => $payment_processor,
             }))
     {
         return $c->status_bad_request($rejection);
@@ -251,9 +291,7 @@ sub write_transaction_line {
             }) if ($client->landing_company->social_responsibility_check_required);
 
         _handle_qualifying_payments($client, $amount, $c->type) if $client->landing_company->qualifying_payment_check_required;
-
-    } elsif ($c->type eq 'payout_inprogress') {
-
+    } elsif ($c->type =~ /^(payout_created|payout_inprogress)$/) {
         # Don't allow balances to ever go negative! Include any fee in this test.
         my $balance = $client->default_account->balance;
         if ($amount + $fee > $balance) {
@@ -265,8 +303,7 @@ sub write_transaction_line {
         $trx = $client->payment_doughflow(%payment_args);
 
         _handle_qualifying_payments($client, $amount, $c->type) if $client->landing_company->qualifying_payment_check_required;
-
-    } elsif ($c->type eq 'payout_rejected') {
+    } elsif ($c->type =~ /^(payout_cancelled|payout_rejected)$/) {
         if ($bonus) {
             return $c->status_bad_request('Bonuses are not allowed for withdrawal reversals');
         }
@@ -289,7 +326,6 @@ sub check_predicates {
     my $trace_id      = $args->{'trace_id'};
     my $amount        = $args->{'amount'};
     my $currency_code = $args->{'currency_code'};
-    my $processor     = $args->{'processor'};
 
     # Detecting duplicates for DoughFlow is simple; it'll be
     # any transaction with an identical type (deposit/withdrawal)
@@ -299,8 +335,7 @@ sub check_predicates {
         currency_code  => $currency_code
     });
 
-    my $rejection;
-    if ($c->type eq 'payout_rejected') {
+    if ($c->type =~ /^(payout_cancelled|payout_rejected)$/) {
         # In order to process this withdrawal reversion, we must first find a currency
         # file entry that describes the withdrawal being reversed. That entry must be
         # be a 'DoughFlow withdrawal' and must have the same trace_id as the one sent
@@ -309,27 +344,25 @@ sub check_predicates {
         my $match_count = $doughflow_datamapper->get_doughflow_withdrawal_count_by_trace_id($trace_id);
 
         return
-              'A withdrawal reversal was requested for DoughFlow trace ID '
-            . $trace_id
-            . ', but no corresponding original withdrawal could be found with that trace ID'
+            sprintf(
+            'A withdrawal reversal was requested for DoughFlow trace ID %d, but no corresponding original withdrawal could be found with that trace ID',
+            $trace_id)
             unless $match_count;
 
         return
-              'A withdrawal reversal was requested for DoughFlow trace ID '
-            . $trace_id
-            . ', but multiple corresponding original withdrawals were found with that trace ID '
+            sprintf(
+            'A withdrawal reversal was requested for DoughFlow trace ID %d, but multiple corresponding original withdrawals were found with that trace ID',
+            $trace_id)
             if ($match_count > 1);
 
         my ($amt, $trace_amt) = (
             financialrounding('amount', $currency_code, $amount),
             financialrounding('amount', $currency_code, $doughflow_datamapper->get_doughflow_withdrawal_amount_by_trace_id($trace_id)));
+
         return
-              'A withdrawal reversal request for DoughFlow trace ID '
-            . $trace_id
-            . ' was made in the amount of '
-            . $currency_code . ' '
-            . $amt
-            . ', but this does not match the original DoughFlow withdrawal request amount'
+            sprintf(
+            'A withdrawal reversal request for DoughFlow trace ID %d was made in the amount of %s %s, but this does not match the original DoughFlow withdrawal request amount',
+            $trace_id, $currency_code, $amt)
             if ($amt != $trace_amt);
     }
 
@@ -338,24 +371,16 @@ sub check_predicates {
 
     if (
         $doughflow_datamapper->is_duplicate_payment({
-                payment_processor => $processor,
-                transaction_type  => $type,
-                trace_id          => $trace_id,
-                transaction_id    => $transaction_id,
+                transaction_type => $type,
+                trace_id         => $trace_id,
+                transaction_id   => $transaction_id,
             }))
     {
-        $rejection =
-              "Detected duplicate transaction ["
-            . $c->comment
-            . "] while processing request for "
-            . $type
-            . " with trace id "
-            . $trace_id
-            . " and transaction id "
-            . $transaction_id;
+        return sprintf('Detected duplicate transaction [%s] while processing request for %s with trace id %s and transaction id %s',
+            $c->comment, $type, $trace_id, $transaction_id);
     }
 
-    return $rejection;
+    return;
 }
 
 no Moo;

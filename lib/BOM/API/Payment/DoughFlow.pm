@@ -134,6 +134,9 @@ sub update_payout_POST {
     return _process_doughflow_request($c, 'payout_inprogress')
         if ($c->request_parameters->{status} // '') eq 'inprogress';
 
+    return _doughflow_backend($c, 'payout_cancelled')
+        if (($c->request_parameters->{status} // '') eq 'cancelled');
+
     return _doughflow_backend($c, 'payout_rejected')
         if ($c->request_parameters->{status} // '') eq 'rejected';
 
@@ -161,15 +164,14 @@ See https://trello.com/c/10Ex9IyA/8915-8-billmarriott-newdfendpoints-2 for more 
 sub create_payout_POST {
     my $c = shift;
 
-    _log_new_api_request($c, 'create_payout');
+    return _doughflow_backend($c, 'payout_created')
+        if ($c->user->is_payout_freezing_funds_enabled);
 
     unless (_is_authenticated($c)) {
         $new_api_log->debugf('create_payout: Authorization required, please check if request has X-DoughFlow-Authorization-Passed header.');
         return $c->throw(401, 'Authorization required');
     }
 
-    # return success as of now, once we have evaluated all
-    # the error messages then we will update this accordingly
     return {
         status      => 0,
         description => 'success',
@@ -256,7 +258,7 @@ sub _doughflow_backend {
     return {
         status      => 0,
         description => 'success',
-    } if $type =~ /^(payout_inprogress|payout_rejected)$/;
+    } if $type =~ /^(payout_created|payout_inprogress|payout_cancelled|payout_rejected)$/;
 
     my $location = $c->req->base->clone;
     $location->path('/paymentapi/transaction/payment/doughflow/record/');
