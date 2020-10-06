@@ -1284,6 +1284,23 @@ sub is_tnc_approval_required {
     return 0;
 }
 
+=head2 is_payout_freezing_funds_enabled
+
+returns true is freezing funds for payout is enabled considering both system and client landing company settings, false otherwise
+
+=cut
+
+sub is_payout_freezing_funds_enabled {
+    my $self = shift;
+
+    return (
+        # is payout freezing funds enabled for this user's landing company?
+        $self->landing_company->payout_freezing_funds
+            # is payout freezing funds enabled system-wide, i.e. not suspended?
+            && !BOM::Config::Runtime->instance->app_config->system->suspend->payout_freezing_funds
+    );
+}
+
 sub user_id {
     my $self = shift;
     return $self->binary_user_id // $self->user->{id};
