@@ -141,6 +141,9 @@ sub _check_single_limit {
 
 sub _check_limits {
     my ($c, $service) = @_;
+
+    return Future->done if _app_rate_limit_is_disabled($c);
+
     my $rates_config      = $c->app->{_binary}{rates_config};
     my $limits_domain     = $rates_config->{$c->landing_company_name // ''} // $rates_config->{binary};
     my $limit_descriptors = $limits_domain->{$service};
@@ -155,6 +158,30 @@ sub _check_limits {
     # do updates in parallel (in background)
     retain_future(Future->wait_all(@future_checks));
     return $speculative_result ? Future->done : Future->fail('limit hit');
+}
+
+=head2 _app_rate_limit_is_disabled
+
+Checks to see if the given app rate-limit is disabled or not?
+Returns C<true> if rate-limit is disabled and false otherwise.
+
+=over 4
+
+=item * C<$c> - websocket connection object
+
+=back
+
+Returns boolean
+
+=cut
+
+sub _app_rate_limit_is_disabled {
+    my $c = shift;
+
+    my $app_redis_key      = sprintf('app_id::disable_rate_limit::%s', $c->app_id);
+    my $disable_rate_limit = $c->app->ws_redis_master->get($app_redis_key) // 0;
+
+    return $disable_rate_limit eq 'bypass';
 }
 
 1;
