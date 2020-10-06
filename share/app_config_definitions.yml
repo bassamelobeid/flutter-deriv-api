@@ -152,6 +152,11 @@ payments:
               description: 'Maximum amount per order (in USD)'
               default: 100
               global: 1
+            maximum_ads_per_type:
+              isa: Num
+              description: 'Maximum number of active orders an advertiser may have for each type and currency pair combination.'
+              default: 3
+              global: 1              
     crypto:
       description: 'Cryptocurrencies related config'
       isa: section
