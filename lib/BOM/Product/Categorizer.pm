@@ -436,7 +436,8 @@ sub _initialize_other_parameters {
             details    => {field => 'amount'})
             if defined $min_amount
             and exists $params->{amount}
-            and $params->{amount} < $min_amount;
+            and $params->{amount} < $min_amount
+            and not $params->{is_sold};
 
     } else {
         BOM::Product::Exception->throw(

@@ -2,7 +2,7 @@ use strict;
 use warnings;
 
 use Test::Deep qw( cmp_deeply );
-use Test::More (tests => 2);
+use Test::More (tests => 3);
 use Test::Warnings;
 use Test::Exception;
 use Test::MockModule;
@@ -84,6 +84,31 @@ subtest 'shortcode_to_parameters' => sub {
         starts_as_forward_starting => 0,
     };
     cmp_deeply($call, $expected, 'CALL shortcode. for is_sold');
+};
+
+subtest 'Invalid legacy contract' => sub {
+    subtest 'get_bid for legacy sold callputSpread contracts should not fail for InvalidMinPayout/Stake' => sub {
+        my $lower_than_min_amount = '0.95';
+        my $bet_params            = {
+            high_barrier               => "S7000000P",
+            amount                     => $lower_than_min_amount,
+            underlying                 => "R_75",
+            amount_type                => "payout",
+            sell_time                  => 1582203903,
+            sell_price                 => "0.00",
+            date_start                 => "1582203886",
+            date_expiry                => "1582203901",
+            is_sold                    => 1,
+            landing_company            => "svg",
+            app_markup_percentage      => 0,
+            currency                   => "USD",
+            starts_as_forward_starting => 0,
+            bet_type                   => "CALLSPREAD",
+            fixed_expiry               => undef,
+            low_barrier                => "S-800P"
+        };
+        lives_ok { produce_contract($bet_params) };
+    };
 };
 
 1;
