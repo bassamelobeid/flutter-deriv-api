@@ -469,15 +469,18 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
         client => $client,
         input  => \%input,
     });
+
     # Active client specific update details:
     my $auth_method = 'dummy';
     if ($input{client_authentication}) {
         $auth_method = $input{client_authentication};
+
         # Remove existing status to make the auth methods mutually exclusive
         $_->delete for @{$client->client_authentication_method};
 
         if ($auth_method eq 'ID_NOTARIZED') {
-            $client->set_authentication('ID_NOTARIZED', {status => 'pass'});
+            $client->set_authentication('ID_NOTARIZED')->status('pass');
+            $client->status->clear_allow_document_upload;
         }
 
         my $already_passed_id_document =
@@ -488,7 +491,8 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
             && !($already_passed_id_document eq 'pass'))
         {    #Authenticated with scans, front end lets this get run again even if already set.
 
-            $client->set_authentication('ID_DOCUMENT', {status => 'pass'});
+            $client->set_authentication('ID_DOCUMENT')->status('pass');
+            $client->status->clear_allow_document_upload;
             BOM::Platform::Event::Emitter::emit('authenticated_with_scans', {loginid => $loginid});
         }
 
@@ -499,11 +503,12 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
         if ($auth_method eq 'ID_ONLINE'
             && !($already_passed_id_online eq 'pass'))
         {
-            $client->set_authentication('ID_ONLINE', {status => 'pass'});
+            $client->set_authentication('ID_ONLINE')->status('pass');
+            $client->status->clear_allow_document_upload;
         }
 
         if ($auth_method eq 'NEEDS_ACTION') {
-            $client->set_authentication('ID_DOCUMENT', {status => 'needs_action'});
+            $client->set_authentication('ID_DOCUMENT')->status('needs_action');
             # 'Needs Action' shouldn't replace the locks from the account because we'll lose the request authentication reason
             $client->status->setnx('allow_document_upload', $clerk, 'MARKED_AS_NEEDS_ACTION');
 
@@ -668,7 +673,7 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
 
     my $new_residence = delete $input{residence};
 
-    my (%clients_updated);
+    my (@clients_to_update, %clients_updated);
 
     if ($new_residence) {
 
@@ -700,7 +705,7 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
 # but updated other fields (first_name, last_name)
 # Filter out virtual clients if residence is not updated VR does not have this data; only residence is needed.
 # Hence: we'll end up making an extra call to VR database when none of the fields were updated
-    my @clients_to_update = $client->is_virtual ? () : grep { not $_->is_virtual } $user_clients->@*;
+    @clients_to_update = $client->is_virtual ? () : grep { not $_->is_virtual } $user_clients->@*;
 
     # Updates that apply to both active client and its corresponding clients
     foreach my $cli (@clients_to_update) {
