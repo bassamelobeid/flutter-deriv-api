@@ -2046,16 +2046,10 @@ sub p2p_advert_create {
 
     $param{country}          = $self->residence;
     $param{account_currency} = $self->currency;
+    ($param{local_currency} //= $self->local_currency) or die +{error_code => 'NoLocalCurrency'};
 
     $self->_validate_advert_amounts(%param);
-
-    my $active_adverts_count = $self->_p2p_adverts(
-        advertiser_id => $advertiser_info->{id},
-        is_active     => 1,
-    )->@*;
-    die +{error_code => 'AdvertMaxExceeded'} if $active_adverts_count >= P2P_MAXIMUM_ACTIVE_ADVERTS;
-
-    $param{local_currency} //= $self->local_currency || die +{error_code => 'NoLocalCurrency'};
+    $self->_validate_advert_limits(%param, advertiser_id => $advertiser_info->{id});
 
     if ($param{rate} < P2P_RATE_LOWER_LIMIT) {
         die +{
@@ -2167,6 +2161,11 @@ sub p2p_advert_update {
             status    => ['pending', 'buyer-confirmed', 'timed-out'],
         );
         die +{error_code => 'OpenOrdersDeleteAdvert'} if @$open_orders;
+    }
+
+    # throw error if re-enabling this ad will cause duplicates or exceed limits
+    if ($param{is_active}) {
+        $self->_validate_advert_limits($advert_info->%*);
     }
 
     my $update = $self->db->dbic->run(
@@ -3257,6 +3256,50 @@ sub _validate_advert_amounts {
 
     die +{error_code => 'InvalidMinMaxAmount'} unless $param{min_order_amount} <= $param{max_order_amount};
     die +{error_code => 'InvalidMaxAmount'}    unless $param{max_order_amount} <= $param{amount};
+
+    return;
+}
+
+=head2 _validate_advert_limits
+
+Validates advert limits for p2p_advert_create and p2p_advert_update.
+
+=cut
+
+sub _validate_advert_limits {
+    my ($self, %param) = @_;
+
+    my @active_ads = $self->_p2p_adverts(
+        advertiser_id => $param{advertiser_id},
+        is_active     => 1,
+    )->@*;
+
+    @active_ads = grep { $_->{remaining} >= $_->{min_order_amount} } @active_ads;
+    die +{error_code => 'AdvertMaxExceeded'} if @active_ads >= P2P_MAXIMUM_ACTIVE_ADVERTS;
+
+    my @ads_by_criteria =
+        grep { $_->{type} eq $param{type} && $_->{local_currency} eq $param{local_currency} && $_->{account_currency} eq $param{account_currency} }
+        @active_ads;
+
+    my $same_type_limit = BOM::Config::Runtime->instance->app_config->payments->p2p->limits->maximum_ads_per_type;
+    if (@ads_by_criteria >= $same_type_limit) {
+        die +{
+            error_code     => 'AdvertMaxExceededSameType',
+            message_params => [$same_type_limit],
+        };
+    }
+
+    # cannot have an ad with the same rate + type + currencies
+    die +{error_code => 'DuplicateAdvert'} if any { $_->{rate} == $param{rate} } @ads_by_criteria;
+
+    # cannot have an ad with overlapping min/max amounts and same type + currencies
+    die +{error_code => 'AdvertSameLimits'} if any {
+        ($param{min_order_amount} >= $_->{min_order_amount} and $param{min_order_amount} <= $_->{max_order_amount})
+            or ($param{max_order_amount} >= $_->{min_order_amount} and $param{max_order_amount} <= $_->{max_order_amount})
+            or
+            ($param{max_order_amount} >= $_->{max_order_amount} and $param{min_order_amount} <= $_->{min_order_amount})
+    }
+    @ads_by_criteria;
 
     return;
 }

@@ -3,6 +3,7 @@ use warnings;
 
 use Test::More;
 use Test::Fatal;
+use Test::Exception;
 use Test::Deep;
 use List::Util qw(pairs);
 
@@ -410,6 +411,180 @@ subtest 'Rate Validation' => sub {
         },
         'Error when amount exceeds BO advert limit'
     );
+};
+
+subtest 'Duplicate ads' => sub {
+    
+    my %params     = %advert_params;
+    $params{rate} = 50.0;
+    $params{min_order_amount} = 5;
+    $params{max_order_amount} = 9.99,
+
+    my $advertiser = BOM::Test::Helper::P2P::create_advertiser(balance=>1000);
+    BOM::Test::Helper::P2P::create_escrow;
+    
+    my $ad;
+    lives_ok { $ad = $advertiser->p2p_advert_create(%params) } 'create first ad';
+    
+    subtest 'duplicate rate' => sub {
+        
+        cmp_deeply(
+            exception {
+                $advertiser->p2p_advert_create(%params)
+            },
+            {error_code => 'DuplicateAdvert'},
+            'cannot create ad with duplicate rate'
+        );
+        
+        $advertiser->p2p_advert_update(id => $ad->{id},  is_active => 0);
+        lives_ok { $advertiser->p2p_advert_create(%params) } 'create duplicate ad when first disabled';
+        
+        cmp_deeply(
+            exception {
+                $advertiser->p2p_advert_update(id => $ad->{id}, is_active => 1)
+            },
+            {error_code => 'DuplicateAdvert'},
+            'cannot enable ad with duplicate rate'
+        );
+    };
+    
+    subtest 'overlapping range' => sub {
+    
+        $params{rate} = 49.99;
+        $params{min_order_amount} = 9.99;
+        $params{max_order_amount} = 19.99;
+        
+        cmp_deeply(
+            exception {
+                $advertiser->p2p_advert_create(%params)
+            },
+            {error_code => 'AdvertSameLimits'},
+            'cannot create ad with overlapping min_order_amount'
+        );
+        
+        $params{min_order_amount} = 1;
+        $params{max_order_amount} = 5;
+        cmp_deeply(
+            exception {
+                $advertiser->p2p_advert_create(%params)
+            },
+            {error_code => 'AdvertSameLimits'},
+            'cannot create ad with overlapping max_order_amount'
+        );        
+
+        $params{min_order_amount} = 6;
+        $params{max_order_amount} = 7;
+        cmp_deeply(
+            exception {
+                $advertiser->p2p_advert_create(%params)
+            },
+            {error_code => 'AdvertSameLimits'},
+            'cannot create ad with inner range'
+        );
+
+        $params{min_order_amount} = 4;
+        $params{max_order_amount} = 11;
+        cmp_deeply(
+            exception {
+                $advertiser->p2p_advert_create(%params)
+            },
+            {error_code => 'AdvertSameLimits'},
+            'cannot create ad with outer range'
+        );          
+        
+        $params{min_order_amount} = 10;
+        $params{max_order_amount} = 19.99;
+        lives_ok { $ad = $advertiser->p2p_advert_create(%params) } 'can create 2nd ad with new range';
+        $advertiser->p2p_advert_update(id => $ad->{id}, is_active => 0);
+        $params{rate} = 49.98;
+        lives_ok { $advertiser->p2p_advert_create(%params) } 'can create again after disabling it';
+        
+        cmp_deeply(
+            exception {
+                $advertiser->p2p_advert_update(id => $ad->{id}, is_active => 1)
+            },
+            {error_code => 'AdvertSameLimits'},
+            'cannot enable ad with overlapping range'
+        );
+        
+        $params{rate} = 49.95;
+        $params{min_order_amount} = 20;
+        $params{max_order_amount} = 29.99;
+        lives_ok { $ad = $advertiser->p2p_advert_create(%params) } 'can create 3rd ad with new range';
+    };
+
+    subtest 'max ads of same type' => sub {
+        
+        BOM::Config::Runtime->instance->app_config->payments->p2p->limits->maximum_ads_per_type(3);
+        $params{rate} = 49.9;
+        $params{min_order_amount} = 40;
+        $params{max_order_amount} = 49;
+        
+        cmp_deeply(
+            exception {
+                $advertiser->p2p_advert_create(%params)
+            },
+            {
+                error_code => 'AdvertMaxExceededSameType',
+                message_params => [3],
+            },
+            'limit for same ad type'
+        );
+        
+        $advertiser->p2p_advert_update(id => $ad->{id}, is_active => 0);
+        lives_ok { $advertiser->p2p_advert_create(%params) } 'can create after disabling another ad';
+        
+        cmp_deeply(
+            exception {
+                $advertiser->p2p_advert_update(id => $ad->{id}, is_active => 1)
+            },
+            {
+                error_code => 'AdvertMaxExceededSameType',
+                message_params => [3],
+            },
+            'cannot enable ad which will exceed type limit'
+        );
+        
+        $params{rate} = 49.8;
+        $params{min_order_amount} = 50;
+        $params{max_order_amount} = 60;    
+        
+        BOM::Config::Runtime->instance->app_config->payments->p2p->limits->maximum_ads_per_type(4);
+        lives_ok { $advertiser->p2p_advert_create(%params) } 'can create 4th ad when limit increased';
+        BOM::Config::Runtime->instance->app_config->payments->p2p->limits->maximum_ads_per_type(3);
+    };
+    
+    subtest 'max active ads' => sub {
+        for my $num (5..10) {
+            $params{local_currency} = chr($num+60) x 3;
+            lives_ok { $ad = $advertiser->p2p_advert_create(%params) } "can create ${num}th ad with different currency";
+        }
+    
+        $params{local_currency} = 'xxx';
+        cmp_deeply(
+            exception {
+                $advertiser->p2p_advert_create(%params)
+            },
+            {error_code => 'AdvertMaxExceeded'},
+            'cannot have more than 10 active ads'
+        );
+        $advertiser->p2p_advert_update(id => $ad->{id}, is_active => 0);
+        my $ad_10;
+        lives_ok { $ad_10 = $advertiser->p2p_advert_create(%params) } 'can create after an ad is disabled';
+    
+        cmp_deeply(
+            exception {
+                $advertiser->p2p_advert_update(id => $ad->{id}, is_active => 1)
+            },
+            {error_code => 'AdvertMaxExceeded'},
+            'cannot re-enable another ad'
+        );
+
+        BOM::Test::Helper::P2P::create_order(advert_id => $ad_10->{id}, amount => 55);
+        lives_ok { $advertiser->p2p_advert_update(id => $ad->{id}, is_active => 1) } 'can re-enable if another ad is used up';
+    };
+    
+    BOM::Test::Helper::P2P::reset_escrow;
 };
 
 subtest 'Updating advert' => sub {
