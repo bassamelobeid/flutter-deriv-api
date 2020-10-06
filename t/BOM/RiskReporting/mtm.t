@@ -74,7 +74,7 @@ foreach my $symbol (keys %date_string) {
 }
 
 subtest 'realtime report generation' => sub {
-    plan tests => 13;
+    plan tests => 14;
 
     mailbox_clear();
 
@@ -166,12 +166,13 @@ subtest 'realtime report generation' => sub {
         send_alerts => 0
     );
 
-    # It's quite hard to test this function in unit test env, because there's only one clientdb
+    # It's quite hard to test this function in unit test env, because there's only two clientdb
     # When we create db in BOM::Database::ClientDB we specifically select svg as domain name for unit tests
     my $client_dbs  = $marked->all_client_dbs;
-    my $domain_name = $client_dbs->[0]{domain};
-    is(@$client_dbs, 1,     'There is one database for unit tests');
-    is($domain_name, 'svg', 'Unit test database name');
+    is(@$client_dbs, 2,     'There are two databases for unit tests');
+    for (0..1){
+        is($client_dbs->[$_]{domain}, 'svg', 'Unit test database name');
+    }
 
     warning {
         lives_ok { $results = $marked->generate } 'Report generation does not die.';
@@ -211,10 +212,9 @@ subtest 'Client db connection failure' => sub {
 
     my $client_dbs = $marked->all_client_dbs;
     my @msgs       = grep { $_->{level} eq 'error' } $log->msgs->@*;
-    is(scalar @msgs, 5, 'Connection fails on all 5 brokers');
+    is(scalar @msgs, 6, 'Connection fails on all 6 brokers');
     $log->contains_ok(qr/Clientdb connection failed. Skipping CR/, 'CR is among skipped dbs');
     done_testing;
 };
 
 done_testing;
-
