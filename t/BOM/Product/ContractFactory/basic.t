@@ -7,7 +7,7 @@ use Test::Exception;
 use Test::MockModule;
 use File::Spec;
 use Test::Fatal;
-use JSON;
+use JSON::MaybeUTF8 qw(encode_json_text);
 
 use Postgres::FeedDB::Spot::Tick;
 use BOM::Test::Data::Utility::UnitTestRedis;
@@ -75,7 +75,7 @@ subtest 'produce_contract' => sub {
     }
     'produce a contract';
 
-    is to_json([$contract->payout]), '[1]', 'payout is number';
+    is encode_json_text([$contract->payout]), '[1]', 'payout is number';
 };
 
 subtest 'produce_contract exception' => sub {
