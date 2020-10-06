@@ -6,7 +6,7 @@ use Test::Most;
 use Test::Mojo;
 use Test::MockModule;
 
-use JSON::MaybeXS;
+use JSON::MaybeUTF8 qw(encode_json_utf8);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use MojoX::JSON::RPC::Client;
@@ -48,7 +48,7 @@ subtest "Request $method" => sub {
     my $redis = BOM::Config::Redis::redis_replicated_write();
     $redis->set(
         'Distributor::QUOTE::frxUSDJPY',
-        encode_json({
+        encode_json_utf8({
                 quote => 500,
                 epoch => 1340871449
             }));
