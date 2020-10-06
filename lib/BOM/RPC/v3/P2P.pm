@@ -762,13 +762,6 @@ p2p_rpc p2p_order_dispute => sub {
         dispute_reason => $dispute_reason,
     );
 
-    BOM::Platform::Event::Emitter::emit(
-        p2p_order_updated => {
-            client_loginid => $client->loginid,
-            order_id       => $order_id,
-            order_event    => 'dispute',
-        });
-
     return $order;
 };
 
