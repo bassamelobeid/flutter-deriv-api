@@ -151,6 +151,28 @@ subtest "high real account buy sell pricing limit" => sub {
     dies_ok { Binary::WebSocketAPI::Hooks::reached_limit_check($c, 'proposal', 1)->get } "limit hit";
 };
 
+subtest "Apps rate-limit can be disabled" => sub {
+    my $app_redis_key = 'app_id::disable_rate_limit::1';
+
+    # Disabling the rate-limit functionality by setting the app associated redis key
+    $t->app->ws_redis_master->set($app_redis_key, 'bypass');
+
+    my @futures;
+    # 10 * 4 = 40, as in limits.yml
+    for (1 .. 10) {
+        push @futures, Binary::WebSocketAPI::Hooks::reached_limit_check($c, 'buy',                    1);
+        push @futures, Binary::WebSocketAPI::Hooks::reached_limit_check($c, 'sell',                   1);
+        push @futures, Binary::WebSocketAPI::Hooks::reached_limit_check($c, 'proposal',               1);
+        push @futures, Binary::WebSocketAPI::Hooks::reached_limit_check($c, 'proposal_open_contract', 1);
+    }
+
+    lives_ok { Future->needs_all(@futures)->get } "no limits hit";
+    lives_ok { Binary::WebSocketAPI::Hooks::reached_limit_check($c, 'proposal', 1)->get } "There is no limit to hit on the limitless apps";
+
+    # Enabling the rate-limit functionality by deleting the app associated redis key
+    $t->app->ws_redis_master->del($app_redis_key);
+};
+
 subtest "hit limits 'proposal' / 'proposal_open_contract' for virtual account" => sub {
     my @futures;
     # 2 * 16 > 30
