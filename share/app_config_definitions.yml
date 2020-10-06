@@ -650,6 +650,11 @@ system:
       description: "Suspend one or more of our services"
       isa: section
       contains:
+        payout_freezing_funds:
+          description: "Suspend freezing funds on create payout for those landing companies that support it. On DoughFlow, the front end setting 'CRM Payout Requests Debited Upon Event' should be set to `REQUESTED` when  freezing funds is enabled, `INPROGRESS` otherwise"
+          isa: Bool
+          default: 1
+          global: 1
         trading:
           description: "Suspend buy or sell of all trades"
           isa: Bool
