@@ -8,6 +8,7 @@ use Test::Mojo;
 use Test::MockTime::HiRes qw(set_relative_time restore_time);
 use Test::MockModule;
 use Test::Deep;
+use Test::Warnings;
 
 use Date::Utility;
 use Data::Dumper;
@@ -18,6 +19,7 @@ use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use BOM::Test::Helper::Client qw(top_up);
 use BOM::Config::Redis;
 use ExpiryQueue;
 use BOM::Config::Chronicle;
@@ -43,6 +45,12 @@ my $current_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     },
     1
 );
+
+BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+        underlying => 'frxAUDJPY',
+        epoch      => $_,
+        quote      => 100
+    }) for ($now->epoch, $now->epoch + 1, $now->epoch + 5);
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'economic_events',
@@ -201,7 +209,7 @@ $mock_calendar->mock(
     is_open    => sub { 1 },
     trades_on  => sub { 1 });
 
-subtest 'forex major pair - frxAUDJPY' => sub {
+subtest 'forex major pair - frxAUDJPY [VRTC]' => sub {
     note "commission on forex is a function of spread seasonality. So it changes throughout the day";
 
     my $buy_params = {
@@ -238,6 +246,154 @@ subtest 'forex major pair - frxAUDJPY' => sub {
     ok $update_res->{stop_loss}->{value};
     is $update_res->{take_profit}->{order_amount}, 10;
     ok $update_res->{take_profit}->{value};
+};
+
+my $current_tnc_version = BOM::Config::Runtime->instance->app_config->cgi->terms_conditions_version;
+my $mx                  = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    broker_code => 'MX',
+    email       => $email,
+});
+$mx->status->set('tnc_approval',     'system', $current_tnc_version);
+$mx->status->set('age_verification', 'system', 'age verified');
+top_up $mx, 'USD', 1000;
+my ($mx_token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $mx->loginid);
+
+subtest 'multiplier on MX' => sub {
+    note "commission on forex is a function of spread seasonality. So it changes throughout the day";
+
+    my $buy_params = {
+        client_ip           => '127.0.0.1',
+        token               => $mx_token,
+        contract_parameters => {
+            contract_type => 'MULTUP',
+            basis         => 'stake',
+            amount        => 100,
+            multiplier    => 50,
+            symbol        => 'frxAUDJPY',
+            currency      => 'USD',
+        },
+        args => {price => 100},
+    };
+    my $buy_res = $c->call_ok('buy', $buy_params)->has_no_error->result;
+
+    ok $buy_res->{contract_id}, 'contract is bought successfully with contract id';
+    ok !$buy_res->{contract_details}->{is_sold}, 'not sold';
+
+    my $update_params = {
+        client_ip => '127.0.0.1',
+        token     => $mx_token,
+        args      => {
+            contract_id     => $buy_res->{contract_id},
+            contract_update => 1,
+            limit_order     => {
+                take_profit => 10,
+                stop_loss   => 5
+            },
+        }};
+    my $update_res = $c->call_ok('contract_update', $update_params)->has_no_error->result;
+    is $update_res->{stop_loss}->{order_amount}, -5;
+    ok $update_res->{stop_loss}->{value};
+    is $update_res->{take_profit}->{order_amount}, 10;
+    ok $update_res->{take_profit}->{value};
+};
+
+my $mx_uk = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    broker_code => 'MX',
+    residence   => 'gb',
+    email       => $email,
+});
+$mx_uk->status->set('tnc_approval',     'system', $current_tnc_version);
+$mx_uk->status->set('age_verification', 'system', 'age verified');
+top_up $mx_uk, 'USD', 1000;
+my ($mx_uk_token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $mx_uk->loginid);
+
+subtest 'multiplier on MX [with UK residence]' => sub {
+    note "commission on forex is a function of spread seasonality. So it changes throughout the day";
+
+    my $buy_params = {
+        client_ip           => '127.0.0.1',
+        token               => $mx_uk_token,
+        contract_parameters => {
+            contract_type => 'MULTUP',
+            basis         => 'stake',
+            amount        => 100,
+            multiplier    => 50,
+            symbol        => 'frxAUDJPY',
+            currency      => 'USD',
+        },
+        args => {price => 100},
+    };
+    $c->call_ok('buy', $buy_params)->has_error->error_code_is('InvalidOfferings', 'Trading is not offered for this asset.');
+
+    $buy_params->{contract_parameters}{symbol} = 'R_100';
+    my $buy_res = $c->call_ok('buy', $buy_params)->has_no_error->result;
+
+    ok $buy_res->{contract_id}, 'contract is bought successfully with contract id';
+    ok !$buy_res->{contract_details}->{is_sold}, 'not sold';
+
+    my $update_params = {
+        client_ip => '127.0.0.1',
+        token     => $mx_uk_token,
+        args      => {
+            contract_id     => $buy_res->{contract_id},
+            contract_update => 1,
+            limit_order     => {
+                take_profit => 10,
+                stop_loss   => 5
+            },
+        }};
+    my $update_res = $c->call_ok('contract_update', $update_params)->has_no_error->result;
+    is $update_res->{stop_loss}->{order_amount}, -5;
+    ok $update_res->{stop_loss}->{value};
+    is $update_res->{take_profit}->{order_amount}, 10;
+    ok $update_res->{take_profit}->{value};
+};
+
+my $mf = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    broker_code => 'MF',
+    email       => $email,
+});
+$mf->status->set('tnc_approval',     'system', $current_tnc_version);
+$mf->status->set('age_verification', 'system', 'age verified');
+
+note('mocking all compliance checks to true');
+$mocked = Test::MockModule->new('BOM::Transaction::Validation');
+$mocked->mock('check_tax_information',         sub { return undef });
+$mocked->mock('compliance_checks',             sub { return undef });
+$mocked->mock('check_client_professional',     sub { return undef });
+$mocked->mock('check_authentication_required', sub { return undef });
+$mocked->mock('_validate_client_status',       sub { return undef });
+
+top_up $mf, 'USD', 1000;
+my ($mf_token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $mf->loginid);
+
+subtest 'multiplier on MF' => sub {
+    note "commission on forex is a function of spread seasonality. So it changes throughout the day";
+
+    my $buy_params = {
+        client_ip           => '127.0.0.1',
+        token               => $mf_token,
+        contract_parameters => {
+            contract_type => 'MULTUP',
+            basis         => 'stake',
+            amount        => 100,
+            multiplier    => 50,
+            symbol        => 'R_100',
+            currency      => 'USD',
+        },
+        args => {price => 100},
+    };
+    Test::Warnings::allow_warnings(1);
+    $c->call_ok('buy', $buy_params)->has_error->error_code_is('InvalidtoBuy');
+    Test::Warnings::allow_warnings(0);
+
+    $buy_params->{contract_parameters}{symbol}     = 'frxAUDJPY';
+    $buy_params->{contract_parameters}{multiplier} = 50;
+    $c->call_ok('buy', $buy_params)->has_error->error_code_is('InvalidtoBuy')->error_message_is('Multiplier is not in acceptable range. Accepts 30.');
+
+    $buy_params->{contract_parameters}{multiplier} = 30;
+    my $buy_res = $c->call_ok('buy', $buy_params)->has_error->error_code_is('InvalidOfferings')->result;
+    is $buy_res->{error}->{message_to_client}, 'Trading is not offered for this asset.';
 };
 
 done_testing();

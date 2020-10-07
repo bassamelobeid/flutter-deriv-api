@@ -203,7 +203,7 @@
       "legal_allowed_contract_categories" : {
          "type" : "array",
          "items" : {
-            "pattern" : "^(asian|callput|digits|endsinout|staysinout|touchnotouch|callputequal|callputspread|reset|highlowticks|lookback|runs)$",
+            "pattern" : "^(asian|callput|digits|endsinout|staysinout|touchnotouch|callputequal|callputspread|reset|highlowticks|lookback|runs|multiplier)$",
             "type" : "string"
          },
          "minItems" : 6

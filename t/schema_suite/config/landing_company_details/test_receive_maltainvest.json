@@ -47,64 +47,10 @@
                "properties" : {},
                "additionalProperties" : false,
                "type" : "object"
-            },
-            "commodities" : {
-               "additionalProperties" : false,
-               "type" : "object",
-               "patternProperties" : {
-                  "^[A-Z]{3,4}$" : {
-                     "additionalProperties" : false,
-                     "type" : "object",
-                     "required" : [
-                        "max_payout",
-                        "min_stake"
-                     ],
-                     "properties" : {
-                        "min_stake" : {
-                           "maximum" : 10,
-                           "minimum" : 0,
-                           "type" : "number"
-                        },
-                        "max_payout" : {
-                           "type" : "number",
-                           "minimum" : 0
-                        }
-                     }
-                  }
-               },
-               "properties" : {}
-            },
-            "indices" : {
-               "type" : "object",
-               "additionalProperties" : false,
-               "properties" : {},
-               "patternProperties" : {
-                  "^[A-Z]{3,4}$" : {
-                     "properties" : {
-                        "min_stake" : {
-                           "maximum" : 10,
-                           "type" : "number",
-                           "minimum" : 0
-                        },
-                        "max_payout" : {
-                           "type" : "number",
-                           "minimum" : 0
-                        }
-                     },
-                     "required" : [
-                        "max_payout",
-                        "min_stake"
-                     ],
-                     "type" : "object",
-                     "additionalProperties" : false
-                  }
-               }
             }
          },
          "required" : [
-            "forex",
-            "commodities",
-            "indices"
+            "forex"
          ],
          "type" : "object",
          "additionalProperties" : false
@@ -124,10 +70,10 @@
       "legal_allowed_markets" : {
          "type" : "array",
          "items" : {
-            "pattern" : "^(commodities|forex|indices)$",
+            "pattern" : "^forex$",
             "type" : "string"
          },
-         "minItems" : 3
+         "minItems" : 1
       },
       "name" : {
          "pattern" : "^Deriv Investments \\(Europe\\) Limited$",
@@ -165,10 +111,10 @@
       "legal_allowed_contract_categories" : {
          "items" : {
             "type" : "string",
-            "pattern" : "^(asian|callput|digits|endsinout|staysinout|touchnotouch|callputequal)$"
+            "pattern" : "^multiplier$"
          },
          "type" : "array",
-         "minItems" : 6
+         "minItems" : 1
       },
       "has_reality_check" : {
          "type" : "integer",

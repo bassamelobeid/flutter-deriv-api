@@ -76,19 +76,11 @@
                ]
             },
             "legal_allowed_contract_categories": [
-               "asian",
-               "callput",
-               "callputequal",
-               "digits",
-               "endsinout",
-               "staysinout",
-               "touchnotouch"
+               "multiplier"
             ],
             "has_reality_check": 0,
             "legal_allowed_markets": [
-               "commodities",
-               "forex",
-               "indices"
+               "forex"
             ],
             "address": [
                "W Business Centre",
@@ -176,10 +168,10 @@
             "legal_allowed_contract_categories": {
                "type": "array",
                "items": {
-                  "pattern": "^(asian|callput|digits|endsinout|staysinout|touchnotouch|callputequal)$",
+                  "pattern": "^multiplier$",
                   "type": "string"
                },
-               "minItems": 6
+               "minItems": 1
             },
             "has_reality_check": {
                "type": "integer",
@@ -201,10 +193,10 @@
                "additionalProperties": false
             },
             "legal_allowed_markets": {
-               "minItems": 3,
+               "minItems": 1,
                "items": {
                   "type": "string",
-                  "pattern": "^(commodities|forex|indices)$"
+                  "pattern": "^forex$"
                },
                "type": "array"
             },

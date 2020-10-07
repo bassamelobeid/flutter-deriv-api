@@ -49,7 +49,7 @@ subtest "active_symbols_for_" => sub {
     # check the selected landing comapny doesn't have offerings
     my $landing_company = LandingCompany::Registry::get($landing_company_name);
     my $offering        = $landing_company->default_product_type;
-    is $offering, undef, "The selected landing company doesn't have an offering";
+    ok !$offering, "no offerings for maltainvest";
 
     my $params = {
         language => 'EN',
@@ -58,7 +58,8 @@ subtest "active_symbols_for_" => sub {
             landing_company => $landing_company_name,
         }};
 
-    is_deeply $c->call_ok($method, $params)->has_no_error->result, [], 'No active symbols for companies without offerings';
+    my $result = $c->call_ok($method, $params)->has_no_error->result;
+    is scalar @$result, 0, '0 pairs'
 };
 
 subtest 'active_symbols for suspend_buy' => sub {
