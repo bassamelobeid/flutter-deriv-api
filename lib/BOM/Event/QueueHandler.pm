@@ -305,7 +305,7 @@ sub process_job {
                 stats_inc(lc "$queue_name.processed.failure");
             })->else_done();
     } catch {
-        $log->errorf('Failed to process %s (data %s) - %s', $queue_name, $self->cleaned_data($event_data), $@);
+        $log->errorf('Failed to process %s (data %s) - %s', $queue_name, $self->clean_data_for_logging($event_data), $@);
         exception_logged();
         # This one's less clear cut than other failure cases:
         # we *do* expect occasional failures from processing,

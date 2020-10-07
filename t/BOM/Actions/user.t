@@ -502,6 +502,7 @@ sub test_segment_customer {
         landing_companies           => 'svg',
         available_landing_companies => 'labuan,svg',
         provider                    => 'email',
+        unsubscribed                => $test_client->user->email_consent ? 'false' : 'true'
         },
         'Customer traits are set correctly';
 }

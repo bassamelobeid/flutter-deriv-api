@@ -119,7 +119,7 @@ subtest 'General event validation - filtering by brand' => sub {
         properties => {a => 1},
     )->get, 'event emitted successfully';
     is @identify_args, 0, 'Segment identify is not invoked';
-    ok @track_args, 'Segment tarck is invoked';
+    ok @track_args, 'Segment track is invoked';
     ($customer, %args) = @track_args;
     $expected_args->{properties} = {};
     is_deeply \%args, $expected_args, 'track request args are correct - invalid property filtered out';
@@ -133,7 +133,7 @@ subtest 'General event validation - filtering by brand' => sub {
         is_identify_required => 1
     )->get, 'event emitted successfully';
     ok @identify_args, 'Segment identify is invoked';
-    ok @track_args,    'Segment tarck is invoked';
+    ok @track_args,    'Segment track is invoked';
     ($customer, %args) = @track_args;
     $expected_args->{properties}->{browser} = 'fire-chrome';
     is_deeply \%args, $expected_args, 'track request args are correct';
@@ -148,7 +148,7 @@ subtest 'General event validation - filtering by brand' => sub {
             'locale' => 'id'
         }
         },
-        'itentify request args are correct';
+        'identify request args are correct';
     test_segment_customer($customer);
 
     subtest 'tracking on a disabled brand' => sub {
@@ -171,7 +171,7 @@ subtest 'General event validation - filtering by brand' => sub {
             is_identify_required => 1,
             brand                => Brands->new(name => 'deriv'))->get, 'event emitted successfully';
         ok @identify_args, 'Segment identify is invoked (by setting brand to deriv in the args)';
-        ok @track_args,    'Segment tarck is invoked (by setting brand to deriv in the args)';
+        ok @track_args,    'Segment track is invoked (by setting brand to deriv in the args)';
         ($customer, %args) = @track_args;
         $expected_args->{context}->{app}->{name} = 'deriv';
         is_deeply \%args, $expected_args, 'track request args are correct with context brand switched to deriv';
@@ -186,7 +186,7 @@ subtest 'General event validation - filtering by brand' => sub {
                 'locale' => 'id'
             }
             },
-            'itentify request args are correct with context brand switched to deriv';
+            'identify request args are correct with context brand switched to deriv';
         test_segment_customer($customer);
 
         $req = BOM::Platform::Context::Request->new(
@@ -209,13 +209,47 @@ subtest 'General event validation - filtering by brand' => sub {
             is_identify_required => 1,
             brand                => Brands->new(name => 'deriv'))->get, 'event emitted successfully';
         ok @identify_args, 'Segment identify is invoked';
-        ok @track_args,    'Segment tarck is invoked';
+        ok @track_args,    'Segment track is invoked';
         ($customer, %args) = @track_args;
 
         test_segment_customer($customer);
 
         is $customer->{traits}->{mt5_loginids}, 'MT5900000,MT5900001', 'MT5 account list is correct';
     };
+
+    subtest 'Set unsubscribed to false on email_consent change' => sub {
+        undef @track_args;
+        undef @identify_args;
+
+        $user->update_email_fields(email_consent => 1);
+        ok BOM::Event::Services::Track::track_event(
+            event                => 'profile_change',
+            loginid              => $test_client->loginid,
+            properties           => {email_consent => 1},
+            is_identify_required => 1,
+            brand                => Brands->new(name => 'deriv'))->get, 'event emitted successfully';
+        ok @identify_args, 'Segment identify is invoked';
+        ok @track_args,    'Segment track is invoked';
+        ($customer, %args) = @track_args;
+
+        is_deeply(
+            \%args,
+            {
+                context => {
+                    active => 1,
+                    app    => {name => "deriv"},
+                    locale => "id"
+                },
+                event      => "profile_change",
+                properties => {
+                    email_consent => 1,
+                },
+            },
+            'identify context is properly set for profile_change'
+        );
+
+        is $customer->{traits}->{unsubscribed}, 'false', '\'unsubscribed\' is set to false';
+    }
 };
 
 sub test_segment_customer {
@@ -252,10 +286,9 @@ sub test_segment_customer {
         landing_companies           => 'svg',
         available_landing_companies => 'labuan,svg',
         provider                    => 'email',
+        unsubscribed                => $test_client->user->email_consent ? 'false' : 'true',
     };
-
     is_deeply $customer->traits, $expected_traits, 'Customer traits are set correctly';
-
 }
 
 $mock_segment->unmock_all;

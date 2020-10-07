@@ -23,7 +23,7 @@ use BOM::Database::Model::UserConnect;
 
 my %EVENT_PROPERTIES = (
     identify => [
-        qw (address age available_landing_companies avatar birthday company created_at description email first_name gender id landing_companies last_name name phone provider title username website currencies country)
+        qw (address age available_landing_companies avatar birthday company created_at description email first_name gender id landing_companies last_name name phone provider title username website currencies country unsubscribed)
     ],
     login                     => [qw (loginid browser device ip new_signin_activity location app_name)],
     signup                    => [qw (loginid type currency landing_company date_joined first_name last_name phone address age country provider)],
@@ -35,7 +35,6 @@ my %EVENT_PROPERTIES = (
     app_registered    => [qw(loginid name scopes redirect_uri verification_uri app_markup_percentage homepage github appstore googleplay app_id)],
     app_updated       => [qw(loginid name scopes redirect_uri verification_uri app_markup_percentage homepage github appstore googleplay app_id)],
     app_deleted       => [qw(loginid app_id)],
-    account_closure   => [qw(loginid closing_reason loginids_disabled loginids_failed)],
     api_token_created => [qw(loginid name scopes)],
     api_token_deleted => [qw(loginid name scopes)],
     profile_change    => [
@@ -292,6 +291,7 @@ sub profile_change {
             if (defined $properties->{updated_fields}->{$field} and $properties->{updated_fields}->{$field} ne '');
     }
     $log->debugf('Track profile_change event for client %s', $loginid);
+
     return Future->needs_all(_send_identify_request($customer),
         _send_track_request($customer, {$properties->{updated_fields}->%*, loginid => $loginid}, 'profile_change'));
 }
@@ -892,6 +892,9 @@ sub _create_customer {
             landing_companies           => @landing_companies ? join ',' => uniq sort @landing_companies : 'virtual',
             available_landing_companies => $available_landing_companies,
             provider                    => $provider,
+
+            # subscribe or unsubscribed
+            unsubscribed => $client->user->email_consent ? 'false' : 'true',
         });
     # Will use this attributes as properties in some events like signup
     $customer->{currency}        = $client->account ? $client->account->currency_code : '';

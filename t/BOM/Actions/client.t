@@ -903,6 +903,7 @@ sub test_segment_customer {
             landing_companies           => $landing_companies,
             available_landing_companies => $available_landing_companies,
             provider                    => 'email',
+            unsubscribed                => $test_client->user->email_consent ? 'false' : 'true',
             },
             'Customer traits are set correctly for virtual account';
     } else {
@@ -936,6 +937,7 @@ sub test_segment_customer {
             landing_companies           => $landing_companies,
             available_landing_companies => $available_landing_companies,
             provider                    => 'email',
+            unsubscribed                => $test_client->user->email_consent ? 'false' : 'true'
             },
             'Customer traits are set correctly';
     }
