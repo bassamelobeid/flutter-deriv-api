@@ -107,6 +107,7 @@ subtest 'paymentagent_transfer' => sub {
     my $pa_balance = $agent_usd->default_account->balance;
     my $amount     = 10;
     my $client_id  = $client_usd->loginid;
+    my $agent_id   = $agent_usd->loginid;
 
     my $response = $t->await::paymentagent_transfer({
         paymentagent_transfer => 1,
@@ -121,12 +122,20 @@ subtest 'paymentagent_transfer' => sub {
     cmp_ok($pa_balance - $amount, '==', $agent_usd->default_account->balance, 'Payemnt agent balance is correct after transfer.');
     $pa_balance = $agent_usd->default_account->balance;
 
-    check_last_statement($t, $agent_token, -$amount, 'withdrawal',
-        qr/^Transfer from Payment Agent $agent_name to $client_id. Transaction reference: .* Timestamp: .* Agent note: A message in a bottle$/,
-        $pa_balance, $response->{transaction_id});
     check_last_statement(
-        $t, $client_token, $amount, 'deposit',
-        qr/^Transfer from Payment Agent $agent_name to $client_id. Transaction reference: .* Timestamp: .* Agent note: A message in a bottle$/,
+        $t,
+        $agent_token,
+        -$amount,
+        'withdrawal',
+        qr/^Transfer from Payment Agent $agent_name \($agent_id\) to $client_id. Transaction reference: .* Timestamp: .* Agent note: A message in a bottle$/,
+        $pa_balance,
+        $response->{transaction_id});
+    check_last_statement(
+        $t,
+        $client_token,
+        $amount,
+        'deposit',
+        qr/^Transfer from Payment Agent $agent_name \($agent_id\) to $client_id. Transaction reference: .* Timestamp: .* Agent note: A message in a bottle$/,
         $client_usd->default_account->balance
     );
 };
@@ -136,6 +145,7 @@ subtest 'paymentagent_withdraw' => sub {
     my $client_balance = $client_usd->default_account->balance;
     my $amount         = 10;
     my $client_id      = $client_usd->loginid;
+    my $agent_id       = $agent_usd->loginid;
 
     $t->await::verify_email({
         type         => "paymentagent_withdraw",
@@ -158,12 +168,20 @@ subtest 'paymentagent_withdraw' => sub {
     cmp_ok($client_balance - $amount, '==', $client_usd->default_account->balance, 'Client balance is correct after transfer.');
     $client_balance = $client_usd->default_account->balance;
 
-    check_last_statement($t, $client_token, -$amount, 'withdrawal',
-        qr/^Transfer from $client_id to Payment Agent $agent_name Transaction reference: .* Timestamp: .* Client note: A message in a bottle$/,
-        $client_balance, $response->{transaction_id});
     check_last_statement(
-        $t, $agent_token, $amount, 'deposit',
-        qr/^Transfer from $client_id to Payment Agent $agent_name Transaction reference: .* Timestamp: .* Client note: A message in a bottle$/,
+        $t,
+        $client_token,
+        -$amount,
+        'withdrawal',
+        qr/^Transfer from $client_id to Payment Agent $agent_name \($agent_id\) Transaction reference: .* Timestamp: .* Client note: A message in a bottle$/,
+        $client_balance,
+        $response->{transaction_id});
+    check_last_statement(
+        $t,
+        $agent_token,
+        $amount,
+        'deposit',
+        qr/^Transfer from $client_id to Payment Agent $agent_name \($agent_id\) Transaction reference: .* Timestamp: .* Client note: A message in a bottle$/,
         $agent_usd->default_account->balance
     );
 };
