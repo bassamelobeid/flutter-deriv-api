@@ -90,6 +90,7 @@ my $action_mapping = {
     self_exclude_set            => \&BOM::Event::Actions::App::self_exclude_set,
     crypto_withdrawal           => \&BOM::Event::Actions::Client::handle_crypto_withdrawal,
     client_promo_codes_upload   => \&BOM::Event::Actions::Client::client_promo_codes_upload,
+    shared_payment_method_found => \&BOM::Event::Actions::Client::shared_payment_method_found,
 };
 
 =head1 METHODS
