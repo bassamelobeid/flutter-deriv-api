@@ -22,6 +22,8 @@ GetOptions(
     'c|client_loginid=s' => \my $client_loginid,
     'l|log=s'            => \my $log_level,
     't|trace_id=i'       => \my $trace_id,
+    # Only needed for `shared_payment_method`
+    'p|shared_loginid=s'       => \my $shared_loginid,
 ) or die $usage;
 
 # endpoint for QA box is 127.0.0.1:8110
@@ -32,6 +34,7 @@ my $actions = {
 	'withdrawal_validate' => 'get',
 	'update_payout' => 'post',
 	'reject_payout' => '',
+    'shared_payment_method' => 'post'
 };
 
 $log_level ||= 'info';
@@ -66,6 +69,14 @@ if ($action eq 'reject_payout') {
 }
 if ($action eq 'update_payout') {
 	$params->{status} = 'inprogress'
+}
+# Shared PM needs the hardcoded error code and an error description
+# containing the shared's loginid, hence the -p option is required.
+if ($action eq 'shared_payment_method') {
+    die "ERROR: shared client loginid must be specified. " . ($usage =~ s/\n$//gr) . " -p <shared_loginid>\n" unless $shared_loginid;
+    $endpoint = 'record_failed_withdrawal';
+	$params->{error_code} = 'NDB2006';
+	$params->{error_desc} = sprintf('Shared AccountIdentifier PIN: %s', $shared_loginid);
 }
 
 $log->debugf('Trying $s with %s', $endpoint, $params);

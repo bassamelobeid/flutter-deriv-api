@@ -4,7 +4,7 @@ use strict;
 use warnings;
 
 use Exporter 'import';
-our @EXPORT_OK = qw(request auth_request decode_json deposit withdrawal_validate create_payout update_payout balance new_client);
+our @EXPORT_OK = qw(request auth_request decode_json deposit withdrawal_validate create_payout update_payout balance new_client record_failed_withdrawal);
 
 use Encode;
 use FindBin qw/$Bin/;
@@ -215,6 +215,45 @@ sub update_payout {
             trace_id          => 123,
             ip_address        => '127.0.0.1',
             payment_processor => 'WebMonkey',
+            %override,
+        },
+        {'Content-Type' => 'text/xml'});
+}
+
+=head2 record_failed_withdrawal
+
+A helper for record_failed_withdrawal POST request.
+
+It takes the following named params:
+
+=over 4
+
+=item * C<client_loginid>, the loginid of the client
+
+=item * C<error_desc>, the error description
+
+=item * C<error_code>, the error code
+
+=back
+
+Returns,
+    the request itself
+
+=cut
+
+sub record_failed_withdrawal {
+    my %override = @_;
+    request(
+        'POST',
+        '/transaction/payment/doughflow/record_failed_withdrawal',
+        {
+            accountidentifier => "470010:1******584",
+            amount            => "10.02",
+            client_loginid    => delete $override{client_loginid},
+            error_code        => delete $override{error_code},
+            error_desc        => delete $override{error_desc},
+            frontendname      => "Binary (CR) SA USD",
+            siteid            => 2,
             %override,
         },
         {'Content-Type' => 'text/xml'});

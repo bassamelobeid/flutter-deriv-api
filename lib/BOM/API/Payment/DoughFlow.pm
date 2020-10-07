@@ -9,6 +9,7 @@ use Scalar::Util qw/blessed/;
 use BOM::API::Payment::DoughFlow::Backend;
 use BOM::Database::DataMapper::Payment;
 use BOM::API::Payment::Metric;
+use BOM::Platform::Event::Emitter;
 
 use Log::Any '$new_api_log',
     log_level => 'debug',
@@ -224,6 +225,21 @@ sub record_failed_withdrawal_POST {
     unless (_is_authenticated($c)) {
         $new_api_log->debugf('record_failed_deposit: Authorization required, please check if request has X-DoughFlow-Authorization-Passed header.');
         return $c->throw(401, 'Authorization required');
+    }
+    # Send event for specific error codes
+    my $error_code = $c->request_parameters->{error_code} // '';
+
+    # Shared Payment Method
+    if ($error_code eq 'NDB2006') {
+        my $client_loginid = $c->request_parameters->{client_loginid} // '';
+        my ($shared_loginid) = ($c->request_parameters->{error_desc} // '') =~ m/^Shared\sAccountIdentifier\sPIN:\s(.*)$/;
+
+        BOM::Platform::Event::Emitter::emit(
+            'shared_payment_method_found',
+            {
+                client_loginid => $client_loginid,
+                shared_loginid => $shared_loginid,
+            });
     }
 
     # return success as of now, once we have evaluated all
