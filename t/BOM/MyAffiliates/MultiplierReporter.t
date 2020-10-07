@@ -30,7 +30,7 @@ my $trade_commission = {
     financial     => $app_config->get('quants.multiplier_affiliate_commission.financial'),
     non_financial => $app_config->get('quants.multiplier_affiliate_commission.non_financial')};
 
-my $dc_commission = LoadFile('/home/git/regentmarkets/bom-config/share/default_multiplier_config.yml');
+my $dc_commission = LoadFile('/home/git/regentmarkets/bom-config/share/default_multiplier_config.yml')->{common};
 
 # Parameters are defined in bom-test/data/market_unit_test.yml
 

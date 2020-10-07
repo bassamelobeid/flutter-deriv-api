@@ -31,6 +31,7 @@ use YAML::XS qw(LoadFile);
 use BOM::Config::Runtime;
 use BOM::Config::QuantsConfig;
 use BOM::Config::Chronicle;
+use BOM::User::Client;
 
 use constant HEADERS => qw(
     date client_loginid trade_commission commission
@@ -104,7 +105,8 @@ sub computation {
         } else {
             my $quant_config = BOM::Config::QuantsConfig->new(chronicle_reader => BOM::Config::Chronicle::get_chronicle_reader());
             my $commission_rate =
-                $quant_config->get_config('multiplier_config::' . $info_map->{underlying_symbol})->{cancellation_commission};
+                $quant_config->get_multiplier_config(BOM::User::Client->new({loginid => $info_map->{loginid}})->landing_company->short,
+                $info_map->{underlying_symbol})->{cancellation_commission};
             my $cancellation_commission = $info_map->{value} * $commission_rate;
 
             $result->{$info_map->{loginid}}{trade_commission} += $cancellation_commission;
