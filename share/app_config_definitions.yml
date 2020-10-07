@@ -461,6 +461,11 @@ payments:
       isa: json_string
       default: '{"100":0,"199.99":1,"":2}'
       global: 1
+    crypto_withdrawal_suspicious_check_required:
+      description: "Disable or enable the withdrawal check for suspicious clients."
+      isa: Bool
+      default: 0
+      global: 1
 quants:
   description: "Various quants' parameters"
   isa: section
