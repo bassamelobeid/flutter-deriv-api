@@ -147,8 +147,7 @@ sub proveid {
         $vr_acc->status->clear_unwelcome;
         $vr_acc->status->setnx('age_verification', 'system', 'Experian results are sufficient to mark client as age verified.');
         if ($name_address_match >= NEEDED_MATCHES_FOR_ONLINE_AUTH) {
-            $client->set_authentication('ID_ONLINE')->status('pass');
-            $client->save();
+            $client->set_authentication('ID_ONLINE', {status => 'pass'});
             $client->update_status_after_auth_fa();
             $client->status->clear_unwelcome if $client->status->unwelcome;
         } else {

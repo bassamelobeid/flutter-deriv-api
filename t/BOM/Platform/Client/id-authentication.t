@@ -138,8 +138,7 @@ subtest 'MF accounts' => sub {
         my $v = BOM::Platform::Client::IDAuthentication->new(client => $c);
         ok $v->client->is_first_deposit_pending, 'First deposit tracking for MF account';
 
-        $c->set_authentication('ID_DOCUMENT')->status('pending');
-
+        $c->set_authentication('ID_DOCUMENT', {status => 'pending'});
         $v->run_authentication;
 
         ok !$v->client->fully_authenticated, 'Not fully authenticated';
@@ -158,7 +157,7 @@ subtest 'MF accounts' => sub {
         my $v = BOM::Platform::Client::IDAuthentication->new(client => $c);
         ok $v->client->is_first_deposit_pending, 'First deposit tracking for MF account';
 
-        $c->set_authentication('ID_DOCUMENT')->status('pass');
+        $c->set_authentication('ID_DOCUMENT', {status => 'pass'});
 
         $v->run_authentication;
 

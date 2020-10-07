@@ -65,7 +65,7 @@ subtest 'Account types and broker codes' => sub {
         undef $email_args;
 
         my $cl = create_client($broker);
-        $cl->set_authentication('ID_DOCUMENT')->status('pending');
+        $cl->set_authentication('ID_DOCUMENT', {status => 'pending'});
         my $checker = BOM::Platform::Client::Sanctions->new(
             client => $cl,
             brand  => $brand
@@ -92,7 +92,7 @@ subtest 'Account types and broker codes' => sub {
             client => $cl,
             brand  => $brand
         );
-        $cl->set_authentication('ID_DOCUMENT')->status('pass');
+        $cl->set_authentication('ID_DOCUMENT', {status => 'pass'});
         is $checker->check(), undef, "result is empty when if client is authenticated by default - $broker";
         is $email_args, undef, 'No email is sent for authenticated clients by default - $broker';
 
