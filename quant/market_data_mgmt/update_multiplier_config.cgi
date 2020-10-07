@@ -19,6 +19,8 @@ use Syntax::Keyword::Try;
 use Scalar::Util qw(looks_like_number);
 use Digest::MD5 qw(md5_hex);
 use Text::Trim qw(trim);
+use LandingCompany::Registry;
+use BOM::Config::Runtime;
 
 BOM::Backoffice::Sysinit::init();
 my $staff = BOM::Backoffice::Auth0::get_staffname();
@@ -38,8 +40,9 @@ if ($r->param('save_multiplier_config')) {
         return;
     }
     try {
-        my $symbol         = $r->param('symbol') // die 'symbol is undef';
-        my $stop_out_level = $r->param('stop_out_level');
+        my $symbol          = $r->param('symbol')          // die 'symbol is undef';
+        my $landing_company = $r->param('landing_company') // die 'landing_company is undef';
+        my $stop_out_level  = $r->param('stop_out_level');
         if ($stop_out_level > 75 or $stop_out_level < 0) {
             die 'stop out level must be greater than or equal to 0 and less than or equal to 75';
         }
@@ -50,7 +53,8 @@ if ($r->param('save_multiplier_config')) {
             cancellation_duration_range => decode_json_utf8($r->param('cancellation_duration_range')),
             stop_out_level              => $stop_out_level,
         };
-        $qc->save_config("multiplier_config::$symbol", $multiplier_config);
+        my $redis_key = join('::', 'multiplier_config', $landing_company, $symbol);
+        $qc->save_config($redis_key, $multiplier_config);
 
         BOM::Backoffice::QuantsAuditLog::log($staff, "ChangeMultiplierConfig", $multiplier_config);
         $output = {success => 1};
@@ -101,10 +105,8 @@ if ($r->param('save_multiplier_user_limit')) {
 
     my $custom_volume_limits = decode_json_utf8($app_config->get('quants.custom_volume_limits'));
     my $client_limits        = $custom_volume_limits->{clients} // {};
-    my $qc                   = BOM::Config::QuantsConfig->new(
-        recorded_date    => Date::Utility->new,
-        chronicle_reader => BOM::Config::Chronicle::get_chronicle_reader(),
-    );
+    my $offerings =
+        LandingCompany::Registry::get('svg')->basic_offerings(BOM::Config::Runtime->instance->get_offerings_config('buy', 1));   # 1 - exclude disable
     my $output;
     try {
         my $loginid = $r->param('loginid') // die 'loginid is undef';
@@ -116,7 +118,10 @@ if ($r->param('save_multiplier_user_limit')) {
 
         my $symbol = $r->param('symbol');
         for my $sym (split ',', $symbol) {
-            die "symbol '$sym' is not valid" if $sym && !$qc->get_config('multiplier_config::' . $sym);
+            die "symbol '$sym' is not valid" if $sym && !$offerings->query({
+                contract_category => 'multiplier',
+                underlying_symbol => $sym
+            });
         }
 
         my $comment = $r->param('comment') // '';
@@ -186,10 +191,6 @@ if ($r->param('save_multiplier_market_or_underlying_limit')) {
     my $custom_volume_limits = decode_json_utf8($app_config->get('quants.custom_volume_limits'));
     my $market_limits        = $custom_volume_limits->{markets} // {};
     my $symbol_limits        = $custom_volume_limits->{symbols} // {};
-    my $qc                   = BOM::Config::QuantsConfig->new(
-        recorded_date    => Date::Utility->new,
-        chronicle_reader => BOM::Config::Chronicle::get_chronicle_reader(),
-    );
     my $output;
     try {
         my $limit_defs   = BOM::Config::quants()->{risk_profile};
@@ -242,10 +243,6 @@ if ($r->param('delete_multiplier_market_or_underlying_limit')) {
     my $custom_volume_limits = decode_json_utf8($app_config->get('quants.custom_volume_limits'));
     my $market_limits        = $custom_volume_limits->{markets} // {};
     my $symbol_limits        = $custom_volume_limits->{symbols} // {};
-    my $qc                   = BOM::Config::QuantsConfig->new(
-        recorded_date    => Date::Utility->new,
-        chronicle_reader => BOM::Config::Chronicle::get_chronicle_reader(),
-    );
     my $output;
     try {
         my $market = $r->param('market');
