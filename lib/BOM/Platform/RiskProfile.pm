@@ -380,7 +380,7 @@ sub get_client_volume_limits {
     my $config = BOM::Config::QuantsConfig->new(
         recorded_date    => Date::Utility->new,
         chronicle_reader => BOM::Config::Chronicle::get_chronicle_reader(),
-    )->get_config("multiplier_config::" . $self->symbol);
+    )->get_multiplier_config($client->landing_company->short, $self->symbol);
 
     if (!$config) {
         warn __PACKAGE__ . " multiplier_config::" . $self->symbol . " NOT FOUND.";
