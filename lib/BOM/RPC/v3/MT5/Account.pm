@@ -179,15 +179,19 @@ sub reset_throttler {
 sub _mt5_group {
     # account_type:     demo|gaming|financial
     # sub_account_type: financial|financial_stp
-    my ($company_name, $account_type, $sub_account_type, $currency) = @_;
+    # account_category: conventional|swap_free|empty for financial_stp
+    my ($company_name, $account_type, $sub_account_type, $currency, $account_category) = @_;
 
     # for Maltainvest if the client uses GBP as currency we should add this to the group name
     my $GBP = ($currency eq 'GBP' and $company_name eq 'maltainvest') ? '_GBP' : '';
 
+    # for backward compatibility purposes, we set $account_category as empty to produce no changes for financial accounts
+    $account_category = defined $account_category && $account_category eq 'swap_free' ? "_${account_category}" : '';
+
     # for demo accounts we recognize company type if sub_account_type is available or not
     if ($account_type eq 'demo') {
-        return "demo\\${company_name}_$sub_account_type${GBP}" if length $sub_account_type;
-        return "demo\\$company_name";
+        return "demo\\${company_name}_${sub_account_type}${account_category}${GBP}" if length $sub_account_type;
+        return "demo\\${company_name}${account_category}";
     } else {
         if ($account_type eq 'financial') {
             $sub_account_type = "_${sub_account_type}";
@@ -197,7 +201,7 @@ sub _mt5_group {
             $sub_account_type .= "_Bbook" if $company_name eq 'svg' and not $app_config->system->mt5->suspend->auto_Bbook_svg_financial;
         }
 
-        return "real\\${company_name}${sub_account_type}${GBP}";
+        return "real\\${company_name}${sub_account_type}${account_category}${GBP}";
     }
 }
 
@@ -212,8 +216,9 @@ async_rpc "mt5_new_account",
     my ($client, $args) = @{$params}{qw/client args/};
 
     # extract request parameters
-    my $account_type     = delete $args->{account_type};
-    my $mt5_account_type = delete $args->{mt5_account_type} // '';
+    my $account_type         = delete $args->{account_type};
+    my $mt5_account_type     = delete $args->{mt5_account_type} // '';
+    my $mt5_account_category = delete $args->{mt5_account_category} // 'conventional';
 
     # input validation
     return create_error_future('SetExistingAccountCurrency') unless $client->default_account;
@@ -221,7 +226,8 @@ async_rpc "mt5_new_account",
     my $invalid_account_type_error = create_error_future('InvalidAccountType');
     return $invalid_account_type_error if (not $account_type or $account_type !~ /^demo|gaming|financial$/);
 
-    $mt5_account_type = '' if $account_type eq 'gaming';
+    $mt5_account_type     = '' if $account_type eq 'gaming';
+    $mt5_account_category = '' if $mt5_account_type eq 'financial_stp' or $mt5_account_category !~ /^swap_free|conventional$/;
 
     my $passwd_validation_err = BOM::RPC::v3::Utility::validate_mt5_password({
         email           => $client->email,
@@ -249,14 +255,17 @@ async_rpc "mt5_new_account",
 
     # demo accounts type determined if this parameter exists or not
     my $company_type = $mt5_account_type eq '' ? 'gaming' : 'financial';
-    my $company_name = $countries_instance->mt_company_for_country(
+    # swap_free is considered as sub account type in config files
+    my $sub_account_type = $mt5_account_category eq 'swap_free' ? $mt5_account_category : $mt5_account_type;
+    my $company_name     = $countries_instance->mt_company_for_country(
         country          => $residence,
         account_type     => $company_type,
-        sub_account_type => $mt5_account_type
+        sub_account_type => $sub_account_type
     );
 
     # MT5 is not allowed in client country
-    return create_error_future('MT5NotAllowed', {params => $company_type}) if $company_name eq 'none';
+    return create_error_future($mt5_account_category eq 'swap_free' ? 'MT5SwapFreeNotAllowed' : 'MT5NotAllowed', {params => $company_type})
+        if $company_name eq 'none';
 
     my $binary_company_name = $countries_list->{$residence}->{"${company_type}_company"};
 
@@ -296,7 +305,7 @@ async_rpc "mt5_new_account",
             override_code => 'ASK_FIX_DETAILS',
             details       => {missing => [@missing_fields]}}) if ($account_type ne "demo" and @missing_fields);
 
-    my $group = _mt5_group($company_name, $account_type, $mt5_account_type, $client->currency);
+    my $group = _mt5_group($company_name, $account_type, $mt5_account_type, $client->currency, $mt5_account_category);
     return create_error_future('permission') if $group eq '';
 
     if ($client->residence eq 'gb' and not $client->status->age_verification) {
@@ -502,7 +511,8 @@ async_rpc "mt5_new_account",
                                     currency        => $args->{currency},
                                     account_type    => $account_type,
                                     agent           => $args->{agent},
-                                    ($mt5_account_type) ? (mt5_account_type => $mt5_account_type) : ()});
+                                    ($mt5_account_category) ? (mt5_account_category => $mt5_account_category) : (),
+                                    ($mt5_account_type)     ? (mt5_account_type     => $mt5_account_type)     : ()});
                         });
                 });
         })->catch($error_handler);
