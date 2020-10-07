@@ -269,7 +269,7 @@ subtest 'get account status' => sub {
                 'prompt for non authenticated MF client'
             );
 
-            $test_client->set_authentication('ID_DOCUMENT')->status('pass');
+            $test_client->set_authentication('ID_DOCUMENT', {status => 'pass'});
             $test_client->status->set("professional");
             $test_client->save;
 
@@ -452,7 +452,7 @@ subtest 'get account status' => sub {
             );
             $test_client_cr->status->clear_withdrawal_locked;
 
-            $test_client_cr->set_authentication('ID_DOCUMENT')->status('needs_action');
+            $test_client_cr->set_authentication('ID_DOCUMENT', {status => 'needs_action'});
             $test_client_cr->save;
             $result = $c->tcall($method, {token => $token_cr});
             cmp_deeply(
@@ -521,7 +521,7 @@ subtest 'get account status' => sub {
             );
             $mocked_status->unmock_all();
 
-            $test_client_cr->set_authentication('ID_DOCUMENT')->status('under_review');
+            $test_client_cr->set_authentication('ID_DOCUMENT', {status => 'under_review'});
             $test_client_cr->save;
             $result = $c->tcall($method, {token => $token_cr});
             cmp_deeply(
@@ -595,8 +595,8 @@ subtest 'get account status' => sub {
             $test_client_cr->aml_risk_classification('low');
             $test_client_cr->save;
 
-            $test_client_cr->status->set('age_verification',      'system', 'age verified');
-            $test_client_cr->status->set('allow_document_upload', 'system', 1);
+            $test_client_cr->status->set('age_verification', 'system', 'age verified');
+            $test_client_cr->status->setnx('allow_document_upload', 'system', 1);
             $test_client_cr->save;
             $result = $c->tcall($method, {token => $token_cr});
             cmp_deeply(
@@ -965,7 +965,7 @@ subtest 'get account status' => sub {
         subtest "fully authenicated" => sub {
             my $mocked_client = Test::MockModule->new(ref($test_client));
             # mark as fully authenticated
-            $test_client->set_authentication('ID_DOCUMENT')->status('pass');
+            $test_client->set_authentication('ID_DOCUMENT', {status => 'pass'});
             $test_client->save;
 
             my $mocked_status = Test::MockModule->new(ref($test_client->status));

@@ -57,10 +57,9 @@ $test_client->set_default_account('USD');
 $test_client->binary_user_id(1);
 $test_client->tax_residence('mt');
 $test_client->tax_identification_number('111222333');
-$test_client->set_authentication('ID_DOCUMENT')->status('pass');
+$test_client->set_authentication('ID_DOCUMENT', {status => 'pass'});
 $test_client->account_opening_reason('nothing');
 $test_client->save;
-
 my $test_client_vr = create_client('VRTC');
 $test_client_vr->email($DETAILS{email});
 $test_client_vr->set_default_account('USD');
@@ -509,9 +508,6 @@ subtest 'mf_withdrawal' => sub {
     $test_mf_client->email($DETAILS{email});
     $test_mf_client->status->clear_age_verification;
 
-    $_->delete for @{$test_mf_client->client_authentication_method};
-    $test_mf_client->save();
-
     $user->add_client($test_mf_client);
 
     my $token_mf = $m->create_token($test_mf_client->loginid, 'test token');
@@ -532,15 +528,13 @@ subtest 'mf_withdrawal' => sub {
 
     my $demo_account_mock = Test::MockModule->new('BOM::RPC::v3::MT5::Account');
     $demo_account_mock->mock('_fetch_mt5_lc', sub { return LandingCompany::Registry::get('maltainvest'); });
-
+    $test_mf_client->set_authentication('ID_DOCUMENT', {status => 'pending'});
     $c->call_ok($method, $params_mf)->has_error('Withdrawal request failed.')
         ->error_code_is('MT5WithdrawalError', 'error code is MT5WithdrawalError')->error_message_like(qr/authenticate/);
 
     my $mocked_client = Test::MockModule->new(ref($test_mf_client));
     $mocked_client->mock('has_valid_documents', sub { 1 });
-
-    $test_mf_client->set_authentication('ID_DOCUMENT')->status('pass');
-    $test_mf_client->save();
+    $test_mf_client->set_authentication('ID_DOCUMENT', {status => 'pass'});
 
     BOM::RPC::v3::MT5::Account::reset_throttler($test_mf_client->loginid);
 
@@ -559,9 +553,6 @@ subtest 'mf_deposit' => sub {
 
     $test_mf_client->email($DETAILS{email});
     $test_mf_client->status->clear_age_verification;
-
-    $_->delete for @{$test_mf_client->client_authentication_method};
-    $test_mf_client->save();
 
     $user->add_client($test_mf_client);
 
@@ -583,15 +574,14 @@ subtest 'mf_deposit' => sub {
 
     my $demo_account_mock = Test::MockModule->new('BOM::RPC::v3::MT5::Account');
     $demo_account_mock->mock('_fetch_mt5_lc', sub { return LandingCompany::Registry::get('maltainvest'); });
-
+    $test_mf_client->set_authentication('ID_DOCUMENT', {status => 'pending'});
     $c->call_ok($method, $params_mf)->has_error('Deposit request failed.')->error_code_is('MT5DepositError', 'error code is MT5DepositError')
         ->error_message_like(qr/authenticate/);
 
     my $mocked_client = Test::MockModule->new(ref($test_mf_client));
     $mocked_client->mock('has_valid_documents', sub { 1 });
 
-    $test_mf_client->set_authentication('ID_DOCUMENT')->status('pass');
-    $test_mf_client->save();
+    $test_mf_client->set_authentication('ID_DOCUMENT', {status => 'pass'});
 
     BOM::RPC::v3::MT5::Account::reset_throttler($test_mf_client->loginid);
 

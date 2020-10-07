@@ -355,7 +355,7 @@ subtest 'landing_companies_specific' => sub {
         ->has_no_system_error->has_error->error_code_is('ASK_AUTHENTICATE', 'MF client needs to be fully authenticated')
         ->error_message_is('Please authenticate your account.', 'MF client needs to be fully authenticated');
 
-    $client_mf->set_authentication('ID_DOCUMENT')->status('pass');
+    $client_mf->set_authentication('ID_DOCUMENT', {status => 'pass'});
     $client_mf->save;
 
     $rpc_ct->call_ok($method, $params)

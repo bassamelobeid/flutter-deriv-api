@@ -541,7 +541,7 @@ subtest $method => sub {
 
         $client_mlt->status->clear_cashier_locked;    # clear locked
 
-        $client_mf->set_authentication('ID_DOCUMENT')->status('pass');
+        $client_mf->set_authentication('ID_DOCUMENT', {status => 'pass'});
         $client_mf->status->set('financial_risk_approval', 'system', 'Accepted approval');
         $client_mf->tax_residence('de');
         $client_mf->tax_identification_number('111-222-333');

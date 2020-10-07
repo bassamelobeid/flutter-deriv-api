@@ -52,7 +52,7 @@ $test_client->email($DETAILS{email});
 $test_client->set_default_account('USD');
 $test_client->binary_user_id(1);
 
-$test_client->set_authentication('ID_DOCUMENT')->status('pass');
+$test_client->set_authentication('ID_DOCUMENT', {status => 'pass'});
 $test_client->save;
 
 my $user = BOM::User->create(

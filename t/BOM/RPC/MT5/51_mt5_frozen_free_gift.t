@@ -48,7 +48,7 @@ subtest 'frozen free gift' => sub {
     $user->add_client($client);
     $client->account('USD');
     $client->tax_identification_number('111222333');
-    $client->set_authentication('ID_DOCUMENT')->status('pass');
+    $client->set_authentication('ID_DOCUMENT', {status => 'pass'});
 
     $client->db->dbic->dbh->do(
         q/insert into betonmarkets.promo_code (code, promo_code_type, promo_code_config, start_date, expiry_date, status, description) 

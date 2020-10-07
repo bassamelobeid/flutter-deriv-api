@@ -562,7 +562,7 @@ subtest 'set settings' => sub {
     mailbox_clear();
     $params->{args}->{email_consent} = 1;
 
-    $test_client->set_authentication('ID_DOCUMENT')->status('pass');
+    $test_client->set_authentication('ID_DOCUMENT', {status => 'pass'});
     $test_client->save;
 
     $params->{args}{tax_identification_number} = '111-222-543';

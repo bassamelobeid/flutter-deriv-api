@@ -35,7 +35,7 @@ $test_client->binary_user_id(1);
 $test_client_vr->email($DETAILS{email});
 $test_client_vr->set_default_account('USD');
 
-$test_client->set_authentication('ID_DOCUMENT')->status('pass');
+$test_client->set_authentication('ID_DOCUMENT', {status => 'pass'});
 $test_client->save;
 
 $test_client_vr->save;
@@ -196,12 +196,11 @@ subtest 'new account dry_run' => sub {
 subtest 'status allow_document_upload is added upon mt5 create account dry_run advanced' => sub {
     my $ID_DOCUMENT = $test_client->get_authentication('ID_DOCUMENT')->status;
 
-    $test_client->set_authentication('ID_DOCUMENT')->status('needs_action');
+    $test_client->set_authentication('ID_DOCUMENT', {status => 'pending'});
     $test_client->tax_residence('mt');
     $test_client->tax_identification_number('111222333');
     $test_client->save;
     ok !$test_client->fully_authenticated, 'Not fully authenticated';
-
     my $method = 'get_account_status';
     my $params = {token => $token};
     $c->call_ok($method, $params);
@@ -230,7 +229,7 @@ subtest 'status allow_document_upload is added upon mt5 create account dry_run a
     $status = $c->result->{status};
     ok(grep(/^allow_document_upload$/, @$status), "There's a allow_document_upload");
 
-    $test_client->set_authentication('ID_DOCUMENT')->status($ID_DOCUMENT);
+    $test_client->set_authentication('ID_DOCUMENT', {status => $ID_DOCUMENT});
     $test_client->save;
 };
 

@@ -1251,7 +1251,7 @@ sub financial_assessment {
 sub authenticate {
     my ($client) = shift;
 
-    $client->set_authentication('ID_DOCUMENT')->status('pass');
+    $client->set_authentication('ID_DOCUMENT', {status => 'pass'});
     $client->save();
 }
 

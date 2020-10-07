@@ -171,7 +171,7 @@ subtest 'CR - USD' => sub {
     # Test for authenticated accounts
     subtest 'authenticated' => sub {
         # Set client status to authenticated and save
-        $client->set_authentication('ID_DOCUMENT')->status('pass');
+        $client->set_authentication('ID_DOCUMENT', {status => 'pass'});
         $client->save;
 
         $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_auth_result, 'result is ok for fully authenticated client');
@@ -266,7 +266,7 @@ subtest 'CR-EUR' => sub {
     # Test for authenticated accounts
     subtest 'authenticated' => sub {
         # Set client status to authenticated and save
-        $client->set_authentication('ID_DOCUMENT')->status('pass');
+        $client->set_authentication('ID_DOCUMENT', {status => 'pass'});
         $client->save;
         # Set expected results to reflect withdrawn amount of EUR 1000
         my $expected_result = {
@@ -372,7 +372,7 @@ subtest 'CR-BTC' => sub {
     # Test for authenticated accounts
     subtest 'authenticated' => sub {
         # Set client status to authenticated and save
-        $client->set_authentication('ID_DOCUMENT')->status('pass');
+        $client->set_authentication('ID_DOCUMENT', {status => 'pass'});
         $client->save;
         # Set expected results to reflect withdrawn amount of BTC 1.00000000
         my $expected_result = {
@@ -465,7 +465,7 @@ subtest 'MLT' => sub {
     # Test for authenticated accounts
     subtest 'authenticated' => sub {
         # Set client status to authenticated and save
-        $client->set_authentication('ID_DOCUMENT')->status('pass');
+        $client->set_authentication('ID_DOCUMENT', {status => 'pass'});
         $client->save;
         # Set expected results to reflect withdrawn amount of USD 1000
         my $expected_result = {
@@ -559,7 +559,7 @@ subtest 'MX' => sub {
     # Test for authenticated accounts
     subtest 'authenticated' => sub {
         # Set client status to authenticated and save
-        $client->set_authentication('ID_DOCUMENT')->status('pass');
+        $client->set_authentication('ID_DOCUMENT', {status => 'pass'});
         $client->save;
         # Set expected results to reflect withdrawn amount of USD 1000
         my $expected_result = {

@@ -11,6 +11,7 @@ use Email::Valid;
 use BOM::Platform::Context qw (localize);
 use Crypt::NamedKeys;
 Crypt::NamedKeys::keyfile '/etc/rmg/aes_keys.yml';
+use Log::Any qw($log);
 
 use BOM::RPC::Registry '-dsl';
 
@@ -408,7 +409,12 @@ rpc new_account_real => sub {
         try { $new_client->status->set('max_turnover_limit_not_set', 'system', 'new GB client or MLT client - have to set turnover limit') }
         catch { return BOM::RPC::v3::Utility::client_error() }
     }
-
+    try {
+        $new_client->sync_authentication_from_siblings;
+    } catch ($error) {
+        $log->errorf('Failed to sync authentication for client %s: %s', $new_client->loginid, $error);
+        return BOM::RPC::v3::Utility::client_error()
+    };
     BOM::User::AuditLog::log("successful login", "$client->email");
     BOM::User::Client::PaymentNotificationQueue->add(
         source        => 'real',
@@ -513,7 +519,11 @@ rpc new_account_maltainvest => sub {
         return BOM::RPC::v3::Utility::client_error();
 
     }
-
+    try {
+        $new_client->sync_authentication_from_siblings;
+    } catch {
+        return BOM::RPC::v3::Utility::client_error()
+    };
     $error = BOM::RPC::v3::Utility::set_professional_status($new_client, $professional_status, $professional_requested);
 
     return $error if $error;

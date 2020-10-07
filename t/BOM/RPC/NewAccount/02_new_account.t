@@ -445,7 +445,7 @@ subtest $method => sub {
 
         is $cl_usd->authentication_status, 'no', 'Client is not authenticated yet';
 
-        $cl_usd->set_authentication('ID_DOCUMENT')->status('pass');
+        $cl_usd->set_authentication('ID_DOCUMENT', {status => 'pass'});
         $cl_usd->save;
 
         is $cl_usd->authentication_status, 'scans', 'Client is fully authenticated with scans';
@@ -764,10 +764,12 @@ subtest $method => sub {
                 secret_answer            => BOM::User::Utility::encrypt_secret_answer('mysecretanswer'),
                 non_pep_declaration_time => '2020-01-02',
             });
+            $client_mlt->set_authentication('ID_DOCUMENT', {status => 'pass'});
+            $client_mlt->save;
             $auth_token = BOM::Platform::Token::API->new->create_token($client_mlt->loginid, 'test token');
             $user->add_client($client);
             $user->add_client($client_mlt);
-            $client_mlt->status->set('age_verification', 'system', 'Age verified client');
+            $client_mlt->status->setnx('age_verification', 'system', 'Age verified client');
         }
         'Initial users and clients';
     };
@@ -811,6 +813,7 @@ subtest $method => sub {
             subject => qr/\Qhas submitted the assessment test\E/
         );
         ok($msg, "Risk disclosure email received");
+        is $cl->get_authentication('ID_DOCUMENT')->status, "pass", 'authentication method should be updated upon signup between MLT and MF';
         ok $cl->status->age_verification, 'age verification synced between mlt and mf.';
         is $cl->non_pep_declaration_time, $fixed_time->datetime_yyyymmdd_hhmmss,
             'non_pep_declaration_time is auto-initialized with no non_pep_delclaration in args';
