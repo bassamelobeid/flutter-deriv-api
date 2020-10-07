@@ -1353,8 +1353,44 @@ subtest 'get account status' => sub {
                 'correct authenication object for unauthenticated client'
             );
         };
-    };
 
+        subtest 'shared payment method' => sub {
+            $test_client_cr->status->clear_age_verification;
+            $test_client_cr->status->set('shared_payment_method');
+            $test_client_cr->status->set('cashier_locked');
+
+            my $result = $c->tcall($method, {token => $token_cr});
+            cmp_deeply(
+                $result,
+                {
+                    currency_config => {
+                        "USD" => {
+                            is_deposit_suspended    => 0,
+                            is_withdrawal_suspended => 0,
+                        }
+                    },
+                    status                        => superbagof(qw(cashier_locked shared_payment_method)),
+                    risk_classification           => 'low',
+                    prompt_client_to_authenticate => 0,
+                    authentication                => {
+                        document => {
+                            status                        => "none",
+                            further_resubmissions_allowed => 0,
+                        },
+                        identity => {
+                            status                        => "none",
+                            further_resubmissions_allowed => 0,
+                            services                      => {
+                                onfido => {
+                                    is_country_supported => 1,
+                                    documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport']}}
+                        },
+                        needs_verification => ["identity"]}
+                },
+                'correct authenication object for shared_payment_method client'
+            );
+        };
+    };
 };
 
 my $test_client_onfido = BOM::Test::Data::Utility::UnitTestDatabase::create_client({

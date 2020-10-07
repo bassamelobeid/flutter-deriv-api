@@ -1003,6 +1003,11 @@ sub _get_authentication {
         $needs_verification_hash{identity} = 'identity' if $authentication_object->{identity}->{status} eq 'none';
     }
 
+    # If shared payment method, the POI is required
+    if ($client->status->shared_payment_method) {
+        $needs_verification_hash{identity} = 'identity';
+    }
+
     $authentication_object->{needs_verification} = [sort keys %needs_verification_hash];
     return $authentication_object;
 }
