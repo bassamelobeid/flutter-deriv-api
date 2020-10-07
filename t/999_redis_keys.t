@@ -9,8 +9,7 @@ my @redis = qw(redis_replicated_read redis_replicated_write redis_pricer);
 
 for my $server (@redis) {
     my $redis = BOM::Config::Redis->can($server)->();
-
-    is_within_threshold $server, $redis->info();
+    is_within_threshold $server, $redis;
 }
 
 done_testing;
