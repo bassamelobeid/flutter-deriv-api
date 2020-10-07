@@ -162,7 +162,7 @@ expected_result:
       commission_markup: 0.025
       duration: 8d
       price_engine: Pricing::Engine::EuropeanDigitalSlope
-      risk_markup: 0.00734256622528749
+      risk_markup: 0.0073
       spot: 6685.31
       theo_prob: 0.536771308479828
       total_markup: 0.0328
@@ -258,9 +258,9 @@ expected_result:
       commission_markup: 0.035
       duration: 8d
       price_engine: Pricing::Engine::EuropeanDigitalSlope
-      risk_markup: 0.00729727971182444
+      risk_markup: 0.0071
       spot: 1.3803
-      theo_prob: 0.425139330472577
+      theo_prob: 0.4262
       total_markup: 0.0291
     EXPIRYRANGE:
       ask_prob: 0.8056
@@ -292,7 +292,7 @@ expected_result:
       price_engine: BOM::Product::Pricing::Engine::VannaVolga::Calibrated
       risk_markup: 0.0131524473152999
       spot: 1.3803
-      theo_prob: 0.2420
+      theo_prob: 0.2424
       total_markup: 0.0385
   frxUSDJPY:
     CALL:
@@ -312,9 +312,9 @@ expected_result:
       commission_markup: 0.035
       duration: 8d
       price_engine: Pricing::Engine::EuropeanDigitalSlope
-      risk_markup: 0.0299560518196085
+      risk_markup: 0.0296
       spot: 102.454
-      theo_prob: 0.585699420604664
+      theo_prob: 0.5814
       total_markup: 0.0489
     NOTOUCH:
       ask_prob: 0.3544
@@ -322,9 +322,9 @@ expected_result:
       commission_markup: 0.035
       duration: 12d
       price_engine: BOM::Product::Pricing::Engine::VannaVolga::Calibrated
-      risk_markup: 0.0208152957576505
+      risk_markup: 0.0206
       spot: 102.454
-      theo_prob: 0.3443
+      theo_prob: 0.3414
       total_markup: 0.0425
     RANGE:
       ask_prob: 0.2729
@@ -333,9 +333,9 @@ expected_result:
       commission_markup: 0.035
       duration: 7d
       price_engine: BOM::Product::Pricing::Engine::VannaVolga::Calibrated
-      risk_markup: 0.0548749519196148
+      risk_markup: 0.0544
       spot: 102.454
-      theo_prob: 0.2835
+      theo_prob: 0.2807
       total_markup: 0.0784
 index:
   OTC_FCHI:

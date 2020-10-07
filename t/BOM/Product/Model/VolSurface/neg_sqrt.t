@@ -82,9 +82,9 @@ subtest 'no negative square root error' => sub {
     is $number_of_days, 0.255497685185185, 'Correct number of days';
 
     my $smile = $surface->get_smile($from, $to);
-    is $smile->{25}, 0.0600873459163785, 'Smile for delta 25 is correct.';
-    is $smile->{50}, 0.060705607996547,  'Smile for delta 50 is correct.';
-    is $smile->{75}, 0.0634877873573053, 'Smile for delta 75 is correct.';
+    ok abs($smile->{25} - 0.0600873459163784) < 1e-8, 'Smile for delta 25 is correct.';
+    ok abs($smile->{50} - 0.060705607996547) < 1e-8,  'Smile for delta 50 is correct.';
+    ok abs($smile->{75} - 0.0634877873573053) < 1e-8, 'Smile for delta 75 is correct.';
 
 };
 
