@@ -46,7 +46,8 @@
                      "lookback",
                      "highlowticks",
                      "reset",
-                     "runs"
+                     "runs",
+                     "multiplier"
                   ],
                   "type" : "string"
                },

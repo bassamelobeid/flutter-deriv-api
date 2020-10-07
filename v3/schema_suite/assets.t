@@ -46,7 +46,7 @@ test_sendrecv_params 'active_symbols/test_send.json', 'active_symbols/test_recei
 #     'full';
 
 test_sendrecv_params 'active_symbols/test_send_lc.json', 'active_symbols/test_receive_lc.json', 'malta',       'synthetic_index', '.*';
-test_sendrecv_params 'active_symbols/test_send_lc.json', 'active_symbols/test_receive_lc.json', 'maltainvest', '',                '';
+test_sendrecv_params 'active_symbols/test_send_lc.json', 'active_symbols/test_receive_lc.json', 'maltainvest', 'forex', 'major_pairs';
 
 test_sendrecv 'asset_index/test_send.json',    'asset_index/test_receive.json';
 test_sendrecv 'trading_times/test_send.json',  'trading_times/test_receive.json';

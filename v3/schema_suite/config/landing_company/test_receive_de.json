@@ -16,10 +16,10 @@
                "properties" : {
                   "legal_allowed_markets" : {
                      "items" : {
-                        "pattern" : "^(commodities|forex|indices)$",
+                        "pattern" : "^forex$",
                         "type" : "string"
                      },
-                     "minItems" : 3,
+                     "minItems" : 1,
                      "type" : "array"
                   },
                   "legal_allowed_currencies" : {
@@ -31,11 +31,11 @@
                      }
                   },
                   "legal_allowed_contract_categories" : {
-                     "minItems" : 6,
+                     "minItems" : 1,
                      "type" : "array",
                      "items" : {
                         "type" : "string",
-                        "pattern" : "^(asian|callput|callputequal|digits|endsinout|staysinout|touchnotouch|callputspread)$"
+                        "pattern" : "^multiplier$"
                      }
                   },
                   "address" : {

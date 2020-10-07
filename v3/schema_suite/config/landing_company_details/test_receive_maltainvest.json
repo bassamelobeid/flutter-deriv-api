@@ -55,18 +55,18 @@
             },
             "legal_allowed_contract_categories" : {
                "type" : "array",
-               "minItems" : 6,
+               "minItems" : 1,
                "items" : {
                   "type" : "string",
-                  "pattern" : "^(asian|callput|digits|endsinout|staysinout|touchnotouch|callputspread|callputequal)$"
+                  "pattern" : "^multiplier$"
                }
             },
             "legal_allowed_markets" : {
                "items" : {
                   "type" : "string",
-                  "pattern" : "^(commodities|forex|indices)$"
+                  "pattern" : "^forex$"
                },
-               "minItems" : 3,
+               "minItems" : 1,
                "type" : "array"
             },
             "legal_allowed_currencies" : {
