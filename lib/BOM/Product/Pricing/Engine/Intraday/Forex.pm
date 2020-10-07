@@ -14,7 +14,6 @@ use VolSurface::Utils qw( get_delta_for_strike );
 use Math::Function::Interpolator;
 use Finance::Exchange;
 use BOM::Config::Runtime;
-use BOM::Config::QuantsConfig;
 use BOM::Config::Chronicle;
 use Pricing::Engine::BlackScholes;
 use Pricing::Engine::Markup::EconomicEventsSpotRisk;

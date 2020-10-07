@@ -9,8 +9,6 @@ use List::Util qw(max min);
 use Scalar::Util::Numeric qw(isint);
 use Format::Util::Numbers qw(financialrounding);
 use BOM::Config;
-use BOM::Config::QuantsConfig;
-use BOM::Config::Chronicle;
 
 my $ERROR_MAPPING = BOM::Product::Static::get_error_mapping();
 
@@ -97,7 +95,7 @@ Validate if the limit order placed is valid.
 =cut
 
 sub is_valid {
-    my ($self, $pnl, $currency, $pricing_new) = @_;
+    my ($self, $pnl, $currency, $pricing_new, $stop_out_level) = @_;
 
     $pricing_new //= 0;
     # undef if we want to cancel and it should always be valid
@@ -113,7 +111,7 @@ sub is_valid {
     die 'current pnl is undefined' unless defined $pnl;
 
     my $validation_method = '_validate_' . $self->order_type;
-    if (my $error = $self->$validation_method($pnl, $currency, $pricing_new)) {
+    if (my $error = $self->$validation_method($pnl, $currency, $pricing_new, $stop_out_level)) {
         $self->validation_error($error);
         return 0;
     }
@@ -141,7 +139,7 @@ sub _validate_stop_out {
 }
 
 sub _validate_stop_loss {
-    my ($self, $total_pnl, $currency, $pricing_new) = @_;
+    my ($self, $total_pnl, $currency, $pricing_new, $stop_out_level) = @_;
 
     my $amount           = $self->order_amount;
     my $details          = {field => $self->order_type};
@@ -155,9 +153,10 @@ sub _validate_stop_loss {
         };
     }
 
+    die unless defined $stop_out_level;
     # capping stop loss at stop out amount. This cannot be capped at stake because
     # stop out level can be adjusted to be any percentage of stake (E.g. 90% of stake) from the backoffice.
-    my $cap_amount = $self->stake * (1 - $self->_multiplier_config->{stop_out_level} / 100);
+    my $cap_amount = $self->stake * (1 - $stop_out_level / 100);
     if (defined $amount and abs($amount) > $cap_amount) {
         return {
             message           => 'stop loss too high',
@@ -250,23 +249,6 @@ has [qw(validation_error)] => (
     init_arg => undef,
     default  => undef,
 );
-
-has _multiplier_config => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
-sub _build__multiplier_config {
-    my $self = shift;
-
-    my $for_date = $self->underlying->for_date;
-    my $qc       = BOM::Config::QuantsConfig->new(
-        for_date         => $for_date,
-        chronicle_reader => BOM::Config::Chronicle::get_chronicle_reader($for_date),
-    );
-
-    return $qc->get_config('multiplier_config::' . $self->underlying->symbol) // {};
-}
 
 no Moose;
 __PACKAGE__->meta->make_immutable;

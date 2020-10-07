@@ -19,7 +19,7 @@ use BOM::Config::Chronicle;
 sub decorate {
     my $args = shift;
 
-    my ($underlying, $offerings, $now, $calendar) = @{$args}{'underlying', 'offerings', 'date', 'calendar'};
+    my ($underlying, $offerings, $now, $calendar, $lc_short) = @{$args}{'underlying', 'offerings', 'date', 'calendar', 'landing_company_short'};
 
     my $exchange            = $underlying->exchange;
     my @inefficient_periods = @{$underlying->forward_inefficient_periods // []};
@@ -71,9 +71,9 @@ sub decorate {
             $o->{barriers} = 1;
         }
 
-        if ($contract_category eq 'multiplier') {
-            $o->{multiplier_range}   = _get_multiplier_config($underlying->symbol, 'multiplier_range');
-            $o->{cancellation_range} = _get_multiplier_config($underlying->symbol, 'cancellation_duration_range');
+        if ($contract_category eq 'multiplier' and my $config = _get_multiplier_config($lc_short, $underlying->symbol)) {
+            $o->{multiplier_range}   = $config->{multiplier_range};
+            $o->{cancellation_range} = $config->{cancellation_duration_range};
         }
         # The reason why we have to append 't' to tick expiry duration
         # is because in the backend it is easier to handle them if the
@@ -175,12 +175,12 @@ sub _default_barrier {
 }
 
 sub _get_multiplier_config {
-    my ($symbol, $type) = @_;
+    my ($lc_short, $symbol) = @_;
 
-    my $config = BOM::Config::QuantsConfig->new(chronicle_reader => BOM::Config::Chronicle::get_chronicle_reader())
-        ->get_config('multiplier_config::' . $symbol) // {};
+    my $qc     = BOM::Config::QuantsConfig->new(chronicle_reader => BOM::Config::Chronicle::get_chronicle_reader());
+    my $config = $qc->get_multiplier_config($lc_short, $symbol) // {};
 
-    return $config->{$type};
+    return $config;
 }
 
 1;

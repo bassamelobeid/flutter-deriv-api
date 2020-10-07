@@ -324,7 +324,7 @@ subtest 'stop loss cap' => sub {
     is $c->primary_validation_error->message_to_client->[0], 'Invalid stop loss. Stop loss cannot be more than [_1].';
     is $c->primary_validation_error->message_to_client->[1], '10.00';
 
-    my $mocked_lo = Test::MockModule->new('BOM::Product::LimitOrder');
+    my $mocked_lo = Test::MockModule->new('BOM::Product::Contract::Multup');
     $mocked_lo->mock(
         '_multiplier_config',
         sub {

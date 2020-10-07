@@ -68,7 +68,7 @@ my %file_details = (
     },
     multup => {
         filename => module_path('BOM::Product::Contract::Multup'),
-        hash     => '98305d6165103883412d2b920b3c1acf430b65c9'
+        hash     => '51a5934d9d2337566fb40318fe1fd7824a445462'
     },
     multdown => {
         filename => module_path('BOM::Product::Contract::Multdown'),

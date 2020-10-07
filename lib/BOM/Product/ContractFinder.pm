@@ -43,9 +43,10 @@ sub _get_contracts {
     }
 
     my $deco_args = {
-        underlying => $underlying,
-        calendar   => $calendar,
-        date       => $date
+        underlying            => $underlying,
+        calendar              => $calendar,
+        date                  => $date,
+        landing_company_short => $landing_company_short,
     };
     if ($product_type eq 'basic') {
         $deco_args->{offerings} = _get_basic_offerings($symbol, $landing_company_short, $country_code);

@@ -799,6 +799,12 @@ sub cancellation_price {
     return financialrounding('price', $self->currency, $self->cancellation_cv->amount);
 }
 
+sub stop_out_level {
+    my $self = shift;
+
+    return $self->_multiplier_config->{stop_out_level};
+}
+
 ### PRIVATE METHODS ###
 
 sub _validation_methods {
@@ -928,7 +934,7 @@ sub _validate_orders {
         }
 
         my $pnl = $self->pricing_new ? -1 * $self->commission_amount : $self->total_pnl;
-        if (not $self->stop_loss->is_valid($pnl, $self->currency, $self->pricing_new)) {
+        if (not $self->stop_loss->is_valid($pnl, $self->currency, $self->pricing_new, $self->stop_out_level)) {
             return $self->stop_loss->validation_error;
         }
     }
@@ -1028,7 +1034,17 @@ sub _build__multiplier_config {
         chronicle_reader => BOM::Config::Chronicle::get_chronicle_reader($for_date),
     );
 
-    return $qc->get_config('multiplier_config::' . $self->underlying->symbol) // {};
+    my $config = $qc->get_multiplier_config($self->landing_company, $self->underlying->symbol);
+
+    return $config if $config;
+
+    $self->_add_error({
+        message           => 'multiplier config undefined for ' . $self->underlying->symbol,
+        message_to_client => $ERROR_MAPPING->{InvalidInputAsset},
+    });
+
+    # return config for R_100 to avoid warnings but contract will not go through because of validation error
+    return $qc->get_multiplier_config('common', 'R_100');
 }
 
 sub _limit_order_args {

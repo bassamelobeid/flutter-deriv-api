@@ -14,7 +14,6 @@ use YAML::XS qw(LoadFile);
 use Math::Util::CalculatedValue::Validatable;
 
 use BOM::Product::Exception;
-use BOM::Config::QuantsConfig;
 use BOM::Config;
 
 use constant {
