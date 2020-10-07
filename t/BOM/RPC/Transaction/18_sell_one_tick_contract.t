@@ -1,9 +1,10 @@
 use strict;
 use warnings;
 
-use Test::MockTime::HiRes qw(set_absolute_time);
+use Test::MockTime::HiRes qw(set_absolute_time restore_time);
 use Test::Most;
 use Test::Mojo;
+use Test::MockModule;
 
 use BOM::Test::RPC::Client;
 
@@ -76,7 +77,18 @@ subtest 'Sell one tick contract' => sub {
 
     my $start_time = time;
     set_absolute_time($start_time);
-    my $start = Date::Utility->new($start_time);
+
+    my $mock_du = Test::MockModule->new('Date::Utility');
+    $mock_du->mock(
+        'new',
+        sub {
+            # Sometimes `time` unsyncs from what's been set with `set_absolute_time`
+            # Somewhat hackish, but it works!
+            set_absolute_time($start_time) while ($start_time != time);
+            return $mock_du->original('new')->(@_);
+        });
+
+    my $start = Date::Utility->new;
 
     initialize_realtime_ticks_db();
     BOM::Test::Data::Utility::UnitTestMarketData::create_doc('currency', {symbol => $_}) for qw(USD);
@@ -141,7 +153,9 @@ subtest 'Sell one tick contract' => sub {
         'Should not be sold at the same second even future tick is exist'
     );
 
-    set_absolute_time($start_time + 1);
+    $start_time += 1;
+    set_absolute_time($start_time);
+
     $rpc_ct->call_ok(@params)->result_is_deeply({
             count => 1,
             stash => {
@@ -152,6 +166,9 @@ subtest 'Sell one tick contract' => sub {
         },
         'Now its ready to be sold'
     );
+
+    $mock_du->unmock_all;
+    restore_time();
 };
 
 done_testing();
