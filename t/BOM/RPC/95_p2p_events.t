@@ -152,4 +152,32 @@ subtest 'p2p order create and cancel' => sub {
         'cancellation event args are correct';
 };
 
+subtest 'Order dispute (type buy)' => sub {
+    my ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert(type => 'sell');
+    my ($client,     $order)  = BOM::Test::Helper::P2P::create_order(advert_id => $advert->{id});
+
+    my $client_token     = BOM::Platform::Token::API->new->create_token($client->loginid,     'test token');
+    my $advertiser_token = BOM::Platform::Token::API->new->create_token($advertiser->loginid, 'test token2');
+    BOM::Test::Helper::P2P::set_order_disputable($client, $order->{id});
+
+    my $params;
+    $params->{client} = $client;
+    $params->{args}   = {
+        id             => $order->{id},
+        dispute_reason => 'seller_not_released',
+    };
+
+    undef @emit_args;
+    my $result = BOM::RPC::v3::P2P::p2p_order_dispute($params);
+    is scalar @emit_args, 2, 'emitter is called';
+    is $emit_args[0], 'p2p_order_updated', 'emitted event name is correct';
+    is_deeply $emit_args[1],
+        {
+        client_loginid => $client->loginid,
+        order_id       => $order->{id},
+        order_event    => 'dispute',
+        },
+        'dispute event args are correct';
+};
+
 done_testing()
