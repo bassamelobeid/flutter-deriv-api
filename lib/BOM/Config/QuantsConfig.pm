@@ -33,6 +33,11 @@ use Finance::Underlying;
 
 use BOM::Config::Runtime;
 
+use constant {
+    CONFIG_NAMESPACE  => 'quants_config',
+    MULTIPLIER_CONFIG => 'multiplier_config',
+};
+
 my $default_multiplier_config = LoadFile('/home/git/regentmarkets/bom-config/share/default_multiplier_config.yml');
 
 has [qw(chronicle_reader chronicle_writer)] => (is => 'ro');
@@ -41,8 +46,6 @@ has [qw(recorded_date for_date)] => (
     is      => 'ro',
     default => undef,
 );
-
-my $namespace = 'quants_config';
 
 =head2 save_config
 
@@ -58,7 +61,7 @@ sub save_config {
     my $method = '_' . $config_type;
     my $config = $self->can($method) ? $self->$method($args) : $args;
 
-    $self->chronicle_writer->set($namespace, $config_type, $config, $self->recorded_date);
+    $self->chronicle_writer->set(CONFIG_NAMESPACE, $config_type, $config, $self->recorded_date);
 
     return $config->{$args->{name}} if $args->{name};
     return $config;
@@ -68,7 +71,7 @@ sub _commission {
     my ($self, $args) = @_;
 
     my %args            = %$args;
-    my $existing_config = $self->chronicle_reader->get($namespace, 'commission') // {};
+    my $existing_config = $self->chronicle_reader->get(CONFIG_NAMESPACE, 'commission') // {};
 
     my $identifier = $args{name} || die 'name is required';
     die 'name should only contain words and integers' unless $identifier =~ /^([A-Za-z0-9]+ ?)*$/;
@@ -136,27 +139,55 @@ sub get_config {
     my ($self, $config_type, $args) = @_;
 
     my $method          = $self->for_date ? 'get_for' : 'get';
-    my $existing_config = $self->chronicle_reader->$method($namespace, $config_type, $self->for_date) // {};
+    my $existing_config = $self->chronicle_reader->$method(CONFIG_NAMESPACE, $config_type, $self->for_date) // {};
 
     # custom commission requires some special treatment.
-    return $self->_process_commission($existing_config, $args)                      if $config_type eq 'commission';
-    return $self->_process_multiplier_config($existing_config, $config_type, $args) if $config_type =~ /multiplier_config/;
+    return $self->_process_commission($existing_config, $args) if $config_type eq 'commission';
     return $existing_config;
 }
 
-sub _process_multiplier_config {
-    my ($self, $existing_config, $config_type, $args) = @_;
+=head2 get_multiplier_config
 
-    my (undef, $symbol) = split '::', $config_type;
-    my $default = $default_multiplier_config->{$symbol};
+Get config for multiplier options for a specific landing company and underlying symbol.
 
-    if (%$existing_config) {
-        return {%$default, %$existing_config} if scalar(keys %$default) != scalar(keys %$existing_config);
-        return $existing_config;
+->get_multiplier_config('maltainvest', 'frxUSDJPY');
+
+Returns a hash reference.
+
+=cut
+
+sub get_multiplier_config {
+    my ($self, $landing_company_short, $underlying_symbol) = @_;
+
+    my ($default_config, $cache_key);
+
+    # landing company can be undefined if user is not logged in
+    if (defined $landing_company_short and my $config = $default_multiplier_config->{$landing_company_short}) {
+        $default_config = $config->{$underlying_symbol};
+        $cache_key      = $landing_company_short;
+    } else {
+        $cache_key      = 'common';
+        $default_config = $default_multiplier_config->{$cache_key}{$underlying_symbol};
     }
 
-    # if there's no existing config in chronicle, loads it from default yaml file.
-    return $default;
+    my $redis_key       = join('::', MULTIPLIER_CONFIG, $cache_key, $underlying_symbol);
+    my $method          = $self->for_date ? 'get_for' : 'get';
+    my $existing_config = $self->chronicle_reader->$method(CONFIG_NAMESPACE, $redis_key, $self->for_date);
+
+    return $default_config unless $existing_config;
+
+    # sometimes we add something new to the yaml file without updating the cache.
+    return {%$default_config, %$existing_config};
+}
+
+=head2 get_multiplier_config_default
+
+Returns the default multiplier config defined in yaml.
+
+=cut
+
+sub get_multiplier_config_default {
+    return $default_multiplier_config;
 }
 
 sub _process_commission {
@@ -215,12 +246,12 @@ Deletes config base on config_type and name
 sub delete_config {
     my ($self, $config_type, $name) = @_;
 
-    my $existing_config = $self->chronicle_reader->get($namespace, $config_type) // {};
+    my $existing_config = $self->chronicle_reader->get(CONFIG_NAMESPACE, $config_type) // {};
 
     die 'config does not exist config_type [' . $config_type . '] name [' . $name . ']' unless $existing_config->{$name};
 
     my $deleted = delete $existing_config->{$name};
-    $self->chronicle_writer->set($namespace, $config_type, $existing_config, Date::Utility->new);
+    $self->chronicle_writer->set(CONFIG_NAMESPACE, $config_type, $existing_config, Date::Utility->new);
 
     return $deleted;
 }
