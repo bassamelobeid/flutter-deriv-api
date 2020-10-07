@@ -139,9 +139,11 @@ subtest 'failing the refund' => sub {
 };
 
 subtest 'segment tracking' => sub {
-    my $emit_mock  = Test::MockModule->new('BOM::Platform::Event::Emitter');
-    my $p2p_mock   = Test::MockModule->new('BOM::Event::Actions::P2P');
-    my $track_mock = Test::MockModule->new('BOM::Event::Services::Track');
+    my $emit_mock    = Test::MockModule->new('BOM::Platform::Event::Emitter');
+    my $p2p_mock     = Test::MockModule->new('BOM::Event::Actions::P2P');
+    my $track_mock   = Test::MockModule->new('BOM::Event::Services::Track');
+    my $mock_segment = Test::MockModule->new('WebService::Async::Segment::Customer');
+    my @segment_args;
     my $mock_args;
     my $track_args;
     my @track_event_args;
@@ -166,6 +168,13 @@ subtest 'segment tracking' => sub {
             # Note the event must fire two `track_events`, one for each party
             push @track_event_args, {@_};
             return $track_mock->original('track_event')->(@_);
+        });
+
+    $mock_segment->mock(
+        'track',
+        sub {
+            push @segment_args, [@_];
+            return $mock_segment->original('track')->(@_);
         });
 
     my $escrow = BOM::Test::Helper::P2P::create_escrow();
@@ -215,6 +224,7 @@ subtest 'segment tracking' => sub {
 
     my @expected_track_event_args = ({
             event      => 'p2p_order_timeout_refund',
+            loginid    => $client->loginid,
             properties => {
                 user_role       => 'buyer',
                 order_type      => 'buy',
@@ -233,6 +243,7 @@ subtest 'segment tracking' => sub {
         },
         {
             event      => 'p2p_order_timeout_refund',
+            loginid    => $advertiser->loginid,
             properties => {
                 user_role       => 'seller',
                 order_type      => 'buy',
@@ -248,13 +259,16 @@ subtest 'segment tracking' => sub {
                 amount          => $order->{amount},
             }});
 
-    cmp_deeply $track_event_args[0], $expected_track_event_args[0], 'Track event params are looking good for buyer';
-    cmp_deeply $track_event_args[1], $expected_track_event_args[1], 'Track event params are looking good for seller';
+    cmp_deeply $track_event_args[0], superhashof($expected_track_event_args[0]), 'Track event params are looking good for buyer';
+    cmp_deeply $track_event_args[1], superhashof($expected_track_event_args[1]), 'Track event params are looking good for seller';
+    is scalar @segment_args, 2, 'Two segments tracks fired';
+    is $_->[2], 'p2p_order_timeout_refund', 'p2p order timeout refund sent' foreach @segment_args;
 
     BOM::Test::Helper::P2P::reset_escrow();
     $emit_mock->unmock_all;
     $p2p_mock->unmock_all;
     $track_mock->unmock_all;
+    $mock_segment->unmock_all;
 };
 
 done_testing();

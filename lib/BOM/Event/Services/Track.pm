@@ -63,6 +63,9 @@ my %EVENT_PROPERTIES = (
     p2p_order_cancelled => [qw(loginid  user_role order_type  order_id amount currency buyer_user_id buyer_nickname seller_user_id seller_nickname )],
     p2p_order_expired =>
         [qw(loginid user_role order_type  order_id amount currency buyer_has_confirmed seller_user_id seller_nickname buyer_user_id buyer_nickname)],
+    p2p_order_dispute => [
+        qw(dispute_reason disputer loginid user_role order_type  order_id amount currency buyer_has_confirmed seller_user_id seller_nickname buyer_user_id buyer_nickname)
+    ],
     p2p_order_timeout_refund => [
         qw(loginid user_role order_type  order_id amount currency exchange_rate local_currency seller_user_id seller_nickname buyer_user_id buyer_nickname)
     ],
@@ -439,13 +442,12 @@ sub p2p_order_created {
         event      => 'p2p_order_created',
         loginid    => $parties->{advertiser}->loginid,
         properties => {
-            loginid    => $parties->{advertiser}->loginid,
-            user_role  => 'advertiser',
-            order_type => $order->{type},
-            order_id   => $order->{id},
-            amount     => $order->{amount_display},
-            currency   => $order->{account_currency},
-
+            loginid             => $parties->{advertiser}->loginid,
+            user_role           => 'advertiser',
+            order_type          => $order->{type},
+            order_id            => $order->{id},
+            amount              => $order->{amount_display},
+            currency            => $order->{account_currency},
             advertiser_nickname => $parties->{advertiser_nickname},
             advertiser_user_id  => $parties->{advertiser}->{binary_user_id},
             client_nickname     => $parties->{client_nickname} // '',
@@ -460,19 +462,8 @@ sub p2p_order_buyer_has_paid {
     return track_event(
         event      => 'p2p_order_buyer_has_paid',
         loginid    => $parties->{seller}->loginid,
-        properties => {
-            loginid    => $parties->{seller}->loginid,
-            user_role  => 'seller',
-            order_type => $order->{type},
-            order_id   => $order->{id},
-            amount     => $order->{amount_display},
-            currency   => $order->{account_currency},
-
-            seller_user_id  => $parties->{seller}->{binary_user_id},
-            seller_nickname => $parties->{seller_nickname} // '',
-            buyer_user_id   => $parties->{buyer}->{binary_user_id},
-            buyer_nickname  => $parties->{buyer_nickname} // '',
-        });
+        properties => _p2p_properties($order, $parties, 'seller'),
+    );
 }
 
 sub p2p_order_seller_has_released {
@@ -482,19 +473,8 @@ sub p2p_order_seller_has_released {
     return track_event(
         event      => 'p2p_order_seller_has_released',
         loginid    => $parties->{buyer}->loginid,
-        properties => {
-            loginid    => $parties->{buyer}->loginid,
-            user_role  => 'buyer',
-            order_type => $order->{type},
-            order_id   => $order->{id},
-            amount     => $order->{amount_display},
-            currency   => $order->{account_currency},
-
-            seller_user_id  => $parties->{seller}->{binary_user_id},
-            seller_nickname => $parties->{seller_nickname} // '',
-            buyer_user_id   => $parties->{buyer}->{binary_user_id},
-            buyer_nickname  => $parties->{buyer_nickname} // '',
-        });
+        properties => _p2p_properties($order, $parties, 'buyer'),
+    );
 }
 
 sub p2p_order_cancelled {
@@ -504,19 +484,8 @@ sub p2p_order_cancelled {
     return track_event(
         event      => 'p2p_order_cancelled',
         loginid    => $parties->{seller}->loginid,
-        properties => {
-            loginid    => $parties->{seller}->loginid,
-            user_role  => 'seller',
-            order_type => $order->{type},
-            order_id   => $order->{id},
-            amount     => $order->{amount_display},
-            currency   => $order->{account_currency},
-
-            seller_user_id  => $parties->{seller}->{binary_user_id},
-            seller_nickname => $parties->{seller_nickname} // '',
-            buyer_user_id   => $parties->{buyer}->{binary_user_id},
-            buyer_nickname  => $parties->{buyer_nickname} // '',
-        });
+        properties => _p2p_properties($order, $parties, 'seller'),
+    );
 }
 
 sub p2p_order_expired {
@@ -530,39 +499,65 @@ sub p2p_order_expired {
             event      => 'p2p_order_expired',
             loginid    => $parties->{buyer}->loginid,
             properties => {
-                loginid    => $parties->{buyer}->loginid,
-                user_role  => 'buyer',
-                order_type => $order->{type},
-                order_id   => $order->{id},
-                amount     => $order->{amount_display},
-                currency   => $order->{account_currency},
-
+                _p2p_properties($order, $parties, 'buyer')->%*,
                 buyer_has_confirmed => $buyer_has_confirmed // 0,
-
-                buyer_user_id   => $parties->{buyer}->{binary_user_id},
-                buyer_nickname  => $parties->{buyer_nickname} // '',
-                seller_user_id  => $parties->{seller}->{binary_user_id},
-                seller_nickname => $parties->{seller_nickname} // '',
-            }
+            },
         ),
         track_event(
             event      => 'p2p_order_expired',
             loginid    => $parties->{seller}->loginid,
             properties => {
-                loginid    => $parties->{seller}->loginid,
-                user_role  => 'seller',
-                order_type => $order->{type},
-                order_id   => $order->{id},
-                amount     => $order->{amount_display},
-                currency   => $order->{account_currency},
-
+                _p2p_properties($order, $parties, 'seller')->%*,
                 buyer_has_confirmed => $buyer_has_confirmed // 0,
+            },
+        ),
+    );
+}
 
-                buyer_user_id   => $parties->{buyer}->{binary_user_id},
-                buyer_nickname  => $parties->{buyer_nickname} // '',
-                seller_user_id  => $parties->{seller}->{binary_user_id},
-                seller_nickname => $parties->{seller_nickname} // '',
-            }
+=head2 p2p_order_dispute
+
+Sends to segment the disputed order for further email sending or other events. 
+Two events should be fired off, one for each party.
+
+=over 4
+
+=item * C<order> The order info
+
+=item * C<parties> The parties involved info
+
+=back
+
+Returns, a Future needing both tracking events.
+
+=cut
+
+sub p2p_order_dispute {
+    my %args = @_;
+    my ($order, $parties) = @args{qw(order parties)};
+    my $brand    = Brands->new(name => 'deriv');
+    my $disputer = 'buyer';
+    $disputer = 'seller' if $parties->{seller}->loginid eq $order->{dispute_details}->{disputer_loginid};
+
+    return Future->needs_all(
+        track_event(
+            event      => 'p2p_order_dispute',
+            loginid    => $parties->{buyer}->loginid,
+            properties => {
+                _p2p_properties($order, $parties, 'buyer')->%*,
+                dispute_reason => $order->{dispute_details}->{dispute_reason},
+                disputer       => $disputer,
+            },
+            brand => $brand,
+        ),
+        track_event(
+            event      => 'p2p_order_dispute',
+            loginid    => $parties->{seller}->loginid,
+            properties => {
+                _p2p_properties($order, $parties, 'seller')->%*,
+                dispute_reason => $order->{dispute_details}->{dispute_reason},
+                disputer       => $disputer,
+            },
+            brand => $brand,
         ),
     );
 }
@@ -587,43 +582,63 @@ Returns, a Future needing both tracking events.
 sub p2p_order_timeout_refund {
     my %args = @_;
     my ($order, $parties) = @args{qw(order parties)};
+    my $brand = Brands->new(name => 'deriv');
 
     return Future->needs_all(
         track_event(
             event      => 'p2p_order_timeout_refund',
-            properties => {
-                loginid         => $parties->{buyer}->loginid,
-                user_role       => 'buyer',
-                order_type      => $order->{type},
-                order_id        => $order->{id},
-                exchange_rate   => $order->{rate_display},
-                amount          => $order->{amount_display},
-                currency        => $order->{account_currency},
-                local_currency  => $order->{local_currency},
-                buyer_user_id   => $parties->{buyer}->{binary_user_id},
-                buyer_nickname  => $parties->{buyer_nickname} // '',
-                seller_user_id  => $parties->{seller}->{binary_user_id},
-                seller_nickname => $parties->{seller_nickname} // '',
-            }
+            loginid    => $parties->{buyer}->loginid,
+            properties => _p2p_properties($order, $parties, 'buyer'),
+            ,
+            brand => $brand,
         ),
         track_event(
             event      => 'p2p_order_timeout_refund',
-            properties => {
-                loginid         => $parties->{seller}->loginid,
-                user_role       => 'seller',
-                order_type      => $order->{type},
-                order_id        => $order->{id},
-                exchange_rate   => $order->{rate_display},
-                amount          => $order->{amount_display},
-                currency        => $order->{account_currency},
-                local_currency  => $order->{local_currency},
-                buyer_user_id   => $parties->{buyer}->{binary_user_id},
-                buyer_nickname  => $parties->{buyer_nickname} // '',
-                seller_user_id  => $parties->{seller}->{binary_user_id},
-                seller_nickname => $parties->{seller_nickname} // '',
-            }
+            loginid    => $parties->{seller}->loginid,
+            properties => _p2p_properties($order, $parties, 'seller'),
+            ,
+            brand => $brand,
         ),
     );
+}
+
+=head2 _p2p_properties
+
+Since p2p events have a lot of common properties it makes sense to centralize 
+the common fields in a handy sub.
+It takes the following arguments:
+
+=over 4
+
+=item * C<order> the p2p order being emitted
+
+=item * C<parties> a hashref containing info for both buyer and seller
+
+=item * C<side> which side this event is for (seller/buyer)
+
+=back
+
+Returns, a hashref with common p2p properties for event tracking.
+
+=cut
+
+sub _p2p_properties {
+    my ($order, $parties, $side) = @_;
+
+    return {
+        loginid         => $parties->{$side}->loginid,
+        user_role       => $side,
+        order_type      => $order->{type},
+        order_id        => $order->{id},
+        exchange_rate   => $order->{rate_display},
+        amount          => $order->{amount_display},
+        currency        => $order->{account_currency},
+        local_currency  => $order->{local_currency},
+        buyer_user_id   => $parties->{buyer}->{binary_user_id},
+        buyer_nickname  => $parties->{buyer_nickname} // '',
+        seller_user_id  => $parties->{seller}->{binary_user_id},
+        seller_nickname => $parties->{seller_nickname} // '',
+    };
 }
 
 =head2 track_event
