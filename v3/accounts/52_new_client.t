@@ -100,6 +100,79 @@ subtest 'mt5 new account dry run' => sub {
     test_schema('mt5_new_account', $res);
 };
 
+subtest 'mt5 new swap-free account dry run' => sub {
+    $email    = 'abcd@binary.com';
+    $client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+    });
+    $client_cr->email($email);
+    $client_cr->save;
+    $cr_1 = $client_cr->loginid;
+
+    $user = BOM::User->create(
+        email    => $email,
+        password => $hash_pwd
+    );
+
+    $user->add_client($client_cr);
+    $client_cr->set_default_account('USD');
+    $token     = BOM::Database::Model::OAuth->new->store_access_token_only(1, $cr_1);
+    $authorize = $t->await::authorize({authorize => $token});
+    is $authorize->{authorize}->{loginid}, $cr_1;
+
+    my $params = {
+        account_type            => 'gaming',
+        mt5_account_category    => 'swap_free',
+        country                 => 'mt',
+        email                   => 'test.account@binary.com',
+        name                    => 'Meta traderman',
+        mainPassword            => 'Efgh4567',
+        leverage                => 100,
+        dry_run                 => 1,
+        mt5_new_account         => 1,
+    };
+    $res = $t->await::mt5_new_account($params);
+    is $res->{msg_type}, 'mt5_new_account';
+    is $res->{error}, undef, 'has no error in response';
+    test_schema('mt5_new_account', $res);
+};
+
+subtest 'mt5 new swap free account for Spain' => sub {
+    $email    = 'abcde@binary.com';
+    my $client_mlt = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'MLT',
+    });
+    $client_mlt->email($email);
+    $client_mlt->save;
+    my $mlt_1 = $client_mlt->loginid;
+
+    $user = BOM::User->create(
+        email    => $email,
+        password => $hash_pwd
+    );
+
+    $user->add_client($client_mlt);
+    $client_mlt->set_default_account('USD');
+    $token     = BOM::Database::Model::OAuth->new->store_access_token_only(1, $mlt_1);
+    $authorize = $t->await::authorize({authorize => $token});
+    is $authorize->{authorize}->{loginid}, $mlt_1;
+
+    my $params = {
+        account_type            => 'gaming',
+        mt5_account_category    => 'swap_free',
+        country                 => 'es',
+        email                   => 'test.account@binary.com',
+        name                    => 'Meta traderman',
+        mainPassword            => 'Efgh4567',
+        leverage                => 100,
+        dry_run                 => 1,
+        mt5_new_account         => 1,
+    };
+    $res = $t->await::mt5_new_account($params);
+    is $res->{msg_type}, 'mt5_new_account';
+    is $res->{error}->{code}, 'GamingAccountMissing', ' Gaming account is not allowed in Spain';
+};
+
 $t->finish_ok;
 
 done_testing();

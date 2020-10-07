@@ -126,7 +126,62 @@
                         "minItems" : 1,
                         "type" : "array"
                      }
-                  }
+                  },
+                  "swap_free" : {
+                     "required": ["legal_allowed_markets", "legal_allowed_currencies", "has_reality_check", "shortcode", "legal_default_currency", "country", "address", "name", "legal_allowed_contract_categories"],
+                     "type": "object",
+                    "has_reality_check" : {
+                       "type" : "integer",
+                       "enum" : [0]
+                    },
+                    "legal_default_currency" : {
+                       "pattern" : "^USD$",
+                       "type" : "string"
+                    },
+                    "country" : {
+                       "type" : "string",
+                       "pattern" : "^Republic of Vanuatu$"
+                    },
+                    "shortcode" : {
+                       "type" : "string",
+                       "pattern" : "^vanuatu$"
+                    },
+                    "legal_allowed_contract_categories" : {
+                       "minItems" : 1,
+                       "type" : "array",
+                       "items" : {
+                          "pattern" : "^callput$",
+                          "type" : "string"
+                       }
+                    },
+                    "address" : {
+                       "minItems" : 1,
+                       "items" : {
+                          "type" : "string"
+                       },
+                       "type" : "array"
+                    },
+                    "name" : {
+                       "pattern" : "^Binary \\(V\\) Ltd$",
+                       "type" : "string"
+                    },
+                    "legal_allowed_markets" : {
+                       "items" : {
+                          "type" : "string",
+                          "pattern" : "^forex$"
+                       },
+                       "type" : "array",
+                       "minItems" : 1
+                    },
+                    "legal_allowed_currencies" : {
+                       "minItems" : 1,
+                       "type" : "array",
+                       "items" : {
+                          "type" : "string",
+                          "pattern" : "^USD$"
+                       }
+                    }
+                 }
                },
                "type" : "object",
                "required" : ["financial", "financial_stp"]
@@ -134,6 +189,59 @@
             "mt_gaming_company" : {
                "properties" : {
                   "financial" : {
+                     "type" : "object",
+                     "legal_allowed_markets" : {
+                        "type" : "array",
+                        "minItems" : 4,
+                        "items" : {
+                           "pattern" : "^(commodities|forex|indices|synthetic_index)$",
+                           "type" : "string"
+                        }
+                     },
+                     "legal_allowed_currencies" : {
+                        "items" : {
+                           "type" : "string",
+                           "pattern" : "/^[a-zA-Z0-9]{2,20}$/"
+                        },
+                        "type" : "array",
+                        "minItems" : 5
+                     },
+                     "name" : {
+                        "type" : "string",
+                        "pattern": "^Deriv \\(SVG\\) LLC$"
+                     },
+                     "address" : {
+                        "items" : {
+                           "type" : "string"
+                        },
+                        "type" : "null"
+                     },
+                     "legal_allowed_contract_categories" : {
+                        "type" : "array",
+                        "minItems" : 6,
+                        "items" : {
+                           "pattern" : "^(asian|callput|digits|endsinout|staysinout|touchnotouch|lookback|reset|highlowticks|callputspread|callputequal|multiplier)$",
+                           "type" : "string"
+                        }
+                     },
+                     "has_reality_check" : {
+                        "type" : "integer",
+                        "enum" : [0]
+                     },
+                     "shortcode" : {
+                        "type" : "string",
+                        "pattern" : "^svg$"
+                     },
+                     "legal_default_currency" : {
+                        "type" : "string",
+                        "pattern" : "^USD$"
+                     },
+                     "country" : {
+                        "pattern" : "^Saint Vincent and the Grenadines^",
+                        "type" : "string"
+                     }
+                  },
+                  "swap_free" : {
                      "type" : "object",
                      "legal_allowed_markets" : {
                         "type" : "array",
