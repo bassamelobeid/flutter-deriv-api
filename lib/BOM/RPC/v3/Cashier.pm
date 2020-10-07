@@ -680,6 +680,7 @@ rpc paymentagent_transfer => sub {
     my $comment =
           'Transfer from Payment Agent '
         . $payment_agent->payment_agent_name
+        . " ($loginid_fm)"
         . " to $loginid_to. Transaction reference: $reference. Timestamp: $today."
         . ($description ? " Agent note: $description" : '');
 
@@ -1105,6 +1106,7 @@ rpc paymentagent_withdraw => sub {
         . $client_loginid
         . ' to Payment Agent '
         . $paymentagent->payment_agent_name
+        . " ($paymentagent_loginid)"
         . ' Transaction reference: '
         . $reference
         . ' Timestamp: '
