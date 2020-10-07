@@ -1107,7 +1107,14 @@ sub get_untrusted_types {
             'comments'    => 'Disable Trading',
             'code'        => 'no_trading',
             'show_reason' => 'yes'
-        }];
+        },
+        {
+            'linktype'    => 'sharedpaymentmethod',
+            'comments'    => 'Shared Payment Method Found',
+            'code'        => 'shared_payment_method',
+            'show_reason' => 'yes'
+        },
+    ];
 }
 
 sub get_untrusted_type_by_code {
