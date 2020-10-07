@@ -9,6 +9,7 @@ use Mojo::Redis2;
 use Path::Tiny;
 use Syntax::Keyword::Try;
 use YAML::XS;
+use constant REDIS_KEY_COUNTER => 'redis_key_counter';
 
 =head1 NAME
 
@@ -132,7 +133,7 @@ purge_redis() unless $ENV{NO_PURGE_REDIS};
 
 =head2 purge_redis
 
-Purge Redis database before running a test script. Give it a clear environment.
+prepare and purge Redis database before running a test script. Give it a clear environment.
 
 Parameters: none
 Return: 1
@@ -185,13 +186,40 @@ sub purge_redis {
                     ($config->{password} ? ('password' => $config->{password}) : ()));
                 die "Purge redis $redis_yml failed: Database index is not $REDIS_DB_INDEX. RedisDB hook not applied ?"
                     if $redis->{database} != $REDIS_DB_INDEX;
+                my $redis_key_counter = get_and_add_redis_key_counter($redis);
                 $redis->flushdb();
+                $redis->set(REDIS_KEY_COUNTER, $redis_key_counter);
                 $flushed_redis{"$config->{host}:$config->{port}"} = 1;
-            } catch {
+            } catch ($e) {
+                print STDERR $e, "\n" unless $e =~ /Couldn't connect to the redis server/;
             }
         }
     }
     return 1;
+}
+
+=head2 get_and_add_redis_key_counter
+
+Get statistics information of keys for test.
+
+Parameters: Redis object
+
+Return: number of redis keys from the first test script to the previous test script
+
+=cut
+
+sub get_and_add_redis_key_counter {
+    my ($redis) = @_;
+    my $key = REDIS_KEY_COUNTER;
+    # get number of keys from https://redis.io/commands/INFO keyspace
+    # output format is like: 'keys=XXX,expires=XXX'
+    my $info              = $redis->info('keyspace')->{"db$REDIS_DB_INDEX"};
+    my $redis_key_counter = $redis->get($key) || 0;
+    if ($info) {
+        my %stats = split /[,=]/, $info;
+        $redis_key_counter += $stats{keys};
+    }
+    return $redis_key_counter;
 }
 
 1;

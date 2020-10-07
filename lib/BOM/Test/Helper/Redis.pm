@@ -4,34 +4,31 @@ use warnings;
 
 use Exporter 'import';
 use Test::More;
+use Syntax::Keyword::Try;
+use BOM::Test;
 
-use constant MAX_REDIS_KEYS => 49;
+use constant MAX_REDIS_KEYS => 85;
 
 our @EXPORT_OK = qw( is_within_threshold );
 
 use namespace::clean -except => [qw(import)];
 
 sub is_within_threshold ($$;$) {    ## no critic (Subroutines::ProhibitSubroutinePrototypes)
-    my ($server, $res, $threshold) = @_;
+    my ($redis_name, $redis, $threshold) = @_;
     $threshold //= MAX_REDIS_KEYS;
 
-    fail "No Redis server given!"
-        unless $server;
+    fail "No Redis redis_name given!"
+        unless $redis_name;
 
-    fail "Redis response is invalid!"
-        unless $res and ref $res eq 'HASH';
-
-    note "Checking for number of Redis keys on $server";
-
-    # A Redis may have more than one database, so compare each
-    # database's number of used keys against the threshold
-    for my $db (grep { /^db[0-9]+/ } keys %$res) {
-        # get number of keys from https://redis.io/commands/INFO keyspace
-        # output format is like: 'keys=XXX,expires=XXX'
-        my %stats = split /[,=]/, $res->{$db};
-        cmp_ok $stats{keys}, '<=', $threshold, "Current number of Redis keys ($stats{keys}) for $server ($db) within threshold ($threshold)";
+    note "Checking for number of Redis keys on $redis_name";
+    my $total_keys_count = $redis->get(BOM::Test::REDIS_KEY_COUNTER) || 0;
+    cmp_ok $total_keys_count , '<=', $threshold, "Current number of Redis keys ($total_keys_count}) for $redis_name within threshold ($threshold)";
+    # When we call this funciton, that means this variable has finished its mission. So we delete it to avoid keeping increasing.
+    try {
+        $redis->del(BOM::Test::REDIS_KEY_COUNTER);
+    } catch ($e) {
+        die $e unless $e =~ /EADONLY You can't write against a read only slave/;
     }
-
     return undef;
 }
 
@@ -64,10 +61,9 @@ L<BOM::Test::Helper::Redis> does not export any functions by default.
 
 =head2 is_within_threshold
 
-    is_within_threshold($db, $redis_info, [$threshold]);
+    is_within_threshold($redis_name, $redis_object, [$threshold]);
 
-Given the name of a Redis database and a hashref of its server info
-(from a Redis `INFO` command,) this function reads the compares the
+Given the name of a Redis database and a redis object, this function reads the compares the
 number of Redis keys stated in the server info against a given
 threshold.  If no threshold is given, this function will use a default
 set in this module's C<MAX_REDIS_KEYS>.
