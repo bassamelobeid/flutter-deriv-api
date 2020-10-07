@@ -2052,7 +2052,7 @@ sub withdrawal_limit_reached {
 
     # set client as needs_action if only the status is not set yet
     unless (($client->authentication_status // '') eq 'needs_action') {
-        $client->set_authentication('ID_DOCUMENT')->status('needs_action');
+        $client->set_authentication('ID_DOCUMENT', {status => 'needs_action'});
         $client->save();
     }
 
