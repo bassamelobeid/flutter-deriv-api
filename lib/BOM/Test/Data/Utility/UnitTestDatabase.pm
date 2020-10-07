@@ -144,7 +144,7 @@ sub create_client {
 
     if ($auth && $broker_code =~ /(?:MF|MLT|MX)/) {
         $client->status->set('age_verification');
-        $client->set_authentication('ID_DOCUMENT')->status('pass') if $broker_code eq 'MF';
+        $client->set_authentication('ID_DOCUMENT', {status => 'pass'}) if $broker_code eq 'MF';
         $client->save;
     }
 
