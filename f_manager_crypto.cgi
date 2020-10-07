@@ -306,7 +306,9 @@ try {
 }
 
 if ($view_action eq 'withdrawals') {
-    my $get_balance = $currency_wrapper->get_total_balance();
+    my $get_balance               = $currency_wrapper->get_total_balance();
+    my $suspicious_check_required = BOM::Config::Runtime->instance->app_config->payments->crypto_withdrawal_suspicious_check_required;
+
     print "<b>Available Balance(s) for Payout:</b>";
     for my $currency_of_balance (sort keys %$get_balance) {
         my $balance        = Math::BigFloat->new($get_balance->{$currency_of_balance});
@@ -369,7 +371,7 @@ if ($view_action eq 'withdrawals') {
         ($error) = $dbic->run(ping => sub { $_->selectrow_array('SELECT payment.ctc_set_remark(?, ?)', undef, $db_row_id, $set_remark) })
             if $action eq 'Save';
         my $approvals_required = BOM::Config::Runtime->instance->app_config->payments->crypto_withdrawal_approvals_required;
-        $approvals_required = '{"":2}' if $client->user->is_crypto_withdrawal_suspicious();
+        $approvals_required = '{"":2}' if $suspicious_check_required && $client->user->is_crypto_withdrawal_suspicious();
 
         ($error) = $dbic->run(
             ping => sub {
@@ -411,7 +413,7 @@ if ($view_action eq 'withdrawals') {
             my $withdrawal_client_loginid = $transaction_info{client_loginid};
 
             my $client = BOM::User::Client->new({loginid => $withdrawal_client_loginid});
-            $approvals_required = '{"":2}' if $client->user->is_crypto_withdrawal_suspicious();
+            $approvals_required = '{"":2}' if $suspicious_check_required && $client->user->is_crypto_withdrawal_suspicious();
 
             my $over_limit = BOM::Backoffice::Script::ValidateStaffPaymentLimit::validate($staff, in_usd($withdrawal_amount, $currency));
             # only skip those that does exceeds the staff's payment limit without stopping the operation
