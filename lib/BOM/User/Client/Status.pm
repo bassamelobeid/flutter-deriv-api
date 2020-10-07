@@ -28,7 +28,7 @@ my @status_codes = qw(
     require3ds  skip_3ds  ok  ico_only  allowed_other_card  can_authenticate
     social_signup  trusted pa_withdrawal_explicitly_allowed
     address_verified no_withdrawal_or_trading no_trading allow_document_upload internal_client
-    closed transfers_blocked
+    closed transfers_blocked shared_payment_method
 );
 
 for my $code (@status_codes) {
