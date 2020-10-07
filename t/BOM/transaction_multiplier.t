@@ -18,7 +18,6 @@ use Guard;
 use Crypt::NamedKeys;
 use Date::Utility;
 use List::Util qw(any);
-
 use BOM::User::Client;
 use BOM::User::Password;
 use BOM::User::Utility;
@@ -747,8 +746,8 @@ subtest 'buy multiplier with unsupported underlying' => sub {
 
         my $error = $txn->buy;
         ok $error, 'buy failed with error';
-        is $error->{-mesg}, 'multiplier commission not defined for frxGBPPLN', 'message is multiplier commission not defined for frxGBPPLN';
-        is $error->{-message_to_client}, 'Trading is not offered for this asset.', 'message to client Trading is not offered for this asset.';
+        is $error->{-mesg},              'multiplier config undefined for frxGBPPLN', 'message is multiplier config undefined for frxGBPPLN';
+        is $error->{-message_to_client}, 'Trading is not offered for this asset.',    'message to client Trading is not offered for this asset.';
     };
 
     restore_time();
@@ -932,6 +931,268 @@ subtest 'buy multiplier on synthetic with CR' => sub {
     $error = $txn->buy;
     ok !$error, 'major pair buy successful';
 
+};
+
+subtest 'buy multiplier with MX' => sub {
+    my $mx = create_client('MX');
+    top_up $mx, 'USD', 5000;
+
+    my $contract = produce_contract({
+        underlying      => 'R_100',
+        bet_type        => 'MULTUP',
+        currency        => 'USD',
+        multiplier      => 10,
+        amount          => 100,
+        amount_type     => 'stake',
+        current_tick    => $current_tick,
+        cancellation    => '1h',
+        landing_company => $mx->landing_company->short,
+    });
+
+    my $txn = BOM::Transaction->new({
+        client        => $mx,
+        contract      => $contract,
+        price         => 100,
+        amount        => 100,
+        amount_type   => 'stake',
+        source        => 19,
+        purchase_date => $contract->date_start,
+    });
+
+    my $error = $txn->buy;
+    ok !$error, 'synthetic buy successful';
+
+    $contract = produce_contract({
+        underlying      => 'frxUSDJPY',
+        bet_type        => 'MULTUP',
+        currency        => 'USD',
+        multiplier      => 50,
+        amount          => 100,
+        amount_type     => 'stake',
+        current_tick    => $current_tick,
+        cancellation    => '1h',
+        landing_company => $mx->landing_company->short,
+    });
+
+    $txn = BOM::Transaction->new({
+        client        => $mx,
+        contract      => $contract,
+        price         => 100,
+        amount        => 100,
+        amount_type   => 'stake',
+        source        => 19,
+        purchase_date => $contract->date_start,
+    });
+
+    $error = $txn->buy;
+    ok !$error, 'major pair buy successful with no multiplier range restriction';
+
+    my $uk_cl = create_client('MX', undef, {residence => 'gb'});
+    top_up $uk_cl, 'USD', 5000;
+
+    $contract = produce_contract({
+        underlying      => 'R_100',
+        bet_type        => 'MULTUP',
+        currency        => 'USD',
+        multiplier      => 10,
+        amount          => 100,
+        amount_type     => 'stake',
+        current_tick    => $current_tick,
+        cancellation    => '1h',
+        landing_company => $uk_cl->landing_company->short,
+    });
+
+    $txn = BOM::Transaction->new({
+        client        => $uk_cl,
+        contract      => $contract,
+        price         => 100,
+        amount        => 100,
+        amount_type   => 'stake',
+        source        => 19,
+        purchase_date => $contract->date_start,
+    });
+
+    $error = $txn->buy;
+    ok !$error, 'synthetic buy successful';
+
+    $contract = produce_contract({
+        underlying      => 'frxUSDJPY',
+        bet_type        => 'MULTUP',
+        currency        => 'USD',
+        multiplier      => 50,
+        amount          => 100,
+        amount_type     => 'stake',
+        current_tick    => $current_tick,
+        cancellation    => '1h',
+        landing_company => $uk_cl->landing_company->short,
+    });
+
+    $txn = BOM::Transaction->new({
+        client        => $uk_cl,
+        contract      => $contract,
+        price         => 100,
+        amount        => 100,
+        amount_type   => 'stake',
+        source        => 19,
+        purchase_date => $contract->date_start,
+    });
+
+    $error = $txn->buy;
+    ok $error, 'invalid to buy forex multiplier options for UK clients';
+    is $error->{'-type'},              'InvalidOfferings',                       'InvalidOfferings';
+    is $error->{'-mesg'},              'Invalid underlying symbol',              'symbol is invalid';
+    is $error->{'-message_to_client'}, 'Trading is not offered for this asset.', 'symbol is invalid';
+};
+
+subtest 'buy multiplier with MLT' => sub {
+    my $mlt = create_client('MLT');
+    top_up $mlt, 'USD', 5000;
+
+    my $contract = produce_contract({
+        underlying      => 'R_100',
+        bet_type        => 'MULTUP',
+        currency        => 'USD',
+        multiplier      => 10,
+        amount          => 100,
+        amount_type     => 'stake',
+        current_tick    => $current_tick,
+        cancellation    => '1h',
+        landing_company => $mlt->landing_company->short,
+    });
+
+    my $txn = BOM::Transaction->new({
+        client        => $mlt,
+        contract      => $contract,
+        price         => 100,
+        amount        => 100,
+        amount_type   => 'stake',
+        source        => 19,
+        purchase_date => $contract->date_start,
+    });
+
+    my $error = $txn->buy;
+    ok !$error, 'synthetic buy successful';
+
+    $contract = produce_contract({
+        underlying      => 'frxUSDJPY',
+        bet_type        => 'MULTUP',
+        currency        => 'USD',
+        multiplier      => 50,
+        amount          => 100,
+        amount_type     => 'stake',
+        current_tick    => $current_tick,
+        cancellation    => '1h',
+        landing_company => $mlt->landing_company->short,
+    });
+
+    $txn = BOM::Transaction->new({
+        client        => $mlt,
+        contract      => $contract,
+        price         => 100,
+        amount        => 100,
+        amount_type   => 'stake',
+        source        => 19,
+        purchase_date => $contract->date_start,
+    });
+
+    $error = $txn->buy;
+    ok $error, 'invalid to buy forex multiplier options for MLT clients';
+    is $error->{'-type'}, 'NotLegalMarket', 'NotLegalMarket';
+    is $error->{'-mesg'}, 'Clients are not allowed to trade on this markets as its restricted for this landing company',
+        'symbol is not allowed for client';
+    is $error->{'-message_to_client'}, 'Please switch accounts to trade this market.', 'switch account to trade financial production';
+};
+
+subtest 'buy multiplier with MF' => sub {
+    my $mocked = Test::MockModule->new('BOM::Transaction::Validation');
+    $mocked->mock('check_tax_information',     sub { return undef });
+    $mocked->mock('compliance_checks',         sub { return undef });
+    $mocked->mock('check_client_professional', sub { return undef });
+
+    my $mf = create_client('MF');
+    top_up $mf, 'USD', 5000;
+
+    my $contract = produce_contract({
+        underlying      => 'frxUSDJPY',
+        bet_type        => 'MULTUP',
+        currency        => 'USD',
+        multiplier      => 50,
+        amount          => 100,
+        amount_type     => 'stake',
+        current_tick    => $current_tick,
+        landing_company => $mf->landing_company->short,
+    });
+
+    my $txn = BOM::Transaction->new({
+        client        => $mf,
+        contract      => $contract,
+        price         => 100,
+        amount        => 100,
+        amount_type   => 'stake',
+        source        => 19,
+        purchase_date => $contract->date_start,
+    });
+
+    my $error = $txn->buy;
+    ok $error, 'forex buy failed with multiplier out of range';
+    is $error->{'-type'},              'InvalidtoBuy',                                       'InvalidtoBuy';
+    is $error->{'-mesg'},              'multiplier out of range',                            'multiplier out of range';
+    is $error->{'-message_to_client'}, 'Multiplier is not in acceptable range. Accepts 30.', 'multiplier out of range';
+
+    $contract = produce_contract({
+        underlying      => 'frxUSDJPY',
+        bet_type        => 'MULTUP',
+        currency        => 'USD',
+        multiplier      => 30,
+        amount          => 100,
+        amount_type     => 'stake',
+        current_tick    => $current_tick,
+        landing_company => $mf->landing_company->short,
+    });
+
+    $txn = BOM::Transaction->new({
+        client        => $mf,
+        contract      => $contract,
+        price         => 100,
+        amount        => 100,
+        amount_type   => 'stake',
+        source        => 19,
+        purchase_date => $contract->date_start,
+    });
+
+    $error = $txn->buy;
+    is $error->{'-type'},              'InvalidOfferings',                       'forex buy unsuccessful';
+    is $error->{'-message_to_client'}, 'Trading is not offered for this asset.', 'message to client';
+
+    Test::Warnings::allow_warnings(1);
+    $contract = produce_contract({
+        underlying      => 'R_100',
+        bet_type        => 'MULTUP',
+        currency        => 'USD',
+        multiplier      => 10,
+        amount          => 100,
+        amount_type     => 'stake',
+        current_tick    => $current_tick,
+        cancellation    => '1h',
+        landing_company => $mf->landing_company->short,
+    });
+
+    $txn = BOM::Transaction->new({
+        client        => $mf,
+        contract      => $contract,
+        price         => 100,
+        amount        => 100,
+        amount_type   => 'stake',
+        source        => 19,
+        purchase_date => $contract->date_start,
+    });
+
+    $error = $txn->buy;
+    ok $error, 'invalid to buy forex multiplier options for MF clients';
+    is $error->{'-type'},              'InvalidtoBuy',                           'InvalidtoBuy';
+    is $error->{'-mesg'},              'multiplier config undefined for R_100',  'symbol is not allowed for client';
+    is $error->{'-message_to_client'}, 'Trading is not offered for this asset.', 'trading not available';
+    Test::Warnings::allow_warnings(0);
 };
 
 done_testing();
