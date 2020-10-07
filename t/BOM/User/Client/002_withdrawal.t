@@ -223,7 +223,7 @@ subtest 'CR withdrawal' => sub {
     subtest 'fully authenticated' => sub {
         my $client = new_client('USD');
         $client->status->set('age_verification', 'system', 'Successfully authenticated identity via Experian Prove ID',);
-        $client->set_authentication('ID_DOCUMENT')->status('pass');
+        $client->set_authentication('ID_DOCUMENT', {status => 'pass'});
         $client->smart_payment(%deposit, amount => 20000);
         lives_ok { $client->validate_payment(%withdrawal, amount => -10000) } 'Authed CR withdrawal no more than USD10K';
         lives_ok { $client->validate_payment(%withdrawal, amount => -10001) } 'Authed CR withdrawal more than USD10K';
@@ -238,9 +238,10 @@ subtest 'CR withdrawal' => sub {
     subtest 'BTC authenticated, full withdrawal' => sub {
         my $client = new_client('BTC');
         $client->status->setnx('age_verification', 'system', 'Successfully authenticated identity via Experian Prove ID');
-        $client->set_authentication('ID_DOCUMENT')->status('pass');
+        $client->set_authentication('ID_DOCUMENT', {status => 'pass'});
         my $var = $client->smart_payment(%deposit_btc, amount => 0.01434048);
         lives_ok { $client->validate_payment(%withdrawal_btc, amount => -0.01434048) } 'Authed CR withdraw full BTC amount';
+        $client->set_authentication('ID_DOCUMENT', {status => 'pending'});
     };
 
     subtest 'LC skip authentication' => sub {
@@ -263,7 +264,6 @@ subtest 'EUR3k over 30 days MX limitation.' => sub {
         residence   => 'gb',
         email       => 'binarygb@binary.com',
     );
-
     ok(!$client->fully_authenticated, 'client has not authenticated identity.');
     my $gbp_amount  = _GBP_equiv(6200);
     my %deposit_gbp = (
@@ -303,10 +303,10 @@ subtest 'EUR3k over 30 days MX limitation.' => sub {
 
     ok $client->validate_payment(%wd3000), 'Unauthed, allowed to withdraw GBP equiv of EUR3000.';
 
-    $client->set_authentication('ID_DOCUMENT')->status('pass');
+    $client->set_authentication('ID_DOCUMENT', {status => 'pass'});
     $client->save;
     ok $client->validate_payment(%wd3001), 'Authed, allowed to withdraw GBP equiv of EUR3001.';
-    $client->set_authentication('ID_DOCUMENT')->status('pending');
+    $client->set_authentication('ID_DOCUMENT', {status => 'pending'});
     $client->save;
 
     $client->smart_payment(%wd2500);
@@ -377,14 +377,14 @@ subtest 'Total EUR2000 MLT limitation.' => sub {
 
     # Test for authenticated withdrawals
     subtest 'authenticated' => sub {
-        $client->set_authentication('ID_DOCUMENT')->status('pass');
+        $client->set_authentication('ID_DOCUMENT', {status => 'pass'});
         $client->save;
 
         ok $client->validate_payment(%withdrawal_eur, amount => -2001), 'Authed, allowed to withdraw EUR2001.';
         $client->smart_payment(%withdrawal_eur, amount => -2001);
         ok $client->validate_payment(%withdrawal_eur, amount => -2001), 'Authed, allowed to withdraw EUR (2001+2001), no limit anymore.';
 
-        $client->set_authentication('ID_DOCUMENT')->status('pending');
+        $client->set_authentication('ID_DOCUMENT', {status => 'pending'});
         $client->save;
 
         throws_ok { $client->validate_payment(%withdrawal_eur, amount => -100) } qr/reached the maximum withdrawal limit of \[EUR 2000\]/,

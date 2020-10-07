@@ -168,9 +168,9 @@ subtest 'filter by authentication and financial_assessment' => sub {
     $expected_db_rows = [{login_ids => join(',', sort($client_cr->loginid, $client_cr2->loginid))}];
 
     my $landing_company = 'CR';
-    $client_cr->set_authentication('ID_DOCUMENT')->status('pass');
+    $client_cr->set_authentication('ID_DOCUMENT', {status => 'pass'});
     $client_cr->save();
-    $client_cr2->set_authentication('ID_DOCUMENT')->status('pass');
+    $client_cr2->set_authentication('ID_DOCUMENT', {status => 'pass'});
     $client_cr2->save();
     ok $client_cr->fully_authenticated,  'The account is fully authenticated';
     ok $client_cr2->fully_authenticated, 'Sibling account is fully authenticated';
@@ -230,14 +230,15 @@ subtest 'withdrawal lock auto removal after authentication and FA' => sub {
     undef @called_for_clients;
 
     # financial assessment incomplete, authenticated
-    $client_cr->set_authentication('ID_DOCUMENT')->status('pass');
+    $client_cr->set_authentication('ID_DOCUMENT', {status => 'pass'});
     $client_cr->save;
     ok $client_cr->fully_authenticated, 'client is authenticated';
-    is @called_for_clients, 0, 'update_status_after_auth_fa is not called for authentication';
+    is @called_for_clients, 1, 'update_status_after_auth_fa is called for authentication';
+    undef @called_for_clients;
     update_financial_assessment($user, {});
     is @called_for_clients, 1, 'update_status_after_auth_fa called automatically by financial assessment';
-    ok $client_cr->status->withdrawal_locked,     'client is still withdrawal-locked (fa is incomplete)';
-    ok $client_cr->status->allow_document_upload, 'client is still allow_document_upload, (fa is incomplete)';
+    ok $client_cr->status->withdrawal_locked, 'client is still withdrawal-locked (fa is incomplete)';
+    ok !$client_cr->status->allow_document_upload, 'client has not allow_document_upload, (authenticated)';
     undef @called_for_clients;
 
     # financial assessment incompelete, authenticated, different reason
@@ -312,7 +313,7 @@ sub clear_clients {
     for my $client (@_) {
         $client->status->clear_withdrawal_locked();
         $client->status->clear_allow_document_upload();
-        $client->set_authentication('ID_DOCUMENT')->status('pending');
+        $client->set_authentication('ID_DOCUMENT', {status => 'pending'});
         $client->financial_assessment({data => '{}'});
         $client->aml_risk_classification('low');
         $client->save;

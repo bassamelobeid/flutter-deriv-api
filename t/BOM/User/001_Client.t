@@ -47,7 +47,7 @@ subtest "Client load and saving." => sub {
     lives_ok { $client = BOM::User::Client->new({'loginid' => 'CR0006'}); }
     "Can create client object 'BOM::User::Client::get_instance({'loginid' => CR0006})'";
     ok(!$client->fully_authenticated(), 'CR0006 - not fully authenticated as it has ADDRESS status only');
-    $client->set_authentication('ID_NOTARIZED')->status('pass');
+    $client->set_authentication('ID_NOTARIZED', {status => 'pass'});
     ok($client->fully_authenticated(), 'CR0006 - fully authenticated as it has ID_NOTARIZED');
 
     lives_ok { $client = BOM::User::Client->new({'loginid' => 'CR0007'}); }

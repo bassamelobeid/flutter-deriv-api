@@ -38,7 +38,7 @@ use BOM::User::Client::PaymentAgent;
 use BOM::User::Client::Status;
 use BOM::User::Client::Account;
 use BOM::User::Phone;
-use BOM::User::FinancialAssessment qw(is_section_complete decode_fa);
+use BOM::User::FinancialAssessment;
 use BOM::User::Utility;
 use BOM::Platform::Event::Emitter;
 use BOM::Database::UserDB;
@@ -59,7 +59,7 @@ use BOM::Platform::S3Client;
 use BOM::Platform::Event::Emitter;
 use BOM::Platform::Client::CashierValidation;
 
-use Carp qw(croak);
+use Carp qw(croak confess);
 
 use Log::Any qw($log);
 
@@ -358,20 +358,164 @@ sub get_authentication {
     return $column ? $obj->$column : $obj;
 }
 
+=head2 set_authentication
+
+Set authentication for a client and all allowed siblings.
+
+Allow client to upload documents if the status is needs_action.
+
+Takes the following arguments as named parameters
+
+=over
+
+=item * C<method> - required. Name of an authentication method.
+
+=item * C<authentication_status> - required. The status of authentication method.
+
+=back
+
+Returns the authentication method for a client.
+
+=cut
+
 sub set_authentication {
-    my $self   = shift;
-    my $method = shift;
+    my ($self, $method, $authentication_status) = @_;
+    my $status = $authentication_status->{status};
     unless ($self->get_db eq 'write') {
         $self->set_db('write');
         $self->client_authentication_method(undef);    # throw out my read-only versions..
     }
-    return $self->get_authentication($method) || do {
-        $self->add_client_authentication_method({
-            authentication_method_code => $method,
-            status                     => 'pending'
-        });
-        $self->get_authentication($method);
+
+    # Set authentication method for a client and all allowed siblings
+    my @allowed_lc_to_sync = @{$self->landing_company->allowed_landing_companies_for_authentication_sync};
+    my @clients_to_update;
+    # Get all siblings for a client except virtual one and itself
+    if ($self->user and not $self->is_virtual) {
+        @clients_to_update = grep { not $_->is_virtual and $_->loginid ne $self->loginid } $self->user->clients;
     }
+    # Push the client to the list.
+    push(@clients_to_update, $self);
+    # Set authentication for client itself
+    # Set authentication for allowed landing company
+    # Skip if client is already authenticated
+    foreach my $cli (@clients_to_update) {
+        if (   ($self->landing_company->short eq $cli->landing_company->short)
+            or (any { $_ eq $cli->landing_company->short } @allowed_lc_to_sync)
+            and not($cli->get_authentication($method) and ($cli->get_authentication($method)->status eq $status)))
+        {
+            # Should not sync authentication if MX client authenticated with Experian
+            next
+                if $self->landing_company->short eq 'iom'
+                and $self->landing_company->short ne $cli->landing_company->short
+                and $method eq 'ID_ONLINE';
+            # Remove existing status to make the auth methods mutually exclusive
+            $_->delete for @{$cli->client_authentication_method};
+            $cli->add_client_authentication_method({
+                authentication_method_code => $method,
+                status                     => $status
+            });
+            if ($status eq 'pass') {
+                $cli->status->clear_allow_document_upload;
+                # We should notify CS to check TIN and MIFIR for MF clients
+                # if its status updated from respective MLT or MX
+                _notify_cs_about_authenticated_mf($cli->loginid, $self->broker_code)
+                    if not $self->landing_company->short eq 'maltainvest' and $cli->landing_company->short eq 'maltainvest';
+                # Remove unwelcome from MX once its authenticated from MF
+                $cli->status->clear_unwelcome
+                    if ($cli->residence eq 'gb'
+                    and $cli->landing_company->short eq 'iom'
+                    and $cli->status->unwelcome);
+            } elsif ($status eq 'needs_action' and not $cli->status->allow_document_upload) {
+                $cli->status->set('allow_document_upload', 'system', 'Allow client to document upload');
+            }
+            $cli->save;
+        }
+    }
+    $self->update_status_after_auth_fa();
+    return $self->get_authentication($method);
+}
+
+=head2 sync_authentication_from_siblings
+
+Update authentication for a client upon signup based on all allowed siblings.
+
+Allow client to upload documents if the status is needs_action.
+
+=cut
+
+sub sync_authentication_from_siblings {
+    my $self = shift;
+    unless ($self->get_db eq 'write') {
+        $self->set_db('write');
+        $self->client_authentication_method(undef);    # throw out my read-only versions..
+    }
+    my (@allowed_lc_to_sync, @siblings, $method, $status);
+    # Get all siblings for a client except virtual one and itself
+    if ($self->user and not $self->is_virtual) {
+        @siblings = grep { not $_->is_virtual and $_->loginid ne $self->loginid } $self->user->clients;
+    }
+    # Get authentication method and status from allowed sibling
+    # Update new created account's authentication
+    foreach my $cli (@siblings) {
+        @allowed_lc_to_sync = @{$cli->landing_company->allowed_landing_companies_for_authentication_sync};
+        if ((any { $_ eq $self->landing_company->short } @allowed_lc_to_sync) and $cli->client_authentication_method) {
+            for my $auth_method (qw/ID_DOCUMENT ID_NOTARIZED/) {
+                my $auth = $cli->get_authentication($auth_method);
+                if ($auth) {
+                    $method = $auth->authentication_method_code;
+                    $status = $auth->status;
+                    $self->add_client_authentication_method({
+                        authentication_method_code => $method,
+                        status                     => $status
+                    });
+                    if ($status eq 'pass') {
+                        $self->status->clear_allow_document_upload;
+                        # We should notify CS to check TIN and MIFIR for MF clients
+                        _notify_cs_about_authenticated_mf($self->loginid, $cli->broker_code) if $self->landing_company->short eq 'maltainvest';
+                        # Remove unwelcome from MX once its authenticated from MF
+                        $self->status->clear_unwelcome
+                            if ($self->residence eq 'gb'
+                            and $self->landing_company->short eq 'iom'
+                            and $self->status->unwelcome);
+                    } elsif ($status eq 'needs_action') {
+                        $self->status->set('allow_document_upload', 'system', 'Allow client to document upload')
+                            if not $cli->status->allow_document_upload;
+                    }
+                    $self->save;
+                    return $self->get_authentication($method);
+                }
+            }
+        }
+    }
+    return undef;
+}
+
+=head2 notify_cs_about_authenticated_mf
+
+Send an email to CS about new authenticated MF based on MLT to check their TIN and MIFIR
+
+=over
+
+=item * C<loginid> - required. MF client loginid that needs check.
+
+=back
+
+Returns B<1>.
+
+=cut
+
+sub _notify_cs_about_authenticated_mf {
+    my ($loginid, $broker_code) = @_;
+
+    my $from_email = request()->brand->emails('no-reply');
+    my $to_email   = request()->brand->emails('authentications');
+
+    return Email::Stuffer->from($from_email)->to($to_email)->subject('New authenticated MF from ' . $broker_code . ': ' . $loginid)
+        ->text_body('A MF client has been marked as authenticated based on  '
+            . $broker_code
+            . ' client. Please check the financial assessment, Tax Identification Number and MIFIR information. MF client is: '
+            . $loginid)->send();
+
 }
 
 =head2 risk_level
@@ -414,16 +558,16 @@ sub is_financial_assessment_complete {
     my $self = shift;
 
     my $sc                   = $self->landing_company->short;
-    my $financial_assessment = decode_fa($self->financial_assessment());
+    my $financial_assessment = BOM::User::FinancialAssessment::decode_fa($self->financial_assessment());
 
-    my $is_FI = is_section_complete($financial_assessment, 'financial_information');
+    my $is_FI = BOM::User::FinancialAssessment::is_section_complete($financial_assessment, 'financial_information');
 
     if ($sc ne 'maltainvest') {
         return 0 if ($self->risk_level() eq 'high' and not $is_FI);
         return 1;
     }
 
-    my $is_TE = is_section_complete($financial_assessment, 'trading_experience');
+    my $is_TE = BOM::User::FinancialAssessment::is_section_complete($financial_assessment, 'trading_experience');
 
     return 0 unless ($is_FI and $is_TE);
 
@@ -4276,7 +4420,7 @@ Checks status of the client after authentication or financial assessment changes
 
 sub update_status_after_auth_fa() {
     my $self = shift;
-
+    return unless $self->user;
     for my $sibling ($self->user->clients) {
         if ($sibling->is_financial_assessment_complete && $sibling->fully_authenticated && !$sibling->documents_expired) {
             $sibling->status->clear_withdrawal_locked

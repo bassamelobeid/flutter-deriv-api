@@ -57,7 +57,7 @@ subtest 'verification' => sub {
     $stats_adv->{basic_verification} = 1;
     check_stats($advertiser, $stats_adv, 'age verified sets basic verification');
 
-    $advertiser->set_authentication('ID_ONLINE')->status('pass');
+    $advertiser->set_authentication('ID_ONLINE', {status => 'pass'});
     $stats_adv->{full_verification} = 1;
     check_stats($advertiser, $stats_adv, 'POA sets basic verification');
 };
