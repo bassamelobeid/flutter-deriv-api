@@ -1065,4 +1065,37 @@ sub _convert_caller_to_array_of_tags {
     return @dd_tags;
 }
 
+=head2 client_crypto_deposit_address
+
+Get a client crypto deposit address - in new state
+
+Example usage:
+
+client_crypto_deposit_address()
+
+Takes the following arguments as named parameters
+
+=over 4
+
+=item * C<client>
+
+C<BOM::User::Client> object
+
+=back
+
+Returns an address string based on currency of client
+
+=cut
+
+sub client_crypto_deposit_address {
+    my ($client) = @_;
+
+    my ($address) = $client->db->dbic->run(
+        fixup => sub {
+            $_->selectrow_array('SELECT address from payment.ctc_find_new_deposit_address(?, ?)', undef, $client->currency, $client->loginid);
+        });
+
+    return $address // '';
+}
+
 1;

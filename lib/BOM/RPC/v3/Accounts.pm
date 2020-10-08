@@ -56,6 +56,7 @@ use BOM::Database::Model::UserConnect;
 use BOM::Config::Runtime;
 use BOM::Config::Quants qw(market_pricing_limits);
 use BOM::RPC::v3::Services;
+use BOM::RPC::v3::Services::Onramp;
 use BOM::Config::Redis;
 use BOM::User::Onfido;
 
@@ -2075,6 +2076,22 @@ async_rpc service_token => sub {
                         return Future->done({
                             token   => $result->{token},
                             service => 'onfido',
+                        });
+                    }
+                });
+        }
+
+        if ($service =~ /^(banxa|wyre)$/) {
+            my $onramp = BOM::RPC::v3::Services::Onramp->new(service => $service);
+            push @service_futures, $onramp->create_order($params)->then(
+                sub {
+                    my ($result) = @_;
+                    if ($result->{error}) {
+                        return Future->fail($result->{error});
+                    } else {
+                        return Future->done({
+                            service => $service,
+                            %$result
                         });
                     }
                 });

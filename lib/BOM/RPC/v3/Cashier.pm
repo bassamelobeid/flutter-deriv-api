@@ -133,7 +133,7 @@ rpc "cashier", sub {
         return {
             action  => 'deposit',
             deposit => {
-                address => _get_crypto_deposit_address($client),
+                address => BOM::RPC::v3::Utility::client_crypto_deposit_address($client),
             }};
     }
 
@@ -1902,17 +1902,6 @@ sub _template_args {
         pa_first_name     => encode_entities($pa_client->first_name),
         pa_last_name      => encode_entities($pa_client->last_name),
     };
-}
-
-sub _get_crypto_deposit_address {
-    my ($client) = @_;
-
-    my ($address) = $client->db->dbic->run(
-        fixup => sub {
-            $_->selectrow_array('SELECT address from payment.ctc_find_new_deposit_address(?, ?)', undef, $client->currency, $client->loginid);
-        });
-
-    return $address // '';
 }
 
 1;

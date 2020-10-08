@@ -198,7 +198,7 @@ subtest 'landing company details' => sub {
 };
 
 $method = 'service_token';
-subtest 'onfido service_token validation' => sub {
+subtest 'service_token validation' => sub {
     $test_client->place_of_birth('');
     $test_client->residence('');
     $test_client->save;
@@ -215,7 +215,26 @@ subtest 'onfido service_token validation' => sub {
             token => $token,
             args  => $args
         });
-    is($res->{error}->{code}, 'MissingPersonalDetails', "Validation for Place of birth & residence passed.");
+    is($res->{error}->{code}, 'MissingPersonalDetails', "Onfido returns expected error for missing birth & residence");
+    
+    $args = { service  => 'banxa' };
+    $res = $c->tcall(
+        $method,
+        {
+            token => $token,
+            args  => $args
+        });
+    is($res->{error}->{code}, 'PermissionDenied', 'Banxa returns expected error for unofficial app id');
+    
+    $args = { service  => 'wyre' };
+    $res = $c->tcall(
+        $method,
+        {
+            token => $token,
+            source_type => 'official',
+            args  => $args
+        });
+    is($res->{error}->{code}, 'OrderCreationError', 'Wyre returns expected error for non crypto');
 };
 
 done_testing();
