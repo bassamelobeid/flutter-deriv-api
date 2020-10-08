@@ -285,7 +285,7 @@ sub actions_config {
         [
             'service_token',
             {
-                stash_params => [qw/ referrer /],
+                stash_params => [qw/ referrer source_type /],
             }
         ],
         ['exchange_rates', {stash_params => [qw/ exchange_rates base_currency /]}],

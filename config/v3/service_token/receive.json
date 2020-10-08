@@ -14,6 +14,24 @@
             "additionalProperties": false,
             "minProperties": 1,
             "properties": {
+                "banxa": {
+                    "description": "Banxa order data.",
+                    "type": "object",
+                    "properties": {
+                        "token": {
+                            "description": "Created order id reference token.",
+                            "type": "string"
+                        },
+                        "url": {
+                            "description": "Banxa order checkout url.",
+                            "type": "string"
+                        },
+                        "url_iframe": {
+                            "description": "Banxa order checkout iframe url.",
+                            "type": "string"
+                        }
+                    }
+                },
                 "onfido": {
                     "description": "Onfido data.",
                     "type": "object",
@@ -38,6 +56,20 @@
                         },
                         "token": {
                             "description": "Sendbird token.",
+                            "type": "string"
+                        }
+                    }
+                },
+                "wyre": {
+                    "description": "Wyre reservation data.",
+                    "type": "object",
+                    "properties": {
+                        "token": {
+                            "description": "Wyre reservation id token",
+                            "type": "string"
+                        },
+                        "url": {
+                            "description": "Wyre reservation URL",
                             "type": "string"
                         }
                     }
