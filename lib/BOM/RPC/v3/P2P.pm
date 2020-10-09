@@ -149,6 +149,7 @@ our %ERROR_MAP = do {
         InvalidReasonForSeller           => localize("This reason doesn't apply to your case. Please choose another reason."),
         OrderUnderDispute                => localize('This order is under dispute.'),
         InvalidFinalStateForDispute      => localize('This order is complete and can no longer be disputed.'),
+        SellProhibited => localize("You can't sell on DP2P because you haven't been active enough and have used a card to fund your account."),
     );
 };
 
