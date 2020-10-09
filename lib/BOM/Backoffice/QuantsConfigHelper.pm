@@ -17,6 +17,7 @@ use List::Util qw(uniq);
 use BOM::Backoffice::Auth0;
 use BOM::Backoffice::QuantsAuditLog;
 use Time::Duration::Concise;
+use Scalar::Util qw(looks_like_number);
 
 my $app_config = BOM::Config::Runtime->instance->app_config;
 $app_config->chronicle_writer(BOM::Config::Chronicle::get_chronicle_writer());
@@ -320,6 +321,11 @@ sub save_threshold {
         return {error => 'threshold amount is not specified'};
     }
 
+    unless (looks_like_number $amount) {
+        return {error => 'threshold amount is not a number'};
+    }
+
+    $amount = 0 + $amount;
     if ($amount > 1 or $amount < 0) {
         return {error => 'threshold amount must be between 0 and 1'};
     }

@@ -40,11 +40,10 @@ my $app_config    = BOM::Config::Runtime->instance->app_config;
 my $data_in_redis = $app_config->chronicle_reader->get($app_config->setting_namespace, $app_config->setting_name);
 my $old_config    = 0;
 # due to app_config data_set cache, config might not be saved.
-$old_config = 1 if $data_in_redis->{_rev} ne $app_config->data_set->{version};
+$old_config = 1 if ($data_in_redis->{_rev} // '') ne ($app_config->data_set->{version} // '');
 my $quants_config    = BOM::Database::QuantsConfig->new();
 my $supported_config = $quants_config->supported_config_type;
-
-my @config_status = BOM::Backoffice::QuantsConfigHelper::get_global_config_status();
+my @config_status    = BOM::Backoffice::QuantsConfigHelper::get_global_config_status();
 
 my $disabled_write = not BOM::Backoffice::Auth0::has_quants_write_access();
 
