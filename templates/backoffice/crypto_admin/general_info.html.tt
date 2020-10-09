@@ -59,7 +59,7 @@
         </table>
     </div>
 [% END %]
-
+<br>
 <script>
 
 window.onload = function() {

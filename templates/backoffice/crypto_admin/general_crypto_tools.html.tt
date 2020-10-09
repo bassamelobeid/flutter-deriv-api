@@ -1,0 +1,17 @@
+<form id="error_txn_form" action="[% controller_url %]" method="POST">
+    <table>
+        <tr>
+            <td>Show Error Transactions: </td>
+            <td>
+                <select name="gt_etf_currency" id="crypto_currencies_list">
+                    [% USE String %]
+                    [% FOR crypto IN currency_options %]
+                        [% space = String.new('&nbsp;').repeat(6 - crypto.length) %]
+                        <option value="[% crypto %]"[% IF currency_selected == crypto %] selected="selected"[% END %]>[% crypto %]</option>
+                    [% END %]
+                </select>
+            </td>
+            <td><button type="submit" name='req_type' form="error_txn_form" value="gt_get_error_txn">Get</button></td>
+        </tr>
+    </table>
+</form>

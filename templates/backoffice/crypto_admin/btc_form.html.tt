@@ -1,87 +1,11 @@
 <form action="[% controller_url %]" method="POST">
     <INPUT type=hidden name='currency' value='[% currency %]'/>
-<!--List Unspent UTXO-->
+
+    <!--Wallet functions-->
     <table>
         <tr>
-            <th colspan=3>List Unspent UTXO</th>
-        </tr>
-        <tr>
-            <th>Address:</th>
-            <td><input type=text name='lu_utxo_address'/></td>
-            <td rowspan=2><button type=submit name='req_type' value='list_unspent_utxo'>Get Unspent UTXO</button></td>
-        </tr>
-        <tr>
-            <th>Confirmations:</th>
-            <td><input type=text  name='confirmations'/></td>
-        </tr>
-    </table>
-    <p>*Leave blank to get <b>all</b> unspent utxo<p>
-    
-<br><br>
-<!--Get Trasaction-->
-    <table>
-        <th colspan=3>Get transaction info</th>
-        <tr>
-            <th>Transaction hash</th>
-            <td><input type=text name='txn_id'/></td>
-            <td><button type=submit name='req_type' value='get_transaction'/>Get transaction info</button></td>
-        </tr>
-    </table>
-<br><br>
-<!--list_receivedby_address-->
-    <table>
-        <th colspan=3>List receivedbyaddress</th>
-        <tr>
-            <th>Address</th>
-            <td><input type=text name='address_filter'/></td>
-            <td rowspan=2><button type=submit name='req_type' value='list_receivedby_address'/>listreceivedbyaddress</button></td>
-        </tr>
-        <tr>
-            <th>Min confirmation</th>
-            <td><input type=number name='receivedby_minconf'/></td>
-        </tr>
-    </table>
-<br><br>
-<!--get_estimate_smartfee-->
-    <table>
-        <th colspan=3>Estimate smart fee</th>
-        <tr>
-            <th>Number of Confirmation</th>
-            <td><input type=text name='esf_confirmation'/></td>
-            <td rowspan=2><button type=submit name='req_type' value='get_estimate_smartfee'/>Get</button></td>
-        </tr>
-        <tr>
-            <th>Estimate mode</th>
+            <th>Wallet Functions (w/o param)</th>
             <td>
-                <select name="esf_estimate_mode">
-                  <option value="CONSERVATIVE">CONSERVATIVE</option>
-                  <option value="UNSET">UNSET</option>
-                  <option value="ECONOMICAL">ECONOMICAL</option>
-                </select>
-            </td>
-        </tr>
-    </table>
-    <p><b>*Defaults to 3 confirmations if no confirmation is specified</b></p>
-<br>
-<!--calculate withdrawal fee-->
-    <table>
-        <th colspan=3>Calculate withdrawal fee</th>
-        <tr>
-            <th>Withdraw_to address</th>
-            <td><input type=text name='withdrawal_address'/></td>
-            <td rowspan=2><button type=submit name='req_type' value='calculate_withdrawal_fee'/>Calculate</button></td>
-        </tr>
-        <tr>
-            <th>Amount</th>
-            <td><input type=number step=any name='withdrawal_amount'/></td>
-        </tr>
-    </table>
-<br><br>
-<!--Wallet functions-->
-    <table>
-        <th colspan=3>Wallet functions</th>
-        <tr>
-            <td colspan=2>
                 <select name="req_type">
                   <option disabled selected value> -- select an option -- </option>
                   <option value="get_balance">Wallet balance</option>
@@ -94,5 +18,143 @@
         </tr>
     </table>
     <br>
+    <table>
+        <tr>
+            <th>Wallet Functions (with params)</th>
+            <td>
+                <select id="func_list_w_params"  onchange="showSelected(this.value)">
+                  <option disabled selected value> -- select an option -- </option>
+                  <option value="list_unspent_utxo">List Unspent UTXO</option>
+                  <option value="get_transaction">Get transaction info</option>
+                  <option value="list_receivedby_address">List receivedbyaddress</option>
+                  <option value="get_estimate_smartfee">Estimate smart fee</option>
+                  <option value="calculate_withdrawal_fee">Calculate withdrawal fee</option>
+                </select>
+            </td>
+        </tr>
+    </table>
+    
+    <br>
+    
+<!--List Unspent UTXO-->
+    <div class="crypto_func invisible" id="list_unspent_utxo">
+        <hr>
+        <table>
+            <tr>
+                <th colspan=3>List Unspent UTXO</th>
+            </tr>
+            <tr>
+                <th>Address:</th>
+                <td><input type=text name='lu_utxo_address'/></td>
+                <td rowspan=2><button type=submit name='req_type' value='list_unspent_utxo'>Get Unspent UTXO</button></td>
+            </tr>
+            <tr>
+                <th>Confirmations:</th>
+                <td><input type=text  name='confirmations'/></td>
+            </tr>
+        </table>
+        <p>*Leave blank to get <b>all</b> unspent utxo<p>
+    </div>
+    
+<!--Get Trasaction-->
+    <div class="crypto_func invisible" id = "get_transaction">
+        <hr>
+        <table>
+            <tr>
+                <th colspan=3>Get transaction info</th>
+            </tr>
+            <tr>
+                <th>Transaction hash</th>
+                <td><input type=text name='txn_id'/></td>
+                <td><button type=submit name='req_type' value='get_transaction'/>Get transaction info</button></td>
+            </tr>
+        </table>
+    </div>
+
+<!--list_receivedby_address-->
+    <div class="crypto_func invisible" id = "list_receivedby_address">
+        <hr>
+        <table>
+            <th colspan=3>List receivedbyaddress</th>
+            <tr>
+                <th>Address</th>
+                <td><input type=text name='address_filter'/></td>
+                <td rowspan=2><button type=submit name='req_type' value='list_receivedby_address'/>listreceivedbyaddress</button></td>
+            </tr>
+            <tr>
+                <th>Min confirmation</th>
+                <td><input type=number name='receivedby_minconf'/></td>
+            </tr>
+        </table>
+    </div>
+
+<!--get_estimate_smartfee-->
+    <div class="crypto_func invisible" id = "get_estimate_smartfee">
+        <hr>
+        <table>
+            <th colspan=3>Estimate smart fee</th>
+            <tr>
+                <th>Number of Confirmation</th>
+                <td><input type=text name='esf_confirmation'/></td>
+                <td rowspan=2><button type=submit name='req_type' value='get_estimate_smartfee'/>Get</button></td>
+            </tr>
+            <tr>
+                <th>Estimate mode</th>
+                <td>
+                    <select name="esf_estimate_mode">
+                      <option value="CONSERVATIVE">CONSERVATIVE</option>
+                      <option value="UNSET">UNSET</option>
+                      <option value="ECONOMICAL">ECONOMICAL</option>
+                    </select>
+                </td>
+            </tr>
+        </table>
+        <p><b>*Defaults to 3 confirmations if no confirmation is specified</b></p>
+    </div>
+
+<!--calculate withdrawal fee-->
+    <div class="crypto_func invisible" id = "calculate_withdrawal_fee">
+        <hr>
+        <table>
+            <th colspan=3>Calculate withdrawal fee</th>
+            <tr>
+                <th>Withdraw_to address</th>
+                <td><input type=text name='withdrawal_address'/></td>
+                <td rowspan=2><button type=submit name='req_type' value='calculate_withdrawal_fee'/>Calculate</button></td>
+            </tr>
+            <tr>
+                <th>Amount</th>
+                <td><input type=number step=any name='withdrawal_amount'/></td>
+            </tr>
+        </table>
+    </div>
     
 </form>
+
+<script type="text/javascript">
+    
+    window.onload = function() {
+        var dropdown_field = document.getElementById("func_list_w_params")
+        var default_selection = "[% previous_req %]";
+        
+        if (default_selection){
+            dropdown_field.value=default_selection;
+            showSelected(default_selection);
+        }
+    };
+
+    var current_selection = '';
+    
+    function showSelected(sel_val) {
+        const sel_div = document.getElementById(sel_val);
+        const cur_div = document.getElementById(current_selection);
+        
+        if (current_selection){     
+            cur_div.classList.add('invisible');
+        }
+        current_selection = sel_val;
+        sel_div.classList.remove('invisible');
+
+    };
+
+</script>

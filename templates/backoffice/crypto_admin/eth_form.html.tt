@@ -1,57 +1,9 @@
 <form action="[% controller_url %]" method="POST">
-    <INPUT type=hidden name='currency' value='ETH'/>
-<!--get balance-->
+    <!--Wallet functions-->
     <table>
         <tr>
-            <th colspan=3>Get Balance</th>
-        </tr>
-        <tr>
-            <th>Address:</th>
-            <td><input type=text name='address'/></td>
-            <td><button type=submit name='req_type' value='get_balance'>Get address balance</button></td>
-        </tr>
-    </table>
-<br><br>
-<!--Get Trasaction by hash-->
-    <table>
-        <th colspan=3>Get transaction info</th>
-        <tr>
-            <th>Transaction hash</th>
-            <td><input type=text name='transaction_hash'/></td>
-            <td><button type=submit name='req_type' value='get_transactionbyhash'/>Get transaction info</button></td>
-        </tr>
-    </table>
-<br><br>
-<!--Get Trasaction by hash-->
-    <table>
-        <th colspan=3>Estimate gas</th>
-        <tr>
-            <th>To address: </th>
-            <td><input type=text name='to_address'/></td>
-            <td rowspan=2><button type=submit name='req_type' value='get_estimatedgas'/>Estimated Gas</button></td>
-        </tr>
-        <tr>
-            <th>Amount: </th>
-            <td><input type=text name='amount'/></td>
-        </tr>
-    </table>
-<br><br>
-    <table>
-        <tr>
-            <th colspan=3>Get transaction receipt</th>
-        </tr>
-        <tr>
-            <th>Transaction hash:</th>
-            <td><input type=text name='gtr_transaction_hash'/></td>
-            <td><button type=submit name='req_type' value='get_transaction_receipt'>Get Transaction Receipt</button></td>
-        </tr>
-    </table>
-<br><br>
-<!--Wallet functions-->
-    <table>
-        <th colspan=3>Wallet functions</th>
-        <tr>
-            <td colspan=2>
+            <th>Functions (w/o params)</th>
+            <td>
                 <select name="req_type">
                   <option disabled selected value> -- select an option -- </option>
                   <option value="get_gas_price">Get gas price</option>
@@ -63,5 +15,111 @@
             <td><button type=submit/>Get</button></td>
         </tr>
     </table>
+    <br>
+    <table>
+        <tr>
+            <th>Functions (with params)</th>
+            <td>
+                <select id="func_list_w_params"  onchange="showSelected(this.value)">
+                  <option disabled selected value> -- select an option -- </option>
+                  <option value="get_balance">Get balance</option>
+                  <option value="get_transactionbyhash">Get transaction by hash</option>
+                  <option value="get_estimatedgas">Get estimated gas</option>
+                  <option value="get_transaction_receipt">Get transaction receipt</option>
+                </select>
+            </td>
+        </tr>
+    </table>
+    <br>
+    
+    <INPUT type=hidden name='currency' value='ETH'/>
+    
+<!--get balance-->
+    <div class="crypto_func invisible" id="get_balance">
+        <hr>
+        <table>
+            <tr>
+                <th colspan=3>Get Balance</th>
+            </tr>
+            <tr>
+                <th>Address:</th>
+                <td><input type=text name='address'/></td>
+                <td><button type=submit name='req_type' value='get_balance'>Get address balance</button></td>
+            </tr>
+        </table>
+    </div>
+
+<!--Get Transaction by hash-->
+    <div class="crypto_func invisible" id="get_transactionbyhash">
+        <hr>
+        <table>
+            <th colspan=3>Get transaction info</th>
+            <tr>
+                <th>Transaction hash</th>
+                <td><input type=text name='transaction_hash'/></td>
+                <td><button type=submit name='req_type' value='get_transactionbyhash'/>Get transaction info</button></td>
+            </tr>
+        </table>
+    </div>
+
+<!--Get estimated gas-->
+    <div class="crypto_func invisible" id="get_estimatedgas">
+        <hr>
+        <table>
+            <th colspan=3>Estimate gas</th>
+            <tr>
+                <th>To address: </th>
+                <td><input type=text name='to_address'/></td>
+                <td rowspan=2><button type=submit name='req_type' value='get_estimatedgas'/>Estimated Gas</button></td>
+            </tr>
+            <tr>
+                <th>Amount: </th>
+                <td><input type=text name='amount'/></td>
+            </tr>
+        </table>
+    </div>
+
+<!--Get transaction receipt-->
+    <div class="crypto_func invisible" id="get_transaction_receipt">
+        <hr>
+        <table>
+            <tr>
+                <th colspan=3>Get transaction receipt</th>
+            </tr>
+            <tr>
+                <th>Transaction hash:</th>
+                <td><input type=text name='gtr_transaction_hash'/></td>
+                <td><button type=submit name='req_type' value='get_transaction_receipt'>Get Transaction Receipt</button></td>
+            </tr>
+        </table>
+    </div>
     
 </form>
+
+<script type="text/javascript">
+    
+    window.onload = function() {
+        var dropdown_field = document.getElementById("func_list_w_params")
+        var default_selection = "[% previous_req %]";
+        
+        if (default_selection){
+            dropdown_field.value=default_selection;
+            showSelected(default_selection);
+        }
+    };
+
+    var current_selection = '';
+    
+    function showSelected(sel_val) {
+        const sel_div = document.getElementById(sel_val);
+        const cur_div = document.getElementById(current_selection);
+        
+        if (current_selection){     
+            cur_div.classList.add('invisible');
+        }
+        current_selection = sel_val;
+        sel_div.classList.remove('invisible');
+
+    };
+
+</script>

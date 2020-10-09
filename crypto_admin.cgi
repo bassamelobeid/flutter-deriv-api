@@ -16,9 +16,13 @@ use BOM::Backoffice::Request;
 use Syntax::Keyword::Try;
 use LandingCompany::Registry;
 use ExchangeRates::CurrencyConverter qw(in_usd);
+use BOM::Config::Redis;
+use BOM::Cryptocurrency::Helper;
 
 use BOM::Backoffice::Sysinit ();
 BOM::Backoffice::Sysinit::init();
+
+use constant REVERT_ERROR_TXN_RECORD => "CRYPTO::ERROR::TXN::ID::";
 
 # Check if a staff is logged in
 BOM::Backoffice::Auth0::get_staff();
@@ -40,9 +44,25 @@ print "<center>";
 
 my @currency_options  = qw/ BTC LTC ETH UST ERC20/;
 my $currency_selected = $input{currency} // 'BTC';
+my @all_cryptos       = LandingCompany::Registry::all_crypto_currencies();
+my $currency_mapper   = {
+    LTC => 'BTC',
+};
 
 my $tt = BOM::Backoffice::Request::template;
-Bar("Select Currency");
+
+Bar("GENERAL TOOLS");
+$tt->process(
+    'backoffice/crypto_admin/general_crypto_tools.html.tt',
+    {
+        controller_url    => request()->url_for('backoffice/crypto_admin.cgi'),
+        currency_options  => \@all_cryptos,
+        currency_selected => $currency_selected
+    },
+    undef,
+    {binmode => ':utf8'});
+
+Bar($currency_selected . " TOOLS");
 $tt->process(
     'backoffice/crypto_admin/currency_selection.html.tt',
     {
@@ -57,17 +77,12 @@ my $currency_info = _get_currency_info($currency_selected);
 
 $tt->process('backoffice/crypto_admin/general_info.html.tt', {currency_info => $currency_info}, undef, {binmode => ':utf8'});
 
-Bar($currency_selected . " TOOLS");
-
-my $currency_mapper = {
-    LTC => 'BTC',
-};
-
 $tt->process(
     'backoffice/crypto_admin/' . lc($currency_mapper->{$currency_selected} // $currency_selected) . '_form.html.tt',
     {
         controller_url => request()->url_for('backoffice/crypto_admin.cgi'),
         currency       => $currency_selected,
+        previous_req   => $input{req_type} // '',
         cmd            => request()->param('command') // '',
         broker         => $broker,
         staff          => $staff,
@@ -77,32 +92,91 @@ if (%input && $input{req_type}) {
 
     my $req_type = $input{req_type};
 
+    my $is_general_req = $req_type =~ /^gt_/ ? 1 : 0;
+
     Bar("Results: $req_type");
     code_exit_BO('<p style="color:red"><b>ERROR: Please select ONLY ONE request at a time.</b></p>') if (ref $input{req_type});
 
-    my $currency_wrapper = _get_currency($currency_selected);
+    if ($is_general_req) {
+        my $redis_write = BOM::Config::Redis::redis_replicated_write();
+        my $redis_read  = BOM::Config::Redis::redis_replicated_read();
 
-    my $func_map = _get_function_map($currency_selected, $currency_wrapper, \%input);
+        if ($req_type eq 'gt_get_error_txn') {
 
-    my $template_details;
-    $template_details->{req_type} = $req_type;
-    $template_details->{currency} = $currency_selected;
-    try {
-        my $response = $func_map->{$req_type}();
-        $template_details->{response} = $response;
-        try {
-            $template_details->{response_json} = encode_json($response);
-        } catch {
-            $template_details->{response_json} = $response;
+            my $error_withdrawals = BOM::Cryptocurrency::Helper::get_withdrawal_error_txn($input{gt_etf_currency});
+
+            foreach my $txn_record (keys %$error_withdrawals) {
+
+                my $approver = $redis_read->get(REVERT_ERROR_TXN_RECORD . $txn_record);
+                $error_withdrawals->{$txn_record}->{approved_by} = $approver;
+            }
+
+            $tt->process(
+                'backoffice/crypto_admin/error_withdrawals.html.tt',
+                {
+                    controller_url    => request()->url_for('backoffice/crypto_admin.cgi'),
+                    currency          => $input{gt_etf_currency},
+                    error_withdrawals => $error_withdrawals,
+                }) || die $tt->error();
+
         }
-    } catch {
-        $template_details->{response} = +{error => $@};
-    };
 
-    BOM::Backoffice::Request::template()
-        ->process('backoffice/crypto_admin/' . lc($currency_mapper->{$currency_selected} // $currency_selected) . '_result.html.tt',
-        $template_details, undef, {binmode => ':utf8'});
+        if ($req_type eq 'gt_revert_processing_txn') {
+            code_exit_BO("No transaction selected") unless $input{txn_checkbox};
 
+            my @txn_to_process = ref($input{txn_checkbox}) eq 'ARRAY' ? $input{txn_checkbox}->@* : ($input{txn_checkbox});
+            my $messages;
+
+            foreach my $txn_id (@txn_to_process) {
+                my $approver = $redis_read->get(REVERT_ERROR_TXN_RECORD . $txn_id);
+
+                code_exit_BO("ERROR: Missing variable staff name. Please check!") unless $staff;
+
+                if ($approver && $approver ne $staff) {
+                    try {
+                        BOM::Cryptocurrency::Helper::revert_txn_status_to_processing($txn_id, $input{gt_currency}, $approver, $staff);
+
+                        $messages .= "<p style='color:green'>Transaction id: $txn_id successfully reverted. </p>";
+                        $redis_write->del(REVERT_ERROR_TXN_RECORD . $txn_id);
+                    } catch ($e) {
+                        $messages .= "<p style='color:red'><b>Transaction id: $txn_id revert failed. Error: $e</b></p>";
+                    }
+                } elsif ($approver) {
+                    $messages .= "<p style='color:red'><b>Transaction id: $txn_id is already previously approved by you.</b></p>";
+                } else {
+                    $messages .= "<p style='color:green'><b>Transaction id: $txn_id successfully approved. Needs one more approver.</b></p>";
+                    $redis_write->setex(REVERT_ERROR_TXN_RECORD . $txn_id, 3600, $staff);
+                }
+            }
+
+            print($messages);
+        }
+
+    } else {
+        my $currency_wrapper = _get_currency($currency_selected);
+
+        # these are used for currency_specific calls
+        my $func_map = _get_function_map($currency_selected, $currency_wrapper, \%input);
+
+        my $template_details;
+        $template_details->{req_type} = $req_type;
+        $template_details->{currency} = $currency_selected;
+        try {
+            my $response = $func_map->{$req_type}();
+            $template_details->{response} = $response;
+            try {
+                $template_details->{response_json} = encode_json($response);
+            } catch ($e) {
+                $template_details->{response_json} = $response;
+            }
+        } catch ($e) {
+            $template_details->{response} = +{error => $e};
+        };
+
+        BOM::Backoffice::Request::template()
+            ->process('backoffice/crypto_admin/' . lc($currency_mapper->{$currency_selected} // $currency_selected) . '_result.html.tt',
+            $template_details, undef, {binmode => ':utf8'});
+    }
 }
 
 sub _get_currency {

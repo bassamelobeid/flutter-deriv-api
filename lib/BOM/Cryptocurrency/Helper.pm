@@ -176,4 +176,41 @@ sub get_crypto_transactions {
         }) // [];
 }
 
+=head2 get_withdrawal_error_txn
+
+This sub queries the withdrawal transactions with the "error" status of the selected currency
+
+=cut
+
+sub get_withdrawal_error_txn {
+
+    my ($currency_code) = @_;
+
+    my $dbic = BOM::CTC::Database->new()->cryptodb_dbic();
+
+    return $dbic->run(
+        fixup => sub {
+            $_->selectall_hashref("SELECT * from payment.ctc_get_error_withdrawal_transactions(?::TEXT)", 'id', {}, $currency_code);
+        }) // [];
+
+}
+
+=head2 revert_txn_status_to_processing
+
+This sub changes the withdrawal transaction's status from "ERROR" to "PROCESSING" by getting the id
+
+=cut
+
+sub revert_txn_status_to_processing {
+    my ($txn_id, $currency, $prev_approver, $staff) = @_;
+
+    my $dbic = BOM::CTC::Database->new()->cryptodb_dbic();
+
+    $dbic->run(
+        fixup => sub {
+            $_->do("SELECT * from payment.ctc_reset_error_to_processing(?::BIGINT, ?::TEXT, ?::TEXT, ?::TEXT)",
+                undef, $txn_id, $currency, $prev_approver, $staff);
+        });
+}
+
 1;

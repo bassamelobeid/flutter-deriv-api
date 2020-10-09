@@ -168,9 +168,9 @@ subtest 'realtime report generation' => sub {
 
     # It's quite hard to test this function in unit test env, because there's only two clientdb
     # When we create db in BOM::Database::ClientDB we specifically select svg as domain name for unit tests
-    my $client_dbs  = $marked->all_client_dbs;
-    is(@$client_dbs, 2,     'There are two databases for unit tests');
-    for (0..1){
+    my $client_dbs = $marked->all_client_dbs;
+    is(@$client_dbs, 2, 'There are two databases for unit tests');
+    for (0 .. 1) {
         is($client_dbs->[$_]{domain}, 'svg', 'Unit test database name');
     }
 
