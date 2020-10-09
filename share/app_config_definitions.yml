@@ -79,6 +79,23 @@ payments:
       isa: json_string
       default: '{"jy":"99999"}'
       global: 1
+    credit_card_processors:
+      description: 'Doughflow payment processors used for credit card payments'
+      isa: ArrayRef
+      default:
+        - Acquired
+        - Acquired_CF
+        - Apexx
+        - CardPay
+        - CardPay1
+        - CardPayCC
+        - CardPayCC_1
+        - CardPayCC_NG
+        - CardPay_SA
+        - DCash4
+        - PCC_Ecommpay
+        - PCC_ISignThis
+      global: 1      
     p2p:
       description: 'Peer-to-peer payment system'
       isa: section
@@ -156,7 +173,17 @@ payments:
               isa: Num
               description: 'Maximum number of active orders an advertiser may have for each type and currency pair combination.'
               default: 3
-              global: 1              
+              global: 1
+        credit_card_turnover_requirement:
+          description: 'Non-PA client needs turnover at least this percentage of credit card deposits to be allowed to create sell orders and ads.'
+          isa: Num
+          global: 1
+          default: 25
+        credit_card_check_period:
+          description: 'Number of months in the past to check credit card deposits and turnover.'
+          isa: Num
+          global: 1
+          default: 6             
     crypto:
       description: 'Cryptocurrencies related config'
       isa: section
