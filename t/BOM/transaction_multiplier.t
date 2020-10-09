@@ -70,6 +70,11 @@ my $current_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     quote      => 100,
 });
 
+# Avoid roll-over blackout period
+if (any { Date::Utility->new->hour == $_ } (20, 21)) {
+    set_relative_time(0 - 3 * 60 * 60);
+}
+
 my $mocked_u = Test::MockModule->new('Quant::Framework::Underlying');
 $mocked_u->mock('spot_tick', sub { return $current_tick });
 initialize_realtime_ticks_db();
