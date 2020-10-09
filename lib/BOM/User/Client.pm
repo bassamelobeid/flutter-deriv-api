@@ -2192,6 +2192,10 @@ sub p2p_advert_create {
     $param{account_currency} = $self->currency;
     ($param{local_currency} //= $self->local_currency) or die +{error_code => 'NoLocalCurrency'};
 
+    if ($param{type} eq 'sell') {
+        die +{error_code => 'SellProhibited'} unless $self->_p2p_validate_sell($self, $advertiser_info);
+    }
+
     $self->_validate_advert_amounts(%param);
     $self->_validate_advert_limits(%param, advertiser_id => $advertiser_info->{id});
 
@@ -2389,16 +2393,19 @@ sub p2p_order_create {
         message_params => [$advert_info->{account_currency}, formatnumber('amount', $advert_info->{account_currency}, $limit_remaining),]}
         if $amount > $limit_remaining;
 
+    my $advertiser = BOM::User::Client->new({loginid => $advertiser_info->{client_loginid}});
     my ($order_type, $amount_advertiser, $amount_client);
 
     if ($advert_type eq 'buy') {
         $order_type = 'sell';
+        die +{error_code => 'SellProhibited'} unless $self->_p2p_validate_sell($self, $client_info);
         die +{error_code => 'OrderPaymentInfoRequired'} if !trim($param{payment_info});
         die +{error_code => 'OrderContactInfoRequired'} if !trim($param{contact_info});
         $amount_advertiser = $amount;
         $amount_client     = -$amount;
     } elsif ($advert_type eq 'sell') {
         $order_type = 'buy';
+        die +{error_code => 'OrderCreateFailAdvertiser'} unless $self->_p2p_validate_sell($advertiser, $advertiser_info);
         die +{error_code => 'OrderPaymentContactInfoNotAllowed'} if $payment_info or $contact_info;
         ($payment_info, $contact_info) = $advert_info->@{qw/payment_info contact_info/};
         $amount_advertiser = -$amount;
@@ -2419,7 +2426,6 @@ sub p2p_order_create {
         };
     }
 
-    my $advertiser = BOM::User::Client->new({loginid => $advertiser_info->{client_loginid}});
     try {
         $advertiser->validate_payment(
             amount   => $amount_advertiser,
@@ -3189,6 +3195,72 @@ sub _p2p_validate_seller_confirm {
     die +{error_code => 'OrderConfirmCompleted'}    if $order->{status} !~ /^(buyer-confirmed|timed-out|disputed)$/;
 
     return;
+}
+
+=head2 _p2p_validate_sell
+
+Validates sell advert creation, sell order creation, and orders against sell ads.
+
+=cut
+
+sub _p2p_validate_sell {
+    my ($self, $client, $advertiser) = @_;
+
+    return 1 if $client->get_payment_agent();
+
+    my $card_processors   = BOM::Config::Runtime->instance->app_config->payments->credit_card_processors;
+    my $turnover_required = BOM::Config::Runtime->instance->app_config->payments->p2p->credit_card_turnover_requirement;
+    my $check_period      = BOM::Config::Runtime->instance->app_config->payments->p2p->credit_card_check_period;
+
+    my ($cc_deposits) = $self->db->dbic->run(
+        fixup => sub {
+            $_->selectrow_array(
+                "SELECT SUM(p.amount) FROM payment.payment p 
+                JOIN payment.doughflow d ON d.payment_id = p.id 
+                WHERE p.account_id = ?
+                AND d.payment_processor = ANY(?)
+                AND p.payment_time > NOW() - ? * INTERVAL '1 month'",
+                undef,
+                $client->account->id, $card_processors, $check_period
+            );
+        });
+    return 1 unless $cc_deposits;
+
+    my ($turnover) = $self->db->dbic->run(
+        fixup => sub {
+            $_->selectrow_array(
+                "SELECT COALESCE(SUM(buy_price),0) FROM bet.financial_market_bet 
+                WHERE account_id = ? AND purchase_time > NOW() - ? * INTERVAL '1 month'",
+                undef,
+                $client->account->id, $check_period
+            );
+        });
+
+    my ($mt5_net) = $self->db->dbic->run(
+        fixup => sub {
+            $_->selectrow_array(
+                "SELECT COALESCE(SUM(amount)*-1,0) FROM payment.payment  
+                WHERE account_id = ? AND payment_type_code = 'mt5_transfer' AND payment_time > NOW() - ? * INTERVAL '1 month'",
+                undef,
+                $client->account->id, $check_period
+            );
+        });
+
+    my ($buy) = $self->db->dbic->run(
+        fixup => sub {
+            $_->selectrow_array(
+                "SELECT COALESCE(SUM(o.amount),0) FROM p2p.p2p_transaction t 
+               JOIN p2p.p2p_order o ON o.id = t.order_id 
+               JOIN p2p.p2p_advert a ON a.id = o.advert_id
+               WHERE t.type = 'order_complete_payment'
+               AND t.transaction_time > NOW() - ? * INTERVAL '1 month' 
+               AND ((a.type = 'buy' AND a.advertiser_id = ?) OR (a.type = 'sell' AND o.client_loginid = ?))",
+                undef,
+                $check_period, $advertiser->{id}, $client->loginid
+            );
+        });
+
+    return ($turnover + $mt5_net + $buy) > ($cc_deposits * ($turnover_required / 100));
 }
 
 =head2 _advertiser_details
