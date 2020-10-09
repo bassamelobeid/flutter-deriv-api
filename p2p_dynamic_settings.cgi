@@ -41,6 +41,8 @@ my @setting_keys = qw(
     payments.p2p.restricted_countries
     payments.p2p.available_for_currencies
     payments.p2p.refund_timeout
+    payments.p2p.credit_card_turnover_requirement
+    payments.p2p.credit_card_check_period
 );
 
 if (request()->http_method eq 'POST' and request()->params->{save}) {

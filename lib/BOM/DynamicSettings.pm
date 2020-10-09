@@ -257,6 +257,7 @@ sub get_settings_by_group {
                 payments.transfer_between_accounts.maximum.default
                 payments.transfer_between_accounts.maximum.MT5
                 payments.experimental_currencies_allowed
+                payments.credit_card_processors
                 )
         ],
         crypto => [qw(
@@ -299,6 +300,8 @@ sub get_settings_by_group {
                 payments.p2p.restricted_countries
                 payments.p2p.available_for_currencies
                 payments.p2p.refund_timeout
+                payments.p2p.credit_card_turnover_requirement
+                payments.p2p.credit_card_check_period
                 )]};
 
     my $app_config = BOM::Config::Runtime->instance->app_config;
