@@ -132,7 +132,18 @@ sub ready_to_refund {
 sub set_order_status {
     my ($client, $order_id, $new_status) = @_;
 
-    return $client->db->dbic->dbh->do('SELECT * FROM p2p.order_update(?, ?)', undef, $order_id, $new_status);
+    $client->db->dbic->dbh->do(
+        "UPDATE p2p.p2p_advert a SET active_orders=active_orders+
+        CASE 
+            WHEN p2p.is_status_final(?) AND NOT p2p.is_status_final(o.status) THEN -1
+            WHEN NOT p2p.is_status_final(?) AND p2p.is_status_final(o.status) THEN 1
+            ELSE 0
+        END
+        FROM p2p.p2p_order o WHERE o.advert_id = a.id AND o.id = ?",
+        undef, $new_status, $new_status, $order_id
+    );
+
+    $client->db->dbic->dbh->do('SELECT * FROM p2p.order_update(?, ?)', undef, $order_id, $new_status);
 }
 
 sub bypass_sendbird {
