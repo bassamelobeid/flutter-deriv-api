@@ -93,17 +93,29 @@ ok $timing->[0]->[1], 'Should log timing';
 is $timing->[0]->[2]->{tags}->[0], 'rpc:buy', 'Should set tag with rpc method name';
 
 @$timing = ();
-my ($fake_rpc_response, $fake_rpc_client, $rpc_client_mock);
+
+my ($fake_rpc_response, $rpc_client_mock);
+
 $fake_rpc_response = Test::MockObject->new();
 $fake_rpc_response->mock('is_error',      sub { 1 });
 $fake_rpc_response->mock('result',        sub { +{} });
-$fake_rpc_response->mock('error_message', sub { 'error' });
+$fake_rpc_response->mock('error_message', sub { 'dummy' });
+$fake_rpc_response->mock('error_code',    sub { 'dummy' });
+
+# Json RPC compatible
 $rpc_client_mock = Test::MockModule->new('MojoX::JSON::RPC::Client');
 $rpc_client_mock->mock('call', sub { shift; return $_[2]->($fake_rpc_response) });
 
-my $warn_string;
+# RPC Queue compatible
 {
-    local $SIG{'__WARN__'} = sub { $warn_string = shift; };
+    no warnings qw(redefine);    ## no critic (ProhibitNoWarnings)
+
+    *MojoX::JSON::RPC::Client::ReturnObject::new = sub {
+        return $fake_rpc_response;
+    }
+}
+
+{
     $res = $t->await::website_status({website_status => 1});
 }
 is $res->{error}->{code}, 'CallError', 'Should make timing if returns CallError';
@@ -117,6 +129,8 @@ ok $timing->[1]->[1], 'Should log timing';
 is $timing->[1]->[2]->{tags}->[0], 'rpc:website_status', 'Should set tag with rpc method name';
 
 @$timing = ();
+
+# Json RPC compatible
 my $fake_req = Test::MockObject->new();
 my $fake_tx  = Test::MockObject->new();
 $fake_req->mock('url', sub { return "fake req url" });
@@ -124,8 +138,18 @@ $fake_tx->mock('error', sub { return +{} });
 $fake_tx->mock('req',   sub { return $fake_req });
 $rpc_client_mock->mock('tx',   sub { return $fake_tx });
 $rpc_client_mock->mock('call', sub { shift; return $_[2]->('') });
+
+# RPC Queue compatible
 {
-    local $SIG{'__WARN__'} = sub { $warn_string = shift; };
+    no warnings qw(redefine);    ## no critic (ProhibitNoWarnings)
+
+    *MojoX::JSON::RPC::Client::ReturnObject::new = sub {
+        return '';
+    }
+}
+
+{
+    local $SIG{'__WARN__'} = undef;
     $res = $t->await::website_status({website_status => 1});
 }
 

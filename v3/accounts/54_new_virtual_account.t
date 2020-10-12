@@ -4,7 +4,7 @@ use Test::More;
 use JSON::MaybeXS;
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
-use BOM::Test::Helper qw/test_schema build_wsapi_test call_mocked_client reconnect/;
+use BOM::Test::Helper qw/test_schema build_wsapi_test call_mocked_consumer_groups_request reconnect/;
 use BOM::Platform::Token;
 use BOM::Config::Redis;
 use List::Util qw(first);
@@ -55,7 +55,7 @@ subtest 'verify_email' => sub {
 
     my $old_token = _get_token();
 
-    my (undef, $call_params) = call_mocked_client(
+    my (undef, $call_params) = call_mocked_consumer_groups_request(
         $t,
         {
             verify_email => $email,

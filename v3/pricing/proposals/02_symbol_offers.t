@@ -15,7 +15,7 @@ use lib "$Bin/../lib";
 use Test::MockModule;
 use Quant::Framework;
 
-use BOM::Test::Helper qw/test_schema build_wsapi_test call_mocked_client/;
+use BOM::Test::Helper qw/test_schema build_wsapi_test call_mocked_consumer_groups_request/;
 use await;
 
 initialize_realtime_ticks_db();
@@ -51,7 +51,7 @@ ok(grep { $_ eq 'USD' } @{$payout_currencies->{payout_currencies}});
 test_schema('payout_currencies', $payout_currencies);
 
 # test active_symbols
-my (undef, $call_params) = call_mocked_client($t, {active_symbols => 'full'});
+my (undef, $call_params) = call_mocked_consumer_groups_request($t, {active_symbols => 'full'});
 ok exists $call_params->{token};
 
 my $active_symbols = $t->await::active_symbols({active_symbols => 'full'});
@@ -77,7 +77,7 @@ ok($trading_times->{trading_times}->{markets});
 test_schema('trading_times', $trading_times);
 
 Cache::RedisDB->flushall;
-(undef, $call_params) = call_mocked_client($t, {asset_index => 1});
+(undef, $call_params) = call_mocked_consumer_groups_request($t, {asset_index => 1});
 is $call_params->{language}, 'EN';
 
 my $asset_index = $t->await::asset_index({asset_index => 1});
@@ -86,7 +86,7 @@ ok($asset_index->{asset_index});
 my $got_asset_index = $asset_index->{asset_index};
 test_schema('asset_index', $asset_index);
 
-(undef, $call_params) = call_mocked_client($t, {asset_index => 1});
+(undef, $call_params) = call_mocked_consumer_groups_request($t, {asset_index => 1});
 is_deeply $got_asset_index, $asset_index->{asset_index}, 'Should use cache';
 
 $t->finish_ok;

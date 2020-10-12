@@ -92,8 +92,8 @@ initialize_realtime_ticks_db();
         is scalar(@{$res->{forget_all}}), scalar(@$types), "Forget the relevant tick channel";
     }
 
-    _check_ticks('ticks');
     _check_ticks(['ticks', 'candles']);
+    _check_ticks('ticks');
 
     $t->finish_ok;
 }

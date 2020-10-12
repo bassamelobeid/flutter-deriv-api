@@ -12,7 +12,7 @@ use Format::Util::Numbers qw/financialrounding/;
 
 use Quant::Framework;
 
-use BOM::Test::Helper qw/test_schema build_wsapi_test call_mocked_client/;
+use BOM::Test::Helper qw/test_schema build_wsapi_test/;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);

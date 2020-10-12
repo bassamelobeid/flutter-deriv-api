@@ -4,7 +4,7 @@ use Test::More;
 
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
-use BOM::Test::Helper qw/test_schema build_wsapi_test call_mocked_client/;
+use BOM::Test::Helper qw/test_schema build_wsapi_test call_mocked_consumer_groups_request/;
 use Test::MockModule;
 
 use BOM::Database::Model::OAuth;
@@ -53,7 +53,7 @@ my $authorize = $t->await::authorize({authorize => $token});
 is $authorize->{authorize}->{email},   $email;
 is $authorize->{authorize}->{loginid}, $cr_1;
 
-my ($res, $call_params) = call_mocked_client($t, {topup_virtual => 1});
+my ($res, $call_params) = call_mocked_consumer_groups_request($t, {topup_virtual => 1});
 is $call_params->{language}, 'EN';
 ok exists $call_params->{token};
 is $res->{msg_type}, 'topup_virtual';

@@ -151,16 +151,33 @@ subtest 'ticks_forget_one_sub' => sub {
 
 subtest 'ticks_history_fail_rpc' => sub {
 
-    my $res = $t->await::forget_all({forget_all => 'ticks'});
+    my $res               = $t->await::forget_all({forget_all => 'ticks'});
+    my $origin_return_obj = MojoX::JSON::RPC::Client::ReturnObject->can("new");
+    my @return_obj_params;
     {
+        use Test::MockObject;
+        my $fake_rpc_response = Test::MockObject->new();
+        $fake_rpc_response->mock('is_error',      sub { 1 });
+        $fake_rpc_response->mock('result',        sub { +{} });
+        $fake_rpc_response->mock('error_message', sub { 'dummy' });
+        $fake_rpc_response->mock('error_code',    sub { 'dummy' });
         my $mock_rpc = Test::MockModule->new('MojoX::JSON::RPC::Client');
         $mock_rpc->mock(
             'call',
             sub {
                 my ($a, $b, $c, $d) = @_;
-                use Data::Dumper::Concise;
-                &$d($a, undef);
+                $d->($fake_rpc_response);
             });
+
+        {
+            no warnings qw(redefine);    ## no critic (ProhibitNoWarnings)
+
+            *MojoX::JSON::RPC::Client::ReturnObject::new = sub {
+                @return_obj_params = @_;
+                return $fake_rpc_response;
+            }
+        }
+
         my $req2 = {
             "ticks_history" => "R_50",
             "style"         => "ticks",
@@ -173,6 +190,14 @@ subtest 'ticks_history_fail_rpc' => sub {
 
         cmp_ok $res->{error}->{message}, 'eq', 'Sorry, an error occurred while processing your request.',
             "Recived tick history error when RPC failed";
+    }
+
+    {
+        no warnings qw(redefine);    ## no critic (ProhibitNoWarnings)
+
+        *MojoX::JSON::RPC::Client::ReturnObject::new = sub {
+            return $origin_return_obj->(@return_obj_params);
+        }
     }
 
 # If the RPC response fails any subscription created in the call should be canceled and we should be able to try again with out needing to forget.

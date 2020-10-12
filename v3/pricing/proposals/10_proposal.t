@@ -5,7 +5,7 @@ use Test::Deep;
 
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
-use BOM::Test::Helper qw/test_schema build_wsapi_test build_test_R_50_data call_mocked_client/;
+use BOM::Test::Helper qw/test_schema build_wsapi_test build_test_R_50_data/;
 use Net::EmptyPort qw(empty_port);
 use Test::MockModule;
 

@@ -4,7 +4,7 @@ use Test::More;
 
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
-use BOM::Test::Helper qw/test_schema build_wsapi_test call_mocked_client/;
+use BOM::Test::Helper qw/test_schema build_wsapi_test call_mocked_consumer_groups_request/;
 use Test::MockModule;
 use BOM::Config::Runtime;
 use BOM::Test::Helper::ExchangeRates qw/populate_exchange_rates/;
@@ -75,7 +75,7 @@ test_schema('states_list', $res);
 populate_exchange_rates();
 
 ## website_status
-my (undef, $call_params) = call_mocked_client($t, {website_status => 1});
+my (undef, $call_params) = call_mocked_consumer_groups_request($t, {website_status => 1});
 ok $call_params->{country_code};
 
 BOM::Config::Runtime->instance->app_config->check_for_update(1);

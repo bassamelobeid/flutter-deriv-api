@@ -7,7 +7,7 @@ use Test::Most;
 
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
-use BOM::Test::Helper qw/test_schema build_wsapi_test build_test_R_50_data call_mocked_client/;
+use BOM::Test::Helper qw/test_schema build_wsapi_test build_test_R_50_data call_mocked_consumer_groups_request/;
 use Net::EmptyPort qw(empty_port);
 use Test::MockModule;
 
@@ -148,7 +148,7 @@ my $forget = $t->await::forget({forget => $proposal->{proposal}->{id}});
 
 is $forget->{forget}, 0, 'buying a proposal deletes the stream';
 
-my (undef, $call_params) = call_mocked_client($t, {portfolio => 1});
+my (undef, $call_params) = call_mocked_consumer_groups_request($t, {portfolio => 1});
 is $call_params->{token}, $token;
 
 my $portfolio = $t->await::portfolio({portfolio => 1});
@@ -160,7 +160,7 @@ test_schema('portfolio', $portfolio);
 # proposal_open_contract is tested in 81_proposal_open_contract.t
 my $res;
 
-(undef, $call_params) = call_mocked_client(
+(undef, $call_params) = call_mocked_consumer_groups_request(
     $t,
     {
         buy        => 1,
@@ -193,7 +193,7 @@ ok $res->{buy}->{purchase_time};
 
 test_schema('buy', $res);
 
-(undef, $call_params) = call_mocked_client(
+(undef, $call_params) = call_mocked_consumer_groups_request(
     $t,
     {
         sell  => 1,

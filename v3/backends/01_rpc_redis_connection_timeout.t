@@ -11,6 +11,8 @@ use Mojo::IOLoop;
 use BOM::Test::Helper qw(build_wsapi_test call_instrospection);
 use BOM::Config::Redis;
 
+use BOM::Test::Script::RpcRedis;
+
 my $redis;
 my $api;
 
@@ -18,8 +20,6 @@ BEGIN {
     $api   = build_wsapi_test();
     $redis = BOM::Config::Redis::redis_rpc_write();
 }
-
-use BOM::Test::Script::RpcRedis;
 
 use constant BOOT_TIMEOUT => 5;
 
@@ -35,6 +35,8 @@ $mock_cg_backend->mock(
         return $mock_cg_backend->original('call_rpc')->(@_);
     });
 
+$mock_cg_backend->mock('timeout', BOOT_TIMEOUT);
+
 my $mock_http_backend = Test::MockModule->new('Mojo::WebSocketProxy::Backend::JSONRPC');
 $mock_http_backend->mock(
     'call_rpc',
@@ -45,12 +47,7 @@ $mock_http_backend->mock(
     });
 subtest 'Consumer service unavailability' => sub {
     # switch to rpc backend
-    my $rpc_redis       = BOM::Test::Script::RpcRedis::get_script;
-    my $expected_result = {
-        states_list => 'rpc_redis',
-        id          => 1
-    };
-    call_instrospection('backend', ['states_list', 'rpc_redis']);
+    my $rpc_redis = BOM::Test::Script::RpcRedis::get_script;
 
     my $request = {states_list => 'be'};
     ok my $response = send_request($request, 'states_list'), 'Response is recieved after switching to consumer groups';
@@ -94,11 +91,11 @@ subtest 'Consumer service unavailability' => sub {
     Mojo::IOLoop->one_tick while !($timeout or scalar($api->{messages}->@*));
     ok scalar($api->{messages}->@*), 'Message is received for not expired request immedietly after running Cosnumer';
 
-    $expected_result = {
-        states_list => 'default',
+    my $expected_result = {
+        states_list => 'http',
         id          => 1
     };
-    is_deeply call_instrospection('backend', ['states_list', 'default']), $expected_result, 'Backend swithed back to default';
+    is_deeply call_instrospection('backend', ['states_list', 'http']), $expected_result, 'Backend swithed back to http';
 
     $rpc_redis->stop_script();
     ok !kill(0, $pid), 'Consumer worker process killed successfully';
@@ -112,10 +109,10 @@ subtest 'redis connnection loss' => sub {
     my $rpc_redis = BOM::Test::Script::RpcRedis::get_script;
     $rpc_redis->start_script();
     my $expected_result = {
-        states_list => 'rpc_redis',
+        states_list => 'default',
         id          => 1
     };
-    is_deeply call_instrospection('backend', ['states_list', 'rpc_redis']), $expected_result, 'Backend switched successfully';
+    is_deeply call_instrospection('backend', ['states_list', 'default']), $expected_result, 'Backend switched successfully';
 
     my $request = {states_list => 'be'};
     ok my $response = send_request($request, 'states_list'), 'Response is recieved after switching to consumer groups';

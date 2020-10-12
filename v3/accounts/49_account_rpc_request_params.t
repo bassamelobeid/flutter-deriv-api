@@ -105,21 +105,26 @@ my $fake_res = Test::MockObject->new();
 $fake_res->mock('result',   sub { $rpc_response });
 $fake_res->mock('is_error', sub { '' });
 
-my $module = Test::MockModule->new('MojoX::JSON::RPC::Client');
-$module->mock('call', sub { shift; $call_params = $_[1]->{params}; return $_[2]->($fake_res) });
+# Json RPC compatible
+my $client_module = Test::MockModule->new('MojoX::JSON::RPC::Client');
+$client_module->mock('call', sub { shift; $call_params = $_[1]->{params}; return $_[2]->($fake_res) });
 
-my $sync_moduel = Test::MockModule->new('Job::Async::Client::Redis');
-$sync_moduel->mock(
-    'submit',
+# RPC Queue compatible
+my $cgs_module = Test::MockModule->new('Mojo::WebSocketProxy::Backend::ConsumerGroups');
+$cgs_module->mock(
+    'request',
     sub {
-        my ($self, %args) = @_;
-        $call_params = decode_json_utf8($args{params});
-        return Future->done(
-            encode_json_utf8({
-                    success => 1,
-                    result  => $rpc_response
-                }));
+        my $self = shift;
+        $call_params = decode_json_utf8({$_[0]->@*}->{args});
+        return $cgs_module->original('request')->($self, @_);
     });
+{
+    no warnings qw( redefine once );    ## no critic (ProhibitNoWarnings)
+
+    *MojoX::JSON::RPC::Client::ReturnObject::new = sub {
+        return $fake_res;
+    }
+}
 
 $res = $t->await::landing_company({landing_company => 'de'});
 is($res->{msg_type}, 'landing_company');

@@ -1,7 +1,7 @@
 use strict;
 use warnings;
 use Test::More;
-use BOM::Test::Helper qw/test_schema build_wsapi_test build_test_R_50_data call_mocked_client build_mojo_test/;
+use BOM::Test::Helper qw/test_schema build_wsapi_test build_test_R_50_data build_mojo_test/;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Database::Model::OAuth;

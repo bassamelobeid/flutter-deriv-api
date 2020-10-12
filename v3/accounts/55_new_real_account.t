@@ -4,7 +4,7 @@ use Test::More;
 
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
-use BOM::Test::Helper qw/test_schema build_wsapi_test call_mocked_client/;
+use BOM::Test::Helper qw/test_schema build_wsapi_test call_mocked_consumer_groups_request/;
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
@@ -51,7 +51,7 @@ subtest 'new CR real account' => sub {
 
     subtest 'create CR account' => sub {
         # Note the p.o. box address should not fail the call for CR accounts
-        my ($res, $call_params) = call_mocked_client($t, {%client_details, address_line_1 => 'p.o. box 25325'});
+        my ($res, $call_params) = call_mocked_consumer_groups_request($t, {%client_details, address_line_1 => 'p.o. box 25325'});
         is $call_params->{token}, $token;
         ok($res->{msg_type}, 'new_account_real');
         ok($res->{new_account_real});

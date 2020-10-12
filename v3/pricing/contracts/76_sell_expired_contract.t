@@ -4,7 +4,7 @@ use Test::More;
 
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
-use BOM::Test::Helper qw/test_schema build_wsapi_test call_mocked_client/;
+use BOM::Test::Helper qw/test_schema build_wsapi_test call_mocked_consumer_groups_request/;
 use Test::MockModule;
 
 use BOM::User;
@@ -48,7 +48,7 @@ $response = $t->await::sell_expired({sell_expired => 2});
 is $response->{error}->{code}, 'InputValidationFailed';
 
 my $call_params;
-($response, $call_params) = call_mocked_client(
+($response, $call_params) = call_mocked_consumer_groups_request(
     $t,
     {
         sell_expired => 1,

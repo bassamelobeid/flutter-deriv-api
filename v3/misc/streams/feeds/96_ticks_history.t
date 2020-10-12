@@ -2,7 +2,7 @@ use strict;
 use warnings;
 
 use Test::Most;
-use Test::MockTime qw/:all/;
+use BOM::Test::Time qw(set_date);
 use JSON::MaybeUTF8 qw/decode_json_utf8/;
 use Date::Utility;
 use FindBin qw/$Bin/;
@@ -27,7 +27,7 @@ for my $symbol (qw/R_50 frxUSDJPY/) {
 
 my $time      = Date::Utility->new;
 my $test_date = Date::Utility->new('2012-03-14 07:00:00');
-set_fixed_time($test_date->epoch);
+set_date($test_date->epoch);
 
 my $t = build_wsapi_test();
 my ($req_storage, $res, $start, $end);

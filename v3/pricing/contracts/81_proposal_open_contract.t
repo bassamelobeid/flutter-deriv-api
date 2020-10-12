@@ -7,7 +7,7 @@ use JSON::MaybeXS;
 use Date::Utility;
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
-use BOM::Test::Helper qw/test_schema build_wsapi_test build_test_R_50_data call_mocked_client build_mojo_test/;
+use BOM::Test::Helper qw/test_schema build_wsapi_test build_test_R_50_data build_mojo_test/;
 use Net::EmptyPort qw(empty_port);
 use Test::MockModule;
 use Test::MockObject;
@@ -136,18 +136,16 @@ subtest 'passthrough' => sub {
 };
 
 subtest 'selling contract message' => sub {
-    # It is hack to emulate contract selling and test subcribtion
-    my ($url, $call_params);
-
     my $fake_res = Test::MockObject->new();
     $fake_res->mock('result',   sub { +{ok => 1} });
     $fake_res->mock('is_error', sub { '' });
 
+    #  Json RPC compatible
     my $fake_rpc_client = Test::MockObject->new();
-    $fake_rpc_client->mock('call', sub { shift; $url = $_[0]; $call_params = $_[1]->{params}; return $_[2]->($fake_res) });
+    $fake_rpc_client->mock('call', sub { shift; return $_[2]->($fake_res) });
 
-    my $module = Test::MockModule->new('MojoX::JSON::RPC::Client');
-    $module->mock('new', sub { return $fake_rpc_client });
+    my $client_module = Test::MockModule->new('MojoX::JSON::RPC::Client');
+    $client_module->mock('new', sub { return $fake_rpc_client });
 
     my $mapper = BOM::Database::DataMapper::FinancialMarketBet->new({
         broker_code => $client->broker_code,
@@ -170,7 +168,7 @@ subtest 'selling contract message' => sub {
     is($data->{msg_type}, 'proposal_open_contract', 'Got message about selling contract');
     is $data->{proposal_open_contract}->{contract_id}, $contract_id, 'Contract id is correct';
 
-    $module->unmock_all;
+    $client_module->unmock_all;
 };
 
 subtest 'forget' => sub {
@@ -300,7 +298,7 @@ subtest 'rpc error' => sub {
 
     diag explain $data unless ok($contract_id = $data->{buy}->{contract_id}, "got contract_id");
 
-    my ($fake_rpc_response, $fake_rpc_client, $rpc_client_mock);
+    my ($fake_rpc_response, $rpc_client_mock);
     $fake_rpc_response = Test::MockObject->new();
     $fake_rpc_response->mock('is_error', sub { 0 });
     $fake_rpc_response->mock(
@@ -312,9 +310,21 @@ subtest 'rpc error' => sub {
                     message_to_client => 'The token is invalid.'
                 }};
         });
+    $fake_rpc_response->mock('error_code',    sub { 'dummy' });
     $fake_rpc_response->mock('error_message', sub { 'error' });
+
+    # Json RPC compatible
     $rpc_client_mock = Test::MockModule->new('MojoX::JSON::RPC::Client');
     $rpc_client_mock->mock('call', sub { shift; return $_[2]->($fake_rpc_response) });
+
+    # RPC‌ Queue compatible
+    {
+        no warnings qw( redefine once );    ## no critic (ProhibitNoWarnings)
+
+        *MojoX::JSON::RPC::Client::ReturnObject::new = sub {
+            return $fake_rpc_response;
+        }
+    }
 
     $data = $t->await::proposal_open_contract({
         proposal_open_contract => 1,
