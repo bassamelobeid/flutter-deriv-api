@@ -67,6 +67,7 @@ use BOM::Test::WebsocketAPI::Contexts;
 use BOM::Test::WebsocketAPI::SanityChecker;
 use BOM::Test::WebsocketAPI::Publisher;
 use BOM::Test::WebsocketAPI::MockRPC;
+use BOM::Test::WebsocketAPI::MockConsumerGroups;
 
 my $default_suite_params = {
     requests => [],

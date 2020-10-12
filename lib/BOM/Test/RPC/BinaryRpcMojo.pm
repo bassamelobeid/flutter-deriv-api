@@ -1,6 +1,8 @@
-package BOM::Test::RPC::BomRpc;
+package BOM::Test::RPC::BinaryRpcMojo;
+
 use strict;
 use warnings;
+
 use Mojo::Server::Daemon;
 use Path::Tiny;
 
@@ -35,7 +37,7 @@ EOC
     } elsif ($pid == 0) {
         local $ENV{NO_PURGE_REDIS} = 1;
         # TODO run /home/git/regentmarkets/bom-rpc/bin/binary_rpc.pl directly
-        my $script = '/home/git/regentmarkets/bom-test/bin/bom_rpc_for_test.pl';
+        my $script = '/home/git/regentmarkets/bom-test/bin/binary_rpc_for_test.pl';
 
         exec($^X, qw(-MBOM::Test), $script) or die "Couldn't $script: $!";
     }

@@ -48,7 +48,7 @@ use await;
 
 use Exporter qw/import/;
 our @EXPORT_OK =
-    qw/test_schema build_mojo_test build_wsapi_test build_test_R_50_data create_test_user call_mocked_client reconnect call_instrospection/;
+    qw/test_schema build_mojo_test build_wsapi_test build_test_R_50_data create_test_user call_mocked_jsonrpc_client call_mocked_consumer_groups_request reconnect call_instrospection/;
 
 my $version = 'v3';
 die 'unknown version' unless $version;
@@ -170,12 +170,31 @@ sub create_test_user {
     return $client_cr;
 }
 
-sub call_mocked_client {
+sub call_mocked_jsonrpc_client {
     my ($t, $json) = @_;
     my $call_params;
 
     my $module = Test::MockModule->new('MojoX::JSON::RPC::Client');
     $module->mock('call', sub { my $self = shift; $call_params = $_[1]->{params}; return $module->original('call')->($self, @_) });
+
+    $t = $t->send_ok({json => $json})->message_ok;
+    my $res = JSON::MaybeXS->new->decode(Encode::decode_utf8($t->message->[1]));
+
+    $module->unmock_all;
+    return ($res, $call_params);
+}
+
+sub call_mocked_consumer_groups_request {
+    my ($t, $json) = @_;
+    my $call_params;
+
+    my $module = Test::MockModule->new('Mojo::WebSocketProxy::Backend::ConsumerGroups');
+    $module->mock(
+        'request',
+        sub {
+            $call_params = decode_json_utf8({$_[1]->@*}->{args});
+            return $module->original('request')->(@_);
+        });
 
     $t = $t->send_ok({json => $json})->message_ok;
     my $res = JSON::MaybeXS->new->decode(Encode::decode_utf8($t->message->[1]));
