@@ -316,7 +316,12 @@ sub _setup_stream_reader {
         } catch {
             my $err = $@;
 
-            if ($self->_is_redis_exception($err)) {
+            if ($self->_is_redis_exception($err) && $err->{redis}->{message} =~ /^NOGROUP/) {
+                # There is no consumer group for reading, suppress error and recreate one.
+                # Note: it happens by purging Redis while the worker is working, common in testing.
+                $self->initialize_connection;
+
+            } elsif ($self->_is_redis_exception($err)) {
                 $log->errorf('Failed while reading from Redis stream consumer group: %s', $err->{redis}->{message});
             } else {
                 $log->errorf('An exception occurred while processing RPC request: %s', $err);
@@ -390,6 +395,10 @@ sub _process_message {
 
         $msg_id = $parsed->{message_id};
         $params = $parsed->{payload};
+
+        # For tests compatibility
+        # Check <BOM::Test::Time> for more info
+        BOM::Test::Time::set_date_from_file() if defined $INC{'BOM/Test/Time.pm'};
 
         if ($params->{deadline} && $params->{deadline} <= time) {
             $self->_ack_message($msg_id);
