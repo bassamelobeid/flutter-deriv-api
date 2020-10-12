@@ -29,6 +29,9 @@ schema:
 subscriptions:
 	@$(PROVE) --norc /home/git/regentmarkets/bom-websocket-tests/v3/subscriptions
 
+backends:
+	@$(PROVE) --norc /home/git/regentmarkets/bom-websocket-tests/v3/backends
+
 pod_test:
 	@$(PROVE) t/*pod*.t
 

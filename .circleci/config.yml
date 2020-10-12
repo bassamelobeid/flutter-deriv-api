@@ -190,6 +190,21 @@ jobs:
         name: Run subscription tests
     - store_test_results:
         path: /var/tmp/test-output
+  backends:
+    <<: *6
+    steps:
+    - *1
+    - *2
+    - *3
+    - *4
+    - run:
+        <<: *5
+        command: |
+          echo '--formatter TAP::Formatter::JUnit' >> .proverc
+          make backends
+        name: Run backends tests
+    - store_test_results:
+        path: /var/tmp/test-output
   update_docs:
     <<: *6
     steps:
@@ -220,6 +235,8 @@ workflows:
         context: perl
     - subscriptions:
         context: perl
+    - backends:
+        context: perl
     - update_docs:
         context: perl
         filters:
@@ -243,6 +260,8 @@ workflows:
     - schema:
         context: perl
     - subscriptions:
+        context: perl
+    - backends:
         context: perl
     - update_docs:
         context: perl
@@ -305,6 +324,13 @@ workflows:
           tags:
             only: /^V\d+_.*/
     - subscriptions:
+        context: perl
+        filters:
+          branches:
+            ignore: /.*/
+          tags:
+            only: /^V\d+_.*/
+    - backends:
         context: perl
         filters:
           branches:

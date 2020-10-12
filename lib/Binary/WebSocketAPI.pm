@@ -410,8 +410,8 @@ sub startup {
                     my $backends = decode_json_utf8($backends_str);
                     for my $method (keys %$backends) {
                         my $backend = $backends->{$method} // 'default';
-                        $backend = 'default' if $backend eq 'http';
-                        if (exists $WS_ACTIONS->{$method} and ($backend eq 'default' or exists $WS_BACKENDS->{$backend})) {
+                        $backend = 'default' if $backend eq 'rpc_redis';
+                        if (exists $WS_ACTIONS->{$method} and ($backend eq 'default' or $backend eq 'http' or exists $WS_BACKENDS->{$backend})) {
                             $WS_ACTIONS->{$method}->{backend} = $backend;
                         } else {
                             $log->warn("Invalid  backend setting ignored: <$method $backend>");

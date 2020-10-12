@@ -2,7 +2,7 @@
 --exec '/etc/rmg/bin/perl -MBOM::Test -It/lib -MTest::Warnings'
 -MBOM::Test::Initializations
 -MBOM::Test::Suite
--MBOM::Test::RPC::BomRpc
+-MBOM::Test::RPC::BinaryRpcRedis
 -MBOM::Test::Script::NotifyPub
 -MBOM::Test::Script::PricerDaemon
 -MBOM::Test::Script::ExperianMock
