@@ -13,6 +13,10 @@ use File::Basename;
 use YAML::XS qw(LoadFile);
 use Sereal::Encoder;
 use BOM::Config::Redis;
+use BOM::Config::Chronicle;
+use Finance::Exchange;
+use Finance::Underlying;
+use Quant::Framework;
 
 use base qw( Exporter );
 our @EXPORT_OK = qw( setup_ticks );
@@ -206,6 +210,13 @@ sub flush_and_create_ticks {
     return;
 }
 
+=head2 create_ohlc_daily
+
+We can't directly insert into daily ohlc table for non-official tick.
+So, going forward we need to create ticks to simulate the ohlc procedures.
+
+=cut
+
 sub create_ohlc_daily {
     my $args = shift;
 
@@ -216,7 +227,6 @@ sub create_ohlc_daily {
         high       => 76.9001,
         low        => 76.8344,
         close      => 76.8633,
-        official   => 1,
     );
 
     # any modify args were specified?
@@ -224,27 +234,28 @@ sub create_ohlc_daily {
         $defaults{$_} = $args->{$_};
     }
 
-    # date for database
-    my $ts = Date::Utility->new($defaults{epoch})->datetime_yyyymmdd_hhmmss;
+    my $exchange = Finance::Exchange->create_exchange(Finance::Underlying->by_symbol($defaults{underlying})->{exchange_name});
+    my $date     = Date::Utility->new($defaults{epoch});
+    my $calendar = Quant::Framework->new->trading_calendar(BOM::Config::Chronicle::get_chronicle_reader());
+    my $open     = $calendar->opening_on($exchange, $date);
+    my $close    = $calendar->closing_on($exchange, $date);
 
-    my $dbic = Postgres::FeedDB::write_dbic;
+    unless ($open and $close) {
+        warn "Trying to create OHLC on a non-trading day. Bailout.";
+        return;
+    }
 
-    my $tick_sql = <<EOD;
-INSERT INTO feed.ohlc_daily(underlying, ts, open, high, low, close, official)
-    VALUES(?, ?, ?, ?, ?, ?, ?)
-EOD
-    $dbic->run(
-        sub {
-            my $sth = $_->prepare($tick_sql);
-            $sth->bind_param(1, $defaults{underlying});
-            $sth->bind_param(2, $ts);
-            $sth->bind_param(3, $defaults{open});
-            $sth->bind_param(4, $defaults{high});
-            $sth->bind_param(5, $defaults{low});
-            $sth->bind_param(6, $defaults{close});
-            $sth->bind_param(7, $defaults{official});
-            $sth->execute();
+    foreach my $data ([$open->epoch, $defaults{open}], [$open->epoch + 1, $defaults{high}], [$close->epoch - 1, $defaults{low}],
+        [$close->epoch, $defaults{close}])
+    {
+        create_tick({
+            underlying => $defaults{underlying},
+            epoch      => $data->[0],
+            quote      => $data->[1],
+            bid        => $data->[1],
+            ask        => $data->[1],
         });
+    }
 
     delete $defaults{underlying};
     return Postgres::FeedDB::Spot::OHLC->new(\%defaults);
