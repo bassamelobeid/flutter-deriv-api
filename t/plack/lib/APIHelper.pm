@@ -4,7 +4,8 @@ use strict;
 use warnings;
 
 use Exporter 'import';
-our @EXPORT_OK = qw(request auth_request decode_json deposit withdrawal_validate create_payout update_payout balance new_client record_failed_withdrawal);
+our @EXPORT_OK =
+    qw(request auth_request decode_json deposit withdrawal_validate create_payout update_payout balance new_client record_failed_withdrawal);
 
 use Encode;
 use FindBin qw/$Bin/;

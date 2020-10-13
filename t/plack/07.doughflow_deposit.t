@@ -67,27 +67,39 @@ subtest 'Wrong trace id' => sub {
 };
 
 subtest 'Duplicate transaction' => sub {
-    my $trace_id = 987;
-    my $txn_id   = 567876;
+    my $trace_id          = 987;
+    my $txn_id            = 567876;
+    my $payment_processor = 'Skrill';
 
     deposit(
-        loginid        => $loginid,
-        trace_id       => $trace_id,
-        transaction_id => $txn_id
+        loginid           => $loginid,
+        trace_id          => $trace_id,
+        transaction_id    => $txn_id,
+        payment_processor => $payment_processor,
     );
 
     my $current_balance = balance $loginid;
 
     my $req = deposit(
-        loginid        => $loginid,
-        trace_id       => $trace_id,
-        transaction_id => $txn_id
+        loginid           => $loginid,
+        trace_id          => $trace_id,
+        transaction_id    => $txn_id,
+        payment_processor => $payment_processor,
     );
 
     is $req->code,      400,                                'Correct bad request status code';
     like $req->content, qr/Detected duplicate transaction/, 'Correspond error message to duplicate transaction';
 
     is balance($loginid), $current_balance, 'Correct unchanged balance';
+
+    $req = deposit(
+        loginid           => $loginid,
+        trace_id          => $trace_id + 1,
+        transaction_id    => $txn_id,
+        payment_processor => 'QIWI',
+    );
+
+    is $req->code, 201, 'Same transaction_id for different payment_processor is not duplicate';
 };
 
 subtest 'emit payment_deposit' => sub {
