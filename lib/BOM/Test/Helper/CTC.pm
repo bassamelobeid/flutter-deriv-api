@@ -90,7 +90,7 @@ It returns a hash ref containing the addresses just created for ERC20 currencies
 
 sub deploy_all_test_contracts {
     my $result = {};
-    for (LandingCompany::Registry->new()->all_currencies) {
+    for (LandingCompany::Registry->new()->all_crypto_currencies()) {
         my $contract_address = deploy_test_contract($_);
         $result->{$_} = $contract_address if $contract_address;
     }
@@ -100,8 +100,6 @@ sub deploy_all_test_contracts {
 
 sub deploy_test_contract {
     my ($currency_code) = @_;
-
-    return undef unless LandingCompany::Registry::get_currency_type($currency_code) eq 'crypto';
 
     my $currency = BOM::CTC::Currency->new(currency_code => $currency_code);
 
