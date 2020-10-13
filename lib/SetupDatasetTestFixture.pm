@@ -8,7 +8,7 @@ use Date::Utility;
 use BOM::MarketData qw(create_underlying);
 use Quant::Framework;
 use BOM::Config::Chronicle;
-use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
+use BOM::Test::Data::Utility::FeedTestDatabase;
 
 =head1 original_spot
 
@@ -75,26 +75,19 @@ sub _setup_spot {
         : Date::Utility->new($date);
 
     my $underlying_symbol = $underlying->symbol;
-    $date =
-        (ref $date eq 'Date::Utility')
-        ? $date
-        : Date::Utility->new($date);
 
-    my $default_data = $underlying->get_combined_realtime();
+    my $default_data = $underlying->spot_tick;
     $self->original_spot->{$underlying_symbol} = $default_data
         if not exists $self->original_spot->{$underlying_symbol};
-    my $values = {
-        quote => $spot,
-        epoch => $date->epoch,
-    };
 
-    BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+    my $values = {
         quote      => $spot,
         epoch      => $date->epoch,
-        underlying => $underlying_symbol
-    });
+        underlying => $underlying_symbol,
+    };
 
-    $underlying->set_combined_realtime($values);
+    BOM::Test::Data::Utility::FeedTestDatabase::create_tick($values);
+    BOM::Test::Data::Utility::FeedTestDatabase::create_realtime_tick($values);
 
     return;
 }
@@ -192,7 +185,7 @@ sub _reset_spot {
 
     my $reset_data = $self->original_spot->{$underlying->symbol};
     return if not $reset_data;
-    $underlying->set_combined_realtime($reset_data);
+    BOM::Test::Data::Utility::FeedTestDatabase::create_realtime_tick($reset_data->as_hash);
 
     return;
 }

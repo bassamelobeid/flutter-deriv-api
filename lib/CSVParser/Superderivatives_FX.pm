@@ -12,6 +12,7 @@ use VolSurface::Utils qw(get_2vol_butterfly);
 use BOM::MarketData qw(create_underlying);
 use BOM::Product::ContractFactory qw( produce_contract );
 use SetupDatasetTestFixture;
+use BOM::Test::Data::Utility::FeedTestDatabase;
 use Date::Utility;
 use Data::Dumper;
 
@@ -67,9 +68,10 @@ sub _build_records {
 
     my $surface_data = $self->_get_surface_data($vol_lines, $underlying, $spot, $rate);
 
-    $underlying->set_combined_realtime({
-        epoch => $date_start->epoch,
-        quote => $spot
+    BOM::Test::Data::Utility::FeedTestDatabase::create_realtime_tick({
+        underlying => $underlying->symbol,
+        epoch      => $date_start->epoch,
+        quote      => $spot,
     });
 
     my $surface = Quant::Framework::VolSurface::Delta->new(
@@ -273,7 +275,7 @@ sub _transpose {
     my ($self, $in) = @_;
 
     my $cols = scalar(@{$in->[0]}) || 0;
-    my @out = ();
+    my @out  = ();
     foreach my $col (0 .. $cols - 1) {
         push @out, [map { $_->[$col] } @$in];
     }
@@ -283,11 +285,11 @@ sub _transpose {
 sub _convert_to_array_of_hashes {
     my ($self, $wanted) = @_;
 
-    my @wanted = @$wanted;
+    my @wanted         = @$wanted;
     my @wanted_strings = map { join ',', @$_ } @wanted;
 
     my $wanted_string = join "\n", @wanted_strings;
-    my $ar_of_hr = Text::CSV::Slurp->load(string => $wanted_string);
+    my $ar_of_hr      = Text::CSV::Slurp->load(string => $wanted_string);
 
     return $ar_of_hr;
 }
@@ -299,7 +301,7 @@ sub _removes_brackets {
         foreach my $num (values %$data) {
             next if !defined $num;
             if ($num =~ /^\s?\(\d+\.\d+\)\s?$/) {
-                $num =~ s/(\s|\(|\))//g;    # negative numbers in excel are in brackets!!!
+                $num =~ s/(\s|\(|\))//g;     # negative numbers in excel are in brackets!!!
                 $num =~ s/(\d+\.\d+)/-$1/;
             }
         }
@@ -403,7 +405,7 @@ sub _calculate_vol_at_delta {
             $BF_25_1_vol, $r_rate, $q_rate, $underlying->market_convention->{delta_premium_adjusted}, '1_vol'
         );
 
-        my $delta_75 = -$args->{'25DeltaRiskReversal'} / 2 + ($BF_25_2_vol * 100) + $args->{Volatility};
+        my $delta_75   = -$args->{'25DeltaRiskReversal'} / 2 + ($BF_25_2_vol * 100) + $args->{Volatility};
         my $delta_25   = $args->{'25DeltaRiskReversal'} / 2 + ($BF_25_2_vol * 100) + $args->{Volatility};
         my $delta_50   = $args->{'Volatility'};
         my $atm_spread = $args->{'VolatilitySpread'};

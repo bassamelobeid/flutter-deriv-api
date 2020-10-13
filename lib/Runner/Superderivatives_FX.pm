@@ -11,6 +11,7 @@ use Carp;
 
 use CSVParser::Superderivatives_FX;
 use BOM::Product::ContractFactory qw( produce_contract );
+use BOM::Test::Data::Utility::FeedTestDatabase;
 use Date::Utility;
 has suite => (
     is      => 'ro',
@@ -150,9 +151,11 @@ sub get_bet_results {
             quote      => $bet_args->{current_spot},
             epoch      => $bet_args->{date_start}->epoch,
         );
-        $bet_args->{volsurface}->underlying->set_combined_realtime({
-            quote => $bet_args->{current_spot},
-            epoch => $date_start->epoch
+
+        BOM::Test::Data::Utility::FeedTestDatabase::create_realtime_tick({
+            underlying => $bet_args->{underlying}->symbol,
+            quote      => $bet_args->{current_spot},
+            epoch      => $bet_args->{date_start}->epoch,
         });
 
         #force re-createion of surface
@@ -164,7 +167,7 @@ sub get_bet_results {
         my $bom_bs =
             $bet->pricing_engine->can('_bs_probability') ? $bet->pricing_engine->_bs_probability : $bet->pricing_engine->bs_probability->amount;
 
-        my $sd_mid = $record->{sd_mid};
+        my $sd_mid   = $record->{sd_mid};
         my @barriers = $bet->two_barriers ? ($bet->high_barrier->as_absolute, $bet->low_barrier->as_absolute) : ($bet->barrier->as_absolute, 'NA');
         next if $sd_mid < 0.05 or $sd_mid > 0.95;
 
