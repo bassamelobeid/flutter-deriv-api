@@ -197,10 +197,6 @@ subtest 'all attributes on a variety of underlyings' => sub {
         is((scalar grep { exists $underlying->market_convention->{$_} } qw(delta_style delta_premium_adjusted)),
             2, ' with at least the minimal key set');
 
-        $underlying->set_combined_realtime({
-            epoch => time,
-            quote => 8
-        });
         my $license = $underlying->feed_license;
         is((scalar grep { $license eq $_ } qw(chartonly delayed daily realtime)), 1, 'Feed license is exactly one of our allowed values');
 
@@ -342,85 +338,37 @@ subtest vol_expiry_date => sub {
     }
 };
 subtest 'all methods on a selection of underlyings' => sub {
-    my $simulated_time = 1326957372;
+    my $simulated_time = 1326957372; # 2012-01-19 07:16:12
     my $AS51           = create_underlying('AS51');
     my $FTSE           = create_underlying('FTSE');
     my $EURUSD         = create_underlying('frxEURUSD');
     my $USDEUR         = create_underlying('frxUSDEUR');
     my $USDJPY         = create_underlying('frxUSDJPY');
-    my $RND50          = create_underlying('R_50');
     my $oldEU          = create_underlying('frxEURUSD', Date::Utility->new('2012-01-19 07:16:12'));
     my $nonsense       = create_underlying('nonsense');
-
-    my $FRW_frxEURUSD_ON  = create_underlying('FRW_frxEURUSD_ON');
-    my $FRW_frxEURUSD_TN  = create_underlying('FRW_frxEURUSD_TN');
-    my $FRW_frxEURUSD_1W  = create_underlying('FRW_frxEURUSD_1W');
-    my $FRW_frxUSDEUR_ON  = create_underlying('FRW_frxUSDEUR_ON');
-    my $FRW_frxUSDEUR_1W  = create_underlying('FRW_frxUSDEUR_1W');
-    my $FRW_frxUSDEUR_TN  = create_underlying('FRW_frxUSDEUR_TN');
-    my $fake_forward_data = {
-        epoch => time,
-        open  => 1,
-        quote => 1,
-        high  => 1,
-        low   => 1,
-        ticks => 1
-    };
-
-    $USDEUR->set_combined_realtime($fake_forward_data);
-    lives_ok {
-        BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-            epoch      => $simulated_time - 2,
-            quote      => 1.2858,
-            bid        => 1.2855,
-            ask        => 1.2861,
-            underlying => 'frxEURUSD'
-        });
-        BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-            epoch      => $simulated_time - 1,
-            quote      => 1.2859,
-            bid        => 1.2858,
-            ask        => 1.2859,
-            underlying => 'frxEURUSD'
-        });
-        BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-            epoch      => $simulated_time + 1,
-            quote      => 1.2858,
-            bid        => 1.2858,
-            ask        => 1.2859,
-            underlying => 'frxEURUSD'
-        });
-    }
-    'Preparing ticks';
+    my $date = Date::Utility->new('2012-01-19');
 
     lives_ok {
-        my $date = Date::Utility->new('2012-01-19');
         BOM::Test::Data::Utility::FeedTestDatabase::create_ohlc_daily({
-            epoch      => ($date->epoch - 86400),
-            open       => 1.2746,
-            high       => 1.2868,
-            low        => 1.2735,
-            close      => 1.2864,
-            underlying => 'frxEURUSD'
-        });
+                epoch      => ($date->epoch - 86400),
+                open       => 1.2746,
+                high       => 1.2868,
+                low        => 1.2735,
+                close      => 1.2864,
+                underlying => 'frxEURUSD'
+            });
+        BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks([1.2864, $date->epoch, 'frxEURUSD'], [1.2972, $date->epoch+1, 'frxEURUSD'], [1.2858, $simulated_time - 2, 'frxEURUSD'], [1.2859, $simulated_time - 1, 'frxEURUSD'], [1.2858, $simulated_time + 1, 'frxEURUSD'], [1.2840, $date->epoch + 86398, 'frxEURUSD'], [1.2961, $date->epoch + 86399, 'frxEURUSD']);
         BOM::Test::Data::Utility::FeedTestDatabase::create_ohlc_daily({
-            epoch      => ($date->epoch),
-            open       => 1.2864,
-            high       => 1.2972,
-            low        => 1.2840,
-            close      => 1.2961,
-            underlying => 'frxEURUSD'
-        });
-        BOM::Test::Data::Utility::FeedTestDatabase::create_ohlc_daily({
-            epoch      => ($date->epoch + 86400),
-            open       => 1.2961,
-            high       => 1.2986,
-            low        => 1.2887,
-            close      => 1.2933,
-            underlying => 'frxEURUSD'
-        });
+                epoch      => ($date->epoch + 86400),
+                open       => 1.2961,
+                high       => 1.2986,
+                low        => 1.2887,
+                close      => 1.2933,
+                underlying => 'frxEURUSD'
+            });
     }
-    'Preparing ohlc';
+    'Preparing ticks and ohlc';
+
 
     is($EURUSD->system_symbol, $EURUSD->symbol, 'System symbol and symbol are same for non-inverted');
     isnt($USDEUR->system_symbol, $USDEUR->symbol, ' and different for inverted');
@@ -480,43 +428,6 @@ subtest 'all methods on a selection of underlyings' => sub {
     is($AS51->pipsized_value(-1.61),      -1.61,    'negative values for indices can be pipsized');
     cmp_ok($EURUSD->pipsized_value(1.230061), '==', 1.23006,   'pipsized_value is numerically as expected');
     cmp_ok($EURUSD->pipsized_value(1.230061), 'eq', '1.23006', ' and string-wise, too.');
-};
-
-subtest combined_realtime => sub {
-    plan tests => 7;
-
-    my $EURUSD    = create_underlying('frxEURUSD');
-    my $fake_tick = {
-        epoch => time,
-        quote => 8,
-    };
-    my $reset_value = $EURUSD->get_combined_realtime;
-
-    ok($EURUSD->set_combined_realtime($fake_tick), 'Set fake data for combined realtime');
-    is_deeply($EURUSD->get_combined_realtime, $fake_tick, 'Got back the same thing from combined realtime');
-    ok($EURUSD->set_combined_realtime($reset_value), 'Set back to preexisting value');
-
-    SKIP: {
-        skip('We are potentially working with live data, so reset_value might be unset.', 1) if (not $reset_value);
-        is_deeply($EURUSD->get_combined_realtime, $reset_value, 'Got back the same thing from combined realtime');
-    }
-
-    # Can we get OHLC when cache is empty and market not yet open today?
-    my $eleventh = Date::Utility->new('2010-01-11 02:00:00');
-    set_absolute_time($eleventh->epoch);    # before opening time
-
-    my $SPC = create_underlying('SPC');
-    ok($SPC->calendar->trades_on($SPC->exchange, $eleventh), 'SPC trades on our chosen date.');
-
-    Cache::RedisDB->del('QUOTE', $SPC->symbol);
-
-    my $ticks;
-    lives_ok {
-        $ticks = $SPC->get_combined_realtime;
-    }
-    "Can get combined realtime from previous trading day's data.";
-
-    is $ticks, undef, "Tick for SPC is not defined";
 };
 
 subtest 'daily close crossing intradays' => sub {
