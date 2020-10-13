@@ -102,6 +102,7 @@ LoginID: <input type="text" name="loginID" value="[% request.params.loginID %]" 
             <tr>
                 <th scope="col">ID</th>
                 <th scope="col">Created</th>
+                <th scope="col">Deleted</th>
                 <th scope="col">Active</th>
                 <th scope="col">Type</th>
                 <th scope="col">Description</th>
@@ -125,6 +126,7 @@ LoginID: <input type="text" name="loginID" value="[% request.params.loginID %]" 
             <tr>
                 <td>[% ad.id %]</td>
                 <td>[% ad.created_time %]</td>
+                <td>[% ad.is_deleted %]</td>
                 <td>[% ad.is_active %]</td>
                 <td>[% ad.type %]</td>
                 <td>[% ad.description %]</td>

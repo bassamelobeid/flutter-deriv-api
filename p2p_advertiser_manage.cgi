@@ -107,7 +107,7 @@ if ($output{advertiser}) {
     my $ads = $db->run(
         fixup => sub {
             $_->selectall_arrayref(
-                "SELECT *, date_trunc('seconds',created_time) created_time FROM p2p.advert_list(NULL, NULL, ?, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL) ORDER BY id DESC",
+                "SELECT *, date_trunc('seconds',created_time) created_time FROM p2p.advert_list(NULL, NULL, ?, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, TRUE) ORDER BY id DESC",
                 {Slice => {}},
                 $output{advertiser}->{id});
         });
