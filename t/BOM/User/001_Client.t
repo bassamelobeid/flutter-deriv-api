@@ -6,11 +6,16 @@ use warnings;
 
 use Test::MockTime;
 use Test::More qw( no_plan );
+use Test::Deep;
 use Test::Exception;
 use Test::MockModule;
+
 use BOM::User::Client;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+
 use Date::Utility;
+use Array::Utils qw(array_minus);
+
 my $login_id = 'CR0022';
 my $client;
 
@@ -76,55 +81,52 @@ subtest "Client load and saving." => sub {
         'secret_answer'         => '::ecp::52616e646f6d495633363368676674792dd36b78f1d98017',
         'address_line_2'        => '♀ﬁ�⑀₂ἠḂӥẄɐː⍎אԱა Καλημέρα κόσμε, コンニチハ',
         'restricted_ip_address' => '',
-        'loginid'               => 'CR5089',
         'salutation'            => 'Mr',
-        'last_name'             => 'The cat',
         'gender'                => 'm',
         'phone'                 => '21345678',
         'residence'             => 'af',
         'comment'               => '',
-        'first_name'            => 'Felix',
         'citizen'               => 'br'
     };
 
-    $client = BOM::User::Client->rnew(%$client_details);
+    my $client2 = BOM::User::Client->rnew(%$client_details);
 
-    is($client->loginid,    $client_details->{'loginid'},         'compare loginid between client object instantize with client hash ref');
-    is($client->broker,     $client_details->{'broker_code'},     'compare broker between client object instantize with client hash ref');
-    is($client->password,   $client_details->{'client_password'}, 'compare password between client object instantize with client hash ref');
-    is($client->email,      $client_details->{'email'},           'compare email between client object instantize with client hash ref');
-    is($client->last_name,  $client_details->{'last_name'},       'compare last_name between client object instantize with client hash ref');
-    is($client->first_name, $client_details->{'first_name'},      'compare first_name between client object instantize with client hash ref');
+    is($client2->loginid,    $client_details->{'loginid'},         'compare loginid between client object instantize with client hash ref');
+    is($client2->broker,     $client_details->{'broker_code'},     'compare broker between client object instantize with client hash ref');
+    is($client2->password,   $client_details->{'client_password'}, 'compare password between client object instantize with client hash ref');
+    is($client2->email,      $client_details->{'email'},           'compare email between client object instantize with client hash ref');
+    is($client2->last_name,  $client_details->{'last_name'},       'compare last_name between client object instantize with client hash ref');
+    is($client2->first_name, $client_details->{'first_name'},      'compare first_name between client object instantize with client hash ref');
 
-    is(length($client->address_1), 50, "treats Unicode chars correctly");
-    is(length($client->address_2), 37, "treats Unicode chars correctly");
+    is(length($client2->address_1), 50, "treats Unicode chars correctly");
+    is(length($client2->address_2), 37, "treats Unicode chars correctly");
 
-    is($client->date_of_birth, $client_details->{'date_of_birth'}, 'compare date_of_birth between client object instantize with client hash ref');
+    is($client2->date_of_birth, $client_details->{'date_of_birth'}, 'compare date_of_birth between client object instantize with client hash ref');
     is(
-        $client->secret_question,
+        $client2->secret_question,
         $client_details->{'secret_question'},
         'compare secret_question between client object instantize with client hash ref'
     );
-    is($client->date_joined =~ /^$client_details->{'date_joined'}/, 1, 'compare date_joined between client object instantize with client hash ref');
-    is($client->email, $client_details->{'email'}, 'compare email between client object instantize with client hash ref');
+    is($client2->date_joined =~ /^$client_details->{'date_joined'}/, 1, 'compare date_joined between client object instantize with client hash ref');
+    is($client2->email, $client_details->{'email'}, 'compare email between client object instantize with client hash ref');
     is(
-        $client->latest_environment,
+        $client2->latest_environment,
         $client_details->{'latest_environment'},
         'compare latest_environment between client object instantize with client hash ref'
     );
-    is($client->secret_answer, $client_details->{'secret_answer'}, 'compare secret_answer between client object instantize with client hash ref');
+    is($client2->secret_answer, $client_details->{'secret_answer'}, 'compare secret_answer between client object instantize with client hash ref');
     is(
-        $client->restricted_ip_address,
+        $client2->restricted_ip_address,
         $client_details->{'restricted_ip_address'},
         'compare restricted_ip_address between client object instantize with client hash ref'
     );
-    is($client->loginid,    $client_details->{'loginid'},    'compare loginid between client object instantize with client hash ref');
-    is($client->salutation, $client_details->{'salutation'}, 'compare salutation between client object instantize with client hash ref');
-    is($client->last_name,  $client_details->{'last_name'},  'compare last_name between client object instantize with client hash ref');
-    is($client->phone,      $client_details->{'phone'},      'compare phone between client object instantize with client hash ref');
-    is($client->residence,  $client_details->{'residence'},  'compare residence between client object instantize with client hash ref');
-    is($client->first_name, $client_details->{'first_name'}, 'compare first_name between client object instantize with client hash ref');
-    is($client->citizen,    $client_details->{'citizen'},    'compare citizen between client object instantize with client hash ref');
+    is($client2->loginid,    $client_details->{'loginid'},    'compare loginid between client object instantize with client hash ref');
+    is($client2->salutation, $client_details->{'salutation'}, 'compare salutation between client object instantize with client hash ref');
+    is($client2->last_name,  $client_details->{'last_name'},  'compare last_name between client object instantize with client hash ref');
+    is($client2->phone,      $client_details->{'phone'},      'compare phone between client object instantize with client hash ref');
+    is($client2->residence,  $client_details->{'residence'},  'compare residence between client object instantize with client hash ref');
+    is($client2->first_name, $client_details->{'first_name'}, 'compare first_name between client object instantize with client hash ref');
+    is($client2->citizen,    $client_details->{'citizen'},    'compare citizen between client object instantize with client hash ref');
 
     $client_details = {
         'loginid'         => 'MX5090',
@@ -137,14 +139,14 @@ subtest "Client load and saving." => sub {
         'residence'       => 'de',
     };
 
-    $client = BOM::User::Client->rnew(%$client_details);
+    $client2 = BOM::User::Client->rnew(%$client_details);
 
-    is($client->loginid,    $client_details->{'loginid'},         'compare loginid between client object instantize with another client hash ref');
-    is($client->broker,     $client_details->{'broker_code'},     'compare broker between client object instantize with another client hash ref');
-    is($client->password,   $client_details->{'client_password'}, 'compare password between client object instantize with another client hash ref');
-    is($client->email,      $client_details->{'email'},           'compare email between client object instantize with client another hash ref');
-    is($client->last_name,  $client_details->{'last_name'},       'compare last_name between client object instantize with another client hash ref');
-    is($client->first_name, $client_details->{'first_name'},      'compare first_name between client object instantize with another client hash ref');
+    is($client2->loginid,   $client_details->{'loginid'},         'compare loginid between client object instantize with another client hash ref');
+    is($client2->broker,    $client_details->{'broker_code'},     'compare broker between client object instantize with another client hash ref');
+    is($client2->password,  $client_details->{'client_password'}, 'compare password between client object instantize with another client hash ref');
+    is($client2->email,     $client_details->{'email'},           'compare email between client object instantize with client another hash ref');
+    is($client2->last_name, $client_details->{'last_name'},       'compare last_name between client object instantize with another client hash ref');
+    is($client2->first_name, $client_details->{'first_name'}, 'compare first_name between client object instantize with another client hash ref');
 };
 
 subtest 'validate_dob' => sub {
@@ -184,10 +186,7 @@ subtest 'validate_dob' => sub {
 };
 
 subtest "format and validate" => sub {
-
     my $args = {first_name => ' newname '};
-    is $client->validate_fields_immutable($args)->{details}, 'first_name', 'validate_fields_immutable';
-
     $client->format_input_details($args);
     is $args->{first_name}, 'newname', 'trim firstname';
 
@@ -381,5 +380,121 @@ subtest "check duplicate accounts" => sub {
     is $result, undef, 'No duplicated account found, same phone number alone doesn\'t consider duplicate account';
 
 };
+
+subtest "immutable_fields and validate_immutable_fields" => sub {
+    my $email     = 'immutable@test.com';
+    my $client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'VRTC',
+    });
+    $client_vr->email($email);
+    $client_vr->save;
+
+    my $client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+    });
+    $client_cr->email($email);
+    $client_cr->tax_identification_number('123456789');
+    $client_cr->place_of_birth('fr');
+    $client_cr->tax_residence('br');
+    $client_cr->account_opening_reason('Speculative');
+    $client_cr->save;
+
+    my $client_mlt = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'MLT',
+    });
+    $client_mlt->email($email);
+    $client_mlt->tax_identification_number('123456789');
+    $client_mlt->place_of_birth('fr');
+    $client_mlt->tax_residence('br');
+    $client_mlt->account_opening_reason('Speculative');
+    $client_mlt->save;
+
+    my $test_user = BOM::User->create(
+        email          => $email,
+        password       => "hello",
+        email_verified => 1,
+    );
+
+    $test_user->add_client($client_vr);
+    $test_user->add_client($client_cr);
+    $test_user->add_client($client_mlt);
+
+    my $changeable_fields;
+    my $mock_lc = Test::MockModule->new('LandingCompany');
+    $mock_lc->mock(
+        changeable_fields => sub {
+            my $lc = shift;
+            # different settings for different landing companies
+            return $changeable_fields->{$lc->short};
+        });
+
+    my @all_immutables = BOM::User::Client::PROFILE_FIELDS_IMMUTABLE_AFTER_AUTH->@*;
+
+    subtest 'empty values' => sub {
+        test_immutable_fields(\@all_immutables, $test_user, 'default list of immutable fields is correct');
+
+        my @empty_fields;
+        for my $field (
+            qw/account_opening_reason citizen first_name last_name place_of_birth
+            salutation secret_answer secret_question tax_residence tax_identification_number/
+            )
+        {
+
+            my $original_value = $client_cr->$field;
+
+            $client_cr->$field('');
+            $client_mlt->$field('');
+            $client_cr->save;
+            $client_mlt->save;
+
+            my @empty_fields = ($field);
+            test_immutable_fields([array_minus @all_immutables, @empty_fields], $test_user, "empty field $field is removed from immutables");
+
+            # restore the original value
+            $client_cr->$field($original_value);
+            $client_mlt->$field($original_value);
+            $client_cr->save;
+            $client_mlt->save;
+        }
+    };
+
+    subtest 'before authentication' => sub {
+        my @excluded_fields;
+        for my $field (@all_immutables) {
+            push @excluded_fields, $field;
+            $changeable_fields->{svg}->{only_before_auth} = [@excluded_fields];
+            test_immutable_fields([array_minus(@all_immutables, @excluded_fields), $field],
+                $test_user, "list of immutable fields is not changed without only_before_auth");
+
+            $changeable_fields->{malta}->{only_before_auth} = [@excluded_fields];
+            test_immutable_fields([array_minus(@all_immutables, @excluded_fields)],
+                $test_user, "$field is removed from immutable fields of both clients by setting just for one landing company");
+        }
+
+        test_immutable_fields([], $test_user, "all fields are changeable now");
+
+        $client_cr->set_authentication('ID_NOTARIZED')->status('pass');
+        cmp_bag [$client_cr->immutable_fields], \@all_immutables, "Immutable fields are reverted to default after authentication";
+
+        $client_cr->set_authentication('ID_NOTARIZED')->status('fail');
+        cmp_bag [$client_cr->immutable_fields], [], "Immutable fields are empty egain if client becomes unauthenticated";
+
+    };
+
+    $mock_lc->unmock_all;
+};
+
+sub test_immutable_fields {
+    my ($fields, $user, $message) = @_;
+
+    is scalar $user->clients, 3, 'Correct number of clients';
+    for my $client ($user->clients) {
+        my $expected_list = $client->is_virtual ? ['residence']                                               : $fields;
+        my $msg           = $client->is_virtual ? 'Immutable fields are always the same for virtual accounts' : $message;
+
+        my $landing_company = $client->landing_company->short;
+        cmp_bag [$client->immutable_fields], $expected_list, "$msg - $landing_company";
+    }
+}
 
 done_testing();
