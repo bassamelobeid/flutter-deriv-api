@@ -11,25 +11,14 @@ use Test::MockTime qw( restore_time set_absolute_time );
 use Test::More qw( no_plan );
 use Test::MockModule;
 use File::Spec;
-use Postgres::FeedDB::Spot;
 use Quant::Framework::VolSurface::Utils qw(NY1700_rollover_date_on);
 
 $ENV{QUANT_FRAMEWORK_HOLIDAY_CACHE} = 0;
 use constant MAX_ALLOWED_AGE => 4 * 60 * 60;
-use Postgres::FeedDB::Spot;
-my $module = Test::MockModule->new('Postgres::FeedDB::Spot');
-$module->mock(
-    'spot_tick',
-    sub {
-        my $self = shift;
-        return Postgres::FeedDB::Spot::Tick->new({
-            epoch => time,
-            quote => 100,
-        });
-    });
 
-use BOM::Test::Data::Utility::UnitTestMarketData qw( :init );
+use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
+use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::MarketDataAutoUpdater::Forex;
 use BOM::MarketData qw(create_underlying_db);
 use BOM::MarketData qw(create_underlying);
@@ -56,6 +45,8 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
             }
         },
     });
+my @symbol_list = qw(frxAUDJPY frxGBPJPY frxUSDJPY frxGBPINR);
+
 Quant::Framework::Utils::Test::create_doc(
     'volsurface_delta',
     {
@@ -63,12 +54,13 @@ Quant::Framework::Utils::Test::create_doc(
         chronicle_reader => BOM::Config::Chronicle::get_chronicle_reader,
         chronicle_writer => BOM::Config::Chronicle::get_chronicle_writer,
         recorded_date    => Date::Utility->new,
-    }) for qw(frxAUDJPY frxGBPJPY frxUSDJPY frxGBPINR);
+    }) for @symbol_list;
 
-create_underlying({symbol => 'frxGBPINR'})->set_combined_realtime({
-    epoch => $fake_date->epoch,
-    quote => 100,
-});
+BOM::Test::Data::Utility::FeedTestDatabase::create_realtime_tick({
+        underlying => $_,
+        epoch      => $fake_date->epoch,
+        quote      => 100
+    }) for @symbol_list;
 
 initialize_realtime_ticks_db;
 
