@@ -11,6 +11,27 @@
    "properties" : {
       "get_settings" : {
          "type" : "object",
+         "required" : [
+            "address_state",
+            "email_consent",
+            "client_tnc_status",
+            "date_of_birth",
+            "country",
+            "email",
+            "address_postcode",
+            "address_line_1",
+            "last_name",
+            "address_line_2",
+            "phone",
+            "first_name",
+            "account_opening_reason",
+            "is_authenticated_payment_agent",
+            "salutation",
+            "country_code",
+            "address_city",
+            "non_pep_declaration",
+            "immutable_fields"
+         ],
          "properties" : {
             "address_state" : {
                "pattern" : "^BT$",
@@ -97,28 +118,14 @@
                 "enum": [
                     1
                 ]
+            },
+            "immutable_fields" : {
+               "type" : "array",
+               "items" : {
+                  "type" : "string"
+               }
             }
-         },
-         "required" : [
-            "address_state",
-            "email_consent",
-            "client_tnc_status",
-            "date_of_birth",
-            "country",
-            "email",
-            "address_postcode",
-            "address_line_1",
-            "last_name",
-            "address_line_2",
-            "phone",
-            "first_name",
-            "account_opening_reason",
-            "is_authenticated_payment_agent",
-            "salutation",
-            "country_code",
-            "address_city",
-            "non_pep_declaration"
-         ]
+         }
       },
       "msg_type" : {
          "pattern" : "^get_settings$",
