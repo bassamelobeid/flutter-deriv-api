@@ -59,7 +59,7 @@ subtest "active_symbols_for_" => sub {
         }};
 
     my $result = $c->call_ok($method, $params)->has_no_error->result;
-    is scalar @$result, 0, '0 pairs'
+    is scalar @$result, 0, '0 pairs';
 };
 
 subtest 'active_symbols for suspend_buy' => sub {

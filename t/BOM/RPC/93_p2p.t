@@ -276,9 +276,9 @@ subtest 'Adverts' => sub {
         ->has_no_system_error->has_error->error_code_is('MaxPerOrderExceeded',
         'Advert max_order_amount cannot be more than maximum_order amount config');
 
-    $params->{args} = $advert_params;
+    $params->{args}                 = $advert_params;
     $params->{args}{local_currency} = 'AAA';
-    $advert = $c->call_ok('p2p_advert_create', $params)->has_no_system_error->has_no_error->result;
+    $advert                         = $c->call_ok('p2p_advert_create', $params)->has_no_system_error->has_no_error->result;
     delete $advert->{stash};
     ok $advert->{id}, 'advert has id';
     push @offer_ids, $advert->{id};
@@ -289,16 +289,16 @@ subtest 'Adverts' => sub {
     $res = $c->call_ok('p2p_advert_list', $params)->has_no_system_error->has_no_error->result->{list};
     cmp_ok $res->[0]->{id}, '==', $advert->{id}, 'p2p_advert_list returns advert';
 
-    $params->{args}       = $advert_params;
+    $params->{args}                 = $advert_params;
     $params->{args}{local_currency} = 'BBB';
-    $params->{args}{rate} = 12.000001;
-    $advert               = $c->call_ok('p2p_advert_create', $params)->has_no_system_error->has_no_error->result;
+    $params->{args}{rate}           = 12.000001;
+    $advert                         = $c->call_ok('p2p_advert_create', $params)->has_no_system_error->has_no_error->result;
     is $advert->{rate_display}, '12.000001', 'advert rate_display is correct';
     push @offer_ids, $advert->{id};
 
     $params->{args}{local_currency} = 'CCC';
-    $params->{args}{rate} = 1_000_000_000;
-    $advert = $c->call_ok('p2p_advert_create', $params)->has_no_system_error->has_no_error->result;
+    $params->{args}{rate}           = 1_000_000_000;
+    $advert                         = $c->call_ok('p2p_advert_create', $params)->has_no_system_error->has_no_error->result;
     is $advert->{rate_display}, '1000000000.00', 'advert rate_display is correct for large numbers';
     push @offer_ids, $advert->{id};
 
@@ -306,7 +306,7 @@ subtest 'Adverts' => sub {
     delete $params->{args}{local_currency};
     $params->{args}{min_order_amount} = 11;
     $params->{args}{max_order_amount} = 20,
-    $c->call_ok('p2p_advert_create', $params)->has_no_system_error->has_error->error_code_is('MinPriceTooSmall', 'Got error if min price is 0');
+        $c->call_ok('p2p_advert_create', $params)->has_no_system_error->has_error->error_code_is('MinPriceTooSmall', 'Got error if min price is 0');
 
     $params->{args} = {
         id        => $advert->{id},

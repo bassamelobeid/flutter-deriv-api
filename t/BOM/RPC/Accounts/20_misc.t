@@ -216,23 +216,23 @@ subtest 'service_token validation' => sub {
             args  => $args
         });
     is($res->{error}->{code}, 'MissingPersonalDetails', "Onfido returns expected error for missing birth & residence");
-    
-    $args = { service  => 'banxa' };
-    $res = $c->tcall(
+
+    $args = {service => 'banxa'};
+    $res  = $c->tcall(
         $method,
         {
             token => $token,
             args  => $args
         });
     is($res->{error}->{code}, 'PermissionDenied', 'Banxa returns expected error for unofficial app id');
-    
-    $args = { service  => 'wyre' };
-    $res = $c->tcall(
+
+    $args = {service => 'wyre'};
+    $res  = $c->tcall(
         $method,
         {
-            token => $token,
+            token       => $token,
             source_type => 'official',
-            args  => $args
+            args        => $args
         });
     is($res->{error}->{code}, 'OrderCreationError', 'Wyre returns expected error for non crypto');
 };

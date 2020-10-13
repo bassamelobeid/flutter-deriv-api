@@ -182,6 +182,22 @@ sub _mt5_group {
     # account_category: conventional|swap_free|empty for financial_stp
     my ($company_name, $account_type, $sub_account_type, $currency, $account_category) = @_;
 
+    # These changes are temporary until restructure all the MT5 groups
+    # We should refactor this function once the new structure of MT5 groups is ready.
+    if ($company_name eq 'samoa') {
+        if ($account_type ne 'demo' && ($account_category || '') ne 'swap_free') {
+            if ($account_type eq 'financial' && $sub_account_type eq 'financial') {
+                return 'real01\financial\samoa_std_btc' if $currency eq 'BTC';
+                return 'real01\financial\samoa_std_ust' if $currency eq 'UST';
+            } elsif ($account_type eq 'gaming') {
+                return 'real01\synthetic\samoa_std_btc' if $currency eq 'BTC';
+                return 'real01\synthetic\samoa_std_ust' if $currency eq 'UST';
+            }
+        }
+
+        return '';
+    }
+
     # for Maltainvest if the client uses GBP as currency we should add this to the group name
     my $GBP = ($currency eq 'GBP' and $company_name eq 'maltainvest') ? '_GBP' : '';
 
@@ -305,7 +321,14 @@ async_rpc "mt5_new_account",
             override_code => 'ASK_FIX_DETAILS',
             details       => {missing => [@missing_fields]}}) if ($account_type ne "demo" and @missing_fields);
 
-    my $group = _mt5_group($company_name, $account_type, $mt5_account_type, $client->currency, $mt5_account_category);
+    my $mt5_account_currency = $args->{currency} // $client->currency;
+
+    # As a temporary check, we will return an error when client currency is GBP,
+    # and the $args->{currency} is defined.
+    # We should remove this check when refactor the getting the group name.
+    return create_error_future('permission') if $client->currency eq 'GBP' && $mt5_account_currency ne $client->currency;
+
+    my $group = _mt5_group($company_name, $account_type, $mt5_account_type, $mt5_account_currency, $mt5_account_category);
     return create_error_future('permission') if $group eq '';
 
     if ($client->residence eq 'gb' and not $client->status->age_verification) {
@@ -382,7 +405,8 @@ async_rpc "mt5_new_account",
 
             # A client can only have either one of
             # real\vanuatu_financial or real\svg_financial or real\svg_financial_Bbook
-            if ($mt5_account_type eq 'financial') {
+            # ignore samoa for now, since their groups follow different pattern.
+            if ($mt5_account_type eq 'financial' && $company_name ne 'samoa') {
                 my ($acct_type, $landing_company_name) = $group =~ /^([a-z]+)\\([a-z]+)_?/;
                 my %check_similar_group = (
                     vanuatu => ['\svg_financial', '\svg_financial_Bbook'],
@@ -1574,7 +1598,10 @@ sub _mt5_validate_and_get_amount {
             return create_error_future('permission') if $authorized_client->is_virtual and not $client->is_virtual;
 
             my $client_currency = $client->account ? $client->account->currency_code() : undef;
-            my $brand           = Brands->new(name => request()->brand);
+            return create_error_future('TransferBetweenDifferentCurrencies')
+                unless $client_currency eq $mt5_currency || $client->landing_company->mt5_transfer_with_different_currency_allowed;
+
+            my $brand = Brands->new(name => request()->brand);
 
             # check for fully authenticated only if it's not gaming account and landing company requires KYC.
             # as of now we only support gaming for binary brand, in future if we
