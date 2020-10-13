@@ -28,33 +28,6 @@ use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::Config::Chronicle;
 use Quant::Framework;
 
-my $FRW_frxUSDJPY_ON = create_underlying('FRW_frxUSDJPY_ON');
-my $FRW_frxUSDJPY_TN = create_underlying('FRW_frxUSDJPY_TN');
-my $FRW_frxUSDJPY_1W = create_underlying('FRW_frxUSDJPY_1W');
-my $FRW_frxUSDJPY_1M = create_underlying('FRW_frxUSDJPY_1M');
-my $FRW_frxUSDJPY_2M = create_underlying('FRW_frxUSDJPY_2M');
-my $FRW_frxUSDJPY_3M = create_underlying('FRW_frxUSDJPY_3M');
-my $FRW_frxUSDJPY_6M = create_underlying('FRW_frxUSDJPY_6M');
-my $FRW_frxUSDJPY_1Y = create_underlying('FRW_frxUSDJPY_1Y');
-
-my $fake_data = {
-    epoch => Date::Utility->new('2012-01-11 10:00:00')->epoch,
-    quote => 1,
-};
-
-{
-    #we can have warnigns here because symbol name is invalid
-    local $SIG{__WARN__} = sub { };
-    $FRW_frxUSDJPY_ON->set_combined_realtime($fake_data);
-    $FRW_frxUSDJPY_TN->set_combined_realtime($fake_data);
-    $FRW_frxUSDJPY_1W->set_combined_realtime($fake_data);
-    $FRW_frxUSDJPY_1M->set_combined_realtime($fake_data);
-    $FRW_frxUSDJPY_2M->set_combined_realtime($fake_data);
-    $FRW_frxUSDJPY_3M->set_combined_realtime($fake_data);
-    $FRW_frxUSDJPY_6M->set_combined_realtime($fake_data);
-    $FRW_frxUSDJPY_1Y->set_combined_realtime($fake_data);
-}
-
 TODO: subtest Forex => sub {
     local $TODO = 'Intermittent failures on Perl 5.26 (very small differences)';
 
@@ -292,11 +265,6 @@ sub _sample_bet {
             type          => 'implied',
             implied_from  => 'USD'
         });
-
-    $underlying->set_combined_realtime({
-        epoch => $overrides{date_pricing}->epoch,
-        quote => 99.840
-    });
 
     my $current_tick = Postgres::FeedDB::Spot::Tick->new({
         underlying => $underlying,

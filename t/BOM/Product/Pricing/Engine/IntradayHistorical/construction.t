@@ -10,18 +10,19 @@ use BOM::MarketData qw(create_underlying_db);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 
+my $now = Date::Utility->new;
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
     {
         symbol => $_,
-        date   => Date::Utility->new,
+        date   => $now,
     }) for (qw/USD JPY EUR/);
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'index',
     {
         symbol => 'OTC_FCHI',
-        date   => Date::Utility->new,
+        date   => $now,
     });
 
 initialize_realtime_ticks_db();
@@ -71,11 +72,10 @@ lives_ok { $bet = produce_contract(+{%$bet_params, high_barrier => 'S20P', low_b
 throws_ok { $pe = BOM::Product::Pricing::Engine::Intraday::Forex->new({bet => $bet}) } qr/Invalid claimtype/,
     'Cannot create engine for two barrier path-dependents (RANGE)';
 
-my $now = time;
 $bet_params->{date_start}   = $now;
 $bet_params->{bet_type}     = 'PUT';
 $bet_params->{duration}     = '15m';
-$bet_params->{date_pricing} = $now - 300;
+$bet_params->{date_pricing} = $now->epoch - 300;
 
 lives_ok { $bet = produce_contract($bet_params); } 'Can create example PUT bet';
 ok !$bet->expiry_daily;
