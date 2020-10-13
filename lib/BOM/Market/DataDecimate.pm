@@ -49,28 +49,20 @@ sub get {
 sub spot_min_max {
     my ($self, $args) = @_;
 
-    # THE RELEASE NEEDS TO BE BACKWARD COMPATIBLE.
-    # TRELLO: https://trello.com/c/zh59tmHk
-    #
-    # IT TAKES 12h FOR FEED-POPULATOR TO FILL THE NEW FORMAT,
-    # ONCE THAT IS DONE, A FOLLOW UP CARD WILL UNCOMMENT BELOW SNIPPET.
+    my $use_decimate = $args->{decimate} // 1;
+    unless ($args->{backprice}) {
+        my $symbol   = $args->{underlying}->symbol;
+        my $start    = $args->{start_epoch};
+        my $end      = $args->{end_epoch};
+        my $key_spot = $self->_make_key($symbol, $use_decimate, 1);
 
-    #################################### START UNCOMMENT
-    # my $use_decimate = $args->{decimate} // 1;
-    # unless ($args->{backprice}) {
-    #     my $symbol   = $args->{underlying}->symbol;
-    #     my $start    = $args->{start_epoch};
-    #     my $end      = $args->{end_epoch};
-    #     my $key_spot = $self->_make_key($symbol, $use_decimate, 1);
+        my @quotes = sort { $a <=> $b } map {
+            my ($quote, undef) = split SPOT_SEPARATOR;
+            $quote
+        } @{$self->redis_read->zrangebyscore($key_spot, $start, $end)};
 
-    #     my @quotes = sort { $a <=> $b } map {
-    #         my ($quote, undef) = split SPOT_SEPARATOR;
-    #         $quote
-    #     } @{$self->redis_read->zrangebyscore($key_spot, $start, $end)};
-
-    #     return [$quotes[0], $quotes[-1]];
-    # }
-    #################################### END UNCOMMENT
+        return [$quotes[0], $quotes[-1]];
+    }
 
     my $ticks  = $self->get($args);
     my @quotes = map { $_->{quote} } @$ticks;
