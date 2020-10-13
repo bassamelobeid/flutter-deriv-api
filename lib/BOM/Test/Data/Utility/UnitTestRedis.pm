@@ -12,6 +12,7 @@ use Quant::Framework::Underlying;
 use BOM::Config;
 use BOM::Config::Redis;
 use BOM::Config::RedisTransactionLimits;
+use BOM::Test::Data::Utility::FeedTestDatabase;
 
 our @EXPORT_OK = qw(initialize_realtime_ticks_db initialize_events_redis initialize_user_transfer_limits);
 
@@ -22,15 +23,9 @@ sub initialize_realtime_ticks_db {
     my %ticks = %{YAML::XS::LoadFile($test_data_dir . '/test_realtime_ticks.yml')};
 
     for my $symbol (keys %ticks) {
-        my $args = {};
-        $args->{symbol}           = $symbol;
-        $args->{chronicle_reader} = BOM::Config::Chronicle::get_chronicle_reader();
-        $args->{chronicle_writer} = BOM::Config::Chronicle::get_chronicle_writer();
-
-        my $ul = Quant::Framework::Underlying->new($args);
-
-        $ticks{$symbol}->{epoch} = time + 600;
-        $ul->set_combined_realtime($ticks{$symbol});
+        $ticks{$symbol}->{epoch}      = time + 600;
+        $ticks{$symbol}->{underlying} = $symbol;
+        BOM::Test::Data::Utility::FeedTestDatabase::create_realtime_tick($ticks{$symbol});
     }
 
     return;
