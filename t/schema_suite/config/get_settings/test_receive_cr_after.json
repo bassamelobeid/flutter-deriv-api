@@ -1,7 +1,7 @@
 {
    "$schema" : "http://json-schema.org/draft-04/schema#",
    "title" : null,
-   "additionalProperties" : false,
+   "additionalProperties" : null,
    "type" : "object",
    "description" : null,
    "required" : [
@@ -110,6 +110,12 @@
         "enum": [
             1
         ]
+      },
+      "immutable_fields" : {
+         "type" : "array",
+         "items" : {
+            "type" : "string"
+         }
       }
    }
 }

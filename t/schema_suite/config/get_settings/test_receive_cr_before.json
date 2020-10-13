@@ -23,7 +23,7 @@
    ],
    "description" : null,
    "type" : "object",
-   "additionalProperties" : false,
+   "additionalProperties" : null,
    "title" : null,
    "properties" : {
       "address_line_2" : {
@@ -110,6 +110,12 @@
         "enum": [
             1
         ]
+      },
+      "immutable_fields" : {
+         "type" : "array",
+         "items" : {
+            "type" : "string"
+         }
       }
    }
 }

@@ -7,10 +7,11 @@
       "email_consent",
       "email",
       "residence",
+      "immutable_fields",
       "user_hash"
    ],
    "title" : null,
-   "additionalProperties" : false,
+   "additionalProperties" : null,
    "description" : null,
    "type" : "object",
    "properties" : {
@@ -41,6 +42,12 @@
             0,
             1
          ]
+      },
+      "immutable_fields" : {
+         "type" : "array",
+         "items" : {
+            "type" : "string"
+         }
       }
    }
 }
