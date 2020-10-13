@@ -26,7 +26,7 @@ $user_mocked->mock('clients', sub { bless {}, 'BOM::User::Client' });
 sub get_verification_uri {
     my $action = shift;
 
-    return "$verification_uri?action=$action&lang=EN&code=$code";
+    return "$verification_uri?action=$action&lang=$language&code=$code";
 }
 
 my $messages = {

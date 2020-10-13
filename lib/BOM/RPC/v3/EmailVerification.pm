@@ -80,20 +80,15 @@ sub email_verification {
         $user_name         = ($user->clients)[0]->last_name if $user->clients;
     }
 
-    my $brand = request()->brand;
-    my $password_reset_url =
-        $brand->name eq 'deriv'
-        ? 'https://' . lc($brand->website_name) . '/reset-password/'
-        : 'https://www.'
-        # Redirect Binary.me and Binary Desktop to binary.me
-        . ($source == 15284 || $source == 14473 ? $brand->whitelist_apps->{15284} : $website_name) . '/'
-        . lc($language)
-        . ($website_name =~ /champion/i ? '/lost-password.html' : '/user/lost_passwordws.html');
-
-    my $contact_url =
-        $brand->name eq 'deriv'
-        ? 'https://' . lc($brand->website_name) . '/contact-us'
-        : 'https://www.' . lc($brand->website_name) . '/en/contact.html';
+    my $brand  = request()->brand;
+    my $params = {
+        website_name => $website_name,
+        source       => $source,
+        language     => $language,
+        app_name     => $app_name
+    };
+    my $password_reset_url = $brand->password_reset_url($params);
+    my $contact_url        = $brand->contact_url($params);
 
     my %common_args = (
         $args->%*,
