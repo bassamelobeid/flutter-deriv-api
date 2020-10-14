@@ -642,7 +642,7 @@ method get_params( $contract_type, $symbol ) {
 
     my $put_call = {
         amount        => 10,
-        barrier       => +0.1,
+        barrier       => "+0.1",
         basis         => "stake",
         contract_type => $contract_type,
         currency      => "USD",
