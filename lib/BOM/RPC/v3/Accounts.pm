@@ -2306,13 +2306,6 @@ rpc account_closure => sub {
     # Return error if NO loginids have been disabled
     return $error if ($error && $loginids_disabled_success eq '');
 
-    my $data_closure = {
-        closing_reason    => $closing_reason,
-        loginid           => $loginid,
-        loginids_disabled => $loginids_disabled_success,
-        loginids_failed   => $loginids_disabled_failed
-    };
-
     my $data_email_consent = {
         loginid       => $loginid,
         email_consent => 0
@@ -2321,6 +2314,14 @@ rpc account_closure => sub {
     # Remove email consents for the user (and update the clients as well)
     $user->update_email_fields(email_consent => $data_email_consent->{email_consent});
     BOM::Platform::Event::Emitter::emit('email_consent', $data_email_consent);
+
+    my $data_closure = {
+        closing_reason    => $closing_reason,
+        loginid           => $loginid,
+        loginids_disabled => $loginids_disabled_success,
+        loginids_failed   => $loginids_disabled_failed,
+        email_consent     => $data_email_consent->{email_consent},
+    };
 
     BOM::Platform::Event::Emitter::emit('account_closure', $data_closure);
 
