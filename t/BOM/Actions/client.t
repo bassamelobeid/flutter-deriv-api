@@ -625,16 +625,19 @@ subtest 'account closure' => sub {
         closing_reason    => 'There is no reason',
         loginid           => $loginid,
         loginids_disabled => [$loginid],
-        loginids_failed   => []};
+        loginids_failed   => [],
+        email_consent     => 0
+    };
 
     my $action_handler = BOM::Event::Process::get_action_mappings()->{account_closure};
     my $result         = $action_handler->($call_args)->get;
     is $result, 1, 'Success result';
 
-    is scalar @identify_args, 0, 'No identify event is triggered';
+    ok @identify_args, 'Identify event is triggered';
 
     my ($customer, %args) = @track_args;
-    is_deeply \%args, {
+    is_deeply \%args,
+        {
         context => {
             active => 1,
             app    => {name => 'deriv'},
@@ -646,10 +649,12 @@ subtest 'account closure' => sub {
             loginid           => $loginid,
             loginids_disabled => [$loginid],
             loginids_failed   => [],
-
+            email_consent     => 0
         },
         },
         'track context and properties are correct.';
+
+    undef @identify_args;
     undef @track_args;
 
     $req = BOM::Platform::Context::Request->new(

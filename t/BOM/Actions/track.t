@@ -249,7 +249,45 @@ subtest 'General event validation - filtering by brand' => sub {
         );
 
         is $customer->{traits}->{unsubscribed}, 'false', '\'unsubscribed\' is set to false';
-    }
+    };
+
+    subtest 'Set unsubscribed to true on account_closure event' => sub {
+        undef @track_args;
+        undef @identify_args;
+
+        $user->update_email_fields(email_consent => 0);
+        ok BOM::Event::Services::Track::track_event(
+            event      => 'account_closure',
+            loginid    => $test_client->loginid,
+            properties => {
+                closing_reason => 'Test',
+                email_consent  => 0,
+            },
+            is_identify_required => 1,
+            brand                => Brands->new(name => 'deriv'))->get, 'event emitted successfully';
+        ok @identify_args, 'Segment identify is invoked';
+        ok @track_args,    'Segment track is invoked';
+        ($customer, %args) = @track_args;
+
+        is_deeply(
+            \%args,
+            {
+                context => {
+                    active => 1,
+                    app    => {name => "deriv"},
+                    locale => "id"
+                },
+                event      => "account_closure",
+                properties => {
+                    closing_reason => 'Test',
+                    email_consent  => 0,
+                },
+            },
+            'identify context is properly set for account_closure'
+        );
+
+        is $customer->{traits}->{unsubscribed}, 'true', '\'unsubscribed\' is set to true';
+    };
 };
 
 sub test_segment_customer {

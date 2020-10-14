@@ -31,7 +31,7 @@ my %EVENT_PROPERTIES = (
         qw(revenue currency value from_account to_account from_currency to_currency from_amount to_amount source fees is_from_account_pa
             is_to_account_pa gateway_code remark time id)
     ],
-    account_closure   => [qw(loginid closing_reason loginids_disabled  loginids_failed)],
+    account_closure   => [qw(loginid closing_reason loginids_disabled loginids_failed email_consent)],
     app_registered    => [qw(loginid name scopes redirect_uri verification_uri app_markup_percentage homepage github appstore googleplay app_id)],
     app_updated       => [qw(loginid name scopes redirect_uri verification_uri app_markup_percentage homepage github appstore googleplay app_id)],
     app_deleted       => [qw(loginid app_id)],
@@ -194,9 +194,10 @@ sub account_closure {
     my ($args) = @_;
 
     return track_event(
-        event      => 'account_closure',
-        loginid    => $args->{loginid},
-        properties => $args
+        event                => 'account_closure',
+        loginid              => $args->{loginid},
+        properties           => $args,
+        is_identify_required => 1,
     );
 }
 
