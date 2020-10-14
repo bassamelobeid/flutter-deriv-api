@@ -6,7 +6,7 @@
         <tr>
             <td>Client Login ID: </td>
             <td><input type="text" name="client_loginid" size="15" data-lpignore="true" /></td>
-            <td> e.g. client login id, example: CR12345. To update default limit, leave this blank</td>
+            <td> e.g. client login id, example: CR12345 CR1001 CR102, seperate multiple ids with space. To update default limit, leave this blank</td>
         </tr>
         <tr>
             <td>Potential loss: </td>

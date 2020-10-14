@@ -203,31 +203,29 @@ if ($r->params->{'new_user_limit'}) {
     }
     $update_error = "permission denied: no write access" if $disabled_write;
 
-    BOM::Backoffice::QuantsAuditLog::log($staff, "updatenewclientlimit",
-              "client_lodinid:"
-            . $r->params->{'client_loginid'}
-            . " potential_loss:"
-            . $r->params->{'potential_loss'}
-            . " realized_loss:"
-            . $r->params->{'realized_loss'}
-            . " client_type:"
-            . $r->params->{client_type}
-            . " market_type:"
-            . $r->params->{market_type}
-            . " expiry:"
-            . $r->params->{expiry});
+    my @clients = split(/\s+/, $r->params->{'client_loginid'});
 
-    BOM::Database::Helper::UserSpecificLimit->new({
-            db             => $db,
-            client_loginid => trim($r->params->{'client_loginid'}),
-            potential_loss => $r->params->{'potential_loss'},
-            realized_loss  => $r->params->{'realized_loss'},
-            client_type    => $r->params->{client_type},
-            market_type    => $r->params->{market_type},
-            expiry         => $r->params->{expiry},
-        }
-        )->record_user_specific_limit
-        unless defined $update_error;
+    foreach my $client (@clients) {
+
+        BOM::Backoffice::QuantsAuditLog::log(
+            $staff,                                                                                                  "updatenewclientlimit",
+            sprintf 'client_loginid:%s potential_loss:%s realized_loss:%s client_type:%s market_type:%s expiry: %s', $client,
+            $r->params->{'potential_loss'},                                                                          $r->params->{'realized_loss'},
+            $r->params->{client_type},                                                                               $r->params->{market_type},
+            $r->params->{expiry});
+
+        BOM::Database::Helper::UserSpecificLimit->new({
+                db             => $db,
+                client_loginid => $client,
+                potential_loss => $r->params->{'potential_loss'},
+                realized_loss  => $r->params->{'realized_loss'},
+                client_type    => $r->params->{client_type},
+                market_type    => $r->params->{market_type},
+                expiry         => $r->params->{expiry},
+            }
+            )->record_user_specific_limit
+            unless defined $update_error;
+    }
 }
 
 my $delete_error;
