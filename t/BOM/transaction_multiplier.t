@@ -71,9 +71,8 @@ my $current_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
 });
 
 # Avoid roll-over blackout period
-if (any { Date::Utility->new->hour == $_ } (20, 21)) {
-    set_relative_time(0 - 3 * 60 * 60);
-}
+my $mocked_m = Test::MockModule->new('BOM::Product::Contract::Multup');
+$mocked_m->mock('_validate_blackout_start', sub { return; });
 
 my $mocked_u = Test::MockModule->new('Quant::Framework::Underlying');
 $mocked_u->mock('spot_tick', sub { return $current_tick });
