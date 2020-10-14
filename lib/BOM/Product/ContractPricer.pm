@@ -816,6 +816,9 @@ sub _build_mu {
     # it for optimization
     return 0 if $self->priced_with_intraday_model;
 
+    # mu is always zero for random_index. Hence, do not calculate it for optimisation.
+    return 0 if $self->underlying->submarket->name eq "random_index";
+
     my $mu = $self->r_rate - $self->q_rate;
 
     if (first { $self->underlying->market->name eq $_ } (qw(forex commodities indices))) {

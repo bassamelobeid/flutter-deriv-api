@@ -210,7 +210,7 @@ sub _validation_methods {
     push @validation_methods, '_validate_barrier_type'    unless $self->for_sale;
     push @validation_methods, '_validate_feed';
     push @validation_methods, '_validate_price'           unless $self->skips_price_validation;
-    push @validation_methods, '_validate_volsurface'      unless $self->volsurface->type eq 'flat';
+    push @validation_methods, '_validate_volsurface'      unless $self->underlying->volatility_surface_type eq 'flat';
     push @validation_methods, '_validate_rollover_blackout';
 
     return \@validation_methods;
