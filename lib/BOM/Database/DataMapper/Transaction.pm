@@ -369,7 +369,13 @@ sub get_transactions_ws {
                 p.payment_time,
                 COALESCE(p.remark, CASE WHEN t.action_type = 'escrow' THEN t.remark ELSE '' END) AS payment_remark,
                 t1.id AS buy_tr_id,
-                COALESCE(ot.transaction_time,of.transaction_time) AS escrow_time
+                COALESCE(ot.transaction_time,of.transaction_time) AS escrow_time,
+                mt5.mt5_amount,
+                mt5.mt5_account_id,
+                mt5.mt5_currency_code,
+                p.transfer_fees,
+                o_buyer.order_id AS buyer_order_id,
+                o_seller.order_id AS seller_order_id
             FROM
                 (
                     SELECT * FROM transaction.transaction
@@ -396,6 +402,12 @@ sub get_transactions_ws {
                     ON(t.action_type = $$escrow$$ AND t.id = of.from_transaction_id)
                 LEFT JOIN p2p.p2p_transaction ot
                     ON(t.action_type = $$escrow$$ AND t.id = ot.to_transaction_id)
+                LEFT JOIN p2p.p2p_transaction o_buyer
+                    ON(t.action_type = $$deposit$$ AND t.id = o_buyer.to_transaction_id)
+                LEFT JOIN p2p.p2p_transaction o_seller
+                    ON(t.action_type = $$withdrawal$$ AND t.id = o_seller.from_transaction_id)
+                LEFT JOIN payment.mt5_transfer mt5
+                    ON(t.payment_id = mt5.payment_id)
             ORDER BY t.transaction_time DESC
     };
 
