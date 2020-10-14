@@ -46,6 +46,7 @@ use constant SHIFT_INTERVAL        => 300;
 use constant BACKOFF_INITIAL_DELAY => 0.3;
 use constant BACKOFF_MAX_DELAY     => 10;
 use constant DEFAULT_ERROR_CODE    => 'WrongResponse';
+use constant REQUESTS_PER_CYCLE    => 1000;
 
 use constant ERROR_MESSAGE_MAPPING => {
     RequestTimeout      => 'Request timed out',
@@ -293,7 +294,7 @@ to the Redis in case of occurring any kind of exceptions
 sub _setup_stream_reader {
     my ($self) = @_;
 
-    while ($self->{is_running}) {
+    while ($self->{is_running} && $self->{request_counter} <= REQUESTS_PER_CYCLE) {
         try {
             # We generate random timeout to prevent attempts at the same time
             # also fixed base READ_BLOCK_TIME for preventing Redis DDoS
