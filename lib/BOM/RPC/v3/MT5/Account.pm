@@ -960,7 +960,7 @@ async_rpc "mt5_password_change",
         },
         sub {
             my $err = shift;
-            &$error_handler($err);
+            return create_error_future($err->{code});
         });
     };
 
