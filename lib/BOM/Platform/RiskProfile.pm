@@ -505,9 +505,11 @@ my %_no_condition;
 sub _match_conditions {
     my ($self, $custom, $additional_info) = @_;
 
-    $additional_info = {} unless defined $additional_info;
+    my $ci = $self->contract_info;
+    if (defined $additional_info) {
+        $ci = {%$ci, %$additional_info};
+    }
     my $real_tests_performed;
-    my $ci = {%{$self->contract_info}, %$additional_info};
 
     foreach my $key (keys %$custom) {
         next if exists $_no_condition{$key};    # skip test
