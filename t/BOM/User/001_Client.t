@@ -473,10 +473,10 @@ subtest "immutable_fields and validate_immutable_fields" => sub {
 
         test_immutable_fields([], $test_user, "all fields are changeable now");
 
-        $client_cr->set_authentication('ID_NOTARIZED')->status('pass');
+        $client_cr->set_authentication('ID_NOTARIZED', {status =>'pass'});
         cmp_bag [$client_cr->immutable_fields], \@all_immutables, "Immutable fields are reverted to default after authentication";
 
-        $client_cr->set_authentication('ID_NOTARIZED')->status('fail');
+        $client_cr->set_authentication('ID_NOTARIZED', {status => 'fail'});
         cmp_bag [$client_cr->immutable_fields], [], "Immutable fields are empty egain if client becomes unauthenticated";
 
     };

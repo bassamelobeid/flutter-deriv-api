@@ -50,7 +50,8 @@ cmp_deeply(
 
 my $sell_ad;
 buy_contract($advertiser, 3);
-lives_ok { $sell_ad = BOM::Test::Helper::P2P::create_advert(client => $advertiser, type => 'sell', local_currency => 'aaa'); } 'can create sell ad after turnover met';
+lives_ok { $sell_ad = BOM::Test::Helper::P2P::create_advert(client => $advertiser, type => 'sell', local_currency => 'aaa'); }
+'can create sell ad after turnover met';
 
 deposit($client, 10, 'oranges');
 
@@ -61,7 +62,8 @@ cmp_deeply(
 );
 
 buy_contract($client, 3);
-lives_ok { $order = (BOM::Test::Helper::P2P::create_order(client => $client, advert_id => $buy_ad->{id}, amount => 1))[1] } 'can create sell order after turnover met';
+lives_ok { $order = (BOM::Test::Helper::P2P::create_order(client => $client, advert_id => $buy_ad->{id}, amount => 1))[1] }
+'can create sell order after turnover met';
 $advertiser2->p2p_order_cancel(id => $order->{id});
 
 deposit($advertiser, 10, 'apples');
@@ -73,18 +75,19 @@ cmp_deeply(
 );
 
 buy_contract($advertiser, 3);
-lives_ok { BOM::Test::Helper::P2P::create_order(client => $client, advert_id => $sell_ad->{id}, amount => 1) } 'can create buy order if seller turnover met';
+lives_ok { BOM::Test::Helper::P2P::create_order(client => $client, advert_id => $sell_ad->{id}, amount => 1) }
+'can create buy order if seller turnover met';
 
 subtest 'payment agent' => sub {
     my $pa_client = BOM::Test::Helper::P2P::create_advertiser();
     deposit($pa_client, 1, 'apples');
-    
+
     cmp_deeply(
         exception { BOM::Test::Helper::P2P::create_advert(client => $pa_client, type => 'sell') },
         {error_code => 'SellProhibited'},
         'non PA cannot create sell ad'
     );
-    
+
     $pa_client->set_payment_agent;
     lives_ok { BOM::Test::Helper::P2P::create_advert(client => $pa_client, type => 'sell'); } 'PA can create sell ad';
 };
@@ -99,7 +102,7 @@ subtest mt5 => sub {
         {error_code => 'SellProhibited'},
         'cannot create sell ad before transfer'
     );
-    
+
     mt5_transfer($mt5_client, -5);
     lives_ok { BOM::Test::Helper::P2P::create_advert(client => $mt5_client, type => 'sell'); } 'Can create sell ad after transfer out';
 
@@ -114,9 +117,9 @@ subtest mt5 => sub {
 subtest 'buy activity' => sub {
     my $advertiser = BOM::Test::Helper::P2P::create_advertiser();
     deposit($advertiser, 10, 'apples');
-    
+
     my ($buy_advertiser, $other_buy_ad) = BOM::Test::Helper::P2P::create_advert(type => 'buy');
-    
+
     cmp_deeply(
         exception { BOM::Test::Helper::P2P::create_advert(client => $advertiser, type => 'sell') },
         {error_code => 'SellProhibited'},
@@ -124,7 +127,7 @@ subtest 'buy activity' => sub {
     );
 
     cmp_deeply(
-        exception { BOM::Test::Helper::P2P::create_order(client => $advertiser, advert_id => $other_buy_ad->{id}, amount=>1) },
+        exception { BOM::Test::Helper::P2P::create_order(client => $advertiser, advert_id => $other_buy_ad->{id}, amount => 1) },
         {error_code => 'SellProhibited'},
         'cannot create sell order firstly'
     );
@@ -132,13 +135,17 @@ subtest 'buy activity' => sub {
     my $ad;
     lives_ok { $ad = (BOM::Test::Helper::P2P::create_advert(client => $advertiser, type => 'buy'))[1] } 'can create buy ad';
 
-    my ($client, $order) = BOM::Test::Helper::P2P::create_order(advert_id => $ad->{id}, amount =>3);
-    $advertiser->p2p_order_confirm(id=>$order->{id});
-    $client->p2p_order_confirm(id=>$order->{id});
-    
+    my ($client, $order) = BOM::Test::Helper::P2P::create_order(
+        advert_id => $ad->{id},
+        amount    => 3
+    );
+    $advertiser->p2p_order_confirm(id => $order->{id});
+    $client->p2p_order_confirm(id => $order->{id});
+
     lives_ok { BOM::Test::Helper::P2P::create_advert(client => $advertiser, type => 'sell', local_currency => 'aaa') } 'can create sell ad now';
 
-    lives_ok { $order = (BOM::Test::Helper::P2P::create_order(client => $advertiser, advert_id => $other_buy_ad->{id}, amount=>1))[0] } 'can create sell order now';
+    lives_ok { $order = (BOM::Test::Helper::P2P::create_order(client => $advertiser, advert_id => $other_buy_ad->{id}, amount => 1))[0] }
+    'can create sell order now';
     #$buy_advertiser->p2p_order_cancel(id => $order->{id});
 
     deposit($advertiser, 10, 'oranges');
@@ -151,22 +158,27 @@ subtest 'buy activity' => sub {
     );
 
     cmp_deeply(
-        exception { BOM::Test::Helper::P2P::create_order(client => $advertiser, advert_id => $other_buy_ad->{id}, amount=>1) },
+        exception { BOM::Test::Helper::P2P::create_order(client => $advertiser, advert_id => $other_buy_ad->{id}, amount => 1) },
         {error_code => 'SellProhibited'},
         'cannot create sell order after additional cc deposit'
     );
 
     my ($other_sell_advertiser, $other_sell_ad) = BOM::Test::Helper::P2P::create_advert(type => 'sell');
-    ($order) = (BOM::Test::Helper::P2P::create_order(client => $advertiser, advert_id => $other_sell_ad->{id}, amount =>3))[1];
-    $advertiser->p2p_order_confirm(id=>$order->{id});
-    $other_sell_advertiser->p2p_order_confirm(id=>$order->{id});
-    
-    lives_ok { BOM::Test::Helper::P2P::create_advert(client => $advertiser, type => 'sell', local_currency => 'ccc') } 'can create a sell ad after making buy order';
-    lives_ok { BOM::Test::Helper::P2P::create_order(client => $advertiser, advert_id => $other_buy_ad->{id}, amount=>1) } 'can create a sell order after making buy order';
-    
+    ($order) = (
+        BOM::Test::Helper::P2P::create_order(
+            client    => $advertiser,
+            advert_id => $other_sell_ad->{id},
+            amount    => 3
+        ))[1];
+    $advertiser->p2p_order_confirm(id => $order->{id});
+    $other_sell_advertiser->p2p_order_confirm(id => $order->{id});
+
+    lives_ok { BOM::Test::Helper::P2P::create_advert(client => $advertiser, type => 'sell', local_currency => 'ccc') }
+    'can create a sell ad after making buy order';
+    lives_ok { BOM::Test::Helper::P2P::create_order(client => $advertiser, advert_id => $other_buy_ad->{id}, amount => 1) }
+    'can create a sell order after making buy order';
+
 };
-
-
 
 done_testing();
 
@@ -218,14 +230,14 @@ sub buy_contract {
 
 sub mt5_transfer {
     my $client = shift;
-    
+
     $client->payment_mt5_transfer(
-                amount   => shift,
-                currency => $client->currency,
-                staff    => 'test',
-                remark   => 'test',
-                fees     => 0,
-                source   => 1,
-            );
-    
+        amount   => shift,
+        currency => $client->currency,
+        staff    => 'test',
+        remark   => 'test',
+        fees     => 0,
+        source   => 1,
+    );
+
 }

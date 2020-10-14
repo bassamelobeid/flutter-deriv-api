@@ -248,7 +248,7 @@ sub clients_for_landing_company {
     my $self      = shift;
     my $lc_short  = shift // die 'need landing_company';
     my @login_ids = $self->bom_loginids;
-    return map { BOM::User::Client->new({loginid => $_, db_operation => 'replica'}) }
+    return map { $self->get_client_using_replica($_) }
         grep { LandingCompany::Registry->get_by_loginid($_)->short eq $lc_short } @login_ids;
 }
 
@@ -421,17 +421,7 @@ sub accounts_by_category {
 
     my (@enabled_accounts_fiat, @enabled_accounts_crypto, @virtual_accounts, @self_excluded_accounts, @disabled_accounts, @duplicated_accounts);
     foreach my $loginid (sort @$loginid_list) {
-        my $cl;
-        try {
-            $cl = BOM::User::Client->new({
-                loginid      => $loginid,
-                db_operation => 'replica'
-            });
-        } catch {
-            # try master if replica is down
-            $cl = BOM::User::Client->new({loginid => $loginid});
-        }
-
+        my $cl = $self->get_client_using_replica($loginid);
         next unless $cl;
 
         next if ($cl->status->is_login_disallowed and not $args{include_duplicated});
@@ -771,6 +761,41 @@ sub valid_to_anonymize {
     return $result->{ck_user_valid_to_anonymize};
 }
 
+=head2 get_client_using_replica
+
+Return the BOM::User::Client object that will use the replica database
+In case of any issue with the replica it will use the master database.
+
+=over
+
+=item * C<$login_id> client login id
+
+=back
+
+returns a L<BOM::User::Client> or undef if not successful
+
+=cut
+
+sub get_client_using_replica {
+    my ($self, $login_id) = @_;
+    my $cl;
+    my $error;
+    try {
+        $cl = BOM::User::Client->new({
+            loginid      => $login_id,
+            db_operation => 'replica'
+        });
+    } catch ($e) {
+        $log->warnf("Error getting replica connection: %s", $e);
+        $error = $e;
+    }
+
+    # try master if replica is down
+    $cl = BOM::User::Client->new({loginid => $login_id}) if not $cl or $error;
+
+    return $cl;
+}
+
 =head2 total_deposits
 
 get the total value of deposits for this user
@@ -793,7 +818,8 @@ sub total_deposits {
 
     my $total = 0;
     for my $client (@clients) {
-        my $count = $client->db->dbic->run(
+        my $replica_client = $self->get_client_using_replica($client->loginid);
+        my $count          = $replica_client->db->dbic->run(
             fixup => sub {
                 $_->selectrow_hashref("select payment.get_total_deposit(?);", undef, $client->loginid);
             });
@@ -827,11 +853,11 @@ sub total_trades {
         # Check if client has no currency code
         next unless $client->account;
 
-        my $count = $client->db->dbic->run(
+        my $replica_client = $self->get_client_using_replica($client->loginid);
+        my $count          = $replica_client->db->dbic->run(
             fixup => sub {
-                $_->selectrow_hashref(
-                    'SELECT transaction.round_amount(?, SUM(buy_price)) as amount FROM bet.financial_market_bet WHERE account_id = ?;',
-                    undef, $client->currency, $client->account->id);
+                $_->selectrow_hashref('SELECT SUM(buy_price) as amount FROM bet.financial_market_bet WHERE account_id = ?;',
+                    undef, $client->account->id);
             });
         $total += in_usd($count->{amount}, $client->currency) if $count->{amount};
     }
