@@ -402,7 +402,8 @@ sub _setup_market_data {
     my $redis = BOM::Config::Redis::redis_replicated_write();
     for my $key (sort keys %$tick_data) {
         my $ticks = $tick_data->{$key};
-        $redis->zadd($key, $_->{epoch}, $encoder->encode($_)) for @$ticks;
+        $redis->zadd($key,           $_->{epoch}, $encoder->encode($_))             for @$ticks;
+        $redis->zadd($key . "_SPOT", $_->{epoch}, $_->{quote} . "::" . $_->{epoch}) for @$ticks;
     }
 
     populate_exchange_rates();
