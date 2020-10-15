@@ -2499,8 +2499,8 @@ sub p2p_order_list {
     $param{loginid} = $self->loginid;
     $param{status} =
         $param{active}
-        ? ['pending',   'buyer-confirmed', 'timed-out']
-        : ['completed', 'cancelled',       'refunded']
+        ? ['pending', 'buyer-confirmed', 'timed-out', 'disputed']
+        : ['completed', 'cancelled', 'refunded', 'dispute-refunded', 'dispute-completed']
         if exists $param{active};
 
     my $list = $self->_p2p_orders(%param);
