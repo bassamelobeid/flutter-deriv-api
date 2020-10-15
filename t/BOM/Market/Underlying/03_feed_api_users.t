@@ -314,6 +314,7 @@ subtest 'get_ohlc_data_for_period' => sub {
         close      => 13_345.89,
         underlying => 'DJI'
     };
+
     BOM::Test::Data::Utility::FeedTestDatabase::create_ohlc_daily($ohlc);
 
     $ohlc_date = Date::Utility->new('2012-10-23');
@@ -337,6 +338,11 @@ subtest 'get_ohlc_data_for_period' => sub {
         underlying => 'DJI'
     };
     BOM::Test::Data::Utility::FeedTestDatabase::create_ohlc_daily($ohlc);
+    BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+        underlying => 'DJI',
+        epoch      => $ohlc_date->epoch + 86401,
+        quote      => 13_077.3,
+    });
 
     subtest 'high, low calculation' => sub {
         my $underlying = check_new_ok('Quant::Framework::Underlying' => [{symbol => 'DJI'}]);
@@ -349,6 +355,18 @@ subtest 'get_ohlc_data_for_period' => sub {
         is $ohlc->{low},   13_063.63, 'Correct Low';
         is $ohlc->{close}, 13_077.34, 'Correct Close';
     };
+
+    BOM::Test::Data::Utility::FeedTestDatabase->instance->truncate_tables();
+    $ohlc = {
+        epoch      => Date::Utility->new('2012-10-22')->epoch,
+        open       => 13_344.28,
+        high       => 13_368.55,
+        low        => 13_235.15,
+        close      => 13_345.89,
+        underlying => 'DJI'
+    };
+
+    BOM::Test::Data::Utility::FeedTestDatabase::create_ohlc_daily($ohlc);
 
     my $tick_date = Date::Utility->new('2012-10-23 14:35:00');
     my $tick      = {
