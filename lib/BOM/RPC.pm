@@ -182,7 +182,7 @@ sub wrap_rpc_sub {
                 log_exception(sprintf('%s::%s', $def->caller, $def->name));
 
                 $result = BOM::RPC::v3::Utility::create_error({
-                        code              => 'InternalServerError' . $error,
+                        code              => 'InternalServerError',
                         message_to_client => localize("Sorry, an error occurred while processing your request.")});
             }
         }
