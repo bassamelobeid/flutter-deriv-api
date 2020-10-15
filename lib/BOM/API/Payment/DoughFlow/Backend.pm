@@ -297,7 +297,7 @@ sub write_transaction_line {
         if ($amount + $fee > $balance) {
             my $plusfee = $fee ? " plus fee $fee" : '';
             return $c->status_bad_request(
-                "Requested withdrawal amount $currency_code $amount$plusfee exceeds client balance $currency_code $balance");
+                "Requested withdrawal amount $amount$plusfee $currency_code exceeds client balance $balance $currency_code");
         }
         $payment_args{amount} = -$amount;
         $trx = $client->payment_doughflow(%payment_args);
