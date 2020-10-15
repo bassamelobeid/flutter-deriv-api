@@ -251,7 +251,7 @@ subtest 'test lookbacks slippage', sub {
         $error = $txn->buy;
         is $error->{-type}, 'PriceMoved';
         is $error->{-message_to_client},
-            'The underlying market has moved too much since you priced the contract. The contract price has changed from USD59.40 to USD60.00.';
+            'The underlying market has moved too much since you priced the contract. The contract price has changed from 59.40USD to 60.00USD.';
 
         $txn = BOM::Transaction->new({
             client        => $cl,
@@ -345,7 +345,7 @@ subtest 'test callputspread slippage' => sub {
         $error = $txn->buy;
         is $error->{-type}, 'PriceMoved';
         is $error->{-message_to_client},
-            'The underlying market has moved too much since you priced the contract. The contract price has changed from USD50.26 to USD50.57.';
+            'The underlying market has moved too much since you priced the contract. The contract price has changed from 50.26USD to 50.57USD.';
 
         $txn = BOM::Transaction->new({
             client        => $cl,
@@ -739,8 +739,8 @@ subtest 'test (binary) sell slippage' => sub {
     my $error = $txn->sell;
     is $error->{-type}, 'PriceMoved', 'error type - PriceMoved';
     is $error->{-message_to_client},
-        'The underlying market has moved too much since you priced the contract. The contract sell price has changed from USD49.37 to USD48.76.',
-        'error message_to_client - The underlying market has moved too much since you priced the contract. The contract sell price has changed from USD49.37 to USD48.76.';
+        'The underlying market has moved too much since you priced the contract. The contract sell price has changed from 49.37USD to 48.76USD.',
+        'error message_to_client - The underlying market has moved too much since you priced the contract. The contract sell price has changed from 49.37USD to 48.76USD.';
 };
 
 done_testing();
