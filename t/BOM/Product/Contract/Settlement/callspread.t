@@ -98,7 +98,7 @@ subtest 'multiday' => sub {
         BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks(
             [100, $now->epoch + 1,                                                 $symbol],
             [102, $now->epoch + 2,                                                 $symbol],
-            [100, $now->truncate_to_day->plus_time_interval('1d23h59m59s')->epoch, $symbol]);
+            [100, $now->truncate_to_day->plus_time_interval('1d23h59m58s')->epoch, $symbol]);
         my $c = produce_contract({%$args, date_pricing => $args->{date_start}->truncate_to_day->plus_time_interval('2d')->epoch});
         ok $c->expiry_daily, 'multi-day contract';
         ok $c->is_expired,   'is expired';
@@ -110,14 +110,15 @@ subtest 'multiday' => sub {
     };
 
     subtest 'CALLSPREAD - expired with OHLC data' => sub {
-        BOM::Test::Data::Utility::FeedTestDatabase::create_ohlc_daily({
+        BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
             underlying => $symbol,
-            epoch      => $args->{date_start}->truncate_to_day->plus_time_interval('1d')->epoch,
-            open       => 100,
-            high       => 101,
-            low        => 99,
-            close      => 100.11,
-            official   => 0,
+            epoch      => $now->truncate_to_day->plus_time_interval('1d23h59m59s')->epoch,
+            quote      => 100.11,
+        });
+        BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+            underlying => $symbol,
+            epoch      => $args->{date_start}->truncate_to_day->plus_time_interval('2d')->epoch,
+            quote      => 100,
         });
         my $c = produce_contract({%$args, date_pricing => $args->{date_start}->truncate_to_day->plus_time_interval('2d')->epoch});
         ok $c->expiry_daily, 'multi-day contract';

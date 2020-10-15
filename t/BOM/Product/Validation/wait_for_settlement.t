@@ -308,7 +308,7 @@ subtest 'Index settlement check on ' => sub {
     BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
         underlying => 'OTC_GDAXI',
         epoch      => Date::Utility->new('2008-02-19 20:30:00')->epoch,
-        quote      => 1008,
+        quote      => 1003,
     });
 
     my $bet_params = {
@@ -327,20 +327,16 @@ subtest 'Index settlement check on ' => sub {
     ok $bet->is_after_expiry, 'is after expiry';
     ok !$bet->is_after_settlement, 'is not pass settlement time';
     is($bet->primary_validation_error->message, 'waiting for settlement', 'Not valid to sell as it is waiting for settlement');
-    is($bet->exit_tick->quote,                  '1008',                   'exit tick is 1008');
+    is($bet->exit_tick->quote,                  '1003',                   'exit tick is 1003');
     is($bet->exit_tick->epoch, Date::Utility->new('2008-02-19 20:30:00')->epoch, 'the exit tick is the one at 20:30');
-    cmp_ok($bet->bid_price, '==', 1, 'Indicative outcome with full payout as the exit tick is 1008');
+    # there's no concept of official OHLC anymore and writing OHLC in bet.ohlc_daily with a wrong number doesn't
+    # make sense for the test
+    cmp_ok($bet->bid_price, '==', 0, 'Indicative outcome with full payout as the exit tick is 1008');
 
-    BOM::Test::Data::Utility::FeedTestDatabase::create_ohlc_daily({
-            underlying => 'OTC_GDAXI',
-            epoch      => Date::Utility->new('2008-02-19 00:00:00')->epoch,
-            # epoch      => 1203379200,    # 19 Feb 2008 00:00:00 GMT
-            open     => 1008,
-            high     => 1110,
-            low      => 1002,
-            close    => 1003,
-            official => 0,
-
+    BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+        underlying => 'OTC_GDAXI',
+        epoch      => Date::Utility->new('2008-02-20')->epoch,
+        quote      => 1009,
     });
     $bet_params->{date_pricing} = Date::Utility->new('2008-02-20 07:00:00');
     $bet = produce_contract($bet_params);

@@ -141,14 +141,10 @@ subtest 'multiday' => sub {
     };
 
     subtest 'CALL - expired with OHLC data' => sub {
-        BOM::Test::Data::Utility::FeedTestDatabase::create_ohlc_daily({
+        BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
             underlying => $symbol,
-            epoch      => $args->{date_start}->truncate_to_day->plus_time_interval('1d')->epoch,
-            open       => 100,
-            high       => 101,
-            low        => 99,
-            close      => 100,
-            official   => 0,
+            epoch      => $args->{date_start}->truncate_to_day->plus_time_interval('2d')->epoch,
+            quote      => 100,
         });
         my $c = produce_contract({%$args, date_pricing => $args->{date_start}->truncate_to_day->plus_time_interval('2d')->epoch});
         ok $c->expiry_daily, 'multi-day contract';
