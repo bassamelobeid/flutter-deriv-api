@@ -771,7 +771,7 @@ rpc paymentagent_transfer => sub {
             my $error_detail = _get_json_error($error_msg);
             return $error_sub->(
                 localize(
-                    'Withdrawal is [_1] [_2] but balance [_3] includes frozen bonus [_4].',
+                    'Withdrawal is [_2] [_1] but balance [_3] includes frozen bonus [_4].',
                     $currency,
                     $error_detail->{amount},
                     $error_detail->{balance},
@@ -783,13 +783,13 @@ rpc paymentagent_transfer => sub {
             return $error_sub->(
                 localize(
                     'Sorry, you cannot withdraw. Your withdrawal amount [_1] exceeds withdrawal limit[_2].',
-                    "$currency $error_detail->{amount}",
-                    $error_detail->{limit_left} <= 0 ? '' : " $currency $error_detail->{limit_left}"
+                    "$error_detail->{amount} $currency",
+                    $error_detail->{limit_left} <= 0 ? '' : " $error_detail->{limit_left} $currency"
                 ));
         } elsif ($error_code eq 'BI223') {
             my $error_detail = _get_json_error($error_msg);
 
-            return $error_sub->(localize('Sorry, you cannot withdraw. Your account balance is [_1] [_2].', $currency, $error_detail->{balance}));
+            return $error_sub->(localize('Sorry, you cannot withdraw. Your account balance is [_1] [_2].', $error_detail->{balance}, $currency));
         } else {
             $log->fatal("Unexpected DB error: $full_error_msg");
             return $error_sub->(localize("Sorry, an error occurred whilst processing your request."));
@@ -1186,17 +1186,17 @@ sub __client_withdrawal_notes {
     my $balance  = $client->default_account ? formatnumber('amount', $currency, $client->default_account->balance) : 0;
 
     if ($error =~ /exceeds client balance/) {
-        return (localize('Sorry, you cannot withdraw. Your account balance is [_1] [_2].', $currency, $balance));
+        return (localize('Sorry, you cannot withdraw. Your account balance is [_1] [_2].', $balance, $currency));
     } elsif ($error =~ /exceeds withdrawal limit \[(.+)\]/) {
-        # if limit <= 0, we show: Your withdrawal amount USD 100.00 exceeds withdrawal limit.
-        # if limit > 0, we show: Your withdrawal amount USD 100.00 exceeds withdrawal limit USD 20.00.
+        # if limit <= 0, we show: Your withdrawal amount 100.00 USD exceeds withdrawal limit.
+        # if limit > 0, we show: Your withdrawal amount 100.00 USD exceeds withdrawal limit USD 20.00.
         my $limit = " $1";
-        if ($limit =~ /\s+0\.00$/ or $limit =~ /\s+-\d+\.\d+$/) {
+        if ($limit =~ /0\.00\s+$/ or $limit =~ /\d+\.\d+-\s+$/) {
             $limit = '';
         }
 
-        return localize('Sorry, you cannot withdraw. Your withdrawal amount [_1] exceeds withdrawal limit[_2].', "$currency $amount", $limit);
-    } elsif (my (@limits) = $error =~ /reached the  maximum withdrawal limit of \[([A-Z]+) (\d+(\.\d+)?)\]/) {
+        return localize('Sorry, you cannot withdraw. Your withdrawal amount [_1] exceeds withdrawal limit[_2].', "$amount $currency", $limit);
+    } elsif (my (@limits) = $error =~ /reached the  maximum withdrawal limit of \[(\d+(\.\d+)?) ([A-Z]+)\]/) {
         return localize("You've reached the maximum withdrawal limit of [_1] [_2]. Please authenticate your account to make unlimited withdrawals.",
             $limits[0], $limits[1]);
     }
@@ -1210,7 +1210,7 @@ sub __client_withdrawal_notes {
         # Insert turnover limit as a parameter depends on the promocode type
         $error_message .= ' '
             . localize(
-            'Note: You will be able to withdraw your bonus of [_1][_2] only once your aggregate volume of trades exceeds [_1][_3]. This restriction applies only to the bonus and profits derived therefrom.  All other deposits and profits derived therefrom can be withdrawn at any time.',
+            'Note: You will be able to withdraw your bonus of [_2] [_1] only once your aggregate volume of trades exceeds [_3] [_1]. This restriction applies only to the bonus and profits derived therefrom.  All other deposits and profits derived therefrom can be withdrawn at any time.',
             $currency,
             $withdrawal_limits->{'frozen_free_gift'},
             $withdrawal_limits->{'free_gift_turnover_limit'});
@@ -1257,14 +1257,14 @@ sub get_transfer_fee_remark {
 
     return '' unless $args{fees};
 
-    return "Includes transfer fee of $args{currency} "
+    return "Includes transfer fee of "
         . formatnumber(
         amount => $args{currency},
         $args{fee_calculated_by_percent})
-        . " ($args{fee_percent}%)."
+        . "$args{currency} ($args{fee_percent}%)."
         if $args{fee_calculated_by_percent} >= $args{minimum_fee};
 
-    return "Includes the minimum transfer fee of $args{currency} $args{minimum_fee}.";
+    return "Includes the minimum transfer fee of $args{minimum_fee}  $args{currency}.";
 }
 
 rpc transfer_between_accounts => sub {
@@ -1465,7 +1465,7 @@ rpc transfer_between_accounts => sub {
         if BOM::RPC::v3::Utility::verify_experimental_email_whitelisted($client, $from_currency)
         || BOM::RPC::v3::Utility::verify_experimental_email_whitelisted($client, $to_currency);
 
-    BOM::User::AuditLog::log("Account Transfer ATTEMPT, from[$loginid_from], to[$loginid_to], curr[$currency], amount[$amount]", $loginid_from);
+    BOM::User::AuditLog::log("Account Transfer ATTEMPT, from[$loginid_from], to[$loginid_to], amount[$amount], curr[$currency]", $loginid_from);
     my $error_audit_sub = sub {
         my ($err, $client_message) = @_;
         BOM::User::AuditLog::log("Account Transfer FAILED, $err");
@@ -1492,7 +1492,7 @@ rpc transfer_between_accounts => sub {
         return $error_audit_sub->(
             $err,
             localize(
-                "This amount is too low. Please enter a minimum of [_1] [_2].",
+                "This amount is too low. Please enter a minimum of [_2] [_1].",
                 $from_currency,
                 formatnumber('amount', $from_currency, BOM::Config::CurrencyConfig::transfer_between_accounts_limits(1)->{$from_currency}->{min}))
         ) if ($err =~ /The amount .* is below the minimum allowed amount .* for $to_currency/);
@@ -1513,7 +1513,7 @@ rpc transfer_between_accounts => sub {
         $to_client_db->unfreeze;
     };
 
-    my $err_msg = "from[$loginid_from], to[$loginid_to], curr[$currency], amount[$amount], ";
+    my $err_msg = "from[$loginid_from], to[$loginid_to], amount[$amount], curr[$currency]";
     if (not $fm_client_db->freeze) {
         return $error_audit_sub->("$err_msg error[Account stuck in previous transaction " . $loginid_from . ']');
     }
@@ -1537,7 +1537,7 @@ rpc transfer_between_accounts => sub {
         } elsif ($err =~ /includes frozen bonus \[(.+)\]/) {
             my $frozen_bonus = $1;
             $limit = $currency . ' ' . formatnumber('amount', $currency, $client_from->default_account->balance - $frozen_bonus);
-        } elsif ($err =~ /exceeds withdrawal limit \[(.+)\](?:\s+\((.+)\))?/) {
+        } elsif ($err =~ /exceeds withdrawal limit \[(.+)\](?:\((.+)\)\s+)?/) {
 
             my $bal_1 = $1;
             my $bal_2 = $2;
@@ -1600,7 +1600,7 @@ rpc transfer_between_accounts => sub {
         log_exception();
         return $error_audit_sub->($err);
     }
-    BOM::User::AuditLog::log("Account Transfer SUCCESS, from[$loginid_from], to[$loginid_to], curr[$currency], amount[$amount]", $loginid_from);
+    BOM::User::AuditLog::log("Account Transfer SUCCESS, from[$loginid_from], to[$loginid_to], amount[$amount], curr[$currency]", $loginid_from);
 
     $client_from->user->daily_transfer_incr();
 

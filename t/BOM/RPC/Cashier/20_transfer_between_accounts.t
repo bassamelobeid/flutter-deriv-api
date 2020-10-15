@@ -12,7 +12,7 @@ use Test::Warn;
 use MojoX::JSON::RPC::Client;
 use POSIX qw/ ceil /;
 use ExchangeRates::CurrencyConverter qw(in_usd convert_currency);
-use Format::Util::Numbers qw/financialrounding get_min_unit/;
+use Format::Util::Numbers qw/financialrounding get_min_unit formatnumber/;
 
 use BOM::User::Client;
 use BOM::RPC::v3::MT5::Account;
@@ -390,11 +390,11 @@ subtest 'validation' => sub {
     $params->{args}->{amount} = $invalid_min;
 
     $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
-    my $elevated_minimum = BOM::Config::CurrencyConfig::transfer_between_accounts_limits(1)->{USD}->{min};
+    my $elevated_minimum = formatnumber('amount', 'USD', BOM::Config::CurrencyConfig::transfer_between_accounts_limits(1)->{USD}->{min});
     cmp_ok $elevated_minimum, '>', $invalid_min, 'Transfer minimum is automatically elevated to the lower bound';
     is $result->{error}->{code}, 'TransferBetweenAccountsError', 'Correct error code crypto to crypto';
     like $result->{error}->{message_to_client},
-        qr/This amount is too low. Please enter a minimum of USD $elevated_minimum./,
+        qr/This amount is too low. Please enter a minimum of $elevated_minimum USD./,
         'A different error message containing the elevated (lower bound) minimum value included.';
     $mock_fees->unmock_all;
 };

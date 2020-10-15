@@ -340,14 +340,14 @@ subtest 'get settings' => sub {
     };
     is_deeply($result, $expected, 'return 1 for authenticated payment agent');
 
-    $test_client_cr_3->set_authentication('ID_DOCUMENT')->status('pass');
+    $test_client_cr_3->set_authentication('ID_DOCUMENT', {status => 'pass'});
     $test_client_cr_3->save;
     ok $test_client_cr_3->fully_authenticated, 'client is authenticated';
     $result = $c->tcall($method, $params);
     $expected->{immutable_fields} =
         ['citizen', 'date_of_birth', 'first_name', 'last_name', 'residence', 'salutation', 'secret_answer', 'secret_question'];
     is_deeply($result, $expected, 'immutable fields changed after authentication');
-    $test_client_cr_3->set_authentication('ID_DOCUMENT')->status('fail');
+    $test_client_cr_3->set_authentication('ID_DOCUMENT', {status => 'fail'});
     $test_client_cr_3->save;
 
     ok !$test_client_cr_3->fully_authenticated, 'authentication is removed';

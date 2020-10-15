@@ -1551,7 +1551,7 @@ sub _mt5_validate_and_get_amount {
                     'DemoTopupBalance',
                     {
                         override_code => $error_code,
-                        params        => [$mt5_currency, formatnumber('amount', $mt5_currency, $max_balance_before_topup)]}
+                        params        => [formatnumber('amount', $mt5_currency, $max_balance_before_topup), $mt5_currency]}
                 ) if ($setting->{balance} > $max_balance_before_topup);
 
                 if (_throttle($mt5_loginid)) {
@@ -1753,7 +1753,7 @@ sub _mt5_validate_and_get_amount {
                 'InvalidMinAmount',
                 {
                     override_code => $error_code,
-                    params        => [$source_currency, formatnumber('amount', $source_currency, $min)]}
+                    params        => [formatnumber('amount', $source_currency, $min), $source_currency]}
             ) if $amount < financialrounding('amount', $source_currency, $min);
 
             my $max = BOM::Config::CurrencyConfig::transfer_between_accounts_limits(0, 'mt5')->{$source_currency}->{max};
@@ -1762,7 +1762,7 @@ sub _mt5_validate_and_get_amount {
                 'InvalidMaxAmount',
                 {
                     override_code => $error_code,
-                    params        => [$source_currency, formatnumber('amount', $source_currency, $max)]}
+                    params        => [formatnumber('amount', $source_currency, $max), $source_currency]}
             ) if $amount > financialrounding('amount', $source_currency, $max);
 
             my $validation = BOM::Platform::Client::CashierValidation::validate($loginid, $action_counterpart);

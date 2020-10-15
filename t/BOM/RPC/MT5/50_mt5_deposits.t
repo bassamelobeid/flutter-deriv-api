@@ -246,7 +246,7 @@ subtest 'virtual_deposit' => sub {
     };
 
     $c->call_ok($method, $deposit_demo_params)->has_error('Cannot Deposit')->error_code_is('MT5DepositError')
-        ->error_message_like(qr/balance falls below USD 1000.00/, 'Balance is higher');
+        ->error_message_like(qr/balance falls below 1000.00 USD/, 'Balance is higher');
 
     BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
     $demo_account_mock->unmock;

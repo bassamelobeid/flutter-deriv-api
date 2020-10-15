@@ -476,7 +476,7 @@ for my $transfer_currency (@fiat_currencies, @crypto_currencies) {
         top_up $Alice, $test_currency => $Alice_balance;
         ## This is used to keep a running tab of amount transferred:
         my $Alice_transferred = 0;
-        is($Alice->default_account->balance, $Alice_balance, "$test ($test_currency $Alice_balance)");
+        is($Alice->default_account->balance, $Alice_balance, "$test ($Alice_balance $test_currency)");
 
         $test = 'Transfer fails if argument not passed to payment_account_transfer';
         for my $arg (qw/ toClient currency amount Alice Bob /) {
@@ -676,7 +676,7 @@ for my $transfer_currency (@fiat_currencies, @crypto_currencies) {
         $sth_insert_client_promo->execute($Alice_id, 'TEST1234', 'NOT CLAIMED', 'PA6-5000');
         $res = BOM::RPC::v3::Cashier::paymentagent_transfer($testargs);
         my $bal = $Alice->default_account->balance;
-        is($res->{error}{message_to_client}, "Withdrawal is $test_currency $test_amount but balance $bal includes frozen bonus $bal.", $test);
+        is($res->{error}{message_to_client}, "Withdrawal is $test_amount $test_currency but balance $bal includes frozen bonus $bal.", $test);
         $SQL = 'DELETE FROM betonmarkets.client_promo_code WHERE client_loginid = ?';
         $clientdbh->do($SQL, undef, $Alice_id);
 
@@ -733,7 +733,7 @@ for my $transfer_currency (@fiat_currencies, @crypto_currencies) {
         $res       = BOM::RPC::v3::Cashier::paymentagent_transfer($testargs);
         is(
             $res->{error}{message_to_client},
-            "Sorry, you cannot withdraw. Your withdrawal amount $test_currency $test_amount exceeds withdrawal limit $test_currency $show_left.",
+            "Sorry, you cannot withdraw. Your withdrawal amount $test_amount $test_currency exceeds withdrawal limit $show_left $test_currency.",
             "$test ($lc_lifetime_limit)"
         );
         reset_transfer_testargs();
@@ -742,7 +742,7 @@ for my $transfer_currency (@fiat_currencies, @crypto_currencies) {
         modify_bom_config('payment_limits', 'withdrawal_limits/*/lifetime_limit = 2');
         $res = BOM::RPC::v3::Cashier::paymentagent_transfer($testargs);
         is($res->{error}{message_to_client},
-            "Sorry, you cannot withdraw. Your withdrawal amount $test_currency $test_amount exceeds withdrawal limit.", $test);
+            "Sorry, you cannot withdraw. Your withdrawal amount $test_amount $test_currency exceeds withdrawal limit.", $test);
         reset_transfer_testargs();
 
         $test = 'Landing company limits are skipped if the client is fully authenticated';
@@ -773,7 +773,7 @@ for my $transfer_currency (@fiat_currencies, @crypto_currencies) {
         $res = BOM::RPC::v3::Cashier::paymentagent_transfer($testargs);
         is(
             $res->{error}{message_to_client},
-            "Sorry, you cannot withdraw. Your withdrawal amount $test_currency $test_amount exceeds withdrawal limit.",
+            "Sorry, you cannot withdraw. Your withdrawal amount $test_amount $test_currency exceeds withdrawal limit.",
             "$test ($lc_lifetime_limit)"
         );
 
@@ -789,7 +789,7 @@ for my $transfer_currency (@fiat_currencies, @crypto_currencies) {
         modify_bom_config('payment_limits', 'withdrawal_limits/*/lifetime_limit = 100000');
         $testargs->{args}{amount} = $Alice_balance + $amount_boost;
         $res = BOM::RPC::v3::Cashier::paymentagent_transfer($testargs);
-        is($res->{error}{message_to_client}, "Sorry, you cannot withdraw. Your account balance is $test_currency $Alice_balance.", $test);
+        is($res->{error}{message_to_client}, "Sorry, you cannot withdraw. Your account balance is $Alice_balance $test_currency.", $test);
         $test_amount = $old_test_amount;
         reset_transfer_testargs();
 
@@ -1156,8 +1156,9 @@ for my $withdraw_currency (shuffle @crypto_currencies, @fiat_currencies) {
         my $alt_amount    = $test_amount * 2;
         $testargs->{args}{amount} = $alt_amount;
         $res = BOM::RPC::v3::Cashier::paymentagent_withdraw($testargs);
+        my $balance = $Alice->default_account ? formatnumber('amount', $test_currency, $Alice_balance) : 0;
         ## Cashier.pm does some remapping to Payments.pm
-        like($res->{error}{message_to_client}, qr/Your account balance is $test_currency $Alice_balance/, $test);
+        like($res->{error}{message_to_client}, qr/Your account balance is $balance $test_currency/, $test);
         top_up $Alice, $test_currency => $MAX_DAILY_WITHDRAW_AMOUNT_WEEKDAY + 1;    ## Should work for all currencies
 
         $mock_account->mock('total_withdrawals', sub { return 54321 });
