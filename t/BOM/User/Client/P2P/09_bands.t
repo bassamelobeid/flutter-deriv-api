@@ -58,7 +58,7 @@ subtest 'Default band' => sub {
         $err,
         {
             error_code     => 'OrderMaximumTempExceeded',
-            message_params => ['EUR', '20.00']
+            message_params => ['20.00', 'EUR']
         },
         'cannot create order that exceeds band limit'
     );
@@ -80,7 +80,7 @@ subtest 'Medium band for country' => sub {
         $err,
         {
             error_code     => 'OrderMaximumTempExceeded',
-            message_params => ['EUR', '40.00']
+            message_params => ['40.00', 'EUR']
         },
         'cannot create order that exceeds band limit'
     );
@@ -173,7 +173,7 @@ subtest 'Check client band limits' => sub {
         $err,
         {
             error_code     => 'OrderMaximumTempExceeded',
-            message_params => ['EUR', '20.00']
+            message_params => ['20.00', 'EUR']
         },
         'client cannot create order if exceeds daily buy limit'
     );

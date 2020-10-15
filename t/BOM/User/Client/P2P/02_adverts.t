@@ -237,7 +237,7 @@ subtest 'Creating advert' => sub {
         },
         {
             error_code     => 'MaximumExceeded',
-            message_params => [$params{account_currency}, $maximum_advert]
+            message_params => [$maximum_advert, $params{account_currency}]
         },
         'Error when amount exceeds BO advert limit'
     );
@@ -251,7 +251,7 @@ subtest 'Creating advert' => sub {
         },
         {
             error_code     => 'MaxPerOrderExceeded',
-            message_params => [$params{account_currency}, $maximum_order],
+            message_params => [$maximum_order, $params{account_currency}],
         },
         'Error when max_order_amount exceeds BO order limit'
     );

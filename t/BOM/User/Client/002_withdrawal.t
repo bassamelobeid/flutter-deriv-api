@@ -162,11 +162,11 @@ subtest 'CR withdrawal' => sub {
 
         subtest 'perform withdraw' => sub {
             lives_ok { $client->smart_payment(%withdrawal, amount => -5000) } 'first 5k withdrawal';
-            throws_ok { $client->smart_payment(%withdrawal, amount => -5001) } qr/exceeds withdrawal limit \[USD 5000.00\]/,
+            throws_ok { $client->smart_payment(%withdrawal, amount => -5001) } qr/exceeds withdrawal limit \[5000.00 USD\]/,
                 'total withdraw cannot > 10k';
             lives_ok { $client->smart_payment(%withdrawal, amount => -5000) } 'second 5k withdrawal';
             is($emitted{$client->loginid}, 'withdrawal_limit_reached', 'An event is emitted to set the client as needs_action');
-            throws_ok { $client->validate_payment(%withdrawal, amount => -100) } qr/reached the maximum withdrawal limit of \[USD 10000\]/,
+            throws_ok { $client->validate_payment(%withdrawal, amount => -100) } qr/reached the maximum withdrawal limit of \[10000 USD\]/,
                 'withdrawal_limit_reached';
         };
 
@@ -292,7 +292,8 @@ subtest 'EUR3k over 30 days MX limitation.' => sub {
     my %wd3001 = (%wd_gbp, amount => -_GBP_equiv(3001));
 
     # Test that the client cannot withdraw the equivalent of EUR 3001
-    throws_ok { $client->validate_payment(%wd3001) } qr/exceeds withdrawal limit \[EUR/, 'Unauthed, not allowed to withdraw GBP equiv of EUR3001.';
+    throws_ok { $client->validate_payment(%wd3001) } qr/exceeds withdrawal limit \[3000.00 EUR/,
+        'Unauthed, not allowed to withdraw GBP equiv of EUR3001.';
     # mx client should be cashier locked and unwelcome
     ok $client->status->unwelcome,      'MX client is unwelcome after wihtdrawal limit is reached';
     ok $client->status->cashier_locked, 'MX client is cashier_locked after wihtdrawal limit is reached';
@@ -313,20 +314,20 @@ subtest 'EUR3k over 30 days MX limitation.' => sub {
     my $payment      = $client->db->dbic->run(fixup => sub { $_->selectrow_hashref("SELECT * FROM payment.payment ORDER BY id DESC LIMIT 1"); });
     my $payment_time = Date::Utility->new($payment->{payment_time})->epoch;
 
-    throws_ok { $client->validate_payment(%wd0501) } qr/exceeds withdrawal limit \[EUR/,
-        'Unauthed, not allowed to withdraw equiv EUR2500 then 501 making total over 3000.';
+    throws_ok { $client->validate_payment(%wd0501) } qr/exceeds withdrawal limit \[500.00 EUR/,
+        'Unauthed, not allowed to withdraw equiv 2500EUR then 501 making total over 3000.';
 
     # remove for further testing
     $client->status->clear_unwelcome;
     $client->status->clear_cashier_locked;
 
-    ok $client->validate_payment(%wd0500), 'Unauthed, allowed to withdraw equiv EUR2500 then 500 making total 3000.';
+    ok $client->validate_payment(%wd0500), 'Unauthed, allowed to withdraw equiv 2500EUR then 500 making total 3000.';
 
     # move forward 29 days
     set_fixed_time($payment_time + 29 * 86400);
 
-    throws_ok { $client->validate_payment(%wd0501) } qr/exceeds withdrawal limit \[EUR/,
-        'Unauthed, not allowed to withdraw equiv EUR3000 then 1 more 29 days later';
+    throws_ok { $client->validate_payment(%wd0501) } qr/exceeds withdrawal limit \[500.00 EUR/,
+        'Unauthed, not allowed to withdraw equiv 3000EUR then 1 more 29 days later';
 
     # remove for further testing
     $client->status->clear_unwelcome;
@@ -357,7 +358,7 @@ subtest 'Total EUR2000 MLT limitation.' => sub {
 
     # Test for unauthenticated withdrawals
     subtest 'unauthenticated' => sub {
-        throws_ok { $client->validate_payment(%withdrawal_eur, amount => -2001) } qr/exceeds withdrawal limit \[EUR/,
+        throws_ok { $client->validate_payment(%withdrawal_eur, amount => -2001) } qr/exceeds withdrawal limit \[2000.00 EUR/,
             'Unauthed, not allowed to withdraw EUR2001.';
 
         is $client->status->unwelcome,      undef, 'Only MX client is unwelcome after it exceeds limit';
@@ -366,11 +367,11 @@ subtest 'Total EUR2000 MLT limitation.' => sub {
         ok $client->validate_payment(%withdrawal_eur, amount => -2000), 'Unauthed, allowed to withdraw EUR2000.';
 
         $client->smart_payment(%withdrawal_eur, amount => -1900);
-        throws_ok { $client->validate_payment(%withdrawal_eur, amount => -101) } qr/exceeds withdrawal limit \[EUR/,
+        throws_ok { $client->validate_payment(%withdrawal_eur, amount => -101) } qr/exceeds withdrawal limit \[100.00 EUR/,
             'Unauthed, total withdrawal (1900+101) > EUR2000.';
 
         ok $client->smart_payment(%withdrawal_eur, amount => -100), 'Unauthed, allowed to withdraw total EUR (1900+100).';
-        throws_ok { $client->smart_payment(%withdrawal_eur, amount => -101) } qr/reached the maximum withdrawal limit of \[EUR 2000\]/,
+        throws_ok { $client->smart_payment(%withdrawal_eur, amount => -101) } qr/reached the maximum withdrawal limit of \[2000 EUR\]/,
             'withdrawal_limit_reached';
 
     };
@@ -387,7 +388,7 @@ subtest 'Total EUR2000 MLT limitation.' => sub {
         $client->set_authentication('ID_DOCUMENT', {status => 'pending'});
         $client->save;
 
-        throws_ok { $client->validate_payment(%withdrawal_eur, amount => -100) } qr/reached the maximum withdrawal limit of \[EUR 2000\]/,
+        throws_ok { $client->validate_payment(%withdrawal_eur, amount => -100) } qr/reached the maximum withdrawal limit of \[2000 EUR\]/,
             'Unauthed, not allowed to withdraw as limit already > EUR2000';
     };
 };

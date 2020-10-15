@@ -2364,13 +2364,13 @@ sub p2p_order_create {
     die +{
         error_code => 'OrderMaximumExceeded',
         message_params =>
-            [$advert_info->{account_currency}, formatnumber('amount', $advert_info->{account_currency}, $advert_info->{max_order_amount_actual}),]}
+            [formatnumber('amount', $advert_info->{account_currency}, $advert_info->{max_order_amount_actual}), $advert_info->{account_currency}]}
         if $amount > $advert_info->{max_order_amount_actual};
 
     die +{
         error_code => 'OrderMinimumNotMet',
         message_params =>
-            [$advert_info->{account_currency}, formatnumber('amount', $advert_info->{account_currency}, $advert_info->{min_order_amount}),]}
+            [formatnumber('amount', $advert_info->{account_currency}, $advert_info->{min_order_amount}), $advert_info->{account_currency}]}
         if $amount < ($advert_info->{min_order_amount} // 0);
 
     my $advert_type = $advert_info->{type};
@@ -2380,7 +2380,7 @@ sub p2p_order_create {
     my $limit_remaining = $advertiser_info->{'daily_' . $advert_type . '_limit'} - $advertiser_info->{'daily_' . $advert_type};
     die +{
         error_code     => 'OrderMaximumTempExceeded',
-        message_params => [$advert_info->{account_currency}, formatnumber('amount', $advert_info->{account_currency}, $limit_remaining),]}
+        message_params => [formatnumber('amount', $advert_info->{account_currency}, $limit_remaining), $advert_info->{account_currency}]}
         if $amount > $limit_remaining;
 
     my $advertiser = BOM::User::Client->new({loginid => $advertiser_info->{client_loginid}});
@@ -2433,7 +2433,7 @@ sub p2p_order_create {
         die +{
             error_code => 'OrderMaximumTempExceeded',
             message_params =>
-                [$client_ad_info->{account_currency}, formatnumber('amount', $client_ad_info->{account_currency}, $client_limit_remaining),]}
+                [formatnumber('amount', $client_ad_info->{account_currency}, $client_limit_remaining), $client_ad_info->{account_currency}]}
             if $amount > $client_limit_remaining;
     }
 
@@ -3448,7 +3448,7 @@ sub _validate_advert_amounts {
     if (in_usd($param{amount}, $param{account_currency}) > $maximum_advert) {
         die +{
             error_code     => 'MaximumExceeded',
-            message_params => [$param{account_currency}, convert_currency($maximum_advert, 'USD', $param{account_currency})],
+            message_params => [convert_currency($maximum_advert, 'USD', $param{account_currency}), $param{account_currency}],
         };
     }
 
@@ -3456,7 +3456,7 @@ sub _validate_advert_amounts {
     if (in_usd($param{max_order_amount}, $param{account_currency}) > $maximum_order) {
         die +{
             error_code     => 'MaxPerOrderExceeded',
-            message_params => [$param{account_currency}, convert_currency($maximum_order, 'USD', $param{account_currency})],
+            message_params => [convert_currency($maximum_order, 'USD', $param{account_currency}), $param{account_currency}],
         };
     }
 
@@ -3736,14 +3736,14 @@ sub validate_payment {
     if ($action_type eq 'withdrawal') {
 
         my $formatted_accbal = formatnumber('amount', $currency, $accbal);
-        die "Withdrawal amount [$currency $absamt] exceeds client balance [$currency $formatted_accbal].\n"
+        die "Withdrawal amount [$absamt $currency] exceeds client balance [$formatted_accbal $currency].\n"
             if financialrounding('amount', $currency, $absamt) > financialrounding('amount', $currency, $accbal);
 
         if (my $frozen = $self->get_withdrawal_limits->{frozen_free_gift}) {
             my $unfrozen = financialrounding('amount', $currency, $accbal - $frozen);
             die(
                 localize(
-                    "Withdrawal is [_1] [_2] but balance [_3] includes frozen bonus [_4].",
+                    "Withdrawal is [_2] [_1] but balance [_3] includes frozen bonus [_4].",
                     $currency,         formatnumber('amount', $currency, $absamt),
                     $formatted_accbal, formatnumber('amount', $currency, $frozen))
                     . "\n"
@@ -3778,7 +3778,7 @@ sub validate_payment {
             my $wd_left  = financialrounding('amount', $currency, $lc_limits->{lifetime_limit} - $wd_epoch);
 
             die sprintf("You've reached the maximum withdrawal limit of [%s %s]. Please authenticate your account to make unlimited withdrawals.\n",
-                $lc_currency, $lc_limits->{lifetime_limit})
+                $lc_limits->{lifetime_limit}, $lc_currency)
                 if $wd_left <= 0;
 
             if (financialrounding('amount', $currency, $absamt) > financialrounding('amount', $currency, $wd_left)) {
@@ -3787,9 +3787,10 @@ sub validate_payment {
                         formatnumber('amount', $currency, convert_currency($absamt, $lc_currency, $currency)),
                         $currency, formatnumber('amount', $currency, convert_currency($wd_left, $lc_currency, $currency));
                 } else {
-                    die sprintf "Withdrawal amount [%s %s] exceeds withdrawal limit [%s %s].\n", $currency,
+                    die sprintf "Withdrawal amount [%s %s] exceeds withdrawal limit [%s %s].\n",
                         formatnumber('amount', $currency, $absamt),
-                        $currency, formatnumber('amount', $currency, $wd_left);
+                        $currency,
+                        formatnumber('amount', $currency, $wd_left), $currency;
                 }
             }
 
@@ -3825,11 +3826,11 @@ sub validate_payment {
             my $wd_eur_left = List::Util::min($wd_eur_since_left, $wd_eur_epoch_left);
 
             die sprintf("You've reached the maximum withdrawal limit of [%s %s]. Please authenticate your account to make unlimited withdrawals.\n",
-                $lc_currency, $lc_limits->{lifetime_limit})
+                $lc_limits->{lifetime_limit}, $lc_currency)
                 if $wd_eur_epoch_left <= 0;
 
             die sprintf("You've reached the maximum withdrawal limit of [%s %s]. Please authenticate your account to make unlimited withdrawals.\n",
-                $lc_currency, $lc_limits->{limit_for_days})
+                $lc_limits->{limit_for_days}, $lc_currency)
                 if $wd_eur_since_left <= 0;
 
             # Withdrawable amount is converted from EUR to clients' currency and rounded
@@ -3844,11 +3845,11 @@ sub validate_payment {
                         reason     => 'Exceeds withdrawal limit',
                     });
                 }
-                my $msg    = "Withdrawal amount [%s %s] exceeds withdrawal limit [EUR %s]";
-                my @values = ($currency, formatnumber('amount', $currency, $absamt), formatnumber('amount', $currency, $wd_eur_left));
+                my $msg    = "Withdrawal amount [%s %s] exceeds withdrawal limit [%s EUR]";
+                my @values = (formatnumber('amount', $currency, $absamt), $currency, formatnumber('amount', $currency, $wd_eur_left));
                 if ($currency ne 'EUR') {
                     $msg = "$msg (equivalent to %s %s)";
-                    push @values, $currency, formatnumber('amount', $currency, $wd_left);
+                    push @values, formatnumber('amount', $currency, $wd_left), $currency;
                 }
                 die sprintf "$msg.\n", @values;
             }
