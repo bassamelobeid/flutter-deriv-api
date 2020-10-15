@@ -373,25 +373,6 @@ sub _translate_payment_remark {
     # 'Transfer from CR90000004 to MT5 account real 540161 Includes transfer fee of BTC 0.00300000 (2%).'
     my $payment_remark = localize($txn->{payment_remark} // '');
 
-    if (defined $txn->{mt5_account_id}) {
-        my $account_type = ($txn->{mt5_account_id} =~ qr/^MTD/) ? localize('demo') : localize('real');
-        my $mt5_int_id   = $txn->{mt5_account_id} =~ s/${\BOM::User->MT5_REGEX}//r;                      # This one is just the numeric ID
-
-        if ($txn->{action_type} eq 'withdrawal') {
-            $payment_remark =
-                ($txn->{currency_code} ne $txn->{mt5_currency_code})
-                ? localize('Transfer from [_1] to MT5 account [_2] [_3] includes transfer fee of [_4] [_5] (2%).',
-                $txn->{staff_loginid}, $account_type, $mt5_int_id, $txn->{currency_code}, $txn->{transfer_fees})
-                : localize('Transfer from [_1] to MT5 account [_2] [_3] ', $txn->{staff_loginid}, $account_type, $mt5_int_id);
-        } elsif ($txn->{action_type} eq 'deposit') {
-            $payment_remark =
-                ($txn->{currency_code} ne $txn->{mt5_currency_code})
-                ? localize('Transfer from MT5 account [_1] [_2] to [_3] includes transfer fee of [_4] [_5] (2%).',
-                $account_type, $mt5_int_id, $txn->{staff_loginid}, $txn->{currency_code}, $txn->{transfer_fees})
-                : localize('Transfer from MT5 account [_1] [_2] to [_3] ', $account_type, $mt5_int_id, $txn->{staff_loginid});
-        }
-    }
-
     if (defined $txn->{seller_order_id}) {
         return localize('P2P order [_1] completed - payment as seller', $txn->{seller_order_id});
     } elsif (defined $txn->{buyer_order_id}) {
