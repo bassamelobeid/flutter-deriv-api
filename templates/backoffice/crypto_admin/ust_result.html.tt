@@ -73,9 +73,7 @@ table td{
         </table>
         <hr>
         [% END %]
-    [% CASE 'get_balance' %]
-        <p>[% currency %] Address Balance: <b>[% response %]</b></p>
-    
+
     [% CASE 'list_transactions' %]
         <p>Total number of response: [% response.size %]</p>
         [% FOREACH transaction IN response %]
@@ -175,6 +173,20 @@ table td{
         [% END %]
     
     [% CASE 'get_wallet_balance' %]
+        <p>Total number of response: [% response.keys.size %]</p>
+        <table>
+            [% FOREACH wallet_currency IN response.keys %]
+                <tr>
+                    <th>[% wallet_currency %]</th>
+                    <td>[% response.$wallet_currency %]</td>
+                </tr>
+            [% END %]
+        </table>
+    
+    [% CASE 'get_address_balance' %]
+        <p>[% currency %] Address Balance: <b>[% response %]</b></p>
+
+    [% CASE 'get_main_address_balance' %]
         <p>Total number of response: [% response.keys.size %]</p>
         <table>
             [% FOREACH wallet_currency IN response.keys %]

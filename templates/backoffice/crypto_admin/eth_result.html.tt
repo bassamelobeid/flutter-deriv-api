@@ -25,9 +25,15 @@ table td{
     <br>
     <div id='fomatted_response'>
         [% SWITCH req_type %]
-            [% CASE 'get_balance' %]
+            [% CASE 'get_address_balance' %]
                 <p>[% currency %] Address Balance: <b>[% response %]</b></p>
             
+            [% CASE 'get_main_address_balance' %]
+                <p>[% currency %] Main Address Balance: <b>[% response %]</b></p>
+            
+            [% CASE 'get_wallet_balance' %]
+                <p>[% currency %] Wallet Balance: <b>[% response %]</b></p>
+
             [% CASE 'get_gas_price' %]
                 <p>[% currency %] Gas Price: <b>[% response %]</b></p>
                 

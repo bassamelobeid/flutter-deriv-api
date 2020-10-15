@@ -306,7 +306,7 @@ try {
 }
 
 if ($view_action eq 'withdrawals') {
-    my $get_balance               = $currency_wrapper->get_total_balance();
+    my $get_balance               = $currency_wrapper->get_main_address_balance();
     my $suspicious_check_required = BOM::Config::Runtime->instance->app_config->payments->crypto_withdrawal_suspicious_check_required;
 
     print "<b>Available Balance(s) for Payout:</b>";
@@ -622,17 +622,17 @@ EOF
     my $cmd = request()->param('command');
 
     if ($cmd eq 'getbalance') {
-        my $get_balance = $currency_wrapper->get_total_balance();
+        my $get_balance = $currency_wrapper->get_main_address_balance();
         print "<b>Available Balance(s) for payout: </b>";
         for my $currency_balance (sort keys %$get_balance) {
-            print sprintf("<p>%s : <b>%s</b></p>", $currency_balance, formatnumber('amount', $currency_balance, $get_balance->{$currency_balance}));
+            print sprintf("<p>%s : <b>%s</b></p>", $currency_balance, $get_balance->{$currency_balance});
         }
         #  We won't calculate for ETH and ERC20 as it will cost performance.
     } elsif ($cmd eq 'getwallet') {
         my $get_balance = $currency_wrapper->get_wallet_balance();
         print "<b>Total Balance(s) in Wallet: </b>";
         for my $currency_balance (sort keys %$get_balance) {
-            print sprintf("<p>%s : <b>%s</b></p>", $currency_balance, formatnumber('amount', $currency_balance, $get_balance->{$currency_balance}));
+            print sprintf("<p>%s : <b>%s</b></p>", $currency_balance, $get_balance->{$currency_balance});
         }
     } elsif ($cmd eq 'getinfo') {
         my $get_info = $currency_wrapper->get_info;

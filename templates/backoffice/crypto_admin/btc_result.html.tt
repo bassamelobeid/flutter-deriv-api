@@ -129,9 +129,15 @@ table td{
                     [% END %]
                 </div>
             
-            [% CASE 'get_balance' %]
+            [% CASE 'get_wallet_balance' %]
                 <p>[% currency %] Wallet Balance: <b>[% response %]</b></p>
             
+            [% CASE 'get_main_address_balance' %]
+                <p>[% currency %] Main Address Balance: <b>[% response %]</b></p>
+
+            [% CASE 'get_address_balance' %]
+                <p>[% currency %] Address Balance: <b>[% response %]</b></p>
+
             [% CASE 'get_newaddress' %]
                 <p>[% currency %] New Address: <b>[% response %]</b></p>
                 

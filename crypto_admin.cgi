@@ -197,14 +197,16 @@ sub _get_function_map {
     code_exit_BO("<p style='color:red'><b>Invalid address</b></p>") if ($address && !$currency_wrapper->is_valid_address($address));
 
     return +{
-        list_unspent_utxo     => sub { $currency_wrapper->get_unspent_transactions($lu_utxo_address ? [$lu_utxo_address] : [], $confirmations_req) },
-        get_transaction       => sub { $currency_wrapper->get_transaction_details($input->{txn_id}) },
-        get_balance           => sub { $currency_wrapper->get_balance() },
-        get_newaddress        => sub { $currency_wrapper->get_new_bo_address() },
-        get_estimate_smartfee => sub { $currency_wrapper->get_estimated_fee($esf_confirmation, $input->{esf_estimate_mode}) },
-        list_receivedby_address => sub { $currency_wrapper->list_receivedby_address($receivedby_minconf, $input->{address_filter}) },
-        get_blockcount          => sub { $currency_wrapper->last_block() },
-        get_blockchain_info     => sub { $currency_wrapper->get_info() },
+        list_unspent_utxo  => sub { $currency_wrapper->get_unspent_transactions($lu_utxo_address ? [$lu_utxo_address] : [], $confirmations_req) },
+        get_transaction    => sub { $currency_wrapper->get_transaction_details($input->{txn_id}) },
+        get_wallet_balance => sub { $currency_wrapper->get_wallet_balance()->{$currency_selected} },
+        get_main_address_balance => sub { $currency_wrapper->get_main_address_balance()->{$currency_selected} },
+        get_address_balance      => sub { $address ? $currency_wrapper->get_address_balance($address) : die "Please enter address"; },
+        get_newaddress           => sub { $currency_wrapper->get_new_bo_address() },
+        get_estimate_smartfee    => sub { $currency_wrapper->get_estimated_fee($esf_confirmation, $input->{esf_estimate_mode}) },
+        list_receivedby_address  => sub { $currency_wrapper->list_receivedby_address($receivedby_minconf, $input->{address_filter}) },
+        get_blockcount           => sub { $currency_wrapper->last_block() },
+        get_blockchain_info      => sub { $currency_wrapper->get_info() },
         calculate_withdrawal_fee => sub {
             die "Invalid or missing parameters entered for calculate withdrawal fee"
                 unless $input->{withdrawal_address} && $input->{withdrawal_amount};
@@ -217,11 +219,12 @@ sub _get_function_map {
         list_unspent_utxo     => sub { $currency_wrapper->get_unspent_transactions($lu_utxo_address ? [$lu_utxo_address] : [], $confirmations_req) },
         get_newaddress        => sub { $currency_wrapper->get_new_bo_address() },
         get_estimate_smartfee => sub { $currency_wrapper->get_estimated_fee($esf_confirmation, $input->{esf_estimate_mode}) },
-        list_receivedby_address => sub { $currency_wrapper->list_receivedby_address($receivedby_minconf, $input->{address_filter}) },
-        get_blockcount          => sub { $currency_wrapper->last_block() },
-        get_blockchain_info     => sub { $currency_wrapper->get_info() },
-        get_wallet_balance      => sub { $currency_wrapper->get_wallet_balance() },
-        get_balance             => sub { $address ? $currency_wrapper->get_balance($address) : die "Please enter address"; },
+        list_receivedby_address  => sub { $currency_wrapper->list_receivedby_address($receivedby_minconf, $input->{address_filter}) },
+        get_blockcount           => sub { $currency_wrapper->last_block() },
+        get_blockchain_info      => sub { $currency_wrapper->get_info() },
+        get_wallet_balance       => sub { $currency_wrapper->get_wallet_balance() },
+        get_main_address_balance => sub { $currency_wrapper->get_main_address_balance() },
+        get_address_balance      => sub { $address ? $currency_wrapper->get_address_balance($address) : die "Please enter address"; },
         list_transactions => sub {
             die "Invalid address" if (length $input->{transaction_address} && !$currency_wrapper->is_valid_address($input->{transaction_address}));
             $listtransaction_limit
@@ -237,12 +240,14 @@ sub _get_function_map {
     } if $currency_selected eq 'UST';
 
     return +{
-        get_balance      => sub { $address ? $currency_wrapper->get_balance($address) : die "Please enter address"; },
-        get_accounts     => sub { $currency_wrapper->list_addresses() },
-        get_gas_price    => sub { $currency_wrapper->get_info()->{gas_price} },
-        get_block_number => sub { $currency_wrapper->get_info()->{last_block} },
-        get_syncing      => sub { $currency_wrapper->get_info()->{is_syncing} },
-        get_estimatedgas => sub {
+        get_wallet_balance       => sub { $currency_wrapper->get_wallet_balance()->{$currency_selected} },
+        get_main_address_balance => sub { $currency_wrapper->get_main_address_balance()->{$currency_selected} },
+        get_address_balance      => sub { $address ? $currency_wrapper->get_address_balance($address) : die "Please enter address"; },
+        get_accounts             => sub { $currency_wrapper->list_addresses() },
+        get_gas_price            => sub { $currency_wrapper->get_info()->{gas_price} },
+        get_block_number         => sub { $currency_wrapper->get_info()->{last_block} },
+        get_syncing              => sub { $currency_wrapper->get_info()->{is_syncing} },
+        get_estimatedgas         => sub {
 
             die "Invalid or missing parameters entered for Estimate Gas" unless $input->{to_address} && $input->{amount};
 

@@ -8,7 +8,8 @@
             <td>
                 <select name="req_type">
                   <option disabled selected value> -- select an option -- </option>
-                  <option value="get_balance">Wallet balance</option>
+                  <option value="get_wallet_balance">Wallet balance</option>
+                  <option value="get_main_address_balance">Main address balance</option>
                   <option value="get_newaddress">Get new address</option>
                   <option value="get_blockcount">Block count</option>
                   <option value="get_blockchain_info">Blockchain info</option>
@@ -25,6 +26,7 @@
                 <select id="func_list_w_params"  onchange="showSelected(this.value)">
                   <option disabled selected value> -- select an option -- </option>
                   <option value="list_unspent_utxo">List Unspent UTXO</option>
+                  <option value="get_address_balance">Get address balance</option>
                   <option value="get_transaction">Get transaction info</option>
                   <option value="list_receivedby_address">List receivedbyaddress</option>
                   <option value="get_estimate_smartfee">Estimate smart fee</option>
@@ -35,7 +37,22 @@
     </table>
     
     <br>
-    
+
+<!-- Get Address Balance -->
+    <div class="crypto_func invisible" id="get_address_balance">
+        <hr>
+        <table>
+            <tr>
+                <th colspan=3>Get Address Balance</th>
+            </tr>
+            <tr>
+                <th>Address:</th>
+                <td><input type=text name='address'/></td>
+                <td><button type=submit name='req_type' value='get_address_balance'>Get address balance</button></td>
+            </tr>
+        </table>
+    </div>
+
 <!--List Unspent UTXO-->
     <div class="crypto_func invisible" id="list_unspent_utxo">
         <hr>
