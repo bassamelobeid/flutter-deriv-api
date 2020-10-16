@@ -13,6 +13,8 @@ sub _db_migrations_dir {
     return '/home/git/regentmarkets/bom-postgres-authdb/config/sql/';
 }
 
+sub _db_unit_tests { }
+
 sub _build__connection_parameters {
     my $self = shift;
     return {

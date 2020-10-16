@@ -20,12 +20,20 @@ use BOM::Database::Model::FinancialMarketBet::RangeBet;
 use BOM::Database::Helper::FinancialMarketBet;
 use BOM::Database::Model::FinancialMarketBet::Multiplier;
 
+use Dir::Self;
+use Cwd qw/abs_path/;
+
 sub _db_name {
     return 'cr';
 }
 
 sub _db_migrations_dir {
     return '/home/git/regentmarkets/bom-postgres-clientdb/config/sql/';
+}
+
+sub _db_unit_tests {
+    my $dir_path = __DIR__;
+    return abs_path("$dir_path/../../../../../data/config/unit_test_dml.sql");
 }
 
 sub _build__connection_parameters {

@@ -11,7 +11,7 @@ use Test::More;
 use List::Util qw( max );
 use File::stat;
 
-requires '_db_name', '_post_import_operations', '_build__connection_parameters', '_db_migrations_dir';
+requires '_db_name', '_post_import_operations', '_build__connection_parameters', '_db_migrations_dir', '_db_unit_tests';
 
 use constant DB_DIR_PREFIX    => '/home/git/regentmarkets/bom-postgres-';
 use constant COLLECTOR_DB_DIR => DB_DIR_PREFIX . 'collectordb/config/sql/';
@@ -123,12 +123,12 @@ sub _create_dbs {
     # apply DB functions
     $m->psql(sort glob $self->_db_migrations_dir =~ s!/*$!/functions/*.sql!r) if (-d $self->_db_migrations_dir . 'functions');
 
-    if (-f $self->_db_migrations_dir . '/unit_test_dml.sql') {
+    if (-f $self->_db_unit_tests) {
         $m->psql({
                 before => "SET session_replication_role TO 'replica';\n",
                 after  => ";\nSET session_replication_role TO 'origin';\n"
             },
-            $self->_db_migrations_dir . '/unit_test_dml.sql'
+            $self->_db_unit_tests
         );
     }
 
