@@ -315,10 +315,10 @@ sub _insert_withdrawal_transaction {
     my $txn_db_id = $dbic->run(
         ping => sub {
             $_->selectrow_array(
-                'SELECT payment.ctc_insert_new_withdraw(?, ?, ?, ?::JSONB, ?, ?)',
-                undef, $address, $transaction->{currency},
-                $client->loginid, '{"":0}', $transaction->{amount}, 0
-            );
+                'SELECT payment.ctc_insert_new_withdraw(?, ?, ?, ?::JSONB, ?, ?, ?, ?)',
+                undef,            $address, $transaction->{currency},
+                $client->loginid, '{"":0}', $transaction->{amount},
+                0,                1,        []);
         });
 
     $dbic->run(ping => sub { $_->selectrow_array('SELECT payment_id FROM payment.ctc_process_withdrawal(?)', undef, $txn_db_id) });
