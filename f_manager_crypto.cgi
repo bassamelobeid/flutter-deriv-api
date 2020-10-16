@@ -367,6 +367,7 @@ if ($view_action eq 'withdrawals') {
         my $over_limit = BOM::Backoffice::Script::ValidateStaffPaymentLimit::validate($staff, in_usd($amount, $currency));
         code_exit_BO($over_limit->get_mesg()) if $over_limit;
 
+        my @client_siblings = map { $_->loginid } $client->siblings->@*;
         my $error;
         ($error) = $dbic->run(ping => sub { $_->selectrow_array('SELECT payment.ctc_set_remark(?, ?)', undef, $db_row_id, $set_remark) })
             if $action eq 'Save';
@@ -375,8 +376,11 @@ if ($view_action eq 'withdrawals') {
 
         ($error) = $dbic->run(
             ping => sub {
-                $_->selectrow_array('SELECT payment.ctc_set_withdrawal_verified(?, ?::JSONB, ?, ?)',
-                    undef, $db_row_id, $approvals_required, $staff, ($set_remark ne '' ? $set_remark : undef));
+                $_->selectrow_array(
+                    'SELECT payment.ctc_set_withdrawal_verified(?, ?::JSONB, ?, ?, ?)',
+                    undef, $db_row_id, $approvals_required, $staff, ($set_remark || undef),
+                    \@client_siblings
+                );
             }) if $action eq 'Verify';
         ($error) = $dbic->run(
             ping => sub { $_->selectrow_array('SELECT payment.ctc_set_withdrawal_rejected(?, ?, ?)', undef, $db_row_id, $set_remark, $staff) })
@@ -407,12 +411,17 @@ if ($view_action eq 'withdrawals') {
         my $approvals_required = BOM::Config::Runtime->instance->app_config->payments->crypto_withdrawal_approvals_required;
 
         for my $withdrawal_id (sort keys $list_to_verified->%*) {
-            my %transaction_info          = $list_to_verified->{$withdrawal_id}->%*;
-            my $withdrawal_amount         = $transaction_info{amount};
-            my $withdrawal_remark         = $transaction_info{remark};
-            my $withdrawal_client_loginid = $transaction_info{client_loginid};
+            my %transaction_info  = $list_to_verified->{$withdrawal_id}->%*;
+            my $withdrawal_amount = $transaction_info{amount};
+            my $withdrawal_remark = $transaction_info{remark};
+            my $client_loginid    = $transaction_info{client_loginid};
+            my $client            = BOM::User::Client->new({loginid => $client_loginid});
 
-            my $client = BOM::User::Client->new({loginid => $withdrawal_client_loginid});
+            if ($client->status->withdrawal_locked) {
+                $combined_error .= "Error in verifying transaction id: $withdrawal_id. The client $client_loginid withdrawal is locked <br />";
+                next;
+            }
+
             $approvals_required = '{"":2}' if $suspicious_check_required && $client->user->is_crypto_withdrawal_suspicious();
 
             my $over_limit = BOM::Backoffice::Script::ValidateStaffPaymentLimit::validate($staff, in_usd($withdrawal_amount, $currency));
@@ -422,10 +431,14 @@ if ($view_action eq 'withdrawals') {
                 next;
             }
 
-            my $error = $dbic->run(
+            my @client_siblings = map { $_->loginid } $client->siblings->@*;
+            my $error           = $dbic->run(
                 ping => sub {
-                    $_->selectrow_array('SELECT payment.ctc_set_withdrawal_verified(?, ?::JSONB, ?, ?)',
-                        undef, $withdrawal_id, $approvals_required, $staff, ($withdrawal_remark ne '' ? $withdrawal_remark : undef));
+                    $_->selectrow_array(
+                        'SELECT payment.ctc_set_withdrawal_verified(?, ?::JSONB, ?, ?, ?)',
+                        undef, $withdrawal_id, $approvals_required, $staff, ($withdrawal_remark || undef),
+                        \@client_siblings
+                    );
                 });
 
             $combined_error .= "Error in verifying transaction id: $withdrawal_id. Error: $error<br />" if $error;
