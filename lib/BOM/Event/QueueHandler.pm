@@ -18,12 +18,13 @@ use mro;
 use Syntax::Keyword::Try;
 use Scalar::Util qw(blessed);
 use Future::Utils qw(repeat);
-use JSON::MaybeUTF8 qw(decode_json_utf8 encode_json_utf8);
+use JSON::MaybeUTF8 qw(decode_json_utf8 encode_json_text);
 use BOM::Event::Services;
 use BOM::Event::Process;
 use DataDog::DogStatsd::Helper qw(stats_gauge stats_inc);
 use Log::Any qw($log);
 use BOM::Event::Utility qw(exception_logged);
+use Clone qw( clone );
 
 =head2 DEFAULT_QUEUE_WAIT_TIME
 
@@ -326,8 +327,7 @@ Takes the following arguments
 
 =over 4
 
-=item - event_data - The JSON string obtained from Redis for the job details.  
-
+=item * C<$event_data> - A JSON string or HashRef containing the event data. 
 
 =back
 
@@ -344,9 +344,10 @@ sub clean_data_for_logging {
     }
     my $decoded_data;
     try {
-        # decode_json only when need.
-        $decoded_data = ref($event_data) ? $event_data : decode_json_utf8($event_data);
-    } catch {
+        # decode_json only when we are passed the original raw JSON bytes.
+        # Otherwise, we take a deep copy of the entire hashref to avoid changing anything in the original.
+        $decoded_data = ref($event_data) ? clone($event_data) : decode_json_utf8($event_data);
+    } catch ($e) {
         exception_logged();
         return "Invalid JSON format event data";
     }
@@ -356,8 +357,7 @@ sub clean_data_for_logging {
         $decoded_data->{sanitised_details} = {loginid => $loginid};
     }
     delete $decoded_data->{details};
-    return encode_json_utf8($decoded_data);
+    return encode_json_text($decoded_data);
 }
 
 1;
-

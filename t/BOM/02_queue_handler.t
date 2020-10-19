@@ -9,11 +9,12 @@ use Log::Any::Test;
 use BOM::Event::QueueHandler;
 use Log::Any qw($log);
 use Log::Any::Adapter (qw(Stderr), log_level => 'warn');
-use JSON::MaybeUTF8 qw(decode_json_utf8);
+use JSON::MaybeUTF8 qw(decode_json_utf8 decode_json_text);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_events_redis);
 use BOM::Config::Redis;
 use IO::Async::Loop;
 use Future::AsyncAwait;
+use utf8;
 initialize_events_redis();
 my $redis = BOM::Config::Redis::redis_events_write();
 my $loop  = IO::Async::Loop->new;
@@ -223,11 +224,32 @@ subtest 'clean_data_for_logging' => sub {
     my $cleaned_data = BOM::Event::QueueHandler->clean_data_for_logging($event_data_json);
     is $cleaned_data, $expected_cleaned_data, 'cleaned data is correct for given json data';
 
-    my $event_data_hashref = decode_json_utf8($event_data_json);
+    my $event_data_hashref = decode_json_text($event_data_json);
     $cleaned_data = BOM::Event::QueueHandler->clean_data_for_logging($event_data_hashref);
     is $cleaned_data, $expected_cleaned_data, 'cleaned data is correct for given already decode data from json';
+
+    $event_data_json    = '{"details":{"loginid":"CR10000","properties":{"type":"real"},"email":"abc@def.com"},"type":"api_token_deleted"}';
+    $event_data_hashref = decode_json_text($event_data_json);
+    $cleaned_data       = BOM::Event::QueueHandler->clean_data_for_logging($event_data_hashref);
+    is $event_data_hashref->{details}{loginid}, 'CR10000', 'Original Hashref was unmodiflied';
+
 };
 
+subtest 'clean_data_for_logging_utf8' => sub {
+    my $event_data_json = Encode::encode("UTF-8",
+        '{"details":{"loginid":"CR10000","properties":{"type":"real"},"email":"abc@def.com"},"utf_8":"À Á Â Ã Ä Å Æ Ç È É Ê Ë Ì Í Î Ï Ð Ñ Ò Ó "}'
+    );
+    my $expected_cleaned_data = '{"sanitised_details":{"loginid":"CR10000"},"utf_8":"À Á Â Ã Ä Å Æ Ç È É Ê Ë Ì Í Î Ï Ð Ñ Ò Ó "}';
+
+    my $cleaned_data = BOM::Event::QueueHandler->clean_data_for_logging($event_data_json);
+    like $cleaned_data, qr/"utf_8":"À Á Â Ã Ä Å Æ Ç È É Ê Ë Ì Í Î Ï Ð Ñ Ò Ó "/,
+        'utf_8 characters OK when JSON string with UTF8 passed';
+
+    my $event_data_hashref = decode_json_utf8($event_data_json);
+    $cleaned_data = BOM::Event::QueueHandler->clean_data_for_logging($event_data_hashref);
+    like $cleaned_data, qr/"utf_8":"À Á Â Ã Ä Å Æ Ç È É Ê Ë Ì Í Î Ï Ð Ñ Ò Ó "/, 'utf_8 character OK when UTF8 in hashref';
+
+};
 $mock_log_adapter_test->unmock_all;
 
 done_testing();
