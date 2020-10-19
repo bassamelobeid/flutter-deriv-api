@@ -7,6 +7,7 @@ use Path::Tiny;
 use BOM::MyAffiliates::ActivityReporter;
 use BOM::MyAffiliates::TurnoverReporter;
 use BOM::MyAffiliates::GenerateRegistrationDaily;
+use BOM::MyAffiliates::MultiplierReporter;
 use BOM::Config::Runtime;
 
 sub activity_report {
@@ -19,6 +20,10 @@ sub registration {
 
 sub turnover_report {
     return shift->__send_file('turnover_report');
+}
+
+sub multiplier_report {
+    return shift->__send_file('multiplier_report');
 }
 
 sub __send_file {
@@ -45,6 +50,12 @@ sub __send_file {
         $file_path = $reporter->output_file_path();
     } elsif ($type eq 'turnover_report') {
         my $reporter = BOM::MyAffiliates::TurnoverReporter->new(
+            brand           => Brands->new(name => $c->stash('brand')),
+            processing_date => Date::Utility->new($date));
+        $file_name = $reporter->output_file_name();
+        $file_path = $reporter->output_file_path();
+    } elsif ($type eq 'multiplier_report') {
+        my $reporter = BOM::MyAffiliates::MultiplierReporter->new(
             brand           => Brands->new(name => $c->stash('brand')),
             processing_date => Date::Utility->new($date));
         $file_name = $reporter->output_file_name();
