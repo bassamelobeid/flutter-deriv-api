@@ -497,9 +497,9 @@ subtest 'risk type' => sub {
 };
 
 subtest 'feed failover' => sub {
-    is(create_underlying('frxUSDJPY')->feed_failover, '300',  "USDJPY's feed failover is 300s");
-    is(create_underlying('AEX')->feed_failover,       '300',  "AEX's feed failover is 300s");
-    is(create_underlying('frxXAUUSD')->feed_failover, '300',  "XAUUSD's feed failover is 300s");
+    is(create_underlying('frxUSDJPY')->feed_failover, '60',  "USDJPY's feed failover is 60s");
+    is(create_underlying('AEX')->feed_failover,       '60',  "AEX's feed failover is 60s");
+    is(create_underlying('frxXAUUSD')->feed_failover, '60',  "XAUUSD's feed failover is 60s");
     is(create_underlying('OTC_AEX')->feed_failover,   '1200', "OTC_AEX's feed failover is 1200s");
     is(create_underlying('OTC_N225')->feed_failover,  '1800', "OTC_N225's feed failover is 1800s");
 };
