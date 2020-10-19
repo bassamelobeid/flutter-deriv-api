@@ -14,6 +14,8 @@ use BOM::Event::Process;
 use BOM::Test::Email qw(mailbox_clear mailbox_search);
 use BOM::User::Utility qw(parse_mt5_group);
 
+my $brand = Brands->new(name => 'deriv');
+my ($app_id) = $brand->whitelist_apps->%*;
 my (@identify_args, @track_args);
 my $mock_segment = new Test::MockModule('WebService::Async::Segment::Customer');
 $mock_segment->redefine(
@@ -91,7 +93,8 @@ subtest 'no error' => sub {
 subtest 'mt5 track event' => sub {
     my $req = BOM::Platform::Context::Request->new(
         brand_name => 'deriv',
-        language   => 'id'
+        language   => 'id',
+        app_id     => $app_id,
     );
     request($req);
 
@@ -287,8 +290,8 @@ subtest 'mt5 account opening mail' => sub {
                         # Set up brand request with desired language
                         my $branded_localized_request = BOM::Platform::Context::Request->new(
                             brand_name => $brand,
-                            language   => $lang
-                        );
+                            language   => $lang,
+                            ($brand eq 'deriv' ? (app_id => $app_id) : ()));
                         request($branded_localized_request);
 
                         my $underscored_type = $type eq '' ? '' : sprintf('_%s', $type);

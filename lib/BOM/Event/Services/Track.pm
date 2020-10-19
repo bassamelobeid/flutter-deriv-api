@@ -70,6 +70,19 @@ my %EVENT_PROPERTIES = (
     ],
 );
 
+# Put the events that shouldn't care about brand or app_id source to get fired.
+# P2P events are a good start
+
+my @SKIP_BRAND_VALIDATION = qw(
+    p2p_order_created
+    p2p_order_buyer_has_paid
+    p2p_order_seller_has_released
+    p2p_order_cancelled
+    p2p_order_expired
+    p2p_order_dispute
+    p2p_order_timeout_refund
+);
+
 my $loop = IO::Async::Loop->new;
 $loop->add(my $services = BOM::Event::Services->new);
 
@@ -535,7 +548,6 @@ Returns, a Future needing both tracking events.
 sub p2p_order_dispute {
     my %args = @_;
     my ($order, $parties) = @args{qw(order parties)};
-    my $brand    = Brands->new(name => 'deriv');
     my $disputer = 'buyer';
     $disputer = 'seller' if $parties->{seller}->loginid eq $order->{dispute_details}->{disputer_loginid};
 
@@ -548,7 +560,6 @@ sub p2p_order_dispute {
                 dispute_reason => $order->{dispute_details}->{dispute_reason},
                 disputer       => $disputer,
             },
-            brand => $brand,
         ),
         track_event(
             event      => 'p2p_order_dispute',
@@ -558,7 +569,6 @@ sub p2p_order_dispute {
                 dispute_reason => $order->{dispute_details}->{dispute_reason},
                 disputer       => $disputer,
             },
-            brand => $brand,
         ),
     );
 }
@@ -583,22 +593,16 @@ Returns, a Future needing both tracking events.
 sub p2p_order_timeout_refund {
     my %args = @_;
     my ($order, $parties) = @args{qw(order parties)};
-    my $brand = Brands->new(name => 'deriv');
-
     return Future->needs_all(
         track_event(
             event      => 'p2p_order_timeout_refund',
             loginid    => $parties->{buyer}->loginid,
             properties => _p2p_properties($order, $parties, 'buyer'),
-            ,
-            brand => $brand,
         ),
         track_event(
             event      => 'p2p_order_timeout_refund',
             loginid    => $parties->{seller}->loginid,
             properties => _p2p_properties($order, $parties, 'seller'),
-            ,
-            brand => $brand,
         ),
     );
 }
@@ -659,6 +663,8 @@ Takes the following named parameters:
 
 =item * C<brand> - the brand associated with the event as a L<Brands> object (optional - defaults to request's brand)
 
+=item * C<app_id> - the app id associated with the event (optional - defaults to request's app id)
+
 =back
 
 =cut
@@ -666,7 +672,7 @@ Takes the following named parameters:
 sub track_event {
     my %args = @_;
 
-    my $client = _validate_params($args{loginid}, $args{event}, $args{brand});
+    my $client = _validate_params($args{loginid}, $args{event}, $args{brand}, $args{app_id});
     return Future->done unless $client;
     my $customer = _create_customer($client, $args{brand});
 
@@ -920,6 +926,8 @@ Arguments:
 
 =item * C<brand> - optional. brand object.
 
+=item * C<app_id> - optional. app id.
+
 =back
 
 Returns a L<BOM::User::Client> object constructed by C<loginid> arg.
@@ -927,25 +935,61 @@ Returns a L<BOM::User::Client> object constructed by C<loginid> arg.
 =cut
 
 sub _validate_params {
-    my ($loginid, $event, $brand) = @_;
-    $brand //= request->brand;
+    my ($loginid, $event, $brand, $app_id) = @_;
+    $brand  //= request->brand;
+    $app_id //= request->app_id;
 
     unless (_segment->write_key) {
         $log->debugf('Write key was not set.');
         return undef;
     }
 
-    unless ($brand->is_track_enabled) {
-        $log->debugf('Event tracking is not enabled for brand %s', $brand->name);
-        return undef;
-    }
-
+    return undef unless _validate_brand($event, $brand, $app_id);
     die "$event tracking triggered without a loginid. Please inform backend team if it continues to occur." unless $loginid;
 
     my $client = BOM::User::Client->new({loginid => $loginid})
         or die "$event tracking triggered with an invalid loginid $loginid. Please inform backend team if it continues to occur.";
 
     return $client;
+}
+
+=head2 _validate_brand
+
+Check if current brand and/or app id are valid.
+
+Arguments:
+
+=over
+
+=item * C<event> - required the event name.
+
+=item * C<brand> - required C<Brands> object.
+
+=item * C<app_id> - required the source app id.
+
+=back
+
+Returns a boolean that indicates the validation status.
+
+=cut
+
+sub _validate_brand {
+    my ($event, $brand, $app_id) = @_;
+
+    # Return true if the event is whitelisted
+    return 1 if any { $_ eq $event } @SKIP_BRAND_VALIDATION;
+
+    unless ($brand->is_track_enabled) {
+        $log->debugf('Event tracking is not enabled for brand %s', $brand->name);
+        return 0;
+    }
+
+    unless ($brand->is_app_whitelisted($app_id)) {
+        $log->debugf('Event tracking is not enabled for unofficial app id: %d', $app_id);
+        return 0;
+    }
+
+    return 1;
 }
 
 1;

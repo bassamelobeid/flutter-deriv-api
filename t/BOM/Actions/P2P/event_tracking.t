@@ -21,13 +21,6 @@ $mock_segment->redefine(
         return Future->done(1);
     });
 
-my $mock_brands = Test::MockModule->new('Brands');
-$mock_brands->mock(
-    'is_track_enabled' => sub {
-        my $self = shift;
-        return 1;
-    });
-
 BOM::Test::Helper::P2P::bypass_sendbird();
 my $escrow = BOM::Test::Helper::P2P::create_escrow();
 my ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert(

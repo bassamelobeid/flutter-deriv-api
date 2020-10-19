@@ -51,6 +51,11 @@ $mock_brands->mock(
         my $self = shift;
         return ($self->name eq 'deriv');
     });
+$mock_brands->mock(
+    'is_app_whitelisted' => sub {
+        my $self = shift;
+        return ($self->name eq 'deriv');
+    });
 
 subtest 'login event' => sub {
     my $action_handler = BOM::Event::Process::get_action_mappings()->{login};

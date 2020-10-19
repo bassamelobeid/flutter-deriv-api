@@ -50,6 +50,11 @@ $mock_brands->mock(
         my $self = shift;
         return ($self->name eq 'deriv');
     });
+$mock_brands->mock(
+    'is_app_whitelisted' => sub {
+        my $self = shift;
+        return ($self->name eq 'deriv');
+    });
 
 subtest 'app registered' => sub {
     my $req = BOM::Platform::Context::Request->new(

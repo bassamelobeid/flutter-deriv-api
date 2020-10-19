@@ -20,6 +20,8 @@ use WebService::Async::Onfido;
 use BOM::Event::Actions::Client;
 use BOM::Event::Process;
 
+my $brand = Brands->new(name => 'deriv');
+my ($app_id) = $brand->whitelist_apps->%*;
 my (@identify_args, @track_args);
 my $segment_response = Future->done(1);
 my $mock_segment     = new Test::MockModule('WebService::Async::Segment::Customer');
@@ -471,7 +473,8 @@ subtest 'signup event' => sub {
 
     my $req = BOM::Platform::Context::Request->new(
         brand_name => 'deriv',
-        language   => 'ID'
+        language   => 'ID',
+        app_id     => $app_id,
     );
     request($req);
     undef @identify_args;
@@ -611,7 +614,8 @@ subtest 'signup event' => sub {
 subtest 'account closure' => sub {
     my $req = BOM::Platform::Context::Request->new(
         brand_name => 'deriv',
-        language   => 'ID'
+        language   => 'ID',
+        app_id     => $app_id,
     );
     request($req);
 
@@ -671,7 +675,8 @@ subtest 'account closure' => sub {
 subtest 'transfer between accounts event' => sub {
     my $req = BOM::Platform::Context::Request->new(
         brand_name => 'deriv',
-        language   => 'ID'
+        language   => 'ID',
+        app_id     => $app_id,
     );
     request($req);
 
@@ -775,7 +780,8 @@ subtest 'transfer between accounts event' => sub {
 subtest 'api token create' => sub {
     my $req = BOM::Platform::Context::Request->new(
         brand_name => 'deriv',
-        language   => 'ID'
+        language   => 'ID',
+        app_id     => $app_id,
     );
     request($req);
 
@@ -828,7 +834,8 @@ subtest 'api token create' => sub {
 subtest 'api token delete' => sub {
     my $req = BOM::Platform::Context::Request->new(
         brand_name => 'deriv',
-        language   => 'ID'
+        language   => 'ID',
+        app_id     => $app_id,
     );
     request($req);
     undef @identify_args;
@@ -951,7 +958,8 @@ sub test_segment_customer {
 subtest 'set financial assessment segment' => sub {
     my $req = BOM::Platform::Context::Request->new(
         brand_name => 'deriv',
-        language   => 'ID'
+        language   => 'ID',
+        app_id     => $app_id,
     );
     request($req);
 
@@ -996,7 +1004,8 @@ subtest 'segment document upload' => sub {
 
     my $req = BOM::Platform::Context::Request->new(
         brand_name => 'deriv',
-        language   => 'ID'
+        language   => 'ID',
+        app_id     => $app_id,
     );
     request($req);
 

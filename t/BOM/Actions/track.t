@@ -65,6 +65,12 @@ $mock_brands->mock(
         return ($self->name eq 'deriv');
     },
 );
+$mock_brands->mock(
+    is_app_whitelisted => sub {
+        my $self = shift;
+        return ($self->name eq 'deriv');
+    },
+);
 
 my $mock_mt5_groups = Test::MockModule->new('BOM::User');
 $mock_mt5_groups->mock(
@@ -329,8 +335,31 @@ sub test_segment_customer {
     is_deeply $customer->traits, $expected_traits, 'Customer traits are set correctly';
 }
 
-$mock_segment->unmock_all;
 $mock_brands->unmock_all;
+
+subtest 'brand/offical app id validation' => sub {
+    my $deriv  = Brands->new(name => 'deriv');
+    my $binary = Brands->new(name => 'binary');
+    my ($deriv_app_id)  = $deriv->whitelist_apps->%*;
+    my ($binary_app_id) = $binary->whitelist_apps->%*;
+
+    ok BOM::Event::Services::Track::_validate_params($test_client->loginid, 'dummy', $deriv, $deriv_app_id), 'Whitelisted app id and brand';
+    ok !BOM::Event::Services::Track::_validate_params($test_client->loginid, 'dummy', $deriv,  $binary_app_id), 'Restricted app id or brand';
+    ok !BOM::Event::Services::Track::_validate_params($test_client->loginid, 'dummy', $binary, $binary_app_id), 'Restricted app id or brand';
+    ok !BOM::Event::Services::Track::_validate_params($test_client->loginid, 'dummy', $binary, $deriv_app_id),  'Restricted app id or brand';
+
+    subtest 'whitelist' => sub {
+        # These events return 1 regardless of the brand / app_id
+        my @whitelisted_events = (
+            'p2p_order_created', 'p2p_order_buyer_has_paid', 'p2p_order_seller_has_released', 'p2p_order_cancelled',
+            'p2p_order_expired', 'p2p_order_dispute',        'p2p_order_timeout_refund',
+        );
+
+        ok BOM::Event::Services::Track::_validate_brand($_, $binary, -1000), "$_ is whitelisted" foreach @whitelisted_events;
+    };
+};
+
+$mock_segment->unmock_all;
 $mock_mt5_groups->unmock_all;
 
 done_testing();
