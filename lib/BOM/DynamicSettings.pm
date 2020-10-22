@@ -242,6 +242,7 @@ sub get_settings_by_group {
                 cgi.allowed_languages
                 cgi.backoffice.static_url
                 cgi.terms_conditions_version
+                cgi.terms_conditions_versions
                 )
         ],
         payments => [qw(
@@ -401,7 +402,7 @@ sub parse_and_refine_setting {
 sub get_extra_validation {
     my $setting = shift;
     state $setting_validators = {
-        'cgi.terms_conditions_version'                               => \&validate_tnc_string,
+        'cgi.terms_conditions_versions'                              => \&_validate_tnc_string,
         'payments.transfer_between_accounts.minimum.by_currency'     => \&_validate_transfer_min_by_currency,
         'payments.transfer_between_accounts.minimum.default'         => \&_validate_transfer_min_default,
         'payments.transfer_between_accounts.limits.between_accounts' => \&_validate_positive_number,
@@ -488,27 +489,35 @@ sub _validate_transfer_min_by_currency {
     return 1;
 }
 
-sub validate_tnc_string {
+sub _validate_tnc_string {
     my ($new_string, $old_string) = @_;
 
-    state $tnc_string_format = qr/^Version ([0-9]+) ([0-9]{4}-[0-9]{2}-[0-9]{2})$/;
+    my $new_config = JSON::MaybeXS->new->decode($new_string);
+    my $old_config = JSON::MaybeXS->new->decode($old_string);
 
-    # Check expected date format
-    die 'Incorrect format (must be Version X yyyy-mm-dd)'
-        unless my ($version, $date) = $new_string =~ $tnc_string_format;
+    state $tnc_string_format = qr/^Version ([0-9\.]+) ([0-9]{4}-[0-9]{2}-[0-9]{2})$/;
 
-    # Date needs to be valid (will die if not)
-    my $new_date = Date::Utility->new($date);
+    for my $brand (keys %$new_config) {
+        my $new_val = $new_config->{$brand};
 
-    # Date shouldn't be in the future
-    die 'Date is in the future' if $new_date->is_after(Date::Utility::today);
+        # Check expected date format
+        die "incorrect format for $brand (must be Version X yyyy-mm-dd)\n"
+            unless my ($version, $date) = $new_val =~ $tnc_string_format;
 
-    # Shouldn't go backward from old
-    die 'Existing version failed validation. Please raise with IT.'
-        unless my ($old_version, $old_date) = $old_string =~ $tnc_string_format;
+        # Date needs to be valid (will die if not)
+        my $new_date = Date::Utility->new($date);
 
-    die 'New version is lower than previous' if $version < $old_version;
-    die 'New date is older than previous'    if $new_date->is_before(Date::Utility->new($old_date));
+        # Date shouldn't be in the future
+        die "date for $brand is in the future\n" if $new_date->is_after(Date::Utility::today);
+
+        if (my $old_val = $old_config->{$brand}) {
+            # Shouldn't go backward from old
+            die "existing version for $brand failed validation. Please raise with IT.\n"
+                unless my ($old_version, $old_date) = $old_val =~ $tnc_string_format;
+
+            die "new date for $brand is older than previous\n" if $new_date->is_before(Date::Utility->new($old_date));
+        }
+    }
 
     # No errors
     return;

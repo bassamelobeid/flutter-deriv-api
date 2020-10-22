@@ -657,8 +657,12 @@ window.addEventListener('DOMContentLoaded', init_text_validations, false);
     [% END %]
     [% IF show_tnc_status %]
         <tr>
-            <td class="label"><input type="checkbox" [% IF tnc_approval_status %]checked[% END %] disabled="disabled"/></td>
-            <td>Client acknowledges T&C [% client_tnc_version %]</td>
+            <td class="label">T&C acceptance</td>
+            <td><table border="1" class="collapsed">[% FOR brand IN tnc_versions.keys.sort %]
+                [% version = tnc_versions.$brand %]
+                <tr><td>[% brand %] ([% version %])</td><td>[% IF tnc_status.$brand.$version %]<b>Yes</b> at [% tnc_status.$brand.$version %][% ELSE %]<b>No</b>[% END %]</td></tr>
+            [% END %]
+            </table></td>
         </tr>
     [% END %]
     [% IF show_risk_approval %]

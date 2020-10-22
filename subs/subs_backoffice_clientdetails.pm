@@ -364,7 +364,18 @@ sub print_client_details {
         $stateoptions .= qq|<option value="$_->{value}">$_->{text}</option>|;
     }
 
-    my $tnc_status              = $client->status->tnc_approval;
+    my $rows = $client->user->dbic->run(
+        fixup => sub {
+            $_->selectall_arrayref(
+                'SELECT version, brand, stamp::timestamp(0) FROM users.tnc_approval WHERE binary_user_id = ?',
+                {Slice => {}},
+                $client->user->id
+            );
+        });
+    my $tnc_status;
+    $tnc_status->{$_->{brand}}{$_->{version}} = $_->{stamp} for @$rows;
+    my $tnc_versions = decode_json_utf8(BOM::Config::Runtime->instance->app_config->cgi->terms_conditions_versions);
+
     my $crs_tin_status          = $client->status->crs_tin_information;
     my $is_valid_tin            = 0;
     my $tin_validation_required = 0;
@@ -419,7 +430,6 @@ sub print_client_details {
         balance              => $balance,
         client               => $client,
         client_phone_country => $client_phone_country,
-        client_tnc_version   => $tnc_status ? $tnc_status->{reason} : '',
         countries            => \@countries,
         country_codes        => $country_codes,
         crs_tin_information  => $crs_tin_status
@@ -453,7 +463,8 @@ sub print_client_details {
         show_uploaded_documents            => $show_uploaded_documents,
         state_options                      => set_selected_item($client->state, $stateoptions),
         client_state                       => $state_name,
-        tnc_approval_status                => $tnc_status,
+        tnc_status                         => $tnc_status,
+        tnc_versions                       => $tnc_versions,
         is_valid_tin                       => $is_valid_tin,
         tin_format_info                    => $tin_format_description,
         tin_validation_required            => $tin_validation_required,
