@@ -18,7 +18,7 @@ my $mock_class = ref(BOM::Config::Runtime->instance->app_config->cgi);
 (my $fname = $mock_class) =~ s!::!/!g;
 $INC{$fname . '.pm'} = 1;
 my $mock_t_c_version = Test::MockModule->new($mock_class);
-$mock_t_c_version->mock('terms_conditions_version', sub { 'version ' . $version });
+$mock_t_c_version->mock('terms_conditions_versions', sub { '{ "binary": "Version ' . $version . '"}' });
 
 my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'MF',
@@ -30,7 +30,7 @@ my $user         = BOM::User->create(
 $user->add_client($test_client);
 
 my $res = BOM::RPC::v3::Static::website_status({country_code => ''});
-is $res->{terms_conditions_version}, 'version 1', 'version 1';
+is $res->{terms_conditions_version}, 'Version 1';
 
 # cleanup
 BOM::Platform::Token::API->new->remove_by_loginid($test_loginid);
@@ -42,14 +42,13 @@ $res = BOM::RPC::v3::Accounts::get_settings({
     client   => $test_client,
     language => 'EN'
 });
-is $res->{client_tnc_status}, 'version 1', 'version 1';
-$test_client->status->clear_tnc_approval;
+is $res->{client_tnc_status}, 'Version 1', 'version 1';
 
 # switch to version 2
 $version = 2;
 
 $res = BOM::RPC::v3::Static::website_status({country_code => ''});
-is $res->{terms_conditions_version}, 'version 2', 'version 2';
+is $res->{terms_conditions_version}, 'Version 2', 'version 2';
 is_deeply $res->{supported_languages}, BOM::Config::Runtime->instance->app_config->cgi->supported_languages, 'Correct supported languages';
 
 $res = BOM::RPC::v3::Accounts::tnc_approval({client => $test_client});
@@ -59,6 +58,6 @@ $res = BOM::RPC::v3::Accounts::get_settings({
     client   => $test_client,
     language => 'EN'
 });
-is $res->{client_tnc_status}, 'version 2', 'version 2';
+is $res->{client_tnc_status}, 'Version 2', 'version 2';
 
 done_testing();

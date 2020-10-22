@@ -24,7 +24,7 @@ use LandingCompany::Registry;
 use Format::Util::Numbers qw/financialrounding/;
 use DataDog::DogStatsd::Helper qw(stats_timing stats_gauge);
 use Unicode::UTF8 qw(decode_utf8);
-use JSON::MaybeXS;
+use JSON::MaybeXS qw(decode_json);
 
 use BOM::RPC::Registry '-dsl';
 
@@ -203,13 +203,17 @@ rpc website_status => sub {
     my $params = shift;
 
     my $app_config = BOM::Config::Runtime->instance->app_config;
+    $app_config->check_for_update;
+    my $tnc_config  = $app_config->cgi->terms_conditions_versions;
+    my $tnc_version = decode_json($tnc_config)->{request()->brand->name};
+
     return {
-        terms_conditions_version => $app_config->cgi->terms_conditions_version,
-        api_call_limits          => BOM::RPC::v3::Utility::site_limits,
-        clients_country          => $params->{country_code},
-        supported_languages      => $app_config->cgi->supported_languages,
-        currencies_config        => _currencies_config(),
-        crypto_config            => _crypto_config(),
+        $tnc_version ? (terms_conditions_version => $tnc_version) : (),
+        api_call_limits     => BOM::RPC::v3::Utility::site_limits,
+        clients_country     => $params->{country_code},
+        supported_languages => $app_config->cgi->supported_languages,
+        currencies_config   => _currencies_config(),
+        crypto_config       => _crypto_config(),
     };
 };
 

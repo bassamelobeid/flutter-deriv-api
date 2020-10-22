@@ -16,8 +16,15 @@ use BOM::Test::Email qw(:no_event);
 use LandingCompany::Registry;
 use Scalar::Util qw/looks_like_number/;
 use BOM::Platform::Token::API;
+use Guard;
 
 BOM::Test::Helper::Token::cleanup_redis_tokens();
+
+my $app_config  = BOM::Config::Runtime->instance->app_config;
+my $orig_config = $app_config->cgi->terms_conditions_versions;
+scope_guard { $app_config->cgi->terms_conditions_versions($orig_config) };
+my $tnc_version = 'Version 1 2020-01-01';
+$app_config->cgi->terms_conditions_versions('{ "binary": "' . $tnc_version . '" }');
 
 # init db
 my $email    = 'abc@binary.com';
@@ -252,8 +259,8 @@ subtest 'get settings' => sub {
         });
 
     $params->{token} = $token;
-    $test_client->status->set('tnc_approval', 'system', 1);
-    is($c->tcall($method, $params)->{client_tnc_status}, 1, 'tnc status set');
+    $test_client->user->set_tnc_approval;
+    is($c->tcall($method, $params)->{client_tnc_status}, $tnc_version, 'tnc status set');
     $params->{token} = $token_vr_3;
     is_deeply(
         $c->tcall($method, $params),

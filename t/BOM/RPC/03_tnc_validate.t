@@ -72,14 +72,4 @@ subtest 'no tnc yet' => sub {
     done_testing();
 };
 
-$test_client->status->set('tnc_approval', 'system', 'test');
-
-subtest 'tnc not correct yet' => sub {
-    for my $method (@methods) {
-        $c->call_ok($method, $params)->has_error->error_message_is('Terms and conditions approval is required.', "method $method check tnc");
-    }
-    done_testing();
-};
-
 done_testing();
-

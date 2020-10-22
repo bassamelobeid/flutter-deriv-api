@@ -248,12 +248,13 @@ subtest 'forex major pair - frxAUDJPY [VRTC]' => sub {
     ok $update_res->{take_profit}->{value};
 };
 
-my $current_tnc_version = BOM::Config::Runtime->instance->app_config->cgi->terms_conditions_version;
-my $mx                  = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+my $mock_client = Test::MockModule->new('BOM::User::Client');
+$mock_client->mock(is_tnc_approval_required => sub { 0 });
+
+my $mx = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'MX',
     email       => $email,
 });
-$mx->status->set('tnc_approval',     'system', $current_tnc_version);
 $mx->status->set('age_verification', 'system', 'age verified');
 top_up $mx, 'USD', 1000;
 my ($mx_token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $mx->loginid);
@@ -302,7 +303,6 @@ my $mx_uk = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     residence   => 'gb',
     email       => $email,
 });
-$mx_uk->status->set('tnc_approval',     'system', $current_tnc_version);
 $mx_uk->status->set('age_verification', 'system', 'age verified');
 top_up $mx_uk, 'USD', 1000;
 my ($mx_uk_token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $mx_uk->loginid);
@@ -353,7 +353,6 @@ my $mf = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'MF',
     email       => $email,
 });
-$mf->status->set('tnc_approval',     'system', $current_tnc_version);
 $mf->status->set('age_verification', 'system', 'age verified');
 
 note('mocking all compliance checks to true');

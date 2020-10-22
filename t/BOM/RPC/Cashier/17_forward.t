@@ -58,8 +58,7 @@ my $params = {
     domain   => 'binary.com'
 };
 
-my $current_tnc_version = BOM::Config::Runtime->instance->app_config->cgi->terms_conditions_version;
-my $email               = 'dummy' . rand(999) . '@binary.com';
+my $email = 'dummy' . rand(999) . '@binary.com';
 
 my $user_client_vr = BOM::User->create(
     email          => 'vr@binary.com',
@@ -150,11 +149,8 @@ subtest 'common' => sub {
     $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('ASK_TNC_APPROVAL', 'Client needs to approve tnc before')
         ->error_message_is('Terms and conditions approval is required.', 'Correct error message for terms and conditions');
 
-    $client_mf->status->set('tnc_approval', 'system', $current_tnc_version);
+    $client_mocked->mock(is_tnc_approval_required => sub { 0 });
 
-    $client_mx->status->set('tnc_approval', 'system', $current_tnc_version);
-
-    $client_cr1->status->set('tnc_approval', 'system', $current_tnc_version);
     $client_cr1->set_default_account('JPY');
     $client_cr1->save;
 
@@ -162,8 +158,6 @@ subtest 'common' => sub {
     $rpc_ct->call_ok($method, $params)
         ->has_no_system_error->has_error->error_code_is('CashierForwardError', 'Client has wrong default currency for landing_company')
         ->error_message_is('JPY transactions may not be performed with this account.', 'Correct error message for wrong default account');
-
-    $client_cr->status->set('tnc_approval', 'system', $current_tnc_version);
 
     $params->{token} = BOM::Platform::Token::API->new->create_token($client_cr->loginid, 'test token');
     $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('ASK_CURRENCY', 'Client has no default currency')
@@ -264,8 +258,7 @@ subtest 'withdraw' => sub {
     $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('ASK_EMAIL_VERIFY', 'Withdrawal needs verification token')
         ->error_message_is('Verify your withdraw request.', 'Withdrawal needs verification token');
 
-    $client_mx->status->clear_tnc_approval;
-    $client_mx->status->set('tnc_approval', 'system', 'some dummy value');
+    $client_mocked->mock(is_tnc_approval_required => sub { 1 });
 
     $params->{args}->{verification_code} = BOM::Platform::Token->new({
             email       => $client_mx->email,
@@ -279,8 +272,7 @@ subtest 'withdraw' => sub {
         'Terms and condition check is skipped for withdrawal, currency check comes after that.')
         ->error_message_is('Please set the currency.', 'Correct error message as terms and condition check is skipped for withdrawal.');
 
-    $client_mx->status->clear_tnc_approval;
-    $client_mx->status->set('tnc_approval', 'system', $current_tnc_version);
+    $client_mocked->unmock('is_tnc_approval_required');
 
     $params->{args}->{verification_code} = BOM::Platform::Token->new({
             email       => $client_mx->email,
@@ -312,9 +304,9 @@ subtest 'landing_companies_specific' => sub {
 
     $params->{token} = BOM::Platform::Token::API->new->create_token($client_mlt->loginid, 'test token1');
 
+    $client_mocked->mock(is_tnc_approval_required => sub { 0 });
+
     $client_mlt->set_default_account('EUR');
-    $client_mlt->status->set('tnc_approval', 'system', $current_tnc_version);
-    $client_mlt->save;
 
     $client_mlt->aml_risk_classification('high');
     $client_mlt->save;

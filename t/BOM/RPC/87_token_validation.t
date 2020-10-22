@@ -3,13 +3,16 @@ use warnings;
 use BOM::Test::RPC::Client;
 use Test::Most;
 use Test::Mojo;
+use Test::MockModule;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::User;
 use utf8;
 use BOM::Platform::Token;
-use BOM::Config::Runtime;
 use Email::Stuffer::TestLinks;
+
+my $mock_client = Test::MockModule->new('BOM::User::Client');
+$mock_client->mock('is_tnc_approval_required', sub { return 0; });
 
 my $email_cr = 'abc@binary.com';
 my $dob      = '1990-07-09';
@@ -19,7 +22,6 @@ my $client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     date_of_birth => '1990-07-09'
 });
 $client_cr->email($email_cr);
-$client_cr->status->set('tnc_approval', 'system', BOM::Config::Runtime->instance->app_config->cgi->terms_conditions_version);
 $client_cr->set_default_account('USD');
 $client_cr->save;
 
@@ -40,7 +42,6 @@ my $client_cr_2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     date_of_birth => '1990-07-09'
 });
 $client_cr_2->email($email_cr_2);
-$client_cr_2->status->set('tnc_approval', 'system', BOM::Config::Runtime->instance->app_config->cgi->terms_conditions_version);
 $client_cr_2->set_default_account('USD');
 $client_cr_2->save;
 

@@ -1234,7 +1234,7 @@ rpc get_settings => sub {
             citizen                        => $real_client->citizen // '',
             allow_copiers                  => $client->allow_copiers // 0,
             non_pep_declaration            => $client->non_pep_declaration_time ? 1 : 0,
-            client_tnc_status              => $client->status->tnc_approval ? $client->status->tnc_approval->{reason} : '',
+            client_tnc_status              => $client->accepted_tnc_version,
             request_professional_status    => $client->status->professional_requested ? 1 : 0,
             is_authenticated_payment_agent => ($client->payment_agent and $client->payment_agent->is_authenticated) ? 1 : 0,
         };
@@ -2130,21 +2130,11 @@ rpc tnc_approval => sub {
             return BOM::RPC::v3::Utility::client_error();
         }
     } else {
-        my $current_tnc_version = BOM::Config::Runtime->instance->app_config->cgi->terms_conditions_version;
-        my $client_tnc_status   = $client->status->tnc_approval;
-
-        if (not $client_tnc_status
-            or ($client_tnc_status->{reason} ne $current_tnc_version))
-        {
-            try {
-                # For TNC Approval status, the reason is rather relevant to be updated.
-                # Due to validation in status setter, we must clear it before updating.
-                $client->status->clear_tnc_approval;
-                $client->status->set('tnc_approval', 'system', $current_tnc_version);
-            } catch {
-                log_exception();
-                return BOM::RPC::v3::Utility::client_error();
-            }
+        try {
+            $client->user->set_tnc_approval;
+        } catch {
+            log_exception();
+            return BOM::RPC::v3::Utility::client_error();
         }
     }
 
