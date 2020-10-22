@@ -2761,6 +2761,8 @@ It takes the following named arguments:
 
 =item * C<dispute_reason> - the dispute reason (predefined at websocket layer, although DB field is TEXT)
 
+=item * C<skip_livechat> - (optional) if specified and true, we won't fill the ZSET handled by P2P daemon and therefore no ticket will be raised about the dispute
+
 =back
 
 Returns the content of the order as parsed by C<_order_details>.
@@ -2772,6 +2774,7 @@ sub p2p_create_order_dispute {
 
     my $id             = $param{id} // die +{error_code => 'OrderNotFound'};
     my $dispute_reason = $param{dispute_reason};
+    my $skip_livechat  = $param{skip_livechat};
     my $order          = $self->_p2p_orders(id => $id)->[0];
     die +{error_code => 'OrderNotFound'} unless $order;
 
@@ -2798,8 +2801,10 @@ sub p2p_create_order_dispute {
             $_->selectrow_hashref('SELECT * FROM p2p.create_order_dispute(?, ?, ?)', undef, $id, $dispute_reason, $self->loginid);
         });
 
-    my $p2p_redis = BOM::Config::Redis->redis_p2p_write();
-    $p2p_redis->hset(P2P_ORDER_DISPUTED_AT, $order->{id}, Date::Utility->new()->epoch);
+    unless ($skip_livechat) {
+        my $p2p_redis = BOM::Config::Redis->redis_p2p_write();
+        $p2p_redis->zadd(P2P_ORDER_DISPUTED_AT, Date::Utility->new()->epoch, join('|', $order->{id}, $self->broker_code));
+    }
 
     BOM::Platform::Event::Emitter::emit(
         p2p_order_updated => {

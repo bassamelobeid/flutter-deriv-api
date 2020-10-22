@@ -34,6 +34,7 @@ $mock_events->mock(
     });
 
 subtest 'Order dispute (type buy)' => sub {
+    my $time      = time;
     my %ad_params = (
         amount         => 100,
         rate           => 3.1,
@@ -64,6 +65,7 @@ subtest 'Order dispute (type buy)' => sub {
     my $response = $client->p2p_create_order_dispute(
         id             => $new_order->{id},
         dispute_reason => 'seller_not_released',
+        skip_livechat  => 1,
     );
 
     my $expected_response = {
@@ -88,6 +90,12 @@ subtest 'Order dispute (type buy)' => sub {
     is $response->{status}, 'timed-out', 'Order is disputed';
     cmp_deeply($response->{dispute_details}, $expected_response, 'order_dispute expected response after client complaint');
 
+    subtest 'dispute time not set in redis' => sub {
+        my $p2p_redis   = BOM::Config::Redis->redis_p2p_write();
+        my $disputed_at = $p2p_redis->zrangebyscore(BOM::User::Client::P2P_ORDER_DISPUTED_AT, $time, time);
+        is scalar $disputed_at->@*, 0, 'Dispute time not set in redis (therefore livechat is skipped)';
+    };
+
     BOM::Test::Helper::P2P::set_order_disputable($client, $new_order->{id});
     my $response_advertiser = $advertiser->p2p_create_order_dispute(
         id             => $new_order->{id},
@@ -105,6 +113,8 @@ subtest 'Order dispute (type buy)' => sub {
 };
 
 subtest 'Order dispute (type sell)' => sub {
+    my $time = time;
+
     BOM::Test::Helper::P2P::create_escrow();
     my $amount = 100;
     my ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert(
@@ -132,9 +142,9 @@ subtest 'Order dispute (type sell)' => sub {
     cmp_deeply($response->{dispute_details}, $expected_response, 'order_dispute expected response after advertiser complaint');
 
     subtest 'dispute time set in redis' => sub {
-        my $p2p_redis    = BOM::Config::Redis->redis_p2p_write();
-        my $dispute_time = $p2p_redis->hget(BOM::User::Client::P2P_ORDER_DISPUTED_AT, $order->{id});
-        ok $dispute_time =~ /^\d+$/, 'Dispute timestamp set in redis';
+        my $p2p_redis   = BOM::Config::Redis->redis_p2p_write();
+        my $disputed_at = $p2p_redis->zrangebyscore(BOM::User::Client::P2P_ORDER_DISPUTED_AT, $time, time);
+        cmp_deeply($disputed_at, superbagof(join('|', $order->{id}, $client->broker_code)), 'Disputed order found in the ZSET');
     };
 
     BOM::Test::Helper::P2P::set_order_disputable($client, $order->{id});
