@@ -73,7 +73,7 @@ sub after_register_client {
     my ($client, $user, $details, $ip, $country) = @{$args}{qw(client user details ip country)};
 
     unless ($client->is_virtual) {
-        $client->status->set('tnc_approval', 'system', BOM::Config::Runtime->instance->app_config->cgi->terms_conditions_version);
+        $client->user->set_tnc_approval;
         copy_status_from_siblings($client, $user, ['no_trading', 'withdrawal_locked', 'age_verification', 'transfers_blocked']);
     }
 
