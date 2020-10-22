@@ -1417,18 +1417,33 @@ sub real_account_siblings_information {
     return $siblings;
 }
 
+=head2 is_tnc_approval_required
+
+Returns true if client needs to accept terms & conditions for the current brand and landing company.
+
+=cut
+
 sub is_tnc_approval_required {
     my $self = shift;
 
     return 0 if $self->is_virtual;
     return 0 unless $self->landing_company->tnc_required;
+    my $version = $self->user->current_tnc_version or return 0;
+    return $version ne $self->user->latest_tnc_version;
+}
 
-    my $current_tnc_version = BOM::Config::Runtime->instance->app_config->cgi->terms_conditions_version;
-    my $client_tnc_status   = $self->status->tnc_approval;
+=head2 accepted_tnc_version
 
-    return 1 if (not $client_tnc_status or ($client_tnc_status->{reason} ne $current_tnc_version));
+Returns latest terms & conditions version accepted by user for current brand.
+Always empty for virtual landing company.
 
-    return 0;
+=cut
+
+sub accepted_tnc_version {
+    my $self = shift;
+
+    return '' if $self->is_virtual;
+    return $self->user->latest_tnc_version;
 }
 
 =head2 is_payout_freezing_funds_enabled

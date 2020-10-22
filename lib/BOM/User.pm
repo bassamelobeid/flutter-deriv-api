@@ -11,7 +11,7 @@ use List::Util qw(first any all minstr);
 use Scalar::Util qw(blessed looks_like_number);
 use Carp qw(croak carp);
 use Log::Any qw($log);
-use JSON::MaybeXS qw(encode_json);
+use JSON::MaybeXS qw(encode_json decode_json);
 
 use BOM::MT5::User::Async;
 use BOM::Database::UserDB;
@@ -24,6 +24,7 @@ use BOM::User::Onfido;
 use BOM::Config::Runtime;
 use ExchangeRates::CurrencyConverter qw(in_usd);
 use LandingCompany::Registry;
+use BOM::Platform::Context qw(request);
 use Exporter qw( import );
 our @EXPORT_OK = qw( is_payment_agents_suspended_in_country );
 
@@ -891,6 +892,54 @@ sub is_crypto_withdrawal_suspicious {
     }
 
     return 0;
+}
+
+=head2 set_tnc_approval
+
+Marks the current terms & conditions version as accepted by user for the current brand.
+Updates the timestamp if user has already accepted the version.
+
+=cut
+
+sub set_tnc_approval {
+    my $self = shift;
+
+    my $version = $self->current_tnc_version or return;
+
+    return $self->dbic->run(
+        fixup => sub {
+            $_->do('SELECT users.set_tnc_approval(?, ?, ?)', undef, $self->{id}, $version, request()->brand->name);
+        });
+}
+
+=head2 latest_tnc_version
+
+Returns the most recent terms & conditions version the user has accepted for the current brand.
+
+=cut
+
+sub latest_tnc_version {
+    my $self = shift;
+
+    return $self->dbic->run(
+        fixup => sub {
+            $_->selectrow_array('SELECT version FROM users.get_tnc_approval(?, ?) LIMIT 1', undef, $self->{id}, request()->brand->name);
+        }) // '';
+}
+
+=head2 current_tnc_version
+
+Returns the current configured terms & conditions version for the current brand.
+
+=cut
+
+sub current_tnc_version {
+    my $self = shift;
+
+    my $tnc_versions = BOM::Config::Runtime->instance->app_config->cgi->terms_conditions_versions;
+    my $tnc_config   = decode_json($tnc_versions);
+    my $brand_name   = request()->brand->name;
+    return $tnc_config->{$brand_name};
 }
 
 1;
