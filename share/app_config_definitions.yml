@@ -125,6 +125,11 @@ payments:
           isa: Num
           global: 1
           default: 30
+        disputed_timeout:
+          description: 'Number of hours to wait before creating a LiveChat ticket for a disputed order'
+          isa: Num
+          global: 1
+          default: 24
         clients:
           description: 'List of clients allowed to access P2P'
           isa: ArrayRef
