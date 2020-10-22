@@ -197,6 +197,12 @@ subtest 'buy ads' => sub {
     check_stats($client,     $stats_cli, 'client stats after order expired');
 };
 
+subtest 'different advertiser' => sub {
+    my $advertiser2 = BOM::Test::Helper::P2P::create_advertiser;
+    my $res         = $advertiser->p2p_advertiser_stats(id => $advertiser2->p2p_advertiser_info->{id});
+    cmp_deeply($res, superhashof(\%default_stats), 'stats are for new advertiser');
+};
+
 BOM::Test::Helper::P2P::reset_escrow();
 
 done_testing();

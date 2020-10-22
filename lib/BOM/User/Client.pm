@@ -3719,8 +3719,6 @@ sub _p2p_advertiser_stats_get {
         sell_orders_count  => $redis->zcount($key_prefix . '::ORDER_COMPLETED::SELL', $start_ts, '+inf'),
         cancel_time_avg    => @cancel_times ? sprintf("%.0f", List::Util::sum(@cancel_times) / @cancel_times) : undef,
         release_time_avg   => @release_times ? sprintf("%.0f", List::Util::sum(@release_times) / @release_times) : undef,
-        basic_verification => $self->status->age_verification ? 1 : 0,
-        full_verification  => $self->fully_authenticated ? 1 : 0,
     };
 
     my $buy_total = $stats->{buy_orders_count} + $redis->zcount($key_prefix . '::ORDER_REFUNDED::BUY', $start_ts, '+inf');
@@ -3732,6 +3730,10 @@ sub _p2p_advertiser_stats_get {
     my $overall_total     = $buy_total + $sell_total;
     my $overall_completed = $stats->{buy_orders_count} + $stats->{sell_orders_count};
     $stats->{total_completion_rate} = $overall_total ? sprintf("%.2f", ($overall_completed / $overall_total) * 100) : undef;
+
+    my $auth_client = $loginid ne $self->loginid ? BOM::User::Client->new({loginid => $loginid}) : $self;
+    $stats->{basic_verification} = $auth_client->status->age_verification ? 1 : 0;
+    $stats->{full_verification}  = $auth_client->fully_authenticated      ? 1 : 0;
 
     return $stats;
 }
