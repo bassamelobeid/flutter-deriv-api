@@ -266,6 +266,8 @@ sub get_settings_by_group {
                 system.suspend.cryptocurrencies
                 system.suspend.cryptocurrencies_deposit
                 system.suspend.cryptocurrencies_withdrawal
+                system.stop.cryptocurrencies_deposit
+                system.stop.cryptocurrencies_withdrawal
                 system.suspend.experimental_currencies
                 payments.crypto.deposit_required_confirmations
                 payments.crypto.restricted_countries
