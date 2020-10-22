@@ -230,6 +230,77 @@ sub timeout_refund {
     return 0;
 }
 
+=head2 dispute_expired
+
+When a disputed order is not resolved for 24 hours (default but configurable) 
+a ticket should be raised.
+
+It takes a hash argument as:
+
+=over 4
+
+=item * C<order_id>: the id of the order
+
+=item * C<broker_code>: the broker code where this order operates
+
+=item * C<timestamp>: the dispute timestamp
+
+=back
+
+Returns, C<1> on success, C<0> otherwise.
+
+=cut
+
+sub dispute_expired {
+    my $data        = shift;
+    my $order_id    = $data->{order_id};
+    my $broker_code = $data->{broker_code};
+    my $timestamp   = $data->{timestamp};
+    return 0 if not $order_id or not $broker_code;
+
+    my $db = BOM::Database::ClientDB->new({broker_code => $broker_code})->db->dbh;
+    # Recover the order, ensure is disputed
+    my ($order) =
+        $db->selectall_arrayref('SELECT * FROM p2p.order_list(?, NULL, NULL, ?::p2p.order_status[], 1)', {Slice => {}}, $order_id, '{disputed}')->@*;
+
+    if ($order) {
+        my $brand              = request()->brand;
+        my $client_loginid     = $order->{client_loginid};
+        my $advertiser_loginid = $order->{advertiser_loginid};
+        my $disputer_loginid   = $order->{disputer_loginid};
+        my $reason             = $order->{dispute_reason};
+        my $amount             = $order->{amount};
+        my $currency           = $order->{local_currency};
+        my $buyer              = $client_loginid;
+        my $seller             = $advertiser_loginid;
+        $buyer  = $advertiser_loginid if $order->{type} eq 'sell';
+        $seller = $client_loginid     if $order->{type} eq 'sell';
+        my $disputed_at = Date::Utility->new($timestamp)->datetime_ddmmmyy_hhmmss_TZ;
+
+        send_email({
+                from    => $brand->emails('no-reply'),
+                to      => $brand->emails('support'),
+                subject => 'P2P dispute expired',
+                message => [
+                    '<p>A P2P order has been disputed for a while without resolution. Here are the details:<p>',
+                    '<ul>',
+                    "<li><b>Buyer Loginid:</b> $buyer</li>",
+                    "<li><b>Seller Loginid:</b> $seller</li>",
+                    "<li><b>Raised by:</b> $disputer_loginid</li>",
+                    "<li><b>Reason:</b> $reason</li>",
+                    "<li><b>Order ID:</b> $order_id</li>",
+                    "<li><b>Amount:</b> $amount</li>",
+                    "<li><b>Currency:</b> $currency</li>",
+                    "<li><b>Dispute raised time:</b> $disputed_at</li>",
+                    '</ul>',
+                ],
+            });
+        return 1;
+    }
+
+    return 0;
+}
+
 =head2 order_expired
 
 An order reached our predefined timeout without being confirmed by both sides or

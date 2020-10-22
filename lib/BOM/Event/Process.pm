@@ -80,6 +80,7 @@ my $action_mapping = {
     p2p_advertiser_created      => \&BOM::Event::Actions::P2P::advertiser_created,
     p2p_advertiser_updated      => \&BOM::Event::Actions::P2P::advertiser_updated,
     p2p_timeout_refund          => \&BOM::Event::Actions::P2P::timeout_refund,
+    p2p_dispute_expired         => \&BOM::Event::Actions::P2P::dispute_expired,
     api_token_created           => \&BOM::Event::Actions::Client::api_token_created,
     api_token_deleted           => \&BOM::Event::Actions::Client::api_token_deleted,
     app_registered              => \&BOM::Event::Actions::App::app_registered,

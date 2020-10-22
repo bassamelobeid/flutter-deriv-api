@@ -17,6 +17,8 @@ use Syntax::Keyword::Try;
 
 use BOM::Config::Runtime;
 use BOM::Platform::Context qw(request);
+use BOM::Config::Redis;
+use Date::Utility;
 
 binmode STDOUT, ':encoding(UTF-8)';
 binmode STDERR, ':encoding(UTF-8)';
@@ -41,6 +43,8 @@ emits event for every order/advert, which state need to be updated.
 
 # Seconds between each attempt at checking the database entries.
 use constant POLLING_INTERVAL => 60;
+use constant P2P_ORDER_DISPUTED_AT => 'P2P::ORDER::DISPUTED_AT';
+use constant ONE_HOUR_IN_SECONDS => 3600;
 
 # request brand name should be changed to 'deriv', otherwise the event will not be sent to Segment.
 request(BOM::Platform::Context::Request->new(
@@ -59,11 +63,34 @@ my $signal_handler = sub {$shutdown->done};
 $loop->watch_signal(INT  => $signal_handler);
 $loop->watch_signal(TERM => $signal_handler);
 
+my $redis = BOM::Config::Redis->redis_p2p_write();
 my %dbs;
 (async sub {
     $log->info('Starting P2P polling');
     until ($shutdown->is_ready) {
         $app_config->check_for_update;
+
+        # Redis Polling
+        # We'll raise LC tickets when dispute reaches a given threshold in hours.
+        my $dispute_threshold = Date::Utility->new()->epoch - ONE_HOUR_IN_SECONDS * ($app_config->payments->p2p->disputed_timeout // 24);
+        my %dispute_timeouts = $redis->zrangebyscore(P2P_ORDER_DISPUTED_AT, '-Inf', $dispute_threshold, 'WITHSCORES')->@*;
+        $redis->zremrangebyscore(P2P_ORDER_DISPUTED_AT, '-Inf', $dispute_threshold);
+
+        foreach my $payload (keys %dispute_timeouts) {
+            # We store each member as P2P_ORDER_ID|BROKER_CODE
+            my $timestamp = $dispute_timeouts{$payload};
+            my ($order_id, $broker_core) = split(/\|/, $payload);
+
+            BOM::Platform::Event::Emitter::emit(
+                p2p_dispute_expired => {
+                    order_id => $order_id,
+                    broker_code  => $broker_core,
+                    timestamp => $timestamp,
+                });
+        }
+        undef %dispute_timeouts;
+
+        # Database Polling
         for my $broker (@broker_codes) {
             try {
                 $dbs{$broker} //= BOM::Database::ClientDB->new({broker_code => $broker})->db->dbh;
