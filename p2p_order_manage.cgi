@@ -105,6 +105,7 @@ if ($input{dispute} and $p2p_write) {
             unless exists $dispute_reasons{$input{reason}};
         my $client = BOM::User::Client->new({loginid => $input{disputer}});
         $client->p2p_create_order_dispute(
+            skip_livechat  => 1,
             id             => $input{order_id},
             dispute_reason => $input{reason});
 

@@ -301,6 +301,7 @@ sub get_settings_by_group {
                 payments.p2p.restricted_countries
                 payments.p2p.available_for_currencies
                 payments.p2p.refund_timeout
+                payments.p2p.disputed_timeout
                 payments.p2p.credit_card_turnover_requirement
                 payments.p2p.credit_card_check_period
                 )]};
