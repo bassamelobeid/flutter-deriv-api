@@ -123,7 +123,7 @@ sub _create_dbs {
     # apply DB functions
     $m->psql(sort glob $self->_db_migrations_dir =~ s!/*$!/functions/*.sql!r) if (-d $self->_db_migrations_dir . 'functions');
 
-    if (-f $self->_db_unit_tests) {
+    if ($self->_db_unit_tests) {
         $m->psql({
                 before => "SET session_replication_role TO 'replica';\n",
                 after  => ";\nSET session_replication_role TO 'origin';\n"
