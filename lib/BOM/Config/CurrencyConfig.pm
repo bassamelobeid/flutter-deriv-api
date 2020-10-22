@@ -352,6 +352,32 @@ sub _is_crypto_currency_action_suspended {
     return any { $currency eq $_ } app_config()->system->suspend->$action->@*;
 }
 
+=head2 _is_crypto_currency_action_stopped
+
+To check if the specified action for the given crypto currency is stopped
+in the crypto cashier.
+
+=over 4
+
+=item * C<currency> - Currency code
+
+=item * C<action> - Action name. Can be one of C<cryptocurrencies_deposit> or C<cryptocurrencies_withdrawal>
+
+=back
+
+Return true if the C<currency> is currently stopped for the C<action>. It will also
+return true in case the C<currency> is suspended.
+
+=cut
+
+sub _is_crypto_currency_action_stopped {
+    my ($currency, $action) = @_;
+
+    return 1 if is_crypto_currency_suspended($currency);
+
+    return any { $currency eq $_ } app_config()->system->stop->$action->@*;
+}
+
 =head2 is_crypto_currency_deposit_suspended
 
 To check if deposit for the given crypto currency is suspended in the crypto cashier.
@@ -372,6 +398,26 @@ sub is_crypto_currency_deposit_suspended {
     return _is_crypto_currency_action_suspended($currency, 'cryptocurrencies_deposit');
 }
 
+=head2 is_crypto_currency_deposit_stopped
+
+To check if deposit for the given crypto currency is stopped in the crypto cashier.
+
+=over 4
+
+=item * C<currency> - Currency code
+
+=back
+
+Return true if the currency is currently stopped for deposit, or if the currency is suspended.
+
+=cut
+
+sub is_crypto_currency_deposit_stopped {
+    my $currency = shift;
+
+    return _is_crypto_currency_action_stopped($currency, 'cryptocurrencies_deposit');
+}
+
 =head2 is_crypto_currency_withdrawal_suspended
 
 To check if withdrawal for the given crypto currency is suspended in the crypto cashier.
@@ -390,6 +436,26 @@ sub is_crypto_currency_withdrawal_suspended {
     my $currency = shift;
 
     return _is_crypto_currency_action_suspended($currency, 'cryptocurrencies_withdrawal');
+}
+
+=head2 is_crypto_currency_withdrawal_stopped
+
+To check if withdrawal for the given crypto currency is stopped in the crypto cashier.
+
+=over 4
+
+=item * C<currency> - Currency code
+
+=back
+
+Return true if the currency is currently stopped for withdrawal, or if the currency is suspended.
+
+=cut
+
+sub is_crypto_currency_withdrawal_stopped {
+    my $currency = shift;
+
+    return _is_crypto_currency_action_stopped($currency, 'cryptocurrencies_withdrawal');
 }
 
 =head2 is_experimental_currency

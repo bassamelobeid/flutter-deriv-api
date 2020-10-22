@@ -234,6 +234,8 @@ subtest 'Check Types of Suspension' => sub {
         ok BOM::Config::CurrencyConfig::is_crypto_currency_suspended('BTC'),            'Crypto Currency BTC is suspended';
         ok BOM::Config::CurrencyConfig::is_crypto_currency_deposit_suspended('BTC'),    'Deposit for cryptocurrency is suspended';
         ok BOM::Config::CurrencyConfig::is_crypto_currency_withdrawal_suspended('BTC'), 'Withdrawal for cryptocurrency is suspended';
+        ok BOM::Config::CurrencyConfig::is_crypto_currency_deposit_stopped('BTC'),      'Deposit for cryptocurrency is stopped';
+        ok BOM::Config::CurrencyConfig::is_crypto_currency_withdrawal_stopped('BTC'),   'Withdrawal for cryptocurrency is stopped';
         $app_config->system->suspend->cryptocurrencies("");
     };
 
@@ -251,6 +253,34 @@ subtest 'Check Types of Suspension' => sub {
         ok !(BOM::Config::CurrencyConfig::is_crypto_currency_deposit_suspended('BTC')), 'Deposit for cryptocurrency is not suspended';
         ok !(BOM::Config::CurrencyConfig::is_crypto_cashier_suspended()), 'Cryptocashier is not suspended';
         $app_config->system->suspend->cryptocurrencies_withdrawal([]);
+    };
+
+    subtest 'Only when cryptocurrency deposit is stopped' => sub {
+        $app_config->system->stop->cryptocurrencies_deposit(['BTC']);
+        ok BOM::Config::CurrencyConfig::is_crypto_currency_deposit_stopped('BTC'), 'Deposit for cryptocurrency is stopped';
+        ok !(BOM::Config::CurrencyConfig::is_crypto_currency_withdrawal_stopped('BTC')), 'Withdrawal for cryptocurrency is not stopped';
+        $app_config->system->stop->cryptocurrencies_deposit([]);
+    };
+
+    subtest 'Only when cryptocurrency withdrawal is stopped' => sub {
+        $app_config->system->stop->cryptocurrencies_withdrawal(['BTC']);
+        ok BOM::Config::CurrencyConfig::is_crypto_currency_withdrawal_stopped('BTC'), 'Withdrawal for cryptocurrency is stopped';
+        ok !(BOM::Config::CurrencyConfig::is_crypto_currency_deposit_stopped('BTC')), 'Deposit for cryptocurrency is not stopped';
+        $app_config->system->stop->cryptocurrencies_withdrawal([]);
+    };
+
+    subtest 'Only when cryptocurrency is suspended' => sub {
+        $app_config->system->suspend->cryptocurrencies('BTC');
+        ok BOM::Config::CurrencyConfig::is_crypto_currency_withdrawal_stopped('BTC'), 'Withdrawal for cryptocurrency is stopped';
+        ok BOM::Config::CurrencyConfig::is_crypto_currency_deposit_stopped('BTC'), 'Deposit for cryptocurrency is stopped';
+        $app_config->system->suspend->cryptocurrencies('');
+    };
+
+    subtest 'Only when cryptocurrency is suspended' => sub {
+        $app_config->system->suspend->cryptocurrencies('ETH');
+        ok !(BOM::Config::CurrencyConfig::is_crypto_currency_withdrawal_stopped('BTC')), 'Withdrawal for cryptocurrency is stopped';
+        ok !(BOM::Config::CurrencyConfig::is_crypto_currency_deposit_stopped('BTC')), 'Deposit for cryptocurrency is stopped';
+        $app_config->system->suspend->cryptocurrencies('');
     };
 
     subtest 'Only when currency is experimental' => sub {

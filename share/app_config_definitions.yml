@@ -807,6 +807,20 @@ system:
           isa: Bool
           default: 1
           global: 1
+    stop:
+      description: "Stop one or more of our services"
+      isa: section
+      contains:
+        cryptocurrencies_deposit:
+          description: "Deposit stopped comma-separated list of currencies, set this configuration if you want to stop just deposits"
+          isa: ArrayRef
+          default: []
+          global: 1
+        cryptocurrencies_withdrawal:
+          description: "Withdrawal stopped comma-separated list of currencies, set this configuration if you want to stop just withdrawals"
+          isa: ArrayRef
+          default: []
+          global: 1
     directory:
       description: "Configuration for system wide directories"
       isa: section
