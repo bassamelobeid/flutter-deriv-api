@@ -9,6 +9,7 @@ use Test::MockModule;
 use BOM::Config::Runtime;
 use BOM::Test::Helper::ExchangeRates qw/populate_exchange_rates/;
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
+use JSON::MaybeUTF8 qw/decode_json_utf8/;
 
 use await;
 
@@ -82,7 +83,9 @@ BOM::Config::Runtime->instance->app_config->check_for_update(1);
 
 $res = $t->await::website_status({website_status => 1});
 is $res->{msg_type}, 'website_status';
-is $res->{website_status}->{terms_conditions_version}, BOM::Config::Runtime->instance->app_config->cgi->terms_conditions_version;
+my $tnc_config = BOM::Config::Runtime->instance->app_config->cgi->terms_conditions_versions;
+my $tnc_version = decode_json_utf8($tnc_config)->{binary};
+is $res->{website_status}->{terms_conditions_version}, $tnc_version;
 
 ## exchage_rates
 $res = $t->await::exchange_rates({

@@ -17,30 +17,34 @@ use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 populate_exchange_rates();
 print STDERR "pid of script is $$\n";
 
+my $reader = BOM::Config::Chronicle::get_chronicle_reader();
+my $writer = BOM::Config::Chronicle::get_chronicle_writer();
+
+my $tnc_config = BOM::Config::Runtime->instance->app_config->cgi->terms_conditions_versions;
+my $tnc_version = decode_json_utf8($tnc_config)->{binary};
+
 my $t = build_wsapi_test();
 $t = $t->send_ok({json => {website_status => 1}})->message_ok;
 my $res = decode_json_utf8($t->message->[1]);
 
-my $reader = BOM::Config::Chronicle::get_chronicle_reader();
-my $writer = BOM::Config::Chronicle::get_chronicle_writer();
-
 is $res->{website_status}->{terms_conditions_version},
-    $reader->get('app_settings', 'binary')->{global}->{cgi}->{terms_conditions_version},
+    $tnc_version,
     'terms_conditions_version should be readed from chronicle';
 
 # Update terms_conditions_version at chronicle
-my $updated_tcv = 'Version 100 ' . Date::Utility->new->date;
+$tnc_version = 'Version 100 ' . Date::Utility->new->date;
+my $json_config = '{"binary": "'.$tnc_version.'"}';
 $writer->set(
     'app_settings',
     'binary',
     {
-        global => {cgi => {terms_conditions_version => $updated_tcv}},
+        global => {cgi => {terms_conditions_versions => $json_config}},
         _rev   => time
     },
     Date::Utility->new
 );
 
-is $reader->get('app_settings', 'binary')->{global}->{cgi}->{terms_conditions_version}, $updated_tcv, 'Chronickle should be updated';
+is $reader->get('app_settings', 'binary')->{global}->{cgi}->{terms_conditions_versions}, $json_config, 'Chronickle should be updated';
 
 #Test website status subscription id
 my $uuid = $res->{subscription};
@@ -107,7 +111,7 @@ sleep 11;
 $t   = $t->send_ok({json => {website_status => 1}})->message_ok;
 $res = decode_json_utf8($t->message->[1]);
 
-is $res->{website_status}->{terms_conditions_version}, $updated_tcv, 'It should return updated terms_conditions_version';
+is $res->{website_status}->{terms_conditions_version}, $tnc_version, 'It should return updated terms_conditions_version';
 
 my $ws_redis_write_config = YAML::XS::LoadFile('/etc/rmg/ws-redis.yml')->{write};
 

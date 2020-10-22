@@ -149,7 +149,6 @@ my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'CR',
 });
 $client->email($email);
-$client->status->set('tnc_approval', 'system', BOM::Config::Runtime->instance->app_config->cgi->terms_conditions_version);
 $client->save;
 my $loginid = $client->loginid;
 my $user    = BOM::User->create(
@@ -157,6 +156,7 @@ my $user    = BOM::User->create(
     password => '1234',
 );
 $user->add_client($client);
+$user->set_tnc_approval;
 
 $client->set_default_account('USD');
 $client->smart_payment(
