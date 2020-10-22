@@ -60,8 +60,7 @@ use constant MAX_DESCRIPTION_LENGTH => 250;
 my $payment_limits = BOM::Config::payment_limits;
 
 rpc "cashier", sub {
-    my $params = shift;
-
+    my $params           = shift;
     my $validation_error = BOM::RPC::v3::Utility::validation_checks($params->{client}, ['compliance_checks']);
     return $validation_error if $validation_error;
 
@@ -163,8 +162,9 @@ rpc "cashier", sub {
     my $doughflow_loc   = BOM::Config::third_party()->{doughflow}->{$brand->name};
     my $is_white_listed = any { $params->{domain} and $params->{domain} eq $_ } BOM::Config->domain->{white_list}->@*;
     my $domain          = $params->{domain} // '';
-    DataDog::DogStatsd::Helper::stats_inc('bom_rpc.v_3.empty_doughflow_domain.count') unless ($domain);
-    unless ($is_white_listed) {
+    if (!$domain) {
+        DataDog::DogStatsd::Helper::stats_inc('bom_rpc.v_3.empty_doughflow_domain.count');
+    } elsif (!$is_white_listed) {
         $log->infof('Trying to access doughflow from an unrecognized domain: %s', $domain);
         DataDog::DogStatsd::Helper::stats_inc('bom_rpc.v_3.invalid_doughflow_domain.count', {tags => ["domain:@{[ $domain ]}"]});
     }
