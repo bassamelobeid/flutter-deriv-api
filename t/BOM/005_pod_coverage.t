@@ -9,16 +9,14 @@ use Test::Pod::CoverageChange;
 # The number of naked (undocumented) subs should never be increased in this hashref.
 
 my $allowed_naked_packages = {
-    'BOM::OAuth' => 1,
-    'BOM::OAuth::O' => 12,
-    'BOM::OAuth::OneAll' => 4,
+    'BOM::OAuth'               => 1,
+    'BOM::OAuth::O'            => 12,
+    'BOM::OAuth::OneAll'       => 4,
     'BOM::OAuth::SingleSignOn' => 5,
-    'BOM::OAuth::Helper' => 1,
+    'BOM::OAuth::Helper'       => 1,
 };
 
-my $ignored_packages = [
-    'BOM::OAuth::SingleSignOn',
-];
+my $ignored_packages = ['BOM::OAuth::SingleSignOn',];
 
 Test::Pod::CoverageChange::pod_coverage_syntax_ok('lib', $allowed_naked_packages, $ignored_packages);
 

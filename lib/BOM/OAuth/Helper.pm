@@ -3,6 +3,12 @@ package BOM::OAuth::Helper;
 use strict;
 use warnings;
 
+=head2 extract_brand_from_params
+
+Return undef or brand name if exists.
+
+=cut
+
 sub extract_brand_from_params {
     my ($self, $params) = @_;
 

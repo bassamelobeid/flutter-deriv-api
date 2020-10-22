@@ -24,14 +24,18 @@ get '/callback' => sub {
     BOM::Platform::Context::request($request);
     $c->stash(request => $request);
 
-    my $email        = $c->param('email');
-    my $brand        = $c->param('brand') || 'binary';
-    my $residence    = $c->stash('request')->country_code;
-    my $one_all      = BOM::OAuth::OneAll->new($c);
+    my $email         = $c->param('email');
+    my $brand         = $c->param('brand') || 'binary';
+    my $residence     = $c->stash('request')->country_code;
+    my $signup_device = $c->param('signup_device');
+
+    my $one_all = BOM::OAuth::OneAll->new($c);
+
     my $user_details = {
-        email     => $email,
-        brand     => $brand,
-        residence => $residence
+        email         => $email,
+        brand         => $brand,
+        residence     => $residence,
+        signup_device => $signup_device,
     };
     my $utm_data = {
         utm_term     => "utm_term test",
@@ -47,7 +51,10 @@ get '/callback' => sub {
         }
     } else {
         my @clients = $account->{user}->clients();
-        $c->render(json => {'residence' => $clients[0]->residence});
+        $c->render(
+            json => {
+                'residence'     => $clients[0]->residence,
+                'signup_device' => $account->{user}->{signup_device}});
     }
 
     #$c->render(text => $clients[0]->residence);
@@ -56,19 +63,23 @@ get '/callback' => sub {
 my $t;
 subtest "check wether client's country of residence is set correctly" => sub {
     $t = Test::Mojo->new('t::BOM::OAuth::OneAll');
-    my $residence;
-    my $email;
+    my ($signup_device, $residence, $email, $brand);
 
     #Test case 1: valid residence
-    $residence = 'au';
-    $email     = 'test' . rand(999) . '@binary.com';
+    $signup_device = 'mobile';
+    $residence     = 'au';
+    $email         = 'test' . rand(999) . '@binary.com';
     $t->ua->on(
         start => sub {
             my ($ua, $tx) = @_;
             $tx->req->headers->header('X-Client-Country' => $residence);
         });
 
-    $t->get_ok("/callback?email=$email")->status_is(200)->json_is(json => {'residence' => $residence});
+    $t->get_ok("/callback?email=$email&signup_device=$signup_device")->status_is(200)->json_is(
+        json => {
+            'residence'     => $residence,
+            'signup_device' => $signup_device
+        });
 
     #Test case 2: already registered user (email)
     $residence = 'es';
@@ -93,7 +104,7 @@ subtest "check wether client's country of residence is set correctly" => sub {
     #Test case 4: invalid brand
     $residence = 'de';
     $email     = 'test' . rand(999) . '@binary.com';
-    my $brand = 'invalid';
+    $brand     = 'invalid';
     $t->ua->on(
         start => sub {
             my ($ua, $tx) = @_;
@@ -101,6 +112,22 @@ subtest "check wether client's country of residence is set correctly" => sub {
         });
     $t->get_ok("/callback?email=$email&brand=$brand")->status_is(200)
         ->json_is(json => {'error' => localize(get_message_mapping()->{'InvalidBrand'})});
+
+    #Test case 5: invalid signup device type
+    $email         = 'test' . rand(999) . '@binary.com';
+    $brand         = 'binary';
+    $signup_device = 'Desktuup';
+
+    $t->ua->on(
+        start => sub {
+            my ($ua, $tx) = @_;
+            $tx->req->headers->header('X-Client-Country' => $residence);
+        });
+    $t->get_ok("/callback?email=$email&brand=$brand&signup_device=$signup_device")->status_is(200)->json_is(
+        json => {
+            'residence'     => $residence,
+            'signup_device' => undef
+        });
 };
 
 subtest "User sing up with social login, app_id is saved" => sub {

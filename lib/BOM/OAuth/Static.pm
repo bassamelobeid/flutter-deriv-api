@@ -4,7 +4,7 @@ use strict;
 use warnings;
 
 use Exporter qw( import );
-our @EXPORT_OK = qw(get_message_mapping);
+our @EXPORT_OK = qw( get_message_mapping get_valid_device_types );
 
 =head1 NAME
 
@@ -57,6 +57,16 @@ Return message mapping for all the error message related to Contract
 
 sub get_message_mapping {
     return $config->{messages};
+}
+
+=head2 get_valid_device_types
+
+Return an array of valid device types
+
+=cut
+
+sub get_valid_device_types {
+    return qw(mobile desktop);
 }
 
 1;

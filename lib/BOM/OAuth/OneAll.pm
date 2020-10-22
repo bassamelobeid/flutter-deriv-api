@@ -9,11 +9,12 @@ use BOM::User;
 use BOM::Platform::Account::Virtual;
 use URI::QueryParam;
 use BOM::OAuth::Helper;
-use BOM::Platform::Context qw(localize);
-use DataDog::DogStatsd::Helper qw(stats_inc);
-use BOM::OAuth::Static qw(get_message_mapping);
-use Locale::Codes::Country qw(code2country);
+use BOM::Platform::Context qw( localize );
+use DataDog::DogStatsd::Helper qw( stats_inc );
+use BOM::OAuth::Static qw( get_message_mapping get_valid_device_types );
+use Locale::Codes::Country qw( code2country );
 use Email::Valid;
+use List::Util qw( none );
 
 sub callback {
     my $c = shift;
@@ -234,6 +235,11 @@ sub __create_virtual_account {
 
     $details->{$_} = $user_details->{$_}
         for grep { $user_details->{$_} } qw (date_first_contact signup_device myaffiliates_token gclid_url utm_medium utm_source utm_campaign);
+
+    # Validate signup_device and reset it to null in case of invalid value
+    if (exists $details->{'signup_device'} && none { $_ eq $details->{'signup_device'} } get_valid_device_types) {
+        $details->{'signup_device'} = undef;
+    }
 
     return BOM::Platform::Account::Virtual::create_account({
         details  => $details,
