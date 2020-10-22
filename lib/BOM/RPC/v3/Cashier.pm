@@ -1261,10 +1261,10 @@ sub get_transfer_fee_remark {
         . formatnumber(
         amount => $args{currency},
         $args{fee_calculated_by_percent})
-        . "$args{currency} ($args{fee_percent}%)."
+        . " $args{currency} ($args{fee_percent}%)."
         if $args{fee_calculated_by_percent} >= $args{minimum_fee};
 
-    return "Includes the minimum transfer fee of $args{minimum_fee}  $args{currency}.";
+    return "Includes the minimum transfer fee of $args{minimum_fee} $args{currency}.";
 }
 
 rpc transfer_between_accounts => sub {
