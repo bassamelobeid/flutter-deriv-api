@@ -498,4 +498,24 @@ sub get_crypto_withdrawal_fee_limit {
     return app_config()->get('payments.crypto.fee_limit_usd.' . $currency);
 }
 
+=head2 get_currency_wait_before_bump
+
+To get time amount to wait before fee bump for currency.
+
+=over 4
+
+=item * C<currency> - Currency code
+
+=back
+
+Returns the amount of time to wait before bumping fee for a transaction for each currency.
+
+=cut
+
+sub get_currency_wait_before_bump {
+    my $currency = shift;
+    
+    return app_config()->get('payments.crypto.fee_bump_wait_time.' . $currency);
+}
+
 1;

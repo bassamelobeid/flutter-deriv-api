@@ -380,6 +380,25 @@ payments:
           isa: ArrayRef
           default: []
           global: 1
+        fee_bump_wait_time:
+          description: "Time to wait before bumping transaction"
+          isa: section
+          contains:
+            BTC:
+              isa: Num
+              description: "BTC wait before bump in seconds"
+              default: 43200
+              global: 1
+            LTC:
+              isa: Num
+              description: "LTC wait before bump in seconds"
+              default: 43200
+              global: 1
+            ETH:
+              isa: Num
+              description: "ETH wait before bump in seconds"
+              default: 43200
+              global: 1
     transfer_between_accounts:
       description: 'Transfer between accounts config'
       isa: section
