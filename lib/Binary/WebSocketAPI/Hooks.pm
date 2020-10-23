@@ -22,6 +22,8 @@ use Net::Address::IP::Local;
 my %schema_cache;
 my $schemas_base = '/home/git/regentmarkets/binary-websocket-api/config/v3/';
 
+use constant APP_ID_LOGGED_METHODS => qr/^(buy|sell|ticks|ticks_history|send_ask|proposal_open_contract)$/;
+
 my $json = JSON::MaybeXS->new;
 
 =head2 _load_schema
@@ -124,6 +126,8 @@ sub log_call_timing {
         rpc => $req_storage->{method},
         map { $_ => $c->stash($_) } qw/brand source_type/
     );
+
+    $tags{app_id} = $c->stash('source') if $req_storage->{method} =~ APP_ID_LOGGED_METHODS;
 
     # extra tagging for buy for better visualization
     $tags{market} = $c->stash('market') if $req_storage->{method} eq 'buy' and $c->stash('market');
