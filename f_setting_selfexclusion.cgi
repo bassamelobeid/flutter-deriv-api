@@ -120,65 +120,65 @@ if (my $self_exclusion = $client->get_self_exclusion) {
         'Maximum account cash balance',
         $client->currency,
         $self_exclusion->max_balance,
-        get_limit_expiration_date($db, $loginid, 'max_balance', 30)) if $self_exclusion->max_balance;
+        get_limit_expiration_date($db, $loginid, 'max_balance', 30)) if defined $self_exclusion->max_balance;
     $info .= make_row(
         'Daily turnover limit',
         $client->currency,
         $self_exclusion->max_turnover,
-        get_limit_expiration_date($db, $loginid, 'max_turnover', 1)) if $self_exclusion->max_turnover;
+        get_limit_expiration_date($db, $loginid, 'max_turnover', 1)) if defined $self_exclusion->max_turnover;
     $info .=
         make_row('Daily limit on losses', $client->currency, $self_exclusion->max_losses, get_limit_expiration_date($db, $loginid, 'max_losses', 1))
-        if $self_exclusion->max_losses;
+        if defined $self_exclusion->max_losses;
     $info .= make_row(
         'Daily deposit limit',
         $client->currency,
         $self_exclusion->max_deposit_daily,
-        get_limit_expiration_date($db, $loginid, 'max_deposit_daily', 1)) if $deposit_limit_enabled and $self_exclusion->max_deposit_daily;
+        get_limit_expiration_date($db, $loginid, 'max_deposit_daily', 1)) if $deposit_limit_enabled and defined $self_exclusion->max_deposit_daily;
     $info .= make_row(
         '7-Day turnover limit',
         $client->currency,
         $self_exclusion->max_7day_turnover,
-        get_limit_expiration_date($db, $loginid, 'max_7day_turnover', 7)) if $self_exclusion->max_7day_turnover;
+        get_limit_expiration_date($db, $loginid, 'max_7day_turnover', 7)) if defined $self_exclusion->max_7day_turnover;
     $info .= make_row(
         '7-Day limit on losses',
         $client->currency,
         $self_exclusion->max_7day_losses,
-        get_limit_expiration_date($db, $loginid, 'max_7day_losses', 7)) if $self_exclusion->max_7day_losses;
+        get_limit_expiration_date($db, $loginid, 'max_7day_losses', 7)) if defined $self_exclusion->max_7day_losses;
     $info .= make_row(
         '7-Day deposit limit',
         $client->currency,
         $self_exclusion->max_deposit_7day,
-        get_limit_expiration_date($db, $loginid, 'max_deposit_7day', 7)) if $deposit_limit_enabled and $self_exclusion->max_deposit_7day;
+        get_limit_expiration_date($db, $loginid, 'max_deposit_7day', 7)) if $deposit_limit_enabled and defined $self_exclusion->max_deposit_7day;
     $info .= make_row(
         '30-Day turnover limit',
         $client->currency,
         $self_exclusion->max_30day_turnover,
-        get_limit_expiration_date($db, $loginid, 'max_30day_turnover', 30)) if $self_exclusion->max_30day_turnover;
+        get_limit_expiration_date($db, $loginid, 'max_30day_turnover', 30)) if defined $self_exclusion->max_30day_turnover;
     $info .= make_row(
         '30-Day limit on losses',
         $client->currency,
         $self_exclusion->max_30day_losses,
-        get_limit_expiration_date($db, $loginid, 'max_30day_losses', 30)) if $self_exclusion->max_30day_losses;
+        get_limit_expiration_date($db, $loginid, 'max_30day_losses', 30)) if defined $self_exclusion->max_30day_losses;
     $info .= make_row(
         '30-Day deposit limit',
         $client->currency,
         $self_exclusion->max_deposit_30day,
-        get_limit_expiration_date($db, $loginid, 'max_deposit_30day', 30)) if $deposit_limit_enabled and $self_exclusion->max_deposit_30day;
+        get_limit_expiration_date($db, $loginid, 'max_deposit_30day', 30)) if $deposit_limit_enabled and defined $self_exclusion->max_deposit_30day;
 
     $info .=
         make_row('Maximum number of open positions', $self_exclusion->max_open_bets, '', get_limit_expiration_date($db, $loginid, 'max_open_bets', 1))
-        if $self_exclusion->max_open_bets;
+        if defined $self_exclusion->max_open_bets;
 
     $info .= make_row(
         'Session duration limit',
         $self_exclusion->session_duration_limit,
-        'minutes', get_limit_expiration_date($db, $loginid, 'session_duration_limit', 1)) if $self_exclusion->session_duration_limit;
+        'minutes', get_limit_expiration_date($db, $loginid, 'session_duration_limit', 1)) if defined $self_exclusion->session_duration_limit;
 
     $info .= make_row('Website exclusion', '', '', Date::Utility->new($self_exclusion->exclude_until)->date)
-        if $self_exclusion->exclude_until;
+        if defined $self_exclusion->exclude_until;
 
     $info .= make_row('Website Timeout until', '', '', Date::Utility->new($self_exclusion->timeout_until)->datetime_yyyymmdd_hhmmss)
-        if $self_exclusion->timeout_until;
+        if defined $self_exclusion->timeout_until;
 
     if ($info) {
         $page .= '<h3>Currently set values are:</h3><table cellspacing="0" cellpadding="5" border="1" class="GreyCandy">' . $info . '</table>';
@@ -204,34 +204,34 @@ if (not $self_exclusion_form->validate()) {
 
 my $v;
 $v = request()->param('MAXOPENPOS');
-$client->set_exclusion->max_open_bets(looks_like_number($v) ? $v : undef);
+$client->set_exclusion->max_open_bets(looks_like_number($v) && $v ? $v : undef);
 $v = request()->param('DAILYTURNOVERLIMIT');
-$client->set_exclusion->max_turnover(looks_like_number($v) ? $v : undef);
+$client->set_exclusion->max_turnover(looks_like_number($v) && $v ? $v : undef);
 $v = request()->param('7DAYTURNOVERLIMIT');
-$client->set_exclusion->max_7day_turnover(looks_like_number($v) ? $v : undef);
+$client->set_exclusion->max_7day_turnover(looks_like_number($v) && $v ? $v : undef);
 $v = request()->param('30DAYTURNOVERLIMIT');
-$client->set_exclusion->max_30day_turnover(looks_like_number($v) ? $v : undef);
+$client->set_exclusion->max_30day_turnover(looks_like_number($v) && $v ? $v : undef);
 $v = request()->param('MAXCASHBAL');
-$client->set_exclusion->max_balance(looks_like_number($v) ? $v : undef);
+$client->set_exclusion->max_balance(looks_like_number($v) && $v ? $v : undef);
 $v = request()->param('SESSIONDURATION');
-$client->set_exclusion->session_duration_limit(looks_like_number($v) ? $v : undef);
+$client->set_exclusion->session_duration_limit(looks_like_number($v) && $v ? $v : undef);
 
 unless ($regulated_lc) {
     $v = request()->param('DAILYLOSSLIMIT');
-    $client->set_exclusion->max_losses(looks_like_number($v) ? $v : undef);
+    $client->set_exclusion->max_losses(looks_like_number($v) && $v ? $v : undef);
     $v = request()->param('7DAYLOSSLIMIT');
-    $client->set_exclusion->max_7day_losses(looks_like_number($v) ? $v : undef);
+    $client->set_exclusion->max_7day_losses(looks_like_number($v) && $v ? $v : undef);
     $v = request()->param('30DAYLOSSLIMIT');
-    $client->set_exclusion->max_30day_losses(looks_like_number($v) ? $v : undef);
+    $client->set_exclusion->max_30day_losses(looks_like_number($v) && $v ? $v : undef);
 }
 
 if ($deposit_limit_enabled) {
     $v = request()->param('DAILYDEPOSITLIMIT');
-    $client->set_exclusion->max_deposit_daily(looks_like_number($v) ? $v : undef);
+    $client->set_exclusion->max_deposit_daily(looks_like_number($v) && $v ? $v : undef);
     $v = request()->param('7DAYDEPOSITLIMIT');
-    $client->set_exclusion->max_deposit_7day(looks_like_number($v) ? $v : undef);
+    $client->set_exclusion->max_deposit_7day(looks_like_number($v) && $v ? $v : undef);
     $v = request()->param('30DAYDEPOSITLIMIT');
-    $client->set_exclusion->max_deposit_30day(looks_like_number($v) ? $v : undef);
+    $client->set_exclusion->max_deposit_30day(looks_like_number($v) && $v ? $v : undef);
 }
 
 my $form_exclusion_until_date = request()->param('EXCLUDEUNTIL') || undef;
