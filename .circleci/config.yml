@@ -67,13 +67,4 @@ workflows:
           branches:
             only:
             - master
-  tagged:
-    jobs:
-    - core:
-        context: perl
-        filters:
-          branches:
-            ignore: /.*/
-          tags:
-            only: /^V\d+_.*/
   version: 2
