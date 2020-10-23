@@ -10,10 +10,12 @@ use warnings;
 no indirect;
 
 use Date::Utility;
-use BOM::Database::DataMapper::Transaction;
 
 use Exporter qw(import);
 our @EXPORT_OK = qw(get_transaction_history);
+
+# maximum number of transaction history items to return
+use constant HISTORY_LIMIT => 1000;
 
 =head2 get_transaction_history
 
@@ -31,15 +33,15 @@ C<args> contains:
 
 =over 4
 
-=item * {args}->{action_type} - enum ('buy', 'sell', 'withdrawal', 'deposit') (optional parameter)
+=item * action_type of transaction.transaction table: 'buy', 'sell', 'withdrawal', 'deposit', 'escrow' etc. (optional parameter)
 
-=item * {args}->{limit} - limit of transactions (optional parameter)
+=item * limit - limit of transactions (optional parameter). There is an upper limit of 1000.
 
-=item * {args}->{offset} - skip transactions by offset amount (optional parameter)
+=item * offset - skip transactions by offset amount (optional parameter)
 
-=item * {args}->{date_from} - get transaction history from (optional parameter)
+=item * date_from - get transaction history from (optional parameter)
 
-=item * {args}->{date_to} - get transaction history top (optional parameter)
+=item * date_to - get transaction history top (optional parameter)
 
 =back
 
@@ -50,59 +52,49 @@ Returns a hashref of structured transactions.
 sub get_transaction_history {
     my $params = shift;
 
-    my $client = $params->{client};
+    my ($client, $args) = $params->@{qw/client args/};
 
     my $account = $client->default_account;
 
-    return {} unless $account;
+    return unless $account;
 
-    # get all transactions
-    my $results = BOM::Database::DataMapper::Transaction->new({db => $account->db})->get_transactions_ws($params->{args}, $account);
-    return {} unless (scalar @{$results});
-
-    my (@close_trades, @open_trades, @payments, @escrow);
-
-    for my $txn (@$results) {
-        $txn->{transaction_id} //= $txn->{id};
-
-        # set transaction_time for different action types
-        my $txn_time = _get_txn_time($txn);
-
-        $txn->{transaction_time} = Date::Utility->new($txn_time)->epoch();
-        $txn->{short_code}       = $txn->{short_code} // '';
-
-        if ($txn->{payment_id}) {
-            push(@payments, $txn);
-        } elsif ($txn->{financial_market_bet_id}) {
-            if ($txn->{is_sold}) {
-                push(@close_trades, $txn);
-            } else {
-                push(@open_trades, $txn);
-            }
-        } else {
-            # no payment_id or financial_market_bet_id is assumed to be escrow
-            push(@escrow, $txn);
-        }
+    for my $dt (qw/date_to date_from/) {
+        $args->{$dt} = Date::Utility->new($args->{$dt})->datetime if defined $args->{$dt};
     }
 
-    return {
-        payment     => \@payments,
-        close_trade => \@close_trades,
-        open_trade  => \@open_trades,
-        escrow      => \@escrow,
-    };
+    $args->{limit} = HISTORY_LIMIT unless defined $args->{limit} and $args->{limit} < HISTORY_LIMIT;
+
+    my $results = $client->db->dbic->run(
+        fixup => sub {
+            $_->selectall_arrayref(
+                'SELECT * FROM transaction.get_transaction_history(?, ?, ?, ?, ?, ?)',
+                {Slice => {}},
+                $account->id, $args->@{qw/date_from date_to action_type limit offset/});
+        });
+
+    # Set transaction time for different transaction types
+    for my $txn (@$results) {
+        my $txn_time = _get_txn_time($txn);
+        $txn->{transaction_time} = Date::Utility->new($txn_time)->epoch();
+    }
+
+    return $results;
 }
 
 sub _get_txn_time {
     my $txn = shift;
 
-    # Time for financial market bet
+    # Financial market bet
     my $time_type = $txn->{action_type} eq 'sell' ? 'sell_time' : 'purchase_time';
-    return $txn->{$time_type}   if $txn->{financial_market_bet_id};
+    return $txn->{$time_type} if $txn->{financial_market_bet_id};
+
+    # Payment
     return $txn->{payment_time} if $txn->{payment_id};
 
-    return $txn->{escrow_time} if $txn->{action_type} =~ /^(hold|release)$/;
+    # P2P escrow
+    return $txn->{escrow_time} if $txn->{referrer_type} eq 'p2p';
 
+    # Other
     return $txn->{transaction_time};
 }
 

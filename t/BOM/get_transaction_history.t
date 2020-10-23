@@ -78,7 +78,7 @@ $test_client->set_default_account('USD');
 $test_client->save();
 
 my $res = get_transaction_history($transac_param);
-is keys %$res, 0, 'client doesnt have any transactions';
+ok !@$res, 'client doesnt have any transactions';
 
 my $test_loginid = $test_client->loginid;
 my $user         = BOM::User->create(
@@ -172,10 +172,7 @@ $advertiser->p2p_order_cancel(id => $order->{id});
 
 my $transaction_history = get_transaction_history($transac_param);
 
-my @all_transactions = (
-    @{$transaction_history->{open_trade}}, @{$transaction_history->{close_trade}},
-    @{$transaction_history->{payment}},    @{$transaction_history->{escrow}});
-is scalar @all_transactions, 7, 'there are 7 transactions';
+is scalar @$transaction_history, 7, 'there are 7 transactions';
 
 # For this test case I'm defining what is expected, then compare with the result of get_transaction_history
 my $expected = [{
@@ -231,13 +228,13 @@ my $expected = [{
     }];
 
 my @expected_transactions = sort { 0 + $a->{amount} <=> 0 + $b->{amount} } @$expected;
-@all_transactions = sort { 0 + $a->{amount} <=> 0 + $b->{amount} } @all_transactions;
+my @got_transactions = sort { 0 + $a->{amount} <=> 0 + $b->{amount} } @$transaction_history;
 
 for my $idx (0 .. $#expected_transactions) {
 
     for my $col (keys %{$expected_transactions[$idx]}) {
 
-        is $all_transactions[$idx]->{$col}, $expected_transactions[$idx]->{$col}, "$col matches for index $idx";
+        is $got_transactions[$idx]->{$col}, $expected_transactions[$idx]->{$col}, "$col matches for index $idx";
     }
 }
 
@@ -249,7 +246,7 @@ $default_account->mock(
     });
 
 $res = get_transaction_history($transac_param);
-is keys %$res, 0, 'client does not have any a default account';
+ok !$res, 'client does not have an account';
 
 $default_account->unmock('default_account');
 
