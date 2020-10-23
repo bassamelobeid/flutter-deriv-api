@@ -218,7 +218,7 @@ subtest 'common' => sub {
             'Attempted to forward request to the cashier after setting whitelisted domain:binary.me.');
     };
     # set valid domain
-    $params->{domain} = 'deriv.app';
+    $params->{domain} = 'deriv.com';
     warning {
         $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('CashierForwardError', 'Valid domain provided')
             ->error_message_is('Sorry, an error occurred. Please try accessing our cashier again.',
