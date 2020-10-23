@@ -99,9 +99,9 @@ sub _send_email_statement {
     my $data = {
         client => {
             %$result,
-            open_trades     => $transactions->{open_trade},
-            closed_trades   => $transactions->{close_trade},
-            payments        => $transactions->{payment},
+            open_trades     => $transactions->{open_trades},
+            closed_trades   => $transactions->{closed_trades},
+            payments        => $transactions->{payments},
             escrow          => $transactions->{escrow},
             is_mf_client    => ($company->short eq 'maltainvest') ? 1 : 0,
             estimated_value => $account ? formatnumber('price', $account->currency_code, $estimated_value) : '',
@@ -147,7 +147,6 @@ sub _send_email_statement {
 }
 
 sub _retrieve_transaction_history {
-
     my ($params, $client) = @_;
 
     try {
@@ -161,81 +160,80 @@ sub _retrieve_transaction_history {
         exception_logged();
     }
 
-    my $transactions = get_transaction_history({
+    my $history = get_transaction_history({
         client => $client,
         args   => $params,
     });
+    my $transactions = {estimated_profit => 0};
 
-    # sort the email by transaction time
-    my $sort_by_transaction = sub {
-        return rev_nsort_by { $_->{transaction_time} } @{$transactions->{+shift}};
-    };
-
-    $transactions->{payment}     = [$sort_by_transaction->('payment')];
-    $transactions->{close_trade} = [$sort_by_transaction->('close_trade')];
-    $transactions->{open_trade}  = [$sort_by_transaction->('open_trade')];
-    $transactions->{escrow}      = [$sort_by_transaction->('escrow')];
-
-    # return empty if account does not have any transactions
+    # return empty if no account
     return $transactions unless $client->account;
 
     my $now      = Date::Utility->new();
     my $currency = $client->account->currency_code;
 
-    $transactions->{estimated_profit} = 0;
-    for my $txn (@{$transactions->{open_trade}}, @{$transactions->{close_trade}}, @{$transactions->{payment}}, @{$transactions->{escrow}}) {
+    for my $txn (@$history) {
 
         my $txn_time = Date::Utility->new($txn->{transaction_time});
         $txn->{transaction_date} = $txn_time->datetime_yyyymmdd_hhmmss;
-        next unless $txn->{financial_market_bet_id};
 
-        # localize longcodes
-        if ($txn->{short_code}) {
-            try {
-                $txn->{long_code} = localize(shortcode_to_longcode($txn->{short_code}, $client->{currency}));
-            } catch {
-                # we do not want to warn for known error like legacy underlying
-                if ($_ !~ /unknown underlying/) {
-                    $log->warn("exception is thrown when executing shortcode_to_longcode, parameters: " . $txn->short_code . ' error: ' . $_);
+        # categorize transactions
+        if ($txn->{payment_id}) {
+            push($transactions->{payments}->@*, $txn);
+        } elsif ($txn->{referrer_type} eq 'p2p') {
+            push($transactions->{escrow}->@*, $txn);
+        } elsif ($txn->{financial_market_bet_id}) {
+            # localize longcodes
+            if ($txn->{short_code}) {
+                try {
+                    $txn->{long_code} = localize(shortcode_to_longcode($txn->{short_code}, $client->{currency}));
+                } catch {
+                    # we do not want to warn for known error like legacy underlying
+                    if ($_ !~ /unknown underlying/) {
+                        $log->warn("exception is thrown when executing shortcode_to_longcode, parameters: " . $txn->short_code . ' error: ' . $_);
+                    }
+                    $txn->{long_code} = localize('No information is available for this contract.');
+                    exception_logged();
                 }
-                $txn->{long_code} = localize('No information is available for this contract.');
-                exception_logged();
-            }
-        } else {
-            $txn->{long_code} //= localize($txn->{payment_remark} // '');
-        }
-
-        # open contracts
-        if (!$txn->{is_sold}) {
-
-            $txn->{expiry_time} = Date::Utility->new($txn->{expiry_time});
-            $txn->{start_time}  = Date::Utility->new($txn->{start_time});
-
-            # profit, calculate indicative price and estimated profit
-            my $contract = produce_contract($txn->{short_code}, $currency);
-            if (defined $txn->{buy_price} and (defined $contract->bid_price or defined $contract->{sell_price})) {
-                $txn->{profit} =
-                    $contract->{sell_price}
-                    ? formatnumber('price', $currency, $contract->{sell_price} - $txn->{buy_price})
-                    : formatnumber('price', $currency, $contract->{bid_price} - $txn->{buy_price});
-
-                $txn->{indicative_price} = formatnumber('price', $currency, $txn->{buy_price} + $txn->{profit});
-                $transactions->{estimated_profit} += $txn->{profit};
-            }
-
-            # get remaining days left for open contracts
-            my $remaining_time = Date::Utility->new($txn->{expiry_time})->epoch - $now->epoch;
-            if ($remaining_time > EPOCH_IN_DAY) {
-                $remaining_time = POSIX::floor($remaining_time / EPOCH_IN_DAY) . ' Days';
-            } elsif ($remaining_time > EPOCH_IN_HOUR) {
-                $remaining_time = POSIX::floor($remaining_time / EPOCH_IN_HOUR) . ' Hours';
-            } elsif ($remaining_time > EPOCH_IN_MINUTE) {
-                $remaining_time = POSIX::floor($remaining_time / EPOCH_IN_MINUTE) . ' Minutes';
             } else {
-                $remaining_time = $remaining_time . ' Seconds';
+                $txn->{long_code} //= localize($txn->{payment_remark} // '');
             }
 
-            $txn->{remaining_time} = $remaining_time;
+            if ($txn->{is_sold}) {
+                push($transactions->{closed_trades}->@*, $txn);
+            } else {
+                # open contracts
+                $txn->{expiry_time} = Date::Utility->new($txn->{expiry_time});
+                $txn->{start_time}  = Date::Utility->new($txn->{start_time});
+
+                # profit, calculate indicative price and estimated profit
+                my $contract = produce_contract($txn->{short_code}, $currency);
+                if (defined $txn->{buy_price} and (defined $contract->bid_price or defined $contract->{sell_price})) {
+                    $txn->{profit} =
+                        $contract->{sell_price}
+                        ? formatnumber('price', $currency, $contract->{sell_price} - $txn->{buy_price})
+                        : formatnumber('price', $currency, $contract->{bid_price} - $txn->{buy_price});
+
+                    $txn->{indicative_price} = formatnumber('price', $currency, $txn->{buy_price} + $txn->{profit});
+                    $transactions->{estimated_profit} += $txn->{profit};
+                }
+
+                # get remaining days left for open contracts
+                my $remaining_time = Date::Utility->new($txn->{expiry_time})->epoch - $now->epoch;
+                if ($remaining_time > EPOCH_IN_DAY) {
+                    $remaining_time = POSIX::floor($remaining_time / EPOCH_IN_DAY) . ' Days';
+                } elsif ($remaining_time > EPOCH_IN_HOUR) {
+                    $remaining_time = POSIX::floor($remaining_time / EPOCH_IN_HOUR) . ' Hours';
+                } elsif ($remaining_time > EPOCH_IN_MINUTE) {
+                    $remaining_time = POSIX::floor($remaining_time / EPOCH_IN_MINUTE) . ' Minutes';
+                } else {
+                    $remaining_time = $remaining_time . ' Seconds';
+                }
+
+                $txn->{remaining_time} = $remaining_time;
+
+                push($transactions->{open_trades}->@*, $txn);
+            }
         }
     }
     return $transactions;

@@ -74,10 +74,9 @@ my $hash_pwd    = BOM::User::Password::hashpw($password);
 my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'CR',
 });
-$test_client->status->set("professional");
+
 $test_client->status->set('age_verification', 'test_name', 'test_reason');
 $test_client->email($email);
-$test_client->account('USD');
 $test_client->save;
 
 my $test_loginid = $test_client->loginid;
@@ -87,7 +86,6 @@ my $user         = BOM::User->create(
 );
 $user->add_client($test_client);
 
-subtest 'Freshly created client - no trades or payments' => sub {
     my $req_args = {
         client    => $test_client,
         source    => 1,
@@ -95,17 +93,34 @@ subtest 'Freshly created client - no trades or payments' => sub {
         date_to   => $now->epoch(),
     };
 
-    # expected values, expressed as regular expressions
+subtest 'Freshly created client - no account' => sub {
+    # expected table cell values, expressed as regular expressions
+    my $expected_content = {
+        profile =>
+            [[$test_client->first_name . ' ' . $test_client->last_name, $test_client->loginid, 'No Currency Selected', 'Retail', '.+ to .+ \(inclusive\)'],],
+        overview => 
+            [['', '', '', '', '', '', '']],
+    };
+    
+    test_email_statement($req_args, $expected_content);
+};
+
+subtest 'Professional client - no transactions' => sub {
+    $test_client->account('USD');
+    $test_client->status->set("professional");
+
     my $expected_content = {
         profile =>
             [[$test_client->first_name . ' ' . $test_client->last_name, $test_client->loginid, 'USD', 'Professional', '.+ to .+ \(inclusive\)'],],
-        overview => [['^0\.00$', '^0\.00$', '^0\.00$', '^0\.00$', '^0\.00$', '0\.00$', '^0\.00$']],
+        overview =>
+            [['^0\.00$', '^0\.00$', '^0\.00$', '^0\.00$', '^0\.00$', '0\.00$', '^0\.00$']],
     };
 
     test_email_statement($req_args, $expected_content);
 };
 
 subtest 'client with payments, trades and P2P' => sub {
+    
 # deposit, amount will be used as a key for matching later
     $test_client->payment_free_gift(
         currency => 'USD',
@@ -233,7 +248,7 @@ subtest 'client with payments, trades and P2P' => sub {
     );
     $advertiser->p2p_order_cancel(id => $order->{id});
 
-    my $req_args = {
+    $req_args = {
         client    => $test_client,
         source    => 1,
         date_from => $R_100_start->epoch(),
@@ -242,7 +257,6 @@ subtest 'client with payments, trades and P2P' => sub {
 
     my $date_format = $now->date_yyyymmdd . ' \d{2}:\d{2}:\d{2}';
 
-# expected values, expressed as regular expressions
     my $expected_content = {
         profile =>
             [[$test_client->first_name . ' ' . $test_client->last_name, $test_client->loginid, 'USD', 'Professional', '.+ to .+ \(inclusive\)'],],
