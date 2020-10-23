@@ -82,6 +82,16 @@ LoginID: <input type="text" name="loginID" value="[% request.params.loginID %]" 
             <td>Buy: [% advertiser.account_currency %] [% advertiser.daily_buy %], sell: [% advertiser.account_currency %] [% advertiser.daily_sell %]</td>
         </tr>
         <tr>
+            <td>Credit Card Sell Authorized</td>
+            <td>
+                <select name="cc_sell_authorized">
+                    <option value="1" [% advertiser.cc_sell_authorized && 'selected' %]>YES</option>
+                    <option value="0" [% !advertiser.cc_sell_authorized && 'selected' %]>NO</option>
+                </select>
+                &nbsp;&nbsp;(If YES, the advertiser is always allowed to sell funds derived from credit card deposits)
+            </td>
+        </tr>        
+        <tr>
             <td>Sendbird ID</td>
             <td> [% advertiser.chat_user_id %]</td>
         </tr>        
@@ -163,6 +173,7 @@ LoginID: <input type="text" name="loginID" value="[% request.params.loginID %]" 
                 <th scope="col">Approved</th>
                 <th scope="col">Listed</th>
                 <th scope="col">Band Level</th>
+                <th scope="col">CC Sell Auth</th>
                 <th scope="col">Name</th>
                 <th scope="col">Ad description</th>
                 <th scope="col">Payment info</th>
@@ -177,7 +188,7 @@ LoginID: <input type="text" name="loginID" value="[% request.params.loginID %]" 
                 <td>[% item.pg_userid %]</td>
                 <td>[% item.remote_addr %]</td>
                 [% next = loop.next %]
-                [% FOREACH fld = ['is_approved','is_listed','trade_band','name','default_advert_description','payment_info','contact_info'] %]
+                [% FOREACH fld = ['is_approved','is_listed','trade_band','cc_sell_authorized','name','default_advert_description','payment_info','contact_info'] %]
                     <td [% IF item.$fld != next.$fld %]style="background:#ffaaaa;"[% END %]>[% item.$fld %]</td>
                 [% END %]                  
             </tr>

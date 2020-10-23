@@ -64,9 +64,12 @@ if ($input{update}) {
             fixup => sub {
                 $_->selectrow_hashref(
                     'UPDATE p2p.p2p_advertiser SET name = ?, is_approved = ?, is_listed = ?, default_advert_description = ?, 
-                        payment_info = ?, contact_info = ?, trade_band = COALESCE(?,trade_band) WHERE id = ? RETURNING *',
+                        payment_info = ?, contact_info = ?, trade_band = COALESCE(?,trade_band), cc_sell_authorized = ?
+                        WHERE id = ? RETURNING *',
                     undef,
-                    @input{qw/update_name is_approved is_listed default_advert_description payment_info contact_info trade_band update_id/});
+                    @input{
+                        qw/update_name is_approved is_listed default_advert_description payment_info contact_info trade_band cc_sell_authorized update_id/
+                    });
             });
         die "Invalid advertiser ID\n" unless $output{advertiser};
 
