@@ -481,7 +481,7 @@ subtest 'last_licensed_display_epoch' => sub {
     if (not $close or time < $close->epoch) {
         ok $N225->last_licensed_display_epoch < $today->epoch, "Do not display any ticks for today before opening";
     } else {
-        ok $N225->last_licensed_display_epoch == $close, "Display ticks up to close epoch";
+        ok $N225->last_licensed_display_epoch == $close->epoch, "Display ticks up to close epoch";
     }
     # chartonly license
     my $DJI = create_underlying('DJI');
