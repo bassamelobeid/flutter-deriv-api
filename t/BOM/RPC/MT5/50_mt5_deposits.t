@@ -171,6 +171,7 @@ subtest 'deposit' => sub {
     BOM::RPC::v3::MT5::Account::reset_throttler($loginid);
 
     $test_client->status->set('mt5_withdrawal_locked', 'system', 'testing');
+    $params->{args}{to_mt5} = 'MTR' . $ACCOUNTS{'real\svg'};
     $c->call_ok($method, $params)->has_error('client is blocked from withdrawal')->error_code_is('MT5DepositError', 'error code is MT5DepositError')
         ->error_message_is('You cannot perform this action, as your account is withdrawal locked.');
     $test_client->status->clear_mt5_withdrawal_locked;
@@ -249,6 +250,33 @@ subtest 'virtual_deposit' => sub {
         ->error_message_like(qr/balance falls below 1000.00 USD/, 'Balance is higher');
 
     BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
+
+    subtest 'virtual deposit under mt5 withdrawal locked' => sub {
+        my $config_mock = Test::MockModule->new('BOM::Config');
+        my $status_mock = Test::MockModule->new('BOM::User::Client::Status');
+
+        $status_mock->mock(
+            'mt5_withdrawal_locked',
+            sub {
+                return 1;
+            });
+
+        # With this one we can hopefully pass the 1000 USD validation.
+        $config_mock->mock(
+            'payment_agent',
+            sub {
+                return {
+                    minimum_topup_balance => {
+                        DEFAULT => 10000000,
+                    },
+                };
+            });
+
+        $c->call_ok($method, $deposit_demo_params)->has_no_error('Can top up demo account');
+        $config_mock->unmock_all;
+        $status_mock->unmock_all;
+    };
+
     $demo_account_mock->unmock;
 
 };

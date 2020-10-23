@@ -1140,9 +1140,6 @@ async_rpc "mt5_deposit",
     return create_error_future('Experimental')
         if BOM::RPC::v3::Utility::verify_experimental_email_whitelisted($client, $client->currency);
 
-    # this status is intended to block withdrawals from binary to MT5
-    return create_error_future('WithdrawalLocked', {override_code => $error_code}) if $client->status->mt5_withdrawal_locked;
-
     return _mt5_validate_and_get_amount($client, $fm_loginid, $to_mt5, $amount, $error_code)->then(
         sub {
             my ($response) = @_;
@@ -1166,6 +1163,9 @@ async_rpc "mt5_deposit",
                         return Future->done({status => 1});
                     });
             } else {
+                # this status is intended to block withdrawals from binary to MT5
+                return create_error_future('WithdrawalLocked', {override_code => $error_code}) if $client->status->mt5_withdrawal_locked;
+
                 $account_type = 'real';
             }
 
@@ -1488,7 +1488,6 @@ sub _get_mt5_account_from_affiliate_token {
 
 sub _mt5_validate_and_get_amount {
     my ($authorized_client, $loginid, $mt5_loginid, $amount, $error_code, $currency_check) = @_;
-
     my $app_config = BOM::Config::Runtime->instance->app_config;
     return create_error_future('PaymentsSuspended', {override_code => $error_code})
         if ($app_config->system->suspend->payments);
