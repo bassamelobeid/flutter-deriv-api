@@ -145,7 +145,7 @@
     - durations:
       - display_name: Minutes
         max: 1440
-        min: 1
+        min: 5
         name: m
       - display_name: Hours
         max: 24
@@ -173,7 +173,7 @@
     - durations:
       - display_name: Minutes
         max: 1440
-        min: 3
+        min: 5
         name: m
       - display_name: Hours
         max: 24
