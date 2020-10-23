@@ -1107,8 +1107,12 @@ sub has_deposits {
 
 sub is_first_deposit_pending {
     my $self = shift;
+
+    return 0 if $self->is_virtual;
     # we need to ignore free gift as its payment done manually by marketing
-    return !$self->is_virtual && !$self->has_deposits({exclude => ['free_gift']});
+    return 0 if $self->has_deposits({exclude => ['free_gift']});
+
+    return 1;
 }
 
 =head2 is_mt5
@@ -1920,10 +1924,14 @@ sub immutable_fields {
     for my $sibling (@siblings) {
         next if $sibling->is_virtual;
 
-        my $company_settings       = $sibling->landing_company->changeable_fields;
-        my $chnageable_before_auth = $company_settings->{only_before_auth} // [];
+        my $company_settings             = $sibling->landing_company->changeable_fields;
+        my $changeable_fields_in_company = $company_settings->{only_before_auth} // [];
+        my $changeable_if_not_locked     = $company_settings->{personal_details_not_locked} // [];
 
-        @changeable = intersect(@changeable, @$chnageable_before_auth);
+        $changeable_fields_in_company = [array_minus(@$changeable_fields_in_company, @$changeable_if_not_locked)]
+            if $sibling->status->personal_details_locked;
+
+        @changeable = intersect(@changeable, @$changeable_fields_in_company);
     }
 
     return array_minus(@immutable, @changeable);

@@ -462,6 +462,7 @@ subtest "immutable_fields and validate_immutable_fields" => sub {
         my @excluded_fields;
         for my $field (@all_immutables) {
             push @excluded_fields, $field;
+
             $changeable_fields->{svg}->{only_before_auth} = [@excluded_fields];
             test_immutable_fields([array_minus(@all_immutables, @excluded_fields), $field],
                 $test_user, "list of immutable fields is not changed without only_before_auth");
@@ -473,12 +474,36 @@ subtest "immutable_fields and validate_immutable_fields" => sub {
 
         test_immutable_fields([], $test_user, "all fields are changeable now");
 
-        $client_cr->set_authentication('ID_NOTARIZED', {status =>'pass'});
+        $client_cr->set_authentication('ID_NOTARIZED', {status => 'pass'});
         cmp_bag [$client_cr->immutable_fields], \@all_immutables, "Immutable fields are reverted to default after authentication";
 
         $client_cr->set_authentication('ID_NOTARIZED', {status => 'fail'});
         cmp_bag [$client_cr->immutable_fields], [], "Immutable fields are empty egain if client becomes unauthenticated";
 
+    };
+
+    subtest 'personal_details_locked status' => sub {
+        $changeable_fields->{only_before_auth} = ['first_name'];
+        $client_cr->set_authentication('ID_NOTARIZED', {status => 'failed'});
+
+        my $args = {first_name => 'newname'};
+        for ($client_cr, $client_mlt) {
+            test_immutable_fields([], $test_user, 'the field is not immutble before authentication');
+        }
+
+        $client->status->set('personal_details_locked', 'system', 'just testing');
+        for ($client_cr, $client_mlt) {
+            test_immutable_fields([], $test_user, 'the field is not immutable before it is included in landing company config');
+        }
+        $changeable_fields->{personal_details_not_locked} = ['first_name'];
+        for ($client_cr, $client_mlt) {
+            test_immutable_fields([], $test_user, 'the field is immutable after being added to landing company config');
+        }
+
+        $client->status->clear_personal_details_locked;
+        for ($client_cr, $client_mlt) {
+            test_immutable_fields([], $test_user, 'the immutable field is editable again by removing the status flag');
+        }
     };
 
     $mock_lc->unmock_all;
