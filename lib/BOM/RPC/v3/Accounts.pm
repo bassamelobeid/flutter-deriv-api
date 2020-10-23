@@ -409,26 +409,23 @@ rpc "statement",
 
     $params->{args}->{limit} //= DEFAULT_STATEMENT_LIMIT;
 
-    my $transaction_res = get_transaction_history($params);
+    my $transactions = get_transaction_history($params);
     return {
         transactions => [],
         count        => 0
-    } unless (keys %$transaction_res);
+    } unless $transactions;
 
     my $currency_code = $client->default_account->currency_code();
-    # combine all trades, and sort by transaction_id
-    my @transactions = reverse sort { 0 + $a->{transaction_id} <=> 0 + $b->{transaction_id} }
-        (@{$transaction_res->{open_trade}}, @{$transaction_res->{close_trade}}, @{$transaction_res->{payment}}, @{$transaction_res->{escrow}});
 
-    my @short_codes = map { $_->{short_code} || () } @transactions;
+    my @short_codes = grep { defined $_ } map { $_->{short_code} } @$transactions;
     my $longcodes;
     $longcodes = longcode({
             short_codes => \@short_codes,
             currency    => $currency_code,
         }) if scalar @short_codes;
 
-    my @txns;
-    for my $txn (@transactions) {
+    my @result;
+    for my $txn (@$transactions) {
 
         my $struct = {
             balance_after    => formatnumber('amount', $currency_code, $txn->{balance_after}),
@@ -462,12 +459,12 @@ rpc "statement",
 
         $struct->{app_id} = BOM::RPC::v3::Utility::mask_app_id($txn->{source}, $txn->{transaction_time});
 
-        push @txns, $struct;
+        push @result, $struct;
     }
 
     return {
-        transactions => [@txns],
-        count        => scalar @txns
+        transactions => \@result,
+        count        => scalar @result
     };
     };
 

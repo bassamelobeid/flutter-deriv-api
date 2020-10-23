@@ -159,7 +159,11 @@ subtest 'statement' => sub {
         'This account is unavailable.',
         'check authorization'
     );
+    
     is($c->tcall($method, {token => $token})->{count}, 0, 'have 0 statements if no default account');
+    
+    $test_client->account('USD');
+    is($c->tcall($method, {token => $token})->{count}, 0, 'have 0 statements if no transactions');
 
     my $contract_expired = {
         underlying   => $underlying,
@@ -200,8 +204,7 @@ subtest 'statement' => sub {
     is($result->{transactions}[2]{longcode}, 'free gift', "if no short code, then longcode is the remark");
 
     # here the expired contract is sold, so we can get the txns as test value
-    my $txns = BOM::Database::DataMapper::Transaction->new({db => $test_client_mf->default_account->db})
-        ->get_transactions_ws({}, $test_client_mf->default_account);
+    my $txns = BOM::Transaction::History::get_transaction_history({ client => $test_client_mf });
     $result = $c->tcall($method, {token => $token_with_txn});
     is($result->{transactions}[0]{transaction_time}, Date::Utility->new($txns->[0]{sell_time})->epoch,     'transaction time correct for sell');
     is($result->{transactions}[1]{transaction_time}, Date::Utility->new($txns->[1]{purchase_time})->epoch, 'transaction time correct for buy ');
@@ -250,8 +253,7 @@ subtest 'statement' => sub {
     );
 
     # here the expired contract is sold, so we can get the txns as test value
-    $txns = BOM::Database::DataMapper::Transaction->new({db => $test_client_mf->default_account->db})
-        ->get_transactions_ws({}, $test_client_mf->default_account);
+    $txns = BOM::Transaction::History::get_transaction_history({ client => $test_client_mf });        
     $result = $c->tcall($method, {token => $token_with_txn});
     cmp_ok(abs($result->{transactions}[0]{transaction_time} - Date::Utility->new($txns->[0]{sell_time})->epoch),
         '<=', 2, 'transaction time correct for sell');
@@ -265,6 +267,58 @@ subtest 'statement' => sub {
         is($sell_tr->{reference_id}, $buy_tr->{transaction_id}, 'transaction id is same for buy and sell ');
     }
 
+    subtest 'sorting and params' => sub {
+        my $account = $test_client_mf->account;
+        my %tx_params = (
+            payment_gateway_code => 'free_gift',
+            payment_type_code    => 'free_gift',
+            status               => 'OK',
+            staff_loginid        => 'test',
+            remark               => 'test',
+            account_id           => $account->id,
+            source               => 1,
+        );
+        
+        my $yesterday = Date::Utility->new->minus_time_interval('1d');
+        $account->add_payment_transaction({
+            amount               => 23,
+            transaction_time     => $yesterday->datetime,
+            %tx_params,
+        });
+        $result = $c->tcall($method, {token => $token_with_txn});
+        cmp_ok($result->{transactions}[-1]{amount}, '==', 23, 'new transaction with old time is sorted to the end');
+    
+        my $tx_time = $test_client_mf->account->db->dbh->selectrow_array('select transaction_time from transaction.transaction where id = '. $result->{transactions}[0]{transaction_id});
+        $account->add_payment_transaction({
+            amount               => 24,
+            transaction_time     => $tx_time,
+            %tx_params,
+        });
+    
+        $result = $c->tcall($method, {token => $token_with_txn});
+        cmp_ok($result->{transactions}[0]{amount}, '==', 24, 'new transaction with same time is sorted to the start');
+        
+        my $limited_result = $c->tcall($method, {token => $token_with_txn, args => {limit => 3}});
+        cmp_ok($limited_result->{transactions}[0]{transaction_id}, '==', $result->{transactions}[0]{transaction_id}, 'first item with limit');
+        cmp_ok($limited_result->{transactions}[-1]{transaction_id},'==', $result->{transactions}[2]{transaction_id}, 'last item with limit');
+        is ($limited_result->{transactions}->@*, 3, 'correct number of results for limit');
+        
+        my $offset_result = $c->tcall($method, {token => $token_with_txn, args => {offset => 3}});
+        cmp_ok($offset_result->{transactions}[0]{transaction_id}, '==', $result->{transactions}[3]{transaction_id}, 'first item with offset');
+        cmp_ok($offset_result->{transactions}[-1]{transaction_id}, '==', $result->{transactions}[-1]{transaction_id}, 'last item with offset');
+
+        $result = $c->tcall($method, {token => $token_with_txn, args => { date_from => $yesterday->minus_time_interval('1d')->epoch, date_to => $yesterday->epoch }});
+        cmp_deeply( $result, { count => 0, transactions => [] }, 'empty results for old date range');
+
+        $result = $c->tcall($method, {token => $token_with_txn, args => { date_from => $yesterday->epoch, date_to => $yesterday->plus_time_interval('1s')->epoch }});
+        is ($result->{transactions}->@*, 1, 'correct number of results for specific date range');
+        cmp_ok($result->{transactions}[0]{amount}, '==', 23, 'expected result for specific date range');
+
+        for my $expected ( [buy => 2], [sell => 2], [deposit=>3], [withdrawal=>0], [escrow=>0], [adjustment=>0], [virtual_credit=>0] ) {
+            $result = $c->tcall($method, {token => $token_with_txn, args => { action_type => $expected->[0] }}); 
+            is ($result->{transactions}->@*, $expected->[1], 'correct number of '.$expected->[0].' results');
+        }
+    };
 };
 
 # request report
