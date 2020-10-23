@@ -1699,11 +1699,13 @@ async sub _upload_documents {
                 filename     => $document_entry->{file_name},
             );
         } else {
+            # We already checked country when _get_applicant_and_file
+            my $country = country_code2code($client->place_of_birth || $client->residence, 'alpha-2', 'alpha-3') // '';
             $future_upload_item = $onfido->document_upload(
                 applicant_id    => $applicant->id,
                 data            => $file_data,
                 filename        => $document_entry->{file_name},
-                issuing_country => uc(country_code2code($client->place_of_birth, 'alpha-2', 'alpha-3') // ''),
+                issuing_country => uc($country),
                 side            => $side,
                 type            => $type,
             );
@@ -1712,12 +1714,12 @@ async sub _upload_documents {
         $future_upload_item->on_fail(
             sub {
                 my ($err, $category, @details) = @_;
-
-                $log->errorf('An error occurred while uploading document to Onfido for %s : %s ; loginid: %s', $client->loginid, $err)
+                $log->errorf('An error occurred while uploading document to Onfido for %s : %s', $client->loginid, $err)
                     unless ($category // '') eq 'http';
 
                 # details is in res, req form
                 my ($res) = @details;
+                local $log->context->{place_of_birth} = $client->place_of_birth // 'unknown';
                 $log->errorf('An error occurred while uploading document to Onfido for %s : %s with response %s ',
                     $client->loginid, $err, ($res ? $res->content : ''));
 

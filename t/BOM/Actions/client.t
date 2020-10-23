@@ -5,6 +5,7 @@ use Future;
 use Test::More;
 use Test::Exception;
 use Test::MockModule;
+use Guard;
 use Log::Any::Test;
 use Log::Any qw($log);
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
@@ -145,6 +146,23 @@ subtest 'upload document' => sub {
         $onfido = WebService::Async::Onfido->new(
             token    => 'test',
             base_uri => $ENV{ONFIDO_URL}));
+
+    subtest "invalid place_of_birth" => sub {
+        my $old_pob = $test_client->place_of_birth;
+        scope_guard {
+            $test_client->place_of_birth($old_pob);
+            $test_client->save;
+        };
+        $test_client->place_of_birth('xxx');
+        $test_client->save;
+        $log->clear;
+        BOM::Event::Actions::Client::document_upload({
+                loginid => $test_client->loginid,
+                file_id => $upload_info->{file_id}})->get;
+        $log->contains_ok(qr/Document not uploaded to Onfido as client is from list of countries not supported by Onfido/,
+            'error log: country not supported');
+    };
+
     BOM::Event::Actions::Client::document_upload({
             loginid => $test_client->loginid,
             file_id => $upload_info->{file_id}})->get;
