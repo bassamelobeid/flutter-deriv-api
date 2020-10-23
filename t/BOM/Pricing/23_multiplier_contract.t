@@ -1,7 +1,7 @@
 #!perl
 use strict;
 use warnings;
-use BOM::Test::RPC::Client;
+use BOM::Test::RPC::QueueClient;
 use Test::Most;
 use Test::Mojo;
 use Test::MockModule;
@@ -37,7 +37,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         recorded_date => $now
     });
 
-my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC::Transport::HTTP')->app->ua);
+my $c = BOM::Test::RPC::QueueClient->new();
 request(BOM::Platform::Context::Request->new(params => {}));
 
 subtest 'multiplier - send_ask' => sub {

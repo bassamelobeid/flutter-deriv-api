@@ -12,13 +12,13 @@ use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use MojoX::JSON::RPC::Client;
 use Data::Dumper;
 use Date::Utility;
-use BOM::Test::RPC::Client;
+use BOM::Test::RPC::QueueClient;
 use BOM::Config::Redis;
 
 use utf8;
 
 set_absolute_time(Date::Utility->new('2017-11-20 00:00:00')->epoch);
-my ($t, $rpc_ct);
+
 my $method = 'contracts_for';
 
 my @params = (
@@ -31,8 +31,7 @@ my @params = (
         },
     });
 
-$t      = Test::Mojo->new('BOM::RPC::Transport::HTTP');
-$rpc_ct = BOM::Test::RPC::Client->new(ua => $t->app->ua);
+my $rpc_ct = BOM::Test::RPC::QueueClient->new();
 set_absolute_time(Date::Utility->new('2017-11-20 00:15:00')->epoch);
 
 subtest "Request $method" => sub {

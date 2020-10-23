@@ -11,7 +11,7 @@ use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use MojoX::JSON::RPC::Client;
 use Data::Dumper;
 use Date::Utility;
-use BOM::Test::RPC::Client;
+use BOM::Test::RPC::QueueClient;
 
 use utf8;
 
@@ -21,7 +21,6 @@ BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     epoch      => Date::Utility->new->minus_time_interval('100d')->epoch,
 });
 
-my ($t, $rpc_ct);
 my $method = 'contracts_for';
 
 my @params = (
@@ -34,8 +33,7 @@ my @params = (
         },
     });
 
-$t      = Test::Mojo->new('BOM::RPC::Transport::HTTP');
-$rpc_ct = BOM::Test::RPC::Client->new(ua => $t->app->ua);
+my $rpc_ct = BOM::Test::RPC::QueueClient->new();
 
 subtest "Request $method" => sub {
     my (%got_landing_company, $result);

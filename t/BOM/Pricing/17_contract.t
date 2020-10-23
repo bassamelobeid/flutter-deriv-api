@@ -1,7 +1,7 @@
 #!perl
 use strict;
 use warnings;
-use BOM::Test::RPC::Client;
+use BOM::Test::RPC::QueueClient;
 use Test::Most;
 use Test::Mojo;
 use Test::Warnings qw(warning warnings);
@@ -61,7 +61,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         recorded_date => $now
     }) for qw (frxAUDCAD frxUSDCAD frxAUDUSD);
 
-my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC::Transport::HTTP')->app->ua);
+my $c = BOM::Test::RPC::QueueClient->new();
 request(BOM::Platform::Context::Request->new(params => {}));
 
 create_ticks([100, $now->epoch - 899, 'R_50']);
