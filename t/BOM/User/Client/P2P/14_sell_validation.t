@@ -33,7 +33,7 @@ deposit($advertiser, 10, 'nuts');
 deposit($client,     10, 'nuts');
 
 lives_ok { BOM::Test::Helper::P2P::create_advert(client => $advertiser, type => 'sell') } 'create sell ad ok';
-
+note explain $@;
 my ($advertiser2, $buy_ad) = BOM::Test::Helper::P2P::create_advert(type => 'buy');
 
 my $order;
@@ -177,7 +177,22 @@ subtest 'buy activity' => sub {
     'can create a sell ad after making buy order';
     lives_ok { BOM::Test::Helper::P2P::create_order(client => $advertiser, advert_id => $other_buy_ad->{id}, amount => 1) }
     'can create a sell order after making buy order';
+};
 
+subtest 'override' => sub {
+
+    my $client = BOM::Test::Helper::P2P::create_advertiser();
+    deposit($client, 10, 'apples');
+
+    cmp_deeply(
+        exception { BOM::Test::Helper::P2P::create_advert(client => $client, type => 'sell') },
+        {error_code => 'SellProhibited'},
+        'cannot create sell ad'
+    );
+
+    $client->db->dbic->dbh->do('UPDATE p2p.p2p_advertiser SET cc_sell_authorized = TRUE WHERE id = '.$client->p2p_advertiser_info->{id});
+
+    lives_ok { BOM::Test::Helper::P2P::create_advert(client => $client, type => 'sell') } 'can create sell ad after override';
 };
 
 done_testing();

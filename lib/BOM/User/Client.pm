@@ -3226,6 +3226,7 @@ Validates sell advert creation, sell order creation, and orders against sell ads
 sub _p2p_validate_sell {
     my ($self, $client, $advertiser) = @_;
 
+    return 1 if $advertiser->{cc_sell_authorized};
     return 1 if $client->get_payment_agent();
 
     my $card_processors   = BOM::Config::Runtime->instance->app_config->payments->credit_card_processors;
