@@ -270,6 +270,9 @@ sub get_settings_by_group {
                 system.stop.cryptocurrencies_withdrawal
                 system.suspend.experimental_currencies
                 payments.crypto.deposit_required_confirmations
+                payments.crypto.fee_bump_wait_time.BTC
+                payments.crypto.fee_bump_wait_time.LTC
+                payments.crypto.fee_bump_wait_time.ETH
                 payments.crypto.restricted_countries
                 payments.crypto.sweep_reserve_balance.BTC
                 payments.crypto.sweep_reserve_balance.LTC
