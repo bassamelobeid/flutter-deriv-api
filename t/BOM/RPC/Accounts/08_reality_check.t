@@ -1,7 +1,7 @@
 use strict;
 use warnings;
 
-use BOM::Test::RPC::Client;
+use BOM::Test::RPC::QueueClient;
 use Test::Most;
 use Test::Mojo;
 use utf8;
@@ -14,7 +14,7 @@ use BOM::Database::Model::OAuth;
 use BOM::User::Password;
 use Email::Stuffer::TestLinks;
 
-my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC::Transport::HTTP')->app->ua);
+my $c = BOM::Test::RPC::QueueClient->new();
 
 my $email          = 'r@binary.com';
 my $password       = 'jskjd8292922';

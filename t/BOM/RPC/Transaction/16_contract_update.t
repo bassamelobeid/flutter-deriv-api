@@ -2,7 +2,7 @@
 use strict;
 use warnings;
 
-use BOM::Test::RPC::Client;
+use BOM::Test::RPC::QueueClient;
 use Test::Most;
 use Test::Mojo;
 use Test::MockTime::HiRes qw(set_relative_time restore_time);
@@ -80,7 +80,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         recorded_date => $now
     });
 
-my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC::Transport::HTTP')->app->ua);
+my $c = BOM::Test::RPC::QueueClient->new();
 request(BOM::Platform::Context::Request->new(params => {}));
 
 subtest 'contract_update' => sub {

@@ -13,7 +13,7 @@ use Date::Utility;
 use MojoX::JSON::RPC::Client;
 use POSIX qw/ ceil /;
 
-use BOM::Test::RPC::Client;
+use BOM::Test::RPC::QueueClient;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Email qw(:no_event);
@@ -58,7 +58,7 @@ $mock_datadog->mock(
     },
 );
 my $email = sprintf('Test%.5f@binary.com', rand(999));
-my ($t, $rpc_ct);
+my $rpc_ct;
 my ($method, $params, $client_details);
 
 $client_details = {
@@ -89,8 +89,7 @@ $params = {
 
 subtest 'Initialization' => sub {
     lives_ok {
-        $t      = Test::Mojo->new('BOM::RPC::Transport::HTTP');
-        $rpc_ct = BOM::Test::RPC::Client->new(ua => $t->app->ua);
+        $rpc_ct = BOM::Test::RPC::QueueClient->new();
     }
     'Initial RPC server and client connection';
 };

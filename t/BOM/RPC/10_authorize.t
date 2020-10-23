@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use BOM::Test::RPC::Client;
+use BOM::Test::RPC::QueueClient;
 use Test::Most;
 use Test::Mojo;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
@@ -67,7 +67,7 @@ my ($token_duplicated) = $oauth->store_access_token_only(1, $test_client_duplica
 
 is $test_client->default_account, undef, 'new client has no default account';
 
-my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC::Transport::HTTP')->app->ua);
+my $c = BOM::Test::RPC::QueueClient->new();
 
 my $email_mx = 'dummy_mx@binary.com';
 

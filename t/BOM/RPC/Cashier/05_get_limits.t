@@ -11,7 +11,7 @@ use Format::Util::Numbers qw/formatnumber/;
 use BOM::RPC::v3::Cashier;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
-use BOM::Test::RPC::Client;
+use BOM::Test::RPC::QueueClient;
 use BOM::Database::Model::OAuth;
 use BOM::Platform::RiskProfile;
 use Email::Stuffer::TestLinks;
@@ -20,7 +20,7 @@ use BOM::Config::Runtime;
 
 use ExchangeRates::CurrencyConverter qw/in_usd convert_currency/;
 
-my $c              = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC::Transport::HTTP')->app->ua);
+my $c              = BOM::Test::RPC::QueueClient->new();
 my $payment_limits = BOM::Config::payment_limits();
 my $method         = 'get_limits';
 my $params         = {token => '12345'};

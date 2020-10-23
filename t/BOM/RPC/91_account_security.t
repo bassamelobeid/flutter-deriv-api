@@ -9,11 +9,11 @@ use Convert::Base32;
 use BOM::User;
 use BOM::User::Password;
 use BOM::Platform::Token::API;
-use BOM::Test::RPC::Client;
+use BOM::Test::RPC::QueueClient;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use Email::Stuffer::TestLinks;
 
-my ($t, $rpc_ct);
+my $rpc_ct;
 my $params = {
     language => 'EN',
     source   => 1,
@@ -25,8 +25,7 @@ my ($email, $client_cr, $user, $token);
 
 subtest 'Initialization' => sub {
     lives_ok {
-        $t      = Test::Mojo->new('BOM::RPC::Transport::HTTP');
-        $rpc_ct = BOM::Test::RPC::Client->new(ua => $t->app->ua);
+        $rpc_ct = BOM::Test::RPC::QueueClient->new();
 
         $email = 'dummy@binary.com';
 

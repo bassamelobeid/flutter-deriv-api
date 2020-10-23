@@ -6,7 +6,7 @@ use Test::More;
 use BOM::RPC::v3::Services;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Platform::Token::API;
-use Test::BOM::RPC::Client;
+use Test::BOM::RPC::QueueClient;
 use Test::Mojo;
 use HTTP::Response;
 use JSON::MaybeUTF8 qw(encode_json_utf8);
@@ -46,8 +46,7 @@ subtest 'onfido validation errors' => sub {
         my $m     = BOM::Platform::Token::API->new;
         my $token = $m->create_token($test_client->loginid, 'test token');
 
-        my $t   = Test::Mojo->new('BOM::RPC::Transport::HTTP');
-        my $c   = Test::BOM::RPC::Client->new(ua => $t->app->ua);
+        my $c   = Test::BOM::RPC::QueueClient->new();
         my $res = $c->tcall(
             'service_token',
             {
@@ -92,8 +91,7 @@ subtest 'onfido validation errors' => sub {
         my $m     = BOM::Platform::Token::API->new;
         my $token = $m->create_token($test_client->loginid, 'test token');
 
-        my $t   = Test::Mojo->new('BOM::RPC::Transport::HTTP');
-        my $c   = Test::BOM::RPC::Client->new(ua => $t->app->ua);
+        my $c   = Test::BOM::RPC::QueueClient->new();
         my $res = $c->tcall(
             'service_token',
             {

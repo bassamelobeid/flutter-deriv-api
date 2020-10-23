@@ -4,7 +4,7 @@ use utf8;
 use Test::More;
 use Test::Deep;
 use Test::Mojo;
-use Test::BOM::RPC::Client;
+use Test::BOM::RPC::QueueClient;
 use Email::Address::UseXS;
 use BOM::Test::Email qw(:no_event);
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
@@ -90,8 +90,8 @@ my $token_vr       = $m->create_token($test_client_vr->loginid, 'test token');
 my $token_mlt      = $m->create_token($test_client_mlt->loginid, 'test token');
 
 my $token_cr = $m->create_token($test_client_cr->loginid, 'test token');
-my $t        = Test::Mojo->new('BOM::RPC::Transport::HTTP');
-my $c        = Test::BOM::RPC::Client->new(ua => $t->app->ua);
+
+my $c = Test::BOM::RPC::QueueClient->new();
 
 my @field_names =
     qw/max_balance max_turnover max_losses max_7day_turnover max_7day_losses max_30day_losses max_30day_turnover max_open_bets session_duration_limit/;

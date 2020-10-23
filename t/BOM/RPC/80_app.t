@@ -12,7 +12,7 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Database::Model::OAuth;
 use BOM::Platform::Token::API;
-use BOM::Test::RPC::Client;
+use BOM::Test::RPC::QueueClient;
 use Test::Mojo;
 use Email::Stuffer::TestLinks;
 
@@ -28,7 +28,7 @@ $dbh->do("DELETE FROM oauth.official_apps");
 $dbh->do("DELETE FROM oauth.apps WHERE id <> 1");
 BOM::Platform::Token::API->new->remove_by_loginid($test_loginid);
 
-my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC::Transport::HTTP')->app->ua);
+my $c = BOM::Test::RPC::QueueClient->new();
 
 my $mock_utility = Test::MockModule->new('BOM::RPC::v3::Utility');
 # need to mock it as to access api token we need token beforehand

@@ -8,7 +8,7 @@ use Test::MockTime qw(:all);
 use JSON::MaybeUTF8;
 
 use LandingCompany::Registry;
-use BOM::Test::RPC::Client;
+use BOM::Test::RPC::QueueClient;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis;
@@ -20,7 +20,7 @@ use BOM::Config::Runtime;
 
 use Test::BOM::RPC::Accounts;
 
-my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC::Transport::HTTP')->app->ua);
+my $c = BOM::Test::RPC::QueueClient->new();
 BOM::Config::Runtime->instance->app_config->payments->transfer_between_accounts->limits->MT5(999);
 
 my $runtime_system  = BOM::Config::Runtime->instance->app_config->system;

@@ -8,7 +8,7 @@ use Test::Fatal qw(lives_ok);
 use MojoX::JSON::RPC::Client;
 use BOM::User::Password;
 
-use BOM::Test::RPC::Client;
+use BOM::Test::RPC::QueueClient;
 use BOM::Test::Data::Utility::UnitTestDatabase;
 use BOM::Test::Email qw(:no_event);
 use BOM::RPC::v3::Utility;
@@ -21,7 +21,7 @@ use utf8;
 
 $ENV{EMAIL_SENDER_TRANSPORT} = 'Test';
 my ($user, $client, $email);
-my ($t, $rpc_ct);
+my $rpc_ct;
 my $method = 'verify_email';
 
 my @params = (
@@ -68,8 +68,7 @@ subtest 'Initialization' => sub {
     'Initial user and client';
 
     lives_ok {
-        $t      = Test::Mojo->new('BOM::RPC::Transport::HTTP');
-        $rpc_ct = BOM::Test::RPC::Client->new(ua => $t->app->ua);
+        $rpc_ct = BOM::Test::RPC::QueueClient->new();
     }
     'Initial RPC server and client connection';
 };

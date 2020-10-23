@@ -6,7 +6,7 @@ use Test::Deep;
 use Test::Mojo;
 use Test::MockModule;
 use Test::MockTime qw(set_fixed_time restore_time);
-use Test::BOM::RPC::Client;
+use Test::BOM::RPC::QueueClient;
 use BOM::Test::Helper::FinancialAssessment;
 use BOM::Test::Helper::Token;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
@@ -180,8 +180,7 @@ my $token_mlt      = $m->create_token($test_client_mlt->loginid, 'test token');
 my $token_mf       = $m->create_token($test_client_mf->loginid, 'test token');
 my $token_vr_3     = $m->create_token($test_client_vr_3->loginid, 'test token');
 
-my $t = Test::Mojo->new('BOM::RPC::Transport::HTTP');
-my $c = Test::BOM::RPC::Client->new(ua => $t->app->ua);
+my $c = Test::BOM::RPC::QueueClient->new();
 
 my $method = 'get_settings';
 subtest 'get settings' => sub {

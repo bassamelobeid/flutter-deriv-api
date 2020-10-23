@@ -6,7 +6,7 @@ use Test::Most;
 use Test::Mojo;
 use Test::MockModule;
 
-use BOM::Test::RPC::Client;
+use BOM::Test::RPC::QueueClient;
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
@@ -33,7 +33,7 @@ my $expected_result = {
 };
 
 my ($client, $client_token, $oauth_token);
-my ($t, $rpc_ct);
+my $rpc_ct;
 my $method = 'sell_expired';
 
 my @params = (
@@ -65,8 +65,7 @@ subtest 'Initialization' => sub {
     'Initial clients';
 
     lives_ok {
-        $t      = Test::Mojo->new('BOM::RPC::Transport::HTTP');
-        $rpc_ct = BOM::Test::RPC::Client->new(ua => $t->app->ua);
+        $rpc_ct = BOM::Test::RPC::QueueClient->new();
     }
     'Initial RPC server';
 };

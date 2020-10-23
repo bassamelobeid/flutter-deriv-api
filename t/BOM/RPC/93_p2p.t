@@ -1,6 +1,5 @@
 use strict;
 use warnings;
-use BOM::Test::RPC::Client;
 use Log::Any::Test;
 use Test::More;
 use Test::Mojo;
@@ -14,13 +13,19 @@ use BOM::RPC::v3::P2P;
 use BOM::Test::Helper::P2P;
 use BOM::Test::Helper::Client;
 
+#Test endpoint for testing logic in function p2p_rpc
+BEGIN {
+    BOM::RPC::v3::P2P::p2p_rpc 'test_p2p_controller' => sub { return {success => 1} };
+}
+
+use BOM::Test::RPC::QueueClient;
+
 cleanup_redis_tokens();
+
 BOM::Test::Helper::P2P::bypass_sendbird();
 BOM::Test::Helper::P2P::purge_redis();
 
-#Test endpoint for testing logic in function p2p_rpc
 my $dummy_method = 'test_p2p_controller';
-BOM::RPC::v3::P2P::p2p_rpc $dummy_method => sub { return {success => 1} };
 
 my $app_config = BOM::Config::Runtime->instance->app_config;
 my ($p2p_suspend, $p2p_enable) = ($app_config->system->suspend->p2p, $app_config->payments->p2p->enabled);
@@ -68,7 +73,7 @@ $user_client->add_client($client_client);
 my $token_vr         = BOM::Platform::Token::API->new->create_token($client_vr->loginid,         'test vr token');
 my $token_advertiser = BOM::Platform::Token::API->new->create_token($client_advertiser->loginid, 'test advertiser token');
 
-my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC::Transport::HTTP')->app->ua);
+my $c = BOM::Test::RPC::QueueClient->new();
 
 my $params = {language => 'EN'};
 my $advert;

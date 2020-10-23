@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use BOM::Test::RPC::Client;
+use BOM::Test::RPC::QueueClient;
 use BOM::User;
 use Test::Most;
 use Test::Mojo;
@@ -14,7 +14,7 @@ use utf8;
 use Data::Dumper;
 use BOM::Config::Runtime;
 
-my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC::Transport::HTTP')->app->ua);
+my $c = BOM::Test::RPC::QueueClient->new();
 
 my $email = 'dummy@binary.com';
 my $user  = BOM::User->create(

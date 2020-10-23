@@ -7,7 +7,7 @@ use Test::Mojo;
 use Test::MockModule;
 use Locale::Country::Extra;
 
-use BOM::Test::RPC::Client;
+use BOM::Test::RPC::QueueClient;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Helper::Client qw(create_client);
@@ -95,7 +95,7 @@ $mocked_mt5->mock(
     },
 );
 
-my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC::Transport::HTTP')->app->ua);
+my $c = BOM::Test::RPC::QueueClient->new();
 
 subtest 'new account' => sub {
     my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
@@ -255,7 +255,7 @@ subtest 'new account' => sub {
         );
         $user->add_client($test_client);
 
-        $c     = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC::Transport::HTTP')->app->ua);
+        $c     = BOM::Test::RPC::QueueClient->new();
         $m     = BOM::Platform::Token::API->new;
         $token = $m->create_token($test_client->loginid, 'test token');
 

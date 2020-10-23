@@ -1,7 +1,7 @@
 use strict;
 use warnings;
 
-use BOM::Test::RPC::Client;
+use BOM::Test::RPC::QueueClient;
 use Test::More;
 use Test::Mojo;
 use Test::Warn;
@@ -11,7 +11,7 @@ use BOM::Database::Model::OAuth;
 use List::Util qw( all );
 use BOM::RPC::v3::DocumentUpload qw(MAX_FILE_SIZE);
 
-my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC::Transport::HTTP')->app->ua);
+my $c = BOM::Test::RPC::QueueClient->new();
 
 # Set up clients
 

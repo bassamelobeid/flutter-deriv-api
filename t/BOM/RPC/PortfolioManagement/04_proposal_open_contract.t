@@ -9,7 +9,7 @@ use Test::Warn;
 use MojoX::JSON::RPC::Client;
 use Data::Dumper;
 
-use BOM::Test::RPC::Client;
+use BOM::Test::RPC::QueueClient;
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
@@ -27,7 +27,7 @@ use Email::Stuffer::TestLinks;
 use utf8;
 
 my ($client, $client_token, $oauth_token);
-my ($t, $rpc_ct);
+my $rpc_ct;
 my $method = 'proposal_open_contract';
 
 my @params = (
@@ -38,8 +38,7 @@ my @params = (
         args     => {},
     });
 
-$t      = Test::Mojo->new('BOM::RPC::Transport::HTTP');
-$rpc_ct = BOM::Test::RPC::Client->new(ua => $t->app->ua);
+$rpc_ct = BOM::Test::RPC::QueueClient->new();
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'economic_events',

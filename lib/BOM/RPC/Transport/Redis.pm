@@ -409,7 +409,7 @@ sub _process_message {
             return undef;
         }
 
-        $result = $self->_dispatch_request(dclone($params));
+        $result = $self->_dispatch_request($params);
     } catch {
         my $err = $@;
         chomp($err);
@@ -446,6 +446,9 @@ Returns a hashref containing RPC response
 
 sub _dispatch_request {
     my ($self, $params) = @_;
+
+    # Take a deep clone of params to avoid any redundant data per dispathing requests.
+    $params = dclone $params;
 
     my $result;
 

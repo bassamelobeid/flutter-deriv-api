@@ -14,7 +14,7 @@ use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Database::Model::OAuth;
 use BOM::Test::Localize qw(is_localized);
 
-use BOM::Test::RPC::Client;
+use BOM::Test::RPC::QueueClient;
 
 initialize_realtime_ticks_db();
 
@@ -27,7 +27,7 @@ $client->deposit_virtual_funds;
 
 my $loginid = $client->loginid;
 my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $loginid);
-my $app     = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC::Transport::HTTP')->app->ua);
+my $app     = BOM::Test::RPC::QueueClient->new();
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',

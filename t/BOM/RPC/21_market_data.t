@@ -17,11 +17,11 @@ use BOM::Test::Data::Utility::UnitTestMarketData;
 use Try::Tiny;
 use BOM::Config::Chronicle;
 
-use BOM::Test::RPC::Client;
+use BOM::Test::RPC::QueueClient;
 use BOM::RPC::v3::MarketData;
 use Email::Stuffer::TestLinks;
 
-my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC::Transport::HTTP')->app->ua);
+my $c = BOM::Test::RPC::QueueClient->new();
 
 my ($base, $result);
 subtest 'invalid currency' => sub {

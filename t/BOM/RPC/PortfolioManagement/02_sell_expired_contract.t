@@ -8,7 +8,7 @@ use Test::MockModule;
 use MojoX::JSON::RPC::Client;
 use Data::Dumper;
 
-use BOM::Test::RPC::Client;
+use BOM::Test::RPC::QueueClient;
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
@@ -33,7 +33,7 @@ my $expected_result = {
 use utf8;
 
 my ($vclient, $vclient_token, $client, $client_token, $oauth_token);
-my ($t, $rpc_ct);
+my $rpc_ct;
 my $method = 'sell_expired';
 
 my @params = (
@@ -69,8 +69,7 @@ subtest 'Initialization' => sub {
     'Initial clients';
 
     lives_ok {
-        $t      = Test::Mojo->new('BOM::RPC::Transport::HTTP');
-        $rpc_ct = BOM::Test::RPC::Client->new(ua => $t->app->ua);
+        $rpc_ct = BOM::Test::RPC::QueueClient->new();
     }
     'Initial RPC server';
 };

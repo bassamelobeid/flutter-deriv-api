@@ -5,7 +5,7 @@ use Test::More;
 use Test::Deep;
 use Test::Mojo;
 use Test::MockModule;
-use Test::BOM::RPC::Client;
+use Test::BOM::RPC::QueueClient;
 use BOM::Test::Helper::FinancialAssessment;
 use LandingCompany::Registry;
 use BOM::RPC::v3::Utility;
@@ -128,8 +128,7 @@ $user_mlt_mf->add_client($test_client_mf);
 my $m     = BOM::Platform::Token::API->new;
 my $token = $m->create_token($test_client_cr->loginid, 'test token');
 
-my $t = Test::Mojo->new('BOM::RPC::Transport::HTTP');
-my $c = Test::BOM::RPC::Client->new(ua => $t->app->ua);
+my $c = Test::BOM::RPC::QueueClient->new();
 
 my $method = 'payout_currencies';
 subtest 'payout currencies' => sub {

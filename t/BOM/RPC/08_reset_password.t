@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use BOM::Test::RPC::Client;
+use BOM::Test::RPC::QueueClient;
 use Test::More;
 use Test::Mojo;
 use Email::Address::UseXS;
@@ -42,7 +42,7 @@ subtest 'check_login_vrtc' => sub {
 
 my $new_password = 'jskjD8292923';
 
-my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC::Transport::HTTP')->app->ua);
+my $c = BOM::Test::RPC::QueueClient->new();
 
 my $expected_result = {
     status => 1,

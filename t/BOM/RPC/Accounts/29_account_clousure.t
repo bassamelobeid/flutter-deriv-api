@@ -5,7 +5,7 @@ use Test::More;
 use Test::Deep;
 use Test::Mojo;
 use Test::MockModule;
-use Test::BOM::RPC::Client;
+use Test::BOM::RPC::QueueClient;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Platform::Token::API;
 use BOM::User::Password;
@@ -20,8 +20,7 @@ my $hash_pwd = BOM::User::Password::hashpw($password);
 
 my $m = BOM::Platform::Token::API->new;
 
-my $t = Test::Mojo->new('BOM::RPC::Transport::HTTP');
-my $c = Test::BOM::RPC::Client->new(ua => $t->app->ua);
+my $c = Test::BOM::RPC::QueueClient->new();
 
 my $method = 'account_closure';
 subtest 'account closure' => sub {

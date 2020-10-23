@@ -9,7 +9,7 @@ use BOM::User;
 
 use BOM::Test::Email qw(:no_event);
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
-use BOM::Test::RPC::Client;
+use BOM::Test::RPC::QueueClient;
 use LWP::UserAgent;
 require Test::NoWarnings;
 
@@ -18,11 +18,10 @@ use Test::Most;
 
 my $mocked_call = Test::MockModule->new('LWP::UserAgent');
 
-my ($t, $rpc_ct);
+my $rpc_ct;
 subtest 'Initialization' => sub {
     lives_ok {
-        $t      = Test::Mojo->new('BOM::RPC::Transport::HTTP');
-        $rpc_ct = BOM::Test::RPC::Client->new(ua => $t->app->ua);
+        $rpc_ct = BOM::Test::RPC::QueueClient->new();
     }
     'Initial RPC server and client connection';
 };

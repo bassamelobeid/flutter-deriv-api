@@ -5,7 +5,7 @@ use Test::More;
 use Test::Deep;
 use Test::Mojo;
 use Test::MockModule;
-use Test::BOM::RPC::Client;
+use Test::BOM::RPC::QueueClient;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Platform::Token::API;
 use BOM::User::Password;
@@ -74,8 +74,7 @@ my $token          = $m->create_token($test_loginid, 'test token');
 my $token_disabled = $m->create_token($test_client_disabled->loginid, 'test token');
 my $token_mlt      = $m->create_token($test_client_mlt->loginid, 'test token');
 
-my $t = Test::Mojo->new('BOM::RPC::Transport::HTTP');
-my $c = Test::BOM::RPC::Client->new(ua => $t->app->ua);
+my $c = Test::BOM::RPC::QueueClient->new();
 
 my $method = 'balance';
 subtest 'balance' => sub {

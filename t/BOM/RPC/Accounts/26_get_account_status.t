@@ -5,7 +5,7 @@ use Test::More;
 use Test::Deep;
 use Test::Mojo;
 use Test::MockModule;
-use Test::BOM::RPC::Client;
+use Test::BOM::RPC::QueueClient;
 use Encode;
 use JSON::MaybeUTF8 qw(encode_json_utf8);
 use Encode qw(encode);
@@ -124,8 +124,7 @@ my $token_disabled = $m->create_token($test_client_disabled->loginid, 'test toke
 my $token_mx       = $m->create_token($test_client_mx->loginid, 'test token');
 my $token_mlt      = $m->create_token($test_client_mlt->loginid, 'test token');
 
-my $t = Test::Mojo->new('BOM::RPC::Transport::HTTP');
-my $c = Test::BOM::RPC::Client->new(ua => $t->app->ua);
+my $c = Test::BOM::RPC::QueueClient->new();
 
 my $method = 'get_account_status';
 subtest 'get account status' => sub {

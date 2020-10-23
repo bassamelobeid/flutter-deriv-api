@@ -5,7 +5,7 @@ use Test::Mojo;
 use Test::MockModule;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis;
-use BOM::Test::RPC::Client;
+use BOM::Test::RPC::QueueClient;
 
 use BOM::User;
 use BOM::User::Client;
@@ -33,7 +33,7 @@ BOM::Database::Model::AccessToken->new->dbic->dbh->do("
 
 my $client = create_test_user();
 
-my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC::Transport::HTTP')->app->ua);
+my $c = BOM::Test::RPC::QueueClient->new();
 
 my $res = BOM::RPC::v3::Accounts::api_token({
     client => $client,

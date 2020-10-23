@@ -13,7 +13,7 @@ use File::Temp;
 
 use BOM::Config::Chronicle;
 use Quant::Framework;
-use BOM::Test::RPC::Client;
+use BOM::Test::RPC::QueueClient;
 use BOM::Test::Data::Utility::FeedTestDatabase qw/:init/;
 use BOM::Populator::TickFile;
 use BOM::Populator::InsertTicks;
@@ -25,7 +25,7 @@ use utf8;
 
 use constant MAX_TICK_COUNT => 5000;
 
-my ($t, $rpc_ct, $result);
+my ($rpc_ct, $result);
 my $method = 'ticks_history';
 
 my $params = {
@@ -36,8 +36,7 @@ my $params = {
 my $now = Date::Utility->new('2012-03-14 07:00:00');
 set_fixed_time($now->epoch);
 
-$t      = Test::Mojo->new('BOM::RPC::Transport::HTTP');
-$rpc_ct = BOM::Test::RPC::Client->new(ua => $t->app->ua);
+$rpc_ct = BOM::Test::RPC::QueueClient->new();
 
 my $feed_dir = File::Temp->newdir;
 $ENV{BOM_POPULATOR_ROOT} = "$feed_dir";

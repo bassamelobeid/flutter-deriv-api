@@ -12,7 +12,7 @@ use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Database::Model::OAuth;
 
-use BOM::Test::RPC::Client;
+use BOM::Test::RPC::QueueClient;
 use Test::BOM::RPC::Contract;
 use Email::Stuffer::TestLinks;
 
@@ -27,7 +27,7 @@ $client->deposit_virtual_funds;
 
 my $loginid = $client->loginid;
 my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $loginid);
-my $app     = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC::Transport::HTTP')->app->ua);
+my $app     = BOM::Test::RPC::QueueClient->new();
 my $now     = Date::Utility->new('10-Mar-2015');
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(

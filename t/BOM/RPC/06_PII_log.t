@@ -1,7 +1,7 @@
 use strict;
 use warnings;
 
-use BOM::Test::RPC::Client;
+use BOM::Test::RPC::QueueClient;
 use Test::More;
 use Test::Mojo;
 use Test::MockModule;
@@ -12,7 +12,7 @@ $check_pass->mock('check_password', sub { die "in new account for test" });
 $check_pass->mock('is_verification_token_valid', {});
 
 subtest 'log detailed error message' => sub {
-    my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC::Transport::HTTP')->app->ua);
+    my $c = BOM::Test::RPC::QueueClient->new();
 
     local $ENV{LOG_DETAILED_EXCEPTION} = 1;
     like(
@@ -34,7 +34,7 @@ subtest 'log detailed error message' => sub {
 };
 
 subtest 'log normal error message' => sub {
-    my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC::Transport::HTTP')->app->ua);
+    my $c = BOM::Test::RPC::QueueClient->new();
 
     local $ENV{LOG_DETAILED_EXCEPTION} = 0;
     like(

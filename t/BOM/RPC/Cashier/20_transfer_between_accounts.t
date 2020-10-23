@@ -17,7 +17,7 @@ use Format::Util::Numbers qw/financialrounding get_min_unit formatnumber/;
 use BOM::User::Client;
 use BOM::RPC::v3::MT5::Account;
 
-use BOM::Test::RPC::Client;
+use BOM::Test::RPC::QueueClient;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Helper::ExchangeRates qw/populate_exchange_rates populate_exchange_rates_db/;
@@ -31,7 +31,7 @@ use Test::BOM::RPC::Accounts;
 use utf8;
 
 my $test_binary_user_id = 65000;
-my ($t, $rpc_ct);
+my $rpc_ct;
 
 my $redis = BOM::Config::Redis::redis_exchangerates_write();
 
@@ -64,8 +64,7 @@ $mock_events->mock(
 
 subtest 'Initialization' => sub {
     lives_ok {
-        $t      = Test::Mojo->new('BOM::RPC::Transport::HTTP');
-        $rpc_ct = BOM::Test::RPC::Client->new(ua => $t->app->ua);
+        $rpc_ct = BOM::Test::RPC::QueueClient->new();
     }
     'Initial RPC server and client connection';
 };

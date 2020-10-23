@@ -1,7 +1,7 @@
 use strict;
 use warnings;
 use utf8;
-use BOM::Test::RPC::Client;
+use BOM::Test::RPC::QueueClient;
 use Test::Most;
 use Test::Mojo;
 use Data::Dumper;
@@ -14,7 +14,7 @@ use LandingCompany::Registry;
 use BOM::Config::Runtime;
 use BOM::Config::Chronicle;
 
-my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC::Transport::HTTP')->app->ua);
+my $c = BOM::Test::RPC::QueueClient->new();
 
 my $method = 'active_symbols';
 subtest $method => sub {

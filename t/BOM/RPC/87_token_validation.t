@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use BOM::Test::RPC::Client;
+use BOM::Test::RPC::QueueClient;
 use Test::Most;
 use Test::Mojo;
 use Test::MockModule;
@@ -62,11 +62,10 @@ my $params = {
         verification_code => $code
     }};
 
-my ($t, $c);
+my $c;
 subtest 'Initialization' => sub {
     lives_ok {
-        $t = Test::Mojo->new('BOM::RPC::Transport::HTTP');
-        $c = BOM::Test::RPC::Client->new(ua => $t->app->ua);
+        $c = BOM::Test::RPC::QueueClient->new();
     }
     'Initial RPC server and client connection';
 };

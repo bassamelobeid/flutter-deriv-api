@@ -6,7 +6,7 @@ use Test::Mojo;
 use Test::MockModule;
 use Test::FailWarnings;
 use Test::Warnings qw(warning);
-use BOM::Test::RPC::Client;
+use BOM::Test::RPC::QueueClient;
 
 use MojoX::JSON::RPC::Client;
 
@@ -22,7 +22,7 @@ use BOM::User::Client;
 use BOM::User::Password;
 use Email::Stuffer::TestLinks;
 
-my ($t, $rpc_ct);
+my $rpc_ct;
 my $client_mocked      = Test::MockModule->new('BOM::User::Client');
 my $status_mocked      = Test::MockModule->new('BOM::User::Client::Status');
 my @can_affect_cashier = (
@@ -45,8 +45,7 @@ my $runtime_system = BOM::Config::Runtime->instance->app_config->system;
 
 subtest 'Initialization' => sub {
     lives_ok {
-        $t      = Test::Mojo->new('BOM::RPC::Transport::HTTP');
-        $rpc_ct = BOM::Test::RPC::Client->new(ua => $t->app->ua);
+        $rpc_ct = BOM::Test::RPC::QueueClient->new();
     }
     'Initial RPC server and client connection';
 };

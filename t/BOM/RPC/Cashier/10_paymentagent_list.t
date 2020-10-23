@@ -1,7 +1,7 @@
 use strict;
 use warnings;
 
-use BOM::Test::RPC::Client;
+use BOM::Test::RPC::QueueClient;
 use Test::Fatal qw/ exception/;
 use Test::Most;
 use Test::Mojo;
@@ -98,7 +98,7 @@ $pa_client->save;
 $pa_client->get_payment_agent->set_countries(['id']);
 my $third_pa_loginid = $pa_client->loginid;
 
-my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC::Transport::HTTP')->app->ua);
+my $c = BOM::Test::RPC::QueueClient->new();
 
 my $method = 'paymentagent_list';
 

@@ -7,7 +7,7 @@ use Format::Util::Numbers qw/financialrounding get_min_unit/;
 use JSON::MaybeUTF8;
 use Date::Utility;
 use LandingCompany::Registry;
-use BOM::Test::RPC::Client;
+use BOM::Test::RPC::QueueClient;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis;
@@ -21,7 +21,7 @@ use BOM::Config::CurrencyConfig;
 
 use Test::BOM::RPC::Accounts;
 
-my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC::Transport::HTTP')->app->ua);
+my $c = BOM::Test::RPC::QueueClient->new();
 
 my $redis = BOM::Config::Redis::redis_exchangerates_write();
 

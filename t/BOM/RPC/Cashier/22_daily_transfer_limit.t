@@ -11,7 +11,7 @@ use BOM::Test::Data::Utility::UserTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_user_transfer_limits);
 use BOM::Test::Helper::ExchangeRates qw(populate_exchange_rates populate_exchange_rates_db);
 use BOM::Test::Helper::Token qw(cleanup_redis_tokens);
-use BOM::Test::RPC::Client;
+use BOM::Test::RPC::QueueClient;
 use Test::BOM::RPC::Accounts;
 use BOM::User;
 use Date::Utility;
@@ -57,7 +57,7 @@ scope_guard {
     }
 };
 
-my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC::Transport::HTTP')->app->ua);
+my $c = BOM::Test::RPC::QueueClient->new();
 
 # setup clients
 

@@ -1,6 +1,5 @@
 use strict;
 use warnings;
-use BOM::Test::RPC::Client;
 use BOM::User;
 use Test::Most;
 use Test::Mojo;

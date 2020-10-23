@@ -3,7 +3,7 @@ use warnings;
 
 use Test::More;
 use Test::MockModule;
-use BOM::Test::RPC::Client;
+use BOM::Test::RPC::QueueClient;
 use Test::Mojo;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::MT5::User::Async;
@@ -13,7 +13,7 @@ use BOM::Config::Runtime;
 use Test::BOM::RPC::Accounts;
 use BOM::RPC::v3::MT5::Account;
 
-my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC::Transport::HTTP')->app->ua);
+my $c = BOM::Test::RPC::QueueClient->new();
 BOM::Config::Runtime->instance->app_config->payments->transfer_between_accounts->limits->MT5(999);
 
 my $manager_module = Test::MockModule->new('BOM::MT5::User::Async');

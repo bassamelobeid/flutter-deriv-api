@@ -1,7 +1,7 @@
 use strict;
 use warnings;
 
-use BOM::Test::RPC::Client;
+use BOM::Test::RPC::QueueClient;
 use Test::Most;
 use Test::Mojo;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
@@ -104,7 +104,7 @@ my $tick2 = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     ask        => 76.3030,
 });
 
-my $c      = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC::Transport::HTTP')->app->ua);
+my $c      = BOM::Test::RPC::QueueClient->new();
 my $amount = '10000.00';
 # start test topup_virtual
 my $method = 'topup_virtual';

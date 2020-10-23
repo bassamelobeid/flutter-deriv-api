@@ -23,7 +23,7 @@ use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Helper::Client qw( create_client top_up );
-use BOM::Test::RPC::Client;
+use BOM::Test::RPC::QueueClient;
 
 use Test::BOM::RPC::Contract;
 use Email::Stuffer::TestLinks;
@@ -54,7 +54,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
                 impact       => 1,
                 event_name   => 'FOMC',
             }]});
-my $c = BOM::Test::RPC::Client->new(ua => Test::Mojo->new('BOM::RPC::Transport::HTTP')->app->ua);
+my $c = BOM::Test::RPC::QueueClient->new();
 
 ####################################################################
 # Setup clients

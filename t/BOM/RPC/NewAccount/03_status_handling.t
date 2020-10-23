@@ -7,7 +7,7 @@ use Test::Fatal qw(lives_ok);
 
 use BOM::Platform::Client::IDAuthentication;
 use BOM::Platform::ProveID;
-use BOM::Test::RPC::Client;
+use BOM::Test::RPC::QueueClient;
 use BOM::User::Client;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
@@ -15,7 +15,7 @@ use Test::MockModule;
 
 use BOM::Test::Helper::FinancialAssessment;
 
-my ($rpc_ct, $t, $params);
+my ($rpc_ct, $params);
 
 _reset_params();
 
@@ -54,8 +54,7 @@ sub new_client_details {
 
 subtest 'Initialization' => sub {
     lives_ok {
-        $t      = Test::Mojo->new('BOM::RPC::Transport::HTTP');
-        $rpc_ct = BOM::Test::RPC::Client->new(ua => $t->app->ua);
+        $rpc_ct = BOM::Test::RPC::QueueClient->new();
     }
     'Initial RPC server and client connection';
 };
