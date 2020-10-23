@@ -288,7 +288,7 @@ try {
     }
 
     if ($ttype eq 'CREDIT' || $ttype eq 'DEBIT') {
-        $client->smart_payment(
+        my $trx = $client->smart_payment(
             %params,    # these are payment-type-specific params from the html form.
             amount => $signed_amount,
             staff  => $clerk,
@@ -297,8 +297,10 @@ try {
         BOM::Platform::Event::Emitter::emit(
             'payment_deposit',
             {
-                loginid          => $client->loginid,
-                is_first_deposit => $fdp
+                loginid           => $client->loginid,
+                is_first_deposit  => $fdp,
+                payment_processor => ($payment_type eq 'external_cashier' ? $params{payment_processor} : undef),
+                transaction_id    => $trx->{id},
             }) if $ttype eq 'CREDIT';
 
         # Handle deposits for doughflow and bank money transfers (internal)
