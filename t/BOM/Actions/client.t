@@ -1213,4 +1213,32 @@ subtest 'client becomes transfers_blocked when deposits from QIWI' => sub {
     ok $sibling->status->transfers_blocked,     'transfers_blocked status is copied over all siblings after QIWI deposit';
 };
 
+subtest 'card deposits' => sub {
+    ok !$test_client->status->personal_details_locked, 'personal details are not locked';
+
+    my $event_args = {
+        loginid           => $test_client->loginid,
+        is_first_deposit  => 0,
+        payment_processor => 'test processor',
+        transaction_id    => 123,
+        payment_id        => 456,
+    };
+
+    BOM::Event::Actions::Client::payment_deposit($event_args);
+
+    $test_client = BOM::User::Client->new({loginid => $test_client->loginid});
+    ok !$test_client->status->personal_details_locked, 'personal details are not locked - non-card payment method was used';
+
+    for my $processor (BOM::Config::Runtime->instance->app_config->payments->credit_card_processors->@*) {
+        $event_args->{payment_processor} = $processor;
+        BOM::Event::Actions::Client::payment_deposit($event_args);
+        $test_client = BOM::User::Client->new({loginid => $test_client->loginid});
+
+        ok $test_client->status->personal_details_locked, 'personal details are locked when a card payment method is used';
+        is $test_client->status->personal_details_locked->{reason}, "A card deposit is made via $processor with ref. id: 123";
+        $test_client->status->clear_personal_details_locked;
+        $test_client->save;
+    }
+};
+
 done_testing();

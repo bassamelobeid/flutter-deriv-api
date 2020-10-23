@@ -31,6 +31,11 @@ use ExchangeRates::CurrencyConverter qw(convert_currency);
 use Encode qw(decode_utf8 encode_utf8);
 use Time::HiRes;
 use Format::Util::Numbers qw(financialrounding);
+use Encode qw(decode_utf8 encode_utf8);
+use Time::HiRes;
+use File::Temp;
+use Digest::MD5;
+use Brands;
 
 use BOM::Config;
 use BOM::Config::Runtime;
@@ -48,14 +53,12 @@ use BOM::Config::Redis;
 use BOM::Event::Services;
 use BOM::Event::Services::Track;
 use BOM::Config::Onfido;
-use Email::Stuffer;
-use Encode qw(decode_utf8 encode_utf8);
-use Time::HiRes;
-use File::Temp;
-use Digest::MD5;
 use BOM::Event::Utility qw(exception_logged);
+use BOM::User::Client::PaymentTransaction;
 use BOM::Platform::Redis;
-use Brands;
+
+# this one shoud come after BOM::Platform::Email
+use Email::Stuffer;
 
 # For smartystreets datadog stats_timing
 $Future::TIMES = 1;
@@ -2006,7 +2009,9 @@ async sub payment_deposit {
     my $client = BOM::User::Client->new({loginid => $loginid})
         or die 'Could not instantiate client for login ID ' . $loginid;
 
-    my $is_first_deposit = $args->{is_first_deposit};
+    my $is_first_deposit  = $args->{is_first_deposit};
+    my $payment_processor = $args->{payment_processor} // '';
+    my $transaction_id    = $args->{transaction_id} // '';
 
     if ($is_first_deposit) {
         try {
@@ -2020,13 +2025,19 @@ async sub payment_deposit {
         BOM::Platform::Client::IDAuthentication->new(client => $client)->run_authentication;
     }
 
-    my $payment_processor = $args->{payment_processor};
-    if ($payment_processor and uc($payment_processor) =~ m/QIWI/) {
+    if (uc($payment_processor) =~ m/QIWI/) {
         _set_all_sibling_status({
             loginid => $loginid,
             status  => 'transfers_blocked',
             message => "Internal account transfers are blocked because of QIWI deposit into $loginid"
         });
+    }
+
+    my $card_processors = BOM::Config::Runtime->instance->app_config->payments->credit_card_processors;
+
+    if (!$client->landing_company->is_eu && any { lc($_) eq lc($payment_processor) } @$card_processors) {
+        $client->status->setnx('personal_details_locked', 'system', "A card deposit is made via $payment_processor with ref. id: $transaction_id");
+        $client->save;
     }
 
     return;
