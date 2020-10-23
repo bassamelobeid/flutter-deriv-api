@@ -1,11 +1,15 @@
 use strict;
 use warnings;
 
+use FindBin qw/ $Bin /;
+use lib "$Bin/lib";
+
 use Test::More;
 use Test::MockModule;
 
-use FindBin qw/ $Bin /;
-use lib "$Bin/lib";
+use BOM::Database::DataMapper::Transaction;
+use BOM::Database::ClientDB;
+use BOM::User;
 
 use APIHelper qw/ balance deposit request decode_json /;
 
@@ -122,8 +126,19 @@ subtest 'emit payment_deposit' => sub {
     );
     is $req->code, 201, 'Correct created status code';
 
+    my $trx = $client_db->db->dbic->run(
+        fixup => sub { $_->selectrow_hashref("SELECT * FROM transaction.transaction ORDER BY transaction_time DESC LIMIT 1", undef) });
+
     is $last_event{type}, 'payment_deposit', 'event payment_deposit emitted';
-    is $last_event{data}->{payment_processor}, 'QIWI', 'event has correct payment_processor';
+
+    is_deeply $last_event{data},
+        {
+        loginid           => $loginid,
+        payment_processor => 'QIWI',
+        transaction_id    => $trx->{id},
+        is_first_deposit  => 0,
+        },
+        'event args are correct';
 };
 
 subtest 'datadog metric collected' => sub {

@@ -270,18 +270,21 @@ sub write_transaction_line {
     );
 
     # Write the payment transaction
-    my ($trx, $fdp);
+    my $trx;
 
     if ($c->type eq 'deposit') {
-        $fdp = $client->is_first_deposit_pending;
+        # should be executed before saving the payment in the database
+        my $is_first_deposit = $client->is_first_deposit_pending;
+
         $trx = $client->payment_doughflow(%payment_args);
 
         BOM::Platform::Event::Emitter::emit(
             'payment_deposit',
             {
                 loginid           => $client->loginid,
-                is_first_deposit  => $fdp,
                 payment_processor => $payment_processor,
+                transaction_id    => $trx->{id},
+                is_first_deposit  => $is_first_deposit,
             }) if $trx;
 
         # Social responsibility checks for MLT/MX clients
