@@ -104,27 +104,4 @@ workflows:
           branches:
             only:
             - master
-  tagged:
-    jobs:
-    - syntax:
-        context: perl
-        filters:
-          branches:
-            ignore: /.*/
-          tags:
-            only: /^V\d+_.*/
-    - unit:
-        context: perl
-        filters:
-          branches:
-            ignore: /.*/
-          tags:
-            only: /^V\d+_.*/
-    - schema:
-        context: perl
-        filters:
-          branches:
-            ignore: /.*/
-          tags:
-            only: /^V\d+_.*/
   version: 2
