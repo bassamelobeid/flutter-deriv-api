@@ -217,6 +217,8 @@ sub get_settings_by_group {
                 system.mt5.suspend.deposits
                 system.mt5.suspend.withdrawals
                 system.mt5.suspend.auto_Bbook_svg_financial
+                system.mt5.suspend.demo
+                system.mt5.suspend.real
                 system.suspend.payout_freezing_funds
                 system.suspend.doughflow_deriv_sportsbooks
                 )
