@@ -881,6 +881,16 @@ system:
               isa: Bool
               default: 0
               global: 1
+            demo:
+              description: "Suspend MT5 API calls to demo"
+              isa: Bool
+              default: 0
+              global: 1
+            real:
+              description: "Suspend MT5 API calls to real"
+              isa: Bool
+              default: 0
+              global: 1
 marketing:
     description:  "Marketing Bonus Settings"
     isa: section
