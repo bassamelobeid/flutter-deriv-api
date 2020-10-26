@@ -129,11 +129,6 @@ subtest 'new account' => sub {
 
     $params->{token} = $token;
 
-    BOM::Config::Runtime->instance->app_config->system->mt5->suspend->all(1);
-    $c->call_ok($method, $params)->has_error->error_code_is('MT5APISuspendedError', 'MT5 calls are suspended error message');
-
-    BOM::Config::Runtime->instance->app_config->system->mt5->suspend->all(0);
-
     $params->{args}->{account_type} = undef;
     $c->call_ok($method, $params)->has_error->error_code_is('InvalidAccountType', 'Correct error message for undef account type');
     $params->{args}->{account_type} = 'dummy';

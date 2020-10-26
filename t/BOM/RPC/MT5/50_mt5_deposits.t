@@ -143,12 +143,6 @@ subtest 'deposit' => sub {
 
     BOM::RPC::v3::MT5::Account::reset_throttler($loginid);
 
-    $runtime_system->mt5->suspend->deposits(1);
-    $c->call_ok($method, $params)->has_error('error as mt5_deposits are suspended in system config')
-        ->error_code_is('MT5DepositError', 'error code is MT5DepositError')
-        ->error_message_is('Deposits are currently unavailable. Please try again later.');
-    $runtime_system->mt5->suspend->deposits(0);
-
     BOM::RPC::v3::MT5::Account::reset_throttler($loginid);
 
     $runtime_system->suspend->experimental_currencies(['USD']);
@@ -385,12 +379,6 @@ subtest 'withdrawal' => sub {
         is($mt5_transfer->{mt5_amount}, 150, 'Correct amount recorded');
     };
     BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
-
-    $runtime_system->mt5->suspend->withdrawals(1);
-    $c->call_ok($method, $params)->has_error('error as mt5_withdrawals are suspended in system config')
-        ->error_code_is('MT5WithdrawalError', 'error code is MT5WithdrawalError')
-        ->error_message_is('Withdrawals are currently unavailable. Please try again later.');
-    $runtime_system->mt5->suspend->withdrawals(0);
 
     BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
 

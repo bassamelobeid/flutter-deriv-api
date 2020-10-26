@@ -123,8 +123,6 @@ async_rpc "mt5_login_list",
 
     my $client = $params->{client};
 
-    return create_error_future('MT5APISuspendedError') if _is_mt5_suspended();
-
     return get_mt5_logins($client)->then(
         sub {
             my (@logins) = @_;
@@ -225,7 +223,6 @@ async_rpc "mt5_new_account",
     category => 'mt5',
     sub {
     my $params = shift;
-    return create_error_future('MT5APISuspendedError') if _is_mt5_suspended();
 
     my $error_code = 'MT5CreateUserError';
 
@@ -674,8 +671,6 @@ async_rpc "mt5_get_settings",
     sub {
     my $params = shift;
 
-    return create_error_future('MT5APISuspendedError') if _is_mt5_suspended();
-
     my $client = $params->{client};
     my $args   = $params->{args};
     my $login  = $args->{login};
@@ -701,7 +696,7 @@ sub _filter_settings {
 
 sub _get_user_with_group {
     my ($loginid) = shift;
-    return create_error_future('MT5APISuspendedError') if _is_mt5_suspended();
+
     return BOM::MT5::User::Async::get_user($loginid)->then(
         sub {
             my ($settings) = @_;
@@ -803,8 +798,6 @@ async_rpc "mt5_password_check",
     category => 'mt5',
     sub {
     my $params = shift;
-
-    return create_error_future('MT5APISuspendedError') if _is_mt5_suspended();
 
     my $client = $params->{client};
     my $args   = $params->{args};
@@ -909,8 +902,6 @@ async_rpc "mt5_password_change",
     category => 'mt5',
     sub {
     my $params = shift;
-
-    return create_error_future('MT5APISuspendedError') if _is_mt5_suspended();
 
     my $client = $params->{client};
     my $args   = $params->{args};
@@ -1043,8 +1034,6 @@ async_rpc "mt5_password_reset",
     sub {
     my $params = shift;
 
-    return create_error_future('MT5APISuspendedError') if _is_mt5_suspended();
-
     my $client = $params->{client};
     my $args   = $params->{args};
     my $login  = $args->{login};
@@ -1132,10 +1121,6 @@ async_rpc "mt5_deposit",
     my $app_config = BOM::Config::Runtime->instance->app_config;
 
     # no need to throttle this call only limited numbers of transfers are allowed
-
-    if (_is_mt5_suspended('deposits')) {
-        return create_error_future('MT5DepositSuspended', {override_code => $error_code});
-    }
 
     return create_error_future('Experimental')
         if BOM::RPC::v3::Utility::verify_experimental_email_whitelisted($client, $client->currency);
@@ -1310,10 +1295,6 @@ async_rpc "mt5_withdrawal",
 
     # no need to throttle this call only limited numbers of transfers are allowed
 
-    if (_is_mt5_suspended('withdrawals')) {
-        return create_error_future('MT5WithdrawalSuspended', {override_code => $error_code});
-    }
-
     return create_error_future('Experimental')
         if BOM::RPC::v3::Utility::verify_experimental_email_whitelisted($client, $client->currency);
 
@@ -1433,18 +1414,6 @@ async_rpc "mt5_withdrawal",
                 });
         });
     };
-
-sub _is_mt5_suspended {
-    my ($feature_name) = @_;
-    my $app_config = BOM::Config::Runtime->instance->app_config->system->mt5->suspend;
-
-    # always check if all calls are suspended.
-    if (($feature_name and $app_config->$feature_name) or $app_config->all) {
-        return 1;
-    } else {
-        return 0;
-    }
-}
 
 sub _get_mt5_account_from_affiliate_token {
     my $token = shift;
