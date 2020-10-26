@@ -221,36 +221,90 @@ subtest 'MT5 suspended' => sub {
     }
     BOM::Config::Runtime->instance->app_config->system->mt5->suspend->all(0);
     for my $cmd (@cmds) {
-        my $fail_result = BOM::MT5::User::Async::_is_suspended($cmd, {});
+        my $fail_result = BOM::MT5::User::Async::_is_suspended($cmd, {login => 'MTR123'});
         ok(!$fail_result, "mt5 $cmd not suspeneded when not set suspended");
     }
     BOM::Config::Runtime->instance->app_config->system->mt5->suspend->deposits(1);
     for my $cmd (@cmds) {
-        my $fail_result = BOM::MT5::User::Async::_is_suspended($cmd, {});
+        my $fail_result = BOM::MT5::User::Async::_is_suspended($cmd, {login => 'MTR123'});
         ok(!$fail_result, "mt5 $cmd not suspeneded when only set deposit suspended");
     }
-    my $fail_result = BOM::MT5::User::Async::_is_suspended($deposit_cmd, {new_deposit => 1});
+    my $fail_result = BOM::MT5::User::Async::_is_suspended(
+        $deposit_cmd,
+        {
+            login       => 'MTR123',
+            new_deposit => 1
+        });
     is($fail_result, 'MT5DepositSuspended', 'deposit suspended when set deposit suspended');
-    $fail_result = BOM::MT5::User::Async::_is_suspended($deposit_cmd, {new_deposit => -1});
+    $fail_result = BOM::MT5::User::Async::_is_suspended(
+        $deposit_cmd,
+        {
+            login       => 'MTR123',
+            new_deposit => -1
+        });
     ok(!$fail_result, 'withdrawals not suspended when set deposit suspended');
     BOM::Config::Runtime->instance->app_config->system->mt5->suspend->deposits(0);
     BOM::Config::Runtime->instance->app_config->system->mt5->suspend->withdrawals(1);
     for my $cmd (@cmds) {
-        my $fail_result = BOM::MT5::User::Async::_is_suspended($cmd, {});
+        my $fail_result = BOM::MT5::User::Async::_is_suspended($cmd, {login => 'MTR123'});
         ok(!$fail_result, "mt5 $cmd not suspeneded when only set withdrawals suspended");
     }
-    $fail_result = BOM::MT5::User::Async::_is_suspended($deposit_cmd, {new_deposit => 1});
+    $fail_result = BOM::MT5::User::Async::_is_suspended(
+        $deposit_cmd,
+        {
+            login       => 'MTR123',
+            new_deposit => 1
+        });
     ok(!$fail_result, 'deposit not suspended when set withdrawals suspended');
-    $fail_result = BOM::MT5::User::Async::_is_suspended($deposit_cmd, {new_deposit => -1});
+    $fail_result = BOM::MT5::User::Async::_is_suspended(
+        $deposit_cmd,
+        {
+            login       => 'MTR123',
+            new_deposit => -1
+        });
     is($fail_result, 'MT5WithdrawalSuspended', 'withdrawals suspended when set withdrawals suspended');
 
     $fail_result = {};
-    BOM::MT5::User::Async::_invoke_mt5($deposit_cmd, {new_deposit => -1})->else(sub { $fail_result = shift; return Future->done })->get;
+    BOM::MT5::User::Async::_invoke_mt5(
+        $deposit_cmd,
+        {
+            login       => 'MTR123',
+            new_deposit => -1
+        })->else(sub { $fail_result = shift; return Future->done })->get;
     is(
         $fail_result->{code},
-        BOM::MT5::User::Async::_is_suspended($deposit_cmd, {new_deposit => -1}),
+        BOM::MT5::User::Async::_is_suspended(
+            $deposit_cmd,
+            {
+                login       => 'MTR123',
+                new_deposit => -1
+            }
+        ),
         '_invoke_mt5 will fail with the value of  _is_suspended when _is_suspended return true'
     );
+    BOM::Config::Runtime->instance->app_config->system->mt5->suspend->withdrawals(0);
+
+    subtest 'suspend real' => sub {
+        BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real(1);
+        for my $cmd (@cmds) {
+            my $fail_result = BOM::MT5::User::Async::_is_suspended($cmd, {login => 'MTR123'}) // {};
+            is($fail_result, 'MT5REALAPISuspendedError', "mt5 $cmd suspeneded for MTR123 when set real as true");
+            my $pass_result = BOM::MT5::User::Async::_is_suspended($cmd, {login => 'MTD123'});
+            ok !$pass_result, "mt5 $cmd not suspended for MTD123 when set real as true";
+        }
+        BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real(0);
+    };
+
+    subtest 'suspend demo' => sub {
+        BOM::Config::Runtime->instance->app_config->system->mt5->suspend->demo(1);
+        for my $cmd (@cmds) {
+            my $fail_result = BOM::MT5::User::Async::_is_suspended($cmd, {login => 'MTD123'}) // {};
+            is($fail_result, 'MT5DEMOAPISuspendedError', "mt5 $cmd suspeneded for MTD123 when set demo as true");
+            my $pass_result = BOM::MT5::User::Async::_is_suspended($cmd, {login => 'MTR123'});
+            ok !$pass_result, "mt5 $cmd not suspended for MTR123 when set demo as true";
+        }
+        BOM::Config::Runtime->instance->app_config->system->mt5->suspend->demo(0);
+    };
 };
 
 done_testing;

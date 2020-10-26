@@ -153,9 +153,15 @@ Returns the code string if suspended, C<undef> otherwise.
 # The error code here is extracted from BOM::RPC::v3::MT5::Errors
 sub _is_suspended {
     my ($cmd, $param) = @_;
+
     my $app_config = BOM::Config::Runtime->instance->app_config->system->mt5->suspend;
     return 'MT5APISuspendedError' if $app_config->all;
-    return undef                  if $cmd ne 'UserDepositChange';
+
+    my $srv_type = _get_server_type_by_prefix(_get_prefix($param));
+    return 'MT5DEMOAPISuspendedError' if $app_config->demo and $srv_type eq 'demo';
+    return 'MT5REALAPISuspendedError' if $app_config->real and $srv_type eq 'real';
+    return undef                      if $cmd ne 'UserDepositChange';
+
     if ($param->{new_deposit} > 0) {
         return 'MT5DepositSuspended' if $app_config->deposits;
     } else {
