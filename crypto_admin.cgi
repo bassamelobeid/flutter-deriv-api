@@ -207,11 +207,6 @@ sub _get_function_map {
         list_receivedby_address  => sub { $currency_wrapper->list_receivedby_address($receivedby_minconf, $input->{address_filter}) },
         get_blockcount           => sub { $currency_wrapper->last_block() },
         get_blockchain_info      => sub { $currency_wrapper->get_info() },
-        calculate_withdrawal_fee => sub {
-            die "Invalid or missing parameters entered for calculate withdrawal fee"
-                unless $input->{withdrawal_address} && $input->{withdrawal_amount};
-            $currency_wrapper->get_withdrawal_daemon()->calculate_transaction_fee($input->{withdrawal_address}, $input->{withdrawal_amount});
-        },
         }
         if ($currency_selected eq 'BTC' || $currency_selected eq 'LTC');
 
