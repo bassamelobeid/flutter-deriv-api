@@ -377,6 +377,11 @@ subtest 'valid currency test' => sub {
 
 subtest 'Purchase Sell Contract' => sub {
     $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'MLT'});
+    BOM::User->create(
+        email    => 'tset'.$$.'@test.com',
+        password => 'xxx'
+    )->add_client($client);    
+
     my $currency = 'USD';
     $client->set_default_account($currency);
 
