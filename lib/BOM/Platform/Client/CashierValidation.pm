@@ -91,10 +91,14 @@ sub validate {
             unless $client->status->crs_tin_information;
     }
 
-    if ($client->landing_company->short ne 'maltainvest' && ($client->residence eq 'gb' || $client->landing_company->check_max_turnover_limit_is_set))
+    my $config = request()->brand->countries_instance->countries_list->{$client->residence};
+
+    if ($client->landing_company->short ne 'maltainvest'
+        && ($config->{need_set_max_turnover_limit} || $client->landing_company->check_max_turnover_limit_is_set))
     {
         return _create_error(localize('Please accept Funds Protection.'), 'ASK_UK_FUNDS_PROTECTION')
-            if $client->residence eq 'gb' && !$client->status->ukgc_funds_protection;
+            if $config->{ukgc_funds_protection}
+            && !$client->status->ukgc_funds_protection;
         return _create_error(localize('Please set your 30-day turnover limit in our self-exclusion facilities to access the cashier.'),
             'ASK_SELF_EXCLUSION_MAX_TURNOVER_SET')
             if $client->status->max_turnover_limit_not_set;
@@ -260,7 +264,8 @@ sub _withdrawal_validation_period {
     return {
         start_time => Date::Utility->new(time - 86400 * 30),
         exclude    => ['currency_conversion_transfer', 'account_transfer'],
-    } if $lc eq 'iom';
+        }
+        if $lc eq 'iom';
 
     return {
         exclude => ['currency_conversion_transfer', 'account_transfer'],

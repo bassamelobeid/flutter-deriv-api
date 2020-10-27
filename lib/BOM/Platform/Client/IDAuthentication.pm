@@ -95,7 +95,7 @@ sub proveid {
     my $client  = $self->client;
     my $loginid = $client->loginid;
 
-    return undef unless $client->residence eq 'gb';
+    return undef unless request()->brand->countries_instance->countries_list->{lc $client->residence}->{has_proveid};
 
     my $prove_id_result = $self->_fetch_proveid;
 

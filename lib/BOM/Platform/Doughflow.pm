@@ -32,7 +32,7 @@ sub get_sportsbook {
         return 'test';
     }
 
-    my $landing_company = LandingCompany::Registry->get_by_broker($broker);
+    my $landing_company      = LandingCompany::Registry->get_by_broker($broker);
     my $landing_company_name = $landing_company->name;
 
     unless (is_deriv_sportsbooks_enabled()) {

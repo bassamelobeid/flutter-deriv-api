@@ -28,6 +28,7 @@ use base qw(BOM::User::Client);
 use Locale::Country;
 use Lingua::EN::AddressParse;
 use Date::Utility;
+use BOM::Platform::Context qw(request);
 
 # The currently suppoted country names and codes are:
 #     AU or Australia
@@ -117,7 +118,8 @@ sub City {
 
     my $city = $self->city;
 
-    if ($self->Country eq 'US' or $self->Country eq 'CA' or $self->Country eq 'AU' or $self->Country eq 'GB') {
+    my $config = request()->brand->countries_instance->countries_list->{lc $self->Country} // {};
+    if ($config->{address_parseable}) {
         $self->_parse_address;
         $city = $self->{'_parsed_address'}->{'suburb'}
             unless $self->{'_parsed_address_error'};
@@ -139,13 +141,14 @@ sub Province {
     my $self = shift;
 
     my $province;
-#       Lingua::EN::AddressParse will get provinces from:
-#     AU or Australia
-#     CA or Canada
-#     GB or United Kingdom
-#     US or United States
+    #       Lingua::EN::AddressParse will get provinces from:
+    #     AU or Australia
+    #     CA or Canada
+    #     GB or United Kingdom
+    #     US or United States
 
-    if ($self->Country eq 'US' or $self->Country eq 'CA' or $self->Country eq 'AU' or $self->Country eq 'GB') {
+    my $config = request()->brand->countries_instance->countries_list->{lc $self->Country} // {};
+    if ($config->{address_parseable}) {
         # must be US state
         # 2-letter iso code
         $self->_parse_address;
@@ -160,7 +163,7 @@ sub Province {
         $province = $self->state;
     }
 
-    if ($self->Country eq 'GB') {
+    if ($config->{no_province}) {
         $province = '';
     }
     return $province;

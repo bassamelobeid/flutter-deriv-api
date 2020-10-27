@@ -49,7 +49,7 @@ subtest 'doughflow_sportsbooks' => sub {
     my $config_mocked = Test::MockModule->new('BOM::Config');
     $config_mocked->mock('on_production', sub { return 1 });
 
-    BOM::Config::Runtime->instance->app_config->system->suspend->doughflow_deriv_sportsbooks(1); # disable Deriv sportsbooks
+    BOM::Config::Runtime->instance->app_config->system->suspend->doughflow_deriv_sportsbooks(1);    # disable Deriv sportsbooks
 
     for my $broker (@all_broker_codes) {
         my $lc = LandingCompany::Registry->get_by_broker($broker);
@@ -73,7 +73,7 @@ subtest 'doughflow_deriv_sportsbooks' => sub {
     my $config_mocked = Test::MockModule->new('BOM::Config');
     $config_mocked->mock('on_production', sub { return 1 });
 
-    BOM::Config::Runtime->instance->app_config->system->suspend->doughflow_deriv_sportsbooks(0); # enable Deriv sportsbooks
+    BOM::Config::Runtime->instance->app_config->system->suspend->doughflow_deriv_sportsbooks(0);    # enable Deriv sportsbooks
 
     for my $broker (@all_broker_codes) {
         my $lc = LandingCompany::Registry->get_by_broker($broker);
