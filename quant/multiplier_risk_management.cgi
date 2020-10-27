@@ -75,6 +75,18 @@ BOM::Backoffice::Request::template()->process(
         multiplier_upload_url  => request()->url_for('backoffice/quant/market_data_mgmt/update_multiplier_config.cgi'),
     }) || die BOM::Backoffice::Request::template()->error;
 
+Bar("Custom multiplier commissions");
+
+my $existing_custom_multiplier_config = _get_existing_custom_multiplier_commissions();
+
+BOM::Backoffice::Request::template()->process(
+    'backoffice/multiplier_custom_commissions.html.tt',
+    {
+        multiplier_upload_url                  => request()->url_for('backoffice/quant/market_data_mgmt/update_multiplier_config.cgi'),
+        existing_custom_multiplier_commissions => encode_json_utf8($existing_custom_multiplier_config),
+        disabled                               => $disabled_write,
+    }) || die BOM::Backoffice::Request::template()->error;
+
 sub _get_existing_commission_config {
 
     my $app_config = BOM::Config::Runtime->instance->app_config;
@@ -111,6 +123,18 @@ sub _get_existing_multiplier_config {
     }
 
     return \%existing;
+}
+
+sub _get_existing_custom_multiplier_commissions {
+    my $qc         = BOM::Config::QuantsConfig->new(chronicle_reader => BOM::Config::Chronicle::get_chronicle_reader());
+    my $all_config = $qc->get_config('custom_multiplier_commission') // [];
+
+    foreach my $config (@{$all_config}) {
+        $config->{start_time} = Date::Utility->new($config->{start_time})->datetime;
+        $config->{end_time}   = Date::Utility->new($config->{end_time})->datetime;
+    }
+
+    return $all_config;
 }
 
 sub _get_existing_client_volume_limits {

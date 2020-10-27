@@ -265,3 +265,105 @@ if ($r->param('delete_multiplier_market_or_underlying_limit')) {
 
     print encode_json_utf8($output);
 }
+
+if ($r->param('save_multiplier_custom_commission')) {
+
+    my $args = {
+        staff                 => $staff,
+        name                  => $r->param('name'),
+        currency_symbol       => $r->param('currency_symbol'),
+        underlying_symbol     => $r->param('underlying_symbol'),
+        start_time            => $r->param('start_time'),
+        end_time              => $r->param('end_time'),
+        min_multiplier        => $r->param('min_multiplier'),
+        max_multiplier        => $r->param('max_multiplier'),
+        commission_adjustment => $r->param('commission_adjustment'),
+        dc_commission         => $r->param('dc_commission'),
+    };
+
+    print encode_json_utf8(_save_multiplier_custom_commission($args));
+}
+
+sub _save_multiplier_custom_commission {
+    my $args = shift;
+    my $now  = Date::Utility->new();
+
+    my ($start, $end);
+
+    my $identifier = $args->{name} || return {error => 'ERR: ' . 'name is required'};
+    return {error => 'ERR: ' . 'name should only contain words and integers'} unless $identifier =~ /^([A-Za-z0-9]+ ?)*$/;
+
+    my $qc = BOM::Config::QuantsConfig->new(
+        chronicle_reader => BOM::Config::Chronicle::get_chronicle_reader(),
+        chronicle_writer => BOM::Config::Chronicle::get_chronicle_writer(),
+        recorded_date    => $now,
+    );
+
+    my $existing_configs_arr = $qc->get_config('custom_multiplier_commission') // {};
+    my %existing_configs     = map { $_->{name} => $_ } @{$existing_configs_arr};
+    return {error => 'ERR: ' . 'Cannot use an identical name.'} if $existing_configs{$identifier};
+    return {error => 'ERR: ' . 'start_time is required'} unless $args->{start_time};
+    return {error => 'ERR: ' . 'end_time is required'}   unless $args->{end_time};
+
+    my $error;
+    try {
+        $start = Date::Utility->new($args->{start_time});
+        $end   = Date::Utility->new($args->{end_time});
+        $error = {error => 'ERR: ' . "Start time and end time should not be in the past"} if $start->is_before($now) or $end->is_before($now);
+    } catch {
+        $error = {error => 'ERR: ' . "Invalid date format"} unless $start and $end;
+    }
+
+    return $error if defined $error and defined $error->{error};
+
+    for my $time_name (qw(start_time end_time)) {
+        $args->{$time_name} =~ s/^\s+|\s+$//g;
+        try {
+            $args->{$time_name} = Date::Utility->new($args->{$time_name})->epoch;
+        } catch {
+            return {error => 'ERR: ' . "Invalid $time_name format"};
+        }
+    }
+
+    for my $key (qw(currency_symbol underlying_symbol)) {
+        my @values = split ',', $args->{$key};
+        $args->{$key} = \@values;
+    }
+
+    for (qw(commission_adjustment dc_commission min_multiplier max_multiplier)) {
+        return {error => 'ERR: ' . "Min multiplier, Max multiplier, Commission adjustment or dc commission must be a number"}
+            if defined $args->{$_} and not looks_like_number($args->{$_});
+    }
+
+    $existing_configs{$identifier} = $args;
+
+    foreach my $name (keys %existing_configs) {
+        delete $existing_configs{$name} if ($existing_configs{$name}->{end_time} < $now->epoch);
+    }
+
+    try {
+        $qc->save_config('custom_multiplier_commission', \%existing_configs);
+        $args->{start_time} = Date::Utility->new($args->{start_time})->datetime;
+        $args->{end_time}   = Date::Utility->new($args->{end_time})->datetime;
+        return $args;
+    } catch {
+        return {error => 'ERR: ' . $@};
+    }
+}
+
+if ($r->param('delete_multiplier_custom_commission')) {
+    my $name = $r->param('name');
+
+    my $qc = BOM::Config::QuantsConfig->new(
+        chronicle_reader => BOM::Config::Chronicle::get_chronicle_reader(),
+        chronicle_writer => BOM::Config::Chronicle::get_chronicle_writer(),
+        recorded_date    => Date::Utility->new,
+    );
+
+    try {
+        $qc->delete_config('custom_multiplier_commission', $name);
+        print encode_json_utf8({success => $name});
+    } catch {
+        print encode_json_utf8({error => 'ERR: ' . $@});
+    }
+}

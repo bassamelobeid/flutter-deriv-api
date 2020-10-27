@@ -1,0 +1,117 @@
+<p><b>Add new multiplier custom commission adjustment with the tool below: </b></p>
+
+<fieldset  [% IF disabled %] disabled title='no write access' [% END %]>
+<table id='custom_multiplier_commission_form'>
+    <tr><td>Name</td><td> : <input type="text" name="name" data-lpignore="true" /></td><td>Accepts only words and integers (required)</td></tr>
+    <tr><td>Start Time</td><td> : <input type="text" name="start_time" id="custom_multiplier_commission_start_time" data-lpignore="true" /></td><td>Accepts valid date utility format, e.g. epoch or '2020-10-17 10:00:30' (required)</td></tr>
+    <tr><td>End Time</td><td> : <input type="text" name="end_time" id="custom_multiplier_commission_end_time" data-lpignore="true" /></td><td>Accepts valid date utility format, e.g. epoch or '2020-10-17 10:05:30' (required)</td></tr>
+    <tr><td>Currency Symbol</td><td> : <input type="text" name="currency_symbol" data-lpignore="true" /></td></tr>
+    <tr><td>Underlying Symbol</td><td> : <input type="text" name="underlying_symbol" data-lpignore="true" /></td></tr>
+
+    <tr><td>Min multiplier </td><td> : <input type="text" name="min_multiplier" data-lpignore="true" /></td></tr>
+    <tr><td>Max multiplier </td><td> : <input type="text" name="max_multiplier" data-lpignore="true" /></td></tr>
+    <tr><td>Commission_adjustment </td><td> : <input type="text" name="multiplier_commission_adjustment" data-lpignore="true" /></td></tr>
+    <tr><td>DC Commission </td><td> : <input type="text" name="dc_commission" data-lpignore="true" /></td></tr>
+    <tr><td></td><button onclick="saveCustomMultiplierCommission()" style="margin-left: 20px;">Save</button></td><td class="result"></td></tr>
+</table>
+</fieldset>
+
+<div id='custom_multiplier_commission_table'>
+</div>
+
+<script>
+    function saveCustomMultiplierCommission() {
+        var el = \$('table#custom_multiplier_commission_form');
+        var result = el.find('.result');
+        result.text('processing...');
+        var start_time = \$('#custom_multiplier_commission_start_time').val();
+        var end_time = \$('#custom_multiplier_commission_end_time').val();
+        var date_re = /^(\d{10}|\d{4}-\d{2}-\d{2}( \d{2}:\d{2}:\d{2})?)\$/;
+        if(!date_re.test(start_time) || !date_re.test(end_time)){
+            result.text("Invaild DateTime entered").css('color', 'red');
+            return true;
+        }
+
+        \$.ajax({
+                url: "[% multiplier_upload_url | none %]",
+                data: {
+                    save_multiplier_custom_commission: "1",
+                    name: el.find('input[name="name"]').val(),
+                    underlying_symbol: el.find('input[name="underlying_symbol"]').val(),
+                    currency_symbol: el.find('input[name="currency_symbol"]').val(),
+                    start_time: el.find('input[name="start_time"]').val(),
+                    end_time: el.find('input[name="end_time"]').val(),
+                    min_multiplier: el.find('input[name="min_multiplier"]').val(),
+                    max_multiplier: el.find('input[name="max_multiplier"]').val(),
+                    commission_adjustment: el.find('input[name="multiplier_commission_adjustment"]').val(),
+                    dc_commission: el.find('input[name="dc_commission"]').val()
+                },
+                success: function(data){
+                    var config = \$.parseJSON(data);
+                    if (config.error) {
+                        result.text('Failed: '+ config.error).css('color', 'red').show();
+                    } else {
+                        appendTable('custom_multiplier_commission_table',config);
+                        result.hide();
+                    }
+                }
+        });
+    }
+
+    function appendTable(id, config) {
+        var table = \$('table#'+id);
+        table.find('tr.none').remove();
+        var to_append = '<tr id="'+config.name+'"><td>'+config.staff+'</td><td>'+config.name+'</td><td>'+config.underlying_symbol+'</td><td>'+config.currency_symbol+'</td><td>'+config.start_time+'</td><td>'+config.end_time+'</td><td>'+config.min_multiplier+'</td><td>'+ config.max_multiplier + '</td><td>' + config.commission_adjustment+'</td><td>'+config.dc_commission+'</td><td><button onclick="deleteConfig(\''+config.name+'\')">Delete</button></td><td class="result"></td></tr>';
+        table.append(to_append);
+    }
+
+    function createTable(id, config) {
+        var table = '<table id="'+id+'">';
+        table += '<tr><td>Updated by</td><td>Name</td><td>Underlying Symbol</td><td>Currency Symbol</td><td>Start</td><td>End</td><td>Min mult</td><td>Max mult</td><td>Comm adj</td><td>DC comm</td></tr>';
+        if (config.length > 0) {
+            for (var i=0; i < config.length; i++) {
+                table += '<tr id="'+config[i].name+'"><td>'+config[i].staff+'</td><td>'+config[i].name+'</td><td>'+config[i].underlying_symbol+'</td><td>'+config[i].currency_symbol+'</td><td>'+config[i].start_time+'</td><td>'+config[i].end_time+'</td><td>'+config[i].min_multiplier+'</td><td>' + config[i].max_multiplier +'</td><td>' +config[i].commission_adjustment+ '</td><td>' + config[i].dc_commission + '</td><td><button onclick="deleteConfig(\''+config[i].name+'\')">Delete</button></td><td class="result"></td></tr>';
+            }
+        } else {
+            table += '<tr class="none"><td>None</td></tr>';
+        }
+
+        table += '</table>';
+        \$('div#'+id).html(table);
+    }
+
+    function deleteConfig (name) {
+        var el = \$('tr#'+name);
+        \$.ajax({
+                url: "[% multiplier_upload_url | none %]",
+                data: {
+                    delete_multiplier_custom_commission: "1",
+                    name: name
+                },
+                success: function(data){
+                    var config = \$.parseJSON(data);
+                    if (config.error) {
+                        el.find('td.result').text('Failed: '+ config.error).css('color','red');
+                    } else {
+                        el.remove();
+                    }
+                }
+        });
+    }
+    createTable('custom_multiplier_commission_table', [% existing_custom_multiplier_commissions | none %])
+</script>
+
+<style>
+    table {
+        border-collapse: collapse;
+    }
+    #custom_multiplier_commission_table td {
+        border: 1px solid #dddddd;
+        text-align: left;
+        padding: 4px;
+        vertical-align: top;
+    }
+    .result {
+      max-width: 145px;
+    }
+</style>
