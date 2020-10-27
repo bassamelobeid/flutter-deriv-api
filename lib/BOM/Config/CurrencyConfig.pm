@@ -114,54 +114,113 @@ These values are extracted from app_config->payment.transfer_between_accounts.mi
 =over 4
 
 =item * C<force_refresh> - if true, transfer between accounts will be recalculated (a little expensive); otherwise, use the cached values.
-=item * C<config_for> - the intended subcategory. 'default' (or empty): internal transfer limits, 'MT5': mt5 transfer limits
 
 =back
 
 =cut
 
 sub transfer_between_accounts_limits {
-    my ($force_refresh, $config_for) = @_;
-
-    my $max_config = uc($config_for // '') eq 'MT5' ? 'MT5' : 'default';
+    my ($force_refresh) = @_;
 
     state $currency_limits_cache = {};
     my $loaded_revision = BOM::Config::Runtime->instance->app_config()->loaded_revision // '';
     return $currency_limits_cache
         if (not $force_refresh)
-        and (not $config_for)
         and $currency_limits_cache->{revision}
         and ($currency_limits_cache->{revision} eq $loaded_revision);
 
     my @all_currencies = LandingCompany::Registry::all_currencies();
 
-    my $configs = app_config()->get([
-        'payments.transfer_between_accounts.minimum.default', 'payments.transfer_between_accounts.minimum.by_currency',
-        'payments.transfer_between_accounts.maximum.default', 'payments.transfer_between_accounts.maximum.MT5'
-    ]);
+    my $configs = app_config()->get(['payments.transfer_between_accounts.minimum.default', 'payments.transfer_between_accounts.maximum.default',]);
 
-    my $configs_json = JSON::MaybeUTF8::decode_json_utf8($configs->{'payments.transfer_between_accounts.minimum.by_currency'});
+    my $min_amount = $configs->{"payments.transfer_between_accounts.minimum.default"};
+    my $max_amount = $configs->{"payments.transfer_between_accounts.maximum.default"};
 
     my $currency_limits = {};
     foreach my $currency (@all_currencies) {
         my ($min, $max);
 
-        $min = $configs_json->{$currency} // $configs->{"payments.transfer_between_accounts.minimum.default"};
-        $min = eval { 0 + financialrounding('amount', $currency, convert_currency($min, 'USD', $currency)); };
-
-        $max = eval {
-            0 + financialrounding('amount', $currency,
-                convert_currency($configs->{'payments.transfer_between_accounts.maximum.' . $max_config}, 'USD', $currency));
-        };
+        $min = eval { 0 + financialrounding('amount', $currency, convert_currency($min_amount, 'USD', $currency)); };
+        $max = eval { 0 + financialrounding('amount', $currency, convert_currency($max_amount, 'USD', $currency)); };
 
         $currency_limits->{$currency}->{min} = $min // 0;
         $currency_limits->{$currency}->{max} = $max // 0;
     }
 
     $currency_limits->{revision} = $loaded_revision;
-    $currency_limits_cache = $currency_limits if not $config_for;
+    $currency_limits_cache = $currency_limits;
 
     return $currency_limits;
+}
+
+=head2 mt5_transfer_limits
+
+MT5 transfer limits are returned as a {currency => {min => 1, max => 2500}, ... } hash ref.
+These values are extracted from app_config->payment.transfer_between_accounts.minimum/maximum.MT5 editable in backoffice Dynamic Settings page.
+
+=over 4
+
+=item * C<brand> - The requester brand name (e.g. derivcrypto, binary, ....) (optional)
+
+=back
+
+=cut
+
+sub mt5_transfer_limits {
+    my ($brand) = @_;
+
+    my @all_currencies = LandingCompany::Registry::all_currencies();
+
+    my $configs      = get_mt5_transfer_limit_by_brand($brand);
+    my $min_amount   = $configs->{minimum}->{amount};
+    my $min_currency = $configs->{minimum}->{currency};
+    my $max_amount   = $configs->{maximum}->{amount};
+    my $max_currency = $configs->{maximum}->{currency};
+
+    my $currency_limits = {};
+    foreach my $currency (@all_currencies) {
+        my ($min, $max);
+
+        $min = eval { 0 + financialrounding('amount', $currency, convert_currency($min_amount, $min_currency, $currency)); };
+        $max = eval { 0 + financialrounding('amount', $currency, convert_currency($max_amount, $max_currency, $currency)); };
+
+        $currency_limits->{$currency}->{min} = $min // 0;
+        $currency_limits->{$currency}->{max} = $max // 0;
+    }
+
+    return $currency_limits;
+}
+
+=head2 get_mt5_transfer_limit_by_brand
+
+Returns a hash reference of MT5 transfer limits config {maximum => {...}, minimum => {...}}.
+Returns the default config when C<brand> is undefined or we didn't find any config related.
+
+=over 4
+
+=item * C<brand> - The brand name (e.g. derivcrypto, binary, ....) (optional)
+
+=back
+
+=cut
+
+sub get_mt5_transfer_limit_by_brand {
+    my $brand = shift;
+
+    my $configs = app_config()->get(['payments.transfer_between_accounts.minimum.MT5', 'payments.transfer_between_accounts.maximum.MT5']);
+
+    my $maximum_config = JSON::MaybeUTF8::decode_json_utf8($configs->{'payments.transfer_between_accounts.maximum.MT5'});
+    my $minimum_config = JSON::MaybeUTF8::decode_json_utf8($configs->{'payments.transfer_between_accounts.minimum.MT5'});
+
+    my $result = {
+        maximum => $maximum_config->{default},
+        minimum => $minimum_config->{default}};
+
+    return $result unless $brand;
+
+    $result->{maximum} = $maximum_config->{$brand} if $maximum_config->{$brand};
+    $result->{minimum} = $minimum_config->{$brand} if $minimum_config->{$brand};
+    return $result;
 }
 
 =head2 transfer_between_accounts_fees

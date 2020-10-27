@@ -59,27 +59,121 @@ $mock_app_config->mock(
         return $revision;
     });
 
-subtest 'transfer_between_accounts_limits' => sub {
-    my $minimum = {
-        USD => 10,
-        GBP => 11,
-        BTC => 12,
-        UST => 15
-    };
+subtest 'get_mt5_transfer_limit_by_brand' => sub {
+    my $mt5_max_limit = {
+        default => {
+            currency => 'USD',
+            amount   => 2500
+        },
+        derivcrypto => {
+            currency => 'BTC',
+            amount   => 0.25
+        }};
+
+    my $mt5_min_limit = {
+        default => {
+            currency => 'USD',
+            amount   => 1
+        },
+        derivcrypto => {
+            currency => 'BTC',
+            amount   => 0.00008
+        }};
 
     my $app_config = BOM::Config::Runtime->instance->app_config();
     $app_config->set({
-        'payments.transfer_between_accounts.minimum.by_currency' => JSON::MaybeUTF8::encode_json_utf8($minimum),
-        'payments.transfer_between_accounts.minimum.default'     => 1,
-        'payments.transfer_between_accounts.maximum.default'     => 2500,
-        'payments.transfer_between_accounts.maximum.MT5'         => 2500,
+        'payments.transfer_between_accounts.maximum.MT5' => JSON::MaybeUTF8::encode_json_utf8($mt5_max_limit),
+        'payments.transfer_between_accounts.minimum.MT5' => JSON::MaybeUTF8::encode_json_utf8($mt5_min_limit),
+    });
+
+    my $expected_config_for_derivCrypto = {
+        maximum => {
+            currency => 'BTC',
+            amount   => 0.25
+        },
+        minimum => {
+            currency => 'BTC',
+            amount   => 0.00008
+        }};
+
+    my $expected_default_config = {
+        maximum => {
+            currency => 'USD',
+            amount   => 2500
+        },
+        minimum => {
+            currency => 'USD',
+            amount   => 1
+        }};
+
+    my $derivCrypto_config = BOM::Config::CurrencyConfig::get_mt5_transfer_limit_by_brand('derivcrypto');
+    is_deeply $derivCrypto_config, $expected_config_for_derivCrypto, 'Correct config for derivcrypto';
+
+    my $default_config = BOM::Config::CurrencyConfig::get_mt5_transfer_limit_by_brand();
+    is_deeply $default_config, $expected_default_config, 'Correct default config';
+
+};
+
+subtest 'mt5_transfer_limits' => sub {
+    my $mt5_max_limit = {
+        default => {
+            currency => 'USD',
+            amount   => 2500
+        },
+        derivcrypto => {
+            currency => 'BTC',
+            amount   => 0.25
+        }};
+
+    my $mt5_min_limit = {
+        default => {
+            currency => 'USD',
+            amount   => 1
+        },
+        derivcrypto => {
+            currency => 'BTC',
+            amount   => 0.00008
+        }};
+
+    my $app_config = BOM::Config::Runtime->instance->app_config();
+    $app_config->set({
+        'payments.transfer_between_accounts.maximum.MT5' => JSON::MaybeUTF8::encode_json_utf8($mt5_max_limit),
+        'payments.transfer_between_accounts.minimum.MT5' => JSON::MaybeUTF8::encode_json_utf8($mt5_min_limit),
+    });
+
+    my @all_currencies = LandingCompany::Registry::all_currencies();
+
+    my $expected_currency_config = {};
+    my $min_amount               = $mt5_min_limit->{default}->{amount};
+    my $max_amount               = $mt5_max_limit->{default}->{amount};
+    my $min_currency             = $mt5_min_limit->{default}->{currency};
+    my $max_currency             = $mt5_max_limit->{default}->{currency};
+    for my $currency (@all_currencies) {
+        my ($min, $max);
+
+        $min = eval { 0 + financialrounding('amount', $currency, convert_currency($min_amount, $min_currency, $currency)); };
+        $max = eval { 0 + financialrounding('amount', $currency, convert_currency($max_amount, $max_currency, $currency)); };
+
+        $expected_currency_config->{$currency}->{min} = $min // 0;
+        $expected_currency_config->{$currency}->{max} = $max // 0;
+    }
+
+    my $mt5_transfer_limits = BOM::Config::CurrencyConfig::mt5_transfer_limits(1);
+    is_deeply $mt5_transfer_limits, $expected_currency_config, 'correct mt5 limits config';
+};
+
+subtest 'transfer_between_accounts_limits' => sub {
+    my $app_config = BOM::Config::Runtime->instance->app_config();
+    $app_config->set({
+        'payments.transfer_between_accounts.minimum.default' => 1,
+        'payments.transfer_between_accounts.maximum.default' => 2500,
     });
 
     my @all_currencies  = LandingCompany::Registry::all_currencies();
     my $transfer_limits = BOM::Config::CurrencyConfig::transfer_between_accounts_limits(1);
     my $min_default     = 1;
     for my $currency_code (@all_currencies) {
-        my $currency_min_default = convert_currency($minimum->{$currency_code} // $min_default, 'USD', $currency_code);
+        my $currency_min_default = convert_currency($min_default, 'USD', $currency_code);
 
         cmp_ok(
             $transfer_limits->{$currency_code}->{min},

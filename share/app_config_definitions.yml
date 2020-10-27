@@ -91,7 +91,7 @@ payments:
         - DCash4
         - PCC_Ecommpay
         - PCC_ISignThis
-      global: 1      
+      global: 1
     p2p:
       description: 'Peer-to-peer payment system'
       isa: section
@@ -150,7 +150,7 @@ payments:
           description: 'List of countries for which P2P is not available, 2 letter lower case country codes.'
           isa: ArrayRef
           global: 1
-          default: []          
+          default: []
         limits:
           description: 'Peer-to-peer payment system and client limits'
           isa: section
@@ -184,7 +184,7 @@ payments:
           description: 'Number of months in the past to check credit card deposits and turnover.'
           isa: Num
           global: 1
-          default: 6             
+          default: 6
     crypto:
       description: 'Cryptocurrencies related config'
       isa: section
@@ -474,15 +474,15 @@ payments:
           isa: section
           description: 'Transfer minimum amount'
           contains:
-            by_currency:
-              description: 'Minimum amount for individual currencies (in USD); example: {"UST":1, "GBP":1.8}'
-              isa: json_string
-              default: '{"UST":1}'
-              global: 1
             default:
               isa: Num
               description: 'Default transfer minimum (in USD)'
               default: 1
+              global: 1
+            MT5:
+              isa: json_string
+              description: 'Minimum amount for transferring between binary accounts and MT5 accounts per the brand. ("default" applies to all brands that are not in the config)'
+              default: '{"default":{"currency":"USD","amount":1},"derivcrypto":{"currency":"BTC","amount":0.00008}}'
               global: 1
         maximum:
           isa: section
@@ -494,9 +494,9 @@ payments:
               default: 2500
               global: 1
             MT5:
-              isa: Num
-              description: 'Maximum amount for transferring between binary accounts and MT5 accounts in USD'
-              default: 2500
+              isa: json_string
+              description: 'Maximum amount for transferring between binary accounts and MT5 accounts per the brand. ("default" applies to all brands that are not in the config)'
+              default: '{"default":{"currency":"USD","amount":2500},"derivcrypto":{"currency":"BTC","amount":0.25}}'
               global: 1
     experimental_currencies_allowed:
       description: "List of emails that allowed to deposit using experimental currencies"

@@ -125,8 +125,7 @@ sub _check_object {
     }
     try {
         require $file;
-    }
-    catch {
+    } catch {
         $@ =~ s/\n .*//xms;
         push @results, [diag => "Testing JSON::MaybeXS ignores $orig_file because: $@"];
         _pipe_results($pipe, @results);
@@ -134,7 +133,7 @@ sub _check_object {
     }
 
     require JSON::MaybeXS;
-    my $json = JSON::MaybeXS->new;
+    my $json         = JSON::MaybeXS->new;
     my @json_results = ['pass', "JSON::MaybeXS->new returned Cpanel::JSON::XS in file $file."];
     if (not $json->isa('Cpanel::JSON::XS')) {
         my $class = ref($json);
