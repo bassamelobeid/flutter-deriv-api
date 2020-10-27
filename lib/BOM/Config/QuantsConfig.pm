@@ -142,7 +142,7 @@ sub get_config {
     my $existing_config = $self->chronicle_reader->$method(CONFIG_NAMESPACE, $config_type, $self->for_date) // {};
 
     # custom commission requires some special treatment.
-    return $self->_process_commission($existing_config, $args) if $config_type eq 'commission';
+    return $self->_process_commission($existing_config, $args) if $config_type eq 'commission' or $config_type eq 'custom_multiplier_commission';
     return $existing_config;
 }
 
