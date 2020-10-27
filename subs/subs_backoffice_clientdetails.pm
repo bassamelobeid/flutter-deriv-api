@@ -34,6 +34,7 @@ use BOM::Backoffice::Request qw(request);
 use BOM::Database::Model::HandoffToken;
 use BOM::Config::Redis;
 use BOM::User::Client;
+use BOM::Backoffice::Request qw(request);
 use 5.010;
 
 =head1 subs_backoffice_clientdetails
@@ -285,7 +286,8 @@ sub print_client_details {
     my $client_for_prove = undef;
 
     # If client is from UK, check for ProveID
-    if ($client->residence eq 'gb') {
+    my $config = request()->brand->countries_instance->countries_list->{$client->residence};
+    if ($config->{has_proveid}) {
         $client_for_prove = $client;
 
         # KYC/IDENTITY VERIFICATION SECTION
@@ -455,7 +457,7 @@ sub print_client_details {
         show_social_responsibility_client  => $client->landing_company->social_responsibility_check_required,
         social_responsibility_risk_status  => BOM::Config::Redis::redis_events_write()->get($client->loginid . '_sr_risk_status') // 'low',
         professional_status                => get_professional_status($client),
-        show_funds_message                 => ($client->residence eq 'gb' and not $client->is_virtual),
+        show_funds_message                 => ($config->{ukgc_funds_protection} and not $client->is_virtual),
         show_risk_approval                 => ($client->landing_company->short eq 'maltainvest'),
         show_tnc_status                    => !$client->is_virtual,
         show_non_pep_declaration_time      => !$client->is_virtual,
