@@ -133,6 +133,7 @@ rpc states_list => sub {
 
 sub _currencies_config {
 
+    my $brand_name     = request()->brand->name;
     my $amt_precision  = Format::Util::Numbers::get_precision_config()->{price};
     my $default_stakes = BOM::Config::quants()->{default_stake};
     # As a stake_default (amount, which will be pre-populated for this currency on our website,
@@ -140,7 +141,7 @@ sub _currencies_config {
     # Logic is copied from _build_staking_limits
 
     my $transfer_limits     = BOM::Config::CurrencyConfig::transfer_between_accounts_limits();
-    my $transfer_limits_mt5 = BOM::Config::CurrencyConfig::transfer_between_accounts_limits(1, 'mt5');
+    my $transfer_limits_mt5 = BOM::Config::CurrencyConfig::mt5_transfer_limits($brand_name);
     my $transfer_fees       = BOM::Config::CurrencyConfig::transfer_between_accounts_fees();
 
     # Get available currencies

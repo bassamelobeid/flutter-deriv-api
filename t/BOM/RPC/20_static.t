@@ -54,7 +54,7 @@ subtest 'currencies_config.transfer_between_accounts' => sub {
 
     my @all_currencies      = keys %{LandingCompany::Registry::get('svg')->legal_allowed_currencies};
     my $currency_limits     = BOM::Config::CurrencyConfig::transfer_between_accounts_limits();
-    my $currency_limits_mt5 = BOM::Config::CurrencyConfig::transfer_between_accounts_limits(1, 'mt5');
+    my $currency_limits_mt5 = BOM::Config::CurrencyConfig::mt5_transfer_limits();
     my $currency_fees       = BOM::Config::CurrencyConfig::transfer_between_accounts_fees();
 
     is(

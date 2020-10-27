@@ -514,8 +514,8 @@ subtest 'Transfers Limits' => sub {
         ->error_code_is('MT5DepositError', 'Transfers limit - correct error code')
         ->error_message_like(qr/minimum amount for transfers is $expected_eur_min EUR/, 'Transfers minimum - correct error message');
 
-    my $expected_usd_min = BOM::Config::CurrencyConfig::transfer_between_accounts_limits(1, 'mt5')->{USD}->{min};
-    my $expected_usd_max = BOM::Config::CurrencyConfig::transfer_between_accounts_limits(1, 'mt5')->{USD}->{max};
+    my $expected_usd_min = BOM::Config::CurrencyConfig::mt5_transfer_limits()->{USD}->{min};
+    my $expected_usd_max = BOM::Config::CurrencyConfig::mt5_transfer_limits()->{USD}->{max};
 
     my $withdraw_params = {
         language => 'EN',
