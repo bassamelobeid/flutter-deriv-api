@@ -6,6 +6,7 @@ use MooseX::Singleton;
 use Mojo::URL;
 
 use BOM::Config::Runtime;
+use BOM::Backoffice::Request qw(request);
 
 sub bo_js_files_for {
     my $self = shift;
@@ -32,9 +33,7 @@ sub bo_js_files_for {
             if /f_manager_crypto/;
     }
 
-    my $base_dir = Mojo::URL->new(BOM::Config::Runtime->instance->app_config->cgi->backoffice->static_url);
-    $base_dir->path('javascript/');
-    return map { $base_dir->to_string . $_ } @js_files;
+    return map { request()->url_for('js/' . $_) } @js_files;
 }
 
 1;

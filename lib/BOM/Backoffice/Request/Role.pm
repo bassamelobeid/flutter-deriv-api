@@ -48,13 +48,14 @@ sub url_for {
     if ($url->path =~ /.*\.cgi$/) {
         $url->query($query);
         $url->path('/d/' . $url->path);
-        $url->host(_domain_for());
         # static files
     } else {
+        # Our nginx mapping is /d/backoffice/public -> /home/git/regentmarkets/bom-backoffice/public
         $url->query($query);
-        $url->path('/binary-static-backoffice/' . $url->path);
-        $url->host('regentmarkets.github.io');
+        $url->path('/d/backoffice/public/' . $url->path);
     }
+
+    $url->host(_domain_for());
     $url->scheme('https');
 
     return $url;

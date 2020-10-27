@@ -34,9 +34,7 @@ sub BrokerPresentation {
     print "<title>$title-$ENV{REMOTE_ADDR}</title>";
     print '<meta http-equiv="Content-Type" content="text/html; charset=utf-8">';
 
-    my $base_dir = Mojo::URL->new(BOM::Config::Runtime->instance->app_config->cgi->backoffice->static_url);
-    $base_dir->path('css/');
-    print '<link rel="stylesheet" type="text/css" href="' . $base_dir->to_string . $_ . '"/>'
+    print '<link rel="stylesheet" type="text/css" href="' . request()->url_for('css/' . $_) . '"/>'
         for ('style.css', 'sell_popup.css', 'external/grid.css', 'external/jquery-ui.custom.css');
 
     foreach my $js_file (BOM::JavascriptConfig->instance->bo_js_files_for($0)) {
