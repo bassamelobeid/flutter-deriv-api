@@ -4205,6 +4205,50 @@ sub payment_doughflow {
     return BOM::User::Client::PaymentTransaction::Doughflow->new(%$trx);
 }
 
+sub payment_ctc {
+    my ($self, %args) = @_;
+
+    my $currency  = $args{currency}  || die "no currency";
+    my $amount    = $args{amount}    || die "no amount";
+    my $remark    = $args{remark}    || '';
+    my $staff     = $args{staff}     || 'system';
+    my $crypto_id = $args{crypto_id} || die "no crypto_id";
+    my $transaction_hash = $args{transaction_hash};
+
+    my $action_type = $amount > 0 ? 'deposit' : 'withdrawal';
+    my $account     = $self->set_default_account($currency);
+
+    my $ctc_values = {
+        crypto_id        => $crypto_id,
+        transaction_type => $action_type,
+        created_by       => $staff,
+        transaction_hash => $transaction_hash,
+    };
+
+    my ($trx) = $account->add_payment_transaction({
+            amount               => $amount,
+            payment_gateway_code => 'ctc',
+            payment_type_code    => 'crypto_cashier',
+            status               => 'OK',
+            staff_loginid        => $staff,
+            remark               => $remark,
+            account_id           => $account->id,
+        },
+        $ctc_values
+    );
+
+    BOM::User::Client::PaymentNotificationQueue->add(
+        source        => 'cryptocashier',
+        currency      => $currency,
+        loginid       => $self->loginid,
+        type          => $action_type,
+        amount        => $amount,
+        payment_agent => $self->payment_agent ? 1 : 0,
+    );
+
+    return $trx;
+}
+
 sub payment_free_gift {
     my ($self, %args) = @_;
 
