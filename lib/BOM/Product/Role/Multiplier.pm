@@ -48,7 +48,10 @@ sub BUILD {
     if (defined $self->_order->{stop_out} and defined $self->_order->{stop_out}->{commission}) {
         $commission = $self->_order->{stop_out}->{commission};
     } else {
-        my $base_commission       = $self->_multiplier_config->{commission};
+        my $custom_commission = $self->_get_valid_custom_commission_adjustment;
+        my $commission_adj    = $custom_commission->{commission_adj} // 1.0;
+
+        my $base_commission       = $self->_multiplier_config->{commission} * $commission_adj;
         my $commission_multiplier = $self->commission_multiplier;
 
         unless (defined $base_commission and defined $commission_multiplier) {
@@ -781,11 +784,14 @@ sub cancellation_cv {
 
     $cost_cv->include_adjustment('multiply', $volume_cv);
 
+    my $custom_commission = $self->_get_valid_custom_commission_adjustment;
+    my $dc_commission     = $custom_commission->{dc_commission} // $self->_multiplier_config->{cancellation_commission};
+
     my $comm_multiplier_cv = Math::Util::CalculatedValue::Validatable->new({
         name        => 'commission_multiplier',
         description => 'commission markup on the cost',
         set_by      => __PACKAGE__,
-        base_amount => 1 + $self->_multiplier_config->{cancellation_commission},
+        base_amount => 1 + $dc_commission,
     });
 
     $cost_cv->include_adjustment('multiply', $comm_multiplier_cv);
@@ -1020,12 +1026,12 @@ sub _validate_sell_pnl {
     return;
 }
 
-has _multiplier_config => (
+has _quants_config => (
     is         => 'ro',
     lazy_build => 1,
 );
 
-sub _build__multiplier_config {
+sub _build__quants_config {
     my $self = shift;
 
     my $for_date = $self->underlying->for_date;
@@ -1034,7 +1040,18 @@ sub _build__multiplier_config {
         chronicle_reader => BOM::Config::Chronicle::get_chronicle_reader($for_date),
     );
 
-    my $config = $qc->get_multiplier_config($self->landing_company, $self->underlying->symbol);
+    return $qc;
+}
+
+has _multiplier_config => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+sub _build__multiplier_config {
+    my $self = shift;
+
+    my $config = $self->_quants_config->get_multiplier_config($self->landing_company, $self->underlying->symbol);
 
     return $config if $config;
 
@@ -1044,7 +1061,46 @@ sub _build__multiplier_config {
     });
 
     # return config for R_100 to avoid warnings but contract will not go through because of validation error
-    return $qc->get_multiplier_config('common', 'R_100');
+    return $self->_quants_config->get_multiplier_config('common', 'R_100');
+}
+
+has _custom_commission_adjustment => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+sub _build__custom_commission_adjustment {
+    my $self = shift;
+
+    return $self->_quants_config->get_config('custom_multiplier_commission', +{underlying_symbol => $self->underlying->symbol});
+}
+
+sub _get_valid_custom_commission_adjustment {
+    my $self = shift;
+
+    my $c_start = $self->date_start->epoch;
+
+    my $commission_adj;
+    my $dc_commission;
+    foreach my $custom (@{$self->_custom_commission_adjustment}) {
+        my $start_epoch     = Date::Utility->new($custom->{start_time})->epoch;
+        my $end_epoch       = Date::Utility->new($custom->{end_time})->epoch;
+        my $valid_timeframe = ($c_start >= $start_epoch && $c_start <= $end_epoch);
+
+        my $min_multiplier = $custom->{min_multiplier} // 0;
+        my $max_multiplier = $custom->{max_multiplier} // 0;
+        my $valid_range = ($self->multiplier >= $min_multiplier and $self->multiplier <= $max_multiplier) ? 1 : 0;
+
+        if ($valid_timeframe and $valid_range) {
+            $commission_adj = $custom->{commission_adjustment};
+            $dc_commission  = $custom->{dc_commission};
+        }
+    }
+
+    return {
+        commission_adj => $commission_adj,
+        dc_commission  => $dc_commission
+    };
 }
 
 sub _limit_order_args {
