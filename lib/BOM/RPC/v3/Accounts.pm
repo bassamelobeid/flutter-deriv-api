@@ -380,7 +380,26 @@ sub _translate_payment_remark {
 
     #MT5 remark example.
     # 'Transfer from CR90000004 to MT5 account real 540161 Includes transfer fee of BTC 0.00300000 (2%).'
-    my $payment_remark = localize($txn->{payment_remark} // '');
+    my $payment_remark;
+
+    if (defined $txn->{mt5_account_id}) {
+        my $account_type = ($txn->{mt5_account_id} =~ /^MTD/) ? localize('demo') : localize('real');
+        my $mt5_int_id   = $txn->{mt5_account_id} =~ s/${\BOM::User->MT5_REGEX}//r;                    # This one is just the numeric ID
+
+        if ($txn->{action_type} eq 'withdrawal') {
+            $payment_remark =
+                (defined $txn->{transfer_fees} and $txn->{transfer_fees} > 0)
+                ? localize('Transfer from [_1] to MT5 account [_2] [_3] includes transfer fee of [_4] [_5] (2%).',
+                $txn->{staff_loginid}, $account_type, $mt5_int_id, $txn->{transfer_fees}, $txn->{mt5_currency_code})
+                : localize('Transfer from [_1] to MT5 account [_2] [_3] ', $txn->{staff_loginid}, $account_type, $mt5_int_id);
+        } elsif ($txn->{action_type} eq 'deposit') {
+            $payment_remark =
+                (defined $txn->{transfer_fees} and $txn->{transfer_fees} > 0)
+                ? localize('Transfer from MT5 account [_1] [_2] to [_3] includes transfer fee of [_4] [_5] (2%).',
+                $account_type, $mt5_int_id, $txn->{staff_loginid}, $txn->{transfer_fees}, $txn->{mt5_currency_code})
+                : localize('Transfer from MT5 account [_1] [_2] to [_3] ', $account_type, $mt5_int_id, $txn->{staff_loginid});
+        }
+    }
 
     if (defined $txn->{seller_order_id}) {
         return localize('P2P order [_1] completed - payment as seller', $txn->{seller_order_id});
@@ -388,7 +407,7 @@ sub _translate_payment_remark {
         return localize('P2P order [_1] completed - payment as buyer', $txn->{buyer_order_id});
     }
 
-    return $payment_remark;
+    return $payment_remark // $txn->{payment_remark};
 }
 
 rpc "statement",
@@ -449,7 +468,7 @@ rpc "statement",
                 $struct->{longcode} = $longcodes->{longcodes}->{$txn->{short_code}} // localize('Could not retrieve contract details');
             } elsif ($txn->{payment_id}) {
                 # withdrawal/deposit
-                $struct->{longcode} = _translate_payment_remark($txn);
+                $struct->{longcode} = _translate_payment_remark($txn) // '';
             } else {
                 $struct->{longcode} = localize($txn->{remark} // '');
             }
