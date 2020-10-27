@@ -25,8 +25,10 @@ use IO::Async::Loop;
 use BOM::Event::Services;
 use List::Util qw(all);
 use BOM::Test::Helper::Client qw( create_client top_up);
+use BOM::Test::Helper::ExchangeRates qw(populate_exchange_rates);
 
 initialize_events_redis();
+populate_exchange_rates();
 
 my $mock_ltc = Test::MockModule->new('BOM::CTC::Currency::LTC');
 $mock_ltc->mock(
@@ -321,7 +323,7 @@ sub _insert_withdrawal_transaction {
                 0,                1,        []);
         });
 
-    $dbic->run(ping => sub { $_->selectrow_array('SELECT payment_id FROM payment.ctc_process_withdrawal(?)', undef, $txn_db_id) });
+    $helper->process_withdrawal($txn_db_id, $address, $transaction->{amount});
 
     return $dbic->run(
         ping => sub {
