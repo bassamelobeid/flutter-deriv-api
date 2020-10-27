@@ -3777,7 +3777,7 @@ sub validate_payment {
             $self->{mlt_affiliate_first_deposit} = 1;
         }
         my $max_balance = $self->get_limit({'for' => 'account_balance'});
-        die sprintf("Balance would exceed limit [%s %s] for [%s] \n", $currency, $max_balance, $self->loginid)
+        die sprintf("Balance would exceed limit [%s %s] for [%s] \n", $max_balance, $currency, $self->loginid)
             if ($amount + $accbal) > $max_balance;
 
         $self->_check_deposit_limits($amount);
@@ -3833,9 +3833,9 @@ sub validate_payment {
 
             if (financialrounding('amount', $currency, $absamt) > financialrounding('amount', $currency, $wd_left)) {
                 if ($currency ne $lc_currency) {
-                    die sprintf "Withdrawal amount [%s %s] exceeds withdrawal limit [%s %s].\n", $currency,
-                        formatnumber('amount', $currency, convert_currency($absamt, $lc_currency, $currency)),
-                        $currency, formatnumber('amount', $currency, convert_currency($wd_left, $lc_currency, $currency));
+                    die sprintf "Withdrawal amount [%s %s] exceeds withdrawal limit [%s %s].\n",
+                        formatnumber('amount', $currency, convert_currency($absamt,  $lc_currency, $currency)), $currency,
+                        formatnumber('amount', $currency, convert_currency($wd_left, $lc_currency, $currency)), $currency;
                 } else {
                     die sprintf "Withdrawal amount [%s %s] exceeds withdrawal limit [%s %s].\n",
                         formatnumber('amount', $currency, $absamt),

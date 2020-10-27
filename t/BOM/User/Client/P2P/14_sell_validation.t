@@ -190,7 +190,7 @@ subtest 'override' => sub {
         'cannot create sell ad'
     );
 
-    $client->db->dbic->dbh->do('UPDATE p2p.p2p_advertiser SET cc_sell_authorized = TRUE WHERE id = '.$client->p2p_advertiser_info->{id});
+    $client->db->dbic->dbh->do('UPDATE p2p.p2p_advertiser SET cc_sell_authorized = TRUE WHERE id = ' . $client->p2p_advertiser_info->{id});
 
     lives_ok { BOM::Test::Helper::P2P::create_advert(client => $client, type => 'sell') } 'can create sell ad after override';
 };

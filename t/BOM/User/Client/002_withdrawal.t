@@ -131,7 +131,8 @@ subtest "withdraw vs Balance" => sub {
     plan tests => 1;
     my $client = new_client('USD');
     $client->smart_payment(%deposit);
-    throws_ok { $client->validate_payment(%withdrawal, amount => -100.01) } qr/exceeds client balance/, "Withdraw more than balance";
+    throws_ok { $client->validate_payment(%withdrawal, amount => -100.01) } qr/Withdrawal amount .* USD] exceeds client balance .* USD/,
+        "Withdraw more than balance";
 };
 
 # Test for CR withdrawal limits

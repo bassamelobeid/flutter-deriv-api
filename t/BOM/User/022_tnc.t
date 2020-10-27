@@ -8,7 +8,7 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Config::Runtime;
 use BOM::Platform::Context::Request;
 
-my $app_config = BOM::Config::Runtime->instance->app_config;
+my $app_config  = BOM::Config::Runtime->instance->app_config;
 my $orig_config = $app_config->cgi->terms_conditions_versions;
 scope_guard { $app_config->cgi->terms_conditions_versions($orig_config) };
 $app_config->cgi->terms_conditions_versions('{ "binary": "Version 1 2020-01-01", "deriv": "Version 2 2020-06-01" }');
@@ -20,12 +20,12 @@ my $user = BOM::User->create(
     password => 'test',
 );
 
-my $client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code=>'VRTC'});
-my $client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code=>'CR'});
+my $client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'VRTC'});
+my $client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR'});
 $user->add_client($client_vr);
 $user->add_client($client_cr);
 
-my $r = BOM::Platform::Context::Request->new({brand_name=>'binary'});
+my $r = BOM::Platform::Context::Request->new({brand_name => 'binary'});
 BOM::Platform::Context::request($r);
 
 ok !$client_vr->is_tnc_approval_required, 'vr does not need tnc';
@@ -41,9 +41,9 @@ is $client_cr->user->current_tnc_version, 'Version 1 2020-01-01', 'correct versi
 $client_cr->user->set_tnc_approval();
 ok !$client_cr->is_tnc_approval_required, 'client does not need tnc after accepting';
 is $client_cr->accepted_tnc_version, 'Version 1 2020-01-01', 'Client accepted version';
-is $client_vr->accepted_tnc_version, '', 'vr client has no accepted t&c version';
+is $client_vr->accepted_tnc_version, '',                     'vr client has no accepted t&c version';
 
-$r = BOM::Platform::Context::Request->new({brand_name=>'deriv'});
+$r = BOM::Platform::Context::Request->new({brand_name => 'deriv'});
 BOM::Platform::Context::request($r);
 
 ok $client_cr->is_tnc_approval_required, 'client needs tnc for new brand';
@@ -51,13 +51,13 @@ is $client_cr->accepted_tnc_version, '', 'No tnc accepted for new brand';
 $client_cr->user->set_tnc_approval();
 ok !$client_cr->is_tnc_approval_required, 'client does not need tnc after accepting';
 is $client_cr->accepted_tnc_version, 'Version 2 2020-06-01', 'Client accepted version for new brand';
-is $client_vr->accepted_tnc_version, '', 'vr client still has no accepted t&c version';
+is $client_vr->accepted_tnc_version, '',                     'vr client still has no accepted t&c version';
 
 $app_config->cgi->terms_conditions_versions('{ "deriv": "Version 3 2020-07-01" }');
 
 ok $client_cr->is_tnc_approval_required, 'client needs tnc after version increased';
 
-$r = BOM::Platform::Context::Request->new({brand_name=>'binary'});
+$r = BOM::Platform::Context::Request->new({brand_name => 'binary'});
 BOM::Platform::Context::request($r);
 
 ok !$client_cr->is_tnc_approval_required, 'client does not need tnc if brand has no tnc version';
