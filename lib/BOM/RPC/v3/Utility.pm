@@ -469,10 +469,13 @@ sub validate_make_new_account {
     }
 
     my $landing_company_name = $client->landing_company->short;
+    my $config               = $countries_instance->countries_list->{$client->residence};
     if ($account_type eq 'financial') {
         #moved from Platform::Account::Real::maltainvest::_validate
         # also allow MLT UK client to open MF account
-        unless (($financial_company // '') eq 'maltainvest' or ($client->residence eq 'gb' and $landing_company_name eq 'malta')) {
+        unless (($financial_company // '') eq 'maltainvest'
+            or ($config->{lc_to_open_mf_account} // '') eq $landing_company_name)
+        {
             warn "maltainvest acc opening err: loginid:$loginid, residence:$residence, financial_company:" . ($financial_company // '');
             return create_error_by_code('InvalidAccount');
         }

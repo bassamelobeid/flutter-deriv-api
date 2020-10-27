@@ -328,7 +328,10 @@ async_rpc "mt5_new_account",
     my $group = _mt5_group($company_name, $account_type, $mt5_account_type, $mt5_account_currency, $mt5_account_category);
     return create_error_future('permission') if $group eq '';
 
-    if ($client->residence eq 'gb' and not $client->status->age_verification) {
+    my $config = request()->brand->countries_instance->countries_list->{$client->residence};
+    if ($config->{mt5_age_verification}
+        and not $client->status->age_verification)
+    {
         return ($client->is_virtual() and $user->clients == 1)
             ? create_error_future('RealAccountMissing')
             : create_error_future('NoAgeVerification');

@@ -1894,8 +1894,11 @@ rpc set_self_exclusion => sub {
 
     # RTS 12 - Financial Limits - max turover limit is mandatory for UK Clients and MLT clients
     # If the limit is set, restrictions can be lifted by removing the pertaining status.
+    my $config = request()->brand->countries_instance->countries_list->{$client->residence};
     $client->status->clear_max_turnover_limit_not_set()
-        if $args{max_30day_turnover} and ($client->residence eq 'gb' or $client->landing_company->check_max_turnover_limit_is_set);
+        if $args{max_30day_turnover}
+        and ($config->{need_set_max_turnover_limit}
+        or $client->landing_company->check_max_turnover_limit_is_set);
 
     $args{customerio_suspended} = 0;
     if (defined $args{exclude_until} && $client->user->email_consent) {

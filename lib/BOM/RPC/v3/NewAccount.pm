@@ -8,34 +8,30 @@ use List::MoreUtils qw(any);
 use List::Util qw(minstr);
 use Format::Util::Numbers qw/formatnumber/;
 use Email::Valid;
-use BOM::Platform::Context qw (localize);
 use Crypt::NamedKeys;
 Crypt::NamedKeys::keyfile '/etc/rmg/aes_keys.yml';
 use Log::Any qw($log);
 
-use BOM::RPC::Registry '-dsl';
-
 use DataDog::DogStatsd::Helper qw(stats_inc);
 
-use BOM::User::Client;
-
-use BOM::RPC::v3::Utility;
-use BOM::RPC::v3::EmailVerification qw(email_verification);
-use BOM::RPC::v3::Accounts;
-use BOM::Platform::Account::Virtual;
+use BOM::Config;
+use BOM::Database::Model::OAuth;
 use BOM::Platform::Account::Real::default;
 use BOM::Platform::Account::Real::maltainvest;
-use BOM::Platform::Account::Real::default;
-use BOM::Platform::Event::Emitter;
+use BOM::Platform::Account::Virtual;
+use BOM::Platform::Context qw (localize request);
 use BOM::Platform::Email qw(send_email);
+use BOM::Platform::Event::Emitter;
 use BOM::Platform::Locale;
 use BOM::Platform::Redis;
-use BOM::User;
-use BOM::Config;
-use BOM::Platform::Context qw (request);
-use BOM::Database::Model::OAuth;
+use BOM::RPC::Registry '-dsl';
+use BOM::RPC::v3::Accounts;
+use BOM::RPC::v3::EmailVerification qw(email_verification);
+use BOM::RPC::v3::Utility;
 use BOM::User::Client::PaymentNotificationQueue;
+use BOM::User::Client;
 use BOM::User::FinancialAssessment qw(update_financial_assessment decode_fa);
+use BOM::User;
 
 requires_auth();
 
@@ -91,7 +87,8 @@ rpc "new_account_virtual",
             message_to_client => BOM::RPC::v3::Utility::error_map()->{$acc->{error}}}) if $acc->{error};
 
     # Check if it is from UK, instantly mark it as unwelcome
-    if (uc $acc->{client}->residence eq 'GB') {
+    my $config = request()->brand->countries_instance->countries_list->{$acc->{client}->residence};
+    if ($config->{virtual_age_verification}) {
         $acc->{client}->status->set('unwelcome', 'SYSTEM', 'Pending proof of age');
     }
 
@@ -404,7 +401,9 @@ rpc new_account_real => sub {
         successful  => 't',
         app_id      => $params->{source});
 
-    if ($new_client->residence eq 'gb' or $new_client->landing_company->check_max_turnover_limit_is_set)
+    my $config = request()->brand->countries_instance->countries_list->{$new_client->residence};
+    if (   $config->{need_set_max_turnover_limit}
+        or $new_client->landing_company->check_max_turnover_limit_is_set)
     {    # RTS 12 - Financial Limits - UK Clients and MLT Clients
         try { $new_client->status->set('max_turnover_limit_not_set', 'system', 'new GB client or MLT client - have to set turnover limit') }
         catch { return BOM::RPC::v3::Utility::client_error() }
