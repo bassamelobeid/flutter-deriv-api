@@ -11,12 +11,6 @@ use BOM::Database::DataMapper::Payment;
 use BOM::API::Payment::Metric;
 use BOM::Platform::Event::Emitter;
 
-use Log::Any '$new_api_log',
-    log_level => 'debug',
-    category  => 'new_api_log';
-use Log::Any::Adapter;
-Log::Any::Adapter->set({category => 'new_api_log'}, 'File', '/var/lib/binary/paymentapi_new_api_calls_trace.log');
-
 =head2 _process_doughflow_request
 
 Wrapper around _doughflow_backend so that we don't need to
@@ -123,9 +117,7 @@ sub withdrawal_validate_GET {
 =head2 update_payout_POST
 
 Called by Doughflow when a payout is updated.
-If new status is 'inprogress', the payout is processed as a withdrawal.
-Otherwise request params are written to the paymentapi_new_api_calls_trace log.
-See https://trello.com/c/10Ex9IyA/8915-8-billmarriott-newdfendpoints-2 for more background.
+If new status is 'inprogress', the payout is processed as a withdrawal unless freezing funds are enabled.
 
 =cut
 
@@ -141,13 +133,6 @@ sub update_payout_POST {
     return _doughflow_backend($c, 'payout_rejected')
         if ($c->request_parameters->{status} // '') eq 'rejected';
 
-    _log_new_api_request($c, 'update_payout');
-
-    unless (_is_authenticated($c)) {
-        $new_api_log->debugf('update_payout: Authorization required, please check if request has X-DoughFlow-Authorization-Passed header.');
-        return $c->throw(401, 'Authorization required');
-    }
-
     return {
         status      => 0,
         description => 'success',
@@ -156,9 +141,8 @@ sub update_payout_POST {
 
 =head2 create_payout_POST
 
-Placeholder for future implemention of the Doughflow request CreatePayout.
-Writes request params to the paymentapi_new_api_calls_trace log.
-See https://trello.com/c/10Ex9IyA/8915-8-billmarriott-newdfendpoints-2 for more background.
+Called by Doughflow when a payout is created.
+The payout is processed as a withdrawal if freezing funds are enabled.
 
 =cut
 
@@ -167,11 +151,6 @@ sub create_payout_POST {
 
     return _doughflow_backend($c, 'payout_created')
         if ($c->user->is_payout_freezing_funds_enabled);
-
-    unless (_is_authenticated($c)) {
-        $new_api_log->debugf('create_payout: Authorization required, please check if request has X-DoughFlow-Authorization-Passed header.');
-        return $c->throw(401, 'Authorization required');
-    }
 
     return {
         status      => 0,
@@ -184,18 +163,14 @@ sub create_payout_POST {
 Implements the RecordFailedDeposit Doughflow request.
 DoughFlow has provision to notify our platform upon the failure
 of customer deposit.
-Currently we are just logging to evaluate the data we get, later
-we can extend this to notify client about failure.
+Later we can extend this to notify client about failure.
 
 =cut
 
 sub record_failed_deposit_POST {
     my $c = shift;
 
-    _log_new_api_request($c, 'record_failed_deposit');
-
     unless (_is_authenticated($c)) {
-        $new_api_log->debugf('record_failed_deposit: Authorization required, please check if request has X-DoughFlow-Authorization-Passed header.');
         return $c->throw(401, 'Authorization required');
     }
 
@@ -212,18 +187,13 @@ sub record_failed_deposit_POST {
 Implements the RecordFailedWithdrawal Doughflow request.
 DoughFlow has provision to notify our platform upon the failure
 of customer withdrawal.
-Currently we are just logging to evaluate the data we get, later
-we can extend this to notify client about failure.
 
 =cut
 
 sub record_failed_withdrawal_POST {
     my $c = shift;
 
-    _log_new_api_request($c, 'record_failed_withdrawal');
-
     unless (_is_authenticated($c)) {
-        $new_api_log->debugf('record_failed_deposit: Authorization required, please check if request has X-DoughFlow-Authorization-Passed header.');
         return $c->throw(401, 'Authorization required');
     }
     # Send event for specific error codes
@@ -242,8 +212,6 @@ sub record_failed_withdrawal_POST {
             });
     }
 
-    # return success as of now, once we have evaluated all
-    # the error messages then we will update this accordingly
     return {
         status      => 0,
         description => 'success',
@@ -291,22 +259,6 @@ sub _is_authenticated {
     return 0 unless $c->env->{'X-DoughFlow-Authorization-Passed'};
 
     return 1;
-}
-
-sub _log_new_api_request {
-    my ($c, $type) = @_;
-
-    my $params = $c->request_parameters;
-    $params = $params->as_hashref if ref $params eq 'Hash::MultiValue';
-
-    $new_api_log->debugf(
-        'Request details: type: %s, timestamp: %s, method: %s and params: %s',
-        ($type // ''),
-        Date::Utility->new->datetime_yyyymmdd_hhmmss,
-        $c->req->method, $params
-    );
-
-    return undef;
 }
 
 no Moo;
