@@ -81,7 +81,7 @@ sub set_gamstop_self_exclusion {
     return undef unless $client and $client->residence;
 
     # gamstop is only applicable for UK residence
-    return undef unless $client->residence eq 'gb';
+    return undef unless request()->brand->countries_instance->countries_list->{$client->residence}->{gamstop_company};
 
     my $gamstop_config = BOM::Config::third_party()->{gamstop};
 

@@ -1653,17 +1653,24 @@ sub is_verification_required {
 
     return 0 if $self->fully_authenticated and $self->status->age_verification;
 
+    my $country_config = request()->brand->countries_instance->countries_list->{$self->residence};
     if ($args{check_authentication_status}) {
         return 1 if ($self->authentication_status // '') eq 'needs_action';
-        return 1 if ($self->residence eq 'gb' and not $self->get_authentication('ID_ONLINE'));
+        return 1 if ($country_config->{require_poi} and not $self->get_authentication('ID_ONLINE'));
     }
 
     # applicable for all landing companies
     return 1 if ($self->aml_risk_classification // '') eq 'high';
 
-    return 1 if ($self->landing_company->short =~ /^(?:malta|iom)$/ and $self->residence ne 'gb' and $self->has_deposits());
+    return 1
+        if ($self->landing_company->short =~ /^(?:malta|iom)$/
+        and not $country_config->{skip_deposit_verification}
+        and $self->has_deposits());
 
-    return 1 if ($self->residence eq 'gb' and not $self->status->age_verification and $self->status->unwelcome);
+    return 1
+        if ($country_config->{require_verification_when_not_age_verified_and_unwelcome}
+        and not $self->status->age_verification
+        and $self->status->unwelcome);
 
     return 1 if $self->landing_company->short eq 'maltainvest';
 
@@ -1841,7 +1848,9 @@ sub validate_common_account_details {
 
         ## If this is non-virtual United Kingdom account, it must have a postcode
         die "invalid UK postcode\n"
-            if ($residence eq 'gb' and not $self->is_virtual and not($args->{address_postcode} // $self->address_postcode));
+            if (request()->brand->countries_instance->countries_list->{$self->residence}->{require_address_postcode}
+            and not $self->is_virtual
+            and not($args->{address_postcode} // $self->address_postcode));
 
         # If not broker code is passed rely on current client landing company.
         # This is remarkably useful for new account calls.

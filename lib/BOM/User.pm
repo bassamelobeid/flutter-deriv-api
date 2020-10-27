@@ -204,8 +204,12 @@ sub login {
     # store this login attempt in redis
     $self->_save_login_detail_redis($environment);
 
-    # gamstop is applicable for UK residence only
-    my $gamstop_client = first { $_->residence eq 'gb' and $_->landing_company->short =~ /^(?:malta|iom)$/ } @clients;
+    my $countries_list = request()->brand->countries_instance->countries_list;
+    my $gamstop_client = first {
+        my $client = $_;
+        any { $client->landing_company->short eq $_ } ($countries_list->{$client->residence}->{gamstop_company} // [])->@*
+    }
+    @clients;
     BOM::User::Utility::set_gamstop_self_exclusion($gamstop_client) if $gamstop_client;
     return {success => 1};
 }
