@@ -15,7 +15,7 @@ use Format::Util::Numbers qw/formatnumber/;
 use Array::Utils qw(:all);
 use Date::Utility;
 use Scalar::Util;
-use List::Util;
+use List::Util qw( any );
 use BOM::Backoffice::QuantsAuditLog;
 use BOM::Platform::Email qw(send_email);
 use BOM::Config::Runtime;
@@ -255,7 +255,7 @@ sub get_settings_by_group {
                 payments.transfer_between_accounts.exchange_rate_expiry.fiat_holidays
                 payments.transfer_between_accounts.exchange_rate_expiry.crypto
                 payments.transfer_between_accounts.minimum.default
-                payments.transfer_between_accounts.minimum.by_currency
+                payments.transfer_between_accounts.minimum.MT5
                 payments.transfer_between_accounts.maximum.default
                 payments.transfer_between_accounts.maximum.MT5
                 payments.experimental_currencies_allowed
@@ -410,11 +410,12 @@ sub get_extra_validation {
     my $setting = shift;
     state $setting_validators = {
         'cgi.terms_conditions_versions'                              => \&_validate_tnc_string,
-        'payments.transfer_between_accounts.minimum.by_currency'     => \&_validate_transfer_min_by_currency,
         'payments.transfer_between_accounts.minimum.default'         => \&_validate_transfer_min_default,
+        'payments.transfer_between_accounts.minimum.MT5'             => \&_validate_transfer_mt5,
         'payments.transfer_between_accounts.limits.between_accounts' => \&_validate_positive_number,
         'payments.transfer_between_accounts.limits.MT5'              => \&_validate_positive_number,
         'payments.transfer_between_accounts.maximum.default'         => \&_validate_positive_number,
+        'payments.transfer_between_accounts.maximum.MT5'             => \&_validate_transfer_mt5,
         'payments.payment_limits'                                    => \&_validate_payment_min_by_staff,
     };
 
@@ -447,6 +448,31 @@ sub _validate_transfer_min_default {
     return 1;
 }
 
+=head2 _validate_transfer_mt5
+
+Validates json string containing the maximum/minimum MT5 transfer limit per brand
+
+=cut
+
+sub _validate_transfer_mt5 {
+    my $input_string = shift;
+
+    my $json_config    = JSON::MaybeXS->new->decode($input_string);
+    my @all_currencies = LandingCompany::Registry::all_currencies();
+
+    foreach my $brand (keys %$json_config) {
+        my $brand_config = $json_config->{$brand};
+        die "$brand should be an object contain the currency and the amount." unless ref $brand_config eq 'HASH';
+
+        my $amount = $brand_config->{amount};
+        die "The amount is less or equal to 0 for $brand config." unless $amount && $amount > 0;
+
+        my $currency = $brand_config->{currency};
+        die "$currency does not match any valid currency" unless any { $_ eq $currency } @all_currencies;
+    }
+    return 1;
+}
+
 =head2 _validate_payment_min_by_staff
 
 Validates json string containing the minimum payment limit per staff
@@ -461,37 +487,6 @@ sub _validate_payment_min_by_staff {
     foreach my $user_name (keys %$json_config) {
         my $amount = $json_config->{$user_name};
         die "$user_name 's payment limit entered has a value less than or equal to 0" unless $amount > 0;
-    }
-    return 1;
-}
-
-=head2 _validate_transfer_min_by_currency
-
-Validates json string containing the minimum transfer amount per currency.
-It validates currency codes (hash keys) to be supported within the system; also
-validates the minimum values to be well-formatted for displaying.
-
-=cut
-
-sub _validate_transfer_min_by_currency {
-    my $new_string = shift;
-
-    my $json_config    = JSON::MaybeXS->new->decode($new_string);
-    my @all_currencies = LandingCompany::Registry::all_currencies();
-
-    foreach my $currency (keys %$json_config) {
-        die "$currency does not match any valid currency"
-            unless grep { $_ eq $currency } @all_currencies;
-
-        my $amount           = $json_config->{$currency};
-        my $allowed_decimals = Format::Util::Numbers::get_precision_config()->{price}->{$currency};
-        my $rounded_amount   = Format::Util::Numbers::financialrounding('price', $currency, $amount);
-
-        die "Minimum value $amount has more than $allowed_decimals decimals allowed for $currency."
-            if length($amount) > 12
-            or (sprintf('%0.010f', $rounded_amount) ne sprintf('%0.010f', $amount));
-
-        die "The value $amount for $currency is lower " . MINIMUM_ALLOWABLE_USD_AMOUNT . " USD." if $amount < MINIMUM_ALLOWABLE_USD_AMOUNT;
     }
     return 1;
 }
