@@ -51,15 +51,6 @@ cgi:
       isa: ArrayRef
       default:
         - AR
-    backoffice:
-      description: "Contains backoffice static url"
-      isa: section
-      contains:
-        static_url:
-          description: "Static url of backoffice statics"
-          isa: Str
-          default: "https://regentmarkets.github.io/binary-static-backoffice/"
-          global: 1
     terms_conditions_version:
       description: "Current version for terms and conditions. Use format - Version 35 2015-01-19. WARNING: Clients from particular landing companies (IOM/Malta/Maltainvest) will be blocked from trading and accessing cashier when T&Cs are updated until they manually approve them."
       isa: Str
