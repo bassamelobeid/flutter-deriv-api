@@ -43,7 +43,7 @@ if ($input{edit}) {
         $db->run(
             fixup => sub {
                 $_->do(
-                    "UPDATE p2p.p2p_country_trade_band SET max_daily_buy = ?, max_daily_sell =? WHERE country = ? AND trade_band = ? AND currency = ?",
+                    "UPDATE p2p.p2p_country_trade_band SET max_daily_buy = ?, max_daily_sell =? WHERE country = ? AND trade_band = LOWER(?) AND currency = ?",
                     undef, @input{qw/max_daily_buy max_daily_sell country trade_band currency/});
             });
         print '<p style="color:green; font-weight:bold;">Band configuration updated</p>';
@@ -57,7 +57,7 @@ if ($action eq 'delete') {
     try {
         $db->run(
             fixup => sub {
-                $_->do("DELETE FROM p2p.p2p_country_trade_band WHERE country = ? AND trade_band = ? AND currency = ?",
+                $_->do("DELETE FROM p2p.p2p_country_trade_band WHERE country = ? AND trade_band = LOWER(?) AND currency = ?",
                     undef, @input{qw/country trade_band currency/});
             });
         print '<p style="color:green; font-weight:bold;">Band deleted</p>';
@@ -77,11 +77,16 @@ if ($input{save} or $input{copy}) {
 
         my ($existing) = $db->run(
             fixup => sub {
-                $_->selectrow_array('SELECT COUNT(*) FROM p2p.p2p_country_trade_band WHERE country = ? AND trade_band = ? AND currency = ?',
+                $_->selectrow_array('SELECT COUNT(*) FROM p2p.p2p_country_trade_band WHERE country = ? AND trade_band = LOWER(?) AND currency = ?',
                     undef, @input{qw/country trade_band currency/});
             });
 
-        die 'Band definition already exists for ' . $input{country} . ' ' . $input{trade_band} . ' ' . $input{currency} . "\n"
+        die 'level '
+            . $input{trade_band}
+            . ' already exists for '
+            . ($countries_list{$input{country}}{name} // 'default country')
+            . ' and currency '
+            . $input{currency} . "\n"
             if $existing;
 
         for (qw(max_daily_buy max_daily_sell)) {
@@ -90,7 +95,8 @@ if ($input{save} or $input{copy}) {
 
         $db->run(
             fixup => sub {
-                $_->do("INSERT INTO p2p.p2p_country_trade_band (country, trade_band, currency, max_daily_buy, max_daily_sell) VALUES (?,?,?,?,?)",
+                $_->do(
+                    "INSERT INTO p2p.p2p_country_trade_band (country, trade_band, currency, max_daily_buy, max_daily_sell) VALUES (?,LOWER(?),?,?,?)",
                     undef, @input{@fields});
             });
         print '<p style="color:green; font-weight:bold;">New band configuration saved</p>';

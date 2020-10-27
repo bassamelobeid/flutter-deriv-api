@@ -31,11 +31,7 @@
                 <b>[% item.trade_band %]</b>
                 <input type="hidden" name="trade_band" value="[% item.trade_band %]"/>
             [% ELSE %]
-            <select name="trade_band">
-                <option value="low" [% item.action == 'copy' && item.trade_band=='low' && 'selected' %]>Low</option>
-                <option value="medium" [% item.action == 'copy' && item.trade_band=='medium' && 'selected' %]>Medium</option>
-                <option value="high" [% item.action == 'copy' && item.trade_band=='high' && 'selected' %]>High</option>
-            </select>
+            <input name="trade_band" value="[% item.action == 'copy' && item.trade_band %]">
             [% END %]
         </td>
     </tr>

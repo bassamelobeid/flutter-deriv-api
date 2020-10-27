@@ -64,9 +64,9 @@ LoginID: <input type="text" name="loginID" value="[% request.params.loginID %]" 
             <td>Band Level</td>
             <td>[% IF p2p_write %]
                 <select name="trade_band">
-                    <option value="low" [% advertiser.trade_band == 'low' && 'selected' %]>Low</option>
-                    <option value="medium" [% advertiser.trade_band == 'medium' && 'selected' %]>Medium</option>
-                    <option value="high" [% advertiser.trade_band == 'high' && 'selected' %]>High</option>
+                    [% FOREACH band = bands %]
+                    <option value="[% band %]" [% advertiser.trade_band == band && 'selected' %]>[% band %]</option>
+                    [% END %]
                 </select>
                 [% ELSE %]
                 [% advertiser.trade_band | ucfirst %]

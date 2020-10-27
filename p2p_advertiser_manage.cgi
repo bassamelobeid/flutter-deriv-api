@@ -129,6 +129,17 @@ if ($output{advertiser}) {
                 {Slice => {}},
                 $output{advertiser}->{id});
         });
+
+    my $bands = $db->run(
+        fixup => sub {
+            $_->selectall_arrayref(
+                "SELECT DISTINCT(trade_band) FROM p2p.p2p_country_trade_band b, betonmarkets.client c 
+                    WHERE c.loginid = ? AND (b.country = c.residence OR b.country = 'default')",
+                undef,
+                $output{advertiser}->{client_loginid});
+        });
+    $output{bands} = [map { $_->[0] } @$bands];
+
 } elsif ($input{loginID}) {
     $output{client} = BOM::User::Client->new({loginid => $input{loginID}});
     $output{error}  = 'Client not found' unless $output{client};
