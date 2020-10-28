@@ -601,6 +601,11 @@ quants:
           global: 1
           isa: ArrayRef
           default: []
+        suspend_early_sellback:
+          description: "A list of contract types for which early sellback should be suspended"
+          global: 1
+          isa: ArrayRef
+          default: []
     markets:
       description: "Market-specific variables"
       isa: section
@@ -612,6 +617,11 @@ quants:
           default: []
         suspend_buy:
           description: "A list of markets for which purchase trades should be suspended"
+          global: 1
+          isa: ArrayRef
+          default: []
+        suspend_early_sellback:
+          description: "A list of contract types for which early sellback should be suspended"
           global: 1
           isa: ArrayRef
           default: []
@@ -631,6 +641,11 @@ quants:
           default: []
         suspend_buy:
           description: "A list of underlyings for which purchase trades should be suspended"
+          global: 1
+          isa: ArrayRef
+          default: []
+        suspend_early_sellback:
+          description: "A list of contract types for which early sellback should be suspended"
           global: 1
           isa: ArrayRef
           default: []
