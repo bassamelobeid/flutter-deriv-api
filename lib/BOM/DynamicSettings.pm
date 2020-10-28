@@ -231,13 +231,16 @@ sub get_settings_by_group {
                 quants.commission.adjustment.per_market_scaling.synthetic_index
                 quants.markets.suspend_buy
                 quants.markets.suspend_trades
+                quants.markets.suspend_early_sellback
                 quants.contract_types.suspend_buy
                 quants.contract_types.suspend_trades
+                quants.contract_types.suspend_early_sellback
                 quants.suspend_deal_cancellation.forex
                 quants.suspend_deal_cancellation.synthetic_index
                 quants.underlyings.disable_autoupdate_vol
                 quants.underlyings.suspend_buy
                 quants.underlyings.suspend_trades
+                quants.underlyings.suspend_early_sellback
                 )
         ],
         it => [qw(
