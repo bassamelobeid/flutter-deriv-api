@@ -23,6 +23,7 @@ use Quant::Framework;
 use Finance::Exchange;
 use Math::Business::BlackScholesMerton::NonBinaries;
 my $json = JSON::MaybeXS->new;
+use Storable qw(dclone);
 
 sub get_economic_events_for_date {
     my $date = shift;
@@ -38,6 +39,8 @@ sub get_economic_events_for_date {
         from => $from,
         to   => $to,
     });
+
+    $economic_events = dclone($economic_events);    # Avoid mutating the original cached value from get_latest_events_for_period
 
     my @categorized_events = map { get_info($_) } grep { Volatility::EconomicEvents::is_defined($_->{symbol}, $_->{event_name}) } @$economic_events;
     my @uncategorized_events =
