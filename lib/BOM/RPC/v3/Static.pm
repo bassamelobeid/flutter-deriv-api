@@ -209,12 +209,12 @@ rpc website_status => sub {
     my $tnc_version = decode_json($tnc_config)->{request()->brand->name};
 
     return {
-        $tnc_version ? (terms_conditions_version => $tnc_version) : (),
-        api_call_limits     => BOM::RPC::v3::Utility::site_limits,
-        clients_country     => $params->{country_code},
-        supported_languages => $app_config->cgi->supported_languages,
-        currencies_config   => _currencies_config(),
-        crypto_config       => _crypto_config(),
+        terms_conditions_version => $tnc_version // '',
+        api_call_limits          => BOM::RPC::v3::Utility::site_limits,
+        clients_country          => $params->{country_code},
+        supported_languages      => $app_config->cgi->supported_languages,
+        currencies_config        => _currencies_config(),
+        crypto_config            => _crypto_config(),
     };
 };
 
