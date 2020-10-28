@@ -220,6 +220,37 @@ sub _validation_methods {
 sub _validate_offerings {
     my $self = shift;
 
+    # validate if this contract is restricted from early sell back
+    if ($self->for_sale and not $self->is_after_settlement) {
+        my $quants_config = BOM::Config::Runtime->instance->app_config->quants;
+        if (my @suspend_contract_types = @{$quants_config->contract_types->suspend_early_sellback // []}) {
+            if (any { $_ eq $self->code } @suspend_contract_types) {
+                return {
+                    message           => 'early sellback disabled for contract type',
+                    message_to_client => [$ERROR_MAPPING->{ResaleNotOffered}],
+                };
+            }
+        }
+
+        if (my @suspend_markets = @{$quants_config->markets->suspend_early_sellback // []}) {
+            if (any { $_ eq $self->underlying->market->name } @suspend_markets) {
+                return {
+                    message           => 'early sellback disabled for market',
+                    message_to_client => [$ERROR_MAPPING->{ResaleNotOffered}],
+                };
+            }
+        }
+
+        if (my @suspend_underlyings = @{$quants_config->underlyings->suspend_early_sellback // []}) {
+            if (any { $_ eq $self->underlying->symbol } @suspend_underlyings) {
+                return {
+                    message           => 'early sellback disabled for underlying',
+                    message_to_client => [$ERROR_MAPPING->{ResaleNotOffered}],
+                };
+            }
+        }
+    }
+
     # available payout currency
     unless ($all_currencies{$self->currency}) {
         BOM::Product::Exception->throw(
