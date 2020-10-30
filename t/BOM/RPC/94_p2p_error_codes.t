@@ -1,6 +1,7 @@
 use strict;
 use warnings;
 use Test::More;
+use Test::Warnings;
 use B::Deparse;
 
 use BOM::User::Client;

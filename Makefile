@@ -22,3 +22,9 @@ tidy:
 	find . -name '*.p?.bak' -delete
 	find bin lib t -name '*.p[lm]' -o -name '*.t' | xargs perltidy -pro=/home/git/regentmarkets/cpan/rc/.perltidyrc --backup-and-modify-in-place -bext=tidyup
 	find . -name '*.tidyup' -delete
+
+cover:
+	cover -delete
+	HARNESS_PERL_SWITCHES=-MDevel::Cover DEVEL_COVER_OPTIONS=-'ignore,^t/' /etc/rmg/bin/prove --timer -rl --norc -MBOM::Test -It/lib t/BOM/RPC/
+	cover -report coveralls
+
