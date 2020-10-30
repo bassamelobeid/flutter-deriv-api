@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-
+use BOM::Test;
 use JSON::MaybeXS;
 use Test::MockTime qw/:all/;
 use Test::MockModule;

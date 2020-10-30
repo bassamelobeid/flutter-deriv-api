@@ -2,8 +2,10 @@
 
 use strict;
 use warnings;
+use BOM::Test;
 
 use Test::MockTime qw/:all/;
+use Test::Warnings;
 use Test::More;
 use Test::MockModule;
 use Test::Exception;

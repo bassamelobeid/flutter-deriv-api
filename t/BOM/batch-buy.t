@@ -4,6 +4,7 @@ use strict;
 use warnings;
 use utf8;
 use open ':std', ':encoding(utf8)';
+use BOM::Test;
 use Test::Deep;
 use Test::MockTime qw/:all/;
 use Test::MockModule;

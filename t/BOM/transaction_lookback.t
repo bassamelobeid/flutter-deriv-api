@@ -4,6 +4,7 @@ use strict;
 use warnings;
 use Test::MockTime::HiRes qw/set_relative_time restore_time/;
 use Test::MockModule;
+use Test::Warnings;
 use Test::More tests => 10;
 use Test::Exception;
 use Guard;

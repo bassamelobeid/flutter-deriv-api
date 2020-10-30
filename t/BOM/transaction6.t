@@ -11,6 +11,7 @@ Tests touch no touch tick trade
 
 use Test::MockTime qw/:all/;
 use Test::MockModule;
+use Test::Warnings;
 use Test::More tests => 8;
 use Test::Exception;
 use Guard;
