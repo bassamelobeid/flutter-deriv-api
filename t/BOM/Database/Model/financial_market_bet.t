@@ -2,6 +2,7 @@
 
 use strict;
 use warnings;
+use Test::Warnings;
 use Test::More tests => 16;
 use Test::Exception;
 use Test::FailWarnings -allow_from => [qw/BOM::Database::Rose::DB/];

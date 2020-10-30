@@ -32,3 +32,8 @@ tidy:
 orm_files:
 	perl -MBOM::Test -MBOM::Test::Data::Utility::UnitTestDatabase=:init -e0
 	PERL_HASH_SEED=0 PGPORT=5432 bin/rose_generation clientdb_template --all
+
+cover:
+	cover -delete
+	HARNESS_PERL_SWITCHES=-MDevel::Cover DEVEL_COVER_OPTIONS=-'ignore,^t/' /etc/rmg/bin/prove --timer -rl --norc -MBOM::Test  t/BOM/Database/DataMapper/collector_reporting.t
+	cover -report coveralls

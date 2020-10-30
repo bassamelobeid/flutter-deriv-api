@@ -52,6 +52,16 @@ jobs:
         name: Run tests
     - store_test_results:
         path: /var/tmp/test-output
+  code_coverage:
+    <<: *5
+    steps:
+    - *1
+    - *2
+    - *3
+    - *4
+    - run:
+        command: make cover
+        name: code coverage tests
 version: 2
 workflows:
   build-workflow:
@@ -63,6 +73,17 @@ workflows:
     triggers:
     - schedule:
         cron: 50 20 * * *
+        filters:
+          branches:
+            only:
+            - master
+  weekly-code-coverage:
+    jobs:
+    - code_coverage:
+        context: perl
+    triggers:
+    - schedule:
+        cron: "30 4 * * 6"
         filters:
           branches:
             only:

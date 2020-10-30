@@ -3,6 +3,7 @@
 use strict;
 use warnings;
 
+use Test::Warnings;
 use Test::More tests => 4;    # match to number of subs in Account DataMapper
 use Test::Exception;
 

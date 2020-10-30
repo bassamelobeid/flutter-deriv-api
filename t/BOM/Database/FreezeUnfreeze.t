@@ -1,3 +1,4 @@
+use Test::Warnings;
 use Test::More (tests => 5);
 use Test::Exception;
 
