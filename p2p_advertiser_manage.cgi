@@ -64,11 +64,11 @@ if ($input{update}) {
             fixup => sub {
                 $_->selectrow_hashref(
                     'UPDATE p2p.p2p_advertiser SET name = ?, is_approved = ?, is_listed = ?, default_advert_description = ?, 
-                        payment_info = ?, contact_info = ?, trade_band = COALESCE(?,trade_band), cc_sell_authorized = ?
+                        payment_info = ?, contact_info = ?, trade_band = COALESCE(?,trade_band), cc_sell_authorized = ?, show_name = ?
                         WHERE id = ? RETURNING *',
                     undef,
                     @input{
-                        qw/update_name is_approved is_listed default_advert_description payment_info contact_info trade_band cc_sell_authorized update_id/
+                        qw/update_name is_approved is_listed default_advert_description payment_info contact_info trade_band cc_sell_authorized show_name update_id/
                     });
             });
         die "Invalid advertiser ID\n" unless $output{advertiser};
@@ -101,7 +101,9 @@ delete $input{id} unless looks_like_number($input{id});
 if ($input{loginID} || $input{name} || $input{id}) {
     $output{advertiser} = $db->run(
         fixup => sub {
-            $_->selectrow_hashref('SELECT * FROM p2p.advertiser_list(?,?,NULL,?)', undef, @input{qw/id loginID name/});
+            $_->selectrow_hashref(
+                'SELECT l.*, c.first_name, c.last_name FROM p2p.advertiser_list(?,?,NULL,?) l
+            JOIN betonmarkets.client c ON c.loginid = l.client_loginid', undef, @input{qw/id loginID name/});
         });
     $output{error} //= 'Advertiser not found' unless $output{advertiser};
 }

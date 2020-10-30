@@ -45,9 +45,22 @@ LoginID: <input type="text" name="loginID" value="[% request.params.loginID %]" 
             </td>
         </tr>
         <tr>
-            <td>Name</td>
+            <td>Nickname</td>
             <td><input type="text" name="update_name" value="[% advertiser.name %]" size=50 data-lpignore="true" /></td>
+        </tr>
+        <tr>
+            <td>Real name</td>
+            <td>[% advertiser.first_name %] [% advertiser.last_name %]</td>
         </tr>        
+        <tr>
+            <td>Show Real Name</td>
+            <td>
+                <select name="show_name">
+                    <option value="1" [% advertiser.show_name && 'selected' %]>YES</option>
+                    <option value="0" [% !advertiser.show_name && 'selected' %]>NO</option>
+                </select>
+            </td>
+        </tr>         
         <tr>
             <td>Default advert description</td>
             <td><input type="text" name="default_advert_description" value="[% advertiser.default_advert_description %]" size=80 data-lpignore="true" /></td>
@@ -175,6 +188,7 @@ LoginID: <input type="text" name="loginID" value="[% request.params.loginID %]" 
                 <th scope="col">Band Level</th>
                 <th scope="col">CC Sell Auth</th>
                 <th scope="col">Name</th>
+                <th scope="col">Real Name</th>
                 <th scope="col">Ad description</th>
                 <th scope="col">Payment info</th>
                 <th scope="col">Contact info</th>
@@ -188,7 +202,7 @@ LoginID: <input type="text" name="loginID" value="[% request.params.loginID %]" 
                 <td>[% item.pg_userid %]</td>
                 <td>[% item.remote_addr %]</td>
                 [% next = loop.next %]
-                [% FOREACH fld = ['is_approved','is_listed','trade_band','cc_sell_authorized','name','default_advert_description','payment_info','contact_info'] %]
+                [% FOREACH fld = ['is_approved','is_listed','trade_band','cc_sell_authorized','name','show_name','default_advert_description','payment_info','contact_info'] %]
                     <td [% IF item.$fld != next.$fld %]style="background:#ffaaaa;"[% END %]>[% item.$fld %]</td>
                 [% END %]                  
             </tr>
