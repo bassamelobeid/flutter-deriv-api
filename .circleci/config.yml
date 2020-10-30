@@ -56,7 +56,18 @@ jobs:
             make unit_test_market
       - store_test_results:
           path: /var/tmp/test-output
-
+  code_coverage:
+    <<: *default
+    steps:
+      - *ssh_keys
+      - *git
+      - *services
+      - *wait_services
+      - run:
+          <<: *tests
+          name: code coverage tests
+          command: |
+            make cover
 workflows:
   build-workflow:
     jobs:
@@ -69,6 +80,17 @@ workflows:
     triggers:
     - schedule:
         cron: 47 20 * * *
+        filters:
+          branches:
+            only:
+            - master
+  weekly-code-coverage:
+    jobs:
+    - code_coverage:
+        context: perl
+    triggers:
+    - schedule:
+        cron: "30 3 * * 6"
         filters:
           branches:
             only:

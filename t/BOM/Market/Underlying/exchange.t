@@ -3,6 +3,7 @@ use warnings;
 
 use Test::Most;
 use Test::FailWarnings;
+use Test::Warnings;
 use Data::Chronicle::Mock;
 
 use BOM::Config::Chronicle;
