@@ -11,3 +11,8 @@ tidy:
 
 doc:
 	pod2markdown lib/BOM/API/Payment.pm > README.md
+
+cover:
+	cover -delete
+	HARNESS_PERL_SWITCHES=-MDevel::Cover DEVEL_COVER_OPTIONS=-'ignore,^t/' /etc/rmg/bin/prove --timer -rl --norc -MBOM::Test  t/plack
+	cover -report coveralls
