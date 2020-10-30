@@ -346,7 +346,7 @@ sub _slippage {
     $market_moved =
         $market_moved . ' '
         . localize(
-        'The contract [_4] has changed from [_2][_1] to [_3][_1].',
+        'The contract [_4] has changed from [_2] [_1] to [_3] [_1].',
         $currency,
         financialrounding('amount', $currency, $p->{amount}),
         financialrounding('amount', $currency, $p->{recomputed_amount}),
@@ -566,7 +566,7 @@ sub _validate_stake_limit {
             -type  => 'StakeTooLow',
             -mesg  => $client->loginid . ' stake [' . $contract->ask_price . '] is lower than minimum allowable stake [' . $stake_limit . ']',
             -message_to_client => localize(
-                "This contract's price is [_2][_1]. Contracts purchased from [_3] must have a purchase price above [_4][_1]. Please accordingly increase the contract amount to meet this minimum stake.",
+                "This contract's price is [_2] [_1]. Contracts purchased from [_3] must have a purchase price above [_4] [_1]. Please accordingly increase the contract amount to meet this minimum stake.",
                 $currency,
                 financialrounding('price', $currency, $contract->ask_price),
                 $landing_company->name,

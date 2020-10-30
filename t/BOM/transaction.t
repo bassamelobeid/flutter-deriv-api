@@ -622,8 +622,8 @@ subtest 'max_balance validation: try to buy a bet with a balance of 100 and max_
 
             is $error->get_type, 'AccountBalanceExceedsLimit', 'error is AccountBalanceExceedsLimit';
 
-            like $error->{-message_to_client}, qr/balance is too high \(100\.00USD\)/,   'message_to_client contains balance';
-            like $error->{-message_to_client}, qr/maximum account balance is 99\.99USD/, 'message_to_client contains limit';
+            like $error->{-message_to_client}, qr/balance is too high \(100\.00 USD\)/,   'message_to_client contains balance';
+            like $error->{-message_to_client}, qr/maximum account balance is 99\.99 USD/, 'message_to_client contains limit';
 
             is $txn->contract_id,    undef, 'txn->contract_id';
             is $txn->transaction_id, undef, 'txn->transaction_id';
@@ -909,7 +909,7 @@ subtest 'max_payout_open_bets validation', sub {
 
             is $error->get_type, 'OpenPositionPayoutLimit', 'error is OpenPositionPayoutLimit';
 
-            like $error->{-message_to_client}, qr/aggregate payouts of contracts on your account cannot exceed 29\.99USD/,
+            like $error->{-message_to_client}, qr/aggregate payouts of contracts on your account cannot exceed 29\.99 USD/,
                 'message_to_client contains balance';
 
             is $txn->contract_id,    undef, 'txn->contract_id';
@@ -1005,7 +1005,7 @@ subtest 'max_turnover validation', sub {
 
             is $error->get_type, 'DailyTurnoverLimitExceeded', 'error is DailyTurnoverLimitExceeded';
 
-            like $error->{-message_to_client}, qr/daily turnover limit of 15\.59USD/, 'message_to_client contains limit';
+            like $error->{-message_to_client}, qr/daily turnover limit of 15\.59 USD/, 'message_to_client contains limit';
 
             is $txn->contract_id,    undef, 'txn->contract_id';
             is $txn->transaction_id, undef, 'txn->transaction_id';
@@ -1027,7 +1027,7 @@ subtest 'max_turnover validation', sub {
 
             is $error->get_type, 'DailyTurnoverLimitExceeded', 'error is DailyTurnoverLimitExceeded';
 
-            like $error->{-message_to_client}, qr/daily turnover limit of 15\.59USD/, 'message_to_client contains limit';
+            like $error->{-message_to_client}, qr/daily turnover limit of 15\.59 USD/, 'message_to_client contains limit';
 
             is $txn->contract_id,    undef, 'txn->contract_id';
             is $txn->transaction_id, undef, 'txn->transaction_id';
@@ -1153,7 +1153,7 @@ subtest 'max_7day_turnover validation', sub {
 
             is $error->get_type, '7DayTurnoverLimitExceeded', 'error is 7DayTurnoverLimitExceeded';
 
-            like $error->{-message_to_client}, qr/7-day turnover limit of 15\.59USD/, 'message_to_client contains limit';
+            like $error->{-message_to_client}, qr/7-day turnover limit of 15\.59 USD/, 'message_to_client contains limit';
 
             is $txn->contract_id,    undef, 'txn->contract_id';
             is $txn->transaction_id, undef, 'txn->transaction_id';
@@ -1249,7 +1249,7 @@ subtest 'max_30day_turnover validation', sub {
 
             is $error->get_type, '30DayTurnoverLimitExceeded', 'error is 30DayTurnoverLimitExceeded';
 
-            like $error->{-message_to_client}, qr/30-day turnover limit of 15\.59USD/, 'message_to_client contains limit';
+            like $error->{-message_to_client}, qr/30-day turnover limit of 15\.59 USD/, 'message_to_client contains limit';
 
             is $txn->contract_id,    undef, 'txn->contract_id';
             is $txn->transaction_id, undef, 'txn->transaction_id';
@@ -1372,7 +1372,7 @@ subtest 'max_losses validation', sub {
 
             is $error->get_type, 'DailyLossLimitExceeded', 'error is DailyLossLimitExceeded';
 
-            like $error->{-message_to_client}, qr/daily limit on losses of 15\.59USD/, 'message_to_client contains limit';
+            like $error->{-message_to_client}, qr/daily limit on losses of 15\.59 USD/, 'message_to_client contains limit';
 
             is $txn->contract_id,    undef, 'txn->contract_id';
             is $txn->transaction_id, undef, 'txn->transaction_id';
@@ -1504,7 +1504,7 @@ subtest 'max_7day_losses validation', sub {
 
             is $error->get_type, '7DayLossLimitExceeded', 'error is 7DayLossLimitExceeded';
 
-            like $error->{-message_to_client}, qr/7-day limit on losses of 15\.59USD/, 'message_to_client contains limit';
+            like $error->{-message_to_client}, qr/7-day limit on losses of 15\.59 USD/, 'message_to_client contains limit';
 
             is $txn->contract_id,    undef, 'txn->contract_id';
             is $txn->transaction_id, undef, 'txn->transaction_id';
@@ -1637,7 +1637,7 @@ subtest 'max_30day_losses validation', sub {
 
             is $error->get_type, '30DayLossLimitExceeded', 'error is 30DayLossLimitExceeded';
 
-            like $error->{-message_to_client}, qr/30-day limit on losses of 15\.59USD/, 'message_to_client contains limit';
+            like $error->{-message_to_client}, qr/30-day limit on losses of 15\.59 USD/, 'message_to_client contains limit';
 
             is $txn->contract_id,    undef, 'txn->contract_id';
             is $txn->transaction_id, undef, 'txn->transaction_id';
