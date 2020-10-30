@@ -6,6 +6,7 @@ use Test::Exception;
 use Test::Deep;
 use Test::Warn;
 use Date::Utility;
+use Test::Warnings;
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Helper::Client qw( create_client top_up );

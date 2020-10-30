@@ -4,6 +4,8 @@ use Test::More tests => 7;
 use Test::Exception;
 use Test::NoWarnings;
 use Test::Warn;
+use Test::Warnings;
+
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Script::OnfidoMock;
 
