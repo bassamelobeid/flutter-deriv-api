@@ -316,19 +316,19 @@ subtest 'EUR3k over 30 days MX limitation.' => sub {
     my $payment_time = Date::Utility->new($payment->{payment_time})->epoch;
 
     throws_ok { $client->validate_payment(%wd0501) } qr/exceeds withdrawal limit \[500.00 EUR/,
-        'Unauthed, not allowed to withdraw equiv 2500EUR then 501 making total over 3000.';
+        'Unauthed, not allowed to withdraw equiv 2500 EUR then 501 making total over 3000.';
 
     # remove for further testing
     $client->status->clear_unwelcome;
     $client->status->clear_cashier_locked;
 
-    ok $client->validate_payment(%wd0500), 'Unauthed, allowed to withdraw equiv 2500EUR then 500 making total 3000.';
+    ok $client->validate_payment(%wd0500), 'Unauthed, allowed to withdraw equiv 2500 EUR then 500 making total 3000.';
 
     # move forward 29 days
     set_fixed_time($payment_time + 29 * 86400);
 
     throws_ok { $client->validate_payment(%wd0501) } qr/exceeds withdrawal limit \[500.00 EUR/,
-        'Unauthed, not allowed to withdraw equiv 3000EUR then 1 more 29 days later';
+        'Unauthed, not allowed to withdraw equiv 3000 EUR then 1 more 29 days later';
 
     # remove for further testing
     $client->status->clear_unwelcome;
@@ -336,7 +336,7 @@ subtest 'EUR3k over 30 days MX limitation.' => sub {
 
     # move forward 1 day
     set_fixed_time(time + 86400 + 1);
-    ok $client->validate_payment(%wd0501), 'Unauthed, allowed to withdraw equiv EUR3000 then 3000 more 30 days later.';
+    ok $client->validate_payment(%wd0501), 'Unauthed, allowed to withdraw equiv EUR 3000 then 3000 more 30 days later.';
 };
 
 # Test for MLT withdrawal limits
