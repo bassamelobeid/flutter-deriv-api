@@ -12,3 +12,8 @@ tidy:
 
 pod_test:
 	@$(PROVE) t/BOM/*pod*.t
+
+cover:
+	cover -delete
+	HARNESS_PERL_SWITCHES=-MDevel::Cover DEVEL_COVER_OPTIONS=-'ignore,^t/' /etc/rmg/bin/prove --timer --norc  -MBOM::Test -rl  t/BOM/Pricing/
+	cover -report coveralls

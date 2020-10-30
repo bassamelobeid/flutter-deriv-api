@@ -8,7 +8,6 @@ use Test::Warnings qw(warning warnings);
 use Test::MockModule;
 use Test::MockTime::HiRes qw(set_relative_time restore_time);
 use Date::Utility;
-
 use Data::Dumper;
 use Quant::Framework::Utils::Test;
 use BOM::MarketData qw(create_underlying_db);
@@ -18,6 +17,7 @@ use Data::UUID;
 
 use BOM::Pricing::v3::Contract;
 use BOM::Platform::Context qw (request);
+use BOM::Test::Initializations;
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use BOM::Product::ContractFactory qw( produce_contract );
 use Quant::Framework;
