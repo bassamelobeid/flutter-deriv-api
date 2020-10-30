@@ -2124,15 +2124,17 @@ sub p2p_advertiser_update {
     $param{is_listed} = 0 if defined $param{is_approved} and not $param{is_approved};
 
     # Return the current information of the advertiser if nothing changed
-    return $advertiser_info unless grep { exists $advertiser_info->{$_} and $param{$_} ne $advertiser_info->{$_} } keys %param;
+    return $advertiser_info
+        unless grep { exists $advertiser_info->{$_} and $param{$_} ne $advertiser_info->{$_} } keys %param
+        or exists $param{show_name};
 
     my $update = $self->db->dbic->run(
         fixup => sub {
             $_->selectrow_hashref(
-                'SELECT * FROM p2p.advertiser_update(?, ?, ?, ?, ?, ?, ?, NULL, NULL, NULL)',
+                'SELECT * FROM p2p.advertiser_update(?, ?, ?, ?, ?, ?, ?, NULL, NULL, NULL, NULL, NULL, NULL, ?)',
                 undef,
                 $advertiser_info->{id},
-                @param{qw/is_approved is_listed name default_advert_description payment_info contact_info/});
+                @param{qw/is_approved is_listed name default_advert_description payment_info contact_info show_name/});
         });
 
     BOM::Platform::Event::Emitter::emit(
@@ -3315,6 +3317,12 @@ sub _advertiser_details {
         $self->_p2p_advertiser_stats_get($advertiser->{client_loginid}, $stats_days)->%*,
     };
 
+    if ($advertiser->{show_name}) {
+        my $client = $advertiser->{client_loginid} ne $self->loginid ? BOM::User::Client->new({loginid => $advertiser->{client_loginid}}) : $self;
+        $details->{first_name} = $client->first_name;
+        $details->{last_name}  = $client->last_name;
+    }
+
     # only advertiser themself can see these fields
     # We will manualy clean up this field in websocket
     # If you're adding any new field here please add it to websocket subscription clean up as well
@@ -3323,6 +3331,7 @@ sub _advertiser_details {
         $details->{contact_info} = $advertiser->{contact_info} // '';
         $details->{chat_user_id} = $advertiser->{chat_user_id};
         $details->{chat_token} = $advertiser->{chat_token} // '';
+        $details->{show_name}  = $advertiser->{show_name};
         # band limits are not returned by all db functions
         if ($advertiser->{limit_currency}) {
             $details->{daily_buy}        = financialrounding('amount', $advertiser->{account_currency}, $advertiser->{daily_buy});
@@ -3391,6 +3400,12 @@ sub _advert_details {
             advertiser_details => {
                 id   => $advert->{advertiser_id},
                 name => $advert->{advertiser_name},
+                $advert->{advertiser_show_name}
+                ? (
+                    first_name => $advert->{advertiser_first_name},
+                    last_name  => $advert->{advertiser_last_name},
+                    )
+                : ()
             },
         };
 
@@ -3437,18 +3452,26 @@ sub _order_details {
             type               => $order->{type},
             chat_channel_url   => $order->{chat_channel_url} // '',
             advertiser_details => {
-                id         => $order->{advertiser_id},
-                name       => $order->{advertiser_name},
-                first_name => $order->{advertiser_first_name},
-                last_name  => $order->{advertiser_last_name},
-                loginid    => $order->{advertiser_loginid},
+                id      => $order->{advertiser_id},
+                name    => $order->{advertiser_name},
+                loginid => $order->{advertiser_loginid},
+                $order->{advertiser_show_name}
+                ? (
+                    first_name => $order->{advertiser_first_name},
+                    last_name  => $order->{advertiser_last_name},
+                    )
+                : (),
             },
             client_details => {
                 id   => $order->{client_id}   // '',
                 name => $order->{client_name} // '',
-                first_name => $order->{client_first_name},
-                last_name  => $order->{client_last_name},
-                loginid    => $order->{client_loginid},
+                loginid => $order->{client_loginid},
+                $order->{client_show_name}
+                ? (
+                    first_name => $order->{client_first_name},
+                    last_name  => $order->{client_last_name},
+                    )
+                : (),
             },
             advert_details => {
                 id             => $order->{advert_id},

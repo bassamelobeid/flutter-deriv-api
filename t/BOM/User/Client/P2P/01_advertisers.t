@@ -163,4 +163,32 @@ subtest 'Updating advertiser fields' => sub {
     );
 };
 
+subtest 'show real name' => sub {
+    my $names = { first_name => 'john', last_name  => 'smith' };
+    
+    my $advertiser = BOM::Test::Helper::P2P::create_advertiser(client_details => { %$names });
+
+    my $details = $advertiser->p2p_advertiser_info;
+    is $details->{show_name}, 0, 'show_name defaults to 0';
+    is $details->{first_name}, undef, 'no first name yet';
+    is $details->{last_name}, undef, 'no last name yet';
+    
+    cmp_deeply($advertiser->p2p_advertiser_update(show_name => 1), superhashof({ %$names, show_name=>1 }), 'names returned from advertiser update');
+    cmp_deeply($advertiser->p2p_advertiser_info, superhashof({ %$names, show_name=>1 }), 'names returned from advertiser info');
+
+    my $advertiser2 = BOM::Test::Helper::P2P::create_advertiser(client_details => { first_name => 'mary', last_name  => 'jane' });
+    my $res = $advertiser2->p2p_advertiser_info(id => $details->{id});
+    cmp_deeply($res, superhashof($names), 'other client sees names');
+    
+    $advertiser->p2p_advertiser_update(show_name => 0);
+    $res = $advertiser2->p2p_advertiser_info(id => $details->{id});
+    is $res->{first_name}, undef, 'first name hidden from other client';
+    is $res->{last_name}, undef, 'last name hidden from other client';    
+    
+    $res = $advertiser->p2p_advertiser_info;
+    is $details->{first_name}, undef, 'correct response for advertiser';
+    is $details->{last_name}, undef, 'correct response for advertiser';
+
+};
+
 done_testing;

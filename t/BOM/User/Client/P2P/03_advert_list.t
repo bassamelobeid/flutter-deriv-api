@@ -81,6 +81,41 @@ subtest 'country & currency filtering' => sub {
     is $client3->p2p_advert_list()->@*, 0, 'Client with other currency does not see ads';
 };
 
+subtest 'show real name' => sub {
+    
+    my $names = { first_name => 'john', last_name  => 'smith' };
+
+    my ($advertiser, $ad) = BOM::Test::Helper::P2P::create_advert(advertiser => { %$names });
+    is $ad->{advertiser_details}{first_name}, undef, 'create ad: no first name yet';
+    is $ad->{advertiser_details}{last_name}, undef, 'create ad: no last name yet';
+
+    my $res = $client1->p2p_advert_list(id=>$ad->{id})->[0]->{advertiser_details};
+    is $res->{first_name}, undef, 'ad list: no first name yet';
+    is $res->{last_name}, undef, 'ad list: no last name yet';
+
+    $res = $client1->p2p_advert_info(id=>$ad->{id})->{advertiser_details};
+    is $res->{first_name}, undef, 'ad info: no first name yet';
+    is $res->{last_name}, undef, 'ad info: no last name yet';
+    
+    $res = $advertiser->p2p_advert_update(id=>$ad->{id}, is_active=>0)->{advertiser_details};
+    is $res->{first_name}, undef, 'ad update: no first name yet';
+    is $res->{last_name}, undef, 'ad update: no last name yet';    
+
+    $advertiser->p2p_advertiser_update(show_name=>1);
+
+    ($advertiser, $ad) = BOM::Test::Helper::P2P::create_advert(local_currency => 'xxx', client => $advertiser);
+    cmp_deeply($ad->{advertiser_details}, superhashof($names), 'create ad: real names returned');
+ 
+    $res = $client1->p2p_advert_list(id=>$ad->{id})->[0]->{advertiser_details};
+    cmp_deeply($res, superhashof($names), 'ad list: real names returned');
+    
+    $res = $client1->p2p_advert_info(id=>$ad->{id})->{advertiser_details};
+    cmp_deeply($res, superhashof($names), 'ad info: real names returned');
+    
+    $res = $advertiser->p2p_advert_update(id=>$ad->{id}, is_active=>0)->{advertiser_details};
+    cmp_deeply($res, superhashof($names), 'ad update: real names returned');
+};
+
 BOM::Test::Helper::P2P::reset_escrow();
 
 # restore app config

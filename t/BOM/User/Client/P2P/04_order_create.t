@@ -50,12 +50,7 @@ subtest 'Creating new buy order' => sub {
     my $escrow       = BOM::Test::Helper::P2P::create_escrow();
     my $order_amount = 100;
 
-    my ($advertiser, $advert_info) = BOM::Test::Helper::P2P::create_advert(
-        %ad_params,
-        advertiser => {
-            first_name => 'john',
-            last_name  => 'smith'
-        });
+    my ($advertiser, $advert_info) = BOM::Test::Helper::P2P::create_advert(%ad_params);
     my $non_advertiser = BOM::Test::Helper::Client::create_client();
     $non_advertiser->account('USD');
 
@@ -82,11 +77,7 @@ subtest 'Creating new buy order' => sub {
     };
     is $err->{error_code}, 'AdvertiserNotApprovedForOrder', 'Client should be an approved advertiser to create an order';
 
-    my $client = BOM::Test::Helper::P2P::create_advertiser(
-        client_details => {
-            first_name => 'mary',
-            last_name  => 'jane'
-        });
+    my $client = BOM::Test::Helper::P2P::create_advertiser;
 
     ok($escrow->account->balance == 0,                      'Escrow balance is correct');
     ok($advertiser->account->balance == $ad_params{amount}, 'advertiser balance is correct');
@@ -151,15 +142,11 @@ subtest 'Creating new buy order' => sub {
         client_details => {
             id         => $client->p2p_advertiser_info->{id},
             name       => $client->p2p_advertiser_info->{name},
-            first_name => 'mary',
-            last_name  => 'jane',
             loginid    => $client->loginid,
         },
         advertiser_details => {
             id         => $advertiser->p2p_advertiser_info->{id},
             name       => $advertiser->p2p_advertiser_info->{name},
-            first_name => 'john',
-            last_name  => 'smith',
             loginid    => $advertiser->loginid,
         },
         dispute_details => {
@@ -865,6 +852,8 @@ subtest 'payment validation' => sub {
         );
     };
     cmp_deeply($err, undef, 'validate_payment pass');
+    
+    BOM::Test::Helper::P2P::reset_escrow();
 };
 
 done_testing();
