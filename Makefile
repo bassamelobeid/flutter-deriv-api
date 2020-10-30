@@ -15,3 +15,8 @@ syntax:
 
 pod_test:
 	@$(PROVE) t/*pod*.t
+
+cover:
+	cover -delete
+	HARNESS_PERL_SWITCHES=-MDevel::Cover DEVEL_COVER_OPTIONS=-'ignore,^t/' /etc/rmg/bin/prove --timer --norc  -MBOM::Test -rl t/BOM/
+	cover -report coveralls
