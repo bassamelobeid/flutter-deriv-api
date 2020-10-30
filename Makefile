@@ -8,3 +8,8 @@ tidy:
 
 pod_test:
 	/etc/rmg/bin/prove -vlr t/BOM/*pod*.t
+
+cover:
+	cover -delete
+	HARNESS_PERL_SWITCHES=-MDevel::Cover DEVEL_COVER_OPTIONS=-'ignore,^t/' /etc/rmg/bin/prove --timer -rl --norc -MBOM::Test  t/BOM/MyAffiliates
+	cover -report coveralls
