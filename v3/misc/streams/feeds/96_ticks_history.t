@@ -73,7 +73,7 @@ subtest 'call_ticks_history' => sub {
 
     my $underlying = create_underlying('frxUSDJPY');
     my $calendar   = Quant::Framework->new->trading_calendar(BOM::Config::Chronicle::get_chronicle_reader());
-    my $is_open    = $calendar->is_open_at($underlying->exchange, Date::Utility->new($time));
+    my $is_open    = $calendar->is_open_at($underlying->exchange, $test_date);
 
     $t->send_ok({json => $req_storage});
     $t   = $t->message_ok;
