@@ -837,10 +837,8 @@ subtest 'P2P Order Info' => sub {
         local_currency   => 'myr',
         amount           => '100.00',
         client_details   => {
-            last_name  => 'pItT',
             name       => 'test advertiser 39',
             id         => re('\d+'),
-            first_name => 'bRaD',
             loginid    => 'CR10055'
         },
         price_display  => 100,
@@ -858,8 +856,6 @@ subtest 'P2P Order Info' => sub {
         advertiser_details => {
             loginid    => 'CR10054',
             id         => re('\d+'),
-            first_name => 'bRaD',
-            last_name  => 'pItT',
             name       => 'test advertiser 38'
         },
         contact_info     => 'Tel: 123456',
