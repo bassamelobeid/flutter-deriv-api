@@ -4,6 +4,7 @@ use strict;
 use warnings;
 
 use Test::More (tests => 2);
+use Test::Warnings;
 
 use BOM::Platform::Context::Request;
 

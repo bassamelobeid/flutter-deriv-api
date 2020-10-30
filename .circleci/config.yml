@@ -24,9 +24,15 @@ alias:
           sleep 1
       done
     name: Wait for services to start up
+- &5
+  run:
+    background: true
+    command: /home/git/regentmarkets/cpan/local/bin/morbo /home/git/regentmarkets/bom-platform/bin/experian_mock.pl
+      -l http://localhost:4040
+    name: Experian mock service again
 - environment:
     PERL_TEST_HARNESS_DUMP_TAP: /var/tmp/test-output
-default: &5
+default: &6
   docker:
   - auth:
       password: $DOCKERHUB_PASSWORD
@@ -37,17 +43,13 @@ default: &5
   working_directory: /home/git/regentmarkets/bom-platform
 jobs:
   build:
-    <<: *5
+    <<: *6
     steps:
     - *1
     - *2
     - *3
     - *4
-    - run:
-        background: true
-        command: /home/git/regentmarkets/cpan/local/bin/morbo /home/git/regentmarkets/bom-platform/bin/experian_mock.pl
-          -l http://localhost:4040
-        name: Experian mock service again
+    - *5
     - run:
         command: |
           echo '--formatter TAP::Formatter::JUnit' >> .proverc
@@ -55,17 +57,39 @@ jobs:
         name: Run tests
     - store_test_results:
         path: /var/tmp/test-output
+  code_coverage:
+    <<: *6
+    steps:
+    - *1
+    - *2
+    - *3
+    - *4
+    - *5
+    - run:
+        command: make cover
+        name: code coverage tests
 version: 2
 workflows:
   build-workflow:
-    jobs: &6
+    jobs: &7
     - build:
         context: perl
   daily:
-    jobs: *6
+    jobs: *7
     triggers:
     - schedule:
         cron: 32 20 * * *
+        filters:
+          branches:
+            only:
+            - master
+  weekly-code-coverage:
+    jobs:
+    - code_coverage:
+        context: perl
+    triggers:
+    - schedule:
+        cron: "10 5 * * 6"
         filters:
           branches:
             only:
