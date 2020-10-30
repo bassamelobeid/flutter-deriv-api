@@ -54,16 +54,18 @@ my %EVENT_PROPERTIES = (
             max_deposit_end_date max_losses max_open_bets max_turnover session_duration_limit timeout_until )
     ],
     p2p_order_created =>
-        [qw(loginid user_role order_type  order_id amount currency advertiser_nickname advertiser_user_id client_nickname client_user_id )],
-    p2p_order_buyer_has_paid =>
-        [qw(loginid user_role order_type  order_id amount currency buyer_user_id buyer_nickname seller_user_id seller_nickname)],
+        [qw(loginid user_role order_type  order_id amount currency advertiser_nickname advertiser_user_id client_nickname client_user_id)],
+    p2p_order_buyer_has_paid => [
+        qw(loginid user_role order_type  order_id amount currency buyer_user_id buyer_nickname seller_user_id seller_nickname order_created_at exchange_rate)
+    ],
     p2p_order_seller_has_released =>
         [qw(loginid user_role order_type  order_id amount currency buyer_user_id buyer_nickname seller_user_id seller_nickname)],
-    p2p_order_cancelled => [qw(loginid  user_role order_type  order_id amount currency buyer_user_id buyer_nickname seller_user_id seller_nickname )],
-    p2p_order_expired =>
-        [qw(loginid user_role order_type  order_id amount currency buyer_has_confirmed seller_user_id seller_nickname buyer_user_id buyer_nickname)],
+    p2p_order_cancelled => [qw(loginid  user_role order_type  order_id amount currency buyer_user_id buyer_nickname seller_user_id seller_nickname)],
+    p2p_order_expired   => [
+        qw(loginid user_role order_type  order_id amount currency buyer_has_confirmed seller_user_id seller_nickname buyer_user_id buyer_nickname order_created_at exchange_rate)
+    ],
     p2p_order_dispute => [
-        qw(dispute_reason disputer loginid user_role order_type  order_id amount currency buyer_has_confirmed seller_user_id seller_nickname buyer_user_id buyer_nickname)
+        qw(dispute_reason disputer loginid user_role order_type  order_id amount currency buyer_has_confirmed seller_user_id seller_nickname buyer_user_id buyer_nickname order_created_at)
     ],
     p2p_order_timeout_refund => [
         qw(loginid user_role order_type  order_id amount currency exchange_rate local_currency seller_user_id seller_nickname buyer_user_id buyer_nickname)
@@ -631,18 +633,19 @@ sub _p2p_properties {
     my ($order, $parties, $side) = @_;
 
     return {
-        loginid         => $parties->{$side}->loginid,
-        user_role       => $side,
-        order_type      => $order->{type},
-        order_id        => $order->{id},
-        exchange_rate   => $order->{rate_display},
-        amount          => $order->{amount_display},
-        currency        => $order->{account_currency},
-        local_currency  => $order->{local_currency},
-        buyer_user_id   => $parties->{buyer}->{binary_user_id},
-        buyer_nickname  => $parties->{buyer_nickname} // '',
-        seller_user_id  => $parties->{seller}->{binary_user_id},
-        seller_nickname => $parties->{seller_nickname} // '',
+        loginid          => $parties->{$side}->loginid,
+        user_role        => $side,
+        order_type       => $order->{type},
+        order_id         => $order->{id},
+        exchange_rate    => $order->{rate_display},
+        amount           => $order->{amount_display},
+        currency         => $order->{account_currency},
+        local_currency   => $order->{local_currency},
+        buyer_user_id    => $parties->{buyer}->{binary_user_id},
+        buyer_nickname   => $parties->{buyer_nickname} // '',
+        seller_user_id   => $parties->{seller}->{binary_user_id},
+        seller_nickname  => $parties->{seller_nickname} // '',
+        order_created_at => Time::Moment->from_epoch($order->{created_time})->to_string,
     };
 }
 

@@ -86,22 +86,25 @@ my $user         = BOM::User->create(
 );
 $user->add_client($test_client);
 
-    my $req_args = {
-        client    => $test_client,
-        source    => 1,
-        date_from => $now->epoch(),
-        date_to   => $now->epoch(),
-    };
+my $req_args = {
+    client    => $test_client,
+    source    => 1,
+    date_from => $now->epoch(),
+    date_to   => $now->epoch(),
+};
 
 subtest 'Freshly created client - no account' => sub {
     # expected table cell values, expressed as regular expressions
     my $expected_content = {
-        profile =>
-            [[$test_client->first_name . ' ' . $test_client->last_name, $test_client->loginid, 'No Currency Selected', 'Retail', '.+ to .+ \(inclusive\)'],],
-        overview => 
-            [['', '', '', '', '', '', '']],
+        profile => [[
+                $test_client->first_name . ' ' . $test_client->last_name,
+                $test_client->loginid, 'No Currency Selected',
+                'Retail',              '.+ to .+ \(inclusive\)'
+            ],
+        ],
+        overview => [['', '', '', '', '', '', '']],
     };
-    
+
     test_email_statement($req_args, $expected_content);
 };
 
@@ -112,15 +115,14 @@ subtest 'Professional client - no transactions' => sub {
     my $expected_content = {
         profile =>
             [[$test_client->first_name . ' ' . $test_client->last_name, $test_client->loginid, 'USD', 'Professional', '.+ to .+ \(inclusive\)'],],
-        overview =>
-            [['^0\.00$', '^0\.00$', '^0\.00$', '^0\.00$', '^0\.00$', '0\.00$', '^0\.00$']],
+        overview => [['^0\.00$', '^0\.00$', '^0\.00$', '^0\.00$', '^0\.00$', '0\.00$', '^0\.00$']],
     };
 
     test_email_statement($req_args, $expected_content);
 };
 
 subtest 'client with payments, trades and P2P' => sub {
-    
+
 # deposit, amount will be used as a key for matching later
     $test_client->payment_free_gift(
         currency => 'USD',
