@@ -35,7 +35,7 @@ i18n:
 		--output-dir=/home/git/binary-com/translations-websockets-api/src/locales \
 		--directory=/home/git/regentmarkets/binary-websocket-api/ \
 		--directory=/home/git/regentmarkets/bom/ \
-		--directory=/home/git/regentmarkets/bom-backoffice/ \
+		--files-from=`find /home/git/regentmarkets/bom-backoffice/ -not -path '*/\.*' -not -path '*\/public\/*'` \
 		--directory=/home/git/regentmarkets/bom-cryptocurrency/ \
 		--directory=/home/git/regentmarkets/bom-events/ \
 		--directory=/home/git/regentmarkets/bom-oauth/ \
