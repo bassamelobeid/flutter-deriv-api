@@ -42,3 +42,9 @@ tidy:
 
 doc:
 	pod2markdown lib/BOM/Product/Contract.pm > README.md
+
+cover:
+	cover -delete
+	HARNESS_PERL_SWITCHES=-MDevel::Cover DEVEL_COVER_OPTIONS=-'ignore,^t/' /etc/rmg/bin/prove --timer --norc -It/lib -MBOM::Test -rl  $$(find t/BOM/Product/ -mindepth 1 -maxdepth 1 -type d| grep -v ContractFinder)
+	cover -report coveralls
+

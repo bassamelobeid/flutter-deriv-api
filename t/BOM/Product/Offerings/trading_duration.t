@@ -3,6 +3,7 @@
 use strict;
 use warnings;
 use Test::MockTime qw(set_absolute_time);
+use BOM::Test;
 use Test::More;
 use Test::Deep;
 use Test::FailWarnings;

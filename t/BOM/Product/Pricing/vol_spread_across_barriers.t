@@ -3,6 +3,7 @@
 use strict;
 use warnings;
 
+use Test::Warnings;
 use Test::More;
 use Test::FailWarnings;
 
