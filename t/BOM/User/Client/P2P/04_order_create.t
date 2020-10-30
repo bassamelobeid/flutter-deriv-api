@@ -612,7 +612,7 @@ subtest 'Buyer with empty balance tries to place an "sell" order' => sub {
         )
     };
 
-    is $err->{error_code}, 'AdvertNotFound', 'Could not create order, got error code AdvertNotFound';
+    is $err->{error_code}, 'OrderCreateFailClient', 'Could not create order, got error code OrderCreateFailClient';
 
     BOM::Test::Helper::P2P::reset_escrow();
 };
@@ -681,7 +681,7 @@ subtest 'Buyer tries to place a "buy" order with an amount that exceeds the adve
 
 subtest 'Buyer tries to place an order bigger than the ad amount' => sub {
     my $escrow    = BOM::Test::Helper::P2P::create_escrow();
-    my $ad_amount = 100;
+    my $ad_amount = 50;
 
     my ($advertiser, $advert_info) = BOM::Test::Helper::P2P::create_advert(
         amount           => $ad_amount,
@@ -700,7 +700,7 @@ subtest 'Buyer tries to place an order bigger than the ad amount' => sub {
         )
     };
 
-    is $err->{error_code}, 'AdvertNotFound', 'Could not create order, got error code AdvertNotFound';
+    is $err->{error_code}, 'OrderMaximumExceeded', 'Could not create order, got error code OrderMaximumExceeded';
 
     BOM::Test::Helper::P2P::reset_escrow();
 };

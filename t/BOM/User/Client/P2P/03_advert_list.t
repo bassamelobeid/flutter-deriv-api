@@ -42,8 +42,10 @@ subtest 'Seller lists ads and those with a min order amount greater than its bal
         min_order_amount => $seller_balance * 1.1
     );
 
-    is scalar($seller->p2p_advert_list->@*), 1, 'List correct amount of ads (1)';
-    cmp_ok $seller->p2p_advert_list->[0]->{id}, '==', $advert_info->{id}, 'List ad is the expected one';
+    is scalar($seller->p2p_advert_list(use_client_limits=>1)->@*), 1, 'List correct amount of ads (1) with use_client_limits=1';
+    cmp_ok $seller->p2p_advert_list(use_client_limits=>1)->[0]->{id}, '==', $advert_info->{id}, 'List ad is the expected one';
+    
+    is scalar($seller->p2p_advert_list()->@*), 2, 'list correct amount of ads (2) without use_client_limits';
 };
 
 my ($advertiser1, $advert1) = BOM::Test::Helper::P2P::create_advert(amount => 100);
@@ -76,7 +78,7 @@ subtest 'advertiser adverts' => sub {
 };
 
 subtest 'country & currency filtering' => sub {
-    is $client1->p2p_advert_list()->@*, 1, 'Client from same country sees ad';
+    is $client1->p2p_advert_list()->@*, 3, 'Client from same country sees ad';
     is $client2->p2p_advert_list()->@*, 0, 'Client from other country does not see ads';
     is $client3->p2p_advert_list()->@*, 0, 'Client with other currency does not see ads';
 };

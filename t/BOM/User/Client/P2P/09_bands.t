@@ -19,6 +19,7 @@ populate_exchange_rates({EUR => 2});
 BOM::Test::Helper::P2P::bypass_sendbird();
 my $original_admax = BOM::Config::Runtime->instance->app_config->payments->p2p->limits->maximum_advert;
 BOM::Config::Runtime->instance->app_config->payments->p2p->limits->maximum_advert(1000);
+BOM::Config::Runtime->instance->app_config->payments->p2p->limits->maximum_order(100);
 
 my $original_escrow = BOM::Config::Runtime->instance->app_config->payments->p2p->escrow;
 my $escrow_client   = BOM::Test::Helper::Client::create_client();
@@ -177,7 +178,26 @@ subtest 'Check client band limits' => sub {
         },
         'client cannot create order if exceeds daily buy limit'
     );
+};
 
+subtest 'ad list' => sub {
+    BOM::Test::Helper::P2P::create_escrow();
+  
+    my ($advertiser, $ad) = BOM::Test::Helper::P2P::create_advert(amount=>100, min_order_amount=>10, max_order_amount=>100, type=>'sell');
+    my ($client, $order) = BOM::Test::Helper::P2P::create_order(amount=>100, advert_id=>$ad->{id});
+    my ($advertiser2, $ad2) = BOM::Test::Helper::P2P::create_advert(type=>'sell');
+    
+    is scalar($client->p2p_advert_list(id=>$ad2->{id},use_client_limits=>1)->@*), 0, 'sell ad is hidden with use_client_limits=1';
+    is scalar($client->p2p_advert_list(id=>$ad2->{id})->@*), 1, 'sell ad is shown without use_client_limits';
+
+    ($advertiser, $ad) = BOM::Test::Helper::P2P::create_advert(amount=>100, min_order_amount=>10, max_order_amount=>100, type=>'buy');
+    ($client, $order) = BOM::Test::Helper::P2P::create_order(balance=>100, amount=>100, advert_id=>$ad->{id});
+    ($advertiser2, $ad2) = BOM::Test::Helper::P2P::create_advert(type=>'buy');
+
+    is scalar($client->p2p_advert_list(id=>$ad2->{id},use_client_limits=>1)->@*), 0, 'buy ad is hidden with use_client_limits=1';
+    is scalar($client->p2p_advert_list(id=>$ad2->{id})->@*), 1, 'buy ad is shown without use_client_limits=1';
+    
+    BOM::Test::Helper::P2P::reset_escrow();
 };
 
 sub order {

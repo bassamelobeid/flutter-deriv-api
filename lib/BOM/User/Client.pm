@@ -2295,6 +2295,8 @@ sub p2p_advert_list {
         $param{type} = P2P_COUNTERYPARTY_TYPE_MAPPING->{$param{counterparty_type}};
     }
 
+    $param{client_loginid} = $self->loginid if $param{use_client_limits};
+
     my $list = $self->_p2p_adverts(
         %param,
         is_active              => 1,
@@ -2985,7 +2987,6 @@ sub _p2p_adverts {
     die +{error_code => 'InvalidListLimit'}  if defined $limit  && $limit <= 0;
     die +{error_code => 'InvalidListOffset'} if defined $offset && $offset < 0;
 
-    $param{client_loginid} = $self->loginid;
     $param{max_order} = convert_currency(BOM::Config::Runtime->instance->app_config->payments->p2p->limits->maximum_order, 'USD', $self->currency);
 
     $self->db->dbic->run(

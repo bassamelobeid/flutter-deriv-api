@@ -639,7 +639,7 @@ subtest 'Updating advert' => sub {
     my $ad_info = $advertiser->p2p_advert_info(id => $advert->{id});
 
     # p2p_advert_update does not return these, because we don't know counterparty balance
-    delete @$ad_info{qw( min_order_amount_limit min_order_amount_limit_display max_order_amount_limit max_order_amount_limit_display )};
+    delete @$ad_info{qw( min_order_amount_limit min_order_amount_limit_display max_order_amount_limit max_order_amount_limit_display)};
 
     my $empty_update = $advertiser->p2p_advert_update(id => $advert->{id});
     cmp_deeply($empty_update, $ad_info, 'empty update returns all fields');
