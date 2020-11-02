@@ -376,7 +376,7 @@ Takes transaction hash ($txn) as args and returns the localized payment remark.
 =cut
 
 sub _translate_payment_remark {
-    my ($txn) = @_;
+    my ($txn, $loginid) = @_;
 
     #MT5 remark example.
     # 'Transfer from CR90000004 to MT5 account real 540161 Includes transfer fee of BTC 0.00300000 (2%).'
@@ -401,10 +401,36 @@ sub _translate_payment_remark {
         }
     }
 
-    if (defined $txn->{seller_order_id}) {
-        return localize('P2P order [_1] completed - payment as seller', $txn->{seller_order_id});
-    } elsif (defined $txn->{buyer_order_id}) {
-        return localize('P2P order [_1] completed - payment as buyer', $txn->{buyer_order_id});
+    if (my $p2p_type = $txn->{p2p_type}) {
+        if ($p2p_type eq 'order_create') {
+            if ($loginid ne $txn->{p2p_client_loginid}) {
+                return localize(
+                    'P2P order [_1] created by [_2] ([_3]) - seller funds held',
+                    $txn->{p2p_order_id},
+                    $txn->{p2p_client_nickname},
+                    $txn->{p2p_client_loginid});
+            } else {
+                return localize('P2P order [_1] created - seller funds held', $txn->{p2p_order_id});
+            }
+        } elsif ($p2p_type eq 'order_complete_escrow') {
+            return localize('P2P order [_1] completed - seller funds released', $txn->{p2p_order_id});
+        } elsif ($p2p_type eq 'order_complete_payment') {
+            my @seller =
+                $txn->{p2p_advert_type} eq 'sell'
+                ? (($txn->{p2p_advertiser_nickname} // '-'), $txn->{p2p_advertiser_loginid})
+                : (($txn->{p2p_client_nickname} // '-'), $txn->{p2p_client_loginid});
+            my @buyer =
+                $txn->{p2p_advert_type} eq 'buy'
+                ? (($txn->{p2p_advertiser_nickname} // '-'), $txn->{p2p_advertiser_loginid})
+                : (($txn->{p2p_client_nickname} // '-'), $txn->{p2p_client_loginid});
+            if ($txn->{p2p_direction} eq 'to') {
+                return localize('P2P order [_1] completed - payment from [_2] ([_3])', $txn->{p2p_order_id}, @seller);
+            } elsif ($txn->{p2p_direction} eq 'from') {
+                return localize('P2P order [_1] completed - payment to [_2] ([_3])', $txn->{p2p_order_id}, @buyer);
+            }
+        } elsif ($p2p_type eq 'order_cancel') {
+            return localize('P2P order [_1] cancelled - seller funds released', $txn->{p2p_order_id});
+        }
     }
 
     return $payment_remark // $txn->{payment_remark};
@@ -466,11 +492,8 @@ rpc "statement",
         if ($params->{args}->{description}) {
             if ($txn->{short_code}) {
                 $struct->{longcode} = $longcodes->{longcodes}->{$txn->{short_code}} // localize('Could not retrieve contract details');
-            } elsif ($txn->{payment_id}) {
-                # withdrawal/deposit
-                $struct->{longcode} = _translate_payment_remark($txn) // '';
             } else {
-                $struct->{longcode} = localize($txn->{remark} // '');
+                $struct->{longcode} = _translate_payment_remark($txn, $client->loginid);
             }
 
             $struct->{shortcode} = $txn->{short_code};

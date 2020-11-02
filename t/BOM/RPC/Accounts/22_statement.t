@@ -15,6 +15,7 @@ use BOM::MarketData qw(create_underlying_db);
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
 use BOM::Test::Helper::Token;
+use BOM::Test::Helper::P2P;
 
 BOM::Test::Helper::Token::cleanup_redis_tokens();
 
@@ -352,6 +353,136 @@ subtest 'statement' => sub {
                     args  => {action_type => $expected->[0]}});
             is($result->{transactions}->@*, $expected->[1], 'correct number of ' . $expected->[0] . ' results');
         }
+    };
+};
+
+subtest 'p2p remarks' => sub {
+    my $escrow = BOM::Test::Helper::P2P::create_escrow;
+    BOM::Test::Helper::P2P::bypass_sendbird();
+    
+    my ($order, $advert, $result);
+
+    my $advertiser = BOM::Test::Helper::P2P::create_advertiser(
+        name    => 'andy',
+        balance => 100
+    );
+    my $client = BOM::Test::Helper::P2P::create_advertiser(
+        name    => 'cody',
+        balance => 100
+    );
+
+    my $advertiser_token = $m->create_token($advertiser->loginid, 'test token');
+    my $client_token     = $m->create_token($client->loginid,     'test token');
+    my $escrow_token     = $m->create_token($escrow->loginid,     'test token');
+
+    subtest 'sell ads' => sub {
+        ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert(
+            client => $advertiser,
+            type   => 'sell'
+        );
+        ($client, $order) = BOM::Test::Helper::P2P::create_order(
+            client    => $client,
+            advert_id => $advert->{id},
+            amount    => 10
+        );
+
+        $result = $c->tcall(
+            $method,
+            {
+                token => $advertiser_token,
+                args  => {description => 1}});
+        is $result->{transactions}[0]{longcode}, 'P2P order ' . $order->{id} . ' created by cody ('.$client->loginid.') - seller funds held',
+            'order create remark for advertiser';
+
+        $client->p2p_order_confirm(id => $order->{id});
+        $advertiser->p2p_order_confirm(id => $order->{id});
+
+        $result = $c->tcall(
+            $method,
+            {
+                token => $advertiser_token,
+                args  => {description => 1}});
+        is $result->{transactions}[1]{longcode}, 'P2P order ' . $order->{id} . ' completed - seller funds released', 'release remark for advertiser';
+        is $result->{transactions}[0]{longcode}, 'P2P order ' . $order->{id} . ' completed - payment to cody ('.$client->loginid.')',       'payment remark for advertiser';
+
+        $result = $c->tcall(
+            $method,
+            {
+                token => $client_token,
+                args  => {description => 1}});
+        is $result->{transactions}[0]{longcode}, 'P2P order ' . $order->{id} . ' completed - payment from andy ('.$advertiser->loginid.')', 'payment remark for client';
+
+        ($client, $order) = BOM::Test::Helper::P2P::create_order(
+            client    => $client,
+            advert_id => $advert->{id},
+            amount    => 10
+        );
+        $client->p2p_order_cancel(id => $order->{id});
+
+        $result = $c->tcall(
+            $method,
+            {
+                token => $advertiser_token,
+                args  => {description => 1}});
+        is $result->{transactions}[0]{longcode}, 'P2P order ' . $order->{id} . ' cancelled - seller funds released', 'cancel remark for advertiser';
+    };
+
+    subtest 'buy ads' => sub {
+        ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert(
+            client => $advertiser,
+            type   => 'buy'
+        );
+        ($client, $order) = BOM::Test::Helper::P2P::create_order(
+            client    => $client,
+            advert_id => $advert->{id},
+            amount    => 10
+        );
+
+        $result = $c->tcall(
+            $method,
+            {
+                token => $client_token,
+                args  => {description => 1}});
+        is $result->{transactions}[0]{longcode}, 'P2P order ' . $order->{id} . ' created - seller funds held', 'order create remark for client';
+
+        $result = $c->tcall(
+            $method,
+            {
+                token => $escrow_token,
+                args  => {description => 1}});
+        is $result->{transactions}[0]{longcode}, 'P2P order ' . $order->{id} . ' created by cody ('.$client->loginid.') - seller funds held', 'order create remark for escrow';
+
+        $advertiser->p2p_order_confirm(id => $order->{id});
+        $client->p2p_order_confirm(id => $order->{id});
+
+        $result = $c->tcall(
+            $method,
+            {
+                token => $client_token,
+                args  => {description => 1}});
+        is $result->{transactions}[1]{longcode}, 'P2P order ' . $order->{id} . ' completed - seller funds released', 'release remark for client';
+        is $result->{transactions}[0]{longcode}, 'P2P order ' . $order->{id} . ' completed - payment to andy ('.$advertiser->loginid.')',       'payment remark for client';
+
+        $result = $c->tcall(
+            $method,
+            {
+                token => $advertiser_token,
+                args  => {description => 1}});
+        is $result->{transactions}[0]{longcode}, 'P2P order ' . $order->{id} . ' completed - payment from cody ('.$client->loginid.')', 'payment remark for advertiser';
+
+        ($client, $order) = BOM::Test::Helper::P2P::create_order(
+            client    => $client,
+            advert_id => $advert->{id},
+            amount    => 10
+        );
+        $advertiser->p2p_order_cancel(id => $order->{id});
+
+        $result = $c->tcall(
+            $method,
+            {
+                token => $client_token,
+                args  => {description => 1}});
+        is $result->{transactions}[0]{longcode}, 'P2P order ' . $order->{id} . ' cancelled - seller funds released', 'cancel remark for client';
     };
 };
 
