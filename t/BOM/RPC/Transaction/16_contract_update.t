@@ -391,8 +391,8 @@ subtest 'multiplier on MF' => sub {
     $c->call_ok('buy', $buy_params)->has_error->error_code_is('InvalidtoBuy')->error_message_is('Multiplier is not in acceptable range. Accepts 30.');
 
     $buy_params->{contract_parameters}{multiplier} = 30;
-    my $buy_res = $c->call_ok('buy', $buy_params)->has_error->error_code_is('InvalidOfferings')->result;
-    is $buy_res->{error}->{message_to_client}, 'Trading is not offered for this asset.';
+    my $buy_res = $c->call_ok('buy', $buy_params)->has_no_error->result;
+    ok $buy_res->{contract_id}, 'buy successful';
 };
 
 done_testing();
