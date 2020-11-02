@@ -317,6 +317,16 @@ subtest 'get_transactions' => sub {
         is $transactions->[0]->{transaction_time},  '2005-09-21 06:39:00', 'Last transaction first';
         is $transactions->[-1]->{transaction_time}, '2005-09-21 06:37:00', 'Lists from before_time to after_time';
     };
+
+    subtest 'with transaction_id' => sub {
+        my $transactions       = $txn_data_mapper->get_transactions({limit => 1});
+        my $transaction_id     = $transactions->[0]->{id};
+        my $transactions_by_id = $txn_data_mapper->get_transactions({transaction_id => $transaction_id});
+        cmp_deeply($transactions, $transactions_by_id, 'Got the correct transaction by ID');
+
+        $transactions_by_id = $txn_data_mapper->get_transactions({transaction_id => 'abc'});
+        is scalar $transactions_by_id->@*, 50, 'Ignores transaction_id if invalid value passed';
+    };
 };
 
 subtest 'get_payments' => sub {
@@ -368,4 +378,3 @@ subtest 'get_payments' => sub {
         is $transactions->[1]->{transaction_time}, '2011-03-09 07:22:00', 'Does not include 2011-03-09 06:22:00';
     };
 };
-
