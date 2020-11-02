@@ -429,23 +429,29 @@ async sub ready_for_authentication {
             die 'We exceeded our Onfido authentication check request per day';
         }
 
-        if ($resubmission_flag) {
-            # The following redis keys block email sending on client verification failure. We might clear them for resubmission
-            my @delete_on_resubmission = (
-                ONFIDO_AGE_BELOW_EIGHTEEN_EMAIL_PER_USER_PREFIX . $client->binary_user_id,
-                ONFIDO_POI_EMAIL_NOTIFICATION_SENT_PREFIX . $client->binary_user_id,
-            );
+        await $redis_replicated_write->del(ONFIDO_IS_A_RESUBMISSION_KEY_PREFIX . $client->binary_user_id);
 
-            await $redis_events_write->connect;
-            foreach my $email_blocker (@delete_on_resubmission) {
-                await $redis_events_write->del($email_blocker);
+        if ($resubmission_flag) {
+            # Ensure the resubmission kicks in only if the user has at least one check
+            # otherwise this would be the first check and call it resubmission may be pointless
+
+            if (BOM::User::Onfido::get_latest_onfido_check($client->binary_user_id)) {
+                # The following redis keys block email sending on client verification failure. We might clear them for resubmission
+                my @delete_on_resubmission = (
+                    ONFIDO_AGE_BELOW_EIGHTEEN_EMAIL_PER_USER_PREFIX . $client->binary_user_id,
+                    ONFIDO_POI_EMAIL_NOTIFICATION_SENT_PREFIX . $client->binary_user_id,
+                );
+
+                await $redis_events_write->connect;
+                foreach my $email_blocker (@delete_on_resubmission) {
+                    await $redis_events_write->del($email_blocker);
+                }
+                # Deal with resubmission counter and context
+                await $redis_replicated_write->incr(ONFIDO_RESUBMISSION_COUNTER_KEY_PREFIX . $client->binary_user_id);
+                await $redis_replicated_write->set(ONFIDO_IS_A_RESUBMISSION_KEY_PREFIX . $client->binary_user_id, 1);
+                await $redis_replicated_write->expire(ONFIDO_RESUBMISSION_COUNTER_KEY_PREFIX . $client->binary_user_id,
+                    ONFIDO_RESUBMISSION_COUNTER_TTL);
             }
-            # Deal with resubmission counter and context
-            await $redis_replicated_write->incr(ONFIDO_RESUBMISSION_COUNTER_KEY_PREFIX . $client->binary_user_id);
-            await $redis_replicated_write->set(ONFIDO_IS_A_RESUBMISSION_KEY_PREFIX . $client->binary_user_id, 1);
-            await $redis_replicated_write->expire(ONFIDO_RESUBMISSION_COUNTER_KEY_PREFIX . $client->binary_user_id, ONFIDO_RESUBMISSION_COUNTER_TTL);
-        } else {
-            await $redis_replicated_write->del(ONFIDO_IS_A_RESUBMISSION_KEY_PREFIX . $client->binary_user_id);
         }
 
         await _save_request_context($applicant_id);

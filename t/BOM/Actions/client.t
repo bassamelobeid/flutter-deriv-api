@@ -1116,10 +1116,47 @@ subtest 'onfido resubmission' => sub {
             Future->done;
         });
 
-    # First test, we expect counter to be +1
+    # Resubmission shouldnt kick in if no previous onfido checks
+    my $mock_onfido = Test::MockModule->new('BOM::User::Onfido');
+    $mock_onfido->mock(
+        'get_latest_onfido_check',
+        sub {
+            return;
+        });
+
+    # For this test, we expect counter to be 0 due to empty checks
     $redis_write->set(ONFIDO_ALLOW_RESUBMISSION_KEY_PREFIX . $test_client->binary_user_id, 1)->get;
     my $counter   = $redis_write->get(ONFIDO_RESUBMISSION_COUNTER_KEY_PREFIX . $test_client->binary_user_id)->get // 0;
     my $call_args = {
+        loginid      => $test_client->loginid,
+        applicant_id => $applicant_id
+    };
+    my $counter_after = $redis_write->get(ONFIDO_RESUBMISSION_COUNTER_KEY_PREFIX . $test_client->binary_user_id)->get // 0;
+    is $counter, $counter_after, 'Resubmission discarded due to being the first check';
+
+    # Not the first check anymore
+    $mock_onfido->mock(
+        'get_latest_onfido_check',
+        sub {
+            return ({
+                'status'       => 'in_progress',
+                'stamp'        => '2020-10-01 16:09:35.785807',
+                'href'         => '/v2/applicants/7FC678E6-0400-11EB-98D4-92B97BD2E76D/checks/7FEEF47E-0400-11EB-98D4-92B97BD2E76D',
+                'api_type'     => 'express',
+                'id'           => '7FEEF47E-0400-11EB-98D4-92B97BD2E76D',
+                'download_uri' => 'https://onfido.com/dashboard/pdf/information_requests/<REQUEST_ID>',
+                'result'       => 'clear',
+                'applicant_id' => '7FC678E6-0400-11EB-98D4-92B97BD2E76D',
+                'tags'         => ['automated', 'CR', 'CR10000', 'IDN'],
+                'results_uri'  => 'https://onfido.com/dashboard/information_requests/<REQUEST_ID>',
+                'created_at'   => '2020-10-01 16:09:35'
+            });
+        });
+
+    # Then, we expect counter to be +1
+    $redis_write->set(ONFIDO_ALLOW_RESUBMISSION_KEY_PREFIX . $test_client->binary_user_id, 1)->get;
+    $counter   = $redis_write->get(ONFIDO_RESUBMISSION_COUNTER_KEY_PREFIX . $test_client->binary_user_id)->get // 0;
+    $call_args = {
         loginid      => $test_client->loginid,
         applicant_id => $applicant_id
     };
@@ -1128,8 +1165,8 @@ subtest 'onfido resubmission' => sub {
     $redis_events->set(ONFIDO_POI_EMAIL_NOTIFICATION_SENT_PREFIX . $test_client->binary_user_id,       1)->get;
     $redis_write->del(ONFIDO_IS_A_RESUBMISSION_KEY_PREFIX . $test_client->binary_user_id)->get;
     $action_handler->($call_args)->get;
-    my $counter_after = $redis_write->get(ONFIDO_RESUBMISSION_COUNTER_KEY_PREFIX . $test_client->binary_user_id)->get;
-    my $ttl           = $redis_write->ttl(ONFIDO_RESUBMISSION_COUNTER_KEY_PREFIX . $test_client->binary_user_id)->get;
+    $counter_after = $redis_write->get(ONFIDO_RESUBMISSION_COUNTER_KEY_PREFIX . $test_client->binary_user_id)->get;
+    my $ttl = $redis_write->ttl(ONFIDO_RESUBMISSION_COUNTER_KEY_PREFIX . $test_client->binary_user_id)->get;
     is($counter + 1, $counter_after, 'Resubmission Counter has been incremented by 1');
 
     my $age_below_eighteen_per_user = $redis_events->get(ONFIDO_AGE_BELOW_EIGHTEEN_EMAIL_PER_USER_PREFIX . $test_client->binary_user_id)->get;
@@ -1208,6 +1245,7 @@ subtest 'onfido resubmission' => sub {
     };
 
     $mock_client->unmock_all;
+    $mock_onfido->unmock_all;
 };
 
 subtest 'client becomes transfers_blocked when deposits from QIWI' => sub {
