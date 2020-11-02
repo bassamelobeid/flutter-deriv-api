@@ -14,6 +14,7 @@ use Syntax::Keyword::Try;
 use Date::Utility;
 use JSON::MaybeUTF8 qw(decode_json_utf8 encode_json_utf8);
 use Locale::Codes::Country qw(country_code2code);
+use List::Util qw(first);
 
 =head2 store_onfido_applicant
 
@@ -130,18 +131,23 @@ sub store_onfido_check {
 
 =head2 get_latest_onfido_check
 
-Given a user_id, get the latest onfido check from DB
+Given a C<user_id>, get the latest onfido check from DB
+
+Optionally, you may pass C<applicant_id> and C<limit>, both defaulting to NULL.
+
+You may pass C<limit> = 1 to get only the `latest` one.
 
 =cut
 
 sub get_latest_onfido_check {
-    my ($user_id) = @_;
+    my ($user_id, $applicant_id, $limit) = @_;
+
     my $dbic = BOM::Database::UserDB::rose_db()->dbic;
 
     try {
         return $dbic->run(
             fixup => sub {
-                $_->selectrow_hashref('SELECT * FROM users.get_onfido_checks(?::BIGINT)', undef, $user_id);
+                $_->selectrow_hashref('SELECT * FROM users.get_onfido_checks(?::BIGINT, ?::TEXT, ?::BIGINT)', undef, $user_id, $applicant_id, $limit);
             });
     } catch {
         my $e = $@;
@@ -349,6 +355,66 @@ sub get_onfido_live_photo {
     }
 
     return;
+}
+
+=head2 get_latest_check
+
+Gets the onfido latest check data for the given client.
+
+It takes the following named params:
+
+=over 4
+
+=item * L<BOM::User::Client> the client itself
+
+=back
+
+Returns,
+    a hashref with the following content, gathered from onfido latest check:
+    C<user_applicant>, C<report_document_status>, C<report_document_sub_result>, C<user_check>
+
+=cut
+
+sub get_latest_check {
+    my $client                     = shift;
+    my $report_document_sub_result = '';
+    my $report_document_status     = '';
+    my $user_check;
+    my $user_applicant;
+
+    try {
+        $user_applicant = get_all_user_onfido_applicant($client->binary_user_id);
+    } catch ($error) {
+        $user_applicant = undef;
+    }
+
+    # if documents are there and we have onfido applicant then
+    # check for onfido check status and inform accordingly
+    if ($user_applicant) {
+        if ($user_check = get_latest_onfido_check($client->binary_user_id, undef, 1)) {
+            if (my $check_id = $user_check->{id}) {
+                $report_document_status = $user_check->{result};
+
+                if ($report_document_status eq 'consider') {
+                    my $user_reports = get_all_onfido_reports($client->binary_user_id, $check_id);
+
+                    # check for document result as we have accepted documents
+                    # manually so facial similarity is not accurate as client
+                    # use to provide selfie while holding identity card
+                    my $report_document = first { ($_->{api_name} // '') eq 'document' }
+                    sort { Date::Utility->new($a->{created_at})->is_before(Date::Utility->new($b->{created_at})) ? 1 : 0 } values %$user_reports;
+                    $report_document_sub_result = $report_document->{sub_result} // '';
+                }
+            }
+        }
+    }
+
+    return {
+        user_check                 => $user_check,
+        user_applicant             => $user_applicant,
+        report_document_status     => $report_document_status,
+        report_document_sub_result => $report_document_sub_result,
+    };
 }
 
 1;

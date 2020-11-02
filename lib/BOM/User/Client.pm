@@ -96,6 +96,9 @@ use constant {
     ],
 };
 
+use constant ONFIDO_ALLOW_RESUBMISSION_KEY_PREFIX => 'ONFIDO::ALLOW_RESUBMISSION::ID::';
+use constant POA_ALLOW_RESUBMISSION_KEY_PREFIX    => 'POA::ALLOW_RESUBMISSION::ID::';
+
 # this email address should not be added into brand as it is specific to internal system
 my $SUBJECT_RE = qr/(New Sign-Up|Update Address)/;
 
@@ -1693,6 +1696,9 @@ sub is_document_expiry_check_required {
     return 1 if $self->landing_company->documents_expiration_check_required();
 
     return 1 if ($self->aml_risk_classification // '') eq 'high';
+
+    # we will check for expiry irrespective of landing company
+    return 1 if $self->fully_authenticated;
 
     return 0;
 }
@@ -4844,6 +4850,193 @@ sub get_account_details {
         is_disabled          => $self->status->disabled ? 1 : 0,
         is_virtual => $self->is_virtual ? 1 : 0,
         $exclude_until ? (excluded_until => Date::Utility->new($exclude_until)->epoch) : ()};
+}
+
+=head2 get_poa_status
+
+Resolves the POA status.
+This C<status> is inferred from client C<documents>.
+Expiry check is not always required hence the C<is_document_expiry_check_required> flag.
+
+It takes the following params:
+
+=over 4
+
+=item * C<documents> hashref containing the client documents by type (optional)
+
+=item * C<is_document_expiry_check_required> indicates whether the expiry check is needed (optional)
+
+=back
+
+Returns,
+    string for the current POA status, it can be: none, expired, pending, rejected, verified.
+
+=cut
+
+sub get_poa_status {
+    my ($self, $documents, $is_document_expiry_check_required) = @_;
+    # Note optional arguments will be resolved if not provided
+    $is_document_expiry_check_required //= $self->is_document_expiry_check_required_mt5();
+    $documents                         //= $self->documents_uploaded();
+
+    my ($is_poa_already_expired, $is_poa_pending, $is_rejected) =
+        @{$documents->{proof_of_address}}{qw/is_expired is_pending is_rejected/};
+
+    # state machine, :robot_face: not included
+    return 'expired' if $is_poa_already_expired and $is_document_expiry_check_required;
+
+    return 'pending' if $is_poa_pending;
+
+    return 'rejected' if $is_rejected;
+
+    return 'verified' if $self->fully_authenticated;
+
+    return 'none';
+}
+
+=head2 get_poi_status
+
+Resolves the POI status.
+Infers C<status> from onfido latest check, or returns C<verified> if client already has poa or poi.
+Expiry check is not always required hence the C<is_document_expiry_check_required> flag.
+
+
+It takes the following params:
+
+=over 4
+
+=item * C<documents> hashref containing the client documents by type (optional)
+
+=item * C<is_document_expiry_check_required> indicates whether the expiry check is needed  (optional)
+
+=back
+
+Returns,
+    string for the current POA status, it can be: none, expired, pending, rejected, suspected, verified.
+
+=cut
+
+sub get_poi_status {
+    my ($self, $documents, $is_document_expiry_check_required) = @_;
+    # Note optional arguments will be resolved if not provided
+    $is_document_expiry_check_required //= $self->is_document_expiry_check_required_mt5();
+    $documents                         //= $self->documents_uploaded();
+
+    my ($is_poi_already_expired) =
+        @{$documents->{proof_of_identity}}{qw/is_expired/};
+
+    # state machine, :robot_face: not included
+    return 'expired' if $is_poi_already_expired && $is_document_expiry_check_required;
+
+    return 'verified' if $self->fully_authenticated || $self->status->age_verification;
+
+    # Not age verified and not fully authenticated
+    # For these clients, onfido results are used (tricky isn't it)
+    my $onfido = BOM::User::Onfido::get_latest_check($self);
+    my ($report_document_status, $report_document_sub_result) = @{$onfido}{qw/report_document_status report_document_sub_result/};
+    $report_document_sub_result //= '';
+    $report_document_status     //= '';
+
+    return 'suspected' if $report_document_sub_result eq 'suspected';
+
+    return 'rejected' if any { $_ eq $report_document_sub_result } qw/rejected caution/;
+
+    return 'pending' if any { $_ eq $report_document_status } qw/in_progress awaiting_applicant/;
+
+    return 'none';
+}
+
+=head2 needs_poa_verification
+
+Determines if POA documents are needed.
+
+It takes the following params:
+
+=over 4
+
+=item * C<documents> hashref containing the client documents by type (optional)
+
+=item * C<status> the current poa status (optional)
+
+=back
+
+Returns,
+    a boolean that indicates whether a POI is needed
+
+=cut
+
+sub needs_poa_verification {
+    my ($self, $documents, $status) = @_;
+    # Note optional arguments will be resolved if not provided
+    $documents //= $self->documents_uploaded();
+    $status    //= $self->get_poa_status($documents);
+
+    # From POA status
+    return 1 if any { $_ eq $status } qw/expired rejected/;
+
+    # Not fully authenticated rules
+    unless ($self->fully_authenticated) {
+        my $poa_documents    = $documents->{proof_of_address}->{documents};
+        my $is_required_auth = $self->is_verification_required(check_authentication_status => 1);
+        return 1 if $is_required_auth and not $poa_documents;
+    }
+
+    # Resubmissions
+    my $redis = BOM::Config::Redis::redis_replicated_write();
+    return 1 if $redis->get(POA_ALLOW_RESUBMISSION_KEY_PREFIX . $self->binary_user_id);
+    return 0;
+}
+
+=head2 needs_poi_verification
+
+Determines if POI documents are needed.
+
+It takes the following params:
+
+=over 4
+
+=item * C<documents> hashref containing the client documents by type (optional)
+
+=item * C<status> the current poi status (optional)
+
+=back
+
+Returns,
+    a boolean that indicates whether a POI is needed
+
+=cut
+
+sub needs_poi_verification {
+    my ($self, $documents, $status) = @_;
+    # Note optional arguments will be resolved if not provided
+    $documents //= $self->documents_uploaded();
+    $status    //= $self->get_poi_status($documents);
+
+    # From POI status
+    return 1 if $status eq 'expired';
+
+    # Not age verified and not fully authenticated (de morgan law)
+    unless ($self->status->age_verification or $self->fully_authenticated) {
+        # If shared payment method, the POI is required
+        return 1 if $self->status->shared_payment_method;
+
+        my $is_required_auth = $self->is_verification_required(check_authentication_status => 1);
+        return 1 if $is_required_auth and $status eq 'none';
+        # Try to infer state from onfido results
+        my $onfido        = BOM::User::Onfido::get_latest_check($self);
+        my $poi_documents = $documents->{proof_of_identity}->{documents};
+        my ($user_applicant, $user_check, $report_document_sub_result) = @{$onfido}{qw/user_applicant user_check report_document_sub_result/};
+        $report_document_sub_result //= '';
+
+        return 1 if any { $_ eq $report_document_sub_result } qw/rejected suspected caution/;
+        return 1 if $is_required_auth and not $poi_documents and not $user_applicant;
+        return 1 if $is_required_auth and not $user_check;
+    }
+
+    # Resubmissions
+    my $redis = BOM::Config::Redis::redis_replicated_write();
+    return 1 if $redis->get(ONFIDO_ALLOW_RESUBMISSION_KEY_PREFIX . $self->binary_user_id);
+    return 0;
 }
 
 1;
