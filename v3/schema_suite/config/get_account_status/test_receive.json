@@ -81,13 +81,6 @@
                            },
                            "expiry_date" : {
                                "type" : "integer"
-                           },
-                           "further_resubmissions_allowed": {
-                               "type": "integer",
-                               "enum": [
-                                   1,
-                                   0
-                               ]
                            }
                        }
                    },
@@ -107,13 +100,6 @@
                            },
                            "expiry_date" : {
                                "type" : "integer"
-                           },
-                           "further_resubmissions_allowed": {
-                               "type": "integer",
-                               "enum": [
-                                   1,
-                                   0
-                               ]
                            }
                        }
                    }
