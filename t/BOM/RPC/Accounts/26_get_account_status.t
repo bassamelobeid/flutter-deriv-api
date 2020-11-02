@@ -213,13 +213,11 @@ subtest 'get account status' => sub {
                     prompt_client_to_authenticate => '0',
                     authentication                => {
                         document => {
-                            status                          => "none",
-                            "further_resubmissions_allowed" => 0,
+                            status => "none",
                         },
                         identity => {
-                            status                          => "none",
-                            "further_resubmissions_allowed" => 0,
-                            services                        => {
+                            status   => "none",
+                            services => {
                                 onfido => {
                                     is_country_supported => 1,
                                     documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport']}}
@@ -251,13 +249,11 @@ subtest 'get account status' => sub {
                     prompt_client_to_authenticate => '1',
                     authentication                => {
                         document => {
-                            status                          => "none",
-                            "further_resubmissions_allowed" => 0,
+                            status => "none",
                         },
                         identity => {
-                            status                          => "none",
-                            "further_resubmissions_allowed" => 0,
-                            services                        => {
+                            status   => "none",
+                            services => {
                                 onfido => {
                                     is_country_supported => 1,
                                     documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport']}}
@@ -287,13 +283,11 @@ subtest 'get account status' => sub {
                     prompt_client_to_authenticate => '0',
                     authentication                => {
                         document => {
-                            status                          => "verified",
-                            "further_resubmissions_allowed" => 0
+                            status => "verified",
                         },
                         identity => {
-                            status                          => "verified",
-                            "further_resubmissions_allowed" => 0,
-                            services                        => {
+                            status   => "verified",
+                            services => {
                                 onfido => {
                                     is_country_supported => 1,
                                     documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport']}}
@@ -321,13 +315,11 @@ subtest 'get account status' => sub {
                     prompt_client_to_authenticate => '0',
                     authentication                => {
                         document => {
-                            status                          => "verified",
-                            "further_resubmissions_allowed" => 0,
+                            status => "verified",
                         },
                         identity => {
-                            status                          => "verified",
-                            "further_resubmissions_allowed" => 0,
-                            services                        => {
+                            status   => "verified",
+                            services => {
                                 onfido => {
                                     is_country_supported => 1,
                                     documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport']}}
@@ -364,13 +356,11 @@ subtest 'get account status' => sub {
                     prompt_client_to_authenticate => '0',
                     authentication                => {
                         document => {
-                            status                          => "verified",
-                            "further_resubmissions_allowed" => 0,
+                            status => "verified",
                         },
                         identity => {
-                            status                          => "verified",
-                            "further_resubmissions_allowed" => 0,
-                            services                        => {
+                            status   => "verified",
+                            services => {
                                 onfido => {
                                     is_country_supported => 1,
                                     documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport']}}
@@ -382,6 +372,87 @@ subtest 'get account status' => sub {
             );
 
             $mocked_client->unmock('documents_expired');
+
+            subtest "Age verified client, check for expiry of documents" => sub {
+                # For age verified clients
+                # we will only check for iom and malta. (expiry of documents)
+
+                $test_client->set_authentication('ID_DOCUMENT', {status => 'pending'});
+                $test_client->save;
+
+                my $mocked_status = Test::MockModule->new(ref($test_client->status));
+                $mocked_status->mock('age_verification',  sub { return 1 });
+                $mocked_client->mock('documents_expired', sub { return 1 });
+                $mocked_client->mock(
+                    'documents_uploaded',
+                    sub {
+                        return {
+                            proof_of_identity => {
+                                documents => {
+                                    $test_client->loginid
+                                        . '_passport' => {
+                                        expiry_date => Date::Utility->new->minus_time_interval('10d')->epoch,
+                                        type        => 'passport',
+                                        format      => 'pdf',
+                                        id          => 2,
+                                        status      => 'uploaded'
+                                        },
+                                },
+                                minimum_expiry_date => Date::Utility->new->minus_time_interval('1d')->epoch,
+                                is_expired          => 1,
+                            },
+                        };
+                    });
+
+                my $documents              = $test_client->documents_uploaded();
+                my $is_poi_already_expired = $documents->{proof_of_identity}->{is_expired};
+                ok !$test_client->fully_authenticated, 'Not fully authenticated';
+                ok $test_client->status->age_verification, 'Age verified';
+                ok $is_poi_already_expired, 'POI expired';
+                $result = $c->tcall($method, {token => $token_mx});
+                cmp_deeply(
+                    $result,
+                    {
+                        currency_config => {
+                            "GBP" => {
+                                is_deposit_suspended    => 0,
+                                is_withdrawal_suspended => 0,
+                            }
+                        },
+                        status                        => superbagof(qw(allow_document_upload document_expired)),
+                        risk_classification           => 'low',
+                        prompt_client_to_authenticate => '1',
+                        authentication                => {
+                            document => {
+                                status => "none",
+                            },
+                            identity => {
+                                status      => "expired",
+                                expiry_date => re('\d+'),
+                                services    => {
+                                    onfido => {
+                                        is_country_supported => 1,
+                                        documents_supported  => [
+                                            'Asylum Registration Card',
+                                            'Certificate of Naturalisation',
+                                            'Driving Licence',
+                                            'Home Office Letter',
+                                            'Immigration Status Document',
+                                            'National Identity Card',
+                                            'Passport',
+                                            'Residence Permit',
+                                            'Visa'
+                                        ]}}
+                            },
+                            needs_verification => superbagof(qw(identity)),
+                        }
+                    },
+                    "authentication object is correct"
+                );
+
+                $mocked_client->unmock_all();
+                $mocked_status->unmock_all();
+            };
         };
 
         subtest 'costarica account' => sub {
@@ -400,13 +471,11 @@ subtest 'get account status' => sub {
                     prompt_client_to_authenticate => '0',
                     authentication                => {
                         document => {
-                            status                          => "none",
-                            "further_resubmissions_allowed" => 0,
+                            status => "none",
                         },
                         identity => {
-                            status                          => "none",
-                            "further_resubmissions_allowed" => 0,
-                            services                        => {
+                            status   => "none",
+                            services => {
                                 onfido => {
                                     is_country_supported => 1,
                                     documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport']}}
@@ -433,13 +502,11 @@ subtest 'get account status' => sub {
                     prompt_client_to_authenticate => '0',
                     authentication                => {
                         document => {
-                            status                          => "none",
-                            "further_resubmissions_allowed" => 0,
+                            status => "none",
                         },
                         identity => {
-                            status                          => "none",
-                            "further_resubmissions_allowed" => 0,
-                            services                        => {
+                            status   => "none",
+                            services => {
                                 onfido => {
                                     is_country_supported => 1,
                                     documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport']}}
@@ -468,13 +535,11 @@ subtest 'get account status' => sub {
                     prompt_client_to_authenticate => '1',
                     authentication                => {
                         document => {
-                            status                          => "none",
-                            "further_resubmissions_allowed" => 0,
+                            status => "none",
                         },
                         identity => {
-                            status                          => "none",
-                            "further_resubmissions_allowed" => 0,
-                            services                        => {
+                            status   => "none",
+                            services => {
                                 onfido => {
                                     is_country_supported => 1,
                                     documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport']}}
@@ -502,13 +567,11 @@ subtest 'get account status' => sub {
                     prompt_client_to_authenticate => '1',
                     authentication                => {
                         document => {
-                            status                          => "none",
-                            "further_resubmissions_allowed" => 0,
+                            status => "none",
                         },
                         identity => {
-                            status                          => "verified",
-                            "further_resubmissions_allowed" => 0,
-                            services                        => {
+                            status   => "verified",
+                            services => {
                                 onfido => {
                                     is_country_supported => 1,
                                     documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport']}}
@@ -519,6 +582,157 @@ subtest 'get account status' => sub {
                 'authentication page should be shown for proof of address if needs action is set for age verified clients'
             );
             $mocked_status->unmock_all();
+
+            subtest "Age verified client, don't check for expiry of documents" => sub {
+                # For age verified clients
+                # we don't need to have a check for expiry of documents for svg
+
+                my $mocked_client = Test::MockModule->new(ref($test_client_cr));
+                $mocked_status->mock('age_verification', sub { return 1 });
+                $mocked_client->mock(
+                    'documents_uploaded',
+                    sub {
+                        return {
+                            proof_of_identity => {
+                                documents => {
+                                    $test_client_cr->loginid
+                                        . '_passport' => {
+                                        expiry_date => Date::Utility->new->minus_time_interval('1d')->epoch,
+                                        type        => 'passport',
+                                        format      => 'pdf',
+                                        id          => 2,
+                                        status      => 'uploaded'
+                                        },
+                                },
+                                minimum_expiry_date => Date::Utility->new->minus_time_interval('1d')->epoch,
+                                is_expired          => 1,
+                            },
+                        };
+                    });
+
+                $mocked_client->mock('documents_expired', sub { return 1 });
+                $test_client_cr->set_authentication('ID_DOCUMENT', {status => 'pending'});
+                $test_client_cr->save;
+                my $documents              = $test_client_cr->documents_uploaded();
+                my $is_poi_already_expired = $documents->{proof_of_identity}->{is_expired};
+                ok !$test_client_cr->fully_authenticated, 'Not fully authenticated';
+                ok $test_client_cr->status->age_verification, 'Age verified';
+                ok $is_poi_already_expired, 'POI expired';
+                $result = $c->tcall($method, {token => $token_cr});
+
+                cmp_deeply(
+                    $result,
+                    {
+                        currency_config => {
+                            "USD" => {
+                                is_deposit_suspended    => 0,
+                                is_withdrawal_suspended => 0,
+                            }
+                        },
+                        status                        => noneof(qw(document_expired)),
+                        risk_classification           => 'low',
+                        prompt_client_to_authenticate => '0',
+                        authentication                => {
+                            document => {
+                                status => "none",
+                            },
+                            identity => {
+                                status   => "verified",
+                                services => {
+                                    onfido => {
+                                        is_country_supported => 1,
+                                        documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport']}}
+                            },
+                            needs_verification => [],
+                        }
+                    },
+                    "authentication object is correct"
+                );
+
+                $mocked_client->unmock_all();
+                $mocked_status->unmock_all();
+            };
+
+            subtest 'Fully authenticated will check for expiry irrespective of landing company' => sub {
+                my $mocked_client = Test::MockModule->new(ref($test_client_cr));
+                $mocked_client->mock('fully_authenticated', sub { return 1 });
+                $mocked_status->mock('age_verification',    sub { return 1 });
+                $mocked_client->mock('documents_expired',   sub { return 1 });
+                $mocked_client->mock(
+                    'documents_uploaded',
+                    sub {
+                        return {
+                            proof_of_address => {
+                                documents => {
+                                    $test_client_cr->loginid
+                                        . '_bankstatement' => {
+                                        expiry_date => Date::Utility->new->minus_time_interval('1d')->epoch,
+                                        type        => 'bankstatement',
+                                        format      => 'pdf',
+                                        id          => 1,
+                                        status      => 'uploaded'
+                                        },
+                                },
+                                minimum_expiry_date => Date::Utility->new->minus_time_interval('1d')->epoch,
+                                is_expired          => 1,
+                            },
+                            proof_of_identity => {
+                                documents => {
+                                    $test_client_cr->loginid
+                                        . '_passport' => {
+                                        expiry_date => Date::Utility->new->minus_time_interval('1d')->epoch,
+                                        type        => 'passport',
+                                        format      => 'pdf',
+                                        id          => 2,
+                                        status      => 'uploaded'
+                                        },
+                                },
+                                minimum_expiry_date => Date::Utility->new->minus_time_interval('1d')->epoch,
+                                is_expired          => 1,
+                            },
+                        };
+                    });
+
+                # This test would be useless if this company authentication is mandatory
+                ok !$test_client_cr->landing_company->is_authentication_mandatory, 'Authentication is not mandatory';
+                ok $test_client_cr->documents_expired(), 'Client expiry is required';
+                ok $test_client_cr->fully_authenticated,               'Account is fully authenticated';
+                ok $test_client_cr->is_document_expiry_check_required, "Fully authenticated CR account does have to check documents expiry";
+                $result = $c->tcall($method, {token => $token_cr});
+
+                cmp_deeply(
+                    $result,
+                    {
+                        currency_config => {
+                            "USD" => {
+                                is_deposit_suspended    => 0,
+                                is_withdrawal_suspended => 0,
+                            }
+                        },
+                        status                        => superbagof(qw(allow_document_upload document_expired)),
+                        risk_classification           => 'low',
+                        prompt_client_to_authenticate => '0',
+                        authentication                => {
+                            document => {
+                                status      => "expired",
+                                expiry_date => re('\d+'),
+                            },
+                            identity => {
+                                status      => "expired",
+                                expiry_date => re('\d+'),
+                                services    => {
+                                    onfido => {
+                                        is_country_supported => 1,
+                                        documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport']}}
+                            },
+                            needs_verification => superbagof(qw(document identity)),
+                        }
+                    },
+                    "authentication object is correct"
+                );
+                $mocked_client->unmock_all;
+                $mocked_status->unmock_all;
+            };
 
             $test_client_cr->set_authentication('ID_DOCUMENT', {status => 'under_review'});
             $test_client_cr->save;
@@ -537,13 +751,11 @@ subtest 'get account status' => sub {
                     prompt_client_to_authenticate => '0',
                     authentication                => {
                         document => {
-                            status                          => "none",
-                            "further_resubmissions_allowed" => 0,
+                            status => "none",
                         },
                         identity => {
-                            status                          => "none",
-                            "further_resubmissions_allowed" => 0,
-                            services                        => {
+                            status   => "none",
+                            services => {
                                 onfido => {
                                     is_country_supported => 1,
                                     documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport']}}
@@ -573,13 +785,11 @@ subtest 'get account status' => sub {
                     prompt_client_to_authenticate => '1',
                     authentication                => {
                         document => {
-                            status                          => "none",
-                            "further_resubmissions_allowed" => 0,
+                            status => "none",
                         },
                         identity => {
-                            status                          => "none",
-                            "further_resubmissions_allowed" => 0,
-                            services                        => {
+                            status   => "none",
+                            services => {
                                 onfido => {
                                     is_country_supported => 1,
                                     documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport']}}
@@ -612,13 +822,11 @@ subtest 'get account status' => sub {
                     prompt_client_to_authenticate => '0',
                     authentication                => {
                         document => {
-                            status                          => "none",
-                            "further_resubmissions_allowed" => 0,
+                            status => "none",
                         },
                         identity => {
-                            status                          => "verified",
-                            "further_resubmissions_allowed" => 0,
-                            services                        => {
+                            status   => "verified",
+                            services => {
                                 onfido => {
                                     is_country_supported => 1,
                                     documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport']}}
@@ -629,8 +837,8 @@ subtest 'get account status' => sub {
                 'allow_document_upload flag is set if client is not authenticated and status exists on client'
             );
 
-            my $mocked_client = Test::MockModule->new(ref($test_client_cr));
             # mark as fully authenticated
+            my $mocked_client = Test::MockModule->new(ref($test_client_cr));
             $mocked_client->mock('fully_authenticated', sub { return 1 });
 
             $result = $c->tcall($method, {token => $token_cr});
@@ -648,13 +856,11 @@ subtest 'get account status' => sub {
                     prompt_client_to_authenticate => '0',
                     authentication                => {
                         document => {
-                            status                          => "verified",
-                            "further_resubmissions_allowed" => 0,
+                            status => "verified",
                         },
                         identity => {
-                            status                          => "verified",
-                            "further_resubmissions_allowed" => 0,
-                            services                        => {
+                            status   => "verified",
+                            services => {
                                 onfido => {
                                     is_country_supported => 1,
                                     documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport']}}
@@ -687,13 +893,11 @@ subtest 'get account status' => sub {
                     prompt_client_to_authenticate => '0',
                     authentication                => {
                         document => {
-                            status                          => "none",
-                            "further_resubmissions_allowed" => 0,
+                            status => "none",
                         },
                         identity => {
-                            status                          => "none",
-                            "further_resubmissions_allowed" => 0,
-                            services                        => {
+                            status   => "none",
+                            services => {
                                 onfido => {
                                     is_country_supported => 1,
                                     documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport']}}
@@ -707,45 +911,84 @@ subtest 'get account status' => sub {
         };
 
         subtest 'futher resubmission allowed' => sub {
-            # Redis key for poa resubmission flag
-            use constant POA_ALLOW_RESUBMISSION_KEY_PREFIX => 'POA::ALLOW_RESUBMISSION::ID::';
-            my $redis = BOM::Config::Redis::redis_replicated_write();
-            $redis->set(POA_ALLOW_RESUBMISSION_KEY_PREFIX . $test_client_cr->binary_user_id, 1);    # Activate the flag
-
             my $result = $c->tcall($method, {token => $token_cr});
+            cmp_deeply $result->{authentication}->{needs_verification}, noneof(qw/document identity/), 'Make sure needs verification is empty';
+            cmp_deeply $result->{status}, noneof(qw/allow_document_upload/), 'Make sure allow_document_upload is off';
 
-            cmp_deeply(
-                $result,
-                {
-                    currency_config => {
-                        "USD" => {
-                            is_deposit_suspended    => 0,
-                            is_withdrawal_suspended => 0,
+            subtest 'poi resubmission' => sub {
+                use constant ONFIDO_ALLOW_RESUBMISSION_KEY_PREFIX => 'ONFIDO::ALLOW_RESUBMISSION::ID::';
+                my $redis = BOM::Config::Redis::redis_replicated_write();
+                $redis->set(ONFIDO_ALLOW_RESUBMISSION_KEY_PREFIX . $test_client_cr->binary_user_id, 1);    # Activate the flag
+
+                my $result = $c->tcall($method, {token => $token_cr});
+                cmp_deeply(
+                    $result,
+                    {
+                        currency_config => {
+                            "USD" => {
+                                is_deposit_suspended    => 0,
+                                is_withdrawal_suspended => 0,
+                            }
+                        },
+                        status                        => superbagof(),
+                        risk_classification           => 'low',
+                        prompt_client_to_authenticate => '0',
+                        authentication                => {
+                            document => {
+                                status => "none",
+                            },
+                            identity => {
+                                status   => "none",
+                                services => {
+                                    onfido => {
+                                        is_country_supported => 1,
+                                        documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport']}}
+                            },
+                            needs_verification => superbagof(qw(identity)),
                         }
                     },
-                    status                        => [qw(financial_information_not_complete trading_experience_not_complete)],
-                    risk_classification           => 'low',
-                    prompt_client_to_authenticate => '0',
-                    authentication                => {
-                        document => {
-                            status                          => "none",
-                            "further_resubmissions_allowed" => 1,
-                        },
-                        identity => {
-                            status                          => "none",
-                            "further_resubmissions_allowed" => 0,
-                            services                        => {
-                                onfido => {
-                                    is_country_supported => 1,
-                                    documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport']}}
-                        },
-                        needs_verification => [],
-                    }
-                },
-                'poa further_resubmissions_allowed is set to 1 correctly'
-            );
+                );
 
-            $redis->del(POA_ALLOW_RESUBMISSION_KEY_PREFIX . $test_client_cr->binary_user_id);
+                $redis->del(ONFIDO_ALLOW_RESUBMISSION_KEY_PREFIX . $test_client_cr->binary_user_id);
+            };
+
+            subtest 'poa resubmission' => sub {
+                # Redis key for poa resubmission flag
+                use constant POA_ALLOW_RESUBMISSION_KEY_PREFIX => 'POA::ALLOW_RESUBMISSION::ID::';
+                my $redis = BOM::Config::Redis::redis_replicated_write();
+                $redis->set(POA_ALLOW_RESUBMISSION_KEY_PREFIX . $test_client_cr->binary_user_id, 1);    # Activate the flag
+
+                my $result = $c->tcall($method, {token => $token_cr});
+
+                cmp_deeply(
+                    $result,
+                    {
+                        currency_config => {
+                            "USD" => {
+                                is_deposit_suspended    => 0,
+                                is_withdrawal_suspended => 0,
+                            }
+                        },
+                        status                        => superbagof(),
+                        risk_classification           => 'low',
+                        prompt_client_to_authenticate => '0',
+                        authentication                => {
+                            document => {
+                                status => "none",
+                            },
+                            identity => {
+                                status   => "none",
+                                services => {
+                                    onfido => {
+                                        is_country_supported => 1,
+                                        documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport']}}
+                            },
+                            needs_verification => superbagof(qw(document))}
+                    },
+                );
+
+                $redis->del(POA_ALLOW_RESUBMISSION_KEY_PREFIX . $test_client_cr->binary_user_id);
+            };
         };
 
         subtest 'malta account' => sub {
@@ -769,13 +1012,11 @@ subtest 'get account status' => sub {
                     prompt_client_to_authenticate => '1',
                     authentication                => {
                         document => {
-                            status                          => "none",
-                            "further_resubmissions_allowed" => 0,
+                            status => "none",
                         },
                         identity => {
-                            status                          => "none",
-                            "further_resubmissions_allowed" => 0,
-                            services                        => {
+                            status   => "none",
+                            services => {
                                 onfido => {
                                     is_country_supported => 1,
                                     documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport', 'Residence Permit', 'Visa']}}
@@ -804,13 +1045,11 @@ subtest 'get account status' => sub {
                     prompt_client_to_authenticate => '0',
                     authentication                => {
                         document => {
-                            status                          => "none",
-                            "further_resubmissions_allowed" => 0,
+                            status => "none",
                         },
                         identity => {
-                            status                          => "none",
-                            "further_resubmissions_allowed" => 0,
-                            services                        => {
+                            status   => "none",
+                            services => {
                                 onfido => {
                                     is_country_supported => 1,
                                     documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport', 'Residence Permit', 'Visa']}}
@@ -839,13 +1078,11 @@ subtest 'get account status' => sub {
                     prompt_client_to_authenticate => '1',
                     authentication                => {
                         document => {
-                            status                          => "none",
-                            "further_resubmissions_allowed" => 0,
+                            status => "none",
                         },
                         identity => {
-                            status                          => "none",
-                            "further_resubmissions_allowed" => 0,
-                            services                        => {
+                            status   => "none",
+                            services => {
                                 onfido => {
                                     is_country_supported => 1,
                                     documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport', 'Residence Permit', 'Visa']}}
@@ -856,6 +1093,79 @@ subtest 'get account status' => sub {
                 'ask for documents for malta client if first deposit has been done and not authorized'
             );
             $mocked_client->unmock_all;
+
+            subtest "Age verified client, check for expiry of documents" => sub {
+                # For age verified clients
+                # we will only check for iom and malta. (expiry of documents)
+
+                $test_client_mlt->set_authentication('ID_DOCUMENT', {status => 'pending'});
+                $test_client_mlt->save;
+
+                my $mocked_status = Test::MockModule->new(ref($test_client_mlt->status));
+                $mocked_status->mock('age_verification',  sub { return 1 });
+                $mocked_client->mock('documents_expired', sub { return 1 });
+                $mocked_client->mock('has_deposits',      sub { return 1 });
+                $mocked_client->mock(
+                    'documents_uploaded',
+                    sub {
+                        return {
+                            proof_of_identity => {
+                                documents => {
+                                    $test_client_mlt->loginid
+                                        . '_passport' => {
+                                        expiry_date => Date::Utility->new->minus_time_interval('10d')->epoch,
+                                        type        => 'passport',
+                                        format      => 'pdf',
+                                        id          => 2,
+                                        status      => 'uploaded'
+                                        },
+                                },
+                                minimum_expiry_date => Date::Utility->new->minus_time_interval('1d')->epoch,
+                                is_expired          => 1,
+                            },
+                        };
+                    });
+
+                my $documents              = $test_client_mlt->documents_uploaded();
+                my $is_poi_already_expired = $documents->{proof_of_identity}->{is_expired};
+                ok !$test_client_mlt->fully_authenticated, 'Not fully authenticated';
+                ok $test_client_mlt->status->age_verification, 'Age verified';
+                ok $is_poi_already_expired, 'POI expired';
+                $result = $c->tcall($method, {token => $token_mlt});
+                cmp_deeply(
+                    $result,
+                    {
+                        currency_config => {
+                            "EUR" => {
+                                is_deposit_suspended    => 0,
+                                is_withdrawal_suspended => 0,
+                            }
+                        },
+                        status                        => superbagof(qw(allow_document_upload document_expired)),
+                        risk_classification           => 'low',
+                        prompt_client_to_authenticate => '1',
+                        authentication                => {
+                            document => {
+                                status => "none",
+                            },
+                            identity => {
+                                status      => "expired",
+                                expiry_date => re('\d+'),
+                                services    => {
+                                    onfido => {
+                                        is_country_supported => 1,
+                                        documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport', 'Residence Permit', 'Visa']}
+                                }
+                            },
+                            needs_verification => superbagof(qw(identity)),
+                        }
+                    },
+                    "authentication object is correct"
+                );
+
+                $mocked_client->unmock_all();
+                $mocked_status->unmock_all();
+            };
         };
 
         subtest 'iom account' => sub {
@@ -877,13 +1187,11 @@ subtest 'get account status' => sub {
                     prompt_client_to_authenticate => '1',
                     authentication                => {
                         document => {
-                            status                          => "none",
-                            "further_resubmissions_allowed" => 0,
+                            status => "none",
                         },
                         identity => {
-                            status                          => "none",
-                            "further_resubmissions_allowed" => 0,
-                            services                        => {
+                            status   => "none",
+                            services => {
                                 onfido => {
                                     is_country_supported => 1,
                                     documents_supported  => [
@@ -929,13 +1237,11 @@ subtest 'get account status' => sub {
                     prompt_client_to_authenticate => '1',
                     authentication                => {
                         document => {
-                            status                          => "none",
-                            "further_resubmissions_allowed" => 0,
+                            status => "none",
                         },
                         identity => {
-                            status                          => "verified",
-                            "further_resubmissions_allowed" => 0,
-                            services                        => {
+                            status   => "verified",
+                            services => {
                                 onfido => {
                                     is_country_supported => 1,
                                     documents_supported  => [
@@ -953,10 +1259,134 @@ subtest 'get account status' => sub {
                         needs_verification => ["document"],
                     }
                 },
-                'ask for proof of address documents for iom client if age verified client is marked as unwelcome'
+                'ask for proof of address and proof of identity documents for iom client if age verified and not fully authenticated client is marked as unwelcome'
             );
+
+            # mark as fully authenticated
+            $test_client_mx->set_authentication('ID_DOCUMENT', {status => 'pass'});
+            $test_client_mx->save;
+            $result = $c->tcall($method, {token => $token_mx});
+            cmp_deeply(
+                $result,
+                {
+                    currency_config => {
+                        "GBP" => {
+                            is_deposit_suspended    => 0,
+                            is_withdrawal_suspended => 0,
+                        }
+                    },
+                    status                        => superbagof(qw(financial_information_not_complete trading_experience_not_complete)),
+                    risk_classification           => 'low',
+                    prompt_client_to_authenticate => '0',
+                    authentication                => {
+                        document => {
+                            status => "verified",
+                        },
+                        identity => {
+                            status   => "verified",
+                            services => {
+                                onfido => {
+                                    is_country_supported => 1,
+                                    documents_supported  => [
+                                        'Asylum Registration Card',
+                                        'Certificate of Naturalisation',
+                                        'Driving Licence',
+                                        'Home Office Letter',
+                                        'Immigration Status Document',
+                                        'National Identity Card',
+                                        'Passport',
+                                        'Residence Permit',
+                                        'Visa'
+                                    ]}}
+                        },
+                        needs_verification => ["document"],
+                        needs_verification => [],
+                    }
+                },
+                'Dont allow for further resubmission if MX client is fully authenticated.'
+            );
+
             $mocked_client->unmock_all;
             $mocked_status->unmock_all;
+
+            subtest "Age verified client, check for expiry of documents" => sub {
+                # For age verified clients
+                # we will only check for iom and malta. (expiry of documents)
+
+                $test_client_mx->set_authentication('ID_DOCUMENT', {status => 'pending'});
+                $test_client_mx->save;
+                $mocked_status->mock('age_verification',  sub { return 1 });
+                $mocked_client->mock('documents_expired', sub { return 1 });
+                $mocked_client->mock(
+                    'documents_uploaded',
+                    sub {
+                        return {
+                            proof_of_identity => {
+                                documents => {
+                                    $test_client_mx->loginid
+                                        . '_passport' => {
+                                        expiry_date => Date::Utility->new->minus_time_interval('10d')->epoch,
+                                        type        => 'passport',
+                                        format      => 'pdf',
+                                        id          => 2,
+                                        status      => 'uploaded'
+                                        },
+                                },
+                                minimum_expiry_date => Date::Utility->new->minus_time_interval('1d')->epoch,
+                                is_expired          => 1,
+                            },
+                        };
+                    });
+
+                my $documents              = $test_client_mx->documents_uploaded();
+                my $is_poi_already_expired = $documents->{proof_of_identity}->{is_expired};
+                ok !$test_client_mx->fully_authenticated, 'Not fully authenticated';
+                ok $test_client_mx->status->age_verification, 'Age verified';
+                ok $is_poi_already_expired, 'POI expired';
+                $result = $c->tcall($method, {token => $token_mx});
+                cmp_deeply(
+                    $result,
+                    {
+                        currency_config => {
+                            "GBP" => {
+                                is_deposit_suspended    => 0,
+                                is_withdrawal_suspended => 0,
+                            }
+                        },
+                        status                        => superbagof(qw(allow_document_upload document_expired)),
+                        risk_classification           => 'low',
+                        prompt_client_to_authenticate => '1',
+                        authentication                => {
+                            document => {
+                                status => "none",
+                            },
+                            identity => {
+                                status      => "expired",
+                                expiry_date => re('\d+'),
+                                services    => {
+                                    onfido => {
+                                        is_country_supported => 1,
+                                        documents_supported  => [
+                                            'Asylum Registration Card',
+                                            'Certificate of Naturalisation',
+                                            'Driving Licence',
+                                            'Home Office Letter',
+                                            'Immigration Status Document',
+                                            'National Identity Card',
+                                            'Passport',
+                                            'Residence Permit',
+                                            'Visa'
+                                        ]}}
+                            },
+                            needs_verification => superbagof(qw(identity)),
+                        }
+                    },
+                    "authentication object is correct"
+                );
+
+                $mocked_client->unmock_all();
+                $mocked_status->unmock_all();
+            };
         };
     };
 
@@ -988,13 +1418,11 @@ subtest 'get account status' => sub {
                         prompt_client_to_authenticate => '0',
                         authentication                => {
                             document => {
-                                status                          => "verified",
-                                "further_resubmissions_allowed" => 0,
+                                status => "verified",
                             },
                             identity => {
-                                status                          => "verified",
-                                "further_resubmissions_allowed" => 0,
-                                services                        => {
+                                status   => "verified",
+                                services => {
                                     onfido => {
                                         is_country_supported => 1,
                                         documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport']}}
@@ -1057,15 +1485,13 @@ subtest 'get account status' => sub {
                         prompt_client_to_authenticate => '0',
                         authentication                => {
                             document => {
-                                status                          => "expired",
-                                "further_resubmissions_allowed" => 0,
-                                expiry_date                     => $result->{authentication}{document}{expiry_date}
+                                status      => "expired",
+                                expiry_date => $result->{authentication}{document}{expiry_date}
                             },
                             identity => {
-                                status                        => "expired",
-                                expiry_date                   => $result->{authentication}{identity}{expiry_date},
-                                further_resubmissions_allowed => 0,
-                                services                      => {
+                                status      => "expired",
+                                expiry_date => $result->{authentication}{identity}{expiry_date},
+                                services    => {
                                     onfido => {
                                         is_country_supported => 1,
                                         documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport']}}
@@ -1125,13 +1551,11 @@ subtest 'get account status' => sub {
 
                     my $expected_result = {
                         document => {
-                            status                          => "verified",
-                            "further_resubmissions_allowed" => 0,
+                            status => "verified",
                         },
                         identity => {
-                            status                        => "verified",
-                            further_resubmissions_allowed => 0,
-                            services                      => {
+                            status   => "verified",
+                            services => {
                                 onfido => {
                                     documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport'],
                                     is_country_supported => 1
@@ -1182,13 +1606,11 @@ subtest 'get account status' => sub {
                         prompt_client_to_authenticate => 1,
                         authentication                => {
                             document => {
-                                status                          => "none",
-                                "further_resubmissions_allowed" => 0,
+                                status => "none",
                             },
                             identity => {
-                                status                        => "verified",
-                                further_resubmissions_allowed => 0,
-                                services                      => {
+                                status   => "verified",
+                                services => {
                                     onfido => {
                                         is_country_supported => 1,
                                         documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport']}}
@@ -1238,14 +1660,12 @@ subtest 'get account status' => sub {
                             prompt_client_to_authenticate => 1,
                             authentication                => {
                                 document => {
-                                    status                          => "expired",
-                                    expiry_date                     => $result->{authentication}{document}{expiry_date},
-                                    "further_resubmissions_allowed" => 0,
+                                    status      => "expired",
+                                    expiry_date => $result->{authentication}{document}{expiry_date},
                                 },
                                 identity => {
-                                    status                        => "verified",
-                                    further_resubmissions_allowed => 0,
-                                    services                      => {
+                                    status   => "verified",
+                                    services => {
                                         onfido => {
                                             is_country_supported => 1,
                                             documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport']}}
@@ -1293,17 +1713,15 @@ subtest 'get account status' => sub {
                             prompt_client_to_authenticate => 1,
                             authentication                => {
                                 identity => {
-                                    status                        => "expired",
-                                    expiry_date                   => $result->{authentication}{identity}{expiry_date},
-                                    further_resubmissions_allowed => 0,
-                                    services                      => {
+                                    status      => "expired",
+                                    expiry_date => $result->{authentication}{identity}{expiry_date},
+                                    services    => {
                                         onfido => {
                                             is_country_supported => 1,
                                             documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport']}}
                                 },
                                 document => {
-                                    status                          => "none",
-                                    "further_resubmissions_allowed" => 0,
+                                    status => "none",
                                 },
                                 needs_verification => ["document", "identity"]}
                         },
@@ -1336,13 +1754,11 @@ subtest 'get account status' => sub {
                     prompt_client_to_authenticate => 1,
                     authentication                => {
                         document => {
-                            status                          => "none",
-                            "further_resubmissions_allowed" => 0,
+                            status => "none",
                         },
                         identity => {
-                            status                        => "none",
-                            further_resubmissions_allowed => 0,
-                            services                      => {
+                            status   => "none",
+                            services => {
                                 onfido => {
                                     is_country_supported => 1,
                                     documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport']}}
@@ -1373,13 +1789,11 @@ subtest 'get account status' => sub {
                     prompt_client_to_authenticate => 0,
                     authentication                => {
                         document => {
-                            status                        => "none",
-                            further_resubmissions_allowed => 0,
+                            status => "none",
                         },
                         identity => {
-                            status                        => "none",
-                            further_resubmissions_allowed => 0,
-                            services                      => {
+                            status   => "none",
+                            services => {
                                 onfido => {
                                     is_country_supported => 1,
                                     documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport']}}
@@ -1442,13 +1856,11 @@ subtest "Test onfido is_country_supported" => sub {
             prompt_client_to_authenticate => '0',
             authentication                => {
                 document => {
-                    status                          => "none",
-                    "further_resubmissions_allowed" => 0,
+                    status => "none",
                 },
                 identity => {
-                    status                          => "none",
-                    "further_resubmissions_allowed" => 0,
-                    services                        => {
+                    status   => "none",
+                    services => {
                         onfido => {
                             is_country_supported => 0,
                             documents_supported  => []}}
@@ -1474,13 +1886,11 @@ subtest "Test onfido is_country_supported" => sub {
             prompt_client_to_authenticate => '0',
             authentication                => {
                 document => {
-                    status                          => "none",
-                    "further_resubmissions_allowed" => 0,
+                    status => "none",
                 },
                 identity => {
-                    status                          => "none",
-                    "further_resubmissions_allowed" => 0,
-                    services                        => {
+                    status   => "none",
+                    services => {
                         onfido => {
                             is_country_supported => 1,
                             documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport']}}

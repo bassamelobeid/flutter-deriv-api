@@ -61,10 +61,7 @@ use BOM::RPC::v3::Services::Onramp;
 use BOM::Config::Redis;
 use BOM::User::Onfido;
 
-use constant DEFAULT_STATEMENT_LIMIT              => 100;
-use constant ONFIDO_ALLOW_RESUBMISSION_KEY_PREFIX => 'ONFIDO::ALLOW_RESUBMISSION::ID::';
-use constant POA_ALLOW_RESUBMISSION_KEY_PREFIX    => 'POA::ALLOW_RESUBMISSION::ID::';
-
+use constant DEFAULT_STATEMENT_LIMIT         => 100;
 use constant DOCUMENT_EXPIRING_SOON_INTERVAL => '1mo';
 
 my $allowed_fields_for_virtual = qr/set_settings|email_consent|residence|allow_copiers|non_pep_declaration/;
@@ -862,7 +859,6 @@ rpc get_account_status => sub {
             push(@$status, 'document_expiring_soon');
         }
     }
-
     my %currency_config = map {
         $_ => {
             is_deposit_suspended    => BOM::RPC::v3::Utility::verify_experimental_email_whitelisted($client, $_),
@@ -882,26 +878,55 @@ rpc get_account_status => sub {
     };
 };
 
-=begin comment
+=head2 _get_authentication
 
-  {
-    # this will act as flag on which part of authentication
-    # flow to show, if its empty it means we don't need to prompt client
-    "needs_verification": ["identity", "document"],
-    # these individual sections are for information purpose only
-    # if needs_verification is non-empty then these should be validated
-    # to represent or request details from client accordingly
-    "identity": {
-      "status": "verified", # [none, pending, rejected, verified, expired]
-      "expiry_date": 12423423
-    },
-    "document":{
-      "status": "rejected", # [none, pending, rejected, verified, expired]
-      "expiry_date": 12423423
-    }
-  }
+Gets the authentication object for the given client.
 
-=end comment
+It takes the following named params:
+
+=over 4
+
+=item * C<client> the client itself
+
+=item * C<is_document_expiry_check_required> indicates if `expired` status is allowed for the given client
+
+=back
+
+Returns,
+    a hashref with the following structure:
+
+=over 4
+
+=item * C<needs_verification> an arrayref that can hold 'identity' and/or 'document', they indicate that POI and/or POA are required respectively
+
+=item * C<identity> a hashref containing the current POI situation
+
+=item * C<document> a hashref containing the current POA situation
+
+=back
+
+Both 'identity' and 'document' share a C<status> and an optional C<expiry_date> (as timestamp),
+meanwhile 'identity' also offers a C<services> structure which indicates the current
+onfido configuration.
+
+Possible C<status> values:
+
+=over 4
+
+=item * C<none> no POI/POA
+
+=item * C<expired> the POI/POA has expired
+
+=item * C<pending> the POI/POA is waiting for validation
+
+=item * C<rejected> the POI/POA has been rejected
+
+=item * C<suspected> POI only, the POI is fishy
+
+=item * C<verified> there is a valid POI/POA
+
+=back
+
 =cut
 
 sub _get_authentication {
@@ -913,175 +938,116 @@ sub _get_authentication {
     my $authentication_object = {
         needs_verification => [],
         identity           => {
-            status                        => "none",
-            further_resubmissions_allowed => 0,
-            services                      => {
+            status   => "none",
+            services => {
                 onfido => {
                     is_country_supported => 0,
-                    documents_supported  => []}}
+                    documents_supported  => []}
+            },
         },
         document => {
-            status                        => "none",
-            further_resubmissions_allowed => 0,
+            status => "none",
         },
     };
 
     return $authentication_object if $client->is_virtual;
-
-    my $redis = BOM::Config::Redis::redis_replicated_write();
-    $authentication_object->{identity}{further_resubmissions_allowed} =
-        $redis->get(ONFIDO_ALLOW_RESUBMISSION_KEY_PREFIX . $client->binary_user_id) ? 1 : 0;
-
-    $authentication_object->{document}{further_resubmissions_allowed} =
-        $redis->get(POA_ALLOW_RESUBMISSION_KEY_PREFIX . $client->binary_user_id) ? 1 : 0;
-
-    my $country_code = uc($client->place_of_birth || $client->residence // '');
-    $authentication_object->{identity}{services}{onfido}{is_country_supported} = BOM::Config::Onfido::is_country_supported($country_code);
-    $authentication_object->{identity}{services}{onfido}{documents_supported} =
-        BOM::Config::Onfido::supported_documents_for_country($country_code);
-
+    # Each key from the authentication object will be filled up independently by an assembler method.
+    # The `needs_verification` array can be filled with `identity` and/or `document`, there is a method for each one.
     my $documents = $client->documents_uploaded();
-
-    my ($poi_documents, $poi_minimum_expiry_date, $is_poi_already_expired, $is_poi_pending) =
-        @{$documents->{proof_of_identity}}{qw/documents minimum_expiry_date is_expired is_pending/};
-    my ($poa_documents, $poa_minimum_expiry_date, $is_poa_already_expired, $is_poa_pending, $is_rejected) =
-        @{$documents->{proof_of_address}}{qw/documents minimum_expiry_date is_expired is_pending is_rejected/};
-
-    my %needs_verification_hash = ();
-
-    my $poi_structure = sub {
-        $authentication_object->{identity}{expiry_date} = $poi_minimum_expiry_date
-            if $poi_minimum_expiry_date and $is_document_expiry_check_required;
-
-        $authentication_object->{identity}{status} = 'pending' if $is_poi_pending;
-        # check for expiry
-        if ($is_poi_already_expired and $is_document_expiry_check_required) {
-            $authentication_object->{identity}{status} = 'expired';
-            $needs_verification_hash{identity} = 'identity';
-        }
-
-        return undef;
+    my $args      = {
+        client                            => $client,
+        documents                         => $documents,
+        is_document_expiry_check_required => $is_document_expiry_check_required,
     };
-
-    my $poa_structure = sub {
-        $authentication_object->{document}{expiry_date} = $poa_minimum_expiry_date
-            if $poa_minimum_expiry_date and $is_document_expiry_check_required;
-
-        # check for expiry
-        if ($is_poa_already_expired and $is_document_expiry_check_required) {
-            $authentication_object->{document}{status} = 'expired';
-            $needs_verification_hash{document} = 'document';
-        }
-
-        $authentication_object->{document}{status} = 'pending' if $is_poa_pending;
-        if ($is_rejected) {
-            $authentication_object->{document}{status} = 'rejected';
-            $needs_verification_hash{document} = 'document';
-        }
-
-        return undef;
-    };
-
-    # fully authenticated
-    return do {
-        $authentication_object->{identity}{status} = 'verified';
-        $authentication_object->{document}{status} = 'verified';
-
-        $poi_structure->();
-        $poa_structure->();
-
-        $authentication_object->{needs_verification} = [sort keys %needs_verification_hash];
-
-        $authentication_object;
-    } if $client->fully_authenticated();
-
-    # variable for caching result
-    my ($is_verification_required, $is_verification_required_check_authentication_status);
-
-    # proof of identity provided
-    return do {
-        # proof of identity
-        $authentication_object->{identity}{status} = "verified";
-        $poi_structure->();
-
-        # proof of address
-        if (not $poa_documents) {
-            $is_verification_required_check_authentication_status //= $client->is_verification_required(check_authentication_status => 1);
-            $needs_verification_hash{document} = 'document' if $is_verification_required_check_authentication_status;
-        } else {
-            $poa_structure->();
-        }
-
-        $authentication_object->{needs_verification} = [sort keys %needs_verification_hash];
-        $authentication_object;
-    } if $client->status->age_verification;
-
-    my $dbic = BOM::Database::UserDB::rose_db()->dbic;
-
-    my $user_applicant = $dbic->run(
-        fixup => sub {
-            $_->selectrow_hashref('SELECT * FROM users.get_onfido_applicant(?::BIGINT)', undef, $client->binary_user_id);
-        });
-    # if documents are there and we have onfido applicant then
-    # check for onfido check status and inform accordingly
-    if ($user_applicant) {
-
-        my $user_check = BOM::User::Onfido::get_latest_onfido_check($client->binary_user_id);
-
-        unless ($user_check) {
-            $is_verification_required //= $client->is_verification_required();
-            $needs_verification_hash{identity} = 'identity' if $is_verification_required;
-        } else {
-            if (my $check_id = $user_check->{id}) {
-                if ($user_check->{status} =~ /^in_progress|awaiting_applicant$/) {
-                    $authentication_object->{identity}->{status} = 'pending';
-                } elsif ($user_check->{result} eq 'consider') {
-                    my $user_reports = BOM::User::Onfido::get_all_onfido_reports($client->binary_user_id, $check_id);
-
-                    # check for document result as we have accepted documents
-                    # manually so facial similarity is not accurate as client
-                    # use to provide selfie while holding identity card
-                    my $report_document = first { ($_->{api_name} // '') eq 'document' }
-                    sort { Date::Utility->new($a->{created_at})->is_before(Date::Utility->new($b->{created_at})) ? 1 : 0 } values %$user_reports;
-
-                    my $report_document_sub_result = $report_document->{sub_result} // '';
-                    $needs_verification_hash{identity} = 1 if $report_document_sub_result =~ /^rejected|suspected|caution/;
-                    $authentication_object->{identity}->{status} = $report_document_sub_result
-                        if $report_document_sub_result =~ /^rejected|suspected/;
-                    $authentication_object->{identity}->{status} = 'rejected' if $report_document_sub_result eq 'caution';
-                    $authentication_object->{identity}->{status} = 'pending'
-                        if (($report_document_sub_result =~ /^clear|consider/) and not $client->status->age_verification);
-                }
-            }
-        }
-    } elsif (not $poi_documents) {
-        $is_verification_required //= $client->is_verification_required();
-        $needs_verification_hash{identity} = 'identity' if $is_verification_required;
-    } else {
-        $poi_structure->();
-    }
-
-    $is_verification_required_check_authentication_status //= $client->is_verification_required(check_authentication_status => 1);
-
-    # proof of address
-    if (not $poa_documents) {
-        $needs_verification_hash{document} = 'document' if $is_verification_required_check_authentication_status;
-    } else {
-        $poa_structure->();
-    }
-
-    # If needs action and not age verified, we require both POI and POA
-    if ($is_verification_required_check_authentication_status and not defined $client->status->age_verification) {
-        $needs_verification_hash{identity} = 'identity' if $authentication_object->{identity}->{status} eq 'none';
-    }
-
-    # If shared payment method, the POI is required
-    if ($client->status->shared_payment_method) {
-        $needs_verification_hash{identity} = 'identity';
-    }
-
+    # Resolve the POA
+    $authentication_object->{document} = _get_authentication_poa($args);
+    # Resolve the POI
+    $authentication_object->{identity} = _get_authentication_poi($args);
+    # Current statuses
+    my $poa_status = $authentication_object->{document}->{status};
+    my $poi_status = $authentication_object->{identity}->{status};
+    # The `needs_verification` array is built from the following hash keys
+    my %needs_verification_hash;
+    $needs_verification_hash{identity} = 1 if $client->needs_poi_verification($documents, $poi_status);
+    $needs_verification_hash{document} = 1 if $client->needs_poa_verification($documents, $poa_status);
+    # Craft the `needs_verification` array
     $authentication_object->{needs_verification} = [sort keys %needs_verification_hash];
     return $authentication_object;
+}
+
+=head2 _get_authentication_poi
+
+Resolves the C<identity> structure of the authentication object.
+
+It takes the following named params:
+
+=over 4
+
+=item * L<BOM::User::Client> the client itself
+
+=item * C<documents> hashref containing the client documents by type
+
+=item * C<is_document_expiry_check_required> indicates whether the expiry check is needed
+
+=back
+
+Returns,
+    hashref containing the structure needed for C<document> at authentication object.
+
+=cut
+
+sub _get_authentication_poi {
+    my $params = shift;
+    my ($client, $documents, $is_document_expiry_check_required) = @{$params}{qw/client documents is_document_expiry_check_required/};
+    my $poi_minimum_expiry_date = $documents->{proof_of_identity}->{minimum_expiry_date};
+    my $expiry_date             = ($poi_minimum_expiry_date and $is_document_expiry_check_required) ? $poi_minimum_expiry_date : undef;
+    my $country_code            = uc($client->place_of_birth || $client->residence // '');
+
+    # Return the identity structure
+    return {
+        status   => $client->get_poi_status($documents, $is_document_expiry_check_required),
+        services => {
+            onfido => {
+                is_country_supported => BOM::Config::Onfido::is_country_supported($country_code),
+                documents_supported  => BOM::Config::Onfido::supported_documents_for_country($country_code),
+            }
+        },
+        defined $expiry_date ? (expiry_date => $expiry_date) : (),
+    };
+}
+
+=head2 _get_authentication_poa
+
+Resolves the C<document> structure of the authentication object.
+
+It takes the following named params:
+
+=over 4
+
+=item * L<BOM::User::Client> the client itself
+
+=item * C<documents> hashref containing the client documents by type
+
+=item * C<is_document_expiry_check_required> indicates whether the expiry check is needed
+
+=back
+
+Returns,
+    hashref containing the structure needed for C<document> at authentication object.
+
+=cut
+
+sub _get_authentication_poa {
+    my $params = shift;
+    my ($client, $documents, $is_document_expiry_check_required) = @{$params}{qw/client documents is_document_expiry_check_required/};
+    my $poa_minimum_expiry_date = $documents->{proof_of_address}->{minimum_expiry_date};
+    my $expiry_date             = ($poa_minimum_expiry_date and $is_document_expiry_check_required) ? $poa_minimum_expiry_date : undef;
+
+    # Return the document structure
+    return {
+        status => $client->get_poa_status($documents, $is_document_expiry_check_required),
+        defined $expiry_date ? (expiry_date => $expiry_date) : (),
+    };
 }
 
 rpc change_password => sub {
