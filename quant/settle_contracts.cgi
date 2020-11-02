@@ -105,8 +105,6 @@ sub current_unsaleable {
     my $query     = qq{ SELECT * FROM expired_unsold_bets() };
     my %possibles = %{$broker_db->dbic->run(fixup => sub { $_->selectall_hashref($query, 'financial_market_bet_id') })};
 
-    return [
-        sort { $a->{bb_lookup} cmp $b->{bb_lookup} }
-        grep { exists $possibles{$_->{fmb_id}} } @{Cache::RedisDB->get('AUTOSELL', 'ERRORS') // []}];
+    return [grep { exists $possibles{$_->{fmb_id}} } @{Cache::RedisDB->get('AUTOSELL', 'ERRORS') // []}];
 }
 

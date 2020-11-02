@@ -13,7 +13,6 @@
         <th>Reason</th>
         <th>Buy Price</th>
         <th>Full Payout</th>
-        <th>BB Lookup</th>
         <th>Skip</th>
         <th bgcolor="#ccf">Cancel</th>
         <th bgcolor="#fcc">As Loss</th>
@@ -27,7 +26,6 @@
         <td>[% contract.reason %]</td>
         <td>[% contract.currency %][% contract.buy_price %]</td>
         <td>[% contract.currency %][% contract.payout %]</td>
-        <td>[% contract.bb_lookup %]</td>
         <td><input type="radio" name="fmb_[% contract.fmb_id %]" value="skip" checked></td>
         <td bgcolor="#ccf"><input type="radio" name="fmb_[% contract.fmb_id %]" value="cancel"> </td>
         <td bgcolor="#fcc"><input type="radio" name="fmb_[% contract.fmb_id %]" value="loss"> </td>

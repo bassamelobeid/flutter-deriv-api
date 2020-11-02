@@ -6,7 +6,7 @@ BOM::RiskReporting::MarkedToModel
 
 =head1 SYNOPSIS
 
-BOM::RiskReport::MarkedToModel->new->generate;
+BOM::RiskReporting::MarkedToModel->new->generate;
 
 =cut
 
@@ -15,14 +15,10 @@ use warnings;
 
 no indirect;
 
-local $\ = undef;    # Sigh.
-
 use Moose;
 extends 'BOM::RiskReporting::Base';
 
 use JSON::MaybeXS;
-use File::Temp;
-use POSIX qw(strftime);
 use Syntax::Keyword::Try;
 
 use Email::Address::UseXS;
@@ -30,17 +26,10 @@ use Email::Stuffer;
 use BOM::Database::ClientDB;
 use BOM::Product::ContractFactory qw( produce_contract );
 use Finance::Contract::Longcode qw( shortcode_to_parameters );
-use Time::Duration::Concise::Localize;
 use BOM::Database::DataMapper::CollectorReporting;
 use BOM::Config;
-use Bloomberg::UnderlyingConfig;
-use Text::CSV;
-use BOM::Database::DataMapper::FinancialMarketBet;
-use BOM::Database::Model::Constants;
 use DataDog::DogStatsd::Helper qw (stats_inc stats_timing stats_count);
 use BOM::User::Client;
-use BOM::Backoffice::Request;
-use ExchangeRates::CurrencyConverter qw (in_usd);
 use BOM::Transaction;
 use BOM::Transaction::Utility;
 use List::Util qw(max);
@@ -83,14 +72,13 @@ sub check_open_bets {
         gamma => 0,
     );
 
-    my $total_expired             = 0;
-    my $error_count               = 0;
-    my $last_fmb_id               = 0;
-    my $waiting_for_settlement    = 0;
-    my $require_manual_settlement = 0;
-    my @manually_settle_fmbid     = ();
-    my %cached_underlyings;
+    my $total_expired          = 0;
+    my $error_count            = 0;
+    my $last_fmb_id            = 0;
+    my $waiting_for_settlement = 0;
+    my @manually_settle_fmbid  = ();
     my @mail_content;
+    my $make_contract = contract_maker($pricing_date);
 
     # Before starting pricing we'd like to make sure we'll have the ticks we need.
     # They'll all still be priced at that second, though.
@@ -111,15 +99,7 @@ sub check_open_bets {
                     $last_fmb_id = $open_fmb_id;
                     my $open_fmb = $open_bets_ref->{$open_fmb_id};
                     try {
-                        my $bet_params = shortcode_to_parameters($open_fmb->{short_code}, $open_fmb->{currency_code});
-
-                        $bet_params->{date_pricing} = $pricing_date;
-                        my $symbol = $bet_params->{underlying};
-                        $bet_params->{underlying} = $cached_underlyings{$symbol}
-                            if ($cached_underlyings{$symbol});
-                        $bet_params->{limit_order} = BOM::Transaction::Utility::extract_limit_orders($open_fmb);
-                        my $bet = produce_contract($bet_params);
-                        $cached_underlyings{$symbol} ||= $bet->underlying;
+                        my $bet = $make_contract->($open_fmb);
 
                         # $current_value is the value of the open contract if it is sold back to us. So, this should be bid price for all contract.
                         my $current_value = $bet->bid_price;
@@ -137,46 +117,18 @@ sub check_open_bets {
                                     $open_bets_expired_ref->{$open_fmb->{client_loginid}}{$open_fmb_id} = $open_fmb;
                                 }
                             } elsif ($bet->require_manual_settlement) {
-                                $require_manual_settlement++;
-                                push @manually_settle_fmbid, +{
-                                    loginid   => $open_fmb->{client_loginid},
-                                    ref       => $open_fmb->{transaction_id},
-                                    fmb_id    => $open_fmb_id,
-                                    buy_price => $open_fmb->{buy_price},
-                                    currency  => $open_fmb->{currency_code},
-                                    shortcode => $bet->shortcode,
-                                    payout    => $bet->payout,
-                                    reason    => $bet->primary_validation_error->message,
-                                    # TODO: bb_lookup is a bloomberg lookup symbol that is no longer required in manual settlement page.
-                                    # This will be removed in a separate card.
-                                    bb_lookup => '--',
-                                };
+                                push @manually_settle_fmbid, get_fmb_for_manual_settlement($open_fmb, $bet, $bet->primary_validation_error->message);
                                 $dbh->do(qq{INSERT INTO accounting.expired_unsold (financial_market_bet_id, market_price) VALUES(?,?)},
                                     undef, $open_fmb_id, $value);
                             } elsif ($bet->waiting_for_settlement_tick) {
                                 # If settlement tick does not update after a day, that is something wrong. Manual settlement is needed.
                                 if ((Date::Utility->new->epoch - $bet->date_expiry->epoch) < 60 * 60 * 24) {
-
                                     $waiting_for_settlement++;
-
                                 } else {
-                                    $require_manual_settlement++;
-                                    push @manually_settle_fmbid, +{
-                                        loginid   => $open_fmb->{client_loginid},
-                                        ref       => $open_fmb->{transaction_id},
-                                        fmb_id    => $open_fmb_id,
-                                        buy_price => $open_fmb->{buy_price},
-                                        currency  => $open_fmb->{currency_code},
-                                        shortcode => $bet->shortcode,
-                                        payout    => $bet->payout,
-                                        reason    => "Settlement tick is missing. Please check. ",
-                                        # TODO: bb_lookup is a bloomberg lookup symbol that is no longer required in manual settlement page.
-                                        # This will be removed in a separate card.
-                                        bb_lookup => '--',
-                                    };
+                                    push @manually_settle_fmbid,
+                                        get_fmb_for_manual_settlement($open_fmb, $bet, 'Settlement tick is missing. Please check.');
                                     $dbh->do(qq{INSERT INTO accounting.expired_unsold (financial_market_bet_id, market_price) VALUES(?,?)},
                                         undef, $open_fmb_id, $value);
-
                                 }
                             } else {
                                 push @mail_content, "Contract expired but could not be settled [$last_fmb_id,  $open_fmb->{short_code}]";
@@ -201,11 +153,8 @@ sub check_open_bets {
                 }
 
                 $dbh->do(
-                    qq{
-        INSERT INTO accounting.historical_marked_to_market(calculation_time, market_value, delta, theta, vega, gamma)
-        VALUES(?, ?, ?, ?, ?, ?)
-        }, undef, $pricing_date->db_timestamp,
-                    map { $totals{$_} } qw(value delta theta vega gamma)
+                    qq{INSERT INTO accounting.historical_marked_to_market(calculation_time, market_value, delta, theta, vega, gamma) VALUES(?, ?, ?, ?, ?, ?) },
+                    undef, $pricing_date->db_timestamp, map { $totals{$_} } qw(value delta theta vega gamma)
                 );
 
                 if (@mail_content and $self->send_alerts) {
@@ -233,7 +182,7 @@ sub check_open_bets {
         errors                    => $error_count,
         expired                   => $total_expired,
         waiting_for_settlement    => $waiting_for_settlement,
-        require_manual_settlement => $require_manual_settlement,
+        require_manual_settlement => scalar @manually_settle_fmbid,
     };
 }
 
@@ -247,19 +196,17 @@ sub sell_expired_contracts {
     my @error_lines;
     my @client_loginids = keys %{$open_bets_ref};
 
-    my %map_to_bb = reverse Bloomberg::UnderlyingConfig::bloomberg_to_binary();
-    my $csv       = Text::CSV->new;
-
     for my $client_id (@client_loginids) {
         my $fmb_infos = $open_bets_ref->{$client_id};
         my $client    = BOM::User::Client::get_instance({'loginid' => $client_id});
         my (@fmb_ids_to_be_sold, %bet_infos);
         for my $id (keys %$fmb_infos) {
-            my $fmb_id         = $fmb_infos->{$id}->{id};
-            my $expected_value = $fmb_infos->{$id}->{market_price};
-            my $currency       = $fmb_infos->{$id}->{currency_code};
-            my $ref_number     = $fmb_infos->{$id}->{transaction_id};
-            my $buy_price      = $fmb_infos->{$id}->{buy_price};
+            my $fmb_id         = $fmb_infos->{$id}{id};
+            my $expected_value = $fmb_infos->{$id}{market_price};
+            my $currency       = $fmb_infos->{$id}{currency_code};
+            my $ref_number     = $fmb_infos->{$id}{transaction_id};
+            my $buy_price      = $fmb_infos->{$id}{buy_price};
+            my $bet            = $fmb_infos->{$id}{bet};
 
             my $bet_info = {
                 loginid   => $client_id,
@@ -267,17 +214,9 @@ sub sell_expired_contracts {
                 fmb_id    => $fmb_id,
                 buy_price => $buy_price,
                 currency  => $currency,
-                bb_lookup => '--',
+                shortcode => $bet->shortcode,
+                payout    => $bet->payout,
             };
-
-            my $bet = $fmb_infos->{$id}{bet};
-
-            if (my $bb_symbol = $map_to_bb{$bet->underlying->symbol}) {
-                $csv->combine($map_to_bb{$bet->underlying->symbol}, $bet->date_start->db_timestamp, $bet->date_expiry->db_timestamp);
-                $bet_info->{bb_lookup} = $csv->string;
-            }
-            $bet_info->{shortcode} = $bet->shortcode;
-            $bet_info->{payout}    = $bet->payout;
 
             if (not defined $bet->value) {
                 # $bet->value is set when we confirm expiration status, even further above.
@@ -327,7 +266,6 @@ sub sell_expired_contracts {
     }
 
     if (scalar @error_lines) {
-        local ($/, $\) = ("\n", undef);    # in case overridden elsewhere
         Cache::RedisDB->set('AUTOSELL', 'ERRORS', \@error_lines, 3600);
         my $sep     = '---';
         my $subject = 'AutoSell Failures during riskd operation';
@@ -417,6 +355,39 @@ sub cache_daily_turnover {
         }
     }
     return;
+}
+
+sub contract_maker {
+    my $pricing_date       = shift;
+    my %cached_underlyings = ();
+
+    return sub {
+        my $open_fmb   = shift;
+        my $bet_params = shortcode_to_parameters($open_fmb->{short_code}, $open_fmb->{currency_code});
+        $bet_params->{date_pricing} = $pricing_date;
+        $bet_params->{limit_order}  = BOM::Transaction::Utility::extract_limit_orders($open_fmb);
+
+        my $symbol = $bet_params->{underlying};
+        $bet_params->{underlying} = $cached_underlyings{$symbol} if $cached_underlyings{$symbol};
+
+        my $bet = produce_contract($bet_params);
+        $cached_underlyings{$symbol} ||= $bet->underlying;
+        return $bet;
+    }
+}
+
+sub get_fmb_for_manual_settlement {
+    my ($open_fmb, $bet, $error) = @_;
+    return {
+        loginid   => $open_fmb->{client_loginid},
+        ref       => $open_fmb->{transaction_id},
+        fmb_id    => $open_fmb->{id},
+        buy_price => $open_fmb->{buy_price},
+        currency  => $open_fmb->{currency_code},
+        shortcode => $open_fmb->{shortcode},
+        payout    => $bet->payout,
+        reason    => $error,
+    };
 }
 
 no Moose;
