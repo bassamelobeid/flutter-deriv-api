@@ -24,12 +24,12 @@ PrintContentType();
 
 Description: To be used by marketing to approve Bonus payments.
 This purposefully does not apply any rules as the decision to grant
-a bonus or not is largely up to the staff member. It attempts to 
+a bonus or not is largely up to the staff member. It attempts to
 give the information required to make that decision and the tools
-to quickly approve or reject the bonus. 
+to quickly approve or reject the bonus.
 
 It will first check myaffiliates for the bonus code and if one does not exist
-it will offer the opportunity to manually  enter a bonus code.   
+it will offer the opportunity to manually  enter a bonus code.
 
 =cut
 
@@ -82,11 +82,11 @@ BOM::Backoffice::Request::template()->process(
     'backoffice/client_statement_get.html.tt',
     {
         history_url     => request()->url_for('backoffice/f_manager_history.cgi'),
-        statmnt_url     => request()->url_for('backoffice/f_manager_statement.cgi'),
+        statement_url   => request()->url_for('backoffice/f_manager_statement.cgi'),
         self_post       => $self_post,
         encoded_loginid => $encoded_loginid,
         encoded_broker  => $encoded_broker,
-        checked         => 'checked="checked"'
+        checked         => 'checked="checked"',
     });
 
 Bar("$loginid STATUSES");
@@ -242,9 +242,9 @@ code_exit_BO();
 
 =head2 get_myaffilate_information
 
-Description: Gets the Bonus promotion code from myaffiliates if 
-the client has registered via myaffiliates and has a myaffiliates token. 
-Takes the following argument 
+Description: Gets the Bonus promotion code from myaffiliates if
+the client has registered via myaffiliates and has a myaffiliates token.
+Takes the following argument
 
 =over 4
 
@@ -253,7 +253,7 @@ Takes the following argument
 
 =back
 
-Returns the promo code as a string or undef. 
+Returns the promo code as a string or undef.
 
 =cut
 
@@ -294,20 +294,20 @@ sub get_myaffilate_information {
 
 =head2 get_promo_information
 
-Description: Retrieve Promotional information from the DB using the promo code. 
+Description: Retrieve Promotional information from the DB using the promo code.
 converts  the JSON (promo_code_config) field into Perl vars and dates into L<Date::Utility> Objects
 Takes the following arguments
 
 =over 4
 
-=item - $promo_code String Id of promo code. 
+=item - $promo_code String Id of promo code.
 
 =item - $dbic L<DBIx::Connector::Pg>
 
 =back
 
-Returns an hashref 
-   
+Returns an hashref
+
       {
           'start_date' => 'Date::Utility',
           'description' => 'description text ',
@@ -322,8 +322,8 @@ Returns an hashref
                       }
        }
 
-or 
- 
+or
+
 undef  if not found
 
 =cut

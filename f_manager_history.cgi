@@ -145,15 +145,17 @@ my $summary = client_statement_summary({
 # so we add and minus 1 second to make it same as >= or <=
 # underlying of get_transactions_details uses get_transactions and get_payments
 # which handles undef accordingly.
-my $transactions = get_transactions_details({
+my $transaction_id = request()->param('transactionID');
+my $transactions   = get_transactions_details({
         client   => $client,
         currency => $currency,
         from     => (not $all_in_one_page and $from_date) ? $from_date->minus_time_interval('1s')->datetime_yyyymmdd_hhmmss()
         : undef,
         to => (not $all_in_one_page and $to_date) ? $to_date->plus_time_interval('1s')->datetime_yyyymmdd_hhmmss()
         : undef,
-        dw_only => $deposit_withdrawal_only,
-        limit   => $all_in_one_page ? 99999 : 200,
+        dw_only        => $deposit_withdrawal_only,
+        limit          => $all_in_one_page ? 99999 : 200,
+        transaction_id => $transaction_id,
     });
 
 my $balance = client_balance($client, $currency);
@@ -170,6 +172,7 @@ BOM::Backoffice::Request::template()->process(
             to   => $overview_to_date->date_yyyymmdd()
         },
         transactions            => $transactions,
+        transaction_id          => $transaction_id,
         apps                    => $apps,
         balance                 => $balance,
         now                     => Date::Utility->today,

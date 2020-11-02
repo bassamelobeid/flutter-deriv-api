@@ -988,7 +988,8 @@ sub client_statement_summary {
 
 sub get_transactions_details {
     my ($args) = @_;
-    my ($client, $from, $to, $currency, $dw_only, $limit) = @{$args}{'client', 'from', 'to', 'currency', 'dw_only', 'limit'};
+    my ($client, $from, $to, $currency, $dw_only, $limit, $transaction_id) =
+        @{$args}{'client', 'from', 'to', 'currency', 'dw_only', 'limit', 'transaction_id'};
 
     $currency //= $client->currency;
     $dw_only  //= 0;
@@ -1019,9 +1020,10 @@ sub get_transactions_details {
 
     } else {
         $transactions = $tranxs_dm->get_transactions({
-            after  => $from,
-            before => $to,
-            limit  => $limit,
+            after          => $from,
+            before         => $to,
+            limit          => $limit,
+            transaction_id => $transaction_id,
         });
 
         foreach my $transaction (@{$transactions}) {

@@ -890,18 +890,18 @@ client_navigation($client, $self_post);
 
 # view client's statement/portfolio/profit table
 my $history_url     = request()->url_for('backoffice/f_manager_history.cgi');
-my $statmnt_url     = request()->url_for('backoffice/f_manager_statement.cgi');
+my $statement_url   = request()->url_for('backoffice/f_manager_statement.cgi');
 my $impersonate_url = request()->url_for('backoffice/client_impersonate.cgi');
 
 BOM::Backoffice::Request::template()->process(
     'backoffice/client_statement_get.html.tt',
     {
-        history_url     => request()->url_for('backoffice/f_manager_history.cgi'),
-        statmnt_url     => request()->url_for('backoffice/f_manager_statement.cgi'),
+        history_url     => $history_url,
+        statement_url   => $statement_url,
         self_post       => $self_post,
         encoded_loginid => $encoded_loginid,
         encoded_broker  => $encoded_broker,
-        checked         => ''
+        checked         => '',
     });
 
 print qq{
@@ -912,6 +912,25 @@ print qq{
 <input type="submit" value="Impersonate"></form>
 </div>
 };
+
+# Display only the latest 2 comments here for faster review by CS
+my $comments_count  = 2;
+my @client_comments = grep { defined } $client->get_comments()->@[0 .. $comments_count - 1];
+if (@client_comments) {
+    my $comments_url = request()->url_for('backoffice/f_client_comments.cgi', {loginid => $client->loginid});
+    print qq~
+        <div class="grd-margin-top">
+            <b>Latest Comment(s)</b> (Displaying up to <b>$comments_count</b> most recent comments) -
+            <a href="$comments_url">Add a new comment / View full list</a>
+        </div>~;
+    BOM::Backoffice::Request::template()->process(
+        'backoffice/client_comments_table.html.tt',
+        {
+            comments => [@client_comments],
+            loginid  => $client->loginid,
+            csrf     => BOM::Backoffice::Form::get_csrf_token(),
+        });
+}
 
 Bar("$loginid STATUSES");
 if (my $statuses = build_client_warning_message($loginid)) {
@@ -956,7 +975,7 @@ Bar("$loginid PAYMENT AGENT DETAILS");
 # Show Payment-Agent details if this client is also a Payment Agent.
 my $payment_agent = $client->payment_agent;
 if ($payment_agent) {
-    print '<table class="collapsed">';
+    print '<div class="grd-margin-bottom"><table class="collapsed">';
 
     foreach my $column ($payment_agent->meta->columns) {
         my $value = $payment_agent->$column;
@@ -967,20 +986,20 @@ if ($payment_agent) {
     my $pa_countries = $client->get_payment_agent->get_countries;
     print "<tr><td>Target Countries</td><td>=</td><td>" . encode_entities(join(',', @$pa_countries)) . "</td></tr>";
 
-    print '</table>';
+    print '</table></div>';
 }
 
 if ($client->landing_company->allows_payment_agents) {
-    print "<p><a href=\""
+    print '<div><a href="'
         . request()->url_for(
         'backoffice/f_setting_paymentagent.cgi',
         {
             broker   => $broker,
             loginid  => $loginid,
             whattodo => $payment_agent ? "show" : "create"
-        }) . "\">$encoded_loginid payment agent details</a></p>";
+        }) . "\">$encoded_loginid payment agent details</a></div>";
 } else {
-    print '<p>Payment Agents are not available for this account.</p>';
+    print '<div>Payment Agents are not available for this account.</div>';
 }
 
 my $statuses = join '/', map { uc $_ } @{$client->status->all};
@@ -990,16 +1009,16 @@ $name .= $client->last_name;
 my $client_info = sprintf "%s %s%s", $client->loginid, ($name || '?'), ($statuses ? " [$statuses]" : '');
 Bar("CLIENT " . $client_info);
 
-my ($link_acc, $link_loginid);
+my ($link_acc_msg, $link_loginid);
 if ($client->comment =~ /move UK clients to \w+ \(from (\w+)\)/) {
     $link_loginid = $1;
-    $link_acc     = "<p>UK account, previously moved from ";
+    $link_acc_msg = 'UK account, previously moved from';
 } elsif ($client->comment =~ /move UK clients to \w+ \(to (\w+)\)/) {
     $link_loginid = $1;
-    $link_acc     = "<p>UK account, has been moved to ";
+    $link_acc_msg = 'UK account, has been moved to';
 }
 
-if ($link_acc) {
+if ($link_acc_msg) {
     $link_loginid =~ /(\D+)\d+/;
     my $link_href = request()->url_for(
         'backoffice/f_clientloginid_edit.cgi',
@@ -1007,11 +1026,10 @@ if ($link_acc) {
             broker  => $1,
             loginID => $link_loginid
         });
-    $link_acc .= "<a href='$link_href'>" . encode_entities($link_loginid) . "</a></p></br>";
-    print $link_acc;
+    print "<div class='grd-margin-bottom'>$link_acc_msg <a href='$link_href'>" . encode_entities($link_loginid) . "</a></div>";
 }
 
-print "<p>Corresponding accounts: </p><ul>";
+print '<div>Corresponding accounts:</div><ul>';
 
 # show all BOM loginids for user, include disabled acc
 foreach my $lid ($user_clients->@*) {
@@ -1049,7 +1067,6 @@ foreach my $lid ($user_clients->@*) {
         . ") </a><span style='margin-left:12px; color:#f44336'><strong>"
         . $formatted_balance
         . "</strong></span></li>";
-
 }
 
 # show MT5 a/c
@@ -1085,12 +1102,12 @@ my $log_args = {
 };
 
 my $new_log_href = request()->url_for('backoffice/show_audit_trail.cgi', $log_args);
-print qq{<p>Click for <a href="$new_log_href">history of changes</a> to $encoded_loginid</p>};
+print qq{<p>Click for <a href="$new_log_href">History of Changes (Audit Trail)</a> to $encoded_loginid</p>};
 
 if ($payment_agent) {
     $log_args->{category} = 'payment_agent';
     $new_log_href = request()->url_for('backoffice/show_audit_trail.cgi', $log_args);
-    print qq{<p>Click for <a href="$new_log_href">payment agent history</a> for $encoded_loginid</p>};
+    print qq{<p>Click for <a href="$new_log_href">Payment Agent History</a> for $encoded_loginid</p>};
 }
 
 print qq[<form action="$self_post?loginID=$encoded_loginid" id="clientInfoForm" method="post">

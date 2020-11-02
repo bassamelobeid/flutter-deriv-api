@@ -14,10 +14,7 @@ use BOM::User::AuditLog;
 use BOM::User::Client;
 use Syntax::Keyword::Try;
 
-use constant {
-    SALT_FOR_CSRF_TOKEN_COMMENTS => 'emDWVx1SH68JE5N1ba9IGz5fb',
-    COMMENT_LIMIT                => 1000,
-};
+use constant COMMENT_LIMIT => 1000;
 
 BOM::Backoffice::Sysinit::init();
 
@@ -53,7 +50,7 @@ my $action = $input->{action} && $action_router{$input->{action}};
 
 my $error_msg = '';
 if ($action && request()->http_method eq 'POST') {
-    return_error('Invalid CSRF Token') unless ($input->{csrf} // '') eq get_csrf_token();
+    return_error('Invalid CSRF Token') unless ($input->{csrf} // '') eq BOM::Backoffice::Form::get_csrf_token();
 
     try {
         $result = $action->(
@@ -94,7 +91,7 @@ BOM::Backoffice::Request::template()->process(
         action   => $input->{action} // '',
         input    => $input,
         result   => $result,
-        csrf     => get_csrf_token(),
+        csrf     => BOM::Backoffice::Form::get_csrf_token(),
         error    => $error_msg,
     });
 
@@ -188,14 +185,6 @@ sub _get_comment_by_id {
     my ($record) = grep { $_->{id} == $id } $client->get_comments()->@*;
 
     return $record;
-}
-
-sub get_csrf_token {
-    my $auth_token = request()->cookies->{auth_token};
-
-    die "Can't find auth token" unless $auth_token;
-
-    return sha256_hex(SALT_FOR_CSRF_TOKEN_COMMENTS . $auth_token);
 }
 
 sub return_error {

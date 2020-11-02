@@ -15,7 +15,6 @@ A helper package for f_setting_website_status.cgi
 
 use f_brokerincludeall;
 use BOM::Backoffice::Request qw(request);
-use Digest::SHA qw(sha256_hex);
 use Exporter 'import';
 our @EXPORT_OK = qw(get_redis_keys return_bo_error get_statuses get_messages);
 
@@ -34,13 +33,13 @@ use constant {
         suspended      => 'Trading is suspended',
         unstable       => 'Site is unstable',
     },
-    STATUSES        => ['up', 'down'],
-    CSRF_TOKEN_SALT => 'r14P0fT904tyuIF343f93P03p3',
-    REDIS_KEYS      => {
+    STATUSES   => ['up', 'down'],
+    REDIS_KEYS => {
         channel => "NOTIFY::broadcast::channel",
         state   => "NOTIFY::broadcast::state",
         is_on   => "NOTIFY::broadcast::is_on"
-    }};
+    },
+};
 
 =head2 get_statuses
 
@@ -70,20 +69,6 @@ Get a hashref of needed redis keys
 
 sub get_redis_keys {
     REDIS_KEYS;
-}
-
-=head2 get_csrf_token
-
-Generates a CSRF for this page.
-
-=cut
-
-sub get_csrf_token {
-    my $auth_token = request()->cookies->{auth_token};
-
-    die "Can't find auth token" unless $auth_token;
-
-    return sha256_hex(CSRF_TOKEN_SALT . $auth_token);
 }
 
 =head2 return_bo_error

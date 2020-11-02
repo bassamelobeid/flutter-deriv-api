@@ -21,7 +21,7 @@ use BOM::Backoffice::CGI::SettingWebsiteStatus;
 my $cgi = CGI->new;
 PrintContentType();
 
-my $csrf         = BOM::Backoffice::CGI::SettingWebsiteStatus::get_csrf_token();
+my $csrf         = BOM::Backoffice::Form::get_csrf_token();
 my $redis        = BOM::Config::Redis->redis_ws_write();
 my $is_on_key    = get_redis_keys()->{is_on};
 my $state_key    = get_redis_keys()->{state};

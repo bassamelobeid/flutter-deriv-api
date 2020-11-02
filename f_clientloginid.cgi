@@ -36,32 +36,31 @@ my $last_year = Date::Utility->new($now->epoch - 365 * 24 * 60 * 60)->date_ddmmm
 
 # CLIENT DETAILS
 Bar('CLIENT ACCOUNT DETAILS');
-print '<table border=0 width=100% cellpadding=4><tr><td>';
-
-# client details
-print '<form action="'
-    . request()->url_for('backoffice/f_clientloginid_edit.cgi')
-    . '" method=get>'
-    . '<font size=2>'
-    . '<input type=hidden name=broker value='
-    . $encoded_broker . '>'
-    . '<table>'
-    . '<tr><td><b>LoginID</b></td><td> : ';
-
-print '<input type=text size=15 name="loginID" value="" data-lpignore="true" />'
-    . ' <a href="'
-    . request()->url_for('backoffice/f_popupclientsearch.cgi')
-    . '"><font class=smallfont>[Search]</font></a>'
-    . ' <a href="javascript:WinPopupSearchClients();"><font class=smallfont>[OldSearch]</font></a>'
-    . '</td></tr>';
-
-print '<tr><td>&nbsp;</td><td>' . '&nbsp;&nbsp;<input type="submit" value="EDIT CLIENT DETAILS"></td>' . '</tr>' . '</table>' . '</font>' . '</form>';
-print '</td></tr></table>';
-
-Bar("VIEW/EDIT CLIENT'S Email");
-print '<form action="' . request()->url_for('backoffice/client_email.cgi') . '" method="get">' . '<b>Client\'s Email : </b>';
-print '<input type=text size=30 name="email" data-lpignore="true" />';
-print '&nbsp;&nbsp;<input type="submit" value="View / Edit"></b>' . '</form>';
+print qq~
+    <table cellpadding="0" cellspacing="5">
+        <tr>
+            <td><b>LoginID: </b></td>
+            <td>
+                <form action="~ . request()->url_for('backoffice/f_clientloginid_edit.cgi') . qq~" method="get">
+                    <input type="text" size="15" name="loginID" placeholder="loginid" value="" data-lpignore="true" />
+                    <input type="submit" value="EDIT CLIENT DETAILS" />
+                    <input type="hidden" name="broker" value="$encoded_broker" />
+                    <a href="~ . request()->url_for('backoffice/f_popupclientsearch.cgi') . qq~">[Search]</a>
+                    <a href="javascript:WinPopupSearchClients();">[OldSearch]</a>
+                </form>
+            </td>
+        </tr>
+        <tr>
+            <td><b>Email: </b></td>
+            <td>
+                <form action="~ . request()->url_for('backoffice/client_email.cgi') . qq~" method="get">
+                    <input type="text" size="30" name="email" placeholder="email\@domain.com" value="" data-lpignore="true" />
+                    <input type="submit" value="View / Edit" />
+                </form>
+            </td>
+        </tr>
+    </table>
+~;
 
 Bar("IMPERSONATE CLIENT");
 print '<form action="' . request()->url_for('backoffice/client_impersonate.cgi') . '" method="get">';
@@ -70,8 +69,12 @@ print '<input type=text size=15 name="impersonate_loginid" data-lpignore="true" 
 print "<input type='hidden' name='broker' value='$encoded_broker'>";
 print '<input type="submit" value="Impersonate"></b></form>';
 
-Bar("SEND CLIENT EMAILS");
-print '<a href="' . request()->url_for('backoffice/email_templates.cgi') . '">Go to send email page</a>';
+Bar("SEND ACCOUNT RECOVERY EMAIL");
+BOM::Backoffice::Request::template()->process(
+    'backoffice/newpassword_email.html.tt',
+    {
+        languages => BOM::Backoffice::Utility::get_languages(),
+    }) || die BOM::Backoffice::Request::template()->error();
 
 Bar("MAKE DUAL CONTROL CODE");
 print

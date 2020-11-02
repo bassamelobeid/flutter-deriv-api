@@ -11,8 +11,7 @@ BOM::Backoffice::Sysinit::init();
 PrintContentType();
 BrokerPresentation('TRANSACTION REPORTS');
 
-my $broker           = request()->broker_code;
-my $currency_options = get_currency_options();
+my $broker = request()->broker_code;
 
 if ($broker eq 'FOG') {
     $broker = request()->broker_code;
@@ -118,6 +117,19 @@ $(document).ready(function() {
 });
 </script>
 };
+
+    Bar("Find Transaction By Ref. (ID)");
+    print qq~
+        <form method="post" action="~ . request()->url_for('backoffice/f_manager_history.cgi') . qq~">
+            <label for="findtransid_loginid">LoginID: </label>
+            <input type="text" name="loginID" id="findtransid_loginid" required size="15" data-lpignore="true" />
+
+            <label for="findtransid_transid">Transaction Ref.: </label>
+            <input type="number" name="transactionID" id="findtransid_transid" required data-lpignore="true" />
+
+            <input type="submit" value="Find Transaction By Ref. (ID)" />
+        </form>
+    ~;
 }
 
 code_exit_BO();

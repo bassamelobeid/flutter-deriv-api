@@ -30,10 +30,9 @@
 [% END %]
 
 <div>
-    <div style="color:red;">NOTE:
-        <b>Show All Transactions</b>, may fail for clients with a huge number of transactions, so use this feature only
-        when required.
-    </div><br/>
+    <div class="grd-margin-bottom" style="color:red;">
+        NOTE: <b>Show All Transactions</b>, may fail for clients with a huge number of transactions, so use this feature only when required.
+    </div>
     <div>
         <form action="[% self_post %]" method="get">
             <span>Quick jump to see another statement:</span>
@@ -42,6 +41,10 @@
             <input name="enddate" type="text" size=15 value="[% enddate %]" placeholder="2017-01-20" class="datepick" data-lpignore="true" />
             <input name="broker" type=hidden value="[% broker %]">
             <input name="currency" type="hidden" value="[% currency %]">
+            <span tooltip="If specified, the result would contain only one transaction if found a match, otherwise nothing">
+                <label for="transactionID">Transaction Ref.: </label>
+                <input name="transactionID" id="transactionID" type="number" size=15 value="[% transaction_id %]" data-lpignore="true" />
+            </span>
             <div style = "padding-left: 195px;">
                 <input name="all_in_one_page" id="all_in_one_page" type="checkbox">
                 <label for="all_in_one_page">Show All Transactions</label>
@@ -88,6 +91,8 @@
     </div>
 </div>
 
+[% MACRO pagination(is_top) BLOCK %]
+    [% IF NOT transaction_id %]
 <div class="grd-parent grd-grid-12">
     <div class="grd-grid-2 left-aligned">
         <a class="pjaxload button"
@@ -101,6 +106,14 @@
            href="[% request.url_for('backoffice/f_manager_history.cgi', { loginID => loginid, overview_fm_date => client_summary_ranges.from, overview_to_date=>client_summary_ranges.to, enddate => transactions.last.transaction_time, currency => currency, depositswithdrawalsonly => depositswithdrawalsonly }) | none %]"><span>Older&raquo;</span></a>
     </div>
 </div>
+    [% ELSIF is_top %]
+    <div>
+        <strong>NOTE:</strong> Showing only transaction Ref.: <strong>[% transaction_id %]</strong> for client: <strong>[% loginid %]</strong>
+    </div>
+    [% END %]
+[% END %]
+
+[% pagination(1) | none %]
 
 <table id="statement-table" class="hover alternate collapsed" border="1" width="100%">
     <thead>
@@ -121,7 +134,13 @@
     [% IF transactions.size == 0 %]
     <tr>
         <td align="center" colspan="9" style="color: red;">
-            <strong>[% l('There are no items during this period') %]</strong>
+            <strong>
+                [%
+                transaction_id
+                    ? 'No transaction found matching client: ' _ loginid _ ' transaction id: ' _ transaction_id
+                    : 'There are no items during this period'
+                %]
+            </strong>
         </td>
     </tr>
     [% ELSE %]
@@ -192,19 +211,7 @@
     </tbody>
 </table>
 
-<div class="grd-parent grd-grid-12">
-    <div class="grd-grid-2 left-aligned">
-        <a class="pjaxload button"
-           href="[% request.url_for('backoffice/f_manager_history.cgi', { loginID => loginid, overview_fm_date => client_summary_ranges.from, overview_to_date=>client_summary_ranges.to, startdate => transactions.first.transaction_time, currency => currency, depositswithdrawalsonly => depositswithdrawalsonly }) | none %]"><span>&laquo;Newer</span></a>
-    </div>
-    <div class="grd-grid-8 center-aligned">
-        <b>[% transactions.first.date.datetime %] --- [% transactions.last.date.datetime %]</b>
-    </div>
-    <div class="grd-grid-2 right-aligned">
-        <a class="pjaxload button"
-           href="[% request.url_for('backoffice/f_manager_history.cgi', { loginID => loginid, overview_fm_date => client_summary_ranges.from, overview_to_date=>client_summary_ranges.to, enddate => transactions.last.transaction_time, currency => currency, depositswithdrawalsonly => depositswithdrawalsonly }) | none %]"><span>Older&raquo;</span></a>
-    </div>
-</div>
+[% pagination(0) | none %]
 
 <style>
     #statement-table td {

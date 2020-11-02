@@ -6,7 +6,7 @@
 </div>
 
 <div class="flat">
-    <form action="[% statmnt_url %]" method="get">
+    <form action="[% statement_url %]" method="get">
         <input type="hidden" name="loginID" value="[% encoded_loginid %]">
         <input type="submit" value="View $encoded_loginid Portfolio">
         <input type="hidden" name="broker" value="[% encoded_broker %]">
@@ -29,4 +29,3 @@
         <input type="submit" value="Account Review Notes" />
     </form>
 </div>
-

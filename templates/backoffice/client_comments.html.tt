@@ -1,7 +1,7 @@
-
 [% WRAPPER layout title='' %]
    <a href="[% request.url_for('backoffice/f_clientloginid_edit.cgi', { loginID => input.loginid }) | url %]">return to client details</a>
 [% END %]
+
 [% IF error %]
     [% WRAPPER layout title='Error' %]
        <b style="color:red; font-size: medium"> [% error %]</b>
@@ -46,43 +46,9 @@
     [% END %]
 [% END %]
 
-
 [% WRAPPER layout title='Review Comments' %]
-    <table>
-<table class="collapsed hover alternate" border="1">
-    <tbody><tr>
-        <th>Comment</th>
-        <th>Author</th>
-        <th>Date</th>
-        <th>Actions</th>
-    </tr>
-    [% FOREACH record IN comments %]
-        <tr>
-            <td width=800>[% record.comment | html | html_line_break %]</td>
-            <td>[% record.author %]</td>
-            <td>[% record.creation_datetime %]</td>
-            <td>
-                <form method="post" onSubmit="return confirm('Are you sure you want to delete the comment?');">
-                    <input type="hidden" name="loginid" value="[% input.loginid %]" />
-                    <input type="hidden" name="action" value="delete_comment" />
-                    <input type="hidden" name="csrf" value="[% csrf %]" />
-                    <input type="hidden" name="id" value="[% record.id %]" />
-                    <input type="hidden" name="checksum" value="[% record.checksum %]" />
-                    <input type="submit" value="Delete">
-                </form>
-                <form method="post">
-                    <input type="hidden" name="loginid" value="[% input.loginid %]" />
-                    <input type="hidden" name="action" value="show_edit_form" />
-                    <input type="hidden" name="csrf" value="[% csrf %]" />
-                    <input type="hidden" name="id" value="[% record.id %]" />
-                    <input type="submit" value="Edit">
-                </form>
-            </td>
-        </tr>
-    [% END %]
-</tbody></table>
+    [% INCLUDE 'backoffice/client_comments_table.html.tt' loginid=input.loginid %]
 [% END %]
-
 
 
 [% BLOCK layout %]

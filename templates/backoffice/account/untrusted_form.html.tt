@@ -9,36 +9,55 @@
 [% END %]
 
 <form action="[% edit_url %]" method=post>
-[% IF show_login %]
-Login ID : <input type="text" size="45" name="login_id" value="[% clientid %]" data-lpignore="true" /><br />
-[% ELSE %]
-<input type="hidden" name="login_id" value="[% clientid %]">
-[% END %]
-Action :
-<select name="untrusted_action_type">
-<option>--------------------SELECT AN ACTION--------------------</option>
-[% FOREACH r IN actions%]
-    [% NEXT IF r.show_reason == 'no' %]
-    <option value="[% r.linktype %]"[% IF r.linktype == selected_untrusted_action %]selected[% END %]>[% r.comments %]</option>
-[% END %]
-</select>
-<br>
-Reason : <select id="untrusted_reasonlist" name="untrusted_reason">
-<option>--------------------SELECT A REASON--------------------</option>
-[% FOREACH key IN reasons.keys.sort %]
-    <optgroup label="[% reasons.$key.name %]">
-    [% FOREACH reason IN reasons.$key.reasons.sort %]
-        <option value="[% reason %]">[% reason %]</option>
+    <table>
+    [% IF show_login %]
+        <tr>
+            <td>Login ID :</td>
+            <td><input type="text" size="15" name="login_id" value="[% clientid %]" data-lpignore="true" /></td>
+        </tr>
+    [% ELSE %]
+        <input type="hidden" name="login_id" value="[% clientid %]" />
     [% END %]
-    </optgroup>
-[% END %]
-</select> <span> &nbsp Editing status reason is not allowed, you need to delete the existing and create new one </span>
-<br />
-<input type="text" size="92" name="additional_info" placeholder="Please specify here (optional)" data-lpignore="true" />
-<input type="hidden" name="broker" value="[% broker %]">
-<input type="hidden" name="untrusted_action" value="insert_data">
-<input type="hidden" name="p2p_approved" value="[% p2p_approved %]">
-<br /><input type="submit" value="Go">
+        <tr>
+            <td>Action :</td>
+            <td>
+                <select name="untrusted_action_type">
+                    <option>--------------------SELECT AN ACTION--------------------</option>
+                    [% FOREACH r IN actions%]
+                    [% NEXT IF r.show_reason == 'no' %]
+                    <option value="[% r.linktype %]"[% IF r.linktype == selected_untrusted_action %]selected[% END %]>[% r.comments %]</option>
+                    [% END %]
+                </select>
+            </td>
+        </tr>
+        <tr>
+            <td>Reason :</td>
+            <td>
+                <select id="untrusted_reasonlist" name="untrusted_reason">
+                    <option>--------------------SELECT A REASON--------------------</option>
+                    [% FOREACH key IN reasons.keys.sort %]
+                    <optgroup label="[% reasons.$key.name %]">
+                        [% FOREACH reason IN reasons.$key.reasons.sort %]
+                        <option value="[% reason %]">[% reason %]</option>
+                        [% END %]
+                    </optgroup>
+                    [% END %]
+                </select>
+                <span>Editing status reason is not allowed, you need to delete the existing and create new one.</span>
+                <br />
+                <input type="text" size="92" name="additional_info" placeholder="Please specify here (optional)" data-lpignore="true" />
+            </td>
+        </tr>
+        <tr>
+            <td></td>
+            <td>
+                <input type="hidden" name="broker" value="[% broker %]">
+                <input type="hidden" name="untrusted_action" value="insert_data">
+                <input type="hidden" name="p2p_approved" value="[% p2p_approved %]">
+                <input type="submit" value="Go">
+            </td>
+        </tr>
+    </table>
 </form>
 
 [% IF show_untrusted %]

@@ -1,6 +1,18 @@
 [%
-    titles = { stamp=>'Date', remote_addr=>'IP', staff_name=>'Staff', table=>'Table', operation=>'Operation' };
+    titles = { stamp => 'Date', remote_addr => 'IP', staff_name => 'Staff' };
+    groups_config = {
+        cs => ['stamp', 'staff_name', 'operation', 'table', 'reason', 'document_type', 'first_name', 'last_name', 'email', 'phone', 'address_city', 'address_line_1', 'address_line_2', 'address_postcode', 'address_state', 'no data found'],
+    };
 %]
+
+[% MACRO groups_class(column) BLOCK;
+    cl = '';
+    FOREACH group = groups_config.keys;
+        cl = cl _ ' group-' _ group IF groups_config.item(group).list.grep("^$column$").size;
+    END;
+-%]
+    [%- cl ? "class='$cl.trim'" : '' -%]
+[% END %]
 
 <style type="text/css">
     .hidden {
@@ -11,6 +23,20 @@
     .hidden_show {
         background: #000000;
         color: #ffffff;
+    }
+    #group_display span {
+        cursor: pointer;
+        display: inline-block;
+        font-weight: bold;
+        margin-left: 10px;
+        color: #060;
+        background: #ddc;
+        padding: 3px 5px;
+        border-bottom: 2px solid transparent;
+    }
+    #group_display span.selected, #group_display span:hover {
+        border-bottom-color: #060;
+        background: #eed;
     }
     table#show_log_list_table td {
         background: #eeeedd;
@@ -28,25 +54,24 @@
         background: #999999;
     }
 </style>
-<script>
-function showHidden(){
-    var x = Array.from(document.getElementsByClassName("hidden"));
-    for (var i = 0; i < x.length; i++) {
-            x[i].classList.add('hidden_show');
-            x[i].classList.remove('hidden');
-    }
-    return false;
-}
-</script>
+
 <a href="[% url_to_client | none %]">&laquo; return to client details</a><br>
 
-[% IF hidden_cols %]Note: some columns are hidden. <button onclick="showHidden()">Show them</button>, if you need.<br>[% END %]
+[% IF hidden_cols %]Note: some contents are hidden (those having black background). <button onclick="showHidden()">Show them</button>, if you need.<br>[% END %]
+
+<p id="group_display">
+    Display:
+    <span>All columns</span>
+    [% FOREACH group IN groups_config.keys.sort %]
+        <span data-group="[% group %]">[% group.upper %] columns</span>
+    [% END %]
+</p>
 
 [% INCLUDE pager %]
 <table id="show_log_list_table">
     <tr>
         [% FOREACH hdr = hdrs  %]
-            <th>[% titles.$hdr || hdr.replace('_',' ') %]</th>
+            <th [% groups_class(hdr) %]>[% titles.$hdr || hdr.replace('_', ' ').ucfirst %]</th>
         [% END %]
     </tr>
     [% FOREACH log = logs %]
@@ -59,9 +84,9 @@ function showHidden(){
                 SET class = class _ " hidden" IF hidden_cols.$hdr;
                 SET class = class _ " unavailable" IF !log.data.exists(hdr);
                 SET classdec = class ? "class=\"$class\"" : '' %]
-                <td><div [% classdec | none %] title="[%value%]">
-                    [% value %]
-                </div></td>
+                <td [% groups_class(hdr) %]>
+                    <div [% classdec | none %] title="[% value %]">[% value %]</div>
+                </td>
             [% END %]
         </tr>
     [% END %]
@@ -83,3 +108,43 @@ function showHidden(){
     [% END %]
 [% END %]
 
+<style type="text/css" id="group_display_style">#show_log_list_table { display: none; }</style>
+<script>
+    // Show hidden contents
+    const showHidden = () => {
+        [...document.getElementsByClassName('hidden')].forEach(elm => {
+            elm.classList.add('hidden_show');
+            elm.classList.remove('hidden');
+        });
+        return false;
+    };
+
+    // Display different column groups
+    const storage_key     = 'audit_columns';
+    const group_attr      = 'data-group';
+    const group_selectors = document.querySelectorAll('#group_display span');
+    const elm_group_style = document.getElementById('group_display_style');
+
+    const showColumns = (group = getDefaultGroup()) => {
+        elm_group_style.innerHTML = group ? `#show_log_list_table th, #show_log_list_table td { display: none; } .group-\${group} { display: table-cell !important; }` : '';
+        updateSelectors(group);
+    };
+
+    const getElementGroup = (elm) => elm.getAttribute(group_attr) || '';
+    const getDefaultGroup = () => localStorage.getItem(storage_key) || '';
+
+    const updateSelectors = (selected_group = getDefaultGroup()) => {
+        group_selectors.forEach((elm) => {
+            elm.classList[getElementGroup(elm) === selected_group ? 'add' : 'remove']('selected');
+        });
+        localStorage.setItem(storage_key, selected_group || '');
+    };
+
+    group_selectors.forEach((elm) => {
+        elm.addEventListener('click', (e) => {
+            showColumns(getElementGroup(e.target));
+        });
+    });
+
+    showColumns();
+</script>

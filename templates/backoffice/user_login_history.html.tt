@@ -30,14 +30,16 @@
             ip = matches.0;
             cc = matches.1
             env = env.remove('.+User_AGENT=');
-            is_company_ip = l.app_id == 4 ? 'Yes' : 'No';
+            is_company_ip = l.app_id == 4;
+            is_company_ip_text  = is_company_ip ? 'Yes' : 'No';
+            is_company_ip_style = is_company_ip ? 'style="color: red;"' : '';
 %]
             <tr>
                 <td width='150'>[% date %] GMT</td>
                 <td>[% l.action %]</td>
                 <td>[% status %]</td>
                 <td>[% ip %]</td>
-                <td>[% is_company_ip %]</td>
+                <td [% is_company_ip_style | none %]>[% is_company_ip_text %]</td>
                 <td>[% cc %]</td>
                 <td>[% env %]</td>
                 <td>[% l.app_id || 'N/A' %]</td>

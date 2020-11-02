@@ -19,7 +19,6 @@ use BOM::Platform::Event::Emitter;
 use BOM::MyAffiliates;
 use Data::Dumper;
 use BOM::User::Client;
-use constant SALT_FOR_CSRF_TOKEN => 'emDWVx1SH68JE5N1ba9IGz5fb';
 
 BOM::Backoffice::Sysinit::init();
 
@@ -37,7 +36,7 @@ BrokerPresentation("AFFILIATE IB STATUS MANAGING");
 
 my ($affiliate_id, $mt5_login, $action, $action_result);
 if (request()->http_method eq 'POST') {
-    code_exit_BO(_get_display_error_message('Invalid CSRF Token')) if $input->{_csrf} ne _get_csrf_token();
+    code_exit_BO(_get_display_error_message('Invalid CSRF Token')) if $input->{_csrf} ne BOM::Backoffice::Form::get_csrf_token();
 
     $affiliate_id = $input->{affiliate_id};
     $mt5_login    = $input->{mt5_login};
@@ -94,19 +93,10 @@ BOM::Backoffice::Request::template()->process(
         clerk         => encode_entities($clerk),
         affiliate_id  => $affiliate_id,
         loginid       => $loginid,
-        csrf          => _get_csrf_token(),
+        csrf          => BOM::Backoffice::Form::get_csrf_token(),
         action        => $action,
         action_result => $action_result,
         email         => $clerk . '@binary.com'
     });
 
 code_exit_BO();
-
-# IT'D BETTER TO MAKE GENERAL SOLUTION FOR CSRF, BUT FOR NOW BETTER THAN NOTHING
-sub _get_csrf_token {
-    my $auth_token = request()->cookies->{auth_token};
-
-    die "Can't find auth token" unless $auth_token;
-
-    return sha256_hex(SALT_FOR_CSRF_TOKEN . $auth_token);
-}

@@ -9,10 +9,13 @@ use HTML::FormBuilder::Validation;
 use HTML::FormBuilder::Select;
 use JSON::MaybeXS;
 use Locale::SubCountry;
+use Digest::SHA qw(sha256_hex);
 
 use BOM::Backoffice::Request qw(request);
 use BOM::Platform::Locale;
 use BOM::User::Client;
+
+use constant SALT_FOR_CSRF_TOKEN => 'emDWVx1SH68JE5N1ba9IGz5fb';
 
 sub get_self_exclusion_form {
     my $arg_ref         = shift;
@@ -1115,6 +1118,20 @@ sub _email_check_regexp {
 sub _get_payment_agent_banks {
     return
         qw(AlertPay Alipay BNI BankBRI CIMBNIAGA DiamondBank EGold FirstBank GTBank GrupBCA ICBC LibertyReserve Mandiri MandiriSyariah MasterCard MoneyGram PayPal PerfectMoney PermataBank SolidTrustPay VISA Verve WeChatPay ZenithBank);
+}
+
+=head2 get_csrf_token
+
+Returns the generated CSRF token to be used in forms.
+
+=cut
+
+sub get_csrf_token {
+    my $auth_token = request()->cookies->{auth_token};
+
+    die "Can't find auth token" unless $auth_token;
+
+    return sha256_hex(SALT_FOR_CSRF_TOKEN . $auth_token);
 }
 
 1;
