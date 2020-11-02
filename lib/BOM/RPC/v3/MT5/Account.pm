@@ -130,10 +130,57 @@ async_rpc "mt5_login_list",
         });
     };
 
-sub get_mt5_logins {
-    my ($client, $user) = @_;
+=head2 get_mt5_logins
 
-    $user ||= $client->user;
+$mt5_logins = get_mt5_logins($client)
+
+Takes Client object and fetch all its available and active MT5 accounts
+
+Takes the following parameter:
+
+=over 4
+
+=item * C<params> hashref that contains a C<BOM::User::Client>
+
+=back
+
+Returns a Future holding list of MT5 account information or a failed future with error information
+
+=cut
+
+sub get_mt5_logins {
+    my ($client) = @_;
+
+    return mt5_accounts_lookup($client)->then(
+        sub {
+            my (@logins) = @_;
+            my @valid_logins = grep { defined $_ and $_ } @logins;
+
+            return Future->done(@valid_logins);
+        });
+}
+
+=head2 mt5_accounts_lookup
+
+$mt5_logins = mt5_accounts_lookup($client)
+
+Takes Client object and tries to fetch MT5 account information for each loginid
+If loginid-related account does not exist on MT5, undef will be attached to the list
+
+Takes the following parameter:
+
+=over 4
+
+=item * C<params> hashref that contains a C<BOM::User::Client>
+
+=back
+
+Returns a Future holding list of MT5 account information (or undef) or a failed future with error information
+
+=cut
+
+sub mt5_accounts_lookup {
+    my ($client) = @_;
 
     my $f = fmap1 {
         my $login = shift;
@@ -145,11 +192,21 @@ sub get_mt5_logins {
                 my ($setting) = @_;
                 $setting = _filter_settings($setting, qw/balance display_balance country currency email group leverage login name/);
                 return Future->done($setting);
+            }
+        )->catch(
+            sub {
+                my ($resp) = @_;
+                if (defined $resp->{error} && ref $resp->{error} eq 'HASH' && $resp->{error}{code} eq 'NotFound') {
+                    return Future->done(undef);
+                }
+
+                return Future->fail($resp);
             });
     }
-    foreach        => [$user->mt5_logins],
+    foreach        => [$client->user->get_mt5_loginids],
         concurrent => 4;
-# purely to keep perlcritic+perltidy happy :(
+    # purely to keep perlcritic+perltidy happy :(
+
     return $f;
 }
 
@@ -388,7 +445,7 @@ async_rpc "mt5_new_account",
                 ($mt5_account_type) ? (mt5_account_type => $mt5_account_type) : ()});
     }
 
-    return get_mt5_logins($client, $user)->then(
+    return get_mt5_logins($client)->then(
         sub {
             my (@logins) = @_;
 

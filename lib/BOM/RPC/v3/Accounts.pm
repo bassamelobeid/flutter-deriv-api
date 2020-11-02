@@ -773,7 +773,7 @@ rpc balance => sub {
     my $mt5_real_total = 0;
     my $mt5_demo_total = 0;
 
-    my @mt5_accounts = BOM::RPC::v3::MT5::Account::get_mt5_logins($params->{client})->get;
+    my @mt5_accounts = BOM::RPC::v3::MT5::Account::get_mt5_logins($params->{client})->else(sub { return Future->done(); })->get;
 
     for my $mt5_account (@mt5_accounts) {
         my $is_demo   = $mt5_account->{group} =~ /^demo/ ? 1 : 0;
@@ -2249,7 +2249,7 @@ rpc account_closure => sub {
         } if $balance > 0;
     }
 
-    my @mt5_accounts = BOM::RPC::v3::MT5::Account::get_mt5_logins($params->{client})->get;
+    my @mt5_accounts = BOM::RPC::v3::MT5::Account::get_mt5_logins($params->{client})->else(sub { return Future->done(); })->get;
     foreach my $mt5_account (@mt5_accounts) {
         next if $mt5_account->{group} =~ /^demo/;
 
