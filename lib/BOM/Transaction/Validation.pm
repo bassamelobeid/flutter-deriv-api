@@ -879,6 +879,7 @@ sub check_client_professional {
     my ($self, $client) = (shift, shift);
 
     return undef unless ($client->landing_company->short eq 'maltainvest');
+    return undef unless $self->transaction->contract->is_binary;
 
     return Error::Base->cuss(
         -quiet             => 1,

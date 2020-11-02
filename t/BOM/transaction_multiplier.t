@@ -1164,9 +1164,7 @@ subtest 'buy multiplier with MF' => sub {
         purchase_date => $contract->date_start,
     });
 
-    $error = $txn->buy;
-    is $error->{'-type'},              'InvalidOfferings',                       'forex buy unsuccessful';
-    is $error->{'-message_to_client'}, 'Trading is not offered for this asset.', 'message to client';
+    ok !$txn->buy, 'buy successful';
 
     Test::Warnings::allow_warnings(1);
     $contract = produce_contract({
