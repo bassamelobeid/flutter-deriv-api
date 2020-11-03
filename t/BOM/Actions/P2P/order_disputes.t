@@ -205,6 +205,116 @@ subtest 'Order dispute type sell' => sub {
     cmp_deeply $track_event_args[1], superhashof($expected_track_event_args[1]), 'Track event params are looking good for seller';
 };
 
+subtest 'Dispute resolution' => sub {
+    my @events = qw(dispute_complete dispute_refund dispute_fraud_complete dispute_fraud_refund);
+    my @types  = qw(buy sell);
+
+    for my $event (@events) {
+        for my $type (@types) {
+            subtest "P2P $event ad type $type" => sub {
+                my $amount = 100;
+                my ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert(
+                    amount => $amount,
+                    type   => $type,
+                );
+
+                my ($client, $order) = BOM::Test::Helper::P2P::create_order(
+                    advert_id => $advert->{id},
+                    balance   => $amount
+                );
+
+                BOM::Test::Helper::P2P::set_order_disputable($advertiser, $order->{id});
+                my $response = $client->p2p_create_order_dispute(
+                    id             => $order->{id},
+                    dispute_reason => 'buyer_overpaid',
+                );
+
+                # Then somebody from BO triggers this
+                @track_event_args = ();
+                @segment_args     = ();
+                BOM::Event::Actions::P2P::order_updated({
+                    client_loginid => $client->loginid,
+                    order_id       => $order->{id},
+                    order_event    => $event,
+                });
+
+                # Get fresh order data
+                $order = $advertiser->p2p_order_info(id => $order->{id});
+
+                # Check whether the track_events are called
+                is scalar @track_event_args, 2, 'Two track_event fired';
+                is scalar @segment_args,     2, 'Two segments tracks fired';
+                is $_->[2], "p2p_order_$event", "P2P $event sent" foreach @segment_args;
+
+                my $user_role       = $type eq 'buy' ? 'buyer'                              : 'seller';
+                my $order_type      = $type eq 'buy' ? 'sell'                               : 'buy';
+                my $disputer        = $type eq 'buy' ? 'seller'                             : 'buyer';
+                my $buyer_user_id   = $type eq 'buy' ? $advertiser->binary_user_id          : $client->binary_user_id;
+                my $seller_user_id  = $type eq 'buy' ? $client->binary_user_id              : $advertiser->binary_user_id;
+                my $seller_nickname = $type eq 'buy' ? $order->{client_details}->{name}     : $order->{advertiser_details}->{name};
+                my $buyer_nickname  = $type eq 'buy' ? $order->{advertiser_details}->{name} : $order->{client_details}->{name};
+
+                my $buyer_properties = {
+                    event      => "p2p_order_$event",
+                    loginid    => $advertiser->loginid,
+                    properties => {
+                        user_role        => $user_role,
+                        order_type       => $order_type,
+                        seller_nickname  => '',
+                        order_id         => $order->{id},
+                        buyer_user_id    => $buyer_user_id,
+                        seller_user_id   => $seller_user_id,
+                        currency         => $order->{account_currency},
+                        loginid          => $advertiser->loginid,
+                        exchange_rate    => $order->{rate_display},
+                        local_currency   => $order->{local_currency},
+                        buyer_nickname   => $buyer_nickname // '',
+                        seller_nickname  => $seller_nickname // '',
+                        amount           => $order->{amount},
+                        dispute_reason   => $order->{dispute_details}->{dispute_reason},
+                        disputer         => $disputer,
+                        order_created_at => Time::Moment->from_epoch(Date::Utility->new($order->{created_time})->epoch)->to_string,
+                    }};
+
+                my $seller_properties = {
+                    event      => "p2p_order_$event",
+                    loginid    => $client->loginid,
+                    properties => {
+                        user_role        => $user_role eq 'buyer' ? 'seller' : 'buyer',
+                        order_type       => $order_type,
+                        order_id         => $order->{id},
+                        buyer_user_id    => $buyer_user_id,
+                        seller_user_id   => $seller_user_id,
+                        currency         => $order->{account_currency},
+                        loginid          => $client->loginid,
+                        exchange_rate    => $order->{rate_display},
+                        local_currency   => $order->{local_currency},
+                        buyer_nickname   => $buyer_nickname // '',
+                        seller_nickname  => $seller_nickname // '',
+                        amount           => $order->{amount},
+                        dispute_reason   => $order->{dispute_details}->{dispute_reason},
+                        disputer         => $disputer,
+                        order_created_at => Time::Moment->from_epoch(Date::Utility->new($order->{created_time})->epoch)->to_string,
+                    }};
+
+                if ($type ne 'buy') {
+                    # The hunter becomes the prey
+                    my $swap = $seller_properties;
+                    $seller_properties = $buyer_properties;
+                    $buyer_properties  = $swap;
+                }
+
+                my @expected_track_event_args = ($buyer_properties, $seller_properties);
+                cmp_deeply $track_event_args[0], superhashof($expected_track_event_args[0]),
+                    'Track event params are looking good for ' . $buyer_properties->{properties}->{user_role};
+                cmp_deeply $track_event_args[1], superhashof($expected_track_event_args[1]),
+                    'Track event params are looking good for ' . $seller_properties->{properties}->{user_role};
+
+            };
+        }
+    }
+};
+
 $mock->unmock_all;
 $mock_segment->unmock_all;
 BOM::Test::Helper::P2P::reset_escrow();

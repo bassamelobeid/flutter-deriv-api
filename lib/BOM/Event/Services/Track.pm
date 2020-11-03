@@ -68,7 +68,19 @@ my %EVENT_PROPERTIES = (
         qw(dispute_reason disputer loginid user_role order_type  order_id amount currency buyer_has_confirmed seller_user_id seller_nickname buyer_user_id buyer_nickname order_created_at)
     ],
     p2p_order_timeout_refund => [
-        qw(loginid user_role order_type  order_id amount currency exchange_rate local_currency seller_user_id seller_nickname buyer_user_id buyer_nickname)
+        qw(loginid user_role order_type order_id amount currency exchange_rate local_currency seller_user_id seller_nickname buyer_user_id buyer_nickname order_created_at)
+    ],
+    p2p_order_dispute_complete => [
+        qw(dispute_reason disputer loginid user_role order_type order_id amount currency buyer_has_confirmed seller_user_id seller_nickname buyer_user_id buyer_nickname order_created_at)
+    ],
+    p2p_order_dispute_refund => [
+        qw(dispute_reason disputer loginid user_role order_type order_id amount currency buyer_has_confirmed seller_user_id seller_nickname buyer_user_id buyer_nickname order_created_at)
+    ],
+    p2p_order_dispute_fraud_complete => [
+        qw(dispute_reason disputer loginid user_role order_type order_id amount currency buyer_has_confirmed seller_user_id seller_nickname buyer_user_id buyer_nickname order_created_at)
+    ],
+    p2p_order_dispute_fraud_refund => [
+        qw(dispute_reason disputer loginid user_role order_type order_id amount currency buyer_has_confirmed seller_user_id seller_nickname buyer_user_id buyer_nickname order_created_at)
     ],
 );
 
@@ -83,6 +95,10 @@ my @SKIP_BRAND_VALIDATION = qw(
     p2p_order_expired
     p2p_order_dispute
     p2p_order_timeout_refund
+    p2p_order_dispute_complete
+    p2p_order_dispute_refund
+    p2p_order_dispute_fraud_complete
+    p2p_order_dispute_fraud_refund
 );
 
 my $loop = IO::Async::Loop->new;
@@ -575,6 +591,94 @@ sub p2p_order_dispute {
     );
 }
 
+=head2 p2p_order_dispute_complete
+
+Sent when a dispute was completed without fraud.
+
+It takes the following arguments:
+
+=over 4
+
+=item * C<order> The order info
+
+=item * C<parties> The parties involved info
+
+=back
+
+Returns, a Future needing both tracking events.
+
+=cut
+
+sub p2p_order_dispute_complete {
+    return _p2p_dispute_resolution(@_, event => 'p2p_order_dispute_complete');
+}
+
+=head2 p2p_order_dispute_refund
+
+Sent when a dispute was refunded without fraud.
+
+It takes the following arguments:
+
+=over 4
+
+=item * C<order> The order info
+
+=item * C<parties> The parties involved info
+
+=back
+
+Returns, a Future needing both tracking events.
+
+=cut
+
+sub p2p_order_dispute_refund {
+    return _p2p_dispute_resolution(@_, event => 'p2p_order_dispute_refund');
+}
+
+=head2 p2p_order_fraud_refund
+
+Sent when a dispute was refunded, fraud involved.
+
+It takes the following arguments:
+
+=over 4
+
+=item * C<order> The order info
+
+=item * C<parties> The parties involved info
+
+=back
+
+Returns, a Future needing both tracking events.
+
+=cut
+
+sub p2p_order_dispute_fraud_refund {
+    return _p2p_dispute_resolution(@_, event => 'p2p_order_dispute_fraud_refund');
+}
+
+=head2 p2p_order_dispute_fraud_complete
+
+Sent when a dispute was completed, fraud involved.
+
+It takes the following arguments:
+
+=over 4
+
+=item * C<order> The order info
+
+=item * C<parties> The parties involved info
+
+=back
+
+Returns, a Future needing both tracking events.
+
+=cut
+
+sub p2p_order_dispute_fraud_complete {
+    return _p2p_dispute_resolution(@_, event => 'p2p_order_dispute_fraud_complete');
+}
+
 =head2 p2p_order_timeout_refund
 
 Sends to segment the order refunded tracking event for both parties involved. 
@@ -605,6 +709,55 @@ sub p2p_order_timeout_refund {
             event      => 'p2p_order_timeout_refund',
             loginid    => $parties->{seller}->loginid,
             properties => _p2p_properties($order, $parties, 'seller'),
+        ),
+    );
+}
+
+=head2 _p2p_dispute_resolution
+
+Since the p2p_order_dispute family of subs are identical, we will refactor them
+into this handy sub.
+
+It takes the same arguments as those subs, plus the event name:
+
+=over 4
+
+=item * C<order> The order info
+
+=item * C<parties> The parties involved info
+
+=item * C<event> The event name
+
+=back
+
+Returns, a Future needing both tracking events.
+
+=cut
+
+sub _p2p_dispute_resolution {
+    my %args = @_;
+    my ($order, $parties, $event) = @args{qw(order parties event)};
+    my $disputer = 'buyer';
+    $disputer = 'seller' if $parties->{seller}->loginid eq $order->{dispute_details}->{disputer_loginid};
+
+    return Future->needs_all(
+        track_event(
+            event      => $event,
+            loginid    => $parties->{buyer}->loginid,
+            properties => {
+                _p2p_properties($order, $parties, 'buyer')->%*,
+                dispute_reason => $order->{dispute_details}->{dispute_reason},
+                disputer       => $disputer,
+            },
+        ),
+        track_event(
+            event      => $event,
+            loginid    => $parties->{seller}->loginid,
+            properties => {
+                _p2p_properties($order, $parties, 'seller')->%*,
+                dispute_reason => $order->{dispute_details}->{dispute_reason},
+                disputer       => $disputer,
+            },
         ),
     );
 }
