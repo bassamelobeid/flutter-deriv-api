@@ -204,12 +204,14 @@ sub _build_brand_name {
     if (my $brand = $self->param('brand')) {
         return $brand->[0] if (ref($brand) eq 'ARRAY');
         return $brand;
+    } elsif ($self->domain_name =~ /^qa.+|binaryqa/) {
+        # for qa, return 'binary'
+        return 'binary';
     } elsif (my $domain = $self->domain_name) {
-        # webtrader.champion-fx.com -> champion, visit this regex
-        # when we add new brand
+        # visit this regex when we add new brand
+        # webtrader.champion-fx.com -> 'champion'
         ($domain) = ($domain =~ /\.([a-z]+).*?\./);
-        # for qa return binary
-        return ($domain =~ /^binaryqa/ ? 'binary' : $domain);
+        return $domain;
     }
 
     return "binary";
