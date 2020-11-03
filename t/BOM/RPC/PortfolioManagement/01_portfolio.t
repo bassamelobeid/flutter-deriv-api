@@ -157,6 +157,33 @@ subtest 'Return not expired client contracts' => sub {
     is_deeply($result->{contracts}, [$expected_contract_data], 'Should return contract data',);
 };
 
+subtest 'Filter client contracts by contract type' => sub {
+    lives_ok {
+        create_fmb(
+            $client,
+            buy_bet  => 1,
+            bet_type => 'PUT',
+        );
+    }
+    'Create expired contract of type PUT';
+
+    $params[1]->{args} = {contract_type => ['CALL']};
+    my $result = $rpc_ct->call_ok(@params)->has_no_system_error->has_no_error->result;
+    is scalar $result->{contracts}->@*, 1, 'There is one contract of type CALL';
+    is $result->{contracts}->[0]->{contract_type}, 'CALL', 'contract type is CALL';
+
+    $params[1]->{args} = {contract_type => ['PUT']};
+    $result = $rpc_ct->call_ok(@params)->has_no_system_error->has_no_error->result;
+    is scalar $result->{contracts}->@*, 1, 'There is one contract of type PUT';
+    is $result->{contracts}->[0]->{contract_type}, 'PUT', 'contract type is PUT';
+
+    $params[1]->{args} = {contract_type => []};
+    $result = $rpc_ct->call_ok(@params)->has_no_system_error->has_no_error->result;
+    is scalar $result->{contracts}->@*, 2, 'All contracts are returned if the given array is empty';
+
+    delete $params[1]->{args};
+};
+
 done_testing();
 
 sub create_fmb {

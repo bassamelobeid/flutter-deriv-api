@@ -360,6 +360,90 @@ subtest 'profit table' => sub {
         0,
         'result is correct for arg after'
     );
+
+    #create a new transaction of type PUT for test
+    $contract_expired = {
+        underlying   => $underlying,
+        bet_type     => 'PUT',
+        currency     => 'USD',
+        stake        => 15,
+        date_start   => $now->epoch - 100,
+        date_expiry  => $now->epoch - 50,
+        current_tick => $tick,
+        entry_tick   => $old_tick1,
+        exit_tick    => $old_tick2,
+        barrier      => 'S0P',
+    };
+
+    $txn = BOM::Transaction->new({
+        client              => $test_client_2,
+        contract_parameters => $contract_expired,
+        price               => 115,
+        amount_type         => 'stake',
+        purchase_date       => $now->epoch - 101,
+    });
+
+    $txn->buy(skip_validation => 1);
+    is(
+        $c->tcall(
+            $method,
+            {
+                token => $token_with_txn,
+                args  => {
+                    contract_type => ['PUT'],
+                }}
+        )->{count},
+        1,
+        'There is one contract of type PUT'
+    );
+    is(
+        $c->tcall(
+            $method,
+            {
+                token => $token_with_txn,
+                args  => {
+                    contract_type => ['CALL'],
+                }}
+        )->{count},
+        3,
+        'There are three contracts of type CALL'
+    );
+    is(
+        $c->tcall(
+            $method,
+            {
+                token => $token_with_txn,
+                args  => {
+                    contract_type => ['CALL', 'PUT'],
+                }}
+        )->{count},
+        4,
+        'There are four contracts of type CALL and PUT'
+    );
+    is(
+        $c->tcall(
+            $method,
+            {
+                token => $token_with_txn,
+                args  => {
+                    contract_type => ['UPORDOWN'],
+                }}
+        )->{count},
+        0,
+        'There is no contract of type UPORDOWN'
+    );
+    is(
+        $c->tcall(
+            $method,
+            {
+                token => $token_with_txn,
+                args  => {
+                    contract_type => [],
+                }}
+        )->{count},
+        4,
+        'All contracts are returned if the given array is empty'
+    );
 };
 
 done_testing();

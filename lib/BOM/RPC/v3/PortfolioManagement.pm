@@ -6,6 +6,7 @@ use warnings;
 use Date::Utility;
 use Syntax::Keyword::Try;
 use Format::Util::Numbers qw/formatnumber roundcommon/;
+use List::Util qw/none/;
 
 use BOM::RPC::Registry '-dsl';
 
@@ -52,7 +53,11 @@ rpc "portfolio",
         source      => $params->{source},
     });
 
+    my $contract_type = $params->{args}->{contract_type};
+
     foreach my $row (@rows) {
+
+        next if $contract_type && scalar(@$contract_type) && none { $_ eq $row->{bet_type} } @$contract_type;
 
         my $longcode;
         if (!$res->{longcodes}->{$row->{short_code}}) {
