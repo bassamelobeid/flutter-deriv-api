@@ -55,6 +55,7 @@ requires_auth();
 use Log::Any qw($log);
 
 use constant MAX_DESCRIPTION_LENGTH => 250;
+use constant HANDOFF_TOKEN_TTL      => 5 * 60;    # 5 Minutes
 
 my $payment_limits = BOM::Config::payment_limits;
 
@@ -336,7 +337,7 @@ sub _get_handoff_token_key {
         data_object_params => {
             key            => BOM::Database::Model::HandoffToken::generate_session_key,
             client_loginid => $loginid,
-            expires        => time + 60,
+            expires        => time + HANDOFF_TOKEN_TTL,
         },
     );
     $handoff_token->save;

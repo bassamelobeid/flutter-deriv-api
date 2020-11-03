@@ -837,9 +837,9 @@ subtest 'P2P Order Info' => sub {
         local_currency   => 'myr',
         amount           => '100.00',
         client_details   => {
-            name       => 'test advertiser 39',
-            id         => re('\d+'),
-            loginid    => 'CR10055'
+            name    => 'test advertiser 39',
+            id      => re('\d+'),
+            loginid => 'CR10055'
         },
         price_display  => 100,
         expiry_time    => re('\d+'),
@@ -854,9 +854,9 @@ subtest 'P2P Order Info' => sub {
         created_time       => re('\d+'),
         is_incoming        => 0,
         advertiser_details => {
-            loginid    => 'CR10054',
-            id         => re('\d+'),
-            name       => 'test advertiser 38'
+            loginid => 'CR10054',
+            id      => re('\d+'),
+            name    => 'test advertiser 38'
         },
         contact_info     => 'Tel: 123456',
         type             => 'sell',
