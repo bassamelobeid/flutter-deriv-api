@@ -219,4 +219,15 @@ sub onfido_supported_documents {
     return $config;
 }
 
+=head2 qa_config
+
+Loads configuration file for QA devbox, available only on QA.
+
+=cut
+
+sub qa_config {
+    state $config = YAML::XS::LoadFile('/etc/qa/config.yml');
+    return $config;
+}
+
 1;
