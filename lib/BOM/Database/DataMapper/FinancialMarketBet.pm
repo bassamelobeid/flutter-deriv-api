@@ -47,22 +47,21 @@ sub get_sold_bets_of_account {
 
     my $limit = int($args->{limit} // 50);
     $limit = 50 unless $limit > 0 and $limit <= 50;
-    my $offset   = int($args->{offset} // 0);
-    my $sort_dir = (($args->{sort} // '') eq 'ASC') ? 'ASC' : 'DESC';
-    my $before   = $args->{before};
-    my $after    = $args->{after};
+    my $offset        = int($args->{offset} // 0);
+    my $sort_dir      = (($args->{sort} // '') eq 'ASC') ? 'ASC' : 'DESC';
+    my $before        = $args->{before};
+    my $after         = $args->{after};
+    my $contract_type = $args->{contract_type};
 
-    my $sql = q{
-        FROM
-            bet.financial_market_bet fmb
-            JOIN transaction.transaction t on (action_type='buy' and t.financial_market_bet_id=fmb.id)
-        WHERE
-            fmb.account_id = ?
-            AND is_sold = true
-    };
-    my @binds = ($self->account->id);
+    my $sql = q{SELECT * FROM bet.get_sold_bets_of_account(?, ?, ?, ?, ?, ?, ?)};
+
+    my @binds = ($self->account->id, undef, undef, undef, $limit, $offset, $sort_dir eq 'ASC' ? 1 : 0);
+
+    if ($after and $after = eval { Date::Utility->new($after) }) {
+        $binds[1] = $after->datetime_yyyymmdd_hhmmss;
+    }
+
     if ($before and $before = eval { Date::Utility->new($before) }) {
-        $sql .= ' AND purchase_time < ?';
         ## If we were passed in a date (but not an epoch or full timestamp)
         ## add in one day, so that 2018-04-07 grabs the entire day by doing
         ## a "purchase_time < 2018-04-08 00:00:000'
@@ -72,23 +71,19 @@ sub get_sold_bets_of_account {
         {
             $before = $before->plus_time_interval('1d');
         }
-        push @binds, $before->datetime_yyyymmdd_hhmmss;
+        $binds[2] = $before->datetime_yyyymmdd_hhmmss;
     }
-    if ($after and $after = eval { Date::Utility->new($after) }) {
-        $sql .= ' AND purchase_time >= ?';
-        push @binds, $after->datetime_yyyymmdd_hhmmss;
+
+    if ($contract_type && scalar(@$contract_type)) {
+        $binds[3] = $contract_type;
     }
 
     my $dbic = $self->db->dbic;
     return $dbic->run(
         fixup => sub {
-            my $sth = $_->prepare("
-        SELECT fmb.*, t.id txn_id, t.source
-        $sql
-        ORDER BY fmb.purchase_time $sort_dir, fmb.id $sort_dir
-        LIMIT ? OFFSET ?
-    ");
-            $sth->execute(@binds, $limit, $offset);
+            my $sth = $_->prepare($sql);
+
+            $sth->execute(@binds);
 
             return $sth->fetchall_arrayref({});
         });
