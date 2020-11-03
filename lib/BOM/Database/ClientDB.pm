@@ -196,56 +196,6 @@ sub get_duplicate_client {
     return @dupe_record;
 }
 
-sub lock_client_loginid {
-    my $self           = shift;
-    my $client_loginid = shift || $self->loginid;
-
-    my $dbic   = $self->db->dbic;
-    my $result = $dbic->run(
-        ping => sub {
-            $_->do('SET synchronous_commit=local');
-
-            my $sth = $_->prepare('SELECT lock_client_loginid($1)');
-            $sth->execute($client_loginid);
-
-            $_->do('SET synchronous_commit=on');
-            return $sth->fetchrow_arrayref;
-        });
-
-    return 1 if ($result and $result->[0]);
-
-    return;
-}
-
-BEGIN {
-    *freeze = \&lock_client_loginid;
-}
-
-sub unlock_client_loginid {
-    my $self           = shift;
-    my $client_loginid = shift || $self->loginid;
-
-    my $dbic   = $self->db->dbic;
-    my $result = $dbic->run(
-        ping => sub {
-            $_->do('SET synchronous_commit=local');
-
-            my $sth = $_->prepare('SELECT unlock_client_loginid($1)');
-            $sth->execute($client_loginid);
-
-            $_->do('SET synchronous_commit=on');
-            return $sth->fetchrow_arrayref;
-        });
-
-    return 1 if ($result and $result->[0]);
-
-    return;
-}
-
-BEGIN {
-    *unfreeze = \&unlock_client_loginid;
-}
-
 sub get_next_fmbid {
     my $self = shift;
 
