@@ -84,7 +84,7 @@ if (my $action = $input{action} and $p2p_write) {
             p2p_order_updated => {
                 client_loginid => $input{disputer_loginid},
                 order_id       => $input{order_id},
-                order_event    => $action,
+                order_event    => "dispute_$action",
             });
     } catch {
         my $error = ref $@ eq 'ARRAY' ? join ', ', $@->@* : $@;
