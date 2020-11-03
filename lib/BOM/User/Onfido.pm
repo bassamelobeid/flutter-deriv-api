@@ -393,7 +393,7 @@ sub get_latest_check {
     if ($user_applicant) {
         if ($user_check = get_latest_onfido_check($client->binary_user_id, undef, 1)) {
             if (my $check_id = $user_check->{id}) {
-                $report_document_status = $user_check->{result};
+                $report_document_status = $user_check->{result} // '';
 
                 if ($report_document_status eq 'consider') {
                     my $user_reports = get_all_onfido_reports($client->binary_user_id, $check_id);
