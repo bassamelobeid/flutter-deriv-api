@@ -4,7 +4,6 @@ package main;
 use strict;
 use warnings;
 
-use Guard;
 use BOM::Backoffice::Sysinit ();
 use f_brokerincludeall;
 use BOM::Database::ClientDB;
@@ -37,17 +36,6 @@ foreach my $loginID (split(/,/, $listaccounts)) {
     my $email         = $client->email;
     my $encoded_name  = encode_entities($name);
     my $encoded_email = encode_entities($email);
-
-    my $client_db = BOM::Database::ClientDB->new({
-        client_loginid => $loginID,
-    });
-
-    if (not $client_db->freeze) {
-        die "Account stuck in previous transaction $loginID";
-    }
-    scope_guard {
-        $client_db->unfreeze;
-    };
 
     my $curr         = $client->currency;
     my $balance      = $client->default_account->balance;

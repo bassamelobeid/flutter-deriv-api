@@ -10,7 +10,6 @@ use Date::Utility;
 use HTML::Entities;
 use Format::Util::Numbers qw/formatnumber/;
 use Scalar::Util qw(looks_like_number);
-use Scope::Guard;
 
 use LandingCompany::Registry;
 
@@ -196,16 +195,6 @@ read_csv_row_and_callback(
         }
 
         if (not $preview and $confirm and @invalid_lines == 0) {
-            my $client_db = BOM::Database::ClientDB->new({
-                client_loginid => $login_id,
-            });
-
-            if (not $client_db->freeze) {
-                die "Account stuck in previous transaction $login_id";
-            }
-            my $guard_scope = Scope::Guard::guard {
-                $client_db->unfreeze;
-            };
 
             my $signed_amount = $amount;
             $signed_amount *= -1 if $action eq 'debit';
