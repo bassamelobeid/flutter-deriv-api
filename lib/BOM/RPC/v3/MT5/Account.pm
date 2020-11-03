@@ -5,7 +5,6 @@ use warnings;
 
 no indirect;
 
-use Guard;
 use YAML::XS;
 use Date::Utility;
 use List::Util qw(any first);
@@ -1214,21 +1213,6 @@ async_rpc "mt5_deposit",
                 $account_type = 'real';
             }
 
-            # withdraw from Binary a/c
-            my $fm_client_db = BOM::Database::ClientDB->new({
-                client_loginid => $fm_loginid,
-            });
-            return create_error_future(
-                'ClientFrozen',
-                {
-                    override_code => $error_code,
-                    params        => $fm_loginid
-                }) if (not $fm_client_db->freeze);
-
-            scope_guard {
-                $fm_client_db->unfreeze;
-            };
-
             my $fm_client = BOM::User::Client->new({loginid => $fm_loginid});
 
             # From the point of view of our system, we're withdrawing
@@ -1365,21 +1349,6 @@ async_rpc "mt5_withdrawal",
             my ($response) = @_;
             return Future->done($response) if (ref $response eq 'HASH' and $response->{error});
             my $account_type = 'real';    # withdrawal is not allowed for demo accounts
-
-            my $to_client_db = BOM::Database::ClientDB->new({
-                client_loginid => $to_loginid,
-            });
-
-            return create_error_future(
-                'ClientFrozen',
-                {
-                    override_code => $error_code,
-                    params        => $to_loginid
-                }) if (not $to_client_db->freeze);
-
-            scope_guard {
-                $to_client_db->unfreeze;
-            };
 
             my $fees                      = $response->{fees};
             my $fees_currency             = $response->{fees_currency};

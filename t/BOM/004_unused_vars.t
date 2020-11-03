@@ -7,7 +7,7 @@ use Test::Vars;
 subtest 'unused vars' => sub {
     for my $file (qx{git ls-files lib}) {
         chomp $file;
-        vars_ok $file, ignore_vars => ['$guard_scope'] if -f $file and $file =~ /\.pm$/;
+        vars_ok $file if -f $file and $file =~ /\.pm$/;
     }
     done_testing;
 };

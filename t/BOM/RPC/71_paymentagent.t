@@ -68,9 +68,6 @@ my $auth_document_args = {
 ## Used for test safety, and to mock_get_amount_and_count:
 my $mock_cashier = Test::MockModule->new('BOM::RPC::v3::Cashier');
 
-## Used to mock 'freeze':
-my $mock_clientdb = Test::MockModule->new('BOM::Database::ClientDB');
-
 ## Used to mock default_account, payment_account_transfer, landing_company, currency:
 my $mock_user_client = Test::MockModule->new('BOM::User::Client');
 
@@ -1129,19 +1126,6 @@ for my $withdraw_currency (shuffle @crypto_currencies, @fiat_currencies) {
         $dry_run = 0;
         $mock_utility->mock('is_verification_token_valid', sub { return {status => 1} });
         reset_withdraw_testargs();
-
-        $test = 'Withdraw fails if client freeze attempt does not work';
-        $mock_clientdb->mock('freeze', sub { $_[0]->loginid eq $Alice_id ? 0 : 1; });
-        $res = BOM::RPC::v3::Cashier::paymentagent_withdraw($testargs);
-        ## Note that we use 'message', not 'message_to_client', due to specific strings
-        like($res->{error}{message}, qr/stuck in previous transaction $Alice_id/, $test);
-        $mock_clientdb->unmock('freeze');
-
-        $test = 'Withdraw fails if payment agent freeze attempt does not work';
-        $mock_clientdb->mock('freeze', sub { $_[0]->loginid eq $Bob_id ? 0 : 1; });
-        $res = BOM::RPC::v3::Cashier::paymentagent_withdraw($testargs);
-        like($res->{error}{message}, qr/stuck in previous transaction $Bob_id/, $test);
-        $mock_clientdb->unmock('freeze');
 
         $test = 'Withdrawal fails if payment agents are suspended in the target country';
         BOM::Config::Runtime->instance->app_config->system->suspend->payment_agents_in_countries([$Alice->residence]);

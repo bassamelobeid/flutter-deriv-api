@@ -15,7 +15,6 @@ use LWP::UserAgent;
 use Log::Any qw($log);
 use IO::Socket::SSL qw( SSL_VERIFY_NONE );
 use YAML::XS qw(LoadFile);
-use Scope::Guard qw/guard/;
 use DataDog::DogStatsd::Helper qw(stats_inc stats_event);
 use Format::Util::Numbers qw/formatnumber financialrounding/;
 use JSON::MaybeXS;
@@ -1040,26 +1039,6 @@ rpc paymentagent_withdraw => sub {
         client_loginid => $client_loginid,
     });
 
-    my $paymentagent_client_db = BOM::Database::ClientDB->new({
-        client_loginid => $paymentagent_loginid,
-    });
-
-    my $guard_scope = guard {
-        $client_db->unfreeze;
-        $paymentagent_client_db->unfreeze;
-    };
-
-    # freeze loginID to avoid a race condition
-    return $error_sub->(
-        localize('Sorry, an error occurred whilst processing your request. Please try again in one minute.'),
-        "Account stuck in previous transaction $client_loginid"
-    ) unless $client_db->freeze;
-
-    return $error_sub->(
-        localize('Sorry, an error occurred whilst processing your request. Please try again in one minute.'),
-        "Account stuck in previous transaction $paymentagent_loginid"
-    ) unless $paymentagent_client_db->freeze;
-
     my $withdraw_error;
     try {
         $client->validate_payment(
@@ -1500,26 +1479,7 @@ rpc transfer_between_accounts => sub {
         return $error_audit_sub->($err);
     }
 
-    my $fm_client_db = BOM::Database::ClientDB->new({
-        client_loginid => $loginid_from,
-    });
-    my $to_client_db = BOM::Database::ClientDB->new({
-        client_loginid => $loginid_to,
-    });
-
-    # have added this as exception in unused var test
-    my $guard_scope = guard {
-        $fm_client_db->unfreeze;
-        $to_client_db->unfreeze;
-    };
-
     my $err_msg = "from[$loginid_from], to[$loginid_to], amount[$amount], curr[$currency]";
-    if (not $fm_client_db->freeze) {
-        return $error_audit_sub->("$err_msg error[Account stuck in previous transaction " . $loginid_from . ']');
-    }
-    if (not $to_client_db->freeze) {
-        return $error_audit_sub->("$err_msg error[Account stuck in previous transaction " . $loginid_to . ']');
-    }
 
     try {
         $client_from->validate_payment(
