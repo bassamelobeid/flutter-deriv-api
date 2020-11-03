@@ -91,11 +91,13 @@ sub _domain_for {
     my @host_name   = split(/\./, Sys::Hostname::hostname());
     my $server_name = $host_name[0];
     my $site        = lc(Brands->new(name => 'binary')->website_name);
+
     if ($server_name =~ /^qa.+$/) {
-        #TODO should change here ?
-        return "www.binary$1.com"  if $server_name =~ /^(qa\d+)$/;
-        return "$1.binaryqa02.com" if $server_name =~ /^(qadev\d+)$/;
-        return "qadf.4x.my"        if $server_name =~ /^qadf$/;
+        my $config       = BOM::Config::qa_config();
+        my $server       = join ", " => grep { /$server_name/ } keys %{$config->{nodes}};
+        my $redirect_uri = $config->{nodes}->{$server}{website};
+
+        return $redirect_uri if $host_name[1] eq 'regentmarkets';
         return Sys::Hostname::hostname();
     }
 
