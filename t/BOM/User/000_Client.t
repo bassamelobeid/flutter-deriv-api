@@ -108,23 +108,6 @@ subtest 'prepare' => sub {
 
 };
 
-subtest 'client lock unlock' => sub {
-    lives_ok {
-        $client_db = BOM::Database::ClientDB->new({
-            client_loginid => 'CR656232',
-        });
-    }
-    'Expect to initialize the client data mapper';
-
-    ok($client_db->lock_client_loginid(), "Can lock client when there is no record in lock table initially.");
-
-    ok(!$client_db->lock_client_loginid(),   "Can not lock client wheb it is already locked.");
-    ok($client_db->unlock_client_loginid(),  "Can unlock client.");
-    ok($client_db->lock_client_loginid(),    "Can lock client again after unlock.");
-    ok($client_db->unlock_client_loginid(),  "Can unlock client.");
-    ok(!$client_db->unlock_client_loginid(), "Can not lock client if it is not locked.");
-};
-
 subtest 'Login to self excluded client' => sub {
     my ($client);
     my $new_email = 'test' . rand . '@binary.com';
