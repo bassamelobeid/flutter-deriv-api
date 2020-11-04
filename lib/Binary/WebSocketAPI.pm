@@ -70,16 +70,6 @@ our $WS_BACKENDS;
 
 my $node_config;
 
-=head2 _category_timeout_config
-
-Load configuration file for rpc redis timeouts
-
-=cut
-
-sub _category_timeout_config {
-    return YAML::XS::LoadFile('/etc/rmg/rpc_redis_timeouts.yml');
-}
-
 sub apply_usergroup {
     my ($cf, $log) = @_;
 
@@ -224,15 +214,12 @@ sub startup {
 
     my $actions = Binary::WebSocketAPI::Actions::actions_config();
 
-    my $category_timeout_config = _category_timeout_config();
-
     my $backend_rpc_redis = redis_rpc();
     $WS_BACKENDS = {
         rpc_redis => {
-            type                    => 'consumer_groups',
-            redis_uri               => $backend_rpc_redis->url->to_string,
-            timeout                 => $app->config->{rpc_queue_response_timeout},
-            category_timeout_config => $category_timeout_config,
+            type      => 'consumer_groups',
+            redis_uri => $backend_rpc_redis->url->to_string,
+            timeout   => $app->config->{rpc_queue_response_timeout},
         },
     };
 
