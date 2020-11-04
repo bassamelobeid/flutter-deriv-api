@@ -47,7 +47,7 @@ $mock_http_backend->mock(
     });
 subtest 'Consumer service unavailability' => sub {
     # switch to rpc backend
-    my $rpc_redis = BOM::Test::Script::RpcRedis->new();
+    my $rpc_redis = BOM::Test::Script::RpcRedis::get_script;
 
     my $request = {states_list => 'be'};
     ok my $response = send_request($request, 'states_list'), 'Response is recieved after switching to consumer groups';
@@ -106,7 +106,8 @@ subtest 'redis connnection loss' => sub {
     my $requst = {states_list => 'be'};
 
     # switch to rpc redis backend
-    my $rpc_redis       = BOM::Test::Script::RpcRedis->new();
+    my $rpc_redis = BOM::Test::Script::RpcRedis::get_script;
+    $rpc_redis->start_script();
     my $expected_result = {
         states_list => 'default',
         id          => 1
@@ -131,7 +132,6 @@ subtest 'redis connnection loss' => sub {
     ok scalar($api->{messages}->@*), 'Message is received for not expired request immedietly after running Cosnumer';
 
     is $redis->execute("CLIENT", "GETNAME"), $client_name_before, 'Consumer claim same client name as before killing';
-    $rpc_redis->stop_script();
 };
 
 sub send_request {
