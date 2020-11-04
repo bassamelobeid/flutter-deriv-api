@@ -10,18 +10,18 @@ use BOM::Test::Script;
 
 my $script;
 
-sub new {
-    my ($self, $category) = @_;
-    $category //= 'general';
-
+BEGIN {
     if (not BOM::Test::on_production()) {
         $script = BOM::Test::Script->new(
             script => '/home/git/regentmarkets/bom-rpc/bin/binary_rpc_redis.pl',
-            args   => [qw/ --workers 1 --category /, $category]);
+            args   => [qw/ --workers 1 /]);
 
-        die 'Failed to start rpc redis consumer.' unless $script->start_script_if_not_running;
-        return $script;
+        die 'Failed to start test pricer queue' unless $script->start_script_if_not_running;
     }
+}
+
+sub get_script {
+    return $script;
 }
 
 END {
@@ -31,3 +31,4 @@ END {
 }
 
 1;
+
