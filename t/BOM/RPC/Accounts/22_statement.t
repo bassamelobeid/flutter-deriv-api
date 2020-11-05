@@ -359,7 +359,7 @@ subtest 'statement' => sub {
 subtest 'p2p remarks' => sub {
     my $escrow = BOM::Test::Helper::P2P::create_escrow;
     BOM::Test::Helper::P2P::bypass_sendbird();
-    
+
     my ($order, $advert, $result);
 
     my $advertiser = BOM::Test::Helper::P2P::create_advertiser(
@@ -391,7 +391,7 @@ subtest 'p2p remarks' => sub {
             {
                 token => $advertiser_token,
                 args  => {description => 1}});
-        is $result->{transactions}[0]{longcode}, 'P2P order ' . $order->{id} . ' created by cody ('.$client->loginid.') - seller funds held',
+        is $result->{transactions}[0]{longcode}, 'P2P order ' . $order->{id} . ' created by cody (' . $client->loginid . ') - seller funds held',
             'order create remark for advertiser';
 
         $client->p2p_order_confirm(id => $order->{id});
@@ -403,14 +403,16 @@ subtest 'p2p remarks' => sub {
                 token => $advertiser_token,
                 args  => {description => 1}});
         is $result->{transactions}[1]{longcode}, 'P2P order ' . $order->{id} . ' completed - seller funds released', 'release remark for advertiser';
-        is $result->{transactions}[0]{longcode}, 'P2P order ' . $order->{id} . ' completed - payment to cody ('.$client->loginid.')',       'payment remark for advertiser';
+        is $result->{transactions}[0]{longcode}, 'P2P order ' . $order->{id} . ' completed - payment to cody (' . $client->loginid . ')',
+            'payment remark for advertiser';
 
         $result = $c->tcall(
             $method,
             {
                 token => $client_token,
                 args  => {description => 1}});
-        is $result->{transactions}[0]{longcode}, 'P2P order ' . $order->{id} . ' completed - payment from andy ('.$advertiser->loginid.')', 'payment remark for client';
+        is $result->{transactions}[0]{longcode}, 'P2P order ' . $order->{id} . ' completed - payment from andy (' . $advertiser->loginid . ')',
+            'payment remark for client';
 
         ($client, $order) = BOM::Test::Helper::P2P::create_order(
             client    => $client,
@@ -450,7 +452,8 @@ subtest 'p2p remarks' => sub {
             {
                 token => $escrow_token,
                 args  => {description => 1}});
-        is $result->{transactions}[0]{longcode}, 'P2P order ' . $order->{id} . ' created by cody ('.$client->loginid.') - seller funds held', 'order create remark for escrow';
+        is $result->{transactions}[0]{longcode}, 'P2P order ' . $order->{id} . ' created by cody (' . $client->loginid . ') - seller funds held',
+            'order create remark for escrow';
 
         $advertiser->p2p_order_confirm(id => $order->{id});
         $client->p2p_order_confirm(id => $order->{id});
@@ -461,14 +464,16 @@ subtest 'p2p remarks' => sub {
                 token => $client_token,
                 args  => {description => 1}});
         is $result->{transactions}[1]{longcode}, 'P2P order ' . $order->{id} . ' completed - seller funds released', 'release remark for client';
-        is $result->{transactions}[0]{longcode}, 'P2P order ' . $order->{id} . ' completed - payment to andy ('.$advertiser->loginid.')',       'payment remark for client';
+        is $result->{transactions}[0]{longcode}, 'P2P order ' . $order->{id} . ' completed - payment to andy (' . $advertiser->loginid . ')',
+            'payment remark for client';
 
         $result = $c->tcall(
             $method,
             {
                 token => $advertiser_token,
                 args  => {description => 1}});
-        is $result->{transactions}[0]{longcode}, 'P2P order ' . $order->{id} . ' completed - payment from cody ('.$client->loginid.')', 'payment remark for advertiser';
+        is $result->{transactions}[0]{longcode}, 'P2P order ' . $order->{id} . ' completed - payment from cody (' . $client->loginid . ')',
+            'payment remark for advertiser';
 
         ($client, $order) = BOM::Test::Helper::P2P::create_order(
             client    => $client,

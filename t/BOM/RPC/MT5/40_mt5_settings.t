@@ -180,9 +180,9 @@ subtest 'login list with archived login id ' => sub {
             my $login = shift;
 
             return Future->fail({
-                code  => 'NotFound',
-                error => 'Not found',
-            }) if $login eq 'MTR00000014';
+                    code  => 'NotFound',
+                    error => 'Not found',
+                }) if $login eq 'MTR00000014';
 
             return $mt5_async_mock->original('get_user')->($login);
         });
