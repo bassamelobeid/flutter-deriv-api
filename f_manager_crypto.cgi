@@ -38,30 +38,12 @@ use BOM::Platform::Email qw(send_email);
 use BOM::Platform::Context;
 use Brands;
 use constant REJECTION_REASONS => {
-    low_trade => {
-        reason     => 'less trade/no trade',
-        email_text => "there was insufficient trading activity on your account.
-            \n\nNote that this account was created for trading, and not banking, purposes.
-            \n\nWe recommend that you take advantage of our trading facilities before making further withdrawals.",
-    },
-    back_to_fiat => {
-        reason     => 'back to fiat account',
-        email_text => "the deposit and withdrawal methods did not match.
-            \n\nNote that withdrawals can only be made from the FIAT account where funds were deposited.
-            \n\nTo ensure smooth payouts, we suggest transferring the funds to your FIAT account and make the withdrawal from there.",
-    },
-    crypto_low_trade => {
-        reason => 'insufficient trade (manual refund to card)',
-        email_text =>
-            "your account does not show sufficient trading activity and there is also an incompatibility between your deposit and withdrawal methods.
-            \n\nWe will need to process this request manually instead.
-            \n\nTo allow us to proceed, first transfer the funds back to your FIAT account. Then, reply to this email with permission for us to do a manual refund to your debit/credit card.",
-    },
-    default => {
-        reason     => 'contact CS',
-        email_text => "there is an issue with your account that needs to be resolved first.
-            \n\nPlease contact Customer Support for help.",
-    }};
+    low_trade                       => {reason => 'less trade/no trade'},
+    back_to_fiat                    => {reason => 'back to fiat account'},
+    crypto_low_trade                => {reason => 'insufficient trade (manual refund to card)'},
+    authentication_needed           => {reason => 'authentication needed'},
+    less_trade_back_to_fiat_account => {reason => 'less trade, back to fiat account'},
+    default                         => {reason => 'contact CS'}};
 
 BOM::Backoffice::Sysinit::init();
 
@@ -69,9 +51,8 @@ PrintContentType();
 BrokerPresentation('CRYPTO CASHIER MANAGEMENT');
 
 sub notify_crypto_withdrawal_rejected {
-    my $loginid          = shift;
-    my $remark           = shift // "unknown";
-    my $rejection_reason = REJECTION_REASONS->{$remark}->{email_text} // REJECTION_REASONS->{default}->{email_text};
+    my $loginid = shift;
+    my $reason  = shift // "unknown";
 
     my $client = BOM::User::Client->new({loginid => $loginid});
     my $brand  = Brands->new_from_app_id($client->source);
@@ -82,10 +63,20 @@ sub notify_crypto_withdrawal_rejected {
     );
     BOM::Platform::Context::request($req);
 
-    my $email_subject = localize("Withdrawal request declined - [_1]", $client->loginid);
-    my $email_data    = {
+    my $email_subject;
+    if ($reason eq "authentication_needed") {
+        $email_subject = localize("Your crypto withdrawal request could not be completed");
+
+    } elsif ($reason eq "less_trade_back_to_fiat_account" || $reason eq "crypto_low_trade") {
+        $email_subject = localize("Your crypto withdrawal request was declined");
+
+    } else {
+        $email_subject = localize("Your withdrawal request has been declined");
+    }
+
+    my $email_data = {
         name           => $client->full_name,
-        remark         => $rejection_reason,
+        reason         => $reason,
         client_loginid => $client->loginid,
         brand_name     => ucfirst $brand->name,
     };
