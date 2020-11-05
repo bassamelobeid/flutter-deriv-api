@@ -1792,7 +1792,7 @@ sub notify_resubmission_of_poi_poa_documents {
     );
     BOM::Platform::Context::request($req);
 
-    my $email_subject = 'Please update your Deriv or Binary account details';
+    my $email_subject = 'We couldn\'t verify your account';
     my $email_data    = {
         name           => $client->first_name,
         poi_remark     => $poi_selection,
