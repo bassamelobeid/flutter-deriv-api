@@ -31,6 +31,7 @@ table tr.selected {
             <th>status</th>
             <th>creation_date</th>
             <th>error_date</th>
+            <th>error_text</th>
             <th>remark</th>
             <th>approved_by</th>
         </tr>
@@ -46,6 +47,7 @@ table tr.selected {
                 <td>[% error_withdrawals.$txn.status %]</td>
                 <td>[% error_withdrawals.$txn.creation_date %]</td>
                 <td>[% error_withdrawals.$txn.error_date %]</td>
+                <td>[% error_withdrawals.$txn.error_text %]</td>
                 <td>[% error_withdrawals.$txn.remark %]</td>
                 <td>[% error_withdrawals.$txn.approved_by %]</td>
             </tr>
