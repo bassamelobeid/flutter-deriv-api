@@ -5,8 +5,6 @@ use warnings;
 use Test::Most;
 use Test::Exception;
 use Test::Warnings qw(warnings);
-use Test::MockModule;
-use Test::MockObject;
 
 use Log::Any::Adapter qw(TAP);
 
@@ -14,7 +12,6 @@ use Time::HiRes;
 use YAML::XS;
 use RedisDB;
 use IO::Async::Loop;
-use Future;
 
 my (%stats, %tags);
 
@@ -75,8 +72,6 @@ subtest 'normal flow' => sub {
     is($redis->llen('pricer_jobs'),            @keys,                            'keys added to pricer_jobs queue');
     is($stats{'pricer_daemon.queue.overflow'}, 0,                                'zero overflow reported in statd');
     is($stats{'pricer_daemon.queue.size'},     @keys,                            'keys waiting for processing in statsd');
-    is($stats{'pricer_daemon.queue.bid.size'}, 1,                                'Correct number of bids');
-    is($stats{'pricer_daemon.queue.ask.size'}, 2,                                'Correct number of asks');
     is((keys %tags)[0],                        "tag:@{[ $queue->internal_ip ]}", 'internal ip recorded as tag');
 
     like $redis->lrange('pricer_jobs', -1, -1)->[0], qr/"contract_id"/, 'bid contract is the first to rpop for being processed';
@@ -129,28 +124,6 @@ subtest 'sleeping to next interval' => sub {
             );
         }
     }
-};
-
-subtest 'Pushing jobs to a queue' => sub {
-    my $fake_redis = Test::MockObject->new();
-    $fake_redis->set_always(llen => Future->done(0));
-    $fake_redis->set_always(del  => Future->done(1));
-    $fake_redis->set_series(scan => (Future->done([1, [q{"price_daemon_cmd","ask"}]]), Future->done([0, [q{"price_daemon_cmd","bid"}]]),));
-
-    my @results;
-    $fake_redis->mock(
-        lpush => sub {
-            push @results, $_[2];
-            return Future->done(1);
-        });
-
-    my $mock = Test::MockModule->new('BOM::Pricing::Queue');
-    $mock->mock(redis => $fake_redis);
-
-    $queue->process->get;
-
-    like $results[0], qr/bid/, 'First element in the queue should be bid';
-    like $results[1], qr/ask/, 'Second element in the queue should be ask';
 };
 
 done_testing;
