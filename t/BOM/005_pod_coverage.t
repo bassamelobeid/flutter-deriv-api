@@ -11,7 +11,7 @@ use Test::Pod::CoverageChange;
 my $allowed_naked_packages = {
     'BOM::Database::AuthDB' => 1,
     'BOM::Database::QuantsConfig' => 10,
-    'BOM::Database::ClientDB' => 9,
+    'BOM::Database::ClientDB' => 5,
     'BOM::Database::UserDB' => 1,
     'BOM::Database::Rose::DB' => 4,
     'BOM::Database::Script::GenerateRoseClasses' => 5,
@@ -33,7 +33,7 @@ my $allowed_naked_packages = {
     'BOM::Database::Helper::RejectedTrade' => 1,
     'BOM::Database::Helper::QuestionsAnswered' => 1,
     'BOM::Database::Helper::FinancialMarketBet' => 7,
-    'BOM::Database::DataMapper::Transaction' => 8,
+    'BOM::Database::DataMapper::Transaction' => 7,
     'BOM::Database::DataMapper::Base' => 2,
     'BOM::Database::DataMapper::CollectorReporting' => 5,
     'BOM::Database::DataMapper::Payment' => 1,
