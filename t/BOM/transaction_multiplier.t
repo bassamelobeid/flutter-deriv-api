@@ -696,7 +696,7 @@ subtest 'buy multiplier for forex major pair' => sub {
 
         my $error = $txn->buy;
         ok $error, 'buy failed with error';
-        is $error->{-mesg}, 'multiplier out of range', 'message - multiplier out of range';
+        is $error->{-mesg}, 'stop out level undefined for multiplier', 'message - stop out level undefined for multiplier';
         is $error->{-message_to_client}, 'Multiplier is not in acceptable range. Accepts 20,30,50,100,200.',
             'message to client - Multiplier is not in acceptable range. Accepts 100,200,300,500,1000.';
 
@@ -1140,7 +1140,7 @@ subtest 'buy multiplier with MF' => sub {
     my $error = $txn->buy;
     ok $error, 'forex buy failed with multiplier out of range';
     is $error->{'-type'},              'InvalidtoBuy',                                       'InvalidtoBuy';
-    is $error->{'-mesg'},              'multiplier out of range',                            'multiplier out of range';
+    is $error->{'-mesg'},              'stop out level undefined for multiplier',            'stop out level undefined for multiplier';
     is $error->{'-message_to_client'}, 'Multiplier is not in acceptable range. Accepts 30.', 'multiplier out of range';
 
     $contract = produce_contract({
@@ -1195,6 +1195,113 @@ subtest 'buy multiplier with MF' => sub {
     is $error->{'-mesg'},              'multiplier config undefined for R_100',  'symbol is not allowed for client';
     is $error->{'-message_to_client'}, 'Trading is not offered for this asset.', 'trading not available';
     Test::Warnings::allow_warnings(0);
+};
+
+subtest 'buy multiplier on crash/boom with VRTC' => sub {
+    my $vr = create_client('VRTC');
+    top_up $vr, 'USD', 5000;
+
+    my $contract_args = {
+        underlying   => 'CRASH1000',
+        bet_type     => 'MULTUP',
+        currency     => 'USD',
+        multiplier   => 10,
+        amount       => 100,
+        amount_type  => 'stake',
+        current_tick => $current_tick,
+    };
+    my $contract = produce_contract($contract_args);
+
+    my $txn = BOM::Transaction->new({
+        client        => $vr,
+        contract      => $contract,
+        price         => 100,
+        amount        => 100,
+        amount_type   => 'stake',
+        source        => 19,
+        purchase_date => $contract->date_start,
+    });
+
+    my $error = $txn->buy;
+    is $error->{'-type'}, 'InvalidtoBuy',                            'Invalid to buy when multiplier is out of range';
+    is $error->{'-mesg'}, 'stop out level undefined for multiplier', 'stop out level undefined for multiplier';
+    is $error->{'-message_to_client'}, 'Multiplier is not in acceptable range. Accepts 100,200,300,400.', 'message to client';
+
+    $contract_args->{multiplier} = 100;
+    $contract = produce_contract($contract_args);
+
+    $txn = BOM::Transaction->new({
+        client        => $vr,
+        contract      => $contract,
+        price         => 100,
+        amount        => 100,
+        amount_type   => 'stake',
+        source        => 19,
+        purchase_date => $contract->date_start,
+    });
+
+    ok !$txn->buy, 'buy successful';
+
+    $contract_args->{underlying} = 'BOOM1000';
+    $contract = produce_contract($contract_args);
+
+    $txn = BOM::Transaction->new({
+        client        => $vr,
+        contract      => $contract,
+        price         => 100,
+        amount        => 100,
+        amount_type   => 'stake',
+        source        => 19,
+        purchase_date => $contract->date_start,
+    });
+
+    ok !$txn->buy, 'buy successful';
+};
+
+subtest 'buy multiplier on step index with VRTC' => sub {
+    my $vr = create_client('VRTC');
+    top_up $vr, 'USD', 5000;
+
+    my $contract_args = {
+        underlying   => 'stpRNG',
+        bet_type     => 'MULTUP',
+        currency     => 'USD',
+        multiplier   => 100,
+        amount       => 100,
+        amount_type  => 'stake',
+        current_tick => $current_tick,
+    };
+    my $contract = produce_contract($contract_args);
+
+    my $txn = BOM::Transaction->new({
+        client        => $vr,
+        contract      => $contract,
+        price         => 100,
+        amount        => 100,
+        amount_type   => 'stake',
+        source        => 19,
+        purchase_date => $contract->date_start,
+    });
+
+    my $error = $txn->buy;
+    is $error->{'-type'}, 'InvalidtoBuy',                            'Invalid to buy when multiplier is out of range';
+    is $error->{'-mesg'}, 'stop out level undefined for multiplier', 'stop out level undefined for multiplier';
+    is $error->{'-message_to_client'}, 'Multiplier is not in acceptable range. Accepts 500,1000,2000,3000,4000.', 'message to client';
+
+    $contract_args->{multiplier} = 500;
+    $contract = produce_contract($contract_args);
+
+    $txn = BOM::Transaction->new({
+        client        => $vr,
+        contract      => $contract,
+        price         => 100,
+        amount        => 100,
+        amount_type   => 'stake',
+        source        => 19,
+        purchase_date => $contract->date_start,
+    });
+
+    ok !$txn->buy, 'buy successful';
 };
 
 done_testing();
