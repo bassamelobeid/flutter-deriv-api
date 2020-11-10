@@ -43,7 +43,7 @@
                "pip" : {
                   "type" : "number",
                   "minimum": 0.00001,
-                  "maximum": 0.01
+                  "maximum": 0.1
                },
                "display_name" : {
                   "type" : "string"
