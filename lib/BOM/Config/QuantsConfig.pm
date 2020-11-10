@@ -24,7 +24,7 @@ BOM::Config::QuantsConfig - A class to handle dynamic quants config
 
 use Date::Utility;
 use LandingCompany::Registry;
-use List::Util qw(first);
+use List::Util qw(first all);
 use Scalar::Util qw(looks_like_number);
 use Finance::Contract::Category;
 use Syntax::Keyword::Try;
@@ -58,8 +58,14 @@ save config into quants_config namespace.
 sub save_config {
     my ($self, $config_type, $args) = @_;
 
-    my $method = '_' . $config_type;
-    my $config = $self->can($method) ? $self->$method($args) : $args;
+    my $config;
+    if ($config_type =~ /commission/) {
+        $config = $self->_process_commission_config($args);
+    } elsif ($config_type =~ /multiplier_config/) {
+        $config = $self->_process_multiplier_config($args);
+    } else {
+        die "unregconized config type [$config_type]";
+    }
 
     $self->chronicle_writer->set(CONFIG_NAMESPACE, $config_type, $config, $self->recorded_date);
 
@@ -67,7 +73,7 @@ sub save_config {
     return $config;
 }
 
-sub _commission {
+sub _process_commission_config {
     my ($self, $args) = @_;
 
     my %args            = %$args;
@@ -115,6 +121,21 @@ sub _commission {
     $self->_cleanup($existing_config);
 
     return $existing_config;
+}
+
+sub _process_multiplier_config {
+    my ($self, $args) = @_;
+
+    my $multiplier_range = $args->{multiplier_range};
+    my $stop_out_level   = $args->{stop_out_level};
+
+    die 'multiplier range and stop out level definition does not match'
+        unless (scalar(@$multiplier_range) == scalar(keys %$stop_out_level) && all { defined $stop_out_level->{$_} } @$multiplier_range);
+
+    die 'stop out level is out of range. Allowable range from 0 to 70'
+        if grep { $stop_out_level->{$_} < 0 || $stop_out_level->{$_} > 70 } keys %$stop_out_level;
+
+    return $args;
 }
 
 sub _cleanup {
