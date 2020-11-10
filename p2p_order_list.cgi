@@ -33,6 +33,8 @@ $input{page}  = ($input{page}  && int($input{page}) > 0)  ? int($input{page})  :
 $input{offset} = ($input{page} - 1) * $input{limit};
 
 for my $field (qw(order_id advert_id loginID status limit offset)) {
+    code_exit_BO($input{$field} . ' is not numeric')
+        if $field =~ /^(order_id|advert_id|limit|offset)$/ && $input{$field} && !looks_like_number($input{$field});
     next if $input{$field};
     undef $input{$field};
 }
