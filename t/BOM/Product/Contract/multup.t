@@ -627,13 +627,13 @@ subtest 'deal cancellation with fx' => sub {
         date_pricing => $now,
         amount_type  => 'stake',
         amount       => 100,
-        multiplier   => 10,
+        multiplier   => 50,
         currency     => 'USD',
         cancellation => '1h',
     };
     my $c = produce_contract($args);
-    is $c->ask_price,          101.1,  'ask price is 101.1';
-    is $c->cancellation_price, '1.10', 'cost of cancellation is 1.180';
+    is $c->ask_price,          105.49, 'ask price is 105.49';
+    is $c->cancellation_price, '5.49', 'cost of cancellation is 5.49';
 };
 
 subtest 'commission multiplier' => sub {
@@ -801,6 +801,7 @@ subtest 'variable deal cancellation price with variable stop out level' => sub {
     $c = produce_contract($args);
     my $c2 = $c->cancellation_price;
     ok $c1 > $c2, 'price should be lower if contract is more likely to stop out';
+    $mocked_lo->unmock_all();
 };
 
 subtest 'rollover blackout' => sub {
@@ -814,7 +815,7 @@ subtest 'rollover blackout' => sub {
             date_pricing => $non_dst,
             amount_type  => 'stake',
             amount       => 100,
-            multiplier   => 200,
+            multiplier   => 100,
             currency     => 'USD',
         };
         my $c = produce_contract($args);
@@ -822,7 +823,7 @@ subtest 'rollover blackout' => sub {
 
         BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks([100, $non_dst->epoch, 'frxUSDJPY']);
         $args->{underlying} = 'frxUSDJPY';
-        $args->{multiplier} = 200;
+        $args->{multiplier} = 100;
 
         $c = produce_contract($args);
         ok !$c->is_valid_to_buy, 'not valid to buy';
@@ -879,6 +880,185 @@ subtest 'rollover blackout' => sub {
         };
         my $c = produce_contract($args);
         ok $c->is_valid_to_sell, 'valid to sell during blackout for forex ';
+    };
+};
+
+subtest 'deal cancellation on crash/boom' => sub {
+    my $now = Date::Utility->new;
+    BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks([101.02, $now->epoch, 'CRASH1000']);
+    my $args = {
+        bet_type     => 'MULTUP',
+        underlying   => 'CRASH1000',
+        date_start   => $now,
+        date_pricing => $now,
+        amount_type  => 'stake',
+        amount       => 100,
+        multiplier   => 200,
+        currency     => 'USD',
+    };
+    my $c = produce_contract($args);
+    ok $c->is_valid_to_buy, 'valid to buy';
+
+    $args->{multiplier} = 10;
+    $c = produce_contract($args);
+    ok !$c->is_valid_to_buy, 'invalid to buy';
+    is $c->primary_validation_error->message, 'multiplier out of range', 'multiplier out of range';
+    is $c->primary_validation_error->message_to_client->[0], 'Multiplier is not in acceptable range. Accepts [_1].',
+        'message to client - Multiplier is not in acceptable range. Accepts [_1].';
+
+    $args->{multiplier}   = 100;
+    $args->{cancellation} = '1h';
+    $c                    = produce_contract($args);
+    ok !$c->is_valid_to_buy, 'invalid to buy';
+    is $c->primary_validation_error->message, 'deal cancellation not available', 'deal cancellation not available';
+    is $c->primary_validation_error->message_to_client, 'Deal cancellation is not available for this asset.',
+        'message to client - Deal cancellation is not available for this asset.';
+
+    delete $args->{cancellation};
+    $args->{underlying} = 'BOOM1000';
+    BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks([101.02, $now->epoch, 'BOOM1000']);
+    $args->{multiplier} = 10;
+    $c = produce_contract($args);
+    ok !$c->is_valid_to_buy, 'invalid to buy';
+    is $c->primary_validation_error->message, 'multiplier out of range', 'multiplier out of range';
+    is $c->primary_validation_error->message_to_client->[0], 'Multiplier is not in acceptable range. Accepts [_1].',
+        'message to client - Multiplier is not in acceptable range. Accepts [_1].';
+
+    $args->{multiplier}   = 100;
+    $args->{cancellation} = '1h';
+    $c                    = produce_contract($args);
+    ok !$c->is_valid_to_buy, 'invalid to buy';
+    is $c->primary_validation_error->message, 'deal cancellation not available', 'deal cancellation not available';
+    is $c->primary_validation_error->message_to_client, 'Deal cancellation is not available for this asset.',
+        'message to client - Deal cancellation is not available for this asset.';
+};
+
+subtest 'deal cancellation on step index' => sub {
+    my $now = Date::Utility->new;
+    BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks([101.02, $now->epoch, 'stpRNG']);
+    my $args = {
+        bet_type     => 'MULTUP',
+        underlying   => 'stpRNG',
+        date_start   => $now,
+        date_pricing => $now,
+        amount_type  => 'stake',
+        amount       => 100,
+        multiplier   => 500,
+        currency     => 'USD',
+    };
+    my $c = produce_contract($args);
+    ok $c->is_valid_to_buy, 'valid to buy';
+
+    $args->{multiplier} = 10;
+    $c = produce_contract($args);
+    ok !$c->is_valid_to_buy, 'invalid to buy';
+    is $c->primary_validation_error->message, 'multiplier out of range', 'multiplier out of range';
+    is $c->primary_validation_error->message_to_client->[0], 'Multiplier is not in acceptable range. Accepts [_1].',
+        'message to client - Multiplier is not in acceptable range. Accepts [_1].';
+
+    $args->{multiplier}   = 500;
+    $args->{cancellation} = '1h';
+    $c                    = produce_contract($args);
+    ok !$c->is_valid_to_buy, 'invalid to buy';
+    is $c->primary_validation_error->message, 'deal cancellation not available', 'deal cancellation not available';
+    is $c->primary_validation_error->message_to_client, 'Deal cancellation is not available for this asset.',
+        'message to client - Deal cancellation is not available for this asset.';
+
+    delete $args->{cancellation};
+    BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks([101.02, $now->epoch, 'stpRNG']);
+    $args->{multiplier} = 10;
+    $c = produce_contract($args);
+    ok !$c->is_valid_to_buy, 'invalid to buy';
+    is $c->primary_validation_error->message, 'multiplier out of range', 'multiplier out of range';
+    is $c->primary_validation_error->message_to_client->[0], 'Multiplier is not in acceptable range. Accepts [_1].',
+        'message to client - Multiplier is not in acceptable range. Accepts [_1].';
+
+    $args->{multiplier}   = 500;
+    $args->{cancellation} = '1h';
+    $c                    = produce_contract($args);
+    ok !$c->is_valid_to_buy, 'invalid to buy';
+    is $c->primary_validation_error->message, 'deal cancellation not available', 'deal cancellation not available';
+    is $c->primary_validation_error->message_to_client, 'Deal cancellation is not available for this asset.',
+        'message to client - Deal cancellation is not available for this asset.';
+};
+
+subtest 'variable stop out for crash/boom indices' => sub {
+    # commission mocked to zero for easier verification
+    $mocked->mock('commission',        sub { return 0 });
+    $mocked->mock('commission_amount', sub { return 0 });
+
+    subtest 'stop out level check' => sub {
+        my $now = Date::Utility->new;
+        BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks([100, $now->epoch, 'CRASH1000']);
+        my $args = {
+            bet_type     => 'MULTUP',
+            underlying   => 'CRASH1000',
+            date_start   => $now,
+            date_pricing => $now,
+            amount_type  => 'stake',
+            amount       => 100,
+            multiplier   => 100,
+            currency     => 'USD',
+        };
+        my $c = produce_contract($args);
+        ok $c->is_valid_to_buy, 'valid to buy';
+        is $c->stop_out_level, 10, 'stop out level 10 for multiplier 100';
+        is $c->stop_out->barrier_value, "99.100", 'stop out barrie value 99.100';
+
+        $args->{multiplier} = 200;
+        $c = produce_contract($args);
+        ok $c->is_valid_to_buy, 'valid to buy';
+        is $c->stop_out_level, 20, 'stop out level 20 for multiplier 200';
+        is $c->stop_out->barrier_value, "99.600", 'stop out barrie value 99.600';
+
+        $args->{multiplier} = 300;
+        $c = produce_contract($args);
+        ok $c->is_valid_to_buy, 'valid to buy';
+        is $c->stop_out_level, 30, 'stop out level 30 for multiplier 300';
+        is $c->stop_out->barrier_value, "99.767", 'stop out barrie value 99.767';
+
+        $args->{multiplier} = 400;
+        $c = produce_contract($args);
+        ok $c->is_valid_to_buy, 'valid to buy';
+        is $c->stop_out_level, 50, 'stop out level 50 for multiplier 400';
+        is $c->stop_out->barrier_value, "99.875", 'stop out barrie value 99.875';
+    };
+
+    subtest 'stop out breached' => sub {
+        my $now = Date::Utility->new;
+        BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks([100, $now->epoch, 'CRASH1000'], [99.05, $now->epoch + 1, 'CRASH1000']);
+        my $args = {
+            bet_type     => 'MULTUP',
+            underlying   => 'CRASH1000',
+            date_start   => $now,
+            date_pricing => $now->epoch + 1,
+            amount_type  => 'stake',
+            amount       => 100,
+            multiplier   => 100,
+            currency     => 'USD',
+            limit_order  => {
+                stop_out => {
+                    order_type   => 'stop_out',
+                    order_amount => -90,
+                    order_date   => $now->epoch,
+                    basis_spot   => '100.00',
+                }
+            },
+        };
+        my $c = produce_contract($args);
+        is $c->stop_out_level, 10, 'stop out level 10 for multiplier 100';
+        is $c->stop_out->barrier_value, "99.100", 'stop out barrie value 99.100';
+        ok $c->is_expired, 'expired';
+        is $c->hit_type,   'stop_out';
+        is $c->value,      '5.00', 'contract value 5.00';
+
+        BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks([100, $now->epoch, 'CRASH1000'], [98.9, $now->epoch + 1, 'CRASH1000']);
+        $c = produce_contract($args);
+        is $c->stop_out_level, 10, 'stop out level 10 for multiplier 100';
+        is $c->stop_out->barrier_value, "99.100", 'stop out barrie value 99.100';
+        ok $c->is_expired, 'expired';
+        is $c->hit_type,   'stop_out';
+        is $c->value,      '0.00', 'contract value 0. Does not lose more than stake';
     };
 };
 

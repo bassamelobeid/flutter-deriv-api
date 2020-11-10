@@ -285,12 +285,12 @@ subtest 'deal cancellation with fx' => sub {
         date_pricing => $now,
         amount_type  => 'stake',
         amount       => 100,
-        multiplier   => 10,
+        multiplier   => 50,
         currency     => 'USD',
         cancellation => '1h',
     };
     my $c = produce_contract($args);
-    is $c->ask_price, 101.1, 'ask price is 101.1';
-    is $c->cancellation_price , '1.10', 'cost of cancellation is 1.1';
+    is $c->ask_price, 105.49, 'ask price is 101.1';
+    is $c->cancellation_price , '5.49', 'cost of cancellation is 1.1';
 };
 done_testing();

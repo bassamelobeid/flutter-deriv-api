@@ -15,6 +15,22 @@ use BOM::Config::Chronicle;
 
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
+use Test::MockModule;
+
+my $mock = Test::MockModule->new('BOM::Config::QuantsConfig');
+$mock->mock(
+    'save_config',
+    sub {
+        my ($self, $config_type, $args) = @_;
+
+        my $method = '_' . $config_type;
+        my $config = $self->can($method) ? $self->$method($args) : $args;
+
+        $self->chronicle_writer->set('quants_config', $config_type, $config, $self->recorded_date);
+
+        return $config->{$args->{name}} if $args->{name};
+        return $config;
+    });
 
 my $now = Date::Utility->new('2020-06-10');
 

@@ -1262,7 +1262,7 @@ subtest 'sell back validation for volatility indices' => sub {
     });
 
     foreach my $contract_type (qw(CALLE PUTE CALL PUT ONETOUCH NOTOUCH)) {
-        foreach my $symbol ($o->query({market => 'synthetic_index'}, ['underlying_symbol'])) {
+        foreach my $symbol ($o->query({market => 'synthetic_index', submarket => 'random_index'}, ['underlying_symbol'])) {
             my $tick = Postgres::FeedDB::Spot::Tick->new({
                 underlying => $symbol,
                 epoch      => $date_pricing->epoch,

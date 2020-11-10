@@ -228,7 +228,7 @@ sub _build_stop_out {
 
     # If it is a new contract, construct stop_out using configs from backoffice
     if ($self->pricing_new) {
-        my $stop_out_percentage = $self->_multiplier_config->{stop_out_level};
+        my $stop_out_percentage = $self->stop_out_level;
         my $order_amount        = financialrounding('price', $self->currency, (1 - $stop_out_percentage / 100) * $self->_user_input_stake);
 
         return $self->new_order({stop_out => $order_amount});
@@ -808,7 +808,25 @@ sub cancellation_price {
 sub stop_out_level {
     my $self = shift;
 
-    return $self->_multiplier_config->{stop_out_level};
+    my $stop_out_config = $self->_multiplier_config->{stop_out_level};
+
+    # Historically stop_out_level is just an integer. We need to introduce stop_out_level for each multiplier when we introduce crash/boom indices
+    # on multiplier
+    return $stop_out_config unless ref $stop_out_config;
+    my $level = $stop_out_config->{$self->multiplier};
+
+    unless (defined $level) {
+        my $available_multiplier = $self->_multiplier_config->{multiplier_range};
+        $self->_add_error({
+            message           => 'stop out level undefined for multiplier',
+            message_to_client => [$ERROR_MAPPING->{MultiplierOutOfRange}, join(',', @$available_multiplier)],
+            details           => {field => 'multiplier'},
+        });
+
+        return 0;
+    }
+
+    return $level;
 }
 
 ### PRIVATE METHODS ###
@@ -870,6 +888,15 @@ sub _validate_cancellation {
     }
 
     return unless $self->cancellation;
+
+    # deal cancellation is not offered to crash/boom and step indices.
+    if ($self->underlying->submarket->name eq 'crash_index' or $self->underlying->submarket->name eq 'step_index') {
+        return {
+            message           => 'deal cancellation not available',
+            message_to_client => $ERROR_MAPPING->{DealCancellationNotAvailable},
+            details           => {field => 'cancellation'},
+        };
+    }
 
     my $available_range       = $self->_multiplier_config->{cancellation_duration_range};
     my $cancellation_interval = Time::Duration::Concise->new(interval => $self->cancellation);

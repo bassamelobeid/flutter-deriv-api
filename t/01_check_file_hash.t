@@ -68,11 +68,11 @@ my %file_details = (
     },
     multup => {
         filename => module_path('BOM::Product::Contract::Multup'),
-        hash     => '51a5934d9d2337566fb40318fe1fd7824a445462'
+        hash     => '94b90c4ba5fcd4c7f5cb3cbd227d281737e2ec2f'
     },
     multdown => {
         filename => module_path('BOM::Product::Contract::Multdown'),
-        hash     => 'bd03929485d00041e936fd243daa471975f5a862'
+        hash     => '14b58bb235111966bcf3beffc6939c743db8e891'
     });
 
 foreach my $entry (keys %file_details) {

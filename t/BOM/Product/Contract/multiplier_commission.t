@@ -42,6 +42,11 @@ subtest 'commission for underlying' => sub {
         'frxAUDJPY' => [20,  0.0003],
         'frxEURCHF' => [20,  0.00025],
         'frxUSDCAD' => [50,  0.0002],
+        CRASH1000   => [100, 0.00025],
+        CRASH500    => [100, 0.00025],
+        BOOM1000    => [100, 0.00025],
+        BOOM500     => [100, 0.00025],
+        stpRNG      => [500, 0.00001],
     );
     # fixed time because commission for forex is a function of spread seasonality and economic events
     my $now  = Date::Utility->new('2020-06-10');

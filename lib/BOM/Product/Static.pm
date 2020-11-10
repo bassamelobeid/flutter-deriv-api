@@ -140,6 +140,7 @@ my $config = {
         InvalidDealCancellation           => 'Deal cancellation is not offered at this duration.',
         DealCancellationBlackout          => 'Deal cancellation is not available from [_1] to [_2].',
         DealCancellationPurchaseSuspended => 'Deal cancellation is not available at this moment.',
+        DealCancellationNotAvailable      => 'Deal cancellation is not available for this asset.',
     },
     generic => {
         # use it audit details
