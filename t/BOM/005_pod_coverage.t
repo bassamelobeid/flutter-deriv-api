@@ -18,7 +18,7 @@ my $allowed_naked_packages = {
     'BOM::MyAffiliates::PaymentToAccountManager'   => 8,
     'BOM::MyAffiliates::TurnoverReporter'          => 3,
     'BOM::MyAffiliates::MultiplierReporter'        => 4,
-    'BOM::MyAffiliatesApp::Controller'             => 5,
+    'BOM::MyAffiliatesApp::Controller'             => 6,
 };
 
 Test::Pod::CoverageChange::pod_coverage_syntax_ok('lib', $allowed_naked_packages);
