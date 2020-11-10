@@ -30,6 +30,7 @@
                   <option value="get_transaction">Get transaction info</option>
                   <option value="list_receivedby_address">List receivedbyaddress</option>
                   <option value="get_estimate_smartfee">Estimate smart fee</option>
+                  <option value="calculate_withdrawal_fee">Calculate withdrawal fee</option>
                 </select>
             </td>
         </tr>
@@ -127,6 +128,24 @@
         </table>
         <p><b>*Defaults to 3 confirmations if no confirmation is specified</b></p>
     </div>
+    
+    <!--calculate withdrawal fee-->
+    <div class="crypto_func invisible" id = "calculate_withdrawal_fee">
+        <hr>
+        <table>
+            <th colspan=3>Calculate withdrawal fee</th>
+            <tr>
+                <th>Withdraw_to address</th>
+                <td><input type=text name='withdraw_to_address'/></td>
+                <td rowspan=2><button type=submit name='req_type' value='calculate_withdrawal_fee'/>Calculate</button></td>
+            </tr>
+            <tr>
+                <th>Amount</th>
+                <td><input type=number step=any name='withdrawal_amount'/></td>
+            </tr>
+        </table>
+    </div>
+
 
 </form>
 
