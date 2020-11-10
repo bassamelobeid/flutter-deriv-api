@@ -16,7 +16,7 @@ my $allowed_naked_packages = {
     'BOM::Config::Chronicle'              => 3,
     'BOM::Config::Quants'                 => 6,
     'BOM::Config::CurrencyConfig'         => 2,
-    'BOM::Config::QuantsConfig'           => 6,
+    'BOM::Config::QuantsConfig'           => 7,
 };
 
 Test::Pod::CoverageChange::pod_coverage_syntax_ok('lib', $allowed_naked_packages);
