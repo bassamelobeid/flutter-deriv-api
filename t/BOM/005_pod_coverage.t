@@ -13,7 +13,6 @@ my $allowed_naked_packages = {
     'BOM::OAuth::O'            => 12,
     'BOM::OAuth::OneAll'       => 4,
     'BOM::OAuth::SingleSignOn' => 5,
-    'BOM::OAuth::Helper'       => 1,
 };
 
 my $ignored_packages = ['BOM::OAuth::SingleSignOn',];
