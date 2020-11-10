@@ -4,4 +4,8 @@
 - regentmarkets/bom-config
 - regentmarkets/bom-platform
 - regentmarkets/perl-postgres-feeddb
+- regentmarkets/bom-postgres-feeddb
+- regentmarkets/bom-postgres-userdb
+- regentmarkets/bom-postgres-clientdb
+- regentmarkets/bom-postgres-collectordb
 - binary-com/translations-websockets-api
