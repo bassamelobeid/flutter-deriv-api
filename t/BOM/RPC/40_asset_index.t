@@ -20,7 +20,7 @@ my $client_mlt = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
 my ($token_mlt) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $client_mlt->loginid);
 
 use constant {
-    NUM_TOTAL_SYMBOLS      => 63,    # Total number of symbols listed in underlyings.yml
+    NUM_TOTAL_SYMBOLS      => 68,    # Total number of symbols listed in underlyings.yml
     NUM_VOLATILITY_SYMBOLS => 12,    # Total number of volatility symbols listed in underlyings.yml
 };
 
