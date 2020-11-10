@@ -23,10 +23,10 @@ my $allowed_naked_packages = {
     'BOM::RPC::v3::Contract'                => 4,
     'BOM::RPC::v3::Static'                  => 1,
     'BOM::RPC::v3::MarketData'              => 1,
-    'BOM::RPC::v3::Accounts'                => 6,
+    'BOM::RPC::v3::Accounts'                => 5,
     'BOM::RPC::v3::PortfolioManagement'     => 2,
     'BOM::RPC::v3::NewAccount'              => 6,
-    'BOM::RPC::v3::Cashier'                 => 14,
+    'BOM::RPC::v3::Cashier'                 => 13,
     'BOM::RPC::v3::Services'                => 2,
     'BOM::RPC::v3::Utility'                 => 21,
     'BOM::RPC::v3::EmailVerification'       => 1,
@@ -36,7 +36,7 @@ my $allowed_naked_packages = {
     'BOM::RPC::v3::Authorize'               => 2,
     'BOM::RPC::v3::App'                     => 2,
     'BOM::RPC::v3::MarketDiscovery'         => 1,
-    'BOM::RPC::v3::MT5::Account'            => 19,
+    'BOM::RPC::v3::MT5::Account'            => 17,
     'BOM::RPC::v3::CopyTrading::Statistics' => 1,
 };
 
