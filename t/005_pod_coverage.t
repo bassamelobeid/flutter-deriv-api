@@ -17,7 +17,7 @@ my $allowed_naked_packages = {
     'BOM::Event::Actions::CryptoSubscription' => 3,
     'BOM::Event::Actions::MyAffiliate'        => 4,
     'BOM::Event::Actions::Client'             => 26,
-    'BOM::Event::Actions::MT5'                => 3,
+    'BOM::Event::Actions::MT5'                => 2,
     'BOM::Event::Actions::CustomerStatement'  => 2,
     'BOM::Event::Services::Track'             => 6,
 };
