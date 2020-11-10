@@ -33,7 +33,7 @@ sub _db_migrations_dir {
     return '/home/git/regentmarkets/bom-postgres-feeddb/config/sql/';
 }
 
-sub _db_unit_tests { }
+sub _db_unit_tests { return '' }
 
 # TODO: change feeddb to use unittest cluster as well
 sub _build__connection_parameters {
