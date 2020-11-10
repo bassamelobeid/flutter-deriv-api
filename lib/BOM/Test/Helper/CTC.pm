@@ -106,8 +106,6 @@ sub deploy_test_contract {
     return undef unless ($currency->parent_currency // '') eq 'ETH';
 
     my $address = $currency->contract->{contract_address};
-    # avoid creating duplicate addresses in QA boxes
-    return $address if $address;
 
     my $path = "/home/git/regentmarkets/bom-test/resources/erc20_bytecode";
 
