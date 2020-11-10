@@ -42,16 +42,12 @@ if ($r->param('save_multiplier_config')) {
     try {
         my $symbol          = $r->param('symbol')          // die 'symbol is undef';
         my $landing_company = $r->param('landing_company') // die 'landing_company is undef';
-        my $stop_out_level  = $r->param('stop_out_level');
-        if ($stop_out_level > 75 or $stop_out_level < 0) {
-            die 'stop out level must be greater than or equal to 0 and less than or equal to 75';
-        }
         my $multiplier_config = {
             commission                  => $r->param('commission'),
             multiplier_range            => decode_json_utf8($r->param('multiplier_range')),
             cancellation_commission     => $r->param('cancellation_commission'),
             cancellation_duration_range => decode_json_utf8($r->param('cancellation_duration_range')),
-            stop_out_level              => $stop_out_level,
+            stop_out_level              => decode_json_utf8($r->param('stop_out_level')),
         };
         my $redis_key = join('::', 'multiplier_config', $landing_company, $symbol);
         $qc->save_config($redis_key, $multiplier_config);
@@ -275,10 +271,10 @@ if ($r->param('save_multiplier_custom_commission')) {
         underlying_symbol     => $r->param('underlying_symbol'),
         start_time            => $r->param('start_time'),
         end_time              => $r->param('end_time'),
-        min_multiplier        => $r->param('min_multiplier'),
-        max_multiplier        => $r->param('max_multiplier'),
-        commission_adjustment => $r->param('commission_adjustment'),
-        dc_commission         => $r->param('dc_commission'),
+        min_multiplier        => $r->param('min_multiplier') || undef,
+        max_multiplier        => $r->param('max_multiplier') || undef,
+        commission_adjustment => $r->param('commission_adjustment') || undef,
+        dc_commission         => $r->param('dc_commission') || undef,
     };
 
     print encode_json_utf8(_save_multiplier_custom_commission($args));

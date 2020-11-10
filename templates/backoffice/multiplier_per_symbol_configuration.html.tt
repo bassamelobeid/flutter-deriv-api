@@ -32,7 +32,7 @@
             <td><input type="text" name="multiplier_range" value="[% data.multiplier_range_json %]" data-lpignore="true" /></td>
             <td><input type="text" name="cancellation_commission" value="[% data.cancellation_commission %]" data-lpignore="true" /></td>
             <td><input type="text" name="cancellation_duration_range" value="[% data.cancellation_duration_range_json %]" data-lpignore="true" /></td>
-            <td><input type="text" name="stop_out_level" value="[% data.stop_out_level %]" data-lpignore="true" /></td>
+            <td><input type="text" name="stop_out_level" value="[% data.stop_out_level_json %]" data-lpignore="true" /></td>
             <td><button onClick="SaveMultiplierConfig('[% category %]', '[% data.symbol %]')" type="button">save</button></td>
             <td class="multiplier_config_result"></td>
         </tr>

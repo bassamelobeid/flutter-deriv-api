@@ -114,10 +114,10 @@ sub _get_existing_multiplier_config {
             map  { create_underlying($_) } sort keys %{$all_config->{$category}})
         {
             my $config = $qc->get_multiplier_config($category, $u->symbol);
-            $config->{multiplier_range_json}            = encode_json_utf8($config->{multiplier_range}) unless $config->{multiplier_range_json};
-            $config->{cancellation_duration_range_json} = encode_json_utf8($config->{cancellation_duration_range})
-                unless $config->{cancellation_duration_range_json};
-            $config->{symbol} = $u->symbol;
+            $config->{multiplier_range_json}            = encode_json_utf8($config->{multiplier_range});
+            $config->{cancellation_duration_range_json} = encode_json_utf8($config->{cancellation_duration_range});
+            $config->{stop_out_level_json}              = encode_json_utf8($config->{stop_out_level});
+            $config->{symbol}                           = $u->symbol;
             push @{$existing{$category}->{items}}, $config;
         }
     }
