@@ -183,7 +183,7 @@ sub write_transaction_line {
     my $transaction_id    = $c->request_parameters->{transaction_id};
     my $trace_id          = $c->request_parameters->{trace_id};
     my $amount            = $c->request_parameters->{amount};
-    my $payment_processor = $c->request_parameters->{payment_processor};
+    my $payment_processor = $c->request_parameters->{payment_processor} // '';
     my $payment_method    = $c->request_parameters->{payment_method};
 
     my $doughflow_datamapper = BOM::Database::DataMapper::Payment::DoughFlow->new({

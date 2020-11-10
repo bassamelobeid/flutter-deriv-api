@@ -125,7 +125,7 @@ for my $status (qw(enabled disabled)) {
             # therefore, it's easy to return 400 the second time
             is($response->code, 400, 'updating the payout to inprogress twice returns http code 400');
             like($response->content,
-                qr/Detected duplicate transaction \[DoughFlow withdrawal trace_id=$payout_info{trace_id} payment_processor=WebMonkey\] while processing request for withdrawal with trace id $payout_info{trace_id} and transaction id /
+                qr/Detected duplicate transaction \[DoughFlow withdrawal trace_id=$payout_info{trace_id} payment_method=VISA\] while processing request for withdrawal with trace id $payout_info{trace_id} and transaction id /
             );
         }
 

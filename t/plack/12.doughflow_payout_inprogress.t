@@ -99,7 +99,7 @@ subtest 'payment params' => sub {
 
     my %params = (
         trace_id          => 104,
-        payment_processor => 'Amazon',
+        payment_processor => '',
         payment_method    => 'Seashells',
     );
 
@@ -117,8 +117,11 @@ subtest 'payment params' => sub {
         where d.trace_id = $params{trace_id};/
     );
 
-    for my $k (keys %params) {
+    for my $k (qw/trace_id payment_method/) {
         like $res->{remark}, qr/$k=$params{$k}/, "$k in remark";
+    }
+
+    for my $k (keys %params) {
         is $res->{$k}, $params{$k}, "$k saved in doughflow table";
     }
 };

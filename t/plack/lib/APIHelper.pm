@@ -5,7 +5,7 @@ use warnings;
 
 use Exporter 'import';
 our @EXPORT_OK =
-    qw(request auth_request decode_json deposit withdrawal_validate create_payout update_payout balance new_client record_failed_withdrawal);
+    qw(request auth_request decode_json deposit_validate deposit withdrawal_validate create_payout update_payout balance new_client record_failed_withdrawal);
 
 use Encode;
 use FindBin qw/$Bin/;
@@ -92,24 +92,27 @@ sub decode_json {
     eval { JSON::MaybeXS->new->decode(Encode::decode_utf8($_[0])) };
 }
 
-=head2
+=head2 deposit_validate
 
-deposit and deposit_validate request helper.
+Helper for deposit_validate GET request.
+
+It takes the following named params:
+
+=over 4
+
+=item * C<loginid>, the loginid of the client
+
+=back
+
+Additional params may be provided to override the defaults.
 
 =cut
 
-sub deposit {
-    my %override    = @_;
-    my $is_validate = delete $override{'is_validate'};
-    my $url         = '/transaction/payment/doughflow/deposit';
-    $url .= '_validate' if $is_validate;
-    my $method  = $is_validate ? 'GET' : 'POST';                           # validate only support GET
-    my $headers = $is_validate ? {}    : {'Content-Type' => 'text/xml'};
-    # note.. we have declared content-type xml but we are failing to build xml into the body!
-    # These request parameters get sent as uri query strings.  That works ok for now but does not
-    # really simulate how doughflow sends requests!   TODO:  build xml into request body.
+sub deposit_validate {
+    my %override = @_;
     request(
-        $method, $url,
+        'GET',
+        '/transaction/payment/doughflow/deposit_validate',
         {
             amount            => 1,
             client_loginid    => delete $override{loginid},
@@ -117,18 +120,71 @@ sub deposit {
             currency_code     => 'USD',
             fee               => 0,
             ip_address        => '127.0.0.1',
-            payment_processor => 'WebMonkey',
+            payment_processor => '',
+            payment_method    => 'VISA',
+            trace_id          => '',
+            %override,
+        });
+}
+
+=pod
+
+=head2 deposit
+
+Helper for deposit POST request.
+
+It takes the following named params:
+
+=over 4
+
+=item * C<loginid>, the loginid of the client
+
+=back
+
+Additional params may be provided to override the defaults.
+
+=cut
+
+sub deposit {
+    my %override = @_;
+    # note.. we have declared content-type xml but we are failing to build xml into the body!
+    # These request parameters get sent as uri query strings.  That works ok for now but does not
+    # really simulate how doughflow sends requests!   TODO:  build xml into request body.
+    request(
+        'POST',
+        '/transaction/payment/doughflow/deposit',
+        {
+            amount            => 1,
+            client_loginid    => delete $override{loginid},
+            created_by        => 'derek',
+            currency_code     => 'USD',
+            fee               => 0,
+            ip_address        => '127.0.0.1',
             transaction_id    => '9876543',
-            $is_validate ? () : (trace_id => time),
+            trace_id          => time,
+            payment_processor => 'Skrill',
+            payment_method    => 'VISA',
             %override,
         },
-        $headers
+        {'Content-Type' => 'text/xml'},
     );
 }
 
 =pod
 
-withdrawal_validate request helper.
+=head2 withdrawal_validate 
+
+Helper for withdrawal_validate GET request.
+
+It takes the following named params:
+
+=over 4
+
+=item * C<loginid>, the loginid of the client
+
+=back
+
+Additional params may be provided to override the defaults.
 
 =cut
 
@@ -138,20 +194,32 @@ sub withdrawal_validate {
         'GET',
         '/transaction/payment/doughflow/withdrawal_validate',
         {
-            amount            => 1,
-            client_loginid    => delete $override{loginid},
-            created_by        => 'derek',
-            currency_code     => 'USD',
-            fee               => 0,
-            ip_address        => '127.0.0.1',
-            payment_processor => 'WebMonkey',
+            amount         => 1,
+            client_loginid => delete $override{loginid},
+            created_by     => 'derek',
+            currency_code  => 'USD',
+            fee            => 0,
+            ip_address     => '127.0.0.1',
+            payment_method => 'VISA',
             %override,
         });
 }
 
 =pod
 
-balance request helper.
+=head2 balance 
+
+Performs balance request and returns amount.
+
+It takes the following params:
+
+=over 4
+
+=item * C<loginid>, the loginid of the client
+
+=item * C<override>, optional override params as hashref
+
+=back
 
 =cut
 
@@ -173,7 +241,17 @@ sub balance {
 
 =pod
 
-create_payout request helper
+=head2 create_payout 
+
+Helper for create_payout POST request.
+
+=over 4
+
+=item * C<loginid>, the loginid of the client
+
+=back
+
+Additional params may be provided to override the defaults.
 
 =cut
 
@@ -190,7 +268,7 @@ sub create_payout {
             currency_code  => 'USD',
             trace_id       => 123,
             ip_address     => '127.0.0.1',
-            payment_method => 'WebMonkey',
+            payment_method => 'VISA',
             %override,
         },
         {'Content-Type' => 'text/xml'});
@@ -198,7 +276,17 @@ sub create_payout {
 
 =pod
 
-update_payout request helper.
+=head2 update_payout
+
+Helper for update_payout POST request.
+
+=over 4
+
+=item * C<loginid>, the loginid of the client
+
+=back
+
+Additional params may be provided to override the defaults.
 
 =cut
 
@@ -208,18 +296,20 @@ sub update_payout {
         'POST',
         '/transaction/payment/doughflow/update_payout',
         {
-            amount            => 1,
-            client_loginid    => delete $override{loginid},
-            siteid            => 1,
-            created_by        => 'derek',
-            currency_code     => 'USD',
-            trace_id          => 123,
-            ip_address        => '127.0.0.1',
-            payment_processor => 'WebMonkey',
+            amount         => 1,
+            client_loginid => delete $override{loginid},
+            siteid         => 1,
+            created_by     => 'derek',
+            currency_code  => 'USD',
+            trace_id       => 123,
+            ip_address     => '127.0.0.1',
+            payment_method => 'VISA',
             %override,
         },
         {'Content-Type' => 'text/xml'});
 }
+
+=pod
 
 =head2 record_failed_withdrawal
 
