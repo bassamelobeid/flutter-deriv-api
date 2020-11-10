@@ -9,7 +9,7 @@ use Test::Pod::CoverageChange;
 # The number of naked (undocumented) subs should never be increased in this hashref.
 
 my $allowed_naked_packages = {
-    'BOM::Platform::RiskProfile'                 => 17,
+    'BOM::Platform::RiskProfile'                 => 18,
     'BOM::Platform::Locale'                      => 1,
     'BOM::Platform::Doughflow'                   => 2,
     'BOM::Platform::Token'                       => 2,
