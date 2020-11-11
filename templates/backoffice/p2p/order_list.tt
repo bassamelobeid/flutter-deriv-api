@@ -10,7 +10,7 @@
         <label>Order Status:</label>
         <select name="status">
             <option value="">All</option>
-            [% FOREACH status IN ['pending' 'buyer-confirmed' 'completed' 'cancelled' 'blocked' 'refunded' 'timed-out']  %]
+            [% FOREACH status IN ['pending' 'buyer-confirmed' 'completed' 'cancelled' 'blocked' 'refunded' 'timed-out','disputed','dispute-completed','dispute-refunded'] %]
                 <option value="[% status %]" [% input.status == status ? 'selected' : '' %]>[% status %]</option>
             [% END %]
         </select>
@@ -27,6 +27,9 @@
     <tr><td>timed-out</td><td>Order timed out while in buyer-confirmed status</td><td>Escrow</td></tr>
     <tr><td>refunded</td><td>Order timed out while in pending status, or CS resolved timed-out order in favour of seller</td><td>Seller</td></tr>
     <tr><td>cancelled</td><td>Order cancelled by buyer while in pending status</td><td>Seller</td></tr>
+    <tr><td>disputed</td><td>Order is under dispute</td><td>Escrow</td></tr>
+    <tr><td>dispute-completed</td><td>Disputed order resolved in favour of buyer</td><td>Buyer</td></tr>
+    <tr><td>dispute-refunded</td><td>Disputed order resolved in favour of seller</td><td>Seller</td></tr>
 </table>
 
 <br />

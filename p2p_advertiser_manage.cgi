@@ -21,7 +21,8 @@ use Data::Dumper;
 my $cgi = CGI->new;
 
 PrintContentType();
-BrokerPresentation(' ');
+try { BrokerPresentation(' '); }
+catch { }
 Bar('P2P Advertiser Management');
 
 my %input  = %{request()->params};
@@ -143,8 +144,12 @@ if ($output{advertiser}) {
     $output{bands} = [map { $_->[0] } @$bands];
 
 } elsif ($input{loginID}) {
-    $output{client} = BOM::User::Client->new({loginid => $input{loginID}});
-    $output{error}  = 'Client not found' unless $output{client};
+    try {
+        local $SIG{__WARN__} = sub { };
+        $output{client} = BOM::User::Client->new({loginid => $input{loginID}});
+    } catch {
+    }
+    $output{error} = 'No such client: ' . $input{loginID} unless $output{client};
 }
 
 BOM::Backoffice::Request::template()->process(
