@@ -9,7 +9,7 @@ use warnings;
 use Test::MockTime;
 use Test::More;
 use Test::Exception;
-use Test::Deep qw(cmp_deeply);
+use Test::Deep qw(cmp_deeply cmp_bag);
 use Test::Warnings qw(warning);
 use Test::MockModule;
 use Path::Tiny;
@@ -25,25 +25,26 @@ my $email    = 'abc@binary.com';
 my $password = 'jskjd8292922';
 my $hash_pwd = BOM::User::Password::hashpw($password);
 
-my ($vr_1, $cr_1);
-my ($client_vr, $client_cr, $client_cr_new);
+sub create_client {
+    my ($broker_code) = @_;
+
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => $broker_code,
+    });
+    $client->email($email);
+    $client->save;
+
+    return ($client, $client->loginid);
+}
+
+my ($vr_1, $cr_1, $vrch_1, $ch_1);
+my ($client_vr, $client_cr, $client_cr_new, $client_vrch, $client_ch);
 lives_ok {
-    $client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'VRTC',
-    });
-    $client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-    });
+    ($client_vr, $vr_1) = create_client('VRTC');
+    ($client_cr, $cr_1) = create_client('CR');
 
-    $client_vr->email($email);
-    $client_vr->save;
-
-    $client_cr->email($email);
-    $client_cr->save;
-
-    $vr_1 = $client_vr->loginid;
-    $cr_1 = $client_cr->loginid;
-
+    ($client_vrch, $vrch_1) = create_client('VRCH');
+    ($client_ch,   $ch_1)   = create_client('CH');
 }
 'creating clients';
 
@@ -154,6 +155,21 @@ subtest 'default loginid' => sub {
             my $def_client = ($user->clients)[0];
             is $def_client, undef, 'all acc disabled, no default';
         };
+    };
+
+    subtest 'accounts from different brands' => sub {
+        $user->add_client($client_vrch);
+        $user->add_client($client_ch);
+
+        cmp_bag([$user->loginids(include_all_brands => 1)], [@loginids, $vrch_1, $ch_1], 'loginids returned for all brands');
+        cmp_bag([$user->loginids], [@loginids], 'loginids returned only for default brand');
+
+        my $mocked_request = Test::MockModule->new('BOM::Platform::Context::Request');
+        $mocked_request->mock(brand => sub { return Brands->new(name => 'champion'); });
+
+        cmp_bag([$user->loginids], [$vrch_1, $ch_1], 'loginids returned only for current brand');
+
+        $mocked_request->unmock_all();
     };
 };
 
@@ -556,7 +572,7 @@ CONF
     # at this point we have 9 rows in the queue: 2x VRTC, 4x CR, 2x MT and 1x VRCH
     my $queue = $dbh->selectall_arrayref('SELECT binary_user_id, loginid FROM q.add_loginid');
 
-    is $dbh->selectcol_arrayref('SELECT count(*) FROM q.add_loginid')->[0], 18, 'got expected number of queue entries';
+    is $dbh->selectcol_arrayref('SELECT count(*) FROM q.add_loginid')->[0], 20, 'got expected number of queue entries';
 
     BOM::User::Script::MirrorBinaryUserId::run_once $dbh;
     is $dbh->selectcol_arrayref('SELECT count(*) FROM q.add_loginid')->[0], 0, 'all queue entries processed';
