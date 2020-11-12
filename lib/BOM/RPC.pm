@@ -7,6 +7,7 @@ no indirect;
 use Syntax::Keyword::Try;
 use Scalar::Util q(blessed);
 use Time::HiRes qw();
+use Brands;
 
 use Log::Any::Adapter qw(Stderr), log_level => 'info';
 
@@ -56,8 +57,12 @@ sub set_current_context {
     my $args = {};
     $args->{country_code} = $params->{country}  if exists $params->{country};
     $args->{language}     = $params->{language} if $params->{language};
-    $args->{brand_name}   = $params->{brand}    if $params->{brand};
     $args->{source} = $params->{valid_source} // $params->{source};
+
+    $args->{brand_name} = Brands->new(
+        name   => $params->{brand},
+        app_id => $params->{source},
+    )->name;
 
     my $token_details = $params->{token_details};
     if ($token_details and exists $token_details->{loginid} and $token_details->{loginid} =~ /^(\D+)\d+$/) {

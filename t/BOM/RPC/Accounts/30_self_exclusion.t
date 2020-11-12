@@ -337,11 +337,11 @@ subtest 'get and set self_exclusion' => sub {
 
     is($c->tcall($method, $params)->{status}, 1, 'update self_exclusion ok');
     my $msg = mailbox_search(
-        email   => 'compliance@binary.com',
+        email   => 'compliance@deriv.com',
         subject => qr/Client $test_loginid set self-exclusion limits/,    # debug => 1,
     );
     ok($msg, "msg sent to marketing and compliance email");
-    is_deeply($msg->{to}, ['compliance@binary.com'], "msg sent to marketing and compliance email");
+    is_deeply($msg->{to}, ['compliance@deriv.com'], "msg sent to marketing and compliance email");
     like($msg->{body}, qr/.*Exclude from website until/s, 'email content is ok');
     ok($emitted->{self_exclude_set}, 'self_exclude_set event emitted');
 
@@ -385,7 +385,7 @@ subtest 'get and set self_exclusion' => sub {
     delete $emitted->{self_exclude_set};
     is($c->tcall($method, $params)->{status}, 1, 'update self_exclusion ok');
     $msg = mailbox_search(
-        email   => 'compliance@binary.com',
+        email   => 'compliance@deriv.com',
         subject => qr/Client $test_client_mlt_loginid set self-exclusion limits/
     );
     ok(!$msg, 'No email for MLT client limits without MT5 accounts');
@@ -429,11 +429,11 @@ subtest 'get and set self_exclusion' => sub {
     ## Verify an email was sent after opening an MT5 account, since user has
     ##  limits currently in place.
     $msg = mailbox_search(
-        email   => 'compliance@binary.com',
+        email   => 'compliance@deriv.com',
         subject => qr/Client $test_client_mlt_loginid set self-exclusion limits/
     );
     ok($msg, 'Email for MLT client limits with MT5 accounts');
-    is_deeply($msg->{to}, ['compliance@binary.com', 'x-acc@binary.com'], 'email to address ok');
+    is_deeply($msg->{to}, ['compliance@deriv.com', 'x-acc@deriv.com'], 'email to address ok');
     like($msg->{body}, qr/$mt5_loginid/, 'email content is ok');
 
     ## Set some limits again, and another email should be sent to compliance listing
@@ -441,11 +441,11 @@ subtest 'get and set self_exclusion' => sub {
     mailbox_clear();
     is($c->tcall($method, $params)->{status}, 1, 'update self_exclusion ok');
     $msg = mailbox_search(
-        email   => 'compliance@binary.com',
+        email   => 'compliance@deriv.com',
         subject => qr/Client $test_client_mlt_loginid set self-exclusion limits/
     );
     ok($msg, 'Email for MLT client limits with MT5 accounts');
-    is_deeply($msg->{to}, ['compliance@binary.com', 'x-acc@binary.com'], 'email to address ok');
+    is_deeply($msg->{to}, ['compliance@deriv.com', 'x-acc@deriv.com'], 'email to address ok');
     like($msg->{body}, qr/$mt5_loginid/, 'email content is ok');
     delete $params->{args};
     delete $emitted->{self_exclude_set};

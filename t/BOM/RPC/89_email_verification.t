@@ -8,7 +8,7 @@ use Brands;
 use Template;
 use Template::AutoFilter;
 use Test::MockModule;
-use BOM::Platform::Context qw(localize);
+use BOM::Platform::Context qw(localize request);
 use BOM::RPC::v3::Utility;
 use BOM::User;
 use BOM::User::Client;
@@ -18,7 +18,12 @@ my $website_name     = 'My website name';
 my $verification_uri = 'https://www.example.com/verify';
 my $language         = 'EN';
 my $source           = 1;
-my $brand            = Brands->new();
+my $brand            = Brands->new(name => 'binary');
+my $req              = BOM::Platform::Context::Request->new(
+    brand_name => 'binary',
+    language   => 'en'
+);
+request($req);
 
 my $user_mocked = Test::MockModule->new('BOM::User');
 $user_mocked->mock('clients', sub { bless {}, 'BOM::User::Client' });

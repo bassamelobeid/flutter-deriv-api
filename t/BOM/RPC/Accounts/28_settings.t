@@ -24,7 +24,7 @@ my $app_config  = BOM::Config::Runtime->instance->app_config;
 my $orig_config = $app_config->cgi->terms_conditions_versions;
 scope_guard { $app_config->cgi->terms_conditions_versions($orig_config) };
 my $tnc_version = 'Version 1 2020-01-01';
-$app_config->cgi->terms_conditions_versions('{ "binary": "' . $tnc_version . '" }');
+$app_config->cgi->terms_conditions_versions('{ "deriv": "' . $tnc_version . '" }');
 
 # init db
 my $email    = 'abc@binary.com';
@@ -757,11 +757,11 @@ subtest 'set settings' => sub {
     is($c->tcall($method, $params)->{status}, 1, 'update successfully');
     $subject = $test_client->loginid . ' requested for professional status';
     $msg     = mailbox_search(
-        email   => 'compliance@binary.com',
+        email   => 'compliance@deriv.com',
         subject => qr/\Q$subject\E/
     );
     ok($msg, 'send a email to client');
-    is_deeply($msg->{to}, ['compliance@binary.com'], 'email to address is ok');
+    is_deeply($msg->{to}, ['compliance@deriv.com'], 'email to address is ok');
     mailbox_clear();
 
     is(

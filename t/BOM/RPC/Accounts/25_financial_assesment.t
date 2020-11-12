@@ -251,7 +251,7 @@ subtest 'set financial assessment' => sub {
     );
 
     my $msg = mailbox_search(
-        email   => 'compliance@binary.com',
+        email   => 'compliance@deriv.com',
         subject => qr/has submitted the assessment test/
     );
     ok(!$msg, 'no email for CR submitting FA');
@@ -321,7 +321,7 @@ subtest $method => sub {
         'event args are correct';
 
     my $msg = mailbox_search(
-        email   => 'compliance@binary.com',
+        email   => 'compliance@deriv.com',
         subject => qr/assessment test details have been updated/
     );
     ok($msg, 'send a email to compliance for MF after changing financial assessment');
@@ -337,7 +337,7 @@ subtest $method => sub {
         });
 
     $msg = mailbox_search(
-        email   => 'compliance@binary.com',
+        email   => 'compliance@deriv.com',
         subject => qr/assessment test details have been updated/
     );
 

@@ -77,8 +77,8 @@ subtest 'Account opening request with an invalid email address' => sub {
     mailbox_clear();
     $params[1]->{args}->{verify_email} = 'test' . rand(999) . '.@binary.com';
     $params[1]->{args}->{type}         = 'account_opening';
-    $params[1]->{server_name}          = 'binary.com';
-    $params[1]->{link}                 = 'binary.com/some_url';
+    $params[1]->{server_name}          = 'deriv.com';
+    $params[1]->{link}                 = 'deriv.com/some_url';
 
     $rpc_ct->call_ok(@params)->has_no_system_error->has_error->error_code_is('InvalidEmail', 'If email address is invalid it should return error')
         ->error_message_is('This email address is invalid.', 'If email address is invalid it should return error_message');
@@ -96,7 +96,7 @@ subtest 'Account opening request with email does not exist' => sub {
 
     my $msg = mailbox_search(
         email   => $params[1]->{args}->{verify_email},
-        subject => qr/Verify your email address/
+        subject => qr/Verify your email address|Verify your account for Deriv/
     );
     ok $msg, 'Email sent successfully';
 };
@@ -105,15 +105,15 @@ subtest 'Account opening request with email exists' => sub {
     mailbox_clear();
     $params[1]->{args}->{verify_email} = uc $email;
     $params[1]->{args}->{type}         = 'account_opening';
-    $params[1]->{server_name}          = 'binary.com';
-    $params[1]->{link}                 = 'binary.com/some_url';
+    $params[1]->{server_name}          = 'deriv.com';
+    $params[1]->{link}                 = 'deriv.com/some_url';
 
     $rpc_ct->call_ok(@params)
         ->has_no_system_error->has_no_error->result_is_deeply($expected_result, "It always should return 1, so not to leak client's email");
 
     my $msg = mailbox_search(
         email   => lc($params[1]->{args}->{verify_email}),
-        subject => qr/Duplicate email address submitted/
+        subject => qr/Duplicate email address submitted|Unsuccessful Deriv account creation/
     );
     ok $msg, 'Email sent successfully';
 };
@@ -122,8 +122,8 @@ subtest 'Reset password for exists user' => sub {
     mailbox_clear();
     $params[1]->{args}->{verify_email} = uc $email;
     $params[1]->{args}->{type}         = 'reset_password';
-    $params[1]->{server_name}          = 'binary.com';
-    $params[1]->{link}                 = 'binary.com/some_url';
+    $params[1]->{server_name}          = 'deriv.com';
+    $params[1]->{link}                 = 'deriv.com/some_url';
 
     $rpc_ct->call_ok(@params)
         ->has_no_system_error->has_no_error->result_is_deeply($expected_result, "It always should return 1, so not to leak client's email");
@@ -138,8 +138,8 @@ subtest 'Reset password for exists user' => sub {
 subtest 'Reset password for not exists user' => sub {
     $params[1]->{args}->{verify_email} = 'not_' . $email;
     $params[1]->{args}->{type}         = 'reset_password';
-    $params[1]->{server_name}          = 'binary.com';
-    $params[1]->{link}                 = 'binary.com/some_url';
+    $params[1]->{server_name}          = 'deriv.com';
+    $params[1]->{link}                 = 'deriv.com/some_url';
 
     $rpc_ct->call_ok(@params)
         ->has_no_system_error->has_no_error->result_is_deeply($expected_result, "It always should return 1, so not to leak client's email");
@@ -236,7 +236,7 @@ subtest 'Closed account' => sub {
 
     $msg = mailbox_search(
         email   => $params[1]->{args}->{verify_email},
-        subject => qr/Duplicate email address submitted/
+        subject => qr/Duplicate email address submitted|Unsuccessful Deriv account creation/
     );
     ok $msg, 'Get the regular email when not all accounts are disabled';
 

@@ -16,6 +16,6 @@ my $server_name = 'qa20';
 is BOM::RPC::v3::Utility::website_name($server_name), 'Binaryqa20.com';
 
 $server_name = 'anynotexistqaserver';
-is BOM::RPC::v3::Utility::website_name($server_name), 'Binary.com';
+is BOM::RPC::v3::Utility::website_name($server_name), 'Deriv.com';
 
 done_testing();

@@ -808,7 +808,7 @@ subtest $method => sub {
         $result = $rpc_ct->call_ok('get_financial_assessment', {token => $auth_token_mf})->result;
         isnt(keys %$result, 0, 'MF client has financial assessment set');
         my $msg = mailbox_search(
-            email   => 'compliance@binary.com',
+            email   => 'compliance@deriv.com',
             subject => qr/\Qhas submitted the assessment test\E/
         );
         ok($msg, "Risk disclosure email received");
