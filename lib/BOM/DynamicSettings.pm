@@ -245,7 +245,6 @@ sub get_settings_by_group {
         ],
         it => [qw(
                 cgi.allowed_languages
-                cgi.terms_conditions_version
                 cgi.terms_conditions_versions
                 )
         ],
