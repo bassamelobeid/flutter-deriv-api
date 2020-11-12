@@ -339,6 +339,47 @@ sub order_expired {
     return 0;
 }
 
+=head2 chat_received
+
+A chat message received from sendbird webhook, note the webhook already checks for data validity and sanity, at this
+point we just perform the database insert and call it a day.
+
+It takes the following named params:
+
+=over 4
+
+=item C<message_id> the message id
+
+=item C<created_at> message timestamp
+
+=item C<user_id> sendbird chat user id
+
+=item C<channel> sendbird chat channel
+
+=item C<type> sendbird message type, FILE or MESG
+
+=item C<message> sendbird chat content when the message type is MESG
+
+=item C<url> url to file when the message type is FILE
+
+=back
+
+Return, the database insert result or false on exception.
+
+=cut
+
+sub chat_received {
+    my $data      = shift;
+    my @values    = @{$data}{qw(message_id created_at user_id channel type message url)};
+    my $collector = BOM::Database::ClientDB->new({broker_code => 'FOG'})->db->dbic;
+
+    return $collector->run(
+        fixup => sub {
+            $_->do(q{SELECT * FROM data_collection.p2p_chat_message_add(?::BIGINT,?::BIGINT,?::TEXT,?::TEXT,?::TEXT,?::TEXT,?::TEXT)},
+                undef, @values);
+        });
+}
+
 =head2 _track_p2p_order_event
 
 Emits p2p order events to Segment for tracking. It takes the following list of named arguments:
