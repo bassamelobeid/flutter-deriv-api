@@ -4,31 +4,43 @@ withdrawal_limits:
     currency: EUR
     limit_for_days: 3000
     lifetime_limit: 99999999
+    limit_for_days_for_authenticated: 99999999
+    lifetime_limit_for_authenticated: 99999999
   malta:                        # EUR
     for_days: 90
     currency: EUR
     limit_for_days: 2000
     lifetime_limit: 2000
+    limit_for_days_for_authenticated: 99999999
+    lifetime_limit_for_authenticated: 99999999
   maltainvest:                  # EUR
     for_days: 90
     currency: EUR
     limit_for_days: 2000
     lifetime_limit: 2000
+    limit_for_days_for_authenticated: 99999999
+    lifetime_limit_for_authenticated: 99999999
   svg:                          # Client's own currency
     for_days: 30
     currency: USD
     limit_for_days: 10000
     lifetime_limit: 10000
+    limit_for_days_for_authenticated: 99999999
+    lifetime_limit_for_authenticated: 99999999
   champion:                     # USD
     for_days: 30
     currency: USD
     limit_for_days: 10000
     lifetime_limit: 10000
-  samoa:                        # USD
+    limit_for_days_for_authenticated: 99999999
+    lifetime_limit_for_authenticated: 99999999
+  samoa:                        # BTC
     for_days: 30
-    currency: USD
-    limit_for_days: 10000
-    lifetime_limit: 10000
+    currency: BTC
+    limit_for_days: 1
+    lifetime_limit: 1
+    limit_for_days_for_authenticated: 1
+    lifetime_limit_for_authenticated: 1
 
 qualifying_payment_check_limits: # Regulatory requirement for deposit and withdrawals
   iom:
