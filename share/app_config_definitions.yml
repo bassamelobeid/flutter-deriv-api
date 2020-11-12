@@ -51,11 +51,6 @@ cgi:
       isa: ArrayRef
       default:
         - AR
-    terms_conditions_version:
-      description: "Current version for terms and conditions. Use format - Version 35 2015-01-19. WARNING: Clients from particular landing companies (IOM/Malta/Maltainvest) will be blocked from trading and accessing cashier when T&Cs are updated until they manually approve them."
-      isa: Str
-      default: "Version 1 1970-01-01"
-      global: 1
     terms_conditions_versions:
       description: "Current version for terms and conditions per brand (brand name as key, version as value). WARNING: Clients from particular landing companies (IOM/Malta/Maltainvest) will be blocked from trading and accessing cashier when T&Cs are updated until they manually approve them."
       isa: json_string
