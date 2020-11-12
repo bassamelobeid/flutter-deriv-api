@@ -67,11 +67,11 @@ BOM::Event::Actions::Client::_email_client_age_verified($test_client);
 my $msg = mailbox_search(subject => qr/Age and identity verification/);
 like($msg->{body}, qr/Dear bRaD pItT/, "Correct user in message");
 
-like($msg->{body}, qr~https://www.binary.com/en/contact.html~, "Url Added");
+like($msg->{body}, qr~https://deriv.com/contact-us~, "Url Added");
 
-like($msg->{body}, qr/Binary.com/, "Website  Added");
+like($msg->{body}, qr/Team Deriv.com/, "Website  Added");
 
-is($msg->{from}, 'no-reply@binary.com', 'Correct from Address');
+is($msg->{from}, 'no-reply@deriv.com', 'Correct from Address');
 $test_client->status->set('age_verification');
 
 mailbox_clear();
@@ -98,10 +98,11 @@ BOM::Event::Actions::Client::email_client_account_verification({loginid => $test
 
 $msg = mailbox_search(subject => qr/Account verification/);
 
-like($msg->{body}, qr/verified your account/,                  "Correct message");
-like($msg->{body}, qr~https://www.binary.com/en/contact.html~, "Url Added");
+like($msg->{body}, qr/verified your account/,        "Correct message");
+like($msg->{body}, qr~https://deriv.com/contact-us~, "Url Added");
 
-like($msg->{body}, qr/Binary.com/, "Website  Added");
+like($msg->{body}, qr/Team Deriv.com/, "Website  Added");
+
 my $args = {
     document_type     => 'proofaddress',
     document_format   => 'PNG',
@@ -1079,7 +1080,7 @@ subtest 'aml risk becomes high withdrawal_locked email CR landing company' => su
             }});
     my $subject = 'High risk status reached - pending KYC-FA - withdrawal locked accounts';
     my $msg     = mailbox_search(
-        email   => 'compliance-alerts@binary.com',
+        email   => 'compliance-alerts@deriv.com',
         subject => qr/\Q$subject\E/
     );
     ok($msg, "email received");

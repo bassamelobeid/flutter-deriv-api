@@ -224,21 +224,21 @@ subtest 'request in process' => sub {
         },
         QUEUE_NAME
     );
-    is($request->brand_name, 'binary', 'default brand name is binary');
-    is($request->language,   'EN',     'default language is EN');
+    is($request->brand_name, 'deriv', 'default brand name is deriv');
+    is($request->language,   'EN',    'default language is EN');
 
     $request = BOM::Event::Process::process({
             type    => 'get_request',
             details => {},
             context => {
-                brand_name => 'deriv',
+                brand_name => 'binary',
                 language   => 'CN'
             }
         },
         QUEUE_NAME
     );
-    is($request->brand_name, 'deriv', 'now brand name is deriv');
-    is($request->language,   'CN',    'now language is CN');
+    is($request->brand_name, 'binary', 'now brand name is binary now');
+    is($request->language,   'CN',     'now language is CN');
 
 };
 

@@ -21,7 +21,7 @@ use Locale::Codes::Country qw(country_code2code);
 use DataDog::DogStatsd::Helper;
 use Syntax::Keyword::Try;
 use Template::AutoFilter;
-use List::Util qw(any all);
+use List::Util qw(any all first);
 use List::UtilsBy qw(rev_nsort_by);
 use Future::Utils qw(fmap0);
 use Future::AsyncAwait;
@@ -223,9 +223,6 @@ $loop->add(my $services = BOM::Event::Services->new);
         return $services->redis_replicated_read();
     }
 }
-
-#load Brands object globally,
-my $BRANDS = request()->brand();
 
 =head2 document_upload
 
@@ -471,6 +468,8 @@ async sub ready_for_authentication {
 
 async sub client_verification {
     my ($args) = @_;
+    my $brand = request->brand;
+
     $log->debugf('Client verification with %s', $args);
 
     try {
@@ -484,7 +483,7 @@ async sub client_verification {
             applicant_id => $applicant_id,
         );
 
-        await _restore_request($applicant_id);
+        await _restore_request($applicant_id, $check->tags);
 
         try {
             my $result = $check->result;
@@ -501,6 +500,7 @@ async sub client_verification {
             # All our checks are tagged by login ID, we don't currently retain
             # any local mapping aside from this.
             my @tags = $check->tags->@*;
+
             my ($loginid) = grep { /^[A-Z]+[0-9]+$/ } @tags
                 or die "No login ID found in tags: @tags";
 
@@ -578,7 +578,7 @@ async sub client_verification {
                     }
                     # Age verified if report is clear and age is above minimum allowed age, otherwise send an email to notify cs
                     # Get the minimum age from the client's residence
-                    my $min_age = $BRANDS->countries_instance->minimum_age_for_country($client->residence);
+                    my $min_age = $brand->countries_instance->minimum_age_for_country($client->residence);
                     if (Date::Utility->new($first_dob)->is_before(Date::Utility->new->_minus_years($min_age))) {
                         _update_client_status(
                             client       => $client,
@@ -1173,9 +1173,7 @@ Called when a client closes their accounts, sends an email to CS and tracks the 
 sub account_closure {
     my $data = shift;
 
-    my $support_email = $BRANDS->emails('support');
-
-    _send_email_account_closure_client($data->{loginid}, $support_email);
+    _send_email_account_closure_client($data->{loginid});
 
     return BOM::Event::Services::Track::account_closure($data);
 }
@@ -1197,16 +1195,20 @@ Returns undef
 
 sub _email_client_age_verified {
     my ($client) = @_;
+    my $brand = request->brand;
 
     return unless $client->landing_company()->{actions}->{account_verified}->{email_client};
 
     return if $client->status->age_verification;
-    my $from_email   = $BRANDS->emails('no-reply');
-    my $website_name = $BRANDS->website_name;
-    my $data_tt      = {
+
+    my $from_email   = $brand->emails('no-reply');
+    my $website_name = $brand->website_name;
+
+    my $data_tt = {
         client       => $client,
         l            => \&localize,
         website_name => $website_name,
+        contact_url  => $brand->contact_url,
     };
     my $email_subject = localize("Age and identity verification");
     my $tt            = Template->new(ABSOLUTE => 1);
@@ -1247,16 +1249,19 @@ Returns undef
 
 sub email_client_account_verification {
     my ($args) = @_;
+    my $brand = request->brand;
 
     my $client = BOM::User::Client->new($args);
 
-    my $from_email   = $BRANDS->emails('no-reply');
-    my $website_name = $BRANDS->website_name;
+    my $from_email   = $brand->emails('no-reply');
+    my $website_name = $brand->website_name;
+    #TODO: set brand logo address and url
 
     my $data_tt = {
         client       => $client,
         l            => \&localize,
         website_name => $website_name,
+        contact_url  => $brand->contact_url,
     };
 
     my $email_subject = localize("Account verification");
@@ -1282,7 +1287,8 @@ sub email_client_account_verification {
 }
 
 sub _send_email_account_closure_client {
-    my ($loginid, $support_email) = @_;
+    my ($loginid) = @_;
+    my $brand = request->brand;
 
     my $client = BOM::User::Client->new({loginid => $loginid});
 
@@ -1292,16 +1298,18 @@ sub _send_email_account_closure_client {
         <p>You have requested to close your [_1] accounts. This is to confirm that all your accounts have been terminated successfully.</p>
         <p>Thank you.</p>
         Team [_1]
-        ", ucfirst BOM::Config::domain()->{default_domain});
+        ",
+        $brand->website_name,
+    );
 
     send_email({
-        from                  => $support_email,
+        from                  => $brand->emails('support'),
         to                    => $client->email,
         subject               => localize("We're sorry you're leaving"),
         message               => [$client_email_template],
         use_email_template    => 1,
         email_content_is_html => 1,
-        skip_text2html        => 1
+        skip_text2html        => 1,
     });
 
     return undef;
@@ -1309,8 +1317,9 @@ sub _send_email_account_closure_client {
 
 sub _send_email_underage_disable_account {
     my ($client) = @_;
+    my $brand = request->brand;
 
-    my $website_name  = ucfirst BOM::Config::domain()->{default_domain};
+    my $website_name  = $brand->website_name;
     my $email_subject = localize('We closed your [_1] account', $website_name);
 
     send_email({
@@ -1328,6 +1337,7 @@ sub _send_email_underage_disable_account {
 
 async sub _send_CS_email_POA_uploaded {
     my ($client) = @_;
+    my $brand = request->brand;
 
     # don't send POA notification if client is not age verified
     # POA don't make any sense if client is not age verified
@@ -1349,8 +1359,8 @@ async sub _send_CS_email_POA_uploaded {
         return if await $redis_events_read->get(ONFIDO_POI_EMAIL_NOTIFICATION_SENT_PREFIX . $client->binary_user_id);
     }
 
-    my $from_email = $BRANDS->emails('no-reply');
-    my $to_email   = $BRANDS->emails('authentications');
+    my $from_email = $brand->emails('no-reply');
+    my $to_email   = $brand->emails('authentications');
 
     Email::Stuffer->from($from_email)->to($to_email)->subject('New uploaded POA document for: ' . $client->loginid)
         ->text_body('New proof of address document was uploaded for ' . $client->loginid)->send();
@@ -1406,10 +1416,12 @@ async sub _send_email_notification_for_poa {
 }
 
 sub _send_email_onfido_check_exceeded_cs {
-    my $request_count        = shift;
-    my $system_email         = $BRANDS->emails('system');
-    my @email_recipient_list = ($BRANDS->emails('support'), $BRANDS->emails('compliance_alert'));
-    my $website_name         = $BRANDS->website_name;
+    my $request_count = shift;
+    my $brand         = request->brand;
+
+    my $system_email         = $brand->emails('system');
+    my @email_recipient_list = ($brand->emails('support'), $brand->emails('compliance_alert'));
+    my $website_name         = $brand->website_name;
     my $email_subject        = 'Onfido request count limit exceeded';
     my $email_template       = "\
         <p><b>IMPORTANT: We exceeded our Onfido authentication check request per day..</b></p>
@@ -1436,6 +1448,7 @@ Send email to CS when Onfido does not support the client's country.
 
 async sub _send_email_onfido_unsupported_country_cs {
     my ($client) = @_;
+    my $brand = request->brand;
 
     # Prevent sending multiple emails for the same user
     my $redis_key         = ONFIDO_UNSUPPORTED_COUNTRY_EMAIL_PER_USER_PREFIX . $client->binary_user_id;
@@ -1451,11 +1464,11 @@ async sub _send_email_onfido_unsupported_country_cs {
             <b>place of birth:</b> " . $client->place_of_birth . "\
             <b>residence:</b> " . $client->residence . "\
         </p>
-        Team " . $BRANDS->website_name . "\
+        Team " . $brand->website_name . "\
         ";
 
-    my $from_email = $BRANDS->emails('no-reply');
-    my $to_email   = $BRANDS->emails('authentications');
+    my $from_email = $brand->emails('no-reply');
+    my $to_email   = $brand->emails('authentications');
     my $email_status =
         Email::Stuffer->from($from_email)->to($to_email)->subject($email_subject)->html_body($email_template)->send();
 
@@ -1498,7 +1511,8 @@ NOTE: This is for MX-MLT clients only (Last updated: 1st May, 2019)
 =cut
 
 sub social_responsibility_check {
-    my $data = shift;
+    my $data  = shift;
+    my $brand = request->brand;
 
     my $loginid = $data->{loginid};
 
@@ -1555,8 +1569,8 @@ sub social_responsibility_check {
 
             my $client = BOM::User::Client->new({loginid => $loginid});
 
-            my $system_email  = $BRANDS->emails('system');
-            my $sr_email      = $BRANDS->emails('social_responsibility');
+            my $system_email  = $brand->emails('system');
+            my $sr_email      = $brand->emails('social_responsibility');
             my $email_subject = 'Social Responsibility Check required - ' . $loginid;
 
             # Client cannot trade or deposit without a financial assessment check
@@ -1769,7 +1783,7 @@ async sub _check_applicant {
             # We don't want Onfido to start emailing people
             suppress_form_emails => 1,
             # Used for reporting and filtering in the web interface
-            tags => ['automated', $broker, $loginid, $residence],
+            tags => ['automated', $broker, $loginid, $residence, 'brand:' . request->brand->name],
             # Note that there are additional report types which are not currently useful:
             # - proof_of_address - only works for UK documents
             # - street_level - involves posting a letter and requesting the user enter
@@ -1906,7 +1920,8 @@ are in page 16, in the following link: http://www.tynwald.org.im/business/opqp/s
 =cut
 
 sub qualifying_payment_check {
-    my $data = shift;
+    my $data  = shift;
+    my $brand = request->brand;
 
     my $loginid = $data->{loginid};
 
@@ -1968,8 +1983,8 @@ sub qualifying_payment_check {
             total_withdrawals      => $total_withdrawals
         };
 
-        my $system_email     = $BRANDS->emails('system');
-        my $compliance_email = $BRANDS->emails('compliance');
+        my $system_email     = $brand->emails('system');
+        my $compliance_email = $brand->emails('compliance');
         my $email_subject    = "MX - Qualifying Payment 3K Check (Loginid: $loginid)";
 
         my $tt = Template::AutoFilter->new({
@@ -2330,11 +2345,12 @@ Send email to compliance-alerts@binary.com if some clients that are set withdraw
 =cut
 
 sub aml_client_status_update {
-    my $data = shift;
+    my $data  = shift;
+    my $brand = request->brand;
 
     my $template_args   = $data->{template_args};
-    my $system_email    = $BRANDS->emails('no-reply');
-    my $to              = $BRANDS->emails('compliance_alert');
+    my $system_email    = $brand->emails('no-reply');
+    my $to              = $brand->emails('compliance_alert');
     my $landing_company = $template_args->{landing_company} // '';
     my $email_subject   = "High risk status reached - pending KYC-FA - withdrawal locked accounts (" . $landing_company . ")";
 
@@ -2393,25 +2409,34 @@ Restore request by stored context.
 
 =item * C<applicant_id> - required. used as access key
 
+=item * C<tags> - required. used to restore brand
+
 =back
 
 =cut
 
 async sub _restore_request {
-    my $applicant_id = shift;
+    my ($applicant_id, $tags) = shift;
 
     my $context_req = await _redis_replicated_read()->get(ONFIDO_APPLICANT_CONTEXT_HOLDER_KEY . $applicant_id);
+
+    my $brand = first { $_ =~ qr/^brand:/ } @$tags;
+    $brand =~ s/brand:// if $brand;
+
     if ($context_req) {
         try {
             my $context  = decode_json_utf8 $context_req;
             my %req_args = map { $_ => $context->{$_} } grep { $context->{$_} } qw(brand_name language app_id);
-            my $new_req  = BOM::Platform::Context::Request->new(%req_args);
+            my $new_req  = BOM::Platform::Context::Request->new(%req_args, $brand ? (brand_name => $brand) : ());
             request($new_req);
         } catch {
             my $e = $@;
             $log->debugf("Failed in restoring cached context ONFIDO_APPLICANT_CONTEXT_HOLDER_KEY::%s: %s", $applicant_id, $e);
             exception_logged();
         }
+    } elsif ($brand) {
+        my $new_req = BOM::Platform::Context::Request->new(brand_name => $brand);
+        request($new_req);
     }
 }
 
