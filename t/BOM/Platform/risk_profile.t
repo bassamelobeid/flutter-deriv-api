@@ -159,7 +159,11 @@ subtest 'turnover limit parameters' => sub {
     is $param->[0]->{name},  'test custom', 'correct name';
     is $param->[0]->{limit}, 0,             'turnover limit correctly set to zero';
     ok $param->[0]->{tick_expiry}, 'tick_expiry set to 1';
-    is scalar(@{$param->[0]->{symbols}}), 12, '12 symbols selected';
+    my $symbols = [
+        '1HZ100V', '1HZ10V', '1HZ25V', '1HZ50V', '1HZ75V', 'BOOM1000', 'BOOM500', 'CRASH1000', 'CRASH500', 'RDBEAR',
+        'RDBULL',  'R_10',   'R_100',  'R_25',   'R_50',   'R_75',     'stpRNG'
+    ];
+    cmp_bag $param->[0]->{symbols}, $symbols, 'correct symbols selected';
     BOM::Config::Runtime->instance->app_config->quants->custom_product_profiles(
         '{"xxx": {"market": "synthetic_index", "expiry_type": "intraday", "risk_profile": "no_business", "name": "test custom"}}');
     $rp = BOM::Platform::RiskProfile->new(%args, expiry_type => 'intraday');
@@ -169,7 +173,7 @@ subtest 'turnover limit parameters' => sub {
     is $param->[0]->{limit}, 0,             'turnover limit correctly set to zero';
     ok !$param->[0]->{daily},       'daily set to 0';
     ok !$param->[0]->{ultra_short}, 'daily set to 0';
-    is scalar(@{$param->[0]->{symbols}}), 12, '12 symbols selected';
+    cmp_bag $param->[0]->{symbols}, $symbols, 'correct symbols selected';
     BOM::Config::Runtime->instance->app_config->quants->custom_product_profiles(
         '{"xxx": {"market": "synthetic_index", "expiry_type": "daily", "risk_profile": "no_business", "name": "test custom"}}');
     $rp = BOM::Platform::RiskProfile->new(%args, expiry_type => 'daily');
@@ -178,7 +182,7 @@ subtest 'turnover limit parameters' => sub {
     is $param->[0]->{name},  'test custom', 'correct name';
     is $param->[0]->{limit}, 0,             'turnover limit correctly set to zero';
     ok $param->[0]->{daily}, 'daily set to 1';
-    is scalar(@{$param->[0]->{symbols}}), 12, '12 symbols selected';
+    cmp_bag $param->[0]->{symbols}, $symbols, 'correct symbols selected';
     BOM::Config::Runtime->instance->app_config->quants->custom_product_profiles(
         '{"xxx": {"underlying_symbol": "R_100,R_10", "expiry_type": "daily", "risk_profile": "no_business", "name": "test custom"}}');
     $rp = BOM::Platform::RiskProfile->new(%args, expiry_type => 'daily');
@@ -200,7 +204,7 @@ subtest 'turnover limit parameters' => sub {
     is $param->[0]->{limit}, 0,                         'turnover limit correctly set to zero';
     ok !$param->[0]->{daily}, 'daily set to 0';
     ok $param->[0]->{ultra_short}, 'daily set to 1';
-    is scalar(@{$param->[0]->{symbols}}), 12, '12 symbols selected';
+    cmp_bag $param->[0]->{symbols}, $symbols, 'correct symbols selected';
 };
 
 subtest 'Handling errors for companies with no offering' => sub {
@@ -379,8 +383,7 @@ subtest 'precedence' => sub {
     my $params         = $rp->get_turnover_limit_parameters;
     my $custom_profile = $params->[0];
     is $custom_profile->{limit}, 50000, '50,000 turnover limit';
-    is scalar(@{$custom_profile->{symbols}}), 1, 'only only symbol';
-    is $custom_profile->{symbols}->[0], 'frxUSDJPY', 'symbol is frxUSDJPY even if market=forex is specified';
+    cmp_bag $custom_profile->{symbols}, ['frxUSDJPY'], 'symbol is frxUSDJPY even if market=forex is specified';
 };
 
 subtest 'Zero non-binary contract limit for lookbacks' => sub {
