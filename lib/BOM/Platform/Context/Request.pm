@@ -75,8 +75,34 @@ sub param {
 }
 
 sub brand {
+    my ($self, %args) = @_;
+
+    return Brands->new(
+        name   => $self->brand_name,
+        app_id => $self->app_id,
+    );
+}
+
+sub _build_brand_name {
     my $self = shift;
-    return Brands->new(name => $self->brand_name);
+
+    if (my $brand = $self->param('brand')) {
+        return $brand->[0] if (ref($brand) eq 'ARRAY');
+        return $brand;
+    }
+
+    # if brand is missing, let the brand be picked by app_id
+    return Brands->new(app_id => $self->param('app_id'))->name if $self->param('app_id');
+
+    if (my $domain = $self->domain_name) {
+        # webtrader.champion-fx.com -> champion, visit this regex
+        # when we add new brand
+        ($domain) = ($domain =~ /\.([a-z]+).*?\./);
+        # for qa return deriv
+        return ($domain =~ /^binaryqa/ ? Brands::DEFAULT_BRAND : $domain);
+    }
+
+    return Brands::DEFAULT_BRAND;
 }
 
 =head2 login_env
@@ -172,7 +198,7 @@ sub _build_domain_name {
     if ($name =~ /^qa\d+$/) {
         return 'www.binary' . $name . '.com';
     }
-    return 'www.binary.com';
+    return 'www.' . Brands::DEFAULT_BRAND . '.com';
 }
 
 sub _build_language {
@@ -196,25 +222,6 @@ sub _build_language {
 sub _build_client_ip {
     my $self = shift;
     return ($self->_ip || '127.0.0.1');
-}
-
-sub _build_brand_name {
-    my $self = shift;
-
-    if (my $brand = $self->param('brand')) {
-        return $brand->[0] if (ref($brand) eq 'ARRAY');
-        return $brand;
-    } elsif ($self->domain_name =~ /^qa.+|binaryqa/) {
-        # for qa, return 'binary'
-        return 'binary';
-    } elsif (my $domain = $self->domain_name) {
-        # visit this regex when we add new brand
-        # webtrader.champion-fx.com -> 'champion'
-        ($domain) = ($domain =~ /\.([a-z]+).*?\./);
-        return $domain;
-    }
-
-    return "binary";
 }
 
 sub _build_app_id {

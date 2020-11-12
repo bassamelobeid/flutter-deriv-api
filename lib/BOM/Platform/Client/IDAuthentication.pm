@@ -237,10 +237,11 @@ Error is: $error
 Client: $loginid
 EOM
         send_email({
-                from    => $brand->emails('compliance'),
-                to      => $brand->emails('compliance'),
-                subject => "Experian request error for client $loginid",
-                message => [$message]});
+            from    => $brand->emails('compliance'),
+            to      => $brand->emails('compliance'),
+            subject => "Experian request error for client $loginid",
+            message => [$message],
+        });
 
         die 'Failed to contact the ProveID server';
     }
@@ -268,7 +269,8 @@ sub _request_id_authentication {
     # Allow Onfido ressubmission
     my $redis = BOM::Config::Redis::redis_replicated_write();
     $redis->set(ONFIDO_ALLOW_RESUBMISSION_KEY_PREFIX . $client->binary_user_id, 1);
-    my $client_name   = join(' ', $client->salutation, $client->first_name, $client->last_name);
+    my $client_name = join(' ', $client->salutation, $client->first_name, $client->last_name);
+
     my $brand         = request()->brand;
     my $support_email = $brand->emails('support');
     my $subject       = localize('Documents are required to verify your identity');
@@ -276,7 +278,7 @@ sub _request_id_authentication {
     # Since this is an HTML email, plain text content will be mangled badly. Instead, we use
     # Markdown syntax, since there are various converters and the plain text to HTML options
     # in Perl are somewhat limited and/or opinionated.
-    my $body = localize(<<'EOM', $client_name, $brand->website_name, "https://www.binary.com/en/user/authenticate.html");
+    my $body = localize(<<'EOM', $client_name, $brand->website_name, $brand->authentication_url);
 Dear [_1],
 
 Thank you for creating your [_2] account!
@@ -314,7 +316,8 @@ EOM
             email_content_is_html => 1,
             skip_text2html        => 1,
             template_loginid      => $client->loginid,
-        });
+        },
+    );
 }
 
 =head2 _notify_cs

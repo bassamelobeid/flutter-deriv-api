@@ -53,7 +53,7 @@ subtest 'support address' => sub {
     my @deliveries = $transport->deliveries;
     is(scalar @deliveries, 1, 'one mail sent');
     is_deeply($deliveries[-1]{successes}, ['test@test.com'], 'send email ok');
-    is $deliveries[-1]{email}->get_header('From'), '"Binary.com" <support@binary.com>', 'From is rewrote';
+    is $deliveries[-1]{email}->get_header('From'), '"Deriv.com" <support@deriv.com>', 'From is rewrote';
 
 };
 
@@ -73,7 +73,7 @@ subtest 'with template' => sub {
     my @deliveries = $transport->deliveries;
     my $email      = $deliveries[-1]{email};
     like $email->get_body, qr/line1\r\nline2/s, 'text not turn to html';
-    like $email->get_body, qr/<html>/s,         'use template';
+    like $email->get_body, qr/<html/s,          'use template';
     $args->{email_content_is_html} = 1;
     ok(send_email($args));
     @deliveries = $transport->deliveries;
@@ -84,6 +84,13 @@ subtest 'with template' => sub {
     @deliveries = $transport->deliveries;
     $email      = $deliveries[-1]{email};
     like $email->get_body, qr/line1\r\nline2/s, 'text not turn to html';
+
+    $args->{email_content_is_html} = 1;
+    $args->{message}               = ['<br/><p>asfd</p>'];
+    ok(send_email($args));
+    @deliveries = $transport->deliveries;
+    $email      = $deliveries[-1]{email};
+    like $email->get_body, qr{<br/><p>asfd</p>}s, 'html is send as html';
 
 };
 

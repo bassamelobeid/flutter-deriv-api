@@ -25,7 +25,7 @@ subtest 'params' => sub {
 };
 
 subtest 'domain_name' => sub {
-    is(BOM::Platform::Context::Request->new->domain_name, 'www.binary.com', 'default hostname is www.binary.com');
+    is(BOM::Platform::Context::Request->new->domain_name, 'www.deriv.com', 'default hostname is www.deriv.com');
     $hostname = 'qa123.com';
     is(BOM::Platform::Context::Request->new->domain_name, 'www.binaryqa123.com', 'qa hostname will be qa self');
 
@@ -34,20 +34,30 @@ subtest 'domain_name' => sub {
 subtest 'brand' => sub {
     $hostname = 'hello';
     my $request = BOM::Platform::Context::Request->new;
-    is($request->brand_name,  'binary', 'brand name (no param brand but have a random domain name) is binary');
-    is($request->brand->name, 'binary', 'brand name (no param brand but have a random domain name) is binary');
+    is($request->brand_name,  'deriv', 'brand name (no param brand but have a random domain name) is deriv');
+    is($request->brand->name, 'deriv', 'brand name (no param brand but have a random domain name) is deriv');
     $hostname = 'www.binaryqa123.com';
     $request  = BOM::Platform::Context::Request->new;
-    is($request->brand_name,  'binary', 'brand name (no param brand but have a qa domain name) is binary');
-    is($request->brand->name, 'binary', 'brand name (no param brand but have a qa domain name) is binary');
+    is($request->brand_name,  'deriv', 'brand name (no param brand but have a qa domain name) is deriv');
+    is($request->brand->name, 'deriv', 'brand name (no param brand but have a qa domain name) is deriv');
     $hostname = 'www.binary.com';
     $request  = BOM::Platform::Context::Request->new;
-    is($request->brand_name,  'binary', 'brand name (no param brand but have binary domain name) is binary');
-    is($request->brand->name, 'binary', 'brand name (no param brand but have binary domain name) is binary');
+    is($request->brand_name,  'deriv', 'brand name (no param brand but have binary domain name) is deriv');
+    is($request->brand->name, 'deriv', 'brand name (no param brand but have binary domain name) is deriv');
     my $mojo_request =
         BOM::Platform::Context::Request::from_mojo({mojo_request => mock_request_for("https://www.dummy.com", {brand => 'deriv'}, 'GET')});
     is($mojo_request->brand_name,  'deriv', 'brand name (with param brand) is param brand');
     is($mojo_request->brand->name, 'deriv', 'brand name (with param brand) is param brand');
+    
+    $mojo_request =
+        BOM::Platform::Context::Request::from_mojo({mojo_request => mock_request_for("https://www.dummy.com", {brand => 'binary'}, 'GET')});
+    is($mojo_request->brand_name,  'binary', 'brand name matches request param');
+    is($mojo_request->brand->name, 'binary', 'brand name matches request param');
+    
+    $mojo_request =
+        BOM::Platform::Context::Request::from_mojo({mojo_request => mock_request_for("https://www.dummy.com", {app_id => 1}, 'GET')});
+    is($mojo_request->brand_name,  'binary', 'brand name matches app_id param');
+    is($mojo_request->brand->name, 'binary', 'brand name matches app_id param');
 };
 
 subtest 'http method' => sub {

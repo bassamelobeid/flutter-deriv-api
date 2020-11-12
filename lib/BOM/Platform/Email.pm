@@ -145,6 +145,7 @@ sub process_send_email {
             l                     => \&localize,
             $template_args->%*,
         };
+
         $vars->{text_email_template_loginid} = localize('Your Login ID: [_1]', $template_loginid)
             if $template_loginid;
 

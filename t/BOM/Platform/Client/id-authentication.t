@@ -23,8 +23,8 @@ use BOM::Test::Helper::Client qw(create_client);
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 
 my $xml              = XML::Simple->new;
-my $support_email    = 'support@binary.com';
-my $compliance_email = 'compliance@binary.com';
+my $support_email    = 'support@deriv.com';
+my $compliance_email = 'compliance@deriv.com';
 my $password         = 'Abc123';
 my $hash_pwd         = BOM::User::Password::hashpw($password);
 
@@ -207,6 +207,10 @@ subtest 'MX accounts' => sub {
         my $base_dir        = "/home/git/regentmarkets/bom-test/data/Experian/SavedXML/";
         my @invalid_matches = ("ExperianDeceased", "ExperianOFSI", "ExperianPEP", "ExperianBOE");
 
+        is request->param('brand'),  undef, 'Brand is missing in request context';
+        is request->param('app_id'), undef, 'App_id is missing in request context';
+        is request->brand->name, 'deriv', "The default brand is deriv";
+
         for my $match (@invalid_matches) {
             subtest "$match" => sub {
                 my ($vr_client, $mx_client) =
@@ -236,8 +240,8 @@ subtest 'MX accounts' => sub {
                 $vr_client = BOM::User::Client->new({loginid => $vr_client->loginid});
                 ok $vr_client->status->unwelcome, "VR still unwelcomed";
 
-                is($emails->{$support_email}, "Account $loginid disabled following Experian results", "CS received email");
-                is($emails->{$client_email},  "Documents are required to verify your identity",       "Client received email");
+                is($emails->{$support_email}->{subject}, "Account $loginid disabled following Experian results", "CS received email");
+                is($emails->{$client_email}->{subject},  "Documents are required to verify your identity",       "Client received email");
             };
         }
     };
@@ -270,7 +274,7 @@ subtest 'MX accounts' => sub {
         $vr_client = BOM::User::Client->new({loginid => $vr_client->loginid});
         ok $vr_client->status->unwelcome, "VR still unwelcomed";
 
-        is($emails->{$client_email}, "Documents are required to verify your identity", "Client received email");
+        is($emails->{$client_email}->{subject}, "Documents are required to verify your identity", "Client received email");
     };
     subtest "Sufficient DOB, Sufficient DATA" => sub {
         my ($vr_client, $mx_client) =
@@ -364,7 +368,7 @@ subtest 'MX accounts' => sub {
             ok $v->client->status->unwelcome,         "Unwelcome due to no entry";
             ok $v->client->status->proveid_requested, "ProveID requested";
 
-            is($emails->{$client_email}, "Documents are required to verify your identity", "Client received email");
+            is($emails->{$client_email}->{subject}, "Documents are required to verify your identity", "Client received email");
         };
         subtest "Blank Response" => sub {
             my ($vr_client, $mx_client) = @{create_user_and_clients(['VRTC', 'MX'], 'mx_test_blank@binary.com', {residence => 'gb'})}{'VRTC', 'MX'};
@@ -392,7 +396,7 @@ subtest 'MX accounts' => sub {
             ok $v->client->status->unwelcome,         "Unwelcome due to no entry";
             ok $v->client->status->proveid_requested, "ProveID requested";
 
-            is($emails->{$client_email}, "Documents are required to verify your identity", "Client received email");
+            is($emails->{$client_email}->{subject}, "Documents are required to verify your identity", "Client received email");
         };
     };
     subtest "Error connecting to Experian" => sub {
@@ -421,16 +425,14 @@ subtest 'MX accounts' => sub {
         $vr_client = BOM::User::Client->new({loginid => $vr_client->loginid});
         ok $vr_client->status->unwelcome, "VR still unwelcomed";
 
-        is($emails->{$compliance_email}, "Experian request error for client $loginid", "CS received email");
+        is($emails->{$compliance_email}->{subject}, "Experian request error for client $loginid", "CS received email");
     };
 };
 
 sub _send_email {
     my $args = shift;
-    my $to   = $args->{to};
-    my $subj = $args->{subject};
 
-    $emails->{$to} = $subj;
+    $emails->{$args->{to}} = $args;
     return 1;
 }
 
