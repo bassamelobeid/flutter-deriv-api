@@ -19,7 +19,22 @@ our %MT5_ACCOUNTS = (
     'real\svg_financial'             => '00000014',
     'real\labuan_financial_stp'      => '00000015',
     'real\svg_financial_Bbook'       => '00000016',
+    'real01\synthetic\svg_std_usd'   => '00000017',
 );
+
+our %MT5_GROUP_MAPPING = (
+    'real\svg_financial_Bbook' => {
+ 'account_type' => 'real',
+  'landing_company_short' => 'svg',
+  'market_type' => 'financial',
+  'sub_account_type' => 'financial'
+    },
+    'real\svg_financial' => {
+ 'account_type' => 'real',
+  'landing_company_short' => 'svg',
+  'market_type' => 'financial',
+  'sub_account_type' => 'financial'
+    });
 
 our %ACCOUNT_DETAILS = (
     password => {
@@ -54,3 +69,621 @@ our %FINANCIAL_DATA = (
     "employment_status"                    => "Self-Employed",
     "source_of_wealth"                     => "Company Ownership",
 );
+
+our %EXPECTED_MT5_GROUP_MAPPINGS = (
+  'real01\synthetic\svg_std_usd' => {
+  'account_type' => 'real',
+  'landing_company_short' => 'svg',
+  'market_type' => 'gaming',
+  'sub_account_type' => 'financial'
+},
+'real02\synthetic\svg_std_usd' => {
+  'account_type' => 'real',
+  'landing_company_short' => 'svg',
+  'market_type' => 'gaming',
+  'sub_account_type' => 'financial'
+},
+'real01\synthetic\svg_std-hr_usd' => {
+  'account_type' => 'real',
+  'landing_company_short' => 'svg',
+  'market_type' => 'gaming',
+  'sub_account_type' => 'financial'
+},
+'real02\synthetic\svg_std-hr_usd' => {
+  'account_type' => 'real',
+  'landing_company_short' => 'svg',
+  'market_type' => 'gaming',
+  'sub_account_type' => 'financial'
+},
+'real01\synthetic\svg_sf_usd' => {
+  'account_type' => 'real',
+  'landing_company_short' => 'svg',
+  'market_type' => 'gaming',
+  'sub_account_type' => 'swap_free'
+},
+'real02\synthetic\svg_sf_usd' => {
+  'account_type' => 'real',
+  'landing_company_short' => 'svg',
+  'market_type' => 'gaming',
+  'sub_account_type' => 'swap_free'
+},
+'real01\synthetic\svg_sf-hr_usd' => {
+  'account_type' => 'real',
+  'landing_company_short' => 'svg',
+  'market_type' => 'gaming',
+  'sub_account_type' => 'swap_free'
+},
+'real02\synthetic\svg_sf-hr_usd' => {
+  'account_type' => 'real',
+  'landing_company_short' => 'svg',
+  'market_type' => 'gaming',
+  'sub_account_type' => 'swap_free'
+},
+'real01\synthetic\malta_std_eur' => {
+  'account_type' => 'real',
+  'landing_company_short' => 'malta',
+  'market_type' => 'gaming',
+  'sub_account_type' => 'financial'
+},
+'real02\synthetic\malta_std_eur' => {
+  'account_type' => 'real',
+  'landing_company_short' => 'malta',
+  'market_type' => 'gaming',
+  'sub_account_type' => 'financial'
+},
+'real01\synthetic\malta_sf_eur' => {
+  'account_type' => 'real',
+  'landing_company_short' => 'malta',
+  'market_type' => 'gaming',
+  'sub_account_type' => 'swap_free'
+},
+'real02\synthetic\malta_sf_eur' => {
+  'account_type' => 'real',
+  'landing_company_short' => 'malta',
+  'market_type' => 'gaming',
+  'sub_account_type' => 'swap_free'
+},
+'real01\synthetic\samoa_std_btc' => {
+  'account_type' => 'real',
+  'landing_company_short' => 'samoa',
+  'market_type' => 'gaming',
+  'sub_account_type' => 'financial'
+},
+'real02\synthetic\samoa_std_btc' => {
+  'account_type' => 'real',
+  'landing_company_short' => 'samoa',
+  'market_type' => 'gaming',
+  'sub_account_type' => 'financial'
+},
+'real01\synthetic\samoa_std_ust' => {
+  'account_type' => 'real',
+  'landing_company_short' => 'samoa',
+  'market_type' => 'gaming',
+  'sub_account_type' => 'financial'
+},
+'real02\synthetic\samoa_std_ust' => {
+  'account_type' => 'real',
+  'landing_company_short' => 'samoa',
+  'market_type' => 'gaming',
+  'sub_account_type' => 'financial'
+},
+'real01\financial\labuan_stp_usd' => {
+  'account_type' => 'real',
+  'landing_company_short' => 'labuan',
+  'market_type' => 'financial',
+  'sub_account_type' => 'financial_stp'
+},
+'real02\financial\labuan_stp_usd' => {
+  'account_type' => 'real',
+  'landing_company_short' => 'labuan',
+  'market_type' => 'financial',
+  'sub_account_type' => 'financial_stp'
+},
+'real01\financial\bvi_stp_usd' => {
+  'account_type' => 'real',
+  'landing_company_short' => 'bvi',
+  'market_type' => 'financial',
+  'sub_account_type' => 'financial_stp'
+},
+'real02\financial\bvi_stp_usd' => {
+  'account_type' => 'real',
+  'landing_company_short' => 'bvi',
+  'market_type' => 'financial',
+  'sub_account_type' => 'financial_stp'
+},
+'real01\financial\maltainvest_std-hr_eur' => {
+  'account_type' => 'real',
+  'landing_company_short' => 'maltainvest',
+  'market_type' => 'financial',
+  'sub_account_type' => 'financial'
+},
+'real02\financial\maltainvest_std-hr_eur' => {
+  'account_type' => 'real',
+  'landing_company_short' => 'maltainvest',
+  'market_type' => 'financial',
+  'sub_account_type' => 'financial'
+},
+'real01\financial\maltainvest_sf-hr_eur' => {
+  'account_type' => 'real',
+  'landing_company_short' => 'maltainvest',
+  'market_type' => 'financial',
+  'sub_account_type' => 'swap_free'
+},
+'real02\financial\maltainvest_sf-hr_eur' => {
+  'account_type' => 'real',
+  'landing_company_short' => 'maltainvest',
+  'market_type' => 'financial',
+  'sub_account_type' => 'swap_free'
+},
+'real01\financial\maltainvest_std-hr_gbp' => {
+  'account_type' => 'real',
+  'landing_company_short' => 'maltainvest',
+  'market_type' => 'financial',
+  'sub_account_type' => 'financial'
+},
+'real02\financial\maltainvest_std-hr_gbp' => {
+  'account_type' => 'real',
+  'landing_company_short' => 'maltainvest',
+  'market_type' => 'financial',
+  'sub_account_type' => 'financial'
+},
+'real01\financial\maltainvest_sf-hr_gbp' => {
+  'account_type' => 'real',
+  'landing_company_short' => 'maltainvest',
+  'market_type' => 'financial',
+  'sub_account_type' => 'swap_free'
+},
+'real02\financial\maltainvest_sf-hr_gbp' => {
+  'account_type' => 'real',
+  'landing_company_short' => 'maltainvest',
+  'market_type' => 'financial',
+  'sub_account_type' => 'swap_free'
+},
+'real01\financial\vanuatu_std-hr_usd' => {
+  'account_type' => 'real',
+  'landing_company_short' => 'vanuatu',
+  'market_type' => 'financial',
+  'sub_account_type' => 'financial'
+},
+'real02\financial\vanuatu_std-hr_usd' => {
+  'account_type' => 'real',
+  'landing_company_short' => 'vanuatu',
+  'market_type' => 'financial',
+  'sub_account_type' => 'financial'
+},
+'real01\financial\svg_std_usd' => {
+  'account_type' => 'real',
+  'landing_company_short' => 'svg',
+  'market_type' => 'financial',
+  'sub_account_type' => 'financial'
+},
+'real02\financial\svg_std_usd' => {
+  'account_type' => 'real',
+  'landing_company_short' => 'svg',
+  'market_type' => 'financial',
+  'sub_account_type' => 'financial'
+},
+'real01\financial\svg_std-hr_usd' => {
+  'account_type' => 'real',
+  'landing_company_short' => 'svg',
+  'market_type' => 'financial',
+  'sub_account_type' => 'financial'
+},
+'real02\financial\svg_std-hr_usd' => {
+  'account_type' => 'real',
+  'landing_company_short' => 'svg',
+  'market_type' => 'financial',
+  'sub_account_type' => 'financial'
+},
+'real01\financial\svg_sf_usd' => {
+  'account_type' => 'real',
+  'landing_company_short' => 'svg',
+  'market_type' => 'financial',
+  'sub_account_type' => 'swap_free'
+},
+'real02\financial\svg_sf_usd' => {
+  'account_type' => 'real',
+  'landing_company_short' => 'svg',
+  'market_type' => 'financial',
+  'sub_account_type' => 'swap_free'
+},
+'real01\financial\svg_sf-hr_usd' => {
+  'account_type' => 'real',
+  'landing_company_short' => 'svg',
+  'market_type' => 'financial',
+  'sub_account_type' => 'swap_free'
+},
+'real02\financial\svg_sf-hr_usd' => {
+  'account_type' => 'real',
+  'landing_company_short' => 'svg',
+  'market_type' => 'financial',
+  'sub_account_type' => 'swap_free'
+},
+'real01\financial\samoa_std-hr_btc' => {
+  'account_type' => 'real',
+  'landing_company_short' => 'samoa',
+  'market_type' => 'financial',
+  'sub_account_type' => 'financial'
+},
+'real02\financial\samoa_std-hr_btc' => {
+  'account_type' => 'real',
+  'landing_company_short' => 'samoa',
+  'market_type' => 'financial',
+  'sub_account_type' => 'financial'
+},
+'real01\financial\samoa_std_btc' => {
+  'account_type' => 'real',
+  'landing_company_short' => 'samoa',
+  'market_type' => 'financial',
+  'sub_account_type' => 'financial'
+},
+'real02\financial\samoa_std_btc' => {
+  'account_type' => 'real',
+  'landing_company_short' => 'samoa',
+  'market_type' => 'financial',
+  'sub_account_type' => 'financial'
+},
+'real01\financial\samoa_std-hr_ust' => {
+  'account_type' => 'real',
+  'landing_company_short' => 'samoa',
+  'market_type' => 'financial',
+  'sub_account_type' => 'financial'
+},
+'real02\financial\samoa_std-hr_ust' => {
+  'account_type' => 'real',
+  'landing_company_short' => 'samoa',
+  'market_type' => 'financial',
+  'sub_account_type' => 'financial'
+},
+'real01\financial\samoa_std_ust' => {
+  'account_type' => 'real',
+  'landing_company_short' => 'samoa',
+  'market_type' => 'financial',
+  'sub_account_type' => 'financial'
+},
+'real02\financial\samoa_std_ust' => {
+  'account_type' => 'real',
+  'landing_company_short' => 'samoa',
+  'market_type' => 'financial',
+  'sub_account_type' => 'financial'
+},
+'real01\financial\samoa_sf-hr_btc' => {
+  'account_type' => 'real',
+  'landing_company_short' => 'samoa',
+  'market_type' => 'financial',
+  'sub_account_type' => 'swap_free'
+},
+'real02\financial\samoa_sf-hr_btc' => {
+  'account_type' => 'real',
+  'landing_company_short' => 'samoa',
+  'market_type' => 'financial',
+  'sub_account_type' => 'swap_free'
+},
+'real01\financial\samoa_sf_btc' => {
+  'account_type' => 'real',
+  'landing_company_short' => 'samoa',
+  'market_type' => 'financial',
+  'sub_account_type' => 'swap_free'
+},
+'real02\financial\samoa_sf_btc' => {
+  'account_type' => 'real',
+  'landing_company_short' => 'samoa',
+  'market_type' => 'financial',
+  'sub_account_type' => 'swap_free'
+},
+'real01\financial\samoa_sf-hr_ust' => {
+  'account_type' => 'real',
+  'landing_company_short' => 'samoa',
+  'market_type' => 'financial',
+  'sub_account_type' => 'swap_free'
+},
+'real02\financial\samoa_sf-hr_ust' => {
+  'account_type' => 'real',
+  'landing_company_short' => 'samoa',
+  'market_type' => 'financial',
+  'sub_account_type' => 'swap_free'
+},
+'real01\financial\samoa_sf_ust' => {
+  'account_type' => 'real',
+  'landing_company_short' => 'samoa',
+  'market_type' => 'financial',
+  'sub_account_type' => 'swap_free'
+},
+'real02\financial\samoa_sf_ust' => {
+  'account_type' => 'real',
+  'landing_company_short' => 'samoa',
+  'market_type' => 'financial',
+  'sub_account_type' => 'swap_free'
+},
+'demo\synthetic\svg_std_usd' => {
+  'account_type' => 'demo',
+  'landing_company_short' => 'svg',
+  'market_type' => 'gaming',
+  'sub_account_type' => 'financial'
+},
+'demo\synthetic\svg_sf_usd' => {
+  'account_type' => 'demo',
+  'landing_company_short' => 'svg',
+  'market_type' => 'gaming',
+  'sub_account_type' => 'swap_free'
+},
+'demo\synthetic\malta_std_usd' => {
+  'account_type' => 'demo',
+  'landing_company_short' => 'malta',
+  'market_type' => 'gaming',
+  'sub_account_type' => 'financial'
+},
+'demo\synthetic\malta_sf_usd' => {
+  'account_type' => 'demo',
+  'landing_company_short' => 'malta',
+  'market_type' => 'gaming',
+  'sub_account_type' => 'swap_free'
+},
+'demo\synthetic\samoa_std_btc' => {
+  'account_type' => 'demo',
+  'landing_company_short' => 'samoa',
+  'market_type' => 'gaming',
+  'sub_account_type' => 'financial'
+},
+'demo\synthetic\samoa_std_ust' => {
+  'account_type' => 'demo',
+  'landing_company_short' => 'samoa',
+  'market_type' => 'gaming',
+  'sub_account_type' => 'financial'
+},
+'demo\financial\labuan_stp_usd' => {
+  'account_type' => 'demo',
+  'landing_company_short' => 'labuan',
+  'market_type' => 'financial',
+  'sub_account_type' => 'financial_stp'
+},
+'demo\financial\maltainvest_std_eur' => {
+  'account_type' => 'demo',
+  'landing_company_short' => 'maltainvest',
+  'market_type' => 'financial',
+  'sub_account_type' => 'financial'
+},
+'demo\financial\maltainvest_sf_eur' => {
+  'account_type' => 'demo',
+  'landing_company_short' => 'maltainvest',
+  'market_type' => 'financial',
+  'sub_account_type' => 'swap_free'
+},
+'demo\financial\maltainvest_std_gbp' => {
+  'account_type' => 'demo',
+  'landing_company_short' => 'maltainvest',
+  'market_type' => 'financial',
+  'sub_account_type' => 'financial'
+},
+'demo\financial\maltainvest_sf_gbp' => {
+  'account_type' => 'demo',
+  'landing_company_short' => 'maltainvest',
+  'market_type' => 'financial',
+  'sub_account_type' => 'swap_free'
+},
+'demo\financial\vanuatu_std_usd' => {
+  'account_type' => 'demo',
+  'landing_company_short' => 'vanuatu',
+  'market_type' => 'financial',
+  'sub_account_type' => 'financial'
+},
+'demo\financial\svg_std_usd' => {
+  'account_type' => 'demo',
+  'landing_company_short' => 'svg',
+  'market_type' => 'financial',
+  'sub_account_type' => 'financial'
+},
+'demo\financial\svg_sf_usd' => {
+  'account_type' => 'demo',
+  'landing_company_short' => 'svg',
+  'market_type' => 'financial',
+  'sub_account_type' => 'swap_free'
+},
+'demo\financial\samoa_std_btc' => {
+  'account_type' => 'demo',
+  'landing_company_short' => 'samoa',
+  'market_type' => 'financial',
+  'sub_account_type' => 'financial'
+},
+'demo\financial\samoa_std_ust' => {
+  'account_type' => 'demo',
+  'landing_company_short' => 'samoa',
+  'market_type' => 'financial',
+  'sub_account_type' => 'financial'
+},
+'demo\synthetic\svg_std_usd' => {
+  'account_type' => 'demo',
+  'landing_company_short' => 'svg',
+  'market_type' => 'gaming',
+  'sub_account_type' => 'financial'
+},
+'demo\synthetic\svg_sf_usd' => {
+  'account_type' => 'demo',
+  'landing_company_short' => 'svg',
+  'market_type' => 'gaming',
+  'sub_account_type' => 'swap_free'
+},
+'demo\synthetic\malta_std_usd' => {
+  'account_type' => 'demo',
+  'landing_company_short' => 'malta',
+  'market_type' => 'gaming',
+  'sub_account_type' => 'financial'
+},
+'demo\synthetic\malta_sf_usd' => {
+  'account_type' => 'demo',
+  'landing_company_short' => 'malta',
+  'market_type' => 'gaming',
+  'sub_account_type' => 'swap_free'
+},
+'demo\synthetic\samoa_std_btc' => {
+  'account_type' => 'demo',
+  'landing_company_short' => 'samoa',
+  'market_type' => 'gaming',
+  'sub_account_type' => 'financial'
+},
+'demo\synthetic\samoa_std_ust' => {
+  'account_type' => 'demo',
+  'landing_company_short' => 'samoa',
+  'market_type' => 'gaming',
+  'sub_account_type' => 'financial'
+},
+'demo\financial\labuan_stp_usd' => {
+  'account_type' => 'demo',
+  'landing_company_short' => 'labuan',
+  'market_type' => 'financial',
+  'sub_account_type' => 'financial_stp'
+},
+'demo\financial\maltainvest_std_eur' => {
+  'account_type' => 'demo',
+  'landing_company_short' => 'maltainvest',
+  'market_type' => 'financial',
+  'sub_account_type' => 'financial'
+},
+'demo\financial\maltainvest_sf_eur' => {
+  'account_type' => 'demo',
+  'landing_company_short' => 'maltainvest',
+  'market_type' => 'financial',
+  'sub_account_type' => 'swap_free'
+},
+'demo\financial\maltainvest_std_gbp' => {
+  'account_type' => 'demo',
+  'landing_company_short' => 'maltainvest',
+  'market_type' => 'financial',
+  'sub_account_type' => 'financial'
+},
+'demo\financial\maltainvest_sf_gbp' => {
+  'account_type' => 'demo',
+  'landing_company_short' => 'maltainvest',
+  'market_type' => 'financial',
+  'sub_account_type' => 'swap_free'
+},
+'demo\financial\vanuatu_std_usd' => {
+  'account_type' => 'demo',
+  'landing_company_short' => 'vanuatu',
+  'market_type' => 'financial',
+  'sub_account_type' => 'financial'
+},
+'demo\financial\svg_std_usd' => {
+  'account_type' => 'demo',
+  'landing_company_short' => 'svg',
+  'market_type' => 'financial',
+  'sub_account_type' => 'financial'
+},
+'demo\financial\svg_sf_usd' => {
+  'account_type' => 'demo',
+  'landing_company_short' => 'svg',
+  'market_type' => 'financial',
+  'sub_account_type' => 'swap_free'
+},
+'demo\financial\samoa_std_btc' => {
+  'account_type' => 'demo',
+  'landing_company_short' => 'samoa',
+  'market_type' => 'financial',
+  'sub_account_type' => 'financial'
+},
+'demo\financial\samoa_std_ust' => {
+  'account_type' => 'demo',
+  'landing_company_short' => 'samoa',
+  'market_type' => 'financial',
+  'sub_account_type' => 'financial'
+},
+'real\svg' => {
+  'account_type' => 'real',
+  'landing_company_short' => 'svg',
+  'market_type' => 'gaming',
+  'sub_account_type' => 'financial'
+},
+'real\svg_highrisk' => {
+  'account_type' => 'real',
+  'landing_company_short' => 'svg',
+  'market_type' => 'gaming',
+  'sub_account_type' => 'financial'
+},
+'real\malta' => {
+  'account_type' => 'real',
+  'landing_company_short' => 'malta',
+  'market_type' => 'gaming',
+  'sub_account_type' => 'financial'
+},
+'real\labuan_financial_stp' => {
+  'account_type' => 'real',
+  'landing_company_short' => 'labuan',
+  'market_type' => 'financial',
+  'sub_account_type' => 'financial_stp'
+},
+'real\maltainvest_financial' => {
+  'account_type' => 'real',
+  'landing_company_short' => 'maltainvest',
+  'market_type' => 'financial',
+  'sub_account_type' => 'financial'
+},
+'real\maltainvest_financial_gbp' => {
+  'account_type' => 'real',
+  'landing_company_short' => 'maltainvest',
+  'market_type' => 'financial',
+  'sub_account_type' => 'financial'
+},
+'real\vanuatu_financial' => {
+  'account_type' => 'real',
+  'landing_company_short' => 'vanuatu',
+  'market_type' => 'financial',
+  'sub_account_type' => 'financial'
+},
+'real\svg_financial_bbook' => {
+  'account_type' => 'real',
+  'landing_company_short' => 'svg',
+  'market_type' => 'financial',
+  'sub_account_type' => 'financial'
+},
+'real\svg_financial' => {
+  'account_type' => 'real',
+  'landing_company_short' => 'svg',
+  'market_type' => 'financial',
+  'sub_account_type' => 'financial'
+},
+'demo\svg' => {
+  'account_type' => 'demo',
+  'landing_company_short' => 'svg',
+  'market_type' => 'gaming',
+  'sub_account_type' => 'financial'
+},
+'demo\malta' => {
+  'account_type' => 'demo',
+  'landing_company_short' => 'malta',
+  'market_type' => 'gaming',
+  'sub_account_type' => 'financial'
+},
+'demo\labuan_financial_stp' => {
+  'account_type' => 'demo',
+  'landing_company_short' => 'labuan',
+  'market_type' => 'financial',
+  'sub_account_type' => 'financial_stp'
+},
+'demo\maltainvest_financial' => {
+  'account_type' => 'demo',
+  'landing_company_short' => 'maltainvest',
+  'market_type' => 'financial',
+  'sub_account_type' => 'financial'
+},
+'demo\maltainvest_financial_gbp' => {
+  'account_type' => 'demo',
+  'landing_company_short' => 'maltainvest',
+  'market_type' => 'financial',
+  'sub_account_type' => 'financial'
+},
+'demo\vanuatu_financial' => {
+  'account_type' => 'demo',
+  'landing_company_short' => 'vanuatu',
+  'market_type' => 'financial',
+  'sub_account_type' => 'financial'
+},
+'demo\svg_financial' => {
+  'account_type' => 'demo',
+  'landing_company_short' => 'svg',
+  'market_type' => 'financial',
+  'sub_account_type' => 'financial'
+}
+
+
+);
+ 

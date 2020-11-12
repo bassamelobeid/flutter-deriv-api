@@ -16,7 +16,6 @@ use LandingCompany::Registry;
 use BOM::MT5::User::Async;
 use BOM::Platform::Token;
 use BOM::User;
-
 use Test::BOM::RPC::Accounts;
 use Email::Valid;
 
@@ -26,6 +25,9 @@ my $c = BOM::Test::RPC::QueueClient->new();
 
 my %ACCOUNTS = %Test::BOM::RPC::Accounts::MT5_ACCOUNTS;
 my %DETAILS  = %Test::BOM::RPC::Accounts::ACCOUNT_DETAILS;
+my %GROUP_MAPPINGS = %Test::BOM::RPC::Accounts::MT5_GROUP_MAPPING;
+my %EXPECTED_MT5_GROUP_MAPPINGS = %Test::BOM::RPC::Accounts::EXPECTED_MT5_GROUP_MAPPINGS ;
+
 
 my %emitted;
 my $mock_events = Test::MockModule->new('BOM::Platform::Event::Emitter');
@@ -111,6 +113,10 @@ subtest 'login list' => sub {
     $c->call_ok($method, $params)->has_no_error('no error for mt5_login_list');
 
     my @accounts = map { $_->{login} } @{$c->result};
+    is($c->result->[0]->{landing_company_short} , 'svg' , "landing_company_short result" );
+    is($c->result->[0]->{market_type} , 'gaming' , "market_type result" );
+    is($c->result->[0]->{sub_account_type} , 'financial' , "sub_account_type result" );
+    is($c->result->[0]->{account_type} , 'real' , "account_type result" );
     cmp_bag(\@accounts, ['MTR' . $ACCOUNTS{'real\svg'}], "mt5_login_list result");
 };
 
@@ -566,6 +572,89 @@ subtest 'password check investor' => sub {
         },
     };
     $c->call_ok($method, $params)->has_no_error('no error for mt5_password_check');
+};
+
+subtest 'MT5 old and new group names mapping' => sub {
+  
+   my @groups = keys %EXPECTED_MT5_GROUP_MAPPINGS;
+
+   foreach(@groups) {
+       my $landing_company_short = $EXPECTED_MT5_GROUP_MAPPINGS{$_}{landing_company_short};
+       my $market_type = $EXPECTED_MT5_GROUP_MAPPINGS{$_}{market_type};
+       my $sub_account_type = $EXPECTED_MT5_GROUP_MAPPINGS{$_}{sub_account_type};
+       my $account_type =  $EXPECTED_MT5_GROUP_MAPPINGS{$_}{account_type};
+       my $config = BOM::RPC::v3::MT5::Account::get_mt5_account_type_config($_);
+       is( $landing_company_short  ,  $config->{landing_company_short}  , "Comparing landing_company_short for $_");
+       is( $market_type  ,  $config->{market_type}  , "Comparing market_type for $_");
+       is( $sub_account_type  ,  $config->{sub_account_type}  , "Comparing sub_account_type for $_");
+       is( $account_type  ,  $config->{account_type}  , "Comparing account_type for $_");
+   }
+};
+
+subtest 'mt5 settings with correct account type' => sub {
+
+
+    my @keys = keys %GROUP_MAPPINGS;
+
+    my $mock_mt5_group = Test::MockModule->new('BOM::RPC::v3::MT5::Account');
+
+    my $v = 1;
+    foreach my $mt5_group (@keys) {
+        my $email =  $v . $DETAILS{email};
+        my $test_client = create_client('CR');
+        $test_client->email($email);
+        $test_client->set_default_account('USD');
+        $test_client->binary_user_id($v);
+        $test_client->set_authentication('ID_DOCUMENT', {status => 'pass'});
+        $test_client->save;
+        my $user = BOM::User->create(
+            email    =>  $email,
+            password => 's3kr1t'
+        );
+        
+
+        $user->add_client($test_client);
+
+        my $m     = BOM::Platform::Token::API->new;
+        my $token = $m->create_token($test_client->loginid, 'test token');
+    
+        $mock_mt5_group->mock('_mt5_group', sub { return $mt5_group});
+
+        my $params = {
+        language => 'EN',
+        token    => $token,
+        args     => {
+            account_type => 'gaming',
+            country      => 'mt',
+            email        => $DETAILS{email},
+            name         => $DETAILS{name},
+            mainPassword => $DETAILS{password}{main},
+            leverage     => 100,
+        },
+        };
+        BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
+        my $res = $c->call_ok('mt5_new_account', $params)->has_no_error->result;
+
+        my $bom_user_mock = Test::MockModule->new('BOM::User');
+        $bom_user_mock->mock('mt5_logins', sub { return 'MTR' . $ACCOUNTS{$_} });
+
+        my $method = 'mt5_get_settings';
+        my $params2 = {
+            language => 'EN',
+            token    => $token,
+            args     => {
+                login => 'MTR' . $ACCOUNTS{$mt5_group},
+            },
+        };
+
+        $c->call_ok($method, $params2)->has_no_error('no error for mt5_get_settings');
+        is($c->result->{landing_company_short} ,$GROUP_MAPPINGS{$mt5_group}{landing_company_short}  , 'landing_company_short for ' .$mt5_group);
+        is($c->result->{market_type} ,$GROUP_MAPPINGS{$mt5_group}{market_type}  , 'market_type for ' .$mt5_group);
+        is($c->result->{sub_account_type} ,$GROUP_MAPPINGS{$mt5_group}{sub_account_type}  , 'sub_account_type for ' .$mt5_group);
+        is($c->result->{account_type} , $GROUP_MAPPINGS{$mt5_group}{account_type}  , 'account_type for '. $mt5_group);
+    
+        $v = $v+2;
+    };
 };
 
 done_testing();
