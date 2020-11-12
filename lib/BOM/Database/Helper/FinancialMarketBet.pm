@@ -632,7 +632,7 @@ sub update_multiplier_contract {
 
     my @args = ($contract_id, $take_profit, $stop_loss, Date::Utility->new->db_timestamp);
 
-    my $sql = q{SELECT * from bet.update_multiplier(?,?,?,?)};
+    my $sql = q{SELECT (updated).* , msg from bet.update_multiplier_v2(?,?,?,?)};
 
     my $res = $self->db->dbic->run(
         fixup => sub {
@@ -641,9 +641,12 @@ sub update_multiplier_contract {
             $sth->fetchall_hashref('financial_market_bet_id');
         });
 
+    unless ($res->{$contract_id}) {
+        $res->{error} = $res->{''}->{msg};
+    }
+
     return $res;
 }
-
 no Moose;
 __PACKAGE__->meta->make_immutable;
 
