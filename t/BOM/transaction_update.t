@@ -590,4 +590,53 @@ subtest 'update contract of another account' => sub {
         'message to client - This contract was not found among your open positions.';
 };
 
+subtest 'too frequent updates' => sub {
+        my $args = {
+            underlying   => $underlying,
+            bet_type     => 'MULTUP',
+            multiplier   => 10,
+            currency     => 'USD',
+            amount       => 100,
+            amount_type  => 'stake',
+            current_tick => $current_tick,
+        };
+        my $contract = produce_contract($args);
+
+        my $txn = BOM::Transaction->new({
+            client        => $cl,
+            contract      => $contract,
+            price         => 100,
+            amount        => 100,
+            amount_type   => 'stake',
+            source        => 19,
+            purchase_date => $contract->date_start,
+        });
+
+        my $error = $txn->buy;
+        ok !$error, 'buy without error';
+
+        (undef, $fmb) = get_transaction_from_db multiplier => $txn->transaction_id;
+
+        # update take profit
+        my $updater = BOM::Transaction::ContractUpdate->new(
+            client        => $cl,
+            contract_id   => $fmb->{id},
+            update_params => {take_profit => 10},
+        );
+        ok $updater->is_valid_to_update , "contract is valid to update";
+        my $update_results = $updater->update;
+        ok $update_results, 'update without error';
+
+        $updater = BOM::Transaction::ContractUpdate->new(
+            client        => $cl,
+            contract_id   => $fmb->{id},
+            update_params => {take_profit => 20},
+        );
+        ok !$updater->is_valid_to_update, 'not valid to update again';
+        is $updater->validation_error->{code}, 'TooFrequentUpdate', 'code - TooFrequentUpdate';
+        is $updater->validation_error->{message_to_client},
+        'Only one update per second is allowed.',
+        'message_to_client - Only one update per second is allowed.';      
+};
+
 done_testing();

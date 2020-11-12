@@ -261,9 +261,9 @@ sub update {
 
     my $res_table =
         BOM::Database::Helper::FinancialMarketBet->new(db => BOM::Database::ClientDB->new({broker_code => $self->client->broker_code})->db)
-        ->update_multiplier_contract($update_args)->{$self->contract_id};
+        ->update_multiplier_contract($update_args);
 
-    return undef unless $res_table;
+    return $res_table if $res_table->{error};
 
     my $res = $self->build_contract_update_response();
     $res->{updated_queue} = $self->_requeue_transaction();
