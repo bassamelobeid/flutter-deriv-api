@@ -214,6 +214,11 @@ sub mt5_user_rights {
     return $config;
 }
 
+sub mt5_account_types {
+    state $config = YAML::XS::LoadFile('/home/git/regentmarkets/bom-config/share/mt5_account_types.yml');
+    return $config;
+}
+
 sub onfido_supported_documents {
     state $config = YAML::XS::LoadFile('/home/git/regentmarkets/bom-config/share/onfido_supported_documents.yml');
     return $config;
