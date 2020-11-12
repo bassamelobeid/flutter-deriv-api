@@ -8,8 +8,8 @@ use Syntax::Keyword::Try;
 use Digest::HMAC;
 use Digest::SHA qw(hmac_sha256_hex);
 use BOM::Config;
-use BOM::Database::ClientDB;
 use DataDog::DogStatsd::Helper qw(stats_inc);
+use BOM::Platform::Event::Emitter;
 
 use parent qw(Mojolicious::Controller);
 
@@ -26,8 +26,8 @@ sub collect {
         die 'not a valid sendbird request' unless $self->validates;
         $self->render(json => 'ok') if $self->save_message_data;
         $self->rendered(200);
-    } catch {
-        $log->errorf('Request failure: %s', $@);
+    } catch ($error) {
+        $log->errorf('Request failure: %s', $error);
         $self->rendered(401);
     }
 }
@@ -38,7 +38,7 @@ Saves data from sendbird webhook, check whether the current json payload is from
 Ensures data is good enough before saving. Some payloads might be dropped due to missing fields.
 
 Returns,
-    true for database insert performed, false otherwise
+    true if reaches event emit, false otherwise
 
 =cut
 
@@ -59,10 +59,18 @@ sub save_message_data {
         return $self->_unexpected_format('payload.message') unless $json->{payload}->{message};
     }
 
-    return $self->p2p_chat_message_add([
-        $json->{payload}->{message_id}, $json->{payload}->{created_at}, $json->{sender}->{user_id}, $json->{channel}->{channel_url},
-        $json->{type},                  $json->{payload}->{message},    $json->{payload}->{url},
-    ]);
+    BOM::Platform::Event::Emitter::emit(
+        p2p_chat_received => {
+            message_id => $json->{payload}->{message_id},
+            created_at => $json->{payload}->{created_at},
+            user_id    => $json->{sender}->{user_id},
+            channel    => $json->{channel}->{channel_url},
+            type       => $json->{type},
+            message    => $json->{payload}->{message} // '',
+            url        => $json->{payload}->{url} // '',
+        });
+    stats_inc('bom_platform.sendbird.webhook.messages_received');
+    return 1;
 }
 
 =head2 _unexpected_format
@@ -76,7 +84,7 @@ Prints out a debug message for foul key in payload.
 =back
 
 Return,
-    always returns false so is clear we didn't even try to save this bogus payload.
+    always returns undef so is clear we didn't even try to save this bogus payload.
 
 =cut
 
@@ -84,33 +92,6 @@ sub _unexpected_format {
     my ($self, $unexpected) = @_;
     $log->debugf('Bogus payload: unexpected %s', $unexpected);
     return;
-}
-
-=head2 p2p_chat_message_add
-
-Runs the DB function to add message.
-
-=over 4
-
-=item C<$data> an arrayref with data to save
-
-=back
-
-Returns,
-    true for database insert performed, false otherwise
-
-=cut
-
-sub p2p_chat_message_add {
-    my ($self, $data) = @_;
-
-    my $result = $self->_get_db->run(
-        fixup => sub {
-            $_->do(q{SELECT * FROM data_collection.p2p_chat_message_add(?,?,?,?,?,?,?)}, undef, @{$data});
-        });
-
-    stats_inc('bom_platform.sendbird.webhook.messages_received');
-    return $result > 0;
 }
 
 =head2 validates
@@ -131,16 +112,6 @@ sub validates {
     my $expected = hmac_sha256_hex($req->body, $token);
 
     return $sig eq $expected;
-}
-
-=head2 _get_db
-
-Returns an instance of ClientDB for the collector DB.
-
-=cut
-
-sub _get_db {
-    return BOM::Database::ClientDB->new({broker_code => 'FOG'})->db->dbic;
 }
 
 1;
