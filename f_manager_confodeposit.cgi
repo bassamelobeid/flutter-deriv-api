@@ -360,15 +360,17 @@ print "</form>";
 if ($informclient) {
     my $subject = $ttype eq 'CREDIT' ? localize('Deposit') : localize('Withdrawal');
 
+    my $brand = request()->brand;
+
     my $email_body =
           localize('Dear [_1] [_2] [_3],', BOM::Platform::Locale::translate_salutation($salutation), $first_name, $last_name) . "\n\n"
         . localize('We would like to inform you that your [_1] has been processed.', $subject) . "\n\n"
         . localize('Kind Regards') . "\n\n"
-        . (ucfirst BOM::Config::domain()->{default_domain});
+        . $brand->website_name;
 
     try {
         send_email({
-            from                  => request()->brand->emails('support'),
+            from                  => $brand->emails('support'),
             to                    => $client->email,
             subject               => $subject,
             message               => [$email_body],

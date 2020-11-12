@@ -65,12 +65,6 @@ has 'domain_name' => (
     lazy_build => 1,
 );
 
-has 'brand' => (
-    is         => 'ro',
-    isa        => 'Brands',
-    lazy_build => 1,
-);
-
 {
     my %known_codes = map { ; $_ => 1 } (LandingCompany::Registry->all_broker_codes, 'FOG');
     has 'broker_code' => (
@@ -104,13 +98,10 @@ sub _build_broker_code {
     return 'CR';
 }
 
-sub _build_brand {
-    my $self = shift;
+sub brand {
+    my ($self, %args) = @_;
 
-    my $broker = $self->broker_code // '';
-    my $brands = LandingCompany::Registry->get_by_broker($broker)->allowed_for_brands;
-
-    return Brands->new(name => $brands->[0]);
+    return Brands->new(%args);
 }
 
 sub _build_available_currencies {

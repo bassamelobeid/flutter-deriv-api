@@ -55,13 +55,8 @@ sub notify_crypto_withdrawal_rejected {
     my $reason  = shift // "unknown";
 
     my $client = BOM::User::Client->new({loginid => $loginid});
-    my $brand  = Brands->new_from_app_id($client->source);
 
-    my $req = BOM::Platform::Context::Request->new(
-        brand_name => $brand->name,
-        app_id     => $client->source,
-    );
-    BOM::Platform::Context::request($req);
+    my $brand = request()->brand;
 
     my $email_subject;
     if ($reason eq "authentication_needed") {

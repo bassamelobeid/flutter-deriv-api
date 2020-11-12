@@ -100,9 +100,12 @@ Returns undef
 
 sub process_bonus_claim {
     my ($client, $approved, $amount, $notify) = @_;
-    my $json        = JSON::MaybeXS->new();
-    my $clerk       = BOM::Backoffice::Auth0::get_staffname();
-    my $tac_url     = 'https://www.binary.com/en/terms-and-conditions.html?anchor=free-bonus#legal-binary';
+
+    my $json  = JSON::MaybeXS->new();
+    my $clerk = BOM::Backoffice::Auth0::get_staffname();
+    my $brand = request()->brand;
+
+    my $tac_url     = $brand->tnc_approval_url . '?anchor=free-bonus#legal-binary';
     my $client_name = ucfirst join(' ', (BOM::Platform::Locale::translate_salutation($client->salutation), $client->first_name, $client->last_name));
     my $email_subject = localize("Your bonus request - [_1]", $client->loginid);
     my $email_content;
@@ -142,7 +145,7 @@ sub process_bonus_claim {
                 currency     => $currency,
                 amount       => $amount,
                 tac_url      => $tac_url,
-                website_name => ucfirst BOM::Config::domain()->{default_domain},
+                website_name => $brand->website_name,
             },
             \$email_content
         ) || return "$loginid: bonus credited but send email failed: " . BOM::Backoffice::Request::template()->error;
@@ -162,7 +165,7 @@ sub process_bonus_claim {
             {
                 name         => $client_name,
                 tac_url      => $tac_url,
-                website_name => ucfirst BOM::Config::domain()->{default_domain},
+                website_name => $brand->website_name,
             },
             \$email_content
         ) || return "$loginid: failed to send rejection email: " . BOM::Backoffice::Request::template()->error;

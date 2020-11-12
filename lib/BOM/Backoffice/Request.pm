@@ -10,6 +10,7 @@ use Exporter qw(import export_to_level);
 use Template::AutoFilter;
 use Template::Stash;
 use Format::Util::Numbers;
+use Brands;
 
 our @EXPORT_OK = qw(request localize template);
 
@@ -111,7 +112,7 @@ sub _configure_template_stash_for {
         runtime      => BOM::Config::Runtime->instance,
         language     => $request->language,
         request      => $request,
-        broker_name  => ucfirst BOM::Config::domain()->{default_domain},
+        broker_name  => Brands->new()->website_name,
         l            => \&localize,
         formatnumber => \&Format::Util::Numbers::formatnumber
     });
