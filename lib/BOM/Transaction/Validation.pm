@@ -518,8 +518,8 @@ sub _validate_iom_withdrawal_limit {
     my $lifetimelimit            = $withdrawal_limits_config->{lifetime_limit};
 
     if ($client->fully_authenticated) {
-        $numdayslimit  = 99999999;
-        $lifetimelimit = 99999999;
+        $numdayslimit  = $withdrawal_limits_config->{limit_for_days_for_authenticated};
+        $lifetimelimit = $withdrawal_limits_config->{lifetime_limit_for_authenticated};
     }
 
     # withdrawal since $numdays
