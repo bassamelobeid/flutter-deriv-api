@@ -218,10 +218,14 @@ rpc "verify_email",
     if ($existing_user and $type eq 'reset_password') {
         request_email($email, $verification->{reset_password}->());
     } elsif ($type eq 'account_opening') {
-        unless ($existing_user) {
-            request_email($email, $verification->{account_opening_new}->());
-        } else {
+        # We allow one virtual account per brand (different landing companies)
+        # hence, it's okay if the existing user doesn't have any client under
+        # landing companies that allowed for the current brand.
+        # (by default, `loginids()` returns only clients of the current brand)
+        if ($existing_user && $existing_user->loginids) {
             request_email($email, $verification->{account_opening_existing}->());
+        } else {
+            request_email($email, $verification->{account_opening_new}->());
         }
     } elsif ($existing_user and ($type eq 'paymentagent_withdraw' or $type eq 'payment_withdraw')) {
         request_email($email, $verification->{payment_withdraw}->());

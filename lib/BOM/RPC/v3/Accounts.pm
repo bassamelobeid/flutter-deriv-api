@@ -707,7 +707,7 @@ rpc balance => sub {
     }
 
     #if (client has real account with USD OR doesn’t have fiat account) {
-    #    use ‘USD’;
+    #    use ‘USD’ if it's in `legal_allowed_currencies`, otherwise use `legal_default_currency`
     #} elsif (there is more than one fiat account) {
     #    use currency of financial account (MF or CR);
     #} else {
@@ -727,7 +727,8 @@ rpc balance => sub {
 
     my $total_currency;
     if ($has_usd || !$fiat_currency) {
-        $total_currency = 'USD';
+        $total_currency = (first { /^USD$/ } keys $client->landing_company->legal_allowed_currencies->%*)
+            || $client->landing_company->legal_default_currency;
     } elsif ($financial_currency) {
         $total_currency = $financial_currency;
     } else {
@@ -2191,7 +2192,10 @@ rpc account_closure => sub {
     my $closing_reason = $args->{reason};
 
     my $user                = $client->user;
-    my @accounts_to_disable = $user->clients(include_disabled => 0);
+    my @accounts_to_disable = $user->clients(
+        include_disabled   => 0,
+        include_all_brands => 1
+    );
 
     return BOM::RPC::v3::Utility::create_error({
             code              => 'ReasonNotSpecified',

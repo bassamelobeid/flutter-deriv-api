@@ -3,6 +3,7 @@ use warnings;
 
 use Test::More;
 use Test::Mojo;
+use Test::MockModule;
 use Test::Fatal qw(lives_ok);
 
 use MojoX::JSON::RPC::Client;
@@ -28,7 +29,7 @@ my @params = (
     $method,
     {
         language => 'EN',
-        country  => 'ru',
+        country  => 'id',
         source   => 1,
     });
 
@@ -115,7 +116,22 @@ subtest 'Account opening request with email exists' => sub {
         email   => lc($params[1]->{args}->{verify_email}),
         subject => qr/Duplicate email address submitted|Unsuccessful Deriv account creation/
     );
-    ok $msg, 'Email sent successfully';
+    ok $msg, 'Duplicate email sent successfully';
+
+    mailbox_clear();
+    my $mocked_request = Test::MockModule->new('BOM::Platform::Context::Request');
+    $mocked_request->mock(brand => sub { return Brands->new(name => 'derivcrypto'); });
+
+    $rpc_ct->call_ok(@params)
+        ->has_no_system_error->has_no_error->result_is_deeply($expected_result, "It always should return 1, so not to leak client's email");
+
+    $msg = mailbox_search(
+        email   => lc($params[1]->{args}->{verify_email}),
+        subject => qr/Verify your email address/
+    );
+    ok $msg, 'Verification email sent in case of different brand';
+
+    $mocked_request->unmock_all();
 };
 
 subtest 'Reset password for exists user' => sub {
