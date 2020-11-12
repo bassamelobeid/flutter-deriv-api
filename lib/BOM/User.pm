@@ -115,45 +115,20 @@ sub add_loginid {
     croak('need a loginid') unless $loginid;
     my ($result) = $self->dbic->run(
         fixup => sub {
-            return $_->selectrow_array('SELECT users.add_loginid(?,?)', undef, $self->{id}, $loginid);
+            return $_->selectrow_array('select users.add_loginid(?,?)', undef, $self->{id}, $loginid);
         });
     push @{$self->{loginids}}, $result if ($self->{loginids} && $result);
     return $self;
 }
 
-=head2 loginids
-
-To retrieve list of clients (C<loginid>s) of a user.
-
-Takes the following named parameter:
-
-=over 4
-
-=item * C<include_all_brands> - If 1, returns all clients irrespective of their brand, otherwise only clients of the landing companies that is allowed for the current brand.
-
-=back
-
-Returns an array containing C<loginid> of the user.
-
-=cut
-
 sub loginids {
-    my ($self, %args) = @_;
-
-    $self->{loginids} //= $self->dbic->run(
+    my $self = shift;
+    return @{$self->{loginids}} if $self->{loginids};
+    $self->{loginids} = $self->dbic->run(
         fixup => sub {
-            return $_->selectcol_arrayref('SELECT loginid FROM users.get_loginids(?)', undef, $self->{id});
+            return $_->selectcol_arrayref('select loginid from users.get_loginids(?)', undef, $self->{id});
         });
-
-    return $self->{loginids}->@* if $args{include_all_brands};
-
-    # Need to return loginids of the same brand, when `include_all_brands` flag is missing
-    my $brand_name = request()->brand->name;
-    return grep {
-        $_ =~ MT5_REGEX    # TODO: return only MT5 accounts related to landing companies of current brand
-            || any { $_ eq $brand_name }
-        LandingCompany::Registry->get_by_loginid($_)->allowed_for_brands->@*
-    } $self->{loginids}->@*;
+    return @{$self->{loginids}};
 }
 
 =head2 create_client
@@ -241,16 +216,13 @@ sub login {
 
 =head2 clients
 
-Get my enabled client objects, in loginid order but with real clients up first.
-Uses the replica db for speed.
+Get my enabled client objects, in loginid order but with reals up first.  Use the replica db for speed.
 
 =over 4
 
-=item * C<include_disabled> - If 1, will include disabled clients otherwise not.
+=item * C<include_disabled> - e.g. include_disabled=>1  will include disableds otherwise not.
 
-=item * C<include_duplicated> - If 1, will include duplicated otherwise not.
-
-=item * C<include_all_brands> - If 1, will include all clients irrespective of their brand, otherwise only clients of the landing companies that is allowed for the current brand.
+=item * C<include_duplicated> - e.g. include_duplicated=>1  will include duplicated otherwise not.
 
 =back
 
@@ -260,12 +232,9 @@ Returns client objects array
 
 sub clients {
     my ($self, %args) = @_;
+    my $include_duplicated = $args{include_duplicated} // 0;
 
-    my @clients = @{
-        $self->get_clients_in_sorted_order(
-            include_duplicated => $args{include_duplicated} // 0,
-            include_all_brands => $args{include_all_brands} // 0,
-        )};
+    my @clients = @{$self->get_clients_in_sorted_order(include_duplicated => $include_duplicated)};
 
     # todo should be refactor
     @clients = grep { not $_->status->disabled } @clients unless $args{include_disabled};
@@ -283,7 +252,7 @@ get clients given special landing company short name.
 sub clients_for_landing_company {
     my $self      = shift;
     my $lc_short  = shift // die 'need landing_company';
-    my @login_ids = $self->bom_loginids(include_all_brands => 1);
+    my @login_ids = $self->bom_loginids;
     return map { $self->get_client_using_replica($_) }
         grep { LandingCompany::Registry->get_by_loginid($_)->short eq $lc_short } @login_ids;
 }
@@ -305,19 +274,11 @@ sub bom_loginid_details {
 
 get client non-mt5 login ids
 
-Takes the following named parameter:
-
-=over 4
-
-=item * C<include_all_brands> - If 1, returns all loginids irrespective of their brand, otherwise only those related to the landing companies that is allowed for the current brand.
-
-=back
-
 =cut
 
 sub bom_loginids {
-    my ($self, %args) = @_;
-    return grep { $_ !~ MT5_REGEX } $self->loginids(include_all_brands => $args{include_all_brands});
+    my $self = shift;
+    return grep { $_ !~ MT5_REGEX } $self->loginids;
 }
 
 =head2 bom_real_loginids
@@ -440,11 +401,8 @@ Return an ARRAY reference that is a list of clients in following order
 sub get_clients_in_sorted_order {
     my ($self, %args) = @_;
     my $include_duplicated = $args{include_duplicated} // 0;
-    my $account_lists      = $self->accounts_by_category(
-        [$self->bom_loginids(include_all_brands => $args{include_all_brands} // 0)],
-        include_duplicated => $include_duplicated,
-    );
-    my @allowed_statuses = qw(enabled virtual self_excluded disabled);
+    my $account_lists      = $self->accounts_by_category([$self->bom_loginids], include_duplicated => $include_duplicated);
+    my @allowed_statuses   = qw(enabled virtual self_excluded disabled);
     push @allowed_statuses, 'duplicated' if ($include_duplicated);
 
     return [map { @$_ } @{$account_lists}{@allowed_statuses}];
@@ -538,7 +496,7 @@ sub get_default_client {
     return $self->{_default_client_include_disabled} if exists($self->{_default_client_include_disabled}) && $args{include_disabled};
     return $self->{_default_client_without_disabled} if exists($self->{_default_client_without_disabled}) && !$args{include_disabled};
 
-    my $client_lists = $self->accounts_by_category([$self->bom_loginids(include_all_brands => 1)], include_duplicated => $include_duplicated);
+    my $client_lists = $self->accounts_by_category([$self->bom_loginids], include_duplicated => $include_duplicated);
     my %tmp;
     foreach my $k (keys %$client_lists) {
         $tmp{$k} = pop(@{$client_lists->{$k}});
@@ -700,7 +658,7 @@ In our system, this means all sub accounts have disabled status.
 
 sub is_closed {
     my $self = shift;
-    return all { $_->status->disabled } $self->clients(include_all_brands => 1);
+    return all { $_->status->disabled } $self->clients;
 }
 
 sub _save_login_detail_redis {
