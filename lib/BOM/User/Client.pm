@@ -3843,8 +3843,6 @@ sub validate_payment {
         # disable withdrawal limit for rpc/internal_transfer_exclude_limit
         return 1 if $args{internal_transfer};
 
-        return 1 if $self->landing_company->skip_authentication;
-
         my $lc = $self->landing_company->short;
         my $lc_limits;
         my $withdrawal_limits = BOM::Config::payment_limits()->{withdrawal_limits};
@@ -3891,9 +3889,9 @@ sub validate_payment {
             my $for_days = $lc_limits->{for_days};
             my $since    = Date::Utility->new->minus_time_interval("${for_days}d");
 
-            # Obtains limit in EUR
-            my $wd_eur_since_limit = $lc_limits->{limit_for_days};
-            my $wd_eur_epoch_limit = $lc_limits->{lifetime_limit};
+            # Obtains limit
+            my $wd_since_limit = $lc_limits->{limit_for_days};
+            my $wd_epoch_limit = $lc_limits->{lifetime_limit};
 
             # Obtains payments over the lifetime of the account
             my $wd_epoch = $account->total_withdrawals();
@@ -3901,29 +3899,29 @@ sub validate_payment {
             # Obtains payments over the last x days
             my $wd_since = $account->total_withdrawals($since);
 
-            # Converts payments over lifetime of the account and the last x days into EUR
-            my $wd_eur_since = convert_currency($wd_since, $currency, 'EUR');
-            my $wd_eur_epoch = convert_currency($wd_epoch, $currency, 'EUR');
+            # Converts payments over lifetime of the account and the last x days
+            my $wd_since_converted = convert_currency($wd_since, $currency, $lc_currency);
+            my $wd_epoch_converted = convert_currency($wd_epoch, $currency, $lc_currency);
 
-            # Amount withdrawable over the last x days in EUR
-            my $wd_eur_since_left = $wd_eur_since_limit - $wd_eur_since;
+            # Amount withdrawable over the last x days
+            my $wd_since_left = $wd_since_limit - $wd_since_converted;
 
-            # Amount withdrawable over the lifetime of the account in EUR
-            my $wd_eur_epoch_left = $wd_eur_epoch_limit - $wd_eur_epoch;
+            # Amount withdrawable over the lifetime of the account
+            my $wd_epoch_left = $wd_epoch_limit - $wd_epoch_converted;
 
             # Withdrawable amount left between the two amounts - The smaller is used
-            my $wd_eur_left = List::Util::min($wd_eur_since_left, $wd_eur_epoch_left);
+            my $wd_left_min = List::Util::min($wd_since_left, $wd_epoch_left);
 
             die sprintf("You've reached the maximum withdrawal limit of [%s %s]. Please authenticate your account to make unlimited withdrawals.\n",
                 $lc_limits->{lifetime_limit}, $lc_currency)
-                if $wd_eur_epoch_left <= 0;
+                if $wd_epoch_left <= 0;
 
             die sprintf("You've reached the maximum withdrawal limit of [%s %s]. Please authenticate your account to make unlimited withdrawals.\n",
                 $lc_limits->{limit_for_days}, $lc_currency)
-                if $wd_eur_since_left <= 0;
+                if $wd_since_left <= 0;
 
-            # Withdrawable amount is converted from EUR to clients' currency and rounded
-            my $wd_left = financialrounding('amount', $currency, convert_currency($wd_eur_left, 'EUR', $currency));
+            # Withdrawable amount is converted from the limit config currency to clients' currency and rounded
+            my $wd_left = financialrounding('amount', $currency, convert_currency($wd_left_min, $lc_currency, $currency));
 
             if (financialrounding('amount', $currency, $absamt) > financialrounding('amount', $currency, $wd_left)) {
                 # lock cashier and unwelcome if its MX (as per compliance, check with compliance if you want to remove it)
@@ -3934,12 +3932,8 @@ sub validate_payment {
                         reason     => 'Exceeds withdrawal limit',
                     });
                 }
-                my $msg    = "Withdrawal amount [%s %s] exceeds withdrawal limit [%s EUR]";
-                my @values = (formatnumber('amount', $currency, $absamt), $currency, formatnumber('amount', $currency, $wd_eur_left));
-                if ($currency ne 'EUR') {
-                    $msg = "$msg (equivalent to %s %s)";
-                    push @values, formatnumber('amount', $currency, $wd_left), $currency;
-                }
+                my $msg    = "Withdrawal amount [%s %s] exceeds withdrawal limit [%s %s]";
+                my @values = (formatnumber('amount', $currency, $absamt), $currency, formatnumber('amount', $currency, $wd_left), $currency);
                 die sprintf "$msg.\n", @values;
             }
         }

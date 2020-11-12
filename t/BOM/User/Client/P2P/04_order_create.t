@@ -140,14 +140,14 @@ subtest 'Creating new buy order' => sub {
             payment_method => $ad_params{payment_method}
         },
         client_details => {
-            id         => $client->p2p_advertiser_info->{id},
-            name       => $client->p2p_advertiser_info->{name},
-            loginid    => $client->loginid,
+            id      => $client->p2p_advertiser_info->{id},
+            name    => $client->p2p_advertiser_info->{name},
+            loginid => $client->loginid,
         },
         advertiser_details => {
-            id         => $advertiser->p2p_advertiser_info->{id},
-            name       => $advertiser->p2p_advertiser_info->{name},
-            loginid    => $advertiser->loginid,
+            id      => $advertiser->p2p_advertiser_info->{id},
+            name    => $advertiser->p2p_advertiser_info->{name},
+            loginid => $advertiser->loginid,
         },
         dispute_details => {
             dispute_reason   => undef,
@@ -852,7 +852,7 @@ subtest 'payment validation' => sub {
         );
     };
     cmp_deeply($err, undef, 'validate_payment pass');
-    
+
     BOM::Test::Helper::P2P::reset_escrow();
 };
 

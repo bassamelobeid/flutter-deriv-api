@@ -137,7 +137,7 @@ subtest "withdraw vs Balance" => sub {
 
 # Test for CR withdrawal limits
 subtest 'CR withdrawal' => sub {
-    plan tests => 7;
+    plan tests => 6;
 
     # CR withdrawals in USD
     subtest 'in USD, unauthenticated' => sub {
@@ -244,17 +244,6 @@ subtest 'CR withdrawal' => sub {
         lives_ok { $client->validate_payment(%withdrawal_btc, amount => -0.01434048) } 'Authed CR withdraw full BTC amount';
         $client->set_authentication('ID_DOCUMENT', {status => 'pending'});
     };
-
-    subtest 'LC skip authentication' => sub {
-        my $client = new_client('USD');
-        $client->smart_payment(%deposit, amount => 100_000);
-        throws_ok { $client->validate_payment(%withdrawal, amount => -100_000) } qr/exceeds withdrawal limit/, 'Cannot withdraw USD 100K usually';
-
-        my $mock_lc = Test::MockModule->new('LandingCompany');
-        $mock_lc->mock('skip_authentication', sub { 1 });
-
-        lives_ok { $client->validate_payment(%withdrawal, amount => -100_000) } 'Can withdraw 100k when LC has skip_authentication flag';
-    };
 };
 
 # Test for MX withdrawal limits
@@ -293,8 +282,7 @@ subtest 'EUR3k over 30 days MX limitation.' => sub {
     my %wd3001 = (%wd_gbp, amount => -_GBP_equiv(3001));
 
     # Test that the client cannot withdraw the equivalent of EUR 3001
-    throws_ok { $client->validate_payment(%wd3001) } qr/exceeds withdrawal limit \[3000.00 EUR/,
-        'Unauthed, not allowed to withdraw GBP equiv of EUR3001.';
+    throws_ok { $client->validate_payment(%wd3001) } qr/exceeds withdrawal limit .* GBP]/, 'Unauthed, not allowed to withdraw GBP equiv of EUR3001.';
     # mx client should be cashier locked and unwelcome
     ok $client->status->unwelcome,      'MX client is unwelcome after wihtdrawal limit is reached';
     ok $client->status->cashier_locked, 'MX client is cashier_locked after wihtdrawal limit is reached';
@@ -315,7 +303,7 @@ subtest 'EUR3k over 30 days MX limitation.' => sub {
     my $payment      = $client->db->dbic->run(fixup => sub { $_->selectrow_hashref("SELECT * FROM payment.payment ORDER BY id DESC LIMIT 1"); });
     my $payment_time = Date::Utility->new($payment->{payment_time})->epoch;
 
-    throws_ok { $client->validate_payment(%wd0501) } qr/exceeds withdrawal limit \[500.00 EUR/,
+    throws_ok { $client->validate_payment(%wd0501) } qr/exceeds withdrawal limit .* GBP]/,
         'Unauthed, not allowed to withdraw equiv 2500 EUR then 501 making total over 3000.';
 
     # remove for further testing
@@ -327,7 +315,7 @@ subtest 'EUR3k over 30 days MX limitation.' => sub {
     # move forward 29 days
     set_fixed_time($payment_time + 29 * 86400);
 
-    throws_ok { $client->validate_payment(%wd0501) } qr/exceeds withdrawal limit \[500.00 EUR/,
+    throws_ok { $client->validate_payment(%wd0501) } qr/exceeds withdrawal limit .* GBP]/,
         'Unauthed, not allowed to withdraw equiv 3000 EUR then 1 more 29 days later';
 
     # remove for further testing
