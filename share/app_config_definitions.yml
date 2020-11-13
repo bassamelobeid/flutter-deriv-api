@@ -812,11 +812,6 @@ system:
           isa: Bool
           default: 0
           global: 1
-        customerio:
-          description: "Suspend sending and syncing of information to customer.io"
-          isa: Bool
-          default: 0
-          global: 1
         p2p:
           description: "Suspend peer-to-peer cashier - this will override payments.p2p.enabled"
           isa: Bool
