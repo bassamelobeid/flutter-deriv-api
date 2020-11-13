@@ -51,12 +51,11 @@ my $error_category_mapping = {
     10019                      => 'NoMoney'
 };
 
-my $FAILCOUNT_KEY       = 'system.mt5.connection_fail_count';    # Number of consecutive failed requests
-my $LOCK_KEY            = 'system.mt5.connection_status';        # Whether MT5 calls are blocked or not
-my $TRIAL_FLAG          = 'system.mt5.connection_check';         # Is there any request to check the connection when MT5 is blocked
-my $BACKOFF_THRESHOLD   = 20;                                    # Block MT5 calls if X consecutive calls failed
-my $BACKOFF_TTL         = 60;                                    # Keep failed counts for X seconds in redis and set it to null afterward
-my $MT5_PROCESS_TIMEOUT = 10;                                    # Kill MT5 process after X seconds of no response
+my $FAILCOUNT_KEY     = 'system.mt5.connection_fail_count';
+my $LOCK_KEY          = 'system.mt5.connection_status';
+my $TRIAL_FLAG        = 'system.mt5.connection_check';
+my $BACKOFF_THRESHOLD = 20;
+my $BACKOFF_TTL       = 60;
 
 sub _get_error_mapping {
     my $error_code = shift;
@@ -171,88 +170,6 @@ sub _is_suspended {
     return undef;
 }
 
-=head2 _manage_mt5_blockage
-
-Check whether MT5 connections are already blocked due to several connection failure
-And also whether we need to block the calls if they're not already?
-
-=over 4
-
-=item * C<$cmd> - the MT5 call which is used for log only
-
-=back
-
-Returns a hashref containing C<block> and C<trying> keys.
-C<block>: 1 means mt5 calls are locked and 0 means normal situation
-C<trying> If it's 1, it means MT5 is already blocked and we're trying to see if the connection fails
-
-=cut
-
-sub _manage_mt5_blockage {
-    my ($redis, $cmd) = @_;
-    my $failcount = $redis->get($FAILCOUNT_KEY) // 0;
-    my $lock      = $redis->get($LOCK_KEY)      // 0;
-
-    my $block  = 0;
-    my $trying = 0;
-
-    # Backoff if we have tried 20 without being able to connect.
-    if ($failcount >= $BACKOFF_THRESHOLD) {
-        $redis->set($LOCK_KEY, 1);
-        $block = 1;
-    } elsif ($lock) {
-        my $is_worker_checking = $redis->get($TRIAL_FLAG) // 0;
-        if ($is_worker_checking) {
-            $block = 1;
-        } else {
-            # Set trial flag, so only one worker checks if we are able to connect.
-            # Make sure flag has TTL so its removed in case worker dies mid call.
-            my $flag_set = $redis->set(
-                $TRIAL_FLAG => 1,
-                EX          => 30,
-                "NX"
-            ) // 0;
-            # in case Flag was already set, we will get 0 so prevent call since a worker already trying to.
-            unless ($flag_set) {
-                $block = 1;
-            }
-            $trying = 1;
-        }
-    }
-
-    DataDog::DogStatsd::Helper::stats_inc('mt5.call.blocked', {tags => ["mt5:$cmd"]}) if $block;
-
-    # Throw an exception if calls are suspended from our side
-    die "MT5 connections are suspended" if $block;
-
-    return $trying;
-}
-
-=head2 _handle_failed_mt5_connection
-
-It sets the value of connection failure counts in redis
-
-Returns C<void>
-
-=cut
-
-sub _handle_failed_mt5_connection {
-    my ($redis) = @_;
-    my $lock = $redis->get($LOCK_KEY) // 0;
-
-    DataDog::DogStatsd::Helper::stats_inc('mt5.call.connection_fail');
-
-    if ($lock) {
-        # If our last try was failed also, set key to threshold straight away.
-        $redis->setex($FAILCOUNT_KEY, $BACKOFF_TTL, $BACKOFF_THRESHOLD);
-    } else {
-        $redis->multi;
-        $redis->incr($FAILCOUNT_KEY);
-        $redis->expire($FAILCOUNT_KEY, $BACKOFF_TTL);
-        $redis->exec;
-    }
-}
-
 =head2 _invoke_mt5
 
 Call mt5 api and return result wrapped in C<Future> object
@@ -288,35 +205,51 @@ sub _invoke_mt5 {
     my $f             = $loop->new_future;
     my $request_start = [Time::HiRes::gettimeofday];
     my $redis         = BOM::Config::Redis::redis_mt5_user_write();
-    my $trying_mode   = 0;
-
-    # Check whether MT5 connections are blocked from our side (due to multiple consecutive connection failure to MT5 server)
-    try {
-        # If it returns 1, it means connections are blocked, but we allow this single request to see if MT5 server responds
-        # If it returns 0, everything's fine
-        # We use this to unlock connections if this try is successful
-        $trying_mode = _manage_mt5_blockage($redis, $cmd);
-    } catch {
-        # An exception will be thrown if connections are blocked
+    my $failcount     = $redis->get($FAILCOUNT_KEY) // 0;
+    my $lock          = $redis->get($LOCK_KEY) // 0;
+    my $trying        = 0;
+    # Backoff if we have tried 20 without being able to connect.
+    if ($failcount >= $BACKOFF_THRESHOLD) {
+        $redis->set($LOCK_KEY, 1);
+        DataDog::DogStatsd::Helper::stats_inc('mt5.call.blocked', {tags => ["mt5:$cmd"]});
         return $f->fail(_future_error({ret_code => 10}));
+    } elsif ($lock) {
+        my $is_worker_checking = $redis->get($TRIAL_FLAG) // 0;
+        if ($is_worker_checking) {
+            DataDog::DogStatsd::Helper::stats_inc('mt5.call.blocked', {tags => ["mt5:$cmd"]});
+            return $f->fail(_future_error({ret_code => 10}));
+        } else {
+            # Set trial flag, so only one worker checks if we are able to connect.
+            # Make sure flag has TTL so its removed in case worker dies mid call.
+            my $flag_set = $redis->set(
+                $TRIAL_FLAG => 1,
+                EX          => 30,
+                "NX"
+            ) // 0;
+            # in case Flag was already set, we will get 0 so prevent call since a worker already trying to.
+            unless ($flag_set) {
+                DataDog::DogStatsd::Helper::stats_inc('mt5.call.blocked', {tags => ["mt5:$cmd"]});
+                return $f->fail(_future_error({ret_code => 10}));
+            }
+            $trying = 1;
+        }
     }
-
     my ($srv_type, $prefix);
     try {
         $prefix   = _get_prefix($param);
         $srv_type = _get_server_type_by_prefix($prefix);
     } catch {
         $log->infof('Error in proccessing mt5 request: %s', $@);
-        return $f->fail(_future_error({code => 'General'}));
+        return _future_error({code => 'General'});
     }
 
-    my $php_pid = $loop->run_child(
+    $loop->run_child(
         command   => [@MT5_WRAPPER_COMMAND, $cmd, $srv_type],
         stdin     => $in,
         on_finish => sub {
             my (undef, $exitcode, $out, $err) = @_;
-            $log->errorf('MT5 PHP call nonzero status: %s', $exitcode) if $exitcode;
-            $log->errorf('MT5 PHP call error: %s from %s', $err, $in) if defined($err) && length($err);
+            warn "MT5 PHP call nonzero status: $exitcode\n" if $exitcode;
+            warn "MT5 PHP call error: $err from $in\n"      if defined($err) && length($err);
 
             DataDog::DogStatsd::Helper::stats_timing('mt5.call.timing', (1000 * Time::HiRes::tv_interval($request_start)), {tags => ["mt5:$cmd"]});
 
@@ -336,17 +269,19 @@ sub _invoke_mt5 {
                     # Update connection trials counter in Redis, with 1 minute TTL
                     # code 10 is 'no connection' & 9 'connection timeout'
                     if ($out->{ret_code} == 10 || $out->{ret_code} == 9) {
-                        _handle_failed_mt5_connection($redis);
+                        DataDog::DogStatsd::Helper::stats_inc('mt5.call.connection_fail');
+                        if ($lock) {
+                            # If our last try was failed also, set key to threshold straight away.
+                            $redis->setex($FAILCOUNT_KEY, $BACKOFF_TTL, $BACKOFF_THRESHOLD);
+                        } else {
+                            $redis->incr($FAILCOUNT_KEY);
+                            $redis->expire($FAILCOUNT_KEY, $BACKOFF_TTL);
+                        }
                     }
                     # needed as both of them return same code for different reason.
                     if (($cmd eq 'UserAdd' or $cmd eq 'UserPasswordCheck') and $out->{ret_code} == 3006) {
                         $out->{ret_code} .= $cmd;
                     }
-
-                    # Unlock the lock if the response is NotFound which means
-                    # we have already connected to MT5 but loginid is archived
-                    $redis->set($LOCK_KEY, 0) if $trying_mode and ($out->{ret_code} // 0) == 13;
-
                     $f->fail(_future_error($out));
                 } else {
                     # Append login prefixes for mt5 used id.
@@ -356,9 +291,8 @@ sub _invoke_mt5 {
                         $out->{login} = $prefix . $out->{login};
                     }
 
-                    # If we're in trying mode
                     # Unset Lock since we got a success call.
-                    $redis->set($LOCK_KEY, 0) if $trying_mode;
+                    $redis->set($LOCK_KEY, 0) if $lock;
                     $f->done($out);
                 }
             } catch {
@@ -366,37 +300,12 @@ sub _invoke_mt5 {
                 chomp $e;
                 $f->fail($e, mt5 => $cmd);
             }
-            $redis->del($TRIAL_FLAG) if $trying_mode;
+            $redis->del($TRIAL_FLAG) if $trying;
 
         },
     );
 
-    # Catch will be triggered whenever $f fails due to any reason
-    # Or when timout reaches before PHP process respond. In this case we perform connection failure oprations
-    #   and kill the PHP process which havn't responded in time
-    return Future->wait_any($f, $loop->timeout_future(after => $MT5_PROCESS_TIMEOUT))->catch(
-        sub {
-            my ($err) = @_;
-
-            if ($err eq 'Timeout') {
-                _handle_failed_mt5_connection($redis);
-                # Kill PHP process if timeout reaches before any response
-                kill 9, $php_pid;
-                return Future->fail(_future_error({ret_code => 9}));
-            }
-
-            return Future->fail($err);
-        }
-    )->on_cancel(
-        sub {
-            # When multiple mt5 calls are being processed simultaneously (e.g. in fmap) and
-            #   one of them trigger an error which stops other calls as well,
-            #   their "Future" is going to be canceled.
-            # This cancellation might be related to many reasons which are listed in $error_category_mapping as well
-            #   so, we only kill PHP process as it its response will be ignored eventually.
-            #   but, we cannot consider it as connection problem
-            kill 9, $php_pid;
-        });
+    return $f;
 }
 
 sub create_user {
