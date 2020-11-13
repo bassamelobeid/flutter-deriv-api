@@ -211,7 +211,6 @@ sub get_settings_by_group {
                 system.suspend.transfer_between_accounts
                 system.suspend.transfer_currencies
                 system.suspend.onfido
-                system.suspend.customerio
                 system.suspend.p2p
                 system.mt5.suspend.all
                 system.mt5.suspend.deposits

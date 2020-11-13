@@ -136,9 +136,11 @@ if ($transaction_type eq 'Anonymize client') {
     }
 }
 if ($transaction_type eq 'Delete customerio record') {
-    # sending email consent as 0 delete record from customerio
+    # Note:
+    #   send 'profile_change' event to Segment to update Customer's trait `unsubscribed` to true,
+    #   it doesn't actually delete the record from Customerio
     BOM::Platform::Event::Emitter::emit(
-        'email_consent',
+        'profile_change',
         {
             loginid       => $loginid,
             email_consent => 0
