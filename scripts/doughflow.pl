@@ -79,12 +79,7 @@ if ($action =~ /(deposit|deposit_validate|withdrawal_validate)/) {
 
 if ($action eq 'deposit') {
     $params->{payment_method} = $payment_method;
-}
-
-if ($action eq 'create_payout') {
-    $params->{payment_method} = $payment_method;
 } elsif ($action =~ /[a-z]+_payout/) {
-    $params->{payment_processor} = 'n/a';
     $params->{payment_method}    = $payment_method;
 }
 
