@@ -185,8 +185,6 @@ subtest $method => sub {
         @{BOM::Database::Model::OAuth->new->get_token_details($rpc_ct->result->{oauth_token})}{qw/loginid creation_time ua_fingerprint/};
     is $resp_loginid, $new_loginid, 'correct oauth token';
 
-    ok $emitted{"register_details_$resp_loginid"}, "register_details event emitted";
-
     ok $emitted{"signup_$resp_loginid"}, "signup event emitted";
 
     subtest 'European client - de' => sub {
@@ -200,8 +198,6 @@ subtest $method => sub {
         $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error('If verification code is ok - account created successfully')
             ->result_value_is(sub { shift->{currency} },     'USD', 'It should return new account data')
             ->result_value_is(sub { ceil shift->{balance} }, 10000, 'It should return new account data');
-
-        ok $emitted{'register_details_' . $rpc_ct->result->{client_id}}, "register_details event emitted";
 
         ok $emitted{'signup_' . $rpc_ct->result->{client_id}}, "signup event emitted";
 
@@ -223,8 +219,6 @@ subtest $method => sub {
         $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error('If verification code is ok - account created successfully')
             ->result_value_is(sub { shift->{currency} },     'USD', 'It should return new account data')
             ->result_value_is(sub { ceil shift->{balance} }, 10000, 'It should return new account data');
-
-        ok $emitted{'register_details_' . $rpc_ct->result->{client_id}}, "register_details event emitted";
 
         ok $emitted{'signup_' . $rpc_ct->result->{client_id}}, "signup event emitted";
 
@@ -361,8 +355,6 @@ subtest $method => sub {
         my $token_db = BOM::Database::Model::AccessToken->new();
         my $tokens   = $token_db->get_all_tokens_by_loginid($new_loginid);
         is($tokens->[0]{info}, "App ID: $app_id", "token's app_id is correct");
-
-        ok $emitted{"register_details_$new_loginid"}, "register_details event emitted";
 
         my ($resp_loginid, $t, $uaf) =
             @{BOM::Database::Model::OAuth->new->get_token_details($rpc_ct->result->{oauth_token})}{qw/loginid creation_time ua_fingerprint/};
@@ -699,8 +691,7 @@ subtest $method => sub {
             @{BOM::Database::Model::OAuth->new->get_token_details($rpc_ct->result->{oauth_token})}{qw/loginid creation_time ua_fingerprint/};
         is $resp_loginid, $new_loginid, 'correct oauth token';
 
-        ok $emitted{"register_details_$new_loginid"}, "register_details event emitted";
-        ok $emitted{"signup_$new_loginid"},           "signup event emitted";
+        ok $emitted{"signup_$new_loginid"}, "signup event emitted";
 
         # check disabled case
         my $new_client = BOM::User::Client->new({loginid => $new_loginid});
@@ -888,8 +879,7 @@ subtest $method => sub {
         $result = $rpc_ct->call_ok('get_financial_assessment', {token => $auth_token_mf})->result;
         isnt(keys %$result, 0, 'MF client has financial assessment set');
 
-        ok $emitted{"register_details_$new_loginid"}, "register_details event emitted";
-        ok $emitted{"signup_$new_loginid"},           "signup event emitted";
+        ok $emitted{"signup_$new_loginid"}, "signup event emitted";
         ok !$cl->status->age_verification, 'age verification not synced between mx(gb) and mf.';
         ok $cl->non_pep_declaration_time, 'non_pep_declaration_time is auto-initialized with no non_pep_delclaration in args';
         cmp_ok $cl->non_pep_declaration_time, 'ne', '2020-01-02T00:00:00', 'non_pep declaration time is different from MLT account';
@@ -925,8 +915,7 @@ subtest $method => sub {
         my $result = $rpc_ct->call_ok($method, $params)->result;
         ok $result->{client_id}, "Create an MF account from virtual account";
 
-        ok $emitted{'register_details_' . $result->{client_id}}, "register_details event emitted";
-        ok $emitted{'signup_' . $result->{client_id}},           "signup event emitted";
+        ok $emitted{'signup_' . $result->{client_id}}, "signup event emitted";
 
         #create a virtual de client
         $email = 'virtual_germany_email' . rand(999) . '@binary.com';
@@ -956,8 +945,7 @@ subtest $method => sub {
         $result = $rpc_ct->call_ok($method, $params)->result;
         ok $result->{client_id}, "Germany users can create MF account from the virtual account";
 
-        ok $emitted{'register_details_' . $result->{client_id}}, "register_details event emitted";
-        ok $emitted{'signup_' . $result->{client_id}},           "signup event emitted";
+        ok $emitted{'signup_' . $result->{client_id}}, "signup event emitted";
 
         my $cl = BOM::User::Client->new({loginid => $result->{client_id}});
         ok $cl->non_pep_declaration_time,
@@ -996,8 +984,6 @@ subtest $method => sub {
         ok $result->{client_id}, "Czech users can create MF account from the virtual account";
 
         $auth_token = BOM::Platform::Token::API->new->create_token($result->{client_id}, 'test token');
-
-        ok $emitted{'register_details_' . $result->{client_id}}, "register_details event emitted";
     };
 
     subtest 'Create new account malta from MF' => sub {

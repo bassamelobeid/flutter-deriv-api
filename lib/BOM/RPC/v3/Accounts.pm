@@ -1349,15 +1349,7 @@ rpc set_settings => sub {
     # so need to save it separately
     if (defined $args->{email_consent}) {
         $user->update_email_fields(email_consent => $args->{email_consent});
-
-        BOM::Platform::Event::Emitter::emit(
-            'email_consent',
-            {
-                loginid       => $current_client->loginid,
-                email_consent => $args->{email_consent}});
     }
-
-    return {status => 1} if $current_client->is_virtual;
 
     # according to compliance, tax_residence and tax_identification_number can be changed
     # but cannot be removed once they have been set
@@ -1889,17 +1881,15 @@ rpc set_self_exclusion => sub {
         and ($config->{need_set_max_turnover_limit}
         or $client->landing_company->check_max_turnover_limit_is_set);
 
-    $args{customerio_suspended} = 0;
     if (defined $args{exclude_until} && $client->user->email_consent) {
         BOM::Config::Runtime->instance->app_config->check_for_update();
-        $args{customerio_suspended} = BOM::Config::Runtime->instance->app_config->system->suspend->customerio;
 
         my $data_subscription = {
-            loginid              => $client->loginid,
-            self_excluded        => 1,
-            customerio_suspended => $args{customerio_suspended}};
+            loginid      => $client->loginid,
+            unsubscribed => 1,
+        };
 
-        BOM::Platform::Event::Emitter::emit('self_exclude_set', $data_subscription);
+        BOM::Platform::Event::Emitter::emit('self_exclude', $data_subscription);
     }
 
 # Need to send email in 2 circumstances:
@@ -1943,9 +1933,6 @@ sub send_self_exclusion_notification {
             my $label = $email_field_labels->{$_};
             my $val   = $args->{$_};
             $message .= "$label: $val\n" if $val;
-        }
-        if ($args->{customerio_suspended}) {
-            $message .= "\n\nClient " . $client->loginid . " could not be unsubcribed from cutomerio. Please unsubscribe it manually.\n";
         }
 
         my @mt5_logins = $client->user->mt5_logins('real');
@@ -2276,7 +2263,6 @@ rpc account_closure => sub {
 
     # Remove email consents for the user (and update the clients as well)
     $user->update_email_fields(email_consent => $data_email_consent->{email_consent});
-    BOM::Platform::Event::Emitter::emit('email_consent', $data_email_consent);
 
     my $data_closure = {
         closing_reason    => $closing_reason,

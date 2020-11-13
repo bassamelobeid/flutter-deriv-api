@@ -343,7 +343,7 @@ subtest 'get and set self_exclusion' => sub {
     ok($msg, "msg sent to marketing and compliance email");
     is_deeply($msg->{to}, ['compliance@deriv.com'], "msg sent to marketing and compliance email");
     like($msg->{body}, qr/.*Exclude from website until/s, 'email content is ok');
-    ok($emitted->{self_exclude_set}, 'self_exclude_set event emitted');
+    ok($emitted->{self_exclude}, 'self_exclude event emitted');
 
     like(
         $c->tcall($method, $params)->{error}->{message_to_client},
@@ -382,14 +382,14 @@ subtest 'get and set self_exclusion' => sub {
         max_open_bets          => 50,
         session_duration_limit => 1440,
     };
-    delete $emitted->{self_exclude_set};
+    delete $emitted->{self_exclude};
     is($c->tcall($method, $params)->{status}, 1, 'update self_exclusion ok');
     $msg = mailbox_search(
         email   => 'compliance@deriv.com',
         subject => qr/Client $test_client_mlt_loginid set self-exclusion limits/
     );
     ok(!$msg, 'No email for MLT client limits without MT5 accounts');
-    is($emitted->{self_exclude_set}, undef, 'self_exclude_set event not emitted');
+    is($emitted->{self_exclude}, undef, 'self_exclude event not emitted');
 
     my $update_mt5_params = {
         language   => 'EN',
@@ -448,7 +448,7 @@ subtest 'get and set self_exclusion' => sub {
     is_deeply($msg->{to}, ['compliance@deriv.com', 'x-acc@deriv.com'], 'email to address ok');
     like($msg->{body}, qr/$mt5_loginid/, 'email content is ok');
     delete $params->{args};
-    delete $emitted->{self_exclude_set};
+    delete $emitted->{self_exclude};
     $params->{token} = $token_cr;
     $params->{args}  = {
         set_self_exclusion     => 1,
@@ -460,7 +460,7 @@ subtest 'get and set self_exclusion' => sub {
         timeout_until          => $timeout_until->epoch,
     };
     is($c->tcall($method, $params)->{status}, 1,     'update self_exclusion ok');
-    is($emitted->{self_exclude_set},          undef, 'self_exclude_set event not emitted because email_consent is not set for user');
+    is($emitted->{self_exclude},              undef, 'self_exclude event not emitted because email_consent is not set for user');
 };
 
 subtest 'deposit limits disabled' => sub {
