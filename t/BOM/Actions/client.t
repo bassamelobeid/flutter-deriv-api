@@ -35,11 +35,13 @@ $mock_segment->redefine(
         @track_args = @_;
         return $segment_response;
     });
-my $mock_brands = Test::MockModule->new('Brands');
+
+my @enabled_brands = ('deriv', 'binary');
+my $mock_brands    = Test::MockModule->new('Brands');
 $mock_brands->mock(
     'is_track_enabled' => sub {
         my $self = shift;
-        return ($self->name eq 'deriv');
+        return (grep { $_ eq $self->name } @enabled_brands);
     });
 
 my $onfido_doc = Test::MockModule->new('WebService::Async::Onfido::Document');
@@ -510,7 +512,7 @@ subtest 'signup event' => sub {
     $virtual_client2->set_default_account('USD');
     my $handler = BOM::Event::Process::get_action_mappings()->{signup};
     my $result  = $handler->($vr_args)->get;
-    is $result, 1, 'Success result';
+    ok $result, 'Success result';
 
     my ($customer, %args) = @identify_args;
     is_deeply \%args,
@@ -547,6 +549,7 @@ subtest 'signup event' => sub {
                 postal_code => '',
                 country     => Locale::Country::code2country($virtual_client2->residence),
             },
+            brand => 'deriv',
         }
         },
         'properties is properly set for virtual account signup';
@@ -568,7 +571,7 @@ subtest 'signup event' => sub {
 
     $result = $handler->($real_args)->get;
 
-    is $result, 1, 'Success signup result';
+    ok $result, 'Success signup result';
     ($customer, %args) = @identify_args;
     test_segment_customer($customer, $test_client2, '', $virtual_client2->date_joined, 'svg', 'labuan,svg');
 
@@ -618,6 +621,7 @@ subtest 'signup event' => sub {
             },
             type     => 'real',
             provider => 'email',
+            brand    => 'deriv',
         }
         },
         'properties is set properly for real account signup event';
@@ -654,7 +658,7 @@ subtest 'account closure' => sub {
 
     my $action_handler = BOM::Event::Process::get_action_mappings()->{account_closure};
     my $result         = $action_handler->($call_args)->get;
-    is $result, 1, 'Success result';
+    ok $result, 'Success result';
 
     ok @identify_args, 'Identify event is triggered';
 
@@ -672,7 +676,8 @@ subtest 'account closure' => sub {
             loginid           => $loginid,
             loginids_disabled => [$loginid],
             loginids_failed   => [],
-            email_consent     => 0
+            email_consent     => 0,
+            brand             => 'deriv',
         },
         },
         'track context and properties are correct.';
@@ -750,7 +755,8 @@ subtest 'transfer between accounts event' => sub {
                 to_currency   => "BTC",
                 value         => 2,
                 id            => 10,
-                time          => '2020-01-09T10:00:00Z'
+                time          => '2020-01-09T10:00:00Z',
+                brand         => 'deriv',
             },
         },
         'identify context is properly set for transfer_between_account'
@@ -789,7 +795,8 @@ subtest 'transfer between accounts event' => sub {
                 is_from_account_pa => 0,
                 is_to_account_pa   => 0,
                 id                 => 10,
-                time               => '2020-01-09T10:00:00Z'
+                time               => '2020-01-09T10:00:00Z',
+                brand              => 'deriv',
             },
         },
         'identify context is properly set for transfer_between_account'
@@ -817,7 +824,7 @@ subtest 'api token create' => sub {
 
     my $action_handler = BOM::Event::Process::get_action_mappings()->{api_token_created};
     my $result         = $action_handler->($call_args)->get;
-    is $result, 1, 'Success result';
+    ok $result, 'Success result';
 
     is scalar @identify_args, 0, 'No identify event is triggered';
 
@@ -831,6 +838,7 @@ subtest 'api token create' => sub {
         },
         event      => 'api_token_created',
         properties => {
+            brand   => 'deriv',
             loginid => $loginid,
             name    => [$loginid],
             scopes  => ['read', 'payment'],
@@ -870,7 +878,7 @@ subtest 'api token delete' => sub {
 
     my $action_handler = BOM::Event::Process::get_action_mappings()->{api_token_deleted};
     my $result         = $action_handler->($call_args)->get;
-    is $result, 1, 'Success result';
+    ok $result, 'Success result';
 
     is scalar @identify_args, 0, 'No identify event is triggered';
 
@@ -887,6 +895,7 @@ subtest 'api token delete' => sub {
             loginid => $loginid,
             name    => [$loginid],
             scopes  => ['read', 'payment'],
+            brand   => 'deriv',
         },
         },
         'track context and properties are correct.';
@@ -935,6 +944,7 @@ sub test_segment_customer {
             available_landing_companies => $available_landing_companies,
             provider                    => 'email',
             unsubscribed                => $test_client->user->email_consent ? 'false' : 'true',
+            signup_brand                => 'deriv',
             },
             'Customer traits are set correctly for virtual account';
     } else {
@@ -968,7 +978,8 @@ sub test_segment_customer {
             landing_companies           => $landing_companies,
             available_landing_companies => $available_landing_companies,
             provider                    => 'email',
-            unsubscribed                => $test_client->user->email_consent ? 'false' : 'true'
+            unsubscribed                => $test_client->user->email_consent ? 'false' : 'true',
+            signup_brand                => 'deriv',
             },
             'Customer traits are set correctly';
     }
@@ -1011,8 +1022,11 @@ subtest 'set financial assessment segment' => sub {
 
     $action_handler->($args)->get;
     my ($customer, %returned_args) = @track_args;
-    is_deeply(
-        {$args->{params}->%*, loginid => $loginid},
+    is_deeply({
+            $args->{params}->%*,
+            loginid => $loginid,
+            brand   => 'deriv'
+        },
         $returned_args{properties},
         'track properties are properly set for set_financial_assessment'
     );

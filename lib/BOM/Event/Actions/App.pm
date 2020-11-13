@@ -4,7 +4,6 @@ use strict;
 use warnings;
 
 use BOM::Event::Services::Track;
-use BOM::Event::Actions::Customerio;
 
 =head1 NAME
 
@@ -54,16 +53,16 @@ sub app_deleted {
     return BOM::Event::Services::Track::app_deleted(@args);
 }
 
-=head2 self_exclude_set
+=head2 self_exclude
 
-It is triggered when client self_exclude_set event emitted.
+It is triggered when client B<self_exclude> event emitted.
 
 =cut
 
-sub self_exclude_set {
+sub self_exclude {
     my @args = @_;
 
-    return BOM::Event::Actions::Customerio::self_exclude_set(@args);
+    return BOM::Event::Services::Track::self_exclude(@args);
 }
 
 1;

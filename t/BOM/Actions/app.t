@@ -44,16 +44,18 @@ $mock_segment->redefine(
         @track_args = @_;
         return $segment_response;
     });
-my $mock_brands = Test::MockModule->new('Brands');
+
+my @enabled_brands = ('deriv', 'binary');
+my $mock_brands    = Test::MockModule->new('Brands');
 $mock_brands->mock(
     'is_track_enabled' => sub {
         my $self = shift;
-        return ($self->name eq 'deriv');
+        return (grep { $_ eq $self->name } @enabled_brands);
     });
 $mock_brands->mock(
     'is_app_whitelisted' => sub {
         my $self = shift;
-        return ($self->name eq 'deriv');
+        return (grep { $_ eq $self->name } @enabled_brands);
     });
 
 subtest 'app registered' => sub {
@@ -73,10 +75,11 @@ subtest 'app registered' => sub {
         redirect_uri     => 'https://www.example.com/',
         verification_uri => 'https://www.example.com/verify',
         homepage         => 'https://www.homepage.com/',
+        brand            => 'deriv',
     };
     my $handler = BOM::Event::Process::get_action_mappings()->{app_registered};
     my $result  = $handler->($args)->get;
-    is $result, 1, 'Success track result';
+    ok $result, 'Success track result';
     is scalar @identify_args, 0, 'no identify call';
 
     my ($customer, %args) = @track_args;
@@ -101,9 +104,9 @@ subtest 'app registered' => sub {
     undef @track_args;
 
     $result = $handler->($args)->get;
-    is $result, undef, 'empty track result (not called)';
+    ok $result, 'Success track result';
     is scalar @identify_args, 0, 'no identify call';
-    is scalar @track_args,    0, 'no track call';
+    ok @track_args, 'Segment track is invoked';
 };
 
 subtest 'app updated' => sub {
@@ -121,10 +124,11 @@ subtest 'app updated' => sub {
         name       => 'App 2',
         googleplay => 'https://googleplay.com/app_2',
         homepage   => 'https://www.homepage.com/',
+        brand      => 'deriv',
     };
     my $handler = BOM::Event::Process::get_action_mappings()->{app_updated};
     my $result  = $handler->($args)->get;
-    is $result, 1, 'Success track result';
+    ok $result, 'Success track result';
     is scalar @identify_args, 0, 'no identify call';
 
     my ($customer, %args) = @track_args;
@@ -149,9 +153,9 @@ subtest 'app updated' => sub {
     undef @track_args;
 
     $result = $handler->($args)->get;
-    is $result, undef, 'Empty track result';
+    ok $result, 'Success track result';
     is scalar @identify_args, 0, 'no identify call';
-    is scalar @track_args,    0, 'no track call';
+    ok @track_args, 'Segment track is invoked';
 };
 
 subtest 'app deleted' => sub {
@@ -166,10 +170,11 @@ subtest 'app deleted' => sub {
     my $args = {
         loginid => $test_client->loginid,
         app_id  => 1,
+        brand   => 'deriv'
     };
     my $handler = BOM::Event::Process::get_action_mappings()->{app_deleted};
     my $result  = $handler->($args)->get;
-    is $result, 1, 'Success track result';
+    ok $result, 'Success track result';
     is scalar @identify_args, 0, 'no identify call';
 
     my ($customer, %args) = @track_args;
@@ -194,9 +199,9 @@ subtest 'app deleted' => sub {
     undef @track_args;
 
     $result = $handler->($args)->get;
-    is $result, undef, 'Empty track result';
+    ok $result, 'Success track result';
     is scalar @identify_args, 0, 'no identify call';
-    is scalar @track_args,    0, 'no track call';
+    ok @track_args, 'Segment track is invoked';
 };
 
 done_testing();

@@ -19,55 +19,55 @@ use constant QUEUE_NAME => 'GENERIC_EVENTS_QUEUE';
 
 my $count  = 0;
 my @events = ({
-        'register_details' => {
+        'signup' => {
             loginid => 'CR121',
             email   => 'abc1@binary.com'
         }
     },
     {
-        'register_details' => {
+        'signup' => {
             loginid => 'CR122',
             email   => 'abc2@binary.com'
         }
     },
     {
-        'register_details' => {
+        'signup' => {
             loginid => 'CR123',
             email   => 'abc3@binary.com'
         }
     },
     {
-        'register_details' => {
+        'signup' => {
             loginid => 'CR124',
             email   => 'abc4@binary.com'
         }
     },
     {
-        'register_details' => {
+        'signup' => {
             loginid => 'CR125',
             email   => 'abc5@binary.com'
         }
     },
     {
-        'register_details' => {
+        'signup' => {
             loginid => 'CR126',
             email   => 'abc6@binary.com'
         }
     },
     {
-        'email_consent' => {
+        'profile_change' => {
             loginid       => 'CR121',
             email_consent => 1
         }
     },
     {
-        'email_consent' => {
+        'profile_change' => {
             loginid       => 'CR122',
             email_consent => 0
         }
     },
     {
-        'email_consent' => {
+        'profile_change' => {
             loginid       => 'CR123',
             email_consent => 1
         }
@@ -108,7 +108,7 @@ subtest 'process' => sub {
     is_deeply(
         [sort keys %$action_mappings],
         [
-            sort qw/email_consent register_details email_statement sync_user_to_MT5 send_email
+            sort qw/email_statement sync_user_to_MT5 send_email
                 store_mt5_transaction new_mt5_signup mt5_password_changed anonymize_client bulk_anonymization
                 document_upload ready_for_authentication account_closure client_verification
                 verify_address social_responsibility_check sync_onfido_details
@@ -118,7 +118,7 @@ subtest 'process' => sub {
                 p2p_order_created p2p_order_updated p2p_order_expired p2p_timeout_refund p2p_dispute_expired p2p_chat_received
                 affiliate_sync_initiated withdrawal_limit_reached
                 api_token_created api_token_deleted
-                app_registered app_updated app_deleted set_financial_assessment self_exclude_set crypto_withdrawal aml_client_status_update
+                app_registered app_updated app_deleted self_exclude set_financial_assessment crypto_withdrawal aml_client_status_update
                 client_promo_codes_upload new_crypto_address onfido_doc_ready_for_upload shared_payment_method_found/
         ],
         'Correct number of actions that can be emitted'
@@ -133,34 +133,30 @@ subtest 'process' => sub {
     $log->contains_ok(qr/no function mapping found for event dummy_action from queue GENERIC_EVENTS_QUEUE/,
         'Process cannot be processed as function action is not available');
 
-    BOM::Event::Process::process({type => 'email_consent'}, QUEUE_NAME);
-    $log->contains_ok(qr/event email_consent from queue GENERIC_EVENTS_QUEUE contains no details/,
-        'Process cannot be processed as no details is given');
-
     my $mock_process = Test::MockModule->new('BOM::Event::Process');
     $mock_process->mock(
         'get_action_mappings' => sub {
             return {
-                register_details => sub { return 'Details registered'; },
-                email_consent    => sub { return 'Unsubscribe flag updated'; },
-                email_statement  => sub { return 'Statement has been sent'; }
+                signup          => sub { return 'Details registered'; },
+                profile_change  => sub { return 'Unsubscribe flag updated'; },
+                email_statement => sub { return 'Statement has been sent'; }
             };
         });
 
     is BOM::Event::Process::process({
-            type    => 'register_details',
+            type    => 'signup',
             details => {}
         },
         QUEUE_NAME
         ),
-        'Details registered', 'Invoked associated sub for register_details event';
+        'Details registered', 'Invoked associated sub for signup event';
     is BOM::Event::Process::process({
-            type    => 'email_consent',
+            type    => 'profile_change',
             details => {}
         },
         QUEUE_NAME
         ),
-        'Unsubscribe flag updated', 'Invoked associated sub for register_details event';
+        'Unsubscribe flag updated', 'Invoked associated sub for profile_change event';
 
     is BOM::Event::Process::process({
             type    => 'email_statement',
@@ -175,14 +171,14 @@ subtest 'process' => sub {
     $mock_process->mock(
         'get_action_mappings' => sub {
             return {
-                register_details => sub { die 'Error - connection error'; },
-                email_consent    => sub { die 'Error - connection error'; },
-                email_statement  => sub { die 'Error - connection error'; },
+                signup          => sub { die 'Error - connection error'; },
+                profile_change  => sub { die 'Error - connection error'; },
+                email_statement => sub { die 'Error - connection error'; },
             };
         });
 
     is BOM::Event::Process::process({
-            type    => 'register_details',
+            type    => 'signup',
             details => {}
         },
         QUEUE_NAME
@@ -190,7 +186,7 @@ subtest 'process' => sub {
         0, 'If internal method die then process should just return false not die';
 
     is BOM::Event::Process::process({
-            type    => 'email_consent',
+            type    => 'profile_change',
             details => {}
         },
         QUEUE_NAME

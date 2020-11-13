@@ -13,7 +13,6 @@ my $allowed_naked_packages = {
     'BOM::Event::QueueHandler'                => 1,
     'BOM::Event::Services'                    => 9,
     'BOM::Event::Actions::P2P'                => 2,
-    'BOM::Event::Actions::Customerio'         => 6,
     'BOM::Event::Actions::CryptoSubscription' => 3,
     'BOM::Event::Actions::MyAffiliate'        => 4,
     'BOM::Event::Actions::Client'             => 26,

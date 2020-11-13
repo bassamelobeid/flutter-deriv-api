@@ -58,19 +58,18 @@ $mock_segment->redefine(
         return $segment_response;
     });
 
-my $mock_brands = Test::MockModule->new('Brands');
+my @enabled_brands = ('deriv');
+my $mock_brands    = Test::MockModule->new('Brands');
 $mock_brands->mock(
-    is_track_enabled => sub {
+    'is_track_enabled' => sub {
         my $self = shift;
-        return ($self->name eq 'deriv');
-    },
-);
+        return (grep { $_ eq $self->name } @enabled_brands);
+    });
 $mock_brands->mock(
-    is_app_whitelisted => sub {
+    'is_app_whitelisted' => sub {
         my $self = shift;
-        return ($self->name eq 'deriv');
-    },
-);
+        return (grep { $_ eq $self->name } @enabled_brands);
+    });
 
 my $mock_mt5_groups = Test::MockModule->new('BOM::User');
 $mock_mt5_groups->mock(
@@ -114,7 +113,9 @@ subtest 'General event validation - filtering by brand' => sub {
             'locale' => 'id'
         },
         'event'      => 'login',
-        'properties' => {}};
+        'properties' => {
+            'brand' => 'deriv',
+        }};
     is_deeply \%args, $expected_args;
 
     undef @track_args;
@@ -127,7 +128,7 @@ subtest 'General event validation - filtering by brand' => sub {
     is @identify_args, 0, 'Segment identify is not invoked';
     ok @track_args, 'Segment track is invoked';
     ($customer, %args) = @track_args;
-    $expected_args->{properties} = {};
+    $expected_args->{properties} = {'brand' => 'deriv'};
     is_deeply \%args, $expected_args, 'track request args are correct - invalid property filtered out';
     test_segment_customer($customer);
 
@@ -155,54 +156,67 @@ subtest 'General event validation - filtering by brand' => sub {
         }
         },
         'identify request args are correct';
-    test_segment_customer($customer);
+    test_segment_customer($customer, \%args);
 
     subtest 'tracking on a disabled brand' => sub {
         $req = BOM::Platform::Context::Request->new(
-            brand_name => 'binary',
+            brand_name => 'champion',
             language   => 'id'
         );
         request($req);
 
         undef @track_args;
         undef @identify_args;
-        is BOM::Event::Services::Track::track_event(event => 'login')->get, undef, 'Response is empty when brand is not deriv';
+        is BOM::Event::Services::Track::track_event(event => 'login')->get, undef, 'Response is empty when brand is not \'deriv\' or \'binary\'';
         is @identify_args, 0, 'Segment identify is not invoked';
         is @track_args,    0, 'Segment track is not invoked';
 
-        ok BOM::Event::Services::Track::track_event(
-            event                => 'login',
-            loginid              => $test_client->loginid,
-            properties           => {browser => 'fire-chrome'},
-            is_identify_required => 1,
-            brand                => Brands->new(name => 'deriv'))->get, 'event emitted successfully';
-        ok @identify_args, 'Segment identify is invoked (by setting brand to deriv in the args)';
-        ok @track_args,    'Segment track is invoked (by setting brand to deriv in the args)';
-        ($customer, %args) = @track_args;
-        $expected_args->{context}->{app}->{name} = 'deriv';
-        is_deeply \%args, $expected_args, 'track request args are correct with context brand switched to deriv';
-        test_segment_customer($customer);
+        foreach (@enabled_brands) {
+            my $brand = $_;
 
-        ($customer, %args) = @identify_args;
-        is_deeply \%args,
-            {
-            'context' => {
-                'active' => 1,
-                'app'    => {'name' => 'deriv'},
-                'locale' => 'id'
-            }
-            },
-            'identify request args are correct with context brand switched to deriv';
-        test_segment_customer($customer);
+            $req = BOM::Platform::Context::Request->new(
+                brand_name => $brand,
+                language   => 'id'
+            );
+            request($req);
 
+            undef @track_args;
+            undef @identify_args;
+            ok BOM::Event::Services::Track::track_event(
+                event                => 'login',
+                loginid              => $test_client->loginid,
+                properties           => {browser => 'fire-chrome'},
+                is_identify_required => 1,
+                brand                => Brands->new(name => $brand))->get, 'event emitted successfully';
+            ok @identify_args, "Segment identify is invoked (by setting brand to '$brand' in the args)";
+            ok @track_args,    "Segment track is invoked (by setting brand to '$brand' in the args)";
+            ($customer, %args) = @track_args;
+            $expected_args->{context}->{app}->{name} = $brand;
+            $expected_args->{properties}->{brand} = $brand;
+            is_deeply \%args, $expected_args, "track request args are correct with context brand switched to '$brand'";
+            test_segment_customer($customer);
+
+            ($customer, %args) = @identify_args;
+            is_deeply \%args,
+                {
+                'context' => {
+                    'active' => 1,
+                    'app'    => {'name' => $brand},
+                    'locale' => 'id'
+                }
+                },
+                "identify request args are correct with context brand switched to '$brand'";
+            test_segment_customer($customer, \%args);
+        }
+    };
+
+    subtest 'mt5 ligin id list' => sub {
         $req = BOM::Platform::Context::Request->new(
             brand_name => 'deriv',
             language   => 'id'
         );
         request($req);
-    };
 
-    subtest 'mt5 ligin id list' => sub {
         $user->add_loginid('MT5900000');
         $user->add_loginid('MT5900001');
         undef @track_args;
@@ -218,12 +232,12 @@ subtest 'General event validation - filtering by brand' => sub {
         ok @track_args,    'Segment track is invoked';
         ($customer, %args) = @track_args;
 
-        test_segment_customer($customer);
+        test_segment_customer($customer, \%args);
 
         is $customer->{traits}->{mt5_loginids}, 'MT5900000,MT5900001', 'MT5 account list is correct';
     };
 
-    subtest 'Set unsubscribed to false on email_consent change' => sub {
+    subtest 'Set unsubscribed to false on `profile_change` event' => sub {
         undef @track_args;
         undef @identify_args;
 
@@ -249,6 +263,7 @@ subtest 'General event validation - filtering by brand' => sub {
                 event      => "profile_change",
                 properties => {
                     email_consent => 1,
+                    brand         => 'deriv'
                 },
             },
             'identify context is properly set for profile_change'
@@ -257,7 +272,7 @@ subtest 'General event validation - filtering by brand' => sub {
         is $customer->{traits}->{unsubscribed}, 'false', '\'unsubscribed\' is set to false';
     };
 
-    subtest 'Set unsubscribed to true on account_closure event' => sub {
+    subtest 'Set unsubscribed to true on `account_closure` event' => sub {
         undef @track_args;
         undef @identify_args;
 
@@ -285,6 +300,7 @@ subtest 'General event validation - filtering by brand' => sub {
                 },
                 event      => "account_closure",
                 properties => {
+                    brand          => 'deriv',
                     closing_reason => 'Test',
                     email_consent  => 0,
                 },
@@ -294,14 +310,95 @@ subtest 'General event validation - filtering by brand' => sub {
 
         is $customer->{traits}->{unsubscribed}, 'true', '\'unsubscribed\' is set to true';
     };
+
+    subtest 'Set unsubscribed to true on `self_exclude` event' => sub {
+        undef @track_args;
+        undef @identify_args;
+
+        my $exclude_until = Date::Utility->new()->plus_time_interval('365d')->date;
+        $test_client->set_exclusion->exclude_until($exclude_until);
+        $test_client->save;
+        ok BOM::Event::Services::Track::track_event(
+            event      => 'self_exclude',
+            loginid    => $test_client->loginid,
+            properties => {
+                unsubscribed => 1,
+            },
+            is_identify_required => 1,
+            brand                => Brands->new(name => 'deriv'))->get, 'event emitted successfully';
+        ok @identify_args, 'Segment identify is invoked';
+        ok @track_args,    'Segment track is invoked';
+        ($customer, %args) = @track_args;
+
+        is_deeply(
+            \%args,
+            {
+                context => {
+                    active => 1,
+                    app    => {name => "deriv"},
+                    locale => "id"
+                },
+                event      => "self_exclude",
+                properties => {
+                    brand        => 'deriv',
+                    unsubscribed => 1,
+                },
+            },
+            'identify context is properly set for self_exclude event'
+        );
+
+        test_segment_customer($customer, \%args);
+
+        undef @track_args;
+        undef @identify_args;
+
+        $user->update_email_fields(email_consent => 1);
+        ok BOM::Event::Services::Track::track_event(
+            event                => 'profile_change',
+            loginid              => $test_client->loginid,
+            properties           => {email_consent => 1},
+            is_identify_required => 1,
+            brand                => Brands->new(name => 'deriv'))->get, 'event emitted successfully';
+        ok @identify_args, 'Segment identify is invoked';
+        ok @track_args,    'Segment track is invoked';
+        ($customer, %args) = @track_args;
+
+        is_deeply(
+            \%args,
+            {
+                context => {
+                    active => 1,
+                    app    => {name => "deriv"},
+                    locale => "id"
+                },
+                event      => "profile_change",
+                properties => {
+                    brand         => 'deriv',
+                    email_consent => 1,
+                },
+            },
+            'identify context is properly set for profile_change'
+        );
+
+        test_segment_customer($customer, \%args);
+        # We expect `unsubscribed` flag to remain true as long as client is self excluded
+        # when other events are triggered
+        is $customer->{traits}->{unsubscribed}, 'true', '\'unsubscribed\' remains as true';
+    };
 };
 
 sub test_segment_customer {
-    my ($customer) = @_;
+    my ($customer, $args) = @_;
 
     ok $customer->isa('WebService::Async::Segment::Customer'), 'Customer object type is correct';
     is $customer->user_id, $test_client->binary_user_id, 'User id is binary user id';
     my ($year, $month, $day) = split('-', $test_client->date_of_birth);
+
+    my $has_exclude_until = $test_client->get_self_exclusion  ? $test_client->get_self_exclusion->exclude_until : undef;
+    my $unsubscribed      = $test_client->user->email_consent ? 'false'                                         : 'true';
+    if (defined($args->{properties}->{unsubscribed} || $has_exclude_until)) {
+        $unsubscribed = 'true';
+    }
 
     my $expected_traits = {
         'email'      => $test_client->email,
@@ -330,7 +427,7 @@ sub test_segment_customer {
         landing_companies           => 'svg',
         available_landing_companies => 'labuan,svg',
         provider                    => 'email',
-        unsubscribed                => $test_client->user->email_consent ? 'false' : 'true',
+        unsubscribed                => $unsubscribed,
     };
     is_deeply $customer->traits, $expected_traits, 'Customer traits are set correctly';
 }
@@ -343,10 +440,10 @@ subtest 'brand/offical app id validation' => sub {
     my ($deriv_app_id)  = $deriv->whitelist_apps->%*;
     my ($binary_app_id) = $binary->whitelist_apps->%*;
 
-    ok BOM::Event::Services::Track::_validate_params($test_client->loginid, 'dummy', $deriv, $deriv_app_id), 'Whitelisted app id and brand';
-    ok !BOM::Event::Services::Track::_validate_params($test_client->loginid, 'dummy', $deriv,  $binary_app_id), 'Restricted app id or brand';
-    ok !BOM::Event::Services::Track::_validate_params($test_client->loginid, 'dummy', $binary, $binary_app_id), 'Restricted app id or brand';
-    ok !BOM::Event::Services::Track::_validate_params($test_client->loginid, 'dummy', $binary, $deriv_app_id),  'Restricted app id or brand';
+    ok BOM::Event::Services::Track::_validate_params($test_client->loginid, 'dummy', $deriv, $deriv_app_id),   'Whitelisted app id and brand';
+    ok !BOM::Event::Services::Track::_validate_params($test_client->loginid, 'dummy', $deriv, $binary_app_id), 'Restricted app id or brand';
+    ok BOM::Event::Services::Track::_validate_params($test_client->loginid, 'dummy', $binary, $binary_app_id), 'Whitelisted app id and brand';
+    ok !BOM::Event::Services::Track::_validate_params($test_client->loginid, 'dummy', $binary, $deriv_app_id), 'Restricted app id or brand';
 
     subtest 'whitelist' => sub {
         # These events return 1 regardless of the brand / app_id

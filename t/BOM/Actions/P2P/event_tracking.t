@@ -82,6 +82,7 @@ subtest 'p2p order created' => sub {
         advertiser_user_id  => $advertiser->binary_user_id,
         client_nickname     => $order->{client_details}->{name} // '',
         client_user_id      => $client->binary_user_id,
+        brand               => 'binary',
         },
         'properties are set properly for p2p_order_create event';
 
@@ -122,6 +123,7 @@ subtest 'p2p order confirmed by buyer' => sub {
         buyer_user_id    => $client->binary_user_id,
         exchange_rate    => '1.00',
         order_created_at => Time::Moment->from_epoch(Date::Utility->new($order->{created_time})->epoch)->to_string,
+        brand            => 'binary',
         },
         'properties are set properly for p2p_order_buyer_has_paid event';
 
@@ -161,6 +163,7 @@ subtest 'p2p order confirmed by seller' => sub {
         seller_user_id  => $advertiser->binary_user_id,
         buyer_nickname  => $order->{client_name} // '',
         buyer_user_id   => $client->binary_user_id,
+        brand           => 'binary',
         },
         'properties are set properly for p2p_order_seller_has_released event';
 
@@ -200,6 +203,7 @@ subtest 'p2p order cancelled' => sub {
         seller_user_id  => $advertiser->binary_user_id,
         buyer_nickname  => $order->{client_name} // '',
         buyer_user_id   => $client->binary_user_id,
+        brand           => 'binary',
         },
         'properties are set properly for p2p_order_cancelled event';
 
@@ -247,6 +251,7 @@ subtest 'pending order expired' => sub {
         buyer_has_confirmed => 0,
         exchange_rate       => '1.00',
         order_created_at    => Time::Moment->from_epoch(Date::Utility->new($order->{created_time})->epoch)->to_string,
+        brand               => 'binary',
     };
     is $args1->{event}, 'p2p_order_expired', 'Track event name is correct';
     is_deeply $args1->{properties}, $expected_properties, 'properties are set properly for p2p_order_expired event (buyer)';
@@ -307,6 +312,7 @@ subtest 'confirmed order expired' => sub {
         buyer_has_confirmed => 1,
         exchange_rate       => '1.00',
         order_created_at    => Time::Moment->from_epoch(Date::Utility->new($order->{created_time})->epoch)->to_string,
+        brand               => 'binary',
     };
     is $args1->{event}, 'p2p_order_expired', 'Track event name is correct';
     is_deeply $args1->{properties}, $expected_properties, 'properties are set properly for p2p_order_expired event (buyer)';

@@ -10,7 +10,6 @@ use Syntax::Keyword::Try;
 use Log::Any qw($log);
 
 use BOM::Event::Actions::Client;
-use BOM::Event::Actions::Customerio;
 use BOM::Event::Actions::CustomerStatement;
 use BOM::Event::Actions::MT5;
 use BOM::Event::Actions::Client;
@@ -43,8 +42,6 @@ Based on type of event its associated method is invoked.
 =cut
 
 my $action_mapping = {
-    register_details            => \&BOM::Event::Actions::Customerio::register_details,
-    email_consent               => \&BOM::Event::Actions::Customerio::email_consent,
     email_statement             => \&BOM::Event::Actions::CustomerStatement::email_statement,
     sync_user_to_MT5            => \&BOM::Event::Actions::MT5::sync_info,
     store_mt5_transaction       => \&BOM::Event::Actions::MT5::redis_record_mt5_transfer,
@@ -89,7 +86,7 @@ my $action_mapping = {
     app_deleted                 => \&BOM::Event::Actions::App::app_deleted,
     set_financial_assessment    => \&BOM::Event::Actions::Client::set_financial_assessment,
     aml_client_status_update    => \&BOM::Event::Actions::Client::aml_client_status_update,
-    self_exclude_set            => \&BOM::Event::Actions::App::self_exclude_set,
+    self_exclude                => \&BOM::Event::Actions::App::self_exclude,
     crypto_withdrawal           => \&BOM::Event::Actions::Client::handle_crypto_withdrawal,
     client_promo_codes_upload   => \&BOM::Event::Actions::Client::client_promo_codes_upload,
     shared_payment_method_found => \&BOM::Event::Actions::Client::shared_payment_method_found,

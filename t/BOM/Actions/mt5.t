@@ -27,11 +27,12 @@ $mock_segment->redefine(
         @track_args = @_;
         return Future->done(1);
     });
-my $mock_brands = Test::MockModule->new('Brands');
+my @enabled_brands = ('deriv', 'binary');
+my $mock_brands    = Test::MockModule->new('Brands');
 $mock_brands->mock(
     'is_track_enabled' => sub {
         my $self = shift;
-        return ($self->name eq 'deriv');
+        return (grep { $_ eq $self->name } @enabled_brands);
     });
 
 my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
@@ -127,7 +128,7 @@ subtest 'mt5 track event' => sub {
 
         my $action_handler = BOM::Event::Process::get_action_mappings()->{new_mt5_signup};
         my $result         = $action_handler->($args)->get;
-        is $result, 1, 'Success mt5 new account result';
+        ok $result, 'Success mt5 new account result';
 
         my ($customer, %args) = @track_args;
         my $mt5_details = parse_mt5_group($args->{mt5_group});
@@ -149,6 +150,7 @@ subtest 'mt5 track event' => sub {
                 'client_first_name' => $test_client->first_name,
                 'type_label'        => ucfirst $mt5_details->{type_label},
                 'mt5_integer_id'    => '90000',
+                brand               => 'deriv',
             }
             },
             'properties are set properly for new mt5 account event';
@@ -177,7 +179,7 @@ subtest 'mt5 track event' => sub {
 
         $args->{mt5_loginid} = 'MT90000';
         my $result = $action_handler->($args)->get;
-        is $result, 1, 'Success mt5 password change result';
+        ok $result, 'Success mt5 password change result';
 
         my ($customer, %args) = @track_args;
         is_deeply \%args,
@@ -191,6 +193,7 @@ subtest 'mt5 track event' => sub {
             properties => {
                 loginid       => $test_client->loginid,
                 'mt5_loginid' => 'MT90000',
+                brand         => 'deriv'
             }
             },
             'properties are set properly for mt5 password change event';

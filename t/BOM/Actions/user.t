@@ -45,16 +45,18 @@ $mock_segment->redefine(
         @track_args = @_;
         return $segment_response;
     });
-my $mock_brands = Test::MockModule->new('Brands');
+
+my @enabled_brands = ('deriv', 'binary');
+my $mock_brands    = Test::MockModule->new('Brands');
 $mock_brands->mock(
     'is_track_enabled' => sub {
         my $self = shift;
-        return ($self->name eq 'deriv');
+        return (grep { $_ eq $self->name } @enabled_brands);
     });
 $mock_brands->mock(
     'is_app_whitelisted' => sub {
         my $self = shift;
-        return ($self->name eq 'deriv');
+        return (grep { $_ eq $self->name } @enabled_brands);
     });
 
 subtest 'login event' => sub {
@@ -87,7 +89,7 @@ subtest 'login event' => sub {
         }};
 
     my $result = $action_handler->($args)->get;
-    is $result, 1, 'Success track result';
+    ok $result, 'Success track result';
     my ($customer, %args) = @identify_args;
     test_segment_customer($customer, $test_client, '', $virtual_client->date_joined);
 
@@ -119,6 +121,7 @@ subtest 'login event' => sub {
             location            => 'Germany',
             new_signin_activity => $new_signin_activity,
             app_name            => '',
+            brand               => 'deriv',
         }
         },
         'identify context and properties is properly set.';
@@ -160,7 +163,7 @@ subtest 'login event' => sub {
     $new_signin_activity_args->{properties}->{new_signin_activity} = $new_signin_activity;
     undef @track_args;
     $result = $action_handler->($new_signin_activity_args)->get;
-    is $result, 1, 'Success track result';
+    ok $result, 'Success track result';
     ($customer, %args) = @track_args;
     is_deeply \%args,
         {
@@ -177,6 +180,7 @@ subtest 'login event' => sub {
             location            => 'Germany',
             new_signin_activity => $new_signin_activity,
             app_name            => '',
+            brand               => 'deriv',
         }
         },
         'idenify context and properties is properly set after new signin activity.';
@@ -201,7 +205,7 @@ subtest 'login event' => sub {
         request($req);
 
         $result = $action_handler->($args)->get;
-        is $result, 1, 'Success track result';
+        ok $result, 'Success track result';
         ($customer, %args) = @track_args;
         ok $customer->isa('WebService::Async::Segment::Customer'), 'Customer object type is correct';
         is_deeply \%args,
@@ -219,6 +223,7 @@ subtest 'login event' => sub {
                 location            => 'Germany',
                 new_signin_activity => 0,
                 app_name            => 'in the name of 100',
+                brand               => 'deriv',
             }
             },
             'App name matches request->app_id.';
@@ -272,7 +277,7 @@ subtest 'user profile change event' => sub {
     undef @track_args;
     my $segment_response = Future->done(1);
     my $result           = $action_handler->($args)->get;
-    is $result, 1, 'Success profile_change result';
+    ok $result, 'Success profile_change result';
     my ($customer, %args) = @identify_args;
     test_segment_customer($customer, $test_client, '', $virtual_client->date_joined);
 
@@ -297,6 +302,7 @@ subtest 'user profile change event' => sub {
         },
         event      => 'profile_change',
         properties => {
+            brand   => 'deriv',
             loginid => $test_client->loginid,
 
             'address_line_1' => 'street 1',
@@ -360,7 +366,7 @@ subtest 'user profile change event' => sub {
                 }};
 
             my $result = $action_handler->($args)->get;
-            is $result, 1, 'Success profile_change result';
+            ok $result, 'Success profile_change result';
             is scalar keys %sanctions_args, 0, 'Sanctions not triggered for address_line_1 update';
         };
 
@@ -383,7 +389,7 @@ subtest 'user profile change event' => sub {
                 }};
 
             $result = $action_handler->($args)->get;
-            is $result, 1, 'Success profile_change result';
+            ok $result, 'Success profile_change result';
             cmp_deeply \%sanctions_args,
                 {
                 triggered_by => 'Triggered by profile update',
@@ -423,7 +429,7 @@ subtest 'user profile change event' => sub {
                 }};
 
             $result = $action_handler->($args)->get;
-            is $result, 1, 'Success profile_change result';
+            ok $result, 'Success profile_change result';
             cmp_deeply \%sanctions_args,
                 {
                 triggered_by => 'Triggered by profile update',
@@ -459,7 +465,7 @@ subtest 'user profile change event' => sub {
                 }};
 
             $result = $action_handler->($args)->get;
-            is $result, 1, 'Success profile_change result';
+            ok $result, 'Success profile_change result';
             my $msg = mailbox_search(subject => qr/$test_loginid possible match in sanctions list - Triggered by profile update/);
             ok $msg, 'Sanctions email sent';
             ok $msg->{body} =~ qr/Triggered by profile update/, 'Correct reason appended to email body';
@@ -507,7 +513,7 @@ sub test_segment_customer {
         landing_companies           => 'svg',
         available_landing_companies => 'labuan,svg',
         provider                    => 'email',
-        unsubscribed                => $test_client->user->email_consent ? 'false' : 'true'
+        unsubscribed                => $test_client->user->email_consent ? 'false' : 'true',
         },
         'Customer traits are set correctly';
 }

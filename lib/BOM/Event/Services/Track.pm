@@ -25,62 +25,60 @@ my %EVENT_PROPERTIES = (
     identify => [
         qw (address age available_landing_companies avatar birthday company created_at description email first_name gender id landing_companies last_name name phone provider title username website currencies country unsubscribed)
     ],
-    login                     => [qw (loginid browser device ip new_signin_activity location app_name)],
-    signup                    => [qw (loginid type currency landing_company date_joined first_name last_name phone address age country provider)],
+    login  => [qw (loginid browser device ip new_signin_activity location app_name brand)],
+    signup => [qw (loginid type currency landing_company date_joined first_name last_name phone address age country provider brand)],
     transfer_between_accounts => [
         qw(revenue currency value from_account to_account from_currency to_currency from_amount to_amount source fees is_from_account_pa
-            is_to_account_pa gateway_code remark time id)
+            is_to_account_pa gateway_code remark time id brand)
     ],
-    account_closure   => [qw(loginid closing_reason loginids_disabled loginids_failed email_consent)],
-    app_registered    => [qw(loginid name scopes redirect_uri verification_uri app_markup_percentage homepage github appstore googleplay app_id)],
-    app_updated       => [qw(loginid name scopes redirect_uri verification_uri app_markup_percentage homepage github appstore googleplay app_id)],
-    app_deleted       => [qw(loginid app_id)],
-    api_token_created => [qw(loginid name scopes)],
-    api_token_deleted => [qw(loginid name scopes)],
+    account_closure => [qw(loginid closing_reason loginids_disabled loginids_failed email_consent brand)],
+    app_registered  => [qw(loginid name scopes redirect_uri verification_uri app_markup_percentage homepage github appstore googleplay app_id brand)],
+    app_updated     => [qw(loginid name scopes redirect_uri verification_uri app_markup_percentage homepage github appstore googleplay app_id brand)],
+    app_deleted     => [qw(loginid app_id brand)],
+    api_token_created => [qw(loginid name scopes brand)],
+    api_token_deleted => [qw(loginid name scopes brand)],
     profile_change    => [
         qw(loginid first_name last_name date_of_birth account_opening_reason address_city address_line_1 address_line_2 address_postcode citizen
-            residence address_state allow_copiers email_consent phone place_of_birth request_professional_status tax_identification_number tax_residence)
+            residence address_state allow_copiers email_consent phone place_of_birth request_professional_status tax_identification_number tax_residence brand)
     ],
-    mt5_signup           => [qw(loginid account_type language mt5_group mt5_loginid sub_account_type client_first_name type_label mt5_integer_id)],
-    mt5_password_changed => [qw(loginid mt5_loginid)],
-    document_upload      => [qw(loginid document_type expiration_date file_name id upload_date uploaded_manually_by_staff)],
+    mt5_signup => [qw(loginid account_type language mt5_group mt5_loginid sub_account_type client_first_name type_label mt5_integer_id brand)],
+    mt5_password_changed     => [qw(loginid mt5_loginid brand)],
+    document_upload          => [qw(loginid document_type expiration_date file_name id upload_date uploaded_manually_by_staff brand)],
     set_financial_assessment => [
         qw(loginid education_level employment_industry estimated_worth income_source net_income occupation account_turnover binary_options_trading_experience
             binary_options_trading_frequency cfd_trading_experience cfd_trading_frequency employment_status forex_trading_experience forex_trading_frequency other_instruments_trading_experience
-            other_instruments_trading_frequency source_of_wealth)
+            other_instruments_trading_frequency source_of_wealth brand)
     ],
-    set_self_exclusion => [
-        qw(loginid exclude_until max_30day_losses max_30day_turnover max_7day_losses max_7day_turnover max_balance max_deposit
-            max_deposit_end_date max_losses max_open_bets max_turnover session_duration_limit timeout_until )
-    ],
+    self_exclude => [qw(loginid unsubscribed brand)],
     p2p_order_created =>
-        [qw(loginid user_role order_type  order_id amount currency advertiser_nickname advertiser_user_id client_nickname client_user_id)],
+        [qw(loginid user_role order_type  order_id amount currency advertiser_nickname advertiser_user_id client_nickname client_user_id brand)],
     p2p_order_buyer_has_paid => [
-        qw(loginid user_role order_type  order_id amount currency buyer_user_id buyer_nickname seller_user_id seller_nickname order_created_at exchange_rate)
+        qw(loginid user_role order_type  order_id amount currency buyer_user_id buyer_nickname seller_user_id seller_nickname order_created_at exchange_rate brand)
     ],
     p2p_order_seller_has_released =>
-        [qw(loginid user_role order_type  order_id amount currency buyer_user_id buyer_nickname seller_user_id seller_nickname)],
-    p2p_order_cancelled => [qw(loginid  user_role order_type  order_id amount currency buyer_user_id buyer_nickname seller_user_id seller_nickname)],
-    p2p_order_expired   => [
-        qw(loginid user_role order_type  order_id amount currency buyer_has_confirmed seller_user_id seller_nickname buyer_user_id buyer_nickname order_created_at exchange_rate)
+        [qw(loginid user_role order_type  order_id amount currency buyer_user_id buyer_nickname seller_user_id seller_nickname brand)],
+    p2p_order_cancelled =>
+        [qw(loginid  user_role order_type  order_id amount currency buyer_user_id buyer_nickname seller_user_id seller_nickname brand)],
+    p2p_order_expired => [
+        qw(loginid user_role order_type  order_id amount currency buyer_has_confirmed seller_user_id seller_nickname buyer_user_id buyer_nickname order_created_at exchange_rate brand)
     ],
     p2p_order_dispute => [
-        qw(dispute_reason disputer loginid user_role order_type  order_id amount currency buyer_has_confirmed seller_user_id seller_nickname buyer_user_id buyer_nickname order_created_at)
+        qw(dispute_reason disputer loginid user_role order_type  order_id amount currency buyer_has_confirmed seller_user_id seller_nickname buyer_user_id buyer_nickname order_created_at brand)
     ],
     p2p_order_timeout_refund => [
-        qw(loginid user_role order_type order_id amount currency exchange_rate local_currency seller_user_id seller_nickname buyer_user_id buyer_nickname order_created_at)
+        qw(loginid user_role order_type order_id amount currency exchange_rate local_currency seller_user_id seller_nickname buyer_user_id buyer_nickname order_created_at brand)
     ],
     p2p_order_dispute_complete => [
-        qw(dispute_reason disputer loginid user_role order_type order_id amount currency buyer_has_confirmed seller_user_id seller_nickname buyer_user_id buyer_nickname order_created_at)
+        qw(dispute_reason disputer loginid user_role order_type order_id amount currency buyer_has_confirmed seller_user_id seller_nickname buyer_user_id buyer_nickname order_created_at brand)
     ],
     p2p_order_dispute_refund => [
-        qw(dispute_reason disputer loginid user_role order_type order_id amount currency buyer_has_confirmed seller_user_id seller_nickname buyer_user_id buyer_nickname order_created_at)
+        qw(dispute_reason disputer loginid user_role order_type order_id amount currency buyer_has_confirmed seller_user_id seller_nickname buyer_user_id buyer_nickname order_created_at brand)
     ],
     p2p_order_dispute_fraud_complete => [
-        qw(dispute_reason disputer loginid user_role order_type order_id amount currency buyer_has_confirmed seller_user_id seller_nickname buyer_user_id buyer_nickname order_created_at)
+        qw(dispute_reason disputer loginid user_role order_type order_id amount currency buyer_has_confirmed seller_user_id seller_nickname buyer_user_id buyer_nickname order_created_at brand)
     ],
     p2p_order_dispute_fraud_refund => [
-        qw(dispute_reason disputer loginid user_role order_type order_id amount currency buyer_has_confirmed seller_user_id seller_nickname buyer_user_id buyer_nickname order_created_at)
+        qw(dispute_reason disputer loginid user_role order_type order_id amount currency buyer_has_confirmed seller_user_id seller_nickname buyer_user_id buyer_nickname order_created_at brand)
     ],
 );
 
@@ -180,6 +178,8 @@ sub signup {
         @{$customer->{traits}}{keys $properties->{utm_tags}->%*} = values $properties->{utm_tags}->%*;
         delete $properties->{utm_tags};
     }
+
+    $customer->{traits}->{signup_brand} = request->brand_name;
     return Future->needs_all(_send_identify_request($customer), _send_track_request($customer, $properties, 'signup'));
 }
 
@@ -447,6 +447,23 @@ sub app_deleted {
         event      => 'app_deleted',
         loginid    => $args->{loginid},
         properties => $args
+    );
+}
+
+=head2 self_exclude
+
+It is triggered for each B<self_exclude> event emitted, delivering it to Segment.
+
+=cut
+
+sub self_exclude {
+    my ($args) = @_;
+
+    return track_event(
+        event                => 'self_exclude',
+        loginid              => $args->{loginid},
+        properties           => $args,
+        is_identify_required => 1
     );
 }
 
@@ -923,7 +940,7 @@ sub _send_track_request {
 
     return $customer->track(
         event      => $event,
-        properties => $valid_properties,
+        properties => {$valid_properties->%*, brand => $brand->{name} // request->brand->name},
         context    => $context,
     );
 }
@@ -966,7 +983,7 @@ Arguments:
 =cut
 
 sub _create_customer {
-    my ($client, $brand) = @_;
+    my ($client, $brand, $properties) = @_;
     $brand //= request->brand;
 
     my @siblings     = $client->user ? $client->user->clients(include_disabled => 1) : ($client);
@@ -1020,6 +1037,18 @@ sub _create_customer {
         $client_age = $dob->delta_years(Time::Moment->now_utc);
     }
 
+    my $has_exclude_until = $client->get_self_exclusion  ? $client->get_self_exclusion->exclude_until : undef;
+    my $unsubscribed      = $client->user->email_consent ? 'false'                                    : 'true';
+    if (
+        defined(
+            # Set unsubscribed to 'true', when `self_exclude` event is triggered
+            # or check for exclude_until, when other events are triggered
+            $properties->{unsubscribed} || $has_exclude_until
+        ))
+    {
+        $unsubscribed = 'true';
+    }
+
     my $customer = _segment->new_customer(
         user_id => $client->binary_user_id(),
         traits  => {
@@ -1057,7 +1086,7 @@ sub _create_customer {
             provider                    => $provider,
 
             # subscribe or unsubscribed
-            unsubscribed => $client->user->email_consent ? 'false' : 'true',
+            unsubscribed => $unsubscribed,
         });
     # Will use this attributes as properties in some events like signup
     $customer->{currency}        = $client->account ? $client->account->currency_code : '';
