@@ -189,9 +189,7 @@ sub mt5_accounts_lookup {
         )->then(
             sub {
                 my ($setting) = @_;
-                $setting = _filter_settings($setting,
-                    qw/balance display_balance country currency email group leverage login name account_type sub_account_type landing_company_short market_type/
-                );
+                $setting = _filter_settings($setting, qw/balance display_balance country currency email group leverage login name/);
                 return Future->done($setting);
             }
         )->catch(
@@ -742,7 +740,7 @@ async_rpc "mt5_get_settings",
         sub {
             my ($settings) = @_;
             $settings = _filter_settings($settings,
-                qw/account_type address balance city company country currency email group landing_company_short leverage login market_type name phone phonePassword state sub_account_type zipCode display_balance/
+                qw/address balance city company country currency email group leverage login name phone phonePassword state zipCode landing_company display_balance/
             );
             return Future->done($settings);
         })->catch($error_handler);
@@ -753,38 +751,6 @@ sub _filter_settings {
     my $filtered_settings = {};
     @{$filtered_settings}{@allowed_keys} = @{$settings}{@allowed_keys};
     return $filtered_settings;
-}
-
-sub get_mt5_account_type_config {
-
-    my ($group_name) = shift;
-
-    my $group_accounttype = lc($group_name);
-
-    my $config = BOM::Config::mt5_account_types()->{$group_accounttype};
-
-    return $config if ($config);
-
-    # if you see this warning, it means mt5 group names changed without updating
-    # the config file: /home/git/regentmarkets/bom-config/share/mt5_account_types.yml
-    warn
-        "Invalid group accounttype $group_accounttype for $group_name in mt5 settings, can't extract account_type from BOM::Config::mt5_account_types";
-
-    return undef;
-}
-
-sub set_mt5_account_settings {
-    my ($settings) = shift;
-
-    my $group_name = lc($settings->{group});
-    my $config     = get_mt5_account_type_config($group_name);
-    if ($config) {
-        $settings->{landing_company_short} = $config->{landing_company_short};
-        $settings->{market_type}           = $config->{market_type};
-        $settings->{account_type}          = $config->{account_type};
-        $settings->{sub_account_type}      = $config->{sub_account_type};
-    }
-
 }
 
 sub _get_user_with_group {
@@ -815,9 +781,6 @@ sub _get_user_with_group {
                     $settings->{currency}        = $group_details->{currency};
                     $settings->{landing_company} = $group_details->{company};
                     $settings->{display_balance} = formatnumber('amount', $settings->{currency}, $settings->{balance});
-
-                    set_mt5_account_settings($settings) if ($settings->{group});
-
                     return Future->done($settings);
                 });
         })->catch($error_handler);
