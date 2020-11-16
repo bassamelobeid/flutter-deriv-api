@@ -365,6 +365,9 @@ subtest 'login_history' => sub {
 };
 
 subtest 'MT5 logins' => sub {
+    my $mock_server_number = Test::MockModule->new('BOM::MT5::User::Async');
+    $mock_server_number->mock('_get_trading_server_key', sub { 'main' });
+
     # Mocked account details
     # This hash shared between two files, and should be kept in-sync to avoid test failures
     #   t/BOM/user.t

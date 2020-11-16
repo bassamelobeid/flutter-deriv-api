@@ -4,6 +4,8 @@ use strict;
 use warnings;
 no indirect;
 
+use feature qw(state);
+
 use JSON::MaybeXS;
 use IPC::Run3;
 use Syntax::Keyword::Try;
@@ -12,9 +14,14 @@ use Time::HiRes;
 use DataDog::DogStatsd::Helper;
 use IO::Async::Loop;
 use Log::Any qw($log);
+use YAML::XS qw(LoadFile);
+use Locale::Country qw(country2code);
 
 # Overrideable in unit tests
 our @MT5_WRAPPER_COMMAND = ('/usr/bin/php', '/home/git/regentmarkets/php-mt5-webapi/lib/binary_mt5.php');
+
+# Register new users in this server by default
+our $DEFAULT_TRADING_SERVER_KEY = '01';
 
 my @common_fields = qw(
     email
@@ -51,11 +58,22 @@ my $error_category_mapping = {
     10019                      => 'NoMoney'
 };
 
-my $FAILCOUNT_KEY     = 'system.mt5.connection_fail_count';
-my $LOCK_KEY          = 'system.mt5.connection_status';
-my $TRIAL_FLAG        = 'system.mt5.connection_check';
-my $BACKOFF_THRESHOLD = 20;
-my $BACKOFF_TTL       = 60;
+my $FAILCOUNT_KEY           = 'system.mt5.connection_fail_count';
+my $LOCK_KEY                = 'system.mt5.connection_status';
+my $TRIAL_FLAG              = 'system.mt5.connection_check';
+my $BACKOFF_THRESHOLD       = 20;
+my $BACKOFF_TTL             = 60;
+my $MAIN_TRADING_SERVER_KEY = '01';
+
+# Override the default server for specific countries - currently hardcoded due
+# to geographical deployments, but this is expected to move out to separate configuration
+# such as LandingCompany, Brands or BOM::Config later
+my %SERVER_FOR_COUNTRY = (
+    demo => {},
+    real => {
+        za => '01',
+        ng => '01',
+    });
 
 sub _get_error_mapping {
     my $error_code = shift;
@@ -75,6 +93,37 @@ sub _get_update_user_fields {
     return (@common_fields, qw/login rights agent/);
 }
 
+=head2 _get_country_server 
+
+Returns key of trading server that corresponds to the account type(demo/real) and country
+
+=over 4
+
+=item * account type
+
+=item * country
+
+=back
+
+Takes the following parameters:
+
+=over 4
+
+=item * C<$account_type> - string representing type of the MT5 sevrer (demo/real)
+
+=item * C<$country> - Alpha-2 code of the country 
+
+=back 
+
+Returns the trading server key 
+
+=cut
+
+sub _get_country_server {
+    my ($account_type, $country) = @_;
+    return $SERVER_FOR_COUNTRY{$account_type}->{country2code($country)} // $DEFAULT_TRADING_SERVER_KEY;
+}
+
 =head2 _get_server_type_by_prefix
 
 Method detects server type by prefix.
@@ -89,6 +138,63 @@ sub _get_server_type_by_prefix {
     return 'demo' if $prefix eq 'MTD';
 
     die "Unexpected prefix $prefix";
+}
+
+=head2 _get_trading_server_key
+
+Returns key of trading server which the request should be sent to
+
+MT5 requests will be routed to different trading servers. Before a request get passed to
+the PHP script, this method detects the destination of request based on: 
+
+=over 4
+
+=item * login ranges
+
+=item * group name suffix
+
+=back
+
+Takes the following parameters:
+
+=over 4
+
+=item * C<$param> - hashref representing the request parameters that are going to be sent to MT5 server. For C<create_user>, C<get_groups> and C<get_user_logins> we expect having a defined $param->{group}, and for all other requests we expect $param->{login} to be defined.
+
+=item * C<$srv_type> - string representing type of the MT5 sevrer (demo/real)
+
+=back 
+
+Returns a string (key of the trading server).
+
+=cut
+
+sub _get_trading_server_key {
+    my ($param, $srv_type) = @_;
+    my $config = get_mt5_config();
+
+    if ($param->{login}) {
+        my ($login_id) = $param->{login} =~ /([0-9]+)/;
+        for my $server_key (keys $config->{$srv_type}->%*) {
+            my @accounts_ranges = $config->{$srv_type}->{$server_key}->{accounts}->@*;
+            for (@accounts_ranges) {
+                return $server_key if ($login_id >= $_->{from} and $login_id <= $_->{to});
+            }
+        }
+
+        # if the login is not in any range (probably mt5webapi.yml is outdated)
+        die "Unexpected login (not in range) $param->{login}";
+    }
+
+    if ($param->{group}) {
+        for my $server_key (keys $config->{$srv_type}->%*) {
+            my $suffix = $config->{$srv_type}->{$server_key}->{group_suffix};
+            return $server_key if ($suffix and $param->{group} =~ /^(real$suffix|demo$suffix)\\.*$/);
+        }
+    }
+
+    # if there is no suffix on group name it is Main Trading Server
+    return $MAIN_TRADING_SERVER_KEY;
 }
 
 =head2 _get_prefix
@@ -234,17 +340,18 @@ sub _invoke_mt5 {
             $trying = 1;
         }
     }
-    my ($srv_type, $prefix);
+    my ($srv_type, $prefix, $srv_key);
     try {
         $prefix   = _get_prefix($param);
         $srv_type = _get_server_type_by_prefix($prefix);
+        $srv_key  = _get_trading_server_key($param, $srv_type);
     } catch {
         $log->infof('Error in proccessing mt5 request: %s', $@);
         return _future_error({code => 'General'});
     }
 
     $loop->run_child(
-        command   => [@MT5_WRAPPER_COMMAND, $cmd, $srv_type],
+        command   => [@MT5_WRAPPER_COMMAND, $cmd, $srv_type, $srv_key],
         stdin     => $in,
         on_finish => sub {
             my (undef, $exitcode, $out, $err) = @_;
@@ -308,13 +415,41 @@ sub _invoke_mt5 {
     return $f;
 }
 
-sub create_user {
+=head2 _modify_registration_group_name
+
+When we have additional mt5 trading servers, group names can't be the same in those servers.
+We append the proper suffix to group names to route user creation request to the desired trading server.
+Currently routing is based on user region.
+
+=over 4
+
+=item * C<$args> - hashref representing the MT5 user, see L<https://support.metaquotes.net/en/docs/mt5/api/webapi_main/webapi_users/webapi_user_data_structure>
+
+=back
+
+Returns a string with the group name
+
+=cut
+
+sub _modify_registration_group_name {
     my $args = shift;
 
+    my ($account_type, $rest_of_group_name) = $args->{group} =~ /(real|demo)\\(.*)/;
+
+    return $args->{group} if not defined $account_type;
+
+    my $config     = get_mt5_config();
+    my $server_key = _get_country_server($account_type, $args->{country});
+
+    return $account_type . $config->{$account_type}->{$server_key}->{group_suffix} . "\\" . $rest_of_group_name;
+}
+
+sub create_user {
+    my $args = shift;
+    $args->{group} = _modify_registration_group_name($args);
     my @fields = _get_create_user_fields();
     my $param  = {};
     $param->{$_} = $args->{$_} for (@fields);
-
     return _invoke_mt5('UserAdd', $param)->then(
         sub {
             my ($response) = @_;
@@ -486,6 +621,17 @@ sub get_account_type {
     my ($loginid) = @_;
     my $prefix = _get_prefix({login => $loginid});
     return _get_server_type_by_prefix($prefix);
+}
+
+=head2 get_mt5_config
+
+Returns the data from MT5 YAML configuration file.
+
+=cut
+
+sub get_mt5_config {
+    state $config = LoadFile('/etc/rmg/mt5webapi.yml');
+    return $config;
 }
 
 1;

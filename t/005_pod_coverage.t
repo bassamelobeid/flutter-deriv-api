@@ -22,7 +22,7 @@ my $allowed_naked_packages = {
     'BOM::User::Client::PaymentAgent'                  => 5,
     'BOM::User::Script::AMLClientsUpdate'              => 2,
     'BOM::User::Script::MirrorBinaryUserId'            => 2,
-    'BOM::MT5::User::Async'                            => 13,
+    'BOM::MT5::User::Async'                            => 12,
     'BOM::User::Client::PaymentTransaction::Doughflow' => 2,
 
 };
