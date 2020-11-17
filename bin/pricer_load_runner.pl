@@ -16,6 +16,7 @@ use Email::Sender::Transport::SMTP;
 use Sys::Hostname;
 use URI::QueryParam;
 use Data::Dumper;
+use DataDog::DogStatsd::Helper qw(stats_gauge);
 
 =head1 NAME
 
@@ -73,6 +74,9 @@ against all markets. Supply as a comma separated list. Options are 'forex', 'syn
 
 =item * --iterations|-i  The number of tests runs  to perform against each market type to achieve an average score. In theory the higher this number the more accurate the results.  
 
+=item * --datadog|-r  Report Results to DataDog,  Metrics key will be C<pricer_daemon.loadtest> with a tag of the market being tested. 
+This will be the average result of all the iterations for each market. 
+
 =item * --help|-h : This help info. 
 
 =back
@@ -87,6 +91,7 @@ GetOptions(
     'e|mail_to=s'       => \my $mail_to,
     'm|markets=s'       => \my $markets,
     'i|iterations=i'    => \my $iterations,
+    'r|datadog'         => \my $report,
     'h|help'            => \my $help,
 );
 
@@ -215,7 +220,7 @@ $timer = IO::Async::Timer::Periodic->new(
             }
             else {
                 say ' No Overflow at ' . $max_queue_size;
-                # check if its first run of next market. it should be running with $intial_subscription & dont need to increase the number.
+                # check if its first run of next market. It should be running with $initial_subscription & we don't need to increase the number.
                 $subscriptions += int( $subscriptions * .3 ) unless($new_market);
                 $start = 0;
             }
@@ -250,8 +255,8 @@ $timer = IO::Async::Timer::Periodic->new(
                     $subscriptions = $initial_subscriptions;
                     $new_market = 1;
                 } else {
-                    email_result( $run_recorder, \@mails_to, $smtp_transport )
-                      if scalar(@mails_to);
+                    if (scalar(@mails_to)){email_result( $run_recorder, \@mails_to, $smtp_transport );}
+                    if ($report) { report_result($run_recorder) }
                     $timer->stop;
                     $loop->stop;
                 }
@@ -339,7 +344,6 @@ Takes the following arguments as parameters
 
 =item - $response  Raw response from DataDog API call. 
 
-
 =back
 
 Returns a flat array of results; 
@@ -361,7 +365,7 @@ Takes the following arguments as parameters
 
 =over 4
 
-=item - $overflowed_at:   an integer of the  queue size that it overflowed at. 
+=item - $overflow_data: An HashRef, each root level key is the market name and the value is an array of hashrefs,  run number as key, queue size when overflow occured as the value. 
 
 =item - $mails_to:  An Array ref of the email addresses to  send the result to.  
 
@@ -372,6 +376,7 @@ Takes the following arguments as parameters
 Returns undef
 
 =cut
+
 
 sub email_result {
     my ( $overflow_data, $mails_to, $smtp_transport ) = @_;
@@ -402,6 +407,40 @@ sub email_result {
     $email_stuffer->send_or_die;
     return undef;
 }
+
+
+=head2 report_result
+
+Description: Sends the results to the reporting service (Currently DataDog)
+Takes the following arguments.
+
+=over 4
+
+=item - $overflow_data: A hashref, each root level key is the market name and the value is an array of hashrefs, 
+         run number as key, C<overflowed_queue_size> size when overflow occured as the value. 
+
+=back
+
+Returns undef
+
+=cut
+
+sub report_result {
+    my($overflow_data) = @_;
+    foreach my $market ( keys(%$overflow_data) ) {
+        my $total; 
+        my $count = 0;
+        foreach my $run ( keys( $overflow_data->{$market}->%* ) ) {
+            $count++;
+            $total+=$overflow_data->{$market}->{$run}->{overflowed_queue_size}
+        }
+        my $average = $total/$count; 
+        stats_gauge('pricer_daemon.loadtest', $average , {tags => ['tag:'.$market]});
+    }
+
+    return undef
+}
+
 
 =head2 get_overflow_buffer_amount
 
