@@ -126,7 +126,7 @@ sub callPost {
         });
 
     $t->post_ok(
-        "/authorize?app_id=$app_id&l=$lang" => form => {
+        "/authorize?app_id=$app_id&l=$lang&brand=binary" => form => {
             login      => 1,
             email      => $email,
             password   => $password,
