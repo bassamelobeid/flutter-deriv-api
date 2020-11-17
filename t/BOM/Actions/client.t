@@ -507,6 +507,8 @@ subtest 'signup event' => sub {
             utm_tags => {
                 utm_source         => 'direct',
                 signup_device      => 'desktop',
+                utm_content        => 'synthetic-ebook',
+                utm_term           => 'term',
                 date_first_contact => '2019-11-28'
             }}};
     $virtual_client2->set_default_account('USD');
@@ -938,6 +940,8 @@ sub test_segment_customer {
             'age'                       => undef,
             'signup_device'             => 'desktop',
             'utm_source'                => 'direct',
+            'utm_content'               => 'synthetic-ebook',
+            'utm_term'                  => 'term',
             'date_first_contact'        => '2019-11-28',
             mt5_loginids                => join(',', $test_client->user->mt5_logins),
             landing_companies           => $landing_companies,
