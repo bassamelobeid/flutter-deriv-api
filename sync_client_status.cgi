@@ -5,6 +5,8 @@ use strict;
 use warnings;
 
 use HTML::Entities;
+use List::Util qw(all);
+use Syntax::Keyword::Try;
 
 use BOM::User::Client;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
@@ -115,6 +117,17 @@ sub handle_request {
                 notify_remove_status_failed($client, $status_code);
             }
         } $client->user->clients_for_landing_company($client->landing_company->short);    # must include current client
+
+        # when real siblings are enabled, we'll try to enable a virtual sibling automatically
+        if ($status_code eq 'disabled') {
+            my @vr_siblings = $client->user->clients_for_landing_company('virtual');
+            if (@vr_siblings && all { $_->status->disabled } @vr_siblings) {
+                # some users have more than one virtual accounts. Let's enable the latest one.
+                my ($vr_sibling) = sort { $b->date_joined cmp $a->date_joined } @vr_siblings;
+                $vr_sibling->status->clear_disabled;
+                push @notifications, notify_remove_status_succeeded($vr_sibling, 'disabled');
+            }
+        }
 
         return (@notifications, '<br/><br/>Go back to ' . link_to_edit_client($client) . '<br/>');
     }
