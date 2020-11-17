@@ -14,16 +14,21 @@ use Date::Utility;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Helper::Client qw( create_client );
 
-my $user_client = BOM::User->create(
+my $user_client1 = BOM::User->create(
     email          => 'abc@binary.com',
+    password       => BOM::User::Password::hashpw('jskjd8292922'),
+    email_verified => 1,
+);
+my $user_client2 = BOM::User->create(
+    email          => 'abc1@binary.com',
     password       => BOM::User::Password::hashpw('jskjd8292922'),
     email_verified => 1,
 );
 my $client_cr  = create_client('CR');
 my $client_mlt = create_client('MLT');
 
-$user_client->add_client($client_cr);
-$user_client->add_client($client_mlt);
+$user_client1->add_client($client_cr);
+$user_client2->add_client($client_mlt);
 
 $client_cr->set_default_account('USD');
 $client_cr->save();
@@ -93,10 +98,10 @@ subtest 'client documents expiry' => sub {
             $sth_doc_update->execute('tomorrow', $id1);
             is($client->documents_expired(), 0, $test);
 
-            $test = q{BOM::User::Client->documents_expired returns 0 if document has an expiration date of today};
+            $test = qq{BOM::User::Client->documents_expired returns $document_expiry if document has an expiration date of today};
             $sth_doc_update->execute('today', $id1);
             $client->client_authentication_document(undef);
-            is($client->documents_expired(), 0, $test);
+            is($client->documents_expired(), $document_expiry, $test);
 
             $test =
                 qq{BOM::User::Client->documents_expired returns $document_expiry depending if expiration date check is required for document that has an expiration date of yesterday};
@@ -109,11 +114,10 @@ subtest 'client documents expiry' => sub {
             $client->client_authentication_document(undef);
             is($client->documents_expired(), 0, $test);
 
-            $test =
-                qq{BOM::User::Client->documents_expired returns $document_expiry depending if expiration date check is required for document that has an expiration date of a long time ago};
+            $test = q{BOM::User::Client->documents_expired returns 0 because there is at least one non-expired document};
             $sth_doc_update->execute('epoch', $id1);
             $client->client_authentication_document(undef);
-            is($client->documents_expired(), $document_expiry, $test);
+            is($client->documents_expired(), 0, $test);
 
             $test = q{BOM::User::Client->documents_expired returns 0 if all documents have no expiration date};
 ## Create a second document
@@ -202,27 +206,19 @@ subtest 'client documents expiry' => sub {
 };
 
 subtest 'documents uploaded' => sub {
-    my $documents = $client_cr->documents_uploaded();
+    my $documents_mlt = $client_mlt->documents_uploaded();
 
-    my $document_hash = {
+    my $document_hash_mlt = {
         proof_of_address => {
             documents => {
                 $client_mlt->loginid
                     . ".bankstatement.270744521_front.PNG" => {
                     expiry_date =>
-                        $documents->{proof_of_address}{documents}{$client_mlt->loginid . ".bankstatement.270744521_front.PNG"}{expiry_date},
+                        $documents_mlt->{proof_of_address}{documents}{$client_mlt->loginid . ".bankstatement.270744521_front.PNG"}{expiry_date},
                     format => "PNG",
                     id     => 65555,
                     status => "uploaded",
                     type   => "bankstatement",
-                    },
-                $client_cr->loginid
-                    . ".bankstatement.270744461_front.PNG" => {
-                    expiry_date => $documents->{proof_of_address}{documents}{$client_cr->loginid . ".bankstatement.270744461_front.PNG"}{expiry_date},
-                    format      => "PNG",
-                    id          => 65555,
-                    status      => "uploaded",
-                    type        => "bankstatement",
                     },
             },
             is_pending => 1,
@@ -231,23 +227,51 @@ subtest 'documents uploaded' => sub {
             documents => {
                 $client_mlt->loginid
                     . ".passport.270744481_front.PNG" => {
-                    expiry_date => $documents->{proof_of_identity}{documents}{$client_mlt->loginid . ".passport.270744481_front.PNG"}{expiry_date},
-                    format      => "PNG",
-                    id          => 55555,
-                    status      => "uploaded",
-                    type        => "passport",
+                    expiry_date =>
+                        $documents_mlt->{proof_of_identity}{documents}{$client_mlt->loginid . ".passport.270744481_front.PNG"}{expiry_date},
+                    format => "PNG",
+                    id     => 55555,
+                    status => "uploaded",
+                    type   => "passport",
                     },
                 $client_mlt->loginid
                     . ".passport.270744501_front.PNG" => {
-                    expiry_date => $documents->{proof_of_identity}{documents}{$client_mlt->loginid . ".passport.270744501_front.PNG"}{expiry_date},
-                    format      => "PNG",
-                    id          => 66666,
-                    status      => "uploaded",
-                    type        => "passport",
+                    expiry_date =>
+                        $documents_mlt->{proof_of_identity}{documents}{$client_mlt->loginid . ".passport.270744501_front.PNG"}{expiry_date},
+                    format => "PNG",
+                    id     => 66666,
+                    status => "uploaded",
+                    type   => "passport",
                     },
+            },
+            is_expired  => 0,
+            expiry_date => $documents_mlt->{proof_of_identity}{documents}{$client_mlt->loginid . ".passport.270744501_front.PNG"}{expiry_date},
+        },
+    };
+
+    cmp_deeply($documents_mlt, $document_hash_mlt, 'correct structure for client documents');
+    my $documents_cr = $client_cr->documents_uploaded();
+
+    my $document_hash_cr = {
+        proof_of_address => {
+            documents => {
+                $client_cr->loginid
+                    . ".bankstatement.270744461_front.PNG" => {
+                    expiry_date =>
+                        $documents_cr->{proof_of_address}{documents}{$client_cr->loginid . ".bankstatement.270744461_front.PNG"}{expiry_date},
+                    format => "PNG",
+                    id     => 65555,
+                    status => "uploaded",
+                    type   => "bankstatement",
+                    },
+            },
+            is_pending => 1,
+        },
+        proof_of_identity => {
+            documents => {
                 $client_cr->loginid
                     . ".passport.270744421_front.PNG" => {
-                    expiry_date => $documents->{proof_of_identity}{documents}{$client_cr->loginid . ".passport.270744421_front.PNG"}{expiry_date},
+                    expiry_date => $documents_cr->{proof_of_identity}{documents}{$client_cr->loginid . ".passport.270744421_front.PNG"}{expiry_date},
                     format      => "PNG",
                     id          => 55555,
                     status      => "uploaded",
@@ -255,26 +279,27 @@ subtest 'documents uploaded' => sub {
                     },
                 $client_cr->loginid
                     . ".passport.270744441_front.PNG" => {
-                    expiry_date => $documents->{proof_of_identity}{documents}{$client_cr->loginid . ".passport.270744441_front.PNG"}{expiry_date},
+                    expiry_date => $documents_cr->{proof_of_identity}{documents}{$client_cr->loginid . ".passport.270744441_front.PNG"}{expiry_date},
                     format      => "PNG",
                     id          => 66666,
                     status      => "uploaded",
                     type        => "passport",
                     },
             },
-            is_expired          => 0,
-            is_pending          => 1,
-            minimum_expiry_date => $documents->{proof_of_identity}{documents}{$client_cr->loginid . '.passport.270744441_front.PNG'}{expiry_date},
+            is_expired  => 0,
+            is_pending  => 1,
+            expiry_date => $documents_cr->{proof_of_identity}{documents}{$client_cr->loginid . '.passport.270744441_front.PNG'}{expiry_date},
         },
     };
 
-    cmp_deeply($documents, $document_hash, 'correct structure for client documents');
+    cmp_deeply($documents_cr, $document_hash_cr, 'correct structure for client documents');
 
-    my $client = $client_cr;
-    my $module = Test::MockModule->new('BOM::User::Client');
+    my $client        = $client_cr;
+    my $document_hash = $document_hash_cr;
+    my $module        = Test::MockModule->new('BOM::User::Client');
     $module->mock('authentication_status', sub { 'needs_action' });
 
-    $documents = $client->documents_uploaded();
+    my $documents = $client->documents_uploaded();
     delete $document_hash->{proof_of_address}{is_pending};
     $document_hash->{proof_of_address}{is_rejected} = 1;
     cmp_deeply($documents, $document_hash, 'correct structure for client documents with authentication status as needs_action');
@@ -294,7 +319,7 @@ subtest 'documents uploaded' => sub {
         $sth_doc_update->execute('yesterday');
 
         my $client_mf = create_client('MF');
-        $user_client->add_client($client_mf);
+        $user_client2->add_client($client_mf);
         my $test = 'BOM::User::Client->documents_expired returns 1 if there are no documents for client but its sibling has an expired one';
         is($client_mf->documents_expired(), 1, $test);
     };
@@ -316,6 +341,97 @@ subtest 'documents uploaded' => sub {
     };
 
     $module->unmock_all();
+};
+
+subtest 'has valid documents' => sub {
+    my $mock_client = Test::MockModule->new('BOM::User::Client');
+
+    subtest 'expiry check required' => sub {
+        $mock_client->mock(
+            'is_document_expiry_check_required',
+            sub {
+                return 1;
+            });
+
+        my $docs = {};
+        ok !$client_cr->has_valid_documents($docs), 'Empty documents are not valid documents';
+
+        $docs = {
+            'other' => {
+                'is_expired' => 1,
+            },
+            'proof_of_identity' => {
+                'is_expired' => 1,
+            }};
+
+        ok !$client_cr->has_valid_documents($docs), 'Invalid due to expired documents';
+
+        $docs = {
+            'other' => {
+                'is_expired' => 0,
+            },
+            'proof_of_identity' => {
+                'is_expired' => 1,
+            }};
+
+        ok !$client_cr->has_valid_documents($docs, 'proof_of_identity'), 'Invalid due to expired POI';
+        ok $client_cr->has_valid_documents($docs, 'other'), 'Valid due to non expired Other';
+
+        $docs = {
+            'other' => {
+                'is_expired' => 1,
+            },
+            'proof_of_identity' => {
+                'is_expired' => 0,
+            }};
+
+        ok $client_cr->has_valid_documents($docs, 'proof_of_identity'), 'Valid due to non expired POI';
+        ok !$client_cr->has_valid_documents($docs, 'other'), 'Invalid due to expired Other';
+    };
+
+    subtest 'expiry check not required' => sub {
+        $mock_client->mock(
+            'is_document_expiry_check_required',
+            sub {
+                return 0;
+            });
+
+        my $docs = {};
+        ok !$client_cr->has_valid_documents($docs), 'Empty documents are not valid documents';
+
+        $docs = {
+            'other' => {
+                'is_expired' => 1,
+            },
+            'proof_of_identity' => {
+                'is_expired' => 1,
+            }};
+
+        ok $client_cr->has_valid_documents($docs), 'Expire check not required';
+
+        $docs = {
+            'other' => {
+                'is_expired' => 0,
+            },
+            'proof_of_identity' => {
+                'is_expired' => 1,
+            }};
+
+        ok $client_cr->has_valid_documents($docs, 'proof_of_identity'), 'Expire check not required';
+        ok $client_cr->has_valid_documents($docs, 'other'),             'Expire check not required';
+
+        $docs = {
+            'other' => {
+                'is_expired' => 1,
+            },
+            'proof_of_identity' => {
+                'is_expired' => 0,
+            }};
+
+        ok $client_cr->has_valid_documents($docs, 'proof_of_identity'),, 'Expire check not required';
+        ok $client_cr->has_valid_documents($docs, 'other'),,             'Expire check not required';
+    };
+    $mock_client->unmock_all;
 };
 
 done_testing();

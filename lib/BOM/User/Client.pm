@@ -68,7 +68,7 @@ sub DOCUMENT_TYPE_CATEGORIES {
             doc_types_appreciated => [qw(passport national_identity_card driving_licence proofid driverslicense)],
         },
         POA => {
-            doc_types => [qw(vf_poa proofaddress utility_bill bankstatement cardstatement)],
+            doc_types => [qw(vf_poa proofaddress utility_bill bankstatement bank_statement cardstatement)],
         },
         Funds => {
             doc_types => [qw(payslip tax_receipt employment_contract)],
@@ -580,28 +580,19 @@ sub is_financial_assessment_complete {
 
 =head2 documents_expired
 
-documents_expired returns a boolean indicating if this client (or any related clients)
-have any POI documents (passport, proofid, driverslicense, vf_id, vf_face_id) which have expired.
+documents_expired returns a boolean indicating if this client has all his 
+POI documents expired (note at least one non expired document make this method return 0). 
+It also returns 0 if there are no documents in sight.
 
 =cut
 
 sub documents_expired {
-    my $self = shift;
+    my $self      = shift;
+    my $documents = $self->documents_uploaded();
 
-    my @siblings = $self->user->clients(
-        include_disabled   => 1,
-        include_duplicated => 1
-    );
-
-    for my $sibling (@siblings) {
-
-        next if $sibling->is_virtual;
-
-        next if !($sibling->is_document_expiry_check_required());
-
-        return 1 if $sibling->_get_documents_expiry_by_date();
-    }
-    return 0;
+    # no documents
+    return 0 unless scalar(keys %$documents);
+    return $self->has_valid_documents($documents, 'proof_of_identity') ? 0 : 1;
 }
 
 =head2 is_any_document_expiring_by_date
@@ -668,7 +659,7 @@ Returns
                 file_name2 => {},
             },
             is_expired => 0,
-            minimum_expiry_date => epoch,
+            expiry_date => epoch,
         },
         proof_of_address => {
             documents => {
@@ -676,7 +667,7 @@ Returns
                 file_name2 => {},
             },
             is_expired => 0,
-            minimum_expiry_date => epoch,
+            expiry_date => epoch,
         },
         others => {
             documents => {
@@ -684,7 +675,7 @@ Returns
                 file_name2 => {},
             },
             is_expired => 0,
-            minimum_expiry_date => epoch,
+            expiry_date => epoch,
         },
     }
 
@@ -718,9 +709,8 @@ sub documents_uploaded {
         next if $each_sibling->is_virtual;
 
         foreach my $single_document ($each_sibling->client_authentication_document) {
-            # uploading document can lead to any success or failure
-            # so better to not consider that
-            next if defined $single_document->status and $single_document->status eq 'uploading';
+            # consider only uploaded documents
+            next if ($single_document->status // '') ne 'uploaded';
 
             my $type                = 'other';
             my %doc_type_categories = DOCUMENT_TYPE_CATEGORIES();
@@ -736,14 +726,14 @@ sub documents_uploaded {
             my $expires = $documents{$type}{documents}{$single_document->file_name}{expiry_date};
             next unless $expires;
 
-            my $existing_expiry_date_epoch = $documents{$type}{minimum_expiry_date} // $expires;
-            # Even though the key is 'minimum_expiry_date' we are taking into account the latest date found for POI, hence max is used
-            my $minimum_expiry_date;
-            $minimum_expiry_date = max($expires, $existing_expiry_date_epoch) if $type eq 'proof_of_identity';
-            $minimum_expiry_date = min($expires, $existing_expiry_date_epoch) if $type ne 'proof_of_identity';
+            my $existing_expiry_date_epoch = $documents{$type}{expiry_date} // $expires;
+            my $expiry_date;
+            $expiry_date = max($expires, $existing_expiry_date_epoch) if $type eq 'proof_of_identity';
+            # This line may need a bit of clarification, why do we use `min`?
+            $expiry_date = min($expires, $existing_expiry_date_epoch) if $type ne 'proof_of_identity';
 
-            $documents{$type}{minimum_expiry_date} = $minimum_expiry_date;
-            $documents{$type}{is_expired}          = Date::Utility->new->epoch > $minimum_expiry_date ? 1 : 0;
+            $documents{$type}{expiry_date} = $expiry_date;
+            $documents{$type}{is_expired}  = Date::Utility->new->epoch > $expiry_date ? 1 : 0;
         }
     }
 
@@ -764,16 +754,41 @@ sub documents_uploaded {
     return \%documents;
 }
 
-sub has_valid_documents {
-    my $self = shift;
+=head2 has_valid_documents
 
-    my $documents = $self->documents_uploaded();
+Check the client documents by type and indicate whether all of them are non-expired.
+Note it returns 0 if there are no documents.
+
+It may take the following arguments:
+
+=over 4
+
+=item * documents, (optional) you can pass the documents to avoid hitting the db
+
+=item * type, (optional) the type of document we are checking, check them all if not specified
+
+=back
+
+Returns
+    boolean indicating that all the document types checked are non-expired
+
+=cut 
+
+sub has_valid_documents {
+    my ($self, $documents, $type) = @_;
+    $documents //= $self->documents_uploaded();
+
+    my $is_document_expiry_check_required = $self->is_document_expiry_check_required();
+
+    # If type is specified disregard the other types
+    my @types = grep { exists $documents->{$_} } $type ? ($type) : (keys %$documents);
 
     # no documents
-    return 0 unless scalar(keys %$documents);
+    return 0 unless @types;
 
-    # if any of the document is expired then documents are invalid
-    return 0 if any { $documents->{$_}{is_expired} } keys %$documents;
+    # Note `is_expired` is calculated from the max expiration timestamp found for POI
+    # Other type of documents take the min expiration timestamp found
+    return 0 if any { $documents->{$_}{is_expired} and $is_document_expiry_check_required } @types;
 
     return 1;
 }
@@ -1696,9 +1711,6 @@ sub is_document_expiry_check_required {
     return 1 if $self->landing_company->documents_expiration_check_required();
 
     return 1 if ($self->aml_risk_classification // '') eq 'high';
-
-    # we will check for expiry irrespective of landing company
-    return 1 if $self->fully_authenticated;
 
     return 0;
 }
@@ -4919,13 +4931,6 @@ sub get_poi_status {
     my ($is_poi_already_expired) =
         @{$documents->{proof_of_identity}}{qw/is_expired/};
 
-    # state machine, :robot_face: not included
-    return 'expired' if $is_poi_already_expired && $is_document_expiry_check_required;
-
-    return 'verified' if $self->fully_authenticated || $self->status->age_verification;
-
-    # Not age verified and not fully authenticated
-    # For these clients, onfido results are used (tricky isn't it)
     my $onfido = BOM::User::Onfido::get_latest_check($self);
     my ($report_document_status, $report_document_sub_result) = @{$onfido}{qw/report_document_status report_document_sub_result/};
     $report_document_sub_result //= '';
@@ -4936,6 +4941,10 @@ sub get_poi_status {
     return 'rejected' if any { $_ eq $report_document_sub_result } qw/rejected caution/;
 
     return 'pending' if any { $_ eq $report_document_status } qw/in_progress awaiting_applicant/;
+
+    return 'expired' if $is_poi_already_expired && $is_document_expiry_check_required;
+
+    return 'verified' if $self->fully_authenticated || $self->status->age_verification;
 
     return 'none';
 }
