@@ -277,7 +277,9 @@ sub create_fmb {
     );
     delete @bet{qw/sell_price sell_time is_sold/};    # not allowed during buy
 
-    my %trans = (transaction_time => $fmb_data->{transaction_time});
+    my %trans = (
+        transaction_time => $fmb_data->{transaction_time},
+        source           => $fmb_data->{source});
 
     $bet{quantity} = $args->{quantity} // 1;
 
