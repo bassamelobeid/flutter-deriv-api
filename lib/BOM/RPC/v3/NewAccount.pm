@@ -113,7 +113,7 @@ rpc "new_account_virtual",
     );
     my $utm_tags = {};
 
-    foreach my $tag (qw( utm_source utm_medium utm_campaign gclid_url date_first_contact signup_device )) {
+    foreach my $tag (qw( utm_source utm_medium utm_campaign gclid_url date_first_contact signup_device utm_content utm_term)) {
         $utm_tags->{$tag} = $args->{$tag} if $args->{$tag};
     }
     BOM::Platform::Event::Emitter::emit(
