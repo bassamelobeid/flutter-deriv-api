@@ -43,7 +43,7 @@ for my $broker (qw(MX)) {
 sub get_db_for_broker {
     return BOM::Database::ClientDB->new({
             broker_code => shift,
-            operation   => 'replica',
+            operation   => 'backoffice_replica',
         })->db;
 }
 
@@ -71,7 +71,7 @@ sub get_client {
     try {
         return BOM::User::Client->new({
             loginid      => $loginid,
-            db_operation => 'replica'
+            db_operation => 'backoffice_replica'
         });
     } catch {
         die "Error: can't identify client $loginid: $@";

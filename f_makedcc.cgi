@@ -48,7 +48,7 @@ if ($input->{'dcctype'} ne 'file_content') {
         code_exit_BO('ERROR: Invalid amount: ' . $input->{'amount'}, $title);
     }
 
-    $client = eval { BOM::User::Client::get_instance({'loginid' => uc($input->{'clientloginid'}), db_operation => 'replica'}) };
+    $client = eval { BOM::User::Client::get_instance({'loginid' => uc($input->{'clientloginid'}), db_operation => 'backoffice_replica'}) };
 
     if (not $client) {
         code_exit_BO('ERROR: ' . encode_entities($input->{'clientloginid'}) . ' does not exist! Perhaps you made a typo?', $title);

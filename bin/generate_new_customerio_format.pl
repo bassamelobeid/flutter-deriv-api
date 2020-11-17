@@ -123,6 +123,6 @@ sub users_for_broker {
 sub get_db_for_broker {
     return BOM::Database::ClientDB->new({
             broker_code => shift,
-            operation   => 'replica',
+            operation   => 'backoffice_replica',
         })->db;
 }

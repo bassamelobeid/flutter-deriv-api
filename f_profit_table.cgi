@@ -38,7 +38,7 @@ if ($loginID !~ /^(\D+)(\d+)$/) {
     code_exit_BO("Error: Wrong loginID ($encoded_loginID).");
 }
 
-my $client = eval { BOM::User::Client::get_instance({'loginid' => $loginID, db_operation => 'replica'}) };
+my $client = eval { BOM::User::Client::get_instance({'loginid' => $loginID, db_operation => 'backoffice_replica'}) };
 if (not $client) {
     code_exit_BO("Error: Wrong loginID ($encoded_loginID) could not get client instance.");
 }

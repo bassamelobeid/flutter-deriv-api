@@ -24,7 +24,7 @@ my $broker = request()->broker_code;
 
 my $db = BOM::Database::ClientDB->new({
         broker_code => $broker,
-        operation   => 'replica'
+        operation   => 'backoffice_replica'
     })->db->dbic;
 
 $input{limit} = ($input{limit} && int($input{limit}) > 0) ? int($input{limit}) : 30;

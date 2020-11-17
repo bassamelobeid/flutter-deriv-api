@@ -28,7 +28,7 @@ if ($login !~ /^$broker\d+$/) {
     code_exit_BO();
 }
 
-my $client = eval { BOM::User::Client::get_instance({'loginid' => uc $login, db_operation => 'replica'}) };
+my $client = eval { BOM::User::Client::get_instance({'loginid' => uc $login, db_operation => 'backoffice_replica'}) };
 
 if (not $client) {
     print "Error: wrong loginid ($encoded_login) could not get client instance";

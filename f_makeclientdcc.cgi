@@ -25,7 +25,7 @@ unless ($input->{clientloginid}) {
     code_exit_BO('Please provide client loginid.', $title);
 }
 
-my $client = eval { BOM::User::Client::get_instance({'loginid' => uc($input->{'clientloginid'}), db_operation => 'replica'}) };
+my $client = eval { BOM::User::Client::get_instance({'loginid' => uc($input->{'clientloginid'}), db_operation => 'backoffice_replica'}) };
 if (not $client) {
     code_exit_BO("ERROR: " . encode_entities($input->{'clientloginid'}) . " does not exist! Perhaps you made a typo?", $title);
 }

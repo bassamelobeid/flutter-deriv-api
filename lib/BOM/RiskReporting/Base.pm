@@ -135,7 +135,7 @@ sub _build_all_client_dbs {
         try {
             $clientdb = BOM::Database::ClientDB->new({
                     broker_code => $broker,
-                    operation   => 'replica'
+                    operation   => 'backoffice_replica'
                 }
                 )->db
                 || die "Client db creation returned undefined on $broker";

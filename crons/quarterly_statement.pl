@@ -87,7 +87,7 @@ for my $broker (@brokers) {
 
             my $client = BOM::User::Client->new({
                 loginid      => $loginid,
-                db_operation => 'replica'
+                db_operation => 'backoffice_replica'
             });
 
             # Skip any inactive clients

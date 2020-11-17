@@ -27,7 +27,7 @@ my $input           = request()->params;
 my $loginid         = $input->{loginid} // '';
 my $encoded_loginid = encode_entities($loginid);
 
-my $client = eval { BOM::User::Client::get_instance({'loginid' => $loginid, db_operation => 'replica'}) };
+my $client = eval { BOM::User::Client::get_instance({'loginid' => $loginid, db_operation => 'backoffice_replica'}) };
 
 code_exit_BO(qq[ERROR : Wrong loginID $encoded_loginid]) unless $client;
 

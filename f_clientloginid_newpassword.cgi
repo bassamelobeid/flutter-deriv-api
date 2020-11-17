@@ -26,7 +26,7 @@ if (not $loginID) {
     code_exit_BO('Invalid loginID: please set loginID');
 }
 
-my $client = eval { BOM::User::Client::get_instance({'loginid' => uc $loginID, db_operation => 'replica'}) };
+my $client = eval { BOM::User::Client::get_instance({'loginid' => uc $loginID, db_operation => 'backoffice_replica'}) };
 if (not $client) {
     code_exit_BO("[f_clientloginid_newpassword cgi] bad client $loginID");
 }

@@ -32,7 +32,7 @@ if ($loginid) {
     my $well_formatted = check_client_login_id($loginid);
     code_exit_BO("Invalid loginid provided!") unless $well_formatted;
 
-    $client = eval { BOM::User::Client::get_instance({'loginid' => uc($loginid), db_operation => 'replica'}) };
+    $client = eval { BOM::User::Client::get_instance({'loginid' => uc($loginid), db_operation => 'backoffice_replica'}) };
     code_exit_BO("ERROR: " . encode_entities($input->{'clientloginid'}) . " does not exist") unless $client;
 
     $code = BOM::DualControl->new({

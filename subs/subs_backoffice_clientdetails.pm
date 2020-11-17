@@ -814,7 +814,7 @@ sub show_client_id_docs {
 
     my $dbic = BOM::Database::ClientDB->new({
             client_loginid => $loginid,
-            operation      => 'replica',
+            operation      => 'backoffice_replica',
         }
         )->db->dbic
         or die "[$0] cannot create connection";
@@ -1152,7 +1152,7 @@ sub get_open_contracts {
     my $client = shift;
     return BOM::Database::ClientDB->new({
             client_loginid => $client->loginid,
-            operation      => 'replica',
+            operation      => 'backoffice_replica',
         })->getall_arrayref('select * from bet.get_open_bets_of_account(?,?,?)', [$client->loginid, $client->currency, 'false']);
 }
 
