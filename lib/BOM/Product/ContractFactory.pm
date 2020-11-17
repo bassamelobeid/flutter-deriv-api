@@ -28,12 +28,11 @@ use BOM::MarketData::Types;
 use Exporter qw(import export_to_level);
 
 BEGIN {
-    our @EXPORT_OK = qw( produce_contract make_similar_contract produce_batch_contract );
+    our @EXPORT_OK = qw( produce_contract make_similar_contract );
 }
 
 use BOM::Product::Contract::Multup;
 use BOM::Product::Contract::Multdown;
-use BOM::Product::Contract::Batch;
 use BOM::Product::Contract::Asiand;
 use BOM::Product::Contract::Asianu;
 use BOM::Product::Contract::Call;
@@ -108,55 +107,6 @@ sub produce_contract {
     );
 
     return $contract_class->new_object($params_ref);
-}
-
-sub produce_batch_contract {
-    my $args = shift;
-
-    # it is not nice to change the input parameters
-    my $build_args = {%$args};
-
-    # ideally we shouldn't be doing it here but the interface is not standardized!
-    $build_args->{bet_types} = [$build_args->{bet_type}] if $build_args->{bet_type} and not $build_args->{bet_types};
-    BOM::Product::Exception->throw(
-        error_code => 'MissingRequiredContractParams',
-        error_args => ['bet_type'],
-        details    => {field => ''},
-    ) if (not $build_args->{bet_types} or ref $build_args->{bet_types} ne 'ARRAY');
-
-    BOM::Product::Exception->throw(
-        error_code => 'InvalidBarrierUndef',
-        details    => {field => ''},
-    ) if (not $build_args->{barriers} or ref $build_args->{barriers} ne 'ARRAY');
-
-    my @contract_parameters = ();
-    my $contract_types      = delete $build_args->{bet_types};
-    my $barriers            = delete $build_args->{barriers};
-
-    foreach my $contract_type (@$contract_types) {
-        foreach my $barrier (@$barriers) {
-            my %params = %$build_args;
-            $params{bet_type} = $contract_type;
-
-            if (ref $barrier eq 'HASH') {
-                if (exists $barrier->{barrier} and exists $barrier->{barrier2}) {
-                    $params{supplied_high_barrier} = $barrier->{barrier};
-                    $params{supplied_low_barrier}  = $barrier->{barrier2};
-                } elsif (exists $barrier->{barrier}) {
-                    $params{supplied_barrier} = $barrier->{barrier};
-                }
-            } else {
-                $params{supplied_barrier} = $barrier;
-            }
-
-            push @contract_parameters, \%params;
-        }
-    }
-
-    return BOM::Product::Contract::Batch->new(
-        parameters           => \@contract_parameters,
-        produce_contract_ref => \&produce_contract
-    );
 }
 
 sub _validate_input_parameters {

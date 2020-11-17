@@ -7,7 +7,7 @@ use Test::More;
 use Test::Exception;
 
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
-use BOM::Product::ContractFactory qw(produce_contract produce_batch_contract);
+use BOM::Product::ContractFactory qw(produce_contract);
 use Test::Fatal;
 
 subtest 'single contract' => sub {
@@ -64,26 +64,6 @@ subtest 'single contract' => sub {
     $error            = exception { produce_contract($args) };
     isa_ok $error, 'BOM::Product::Exception';
     is $error->message_to_client->[0], 'Invalid barrier (Double barrier input is expected).', 'single barrier for RANGE';
-
-};
-
-subtest 'batch contract' => sub {
-    my $args = {
-        underlying => 'R_100',
-        duration   => '5m',
-        currency   => 'USD',
-        payout     => 100,
-        bet_type   => 'CALL',
-    };
-
-    my $error = exception { produce_batch_contract($args) };
-    isa_ok $error, 'BOM::Product::Exception';
-    is $error->message_to_client->[0], 'Invalid barrier.', 'no barriers for CALL';
-
-    $args->{barriers} = [{barrier => 'S0P'}, {barrier2 => 'S10P'}];
-    $error = exception { produce_batch_contract($args) };
-    isa_ok $error, 'BOM::Product::Exception';
-    is $error->message_to_client->[0], 'Invalid barrier (Single barrier input is expected).', 'barrier2 for CALL';
 
 };
 
