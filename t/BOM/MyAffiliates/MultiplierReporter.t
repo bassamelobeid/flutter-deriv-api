@@ -180,7 +180,7 @@ sub buy_contract {
         payment_time     => $now,
         transaction_time => $now,
         start_time       => $now,
-        source           => 1,
+        source           => 1408,
     };
 
     if ($is_dc) {
