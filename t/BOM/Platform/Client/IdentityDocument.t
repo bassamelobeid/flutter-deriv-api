@@ -80,7 +80,11 @@ subtest 'Age Verified' => sub {
             $doc->expiration_date('2008-03-03');    #this day should never come again.
             $doc->save;
             $doc->load;
-            ok !$client->has_valid_documents, "Documents that are expired are not valid";
+
+            ok $client->has_valid_documents, "Documents are always valid if expiration check is not required"
+                unless $client->is_document_expiry_check_required;
+            ok !$client->has_valid_documents, "Documents that are expired are not valid if expiration check is required"
+                if $client->is_document_expiry_check_required;
         };
     }
 };

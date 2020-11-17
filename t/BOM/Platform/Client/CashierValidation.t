@@ -119,6 +119,7 @@ subtest 'Cashier validation common' => sub {
     ok !$cr_client->documents_expired, "No documents so nothing to expire";
     my ($doc) = $cr_client->add_client_authentication_document({
         document_type              => "passport",
+        file_name                  => 'test.pdf',
         document_format            => "PDF",
         document_path              => '/tmp/test.pdf',
         expiration_date            => '2008-03-03',
