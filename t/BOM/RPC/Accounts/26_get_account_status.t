@@ -299,7 +299,7 @@ subtest 'get account status' => sub {
             );
 
             my $mocked_client = Test::MockModule->new(ref($test_client));
-            $mocked_client->mock('documents_expired', sub { return 1 });
+            $mocked_client->mock('get_poi_status', sub { return 'expired' });
             $result = $c->tcall($method, {token => $token});
             cmp_deeply(
                 $result,
@@ -318,28 +318,38 @@ subtest 'get account status' => sub {
                             status => "verified",
                         },
                         identity => {
-                            status   => "verified",
+                            status   => "expired",
                             services => {
                                 onfido => {
                                     is_country_supported => 1,
                                     documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport']}}
                         },
-                        needs_verification => [],
+                        needs_verification => ['identity'],
                     }
                 },
                 'correct account status returned for document expired, please note that this test for status key, authentication expiry structure is tested later'
             );
 
-            $mocked_client->mock('documents_expired', sub { return 0 });
+            $mocked_client->mock('get_poi_status', sub { return 'verified' });
             $mocked_client->mock(
-                'is_any_document_expiring_by_date',
+                'documents_uploaded',
                 sub {
-                    my ($self, $date) = @_;
-                    return 0 unless $date;
-                    my $date_obj = Date::Utility->new($date);
-                    return 1
-                        if $date_obj->is_after(Date::Utility->today)
-                        and $date_obj->is_before(Date::Utility->today->plus_time_interval('1mo')->plus_time_interval('1d'));
+                    return {
+                        proof_of_identity => {
+                            documents => {
+                                $test_client->loginid
+                                    . '_passport' => {
+                                    expiry_date => Date::Utility->new->minus_time_interval('10d')->epoch,
+                                    type        => 'passport',
+                                    format      => 'pdf',
+                                    id          => 2,
+                                    status      => 'uploaded'
+                                    },
+                            },
+                            expiry_date => Date::Utility->new->plus_time_interval('1d')->epoch,
+                            is_expired  => 0,
+                        },
+                    };
                 });
             $result = $c->tcall($method, {token => $token});
             cmp_deeply(
@@ -359,8 +369,9 @@ subtest 'get account status' => sub {
                             status => "verified",
                         },
                         identity => {
-                            status   => "verified",
-                            services => {
+                            status      => "verified",
+                            expiry_date => Date::Utility->new->plus_time_interval('1d')->epoch,
+                            services    => {
                                 onfido => {
                                     is_country_supported => 1,
                                     documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport']}}
@@ -371,7 +382,8 @@ subtest 'get account status' => sub {
                 'correct account status returned for document expiring in next month'
             );
 
-            $mocked_client->unmock('documents_expired');
+            $mocked_client->unmock('get_poi_status');
+            $mocked_client->unmock('documents_uploaded');
 
             subtest "Age verified client, check for expiry of documents" => sub {
                 # For age verified clients
@@ -381,8 +393,7 @@ subtest 'get account status' => sub {
                 $test_client->save;
 
                 my $mocked_status = Test::MockModule->new(ref($test_client->status));
-                $mocked_status->mock('age_verification',  sub { return 1 });
-                $mocked_client->mock('documents_expired', sub { return 1 });
+                $mocked_status->mock('age_verification', sub { return 1 });
                 $mocked_client->mock(
                     'documents_uploaded',
                     sub {
@@ -398,8 +409,8 @@ subtest 'get account status' => sub {
                                         status      => 'uploaded'
                                         },
                                 },
-                                minimum_expiry_date => Date::Utility->new->minus_time_interval('1d')->epoch,
-                                is_expired          => 1,
+                                expiry_date => Date::Utility->new->minus_time_interval('1d')->epoch,
+                                is_expired  => 1,
                             },
                         };
                     });
@@ -410,6 +421,7 @@ subtest 'get account status' => sub {
                 ok $test_client->status->age_verification, 'Age verified';
                 ok $is_poi_already_expired, 'POI expired';
                 $result = $c->tcall($method, {token => $token_mx});
+
                 cmp_deeply(
                     $result,
                     {
@@ -604,8 +616,8 @@ subtest 'get account status' => sub {
                                         status      => 'uploaded'
                                         },
                                 },
-                                minimum_expiry_date => Date::Utility->new->minus_time_interval('1d')->epoch,
-                                is_expired          => 1,
+                                expiry_date => Date::Utility->new->minus_time_interval('1d')->epoch,
+                                is_expired  => 1,
                             },
                         };
                     });
@@ -653,7 +665,7 @@ subtest 'get account status' => sub {
                 $mocked_status->unmock_all();
             };
 
-            subtest 'Fully authenticated will check for expiry irrespective of landing company' => sub {
+            subtest 'Fully authenticated CR does not have to check for expired documents' => sub {
                 my $mocked_client = Test::MockModule->new(ref($test_client_cr));
                 $mocked_client->mock('fully_authenticated', sub { return 1 });
                 $mocked_status->mock('age_verification',    sub { return 1 });
@@ -673,8 +685,8 @@ subtest 'get account status' => sub {
                                         status      => 'uploaded'
                                         },
                                 },
-                                minimum_expiry_date => Date::Utility->new->minus_time_interval('1d')->epoch,
-                                is_expired          => 1,
+                                expiry_date => Date::Utility->new->minus_time_interval('1d')->epoch,
+                                is_expired  => 1,
                             },
                             proof_of_identity => {
                                 documents => {
@@ -687,8 +699,8 @@ subtest 'get account status' => sub {
                                         status      => 'uploaded'
                                         },
                                 },
-                                minimum_expiry_date => Date::Utility->new->minus_time_interval('1d')->epoch,
-                                is_expired          => 1,
+                                expiry_date => Date::Utility->new->minus_time_interval('1d')->epoch,
+                                is_expired  => 1,
                             },
                         };
                     });
@@ -697,7 +709,7 @@ subtest 'get account status' => sub {
                 ok !$test_client_cr->landing_company->is_authentication_mandatory, 'Authentication is not mandatory';
                 ok $test_client_cr->documents_expired(), 'Client expiry is required';
                 ok $test_client_cr->fully_authenticated,               'Account is fully authenticated';
-                ok $test_client_cr->is_document_expiry_check_required, "Fully authenticated CR account does have to check documents expiry";
+                ok !$test_client_cr->is_document_expiry_check_required, "Fully authenticated CR account does not have to check documents expiry";
                 $result = $c->tcall($method, {token => $token_cr});
 
                 cmp_deeply(
@@ -709,23 +721,21 @@ subtest 'get account status' => sub {
                                 is_withdrawal_suspended => 0,
                             }
                         },
-                        status                        => superbagof(qw(allow_document_upload document_expired)),
+                        status                        => superbagof(qw(allow_document_upload)),
                         risk_classification           => 'low',
                         prompt_client_to_authenticate => '0',
                         authentication                => {
                             document => {
-                                status      => "expired",
-                                expiry_date => re('\d+'),
+                                status      => "verified",
                             },
                             identity => {
-                                status      => "expired",
-                                expiry_date => re('\d+'),
+                                status      => "verified",
                                 services    => {
                                     onfido => {
                                         is_country_supported => 1,
                                         documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport']}}
                             },
-                            needs_verification => superbagof(qw(document identity)),
+                            needs_verification => superbagof(),
                         }
                     },
                     "authentication object is correct"
@@ -1120,8 +1130,8 @@ subtest 'get account status' => sub {
                                         status      => 'uploaded'
                                         },
                                 },
-                                minimum_expiry_date => Date::Utility->new->minus_time_interval('1d')->epoch,
-                                is_expired          => 1,
+                                expiry_date => Date::Utility->new->minus_time_interval('1d')->epoch,
+                                is_expired  => 1,
                             },
                         };
                     });
@@ -1332,8 +1342,8 @@ subtest 'get account status' => sub {
                                         status      => 'uploaded'
                                         },
                                 },
-                                minimum_expiry_date => Date::Utility->new->minus_time_interval('1d')->epoch,
-                                is_expired          => 1,
+                                expiry_date => Date::Utility->new->minus_time_interval('1d')->epoch,
+                                is_expired  => 1,
                             },
                         };
                     });
@@ -1450,8 +1460,8 @@ subtest 'get account status' => sub {
                                         status      => 'uploaded'
                                         },
                                 },
-                                minimum_expiry_date => Date::Utility->new->minus_time_interval('1d')->epoch,
-                                is_expired          => 1,
+                                expiry_date => Date::Utility->new->minus_time_interval('1d')->epoch,
+                                is_expired  => 1,
                             },
                             proof_of_identity => {
                                 documents => {
@@ -1464,8 +1474,8 @@ subtest 'get account status' => sub {
                                         status      => 'uploaded'
                                         },
                                 },
-                                minimum_expiry_date => Date::Utility->new->minus_time_interval('1d')->epoch,
-                                is_expired          => 1,
+                                expiry_date => Date::Utility->new->minus_time_interval('1d')->epoch,
+                                is_expired  => 1,
                             },
                         };
                     });
@@ -1520,8 +1530,8 @@ subtest 'get account status' => sub {
                                         status      => 'uploaded'
                                         },
                                 },
-                                minimum_expiry_date => Date::Utility->new->minus_time_interval('1d')->epoch,
-                                is_expired          => 1,
+                                expiry_date => Date::Utility->new->minus_time_interval('1d')->epoch,
+                                is_expired  => 1,
                             },
                             proof_of_identity => {
                                 documents => {
@@ -1534,8 +1544,8 @@ subtest 'get account status' => sub {
                                         status      => 'uploaded'
                                         },
                                 },
-                                minimum_expiry_date => Date::Utility->new->minus_time_interval('1d')->epoch,
-                                is_expired          => 1,
+                                expiry_date => Date::Utility->new->minus_time_interval('1d')->epoch,
+                                is_expired  => 1,
                             },
                         };
                     });
@@ -1639,8 +1649,8 @@ subtest 'get account status' => sub {
                                             status      => 'uploaded'
                                             },
                                     },
-                                    minimum_expiry_date => Date::Utility->new->minus_time_interval('1d')->epoch,
-                                    is_expired          => 1,
+                                    expiry_date => Date::Utility->new->minus_time_interval('1d')->epoch,
+                                    is_expired  => 1,
                                 },
                             };
                         });
@@ -1692,8 +1702,8 @@ subtest 'get account status' => sub {
                                             status      => 'uploaded'
                                             },
                                     },
-                                    minimum_expiry_date => Date::Utility->new->minus_time_interval('1d')->epoch,
-                                    is_expired          => 1,
+                                    expiry_date => Date::Utility->new->minus_time_interval('1d')->epoch,
+                                    is_expired  => 1,
                                 },
                             };
                         });

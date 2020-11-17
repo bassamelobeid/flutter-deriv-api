@@ -62,7 +62,8 @@ my $auth_document_args = {
     document_path              => '/tmp/testfile2.tst',
     authentication_method_code => 'TESTY_TESTY',
     status                     => 'uploaded',
-    checksum                   => 'Abcder12345678'
+    checksum                   => 'Abcder12345678',
+    file_name                  => 'some_test.txt',
 };
 
 ## Used for test safety, and to mock_get_amount_and_count:

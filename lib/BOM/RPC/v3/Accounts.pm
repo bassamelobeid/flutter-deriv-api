@@ -851,11 +851,16 @@ rpc get_account_status => sub {
     push(@$status, 'financial_assessment_not_complete') unless $client->is_financial_assessment_complete();
 
     my $is_document_expiry_check_required = $client->is_document_expiry_check_required_mt5();
+    my $authentication                    = _get_authentication(
+        client                            => $client,
+        is_document_expiry_check_required => $is_document_expiry_check_required
+    );
     if ($is_document_expiry_check_required) {
         # check if the user's documents are expired or expiring soon
-        if ($client->documents_expired()) {
+        my $expiry_soon_date = Date::Utility->new()->plus_time_interval(DOCUMENT_EXPIRING_SOON_INTERVAL)->epoch;
+        if ($authentication->{identity}{status} eq 'expired') {
             push(@$status, 'document_expired');
-        } elsif ($client->is_any_document_expiring_by_date(Date::Utility->new()->plus_time_interval(DOCUMENT_EXPIRING_SOON_INTERVAL))) {
+        } elsif ($authentication->{identity}{expiry_date} && $expiry_soon_date > $authentication->{identity}{expiry_date}) {
             push(@$status, 'document_expiring_soon');
         }
     }
@@ -870,11 +875,8 @@ rpc get_account_status => sub {
         status                        => $status,
         risk_classification           => $client->risk_level(),
         prompt_client_to_authenticate => $client->is_verification_required(check_authentication_status => 1),
-        authentication                => _get_authentication(
-            client                            => $client,
-            is_document_expiry_check_required => $is_document_expiry_check_required
-        ),
-        currency_config => \%currency_config,
+        authentication                => $authentication,
+        currency_config               => \%currency_config,
     };
 };
 
@@ -999,9 +1001,9 @@ Returns,
 sub _get_authentication_poi {
     my $params = shift;
     my ($client, $documents, $is_document_expiry_check_required) = @{$params}{qw/client documents is_document_expiry_check_required/};
-    my $poi_minimum_expiry_date = $documents->{proof_of_identity}->{minimum_expiry_date};
-    my $expiry_date             = ($poi_minimum_expiry_date and $is_document_expiry_check_required) ? $poi_minimum_expiry_date : undef;
-    my $country_code            = uc($client->place_of_birth || $client->residence // '');
+    my $poi_expiry_date = $documents->{proof_of_identity}->{expiry_date};
+    my $expiry_date     = ($poi_expiry_date and $is_document_expiry_check_required) ? $poi_expiry_date : undef;
+    my $country_code    = uc($client->place_of_birth || $client->residence // '');
 
     # Return the identity structure
     return {
@@ -1040,8 +1042,8 @@ Returns,
 sub _get_authentication_poa {
     my $params = shift;
     my ($client, $documents, $is_document_expiry_check_required) = @{$params}{qw/client documents is_document_expiry_check_required/};
-    my $poa_minimum_expiry_date = $documents->{proof_of_address}->{minimum_expiry_date};
-    my $expiry_date             = ($poa_minimum_expiry_date and $is_document_expiry_check_required) ? $poa_minimum_expiry_date : undef;
+    my $poa_expiry_date = $documents->{proof_of_address}->{expiry_date};
+    my $expiry_date     = ($poa_expiry_date and $is_document_expiry_check_required) ? $poa_expiry_date : undef;
 
     # Return the document structure
     return {
