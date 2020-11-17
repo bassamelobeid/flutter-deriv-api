@@ -23,7 +23,7 @@ use BOM::Config;
 use BOM::Platform::Context qw (localize request);
 use BOM::Platform::Locale;
 use BOM::Config::Runtime;
-use BOM::Product::ContractFactory qw(produce_contract produce_batch_contract);
+use BOM::Product::ContractFactory qw(produce_contract);
 use BOM::Product::ContractFinder;
 use Finance::Contract::Longcode qw( shortcode_to_parameters);
 use LandingCompany::Registry;
