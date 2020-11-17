@@ -1604,20 +1604,6 @@ sub _mt5_validate_and_get_amount {
 
             my $brand = Brands->new(name => request()->brand);
 
-            # check for fully authenticated only if it's not gaming account and landing company requires KYC.
-            # as of now we only support gaming for binary brand, in future if we
-            # support for champion please revisit this
-            return create_error_future(
-                'AuthenticateAccount',
-                {
-                    override_code => $error_code,
-                    params        => $client->loginid
-                })
-                if ($action eq 'withdrawal'
-                and ($mt5_group // '') !~ /^real\\svg/
-                and not $client->fully_authenticated
-                and not $client->landing_company->skip_authentication);
-
             return create_error_future(
                 'WithdrawalLocked',
                 {
