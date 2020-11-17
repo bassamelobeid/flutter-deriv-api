@@ -116,7 +116,7 @@ subtest 'login list' => sub {
 
 subtest 'login list partly successfull result' => sub {
     my $bom_user_mock = Test::MockModule->new('BOM::User');
-    $bom_user_mock->mock('get_mt5_loginids', sub { return qw(MTR00000013 MTR00000014) });
+    $bom_user_mock->mock('get_mt5_loginids', sub { return qw(MTR00001013 MTR00001014) });
 
     my $mt5_acc_mock = Test::MockModule->new('BOM::RPC::v3::MT5::Account');
     $mt5_acc_mock->mock(
@@ -125,7 +125,7 @@ subtest 'login list partly successfull result' => sub {
             my $login = shift->{args}{login};
 
             #result one login should have error msg
-            return BOM::RPC::v3::MT5::Account::create_error_future('General') if $login eq 'MTR00000014';
+            return BOM::RPC::v3::MT5::Account::create_error_future('General') if $login eq 'MTR00001014';
 
             return Future->done({some => 'valid data'});
         });
@@ -143,7 +143,7 @@ subtest 'login list partly successfull result' => sub {
 
 subtest 'login list with MT5 connection problem ' => sub {
     my $bom_user_mock = Test::MockModule->new('BOM::User');
-    $bom_user_mock->mock('get_mt5_loginids', sub { return qw(MTR00000013 MTR00000014) });
+    $bom_user_mock->mock('get_mt5_loginids', sub { return qw(MTR00001013 MTR00001014) });
 
     my $mt5_async_mock = Test::MockModule->new('BOM::MT5::User::Async');
     $mt5_async_mock->mock(
@@ -168,7 +168,7 @@ subtest 'login list with MT5 connection problem ' => sub {
 
 subtest 'login list with archived login id ' => sub {
     my $bom_user_mock = Test::MockModule->new('BOM::User');
-    $bom_user_mock->mock('get_mt5_loginids', sub { return qw(MTR00000013 MTR00000014) });
+    $bom_user_mock->mock('get_mt5_loginids', sub { return qw(MTR00001013 MTR00001014) });
 
     my $mt5_acc_mock = Test::MockModule->new('BOM::RPC::v3::MT5::Account');
     $mt5_acc_mock->mock('_check_logins', sub { return 1; });
@@ -182,7 +182,7 @@ subtest 'login list with archived login id ' => sub {
             return Future->fail({
                     code  => 'NotFound',
                     error => 'Not found',
-                }) if $login eq 'MTR00000014';
+                }) if $login eq 'MTR00001014';
 
             return $mt5_async_mock->original('get_user')->($login);
         });
@@ -203,7 +203,7 @@ subtest 'login list with archived login id ' => sub {
 
 subtest 'login list without success results' => sub {
     my $bom_user_mock = Test::MockModule->new('BOM::User');
-    $bom_user_mock->mock('get_mt5_loginids', sub { return qw(MTR00000013 MTR00000014) });
+    $bom_user_mock->mock('get_mt5_loginids', sub { return qw(MTR00001013 MTR00001014) });
 
     my $mt5_acc_mock = Test::MockModule->new('BOM::RPC::v3::MT5::Account');
     $mt5_acc_mock->mock(
@@ -240,7 +240,7 @@ subtest 'create new account fails, when we get error during getting login list' 
     };
 
     my $bom_user_mock = Test::MockModule->new('BOM::User');
-    $bom_user_mock->mock('mt5_logins', sub { return qw(MTR00000013 MTR00000014) });
+    $bom_user_mock->mock('mt5_logins', sub { return qw(MTR00001013 MTR00001014) });
 
     my $mt5_acc_mock = Test::MockModule->new('BOM::RPC::v3::MT5::Account');
     $mt5_acc_mock->mock(
