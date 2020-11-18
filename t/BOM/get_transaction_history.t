@@ -228,7 +228,7 @@ my $expected = [{
     }];
 
 my @expected_transactions = sort { 0 + $a->{amount} <=> 0 + $b->{amount} } @$expected;
-my @got_transactions = sort { 0 + $a->{amount} <=> 0 + $b->{amount} } @$transaction_history;
+my @got_transactions      = sort { 0 + $a->{amount} <=> 0 + $b->{amount} } @$transaction_history;
 
 for my $idx (0 .. $#expected_transactions) {
 

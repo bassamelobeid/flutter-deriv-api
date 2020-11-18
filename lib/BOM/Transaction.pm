@@ -42,6 +42,7 @@ use BOM::Database::ClientDB;
 use BOM::Transaction::CompanyLimits;
 use BOM::Transaction::Validation;
 use BOM::Transaction::Utility;
+use BOM::Platform::Event::Emitter;
 
 =head1 NAME
 
@@ -1914,6 +1915,19 @@ sub sell_expired_contracts {
 
                 if ($contract->category_code eq 'multiplier') {
                     $bet->{verify_child} = _get_info_to_verify_child($bet->{id}, $contract);
+
+                    my $profit = formatnumber('price', $currency, $bet->{sell_price} - $bet->{buy_price});
+
+                    BOM::Platform::Event::Emitter::emit(
+                        'multiplier_hit_type',
+                        {
+                            loginid     => $client->loginid,
+                            contract_id => $bet->{id},
+                            hit_type    => $contract->hit_type,
+                            profit      => $profit,
+                            sell_price  => $bet->{sell_price},
+                            currency    => $currency,
+                        });
                 }
 
                 $bet->{quantity} = 1;
