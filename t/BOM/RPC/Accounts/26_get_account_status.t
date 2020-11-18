@@ -926,10 +926,7 @@ subtest 'get account status' => sub {
             cmp_deeply $result->{status}, noneof(qw/allow_document_upload/), 'Make sure allow_document_upload is off';
 
             subtest 'poi resubmission' => sub {
-                use constant ONFIDO_ALLOW_RESUBMISSION_KEY_PREFIX => 'ONFIDO::ALLOW_RESUBMISSION::ID::';
-                my $redis = BOM::Config::Redis::redis_replicated_write();
-                $redis->set(ONFIDO_ALLOW_RESUBMISSION_KEY_PREFIX . $test_client_cr->binary_user_id, 1);    # Activate the flag
-
+                $test_client_cr->status->set('allow_poi_resubmission', 'test', 'test');
                 my $result = $c->tcall($method, {token => $token_cr});
                 cmp_deeply(
                     $result,
@@ -959,15 +956,11 @@ subtest 'get account status' => sub {
                     },
                 );
 
-                $redis->del(ONFIDO_ALLOW_RESUBMISSION_KEY_PREFIX . $test_client_cr->binary_user_id);
+                $test_client_cr->status->clear_allow_poi_resubmission;
             };
 
             subtest 'poa resubmission' => sub {
-                # Redis key for poa resubmission flag
-                use constant POA_ALLOW_RESUBMISSION_KEY_PREFIX => 'POA::ALLOW_RESUBMISSION::ID::';
-                my $redis = BOM::Config::Redis::redis_replicated_write();
-                $redis->set(POA_ALLOW_RESUBMISSION_KEY_PREFIX . $test_client_cr->binary_user_id, 1);    # Activate the flag
-
+                $test_client_cr->status->set('allow_poa_resubmission', 'test', 'test');
                 my $result = $c->tcall($method, {token => $token_cr});
 
                 cmp_deeply(
@@ -997,7 +990,7 @@ subtest 'get account status' => sub {
                     },
                 );
 
-                $redis->del(POA_ALLOW_RESUBMISSION_KEY_PREFIX . $test_client_cr->binary_user_id);
+                $test_client_cr->status->clear_allow_poa_resubmission;
             };
         };
 
