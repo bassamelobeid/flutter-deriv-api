@@ -89,7 +89,7 @@ publish proposal => sub {
     my $now_str  = '' . time;
     return {
         sprintf(
-            'PRICER_KEYS::["amount","1000","basis","payout","contract_type","%s","currency","%s","duration","%s","duration_unit","%s","landing_company","%s","price_daemon_cmd","price","product_type","basic","proposal","1","skips_price_validation","1","subscribe","1","symbol","%s"]',
+            'PRICER_ARGS::["amount","1000","basis","payout","contract_type","%s","currency","%s","duration","%s","duration_unit","%s","landing_company","%s","price_daemon_cmd","price","product_type","basic","proposal","1","skips_price_validation","1","subscribe","1","symbol","%s"]::v1,EUR,10,stake,0,0.05,0.035,,0.5,20000,,',
             $contract->contract_type, $contract->client->currency,             $contract->duration,
             $contract->duration_unit, $contract->client->landing_company_name, $contract->underlying->symbol
         ) => {
