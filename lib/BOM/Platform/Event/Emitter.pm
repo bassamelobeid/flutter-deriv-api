@@ -49,6 +49,7 @@ my %event_queue_mapping = (
     client_promo_codes_upload   => 'PROMO_CODE_IMPORT_LONG_RUNNING_QUEUE',
     anonymize_client            => 'ANONYMIZATION_QUEUE',
     bulk_anonymization          => 'ANONYMIZATION_QUEUE',
+    multiplier_hit_type         => 'CONTRACT_QUEUE',
 );
 
 my $config = LoadFile('/etc/rmg/redis-events.yml');
