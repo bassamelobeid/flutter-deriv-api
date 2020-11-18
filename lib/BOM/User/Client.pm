@@ -3281,7 +3281,7 @@ sub _p2p_validate_sell {
         fixup => sub {
             $_->selectrow_array(
                 "SELECT COALESCE(SUM(buy_price),0) FROM bet.financial_market_bet 
-                WHERE account_id = ? AND purchase_time > NOW() - ? * INTERVAL '1 month'",
+                WHERE bet_class <> 'multiplier' AND account_id = ? AND purchase_time > NOW() - ? * INTERVAL '1 month'",
                 undef,
                 $client->account->id, $check_period
             );

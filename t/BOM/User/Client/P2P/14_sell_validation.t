@@ -48,10 +48,18 @@ cmp_deeply(
     'cannot create sell ad'
 );
 
+buy_contract($advertiser, 3, 1);
+
+cmp_deeply(
+    exception { BOM::Test::Helper::P2P::create_advert(client => $advertiser, type => 'sell', local_currency => 'aaa') },
+    {error_code => 'SellProhibited'},
+    'cannot create sell ad after buying multipler'
+);
+
 my $sell_ad;
 buy_contract($advertiser, 3);
 lives_ok { $sell_ad = BOM::Test::Helper::P2P::create_advert(client => $advertiser, type => 'sell', local_currency => 'aaa'); }
-'can create sell ad after turnover met';
+'can create sell ad after buying other contract';
 
 deposit($client, 10, 'oranges');
 
@@ -211,9 +219,10 @@ sub deposit {
 }
 
 sub buy_contract {
-    my ($client, $price) = @_;
+    my ($client, $price, $multiplier) = @_;
     my $now      = Date::Utility->new();
     my $duration = '15s';
+    my $type = $multiplier ? 'MULTUP' : 'CALL';
 
     BOM::Database::Helper::FinancialMarketBet->new({
             account_data => {
@@ -221,7 +230,7 @@ sub buy_contract {
                 currency_code  => $client->account->currency_code,
             },
             bet_data => {
-                underlying_symbol => 'frxUSDJPY',
+                underlying_symbol => 'R_50',
                 duration          => $duration,
                 payout_price      => $price,
                 buy_price         => $price,
@@ -232,11 +241,15 @@ sub buy_contract {
                 settlement_time   => $now->plus_time_interval($duration)->db_timestamp,
                 is_expired        => 1,
                 is_sold           => 0,
-                bet_class         => 'higher_lower_bet',
-                bet_type          => 'CALL',
-                short_code        => ('CALL_R_50_' . $price . '_' . $now->epoch . '_' . $now->plus_time_interval($duration)->epoch . '_S0P_0'),
+                bet_class         => $multiplier ? 'multiplier': 'higher_lower_bet',
+                bet_type          => $type,
+                short_code        => ($type. '_R_50_' . $price . '_' . $now->epoch . '_' . $now->plus_time_interval($duration)->epoch . '_S0P_0'),
                 relative_barrier  => 'S0P',
                 quantity          => 1,
+                multiplier        => 10,
+                basis_spot        => 1,
+                stop_out_order_date => $now->db_timestamp,
+                stop_out_order_amount => -1,
             },
             db => $client->db,
         })->buy_bet;
