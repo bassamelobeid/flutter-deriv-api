@@ -87,7 +87,6 @@ use constant ONFIDO_CHECK_EXCEEDED_KEY              => 'ONFIDO_CHECK_EXCEEDED';
 use constant ONFIDO_APPLICANT_CONTEXT_HOLDER_KEY    => 'ONFIDO::APPLICANT_CONTEXT::ID::';
 use constant ONFIDO_REPORT_KEY_PREFIX               => 'ONFIDO::REPORT::ID::';
 use constant ONFIDO_DOCUMENT_ID_PREFIX              => 'ONFIDO::DOCUMENT::ID::';
-use constant ONFIDO_ALLOW_RESUBMISSION_KEY_PREFIX   => 'ONFIDO::ALLOW_RESUBMISSION::ID::';
 use constant ONFIDO_IS_A_RESUBMISSION_KEY_PREFIX    => 'ONFIDO::IS_A_RESUBMISSION::ID::';
 
 use constant ONFIDO_SUPPORTED_COUNTRIES_KEY                    => 'ONFIDO_SUPPORTED_COUNTRIES';
@@ -98,8 +97,6 @@ use constant ONFIDO_AGE_EMAIL_PER_USER_TIMEOUT                 => $ENV{ONFIDO_AG
 use constant ONFIDO_AGE_BELOW_EIGHTEEN_EMAIL_PER_USER_PREFIX   => 'ONFIDO::AGE::BELOW::EIGHTEEN::EMAIL::PER::USER::';
 use constant ONFIDO_ADDRESS_REQUIRED_FIELDS                    => qw(address_postcode residence);
 use constant ONFIDO_UPLOAD_TIMEOUT_SECONDS                     => 30;
-
-use constant POA_ALLOW_RESUBMISSION_KEY_PREFIX => 'POA::ALLOW_RESUBMISSION::ID::';
 
 # Redis TTLs
 use constant TTL_ONFIDO_APPLICANT_CONTEXT_HOLDER => 240 * 60 * 60;    # 10 days in seconds
@@ -275,10 +272,7 @@ async sub document_upload {
             return;
         }
 
-        my $redis_replicated_write = _redis_replicated_write();
-        await $redis_replicated_write->connect;
-        await $redis_replicated_write->del(POA_ALLOW_RESUBMISSION_KEY_PREFIX . $client->binary_user_id);
-
+        $client->status->clear_allow_poa_resubmission;
         await BOM::Event::Services::Track::document_upload({
                 loginid    => $loginid,
                 properties => {
@@ -297,10 +291,7 @@ async sub document_upload {
             any { $_ eq $document_entry->{document_type} } +{BOM::User::Client::DOCUMENT_TYPE_CATEGORIES()}->{POI}{doc_types_appreciated}->@*;
 
         if ($is_poi_doc) {
-            # Consume resubmission context
-            my $redis_replicated_write = _redis_replicated_write();
-            await $redis_replicated_write->connect;
-            await $redis_replicated_write->del(ONFIDO_ALLOW_RESUBMISSION_KEY_PREFIX . $client->binary_user_id);
+            $client->status->clear_allow_poi_resubmission;
         }
 
         await _send_email_notification_for_poa(
@@ -377,12 +368,10 @@ async sub ready_for_authentication {
         my $client = BOM::User::Client->new({loginid => $loginid})
             or die 'Could not instantiate client for login ID ' . $loginid;
 
-        # remove "ONFIDO::ALLOW_RESUBMISSION::ID::" upon check triggered, if there's any
-        my $redis_replicated_write = _redis_replicated_write();
-        await $redis_replicated_write->connect;
         # We want to increment the resubmission counter when the resubmission flag is active.
-        my $resubmission_flag = await $redis_replicated_write->get(ONFIDO_ALLOW_RESUBMISSION_KEY_PREFIX . $client->binary_user_id);
-        await $redis_replicated_write->del(ONFIDO_ALLOW_RESUBMISSION_KEY_PREFIX . $client->binary_user_id);
+
+        my $resubmission_flag = $client->status->allow_poi_resubmission;
+        $client->status->clear_allow_poi_resubmission;
 
         my $residence = uc(country_code2code($client->residence, 'alpha-2', 'alpha-3'));
 
@@ -426,6 +415,8 @@ async sub ready_for_authentication {
             die 'We exceeded our Onfido authentication check request per day';
         }
 
+        my $redis_replicated_write = _redis_replicated_write();
+        await $redis_replicated_write->connect;
         await $redis_replicated_write->del(ONFIDO_IS_A_RESUBMISSION_KEY_PREFIX . $client->binary_user_id);
 
         if ($resubmission_flag) {

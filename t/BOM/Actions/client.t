@@ -131,11 +131,8 @@ subtest 'upload document' => sub {
         });
 
     # Redis key for resubmission flag
-    use constant POA_ALLOW_RESUBMISSION_KEY_PREFIX => 'POA::ALLOW_RESUBMISSION::ID::';
     $loop->add(my $services = BOM::Event::Services->new);
-    my $redis_write = $services->redis_replicated_write();
-    $redis_write->set(POA_ALLOW_RESUBMISSION_KEY_PREFIX . $test_client->binary_user_id, 1)->get;    # Activate the flag
-
+    $test_client->status->set('allow_poa_resubmission', 'test', 'test');
     $test_client->db->dbic->run(
         ping => sub {
             $_->selectrow_array('SELECT * FROM betonmarkets.finish_document_upload(?)', undef, $upload_info->{file_id});
@@ -177,8 +174,8 @@ subtest 'upload document' => sub {
     $applicant_id = $applicant->{id};
     ok($applicant_id, 'applicant id ok');
 
-    my $resubmission_flag_after = $redis_write->get(POA_ALLOW_RESUBMISSION_KEY_PREFIX . $test_client->binary_user_id)->get;
-    ok !$resubmission_flag_after, 'poa resubmission flag is removed from redis after document uploading';
+    my $resubmission_flag_after = $test_client->status->_get('allow_poa_resubmission');
+    ok !$resubmission_flag_after, 'poa resubmission status is removed after document uploading';
 
     my $doc = $onfido->document_list(applicant_id => $applicant_id)->as_arrayref->get->[0];
     ok($doc, "there is a document");
@@ -1107,8 +1104,6 @@ subtest 'aml risk becomes high withdrawal_locked email CR landing company' => su
 subtest 'onfido resubmission' => sub {
     # Redis key for resubmission counter
     use constant ONFIDO_RESUBMISSION_COUNTER_KEY_PREFIX => 'ONFIDO::RESUBMISSION_COUNTER::ID::';
-    # Redis key for resubmission flag
-    use constant ONFIDO_ALLOW_RESUBMISSION_KEY_PREFIX => 'ONFIDO::ALLOW_RESUBMISSION::ID::';
     # Redis key for daily onfido submission per user
     use constant ONFIDO_REQUEST_PER_USER_PREFIX => 'ONFIDO::DAILY::REQUEST::PER::USER::';
 
@@ -1135,6 +1130,8 @@ subtest 'onfido resubmission' => sub {
             Future->done;
         });
 
+    # First test, we expect counter to be +1
+    $test_client->status->set('allow_poi_resubmission', 'test staff', 'reason');
     # Resubmission shouldnt kick in if no previous onfido checks
     my $mock_onfido = Test::MockModule->new('BOM::User::Onfido');
     $mock_onfido->mock(
@@ -1143,13 +1140,16 @@ subtest 'onfido resubmission' => sub {
             return;
         });
 
-    # For this test, we expect counter to be 0 due to empty checks
-    $redis_write->set(ONFIDO_ALLOW_RESUBMISSION_KEY_PREFIX . $test_client->binary_user_id, 1)->get;
     my $counter   = $redis_write->get(ONFIDO_RESUBMISSION_COUNTER_KEY_PREFIX . $test_client->binary_user_id)->get // 0;
     my $call_args = {
         loginid      => $test_client->loginid,
         applicant_id => $applicant_id
     };
+
+    # For this test, we expect counter to be 0 due to empty checks
+    my $action_handler = BOM::Event::Process::get_action_mappings()->{ready_for_authentication};
+    $action_handler->($call_args)->get;
+
     my $counter_after = $redis_write->get(ONFIDO_RESUBMISSION_COUNTER_KEY_PREFIX . $test_client->binary_user_id)->get // 0;
     is $counter, $counter_after, 'Resubmission discarded due to being the first check';
 
@@ -1173,13 +1173,12 @@ subtest 'onfido resubmission' => sub {
         });
 
     # Then, we expect counter to be +1
-    $redis_write->set(ONFIDO_ALLOW_RESUBMISSION_KEY_PREFIX . $test_client->binary_user_id, 1)->get;
+    $test_client->status->set('allow_poi_resubmission', 'test staff', 'reason');
     $counter   = $redis_write->get(ONFIDO_RESUBMISSION_COUNTER_KEY_PREFIX . $test_client->binary_user_id)->get // 0;
     $call_args = {
         loginid      => $test_client->loginid,
         applicant_id => $applicant_id
     };
-    my $action_handler = BOM::Event::Process::get_action_mappings()->{ready_for_authentication};
     $redis_events->set(ONFIDO_AGE_BELOW_EIGHTEEN_EMAIL_PER_USER_PREFIX . $test_client->binary_user_id, 1)->get;
     $redis_events->set(ONFIDO_POI_EMAIL_NOTIFICATION_SENT_PREFIX . $test_client->binary_user_id,       1)->get;
     $redis_write->del(ONFIDO_IS_A_RESUBMISSION_KEY_PREFIX . $test_client->binary_user_id)->get;
@@ -1207,7 +1206,7 @@ subtest 'onfido resubmission' => sub {
     my $lower_ttl = $redis_write->ttl(ONFIDO_RESUBMISSION_COUNTER_KEY_PREFIX . $test_client->binary_user_id)->get;
     is($lower_ttl, 100, 'Resubmission Counter TTL has been set to 100');
     # Activate the flag and run again
-    $redis_write->set(ONFIDO_ALLOW_RESUBMISSION_KEY_PREFIX . $test_client->binary_user_id, 1)->get;
+    $test_client->status->set('allow_poi_resubmission', 'test staff', 'reason');
     $action_handler->($call_args)->get;
     # After running it twice TTL should be set to full time again (roughly 30 days, whatever $ttl is)
     my $ttl2 = $redis_write->ttl(ONFIDO_RESUBMISSION_COUNTER_KEY_PREFIX . $test_client->binary_user_id)->get;
@@ -1216,7 +1215,7 @@ subtest 'onfido resubmission' => sub {
     # For this one user's onfido daily counter will be too high, so the checkup won't be made
     my $counter_after3 = $redis_write->get(ONFIDO_RESUBMISSION_COUNTER_KEY_PREFIX . $test_client->binary_user_id)->get;
     $redis_events->set(ONFIDO_REQUEST_PER_USER_PREFIX . $test_client->binary_user_id, $ENV{ONFIDO_REQUEST_PER_USER_LIMIT} // 3)->get;
-    $redis_write->set(ONFIDO_ALLOW_RESUBMISSION_KEY_PREFIX . $test_client->binary_user_id, 1)->get;
+    $test_client->status->set('allow_poi_resubmission', 'test staff', 'reason');
     $action_handler->($call_args)->get;
     my $counter_after4 = $redis_write->get(ONFIDO_RESUBMISSION_COUNTER_KEY_PREFIX . $test_client->binary_user_id)->get;
     is($counter_after3, $counter_after4, 'Resubmission Counter has not been incremented due to user limits');
@@ -1224,7 +1223,7 @@ subtest 'onfido resubmission' => sub {
     # The last one, will be made upon the fact the whole company has its own onfido submit limit
     $redis_events->hset(ONFIDO_AUTHENTICATION_CHECK_MASTER_KEY, ONFIDO_REQUEST_COUNT_KEY, $ENV{ONFIDO_REQUESTS_LIMIT} // 1000)->get;
     $redis_events->set(ONFIDO_REQUEST_PER_USER_PREFIX . $test_client->binary_user_id, 0)->get;
-    $redis_write->set(ONFIDO_ALLOW_RESUBMISSION_KEY_PREFIX . $test_client->binary_user_id, 1)->get;
+    $test_client->status->set('allow_poi_resubmission', 'test staff', 'reason');
     $action_handler->($call_args)->get;
     my $counter_after5 = $redis_write->get(ONFIDO_RESUBMISSION_COUNTER_KEY_PREFIX . $test_client->binary_user_id)->get;
     is($counter_after4, $counter_after5, 'Resubmission Counter has not been incremented due to global limits');
