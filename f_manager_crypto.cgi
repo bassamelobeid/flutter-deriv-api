@@ -33,7 +33,7 @@ use BOM::CTC::Database;
 use BOM::DualControl;
 use LandingCompany::Registry;
 use f_brokerincludeall;
-use BOM::Cryptocurrency::Helper qw(get_crypto_withdrawal_pending_total prioritize_address);
+use BOM::Cryptocurrency::Helper qw(get_crypto_withdrawal_pending_total reprocess_address);
 use BOM::Platform::Email qw(send_email);
 use BOM::Platform::Context;
 use Brands;
@@ -642,9 +642,9 @@ EOF
     } else {
         die 'Invalid ' . $currency . ' command: ' . $cmd;
     }
-} elsif ($view_action eq 'prioritize_confirmation') {
-    my $prioritize_address = request()->param('prioritize_address');
-    print prioritize_address($currency_wrapper, $prioritize_address);
+} elsif ($view_action eq 'reprocess_confirmation') {
+    my $address_to_reprocess = request()->param('address_to_reprocess');
+    print reprocess_address($currency_wrapper, $address_to_reprocess);
 }
 
 code_exit_BO();

@@ -6,15 +6,15 @@ use warnings;
 use BOM::Config::Redis;
 use BOM::CTC::Database;
 
-use constant {PRIORITIZE_KEY_TTL => 300};
+use constant {REPROCESS_KEY_TTL => 300};
 
 use Exporter qw/import/;
 
-our @EXPORT_OK = qw(prioritize_address get_crypto_withdrawal_pending_total get_crypto_transactions);
+our @EXPORT_OK = qw(reprocess_address get_crypto_withdrawal_pending_total get_crypto_transactions);
 
-=head2 prioritize_address
+=head2 reprocess_address
 
-Prioritizes the given address and returns the result.
+Reprocess the given address and returns the result.
 
 Takes 2 parameters:
 
@@ -22,7 +22,7 @@ Takes 2 parameters:
 
 =item * C<currency_wrapper> - A currency object from L<BOM::CTC::Currency> module
 
-=item * C<prioritize_address> - The address to be prioritised
+=item * C<address_to_reprocess> - The address to be prioritised
 
 =back
 
@@ -30,32 +30,32 @@ Returns the result as a string containing HTML tags.
 
 =cut
 
-sub prioritize_address {
-    my ($currency_wrapper, $prioritize_address) = @_;
+sub reprocess_address {
+    my ($currency_wrapper, $address_to_reprocess) = @_;
 
     return _render_message(0, "Address not found.")
-        unless ($prioritize_address);
+        unless ($address_to_reprocess);
 
-    $prioritize_address =~ s/^\s+|\s+$//g;
+    $address_to_reprocess =~ s/^\s+|\s+$//g;
     return _render_message(0, "Invalid address format.")
-        unless ($currency_wrapper->is_valid_address($prioritize_address));
+        unless ($currency_wrapper->is_valid_address($address_to_reprocess));
 
     my $redis_reader = BOM::Config::Redis::redis_replicated_read();
-    my $redis_key    = "Prioritize::$prioritize_address";
+    my $redis_key    = "Reprocess::$address_to_reprocess";
     if ($redis_reader->get($redis_key)) {
         my $redis_key_ttl = $redis_reader->ttl($redis_key);
-        return _render_message(0, "The address $prioritize_address is already prioritised, please try after $redis_key_ttl seconds.");
+        return _render_message(0, "The address $address_to_reprocess is already reprocessed recently, please try after $redis_key_ttl seconds.");
     }
 
-    my $prioritize_result = $currency_wrapper->prioritize_address($prioritize_address);
-    return _render_message(0, $prioritize_result->{message})
-        unless $prioritize_result->{is_success};
+    my $reprocess_result = $currency_wrapper->reprocess_address($address_to_reprocess);
+    return _render_message(0, $reprocess_result->{message})
+        unless $reprocess_result->{is_success};
 
     BOM::Config::Redis::redis_replicated_write()->set(
         $redis_key => 1,
-        EX         => PRIORITIZE_KEY_TTL,
+        EX         => REPROCESS_KEY_TTL,
     );
-    return _render_message(1, "Requested priority for $prioritize_address");
+    return _render_message(1, "Requested reprocessing for $address_to_reprocess");
 }
 
 =head2 _render_message

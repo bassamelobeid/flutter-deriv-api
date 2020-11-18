@@ -26,7 +26,7 @@ use BOM::ContractInfo;
 use BOM::Backoffice::Sysinit ();
 use BOM::Config;
 use BOM::CTC::Currency;
-use BOM::Cryptocurrency::Helper qw(prioritize_address get_crypto_transactions);
+use BOM::Cryptocurrency::Helper qw(reprocess_address get_crypto_transactions);
 BOM::Backoffice::Sysinit::init();
 
 use constant CRYPTO_DEFAULT_TRANSACTION_COUNT => 50;
@@ -261,10 +261,10 @@ my $render_crypto_transactions = sub {
         $trx->{usd_amount} = formatnumber('amount', 'USD', $trx->{amount} * $exchange_rate);
     }
 
-    my ($prioritize_trx_id, $prioritize_result);
-    if ($trx_type eq 'deposit' && $action && $action eq 'prioritize') {
-        $prioritize_trx_id = request()->param('db_row_id');
-        $prioritize_result = prioritize_address($currency_wrapper, request()->param('prioritize_address'));
+    my ($trx_id_to_reprocess, $reprocess_result);
+    if ($trx_type eq 'deposit' && $action && $action eq 'reprocess_address') {
+        $trx_id_to_reprocess = request()->param('db_row_id');
+        $reprocess_result    = reprocess_address($currency_wrapper, request()->param('address_to_reprocess'));
     }
 
     my $make_pagination_url = sub {
@@ -297,9 +297,9 @@ my $render_crypto_transactions = sub {
                 next_url => $next_url,
                 range    => ($offset + !!@trxns) . ' - ' . ($offset + @trxns),
             },
-            prioritize => {
-                trx_id => $prioritize_trx_id,
-                result => $prioritize_result,
+            reprocess => {
+                trx_id => $trx_id_to_reprocess,
+                result => $reprocess_result,
             },
             %client_details,
         }) || die $tt->error();

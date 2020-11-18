@@ -125,16 +125,16 @@
                     </tbody></table>
                 </td>
                 <td valign="top" align="center">
-                    [% IF trx.status == 'NEW' %]
+                    [% IF trx.transaction_type == 'deposit' %]
                         <form method="POST">
                             <input type="hidden" name="loginID" value="[% loginid %]" />
                             <input type="hidden" name="db_row_id" value="[% trx.id %]" />
-                            <input type="hidden" name="prioritize_address" value="[% trx.address %]" />
-                            <button type="submit" name="action" value="prioritize">Prioritize Confirmation</button>
+                            <input type="hidden" name="address_to_reprocess" value="[% trx.address %]" />
+                            <button type="submit" name="action" value="reprocess_address">Reprocess Address</button>
                         </form>
                     [% END %]
-                    [% IF prioritize and prioritize.trx_id == trx.id %]
-                        [% prioritize.result | none %]
+                    [% IF reprocess and reprocess.trx_id == trx.id %]
+                        [% reprocess.result | none %]
                         <script>smoothScroll('#trx_[% trx.id %]', 700);</script>
                     [% END %]
                 </td>
