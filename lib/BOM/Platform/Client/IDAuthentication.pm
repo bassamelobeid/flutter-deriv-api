@@ -11,17 +11,20 @@ use Text::Markdown;
 use BOM::Platform::Email qw(send_email);
 use BOM::Platform::Context qw(localize request);
 use BOM::Platform::ProveID;
-use BOM::Config::Redis;
 use feature 'state';
+
+has event => (
+    is      => 'rw',
+    default => 'no_event'
+);
 
 has client => (
     is       => 'ro',
     required => 1
 );
 
-use constant NEEDED_MATCHES_FOR_ONLINE_AUTH       => 2;
-use constant NEEDED_MATCHES_FOR_AGE_VERIFICATION  => 1;
-use constant ONFIDO_ALLOW_RESUBMISSION_KEY_PREFIX => 'ONFIDO::ALLOW_RESUBMISSION::ID::';
+use constant NEEDED_MATCHES_FOR_ONLINE_AUTH      => 2;
+use constant NEEDED_MATCHES_FOR_AGE_VERIFICATION => 1;
 
 =head2 run_validation
 
@@ -34,6 +37,7 @@ sub run_validation {
 
     my $client  = $self->client;
     my $loginid = $client->loginid;
+    $self->event($event);
 
     return if $client->is_virtual || $client->fully_authenticated;
 
@@ -267,10 +271,8 @@ sub _request_id_authentication {
     my $client = $self->client;
 
     # Allow Onfido ressubmission
-    my $redis = BOM::Config::Redis::redis_replicated_write();
-    $redis->set(ONFIDO_ALLOW_RESUBMISSION_KEY_PREFIX . $client->binary_user_id, 1);
-    my $client_name = join(' ', $client->salutation, $client->first_name, $client->last_name);
-
+    $client->status->upsert('allow_poi_resubmission', 'system', 'authentication needed after ' . $self->event);
+    my $client_name   = join(' ', $client->salutation, $client->first_name, $client->last_name);
     my $brand         = request()->brand;
     my $support_email = $brand->emails('support');
     my $subject       = localize('Documents are required to verify your identity');
