@@ -77,7 +77,7 @@ my $params = {
 my $c = produce_contract($params);
 like $c->pricing_engine_name, qr/VannaVolga/, 'VV engine selected';
 
-is roundcommon(0.0001, $c->pricing_engine->bs_probability->amount),    0.1515, 'correct bs probability for FX contract';
+is roundcommon(0.0001, $c->pricing_engine->bs_probability->amount),    0.1515,   'correct bs probability for FX contract';
 is roundcommon(0.0001, $c->pricing_engine->market_supplement->amount), '0.0220', 'correct market supplement';
 
 $c = produce_contract({

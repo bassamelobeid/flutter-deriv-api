@@ -148,8 +148,8 @@ subtest 'barrier tier' => sub {
 
     foreach my $test (@test_cases) {
         $mock_underlying->mock('pip_size', sub { $test->[0] });
-        $args->{underlying}   = $test->[1];
-        $args->{bet_type}     = $test->[2];
+        $args->{underlying} = $test->[1];
+        $args->{bet_type}   = $test->[2];
         $mock_contract->mock('current_spot', sub { $test->[3] });
         $mock_barrier->mock('as_absolute', sub { $test->[4] });
     }
@@ -210,7 +210,7 @@ subtest 'bias long' => sub {
     $args->{underlying}   = 'frxAUDJPY';
     $args->{bet_type}     = 'PUT';
     $args->{product_type} = 'basic';
-    my $c                    = produce_contract($args);
+    my $c = produce_contract($args);
     is $c->pricing_engine->event_markup->amount, 0, '0 event markup for PUT-frxAUDJPY';
     $mock_underlying->mock('pip_size', sub { 0.00001 });
     $mock_contract->mock('current_spot', sub { 100 });

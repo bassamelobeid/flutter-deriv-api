@@ -114,7 +114,7 @@ subtest 'config' => sub {
 
     SKIP: {
         skip 'no forex feed available over weekend/holiday', 1 unless $trading_calendar->is_open($exchange);
-        is $c->ask_price, 65.13, 'correct ask price';
+        is $c->ask_price, 65.13,   'correct ask price';
         is $c->bid_price, '61.00', 'correct bid price';
     }
 };

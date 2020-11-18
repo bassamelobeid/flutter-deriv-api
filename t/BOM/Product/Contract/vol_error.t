@@ -30,7 +30,7 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     {
         symbol        => 'frxUSDJPY',
         recorded_date => $now->minus_time_interval('10m'),
-        surface => {
+        surface       => {
             '14' => {
                 'vol_spread' => {
                     '25' => '0.00999999999999999',

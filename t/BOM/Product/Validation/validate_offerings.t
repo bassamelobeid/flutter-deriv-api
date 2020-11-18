@@ -152,7 +152,7 @@ subtest 'suspend early sellback' => sub {
     BOM::Config::Runtime->instance->app_config->quants->contract_types->suspend_early_sellback(['PUT']);
     BOM::Config::Runtime->instance->app_config->quants->underlyings->suspend_early_sellback(['frxUSDJPY']);
     $bet_params->{date_pricing} = $now->epoch + 1;
-    $bet_params->{duration} = '3d';
+    $bet_params->{duration}     = '3d';
 
     $c = produce_contract($bet_params);
     ok !$c->is_valid_to_sell, 'invalid to sell';

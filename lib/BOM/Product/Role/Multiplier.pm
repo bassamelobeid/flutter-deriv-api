@@ -611,7 +611,7 @@ sub supported_orders {
 
 Shows the most recent limit orders for a contract.
 
-This is formatted in a way that it can be directly put into PRICER_KEYS.
+This is formatted in a way that it can be directly put into PRICER_ARGS.
 
 =cut
 

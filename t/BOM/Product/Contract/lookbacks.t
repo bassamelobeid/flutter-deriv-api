@@ -123,7 +123,7 @@ subtest 'lbfloatcall' => sub {
         });
 
     my $error_contract = produce_contract($args);
-    ok $error_contract->is_expired, 'call is expired';
+    ok $error_contract->is_expired,                  'call is expired';
     ok $error_contract->waiting_for_settlement_tick, 'waiting for settlement tick';
 
 };
@@ -170,7 +170,7 @@ subtest 'lbfloatput' => sub {
         });
 
     my $error_contract = produce_contract($args);
-    ok $error_contract->is_expired, 'call is expired';
+    ok $error_contract->is_expired,                  'call is expired';
     ok $error_contract->waiting_for_settlement_tick, 'waiting for settlement tick';
 };
 
@@ -216,21 +216,21 @@ subtest 'lbhighlow' => sub {
         });
 
     my $error_contract = produce_contract($args);
-    ok $error_contract->is_expired, 'call is expired';
+    ok $error_contract->is_expired,                  'call is expired';
     ok $error_contract->waiting_for_settlement_tick, 'waiting for settlement tick';
 };
 
 subtest 'multiplier for crypto' => sub {
-    $args->{currency} = 'BTC';
+    $args->{currency}   = 'BTC';
     $args->{multiplier} = 0.00005;
     $args->{underlying} = 'R_75';
 
-    my $c = produce_contract($args);
+    my $c                  = produce_contract($args);
     my $expected_shortcode = 'LBHIGHLOW_R_75_0.00005_1425945600_1426118399';
     is $c->shortcode, $expected_shortcode, 'correct shortcode';
 
     $args->{underlying} = 'R_100';
-    $args->{currency} = 'USD';
+    $args->{currency}   = 'USD';
     $args->{multiplier} = 1;
 };
 

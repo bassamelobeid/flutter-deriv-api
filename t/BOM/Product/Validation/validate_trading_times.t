@@ -309,12 +309,13 @@ subtest 'sell multiday on weekend' => sub {
         date_pricing => $pricing_date,
         currency     => 'USD',
         limit_order  => {
-        stop_out => {
-            order_type   => 'stop_out',
-            order_amount => -100,
-            order_date   => $weekday->epoch,
-            basis_spot   => '100.00',
-        }},
+            stop_out => {
+                order_type   => 'stop_out',
+                order_amount => -100,
+                order_date   => $weekday->epoch,
+                basis_spot   => '100.00',
+            }
+        },
     };
     $c = produce_contract($bet_params);
     ok !$c->is_valid_to_sell, 'invalid to sell';

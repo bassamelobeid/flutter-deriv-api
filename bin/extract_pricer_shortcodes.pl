@@ -16,7 +16,7 @@ sub get_keys {
 sub to_short_code {
     my $x = shift;
 
-    $x =~ s/^PRICER_KEYS:://;
+    $x =~ s/^PRICER_ARGS:://;
     return unless $x =~ /^\[/;
     my $d = eval {decode_json $x};
     unless ($d) {
