@@ -817,7 +817,7 @@ sub _build_bid_response {
     # for multiplier, we want to return the orders and insurance details.
     if ($contract->category_code eq 'multiplier') {
         # If the caller is not from price daemon, we need:
-        # 1. sorted orders as array reference ($contract->available_orders) for PRICER_KEY
+        # 1. sorted orders as array reference ($contract->available_orders) for PRICER_ARGS
         # 2. available order for display in the websocket api response ($contract->available_orders_for_display)
         my $display = $contract->available_orders_for_display;
         $display->{$_}->{display_name} = localize($display->{$_}->{display_name}) for keys %$display;

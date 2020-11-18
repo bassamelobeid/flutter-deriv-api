@@ -277,7 +277,7 @@ async sub process {
         $log->debugf('got pricer_jobs overflow: %d', $overflow);
     }
 
-    # We now loop through whatever PRICER_KEYS::* entries we have
+    # We now loop through whatever PRICER_ARGS::* entries we have
     # in Redis, doing these in batches: might be a lot of keys,
     # so those batches are grouped.
     my @all_keys;
@@ -287,7 +287,7 @@ async sub process {
         do {
             my $details = await $self->redis->scan(
                 $cursor,
-                match => 'PRICER_KEYS::*',
+                match => 'PRICER_ARGS::*',
                 count => $self->keys_per_batch,
             );
             ($cursor, my $keys) = $details->@*;
@@ -431,7 +431,7 @@ async sub send_stats {
                 my $key = shift;
 
                 try {
-                    my %params = decode_json_utf8($key =~ s/^PRICER_KEYS:://r)->@*;
+                    my %params = decode_json_utf8($key =~ s/^PRICER_ARGS:://r)->@*;
                     # Exclude proposal_array
                     return if exists $params{barriers};
 

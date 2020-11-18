@@ -7,6 +7,10 @@ use DataDog::DogStatsd::Helper qw(stats_inc);
 use JSON::MaybeUTF8 qw(:v1);
 use BOM::Config::Redis;
 use BOM::Product::Contract;
+use Price::Calculator;
+use Math::Util::CalculatedValue::Validatable;
+use Format::Util::Numbers qw/financialrounding/;
+use List::Util qw(min);
 
 sub create_error {
     my $args = shift;
@@ -115,6 +119,89 @@ sub get_contract_params {
     my $contract_params = {@{$payload}};
 
     return $contract_params;
+}
+
+sub non_binary_price_adjustment {
+    my ($contract_parameters, $response) = @_;
+
+    my $theo_price = delete $response->{'theo_price'};
+
+    # apply app markup adjustment here:
+    my $app_markup_percentage = $contract_parameters->{app_markup_percentage} // 0;
+    my $multiplier            = $contract_parameters->{multiplier}            // 0;
+
+    my $app_markup_per_unit = $theo_price * $app_markup_percentage / 100;
+    my $app_markup          = $multiplier * $app_markup_per_unit;
+
+    # currently we only have 2 non-binary contracts:
+    # - lookback
+    # - callput_spread
+    my $adjusted_ask_price = $response->{ask_price} + $app_markup;
+
+    # callput_spread has maximum ask price
+    if (exists $contract_parameters->{maximum_ask_price}) {
+        $adjusted_ask_price = min($contract_parameters->{maximum_ask_price}, $adjusted_ask_price);
+    }
+
+    $response->{ask_price} = $response->{display_value} =
+        financialrounding('price', $contract_parameters->{currency}, $adjusted_ask_price);
+
+    return $response;
+}
+
+sub binary_price_adjustment {
+    my ($contract_parameters, $response) = @_;
+
+    # overrides the theo_probability, which takes the most calculation time.
+    # theo_probability is a calculated value (CV), overwrite it with CV object.
+    my $resp_theo_probability = delete $response->{theo_probability};
+    my $theo_probability      = Math::Util::CalculatedValue::Validatable->new({
+        name        => 'theo_probability',
+        description => 'theorectical value of a contract',
+        set_by      => 'Pricer Daemon',
+        base_amount => $resp_theo_probability,
+        minimum     => 0,
+        maximum     => 1,
+    });
+
+    my $cps              = $contract_parameters;
+    my $price_calculator = Price::Calculator->new({
+        currency              => $cps->{currency},
+        amount                => $cps->{amount},
+        amount_type           => $cps->{amount_type},
+        app_markup_percentage => $cps->{app_markup_percentage},
+        deep_otm_threshold    => $cps->{deep_otm_threshold},
+        base_commission       => $cps->{base_commission},
+        min_commission_amount => $cps->{min_commission_amount},
+        $cps->{staking_limits} ? (staking_limits => $cps->{staking_limits}) : (),
+        theo_probability => $theo_probability
+    });
+
+    if (my $error = $price_calculator->validate_price) {
+        my $error_map = {
+            zero_stake             => "Invalid stake/payout.",
+            payout_too_many_places => 'Payout can not have more than [_1] decimal places.',
+            stake_too_many_places  => 'Stake can not have more than [_1] decimal places.',
+            stake_same_as_payout   => 'This contract offers no return.',
+            stake_outside_range    => 'Minimum stake of [_1] and maximum payout of [_2]. Current stake is [_3].',
+            payout_outside_range   => 'Minimum stake of [_1] and maximum payout of [_2]. Current stake is [_3].',
+        };
+        # FIXME: use the error_mappings in Static.pm
+        # my $ERROR_MAPPING = BOM::Product::Static::get_error_mapping();
+
+        return create_error({
+            # FIXME: price_calculator error codes are the wrong format
+            code              => $error->{error_code},
+            message_to_client => [$error_map->{$error->{error_code}}, @{$error->{error_details} // []}],
+        });
+    }
+
+    $response->{ask_price}     = $price_calculator->ask_price;
+    $response->{display_value} = financialrounding('price', $cps->{currency}, $response->{ask_price});
+    $response->{payout}        = $price_calculator->payout;
+    $response->{$_} .= '' for qw(ask_price display_value payout);
+
+    return $response;
 }
 
 1;

@@ -52,9 +52,9 @@ $loop->add($queue);
 
 # Sample pricer jobs
 my @keys = (
-    q{PRICER_KEYS::["amount",1000,"basis","payout","contract_type","PUT","country_code","ph","currency","AUD","duration",3,"duration_unit","m","landing_company",null,"price_daemon_cmd","price","product_type","basic","proposal",1,"skips_price_validation",1,"subscribe",1,"symbol","frxAUDJPY"]},
-    q{PRICER_KEYS::["amount",1000,"basis","payout","contract_type","CALL","country_code","ph","currency","AUD","duration",3,"duration_unit","m","landing_company",null,"price_daemon_cmd","price","product_type","basic","proposal",1,"skips_price_validation",1,"subscribe",1,"symbol","frxAUDJPY"]},
-    q{PRICER_KEYS::["contract_id",123,"landing_company","svg","price_daemon_cmd","bid"]},
+    q{PRICER_ARGS::["amount",1000,"basis","payout","contract_type","PUT","country_code","ph","currency","AUD","duration",3,"duration_unit","m","landing_company",null,"price_daemon_cmd","price","product_type","basic","proposal",1,"skips_price_validation",1,"subscribe",1,"symbol","frxAUDJPY"]},
+    q{PRICER_ARGS::["amount",1000,"basis","payout","contract_type","CALL","country_code","ph","currency","AUD","duration",3,"duration_unit","m","landing_company",null,"price_daemon_cmd","price","product_type","basic","proposal",1,"skips_price_validation",1,"subscribe",1,"symbol","frxAUDJPY"]},
+    q{PRICER_ARGS::["contract_id",123,"landing_company","svg","price_daemon_cmd","bid"]},
 );
 
 my @contract_params = ([

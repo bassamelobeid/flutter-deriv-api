@@ -12,7 +12,6 @@ use Log::Any qw( $log );
 use Scalar::Util qw(blessed);
 use Time::HiRes ();
 use Syntax::Keyword::Try;
-use Data::Dumper;
 
 use BOM::MarketData qw(create_underlying);
 use BOM::Platform::Context;
@@ -181,7 +180,7 @@ sub run {
         }
 
         my $next = $key->[1];
-        next unless $next =~ s/^PRICER_KEYS:://;
+        next unless $next =~ s/^PRICER_ARGS:://;
         my $payload = decode_json_utf8($next);
         my $params  = {@{$payload}};
 
@@ -223,12 +222,46 @@ sub run {
                 {tags => $self->tags('contract_type:' . $contract_type_string, 'currency:' . $params->{currency})});
         }
 
-        # On websocket clients are subscribing to proposal open contract with "CONTRACT_PRICE::123122__virtual" as the key
-        my $redis_channel     = $params->{contract_id} ? 'CONTRACT_PRICE::' . $params->{contract_id} . '_' . $params->{landing_company} : $key->[1];
-        my $subscribers_count = $redis_pricer_subscription->publish($redis_channel, encode_json_utf8($response));
-        # if None was subscribed, so delete the job
-        if ($subscribers_count == 0) {
-            $redis_pricer->del($key->[1], $next);
+        # proposal-open-contract
+        if ($params->{contract_id}) {
+            # On websocket the client is subscribing to proposal open contract with "CONTRACT_PRICE::123122__virtual" as the key
+            my $redis_channel     = 'CONTRACT_PRICE::' . $params->{contract_id} . '_' . $params->{landing_company};
+            my $subscribers_count = $redis_pricer_subscription->publish($redis_channel, encode_json_utf8($response));
+
+            # delete the job if no-one is subscribed
+            if ($subscribers_count == 0) {
+                $redis_pricer->del($key->[1], $next);
+            }
+        }
+        # proposal
+        else {
+            # on websocket, multiple clients are subscribed to $pricer_args::$subchannel
+            my $pricer_args = $key->[1];
+            my $subchannels = $redis_pricer->smembers($pricer_args);
+
+            # we adjust and publish the price for each of them
+            for my $subchannel (@$subchannels) {
+                my $redis_channel       = $pricer_args . "::" . $subchannel;
+                my $contract_parameters = $self->_deserialize_contract_parameters($subchannel);
+
+                my $adjusted_response = $response;
+                # for non-binary where we expect theo_price to be present
+                if (defined $response->{theo_price}) {
+                    $adjusted_response = BOM::Pricing::v3::Utility::non_binary_price_adjustment($contract_parameters, {%$response});
+                }
+                # for binary contracts where we expect theo_probability to be present
+                elsif (defined $response->{theo_probability}) {
+                    $adjusted_response = BOM::Pricing::v3::Utility::binary_price_adjustment($contract_parameters, {%$response});
+                }
+
+                my $subscribers_count = $redis_pricer_subscription->publish($redis_channel, encode_json_utf8($adjusted_response));
+
+                # delete the subchannel if no-one is subscribed
+                if ($subscribers_count == 0) {
+                    $redis_pricer->srem($pricer_args, $subchannel);
+                }
+            }
+
         }
 
         $tv_now = [Time::HiRes::gettimeofday];
@@ -364,6 +397,55 @@ Returns an arrayref of datadog tags. Takes an optional list of additional tags t
 sub tags {
     my ($self, @tags) = @_;
     return [@{$self->{tags}}, map { ; "tag:$_" } $self->current_queue // (), @tags];
+}
+
+=head2 _deserialize_contract_parameters
+
+Returns the contract subchannel as a hash, used for price adjustment.
+
+=cut
+
+sub _deserialize_contract_parameters {
+    my ($self, $subchannel) = @_;
+
+    my (
+        $version,                  # version
+        $currency,                 # currency
+        $amount,                   # amount
+        $amount_type,              # amount_type
+        $app_markup_percentage,    # app_markup_percentage
+        $deep_otm_threshold,       # deep_otm_threshold
+        $base_commission,          # base_commission
+        $min_commission_amount,    # min_commission_amount
+        $staking_limits_min,       # staking_limits->{min}
+        $staking_limits_max,       # staking_limits->{max}
+        $maximum_ask_price,        # maximum_ask_price
+        $multiplier                # multiplier
+    ) = split ',', $subchannel;
+
+    unless ($version eq 'v1') {
+        $log->warnf('Invalid contract_parameters version %s', $subchannel);
+        return;
+    }
+
+    return {
+        currency => $currency,
+        $amount ne ''             ? (amount             => $amount)             : (),
+        $amount_type ne ''        ? (amount_type        => $amount_type)        : (),
+        $deep_otm_threshold ne '' ? (deep_otm_threshold => $deep_otm_threshold) : (),
+        app_markup_percentage => $app_markup_percentage,
+        base_commission       => $base_commission,
+        min_commission_amount => $min_commission_amount,
+        $staking_limits_min ne '' && $staking_limits_max ne ''
+        ? (
+            staking_limits => {
+                min => $staking_limits_min,
+                max => $staking_limits_max,
+            })
+        : (),
+        $maximum_ask_price ne '' ? (maximum_ask_price => $maximum_ask_price) : (),
+        $multiplier ne ''        ? (multiplier        => $multiplier)        : (),
+    };
 }
 
 1;
