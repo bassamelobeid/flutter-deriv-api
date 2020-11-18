@@ -36,7 +36,6 @@ $test_server->app->log(Mojo::Log->new(level => 'debug'));
 my $endless_loop_avoid = 0;
 my $url                = '/websockets/v3?l=EN&debug=1&app_id=1';
 
-my $channel;
 my $user_first = {};
 
 subtest "Born and die" => sub {
@@ -57,15 +56,16 @@ subtest "Born and die" => sub {
     undef $channels;
     isa_ok($subscription, 'Binary::WebSocketAPI::v3::Subscription::Pricer::Proposal', 'is a pricer proposal subscription');
     is_oneref($subscription, '1 refcount');
-    ($channel) = split('###', $k);
-    ok(redis_pricer->get($channel), "check redis subscription");
+    my ($channel) = substr($k, 0, rindex($k, '::'));
+
+    ok(redis_pricer->exists($channel), "check redis subscription");
     $t->await::forget_all({forget_all => 'proposal'});
     ok(!$subscription, 'subscription is destroyed');
 
     ### Mojo::Redis2 has not method PUBSUB
     SKIP: {
         skip 'Provide test access to pricing cycle so we can confirm that the subscription is cleaned up', 1;
-        ok(!redis_pricer->get($channel), "check redis subscription");
+        ok(!redis_pricer->exists($channel), "check redis subscription");
     }
 
     $t->finish_ok;
@@ -121,7 +121,7 @@ subtest "Count Subscribes" => sub {
 
     my $redis2_module = Test::MockModule->new('Mojo::Redis2');
     $redis2_module->mock(
-        'set',
+        'sadd',
         sub {
             my ($redis, $channel_name, $value) = @_;
             $sets->{$channel_name}++;
