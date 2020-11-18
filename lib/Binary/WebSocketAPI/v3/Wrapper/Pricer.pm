@@ -70,7 +70,7 @@ sub proposal {
                     payout              => $rpc_response->{payout},
                     skip_basis_override => delete $rpc_response->{skip_basis_override} // 0,
                 };
-                $cache->{contract_parameters}->{app_markup_percentage} = $c->stash('app_markup_percentage');
+                $cache->{contract_parameters}->{app_markup_percentage} = $c->stash('app_markup_percentage') // 0;
                 $req_storage->{uuid} = _pricing_channel_for_proposal($c, $req_storage->{args}, $cache, 'Proposal')->{uuid};
             },
             response => sub {
@@ -84,6 +84,7 @@ sub proposal {
                 } else {
                     $api_response = $c->new_error('proposal', 'AlreadySubscribed', $c->l('You are already subscribed to [_1].', 'proposal'));
                 }
+
                 return $api_response;
             },
         });
@@ -286,11 +287,32 @@ sub _serialized_args {
         push @arr, ($k, $copy->{$k});
     }
 
-    return 'PRICER_KEYS::' . Encode::encode_utf8($json->encode([map { !defined($_) ? $_ : ref($_) ? $_ : "$_" } @arr]));
+    return 'PRICER_ARGS::' . Encode::encode_utf8($json->encode([map { !defined($_) ? $_ : ref($_) ? $_ : "$_" } @arr]));
 }
 
-# This function is for Proposal
-# TODO rename this function
+sub _serialize_contract_parameters {
+    my $args = shift;
+
+    my $staking_limits = $args->{staking_limits} // {};
+    return join(
+        ",",
+        "v1",
+        $args->{currency} // '',
+        # binary
+        $args->{amount}                // '',
+        $args->{amount_type}           // '',
+        $args->{app_markup_percentage} // '',
+        $args->{deep_otm_threshold}    // '',
+        $args->{base_commission}       // '',
+        $args->{min_commission_amount} // '',
+        $staking_limits->{min}         // '',
+        $staking_limits->{max}         // '',
+        # non-binary
+        $args->{maximum_ask_price} // '',    # callputspread is the only contract type that has this
+        $args->{multiplier} // '',
+    );
+}
+
 sub _pricing_channel_for_proposal {
     my ($c, $args, $cache, $class) = @_;
 
@@ -310,9 +332,10 @@ sub _pricing_channel_for_proposal {
     # use residence when available, fall back to IP country
     $args_hash{country_code}           = $c->stash('residence') || $c->stash('country_code');
     $args_hash{skips_price_validation} = 1;
-    my $redis_channel = _serialized_args(\%args_hash);
-    my $subchannel    = $args->{amount} // $args->{multiplier};
-    my $pricer_args   = $redis_channel;
+
+    my $pricer_args = _serialized_args(\%args_hash);    # name of the redis set on redis-pricer holding subchannel's as values.
+    my $subchannel    = _serialize_contract_parameters($cache->{contract_parameters});   # parameters needed by price-daemon for price-adjustment.
+    my $redis_channel = $pricer_args . '::' . $subchannel;                               # name of the redis channel that price-daemon publishes into.
 
     my $skip = _skip_streaming($args);
 

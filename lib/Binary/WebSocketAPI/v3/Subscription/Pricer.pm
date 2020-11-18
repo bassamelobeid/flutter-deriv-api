@@ -113,113 +113,6 @@ sub handle_message {
 
 requires 'do_handle_message';
 
-sub _non_binary_price_adjustment {
-    my ($self, $c, $contract_parameters, $results, $theo_price) = @_;
-
-    #do app markup adjustment here
-    my $app_markup_percentage = $contract_parameters->{app_markup_percentage} // 0;
-    my $multiplier            = $contract_parameters->{multiplier}            // 0;
-
-    my $app_markup_per_unit = $theo_price * $app_markup_percentage / 100;
-    my $app_markup          = $multiplier * $app_markup_per_unit;
-
-    #Currently we only have 2 non binary contracts, lookback and callput spread
-    #Callput spread has maximum ask price
-    my $adjusted_ask_price = $results->{ask_price} + $app_markup;
-    $adjusted_ask_price = min($contract_parameters->{maximum_ask_price}, $adjusted_ask_price)
-        if exists $contract_parameters->{maximum_ask_price};
-
-    $results->{ask_price} = $results->{display_value} =
-        financialrounding('price', $contract_parameters->{currency}, $adjusted_ask_price);
-
-    return $results;
-}
-
-sub _binary_price_adjustment {
-    my ($self, $c, $contract_parameters, $results, $resp_theo_probability) = @_;
-
-    # log the instances when pricing server doesn't return theo probability
-    unless (defined $resp_theo_probability) {
-        $log->warnf('missing theo probability from pricer. Contract parameter dump %s, pricer response: %s', $contract_parameters, $results);
-    }
-
-    # overrides the theo_probability which take the most calculation time.
-    # theo_probability is a calculated value (CV), overwrite it with CV object.
-    # TODO Is this something we'd want to do here? Looks like something straight out of BOM-Product-Contract...
-    # Can we move it out of websocket-api ?
-    my $theo_probability = Math::Util::CalculatedValue::Validatable->new({
-        name        => 'theo_probability',
-        description => 'theorectical value of a contract',
-        set_by      => 'Pricer Daemon',
-        base_amount => $resp_theo_probability,
-        minimum     => 0,
-        maximum     => 1,
-    });
-
-    # don't set $contract_parameters->{theo_probability} = $theo_probability because $contract_parameters is actually the cache of the
-    # input parameters of the contract with some additional internally set client info or markup.
-    my $price_calculator = Price::Calculator->new({%$contract_parameters, theo_probability => $theo_probability});
-    # TODO from Zakame: I think this shouldn't be here; websocket-api is supposed to be an interface only, and in particular here should only concern with managing subscriptions, rather than calling pricing methods without the RPC (even for the fallback case.)
-    if (my $error = $price_calculator->validate_price) {
-        state $error_map = {
-            zero_stake             => sub { "Invalid stake/payout." },
-            payout_too_many_places => sub {
-                my ($details) = @_;
-                return ('Payout can not have more than [_1] decimal places.', $details->[0]);
-            },
-            stake_too_many_places => sub {
-                my ($details) = @_;
-                return ('Stake can not have more than [_1] decimal places.', $details->[0]);
-            },
-            stake_same_as_payout => sub {
-                'This contract offers no return.';
-            },
-            stake_outside_range => sub {
-                my ($details) = @_;
-                return ('Minimum stake of [_1] and maximum payout of [_2]. Current stake is [_3].', $details->[0], $details->[1], $details->[2]);
-            },
-            payout_outside_range => sub {
-                my ($details) = @_;
-                return ('Minimum stake of [_1] and maximum payout of [_2]. Current stake is [_3].', $details->[0], $details->[1], $details->[2]);
-            },
-        };
-        return {
-            error => {
-                message_to_client => $c->l($error_map->{$error->{error_code}}->($error->{error_details} || [])),
-                code              => 'ContractBuyValidationError',
-                details           => {
-                    longcode      => $c->l($contract_parameters->{longcode}),
-                    display_value => $price_calculator->ask_price,
-                    payout        => $price_calculator->payout,
-                },
-            }};
-    }
-
-    $results->{ask_price} = $results->{display_value} = $price_calculator->ask_price;
-    $results->{payout}    = $price_calculator->payout;
-    $results->{$_} .= '' for qw(ask_price display_value payout);
-
-    return $results;
-}
-
-sub _price_stream_results_adjustment {
-    my ($self, $c, $cache, $results) = @_;
-
-    my $contract_parameters = $cache->{contract_parameters};
-    # We are handling pricing adjustment for 3 different scenarios here:
-    # 1. adjustment for binary contracts where we expect theo probability to be present
-    # 2. adjustment for non-binary where we we expect theo price
-    # 3. no adjustment needed. Some contract does not require any pricing adjustment on the websocket layer.
-    if (my $theo_price = delete $results->{theo_price}) {
-        return $self->_non_binary_price_adjustment($c, $contract_parameters, $results, $theo_price);
-    } else {
-        my $theo_probability = delete $results->{theo_probability};
-        return $self->_binary_price_adjustment($c, $contract_parameters, $results, $theo_probability) if defined $theo_probability;
-    }
-
-    return $results;
-}
-
 sub _is_response_or_self_invalid {
     my ($self, $type, $response, $additional_params_to_check) = @_;
     my $err = !$response || $response->{error};
@@ -261,7 +154,7 @@ subscribe the channel and store channel to Redis so that pricer_queue script can
 
 before subscribe => sub {
     my $self = shift;
-    return Binary::WebSocketAPI::v3::SubscriptionManager->redis_pricer_manager()->redis->set($self->pricer_args, 1);
+    return Binary::WebSocketAPI::v3::SubscriptionManager->redis_pricer_manager()->redis->sadd($self->pricer_args, $self->subchannel);
 };
 
 1;

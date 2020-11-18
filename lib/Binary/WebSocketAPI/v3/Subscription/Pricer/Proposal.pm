@@ -20,17 +20,16 @@ Please refer to L<Binary::WebSocketAPI::v3::Subscription>
 =cut
 
 sub do_handle_message {
-    my ($self, $message) = @_;
+    my ($self, $response) = @_;
     my $c    = $self->c;
     my $type = 'proposal';
 
     my $results;
-    if ($results = $self->_is_response_or_self_invalid($type, $message, ['contract_type'])) {
+    if ($results = $self->_is_response_or_self_invalid($type, $response, ['contract_type'])) {
         stats_inc('price_adjustment.validation_for_type_failure', {tags => ['type:' . $type]});
     } else {
         $self->cache->{contract_parameters}->{longcode} = $self->cache->{longcode};
-        my $adjusted_results = $self->_price_stream_results_adjustment($c, $self->cache, $message);
-        if (my $ref = $adjusted_results->{error}) {
+        if (my $ref = $response->{error}) {
             my $err = $c->new_error($type, $ref->{code}, $ref->{message_to_client});
             $err->{error}->{details} = $ref->{details} if exists $ref->{details};
             $results = $err;
@@ -39,7 +38,7 @@ sub do_handle_message {
             $results = {
                 msg_type => $type,
                 $type    => {
-                    %$adjusted_results,
+                    %$response,
                     id       => $self->uuid,
                     longcode => $c->l($self->cache->{longcode}),
                 },
