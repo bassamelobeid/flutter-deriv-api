@@ -43,10 +43,7 @@ A spot to place subroutines that might be useful for various client related oper
 
 =cut
 
-use constant ONFIDO_REPORT_KEY_PREFIX               => 'ONFIDO::REPORT::ID::';
-use constant ONFIDO_ALLOW_RESUBMISSION_KEY_PREFIX   => 'ONFIDO::ALLOW_RESUBMISSION::ID::';
 use constant ONFIDO_RESUBMISSION_COUNTER_KEY_PREFIX => 'ONFIDO::RESUBMISSION_COUNTER::ID::';
-use constant POA_ALLOW_RESUBMISSION_KEY_PREFIX      => 'POA::ALLOW_RESUBMISSION::ID::';
 use constant ACCOUNT_OPENING_REASONS                => ['Speculative', 'Income Earning', 'Hedging', 'Peer-to-peer exchange'];
 
 my %doc_type_categories = BOM::User::Client::DOCUMENT_TYPE_CATEGORIES();
@@ -410,9 +407,11 @@ sub print_client_details {
     my $onfido_check = get_onfido_check_latest($client);
 
     my $redis                          = BOM::Config::Redis::redis_replicated_write();
-    my $onfido_allow_resubmission_flag = $redis->get(ONFIDO_ALLOW_RESUBMISSION_KEY_PREFIX . $client->binary_user_id);
-    my $onfido_resubmission_counter    = $redis->get(ONFIDO_RESUBMISSION_COUNTER_KEY_PREFIX . $client->binary_user_id);
-    my $poa_resubmission_allowed       = $redis->get(POA_ALLOW_RESUBMISSION_KEY_PREFIX . $client->binary_user_id);
+    my $onfido_allow_resubmission_flag = $client->status->reason('allow_poi_resubmission') // '';
+    $onfido_allow_resubmission_flag =~ s/\skyc_email$//;    # Match the dropdown reasons to avoid user confusion
+    my $onfido_resubmission_counter = $redis->get(ONFIDO_RESUBMISSION_COUNTER_KEY_PREFIX . $client->binary_user_id);
+    my $poa_resubmission_allowed    = $client->status->reason('allow_poa_resubmission') // '';
+    $poa_resubmission_allowed =~ s/\skyc_email$//;          # Match the dropdown reasons to avoid user confusion
 
     my $balance =
         $client->default_account

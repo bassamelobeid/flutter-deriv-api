@@ -91,32 +91,39 @@ my $self_href       = $details{self_href};
 my $loginid         = $client->loginid;
 
 # Enabling onfido resubmission
-my $redis = BOM::Config::Redis::redis_replicated_write();
+my $redis             = BOM::Config::Redis::redis_replicated_write();
+my $poi_status_reason = $input{poi_reason} // $client->status->reason('allow_poi_resubmission') // 'unselected';
+# Add a comment about kyc email checkbox
+$poi_status_reason = join(' ', $poi_status_reason, $input{kyc_email_checkbox} ? 'kyc_email' : ()) unless $poi_status_reason =~ /\skyc_email$/;
 
 # POI resubmission logic
-if ($input{allow_onfido_resubmission}) {
-    $redis->set(ONFIDO_ALLOW_RESUBMISSION_KEY_PREFIX . $client->binary_user_id, $input{poi_reason} // "unselected");
+if ($input{allow_onfido_resubmission} or $input{poi_reason}) {
+    $client->status->upsert('allow_poi_resubmission', $clerk, $poi_status_reason);
 } elsif (defined $input{allow_onfido_resubmission}) {    # resubmission is unchecked
-    $redis->del(ONFIDO_ALLOW_RESUBMISSION_KEY_PREFIX . $client->binary_user_id);
-} elsif ($input{poi_reason}) {
-    # The 'XX' means only set the key if it already exists. We update the reason to the new selection if it already exists (means resubmission is still checked).
-    $redis->set(ONFIDO_ALLOW_RESUBMISSION_KEY_PREFIX . $client->binary_user_id, $input{poi_reason}, 'XX');
+    $client->status->clear_allow_poi_resubmission;
+} elsif ($input{kyc_email_checkbox} && $client->status->allow_poi_resubmission) {
+    $client->status->upsert('allow_poi_resubmission', $clerk, $poi_status_reason);
 }
 
 # POA resubmission logic
-if ($input{allow_poa_resubmission}) {
-    $redis->set(POA_ALLOW_RESUBMISSION_KEY_PREFIX . $client->binary_user_id, $input{poa_reason} // "unselected");
-} elsif (defined $input{allow_poa_resubmission}) {       # resubmission is unchecked
-    $redis->del(POA_ALLOW_RESUBMISSION_KEY_PREFIX . $client->binary_user_id);
-} elsif ($input{poa_reason}) {
-    # The 'XX' means only set the key if it already exists. We update the reason to the new selection if it already exists (means resubmission is still checked).
-    $redis->set(POA_ALLOW_RESUBMISSION_KEY_PREFIX . $client->binary_user_id, $input{poa_reason}, 'XX');
+my $poa_status_reason = $input{poa_reason} // $client->status->reason('allow_poa_resubmission') // 'unselected';
+# Add a comment about kyc email checkbox
+$poa_status_reason = join(' ', $poa_status_reason, $input{kyc_email_checkbox} ? 'kyc_email' : ()) unless $poa_status_reason =~ /\skyc_email$/;
+
+if ($input{allow_poa_resubmission} or $input{poa_reason}) {
+    $client->status->upsert('allow_poa_resubmission', $clerk, $poa_status_reason);
+} elsif (defined $input{allow_poa_resubmission}) {    # resubmission is unchecked
+    $client->status->clear_allow_poa_resubmission;
+} elsif ($input{kyc_email_checkbox} && $client->status->allow_poa_resubmission) {
+    $client->status->upsert('allow_poa_resubmission', $clerk, $poa_status_reason);
 }
 
 if ($input{kyc_email_checkbox}) {
-    my $poi_reason = $input{poi_reason} || $redis->get(ONFIDO_ALLOW_RESUBMISSION_KEY_PREFIX . $client->binary_user_id);
+    my $poi_reason = ($input{poi_reason} || $client->status->reason('allow_poi_resubmission'));
+    $poi_reason =~ s/\skyc_email$//;
     $poi_reason = undef if $poi_reason && ($poi_reason eq "unselected" || $poi_reason eq "other");
-    my $poa_reason = $input{poa_reason} || $redis->get(POA_ALLOW_RESUBMISSION_KEY_PREFIX . $client->binary_user_id);
+    my $poa_reason = $input{poa_reason} || $client->status->reason('allow_poa_resubmission');
+    $poa_reason =~ s/\skyc_email$//;
     $poa_reason = undef if $poa_reason && ($poa_reason eq "unselected" || $poa_reason eq "other");
 
     notify_resubmission_of_poi_poa_documents($loginid, $poi_reason, $poa_reason) if ($poi_reason || $poa_reason);
