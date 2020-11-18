@@ -6,6 +6,7 @@ use Test::Exception;
 use Test::Deep;
 use Test::Warn;
 use Date::Utility;
+use Test::MockModule;
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Helper::Client qw( create_client );
@@ -234,6 +235,40 @@ subtest 'closed status code' => sub {
     cmp_deeply($client->status->all, ['closed', 'disabled'], 'disabled and closed status codes are back now');
     $client->status->clear_disabled;
     cmp_deeply($client->status->all, [], 'closed status is removed along with disabled status');
+};
+
+subtest 'Upsert' => sub {
+    reset_client_statuses($client) if $client->status->all->@*;
+    my $mock = Test::MockModule->new('BOM::User::Client::Status');
+    my $clear_status_code;
+
+    $mock->mock(
+        '_clear',
+        sub {
+            (undef, $clear_status_code) = @_;
+            return $mock->original('_clear')->(@_);
+        });
+    # A fresh client should not hit the _clear method
+    $client->status->upsert('unwelcome', 'test', 'first reason');
+    ok !$clear_status_code, 'Clear not hit';
+    ok $client->status->unwelcome, 'Status set';
+    is $client->status->reason('unwelcome'), 'first reason', 'Reason set';
+
+    # Since the reason is the same, no need to hit _clear
+    $clear_status_code = undef;
+    $client->status->upsert('unwelcome', 'test', 'first reason');
+    ok !$clear_status_code, 'Clear not hit';
+    ok $client->status->unwelcome, 'Status set';
+    is $client->status->reason('unwelcome'), 'first reason', 'Reason remains';
+
+    # Now the reason has changed and so we hit _clear
+    $clear_status_code = undef;
+    $client->status->upsert('unwelcome', 'test', 'second reason');
+    is $clear_status_code, 'unwelcome', 'Clear was hit';
+    ok $client->status->unwelcome, 'Status set';
+    is $client->status->reason('unwelcome'), 'second reason', 'Reason updated';
+
+    $mock->unmock_all;
 };
 
 done_testing();

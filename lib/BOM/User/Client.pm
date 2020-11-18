@@ -96,9 +96,6 @@ use constant {
     ],
 };
 
-use constant ONFIDO_ALLOW_RESUBMISSION_KEY_PREFIX => 'ONFIDO::ALLOW_RESUBMISSION::ID::';
-use constant POA_ALLOW_RESUBMISSION_KEY_PREFIX    => 'POA::ALLOW_RESUBMISSION::ID::';
-
 # this email address should not be added into brand as it is specific to internal system
 my $SUBJECT_RE = qr/(New Sign-Up|Update Address)/;
 
@@ -4985,8 +4982,7 @@ sub needs_poa_verification {
     }
 
     # Resubmissions
-    my $redis = BOM::Config::Redis::redis_replicated_write();
-    return 1 if $redis->get(POA_ALLOW_RESUBMISSION_KEY_PREFIX . $self->binary_user_id);
+    return 1 if $self->status->allow_poa_resubmission;
     return 0;
 }
 
@@ -5037,8 +5033,7 @@ sub needs_poi_verification {
     }
 
     # Resubmissions
-    my $redis = BOM::Config::Redis::redis_replicated_write();
-    return 1 if $redis->get(ONFIDO_ALLOW_RESUBMISSION_KEY_PREFIX . $self->binary_user_id);
+    return 1 if $self->status->allow_poi_resubmission;
     return 0;
 }
 

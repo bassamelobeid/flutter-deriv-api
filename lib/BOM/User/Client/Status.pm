@@ -29,6 +29,7 @@ my @status_codes = qw(
     social_signup  trusted pa_withdrawal_explicitly_allowed
     address_verified no_withdrawal_or_trading no_trading allow_document_upload internal_client
     closed transfers_blocked shared_payment_method personal_details_locked
+    allow_poi_resubmission allow_poa_resubmission
 );
 
 for my $code (@status_codes) {
@@ -192,6 +193,66 @@ Returns L<BOM::User::Client::Status::set>
 sub setnx {
     my ($self, $status_code, $staff_name, $reason) = @_;
     return $self->set($status_code, $staff_name, $reason, 1);
+}
+
+=head2 upsert
+
+This sub guarantees the reason persisted will be the one you specify.
+Does nothing if the reason is not updated.
+Note statuses don't have a proper update method, what we call update here is `clear + set again`.
+Takes three arguments:
+
+=over 4
+
+=item * status_code
+
+=item * staff_name (optional)
+
+=item * reason (optional)
+
+=back
+
+Returns L<BOM::User::Client::Status::set>
+
+=cut
+
+sub upsert {
+    my ($self, $status_code, $staff_name, $reason) = @_;
+    my $current = $self->_get($status_code);
+
+    # Need to clear the status if the reasons don't match
+    if ($current) {
+        if (($current->{reason} // '') ne ($reason // '')) {
+            my $method = "clear_$status_code";
+            $self->$method;
+        }
+    }
+
+    # Note setnx has no effect if the status is already there
+    return $self->setnx($status_code, $staff_name, $reason);
+}
+
+=head2 reason
+
+Safely gets the current reason for a given status.
+
+It takes the following arguments:
+
+=over 4
+
+=item * status_code
+
+=back
+
+Returns the current reason for the C<status_code> or undef.
+
+=cut
+
+sub reason {
+    my ($self, $status_code) = @_;
+
+    my $status = $self->$status_code // return undef;
+    return $status->{reason};
 }
 
 =head2 multi_set_clear

@@ -474,11 +474,11 @@ subtest 'get_poi_status' => sub {
 };
 
 subtest 'needs_poa_verification' => sub {
-    my $mocked_redis = Test::MockModule->new('RedisDB');
+    my $mocked_status = Test::MockModule->new('BOM::User::Client::Status');
     my $resubmission;
 
-    $mocked_redis->mock(
-        'get' => sub {
+    $mocked_status->mock(
+        'allow_poa_resubmission' => sub {
             return $resubmission;
         });
 
@@ -655,18 +655,10 @@ subtest 'needs_poa_verification' => sub {
         };
     };
 
-    $mocked_redis->unmock_all;
+    $mocked_status->unmock_all;
 };
 
 subtest 'needs_poi_verification' => sub {
-    my $mocked_redis = Test::MockModule->new('RedisDB');
-    my $resubmission;
-
-    $mocked_redis->mock(
-        'get' => sub {
-            return $resubmission;
-        });
-
     my ($onfido_sub_result, $onfido_applicant, $onfido_check);
     my $mocked_onfido = Test::MockModule->new('BOM::User::Onfido');
     $mocked_onfido->mock(
@@ -928,12 +920,20 @@ subtest 'needs_poi_verification' => sub {
 
             $onfido_check = undef;
             ok $test_client_mf->needs_poi_verification, 'POI is needed due to verification required and no onfido check seen';
+
+            $mocked_client->mock('get_poi_status',      sub { return 'verified' });
+            $mocked_client->mock('fully_authenticated', sub { return 1 });
+            $mocked_status->mock(
+                'allow_poi_resubmission' => sub {
+                    return 1;
+                });
+
+            ok $test_client_mf->needs_poi_verification, 'POI is needed due to resubmission flag';
+
             $mocked_client->unmock_all;
             $mocked_status->unmock_all;
         };
     };
-
-    $mocked_redis->unmock_all;
 };
 
 subtest 'is_document_expiry_check_required' => sub {
