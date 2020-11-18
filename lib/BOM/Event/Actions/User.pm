@@ -42,6 +42,12 @@ sub login {
     return BOM::Event::Services::Track::login(@args);
 }
 
+sub multiplier_hit_type {
+    my @args = @_;
+
+    return BOM::Event::Services::Track::multiplier_hit_type(@args);
+}
+
 =head2 profile_change
 
 It is triggered for each B<changing in user profile> event emitted, delivering it to Segment.

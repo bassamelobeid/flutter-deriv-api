@@ -13,6 +13,7 @@ use BOM::Event::Actions::Client;
 use BOM::Event::Actions::CustomerStatement;
 use BOM::Event::Actions::MT5;
 use BOM::Event::Actions::Client;
+use BOM::Event::Actions::Contract;
 use BOM::Event::Actions::CryptoSubscription;
 use BOM::Event::Actions::Anonymization;
 use BOM::Event::Actions::Email;
@@ -42,6 +43,7 @@ Based on type of event its associated method is invoked.
 =cut
 
 my $action_mapping = {
+    multiplier_hit_type         => \&BOM::Event::Actions::Contract::multiplier_hit_type,
     email_statement             => \&BOM::Event::Actions::CustomerStatement::email_statement,
     sync_user_to_MT5            => \&BOM::Event::Actions::MT5::sync_info,
     store_mt5_transaction       => \&BOM::Event::Actions::MT5::redis_record_mt5_transfer,

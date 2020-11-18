@@ -83,6 +83,8 @@ my %EVENT_PROPERTIES = (
     p2p_order_dispute_fraud_refund => [
         qw(dispute_reason disputer loginid user_role order_type order_id amount currency local_currency seller_user_id seller_nickname buyer_user_id buyer_nickname order_created_at brand)
     ],
+
+    multiplier_hit_type => [qw(loginid contract_id hit_type profit sell_price currency)],
 );
 
 # Put the events that shouldn't care about brand or app_id source to get fired.
@@ -100,6 +102,7 @@ my @SKIP_BRAND_VALIDATION = qw(
     p2p_order_dispute_refund
     p2p_order_dispute_fraud_complete
     p2p_order_dispute_fraud_refund
+    multiplier_hit_type
 );
 
 my $loop = IO::Async::Loop->new;
@@ -109,6 +112,32 @@ $loop->add(my $services = BOM::Event::Services->new);
 # It's a singleton - we don't want to leak memory by creating new ones for every event.
 sub _segment {
     return $services->segment();
+}
+
+=head2 multiplier_hit_type
+
+It is triggered for each B<multiplier_hit_type> event emitted, delivering it to Segment.
+It can be called with the following named parameters:
+
+=over
+
+=item * C<loginid> - required. multiplier_hit_type Id of the user.
+
+=item * C<properties> - Free-form dictionary of event properties.
+
+=back
+
+=cut
+
+sub multiplier_hit_type {
+    my ($args) = @_;
+
+    return track_event(
+        event                => 'multiplier_hit_type',
+        loginid              => $args->{loginid},
+        properties           => $args,
+        is_identify_required => 1,
+    );
 }
 
 =head2 login
@@ -800,6 +829,7 @@ sub track_event {
     my %args = @_;
 
     my $client = _validate_params($args{loginid}, $args{event}, $args{brand}, $args{app_id});
+
     return Future->done unless $client;
     my $customer = _create_customer($client, $args{brand});
 
