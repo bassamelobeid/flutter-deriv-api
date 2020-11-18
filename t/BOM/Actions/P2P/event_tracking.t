@@ -9,9 +9,11 @@ use BOM::Test::Helper::P2P;
 use BOM::Event::Process;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
+use BOM::Platform::Context qw(request);
 
 my (@identify_args, @track_args);
 my $mock_segment = new Test::MockModule('WebService::Async::Segment::Customer');
+my $brand        = request()->brand->name;
 $mock_segment->redefine(
     'identify' => sub {
         @identify_args = @_;
@@ -64,28 +66,54 @@ subtest 'p2p order created' => sub {
             order_id       => $order->{id},
         })->get;
     is scalar @identify_args, 0, 'Segment identify is not called';
-    is scalar @track_args,    2, 'Segment track is called once';
+    is scalar @track_args,    4, 'Segment track is called twice';
+    my $order = $client->_p2p_orders(id => $order->{id})->[0];
 
     my ($customer, $args) = @track_args;
 
-    is $args->{event}, 'p2p_order_created', 'Track event name is correct';
+    my (undef, $args_buyer, undef, $args_seller) = @track_args;
 
-    is_deeply $args->{properties},
+    is $args_buyer->{event}, 'p2p_order_created', 'Track event name is correct';
+
+    is_deeply $args_buyer->{properties},
         {
-        loginid             => $advertiser->loginid,
-        user_role           => 'advertiser',
-        order_id            => $order->{id},
-        order_type          => 'buy',
-        amount              => '99.10',
-        currency            => 'USD',
-        advertiser_nickname => $order->{advertiser_details}->{name},
-        advertiser_user_id  => $advertiser->binary_user_id,
-        client_nickname     => $order->{client_details}->{name} // '',
-        client_user_id      => $client->binary_user_id,
-        brand               => 'binary',
+        loginid          => $client->loginid,
+        user_role        => 'buyer',
+        order_id         => $order->{id},
+        order_type       => 'buy',
+        amount           => '99.10',
+        currency         => 'USD',
+        seller_nickname  => $order->{advertiser_name},
+        seller_user_id   => $advertiser->binary_user_id,
+        buyer_nickname   => $order->{client_name} // '',
+        buyer_user_id    => $client->binary_user_id,
+        exchange_rate    => '1.00',
+        order_created_at => Time::Moment->from_epoch(Date::Utility->new($order->{created_time})->epoch)->to_string,
+        brand            => $brand,
+        local_currency   => 'myr',
         },
-        'properties are set properly for p2p_order_create event';
+        'properties are set properly for p2p_order_created event';
 
+    is $args_seller->{event}, 'p2p_order_created', 'Track event name is correct';
+
+    is_deeply $args_seller->{properties},
+        {
+        loginid          => $advertiser->loginid,
+        user_role        => 'seller',
+        order_id         => $order->{id},
+        order_type       => 'buy',
+        amount           => '99.10',
+        currency         => 'USD',
+        seller_nickname  => $order->{advertiser_name},
+        seller_user_id   => $advertiser->binary_user_id,
+        buyer_nickname   => $order->{client_name} // '',
+        buyer_user_id    => $client->binary_user_id,
+        exchange_rate    => '1.00',
+        order_created_at => Time::Moment->from_epoch(Date::Utility->new($order->{created_time})->epoch)->to_string,
+        brand            => $brand,
+        local_currency   => 'myr',
+        },
+        'properties are set properly for p2p_order_created event';
 };
 
 subtest 'p2p order confirmed by buyer' => sub {
@@ -103,13 +131,35 @@ subtest 'p2p order confirmed by buyer' => sub {
             order_event    => 'confirmed',
         })->get;
     is scalar @identify_args, 0, 'Segment identify is not called';
-    is scalar @track_args,    2, 'Segment track is called once';
+    is scalar @track_args,    4, 'Segment track is called twice';
 
     my ($customer, $args) = @track_args;
+    my (undef, $args_buyer, undef, $args_seller) = @track_args;
 
-    is $args->{event}, 'p2p_order_buyer_has_paid', 'Track event name is correct';
+    is $args_buyer->{event}, 'p2p_order_buyer_has_paid', 'Track event name is correct';
 
-    is_deeply $args->{properties},
+    is_deeply $args_buyer->{properties},
+        {
+        loginid          => $client->loginid,
+        user_role        => 'buyer',
+        order_id         => $order->{id},
+        order_type       => 'buy',
+        amount           => '99.10',
+        currency         => 'USD',
+        seller_nickname  => $order->{advertiser_name},
+        seller_user_id   => $advertiser->binary_user_id,
+        buyer_nickname   => $order->{client_name} // '',
+        buyer_user_id    => $client->binary_user_id,
+        exchange_rate    => '1.00',
+        order_created_at => Time::Moment->from_epoch(Date::Utility->new($order->{created_time})->epoch)->to_string,
+        brand            => $brand,
+        local_currency   => 'myr',
+        },
+        'properties are set properly for p2p_order_buyer_has_paid event';
+
+    is $args_seller->{event}, 'p2p_order_buyer_has_paid', 'Track event name is correct';
+
+    is_deeply $args_seller->{properties},
         {
         loginid          => $advertiser->loginid,
         user_role        => 'seller',
@@ -123,10 +173,10 @@ subtest 'p2p order confirmed by buyer' => sub {
         buyer_user_id    => $client->binary_user_id,
         exchange_rate    => '1.00',
         order_created_at => Time::Moment->from_epoch(Date::Utility->new($order->{created_time})->epoch)->to_string,
-        brand            => 'binary',
+        brand            => $brand,
+        local_currency   => 'myr',
         },
         'properties are set properly for p2p_order_buyer_has_paid event';
-
 };
 
 subtest 'p2p order confirmed by seller' => sub {
@@ -145,28 +195,51 @@ subtest 'p2p order confirmed by seller' => sub {
             order_event    => 'confirmed',
         })->get;
     is scalar @identify_args, 0, 'Segment identify is not called';
-    is scalar @track_args,    2, 'Segment track is called once';
+    is scalar @track_args,    4, 'Segment track is called twice';
 
-    my ($customer, $args) = @track_args;
+    my (undef, $args_buyer, undef, $args_seller) = @track_args;
 
-    is $args->{event}, 'p2p_order_seller_has_released', 'Track event name is correct';
+    is $args_buyer->{event}, 'p2p_order_seller_has_released', 'Track event name is correct';
 
-    is_deeply $args->{properties},
+    is_deeply $args_buyer->{properties},
         {
-        loginid         => $client->loginid,
-        user_role       => 'buyer',
-        order_id        => $order->{id},
-        order_type      => 'buy',
-        amount          => '99.10',
-        currency        => 'USD',
-        seller_nickname => $order->{advertiser_name},
-        seller_user_id  => $advertiser->binary_user_id,
-        buyer_nickname  => $order->{client_name} // '',
-        buyer_user_id   => $client->binary_user_id,
-        brand           => 'binary',
+        loginid          => $client->loginid,
+        user_role        => 'buyer',
+        order_id         => $order->{id},
+        order_type       => 'buy',
+        amount           => '99.10',
+        currency         => 'USD',
+        seller_nickname  => $order->{advertiser_name},
+        seller_user_id   => $advertiser->binary_user_id,
+        buyer_nickname   => $order->{client_name} // '',
+        buyer_user_id    => $client->binary_user_id,
+        exchange_rate    => '1.00',
+        order_created_at => Time::Moment->from_epoch(Date::Utility->new($order->{created_time})->epoch)->to_string,
+        brand            => $brand,
+        local_currency   => 'myr',
         },
         'properties are set properly for p2p_order_seller_has_released event';
 
+    is $args_seller->{event}, 'p2p_order_seller_has_released', 'Track event name is correct';
+
+    is_deeply $args_seller->{properties},
+        {
+        loginid          => $advertiser->loginid,
+        user_role        => 'seller',
+        order_id         => $order->{id},
+        order_type       => 'buy',
+        amount           => '99.10',
+        currency         => 'USD',
+        seller_nickname  => $order->{advertiser_name},
+        seller_user_id   => $advertiser->binary_user_id,
+        buyer_nickname   => $order->{client_name} // '',
+        buyer_user_id    => $client->binary_user_id,
+        exchange_rate    => '1.00',
+        order_created_at => Time::Moment->from_epoch(Date::Utility->new($order->{created_time})->epoch)->to_string,
+        brand            => $brand,
+        local_currency   => 'myr',
+        },
+        'properties are set properly for p2p_order_seller_has_released event';
 };
 
 subtest 'p2p order cancelled' => sub {
@@ -185,28 +258,53 @@ subtest 'p2p order cancelled' => sub {
             order_event    => 'cancelled',
         })->get;
     is scalar @identify_args, 0, 'Segment identify is not called';
-    is scalar @track_args,    2, 'Segment track is called once';
+    is scalar @track_args,    4, 'Segment track is called twice';
 
     my ($customer, $args) = @track_args;
 
-    is $args->{event}, 'p2p_order_cancelled', 'Track event name is correct';
+    my (undef, $args_buyer, undef, $args_seller) = @track_args;
 
-    is_deeply $args->{properties},
+    is $args_buyer->{event}, 'p2p_order_cancelled', 'Track event name is correct';
+
+    is_deeply $args_buyer->{properties},
         {
-        loginid         => $advertiser->loginid,
-        user_role       => 'seller',
-        order_id        => $order->{id},
-        order_type      => 'buy',
-        amount          => '99.10',
-        currency        => 'USD',
-        seller_nickname => $order->{advertiser_name},
-        seller_user_id  => $advertiser->binary_user_id,
-        buyer_nickname  => $order->{client_name} // '',
-        buyer_user_id   => $client->binary_user_id,
-        brand           => 'binary',
+        loginid          => $client->loginid,
+        user_role        => 'buyer',
+        order_id         => $order->{id},
+        order_type       => 'buy',
+        amount           => '99.10',
+        currency         => 'USD',
+        seller_nickname  => $order->{advertiser_name},
+        seller_user_id   => $advertiser->binary_user_id,
+        buyer_nickname   => $order->{client_name} // '',
+        buyer_user_id    => $client->binary_user_id,
+        exchange_rate    => '1.00',
+        order_created_at => Time::Moment->from_epoch(Date::Utility->new($order->{created_time})->epoch)->to_string,
+        brand            => $brand,
+        local_currency   => 'myr',
         },
         'properties are set properly for p2p_order_cancelled event';
 
+    is $args_seller->{event}, 'p2p_order_cancelled', 'Track event name is correct';
+
+    is_deeply $args_seller->{properties},
+        {
+        loginid          => $advertiser->loginid,
+        user_role        => 'seller',
+        order_id         => $order->{id},
+        order_type       => 'buy',
+        amount           => '99.10',
+        currency         => 'USD',
+        seller_nickname  => $order->{advertiser_name},
+        seller_user_id   => $advertiser->binary_user_id,
+        buyer_nickname   => $order->{client_name} // '',
+        buyer_user_id    => $client->binary_user_id,
+        exchange_rate    => '1.00',
+        order_created_at => Time::Moment->from_epoch(Date::Utility->new($order->{created_time})->epoch)->to_string,
+        brand            => $brand,
+        local_currency   => 'myr',
+        },
+        'properties are set properly for p2p_order_cancelled event';
 };
 
 subtest 'pending order expired' => sub {
@@ -251,7 +349,8 @@ subtest 'pending order expired' => sub {
         buyer_has_confirmed => 0,
         exchange_rate       => '1.00',
         order_created_at    => Time::Moment->from_epoch(Date::Utility->new($order->{created_time})->epoch)->to_string,
-        brand               => 'binary',
+        brand               => $brand,
+        local_currency      => 'myr',
     };
     is $args1->{event}, 'p2p_order_expired', 'Track event name is correct';
     is_deeply $args1->{properties}, $expected_properties, 'properties are set properly for p2p_order_expired event (buyer)';
@@ -312,7 +411,8 @@ subtest 'confirmed order expired' => sub {
         buyer_has_confirmed => 1,
         exchange_rate       => '1.00',
         order_created_at    => Time::Moment->from_epoch(Date::Utility->new($order->{created_time})->epoch)->to_string,
-        brand               => 'binary',
+        brand               => $brand,
+        local_currency      => 'myr',
     };
     is $args1->{event}, 'p2p_order_expired', 'Track event name is correct';
     is_deeply $args1->{properties}, $expected_properties, 'properties are set properly for p2p_order_expired event (buyer)';
