@@ -587,8 +587,8 @@ sub documents_expired {
     my $self      = shift;
     my $documents = $self->documents_uploaded();
 
-    # no documents
-    return 0 unless scalar(keys %$documents);
+    # no POI documents
+    return 0 unless defined $documents->{proof_of_identity};
     return $self->has_valid_documents($documents, 'proof_of_identity') ? 0 : 1;
 }
 
