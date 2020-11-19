@@ -204,7 +204,7 @@ subtest $method => sub {
         $user = BOM::User->new(
             email => $vr_email,
         );
-        is $user->{email_consent}, 0, 'email consent for new account is 0 for european clients - de';
+        is $user->{email_consent}, 1, 'email consent for new account is 1 for european clients - de';
 
     };
 
@@ -225,7 +225,7 @@ subtest $method => sub {
         $user = BOM::User->new(
             email => $vr_email,
         );
-        is $user->{email_consent}, 0, 'email consent for new account is 0 for european clients - gb';
+        is $user->{email_consent}, 1, 'email consent for new account is 1 for european clients - gb';
     };
 
     subtest 'non-pep self declaration' => sub {
