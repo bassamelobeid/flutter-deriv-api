@@ -708,7 +708,7 @@ subtest 'get account status' => sub {
                 # This test would be useless if this company authentication is mandatory
                 ok !$test_client_cr->landing_company->is_authentication_mandatory, 'Authentication is not mandatory';
                 ok $test_client_cr->documents_expired(), 'Client expiry is required';
-                ok $test_client_cr->fully_authenticated,               'Account is fully authenticated';
+                ok $test_client_cr->fully_authenticated, 'Account is fully authenticated';
                 ok !$test_client_cr->is_document_expiry_check_required, "Fully authenticated CR account does not have to check documents expiry";
                 $result = $c->tcall($method, {token => $token_cr});
 
@@ -726,11 +726,11 @@ subtest 'get account status' => sub {
                         prompt_client_to_authenticate => '0',
                         authentication                => {
                             document => {
-                                status      => "verified",
+                                status => "verified",
                             },
                             identity => {
-                                status      => "verified",
-                                services    => {
+                                status   => "verified",
+                                services => {
                                     onfido => {
                                         is_country_supported => 1,
                                         documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport']}}

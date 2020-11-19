@@ -1752,7 +1752,7 @@ sub _validate_transfer_between_accounts {
 
     # this check is only for svg and unauthenticated clients
     if (    $current_client->landing_company->short eq 'svg'
-        and not $current_client->status->age_verification
+        and not($current_client->status->age_verification or $current_client->fully_authenticated)
         and $from_currency_type eq 'fiat'
         and $to_currency_type eq 'crypto')
     {

@@ -1594,4 +1594,91 @@ subtest 'offer_to_clients' => sub {
 
 };
 
+subtest 'fiat to crypto limits' => sub {
+    # For sake of convenience let's set a 20$ limit
+    BOM::Config::Runtime->instance->app_config->payments->transfer_between_accounts->limits->fiat_to_crypto(20);
+
+    my $email = 'new_fiat_to_crypto_transfer_email' . rand(999) . '@sample.com';
+    my $user  = BOM::User->create(
+        email          => $email,
+        password       => BOM::User::Password::hashpw('jskjd8292922'),
+        email_verified => 1,
+    );
+    my $client_cr_btc = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code    => 'CR',
+        email          => $email,
+        binary_user_id => $test_binary_user_id,
+        place_of_birth => 'id',
+    });
+
+    my $client_cr_usd = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code    => 'CR',
+        email          => $email,
+        binary_user_id => $test_binary_user_id,
+        place_of_birth => 'id',
+    });
+
+    $user->add_client($client_cr_btc);
+    $user->add_client($client_cr_usd);
+
+    $client_cr_usd->set_default_account('USD');
+    $client_cr_btc->set_default_account('BTC');
+
+    $client_cr_btc->payment_free_gift(
+        currency => 'BTC',
+        amount   => 1,
+        remark   => 'free gift',
+    );
+
+    cmp_ok $client_cr_btc->default_account->balance + 0, '==', 1, 'correct balance';
+
+    $client_cr_usd->payment_free_gift(
+        currency => 'USD',
+        amount   => 1000,
+        remark   => 'free gift',
+    );
+    cmp_ok $client_cr_usd->default_account->balance + 0, '==', 1000, 'correct balance';
+
+    $params->{args} = {
+        account_from => $client_cr_usd->loginid,
+        account_to   => $client_cr_btc->loginid,
+        currency     => 'USD',
+        amount       => 100
+    };
+
+    my $token = BOM::Platform::Token::API->new->create_token($client_cr_usd->loginid, _get_unique_display_name());
+    $params->{token}      = $token;
+    $params->{token_type} = 'oauth_token';
+
+    my $mock_client = Test::MockModule->new('BOM::User::Client');
+    my $mock_status = Test::MockModule->new('BOM::User::Client::Status');
+    $mock_client->mock(
+        'fully_authenticated',
+        sub {
+            return 1;
+        });
+    $mock_status->mock(
+        'age_verification',
+        sub {
+            return 0;
+        });
+
+    my $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
+    ok $result->{status}, 'Fully authenticated non age verified transfer is sucessful';
+
+    $mock_client->mock(
+        'fully_authenticated',
+        sub {
+            return 0;
+        });
+    sleep(2);
+    $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('Fiat2CryptoTransferOverLimit',
+        'Not verified account should not pass the fiat to crypto limit')
+        ->error_message_like(qr/You have exceeded 20.00 USD in cumulative transactions. To continue, you will need to verify your identity./,
+        'Correct error message returned for a fiat to crypto transfer that reached the limit.');
+
+    $mock_status->unmock_all;
+    $mock_client->unmock_all;
+};
+
 done_testing();
