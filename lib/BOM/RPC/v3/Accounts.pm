@@ -1422,7 +1422,10 @@ rpc set_settings => sub {
                 . join(' ', $address1, $address2, $addressTown, $addressState, $addressPostcode) . ']';
         }
     }
-    my @realclient_loginids = $user->bom_real_loginids;
+
+    # If this is a virtual account update, we don't want to change anything else - otherwise
+    # let's apply the new fields to all other accounts as well.
+    my @realclient_loginids = $current_client->is_virtual ? () : $user->bom_real_loginids;
 
     # set professional status for applicable countries
     if ($args->{request_professional_status}) {
