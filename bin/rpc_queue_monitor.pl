@@ -63,8 +63,8 @@ Returns 1 (x > y), -1 (y > x), 0 (x == y)
 sub compare_id {
     my ($x, $y) = @_;
     # Handle either side being zero/undef/empty
-    return 1  if $y  && !$x;
-    return -1 if $x  && !$y;
+    return -1 if $y  && !$x;
+    return 1  if $x  && !$y;
     return 0  if !$x && !$y;
     # Do they match?
     return 0 if $x eq $y;
@@ -84,7 +84,7 @@ async sub stream_metrics {
     my $group_name = $group_info->{'name'};
 
     ($redis_response) = await $redis->xpending($stream, $group_name);
-    my ($first_id) = @$redis_response;
+    my ($count, $first_id) = @$redis_response;
     $oldest = $first_id if defined($first_id) and compare_id($oldest, $first_id) > 0;
 
     my $total = 0;
