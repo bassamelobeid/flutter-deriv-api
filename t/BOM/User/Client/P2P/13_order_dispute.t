@@ -86,8 +86,7 @@ subtest 'Order dispute (type buy)' => sub {
         'p2p_order_updated event emitted'
     );
 
-    # Please note the dispute statuses mapping, this SHOULD be disputed when FE implements
-    is $response->{status}, 'timed-out', 'Order is disputed';
+    is $response->{status}, 'disputed', 'Order is disputed';
     cmp_deeply($response->{dispute_details}, $expected_response, 'order_dispute expected response after client complaint');
 
     subtest 'dispute time not set in redis' => sub {
@@ -107,8 +106,7 @@ subtest 'Order dispute (type buy)' => sub {
         disputer_loginid => $advertiser->loginid,
     };
 
-    # Please note the dispute statuses mapping, this SHOULD be disputed when FE implements
-    is $response_advertiser->{status}, 'timed-out', 'Order is disputed';
+    is $response_advertiser->{status}, 'disputed', 'Order is disputed';
     cmp_deeply($response_advertiser->{dispute_details}, $expected_response_advertiser, 'order_dispute expected response after advertiser complaint');
 };
 
@@ -137,8 +135,7 @@ subtest 'Order dispute (type sell)' => sub {
         dispute_reason   => 'buyer_underpaid',
     };
 
-    # Please note the dispute statuses mapping, this SHOULD be disputed when FE implements
-    is $response->{status}, 'timed-out', 'Order is disputed';
+    is $response->{status}, 'disputed', 'Order is disputed';
     cmp_deeply($response->{dispute_details}, $expected_response, 'order_dispute expected response after advertiser complaint');
 
     subtest 'dispute time set in redis' => sub {
@@ -158,8 +155,7 @@ subtest 'Order dispute (type sell)' => sub {
         disputer_loginid => $client->loginid,
     };
 
-    # Please note the dispute statuses mapping, this SHOULD be disputed when FE implements
-    is $response_client->{status}, 'timed-out', 'Order is disputed';
+    is $response_client->{status}, 'disputed', 'Order is disputed';
     cmp_deeply($response_client->{dispute_details}, $expected_response_client, 'order_dispute expected response after client complaint');
 };
 
@@ -201,8 +197,7 @@ subtest 'Seller can confirm under dispute' => sub {
         dispute_reason   => 'seller_not_released',
     };
 
-    # Please note the dispute statuses mapping, this SHOULD be disputed when FE implements
-    is $response->{status}, 'timed-out', 'Order is disputed';
+    is $response->{status}, 'disputed', 'Order is disputed';
     cmp_deeply($response->{dispute_details}, $expected_response, 'order_dispute expected response after client complaint');
 
     my $confirm = $advertiser->p2p_order_confirm(
@@ -250,8 +245,7 @@ subtest 'Buyer cannot confirm under dispute' => sub {
         dispute_reason   => 'seller_not_released',
     };
 
-    # Please note the dispute statuses mapping, this SHOULD be disputed when FE implements
-    is $response->{status}, 'timed-out', 'Order is disputed';
+    is $response->{status}, 'disputed', 'Order is disputed';
     cmp_deeply($response->{dispute_details}, $expected_response, 'order_dispute expected response after client complaint');
 
     my $exception = exception {
@@ -291,8 +285,7 @@ subtest 'Edge cases' => sub {
         dispute_reason   => 'waiting in vain',
     };
 
-    # Please note the dispute statuses mapping, this SHOULD be disputed when FE implements
-    is $response->{status}, 'timed-out', 'Order is disputed';
+    is $response->{status}, 'disputed', 'Order is disputed';
     cmp_deeply($response->{dispute_details}, $expected_response, 'order_dispute expected response after complaint from buyer-confirmed');
 };
 
@@ -471,57 +464,6 @@ subtest 'Returning dispute fields' => sub {
 
     cmp_deeply($response->{dispute_reason},   $expected_response->{dispute_reason},   'order_expire expected dispute_reason after cancel');
     cmp_deeply($response->{disputer_loginid}, $expected_response->{disputer_loginid}, 'order_expire expected disputer_loginid after cancel');
-};
-
-# This should be dropped upon FE implementation of dispute statuses
-
-subtest 'dispute statuses mapping' => sub {
-    my %ad_params = (
-        amount         => 100,
-        rate           => 3.1,
-        type           => 'sell',
-        description    => 'ad description',
-        payment_method => 'bank_transfer',
-        payment_info   => 'ad pay info',
-        contact_info   => 'ad contact info',
-        local_currency => 'sgd',
-    );
-
-    my $escrow = BOM::Test::Helper::P2P::create_escrow();
-
-    my ($advertiser, $advert_info) = BOM::Test::Helper::P2P::create_advert(
-        %ad_params,
-        advertiser => {
-            first_name => 'test',
-            last_name  => 'asdf'
-        });
-
-    my $order_amount = 100;
-    my ($client, $new_order) = BOM::Test::Helper::P2P::create_order(
-        advert_id => $advert_info->{id},
-        balance   => $order_amount,
-    );
-
-    BOM::Test::Helper::P2P::set_order_status($client, $new_order->{id}, 'disputed');
-    my $data = $client->p2p_order_info(
-        id => $new_order->{id},
-    );
-
-    is $data->{status}, 'timed-out', 'Successfully mapped from disputed to timed-out';
-
-    BOM::Test::Helper::P2P::set_order_status($client, $new_order->{id}, 'dispute-refunded');
-    $data = $client->p2p_order_info(
-        id => $new_order->{id},
-    );
-
-    is $data->{status}, 'refunded', 'Successfully mapped from dispute-refunded to refunded';
-
-    BOM::Test::Helper::P2P::set_order_status($client, $new_order->{id}, 'dispute-completed');
-    $data = $client->p2p_order_info(
-        id => $new_order->{id},
-    );
-
-    is $data->{status}, 'completed', 'Successfully mapped from dispute-completed to completed';
 };
 
 done_testing();

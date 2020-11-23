@@ -3443,12 +3443,6 @@ sub _order_details {
     my @results;
 
     for my $order (@$list) {
-        # The following mapping for dispute statuses is temporary
-        # when FE implements these statuses this mapping could be dropped
-        $order->{status} = 'timed-out' if $order->{status} eq 'disputed';
-        $order->{status} = 'refunded'  if $order->{status} eq 'dispute-refunded';
-        $order->{status} = 'completed' if $order->{status} eq 'dispute-completed';
-
         my $result = +{
             account_currency   => $order->{account_currency},
             created_time       => Date::Utility->new($order->{created_time})->epoch,
