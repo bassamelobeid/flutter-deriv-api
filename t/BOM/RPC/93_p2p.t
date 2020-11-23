@@ -310,8 +310,8 @@ subtest 'Adverts' => sub {
     $params->{args}{rate} = 0.000001;
     delete $params->{args}{local_currency};
     $params->{args}{min_order_amount} = 11;
-    $params->{args}{max_order_amount} = 20,
-        $c->call_ok('p2p_advert_create', $params)->has_no_system_error->has_error->error_code_is('MinPriceTooSmall', 'Got error if min price is 0');
+    $params->{args}{max_order_amount} = 20;
+    $c->call_ok('p2p_advert_create', $params)->has_no_system_error->has_error->error_code_is('MinPriceTooSmall', 'Got error if min price is 0');
 
     $params->{args} = {
         id        => $advert->{id},
@@ -623,8 +623,7 @@ subtest 'Order dispute (type buy)' => sub {
         dispute_reason => 'seller_not_released',
     };
     my $res = $c->call_ok(p2p_order_dispute => $params)->has_no_system_error->has_no_error->result;
-    # Please note the dispute statuses mapping at bom-user, this SHOULD be disputed when FE implements
-    is $res->{status}, 'timed-out', 'Order status is disputed';
+    is $res->{status}, 'disputed', 'Order status is disputed';
     is $res->{dispute_details}->{dispute_reason}, 'seller_not_released', 'Dispute reason is properly set';
     is $res->{dispute_details}->{disputer_loginid}, $client->loginid, 'Client is the disputer';
 
@@ -712,8 +711,7 @@ subtest 'Dispute edge cases' => sub {
                 dispute_reason => 'buyer_overpaid',
             };
             my $res = $c->call_ok(p2p_order_dispute => $params)->has_no_system_error->has_no_error->result;
-            # Please note the dispute statuses mapping at bom-user, this SHOULD be disputed when FE implements
-            is $res->{status}, 'timed-out', 'Order status is disputed';
+            is $res->{status}, 'disputed', 'Order status is disputed';
             is $res->{dispute_details}->{dispute_reason}, 'buyer_overpaid', 'Dispute reason is properly set';
             is $res->{dispute_details}->{disputer_loginid}, $client->loginid, 'Client is the disputer';
         }
@@ -742,8 +740,7 @@ subtest 'Order dispute (type sell)' => sub {
 
     BOM::Test::Helper::P2P::set_order_disputable($client, $order->{id});
     my $res = $c->call_ok(p2p_order_dispute => $params)->has_no_system_error->has_no_error->result;
-    # Please note the dispute statuses mapping at bom-user, this SHOULD be disputed when FE implements
-    is $res->{status}, 'timed-out', 'Order status is disputed';
+    is $res->{status}, 'disputed', 'Order status is disputed';
     is $res->{dispute_details}->{dispute_reason}, 'buyer_overpaid', 'Dispute reason is properly set';
     is $res->{dispute_details}->{disputer_loginid}, $advertiser->loginid, 'Advertiser is the disputer';
 
@@ -770,8 +767,7 @@ subtest 'Advertiser stats' => sub {
 
     BOM::Test::Helper::P2P::set_order_disputable($client, $order->{id});
     my $res = $c->call_ok(p2p_order_dispute => $params)->has_no_system_error->has_no_error->result;
-    # Please note the dispute statuses mapping at bom-user, this SHOULD be disputed when FE implements
-    is $res->{status}, 'timed-out', 'Order status is disputed';
+    is $res->{status}, 'disputed', 'Order status is disputed';
     is $res->{dispute_details}->{dispute_reason}, 'buyer_overpaid', 'Dispute reason is properly set';
     is $res->{dispute_details}->{disputer_loginid}, $advertiser->loginid, 'Advertiser is the disputer';
 
