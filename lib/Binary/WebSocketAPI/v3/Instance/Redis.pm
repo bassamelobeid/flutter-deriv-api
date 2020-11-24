@@ -21,6 +21,7 @@ use Exporter qw(import);
 use Mojo::Redis2;
 use Scalar::Util qw(looks_like_number);
 use List::Util qw(any);
+use Log::Any qw($log);
 
 # Add entries here if a new Redis instance is available, this will then be accessible
 # via a function of the same name.
@@ -86,11 +87,12 @@ sub create {
     # fix it now. Given that in the redis_transaction, we send it by
     # RedisDB, that will generate an error 'wide character' when we decode
     # message twice. So we disable it now
-    $redis->encoding(undef) if $name =~ /^redis_(?:transaction|p2p)$/;
+    $redis->encoding(undef) if $name =~ /^redis_(?:transaction|p2p|rpc)$/;
     $redis->on(
         error => sub {
             my ($self, $err) = @_;
-            warn("Redis $name error: $err");
+            $log->errorf('Redis %s(%s) error: %s', $name, $redis_url, $err);
+
             # When redis connection is lost wait until redis server become
             # available then terminate the service so that hypnotoad will
             # restart it.
@@ -100,9 +102,15 @@ sub create {
                 Mojo::IOLoop->timer(
                     1 => sub {
                         try {
-                            $self->ping;
+                            # This die to cover bug in Mojo::Redis2, if we're doing a request to Redis
+                            # But we have connection problem, our callback will not be dequeued from waiting queue.
+                            # Because of that our ping may not throw exception here.
+                            die "Connection to Redis is not recovered" unless $self->ping;
+
+                            $log->warnf('Redis connection %s(%s) is recovered', $name, $redis_url);
                             exit;
                         } catch {
+                            $log->errorf('Unable to connect to redis %s(%s)', $name, $redis_url);
                             $ping_redis->();
                         }
                     });

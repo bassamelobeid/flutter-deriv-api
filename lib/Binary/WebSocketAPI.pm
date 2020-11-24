@@ -217,9 +217,9 @@ sub startup {
     my $backend_rpc_redis = redis_rpc();
     $WS_BACKENDS = {
         rpc_redis => {
-            type      => 'consumer_groups',
-            redis_uri => $backend_rpc_redis->url->to_string,
-            timeout   => $app->config->{rpc_queue_response_timeout},
+            type    => 'consumer_groups',
+            redis   => $backend_rpc_redis,
+            timeout => $app->config->{rpc_queue_response_timeout},
         },
     };
 
