@@ -141,6 +141,54 @@ sub get_token_details {
     };
 }
 
+=head2 create_error
+
+Description: Creates an error data structure that allows front-end to display the correct information 
+
+example
+
+            return BOM::RPC::v3::Utility::create_error({
+                    code              => 'ASK_FIX_DETAILS',
+                    message           => 'There was a failure validatin gperson details'
+                    message_to_client => localize('There was a problem validating your personal details.'),
+                    details           => {fields => \@error_fields}});
+
+Takes the following arguments as named parameters
+
+=over 4
+
+=item - code:  A short string acting as a key for this error.  
+
+=item - message_to_client: A string that will be shown to the end user.  
+This will nearly always need to be translated using the C<localize()> method.  
+
+=item - message: (optional)  Message to be written to the logs. Only log messages that can be 
+acted on. 
+
+=item - details: (optional) An arrayref with meta data for the error.  Has the following
+optional attribute(s)
+
+=over 4 
+
+=item - fields:  an arrayref of fields affected by this error. This allows frontend 
+to display appropriate warnings. 
+
+=back
+
+=back
+
+Returns a hashref 
+
+        {
+        error => {
+            code              => "Error Code",
+            message_to_client => "Message to client",
+            message, => "message that will be logged",
+            details => HashRef of metadata to send to frontend
+        }
+
+=cut
+
 sub create_error {
     my $args = shift;
 
