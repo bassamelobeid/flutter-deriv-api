@@ -1,8 +1,12 @@
 test:
-	/etc/rmg/bin/prove -lvr t/BOM/
+	/etc/rmg/bin/prove -lvr t/
 
 pod_test:
-	/etc/rmg/bin/prove -vlr t/BOM/*pod*.t
+	/etc/rmg/bin/prove -vlr t/*pod*.t
+
+
+syntax:
+	/etc/rmg/bin/prove --norc t/*.t
 
 tidy:
 	find . -name '*.p?.bak' -delete
