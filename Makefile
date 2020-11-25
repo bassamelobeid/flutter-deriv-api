@@ -3,7 +3,7 @@ P=/etc/rmg/bin/prove --timer -rvl -I lib
 PROVE=p () { $M; echo '$P' "$$@"; $P "$$@"; }; p
 
 test:
-	@$(PROVE) $$(ls -1d t/BOM)
+	@$(PROVE) t/
 
 tidy:
 	find . -name '*.p?.bak' -delete
@@ -11,7 +11,7 @@ tidy:
 	find . -name '*.tidyup' -delete
 
 pod_test:
-	@$(PROVE) t/BOM/*pod*.t
+	@$(PROVE) t/*pod*.t
 
 cover:
 	cover -delete
