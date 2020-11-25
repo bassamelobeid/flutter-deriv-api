@@ -30,7 +30,8 @@ alias:
     command: /home/git/regentmarkets/cpan/local/bin/morbo /home/git/regentmarkets/bom-platform/bin/experian_mock.pl
       -l http://localhost:4040
     name: Experian mock service again
-- environment:
+- &environment
+  environment:
     PERL_TEST_HARNESS_DUMP_TAP: /var/tmp/test-output
 default: &6
   docker:
@@ -51,6 +52,7 @@ jobs:
     - *4
     - *5
     - run:
+        <<: *environment
         command: |
           echo '--formatter TAP::Formatter::JUnit' >> .proverc
           make test
