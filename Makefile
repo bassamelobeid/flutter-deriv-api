@@ -1,8 +1,13 @@
-test:
-	/etc/rmg/bin/prove -lvr t/
+M=[ -t 1 ] && echo -e 'making \033[01;33m$@\033[00m' || echo 'making $@'
+P=PERL5OPT=-MTest::Warnings /etc/rmg/bin/prove --timer -rvl
+PROVE=p () { $M; echo '$P' "$$@"; $P "$$@"; }; p
 
-critique:
-	/etc/rmg/bin/prove -l t/BOM/003_autosyntax.t
+
+test:
+	@$(PROVE) t/
+
+syntax:
+	@$(PROVE) t/*.t
 
 tidy:
 	find . -name '*.p?.bak' -delete
