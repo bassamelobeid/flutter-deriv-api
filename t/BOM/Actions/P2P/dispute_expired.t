@@ -118,7 +118,7 @@ subtest 'Event processing return value' => sub {
                 "<li><b>Dispute raised time:</b> $disputed_at</li>",
                 '</ul>'
             ],
-            to => $brand->emails('support'),
+            to => 'p2p-support@deriv.com',
             },
             "We've got the expected email content";
     };

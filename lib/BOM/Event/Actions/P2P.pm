@@ -258,6 +258,8 @@ sub dispute_expired {
     my $timestamp   = $data->{timestamp};
     return 0 if not $order_id or not $broker_code;
 
+    my $app_config = BOM::Config::Runtime->instance->app_config;
+
     my $db = BOM::Database::ClientDB->new({broker_code => $broker_code})->db->dbh;
     # Recover the order, ensure is disputed
     my ($order) =
@@ -279,7 +281,7 @@ sub dispute_expired {
 
         send_email({
                 from    => $brand->emails('no-reply'),
-                to      => $brand->emails('support'),
+                to      => $app_config->payments->p2p->email_to,
                 subject => 'P2P dispute expired',
                 message => [
                     '<p>A P2P order has been disputed for a while without resolution. Here are the details:<p>',
