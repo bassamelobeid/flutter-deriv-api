@@ -9,7 +9,7 @@ PROVE=p () { $M; echo '$P' "$$@"; $P "$$@"; }; p
 test: $(TESTS)
 
 unit_test_syntax:
-	@$(PROVE) -r t/syntax/
+	@$(PROVE) t/*.t
 
 unit_test_initial:
 	@$(PROVE) t/01_check_file_hash.t
@@ -33,7 +33,7 @@ unit_test_intraday:
 	@$(PROVE) -r t/BOM/Product/Pricing/Engine/IntradayHistorical
 
 pod_test:
-	@$(PROVE) t/syntax/*pod*.t
+	@$(PROVE) t/*pod*.t
 
 tidy:
 	find . -name '*.p?.bak' -delete
