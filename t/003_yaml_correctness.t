@@ -2,7 +2,7 @@
 use strict;
 use warnings;
 
-use Test::More qw(no_plan);
+use Test::More;
 use Test::Exception;
 
 use Cwd qw(abs_path);
@@ -17,11 +17,14 @@ subtest "Syntax check YAML files" => sub {
         push @yaml_files, $f if ($f =~ /\.(yml|yaml)$/ and not $f =~ /invalid\.yml$/);
     };
 
-    my $where = abs_path(dirname(__FILE__) . '/../..');
+    my $where = abs_path();
     note $where;
     find($wanted, $where);
 
     foreach my $filename (@yaml_files) {
-        lives_ok { LoadFile($filename) } $filename . ' YAML parses.';
+        lives_ok { LoadFile($filename) } $filename . ' YAML valid.';
     }
 };
+
+done_testing;
+

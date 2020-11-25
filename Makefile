@@ -7,7 +7,7 @@ PROVE=p () { $M; echo '$P' "$$@"; $P "$$@"; }; p
 test: $(TESTS)
 
 unit_test_market:
-	@$(PROVE) -vr t/BOM/
+	@$(PROVE) -vr t/
 
 tidy:
 	find . -name '*.p?.bak' -delete
