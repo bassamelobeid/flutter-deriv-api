@@ -22,7 +22,6 @@ use ExchangeRates::CurrencyConverter qw/in_usd convert_currency/;
 
 my $c              = BOM::Test::RPC::QueueClient->new();
 my $payment_limits = BOM::Config::payment_limits();
-my $method         = 'get_limits';
 my $params         = {token => '12345'};
 
 # Mocked currency converter to imitate currency conversion for CR accounts
@@ -92,13 +91,13 @@ subtest 'CR - USD' => sub {
 
     # Test for expected errors, such as invalid tokens
     subtest 'expected errors' => sub {
-        $c->call_ok($method, $params)->has_error->error_message_is('The token is invalid.', 'invalid token');
+        $c->call_ok('get_limits', $params)->has_error->error_message_is('The token is invalid.', 'invalid token');
         $client->status->set('disabled', 1, 'test');
         $params->{token} = $token;
-        $c->call_ok($method, $params)->has_error->error_message_is('This account is unavailable.', 'invalid token');
+        $c->call_ok('get_limits', $params)->has_error->error_message_is('This account is unavailable.', 'invalid token');
         $client->status->clear_disabled;
         $client->status->set('cashier_locked', 1, 'test');
-        ok $c->call_ok($method, $params)->has_no_error->result->{account_balance}, "Got limits for cashier locked clients";
+        ok $c->call_ok('get_limits', $params)->has_no_error->result->{account_balance}, "Got limits for cashier locked clients";
 
         $client->status->clear_cashier_locked;
     };
@@ -125,7 +124,7 @@ subtest 'CR - USD' => sub {
             'remainder'                           => formatnumber('price', 'USD', $limits->{lifetime_limit}),
             'daily_transfers'                     => $transfer_limits,
         };
-        $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, 'result is ok');
+        $c->call_ok('get_limits', $params)->has_no_error->result_is_deeply($expected_result, 'result is ok');
 
         # Deposit USD 11000
         $client->smart_payment(%deposit);
@@ -139,7 +138,7 @@ subtest 'CR - USD' => sub {
         $expected_result->{withdrawal_since_inception_monetary} = formatnumber('price', 'USD', $withdraw_amount);
         $expected_result->{remainder}                           = formatnumber('price', 'USD', $limits->{lifetime_limit} - $withdraw_amount);
 
-        $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, 'result is ok');
+        $c->call_ok('get_limits', $params)->has_no_error->result_is_deeply($expected_result, 'result is ok');
     };
 
     # Set expected results to reflect withdrawn amount of USD 1000
@@ -165,7 +164,7 @@ subtest 'CR - USD' => sub {
     subtest 'skip_authentication' => sub {
         my $mock_lc = Test::MockModule->new('LandingCompany');
         $mock_lc->mock('skip_authentication', sub { 1 });
-        $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_auth_result, 'result is ok for non-KYC landing company');
+        $c->call_ok('get_limits', $params)->has_no_error->result_is_deeply($expected_auth_result, 'result is ok for non-KYC landing company');
     };
 
     # Test for authenticated accounts
@@ -174,7 +173,7 @@ subtest 'CR - USD' => sub {
         $client->set_authentication('ID_DOCUMENT', {status => 'pass'});
         $client->save;
 
-        $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_auth_result, 'result is ok for fully authenticated client');
+        $c->call_ok('get_limits', $params)->has_no_error->result_is_deeply($expected_auth_result, 'result is ok for fully authenticated client');
     };
 
     # Test for expired documents
@@ -189,7 +188,7 @@ subtest 'CR - USD' => sub {
             checksum                   => 'CE114E4501D2F4E2DCEA3E17B546F339'
         });
         $client->save;
-        ok $c->call_ok($method, $params)->has_no_error->result->{account_balance}, "Got limits for client with expired docs";
+        ok $c->call_ok('get_limits', $params)->has_no_error->result->{account_balance}, "Got limits for client with expired docs";
     };
 };
 
@@ -241,7 +240,7 @@ subtest 'CR-EUR' => sub {
             'remainder'                           => $lifetime_limit,
             'daily_transfers'                     => $transfer_limits,
         };
-        $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, 'result is ok');
+        $c->call_ok('get_limits', $params)->has_no_error->result_is_deeply($expected_result, 'result is ok');
 
         # Deposit EUR 11000
         $client->smart_payment(%deposit, currency => 'EUR');
@@ -256,7 +255,7 @@ subtest 'CR-EUR' => sub {
         $expected_result->{'withdrawal_since_inception_monetary'} = formatnumber('price', 'EUR', $withdraw_amount);
         $expected_result->{'remainder'}                           = formatnumber('price', 'EUR', $lifetime_limit - $withdraw_amount);
 
-        $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, 'result is ok');
+        $c->call_ok('get_limits', $params)->has_no_error->result_is_deeply($expected_result, 'result is ok');
     };
 
     # Convert limits from 99999999 USD to EUR
@@ -288,7 +287,7 @@ subtest 'CR-EUR' => sub {
             'daily_transfers'                     => $transfer_limits,
         };
 
-        $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, 'result is ok for fully authenticated client');
+        $c->call_ok('get_limits', $params)->has_no_error->result_is_deeply($expected_result, 'result is ok for fully authenticated client');
     };
 };
 
@@ -339,7 +338,7 @@ subtest 'CR-BTC' => sub {
             'remainder'                           => $lifetime_limit,
             'daily_transfers'                     => $transfer_limits,
         };
-        $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, 'result is ok');
+        $c->call_ok('get_limits', $params)->has_no_error->result_is_deeply($expected_result, 'result is ok');
 
         # Deposit BTC 2.00000000
         $client->smart_payment(
@@ -362,7 +361,7 @@ subtest 'CR-BTC' => sub {
         $expected_result->{'withdrawal_since_inception_monetary'} = formatnumber('price', 'BTC', $withdraw_amount);
         $expected_result->{'remainder'}                           = formatnumber('price', 'BTC', $lifetime_limit - $withdraw_amount);
 
-        $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, 'result is ok');
+        $c->call_ok('get_limits', $params)->has_no_error->result_is_deeply($expected_result, 'result is ok');
     };
 
     # Convert limits from 99999999 USD to BTC
@@ -394,7 +393,7 @@ subtest 'CR-BTC' => sub {
             'daily_transfers'                     => $transfer_limits,
         };
 
-        $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, 'result is ok for fully authenticated client');
+        $c->call_ok('get_limits', $params)->has_no_error->result_is_deeply($expected_result, 'result is ok for fully authenticated client');
     };
 };
 
@@ -444,7 +443,7 @@ subtest 'MLT' => sub {
             'remainder'                           => formatnumber('price', 'EUR', $limits->{lifetime_limit}),
             'daily_transfers'                     => $transfer_limits,
         };
-        $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, 'result is ok');
+        $c->call_ok('get_limits', $params)->has_no_error->result_is_deeply($expected_result, 'result is ok');
 
         # Deposit EUR 11000
         $client->smart_payment(%deposit, currency => 'EUR');
@@ -459,7 +458,7 @@ subtest 'MLT' => sub {
         $expected_result->{'withdrawal_since_inception_monetary'} = formatnumber('price', 'EUR', $withdraw_amount);
         $expected_result->{'remainder'}                           = formatnumber('price', 'EUR', $limits->{lifetime_limit} - $withdraw_amount);
 
-        $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, 'result is ok');
+        $c->call_ok('get_limits', $params)->has_no_error->result_is_deeply($expected_result, 'result is ok');
     };
 
     # Test for authenticated accounts
@@ -487,7 +486,7 @@ subtest 'MLT' => sub {
             'daily_transfers'                     => $transfer_limits,
         };
 
-        $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, 'result is ok for fully authenticated client');
+        $c->call_ok('get_limits', $params)->has_no_error->result_is_deeply($expected_result, 'result is ok for fully authenticated client');
     };
 };
 
@@ -538,7 +537,7 @@ subtest 'MX' => sub {
             'remainder'                           => formatnumber('price', 'EUR', $limits->{limit_for_days}),
             'daily_transfers'                     => $transfer_limits,
         };
-        $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, 'result is ok');
+        $c->call_ok('get_limits', $params)->has_no_error->result_is_deeply($expected_result, 'result is ok');
 
         # Deposit EUR 11000
         $client->smart_payment(%deposit, currency => 'EUR');
@@ -553,7 +552,7 @@ subtest 'MX' => sub {
         $expected_result->{'withdrawal_since_inception_monetary'} = formatnumber('price', 'EUR', $withdraw_amount);
         $expected_result->{'remainder'}                           = formatnumber('price', 'EUR', $limits->{limit_for_days} - $withdraw_amount);
 
-        $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, 'result is ok');
+        $c->call_ok('get_limits', $params)->has_no_error->result_is_deeply($expected_result, 'result is ok');
     };
 
     # Test for authenticated accounts
@@ -581,7 +580,7 @@ subtest 'MX' => sub {
             'daily_transfers'                     => $transfer_limits,
         };
 
-        $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, 'result is ok for fully authenticated client');
+        $c->call_ok('get_limits', $params)->has_no_error->result_is_deeply($expected_result, 'result is ok for fully authenticated client');
     };
 };
 
@@ -598,7 +597,7 @@ subtest "VR no get_limits" => sub {
     my ($token_vr) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $client_vr->loginid);
 
     $params->{token} = $token_vr;
-    $c->call_ok($method, $params)->has_error->error_message_is('Sorry, this feature is not available.', 'invalid token');
+    $c->call_ok('get_limits', $params)->has_error->error_message_is('Sorry, this feature is not available.', 'invalid token');
 };
 
 done_testing();

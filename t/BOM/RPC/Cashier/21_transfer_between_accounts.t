@@ -55,8 +55,6 @@ my $params = {
     args     => {},
 };
 
-my $method = 'transfer_between_accounts';
-
 subtest 'Basic transfers' => sub {
     my $email      = 'new_email' . rand(999) . '@binary.com';
     my $client_cr1 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
@@ -96,28 +94,28 @@ subtest 'Basic transfers' => sub {
     };
     $client_cr1->status->set('disabled', 'system', 'test');
     ok $client_cr1->status->disabled, "account is disabled";
-    my $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
+    my $result = $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->result;
     is $result->{error}->{code},              'DisabledClient',               'Correct error code if account_from is disabled';
     is $result->{error}->{message_to_client}, 'This account is unavailable.', 'Correct error message if account_from is disabled';
     $client_cr1->status->clear_disabled;
     $client_cr2->status->set('disabled', 'system', 'test');
     ok $client_cr2->status->disabled, "account is disabled";
-    $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
+    $result = $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->result;
     is $result->{error}->{code},              'PermissionDenied',   'Correct error code if account_to is disabled';
     is $result->{error}->{message_to_client}, 'Permission denied.', 'Correct error message if account_to is disabled';
     $client_cr2->status->clear_disabled;
 
-    $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error('simple transfer between sibling accounts');
+    $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->has_no_error('simple transfer between sibling accounts');
 
     $params->{args}{account_from} = $client_cr2->loginid;
     $params->{args}{account_to}   = $client_cr1->loginid;
-    $rpc_ct->call_ok($method, $params)
+    $rpc_ct->call_ok('transfer_between_accounts', $params)
         ->has_no_system_error->has_no_error('can transfer using oauth token when account_from is not authorized client');
 
     $params->{token_type}         = 'api_token';
     $params->{args}{account_from} = $client_cr2->loginid;
     $params->{args}{account_to}   = $client_cr1->loginid;
-    $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_message_is(
+    $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->has_error->error_message_is(
         'From account provided should be same as current authorized client.',
         'Cannot transfer using api token when account_from is not authorized client'
     );
@@ -165,7 +163,7 @@ subtest 'Fiat <-> Crypto account transfers' => sub {
         currency     => 'USD',
         amount       => $amount_to_transfer
     };
-    $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error('simple transfer between sibling accounts');
+    $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->has_no_error('simple transfer between sibling accounts');
     # Reloads client
     $client_fiat = BOM::User::Client->new({loginid => $client_fiat->loginid});
     is($client_fiat->status->allow_document_upload, undef, 'client is not allowed to upload documents');
@@ -173,7 +171,7 @@ subtest 'Fiat <-> Crypto account transfers' => sub {
     # Transaction should be blocked as client is unauthenticated and >200usd
     $amount_to_transfer = 100;
     $params->{args}->{amount} = $amount_to_transfer;
-    my $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
+    my $result = $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->result;
     like $result->{error}->{message_to_client}, qr/To continue, you will need to verify your identity/,
         'Correct error message for 200USD transfer limit';
 
@@ -188,7 +186,7 @@ subtest 'Fiat <-> Crypto account transfers' => sub {
     # Total of 201 usd, client should be allowed to upload document
     $amount_to_transfer = 2;
     $params->{args}->{amount} = $amount_to_transfer;
-    $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
+    $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->result;
 
     # Reloads client
     $client_fiat = BOM::User::Client->new({loginid => $client_fiat->loginid});
@@ -239,7 +237,8 @@ subtest 'In status transfers_blocked Fiat <-> Crypto transfers are not allowed' 
         amount       => $amount_to_transfer
     };
 
-    $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_message_is('Transfers are not allowed for these accounts.',
+    $rpc_ct->call_ok('transfer_between_accounts', $params)
+        ->has_no_system_error->has_error->error_message_is('Transfers are not allowed for these accounts.',
         'Correct error message when transfer from fiat to crypto when transfers is blocked');
 
     $client_crypto->payment_free_gift(
@@ -258,7 +257,8 @@ subtest 'In status transfers_blocked Fiat <-> Crypto transfers are not allowed' 
         amount       => $amount_to_transfer
     };
 
-    $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_message_is('Transfers are not allowed for these accounts.',
+    $rpc_ct->call_ok('transfer_between_accounts', $params)
+        ->has_no_system_error->has_error->error_message_is('Transfers are not allowed for these accounts.',
         'Correct error message when transfer from cryoto to fiat when transfers is blocked');
 
 };
@@ -326,11 +326,12 @@ subtest 'Virtual accounts' => sub {
     $params->{args}       = {};
     $params->{token}      = BOM::Platform::Token::API->new->create_token($client_vr1->loginid, 'test token');
     $params->{token_type} = 'api_token';
-    $rpc_ct->call_ok($method, $params)
+    $rpc_ct->call_ok('transfer_between_accounts', $params)
         ->has_no_system_error->has_error->error_message_is('Permission denied.', 'Permission denied for vr account with api token');
 
     $params->{token_type} = 'oauth_token';
-    my $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error('VR account allowed with oauth token')->result;
+    my $result =
+        $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->has_no_error('VR account allowed with oauth token')->result;
     is($result->{status}, '0', 'expected response for empty args');
 
     $params->{args} = {
@@ -339,12 +340,12 @@ subtest 'Virtual accounts' => sub {
         amount       => 11
     };
 
-    $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error->result;
+    $result = $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->has_no_error->result;
     is($result->{status}, '0', 'incomplete args (missing account_to) is treated same as empty args');
 
     $params->{args}{account_to} = $client_cr3->loginid;
 
-    $rpc_ct->call_ok($method, $params)
+    $rpc_ct->call_ok('transfer_between_accounts', $params)
         ->has_no_system_error->has_error->error_message_is('Permission denied.', 'Permission denied for actual attempt to transfer');
 
     my $client_cr4 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
@@ -362,7 +363,7 @@ subtest 'Virtual accounts' => sub {
     );
 
     $params->{args} = {};
-    $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error()->result;
+    $result = $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->has_no_error()->result;
     is($result->{accounts}[0]{loginid}, $client_cr4->loginid, 'real account loginid returned');
     cmp_ok($result->{accounts}[0]{balance}, '==', 5678, 'real account balance returned');
     is(scalar @{$result->{accounts}}, 1, 'only one account returned');
@@ -373,7 +374,8 @@ subtest 'Virtual accounts' => sub {
         currency     => 'USD',
         amount       => 22
     };
-    $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_message_is('Permission denied.', 'Cannot transfer from VR to real');
+    $rpc_ct->call_ok('transfer_between_accounts', $params)
+        ->has_no_system_error->has_error->error_message_is('Permission denied.', 'Cannot transfer from VR to real');
 
     $params->{args} = {
         account_from => $client_cr4->loginid,
@@ -381,7 +383,8 @@ subtest 'Virtual accounts' => sub {
         currency     => 'USD',
         amount       => 33
     };
-    $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_message_is('Permission denied.', 'Cannot transfer from real to VR');
+    $rpc_ct->call_ok('transfer_between_accounts', $params)
+        ->has_no_system_error->has_error->error_message_is('Permission denied.', 'Cannot transfer from real to VR');
 
     cmp_ok($client_vr1->default_account->balance, '==', 2345, 'VR account balance unchanged');
     cmp_ok($client_cr4->default_account->balance, '==', 5678, 'Real account balance unchanged');
@@ -407,7 +410,7 @@ subtest 'Virtual accounts' => sub {
         amount       => 44
     };
 
-    $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error()->result;
+    $result = $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->has_no_error()->result;
     ok $result->{status} && $result->{transaction_id}, 'Can transfer between sibling real accounts';
     cmp_ok($client_cr4->default_account->balance, '==', 5678 - 44, 'account_form debited');
     cmp_ok($client_cr5->default_account->balance, '==', 6789 + 44, 'account_to credited');
@@ -474,10 +477,10 @@ subtest 'Get accounts list for transfer_between_accounts' => sub {
             account_type => 'binary'
         },
     );
-    $rpc_ct->call_ok($method, $params)->has_no_error("no error for $method with no params");
-    cmp_bag($rpc_ct->result->{accounts}, [@real_accounts], "all real binary accounts by empty $method call.");
+    $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_error("no error for 'transfer_between_accounts' with no params");
+    cmp_bag($rpc_ct->result->{accounts}, [@real_accounts], "all real binary accounts by empty 'transfer_between_accounts' call.");
     $params->{args} = {accounts => 'all'};
-    $rpc_ct->call_ok($method, $params)->has_no_error("no error for $method with no params");
+    $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_error("no error for 'transfer_between_accounts' with no params");
     cmp_bag($rpc_ct->result->{accounts}, [@real_accounts], "accounts=all returns all binary accounts because no MT5 account exists yet.");
 
     my %ACCOUNTS = %Test::BOM::RPC::Accounts::MT5_ACCOUNTS;
@@ -519,17 +522,18 @@ subtest 'Get accounts list for transfer_between_accounts' => sub {
         },
     );
     $params->{args} = {accounts => 'all'};
-    $rpc_ct->call_ok($method, $params)->has_no_error("no error for $method with no params");
+    $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_error("no error for 'transfer_between_accounts' with no params");
     cmp_bag($rpc_ct->result->{accounts}, [@real_accounts, @mt5_accounts], "accounts=all returns all binary accounts + MT5.");
     $test_client->status->set('disabled', 'system', 'test');
-    my $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
+    my $result = $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->result;
     is $result->{error}->{code}, 'DisabledClient', 'Correct error code for disabled acount';
     is $result->{error}->{message_to_client}, 'This account is unavailable.',
         'Correct error message for perform action using disabled account`s token.';
     $test_client->status->clear_disabled;
     #mt5 suspended
     BOM::Config::Runtime->instance->app_config->system->mt5->suspend->all(1);
-    $rpc_ct->call_ok($method, $params)->has_no_error("no error for $method with accounts=all when mt5 suspended");
+    $rpc_ct->call_ok('transfer_between_accounts', $params)
+        ->has_no_error("no error for 'transfer_between_accounts' with accounts=all when mt5 suspended");
     cmp_bag($rpc_ct->result->{accounts}, [@real_accounts], "accounts=all returns only binary accounts when MT5 suspended");
     BOM::Config::Runtime->instance->app_config->system->mt5->suspend->all(0);
 };
@@ -593,13 +597,13 @@ subtest 'Current account is withdrawal_locked but its siblings can transfer betw
         currency     => 'BTC',
         amount       => 0.00018182
     };
-    $rpc_ct->call_ok($method, $params)
+    $rpc_ct->call_ok('transfer_between_accounts', $params)
         ->has_no_system_error->has_no_error('simple transfer between sibling accounts even if current account is withdrawal_locked');
 
     # using token of current account but sibling (account_from) is disabled
     $client_cr2->status->set('disabled', 'system', 'test');
     ok $client_cr2->status->disabled, "account_from is disabled";
-    my $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
+    my $result = $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->result;
     is $result->{error}->{code},              'PermissionDenied',   'Correct error code if account_from is disabled';
     is $result->{error}->{message_to_client}, 'Permission denied.', 'Correct error message if account_from is disabled';
     $client_cr2->status->clear_disabled;
@@ -607,7 +611,7 @@ subtest 'Current account is withdrawal_locked but its siblings can transfer betw
     # using token of current account but sibling (account_to) is disabled
     $client_cr3->status->set('disabled', 'system', 'test');
     ok $client_cr3->status->disabled, "account_to is disabled";
-    $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
+    $result = $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->result;
     is $result->{error}->{code},              'PermissionDenied',   'Correct error code if account_to is disabled';
     is $result->{error}->{message_to_client}, 'Permission denied.', 'Correct error message if account_to is disabled';
     $client_cr3->status->clear_disabled;
@@ -615,7 +619,7 @@ subtest 'Current account is withdrawal_locked but its siblings can transfer betw
     # using token of current account but sibling (account_from) is withdrawal_locked
     $client_cr2->status->set('withdrawal_locked', 'system', 'test');
     ok $client_cr2->status->withdrawal_locked, "account_from is withdrawal_locked";
-    $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
+    $result = $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->result;
     is $result->{error}->{code}, 'TransferBetweenAccountsError', 'Correct error code if account_from is withdrawal_locked';
     is $result->{error}->{message_to_client}, 'You cannot perform this action, as your account is withdrawal locked.',
         'Correct error message if account_from is withdrawal_locked';
@@ -632,7 +636,7 @@ subtest 'Current account is withdrawal_locked but its siblings can transfer betw
         currency     => 'BTC',
         amount       => 0.00018182
     };
-    $rpc_ct->call_ok($method, $params)
+    $rpc_ct->call_ok('transfer_between_accounts', $params)
         ->has_no_system_error->has_no_error('simple transfer between sibling accounts even if account_to is withdrawal_locked');
     $client_cr5->status->clear_withdrawal_locked;
     $client_cr1->status->clear_withdrawal_locked;
@@ -698,13 +702,13 @@ subtest 'Current account is no_withdrawal_or_trading but its siblings can transf
         currency     => 'BTC',
         amount       => 0.00018182
     };
-    $rpc_ct->call_ok($method, $params)
+    $rpc_ct->call_ok('transfer_between_accounts', $params)
         ->has_no_system_error->has_no_error('simple transfer between sibling accounts even if current account is no_withdrawal_or_trading');
 
     # using token of current account but sibling (account_from) is withdrawal_locked
     $client_cr2->status->set('no_withdrawal_or_trading', 'system', 'test');
     ok $client_cr2->status->no_withdrawal_or_trading, "account_from is no_withdrawal_or_trading";
-    my $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
+    my $result = $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->result;
     is $result->{error}->{code}, 'TransferBetweenAccountsError', 'Correct error code if account_from is no_withdrawal_or_trading';
     is $result->{error}->{message_to_client}, 'You cannot perform this action, as your account is withdrawal locked.',
         'Correct error message if account_from is no_withdrawal_or_trading';
@@ -720,7 +724,7 @@ subtest 'Current account is no_withdrawal_or_trading but its siblings can transf
         currency     => 'BTC',
         amount       => 0.00018182
     };
-    $rpc_ct->call_ok($method, $params)
+    $rpc_ct->call_ok('transfer_between_accounts', $params)
         ->has_no_system_error->has_no_error('simple transfer between sibling accounts even if account_to is no_withdrawal_or_trading');
     $client_cr5->status->clear_no_withdrawal_or_trading;
     $client_cr1->status->clear_no_withdrawal_or_trading;
@@ -771,13 +775,13 @@ subtest 'Current account is cashier_locked but its siblings can transfer between
         currency     => 'BTC',
         amount       => 0.00018182
     };
-    $rpc_ct->call_ok($method, $params)
+    $rpc_ct->call_ok('transfer_between_accounts', $params)
         ->has_no_system_error->has_no_error('simple transfer between sibling accounts even if current account is cashier_locked');
     $client_cr1->status->clear_cashier_locked;
     # using token of current account but sibling (account_from) is cashier_locked
     $client_cr2->status->set('cashier_locked', 'system', 'test');
     ok $client_cr2->status->cashier_locked, "account_from is cashier_locked";
-    my $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
+    my $result = $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->result;
     is $result->{error}->{code}, 'TransferBetweenAccountsError', 'Correct error code if account_from is cashier_locked';
     is $result->{error}->{message_to_client}, 'Your account cashier is locked. Please contact us for more information.',
         'Correct error message if account_from is cashier_locked';
@@ -785,7 +789,7 @@ subtest 'Current account is cashier_locked but its siblings can transfer between
     # using token of current account but sibling (account_to) is cashier_locked
     $client_cr3->status->set('cashier_locked', 'system', 'test');
     ok $client_cr3->status->cashier_locked, "account_to is cashier_locked";
-    $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
+    $result = $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->result;
     is $result->{error}->{code}, 'TransferBetweenAccountsError', 'Correct error code if account_to is cashier_locked';
     is $result->{error}->{message_to_client}, 'Your account cashier is locked. Please contact us for more information.',
         'Correct error message if account_to is cashier_locked';
@@ -830,7 +834,7 @@ subtest 'Transfer to Sibling account when current account is withdrawal_locked o
         currency     => 'USD',
         amount       => 100
     };
-    my $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
+    my $result = $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->result;
     is $result->{error}->{code}, 'TransferBetweenAccountsError', 'Correct error code if account_from is cashier_locked';
     is $result->{error}->{message_to_client}, 'Your account cashier is locked. Please contact us for more information.',
         'Correct error message if account_to is cashier_locked';
@@ -838,7 +842,7 @@ subtest 'Transfer to Sibling account when current account is withdrawal_locked o
 
     $client_cr1->status->set('withdrawal_locked', 'system', 'test');
     ok $client_cr1->status->withdrawal_locked, "account is withdrawal_locked";
-    $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
+    $result = $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->result;
     is $result->{error}->{code}, 'TransferBetweenAccountsError', 'Correct error code if account_from is cashier_locked';
     is $result->{error}->{message_to_client}, 'You cannot perform this action, as your account is withdrawal locked.',
         'Correct error message if account_from is withdrawal_locked';
@@ -846,13 +850,13 @@ subtest 'Transfer to Sibling account when current account is withdrawal_locked o
 
     $client_cr1->status->set('no_withdrawal_or_trading', 'system', 'test');
     ok $client_cr1->status->no_withdrawal_or_trading, "account is no_withdrawal_or_trading";
-    $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
+    $result = $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->result;
     is $result->{error}->{code}, 'TransferBetweenAccountsError', 'Correct error code if account_from is cashier_locked';
     is $result->{error}->{message_to_client}, 'You cannot perform this action, as your account is withdrawal locked.',
         'Correct error message if account_from is no_withdrawal_or_trading';
     $client_cr1->status->clear_no_withdrawal_or_trading;
 
-    $rpc_ct->call_ok($method, $params)
+    $rpc_ct->call_ok('transfer_between_accounts', $params)
         ->has_no_system_error->has_no_error(
         'simple transfer to sibling account when current account is not withdrawal_locked, cashier_locked & no_withdrawal_or_trading');
 };
@@ -905,7 +909,7 @@ subtest 'Transfer from Sibling account when current account is withdrawal_locked
         currency     => 'BTC',
         amount       => 0.00018182
     };
-    my $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
+    my $result = $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->result;
     is $result->{error}->{code}, 'TransferBetweenAccountsError', 'Correct error code if account_to is cashier_locked';
     is $result->{error}->{message_to_client}, 'Your account cashier is locked. Please contact us for more information.',
         'Correct error message if account_to is cashier_locked';
@@ -913,7 +917,7 @@ subtest 'Transfer from Sibling account when current account is withdrawal_locked
     $client_cr1->status->set('withdrawal_locked', 'system', 'test');
     ok $client_cr1->status->withdrawal_locked, "account is withdrawal_locked";
     $params->{token} = BOM::Platform::Token::API->new->create_token($client_cr1->loginid, 'test token');
-    $rpc_ct->call_ok($method, $params)
+    $rpc_ct->call_ok('transfer_between_accounts', $params)
         ->has_no_system_error->has_no_error('simple transfer from sibling account to current withdrawal_locked account');
     $client_cr1->status->clear_withdrawal_locked;
 
@@ -921,7 +925,7 @@ subtest 'Transfer from Sibling account when current account is withdrawal_locked
     ok $client_cr1->status->no_withdrawal_or_trading, "account is no_withdrawal_or_trading";
     $params->{token} = BOM::Platform::Token::API->new->create_token($client_cr1->loginid, 'test token');
     $params->{args}{account_from} = $client_cr3->loginid;
-    $rpc_ct->call_ok($method, $params)
+    $rpc_ct->call_ok('transfer_between_accounts', $params)
         ->has_no_system_error->has_no_error('simple transfer from sibling account to current no_withdrawal_or_trading account');
     $client_cr1->status->clear_no_withdrawal_or_trading;
 };

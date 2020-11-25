@@ -100,8 +100,6 @@ my $third_pa_loginid = $pa_client->loginid;
 
 my $c = BOM::Test::RPC::QueueClient->new();
 
-my $method = 'paymentagent_list';
-
 subtest 'paymentagent_list RPC call' => sub {
 # start test
     my $params = {
@@ -111,7 +109,7 @@ subtest 'paymentagent_list RPC call' => sub {
     };
 
     $params->{args}{currency} = 'INVALID';
-    $c->call_ok($method, $params)
+    $c->call_ok('paymentagent_list', $params)
         ->has_no_system_error->has_error->error_code_is('InvalidCurrency', 'Returns correct error code if currency is invalid')
         ->error_message_is('The provided currency INVALID is invalid.', 'Returns correct error message if currency is invalid');
     delete $params->{args}{currency};
@@ -168,10 +166,10 @@ subtest 'paymentagent_list RPC call' => sub {
                 'max_withdrawal'        => 5,
                 'min_withdrawal'        => 0.002,
             }]};
-    $c->call_ok($method, $params)
+    $c->call_ok('paymentagent_list', $params)
         ->has_no_error->result_is_deeply($expected_result, 'If token is invalid, then the paymentagents are from broker "CR"');
     $params->{token} = $token;
-    $c->call_ok($method, $params)
+    $c->call_ok('paymentagent_list', $params)
         ->has_no_error->result_is_deeply($expected_result, "If token is valid, then the paymentagents are from client's broker");
 
     $expected_result = {
@@ -202,7 +200,8 @@ subtest 'paymentagent_list RPC call' => sub {
         "currency"        => "BTC"
     };
 
-    $c->call_ok($method, $params)->has_no_error->result_is_deeply($expected_result, "If currency is passed then it returns for that currency only");
+    $c->call_ok('paymentagent_list', $params)
+        ->has_no_error->result_is_deeply($expected_result, "If currency is passed then it returns for that currency only");
 };
 
 subtest 'suspend countries' => sub {
@@ -317,18 +316,18 @@ subtest 'suspend countries' => sub {
     };
 
     BOM::Config::Runtime->instance->app_config->system->suspend->payment_agents_in_countries(['us']);
-    $c->call_ok($method, $params)->has_no_error->result_is_deeply($full_result, "Result is the same for non-suspended countries.");
+    $c->call_ok('paymentagent_list', $params)->has_no_error->result_is_deeply($full_result, "Result is the same for non-suspended countries.");
 
     BOM::Config::Runtime->instance->app_config->system->suspend->payment_agents_in_countries(['af']);
-    $c->call_ok($method, $params)
+    $c->call_ok('paymentagent_list', $params)
         ->has_no_error->result_is_deeply($empty_result, "Result of unauthenticated call is empty when target country is suspended.");
 
     $params->{token} = $token_client;
-    $c->call_ok($method, $params)
+    $c->call_ok('paymentagent_list', $params)
         ->has_no_error->result_is_deeply($empty_result, "Result of client_authenticated call is empty when target country is suspended.");
 
     $params->{token} = $token_agent;
-    $c->call_ok($method, $params)
+    $c->call_ok('paymentagent_list', $params)
         ->has_no_error->result_is_deeply($empty_plus_agent_result,
         "Result of agent-authenticated call contains agent itself, because FE needs it for extracting settings.");
 
@@ -348,18 +347,18 @@ subtest 'suspend countries' => sub {
     BOM::Config::Runtime->instance->app_config->system->suspend->payment_agents_in_countries(['af']);
 
     delete $params->{token};
-    $c->call_ok($method, $params)
+    $c->call_ok('paymentagent_list', $params)
         ->has_no_error->result_is_deeply($empty_result, "Result of unauthenticated call is still empty after country is suspended.");
 
     $params->{token} = $token_client;
-    $c->call_ok($method, $params)
+    $c->call_ok('paymentagent_list', $params)
         ->has_no_error->result_is_deeply($empty_plus_agent_result,
         "Result of client-authenticated call includes the previously transfered pa, even when country is suspended.");
 
     BOM::Config::Runtime->instance->app_config->system->suspend->payment_agents_in_countries([]);
 
     delete $params->{token};
-    $c->call_ok($method, $params)->has_no_error->result_is_deeply($full_result, "Result is reverted after target country is reset.");
+    $c->call_ok('paymentagent_list', $params)->has_no_error->result_is_deeply($full_result, "Result is reverted after target country is reset.");
 
 };
 

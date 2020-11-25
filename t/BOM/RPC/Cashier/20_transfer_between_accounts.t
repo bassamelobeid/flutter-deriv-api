@@ -80,7 +80,6 @@ my (
     $email,         $client_vr,     $client_cr,     $cr_dummy,         $client_mlt,       $client_mf, $client_cr_usd,
     $client_cr_btc, $client_cr_ust, $client_cr_eur, $client_cr_pa_usd, $client_cr_pa_btc, $user,      $token
 );
-my $method = 'transfer_between_accounts';
 
 my $btc_usd_rate = 4000;
 my $custom_rates = {
@@ -141,7 +140,7 @@ subtest 'call params validation' => sub {
     $token                = BOM::Platform::Token::API->new->create_token($client_cr->loginid, _get_unique_display_name());
     $params->{token}      = $token;
     $params->{token_type} = 'oauth_token';
-    my $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
+    my $result = $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->result;
     is @{$result->{accounts}}, 3, 'if no loginid from or to passed then it returns accounts';
 
     $params->{args} = {
@@ -149,25 +148,25 @@ subtest 'call params validation' => sub {
         account_to   => $client_mlt->loginid,
     };
 
-    $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
+    $result = $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->result;
     is $result->{error}->{code},              'TransferBetweenAccountsError',   'Correct error code for no currency';
     is $result->{error}->{message_to_client}, 'Please provide valid currency.', 'Correct error message for no currency';
 
     $params->{args}->{currency} = 'EUR';
 
-    $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
+    $result = $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->result;
     is $result->{error}->{code},              'TransferBetweenAccountsError', 'Correct error code for invalid amount';
     is $result->{error}->{message_to_client}, 'Please provide valid amount.', 'Correct error message for invalid amount';
 
     $params->{args}->{amount} = 'NA';
 
-    $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
+    $result = $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->result;
     is $result->{error}->{code},              'TransferBetweenAccountsError', 'Correct error code for invalid amount';
     is $result->{error}->{message_to_client}, 'Please provide valid amount.', 'Correct error message for invalid amount';
 
     $params->{args}->{amount}   = 1;
     $params->{args}->{currency} = 'XXX';
-    $result                     = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
+    $result                     = $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->result;
     is $result->{error}->{code},              'TransferBetweenAccountsError',   'Correct error code for invalid currency';
     is $result->{error}->{message_to_client}, 'Please provide valid currency.', 'Correct error message for invalid amount';
 
@@ -176,7 +175,7 @@ subtest 'call params validation' => sub {
 
     $params->{token} = BOM::Platform::Token::API->new->create_token($client_vr->loginid, _get_unique_display_name());
 
-    $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
+    $result = $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->result;
     is $result->{error}->{code},              'PermissionDenied',   'Correct error code for virtual account';
     is $result->{error}->{message_to_client}, 'Permission denied.', 'Correct error message for virtual account';
 
@@ -185,13 +184,14 @@ subtest 'call params validation' => sub {
 
     $client_cr->status->set('cashier_locked', 'system', 'testing something');
 
-    $rpc_ct->call_ok($method, $params)->has_no_system_error->error_code_is('TransferBetweenAccountsError', 'Correct error code for cashier locked')
+    $rpc_ct->call_ok('transfer_between_accounts', $params)
+        ->has_no_system_error->error_code_is('TransferBetweenAccountsError', 'Correct error code for cashier locked')
         ->error_message_like(qr/cashier is locked/, 'Correct error message for cashier locked');
 
     $client_cr->status->clear_cashier_locked;
     $client_cr->status->set('withdrawal_locked', 'system', 'testing something');
 
-    $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
+    $result = $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->result;
     is $result->{error}->{code}, 'TransferBetweenAccountsError', 'Correct error code for withdrawal locked';
     is $result->{error}->{message_to_client}, 'You cannot perform this action, as your account is withdrawal locked.',
         'Correct error message for withdrawal locked';
@@ -206,7 +206,7 @@ subtest 'validation' => sub {
     # random loginid to make it fail
     $params->{token} = $token;
     $params->{args}->{account_from} = 'CR123';
-    my $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
+    my $result = $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->result;
     is $result->{error}->{code},              'PermissionDenied',   'Correct error code for loginid that does not exists';
     is $result->{error}->{message_to_client}, 'Permission denied.', 'Correct error message for loginid that does not exists';
 
@@ -218,7 +218,7 @@ subtest 'validation' => sub {
     # send loginid that is not linked to used
     $params->{args}->{account_from} = $cr_dummy->loginid;
 
-    $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
+    $result = $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->result;
     is $result->{error}->{code},              'PermissionDenied',   'Correct error code for loginid not in siblings';
     is $result->{error}->{message_to_client}, 'Permission denied.', 'Correct error message for loginid not in siblings';
 
@@ -227,7 +227,7 @@ subtest 'validation' => sub {
 
     $params->{token} = BOM::Platform::Token::API->new->create_token($client_mlt->loginid, _get_unique_display_name());
 
-    $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
+    $result = $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->result;
     is $result->{error}->{code}, 'TransferBetweenAccountsError', 'Correct error code if from and to are same';
     is $result->{error}->{message_to_client}, 'Account transfers are not available within same account.',
         'Correct error message if from and to are same';
@@ -235,7 +235,7 @@ subtest 'validation' => sub {
     $params->{token} = BOM::Platform::Token::API->new->create_token($client_cr->loginid, _get_unique_display_name());
     $params->{args}->{account_from} = $client_cr->loginid;
 
-    $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
+    $result = $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->result;
     is $result->{error}->{code}, 'TransferBetweenAccountsError', 'Correct error code';
     is $result->{error}->{message_to_client}, 'Transfers between accounts are not available for your account.',
         'Correct error message for different landing companies';
@@ -243,7 +243,7 @@ subtest 'validation' => sub {
     $params->{args}->{account_from} = $client_mf->loginid;
 
     $params->{token} = BOM::Platform::Token::API->new->create_token($client_mf->loginid, _get_unique_display_name());
-    $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
+    $result = $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->result;
     is $result->{error}->{code},              'TransferBetweenAccountsError',    'Correct error code for no default currency';
     is $result->{error}->{message_to_client}, 'Please deposit to your account.', 'Correct error message for no default currency';
 
@@ -251,20 +251,20 @@ subtest 'validation' => sub {
 
     $params->{args}->{currency} = 'BTC';
 
-    $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
+    $result = $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->result;
     is $result->{error}->{code}, 'TransferBetweenAccountsError', 'Correct error code for invalid currency for landing company';
     is $result->{error}->{message_to_client}, 'Currency provided is not valid for your account.',
         'Correct error message for invalid currency for landing company';
 
     $params->{args}->{currency} = 'USD';
 
-    $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
+    $result = $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->result;
     is $result->{error}->{code},              'TransferBetweenAccountsError',                          'Correct error code';
     is $result->{error}->{message_to_client}, 'Currency provided is different from account currency.', 'Correct error message';
 
     $params->{args}->{currency} = 'EUR';
 
-    $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
+    $result = $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->result;
     is $result->{error}->{code}, 'TransferBetweenAccountsError', 'Correct error code';
     is $result->{error}->{message_to_client}, 'Please set the currency for your existing account ' . $client_mlt->loginid . '.',
         'Correct error message';
@@ -273,7 +273,7 @@ subtest 'validation' => sub {
 
     $params->{token} = BOM::Platform::Token::API->new->create_token($client_mf->loginid, _get_unique_display_name());
     $params->{args}->{account_from} = $client_mf->loginid;
-    $rpc_ct->call_ok($method, $params)
+    $rpc_ct->call_ok('transfer_between_accounts', $params)
         ->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'Transfer error as no different currency')
         ->error_message_is('Account transfers are not available for accounts with different currencies.', 'Different currency error message');
 
@@ -309,14 +309,14 @@ subtest 'validation' => sub {
 
     $params->{args}->{amount} = 0.400000001;
 
-    $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
+    $result = $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->result;
     is $result->{error}->{code}, 'TransferBetweenAccountsError', 'Correct error code for invalid amount';
     like $result->{error}->{message_to_client},
         qr/Invalid amount. Amount provided can not have more than/,
         'Correct error message for amount with decimal places more than allowed per currency';
 
     $params->{args}->{amount} = 0.02;
-    $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
+    $result = $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->result;
     is $result->{error}->{code}, 'TransferBetweenAccountsError', 'Correct error code crypto to crypto';
     is $result->{error}->{message_to_client}, 'Account transfers are not available within accounts with cryptocurrency as default currency.',
         'Correct error message for crypto to crypto';
@@ -338,7 +338,7 @@ subtest 'validation' => sub {
 
     my $limits = BOM::Config::CurrencyConfig::transfer_between_accounts_limits();
     $params->{args}->{amount} = $limits->{USD}->{min} - get_min_unit('USD');
-    $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
+    $result = $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->result;
 
     is $result->{error}->{code}, 'TransferBetweenAccountsError', 'Correct error code crypto to crypto';
     like $result->{error}->{message_to_client},
@@ -346,7 +346,7 @@ subtest 'validation' => sub {
         'Correct error message for a value less than minimum limit';
 
     $params->{args}->{amount} = $limits->{USD}->{min};
-    $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
+    $result = $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->result;
     like $result->{error}->{message_to_client}, qr/The maximum amount you may transfer is: USD 0.00/, 'Correct error message for an empty account';
 
     $client_cr->payment_free_gift(
@@ -357,10 +357,10 @@ subtest 'validation' => sub {
     );
 
     $params->{args}->{amount} = $limits->{USD}->{min};
-    $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error->result;
+    $result = $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->has_no_error->result;
 
     $params->{args}->{amount} = 10;
-    $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
+    $result = $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->result;
     is $result->{error}->{code},                'TransferBetweenAccountsError',                       'Correct error code insufficient balance';
     like $result->{error}->{message_to_client}, qr/The maximum amount you may transfer is: USD 0.00/, 'Correct error message for an empty account';
 
@@ -371,7 +371,7 @@ subtest 'validation' => sub {
         place_of_birth => 'id',
     );
 
-    $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error->result;
+    $result = $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->has_no_error->result;
 
     # set an invalid value to minimum
     my $invalid_min = 0.01;
@@ -388,7 +388,7 @@ subtest 'validation' => sub {
         });
     $params->{args}->{amount} = $invalid_min;
 
-    $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
+    $result = $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->result;
     my $elevated_minimum = formatnumber('amount', 'USD', BOM::Config::CurrencyConfig::transfer_between_accounts_limits(1)->{USD}->{min});
     cmp_ok $elevated_minimum, '>', $invalid_min, 'Transfer minimum is automatically elevated to the lower bound';
     is $result->{error}->{code}, 'TransferBetweenAccountsError', 'Correct error code crypto to crypto';
@@ -439,27 +439,27 @@ subtest 'Validation for transfer from incomplete account' => sub {
         amount       => 10
     };
 
-    $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('ASK_FIX_DETAILS', 'Error code is correct')
+    $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->has_error->error_code_is('ASK_FIX_DETAILS', 'Error code is correct')
         ->error_message_is('Your profile appears to be incomplete. Please update your personal details to continue.',
         'Error msg for client is correct')->error_details_is({fields => ['address_city']}, 'Error details is correct');
 
     $client_cr1->address_city('Test City');
     $client_cr1->address_line_1('');
     $client_cr1->save;
-    $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('ASK_FIX_DETAILS', 'Error code is correct')
+    $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->has_error->error_code_is('ASK_FIX_DETAILS', 'Error code is correct')
         ->error_message_is('Your profile appears to be incomplete. Please update your personal details to continue.',
         'Error msg for client is correct')->error_details_is({fields => ['address_line_1']}, 'Error details is correct');
 
     $client_cr1->address_city('');
     $client_cr1->address_line_1('');
     $client_cr1->save;
-    $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('ASK_FIX_DETAILS', 'Error code is correct')
+    $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->has_error->error_code_is('ASK_FIX_DETAILS', 'Error code is correct')
         ->error_message_is('Your profile appears to be incomplete. Please update your personal details to continue.',
         'Error msg for client is correct')->error_details_is({fields => ['address_city', 'address_line_1']}, 'Error details is correct');
 
 };
 
-subtest $method => sub {
+subtest 'transfer_between_accounts' => sub {
     subtest 'Initialization' => sub {
         lives_ok {
             $email = 'new_email' . rand(999) . '@binary.com';
@@ -495,7 +495,7 @@ subtest $method => sub {
             amount       => 100
         };
 
-        $rpc_ct->call_ok($method, $params)
+        $rpc_ct->call_ok('transfer_between_accounts', $params)
             ->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'Transfer error as no deposit done')
             ->error_message_is('Please deposit to your account.', 'Please deposit before transfer.');
 
@@ -504,30 +504,34 @@ subtest $method => sub {
 
         # some random clients
         $params->{args}->{account_to} = 'MLT999999';
-        $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('PermissionDenied', 'Transfer error as wrong to client')
+        $rpc_ct->call_ok('transfer_between_accounts', $params)
+            ->has_no_system_error->has_error->error_code_is('PermissionDenied', 'Transfer error as wrong to client')
             ->error_message_is('Permission denied.', 'Correct error message for transfering to random client');
 
         $params->{args}->{account_to} = $client_mf->loginid;
-        $rpc_ct->call_ok($method, $params)
+        $rpc_ct->call_ok('transfer_between_accounts', $params)
             ->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'Transfer error as no money in account')
             ->error_message_is('The maximum amount you may transfer is: EUR 0.00.', 'Correct error message for account with no money');
 
         $params->{args}->{amount} = -1;
-        $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', "Invalid amount")
+        $rpc_ct->call_ok('transfer_between_accounts', $params)
+            ->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', "Invalid amount")
             ->error_message_is('Please provide valid amount.', 'Correct error message for transfering invalid amount');
 
         $params->{args}->{amount} = 0;
-        $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', "Invalid amount")
+        $rpc_ct->call_ok('transfer_between_accounts', $params)
+            ->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', "Invalid amount")
             ->error_message_is('Please provide valid amount.', 'Correct error message for transfering invalid amount');
 
         $params->{args}->{amount} = 1;
-        $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', "Invalid amount")
+        $rpc_ct->call_ok('transfer_between_accounts', $params)
+            ->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', "Invalid amount")
             ->error_message_is('The maximum amount you may transfer is: EUR 0.00.', 'Correct error message for transfering invalid amount');
     };
 
     subtest 'Transfer between mlt and mf' => sub {
         $params->{args} = {};
-        my $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
+        my $result = $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->result;
         is scalar(@{$result->{accounts}}), 2, 'two accounts';
         my ($tmp) = grep { $_->{loginid} eq $client_mlt->loginid } @{$result->{accounts}};
         is $tmp->{balance}, "0.00", 'balance is 0';
@@ -546,7 +550,7 @@ subtest $method => sub {
         $client_mf->tax_identification_number('111-222-333');
         $client_mf->save;
 
-        $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
+        $result = $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->result;
         is scalar(@{$result->{accounts}}), 2, 'two accounts';
         ($tmp) = grep { $_->{loginid} eq $client_mlt->loginid } @{$result->{accounts}};
         is $tmp->{balance}, "5000.00", 'balance is 5000';
@@ -560,7 +564,7 @@ subtest $method => sub {
             amount       => 10,
         };
         $params->{token} = BOM::Platform::Token::API->new->create_token($client_mlt->loginid, _get_unique_display_name());
-        $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
+        $result = $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->result;
         is $result->{client_to_loginid},   $client_mf->loginid,   'transfer_between_accounts to client is ok';
         is $result->{client_to_full_name}, $client_mf->full_name, 'transfer_between_accounts to client name is ok';
 
@@ -603,7 +607,7 @@ subtest $method => sub {
             currency     => "EUR",
             amount       => 110
         };
-        $rpc_ct->call_ok($method, $params)->has_no_error('no withdrawal limit');
+        $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_error('no withdrawal limit');
     };
 };
 
@@ -725,7 +729,7 @@ subtest 'transfer with fees' => sub {
     };
 
     BOM::Config::Runtime->instance->app_config->system->suspend->transfer_between_accounts(1);
-    $rpc_ct->call_ok($method, $params)->has_error('error as all transfer_between_accounts are suspended in system config')
+    $rpc_ct->call_ok('transfer_between_accounts', $params)->has_error('error as all transfer_between_accounts are suspended in system config')
         ->error_code_is('TransferBetweenAccountsError', 'error code is TransferBetweenAccountsError')
         ->error_message_like(qr/Transfers between fiat and crypto accounts/);
     BOM::Config::Runtime->instance->app_config->system->suspend->transfer_between_accounts(0);
@@ -757,7 +761,7 @@ subtest 'transfer with fees' => sub {
         currency     => "BTC",
         amount       => $amount
     };
-    $rpc_ct->call_ok($method, $params)->has_no_system_error->error_code_is('TransferBetweenAccountsError')
+    $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->error_code_is('TransferBetweenAccountsError')
         ->error_message_is('Account transfers are not possible between BTC and EUR.');
 
     subtest 'non-pa to non-pa transfers' => sub {
@@ -772,7 +776,7 @@ subtest 'transfer with fees' => sub {
 
         my $amount = $transfer_limits->{USD}->{min};
         $params->{args}->{amount} = $amount;
-        my $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error->result;
+        my $result = $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->has_no_error->result;
         is $result->{client_to_loginid}, $client_cr_btc->loginid, 'Transaction successful';
 
         # fiat to crypto. exchange rate is 4000 for BTC
@@ -793,7 +797,7 @@ subtest 'transfer with fees' => sub {
             amount       => $amount
         };
         $params->{args}->{amount} = $amount;
-        $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error->result;
+        $result = $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->has_no_error->result;
         is $result->{client_to_loginid}, $client_cr_usd->loginid, 'Transaction successful';
         # crypto to fiat is 1%
         $fee_percent     = $btc_usd_fee;
@@ -822,7 +826,7 @@ subtest 'transfer with fees' => sub {
 
         # crypto to fiat is 1% and fiat to crypto is 1%
         my $fee_percent = $btc_usd_fee;
-        my $result      = $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error->result;
+        my $result      = $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->has_no_error->result;
         cmp_ok my $transfer_amount = ($amount - $amount * $fee_percent / 100) * 4000, '>=', get_min_unit('USD'), 'Valid transfered amount';
         cmp_ok $client_cr_pa_btc->default_account->balance, '==', financialrounding('amount', 'BTC', $previous_balance_btc - $amount),
             'correct balance after transfer including fees';
@@ -847,7 +851,7 @@ subtest 'transfer with fees' => sub {
             amount       => $amount
         };
 
-        my $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error->result;
+        my $result = $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->has_no_error->result;
         is $result->{client_to_loginid}, $client_cr_pa_btc->loginid, 'Transaction successful';
 
         my $fee_percent = $usd_btc_fee;
@@ -877,7 +881,7 @@ subtest 'transfer with fees' => sub {
             amount       => $amount
         };
 
-        my $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error->result;
+        my $result = $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->has_no_error->result;
         is $result->{client_to_loginid}, $client_cr_ust->loginid, 'Transaction successful';
 
         cmp_ok $client_cr_usd->account->balance, '==', $previous_amount_usd - $amount, 'From account deducted correctly';
@@ -900,7 +904,7 @@ subtest 'transfer with fees' => sub {
             amount       => $amount
         };
 
-        my $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error->result;
+        my $result = $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->has_no_error->result;
         is $result->{client_to_loginid}, $client_cr_usd->loginid, 'Transaction successful';
 
         cmp_ok $client_cr_ust->account->balance, '==', $previous_amount_ust - $amount, 'From account deducted correctly';
@@ -924,7 +928,7 @@ subtest 'transfer with fees' => sub {
             amount       => $amount
         };
 
-        my $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error->result;
+        my $result = $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->has_no_error->result;
         is $result->{client_to_loginid}, $client_cr_usd->loginid, 'Transaction successful';
 
         cmp_ok $client_cr_ust->account->balance, '==', $previous_amount_ust - $amount, 'From account deducted correctly';
@@ -1026,7 +1030,7 @@ subtest 'transfer with no fee' => sub {
     my $previous_to_amt = $client_cr_usd->default_account->balance;
     my $previous_fm_amt = $client_cr_pa_btc->default_account->balance;
 
-    my $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
+    my $result = $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->result;
     is $result->{client_to_loginid}, $client_cr_usd->loginid, 'Transaction successful';
 
     my $fee_percent     = 0;
@@ -1040,7 +1044,7 @@ subtest 'transfer with no fee' => sub {
 
     $previous_fm_amt = $client_cr_pa_btc->default_account->balance;
     $previous_to_amt = $client_cr_pa_usd->default_account->balance;
-    $result          = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
+    $result          = $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->result;
     is $result->{client_to_loginid}, $client_cr_pa_usd->loginid, 'Transaction successful';
 
     $transfer_amount = ($amount - $amount * $fee_percent / 100) * 4000;
@@ -1061,7 +1065,7 @@ subtest 'transfer with no fee' => sub {
     $previous_to_amt = $client_cr_pa_btc->default_account->balance;
     $previous_fm_amt = $client_cr_usd->default_account->balance;
 
-    $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
+    $result = $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->result;
     is $result->{client_to_loginid}, $client_cr_pa_btc->loginid, 'Transaction successful';
 
     $fee_percent     = 0;
@@ -1096,7 +1100,7 @@ subtest 'multi currency transfers' => sub {
     };
 
     my $result =
-        $rpc_ct->call_ok($method, $params)
+        $rpc_ct->call_ok('transfer_between_accounts', $params)
         ->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', "fiat->fiat not allowed - correct error code")
         ->error_message_is('Account transfers are not available for accounts with different currencies.',
         'fiat->fiat not allowed - correct error message');
@@ -1110,7 +1114,7 @@ subtest 'multi currency transfers' => sub {
         epoch => time
     );
 
-    $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
+    $result = $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->result;
     is $result->{client_to_loginid}, $client_cr_btc->loginid, 'fiat->cryto allowed';
 
     sleep 2;
@@ -1119,7 +1123,7 @@ subtest 'multi currency transfers' => sub {
         quote => 1.1,
         epoch => time - 3595
     );
-    $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
+    $result = $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->result;
     is $result->{client_to_loginid}, $client_cr_btc->loginid, 'fiat->cryto allowed with a slightly old rate (<1 hour)';
 
     sleep 2;
@@ -1128,7 +1132,7 @@ subtest 'multi currency transfers' => sub {
         quote => 1.1,
         epoch => time - 3605
     );
-    $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError',
+    $result = $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError',
         "fiat->cryto when rate older than 1 hour - correct error code")
         ->error_message_is('Sorry, transfers are currently unavailable. Please try again later.',
         'fiat->cryto when rate older than 1 hour - correct error message');
@@ -1140,7 +1144,7 @@ subtest 'multi currency transfers' => sub {
         epoch => time
     );
     $result =
-        $rpc_ct->call_ok($method, $params)
+        $rpc_ct->call_ok('transfer_between_accounts', $params)
         ->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', "Daily Transfer limit - correct error code")
         ->error_message_like(qr/2 transfers a day/, 'Daily Transfer Limit - correct error message');
 };
@@ -1204,7 +1208,8 @@ subtest 'suspended currency transfers' => sub {
             amount       => 10
         };
         BOM::Config::Runtime->instance->app_config->system->suspend->transfer_currencies(['BTC']);
-        my $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError',
+        my $result =
+            $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError',
             "Transfer to suspended currency not allowed - correct error code")
             ->error_message_is('Account transfers are not available between USD and BTC',
             'Transfer to suspended currency not allowed - correct error message');
@@ -1219,7 +1224,8 @@ subtest 'suspended currency transfers' => sub {
             amount       => 1
         };
 
-        my $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError',
+        my $result =
+            $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError',
             "Transfer from suspended currency not allowed - correct error code")
             ->error_message_is('Account transfers are not available between BTC and USD',
             'Transfer from suspended currency not allowed - correct error message');
@@ -1235,7 +1241,7 @@ subtest 'suspended currency transfers' => sub {
             amount       => 10
         };
 
-        $rpc_ct->call_ok($method, $params);
+        $rpc_ct->call_ok('transfer_between_accounts', $params);
     };
 
     # reset the config
@@ -1321,12 +1327,13 @@ subtest 'MT5' => sub {
         currency     => "USD",
         amount       => 180                                               # this is the only deposit amount allowed by mock MT5
     };
-    $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'MT5->MT5 transfer error code')
+    $rpc_ct->call_ok('transfer_between_accounts', $params)
+        ->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'MT5->MT5 transfer error code')
         ->error_message_is('Transfer between two MT5 accounts is not allowed.', 'MT5->MT5 transfer error message');
 
     $params->{args}{account_from} = 'MTD' . $ACCOUNTS{'demo\svg_financial'};
     $params->{args}{account_to}   = $test_client->loginid;
-    $rpc_ct->call_ok($method, $params)
+    $rpc_ct->call_ok('transfer_between_accounts', $params)
         ->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'MT5 demo -> real account transfer error code')
         ->error_message_like(qr/demo accounts/, 'MT5 demo -> real account transfer error message');
 
@@ -1339,8 +1346,8 @@ subtest 'MT5' => sub {
     #set withdrawal_locked status to make sure for Real  -> MT5 transfer is not allowed
     $test_client_btc->status->set('withdrawal_locked', 'system', 'test');
     ok $test_client_btc->status->withdrawal_locked, "Real BTC account is withdrawal_locked";
-    $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'Correct error code')
-        ->error_message_like(
+    $rpc_ct->call_ok('transfer_between_accounts', $params)
+        ->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'Correct error code')->error_message_like(
         qr/You cannot perform this action, as your account is withdrawal locked./,
         'Correct error message returned because Real BTC account is withdrawal locked.'
         );
@@ -1349,8 +1356,8 @@ subtest 'MT5' => sub {
     #set cashier_locked status to make sure for Real  -> MT5 transfer is not allowed
     $test_client_btc->status->set('cashier_locked', 'system', 'test');
     ok $test_client_btc->status->cashier_locked, "Real BTC account is cashier_locked";
-    $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'Correct error code')
-        ->error_message_like(
+    $rpc_ct->call_ok('transfer_between_accounts', $params)
+        ->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'Correct error code')->error_message_like(
         qr/Your account cashier is locked. Please contact us for more information./,
         'Correct error message returned because Real BTC account is cashier_locked.'
         );
@@ -1365,7 +1372,7 @@ subtest 'MT5' => sub {
     # MT5 (fiat) <=> CR (fiat) is allowed even if the client is transfers_blocked
     $test_client->status->set('transfers_blocked', 'system', 'testing transfers_blocked for real -> mt5');
 
-    $rpc_ct->call_ok($method, $params)->has_no_error("Real account -> real MT5 ok");
+    $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_error("Real account -> real MT5 ok");
     _test_events_tba(1, $test_client, $params->{args}{account_to});
 
     cmp_deeply(
@@ -1403,7 +1410,7 @@ subtest 'MT5' => sub {
 
     _test_events_prepare();
 
-    $rpc_ct->call_ok($method, $params)->has_no_error("Real MT5 -> real account ok");
+    $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_error("Real MT5 -> real account ok");
     _test_events_tba(
         0,
         $test_client,
@@ -1444,21 +1451,23 @@ subtest 'MT5' => sub {
     #set cashier locked status to make sure for MT5 -> Real transfer it is failed.
     $test_client->status->set('cashier_locked', 'system', 'test');
     ok $test_client->status->cashier_locked, "Real account is cashier_locked";
-    $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'Correct error code')
+    $rpc_ct->call_ok('transfer_between_accounts', $params)
+        ->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'Correct error code')
         ->error_message_like(qr/Your account cashier is locked. Please contact us for more information./,
         'Correct error message returned because Real account is cashier_locked so no deposit/withdrawal allowed.');
     #remove cashier_locked
     $test_client->status->clear_cashier_locked;
 
     $params->{args}{account_from} = 'MTR' . $ACCOUNTS{'real\labuan_financial_stp'};
-    $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'Correct error code')
+    $rpc_ct->call_ok('transfer_between_accounts', $params)
+        ->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'Correct error code')
         ->error_message_like(qr/Your identity documents have passed their expiration date. Kindly send a scan of a valid identity document to/,
         'Error message returned from inner MT5 sub when regulated account has expired documents');
 
     $mock_client->mock(documents_expired => sub { return 0 });
 
-    $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'Correct error code')
-        ->error_message_like(
+    $rpc_ct->call_ok('transfer_between_accounts', $params)
+        ->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'Correct error code')->error_message_like(
         qr/Your identity documents have passed their expiration date. Kindly send a scan of a valid identity document to/,
         'Error message returned from inner MT5 sub when regulated binary has no expired documents but does not have valid documents'
         );
@@ -1469,12 +1478,14 @@ subtest 'MT5' => sub {
     $params->{args}{account_from} = $test_client->loginid;
     $params->{args}{account_to}   = 'MTR' . $ACCOUNTS{'real\labuan_financial_stp'};
     $params->{args}{currency}     = 'EUR';
-    $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'Correct error code')
+    $rpc_ct->call_ok('transfer_between_accounts', $params)
+        ->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'Correct error code')
         ->error_message_is('Currency provided is different from account currency.', 'Correct message for wrong currency for real account_from');
 
     $params->{args}{account_from} = 'MTR' . $ACCOUNTS{'real\labuan_financial_stp'};
     $params->{args}{account_to}   = $test_client->loginid;
-    $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'Correct error code')
+    $rpc_ct->call_ok('transfer_between_accounts', $params)
+        ->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'Correct error code')
         ->error_message_is('Currency provided is different from account currency.', 'Correct message for wrong currency for MT5 account_from');
 
     subtest 'transfers using an account other than authenticated client' => sub {
@@ -1486,9 +1497,10 @@ subtest 'MT5' => sub {
         $params->{args}{account_to}   = 'MTR' . $ACCOUNTS{'real\svg_financial_Bbook'};
 
         $params->{token_type} = 'oauth_token';
-        $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error('with oauth token, ok if account_from is not the authenticated client');
+        $rpc_ct->call_ok('transfer_between_accounts', $params)
+            ->has_no_system_error->has_no_error('with oauth token, ok if account_from is not the authenticated client');
         $params->{token_type} = 'api_token';
-        $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_message_is(
+        $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->has_error->error_message_is(
             'From account provided should be same as current authorized client.',
             'with api token, NOT ok if account_from is not the authenticated client'
         );
@@ -1498,9 +1510,10 @@ subtest 'MT5' => sub {
         $params->{args}{account_to}   = $test_client->loginid;
 
         $params->{token_type} = 'oauth_token';
-        $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error('with oauth token, ok if account_to is not the authenticated client');
+        $rpc_ct->call_ok('transfer_between_accounts', $params)
+            ->has_no_system_error->has_no_error('with oauth token, ok if account_to is not the authenticated client');
         $params->{token_type} = 'api_token';
-        $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_message_is(
+        $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->has_error->error_message_is(
             'To account provided should be same as current authorized client.',
             'with api token, NOT ok if account_to is not the authenticated client'
         );
@@ -1586,7 +1599,7 @@ subtest 'offer_to_clients' => sub {
         amount       => $limits->{USD}->{min}};
 
     _offer_to_clients(0, 'BTC');
-    my $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
+    my $result = $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->result;
     is $result->{error}->{code}, 'TransferBetweenAccountsError', 'Correct error code when offer_to_clients fails';
     like $result->{error}->{message_to_client}, qr/Sorry, transfers are currently unavailable. Please try again later./;
 
@@ -1663,7 +1676,7 @@ subtest 'fiat to crypto limits' => sub {
             return 0;
         });
 
-    my $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->result;
+    my $result = $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->result;
     ok $result->{status}, 'Fully authenticated non age verified transfer is sucessful';
 
     $mock_client->mock(
@@ -1672,7 +1685,7 @@ subtest 'fiat to crypto limits' => sub {
             return 0;
         });
     sleep(2);
-    $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('Fiat2CryptoTransferOverLimit',
+    $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->has_error->error_code_is('Fiat2CryptoTransferOverLimit',
         'Not verified account should not pass the fiat to crypto limit')
         ->error_message_like(qr/You have exceeded 20.00 USD in cumulative transactions. To continue, you will need to verify your identity./,
         'Correct error message returned for a fiat to crypto transfer that reached the limit.');

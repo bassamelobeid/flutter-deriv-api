@@ -26,7 +26,6 @@ subtest 'Initialization' => sub {
     'Initial RPC server and client connection';
 };
 
-my $method         = 'cashier';
 my $email          = 'dummy' . rand(999) . '@binary.com';
 my $user_client_cr = BOM::User->create(
     email          => 'cr@binary.com',
@@ -48,13 +47,13 @@ subtest 'Doughflow' => sub {
     $params->{token}           = BOM::Platform::Token::API->new->create_token($client_cr->loginid, 'test token123');
     $params->{domain}          = 'binary.com';
 
-    $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_internal_message_like(qr/frontend not found/, 'No frontend error');
+    $rpc_ct->call_ok('cashier', $params)->has_no_system_error->has_error->error_internal_message_like(qr/frontend not found/, 'No frontend error');
 
     $mocked_call->mock('post', sub { return {_content => 'customer too old'} });
 
     mailbox_clear();
 
-    $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_internal_message_like(qr/customer too old/, 'Customer too old error')
+    $rpc_ct->call_ok('cashier', $params)->has_no_system_error->has_error->error_internal_message_like(qr/customer too old/, 'Customer too old error')
         ->error_message_is(
         'Sorry, there was a problem validating your personal information with our payment processor. Please verify that your date of birth was input correctly in your account settings.',
         'Correct client message to user underage'
@@ -68,8 +67,8 @@ subtest 'Doughflow' => sub {
 
     mailbox_clear();
 
-    $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_internal_message_like(qr/customer underage/, 'Customer underage error')
-        ->error_message_is(
+    $rpc_ct->call_ok('cashier', $params)
+        ->has_no_system_error->has_error->error_internal_message_like(qr/customer underage/, 'Customer underage error')->error_message_is(
         'Sorry, there was a problem validating your personal information with our payment processor. Please verify that your date of birth was input correctly in your account settings.',
         'Correct client message to user underage'
         );
@@ -80,14 +79,13 @@ subtest 'Doughflow' => sub {
 
     $mocked_call->mock('post', sub { return {_content => 'abcdef'} });
 
-    $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_internal_message_like(qr/abcdef/, 'Unknown Doughflow error')
+    $rpc_ct->call_ok('cashier', $params)->has_no_system_error->has_error->error_internal_message_like(qr/abcdef/, 'Unknown Doughflow error')
         ->error_message_is('Sorry, an error occurred. Please try accessing our cashier again.', 'Correct Unknown Doughflow error message');
 
 };
 
 subtest 'Get deposit address' => sub {
     my $params = {};
-    my $method = 'cashier';
     my $email  = 'dummy' . rand(999) . '@binary.com';
 
     my $user = BOM::User->create(
@@ -121,7 +119,7 @@ subtest 'Get deposit address' => sub {
         action => 'deposit',
     };
 
-    $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error->result_is_deeply($expected_result, 'Empty Address');
+    $rpc_ct->call_ok('cashier', $params)->has_no_system_error->has_no_error->result_is_deeply($expected_result, 'Empty Address');
 
     my $address = 'test_deposit_address';
     $client->db->dbic->run(
@@ -131,7 +129,7 @@ subtest 'Get deposit address' => sub {
     );
 
     $expected_result->{deposit}{address} = $address;
-    $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error->result_is_deeply($expected_result, 'Correct address');
+    $rpc_ct->call_ok('cashier', $params)->has_no_system_error->has_no_error->result_is_deeply($expected_result, 'Correct address');
 };
 
 subtest 'validate_amount' => sub {

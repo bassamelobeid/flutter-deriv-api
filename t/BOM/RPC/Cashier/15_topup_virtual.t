@@ -107,7 +107,6 @@ my $tick2 = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
 my $c      = BOM::Test::RPC::QueueClient->new();
 my $amount = '10000.00';
 # start test topup_virtual
-my $method = 'topup_virtual';
 my $params = {
     language => 'EN',
     token    => '12345'
@@ -115,21 +114,22 @@ my $params = {
 
 is($account->balance, 0, "init balance is 0");
 
-$c->call_ok($method, $params)->has_error->error_code_is('InvalidToken')->error_message_is('The token is invalid.', 'invalid token');
+$c->call_ok('topup_virtual', $params)->has_error->error_code_is('InvalidToken')->error_message_is('The token is invalid.', 'invalid token');
 $test_client->status->set('disabled', 1, 'test status');
 $params->{token} = $token;
-$c->call_ok($method, $params)->has_error->error_code_is('DisabledClient')->error_message_is('This account is unavailable.', 'account is unavailable');
+$c->call_ok('topup_virtual', $params)->has_error->error_code_is('DisabledClient')
+    ->error_message_is('This account is unavailable.', 'account is unavailable');
 
 $test_client->status->clear_disabled;
-$c->call_ok($method, $params)->has_error->error_code_is('TopupVirtualError')
+$c->call_ok('topup_virtual', $params)->has_error->error_code_is('TopupVirtualError')
     ->error_message_is('Sorry, this feature is available to virtual accounts only', 'virtual accounts only');
 
 $params->{token} = $token_vr;
 
-$c->call_ok($method, $params)->has_no_error->result_is_deeply(expected_result($amount), 'topup account successfully');
+$c->call_ok('topup_virtual', $params)->has_no_error->result_is_deeply(expected_result($amount), 'topup account successfully');
 is($account->balance, $amount, "balance is $amount");
 
-$c->call_ok($method, $params)->has_no_error->result_is_deeply(expected_result(0), 'can topup when balance is default');
+$c->call_ok('topup_virtual', $params)->has_no_error->result_is_deeply(expected_result(0), 'can topup when balance is default');
 is($account->balance, $amount, "balance is default");
 
 $test_client_vr->payment_legacy_payment(
@@ -140,7 +140,7 @@ $test_client_vr->payment_legacy_payment(
 );
 
 is($account->balance, '11000.00', 'balance is 11000');
-$c->call_ok($method, $params)->has_no_error('can topup when balance is 11000');
+$c->call_ok('topup_virtual', $params)->has_no_error('can topup when balance is 11000');
 is($account->balance, $amount, "balance reset to $amount");
 
 # buy a contract to test the error of 'Please close out all open positions before requesting additional funds.'
@@ -168,7 +168,7 @@ my $txn = BOM::Transaction->new($txn_data);
 is($txn->buy(skip_validation => 1), undef, 'buy contract without error');
 
 is($account->balance + 0, $amount - $price, 'balance is reduced for buying contract');
-$c->call_ok($method, $params)->has_no_error->result_is_deeply(expected_result($price), 'topup after buy contract successfully');
+$c->call_ok('topup_virtual', $params)->has_no_error->result_is_deeply(expected_result($price), 'topup after buy contract successfully');
 
 is($account->balance, $amount, "balance reset to $amount");
 

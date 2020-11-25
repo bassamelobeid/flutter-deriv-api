@@ -131,12 +131,11 @@ my $client_mx = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
 $user_client_mx->add_client($client_mx);
 $client_mx->status->set('max_turnover_limit_not_set', 'tests', 'Newly created GB clients have this status until they set 30Day turnover');
 
-my $method = 'cashier';
 subtest 'common' => sub {
     $params->{args}->{cashier} = 'deposit';
     $params->{token} = BOM::Platform::Token::API->new->create_token($client_vr->loginid, 'test token');
 
-    $rpc_ct->call_ok($method, $params)
+    $rpc_ct->call_ok('cashier', $params)
         ->has_no_system_error->has_error->error_code_is('CashierForwardError', 'Cashier forward error as client is virtual')
         ->error_message_is('This is a virtual-money account. Please switch to a real-money account to access cashier.',
         'Correct error message for virtual account');
@@ -145,7 +144,7 @@ subtest 'common' => sub {
     $user_mocked->mock('new', sub { bless {}, 'BOM::User' });
 
     $params->{token} = BOM::Platform::Token::API->new->create_token($client_mx->loginid, 'test token');
-    $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('ASK_TNC_APPROVAL', 'Client needs to approve tnc before')
+    $rpc_ct->call_ok('cashier', $params)->has_no_system_error->has_error->error_code_is('ASK_TNC_APPROVAL', 'Client needs to approve tnc before')
         ->error_message_is('Terms and conditions approval is required.', 'Correct error message for terms and conditions');
 
     $client_mocked->mock(is_tnc_approval_required => sub { 0 });
@@ -154,12 +153,12 @@ subtest 'common' => sub {
     $client_cr1->save;
 
     $params->{token} = BOM::Platform::Token::API->new->create_token($client_cr1->loginid, 'test token');
-    $rpc_ct->call_ok($method, $params)
+    $rpc_ct->call_ok('cashier', $params)
         ->has_no_system_error->has_error->error_code_is('CashierForwardError', 'Client has wrong default currency for landing_company')
         ->error_message_is('JPY transactions may not be performed with this account.', 'Correct error message for wrong default account');
 
     $params->{token} = BOM::Platform::Token::API->new->create_token($client_cr->loginid, 'test token');
-    $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('ASK_CURRENCY', 'Client has no default currency')
+    $rpc_ct->call_ok('cashier', $params)->has_no_system_error->has_error->error_code_is('ASK_CURRENCY', 'Client has no default currency')
         ->error_message_is('Please set the currency.', 'Correct error message when currency is not set');
 
     $client_cr->set_default_account('USD');
@@ -167,7 +166,7 @@ subtest 'common' => sub {
 
     $client_mocked->mock('documents_expired', sub { return 1 });
 
-    $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('CashierForwardError', 'Client documents have expired')
+    $rpc_ct->call_ok('cashier', $params)->has_no_system_error->has_error->error_code_is('CashierForwardError', 'Client documents have expired')
         ->error_message_is(
         'Your identity documents have passed their expiration date. Kindly send a scan of a valid identity document to support@binary.com to unlock your cashier.',
         'Correct error message for documents expired'
@@ -176,14 +175,14 @@ subtest 'common' => sub {
     $client_mocked->unmock('documents_expired');
     $client_cr->status->set('cashier_locked', 'system');
 
-    $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('CashierForwardError', 'Client has cashier lock')
+    $rpc_ct->call_ok('cashier', $params)->has_no_system_error->has_error->error_code_is('CashierForwardError', 'Client has cashier lock')
         ->error_message_is('Your cashier is locked.', 'Correct error message for locked cashier');
 
     $client_cr->status->clear_cashier_locked;
     $client_cr->status->set('disabled', 'system');
 
     # as we check if client is disabled during token verification so it will not go to cashier
-    $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('DisabledClient', 'Client is disabled')
+    $rpc_ct->call_ok('cashier', $params)->has_no_system_error->has_error->error_code_is('DisabledClient', 'Client is disabled')
         ->error_message_is('This account is unavailable.', 'Correct error message for disabled client');
 
     $client_cr->status->clear_disabled;
@@ -192,35 +191,35 @@ subtest 'common' => sub {
     # Sometimes we do not get domain in params, so in that case we will set domain to valid default.
     $params->{domain} = undef;
     warning {
-        $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('CashierForwardError', 'Domain not provided')
+        $rpc_ct->call_ok('cashier', $params)->has_no_system_error->has_error->error_code_is('CashierForwardError', 'Domain not provided')
             ->error_message_is('Sorry, an error occurred. Please try accessing our cashier again.',
             'Attempted to forward request to the cashier to default dogflow url when Domain not provided.');
     };
     # set domain to valid default incase invalid domain is provided
     $params->{domain} = 'dummydomain.com';
     warning {
-        $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('CashierForwardError', 'Invalid domain provided')
+        $rpc_ct->call_ok('cashier', $params)->has_no_system_error->has_error->error_code_is('CashierForwardError', 'Invalid domain provided')
             ->error_message_is('Sorry, an error occurred. Please try accessing our cashier again.',
             'Attempted to forward request to the cashier to default dogflow url when Domain is not whitelisted.');
     };
     # set valid domain
     $params->{domain} = 'binary.com';
     warning {
-        $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('CashierForwardError', 'Valid domain provided')
+        $rpc_ct->call_ok('cashier', $params)->has_no_system_error->has_error->error_code_is('CashierForwardError', 'Valid domain provided')
             ->error_message_is('Sorry, an error occurred. Please try accessing our cashier again.',
             'Attempted to forward request to the cashier after setting whitelisted domain:binary.com.');
     };
     # set valid domain
     $params->{domain} = 'binary.me';
     warning {
-        $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('CashierForwardError', 'Valid domain provided')
+        $rpc_ct->call_ok('cashier', $params)->has_no_system_error->has_error->error_code_is('CashierForwardError', 'Valid domain provided')
             ->error_message_is('Sorry, an error occurred. Please try accessing our cashier again.',
             'Attempted to forward request to the cashier after setting whitelisted domain:binary.me.');
     };
     # set valid domain
     $params->{domain} = 'deriv.com';
     warning {
-        $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('CashierForwardError', 'Valid domain provided')
+        $rpc_ct->call_ok('cashier', $params)->has_no_system_error->has_error->error_code_is('CashierForwardError', 'Valid domain provided')
             ->error_message_is('Sorry, an error occurred. Please try accessing our cashier again.',
             'Attempted to forward request to the cashier after setting whitelisted domain:deriv.app.');
     };
@@ -230,20 +229,20 @@ subtest 'common' => sub {
 subtest 'deposit' => sub {
     $params->{domain} = 'binary.com';
     $runtime_system->suspend->cashier(1);
-    $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('CashierForwardError', 'Cashier is suspended')
+    $rpc_ct->call_ok('cashier', $params)->has_no_system_error->has_error->error_code_is('CashierForwardError', 'Cashier is suspended')
         ->error_message_is('Sorry, cashier is temporarily unavailable due to system maintenance.',
         'Correct error message for withdrawal when cashier is locked.');
     $runtime_system->suspend->cashier(0);
 
     $client_cr->status->set('unwelcome', 'system');
 
-    $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('CashierForwardError', 'Client marked as unwelcome')
+    $rpc_ct->call_ok('cashier', $params)->has_no_system_error->has_error->error_code_is('CashierForwardError', 'Client marked as unwelcome')
         ->error_message_is('Your account is restricted to withdrawals only.', 'Correct error message for client marked as unwelcome');
 
     $client_cr->status->clear_unwelcome;
 
     $runtime_system->suspend->cashier(1);
-    $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('CashierForwardError', 'Cashier is suspended')
+    $rpc_ct->call_ok('cashier', $params)->has_no_system_error->has_error->error_code_is('CashierForwardError', 'Cashier is suspended')
         ->error_message_is('Sorry, cashier is temporarily unavailable due to system maintenance.',
         'Correct error message for deposit when cashier is locked.');
     $runtime_system->suspend->cashier(0);
@@ -254,7 +253,7 @@ subtest 'withdraw' => sub {
 
     $client_cr->status->set('withdrawal_locked', 'system', 'locked for security reason');
 
-    $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('ASK_EMAIL_VERIFY', 'Withdrawal needs verification token')
+    $rpc_ct->call_ok('cashier', $params)->has_no_system_error->has_error->error_code_is('ASK_EMAIL_VERIFY', 'Withdrawal needs verification token')
         ->error_message_is('Verify your withdraw request.', 'Withdrawal needs verification token');
 
     $client_mocked->mock(is_tnc_approval_required => sub { 1 });
@@ -266,7 +265,7 @@ subtest 'withdraw' => sub {
         })->token;
 
     $params->{token} = BOM::Platform::Token::API->new->create_token($client_mx->loginid, 'test token1');
-    $rpc_ct->call_ok($method, $params)
+    $rpc_ct->call_ok('cashier', $params)
         ->has_no_system_error->has_error->error_code_is('ASK_CURRENCY',
         'Terms and condition check is skipped for withdrawal, currency check comes after that.')
         ->error_message_is('Please set the currency.', 'Correct error message as terms and condition check is skipped for withdrawal.');
@@ -279,7 +278,7 @@ subtest 'withdraw' => sub {
             created_for => 'payment_withdraw',
         })->token;
 
-    $rpc_ct->call_ok($method, $params)
+    $rpc_ct->call_ok('cashier', $params)
         ->has_no_system_error->has_error->error_code_is('ASK_CURRENCY',
         'Terms and condition check is skipped for withdrawal, even with correct version set same currency error occur.')
         ->error_message_is('Please set the currency.', 'Correct error message as terms and condition check is skipped for withdrawal.');
@@ -291,7 +290,7 @@ subtest 'withdraw' => sub {
             created_for => 'payment_withdraw',
         })->token;
 
-    $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('CashierForwardError', 'Client has withdrawal lock')
+    $rpc_ct->call_ok('cashier', $params)->has_no_system_error->has_error->error_code_is('CashierForwardError', 'Client has withdrawal lock')
         ->error_message_is('Your account is locked for withdrawals.', 'Client is withdrawal locked');
 
     $client_cr->status->clear_withdrawal_locked;
@@ -310,7 +309,7 @@ subtest 'landing_companies_specific' => sub {
     $client_mlt->aml_risk_classification('high');
     $client_mlt->save;
 
-    $rpc_ct->call_ok($method, $params)
+    $rpc_ct->call_ok('cashier', $params)
         ->has_no_system_error->has_error->error_code_is('FinancialAssessmentRequired',
         'MLT client with High risk should have completed financial assessment')
         ->error_message_is('Please complete the financial assessment form to lift your withdrawal and trading limits.',
@@ -320,7 +319,7 @@ subtest 'landing_companies_specific' => sub {
     $client_mlt->save;
 
     warning {
-        $rpc_ct->call_ok($method, $params)
+        $rpc_ct->call_ok('cashier', $params)
             ->has_no_system_error->has_error->error_code_is('CashierForwardError',
             'MLT client deposit request was forwarded to cashier after AML had been changed to low')
             ->error_message_is('Sorry, an error occurred. Please try accessing our cashier again.',
@@ -332,7 +331,7 @@ subtest 'landing_companies_specific' => sub {
     $client_mf->set_default_account('EUR');
     $client_mf->save;
 
-    $rpc_ct->call_ok($method, $params)
+    $rpc_ct->call_ok('cashier', $params)
         ->has_no_system_error->has_error->error_code_is('FinancialAssessmentRequired',
         'MF client has to complete financial assessment irrespective of risk classification')->error_message_is(
         'Please complete the financial assessment form to lift your withdrawal and trading limits.',
@@ -342,20 +341,20 @@ subtest 'landing_companies_specific' => sub {
     $client_mf->financial_assessment({data => BOM::Test::Helper::FinancialAssessment::mock_maltainvest_fa()});
     $client_mf->save();
 
-    $rpc_ct->call_ok($method, $params)
+    $rpc_ct->call_ok('cashier', $params)
         ->has_no_system_error->has_error->error_code_is('ASK_AUTHENTICATE', 'MF client needs to be fully authenticated')
         ->error_message_is('Please authenticate your account.', 'MF client needs to be fully authenticated');
 
     $client_mf->set_authentication('ID_DOCUMENT', {status => 'pass'});
     $client_mf->save;
 
-    $rpc_ct->call_ok($method, $params)
+    $rpc_ct->call_ok('cashier', $params)
         ->has_no_system_error->has_error->error_code_is('ASK_FINANCIAL_RISK_APPROVAL', 'financial risk approval is required')
         ->error_message_is('Financial Risk approval is required.', 'financial risk approval is required');
 
     $client_mf->status->set('financial_risk_approval', 'SYSTEM', 'Client accepted financial risk disclosure');
 
-    $rpc_ct->call_ok($method, $params)
+    $rpc_ct->call_ok('cashier', $params)
         ->has_no_system_error->has_error->error_code_is('ASK_TIN_INFORMATION', 'tax information is required for malatainvest')
         ->error_message_is('Tax-related information is mandatory for legal and regulatory requirements. Please provide your latest tax information.',
         'tax information is required for malatainvest');
@@ -369,7 +368,7 @@ subtest 'landing_companies_specific' => sub {
     $client_mx->aml_risk_classification('high');
     $client_mx->save;
 
-    $rpc_ct->call_ok($method, $params)
+    $rpc_ct->call_ok('cashier', $params)
         ->has_no_system_error->has_error->error_code_is('FinancialAssessmentRequired',
         'MX client have to complete financial assessment if they are categorized as high risk')->error_message_is(
         'Please complete the financial assessment form to lift your withdrawal and trading limits.',
@@ -379,11 +378,11 @@ subtest 'landing_companies_specific' => sub {
     $client_mx->aml_risk_classification('low');
     $client_mx->save;
 
-    $rpc_ct->call_ok($method, $params)
+    $rpc_ct->call_ok('cashier', $params)
         ->has_no_system_error->has_error->error_code_is('ASK_UK_FUNDS_PROTECTION', 'GB residence needs to accept fund protection')
         ->error_message_is('Please accept Funds Protection.', 'GB residence needs to accept fund protection');
     $client_mx->status->set('ukgc_funds_protection', 'system', 'testing');
-    $rpc_ct->call_ok($method, $params)
+    $rpc_ct->call_ok('cashier', $params)
         ->has_no_system_error->has_error->error_code_is('ASK_SELF_EXCLUSION_MAX_TURNOVER_SET', 'GB residence needs to set 30-Day turnover')
         ->error_message_is('Please set your 30-day turnover limit in our self-exclusion facilities to access the cashier.',
         'GB residence needs to set 30-Day turnover');
