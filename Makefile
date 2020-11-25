@@ -7,16 +7,16 @@ P=/etc/rmg/bin/prove -v --timer -rl
 PROVE=p () { $M; echo '$P' "$$@"; $P "$$@"; }; p
 
 syntax:
-	@$(PROVE) t/BOM/*.t t/999_redis_keys.t
+	@$(PROVE) t/*.t
 
 test:
-	@$(PROVE) $$(ls -1d t/BOM/RPC/) t/000_async_await.t t/999_redis_keys.t
+	@$(PROVE) t/BOM/ t/999_redis_keys.t
 
 pod_test:
-	@$(PROVE) t/BOM/*pod*.t
+	@$(PROVE) t/*pod*.t
 
 json_schemas:
-	@$(PROVE) /home/git/regentmarkets/bom-rpc/t/schema_suite/suite01.t /home/git/regentmarkets/bom-rpc/t/schema_suite/suite02.t
+	@$(PROVE) t/schema_suite/*.t
 
 tidy:
 	find . -name '*.p?.bak' -delete
@@ -27,4 +27,3 @@ cover:
 	cover -delete
 	HARNESS_PERL_SWITCHES=-MDevel::Cover DEVEL_COVER_OPTIONS=-'ignore,^t/' /etc/rmg/bin/prove --timer -rl --norc -MBOM::Test -It/lib t/BOM/RPC/
 	cover -report coveralls
-
