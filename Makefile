@@ -1,5 +1,5 @@
 test:
-	/etc/rmg/bin/prove -vlr t/BOM/
+	/etc/rmg/bin/prove -vlr t/
 
 tidy:
 	find . -name '*.p?.bak' -delete
@@ -7,7 +7,7 @@ tidy:
 	find . -name '*.tidyup' -delete
 
 pod_test:
-	/etc/rmg/bin/prove -vlr t/BOM/*pod*.t
+	/etc/rmg/bin/prove -vlr t/*pod*.t
 
 cover:
 	cover -delete
