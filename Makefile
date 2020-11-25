@@ -7,7 +7,7 @@ PROVE=p () { $M; echo '$P' "$$@"; $P "$$@"; }; p
 test: $(TESTS)
 
 unit_test_marketdataautoupdater:
-	@$(PROVE) -r t/BOM/
+	@$(PROVE) -r t/
 
 tidy:
 	find . -name '*.p?.bak' -delete
