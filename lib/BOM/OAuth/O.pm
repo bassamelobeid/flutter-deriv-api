@@ -67,6 +67,31 @@ sub authorize {
     # load available networks for brand
     $c->stash('login_providers' => $c->stash('brand')->login_providers);
 
+    my $r          = $c->stash('request');
+    my $brand_name = $c->stash('brand')->name;
+
+    my %template_params = (
+        template                  => $c->_get_template_name('login'),
+        layout                    => $brand_name,
+        app                       => $app,
+        r                         => $r,
+        csrf_token                => $c->csrf_token,
+        use_social_login          => $c->_is_social_login_available(),
+        login_providers           => $c->stash('login_providers'),
+        login_method              => undef,
+        is_reset_password_allowed => _is_reset_password_allowed($app->{id}),
+        website_domain            => $c->_website_domain($app->{id}),
+    );
+
+    # Check for blocked IPs early in the process.
+    my $ip    = $r->client_ip || '';
+    my $redis = BOM::Config::Redis::redis_auth();
+    if ($ip and $redis->get('oauth::blocked_by_ip::' . $ip)) {
+        stats_inc('login.authorizer.block.hit');
+        $template_params{error} = localize(get_message_mapping()->{SUSPICIOUS_BLOCKED});
+        return $c->render(%template_params);
+    }
+
     my ($client, $filtered_clients);
     # try to retrieve client from session
     if (    $c->req->method eq 'POST'
@@ -89,21 +114,6 @@ sub authorize {
         $c->session('_is_logined', 1);
         $c->session('_loginid',    $client->loginid);
     }
-
-    my $brand_name = $c->stash('brand')->name;
-
-    my %template_params = (
-        template                  => $c->_get_template_name('login'),
-        layout                    => $brand_name,
-        app                       => $app,
-        r                         => $c->stash('request'),
-        csrf_token                => $c->csrf_token,
-        use_social_login          => $c->_is_social_login_available(),
-        login_providers           => $c->stash('login_providers'),
-        login_method              => undef,
-        is_reset_password_allowed => _is_reset_password_allowed($app->{id}),
-        website_domain            => $c->_website_domain($app->{id}),
-    );
 
     my $date_first_contact = $c->param('date_first_contact') // '';
     eval {
@@ -166,6 +176,7 @@ sub authorize {
         $c->session('_otp_verified', $is_verified);
         $otp_error = localize(get_message_mapping->{TFA_FAILURE});
         _stats_inc_error($brand_name, "TFA_FAILURE");
+        _failed_login_attempt($c) unless $is_verified;
     }
 
     # Check if user has enabled 2FA authentication and this is not a scope request
@@ -281,6 +292,7 @@ sub _login {
 
     if (my $err = $result->{error_code}) {
         _stats_inc_error($brand_name, $err);
+        _failed_login_attempt($c);
 
         my $id = $app->{id};
 
@@ -432,13 +444,6 @@ sub _validate_login {
     my $r  = $c->stash('request');
     my $ip = $r->client_ip || '';
 
-    # Check for blocked IPs early in the process.
-    my $redis = BOM::Config::Redis::redis_auth_write();
-    if ($ip and $redis->get('oauth::blocked_by_ip::' . $ip)) {
-        stats_inc('login.authorizer.block.hit');
-        return $err_var->("SUSPICIOUS_BLOCKED");
-    }
-
     my $user;
 
     if ($oneall_user_id) {
@@ -481,42 +486,7 @@ sub _validate_login {
         app_id          => $app_id
     );
 
-    if (exists $result->{error}) {
-        stats_inc('login.authorizer.login_failed');
-        # Something went wrong - most probably login failure. Innocent enough in isolation;
-        # if we see a pattern of failures from the same address, we would want to discourage
-        # further attempts.
-        if ($ip) {
-            try {
-                my $k = 'oauth::failure_count_by_ip::' . $ip;
-                if ($redis->incr($k) > BLOCK_TRIGGER_COUNT) {
-                    # Note that we don't actively delete the failure count here, since we expect
-                    # it to expire before the block does. If it doesn't... well, this only applies
-                    # on failed login attempt, if you get the password right first time after the
-                    # block then you're home free.
-
-                    my $ttl = $redis->get('oauth::backoff_by_ip::' . $ip);
-                    $ttl = min(BLOCK_MAX_DURATION, $ttl ? $ttl * 2 : BLOCK_MIN_DURATION);
-                    $log->infof('Multiple login failures from the same IP %s, blocking for %d seconds', $ip, $ttl);
-
-                    # Record our new TTL (hangs around for a day, which we expect to be sufficient
-                    # to slow down offenders enough that we no longer have to be particularly concerned),
-                    # and also apply the block at this stage.
-                    $redis->set('oauth::backoff_by_ip::' . $ip, $ttl, EX => BLOCK_TTL_RESET_AFTER);
-                    $redis->set('oauth::blocked_by_ip::' . $ip, 1,    EX => $ttl);
-                    stats_inc('login.authorizer.block.add');
-                } else {
-                    # Extend expiry every time there's a failure
-                    $redis->expire($k, BLOCK_TRIGGER_WINDOW);
-                    stats_inc('login.authorizer.block.fail');
-                }
-            } catch {
-                $log->errorf('Failure encountered while handling Redis blocklists for failed login: %s', $@);
-                stats_inc('login.authorizer.block.error');
-            }
-        }
-        return $err_var->($result->{error});
-    }
+    return $err_var->($result->{error}) if exists $result->{error};
 
     my @filtered_clients = _filter_user_clients_by_app_id(
         app_id => $app_id,
@@ -607,6 +577,55 @@ sub _filter_user_clients_by_app_id {
     return $user->clients unless first { $_ == $app_id } APPS_LOGINS_RESTRICTED;
 
     return grep { $_ and $_->account and ($_->account->currency_code() // '') eq 'USD' } $user->clients_for_landing_company('svg');
+}
+
+=head2 _failed_login_attempt
+
+Called for failed manual login attempt.
+Increments redis counts and may set a blocking flag.
+
+=cut
+
+sub _failed_login_attempt {
+    my $c = shift;
+
+    stats_inc('login.authorizer.login_failed');
+
+    # Something went wrong - most probably login failure. Innocent enough in isolation;
+    # if we see a pattern of failures from the same address, we would want to discourage
+    # further attempts.
+    my $ip = $c->stash('request')->client_ip;
+    if ($ip) {
+        try {
+            my $redis = BOM::Config::Redis::redis_auth_write();
+            my $k     = 'oauth::failure_count_by_ip::' . $ip;
+            if ($redis->incr($k) > BLOCK_TRIGGER_COUNT) {
+                # Note that we don't actively delete the failure count here, since we expect
+                # it to expire before the block does. If it doesn't... well, this only applies
+                # on failed login attempt, if you get the password right first time after the
+                # block then you're home free.
+
+                my $ttl = $redis->get('oauth::backoff_by_ip::' . $ip);
+                $ttl = min(BLOCK_MAX_DURATION, $ttl ? $ttl * 2 : BLOCK_MIN_DURATION);
+                $log->infof('Multiple login failures from the same IP %s, blocking for %d seconds', $ip, $ttl);
+
+                # Record our new TTL (hangs around for a day, which we expect to be sufficient
+                # to slow down offenders enough that we no longer have to be particularly concerned),
+                # and also apply the block at this stage.
+                $redis->set('oauth::backoff_by_ip::' . $ip, $ttl, EX => BLOCK_TTL_RESET_AFTER);
+                $redis->set('oauth::blocked_by_ip::' . $ip, 1,    EX => $ttl);
+                stats_inc('login.authorizer.block.add');
+            } else {
+                # Extend expiry every time there's a failure
+                $redis->expire($k, BLOCK_TRIGGER_WINDOW);
+                stats_inc('login.authorizer.block.fail');
+            }
+        } catch ($err) {
+            $log->errorf('Failure encountered while handling Redis blocklists for failed login: %s', $err);
+            stats_inc('login.authorizer.block.error');
+        }
+    }
+
 }
 
 1;
