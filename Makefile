@@ -1,4 +1,5 @@
-TESTS=unit_test_database_datamapper \
+TESTS=syntax \
+      unit_test_database_datamapper \
       unit_test_database_model \
       unit_test_database_all \
 
@@ -18,10 +19,13 @@ unit_test_database_model:
 	@$(PROVE) -r t/BOM/Database/Model/
 
 unit_test_database_all:
-	@$(PROVE) -r $$(find t -type f -iname '*.t' | grep -v -e '/Model' -e '/DataMapper')
+	@$(PROVE) t/BOM/Database/*.t
+
+syntax:
+	@$(PROVE) t/*.t
 
 pod_test:
-	@$(PROVE) t/BOM/*pod*.t
+	@$(PROVE) t/*pod*.t
 
 tidy:
 	find . -name '*.p?.bak' -delete

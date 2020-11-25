@@ -24,7 +24,8 @@ alias:
           sleep 1
       done
     name: Wait for services to start up
-- environment:
+- &environment
+  environment:
     PERL_TEST_HARNESS_DUMP_TAP: /var/tmp/test-output
 default: &5
   docker:
@@ -44,6 +45,7 @@ jobs:
     - *3
     - *4
     - run:
+        <<: *environment
         command: |
           echo '--formatter TAP::Formatter::JUnit' >> .proverc
           sudo tee -a /etc/hosts < hosts.db
