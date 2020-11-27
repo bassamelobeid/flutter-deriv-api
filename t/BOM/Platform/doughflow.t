@@ -27,14 +27,14 @@ my @doughflow_deriv_sportsbooks_mock = (
     'Deriv (SVG) LLC EUR',
     'Deriv (SVG) LLC AUD',
     'Deriv (SVG) LLC GBP',
-    'Deriv (Europe) Limited GBP',
-    'Deriv (Europe) Limited EUR',
-    'Deriv (Europe) Limited USD',
+    'Deriv (Europe) Ltd GBP',
+    'Deriv (Europe) Ltd EUR',
+    'Deriv (Europe) Ltd USD',
     'Deriv (MX) Ltd GBP',
     'Deriv (MX) Ltd USD',
-    'Deriv Investments (Europe) Limited USD',
-    'Deriv Investments (Europe) Limited EUR',
-    'Deriv Investments (Europe) Limited GBP',
+    'Deriv Investments Ltd USD',
+    'Deriv Investments Ltd EUR',
+    'Deriv Investments Ltd GBP',
 );
 
 sub get_fiat_currencies {
@@ -88,6 +88,25 @@ subtest 'doughflow_deriv_sportsbooks' => sub {
     }
 
     $config_mocked->unmock('on_production');
+};
+
+subtest 'doughflow deriv sportsbook landing company consistency' => sub {
+    my @all_broker_codes = LandingCompany::Registry->all_broker_codes;
+
+    for my $broker (@all_broker_codes) {
+        my $lc = LandingCompany::Registry->get_by_broker($broker);
+
+        next if $lc->short =~ /virtual|champion/;
+
+        my $sportsbook = BOM::Platform::Doughflow::get_sportsbook_mapping_by_landing_company($lc->short);
+        next unless $sportsbook;
+
+        my ($sportsbook_first_two_words) = $sportsbook =~ /^([A-Za-z]*\s\(*[A-Za-z]*\)*)/;
+
+        my ($lc_first_two_words) = $lc->name =~ /^([A-Za-z]*\s\(*[A-Za-z]*\)*)/;
+        is($sportsbook_first_two_words, $lc_first_two_words,
+            "Sportsbook starts with $sportsbook_first_two_words and it matches landing company that starts with $lc_first_two_words");
+    }
 };
 
 done_testing;

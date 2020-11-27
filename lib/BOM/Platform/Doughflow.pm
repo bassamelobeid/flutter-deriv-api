@@ -35,7 +35,9 @@ sub get_sportsbook {
     my $landing_company      = LandingCompany::Registry->get_by_broker($broker);
     my $landing_company_name = $landing_company->name;
 
-    unless (is_deriv_sportsbooks_enabled()) {
+    if (is_deriv_sportsbooks_enabled()) {
+        $sportsbook = get_sportsbook_mapping_by_landing_company($landing_company->short) . ' ' . $currency;
+    } else {
         # TODO: remove this check once Doughflow's side is live
         # for backward compatibility, we keep sportsbook prefixes as 'Binary'
         my %mapping = (
@@ -44,10 +46,9 @@ sub get_sportsbook {
             iom         => 'Binary (IOM) Ltd',
             maltainvest => 'Binary Investments Ltd',
         );
-        $landing_company_name = $mapping{$landing_company->short};
-    }
 
-    $sportsbook = $landing_company_name . ' ' . $currency;
+        $sportsbook = $mapping{$landing_company->short} . ' ' . $currency;
+    }
 
     return $sportsbook;
 }
@@ -87,6 +88,35 @@ sub is_deriv_sportsbooks_enabled {
 
     # is doughflow Deriv sportsbook enabled?
     return !BOM::Config::Runtime->instance->app_config->system->suspend->doughflow_deriv_sportsbooks;
+}
+
+=head2 get_sportsbook_mapping_by_landing_company
+
+Get doughflow sportsbook name for a landing company.
+
+Takes the following argument:
+
+=over 4
+
+=item * C<landing_company_shortcode> - short code of landing company
+
+=back
+
+Returns a sportsbook name corresponding to the landing company
+
+=cut
+
+sub get_sportsbook_mapping_by_landing_company {
+    my $landing_company_shortcode = shift;
+
+    my %mapping = (
+        svg         => 'Deriv (SVG) LLC',
+        malta       => 'Deriv (Europe) Ltd',
+        iom         => 'Deriv (MX) Ltd',
+        maltainvest => 'Deriv Investments Ltd'
+    );
+
+    return $mapping{$landing_company_shortcode} // '';
 }
 
 1;

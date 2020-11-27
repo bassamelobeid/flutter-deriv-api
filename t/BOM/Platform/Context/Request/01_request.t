@@ -48,12 +48,12 @@ subtest 'brand' => sub {
         BOM::Platform::Context::Request::from_mojo({mojo_request => mock_request_for("https://www.dummy.com", {brand => 'deriv'}, 'GET')});
     is($mojo_request->brand_name,  'deriv', 'brand name (with param brand) is param brand');
     is($mojo_request->brand->name, 'deriv', 'brand name (with param brand) is param brand');
-    
+
     $mojo_request =
         BOM::Platform::Context::Request::from_mojo({mojo_request => mock_request_for("https://www.dummy.com", {brand => 'binary'}, 'GET')});
     is($mojo_request->brand_name,  'binary', 'brand name matches request param');
     is($mojo_request->brand->name, 'binary', 'brand name matches request param');
-    
+
     $mojo_request =
         BOM::Platform::Context::Request::from_mojo({mojo_request => mock_request_for("https://www.dummy.com", {app_id => 1}, 'GET')});
     is($mojo_request->brand_name,  'binary', 'brand name matches app_id param');
