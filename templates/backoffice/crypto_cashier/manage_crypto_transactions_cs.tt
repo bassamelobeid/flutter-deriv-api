@@ -94,7 +94,6 @@
                 <td valign="top">
                     <table class="internal"><tbody>
                         <tr><th>Amount:</th><td>[% trx.currency_code %] [% trx.amount %] (USD [% trx.usd_amount %])</td></tr>
-                        <tr><th>Balance:</th><td>[% trx.balance %]</td></tr>
                         <tr><th>Payment ID:</th><td>[% trx.payment_id %]</td></tr>
                     [% IF trx.transaction_type == 'withdrawal'%]
                         <tr><th>Estimated Fee:</th><td>[% trx.estimated_fee %]</td></tr>

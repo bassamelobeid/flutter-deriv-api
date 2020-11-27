@@ -474,7 +474,9 @@ if ($view_action eq 'withdrawals') {
 
     my $count = 0;
     for my $trxn (@$trxns) {
-        if ($trxn->{balance} < $trxn->{amount}) {
+        my $client         = BOM::User::Client->new({loginid => $trxn->{client_loginid}});
+        my $client_balance = $client->default_account->balance;
+        if ($client_balance < $trxn->{amount}) {
             my ($error) = $dbic->run(
                 ping => sub {
                     $_->selectrow_array('SELECT payment.ctc_set_withdrawal_rejected(?, ?, ?)', undef, $trxn->{id}, 'Insufficient balance', $staff);
