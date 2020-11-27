@@ -1122,14 +1122,16 @@ sub _get_tick_details {
             $self->underlying->ticks_in_between_start_limit({
                     start_time => $epoch + 1,
                     limit      => $self->ticks_to_expiry + 1,
-                })};
+                }
+            ) // []};
         push @ticks_all, @tmp_ticks;
     } else {
         my @tmp_ticks = @{
             $self->underlying->ticks_in_between_start_limit({
                     start_time => $epoch + 1,
                     limit      => 3,
-                })};
+                }
+            ) // []};
         push @ticks_after, @tmp_ticks;
     }
 
@@ -1137,7 +1139,8 @@ sub _get_tick_details {
         $self->underlying->ticks_in_between_end_limit({
                 end_time => 0 + $epoch,
                 limit    => $limit,
-            })};
+            }
+        ) // []};
 
     my @ticks = $self->tick_expiry ? (@ticks_before, @ticks_all) : (@ticks_before, @ticks_after);
 
