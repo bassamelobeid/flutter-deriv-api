@@ -431,10 +431,9 @@ subtest 'has valid documents' => sub {
         ok $client_cr->has_valid_documents($docs, 'proof_of_identity'),, 'Expire check not required';
         ok $client_cr->has_valid_documents($docs, 'other'),,             'Expire check not required';
     };
-    
+
     $mock_client->unmock_all;
 };
-
 
 subtest 'Empty POI but has a POA' => sub {
     my $docs = {

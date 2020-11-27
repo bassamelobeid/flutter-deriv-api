@@ -280,6 +280,23 @@ subtest 'get_poi_status' => sub {
             $mocked_client->unmock_all;
         };
 
+        subtest 'POI status is pending' => sub {
+            $mocked_client->mock('fully_authenticated',                   sub { return 0 });
+            $mocked_client->mock('is_document_expiry_check_required_mt5', sub { return 0 });
+            $mocked_client->mock(
+                'documents_uploaded',
+                sub {
+                    return {
+                        proof_of_identity => {
+                            is_pending => 1,
+                        }};
+                });
+
+            $onfido_document_status = undef;
+            is $test_client_cr->get_poi_status, 'pending', 'Client POI status is pending';
+            $mocked_client->unmock_all;
+        };
+
         subtest 'POI documents expired but onfido status in_progress' => sub {
             $onfido_document_status = 'in_progress';
             $mocked_client->mock('fully_authenticated',                   sub { return 0 });
@@ -956,7 +973,7 @@ subtest 'is_document_expiry_check_required' => sub {
 
         $mocked_client->mock('fully_authenticated', sub { return 1 });
 
-        ok $test_client_cr->fully_authenticated,               'Account is fully authenticated';
+        ok $test_client_cr->fully_authenticated, 'Account is fully authenticated';
         ok !$test_client_cr->is_document_expiry_check_required, "Fully authenticated CR account does not have to check documents expiry";
         $mocked_client->unmock_all;
     };

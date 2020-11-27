@@ -740,6 +740,7 @@ sub documents_uploaded {
 
     # set document status for authentication
     # status - needs_action and under_review
+
     if (scalar(keys %documents) and exists $documents{proof_of_address}) {
         if (($self->authentication_status // '') eq 'needs_action') {
             $documents{proof_of_address}{is_rejected} = 1;
@@ -4919,8 +4920,8 @@ sub get_poi_status {
     $is_document_expiry_check_required //= $self->is_document_expiry_check_required_mt5();
     $documents                         //= $self->documents_uploaded();
 
-    my ($is_poi_already_expired) =
-        @{$documents->{proof_of_identity}}{qw/is_expired/};
+    my ($is_poi_already_expired, $is_poi_pending) =
+        @{$documents->{proof_of_identity}}{qw/is_expired is_pending/};
 
     my $onfido = BOM::User::Onfido::get_latest_check($self);
     my ($report_document_status, $report_document_sub_result) = @{$onfido}{qw/report_document_status report_document_sub_result/};
@@ -4936,6 +4937,8 @@ sub get_poi_status {
     return 'expired' if $is_poi_already_expired && $is_document_expiry_check_required;
 
     return 'verified' if $self->fully_authenticated || $self->status->age_verification;
+
+    return 'pending' if $is_poi_pending;
 
     return 'none';
 }

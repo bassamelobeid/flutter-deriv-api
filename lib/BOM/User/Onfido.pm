@@ -393,9 +393,10 @@ sub get_latest_check {
     if ($user_applicant) {
         if ($user_check = get_latest_onfido_check($client->binary_user_id, undef, 1)) {
             if (my $check_id = $user_check->{id}) {
+                my $report_check_result = $user_check->{result} // '';
                 $report_document_status = $user_check->{status} // '';
 
-                if ($report_document_status eq 'consider') {
+                if ($report_check_result eq 'consider') {
                     my $user_reports = get_all_onfido_reports($client->binary_user_id, $check_id);
 
                     # check for document result as we have accepted documents
