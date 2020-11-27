@@ -272,7 +272,11 @@ async sub document_upload {
             return;
         }
 
-        $client->status->clear_allow_poa_resubmission;
+        $client->clear_status_and_sync_to_siblings('allow_poi_resubmission')
+            if any { $_ eq $document_entry->{document_type} } +{BOM::User::Client::DOCUMENT_TYPE_CATEGORIES()}->{POI}{doc_types_appreciated}->@*;
+        $client->clear_status_and_sync_to_siblings('allow_poa_resubmission')
+            if any { $_ eq $document_entry->{document_type} } +{BOM::User::Client::DOCUMENT_TYPE_CATEGORIES()}->{POA}{doc_types}->@*;
+
         await BOM::Event::Services::Track::document_upload({
                 loginid    => $loginid,
                 properties => {
@@ -286,13 +290,6 @@ async sub document_upload {
         }
         die 'Expired document ' . $document_entry->{expiration_date}
             if $document_entry->{expiration_date} and Date::Utility->new($document_entry->{expiration_date})->is_before(Date::Utility->today);
-
-        my $is_poi_doc =
-            any { $_ eq $document_entry->{document_type} } +{BOM::User::Client::DOCUMENT_TYPE_CATEGORIES()}->{POI}{doc_types_appreciated}->@*;
-
-        if ($is_poi_doc) {
-            $client->status->clear_allow_poi_resubmission;
-        }
 
         await _send_email_notification_for_poa(
             document_entry => $document_entry,

@@ -1315,4 +1315,100 @@ subtest 'card deposits' => sub {
     }
 };
 
+subtest 'POI flag removal' => sub {
+    my $document_types = [
+        map {
+            +{
+                document_type     => $_,
+                document_format   => 'PNG',
+                document_id       => undef,
+                expiration_date   => undef,
+                expected_checksum => '12345_' . $_,
+                page_type         => undef,
+            }
+        } qw/passport national_identity_card driving_licence proofid driverslicense/
+    ];
+
+    $test_client->status->clear_allow_poi_resubmission;
+    $test_client->status->clear_allow_poa_resubmission;
+
+    foreach my $args ($document_types->@*) {
+        subtest $args->{document_type} => sub {
+            my $upload_info = $test_client->db->dbic->run(
+                ping => sub {
+                    $_->selectrow_hashref(
+                        'SELECT * FROM betonmarkets.start_document_upload(?, ?, ?, ?, ?, ?, ?, ?)', undef,
+                        $test_client->loginid,                                                      $args->{document_type},
+                        $args->{document_format}, $args->{expiration_date} || undef,
+                        $args->{document_id} || '', $args->{expected_checksum},
+                        '', $args->{page_type} || '',
+                    );
+                });
+
+            $test_client->status->set('allow_poi_resubmission', 'test', 'test');
+            $test_client->status->setnx('allow_poa_resubmission', 'test', 'test');
+            $test_client->db->dbic->run(
+                ping => sub {
+                    $_->selectrow_array('SELECT * FROM betonmarkets.finish_document_upload(?)', undef, $upload_info->{file_id});
+                });
+
+            my $action_handler = BOM::Event::Process::get_action_mappings()->{document_upload};
+            $action_handler->({
+                    loginid => $test_client->loginid,
+                    file_id => $upload_info->{file_id}})->get;
+
+            ok !$test_client->status->_get('allow_poi_resubmission'), 'POI flag successfully gone';
+            ok $test_client->status->_get('allow_poa_resubmission'), 'POI upload should not disable the POA flag';
+        };
+    }
+};
+
+subtest 'POA flag removal' => sub {
+    my $document_types = [
+        map {
+            +{
+                document_type     => $_,
+                document_format   => 'PNG',
+                document_id       => undef,
+                expiration_date   => undef,
+                expected_checksum => '12345_' . $_,
+                page_type         => undef,
+            }
+        } qw/vf_poa proofaddress utility_bill bankstatement bank_statement cardstatement/
+    ];
+
+    $test_client->status->clear_allow_poi_resubmission;
+    $test_client->status->clear_allow_poa_resubmission;
+
+    foreach my $args ($document_types->@*) {
+        subtest $args->{document_type} => sub {
+            my $upload_info = $test_client->db->dbic->run(
+                ping => sub {
+                    $_->selectrow_hashref(
+                        'SELECT * FROM betonmarkets.start_document_upload(?, ?, ?, ?, ?, ?, ?, ?)', undef,
+                        $test_client->loginid,                                                      $args->{document_type},
+                        $args->{document_format}, $args->{expiration_date} || undef,
+                        $args->{document_id} || '', $args->{expected_checksum},
+                        '', $args->{page_type} || '',
+                    );
+                });
+
+            $test_client->status->setnx('allow_poi_resubmission', 'test', 'test');
+            $test_client->status->set('allow_poa_resubmission', 'test', 'test');
+            $test_client->db->dbic->run(
+                ping => sub {
+                    $_->selectrow_array('SELECT * FROM betonmarkets.finish_document_upload(?)', undef, $upload_info->{file_id});
+                });
+
+            my $action_handler = BOM::Event::Process::get_action_mappings()->{document_upload};
+            $action_handler->({
+                    loginid => $test_client->loginid,
+                    file_id => $upload_info->{file_id}})->get;
+
+            ok $test_client->status->_get('allow_poi_resubmission'), 'POA upload should not disable the POI flag';
+            ok !$test_client->status->_get('allow_poa_resubmission'), 'POA flag successfully gone';
+        };
+    }
+};
+
 done_testing();
