@@ -12,12 +12,9 @@ use Test::MockModule;
 use Net::Async::Blockchain::Transaction;
 use BOM::Event::Actions::CryptoSubscription;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
-use BOM::Test::Data::Utility::UnitTestCollectorDatabase qw(:init);
 use BOM::Test::Helper::Client qw( create_client );
 use BOM::Test;
 use BOM::CTC::Helper;
-use BOM::CTC::Currency::LTC;
-use BOM::CTC::Currency::BTC;
 use BOM::CTC::Database;
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_events_redis);
 use BOM::Platform::Event::Emitter;
@@ -54,8 +51,6 @@ my $user = BOM::User->create(
 top_up my $client = create_client('CR'), 'ETH', 10;
 
 $user->add_client($client);
-
-my $currency = BOM::CTC::Currency->new(currency_code => 'ETH');
 
 my $helper = BOM::CTC::Helper->new(client => $client);
 
@@ -155,9 +150,6 @@ subtest "change_address_status" => sub {
     is @tx2, 2, "Correct hash for the second deposit";
     my @tx3 = grep { $_->{blockchain_txn} eq $transaction_hash4 } @address_entries;
     is @tx3, 1, "Correct hash for the third pending deposit";
-
-    my $currency = BOM::CTC::Currency->new(currency_code => $transaction->{currency});
-    is $currency->get_latest_checked_block('deposit'), 10, "correct latest block number got";
 
     $mock_subscription->mock(
         update_transaction_status_to_pending => sub {

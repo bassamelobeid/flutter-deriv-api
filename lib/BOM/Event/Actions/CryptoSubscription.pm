@@ -18,22 +18,11 @@ use BOM::CTC::Helper;
 use BOM::Event::Utility qw(exception_logged);
 
 my $cryptodb_dbic;
-my $collectordb;
 
 sub cryptodb {
     return $cryptodb_dbic //= do {
         my $cryptodb = BOM::CTC::Database->new();
         $cryptodb->cryptodb_dbic();
-    };
-}
-
-sub collectordb {
-    return $collectordb //= do {
-        my $collectordbi = BOM::Database::ClientDB->new({
-            broker_code => 'FOG',
-            operation   => 'collector',
-        });
-        $collectordbi->db->dbic;
     };
 }
 
@@ -107,18 +96,6 @@ sub set_pending_transaction {
     my $address = ref $transaction->{to} eq 'ARRAY' ? $transaction->{to}->[0] : $transaction->{to};
 
     try {
-
-        # the update cursor call is done before because
-        # we need to update the database with the last block
-        # started since once we start the subscription daemon
-        # again it will continue including the latest block
-        # inserted in the database
-        my $cursor_result = collectordb()->run(
-            ping => sub {
-                $_->selectall_arrayref('SELECT cryptocurrency.update_cursor(?, ?, ?)',
-                    undef, $currency_code, $transaction->{block}, TRANSACTION_TYPE_DEPOSIT);
-            });
-        $log->warnf("%s: Can't update the cursor to block: %s", $currency_code, $transaction->{block}) unless $cursor_result;
 
         return undef unless $transaction->{type} && $transaction->{type} ne 'send';
 
