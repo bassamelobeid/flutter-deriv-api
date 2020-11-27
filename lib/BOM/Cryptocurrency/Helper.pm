@@ -170,9 +170,9 @@ sub get_crypto_transactions {
     return $dbic->run(
         fixup => sub {
             $_->selectall_arrayref(
-                "SELECT * FROM $function_name(?, ?, ?, ?, ?, ?)",
+                "SELECT * FROM $function_name(?, ?, ?, ?, ?, ?, ?)",
                 {Slice => {}},
-                @params{qw(loginid address currency_code status limit offset)});
+                @params{qw(loginid address currency_code status limit offset sort_direction)});
         }) // [];
 }
 

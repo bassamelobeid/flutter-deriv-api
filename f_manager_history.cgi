@@ -223,11 +223,18 @@ my $render_crypto_transactions = sub {
     my $offset_param = "crypto_${trx_type}_offset";
     my $offset       = max(request()->param($offset_param) // 0, 0);
     my $limit        = max(request()->param('limit') // 0, 0) || CRYPTO_DEFAULT_TRANSACTION_COUNT;
+    my $search_param = "${trx_type}_address_search";
+
+    my ($search_address, $search_message);
+    $search_address = trim(request()->param($search_param))        if $action && $action eq $search_param && trim(request()->param($search_param));
+    $search_message = "Search result for address: $search_address" if $search_address;
 
     my %params = (
-        loginid => $client->loginid,
-        limit   => $limit,
-        offset  => $offset,
+        loginid        => $client->loginid,
+        limit          => $limit,
+        offset         => $offset,
+        address        => $search_address,
+        sort_direction => 'DESC'
     );
     my @trxns = get_crypto_transactions($trx_type, %params)->@*;
 
@@ -279,8 +286,6 @@ my $render_crypto_transactions = sub {
     my $prev_url = $offset                 ? $make_pagination_url->($offset - $limit) : undef;
     my $next_url = $limit == scalar @trxns ? $make_pagination_url->($offset + $limit) : undef;
 
-    Bar('CRYPTOCURRENCY ACTIVITY: ' . uc $trx_type);
-
     my $tt = BOM::Backoffice::Request::template;
     $tt->process(
         'backoffice/crypto_cashier/manage_crypto_transactions_cs.tt',
@@ -292,6 +297,7 @@ my $render_crypto_transactions = sub {
             address_uri     => $address_uri,
             testnet         => BOM::Config::on_qa() ? 1 : 0,
             trx_type        => $trx_type,
+            search_message  => $search_message,
             pagination      => {
                 prev_url => $prev_url,
                 next_url => $next_url,
@@ -305,6 +311,21 @@ my $render_crypto_transactions = sub {
         }) || die $tt->error();
 };
 
+BarEnd();
+
 $render_crypto_transactions->($_) for qw(deposit withdrawal);
+
+print <<QQ;
+<script type="text/javascript" language="javascript">
+    \$('div.blacklabel.whitelabel.collapsed').click(function(e) {
+        e.preventDefault();
+        var element = \$(this);
+        element.children('span').toggle();
+
+        var content_element = element.siblings('div.contents');
+        content_element.toggle();
+    });
+</script>
+QQ
 
 code_exit_BO();
