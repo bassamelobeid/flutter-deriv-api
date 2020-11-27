@@ -337,15 +337,12 @@ sub get_transaction_id_of_account_by_comment {
     });
 
     my $sql = <<'SQL';
-SELECT t.id
-  FROM transaction.transaction t
-  JOIN payment.payment p ON (p.id = t.payment_id)
-  JOIN transaction.account a ON (a.id = t.account_id)
- WHERE p.amount = ?
-   AND p.remark LIKE ?
-   AND a.client_loginid = ?
-   AND a.currency_code = ?
-ORDER BY 1
+SELECT * FROM transaction.get_txnid_by_amount_and_payment_remark (
+    p_amount        => $1,
+    p_remark        => $2,
+    p_loginid       => $3,
+    p_currency_code => $4
+)
 SQL
 
     my $payment = $replica->db->dbic->run(
