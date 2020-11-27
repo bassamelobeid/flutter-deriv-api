@@ -744,38 +744,6 @@ subtest 'get account status' => sub {
                 $mocked_status->unmock_all;
             };
 
-            $test_client_cr->set_authentication('ID_DOCUMENT', {status => 'under_review'});
-            $test_client_cr->save;
-            $result = $c->tcall($method, {token => $token_cr});
-            cmp_deeply(
-                $result,
-                {
-                    currency_config => {
-                        "USD" => {
-                            is_deposit_suspended    => 0,
-                            is_withdrawal_suspended => 0,
-                        }
-                    },
-                    status                        => superbagof(qw(document_under_review)),
-                    risk_classification           => 'low',
-                    prompt_client_to_authenticate => '0',
-                    authentication                => {
-                        document => {
-                            status => "none",
-                        },
-                        identity => {
-                            status   => "none",
-                            services => {
-                                onfido => {
-                                    is_country_supported => 1,
-                                    documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport']}}
-                        },
-                        needs_verification => [],
-                    }
-                },
-                'prompt_client_to_authenticate should not be set if under review is set regardless of balance'
-            );
-
             $test_client_cr->get_authentication('ID_DOCUMENT')->delete;
 
             $test_client_cr->aml_risk_classification('high');
