@@ -1,0 +1,13 @@
+<div id="container" class="reactivate-account">
+    <div>
+        <h2 class="reactivate-title"><%= l('Would you like to reactivate your account?') %></h2>
+        <p class="reactivate-description"><%== l('You deactivated your account due to financial reasons. By reactivating your account, you agree that we will not be responsible for any losses you incur while trading. Please read our [_1]responsible trading[_2] page for more information.', '<a href="https://www.deriv.com/' . lc($r->language) . '/responsible-trading">' , '</a>') %></p>
+        <form method="POST">
+            <input type="hidden" name="csrf_token" value="<%= $csrf_token %>" />
+            <div>
+                <button id="btnCancel" class="tertiary" name="cancel_reactivate" value="<%= l('Cancel') %>" type="submit"><%= l('Cancel') %></button>
+                <button id="btnGrant" class="secondary" name="confirm_reactivate" value="<%= l('Reactivate') %>" type="submit"><%= l('Reactivate') %></button>
+            </div>
+        </form>
+    </div>
+</div>

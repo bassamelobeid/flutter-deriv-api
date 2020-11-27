@@ -503,8 +503,36 @@
                 font-size: var(--text-size-s);
                 padding: 1rem 0;
             }
-            .scope-confirms #btnCancel {
+            #btnCancel {
                 margin-right: 0.8rem;
+            }
+
+            /*---------- reactivate account page ---------- */
+            .reactivate-account#container {
+                align-items: center;
+                text-align: center;
+            }
+            .reactivate-title {
+                font-size: 2.4rem;
+                margin-bottom: 0.8rem;
+            }
+            .reactivate-description {
+                font-size: 1.6rem;
+                margin-bottom: 2.4rem;
+            }
+            
+            .reactivate-description a {
+                font-size: 1.6rem;
+            }
+
+            @media (max-width: 450px) {
+                .reactivate-account#container {
+                    background-color: unset;
+                    box-shadow: unset;
+                }
+                .reactivate-title {
+                    font-size: 2rem;
+                }
             }
         </style>
 
