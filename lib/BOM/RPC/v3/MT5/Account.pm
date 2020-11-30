@@ -189,13 +189,18 @@ sub mt5_accounts_lookup {
         )->then(
             sub {
                 my ($setting) = @_;
-                $setting = _filter_settings($setting, qw/balance display_balance country currency email group leverage login name/);
+                $setting = _filter_settings($setting,
+                    qw/account_type balance country currency display_balance email group landing_company_short leverage login name market_type sub_account_type/
+                );
                 return Future->done($setting);
             }
         )->catch(
             sub {
                 my ($resp) = @_;
-                if (defined $resp->{error} && ref $resp->{error} eq 'HASH' && $resp->{error}{code} eq 'NotFound') {
+                if (   defined $resp->{error}
+                    && ref $resp->{error} eq 'HASH'
+                    && ($resp->{error}{code} eq 'NotFound' || $resp->{error}{code} eq 'MT5AccountInactive'))
+                {
                     return Future->done(undef);
                 }
 
@@ -739,9 +744,13 @@ async_rpc "mt5_get_settings",
     return _get_user_with_group($login)->then(
         sub {
             my ($settings) = @_;
+
+            return create_error_future('MT5AccountInactive') if !$settings->{active};
+
             $settings = _filter_settings($settings,
-                qw/address balance city company country currency email group leverage login name phone phonePassword state zipCode landing_company display_balance/
+                qw/account_type address balance city company country currency display_balance email group landing_company_short leverage login market_type name phone phonePassword state sub_account_type zipCode/
             );
+
             return Future->done($settings);
         })->catch($error_handler);
     };
@@ -751,6 +760,30 @@ sub _filter_settings {
     my $filtered_settings = {};
     @{$filtered_settings}{@allowed_keys} = @{$settings}{@allowed_keys};
     return $filtered_settings;
+}
+
+sub get_mt5_account_type_config {
+
+    my ($group_name) = shift;
+
+    my $group_accounttype = lc($group_name);
+
+    return BOM::Config::mt5_account_types()->{$group_accounttype};
+
+}
+
+sub set_mt5_account_settings {
+    my ($settings) = shift;
+
+    my $group_name = lc($settings->{group});
+    my $config     = get_mt5_account_type_config($group_name);
+
+    $settings->{active}                = $config->{landing_company_short} ? 1 : 0;
+    $settings->{landing_company_short} = $config->{landing_company_short};
+    $settings->{market_type}           = $config->{market_type};
+    $settings->{account_type}          = $config->{account_type};
+    $settings->{sub_account_type}      = $config->{sub_account_type};
+
 }
 
 sub _get_user_with_group {
@@ -781,6 +814,9 @@ sub _get_user_with_group {
                     $settings->{currency}        = $group_details->{currency};
                     $settings->{landing_company} = $group_details->{company};
                     $settings->{display_balance} = formatnumber('amount', $settings->{currency}, $settings->{balance});
+
+                    set_mt5_account_settings($settings) if ($settings->{group});
+
                     return Future->done($settings);
                 });
         })->catch($error_handler);

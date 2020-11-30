@@ -351,7 +351,7 @@ subtest 'CR account types - low risk' => sub {
         'authentication is required for financial_stp mt5 accounts'
     );
     authenticate($client);
-
+    
     $login = create_mt5_account->(
         $c, $token, $client,
         {
