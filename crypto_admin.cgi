@@ -249,7 +249,8 @@ sub _get_function_map {
         get_syncing              => sub { $currency_wrapper->get_info()->{is_syncing} },
         get_estimatedgas         => sub {
 
-            die "Invalid or missing parameters entered for Estimate Gas" unless $input->{to_address} && $input->{amount};
+            die "Invalid or missing parameters entered for Estimate Gas"
+                unless $input->{to_address} && $input->{amount} && $currency_wrapper->is_valid_address($input->{to_address});
 
             my $params = {
                 from  => $currency_wrapper->account_config->{account}->{address},
