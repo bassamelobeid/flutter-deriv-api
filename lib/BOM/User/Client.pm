@@ -4927,6 +4927,8 @@ sub get_poi_status {
     my ($report_document_status, $report_document_sub_result) = @{$onfido}{qw/report_document_status report_document_sub_result/};
     $report_document_sub_result //= '';
     $report_document_status     //= '';
+    
+    return 'verified' if $self->fully_authenticated || $self->status->age_verification;
 
     return 'suspected' if $report_document_sub_result eq 'suspected';
 
@@ -4935,8 +4937,6 @@ sub get_poi_status {
     return 'pending' if any { $_ eq $report_document_status } qw/in_progress awaiting_applicant/;
 
     return 'expired' if $is_poi_already_expired && $is_document_expiry_check_required;
-
-    return 'verified' if $self->fully_authenticated || $self->status->age_verification;
 
     return 'pending' if $is_poi_pending;
 
