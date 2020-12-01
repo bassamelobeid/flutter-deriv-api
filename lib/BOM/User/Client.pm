@@ -4928,7 +4928,10 @@ sub get_poi_status {
     $report_document_sub_result //= '';
     $report_document_status     //= '';
 
-    return 'verified' if $self->fully_authenticated || $self->status->age_verification;
+    if ($self->fully_authenticated || $self->status->age_verification) {
+        return 'expired' if $is_poi_already_expired && $is_document_expiry_check_required;
+        return 'verified';
+    }
 
     return 'suspected' if $report_document_sub_result eq 'suspected';
 

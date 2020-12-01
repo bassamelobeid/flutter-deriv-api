@@ -369,6 +369,34 @@ subtest 'get_poi_status' => sub {
             is $test_client_cr->get_poi_status, 'verified', 'Client POI status is verified';
             $mocked_client->unmock_all;
         };
+
+        subtest 'POI status rejected - fully authenticated and age verified' => sub {
+            $mocked_client->mock('fully_authenticated',                   sub { return 1 });
+            $mocked_client->mock('is_document_expiry_check_required_mt5', sub { return 1 });
+            $mocked_client->mock(
+                'documents_uploaded',
+                sub {
+                    return {
+                        proof_of_identity => {
+                            is_expired => 0,
+                        }};
+                });
+
+            $onfido_document_status = 'complete';
+            $onfido_sub_result      = 'rejected';
+            is $test_client_cr->get_poi_status, 'verified',
+                'POI status of an age verified authenticated client is <verified> - even with rejected onfido check';
+
+            $onfido_sub_result = 'pending';
+            is $test_client_cr->get_poi_status, 'verified',
+                'POI status of an age verified authenticated client is <verified> - even with pending onfido check';
+
+            $onfido_sub_result = 'none';
+            is $test_client_cr->get_poi_status, 'verified',
+                'POI status of an age verified authenticated client is <verified> - even with no onfido check';
+
+            $mocked_client->unmock_all;
+        };
     };
 
     subtest 'Regulated account' => sub {
@@ -717,6 +745,11 @@ subtest 'needs_poi_verification' => sub {
                 });
 
             ok !$test_client_cr->needs_poi_verification, 'POI is not needed';
+
+            $mocked_client->mock('get_poi_status', sub { return 'rejected' });
+            ok !$test_client_cr->needs_poi_verification,
+                'POI is not needed for fully authenticated and age verified - even if poi status is <rejected>';
+
             $mocked_client->unmock_all;
             $mocked_status->unmock_all;
         };
