@@ -4927,7 +4927,7 @@ sub get_poi_status {
     my ($report_document_status, $report_document_sub_result) = @{$onfido}{qw/report_document_status report_document_sub_result/};
     $report_document_sub_result //= '';
     $report_document_status     //= '';
-    
+
     return 'verified' if $self->fully_authenticated || $self->status->age_verification;
 
     return 'suspected' if $report_document_sub_result eq 'suspected';
