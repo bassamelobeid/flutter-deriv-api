@@ -58,10 +58,23 @@ subtest 'Setter' => sub {
 
     subtest 'Overriding status reason fails' => sub {
         throws_ok {
-            $res = $client->status->set('age_verification');
+            warning_like {
+                $res = $client->status->set('age_verification');
+            }
+            qr/duplicate key value violates unique constraint/, 'Warns with duplicate status';
         }
-        qr/cannot override existing status reason/, 'Dies with cannot override existing status reason';
+        qr/duplicate key value violates unique constraint/, 'Dies with duplicate status';
     };
+};
+
+subtest 'Set NX' => sub {
+    ok $client->status->setnx('no_trading', 'staff1', 'reason1'), 'set_nx for new status';
+    is $client->status->no_trading->{staff_name}, 'staff1', 'staff_name was set';
+    is $client->status->no_trading->{reason}, 'reason1', 'reason was set';
+    ok !$client->status->setnx('no_trading', 'staff2', 'reason2'), 'set_nx for existing status';
+    is $client->status->no_trading->{staff_name}, 'staff1', 'staff_name was not replaced';
+    is $client->status->no_trading->{reason}, 'reason1', 'reason was not replaced';
+    $client->status->clear_no_trading;
 };
 
 subtest 'Getter' => sub {
