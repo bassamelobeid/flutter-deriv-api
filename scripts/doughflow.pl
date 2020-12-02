@@ -80,7 +80,7 @@ if ($action =~ /(deposit|deposit_validate|withdrawal_validate)/) {
 if ($action eq 'deposit') {
     $params->{payment_method} = $payment_method;
 } elsif ($action =~ /[a-z]+_payout/) {
-    $params->{payment_method}    = $payment_method;
+    $params->{payment_method} = $payment_method;
 }
 
 my $endpoint = $action;

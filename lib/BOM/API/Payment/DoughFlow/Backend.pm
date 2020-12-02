@@ -259,21 +259,27 @@ sub write_transaction_line {
 
     # Write the payment transaction
     my $trx;
-
+    my $event_args = {
+        loginid        => $client->loginid,
+        trace_id       => $payment_args{trace_id},
+        amount         => $payment_args{amount},
+        payment_fee    => $payment_args{payment_fee},
+        currency       => $payment_args{currency},
+        payment_method => $payment_args{payment_method},
+    };
     if ($c->type eq 'deposit') {
         # should be executed before saving the payment in the database
         my $is_first_deposit = $client->is_first_deposit_pending;
 
         $trx = $client->payment_doughflow(%payment_args);
-
         BOM::Platform::Event::Emitter::emit(
             'payment_deposit',
             {
-                loginid           => $client->loginid,
-                payment_processor => $payment_processor,
+                $event_args->%*,
                 transaction_id    => $trx->{id},
                 is_first_deposit  => $is_first_deposit,
-            }) if $trx;
+                payment_processor => $payment_processor    # only deposit has payment_processor
+            }) if ($trx);
 
         # Social responsibility checks for MLT/MX clients
         $client->increment_social_responsibility_values({
@@ -290,8 +296,10 @@ sub write_transaction_line {
             return $c->status_bad_request(
                 "Requested withdrawal amount $amount$plusfee $currency_code exceeds client balance $balance $currency_code");
         }
+
         $payment_args{amount} = -$amount;
         $trx = $client->payment_doughflow(%payment_args);
+        BOM::Platform::Event::Emitter::emit('payment_withdrawal', {$event_args->%*, transaction_id => $trx->{id}}) if ($trx);
 
         _handle_qualifying_payments($client, $amount, $c->type) if $client->landing_company->qualifying_payment_check_required;
     } elsif ($c->type =~ /^(payout_cancelled|payout_rejected)$/) {
@@ -300,6 +308,7 @@ sub write_transaction_line {
         }
         $payment_args{payment_fee} = -$fee;
         $trx = $client->payment_doughflow(%payment_args);
+        BOM::Platform::Event::Emitter::emit('payment_withdrawal_reversal', {$event_args->%*, transaction_id => $trx->{id}}) if ($trx);
     }
 
     if ($fee) {

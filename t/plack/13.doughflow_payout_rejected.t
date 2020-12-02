@@ -7,6 +7,8 @@ use APIHelper qw(balance update_payout deposit request decode_json);
 use BOM::User::Client;
 use BOM::User;
 
+use Test::MockModule;
+
 my $loginid = 'CR0012';
 
 my $cli = BOM::User::Client->new({loginid => $loginid});
@@ -100,6 +102,18 @@ $r = update_payout(
 is($r->code,              200, 'withdrawal with fee ok');
 is(0 + balance($loginid), 0,   'balance decreased');
 
+my %last_event;
+my $mock_events = Test::MockModule->new('BOM::Platform::Event::Emitter');
+$mock_events->mock(
+    'emit',
+    sub {
+        my ($type, $data) = @_;
+        %last_event = (
+            type => $type,
+            data => $data
+        );
+    });
+
 $r = update_payout(
     status   => 'rejected',
     loginid  => $loginid,
@@ -109,5 +123,7 @@ $r = update_payout(
 );
 is $r->code, 200, 'reversal with fee ok';
 is(0 + balance($loginid), 2, 'balance increased');
+
+is $last_event{type}, 'payment_withdrawal_reversal', 'event payment_withdrawal_reversal emitted';
 
 done_testing();

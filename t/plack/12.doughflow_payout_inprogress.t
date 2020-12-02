@@ -85,6 +85,18 @@ $r = update_payout(
 is($r->code, 200, 'correct status code');
 is balance($loginid) + 0, 2, 'withdraw successful';
 
+my %last_event;
+my $mock_events = Test::MockModule->new('BOM::Platform::Event::Emitter');
+$mock_events->mock(
+    'emit',
+    sub {
+        my ($type, $data) = @_;
+        %last_event = (
+            type => $type,
+            data => $data
+        );
+    });
+
 $r = update_payout(
     loginid  => $loginid,
     trace_id => '103',
@@ -95,12 +107,12 @@ $r = update_payout(
 is($r->code, 200, 'correct status code');
 is balance($loginid) + 0, 1, 'withdraw successful';
 
-subtest 'payment params' => sub {
+is $last_event{type}, 'payment_withdrawal', 'event payment_withdrawal emitted';
 
+subtest 'payment params' => sub {
     my %params = (
-        trace_id          => 104,
-        payment_processor => '',
-        payment_method    => 'Seashells',
+        trace_id       => 104,
+        payment_method => 'Seashells',
     );
 
     update_payout(

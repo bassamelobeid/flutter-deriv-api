@@ -137,6 +137,11 @@ subtest 'emit payment_deposit' => sub {
         payment_processor => 'QIWI',
         transaction_id    => $trx->{id},
         is_first_deposit  => 0,
+        trace_id          => 1235,
+        amount            => '1',
+        payment_fee       => '0',
+        currency          => 'USD',
+        payment_method    => 'VISA',
         },
         'event args are correct';
 };
