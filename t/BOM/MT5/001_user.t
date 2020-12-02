@@ -98,112 +98,42 @@ subtest 'MT5 Timeout logic handle' => sub {
 subtest 'parse mt5 group' => sub {
     my %dataset = (
         'real\svg' => {
-            company    => 'svg',
-            category   => 'real',
-            type       => 'gaming',
-            subtype    => '',
-            type_label => 'synthetic',
-            currency   => 'USD',
+            company  => 'svg',
+            category => 'real',
+            type     => 'synthetic',
         },
         'real\labuan_financial' => {
-            company    => 'labuan',
-            category   => 'real',
-            type       => 'financial',
-            subtype    => 'financial',
-            type_label => 'financial',
-            currency   => 'USD',
+            company  => 'labuan',
+            category => 'real',
+            type     => 'financial',
         },
         'real\vanuatu_financial' => {
-            company    => 'vanuatu',
-            category   => 'real',
-            type       => 'financial',
-            subtype    => 'financial',
-            type_label => 'financial',
-            currency   => 'USD',
+            company  => 'vanuatu',
+            category => 'real',
+            type     => 'financial',
         },
         'real\maltainvest_financial' => {
-            company    => 'maltainvest',
-            category   => 'real',
-            type       => 'financial',
-            subtype    => 'financial',
-            type_label => 'financial',
-            currency   => 'USD',
+            company  => 'maltainvest',
+            category => 'real',
+            type     => 'financial',
         },
         'real\labuan_financial_stp' => {
-            company    => 'labuan',
-            category   => 'real',
-            type       => 'financial',
-            subtype    => 'financial_stp',
-            type_label => 'financial stp',
-            currency   => 'USD',
+            company  => 'labuan',
+            category => 'real',
+            type     => 'financial stp',
         },
         'demo\maltainvest_financial_stp_GBP' => {
-            company    => 'maltainvest',
-            category   => 'demo',
-            type       => 'financial',
-            subtype    => 'financial_stp',
-            type_label => 'financial stp',
-            currency   => 'GBP',
-        },
-        'real\maltainvest_financial_GBP' => {
-            company    => 'maltainvest',
-            category   => 'real',
-            type       => 'financial',
-            subtype    => 'financial',
-            type_label => 'financial',
-            currency   => 'GBP',
-        },
-        'real\maltainvest_financial_stp_gbp' => {
-            company    => 'maltainvest',
-            category   => 'real',
-            type       => 'financial',
-            subtype    => 'financial_stp',
-            type_label => 'financial stp',
-            currency   => 'USD',             # lower-case currency is not matched; it should fallback to the default value
+            company  => 'maltainvest',
+            category => 'demo',
+            type     => 'financial stp',
         },
         'abc\cde_fgh_IJK' => {
-            company    => 'cde',
-            category   => 'abc',
-            type       => 'financial',
-            subtype    => 'fgh',
-            type_label => '',
-
-            currency => 'IJK',
+            company  => 'cde',
+            category => 'demo',
+            type     => 'synthetic',
         },
-        'abc\cde' => {
-            company    => 'cde',
-            category   => 'abc',
-            type       => 'gaming',
-            subtype    => '',
-            type_label => 'synthetic',
-            currency   => 'USD',
-        },
-        'abc' => {
-            company    => '',
-            category   => '',
-            type       => '',
-            subtype    => '',
-            type_label => '',
-            currency   => '',
-        },
-        '' => {
-            company    => '',
-            category   => '',
-            type       => '',
-            subtype    => '',
-            type_label => '',
-            currency   => '',
-        },
-        undef => {
-            company    => '',
-            category   => '',
-            type       => '',
-            subtype    => '',
-            type_label => '',
-
-            type     => '',
-            currency => '',
-        },
+        'abc' => {},
+        ''    => {},
     );
 
     is_deeply parse_mt5_group($_), $dataset{$_}, "MT5 group parsed successful: " . ($_ // 'undef') for (keys %dataset);
@@ -409,7 +339,7 @@ subtest 'MT5 Multi Trading Server' => sub {
     $mock_mt5_countries_list->mock(
         '_get_country_server',
         sub {
-            print "Mock countty serbrt " .  $BOM::MT5::User::Async::DEFAULT_TRADING_SERVER_KEY ."\n";
+            print "Mock countty serbrt " . $BOM::MT5::User::Async::DEFAULT_TRADING_SERVER_KEY . "\n";
             my %SERVER_FOR_COUNTRY = (
                 demo => {id => '02'},
                 real => {

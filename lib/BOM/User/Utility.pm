@@ -197,43 +197,27 @@ It returns a hashref with the following keys:
 
 =item * C<company>:landing company name, e.g. 'svg' (second component)
 
-=item * C<type>: gaming or financial (implicit, implied by the third component)
-
-=item * C<subtype>: standard or advanced (third component)
-
-=item * C<type_label>: account type as displayed in front-end labels (synthetic, financial or financial stp)
-
-=item * C<currency>: account currency (default value is USD)
+=item * C<type>: synthetic, financial or financial stp
 
 =back
 
 =cut
 
 sub parse_mt5_group {
-    my $group = shift // '';
+    my $group = lc(shift // '');
 
-    # group name can be like following patterns `demo/svg`, `real\vanuatu_financial`, `real\labuan_financial_stp` & `demo\maltainvest_financial_stp_GB` etc
-    my ($category, $company, undef, $subtype, undef, undef, $currency) = $group =~ m/^([a-z]+)\\([a-z]+)(_([a-z]+(_stp)?+))?(_([A-Z]+))?/;
-    $subtype = $subtype // '';
+    my ($category, $company) = $group =~ m/^([^\\]+)\\([^_]+).*/;
 
-    my %subtype_to_type_name = (
-        ''            => 'synthetic',
-        financial     => 'financial',
-        financial_stp => 'financial stp',
-    );
+    return {} unless $category and $company;
 
-    my $type = $subtype ? 'financial' : 'gaming';
-
-    my $type_label = $subtype_to_type_name{$subtype} // '';
+    $category = ($category =~ /^real/) ? 'real' : 'demo';
+    my $type = ($group =~ /financial/) ? 'financial' : 'synthetic';
+    $type = 'financial stp' if $group =~ /financial_stp/;
 
     return {
-        company  => $company  // '',
-        category => $category // '',
-        type       => $company ? $type       : '',
-        subtype    => $company ? $subtype    : '',
-        type_label => $company ? $type_label : '',
-
-        currency => $company ? ($currency // 'USD') : '',
+        company  => $company,
+        category => $category,
+        type     => $type,
     };
 }
 
