@@ -98,11 +98,11 @@ $poi_status_reason = join(' ', $poi_status_reason, $input{kyc_email_checkbox} ? 
 
 # POI resubmission logic
 if ($input{allow_onfido_resubmission} or $input{poi_reason}) {
-    $client->status->upsert('allow_poi_resubmission', $clerk, $poi_status_reason);
+    $client->propagate_status('allow_poi_resubmission', $clerk, $poi_status_reason);
 } elsif (defined $input{allow_onfido_resubmission}) {    # resubmission is unchecked
-    $client->status->clear_allow_poi_resubmission;
+    $client->propagate_clear_status('allow_poi_resubmission');
 } elsif ($input{kyc_email_checkbox} && $client->status->allow_poi_resubmission) {
-    $client->status->upsert('allow_poi_resubmission', $clerk, $poi_status_reason);
+    $client->propagate_status('allow_poi_resubmission', $clerk, $poi_status_reason);
 }
 
 # POA resubmission logic
@@ -111,11 +111,11 @@ my $poa_status_reason = $input{poa_reason} // $client->status->reason('allow_poa
 $poa_status_reason = join(' ', $poa_status_reason, $input{kyc_email_checkbox} ? 'kyc_email' : ()) unless $poa_status_reason =~ /\skyc_email$/;
 
 if ($input{allow_poa_resubmission} or $input{poa_reason}) {
-    $client->status->upsert('allow_poa_resubmission', $clerk, $poa_status_reason);
+    $client->propagate_status('allow_poa_resubmission', $clerk, $poa_status_reason);
 } elsif (defined $input{allow_poa_resubmission}) {    # resubmission is unchecked
-    $client->status->clear_allow_poa_resubmission;
+    $client->propagate_clear_status('allow_poa_resubmission');
 } elsif ($input{kyc_email_checkbox} && $client->status->allow_poa_resubmission) {
-    $client->status->upsert('allow_poa_resubmission', $clerk, $poa_status_reason);
+    $client->propagate_status('allow_poa_resubmission', $clerk, $poa_status_reason);
 }
 
 if ($input{kyc_email_checkbox}) {
