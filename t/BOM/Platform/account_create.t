@@ -360,6 +360,40 @@ subtest 'create account' => sub {
         ok !$client_vr_new->status->withdrawal_locked, 'withdrawal_locked status must not set or copied for virtual accounts';
     };
 
+    subtest 'sync poi/poa flags to new clients upon creation' => sub {
+        my $real_acc = BOM::Platform::Account::Real::default::create_account({
+            from_client => $vr_client,
+            user        => $user,
+            details     => \%t_details,
+        });
+        my ($real_client, $user) = @{$real_acc}{'client', 'user'};
+        $real_client->status->set('allow_poi_resubmission', 'system', 'hello world');
+        $real_client->status->set('allow_poa_resubmission', 'system', 'it is over 9000');
+
+        my $real_acc_new = BOM::Platform::Account::Real::default::create_account({
+            from_client => $vr_client,
+            user        => $user,
+            details     => \%t_details,
+        });
+        my $real_client_new = @{$real_acc_new}{'client'};
+
+        ok $real_client_new->status->allow_poi_resubmission, "allow_poi_resubmission status copied to new real client upon creation";
+        ok $real_client_new->status->allow_poa_resubmission, "allow_poa_resubmission status is copied to new real client upon creation";
+
+        is $real_client_new->status->reason('allow_poi_resubmission'), 'hello world',
+            "allow_poi_resubmission reason should not have the copied from part";
+        is $real_client_new->status->reason('allow_poa_resubmission'), 'it is over 9000',
+            "allow_poa_resubmission reason should not have the copied from part";
+
+        my $client_vr_new = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+            broker_code => 'VRTC',
+        });
+        $user->add_client($client_vr_new);
+
+        ok !$client_vr_new->status->allow_poi_resubmission, 'allow_poi_resubmission status must not set or copied for virtual accounts';
+        ok !$client_vr_new->status->allow_poa_resubmission, 'allow_poa_resubmission status must not set or copied for virtual accounts';
+    };
+
     subtest 'P2P account opening reason' => sub {
 
         my $vr_acc = create_vr_acc({

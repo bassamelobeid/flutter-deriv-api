@@ -58,7 +58,13 @@ sub copy_status_from_siblings {
 
             my $reason = $client->status->$status ? $client->status->$status->{reason} : 'Sync upon signup';
 
-            $cur_client->status->set($status, 'system', $reason . ' - copied from ' . $client->loginid);
+            # For the poi/poa flags the reason should match otherwise the BO dropdown will be unselected
+            if ($status =~ /allow_po(i|a)_resubmission/) {
+                $cur_client->status->set($status, 'system', $reason);
+            } else {
+                $cur_client->status->set($status, 'system', $reason . ' - copied from ' . $client->loginid);
+            }
+
             my $config = request()->brand->countries_instance->countries_list->{$cur_client->residence};
             if (    $config->{virtual_age_verification}
                 and $status eq 'age_verification')
@@ -77,7 +83,8 @@ sub after_register_client {
 
     unless ($client->is_virtual) {
         $client->user->set_tnc_approval;
-        copy_status_from_siblings($client, $user, ['no_trading', 'withdrawal_locked', 'age_verification', 'transfers_blocked']);
+        copy_status_from_siblings($client, $user,
+            ['no_trading', 'withdrawal_locked', 'age_verification', 'transfers_blocked', 'allow_poi_resubmission', 'allow_poa_resubmission']);
     }
 
     BOM::Platform::Client::Sanctions->new({
