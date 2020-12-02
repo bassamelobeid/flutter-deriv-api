@@ -148,7 +148,7 @@ subtest 'mt5 track event' => sub {
                 'mt5_loginid'       => 'MTR90000',
                 'sub_account_type'  => 'financial',
                 'client_first_name' => $test_client->first_name,
-                'type_label'        => ucfirst $mt5_details->{type_label},
+                'type_label'        => ucfirst $mt5_details->{type},
                 'mt5_integer_id'    => '90000',
                 brand               => 'deriv',
             }
@@ -342,7 +342,7 @@ subtest 'mt5 account opening mail' => sub {
                                     template_args => {
                                         mt5_loginid       => $expected_mt5_loginid,
                                         mt5_category      => $category,
-                                        mt5_type_label    => ucfirst $mt5_details->{type_label} =~ s/stp$/STP/r,
+                                        mt5_type_label    => ucfirst $mt5_details->{type} =~ s/stp$/STP/r,
                                         client_first_name => $mt5_client->first_name,
                                         lang              => $lang,
                                         website_name      => $brand_ref->website_name

@@ -231,7 +231,7 @@ sub new_mt5_signup {
 
     # Add email params to track signup event
     $data->{client_first_name} = $client->first_name;
-    $data->{type_label}        = ucfirst $group_details->{type_label};    # Frontend-ish label (Synthetic, Financial, Financial STP)
+    $data->{type_label}        = ucfirst $group_details->{type};          # Frontend-ish label (Synthetic, Financial, Financial STP)
     $data->{mt5_integer_id}    = $id =~ s/${\BOM::User->MT5_REGEX}//r;    # This one is just the numeric ID
 
     return BOM::Event::Services::Track::new_mt5_signup({
@@ -292,7 +292,7 @@ sub send_mt5_account_opening_email {
     return unless $mt5_group;
 
     my $mt5_details       = parse_mt5_group($mt5_group);
-    my $mt5_type_label    = ucfirst $mt5_details->{type_label} =~ s/stp$/STP/r;
+    my $mt5_type_label    = ucfirst $mt5_details->{type} =~ s/stp$/STP/r;
     my $mt5_category      = $mt5_details->{category};
     my $mt5_loginid       = $mt5_login_id =~ s/${\BOM::User->MT5_REGEX}//r;
     my $email             = $client->email;
