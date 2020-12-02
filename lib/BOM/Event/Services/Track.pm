@@ -83,8 +83,10 @@ my %EVENT_PROPERTIES = (
     p2p_order_dispute_fraud_refund => [
         qw(dispute_reason disputer loginid user_role order_type order_id amount currency local_currency seller_user_id seller_nickname buyer_user_id buyer_nickname order_created_at brand)
     ],
-
     multiplier_hit_type => [qw(loginid contract_id hit_type profit sell_price currency)],
+    payment_deposit     => [qw(loginid payment_processor transaction_id is_first_deposit trace_id amount payment_fee currency payment_method)],
+    payment_withdrawal  => [qw(loginid transaction_id trace_id amount payment_fee currency payment_method)],
+    payment_withdrawal_reversal => [qw(loginid transaction_id trace_id amount payment_fee currency payment_method)],
 );
 
 # Put the events that shouldn't care about brand or app_id source to get fired.
@@ -103,6 +105,9 @@ my @SKIP_BRAND_VALIDATION = qw(
     p2p_order_dispute_fraud_complete
     p2p_order_dispute_fraud_refund
     multiplier_hit_type
+    payment_deposit
+    payment_withdrawal
+    payment_withdrawal_reversal
 );
 
 my $loop = IO::Async::Loop->new;
@@ -515,6 +520,39 @@ sub set_financial_assessment {
     );
 }
 
+=head2 payment_deposit
+
+It is triggered for each B<payment_deposit> event emitted, delivering it to Segment.
+
+=cut
+
+sub payment_deposit {
+    my ($args) = @_;
+    return _payment_doughflow_track($args, 'payment_deposit');
+}
+
+=head2 payment_withdrawal
+
+It is triggered for each B<payment_withdrawal> event emitted, delivering it to Segment.
+
+=cut
+
+sub payment_withdrawal {
+    my ($args) = @_;
+    return _payment_doughflow_track($args, 'payment_withdrawal');
+}
+
+=head2 payment_withdrawal_reversal
+
+It is triggered for each B<payment_withdrawal_reversal> event emitted, delivering it to Segment.
+
+=cut
+
+sub payment_withdrawal_reversal {
+    my ($args) = @_;
+    return _payment_doughflow_track($args, 'payment_withdrawal_reversal');
+}
+
 sub p2p_order_created {
     my %args = @_;
     my ($order, $parties) = @args{qw(order parties)};
@@ -800,6 +838,32 @@ sub _p2p_properties {
         seller_nickname  => $parties->{seller_nickname} // '',
         order_created_at => Time::Moment->from_epoch($order->{created_time})->to_string,
     };
+}
+
+=head2 _payment_doughflow_track
+
+Doughflow track event sub
+
+It takes the following arguments:
+
+=over 4
+
+=item * C<args> The doughflow track event properties
+
+=item * C<event> The event name
+
+=back
+
+=cut
+
+sub _payment_doughflow_track {
+    my ($args, $event) = @_;
+
+    return track_event(
+        event      => $event,
+        loginid    => $args->{loginid},
+        properties => $args,
+    );
 }
 
 =head2 track_event

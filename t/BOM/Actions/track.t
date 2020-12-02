@@ -385,6 +385,139 @@ subtest 'General event validation - filtering by brand' => sub {
         # when other events are triggered
         is $customer->{traits}->{unsubscribed}, 'true', '\'unsubscribed\' remains as true';
     };
+
+    subtest 'payment_deposit' => sub {
+        undef @track_args;
+        undef @identify_args;
+
+        ok BOM::Event::Services::Track::track_event(
+            event      => 'payment_deposit',
+            loginid    => $test_client->loginid,
+            properties => {
+                payment_processor => 'QIWI',
+                transaction_id    => 123,
+                is_first_deposit  => 0,
+                trace_id          => 11,
+                amount            => '10',
+                payment_fee       => '0',
+                currency          => 'USD',
+                payment_method    => 'VISA',
+            },
+            brand => Brands->new(name => 'deriv'))->get, 'event emitted successfully';
+        is @identify_args, 0, 'Segment identify is not invoked';
+        ok @track_args, 'Segment track is invoked';
+        ($customer, %args) = @track_args;
+
+        is_deeply(
+            \%args,
+            {
+                context => {
+                    active => 1,
+                    app    => {name => "deriv"},
+                    locale => "id"
+                },
+                event      => "payment_deposit",
+                properties => {
+                    brand             => 'deriv',
+                    payment_processor => 'QIWI',
+                    transaction_id    => 123,
+                    is_first_deposit  => 0,
+                    trace_id          => 11,
+                    amount            => '10',
+                    payment_fee       => '0',
+                    currency          => 'USD',
+                    payment_method    => 'VISA',
+                },
+            },
+            'track args is properly set for payment_deposit'
+        );
+    };
+
+    subtest 'payment_withdrawal' => sub {
+        undef @track_args;
+        undef @identify_args;
+
+        ok BOM::Event::Services::Track::track_event(
+            event      => 'payment_withdrawal',
+            loginid    => $test_client->loginid,
+            properties => {
+                transaction_id => 124,
+                trace_id       => 12,
+                amount         => '-10',
+                payment_fee    => '0',
+                currency       => 'USD',
+                payment_method => 'VISA',
+            },
+            brand => Brands->new(name => 'deriv'))->get, 'event emitted successfully';
+        is @identify_args, 0, 'Segment identify is not invoked';
+        ok @track_args, 'Segment track is invoked';
+        ($customer, %args) = @track_args;
+
+        is_deeply(
+            \%args,
+            {
+                context => {
+                    active => 1,
+                    app    => {name => "deriv"},
+                    locale => "id"
+                },
+                event      => "payment_withdrawal",
+                properties => {
+                    brand          => 'deriv',
+                    transaction_id => 124,
+                    trace_id       => 12,
+                    amount         => '-10',
+                    payment_fee    => '0',
+                    currency       => 'USD',
+                    payment_method => 'VISA',
+                },
+            },
+            'track args is properly set for payment_withdrawal'
+        );
+    };
+
+    subtest 'payment_withdrawal_reversal' => sub {
+        undef @track_args;
+        undef @identify_args;
+
+        ok BOM::Event::Services::Track::track_event(
+            event      => 'payment_withdrawal_reversal',
+            loginid    => $test_client->loginid,
+            properties => {
+                transaction_id => 124,
+                trace_id       => 12,
+                amount         => '-10',
+                payment_fee    => '-10',
+                currency       => 'USD',
+                payment_method => 'VISA',
+            },
+            brand => Brands->new(name => 'deriv'))->get, 'event emitted successfully';
+        is @identify_args, 0, 'Segment identify is not invoked';
+        ok @track_args, 'Segment track is invoked';
+        ($customer, %args) = @track_args;
+
+        is_deeply(
+            \%args,
+            {
+                context => {
+                    active => 1,
+                    app    => {name => "deriv"},
+                    locale => "id"
+                },
+                event      => "payment_withdrawal_reversal",
+                properties => {
+                    brand          => 'deriv',
+                    transaction_id => 124,
+                    trace_id       => 12,
+                    amount         => '-10',
+                    payment_fee    => '-10',
+                    currency       => 'USD',
+                    payment_method => 'VISA',
+                },
+            },
+            'track args is properly set for payment_withdrawal_reversal'
+        );
+    };
 };
 
 sub test_segment_customer {

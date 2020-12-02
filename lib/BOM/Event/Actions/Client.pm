@@ -2051,7 +2051,37 @@ async sub payment_deposit {
         $client->save;
     }
 
+    if (defined $payment_processor) {
+        # temp. check, only track Doughflow deposit payments for now
+        # cos event is emitted from bom-crypto as well
+        return BOM::Event::Services::Track::payment_deposit($args);
+    }
+
     return;
+}
+
+=head2 payment_withdrawal
+
+Event to handle withdrawal payment type.
+
+=cut
+
+sub payment_withdrawal {
+    my @args = @_;
+
+    return BOM::Event::Services::Track::payment_withdrawal(@args);
+}
+
+=head2 payment_withdrawal_reversal
+
+Event to handle withdrawal_reversal payment type.
+
+=cut
+
+sub payment_withdrawal_reversal {
+    my @args = @_;
+
+    return BOM::Event::Services::Track::payment_withdrawal_reversal(@args);
 }
 
 =head2 withdrawal_limit_reached

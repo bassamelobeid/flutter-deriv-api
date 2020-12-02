@@ -112,7 +112,8 @@ subtest 'process' => sub {
                 store_mt5_transaction new_mt5_signup mt5_password_changed anonymize_client bulk_anonymization
                 document_upload ready_for_authentication account_closure client_verification
                 verify_address social_responsibility_check sync_onfido_details
-                crypto_subscription authenticated_with_scans qualifying_payment_check payment_deposit login signup transfer_between_accounts profile_change
+                crypto_subscription authenticated_with_scans qualifying_payment_check payment_deposit payment_withdrawal payment_withdrawal_reversal
+                login signup transfer_between_accounts profile_change
                 p2p_advertiser_created p2p_advertiser_updated
                 p2p_advert_created p2p_advert_updated
                 p2p_order_created p2p_order_updated p2p_order_expired p2p_timeout_refund p2p_dispute_expired p2p_chat_received
