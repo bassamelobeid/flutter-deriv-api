@@ -271,6 +271,154 @@ subtest 'Upsert' => sub {
     $mock->unmock_all;
 };
 
+subtest 'Propagate' => sub {
+    my $email     = 'propa@gation.com';
+    my $client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'VRTC',
+    });
+    $client_vr->email($email);
+    $client_vr->save;
+
+    my $client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+    });
+    $client_cr->email($email);
+    $client_cr->save;
+
+    my $client_mlt = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'MLT',
+    });
+    $client_mlt->email($email);
+    $client_mlt->save;
+
+    my $test_user = BOM::User->create(
+        email          => $email,
+        password       => 'holamundo',
+        email_verified => 1,
+    );
+
+    $test_user->add_client($client_vr);
+    $test_user->add_client($client_cr);
+    $test_user->add_client($client_mlt);
+
+    my $clients = [$client_mlt, $client_cr, $client_vr];
+
+    my $cases = [{
+            status  => 'allow_poi_resubmission',
+            settler => $client_mlt,
+            staff   => 'alice',
+            reason  => 'alices reason'
+        },
+        {
+            status  => 'allow_poi_resubmission',
+            settler => $client_cr,
+            staff   => 'bob',
+            reason  => 'bobs reason'
+        },
+        {
+            status  => 'allow_poa_resubmission',
+            settler => $client_vr,
+            staff   => 'chuck',
+            reason  => 'chucks reason'
+        },
+    ];
+
+    for my $case ($cases->@*) {
+        my $settler = $case->{settler};
+        my $status  = $case->{status};
+        my $staff   = $case->{staff};
+        my $reason  = $case->{reason};
+
+        subtest join(' ', $settler->loginid, 'propagating', $status, 'by', $staff, 'with', $reason) => sub {
+            $settler->propagate_status($status, $staff, $reason);
+
+            for my $client ($clients->@*) {
+                my $current_status = $client->status->_get($status);
+
+                if ($client->is_virtual) {
+                    ok !$current_status, 'Not propagated to virtual account ' . $client->loginid;
+                } else {
+                    cmp_deeply $current_status,
+                        {
+                        reason             => $reason,
+                        staff_name         => $staff,
+                        status_code        => $status,
+                        last_modified_date => re('.+'),
+                        },
+                        'Status successfully propagated to ' . $client->loginid;
+                }
+            }
+        }
+    }
+};
+
+subtest 'Propagate Clear' => sub {
+    my $email     = 'propa@gation2.com';
+    my $client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'VRTC',
+    });
+    $client_vr->email($email);
+    $client_vr->save;
+
+    my $client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+    });
+    $client_cr->email($email);
+    $client_cr->save;
+
+    my $client_mlt = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'MLT',
+    });
+    $client_mlt->email($email);
+    $client_mlt->save;
+
+    my $test_user = BOM::User->create(
+        email          => $email,
+        password       => 'holamundo',
+        email_verified => 1,
+    );
+
+    $test_user->add_client($client_vr);
+    $test_user->add_client($client_cr);
+    $test_user->add_client($client_mlt);
+
+    my $clients = [$client_mlt, $client_cr, $client_vr];
+
+    my $cases = [{
+            status  => 'allow_poi_resubmission',
+            remover => $client_mlt,
+        },
+        {
+            status  => 'allow_document_upload',
+            remover => $client_cr,
+        },
+        {
+            status  => 'allow_poa_resubmission',
+            remover => $client_vr,
+        },
+    ];
+
+    for my $case ($cases->@*) {
+        my $remover = $case->{remover};
+        my $status  = $case->{status};
+
+        subtest join(' ', $remover->loginid, 'propagating', $status, 'removal') => sub {
+            $_->status->set($status) for ($clients->@*);
+            $remover->propagate_clear_status($status);
+
+            for my $client ($clients->@*) {
+                my $current_status = $client->status->_get($status);
+
+                if ($client->is_virtual) {
+                    ok $current_status, 'Not removed from virtual account ' . $client->loginid;
+                } else {
+                    ok !$current_status, 'Removed from real account ' . $client->loginid;
+                }
+            }
+        }
+    }
+};
+
 done_testing();
 
 sub reset_client_statuses {
