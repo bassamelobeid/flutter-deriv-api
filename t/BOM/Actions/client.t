@@ -52,15 +52,23 @@ my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
 });
 $test_client->set_default_account('USD');
 
+my $test_sibling = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    broker_code => 'CR',
+});
+$test_sibling->set_default_account('LTC');
+
 my $test_user = BOM::User->create(
     email          => $test_client->email,
     password       => "hello",
     email_verified => 1,
 );
 $test_user->add_client($test_client);
+$test_user->add_client($test_sibling);
 $test_client->place_of_birth('cn');
 $test_client->binary_user_id($test_user->id);
 $test_client->save;
+$test_sibling->binary_user_id($test_user->id);
+$test_sibling->save;
 
 mailbox_clear();
 
@@ -133,6 +141,9 @@ subtest 'upload document' => sub {
     # Redis key for resubmission flag
     $loop->add(my $services = BOM::Event::Services->new);
     $test_client->status->set('allow_poa_resubmission', 'test', 'test');
+    $test_client->copy_status_to_siblings('allow_poa_resubmission', 'test');
+    ok $test_sibling->status->_get('allow_poa_resubmission'), 'POA flag propagated to siblings';
+
     $test_client->db->dbic->run(
         ping => sub {
             $_->selectrow_array('SELECT * FROM betonmarkets.finish_document_upload(?)', undef, $upload_info->{file_id});
@@ -176,6 +187,9 @@ subtest 'upload document' => sub {
 
     my $resubmission_flag_after = $test_client->status->_get('allow_poa_resubmission');
     ok !$resubmission_flag_after, 'poa resubmission status is removed after document uploading';
+
+    my $sibling_resubmission_flag_after = $test_sibling->status->_get('allow_poa_resubmission');
+    ok !$sibling_resubmission_flag_after, 'poa resubmission status is removed from the sibling after document uploading';
 
     my $doc = $onfido->document_list(applicant_id => $applicant_id)->as_arrayref->get->[0];
     ok($doc, "there is a document");
@@ -1132,6 +1146,9 @@ subtest 'onfido resubmission' => sub {
 
     # First test, we expect counter to be +1
     $test_client->status->set('allow_poi_resubmission', 'test staff', 'reason');
+    $test_client->copy_status_to_siblings('allow_poi_resubmission', 'test');
+    ok $test_sibling->status->_get('allow_poi_resubmission'), 'POI flag propagated to siblings';
+
     # Resubmission shouldnt kick in if no previous onfido checks
     my $mock_onfido = Test::MockModule->new('BOM::User::Onfido');
     $mock_onfido->mock(
@@ -1152,6 +1169,10 @@ subtest 'onfido resubmission' => sub {
 
     my $counter_after = $redis_write->get(ONFIDO_RESUBMISSION_COUNTER_KEY_PREFIX . $test_client->binary_user_id)->get // 0;
     is $counter, $counter_after, 'Resubmission discarded due to being the first check';
+
+    # Check POI flag
+    ok !$test_client->status->_get('allow_poi_resubmission'),  'POI flag removed from client';
+    ok !$test_sibling->status->_get('allow_poi_resubmission'), 'POI flag removed from sibling';
 
     # Not the first check anymore
     $mock_onfido->mock(

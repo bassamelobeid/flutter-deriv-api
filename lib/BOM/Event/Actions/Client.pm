@@ -272,9 +272,9 @@ async sub document_upload {
             return;
         }
 
-        $client->clear_status_and_sync_to_siblings('allow_poi_resubmission')
+        $client->propagate_clear_status('allow_poi_resubmission')
             if any { $_ eq $document_entry->{document_type} } +{BOM::User::Client::DOCUMENT_TYPE_CATEGORIES()}->{POI}{doc_types_appreciated}->@*;
-        $client->clear_status_and_sync_to_siblings('allow_poa_resubmission')
+        $client->propagate_clear_status('allow_poa_resubmission')
             if any { $_ eq $document_entry->{document_type} } +{BOM::User::Client::DOCUMENT_TYPE_CATEGORIES()}->{POA}{doc_types}->@*;
 
         await BOM::Event::Services::Track::document_upload({
@@ -368,7 +368,7 @@ async sub ready_for_authentication {
         # We want to increment the resubmission counter when the resubmission flag is active.
 
         my $resubmission_flag = $client->status->allow_poi_resubmission;
-        $client->status->clear_allow_poi_resubmission;
+        $client->propagate_clear_status('allow_poi_resubmission');
 
         my $residence = uc(country_code2code($client->residence, 'alpha-2', 'alpha-3'));
 
