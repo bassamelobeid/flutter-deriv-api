@@ -16,11 +16,12 @@ use BOM::User::Client;
 use BOM::Transaction;
 use BOM::Platform::Context qw (localize request);
 use BOM::Transaction::History qw(get_transaction_history);
+use BOM::Transaction::Utility;
 use BOM::Product::ContractFactory qw(produce_contract);
 
 use Format::Util::Numbers qw(formatnumber);
 
-use Finance::Contract::Longcode qw(shortcode_to_longcode);
+use Finance::Contract::Longcode qw(shortcode_to_longcode shortcode_to_parameters);
 use BOM::Event::Utility qw(exception_logged);
 
 use constant EPOCH_IN_MINUTE => 60;
@@ -207,7 +208,11 @@ sub _retrieve_transaction_history {
                 $txn->{start_time}  = Date::Utility->new($txn->{start_time});
 
                 # profit, calculate indicative price and estimated profit
-                my $contract = produce_contract($txn->{short_code}, $currency);
+                my $bet_parameters = shortcode_to_parameters($txn->{short_code}, $currency);
+                if ($txn->{bet_class} eq 'multiplier') {
+                    $bet_parameters->{limit_order} = BOM::Transaction::Utility::extract_limit_orders($txn);
+                }
+                my $contract = produce_contract($bet_parameters);
                 if (defined $txn->{buy_price} and (defined $contract->bid_price or defined $contract->{sell_price})) {
                     $txn->{profit} =
                         $contract->{sell_price}
