@@ -286,89 +286,14 @@ sub _get_ticks_for_volatility_calculation {
     my ($self, $period) = @_;
 
     my $decimate = BOM::Market::DataDecimate->new({market => $self->market->name});
-    my @ticks =
-        map {
-        $decimate->get({
-                underlying  => $self->underlying,
-                start_epoch => $_->[0],
-                end_epoch   => $_->[1],
-                backprice   => $self->underlying->for_date,
-            })
-        } @{$self->_get_tick_windows($period)};
+    my $ticks    = $decimate->get({
+        underlying  => $self->underlying,
+        start_epoch => $period->{from}->epoch,
+        end_epoch   => $period->{to}->epoch,
+        backprice   => $self->underlying->for_date,
+    });
 
-    return \@ticks;
-}
-
-# We need a minimum number of ticks to calculate volatility. But these ticks cannot be influenced by econonic events
-# since we are handling economic events impact separately.
-#
-# This method get ticks windows that are not affected by economic events by skipping them. First it looks back for 2 hours
-# the get the events that could potentially impact volatility calculation. Then it combines overlapping events for
-# smoother processing. Finally, it get the windows of ticks not affected by economic events.
-
-sub _get_tick_windows {
-    my ($self, $period) = @_;
-
-    my $from = $period->{from}->epoch;
-    my $to   = $period->{to}->epoch;
-    my $diff = $to - $from;
-
-    # just take events from two hour back and sort it in descending order
-    my $categorized_events = [
-        sort { $b->{release_date} <=> $a->{release_date} }
-        grep { $_->{release_date} > $to - 2 * 3600 && $_->{release_date} < $to } @{$self->_applicable_economic_events}];
-
-    return [[$from, $to]] unless @$categorized_events;
-
-    # combine overlapping events
-    my @combined;
-    foreach my $event (@$categorized_events) {
-        my $start_period = $event->{release_date};
-        my $end_period   = $start_period + min(900, $event->{duration});
-        my $curr         = [$start_period, $end_period];
-
-        if (not @combined) {
-            push @combined, $curr;
-        } elsif ($curr->[0] == $combined[-1][0]) {
-            $combined[-1][1] = max($curr->[1], $combined[-1][1]);    # overlapping release date, just take the maximum duration impact;
-        } elsif ($curr->[1] >= $combined[-1][0]) {
-            $combined[-1][0] = $curr->[0] if $curr->[0] < $combined[-1][0];
-            $combined[-1][1] = $curr->[1] if $curr->[1] > $combined[-1][1];    # duration of current event spans across previously added event
-        } else {
-            push @combined, $curr;
-        }
-    }
-
-    my @tick_windows;
-
-    if ($combined[0][1] < $from) {
-        push @tick_windows, [$from, $to];
-    } else {
-        my $end_of_period = $to;
-        my $seconds_left  = $diff;
-        foreach my $period (@combined) {
-            if (@combined == 1 and $period->[1] >= $end_of_period) {
-                push @tick_windows, [$period->[0] - $seconds_left, $period->[0]];
-                $seconds_left = 0;
-            } else {
-                # use of min($to, x) is to avoid inverted start and end of period when
-                # the event started before $to and ended after $to.
-                my $start_of_period = min($to, max($period->[1], $end_of_period - $seconds_left));
-                push @tick_windows, [$start_of_period, $end_of_period] if $start_of_period < $end_of_period;
-                $seconds_left -= ($end_of_period - $start_of_period);
-                last if $seconds_left <= 0;
-                $end_of_period = $period->[0];
-            }
-        }
-
-        # if we don't have 20 minutes worth of ticks after looping through the events,
-        # add it here.
-        if ($seconds_left > 0) {
-            push @tick_windows, [$end_of_period - $seconds_left, $end_of_period];
-        }
-    }
-
-    return \@tick_windows;
+    return $ticks;
 }
 
 1;
