@@ -11,13 +11,37 @@ use BOM::Test::Data::Utility::UnitTestRedis;
 
 use BOM::MarketData qw(create_underlying);
 #use BOM::Test::Data::Utility::FeedTestDatabase qw( :init );
-
+use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Market::DataDecimate;
 use Text::CSV;
+use BOM::Config::Redis;
+
+BOM::Config::Redis::redis_replicated_write()->set('economic_events_cache_snapshot', time);
 
 #add test case here
 
 my $data = data_from_csv('t/BOM/Market/DecimateCache/sampledata.csv');
+
+# Dummy event which is not used
+my $events = [{
+        release_date => 1579203255,
+        symbol       => 'USD',
+        event_name   => "Non-Farm Employment Change",
+        custom       => {
+            frxUSDJPY => {
+                vol_change   => 0.3,
+                decay_factor => 4,
+                duration     => 0
+            },
+        },
+    }];
+
+BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+    'economic_events',
+    {
+        events        => $events,
+        recorded_date => 1479203250
+    });
 
 subtest "decimate_cache_insert_and_retrieve" => sub {
     my $decimate_cache = BOM::Market::DataDecimate->new({market => 'forex'});
