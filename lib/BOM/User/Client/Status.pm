@@ -148,26 +148,22 @@ Takes four arguments:
 =cut
 
 sub set {
-    my ($self, $status_code, $staff_name, $reason, $set_if_not_exist_flag) = @_;
+    my ($self, $status_code, $staff_name, $reason, $allow_existing) = @_;
     my $loginid = $self->client_loginid;
     die 'status_code is required' unless $status_code;
 
-    # If there's a reason set already, any attempt to change it should fail.
-    # It is also needed to throw the error in the related database function otherwise we might have a race condition.
-    if ($self->_get($status_code)) {
-        return 1 if $set_if_not_exist_flag;
-        croak "cannot override existing status reason for $status_code";
-    }
-
-    $self->dbic->run(
+    my $result = $self->dbic->run(
         ping => sub {
-            $_->do('SELECT betonmarkets.set_client_status(?,?,?,?)', undef, $loginid, $status_code, $staff_name, $reason);
+            $_->selectrow_array('SELECT * FROM betonmarkets.set_client_status(?,?,?,?,?)',
+                undef, $loginid, $status_code, $staff_name, $reason, $allow_existing);
         });
 
-    delete $self->{$status_code};
-    $self->_clear_composite_cache_elements();
+    if ($result) {
+        delete $self->{$status_code};
+        $self->_clear_composite_cache_elements();
+    }
 
-    return 1;
+    return $result;
 }
 
 =head2 setnx

@@ -5037,4 +5037,62 @@ sub needs_poi_verification {
     return 0;
 }
 
+=head2 propagate_status
+
+This sub performs an C<BOM::User::Status::upsert> of the desired status on 
+each real account the client owns.
+
+Note we cannot C<BOM::User::Client::copy_status_to_siblings> as it does not
+perform cross LC operations (e.g. MLT -> MF).
+
+=over 4
+
+=item * status_code
+
+=item * staff_name (optional)
+
+=item * reason (optional)
+
+=back
+
+Returns undef
+
+=cut
+
+sub propagate_status {
+    my ($self, $status_code, $staff_name, $reason) = @_;
+
+    my @clients = grep { !$_->is_virtual } $self->user->clients;
+    $_->status->upsert($status_code, $staff_name, $reason) foreach @clients;
+
+    return undef;
+}
+
+=head2 propagate_clear_status
+
+This sub performs an C<BOM::User::Status::_clear> of the desired status on 
+each real account the client owns.
+
+Note we cannot C<BOM::User::Client::clear_status_and_sync_to_siblings> 
+as it does not perform cross LC operations (e.g. MLT -> MF).
+
+=over 4
+
+=item * status_code
+
+=back
+
+Returns undef
+
+=cut
+
+sub propagate_clear_status {
+    my ($self, $status_code) = @_;
+
+    my @clients = grep { !$_->is_virtual } $self->user->clients;
+    $_->status->_clear($status_code) foreach @clients;
+
+    return undef;
+}
+
 1;
