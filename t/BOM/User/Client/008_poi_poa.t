@@ -5,15 +5,13 @@ use Test::MockModule;
 use BOM::User::Client;
 use BOM::User;
 
+use BOM::Test::Data::Utility::UnitTestDatabase;
+
 subtest 'get_poa_status' => sub {
     subtest 'Unregulated account' => sub {
-        my $test_client_cr = BOM::User::Client->rnew(
+        my $test_client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
             broker_code => 'CR',
-            residence   => 'br',
-            citizen     => 'br',
-            email       => 'nowthatsan@email.com',
-            loginid     => 'CR235711'
-        );
+        });
 
         my $mocked_client = Test::MockModule->new(ref($test_client_cr));
         subtest 'POA status none' => sub {
@@ -108,13 +106,9 @@ subtest 'get_poa_status' => sub {
     };
 
     subtest 'Regulated account' => sub {
-        my $test_client_mf = BOM::User::Client->rnew(
+        my $test_client_mf = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
             broker_code => 'MF',
-            residence   => 'de',
-            citizen     => 'de',
-            email       => 'nowthatsan@email.com',
-            loginid     => 'MF235711'
-        );
+        });
 
         my $mocked_client = Test::MockModule->new(ref($test_client_mf));
         subtest 'POA status none' => sub {
@@ -222,13 +216,9 @@ subtest 'get_poi_status' => sub {
         });
 
     subtest 'Unregulated account' => sub {
-        my $test_client_cr = BOM::User::Client->rnew(
+        my $test_client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
             broker_code => 'CR',
-            residence   => 'br',
-            citizen     => 'br',
-            email       => 'nowthatsan@email.com',
-            loginid     => 'CR235711'
-        );
+        });
 
         my $mocked_client = Test::MockModule->new(ref($test_client_cr));
         subtest 'POI status none' => sub {
@@ -370,43 +360,57 @@ subtest 'get_poi_status' => sub {
             $mocked_client->unmock_all;
         };
 
-        subtest 'POI status rejected - fully authenticated and age verified' => sub {
-            $mocked_client->mock('fully_authenticated',                   sub { return 1 });
-            $mocked_client->mock('is_document_expiry_check_required_mt5', sub { return 1 });
+        subtest 'POI status rejected - fully authenticated or age verified' => sub {
+            $test_client_cr->status->clear_age_verification;
+            my $authenticated = 1;
+            $mocked_client->mock('fully_authenticated', sub { return $authenticated });
+            my $expiry_check_required = 1;
+            $mocked_client->mock('is_document_expiry_check_required_mt5', sub { return $expiry_check_required });
+            my $poi_expired = 0;
             $mocked_client->mock(
                 'documents_uploaded',
                 sub {
                     return {
                         proof_of_identity => {
-                            is_expired => 0,
+                            is_expired => $poi_expired,
                         }};
                 });
+            my $authenticated_test_scenarios = sub {
+                $poi_expired            = 0;
+                $expiry_check_required  = 1;
+                $onfido_document_status = 'complete';
+                $onfido_sub_result      = 'rejected';
+                is $test_client_cr->get_poi_status, 'verified',
+                    'POI status of an authenticated client is <verified> - even with rejected onfido check';
 
-            $onfido_document_status = 'complete';
-            $onfido_sub_result      = 'rejected';
-            is $test_client_cr->get_poi_status, 'verified',
-                'POI status of an age verified authenticated client is <verified> - even with rejected onfido check';
+                $poi_expired = 1;
+                is $test_client_cr->get_poi_status, 'expired', 'POI status of an authenticated client is <expired> - if expiry check is required';
 
-            $onfido_sub_result = 'pending';
-            is $test_client_cr->get_poi_status, 'verified',
-                'POI status of an age verified authenticated client is <verified> - even with pending onfido check';
+                $expiry_check_required = 0;
+                is $test_client_cr->get_poi_status, 'verified',
+                    'POI status of an authenticated client is <verified> - if expiry check is not required';
+            };
 
-            $onfido_sub_result = 'none';
-            is $test_client_cr->get_poi_status, 'verified',
-                'POI status of an age verified authenticated client is <verified> - even with no onfido check';
+            $authenticated = 1;
+            $authenticated_test_scenarios->();
+
+            $authenticated = 0;
+            $test_client_cr->status->set('age_verification', 'system', 'test');
+            $authenticated_test_scenarios->();
+
+            $test_client_cr->status->clear_age_verification;
 
             $mocked_client->unmock_all;
         };
     };
 
     subtest 'Regulated account' => sub {
-        my $test_client_mf = BOM::User::Client->rnew(
+        my $test_client_mf = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
             broker_code => 'MF',
-            residence   => 'de',
-            citizen     => 'de',
-            email       => 'nowthatsan@email.com',
-            loginid     => 'MF235711'
-        );
+        });
+        $test_client_mf->status->clear_age_verification;
+        undef $onfido_document_status;
+        undef $onfido_sub_result;
 
         my $mocked_client = Test::MockModule->new(ref($test_client_mf));
         subtest 'POI status none' => sub {
@@ -528,13 +532,9 @@ subtest 'needs_poa_verification' => sub {
         });
 
     subtest 'Unregulated account' => sub {
-        my $test_client_cr = BOM::User::Client->rnew(
+        my $test_client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
             broker_code => 'CR',
-            residence   => 'br',
-            citizen     => 'br',
-            email       => 'nowthatsan@email.com',
-            loginid     => 'CR235711'
-        );
+        });
 
         my $mocked_client = Test::MockModule->new(ref($test_client_cr));
         subtest 'Not needed' => sub {
@@ -617,13 +617,9 @@ subtest 'needs_poa_verification' => sub {
         # Note for regulated accounts is_verification_required is expected to be true
         # no mock for that is needed.
 
-        my $test_client_mf = BOM::User::Client->rnew(
+        my $test_client_mf = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
             broker_code => 'MF',
-            residence   => 'de',
-            citizen     => 'de',
-            email       => 'nowthatsan@email.com',
-            loginid     => 'MF235711'
-        );
+        });
 
         my $mocked_client = Test::MockModule->new(ref($test_client_mf));
         subtest 'Not needed' => sub {
@@ -717,13 +713,9 @@ subtest 'needs_poi_verification' => sub {
         });
 
     subtest 'Unregulated account' => sub {
-        my $test_client_cr = BOM::User::Client->rnew(
+        my $test_client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
             broker_code => 'CR',
-            residence   => 'br',
-            citizen     => 'br',
-            email       => 'nowthatsan@email.com',
-            loginid     => 'CR235711'
-        );
+        });
 
         my $mocked_client = Test::MockModule->new(ref($test_client_cr));
         my $mocked_status = Test::MockModule->new(ref($test_client_cr->status));
@@ -849,13 +841,9 @@ subtest 'needs_poi_verification' => sub {
     };
 
     subtest 'Regulated account' => sub {
-        my $test_client_mf = BOM::User::Client->rnew(
+        my $test_client_mf = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
             broker_code => 'MF',
-            residence   => 'de',
-            citizen     => 'de',
-            email       => 'nowthatsan@email.com',
-            loginid     => 'CR235711'
-        );
+        });
 
         my $mocked_client = Test::MockModule->new(ref($test_client_mf));
         my $mocked_status = Test::MockModule->new(ref($test_client_mf->status));
@@ -988,13 +976,9 @@ subtest 'needs_poi_verification' => sub {
 
 subtest 'is_document_expiry_check_required' => sub {
     subtest 'Unregulated account' => sub {
-        my $test_client_cr = BOM::User::Client->rnew(
+        my $test_client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
             broker_code => 'CR',
-            residence   => 'br',
-            citizen     => 'br',
-            email       => 'nowthatsan@email.com',
-            loginid     => 'CR235711'
-        );
+        });
 
         my $mocked_client = Test::MockModule->new(ref($test_client_cr));
         $mocked_client->mock('fully_authenticated', sub { return 0 });
@@ -1012,13 +996,9 @@ subtest 'is_document_expiry_check_required' => sub {
     };
 
     subtest 'Regulated account' => sub {
-        my $test_client_cr = BOM::User::Client->rnew(
+        my $test_client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
             broker_code => 'MF',
-            residence   => 'de',
-            citizen     => 'de',
-            email       => 'nowthatsan@email.com',
-            loginid     => 'MF235711'
-        );
+        });
 
         my $mocked_client = Test::MockModule->new(ref($test_client_cr));
         $mocked_client->mock('fully_authenticated', sub { return 0 });
@@ -1035,13 +1015,9 @@ subtest 'is_document_expiry_check_required' => sub {
 };
 
 subtest 'shared payment method' => sub {
-    my $test_client_cr = BOM::User::Client->rnew(
+    my $test_client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'CR',
-        residence   => 'br',
-        citizen     => 'br',
-        email       => 'nowthatsan@email.com',
-        loginid     => 'CR235711'
-    );
+    });
 
     my $mocked_onfido = Test::MockModule->new('BOM::User::Onfido');
     $mocked_onfido->mock(
