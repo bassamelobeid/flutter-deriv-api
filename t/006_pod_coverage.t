@@ -3,6 +3,8 @@ use warnings;
 
 use Test::More;
 use Test::Pod::CoverageChange;
+use FindBin;
+use lib "$FindBin::Bin/..";    # include root files.
 
 # This hashref indicates packages which contain sub routines that do not have any POD documentation.
 # The number indicates the number of subroutines that are missing POD in the package.
@@ -52,6 +54,6 @@ my $allowed_naked_packages = {
     'BOM::Backoffice::CGI::SettingWebsiteStatus'         => 51
 };
 
-Test::Pod::CoverageChange::pod_coverage_syntax_ok('lib', $allowed_naked_packages);
+Test::Pod::CoverageChange::pod_coverage_syntax_ok(allowed_naked_packages => $allowed_naked_packages);
 
 done_testing();
