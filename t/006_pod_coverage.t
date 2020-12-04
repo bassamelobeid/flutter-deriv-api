@@ -27,6 +27,19 @@ my $allowed_naked_packages = {
 
 };
 
-Test::Pod::CoverageChange::pod_coverage_syntax_ok('lib', $allowed_naked_packages, ['BOM::User::Client::Payments']);
+=head2 reasons
+
+=over 4
+
+=item BOM::User::Client::Payments
+
+We ignore L<BOM::User::Client::Payments> because it fails on load. You can check the package's content.
+
+=back
+
+=cut
+
+Test::Pod::CoverageChange::pod_coverage_syntax_ok(allowed_naked_packages => $allowed_naked_packages,
+    ignored_packages => ['BOM::User::Client::Payments']);
 
 done_testing();
