@@ -18,16 +18,34 @@ $collector_mock->mock(
         return 1;
     });
 
+my @metrics;
+
 $collector_mock->mock(
     'stats_inc',
     sub {
+        push @metrics, @_;
         return 1;
     });
+
+subtest 'No Signature' => sub {
+    my $payload = {test => 123};
+    my $json    = encode_json $payload;
+    @metrics = ();
+
+    $t->ua->on(
+        start => sub {
+            my ($ua, $tx) = @_;
+        });
+
+    $t->post_ok('/', json => $payload)->status_is(401)->json_is(undef);
+    is $metrics[0], 'bom_platform.sendbird.webhook.missing_signature_header', 'Missing signature reported';
+};
 
 subtest 'Signature Mismatch' => sub {
     my $payload   = {test => 123};
     my $json      = encode_json $payload;
     my $signature = hmac_sha256_hex($json, $token) + '_badSignature';
+    @metrics = ();
 
     $t->ua->on(
         start => sub {
@@ -37,12 +55,14 @@ subtest 'Signature Mismatch' => sub {
         });
 
     $t->post_ok('/', json => $payload)->status_is(401)->json_is(undef);
+    is $metrics[0], 'bom_platform.sendbird.webhook.signature_mismatch', 'Signature mismatch reported';
 };
 
 subtest 'Correct signature, not valid payload' => sub {
     my $payload   = {test => 123};
     my $json      = encode_json $payload;
     my $signature = hmac_sha256_hex($json, $token);
+    @metrics = ();
 
     $t->ua->on(
         start => sub {
@@ -52,6 +72,7 @@ subtest 'Correct signature, not valid payload' => sub {
         });
 
     $t->post_ok('/', json => {test => 123})->status_is(200)->json_is(undef);
+    is @metrics[0], 'bom_platform.sendbird.webhook.bogus_payload', 'Bogus payload reported';
 };
 
 subtest 'Correct signature, message saved' => sub {
@@ -88,6 +109,7 @@ subtest 'Correct signature, message saved' => sub {
 
     my $json      = encode_json $payload;
     my $signature = hmac_sha256_hex($json, $token);
+    @metrics = ();
 
     $t->ua->on(
         start => sub {
@@ -97,6 +119,7 @@ subtest 'Correct signature, message saved' => sub {
         });
 
     $t->post_ok('/', json => $payload)->status_is(200)->json_is('ok');
+    is $metrics[0], 'bom_platform.sendbird.webhook.messages_received', 'Message received reported';
 };
 
 subtest 'Correct signature, file type message saved' => sub {
@@ -135,6 +158,7 @@ subtest 'Correct signature, file type message saved' => sub {
 
     my $json      = encode_json $payload;
     my $signature = hmac_sha256_hex($json, $token);
+    @metrics = ();
 
     $t->ua->on(
         start => sub {
@@ -144,6 +168,8 @@ subtest 'Correct signature, file type message saved' => sub {
         });
 
     $t->post_ok('/', json => $payload)->status_is(200)->json_is('ok');
+    is $metrics[0], 'bom_platform.sendbird.webhook.messages_received', 'Message received reported';
+
 };
 
 $collector_mock->unmock_all;

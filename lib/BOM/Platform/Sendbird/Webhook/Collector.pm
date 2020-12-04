@@ -27,7 +27,9 @@ sub collect {
         $self->render(json => 'ok') if $self->save_message_data;
         $self->rendered(200);
     } catch ($error) {
-        $log->errorf('Request failure: %s', $error);
+        stats_inc('bom_platform.sendbird.webhook.missing_signature_header') if $error =~ /no signature header found/;
+        stats_inc('bom_platform.sendbird.webhook.signature_mismatch')       if $error =~ /not a valid sendbird request/;
+
         $self->rendered(401);
     }
 }
@@ -90,7 +92,7 @@ Return,
 
 sub _unexpected_format {
     my ($self, $unexpected) = @_;
-    $log->debugf('Bogus payload: unexpected %s', $unexpected);
+    stats_inc('bom_platform.sendbird.webhook.bogus_payload');
     return;
 }
 
