@@ -40,6 +40,6 @@ my $allowed_naked_packages = {
     'BOM::RPC::v3::CopyTrading::Statistics' => 1,
 };
 
-Test::Pod::CoverageChange::pod_coverage_syntax_ok('lib', $allowed_naked_packages);
+Test::Pod::CoverageChange::pod_coverage_syntax_ok(allowed_naked_packages => $allowed_naked_packages);
 
 done_testing();
