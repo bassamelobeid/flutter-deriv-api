@@ -19,7 +19,7 @@ my $allowed_naked_packages = {
     'BOM::Platform::Context'                     => 2,
     'BOM::Platform::Account::Virtual'            => 1,
     'BOM::Platform::Client::CashierValidation'   => 3,
-    'BOM::Platform::Client::IDAuthentication'    => 1,
+    'BOM::Platform::Client::IDAuthentication'    => 2,
     'BOM::Platform::Client::DoughFlowClient'     => 16,
     'BOM::Platform::Context::Request'            => 11,
     'BOM::Platform::Context::I18N'               => 1,
@@ -34,6 +34,6 @@ my $allowed_naked_packages = {
     'BOM::Platform::Context::Request::Builders'  => 1,
 };
 
-Test::Pod::CoverageChange::pod_coverage_syntax_ok('lib', $allowed_naked_packages);
+Test::Pod::CoverageChange::pod_coverage_syntax_ok(allowed_naked_packages => $allowed_naked_packages);
 
 done_testing();
