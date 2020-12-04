@@ -686,11 +686,13 @@ for my $transfer_currency (@fiat_currencies, @crypto_currencies) {
         $res = BOM::RPC::v3::Cashier::paymentagent_transfer($testargs);
         is($res->{status}, 1, $test);
         $Alice_transferred += $test_amount;
+        $Alice_balance = sprintf('%0.*f', $precision, $Alice_balance - $test_amount);
+        $Bob_balance   = sprintf('%0.*f', $precision, $Bob_balance + $test_amount);
+        $test_amount   = sprintf('%0.*f', $precision, $test_amount + $amount_boost);
+        reset_transfer_testargs();
+
         $Alice->residence($old_residence);
         pop @$payment_agent_exclusion_list;
-
-        # sleep 2 seconds to allow next pa transfer
-        sleep 2;
 
         $test              = 'Transfer works when min_turnover overrides the frozen free gift limit check';
         $promo_code_config = qq!{"min_turnover":"100","amount":"$promo_amount"}!;
@@ -698,8 +700,8 @@ for my $transfer_currency (@fiat_currencies, @crypto_currencies) {
         $res = BOM::RPC::v3::Cashier::paymentagent_transfer($testargs);
         is($res->{status}, 1, $test);
         $Alice_transferred += $test_amount;
-        $Alice_balance = sprintf('%0.*f', $precision, $Alice_balance - $test_amount * 2);    # * 2 because we performed 2 pa transfer
-        $Bob_balance   = sprintf('%0.*f', $precision, $Bob_balance + $test_amount * 2);
+        $Alice_balance = sprintf('%0.*f', $precision, $Alice_balance - $test_amount);
+        $Bob_balance   = sprintf('%0.*f', $precision, $Bob_balance + $test_amount);
         $test_amount   = sprintf('%0.*f', $precision, $test_amount + $amount_boost);
         reset_transfer_testargs();
 
@@ -854,9 +856,11 @@ $mock_cashier->unmock('paymentagent_withdraw') if $mock_cashier->is_mocked('paym
 for my $withdraw_currency (shuffle @crypto_currencies, @fiat_currencies) {
 
     $test_currency = $withdraw_currency;
-
+    my $precision = (grep { $_ eq $test_currency } @crypto_currencies) ? 8 : 2;
     $test_amount = (grep { $_ eq $test_currency } @crypto_currencies) ? 0.003 : 101;
-    $dry_run     = 1;
+    # crypto currencies can change with size 0.001, and fiat currencies can change with size 1
+    my $amount_boost = (grep { $_ eq $test_currency } @crypto_currencies) ? 0.001 : 1;
+    $dry_run = 1;
 
     my $email    = 'abc3' . rand . '@binary.com';
     my $password = 'jskjd8292922';
@@ -1196,9 +1200,8 @@ for my $withdraw_currency (shuffle @crypto_currencies, @fiat_currencies) {
         $Alice->residence($old_residence);
         pop @$payment_agent_exclusion_list;
         $mock_payment_agent->unmock('get_authenticated_payment_agents');
-
-        # to avoid request too frequent rest for 2 seconds
-        sleep 2;
+        $test_amount = sprintf('%0.*f', $precision, $test_amount + $amount_boost);
+        reset_withdraw_testargs();
 
         $test = 'Withdraw returns correct paymentagent_name when dry_run is off';
         $res  = BOM::RPC::v3::Cashier::paymentagent_withdraw($testargs);
@@ -1219,8 +1222,8 @@ for my $withdraw_currency (shuffle @crypto_currencies, @fiat_currencies) {
         BOM::Config::Runtime->instance->app_config->system->suspend->payment_agents_in_countries([]);
         $testargs->{args}->{dry_run} = 0;
 
-        # to avoid request too frequent rest for 2 seconds
-        sleep 2;
+        $test_amount = sprintf('%0.*f', $precision, $test_amount + $amount_boost);
+        reset_withdraw_testargs();
 
         # mock to make sure that there is authenticated pa in Alice's country
         $mock_payment_agent->mock('get_authenticated_payment_agents', sub { return {pa1 => 'dummy'}; });
