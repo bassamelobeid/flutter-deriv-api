@@ -19,10 +19,9 @@ my $allowed_naked_packages = {
     'BOM::Event::Actions::MT5'                => 2,
     'BOM::Event::Actions::CustomerStatement'  => 2,
     'BOM::Event::Services::Track'             => 7,
-    'BOM::Event::Actions::User'               => 1
-
+    'BOM::Event::Actions::User'               => 1,
 };
 
-Test::Pod::CoverageChange::pod_coverage_syntax_ok('lib', $allowed_naked_packages);
+Test::Pod::CoverageChange::pod_coverage_syntax_ok(allowed_naked_packages => $allowed_naked_packages);
 
 done_testing();
