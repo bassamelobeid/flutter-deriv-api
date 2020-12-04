@@ -33,7 +33,7 @@
                 <h5 class="note-title"><%== l('If you\'re a [_1] user, log in with your [_2] username and password', '<strong>Binary.com</strong>', '<strong>Binary.com</strong>') %></h5>
             </div>
         </div>
-        <form id="frmLogin" method="POST">
+        <form novalidate id="frmLogin" method="POST">
             <div class='input-group'>
                 <div class="input-wrapper">
                     <input type="email" id="txtEmail" name="email" placeholder="<%= l('example@email.com') %>" required autocomplete="off" <% unless (stash('error')) { %> autofocus="autofocus" <% } %> maxlength="254" />
@@ -139,12 +139,12 @@
             element.value = value;
             if (!value) {
                 showError(element, 'required');
-            } else if (!regex.test(value)) {
+            } else if (!regex.test(value) || !element.checkValidity()) {
                 showError(element, 'invalid');
                 raiseLabel(element, 1);
             } else {
                 hasError = false;
-                raiseLabel(element, 0);
+                raiseLabel(element, !!value)
             }
 
             return !hasError;
