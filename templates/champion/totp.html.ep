@@ -1,6 +1,6 @@
 <h1><%= l('OTP Verification') %></h1>
 <fieldset>
-    <legend><%= l('Please enter your verification code') %></legend>
+    <legend><%= l('Enter the two-factor authentication (2FA) code from the authenticator app on your phone') %></legend>
     <% if (stash('error')) { %>
         <p class='errorfield'><%= stash('error') %></p>
     <% } %>
