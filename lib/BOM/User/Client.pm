@@ -4006,6 +4006,7 @@ sub smart_payment {
         bank_money_transfer => 'bank_wire',
         arbitrary_markup    => 'arbitrary_markup',
         cash_transfer       => 'western_union',      # ! need to fix in db first
+        voucher             => 'legacy_payment',
     );
 
     $payment_gateway_code ||= $gateway_map{$payment_type}
