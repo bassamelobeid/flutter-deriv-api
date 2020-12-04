@@ -18,7 +18,7 @@ sub to_short_code {
 
     $x =~ s/^PRICER_ARGS:://;
     return unless $x =~ /^\[/;
-    my $d = eval {decode_json $x};
+    my $d = eval { decode_json $x };
     unless ($d) {
         warn "cannot convert: $x ($@)\n";
         return;
@@ -31,24 +31,22 @@ sub to_short_code {
         return unless defined $h{duration};
         my $sc = eval {
             produce_contract({
-                              underlying => $h{symbol},
-                              amount => $h{amount},
-                              amount_type => $h{basis},
-                              currency => $h{currency},
-                              bet_type => $h{contract_type},
-                              duration => $h{duration}.$h{duration_unit},
-                              ($h{barrier2}
-                               ? (
-                                  high_barrier => $h{barrier},
-                                  low_barrier => $h{barrier2},
-                                 )
-                               : $h{contract_type} =~ /^LB/
-                               ? ()
-                               : (
-                                  barrier => $h{barrier} // 'S0P',
-                                 )
-                              )
-                             })->shortcode;
+                    underlying  => $h{symbol},
+                    amount      => $h{amount},
+                    amount_type => $h{basis},
+                    currency    => $h{currency},
+                    bet_type    => $h{contract_type},
+                    duration    => $h{duration} . $h{duration_unit},
+                    (
+                        $h{barrier2}
+                        ? (
+                            high_barrier => $h{barrier},
+                            low_barrier  => $h{barrier2},
+                            )
+                        : $h{contract_type} =~ /^LB/ ? ()
+                        : (
+                            barrier => $h{barrier} // 'S0P',
+                        ))})->shortcode;
         };
         unless ($sc) {
             my $e = $@;
@@ -62,5 +60,4 @@ sub to_short_code {
     }
 }
 
-print "$_->[0]\t$_->[1]\t$_->[2]\n"
-    for (map {to_short_code $_} get_keys);
+print "$_->[0]\t$_->[1]\t$_->[2]\n" for (map { to_short_code $_} get_keys);

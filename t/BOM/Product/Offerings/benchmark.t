@@ -40,7 +40,7 @@ subtest 'benchmark offerings' => sub {
                     },
                     ['contract_type']];
                 my $before = Time::HiRes::time;
-                $offerings_obj->query(@{$_}) for @common_call;
+                $offerings_obj->query(@{$_}) for @common_calls;
                 my $diff = Time::HiRes::time - $before;
                 my $avg  = $diff / @common_calls;
                 cmp_ok($avg, "<", 0.002, 'average is less than 2ms');
