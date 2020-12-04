@@ -17,6 +17,7 @@ my $allowed_naked_packages = {
 
 my $ignored_packages = ['BOM::OAuth::SingleSignOn',];
 
-Test::Pod::CoverageChange::pod_coverage_syntax_ok('lib', $allowed_naked_packages, $ignored_packages);
+Test::Pod::CoverageChange::pod_coverage_syntax_ok(allowed_naked_packages => $allowed_naked_packages,
+    ignored_packages => $ignored_packages);
 
 done_testing();
