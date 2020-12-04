@@ -25,6 +25,7 @@
             var remark = \$('option:selected', this).text();
             \$('#remark').val(remark);
         });
+        
     })
 </script>
 
@@ -83,11 +84,12 @@
     <th>
         <label for="skip_validation1">Override Status Checks?</label>
     </th>
-    <th class="all_payment_types external_cashier"      >Trace ID</th>
-    <th class="all_payment_types external_cashier"      >Payment Processor</th>
-    <th class="all_payment_types external_cashier"      >Transaction ID</th>
-    <th class="all_payment_types bank_money_transfer"   >RMG Bank</th>
-    <th class="all_payment_types cash_transfer"         >MTCN</th>
+    <th class="all_payment_types external_cashier"       >Trace ID</th>
+    <th class="all_payment_types external_cashier credit">Payment Processor</th>
+    <th class="all_payment_types external_cashier credit">Payment Method</th>
+    <th class="all_payment_types external_cashier"       >Transaction ID</th>
+    <th class="all_payment_types bank_money_transfer"    >RMG Bank</th>
+    <th class="all_payment_types cash_transfer"          >MTCN</th>
     <th class="all_payment_types bank_money_transfer cash_transfer">Payment reference id</th>
     <th class="all_payment_types bank_money_transfer cash_transfer">
         <label for="informclientbyemail">Notify Client by Email?</label>
@@ -110,6 +112,8 @@
             <option value="crypto_cashier"      >Crypto Cashier</option>
             <option value="test_account"        >Test Account</option>
             <option value="commission_paid"     >Commission Paid</option>
+            <option value="voucher"             >Voucher</option>
+            <option value="mt5_transfer"        >MT5 Adjustment</option>
         </select>
     </td>
     <td style="text-align:center">
@@ -119,8 +123,11 @@
         <input type="number" name="trace_id" />
     </td>
     <td class="all_payment_types external_cashier">
-        <input type="text" name="payment_processor" data-lpignore="true" insist />
+        <input type="text" name="payment_processor" data-lpignore="true" style="width:134" insist />
     </td>
+    <td class="all_payment_types external_cashier">
+        <input type="text" name="payment_method" data-lpignore="true" style="width:134" />
+    </td>    
     <td class="all_payment_types external_cashier">
         <input type="text" name="transaction_id" data-lpignore="true" />
     </td>
@@ -147,6 +154,7 @@
         [% INCLUDE 'backoffice/container/language_select.html.tt' languages = languages %]
     </td>
 </tr>
+<tr class="all_payment_types mt5_transfer"><td>Note: this will not credit/debit the MT5 account!</td></tr>
 </table>
 
 <table>
