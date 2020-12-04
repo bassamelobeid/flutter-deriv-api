@@ -4928,6 +4928,11 @@ sub get_poi_status {
     $report_document_sub_result //= '';
     $report_document_status     //= '';
 
+    if ($self->fully_authenticated || $self->status->age_verification) {
+        return 'expired' if $is_poi_already_expired && $is_document_expiry_check_required;
+        return 'verified';
+    }
+
     return 'suspected' if $report_document_sub_result eq 'suspected';
 
     return 'rejected' if any { $_ eq $report_document_sub_result } qw/rejected caution/;
@@ -4935,8 +4940,6 @@ sub get_poi_status {
     return 'pending' if any { $_ eq $report_document_status } qw/in_progress awaiting_applicant/;
 
     return 'expired' if $is_poi_already_expired && $is_document_expiry_check_required;
-
-    return 'verified' if $self->fully_authenticated || $self->status->age_verification;
 
     return 'pending' if $is_poi_pending;
 
