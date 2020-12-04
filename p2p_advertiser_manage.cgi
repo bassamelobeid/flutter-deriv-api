@@ -98,6 +98,7 @@ if ($input{update}) {
 
 !$input{$_} && delete $input{$_} for qw(loginID name);
 delete $input{id} unless looks_like_number($input{id});
+$input{loginID} = trim uc $input{loginID} if $input{loginID};
 
 if ($input{loginID} || $input{name} || $input{id}) {
     $output{advertiser} = $db->run(
