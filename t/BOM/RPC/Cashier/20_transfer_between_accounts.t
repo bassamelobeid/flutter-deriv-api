@@ -1461,14 +1461,15 @@ subtest 'MT5' => sub {
     $params->{args}{account_from} = 'MTR' . $ACCOUNTS{'real\labuan_financial_stp'};
     $rpc_ct->call_ok('transfer_between_accounts', $params)
         ->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'Correct error code')
-        ->error_message_like(qr/Your identity documents have passed their expiration date. Kindly send a scan of a valid identity document to/,
+        ->error_message_like(
+        qr/Your identity documents have expired. Visit your account profile to submit your valid documents and unlock your cashier./,
         'Error message returned from inner MT5 sub when regulated account has expired documents');
 
     $mock_client->mock(documents_expired => sub { return 0 });
 
     $rpc_ct->call_ok('transfer_between_accounts', $params)
         ->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'Correct error code')->error_message_like(
-        qr/Your identity documents have passed their expiration date. Kindly send a scan of a valid identity document to/,
+        qr/Your identity documents have expired. Visit your account profile to submit your valid documents and unlock your cashier./,
         'Error message returned from inner MT5 sub when regulated binary has no expired documents but does not have valid documents'
         );
 

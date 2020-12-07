@@ -647,6 +647,8 @@ rpc paymentagent_transfer => sub {
         my $msg = localize('You cannot transfer to account [_1]', $loginid_to);
         $msg .= localize(', as their cashier is locked.')   if $validation_to->{error}->{message_to_client} eq 'Your cashier is locked.';
         $msg .= localize(', as their account is disabled.') if $validation_to->{error}->{message_to_client} eq 'Your account is disabled.';
+        $msg .= localize(', as their verification documents have expired.')
+            if $validation_to->{error}->{message_to_client} =~ /Your identity documents have expired/;
         $validation_to->{error}->{message_to_client} = $msg;
     }
     my $validation = $validation_fm // $validation_to;
@@ -1449,6 +1451,31 @@ rpc transfer_between_accounts => sub {
     my $error_audit_sub = sub {
         my ($err, $client_message) = @_;
         BOM::User::AuditLog::log("Account Transfer FAILED, $err");
+
+        my $message_mapping = [{
+                regex   => qr/Please set your 30-day turnover limit/,
+                message => 'Please set your 30-day turnover limit in our self-exclusion facilities to access the cashier.',
+            },
+            {
+                regex   => qr/Please provide your latest tax information/,
+                message => 'Tax-related information is mandatory for legal and regulatory requirements. Please provide your latest tax information.',
+            },
+            {
+                regex   => qr/Financial Risk approval is required/,
+                message => 'Financial Risk approval is required.',
+            },
+            {
+                regex   => qr/Please authenticate your account/,
+                message => 'Please authenticate your account.',
+            }];
+
+        foreach ($message_mapping->@*) {
+            if ($err =~ $_->{regex}) {
+                $client_message = $_->{message};
+                last;
+            }
+        }
+
         $client_message ||= localize('Sorry, an error occurred whilst processing your request. Please try again in one minute.');
         return _transfer_between_accounts_error($client_message);
     };
@@ -1510,6 +1537,7 @@ rpc transfer_between_accounts => sub {
 
         my $msg = (defined $limit) ? localize("The maximum amount you may transfer is: [_1].", $limit) : '';
         $msg = $transfers_blocked_err if $err =~ m/transfers are not allowed/i;
+        $msg = $err                   if $err =~ m/Your identity documents have expired/i;
         return $error_audit_sub->("validate_payment failed for $loginid_from [$err]", $msg);
     }
 
@@ -1527,6 +1555,7 @@ rpc transfer_between_accounts => sub {
         $msg = localize("Your account balance will exceed set limits. Please specify a lower amount.")
             if ($err =~ /Balance would exceed limit/);
         $msg = $transfers_blocked_err if $err =~ m/transfers are not allowed/i;
+        $msg = $err                   if $err =~ m/Your identity documents have expired/i;
         return $error_audit_sub->("validate_payment failed for $loginid_to [$err]", $msg);
     }
     my $response;

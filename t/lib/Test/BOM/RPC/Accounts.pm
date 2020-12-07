@@ -8,18 +8,18 @@ use warnings;
 #   t/lib/mock_binary_mt5.pl
 
 our %MT5_ACCOUNTS = (
-    'demo\svg_financial'             => '00001001',
-    'demo\svg_financial_stp'         => '00001002',
-    'demo\labuan_financial'          => '00001003',
-    'demo\labuan_financial_stp'      => '00001004',
-    'real\malta'                     => '00001010',
-    'real\maltainvest_financial'     => '00001011',
-    'real\maltainvest_financial_GBP' => '00001012',
-    'real\svg'                       => '00001013',
-    'real\svg_financial'             => '00001014',
-    'real\labuan_financial_stp'      => '00001015',
-    'real\svg_financial_Bbook'       => '00001016',
-    'real01\synthetic\svg_std_usd'   => '00001017',
+    'demo\svg_financial'               => '00001001',
+    'demo\svg_financial_stp'           => '00001002',
+    'demo\labuan_financial'            => '00001003',
+    'demo\labuan_financial_stp'        => '00001004',
+    'real\malta'                       => '00001010',
+    'real\maltainvest_financial'       => '00001011',
+    'real\maltainvest_financial_GBP'   => '00001012',
+    'real\svg'                         => '00001013',
+    'real\svg_financial'               => '00001014',
+    'real\labuan_financial_stp'        => '00001015',
+    'real\svg_financial_Bbook'         => '00001016',
+    'real01\synthetic\svg_std_usd'     => '00001017',
     'real\inactive_accounts_financial' => '00002001',
 );
 

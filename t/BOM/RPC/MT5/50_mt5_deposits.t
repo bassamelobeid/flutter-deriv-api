@@ -452,7 +452,7 @@ subtest 'labuan withdrawal' => sub {
     $c->call_ok($method, $params)->has_error('request failed as labuan needs to have valid documents')
         ->error_code_is('MT5WithdrawalError', 'error code is MT5WithdrawalError')
         ->error_message_is(
-        'Your identity documents have passed their expiration date. Kindly send a scan of a valid identity document to support@binary.com.');
+        'Your identity documents have expired. Visit your account profile to submit your valid documents and unlock your cashier.');
 
     BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
 

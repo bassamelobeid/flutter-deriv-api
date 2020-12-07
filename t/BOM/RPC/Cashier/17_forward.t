@@ -167,10 +167,8 @@ subtest 'common' => sub {
     $client_mocked->mock('documents_expired', sub { return 1 });
 
     $rpc_ct->call_ok('cashier', $params)->has_no_system_error->has_error->error_code_is('CashierForwardError', 'Client documents have expired')
-        ->error_message_is(
-        'Your identity documents have passed their expiration date. Kindly send a scan of a valid identity document to support@binary.com to unlock your cashier.',
-        'Correct error message for documents expired'
-        );
+        ->error_message_is('Your identity documents have expired. Visit your account profile to submit your valid documents and unlock your cashier.',
+        'Correct error message for documents expired');
 
     $client_mocked->unmock('documents_expired');
     $client_cr->status->set('cashier_locked', 'system');

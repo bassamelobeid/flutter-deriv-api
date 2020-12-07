@@ -556,6 +556,36 @@ for my $transfer_currency (@fiat_currencies, @crypto_currencies) {
         $Bob->status->clear_disabled;
         $Bob->save;
 
+        my $client_mock = Test::MockModule->new('BOM::User::Client');
+        $client_mock->mock(
+            'documents_uploaded',
+            sub {
+                return {
+                    proof_of_identity => {
+                        is_expired => 1,
+                    },
+                };
+            });
+        $client_mock->mock(
+            'is_document_expiry_check_required',
+            sub {
+                my $self = shift;
+                # Just for bob
+                return $self->loginid eq $Bob_id;
+            });
+        $res = BOM::RPC::v3::Cashier::paymentagent_transfer($testargs);
+        is(
+            $res->{error}{message_to_client},
+            "You cannot transfer to account $Bob_id, as their verification documents have expired.",
+            'Transfer fails if recipient has expired documents'
+        );
+        $Bob->status->clear_disabled;
+        $Bob->save;
+
+        # Left the mock as it was before this test
+        $client_mock->unmock('documents_uploaded');
+        $client_mock->unmock('is_document_expiry_check_required');
+
         $test = 'Transfer fails if transfer_to client status = unwelcome';
         $Bob->status->set('unwelcome', 'Testy McTestington', 'Just running some tests');
         $Bob->save;
@@ -1078,7 +1108,7 @@ for my $withdraw_currency (shuffle @crypto_currencies, @fiat_currencies) {
         $Alice->save;
         $mock_user_client->mock('is_document_expiry_check_required', sub { 1; });
         $res = BOM::RPC::v3::Cashier::paymentagent_withdraw($testargs);
-        like($res->{error}{message_to_client}, qr/Your identity documents have passed their expiration date/, $test);
+        like($res->{error}{message_to_client}, qr/Your identity documents have expired/, $test);
         $mock_user_client->unmock('is_document_expiry_check_required');
 
         $test = 'Withdraw fails if payment agent status = disabled';
