@@ -13,7 +13,7 @@
 }
 </style>
 <div class="container">
-    <p class="center-text"><%= l('Enter the two-factor authentication (2FA) code from the authenticator app on your phone') %></p>
+    <p class="center-text"><%= l('Enter the two-factor authentication (2FA) code from the authenticator app on your phone.') %></p>
     <% if (stash('error')) { %>
         <p class='error-msg center-text'><%= stash('error') %></p>
     <% } %>
