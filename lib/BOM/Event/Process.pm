@@ -94,6 +94,7 @@ my $action_mapping = {
     crypto_withdrawal           => \&BOM::Event::Actions::Client::handle_crypto_withdrawal,
     client_promo_codes_upload   => \&BOM::Event::Actions::Client::client_promo_codes_upload,
     shared_payment_method_found => \&BOM::Event::Actions::Client::shared_payment_method_found,
+    dispute_notification        => \&BOM::Event::Actions::Client::dispute_notification,
 };
 
 =head1 METHODS

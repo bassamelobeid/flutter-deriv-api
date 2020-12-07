@@ -1,0 +1,63 @@
+<h2>New frauds found<br/><br/></h2>
+<table border='0'>
+   <tr>
+      <th colspan="2"></th>
+   </tr>
+   <tr>
+      <td>Timestamp (UTC)</td>
+      <td>[% timestamp %]</td>
+   </tr>
+   <tr>
+      <td>Company ID</td>
+      <td>[% company_id %]</td>
+   </tr>
+   <tr>
+      <td>Event</td>
+      <td>[% event %]</td>
+   </tr>
+</table>
+<br/><br/>
+<table border='1'>
+   <thead>
+      <tr>
+         <th rowspan="2">mid</th>
+         <th rowspan="2">transaction_id</th>
+         <th rowspan="2">merchant_order_id</th>
+         <th rowspan="2">parent_id</th>
+         <th rowspan="2">arn</th>
+         <th rowspan="2">rrn</th>
+         <th colspan="5">Fraud</th>
+         <th colspan="3">History</th>
+      </tr>
+      <tr>
+         <td>fraud_id</td>
+         <td>date</td>
+         <td>amount</td>
+         <td>currency</td>
+         <td>auto_refund</td>
+         <td>retrieval_id</td>
+         <td>fraud_id</td>
+         <td>dispute_id</td>
+      </tr>
+   </thead>
+   <tbody>
+      [% FOREACH  item = list %]
+      <tr>
+         <td>[% item.mid %]</td>
+         <td>[% item.transaction_id %]</td>
+         <td>[% item.merchant_order_id %]</td>
+         <td>[% item.parent_id %]</td>
+         <td>[% item.arn %]</td>
+         <td>[% item.rrn %]</td>
+         <td>[% item.fraud.fraud_id %]</td>
+         <td>[% item.fraud.date %]</td>
+         <td>[% item.fraud.amount %]</td>
+         <td>[% item.fraud.currency %]</td>
+         <td>[% item.fraud.auto_refund %]</td>
+         <td>[% item.history.retrieval_id %]</td>
+         <td>[% item.history.fraud_id %]</td>
+         <td>[% item.history.dispute_id %]</td>
+      </tr>
+      [% END %]
+   </tbody>
+</table>

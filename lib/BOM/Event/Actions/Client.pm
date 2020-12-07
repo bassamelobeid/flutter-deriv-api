@@ -36,6 +36,7 @@ use Time::HiRes;
 use File::Temp;
 use Digest::MD5;
 use Brands;
+use POSIX qw(strftime);
 
 use BOM::Config;
 use BOM::Config::Runtime;
@@ -117,6 +118,9 @@ use constant POA_DOCUMENTS_TYPE => qw(
 use constant POI_DOCUMENTS_TYPE => qw(
     proofid driverslicense passport selfie_with_id
 );
+
+# Templates prefix path
+use constant TEMPLATE_PREFIX_PATH => "/home/git/regentmarkets/bom-events/share/templates/email/";
 
 # Conversion from our database to the Onfido available fields
 my %ONFIDO_DOCUMENT_TYPE_MAPPING = (
@@ -1202,7 +1206,7 @@ sub _email_client_age_verified {
     my $tt            = Template->new(ABSOLUTE => 1);
 
     try {
-        $tt->process('/home/git/regentmarkets/bom-events/share/templates/email/age_verified.html.tt', $data_tt, \my $html);
+        $tt->process(TEMPLATE_PREFIX_PATH . 'age_verified.html.tt', $data_tt, \my $html);
         die "Template error: @{[$tt->error]}" if $tt->error;
         send_email({
             from                  => $from_email,
@@ -1256,7 +1260,7 @@ sub email_client_account_verification {
     my $tt            = Template->new(ABSOLUTE => 1);
 
     try {
-        $tt->process('/home/git/regentmarkets/bom-events/share/templates/email/account_verification.html.tt', $data_tt, \my $html);
+        $tt->process(TEMPLATE_PREFIX_PATH . 'account_verification.html.tt', $data_tt, \my $html);
         die "Template error: @{[$tt->error]}" if $tt->error;
         send_email({
             from                  => $from_email,
@@ -1588,7 +1592,7 @@ sub social_responsibility_check {
             );
 
             try {
-                $tt->process('/home/git/regentmarkets/bom-events/share/templates/email/social_responsibiliy.html.tt', $data, \my $html);
+                $tt->process(TEMPLATE_PREFIX_PATH . 'social_responsibiliy.html.tt', $data, \my $html);
                 die "Template error: @{[$tt->error]}" if $tt->error;
 
                 die "failed to send social responsibility email ($loginid)"
@@ -1987,7 +1991,7 @@ sub qualifying_payment_check {
         };
 
         try {
-            $tt->process('/home/git/regentmarkets/bom-events/share/templates/email/qualifying_payment_check.html.tt', $data, \my $html);
+            $tt->process(TEMPLATE_PREFIX_PATH . 'qualifying_payment_check.html.tt', $data, \my $html);
             die "Template error: @{[$tt->error]}" if $tt->error;
 
             die "failed to send qualifying_payment_check email ($loginid)"
@@ -2377,7 +2381,7 @@ sub aml_client_status_update {
         ENCODING => 'utf8'
     });
     try {
-        $tt->process('/home/git/regentmarkets/bom-events/share/templates/email/clients_update_status.html.tt', $template_args, \my $html);
+        $tt->process(TEMPLATE_PREFIX_PATH . 'clients_update_status.html.tt', $template_args, \my $html);
         die "Template error: @{[$tt->error]}" if $tt->error;
 
         unless (Email::Stuffer->from($system_email)->to($to)->subject($email_subject)->html_body($html)->send()) {
@@ -2574,4 +2578,196 @@ sub _send_shared_payment_method_email {
 
     return;
 }
+
+=head2 dispute_notification
+
+Handle any dispute notification. Currently sending an e-mail to Payments 
+
+=over 4
+
+=item * C<args> - A hashref with the information received from dispute provider. 
+
+=back
+
+=head4 The hashref contains the following field
+
+=over 4
+
+=item * C<provider> -  A string with the provider name. Currently only B<acquired>. 
+
+=item * C<data> -  A hashref to the payload as sent by the provider.
+
+=back
+
+returns, undef.
+
+=cut
+
+sub dispute_notification {
+    my $args = shift;
+    my ($provider, $data) = @{$args}{qw/provider data/};
+
+    if ($provider eq 'acquired') {
+        _handle_acquired($data);
+    } else {
+        $log->warnf("Received dispute_notification from an unknown provider '%s'", $provider);
+    }
+
+    return undef;
+}
+
+=head2 _handle_acquired 
+
+Handle data send by Acquired.com. Events and payloads are described in https://developer.acquired.com/integrations/webhooks#events
+
+B<Important> We are only supporting the B<fraud_new> and B<dispute_new>.
+
+=over 4
+
+=item * C<args> - A hashref data received from acquired.
+
+=back
+
+=head3 Data received from acquired
+
+=over 4
+
+=item * C<id> - A string with the unique reference for the webhook.
+
+=item * C<timestamp> - A string with the timestamp of webhook.
+
+=item * C<company_id> - A string with the integer identifier issued to merchants. (This is our company id)
+
+=item * C<hash> - A string with the verification hash.
+
+=item * C<event> - A string with the event for which the webhook is being triggered. Currently we only support B<fraud_new> and B<dispute_new>.
+
+=item * C<list> - An arrayref of hashrefs described below. 
+
+=back
+
+=head4 Every hashref in lists:
+
+=over 4
+
+=item * C<mid> - A string with the integer merchant ID the transaction was processed through.
+
+=item * C<transaction_id> - A string with the integer unique ID generated to identify the transaction. 
+
+=item * C<merchant_order_id> - A string with unique value we'll use to identify each transaction, repeated from the request.
+
+=item * C<parent_id> - A string with the transaction_id generated by Acquired  and returned in the original request.
+
+=item * C<arn> - A string value set by the acquirer to track the transaction (optional) 
+
+=item * C<rrn> - A string value set by the acquirer to tract the trasnaction (optional)
+
+=item * C<fraud> - A hashref with the fraud information (only if C<event> is B<fraud_new>)
+
+=item * C<dispute> - A hashref with the dispute information (only if C<event> is B<dispute_new>)
+
+=back
+
+=head4 Every fraud hashref have the following attributes
+
+=over 4
+
+=item * C<fraud_id> - A string with the unique ID generated to identify the dispute.
+
+=item * C<date> -  A string with the date and time of dispute submission.
+
+=item * C<amount> -  A string with the transaction amount.
+
+=item * C<currency> -  A string with the trasaction currency, following ISO 4217 (3 digit code).
+
+=item * C<auto_refund> - True/False value stating whether or not the transactionhas been auto refunded.
+
+=back 
+
+=head4 Every dispute hashref have the following attributes
+
+=over 4
+
+=item * C<dispute_id> - A string with the unique ID generated to identify the dispute.
+
+=item * C<reason_code> - A string with the dispute category and/or condition.
+
+=item * C<description> - A string with the description of dispute category and/or condition.
+
+=item * C<date> -  A string with the date and time of dispute submission.
+
+=item * C<amount> -  A string with the transaction amount.
+
+=item * C<currency> -  A string with the trasaction currency, following ISO 4217 (3 digit code).
+
+=back
+
+=over 4
+
+=item * C<history> - A hashref with the historical reference of this dispute.
+
+=back
+
+=head4 Every history hashref have the following attributes
+
+=over 4
+
+=item * C<retrieval_id> - A string with the unique ID Acquired generated to identifiy the retrieval of the dispute (optional)
+
+=item * C<fraud_id> - A string with the unique ID Acquired generated to identify the fraud (optional)
+
+=item * C<dispute_id> - A string with the value set by the acquirer to track the dipsute (optional)
+
+=back
+
+Returns, undef.
+
+=cut 
+
+sub _handle_acquired {
+    my $data  = shift;
+    my $event = $data->{event};
+    die "Event not supported '$event'" unless $event eq 'fraud_new' || $event eq 'dispute_new';
+
+    my ($timestamp, $company_id, $list) = @{$data}{qw/timestamp company_id list/};
+    $timestamp =~ s/(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})/$1-$2-$3 $4:$5:$6/;
+
+    my $payload = {
+        timestamp  => $timestamp,
+        company_id => $company_id,
+        event      => $event,
+        list       => $list,
+    };
+
+    my $subject;
+    my $template_path;
+    if ($event eq 'fraud_new') {
+        $subject       = 'New Fraud';
+        $template_path = TEMPLATE_PREFIX_PATH . 'new_fraud.html.tt';
+    } else {
+        $subject       = 'New Dispute';
+        $template_path = TEMPLATE_PREFIX_PATH . 'new_dispute.html.tt';
+    }
+
+    my $tt = Template->new(ABSOLUTE => 1);
+    try {
+        $tt->process($template_path, $payload, \my $html);
+        die "Template error: @{[$tt->error]}" if $tt->error;
+        send_email({
+            from                  => 'no-reply@deriv.com',
+            to                    => 'x-cs@deriv.com,x-payops@deriv.com',
+            subject               => $subject,
+            message               => [$html],
+            use_email_template    => 0,
+            email_content_is_html => 1,
+            skip_text2html        => 1,
+        });
+    } catch ($error) {
+        $log->warnf("Error handling an event from 'acquired.com'. Details: $error");
+        exception_logged();
+    }
+
+    return;
+}
+
 1;
