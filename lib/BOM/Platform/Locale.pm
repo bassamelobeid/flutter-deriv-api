@@ -131,6 +131,12 @@ sub get_state_option {
         push @options, map { {value => $name_map{$_}, text => $_} }
             sort $country->all_full_names;
     }
+
+    # Filter out some Netherlands territories
+    @options = grep { $_->{value} !~ /\bSX|AW|BQ1|BQ2|BQ3|CW\b/ } @options if $country_code eq 'NL';
+    # Filter out some France territories
+    @options = grep { $_->{value} !~ /\bBL|WF\b/ } @options if $country_code eq 'FR';
+
     return \@options;
 }
 

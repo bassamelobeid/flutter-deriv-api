@@ -29,6 +29,13 @@ my $on_production = 1;
 my $config_mocked = Test::MockModule->new('BOM::Config');
 $config_mocked->mock('on_production', sub { return $on_production });
 
+my $idauth_mocked = Test::MockModule->new('BOM::Platform::Client::IDAuthentication');
+$idauth_mocked->mock(
+    'run_validation',
+    sub {
+        return 1;
+    });
+
 my $vr_acc;
 lives_ok {
     $vr_acc = create_vr_acc({
@@ -50,6 +57,7 @@ my $vr_details = {
         email              => 'foo+id@binary.com',
         client_password    => 'foobar',
         residence          => 'id',                  # Indonesia
+        address_state      => 'BA',
         salutation         => 'Ms',
         myaffiliates_token => 'this is token',
     },
@@ -57,6 +65,7 @@ my $vr_details = {
         email              => 'foo+nl@binary.com',
         client_password    => 'foobar',
         residence          => 'nl',                  # Netherlands
+        address_state      => '',
         salutation         => 'Mr',
         myaffiliates_token => 'this is token',
     },
@@ -64,6 +73,7 @@ my $vr_details = {
         email              => 'foo+gb@binary.com',
         client_password    => 'foobar',
         residence          => 'gb',                  # UK
+        address_state      => 'BIR',
         salutation         => 'Mrs',
         myaffiliates_token => 'this is token',
     },
@@ -76,7 +86,7 @@ my %real_client_details = (
     address_line_1                => 'address 1',
     address_line_2                => 'address 2',
     address_city                  => 'city',
-    address_state                 => 'state',
+    address_state                 => '',
     address_postcode              => '89902872',
     phone                         => '+622112345678',
     secret_question               => 'Mother\'s maiden name',
@@ -444,7 +454,7 @@ sub create_real_acc {
     my ($vr_client, $user, $broker) = @_;
 
     my %details = %real_client_details;
-    $details{$_} = $vr_details->{$broker}->{$_} for qw(email residence);
+    $details{$_} = $vr_details->{$broker}->{$_} for qw(email residence address_state);
     $details{$_} = $broker                      for qw(broker_code first_name);
     $details{client_password} = $vr_client->password;
 
@@ -476,3 +486,5 @@ sub create_mf_acc {
         params      => $params
     });
 }
+
+$idauth_mocked->unmock_all;
