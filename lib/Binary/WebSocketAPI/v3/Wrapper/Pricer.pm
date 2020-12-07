@@ -69,6 +69,7 @@ sub proposal {
                     contract_parameters => delete $rpc_response->{contract_parameters},
                     payout              => $rpc_response->{payout},
                     skip_basis_override => delete $rpc_response->{skip_basis_override} // 0,
+                    skip_streaming      => delete $rpc_response->{skip_streaming} // 0,
                 };
                 $cache->{contract_parameters}->{app_markup_percentage} = $c->stash('app_markup_percentage') // 0;
                 $req_storage->{uuid} = _pricing_channel_for_proposal($c, $req_storage->{args}, $cache, 'Proposal')->{uuid};
@@ -337,10 +338,8 @@ sub _pricing_channel_for_proposal {
     my $subchannel    = _serialize_contract_parameters($cache->{contract_parameters});   # parameters needed by price-daemon for price-adjustment.
     my $redis_channel = $pricer_args . '::' . $subchannel;                               # name of the redis channel that price-daemon publishes into.
 
-    my $skip = _skip_streaming($args);
-
     # uuid is needed regardless of whether its subscription or not
-    return _create_pricer_channel($c, $args, $redis_channel, $subchannel, $pricer_args, $class, $cache, $skip);
+    return _create_pricer_channel($c, $args, $redis_channel, $subchannel, $pricer_args, $class, $cache, $cache->{skip_streaming});
 }
 
 sub pricing_channel_for_proposal_open_contract {
@@ -493,36 +492,6 @@ sub create_subscription {
     my $baseclass = 'Binary::WebSocketAPI::v3::Subscription::Pricer';
     my $class     = delete $args{class};
     return "${baseclass}::$class"->new(%args);
-}
-
-my %skip_duration_list = map { $_ => 1 } qw(t s m h);
-my %skip_symbol_list   = map { $_ => 1 } qw(R_100 R_50 R_25 R_75 R_10 RDBULL RDBEAR 1HZ100V 1HZ10V);
-my %skip_type_list =
-    map { $_ => 1 } qw(DIGITMATCH DIGITDIFF DIGITOVER DIGITUNDER DIGITODD DIGITEVEN ASIAND ASIANU TICKHIGH TICKLOW RESETCALL RESETPUT);
-
-sub _skip_streaming {
-    my $args = shift;
-
-    return 1 if $args->{skip_streaming};
-    my $skip_symbols = ($skip_symbol_list{$args->{symbol}}) ? 1 : 0;
-    my $atm_callput_contract =
-        ($args->{contract_type} =~ /^(CALL|PUT|CALLE|PUTE)$/ and not($args->{barrier}))
-        ? 1
-        : 0;
-
-    my ($skip_atm_callput, $skip_contract_type) = (0, 0);
-
-    if (defined $args->{duration_unit}) {
-
-        $skip_atm_callput =
-            ($skip_symbols and $skip_duration_list{$args->{duration_unit}} and $atm_callput_contract);
-
-        $skip_contract_type = ($skip_symbols and $skip_type_list{$args->{contract_type}});
-
-    }
-
-    return 1 if ($skip_atm_callput or $skip_contract_type);
-    return;
 }
 
 1;
