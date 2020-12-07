@@ -139,7 +139,7 @@ subtest 'Cashier validation common' => sub {
     diag $res;
     is $res->{error}->{code}, 'CashierForwardError', 'Correct error code for expired documents with expired check required';
     is $res->{error}->{message_to_client},
-        'Your identity documents have passed their expiration date. Kindly send a scan of a valid identity document to support@deriv.com to unlock your cashier.',
+        'Your identity documents have expired. Visit your account profile to submit your valid documents and unlock your cashier.',
         'Correct error message for expired documents with expired check required';
     $mock_client->unmock_all();
 

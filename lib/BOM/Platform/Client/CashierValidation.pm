@@ -74,9 +74,8 @@ sub validate {
         unless ($landing_company->is_currency_legal($currency));
 
     return _create_error(
-        localize(
-            'Your identity documents have passed their expiration date. Kindly send a scan of a valid identity document to [_1] to unlock your cashier.',
-            request()->brand->emails('support'))) if ($client->documents_expired);
+        localize('Your identity documents have expired. Visit your account profile to submit your valid documents and unlock your cashier.'))
+        if ($client->documents_expired);
 
     # landing company or country specific validations
     if ($landing_company->short eq 'maltainvest') {
