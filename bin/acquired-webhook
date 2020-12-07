@@ -1,0 +1,16 @@
+#!/usr/bin/env perl
+
+use strict;
+use warnings;
+use BOM::Platform::Acquired::Webhook;
+
+=head2 acquired-webhook
+
+This scripts runs a Mojolicious service meant to handle the acquired.com 
+webhook pushes.
+
+=cut
+
+return BOM::Platform::Acquired::Webhook->new if caller;
+
+1;
