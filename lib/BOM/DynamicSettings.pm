@@ -15,7 +15,7 @@ use Format::Util::Numbers qw/formatnumber/;
 use Array::Utils qw(:all);
 use Date::Utility;
 use Scalar::Util;
-use List::Util qw( any );
+use List::Util qw(any max);
 use BOM::Backoffice::QuantsAuditLog;
 use BOM::Platform::Email qw(send_email);
 use BOM::Config::Runtime;
@@ -519,6 +519,37 @@ sub _validate_tnc_string {
                 unless my ($old_version, $old_date) = $old_val =~ $tnc_string_format;
 
             die "new date for $brand is older than previous\n" if $new_date->is_before(Date::Utility->new($old_date));
+
+            # Break down each version by dot and compare each correspondant chunk
+            my @new = split(/\./, $version);
+            my @old = split(/\./, $old_version);
+
+            # This let migrate boring integer versions into funny semantic versioning
+            return if scalar @new > scalar @old;
+
+            my $is_valid = sub {
+                my $args = shift;
+                my @new  = $args->{new}->@*;
+                my @old  = $args->{old}->@*;
+                my $len  = max(scalar @new, scalar @old);
+
+                # The leading numbers are always the most relevant regardless of array length
+                for my $i (0 .. $len) {
+                    my $new = $new[$i] // 0;
+                    my $old = $old[$i] // 0;
+                    # If the leading numbers are different we can take an early decision
+                    return 1 if $old < $new;
+                    return 0 if $old > $new;
+                }
+
+                # Equal versions should pass
+                return 1;
+            };
+
+            die "version for $brand is lower than previous\n" unless $is_valid->({
+                old => \@old,
+                new => \@new,
+            });
         }
     }
 
