@@ -113,6 +113,7 @@ subtest 'multiplier - send_ask' => sub {
         'ask_price'         => '100.00',
         'multiplier'        => 10,
         skip_basis_override => 1,
+        skip_streaming      => 0,
     };
     my $res = $c->call_ok('send_ask', $params)->has_no_error->result;
     cmp_deeply($res, $expected, 'send_ask output as expected');
@@ -164,6 +165,7 @@ subtest 'multiplier - send_ask' => sub {
         'ask_price'         => '100.00',
         'multiplier'        => 10,
         skip_basis_override => 1,
+        skip_streaming      => 0,
     };
     $args->{limit_order}->{take_profit} = 10;
     $res = $c->call_ok('send_ask', $params)->has_no_error->result;
@@ -221,6 +223,7 @@ subtest 'multiplier - send_ask' => sub {
             'date_expiry' => ignore(),
         },
         skip_basis_override => 1,
+        skip_streaming      => 0,
     };
     $args->{cancellation} = '1h';
     $res = $c->call_ok('send_ask', $params)->has_error('ContractBuyValidationError')

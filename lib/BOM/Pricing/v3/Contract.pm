@@ -181,6 +181,11 @@ sub _get_ask {
                 contract_parameters => $contract_parameters,
             };
 
+            # We only want to return $response->{skip_streaming} from a valid RPC response
+            unless ($streaming_params->{from_pricer}) {
+                $response->{skip_streaming} = $contract->skip_streaming();
+            }
+
             if (not $contract->is_binary) {
                 $response->{contract_parameters}->{multiplier}        = $contract->multiplier        if not $contract->user_defined_multiplier;
                 $response->{contract_parameters}->{maximum_ask_price} = $contract->maximum_ask_price if $contract->can('maximum_ask_price');
