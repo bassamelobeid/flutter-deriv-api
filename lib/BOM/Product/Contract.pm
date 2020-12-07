@@ -1590,6 +1590,23 @@ sub is_non_zero_payout {
     return $self->payout == 0 ? 0 : 1;
 }
 
+sub skip_streaming {
+    my $self = shift;
+
+    # Do not skip if contract does not have defined expiry. Currently, only multipliers does not have pre-defined expiry.
+    return 0 unless $self->category->has_user_defined_expiry;
+    # Only skip random_index and random_daily for now. This list might need updating if we introduce more synthetic indices
+    # to binary options.
+    return 0 if $self->underlying->submarket->name ne 'random_index' and $self->underlying->submarket->name ne 'random_daily';
+    # Digits, asian, highlowticks & reset options will not require price streaming
+    # because of static price.
+    return 1 if $self->category_code =~ /^(?:digits|asian|highlowticks|reset)$/;
+    # Skip callput and callputequal intraday and tick_expiry ATM contracts
+    return 1 if (not $self->expiry_daily and ($self->category_code eq 'callput' or $self->category_code eq 'callputequal') and $self->is_atm_bet);
+
+    return 0;
+}
+
 my $underlyings;
 
 sub _get_underlying_instance {
