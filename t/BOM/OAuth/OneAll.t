@@ -152,33 +152,35 @@ subtest "User sing up with social login, app_id is saved" => sub {
 
     # Mocking OneAll Data
     my $mocked_oneall = Test::MockModule->new('WWW::OneAll');
+    my $result        = {
+        response => {
+            request => {
+                status => {
+                    code => 200,
+                },
+            },
+            result => {
+                status => {
+                    code => 200,
+                    flag => '',
+                },
+                data => {
+                    user => {
+                        identity => {
+                            emails                => [{value => $email}],
+                            provider              => 'google',
+                            provider_identity_uid => 'test_uid',
+                        }
+                    },
+                },
+            },
+        },
+    };
+
     $mocked_oneall->mock(
         new        => sub { bless +{}, 'WWW::OneAll' },
         connection => sub {
-            return +{
-                response => {
-                    request => {
-                        status => {
-                            code => 200,
-                        },
-                    },
-                    result => {
-                        status => {
-                            code => 200,
-                            flag => '',
-                        },
-                        data => {
-                            user => {
-                                identity => {
-                                    emails                => [{value => $email}],
-                                    provider              => 'google',
-                                    provider_identity_uid => 'test_uid',
-                                }
-                            },
-                        },
-                    },
-                },
-            };
+            return $result;
         });
 
     my $residence = 'au';
@@ -204,6 +206,14 @@ subtest "User sing up with social login, app_id is saved" => sub {
     is $user->{app_id}, $app_id, 'User has correct app_id';
 
     ok $emitted{"signup"}, "signup event emitted";
+
+    $result->{response}{result}{data}{user}{identity}{emails}[0]{value} = undef;
+    $result->{response}{result}{data}{user}{identity}{provider} = undef;
+    my $mocked_log = Test::MockModule->new('Mojo::Log');
+    my @error_logs;
+    $mocked_log->mock('error' => sub { shift; push @error_logs, @_ });
+    $t->get_ok("/oneall/callback?app_id=$app_id&connection_token=1")->status_is(302);
+    like($error_logs[0], qr/provider_name is undef/);
 };
 
 done_testing();
