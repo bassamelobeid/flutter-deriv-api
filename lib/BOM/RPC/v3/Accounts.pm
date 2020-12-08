@@ -820,6 +820,8 @@ rpc get_account_status => sub {
     my $status                     = $client->status->visible;
     my $id_auth_status             = $client->authentication_status;
     my $authentication_in_progress = $id_auth_status =~ /under_review|needs_action/;
+    my $is_withdrawal_locked_for_fa =
+        $client->status->withdrawal_locked && $client->status->withdrawal_locked->{reason} =~ /FA needs to be completed/;
 
     push @$status, 'document_' . $id_auth_status if $authentication_in_progress;
 
@@ -830,7 +832,7 @@ rpc get_account_status => sub {
         push @$status, 'allow_document_upload';
     } elsif ($client->landing_company->is_authentication_mandatory
         or ($client->aml_risk_classification // '') eq 'high'
-        or $client->status->withdrawal_locked
+        or ($client->status->withdrawal_locked and not $is_withdrawal_locked_for_fa)
         or $client->status->allow_document_upload)
     {
         push @$status, 'allow_document_upload';
