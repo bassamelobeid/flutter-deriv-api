@@ -12,6 +12,7 @@
                   <option value="get_main_address_balance">Main address balance</option>
                   <option value="get_newaddress">Get new address</option>
                   <option value="get_blockcount">Block count</option>
+                  <option value="get_estimate_smartfee">Get estimate smartfee</option>
                   <option value="get_blockchain_info">Blockchain info</option>
                 </select>
             </td>
@@ -27,7 +28,6 @@
                   <option disabled selected value> -- select an option -- </option>
                   <option value="list_unspent_utxo">List unspent utxo</option>
                   <option value="list_receivedby_address">List receivedby address</option>
-                  <option value="get_estimate_smartfee">Get estimate smartfee</option>
                   <option value="get_address_balance">Get address balance</option>
                   <option value="list_transactions">List transactions</option>
                   <option value="get_transaction">Get Transaction</option>
@@ -87,30 +87,6 @@
                 <td><input type=number name='receivedby_minconf'/></td>
             </tr>
         </table>
-    </div>
-        
-<!--get_estimate_smartfee-->
-    <div class="crypto_func invisible" id="get_estimate_smartfee">
-        <hr>
-        <table>
-            <th colspan=3>Estimate smart fee</th>
-            <tr>
-                <th>Number of Confirmation</th>
-                <td><input type=text name='esf_confirmation'/></td>
-                <td rowspan=2><button type=submit name='req_type' value='get_estimate_smartfee'/>Get</button></td>
-            </tr>
-            <tr>
-                <th>Estimate mode</th>
-                <td>
-                    <select name="esf_estimate_mode">
-                      <option value="CONSERVATIVE">CONSERVATIVE</option>
-                      <option value="UNSET">UNSET</option>
-                      <option value="ECONOMICAL">ECONOMICAL</option>
-                    </select>
-                </td>
-            </tr>
-        </table>
-        <p><b>*Defaults to 3 confirmations if no confirmation is specified</b></p>
     </div>
 
 <!--List transactions-->
