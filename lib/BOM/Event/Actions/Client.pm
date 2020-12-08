@@ -21,7 +21,7 @@ use Locale::Codes::Country qw(country_code2code);
 use DataDog::DogStatsd::Helper;
 use Syntax::Keyword::Try;
 use Template::AutoFilter;
-use List::Util qw(any all first);
+use List::Util qw(any all first uniq);
 use List::UtilsBy qw(rev_nsort_by);
 use Future::Utils qw(fmap0);
 use Future::AsyncAwait;
@@ -2516,14 +2516,12 @@ async sub shared_payment_method_found {
     # Lock the cashier and set shared PM to both clients
     $args->{staff} //= 'system';
     $client->status->setnx('cashier_locked', $args->{staff}, 'Shared payment method found');
-    $client->status->clear_shared_payment_method;
-    $client->status->setnx('shared_payment_method', $args->{staff}, 'Sharing with: ' . $shared_loginid);
+    $client->status->upsert('shared_payment_method', $args->{staff}, _shared_payment_reason($client, $shared_loginid));
     # This may be dropped when POI/POA refactoring is done
     $client->status->setnx('allow_document_upload', $args->{staff}, 'Shared payment method found') unless $client->status->age_verification;
 
     $shared->status->setnx('cashier_locked', $args->{staff}, 'Shared payment method found');
-    $shared->status->clear_shared_payment_method;
-    $shared->status->setnx('shared_payment_method', $args->{staff}, 'Sharing with: ' . $client_loginid);
+    $shared->status->upsert('shared_payment_method', $args->{staff}, _shared_payment_reason($shared, $client_loginid));
     # This may be dropped when POI/POA refactoring is done
     $shared->status->setnx('allow_document_upload', $args->{staff}, 'Shared payment method found') unless $shared->status->age_verification;
 
@@ -2532,6 +2530,51 @@ async sub shared_payment_method_found {
     _send_shared_payment_method_email($shared);
 
     return;
+}
+
+=head2 _shared_payment_reason
+
+Builds the shared payment reason.
+
+It should append any new loginid into the current reason if not repeated.
+
+Should not touch the current reason, just append new loginids.
+
+If the client don't have the status then prepend the `Shared with:` message for convenience.
+
+It takes the following arguments:
+
+=over 4
+
+=item * C<client> the client sharing a payment method
+
+=item * C<shared_loginid> the new addition to the client shared loginid list
+
+=back
+
+Returns,
+    a string with the new reason built for this client.
+
+=cut
+
+sub _shared_payment_reason {
+    my $client         = shift;
+    my $shared_loginid = shift;
+    my $current        = $client->status->reason('shared_payment_method') // 'Shared with:';
+
+    my $loginids_extractor = sub {
+        my $string            = shift;
+        my @all_brokers_codes = LandingCompany::Registry::all_broker_codes();
+        # This will build a regex like CH[0-9]+|MLT[0-9]+|MX[0-9]+|CR[0-9]+|DC[0-9]+|MF[0-9]+
+        # it excludes virtual broker codes
+        my $regex_str = join '|', map { $_ . '[0-9]+' } grep { $_ !~ /VR/ } @all_brokers_codes;
+        my @loginids  = $string =~ /(\b$regex_str\b)/g;
+        return @loginids;
+    };
+
+    my @loginids = $loginids_extractor->($current);
+    return $current if any { $_ eq $shared_loginid } @loginids;
+    return join(' ', $current, $shared_loginid);
 }
 
 =head2 _send_shared_payment_method_email
