@@ -103,9 +103,10 @@ subtest 'Event processing return value' => sub {
 
         cmp_deeply $email_args,
             {
-            from    => $brand->emails('no-reply'),
-            subject => 'P2P dispute expired',
-            message => [
+            from                  => $brand->emails('no-reply'),
+            subject               => 'P2P dispute expired',
+            email_content_is_html => 1,
+            message               => [
                 '<p>A P2P order has been disputed for a while without resolution. Here are the details:<p>',
                 '<ul>',
                 "<li><b>Buyer Loginid:</b> $buyer_loginid</li>",

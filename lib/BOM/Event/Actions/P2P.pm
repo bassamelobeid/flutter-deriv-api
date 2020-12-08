@@ -280,10 +280,11 @@ sub dispute_expired {
         my $disputed_at = Date::Utility->new($timestamp)->datetime_ddmmmyy_hhmmss_TZ;
 
         send_email({
-                from    => $brand->emails('no-reply'),
-                to      => $app_config->payments->p2p->email_to,
-                subject => 'P2P dispute expired',
-                message => [
+                from                  => $brand->emails('no-reply'),
+                to                    => $app_config->payments->p2p->email_to,
+                subject               => 'P2P dispute expired',
+                email_content_is_html => 1,
+                message               => [
                     '<p>A P2P order has been disputed for a while without resolution. Here are the details:<p>',
                     '<ul>',
                     "<li><b>Buyer Loginid:</b> $buyer</li>",
