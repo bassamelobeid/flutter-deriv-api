@@ -11,6 +11,15 @@ BTC:
         max_transfer: 100
         max_percentage_fee: 1
         address: 1QEdWqpiEfWMCGLHmmABLFqym8SSeib8Ks
+    thirdparty_api:
+        bitgo:
+            url: https://bitgo.com/api/v2/btc
+            methods:
+                fee: /tx/fee
+        blockcypher:
+            url: https://api.blockcypher.com/v1/btc/main
+            methods:
+                fee: /
 LTC:
     withdrawal:
         timeout: "3d"
