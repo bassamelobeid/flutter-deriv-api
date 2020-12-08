@@ -83,7 +83,7 @@ BOM::Config::Runtime->instance->app_config->check_for_update(1);
 
 $res = $t->await::website_status({website_status => 1});
 is $res->{msg_type}, 'website_status';
-my $tnc_config = BOM::Config::Runtime->instance->app_config->cgi->terms_conditions_versions;
+my $tnc_config  = BOM::Config::Runtime->instance->app_config->cgi->terms_conditions_versions;
 my $tnc_version = decode_json_utf8($tnc_config)->{binary};
 is $res->{website_status}->{terms_conditions_version}, $tnc_version;
 

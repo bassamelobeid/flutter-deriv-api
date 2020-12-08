@@ -5,11 +5,13 @@ use Test::More;
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
 use BOM::Test::Helper qw/test_schema build_wsapi_test/;
+use Scalar::Util qw( looks_like_number );
 
 use BOM::Database::Model::OAuth;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis;
+use BOM::Test::Script::RpcRedis;
 use BOM::User::Password;
 use BOM::User;
 use BOM::User::Client;
@@ -78,7 +80,10 @@ my $res = $t->await::profit_table({
 
 is $res->{error}->{code}, 'DisabledClient', 'you can not call any authenticated api after disabled.';
 
+my $rpc_redis = BOM::Test::Script::RpcRedis->new('mt5');
+
 subtest 'mt5 new account dry run' => sub {
+
     $client_cr->set_default_account('USD');
     $token     = BOM::Database::Model::OAuth->new->store_access_token_only(1, $cr_1);
     $authorize = $t->await::authorize({authorize => $token});
@@ -101,7 +106,7 @@ subtest 'mt5 new account dry run' => sub {
 };
 
 subtest 'mt5 new swap-free account dry run' => sub {
-    $email    = 'abcd@binary.com';
+    $email     = 'abcd@binary.com';
     $client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'CR',
     });
@@ -121,15 +126,15 @@ subtest 'mt5 new swap-free account dry run' => sub {
     is $authorize->{authorize}->{loginid}, $cr_1;
 
     my $params = {
-        account_type            => 'gaming',
-        mt5_account_category    => 'swap_free',
-        country                 => 'mt',
-        email                   => 'test.account@binary.com',
-        name                    => 'Meta traderman',
-        mainPassword            => 'Efgh4567',
-        leverage                => 100,
-        dry_run                 => 1,
-        mt5_new_account         => 1,
+        account_type         => 'gaming',
+        mt5_account_category => 'swap_free',
+        country              => 'mt',
+        email                => 'test.account@binary.com',
+        name                 => 'Meta traderman',
+        mainPassword         => 'Efgh4567',
+        leverage             => 100,
+        dry_run              => 1,
+        mt5_new_account      => 1,
     };
     $res = $t->await::mt5_new_account($params);
     is $res->{msg_type}, 'mt5_new_account';
@@ -138,7 +143,7 @@ subtest 'mt5 new swap-free account dry run' => sub {
 };
 
 subtest 'mt5 new swap free account for Spain' => sub {
-    $email    = 'abcde@binary.com';
+    $email = 'abcde@binary.com';
     my $client_mlt = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'MLT',
     });
@@ -158,20 +163,25 @@ subtest 'mt5 new swap free account for Spain' => sub {
     is $authorize->{authorize}->{loginid}, $mlt_1;
 
     my $params = {
-        account_type            => 'gaming',
-        mt5_account_category    => 'swap_free',
-        country                 => 'es',
-        email                   => 'test.account@binary.com',
-        name                    => 'Meta traderman',
-        mainPassword            => 'Efgh4567',
-        leverage                => 100,
-        dry_run                 => 1,
-        mt5_new_account         => 1,
+        account_type         => 'gaming',
+        mt5_account_category => 'swap_free',
+        country              => 'es',
+        email                => 'test.account@binary.com',
+        name                 => 'Meta traderman',
+        mainPassword         => 'Efgh4567',
+        leverage             => 100,
+        dry_run              => 1,
+        mt5_new_account      => 1,
     };
     $res = $t->await::mt5_new_account($params);
     is $res->{msg_type}, 'mt5_new_account';
     is $res->{error}->{code}, 'GamingAccountMissing', ' Gaming account is not allowed in Spain';
 };
+
+my $pid = $rpc_redis->pid;
+ok looks_like_number($pid), "Valid consumer worker process id: $pid";
+$rpc_redis->stop_script();
+ok !kill(0, $pid), 'Consumer worker process killed successfully';
 
 $t->finish_ok;
 

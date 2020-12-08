@@ -20,20 +20,18 @@ print STDERR "pid of script is $$\n";
 my $reader = BOM::Config::Chronicle::get_chronicle_reader();
 my $writer = BOM::Config::Chronicle::get_chronicle_writer();
 
-my $tnc_config = BOM::Config::Runtime->instance->app_config->cgi->terms_conditions_versions;
+my $tnc_config  = BOM::Config::Runtime->instance->app_config->cgi->terms_conditions_versions;
 my $tnc_version = decode_json_utf8($tnc_config)->{binary};
 
 my $t = build_wsapi_test();
 $t = $t->send_ok({json => {website_status => 1}})->message_ok;
 my $res = decode_json_utf8($t->message->[1]);
 
-is $res->{website_status}->{terms_conditions_version},
-    $tnc_version,
-    'terms_conditions_version should be readed from chronicle';
+is $res->{website_status}->{terms_conditions_version}, $tnc_version, 'terms_conditions_version should be readed from chronicle';
 
 # Update terms_conditions_version at chronicle
 $tnc_version = 'Version 100 ' . Date::Utility->new->date;
-my $json_config = '{"binary": "'.$tnc_version.'"}';
+my $json_config = '{"binary": "' . $tnc_version . '"}';
 $writer->set(
     'app_settings',
     'binary',
