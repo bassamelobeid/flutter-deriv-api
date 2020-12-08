@@ -889,6 +889,31 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
         if (any { exists $input{$_} } qw(address_1 address_2 city state postcode));
 }
 
+=head2 Trading Experience & Financial Information
+
+The purpose of this section is to display the client's
+financial assessment information and scores in tables.
+
+Also, with a B<Compliance> access, it will render editable dropdowns
+instead of labels which provide them the ability to update the
+client's financial assessment information.
+
+=cut
+
+my $is_compliance = BOM::Backoffice::Auth0::has_authorisation(['Compliance']);
+my %fa_updated;
+if ($is_compliance) {
+    if ($input{whattodo} =~ /^(trading_experience|financial_information)$/) {
+        update_fa($client, $input{whattodo});
+        $fa_updated{$input{whattodo}} = 1;
+    }
+
+    if ($input{whattodo} =~ /^force_financial_assessment$/) {
+        force_fa($self_href, $client, $clerk);
+        $fa_updated{$input{whattodo}} = 1;
+    }
+}
+
 # for hidden form fields
 my $p2p_advertiser = $client->p2p_advertiser_info;
 my $p2p_approved   = $p2p_advertiser ? $p2p_advertiser->{is_approved} : '';
@@ -1161,24 +1186,39 @@ print qq[
     </script>
 ];
 
-=head2 Trading Experience & Financial Information
+sub force_fa {
+    my ($self_href, $client, $clerk) = @_;
 
-The purpose of this section is to display the client's
-financial assessment information and scores in tables.
+    my $is_forced = $client->status->financial_assessment_required;
 
-Also, with a B<Compliance> access, it will render editable dropdowns
-instead of labels which provide them the ability to update the
-client's financial assessment information.
+    code_exit_BO(
+        qq[<p><b>Client is already forced to complete their financial assessment.</b></p>
+        <p><a href="$self_href">&laquo;Return to Client Details</a></p>]
+    ) if $is_forced;
 
-=cut
+    code_exit_BO(
+        qq[<p><b>Client has already completed their financial assessment.</b></p>
+        <p><a href="$self_href">&laquo;Return to Client Details</a></p>]
+    ) if !is_fa_needs_completion($client);
 
-my $is_compliance = BOM::Backoffice::Auth0::has_authorisation(['Compliance']);
-my %fa_updated;
-if (   $is_compliance
-    && $input{whattodo} =~ /^(trading_experience|financial_information)$/)
-{
-    update_fa($client, $input{whattodo});
-    $fa_updated{$input{whattodo}} = 1;
+    $client->status->setnx('financial_assessment_required', $clerk,   'Financial Assessment completion is forced from Backoffice.');
+    $client->status->setnx('withdrawal_locked',             'system', 'FA needs to be completed');
+}
+
+sub is_fa_needs_completion {
+    my $client = shift;
+
+    # Note: we need to refactor some codes regarding https://trello.com/c/UbfQSLTO to handle below code duplication.
+    my $sc                   = $client->landing_company->short;
+    my $financial_assessment = BOM::User::FinancialAssessment::decode_fa($client->financial_assessment());
+
+    my $is_FI = BOM::User::FinancialAssessment::is_section_complete($financial_assessment, 'financial_information');
+
+    return !$is_FI if $sc ne 'maltainvest';
+
+    my $is_TE = BOM::User::FinancialAssessment::is_section_complete($financial_assessment, 'trading_experience');
+
+    return !($is_FI && $is_TE);
 }
 
 sub update_fa {
@@ -1225,6 +1265,10 @@ for my $section_name (qw(trading_experience financial_information)) {
     print "<strong style='color: #060;'>$title updated.</strong>"
         if $fa_updated{$section_name};
 
+    print_fa_force_btn($section_name, $self_href) if ($section_name eq 'financial_information' && $is_compliance);
+    print "<strong style='color: #060;'>Financial Assessment questionnaire triggered.</strong>"
+        if ($section_name eq 'financial_information' && $fa_updated{force_financial_assessment});
+
     print "<p>$title score: <strong>" . $fa_score->{$section_name} . '</strong></p>';
     print '<p>CFD Score: <strong>' . $fa_score->{cfd_score} . '</strong></p>'
         if ($section_name eq 'trading_experience');
@@ -1261,6 +1305,18 @@ sub print_fa_table {
     print '<input type="submit" value="Update"></form>' if $is_editable;
 
     return undef;
+}
+
+sub print_fa_force_btn {
+    my ($section_name, $self_href) = @_;
+
+    print "<form method='post' action='$self_href#$section_name'>";
+
+    print '<input type="hidden" name="whattodo" value="force_financial_assessment">';
+
+    print '<input type="submit" value="Click to force financial assessment" style="border: solid 2px red;margin-top: 12px;">';
+
+    print '</form>';
 }
 
 sub dropdown {
