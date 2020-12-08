@@ -102,8 +102,6 @@ subtest 'MLT accounts' => sub {
         ok !$v->client->status->age_verification, 'Not age verified';
         ok $v->client->status->unwelcome, 'Is unwelcome';
         ok !$v->client->status->cashier_locked, 'Not cashier_locked';
-        ok $v->client->status->allow_poi_resubmission, "Allow POI resubmission";
-        is $v->client->status->reason('allow_poi_resubmission'), 'authentication needed after first_deposit', 'Correct reason for POI resubmission';
     };
     subtest 'Age verified prior to run_authentication' => sub {
         my $user_client_mlt = BOM::User->create(
@@ -121,9 +119,8 @@ subtest 'MLT accounts' => sub {
         $v->run_authentication;
 
         ok !$v->client->fully_authenticated, 'Not fully authenticated';
-        ok !$v->client->status->unwelcome,              'Not unwelcome';
-        ok !$v->client->status->cashier_locked,         'Not cashier_locked';
-        ok !$v->client->status->allow_poi_resubmission, "POI resubmission not set";
+        ok !$v->client->status->unwelcome,      'Not unwelcome';
+        ok !$v->client->status->cashier_locked, 'Not cashier_locked';
     };
 };
 
@@ -270,10 +267,8 @@ subtest 'MX accounts' => sub {
         $v->run_validation('signup');
 
         ok !$v->client->status->disabled, "Not disabled due to Insufficient DOB Match";
-        ok $v->client->status->unwelcome,              "Unwelcome due to Insufficient DOB Match";
-        ok $v->client->status->proveid_requested,      "ProveID requested";
-        ok $v->client->status->allow_poi_resubmission, "Allow POI resubmission";
-        is $v->client->status->reason('allow_poi_resubmission'), 'authentication needed after signup', 'Correct reason for POI resubmission';
+        ok $v->client->status->unwelcome,         "Unwelcome due to Insufficient DOB Match";
+        ok $v->client->status->proveid_requested, "ProveID requested";
 
         $vr_client = BOM::User::Client->new({loginid => $vr_client->loginid});
         ok $vr_client->status->unwelcome, "VR still unwelcomed";
@@ -309,8 +304,8 @@ subtest 'MX accounts' => sub {
 
         ok !$v->client->status->disabled,  "Not disabled due to sufficient DOB Match";
         ok !$v->client->status->unwelcome, "Not unwelcome due to sufficient FullNameAndAddress Match";
-        ok $v->client->status->age_verification, "Age verified due to suffiecient DOB Match";
-        ok !$v->client->status->allow_poi_resubmission, "POI resubmission not set";
+        ok $v->client->status->age_verification,  "Age verified due to suffiecient DOB Match";
+        ok $v->client->status->proveid_requested, "ProveID requested";
 
         cmp_ok($v->client->get_authentication('ID_ONLINE')->status,
             'eq', 'pass', "Online Verification authenticated due to sufficient FullNameAndAddress Match");

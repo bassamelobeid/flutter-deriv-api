@@ -269,8 +269,6 @@ sub _request_id_authentication {
     my $self   = shift;
     my $client = $self->client;
 
-    # Allow Onfido ressubmission
-    $client->status->upsert('allow_poi_resubmission', 'system', 'authentication needed after ' . $self->event);
     my $client_name   = join(' ', $client->salutation, $client->first_name, $client->last_name);
     my $brand         = request()->brand;
     my $support_email = $brand->emails('support');
