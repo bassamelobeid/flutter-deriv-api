@@ -11,6 +11,8 @@ use Future::AsyncAwait;
 use Log::Any qw($log);
 use Log::Any::Adapter qw(Stdout), log_level => 'info';
 use Getopt::Long;
+use Algorithm::Backoff;
+use Syntax::Keyword::Try;
 use BOM::Config::Redis;
 
 =head1 NAME rpc_queue_monitor.pl
@@ -156,24 +158,43 @@ async sub group_metrics {
     return;
 }
 
-Future->needs_any(
-    $redis->connected->then(
-        sub {
-            $redis->echo('LIVE')->on_done(
-                sub {
-                    $log->info('Redis connection established.');
-                    Future->done;
-                }
-            )->on_fail(
-                sub {
-                    Future->fail('Unable to send echo command to redis');
-                });
+sub ping_redis {
+    Future->wait_any(
+        $redis->connected->then(
+            sub {
+                $redis->echo('LIVE')->on_done(
+                    sub {
+                        $log->info('Redis connection established.');
+                        Future->done;
+                    }
+                )->on_fail(
+                    sub {
+                        Future->fail('Unable to send echo command to redis');
+                    });
+            }
+        ),
+        $loop->timeout_future(after => REDIS_CONNECTION_TIMEOUT))->get;
+}
+
+sub ping_circuit {
+    my $backoff = Algorithm::Backoff->new(
+        min => 2,
+        max => 60,
+    );
+
+    while (1) {
+        try {
+            ping_redis();
+            last;
+        } catch ($e) {
+            $log->errorf("Failed while pinging Redis server: %s", $e);
+            die "\n" if $backoff->limit_reached;
+            sleep $backoff->next_value;
         }
-    ),
-    $loop->delay_future(after => REDIS_CONNECTION_TIMEOUT)->then(
-        sub {
-            die('Connection to redis could not be established');
-        }))->get;
+    }
+}
+
+ping_circuit();
 
 $log->info('RPC queue monitoring active');
 
@@ -182,13 +203,18 @@ Future->wait_any(
             async sub {
                 my ($code) = @_;
                 while (1) {
-                    await &fmap_void(
-                        $code,
-                        # Avoid piling too many requests into Redis at a time
-                        concurrent => 8,
-                        foreach    => [@$streams]);
+                    try {
+                        await &fmap_void(
+                            $code,
+                            # Avoid piling too many requests into Redis at a time
+                            concurrent => 8,
+                            foreach    => [@$streams]);
 
-                    await $loop->delay_future(after => $interval_in_seconds);
+                        await $loop->delay_future(after => $interval_in_seconds);
+                    } catch ($e) {
+                        $log->errorf("An error occurred while monitoring Redis: %s", $e);
+                        ping_circuit();
+                    }
                 }
             }
         )->($_)
