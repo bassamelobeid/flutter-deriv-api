@@ -550,7 +550,7 @@ sub risk_level {
 
 Check if the client has filled out the financial assessment information:
 
-- For non-MF, only the the financial information (FI) is required and risk level is high.
+- For non-MF, only the the financial information (FI) is required and (risk level is high or it's forced by staff).
 - For MF, both the FI and trading experience is required, regardless of rish level.
 
 =cut
@@ -563,8 +563,10 @@ sub is_financial_assessment_complete {
 
     my $is_FI = BOM::User::FinancialAssessment::is_section_complete($financial_assessment, 'financial_information');
 
+    my $is_fa_required = $self->status->financial_assessment_required;
+
     if ($sc ne 'maltainvest') {
-        return 0 if ($self->risk_level() eq 'high' and not $is_FI);
+        return 0 if (($self->risk_level() eq 'high' || $is_fa_required) && !$is_FI);
         return 1;
     }
 
@@ -4599,15 +4601,31 @@ sub has_siblings {
 
 =head2 update_status_after_auth_fa
 
-Checks status of the client after authentication or financial assessment changes, removing B<withdrawal_locked> status if:
+Update the client's set statuses based on financial assessment changes or authentication,
+
+Removing B<withdrawal_locked> status if:
 
 =over
 
-=item * client is withdrawal-locked with reason containing: 'Pending authentication or FA'
+=item * client is withdrawal-locked with reason: 'FA needs to be completed' and client's financial assessment is completed
 
-=item * client's financial assessment is completed
+=item * client is fully authenticated without expired documents and withdrawal-locked with reason containing: 'Pending authentication or FA'
 
-=item * client is fully authenticated without expired documents
+=back
+
+Removing B<allow_document_upload> status if:
+
+=over
+
+=item * client is completed financial assessment and fully authenticated without expired documents and allow_document_upload with reason containing: 'BECOME_HIGH_RISK' or 'Pending authentication or FA'
+
+=back
+
+Removing B<financial_assessment_required> status if:
+
+=over
+
+=item * client's financial assessment is completed.
 
 =back
 
@@ -4617,13 +4635,24 @@ sub update_status_after_auth_fa() {
     my $self = shift;
     return unless $self->user;
     for my $sibling ($self->user->clients) {
-        if ($sibling->is_financial_assessment_complete && $sibling->fully_authenticated && !$sibling->documents_expired) {
+        if ($sibling->is_financial_assessment_complete) {
+
             $sibling->status->clear_withdrawal_locked
                 if $sibling->status->withdrawal_locked
-                && $sibling->status->withdrawal_locked->{reason} =~ 'Pending authentication or FA';
-            $sibling->status->clear_allow_document_upload
-                if $sibling->status->allow_document_upload
-                && $sibling->status->allow_document_upload->{reason} =~ /BECOME_HIGH_RISK|Pending authentication or FA/;
+                && $sibling->status->withdrawal_locked->{reason} =~ /FA needs to be completed/;
+
+            $sibling->status->clear_financial_assessment_required;
+
+            if ($sibling->fully_authenticated && !$sibling->documents_expired) {
+
+                $sibling->status->clear_withdrawal_locked
+                    if $sibling->status->withdrawal_locked
+                    && $sibling->status->withdrawal_locked->{reason} =~ 'Pending authentication or FA';
+
+                $sibling->status->clear_allow_document_upload
+                    if $sibling->status->allow_document_upload
+                    && $sibling->status->allow_document_upload->{reason} =~ /BECOME_HIGH_RISK|Pending authentication or FA/;
+            }
         }
     }
 }

@@ -269,6 +269,8 @@ subtest 'withdrawal lock auto removal after authentication and FA' => sub {
     $client_cr->status->clear_allow_document_upload;
     $client_cr->status->set('allow_document_upload', 'system', 'BECOME_HIGH_RISK');
     $client_cr2->status->set('withdrawal_locked', 'system', 'Pending authentication or FA');
+    $client_cr2->status->clear_allow_document_upload;
+    $client_cr2->status->set('allow_document_upload', 'system', 'Pending authentication or FA');
     $client_cr->{status}  = undef;
     $client_cr2->{status} = undef;
     $client_cr->update_status_after_auth_fa();
@@ -284,6 +286,25 @@ subtest 'withdrawal lock auto removal after authentication and FA' => sub {
     update_financial_assessment($user, $data);
     is @called_for_clients, 1, 'update_status_after_auth_fa called automatically by financial assessment';
     ok $client_cr->status->withdrawal_locked, 'client is still withdrawal-lock (documents expired)';
+    undef @called_for_clients;
+
+    # financial assessment incomplete, forced
+    clear_clients($client_cr);
+
+    $client_cr->status->set('financial_assessment_required', 'felan',  'Financial Assessment completion is forced from Backoffice.');
+    $client_cr->status->set('withdrawal_locked',             'system', 'FA needs to be completed');
+    $client_cr->update_status_after_auth_fa();
+    ok $client_cr->status->financial_assessment_required, 'financial_assessment_required not removed, correct action';
+    like $client_cr->status->withdrawal_locked->{reason}, qr/FA needs to be completed/,
+        'withdrawal_locked with "FA needs to be completed" reason not removed, correct action';
+    undef @called_for_clients;
+
+    #financial assessment complete, flags should get removed
+    $client_cr->{status} = undef;
+    update_financial_assessment($user, $data);
+    is @called_for_clients, 1, 'update_status_after_auth_fa called automatically by financial assessment';
+    ok !$client_cr->status->financial_assessment_required, 'financial_assessment_required removed because FA completed';
+    ok !$client_cr->status->withdrawal_locked,             'withdrawal_locked with "FA needs to be completed" message removed because FA completed';
     undef @called_for_clients;
 
     $mocked_client->unmock_all;
@@ -311,6 +332,7 @@ sub test_event {
 
 sub clear_clients {
     for my $client (@_) {
+        $client->status->clear_financial_assessment_required();
         $client->status->clear_withdrawal_locked();
         $client->status->clear_allow_document_upload();
         $client->set_authentication('ID_DOCUMENT', {status => 'pending'});

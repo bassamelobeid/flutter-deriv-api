@@ -20,16 +20,16 @@ has dbic => (
 );
 
 my @status_codes = qw(
-    age_verification cashier_locked  disabled  unwelcome  withdrawal_locked
+    age_verification  cashier_locked  disabled  unwelcome  withdrawal_locked
     mt5_withdrawal_locked  ukgc_funds_protection  financial_risk_approval
     crs_tin_information  max_turnover_limit_not_set
-    professional_requested  professional professional_rejected  tnc_approval
+    professional_requested  professional  professional_rejected  tnc_approval
     migrated_single_email  duplicate_account  proveid_pending  proveid_requested
     require3ds  skip_3ds  ok  ico_only  allowed_other_card  can_authenticate
-    social_signup  trusted pa_withdrawal_explicitly_allowed
-    address_verified no_withdrawal_or_trading no_trading allow_document_upload internal_client
-    closed transfers_blocked shared_payment_method personal_details_locked
-    allow_poi_resubmission allow_poa_resubmission
+    social_signup  trusted  pa_withdrawal_explicitly_allowed  financial_assessment_required
+    address_verified  no_withdrawal_or_trading no_trading  allow_document_upload internal_client
+    closed  transfers_blocked  shared_payment_method  personal_details_locked
+    allow_poi_resubmission  allow_poa_resubmission
 );
 
 for my $code (@status_codes) {
