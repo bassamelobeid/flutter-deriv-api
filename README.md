@@ -1,2 +1,2 @@
-# bom-compliance
+# bom-rules
 Compliance-related handling - hooks and logic for the various regulatory requirements
