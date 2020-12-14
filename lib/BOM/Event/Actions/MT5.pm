@@ -11,11 +11,11 @@ use BOM::Platform::Event::Emitter;
 use BOM::Platform::Context qw(localize request);
 use BOM::Platform::Email qw(send_email);
 use BOM::User::Client;
+use BOM::User::Utility qw(parse_mt5_group);
 use BOM::MT5::User::Async;
 use BOM::Config::Redis;
 use BOM::Config;
 use BOM::Event::Services::Track;
-use BOM::User::Utility qw(parse_mt5_group);
 use BOM::Platform::Client::Sanctions;
 
 use Email::Stuffer;
@@ -33,7 +33,6 @@ use Net::Async::Redis;
 
 use List::Util qw(sum0);
 use HTML::Entities;
-use BOM::User::Utility qw(parse_mt5_group);
 
 use constant DAYS_TO_EXPIRE => 14;
 use constant SECONDS_IN_DAY => 86400;
@@ -210,8 +209,8 @@ sub new_mt5_signup {
     }
 
     my $group_details   = parse_mt5_group($data->{mt5_group});
-    my $company_actions = LandingCompany::Registry->new->get($group_details->{company})->actions // {};
-    if ($group_details->{category} ne 'demo' && any { $_ eq 'sanctions' } ($company_actions->{signup} // [])->@*) {
+    my $company_actions = LandingCompany::Registry->new->get($group_details->{landing_company_short})->actions // {};
+    if ($group_details->{account_type} ne 'demo' && any { $_ eq 'sanctions' } ($company_actions->{signup} // [])->@*) {
         BOM::Platform::Client::Sanctions->new(
             client                        => $client,
             brand                         => request()->brand,
@@ -231,8 +230,11 @@ sub new_mt5_signup {
 
     # Add email params to track signup event
     $data->{client_first_name} = $client->first_name;
-    $data->{type_label}        = ucfirst $group_details->{type};          # Frontend-ish label (Synthetic, Financial, Financial STP)
-    $data->{mt5_integer_id}    = $id =~ s/${\BOM::User->MT5_REGEX}//r;    # This one is just the numeric ID
+    # Frontend-ish label (Synthetic, Financial, Financial STP)
+    my $type_label = $group_details->{market_type};
+    $type_label .= '_stp' if $group_details->{sub_account_type} eq 'stp';
+    $data->{type_label}     = ucfirst $type_label;                     # Frontend-ish label (Synthetic, Financial, Financial STP)
+    $data->{mt5_integer_id} = $id =~ s/${\BOM::User->MT5_REGEX}//r;    # This one is just the numeric ID
 
     return BOM::Event::Services::Track::new_mt5_signup({
         loginid    => $data->{loginid},
@@ -291,9 +293,11 @@ sub send_mt5_account_opening_email {
     return unless $mt5_login_id;
     return unless $mt5_group;
 
-    my $mt5_details       = parse_mt5_group($mt5_group);
-    my $mt5_type_label    = ucfirst $mt5_details->{type} =~ s/stp$/STP/r;
-    my $mt5_category      = $mt5_details->{category};
+    my $mt5_details = parse_mt5_group($mt5_group);
+    my $type_label  = $mt5_details->{market_type};
+    $type_label .= '_stp' if $mt5_details->{sub_account_type} eq 'stp';
+    my $mt5_type_label    = ucfirst $type_label =~ s/stp$/STP/r;
+    my $mt5_category      = $mt5_details->{account_type};
     my $mt5_loginid       = $mt5_login_id =~ s/${\BOM::User->MT5_REGEX}//r;
     my $email             = $client->email;
     my $client_first_name = $client->first_name;

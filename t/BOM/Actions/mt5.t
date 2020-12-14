@@ -132,6 +132,9 @@ subtest 'mt5 track event' => sub {
 
         my ($customer, %args) = @track_args;
         my $mt5_details = parse_mt5_group($args->{mt5_group});
+        my $type_label  = $mt5_details->{market_type};
+        $type_label .= '_stp' if $mt5_details->{sub_account_type} eq 'stp';
+
         is_deeply \%args,
             {
             context => {
@@ -148,7 +151,7 @@ subtest 'mt5 track event' => sub {
                 'mt5_loginid'       => 'MTR90000',
                 'sub_account_type'  => 'financial',
                 'client_first_name' => $test_client->first_name,
-                'type_label'        => ucfirst $mt5_details->{type},
+                'type_label'        => ucfirst $type_label,
                 'mt5_integer_id'    => '90000',
                 brand               => 'deriv',
             }
@@ -331,8 +334,10 @@ subtest 'mt5 account opening mail' => sub {
                         if ($email) {
                             # If a mail is sent we may test its content
                             subtest 'Email content' => sub {
-                                my $brand_ref            = request()->brand;
-                                my $mt5_details          = parse_mt5_group($args->{mt5_group});
+                                my $brand_ref   = request()->brand;
+                                my $mt5_details = parse_mt5_group($args->{mt5_group});
+                                my $type_label  = $mt5_details->{market_type};
+                                $type_label .= '_stp' if $mt5_details->{sub_account_type} eq 'stp';
                                 my $expected_mt5_loginid = $args->{mt5_login_id} =~ s/${\BOM::User->MT5_REGEX}//r;
                                 my $expected_mail_args   = {
                                     from          => $brand_ref->emails('no-reply'),
@@ -342,7 +347,7 @@ subtest 'mt5 account opening mail' => sub {
                                     template_args => {
                                         mt5_loginid       => $expected_mt5_loginid,
                                         mt5_category      => $category,
-                                        mt5_type_label    => ucfirst $mt5_details->{type} =~ s/stp$/STP/r,
+                                        mt5_type_label    => ucfirst $type_label =~ s/stp$/STP/r,
                                         client_first_name => $mt5_client->first_name,
                                         lang              => $lang,
                                         website_name      => $brand_ref->website_name
