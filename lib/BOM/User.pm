@@ -381,7 +381,8 @@ sub has_mt5_regulated_account {
     my @loginids = reverse sort grep { !/^MTD\d+/ } @all_mt5_loginids;
     for my $loginid (@loginids) {
         my $group = BOM::MT5::User::Async::get_user($loginid)->else(sub { Future->done({}) })->get->{group};
-        return 1 if defined($group) && $group =~ /^(?!demo)[a-z]+\\(?!svg)[a-z]+(?:_financial)/;
+        # TODO (JB): to remove old group mapping once all accounts are moved to new group
+        return 1 if (defined($group) && ($group =~ /^(?!demo)[a-z]+\\(?!svg)[a-z]+(?:_financial)/ || $group =~ /^real(?:01|02)\\financial\\(?!svg)/));
     }
 
     return 0;

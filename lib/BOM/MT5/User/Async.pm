@@ -16,6 +16,7 @@ use IO::Async::Loop;
 use Log::Any qw($log);
 use YAML::XS qw(LoadFile);
 use Locale::Country qw(country2code);
+use BOM::Config;
 
 # Overrideable in unit tests
 our @MT5_WRAPPER_COMMAND = ('/usr/bin/php', '/home/git/regentmarkets/php-mt5-webapi/lib/binary_mt5.php');
@@ -65,16 +66,6 @@ my $BACKOFF_THRESHOLD       = 20;
 my $BACKOFF_TTL             = 60;
 my $MAIN_TRADING_SERVER_KEY = '01';
 
-# Override the default server for specific countries - currently hardcoded due
-# to geographical deployments, but this is expected to move out to separate configuration
-# such as LandingCompany, Brands or BOM::Config later
-my %SERVER_FOR_COUNTRY = (
-    demo => {},
-    real => {
-        za => '01',
-        ng => '01',
-    });
-
 sub _get_error_mapping {
     my $error_code = shift;
     return $error_category_mapping->{$error_code} // 'unknown';
@@ -91,37 +82,6 @@ sub _get_user_fields {
 
 sub _get_update_user_fields {
     return (@common_fields, qw/login rights agent/);
-}
-
-=head2 _get_country_server 
-
-Returns key of trading server that corresponds to the account type(demo/real) and country
-
-=over 4
-
-=item * account type
-
-=item * country
-
-=back
-
-Takes the following parameters:
-
-=over 4
-
-=item * C<$account_type> - string representing type of the MT5 sevrer (demo/real)
-
-=item * C<$country> - Alpha-2 code of the country 
-
-=back 
-
-Returns the trading server key 
-
-=cut
-
-sub _get_country_server {
-    my ($account_type, $country) = @_;
-    return $SERVER_FOR_COUNTRY{$account_type}->{country2code($country)} // $DEFAULT_TRADING_SERVER_KEY;
 }
 
 =head2 _get_server_type_by_prefix
@@ -171,7 +131,7 @@ Returns a string (key of the trading server).
 
 sub _get_trading_server_key {
     my ($param, $srv_type) = @_;
-    my $config = get_mt5_config();
+    my $config = BOM::Config::mt5_webapi_config();
 
     if ($param->{login}) {
         my ($login_id) = $param->{login} =~ /([0-9]+)/;
@@ -240,7 +200,7 @@ sub _prepare_params {
     return \%param;
 }
 
-=head2 _is_suspended
+=head2 is_suspended
 
 Test whether the current cmd is suspended
 
@@ -257,22 +217,30 @@ Returns the code string if suspended, C<undef> otherwise.
 =cut
 
 # The error code here is extracted from BOM::RPC::v3::MT5::Errors
-sub _is_suspended {
+sub is_suspended {
     my ($cmd, $param) = @_;
 
-    my $app_config = BOM::Config::Runtime->instance->app_config->system->mt5->suspend;
-    return 'MT5APISuspendedError' if $app_config->all;
+    my $suspend = BOM::Config::Runtime->instance->app_config->system->mt5->suspend;
+    return 'MT5APISuspendedError' if $suspend->all;
 
-    my $srv_type = _get_server_type_by_prefix(_get_prefix($param));
-    return 'MT5DEMOAPISuspendedError' if $app_config->demo and $srv_type eq 'demo';
-    return 'MT5REALAPISuspendedError' if $app_config->real and $srv_type eq 'real';
-    return undef                      if $cmd ne 'UserDepositChange';
+    my $srv_type     = _get_server_type_by_prefix(_get_prefix($param));
+    my $server_key   = _get_trading_server_key($param, $srv_type);
+    my $which_server = $srv_type . $server_key;
+
+    return 'MT5DEMOAPISuspendedError'                    if $srv_type eq 'demo' and $suspend->can($which_server) and $suspend->$which_server;
+    return 'MT5REAL' . $server_key . 'APISuspendedError' if $srv_type eq 'real' and $suspend->can($which_server) and $suspend->$which_server->all;
+    return undef                                         if $cmd ne 'UserDepositChange';
 
     if ($param->{new_deposit} > 0) {
-        return 'MT5DepositSuspended' if $app_config->deposits;
+        return 'MT5REAL' . $server_key . 'DepositSuspended'
+            if $suspend->deposits
+            or ($suspend->$which_server->can('deposits') and $suspend->$which_server->deposits);
     } else {
-        return 'MT5WithdrawalSuspended' if $app_config->withdrawals;
+        return 'MT5REAL' . $server_key . 'WithdrawalSuspended'
+            if $suspend->withdrawals
+            or ($suspend->$which_server->can('withdrawals') and $suspend->$which_server->withdrawals);
     }
+
     return undef;
 }
 
@@ -294,7 +262,7 @@ Returns Future object. Future object will be done if succeed, fail otherwise.
 
 sub _invoke_mt5 {
     my ($cmd, $param) = @_;
-    if (my $suspended_code = _is_suspended($cmd, $param)) {
+    if (my $suspended_code = is_suspended($cmd, $param)) {
         return Future->fail(
             _future_error({
                     code => $suspended_code,
@@ -415,38 +383,9 @@ sub _invoke_mt5 {
     return $f;
 }
 
-=head2 _modify_registration_group_name
-
-When we have additional mt5 trading servers, group names can't be the same in those servers.
-We append the proper suffix to group names to route user creation request to the desired trading server.
-Currently routing is based on user region.
-
-=over 4
-
-=item * C<$args> - hashref representing the MT5 user, see L<https://support.metaquotes.net/en/docs/mt5/api/webapi_main/webapi_users/webapi_user_data_structure>
-
-=back
-
-Returns a string with the group name
-
-=cut
-
-sub _modify_registration_group_name {
-    my $args = shift;
-
-    my ($account_type, $rest_of_group_name) = $args->{group} =~ /(real|demo)\\(.*)/;
-
-    return $args->{group} if not defined $account_type;
-
-    my $config     = get_mt5_config();
-    my $server_key = _get_country_server($account_type, $args->{country});
-
-    return $account_type . $config->{$account_type}->{$server_key}->{group_suffix} . "\\" . $rest_of_group_name;
-}
-
 sub create_user {
     my $args = shift;
-    $args->{group} = _modify_registration_group_name($args);
+
     my @fields = _get_create_user_fields();
     my $param  = {};
     $param->{$_} = $args->{$_} for (@fields);
@@ -621,17 +560,6 @@ sub get_account_type {
     my ($loginid) = @_;
     my $prefix = _get_prefix({login => $loginid});
     return _get_server_type_by_prefix($prefix);
-}
-
-=head2 get_mt5_config
-
-Returns the data from MT5 YAML configuration file.
-
-=cut
-
-sub get_mt5_config {
-    state $config = LoadFile('/etc/rmg/mt5webapi.yml');
-    return $config;
 }
 
 1;

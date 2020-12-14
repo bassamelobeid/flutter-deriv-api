@@ -181,43 +181,59 @@ sub sendbird_api {
 
 =head2 parse_mt5_group
 
-Parses an mt5 group string, decomposing it into details. It takes a single argument:
+Sample group: real\svg (old group name), real01\synthetic\svg_std_usd (new group name)
+
+Returns
 
 =over 4
 
-=item * C<$mt5_group> - an string representing an mt5 group (e.g. 'real/svg_standard')
+=item * C<account_type> - real|demo
 
-=back
+=item * C<server_type> - server id (E.g. 01, 02 ..)
 
-It returns a hashref with the following keys:
+=item * C<market_type> - financial|synthetic
 
-=over 4
+=item * C<landing_company_short> - landing company short name (E.g. svg, malta ..)
 
-=item * C<category>: real/demo category of the mt5 group (first component)
+=item * C<sub_account_type> - std|sf|stp
 
-=item * C<company>:landing company name, e.g. 'svg' (second component)
-
-=item * C<type>: synthetic, financial or financial stp
+=item * C<currency> - group currency
 
 =back
 
 =cut
 
 sub parse_mt5_group {
-    my $group = lc(shift // '');
+    my $group = shift;
 
-    my ($category, $company) = $group =~ m/^([^\\]+)\\([^_]+).*/;
+    my ($account_type, $server_type, $market_type, $landing_company_short, $sub_account_type, $currency);
 
-    return {} unless $category and $company;
-
-    $category = ($category =~ /^real/) ? 'real' : 'demo';
-    my $type = ($group =~ /financial/) ? 'financial' : 'synthetic';
-    $type = 'financial stp' if $group =~ /financial_stp/;
+    # TODO (JB): remove old mt5 groups support when we have move all accounts over to the new groups
+    # old mt5 groups support
+    if ($group =~ m/^([a-z]+)\\([a-z]+)(?:_([a-z]+(?:_stp)?+))?(?:_([A-Z,a-z]+))?/) {
+        $account_type          = $1;
+        $landing_company_short = $2;
+        my $subtype = $3;
+        $currency         = lc($4 // 'usd');
+        $server_type      = '01';                                                        # default to 01 for old group
+        $market_type      = (not $subtype) ? 'synthetic' : 'financial';
+        $sub_account_type = (defined $subtype and $subtype =~ /stp$/) ? 'stp' : 'std';
+    } elsif ($group =~ /^(real|demo)(\d{2})\\(synthetic|financial)\\([a-z]+)_(.*)_(\w+)$/) {
+        $account_type          = $1;
+        $server_type           = $2;
+        $market_type           = $3;
+        $landing_company_short = $4;
+        $sub_account_type      = $5;
+        $currency              = $6;
+    }
 
     return {
-        company  => $company,
-        category => $category,
-        type     => $type,
+        account_type          => $account_type,
+        server_type           => $server_type,
+        market_type           => $market_type,
+        landing_company_short => $landing_company_short,
+        sub_account_type      => $sub_account_type,
+        currency              => $currency,
     };
 }
 
