@@ -58,7 +58,7 @@ my %DETAILS = (
     password => 'Efgh4567',
     email    => 'test.account@binary.com',
     name     => 'Test',
-    group    => 'real\svg',
+    group    => 'real01\synthetic\svg_std_usd',
     country  => 'Malta',
     balance  => '1234',
 );

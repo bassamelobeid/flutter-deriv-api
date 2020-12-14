@@ -7,7 +7,7 @@ no indirect;
 
 use YAML::XS;
 use Date::Utility;
-use List::Util qw(any first);
+use List::Util qw(any first all);
 use Syntax::Keyword::Try;
 use File::ShareDir;
 use Locale::Country::Extra;
@@ -20,6 +20,7 @@ use Digest::SHA qw(sha384_hex);
 use LandingCompany::Registry;
 use ExchangeRates::CurrencyConverter qw/convert_currency offer_to_clients/;
 use Log::Any qw($log);
+use Locale::Country qw(country2code);
 
 use BOM::RPC::Registry '-dsl';
 use BOM::RPC::v3::MT5::Errors;
@@ -30,6 +31,7 @@ use BOM::Config;
 use BOM::Platform::Context qw (localize request);
 use BOM::Platform::Email qw(send_email);
 use BOM::User;
+use BOM::User::Utility qw(parse_mt5_group);
 use BOM::User::Client;
 use BOM::MT5::User::Async;
 use BOM::Database::ClientDB;
@@ -172,6 +174,8 @@ Takes the following parameter:
 
 =item * C<params> hashref that contains a C<BOM::User::Client>
 
+=item * C<args> - additional parameters to retrieve all accounts
+
 =back
 
 Returns a Future holding list of MT5 account information (or undef) or a failed future with error information
@@ -207,7 +211,7 @@ sub mt5_accounts_lookup {
                 return Future->fail($resp);
             });
     }
-    foreach        => [$client->user->get_mt5_loginids],
+    foreach        => [grep { !BOM::MT5::User::Async::is_suspended('', {login => $_}) } $client->user->get_mt5_loginids],
         concurrent => 4;
     # purely to keep perlcritic+perltidy happy :(
 
@@ -235,49 +239,152 @@ sub reset_throttler {
     return BOM::Config::Redis::redis_replicated_write()->del($key);
 }
 
+=head2 _mt5_group
+
+Group naming convention for mt5 is as follow:
+
+${account_type}${server_type}\${market_type}\${landing_company_short}_${sub_account_type}_${currency}
+
+where:
+
+account_type: demo|real
+server_type: 01|02|...
+market_type: financial|synthetic
+landing_company_short: svg|maltainvest|samoa|...
+sub_account_type: std[standard]|sf[swap-free]|hf[high-risk]
+currency: usd|gbp|...
+
+How does this map to the input?
+
+account_type:     demo|gaming|financial
+mt5_account_type  financial|financial_stp
+mt5_account_category: conventional|swap_free|empty for financial_stp
+
+=cut
+
 sub _mt5_group {
-    # account_type:     demo|gaming|financial
-    # sub_account_type: financial|financial_stp
-    # account_category: conventional|swap_free|empty for financial_stp
-    my ($company_name, $account_type, $sub_account_type, $currency, $account_category) = @_;
+    my $args = shift;
 
-    # These changes are temporary until restructure all the MT5 groups
-    # We should refactor this function once the new structure of MT5 groups is ready.
-    if ($company_name eq 'samoa') {
-        if ($account_type ne 'demo' && ($account_category || '') ne 'swap_free') {
-            if ($account_type eq 'financial' && $sub_account_type eq 'financial') {
-                return 'real01\financial\samoa_std_btc' if $currency eq 'BTC';
-                return 'real01\financial\samoa_std_ust' if $currency eq 'UST';
-            } elsif ($account_type eq 'gaming') {
-                return 'real01\synthetic\samoa_std_btc' if $currency eq 'BTC';
-                return 'real01\synthetic\samoa_std_ust' if $currency eq 'UST';
-            }
-        }
+    my ($landing_company_short, $account_type, $mt5_account_type, $currency, $account_category, $country) =
+        @{$args}{qw(landing_company_short account_type mt5_account_type currency sub_account_type country)};
 
-        return '';
-    }
+    # account creation for samoa if not allowed until the launch of deriv-crypto
+    return '' if $landing_company_short eq 'samoa';
 
-    # for Maltainvest if the client uses GBP as currency we should add this to the group name
-    my $GBP = ($currency eq 'GBP' and $company_name eq 'maltainvest') ? '_GBP' : '';
-
-    # for backward compatibility purposes, we set $account_category as empty to produce no changes for financial accounts
-    $account_category = defined $account_category && $account_category eq 'swap_free' ? "_${account_category}" : '';
-
-    # for demo accounts we recognize company type if sub_account_type is available or not
+    my ($server_type, $market_type, $sub_account_type);
     if ($account_type eq 'demo') {
-        return "demo\\${company_name}_${sub_account_type}${account_category}${GBP}" if length $sub_account_type;
-        return "demo\\${company_name}${account_category}";
+        # $server_type is defaulted to 01 for demo since we do not have demo trade server cluster
+        $server_type = '01';
+        # if $mt5_account_type is undefined, it maps to $market_type=synthetic, else $market_type=financial
+        $market_type      = $mt5_account_type ? 'financial' : 'synthetic';
+        $sub_account_type = _get_sub_account_type($mt5_account_type, $account_category);
+        # we need to override the currency here because virtual account default currency is all in USD
+        $currency = LandingCompany::Registry::get($landing_company_short)->get_default_currency($country);
     } else {
-        if ($account_type eq 'financial') {
-            $sub_account_type = "_${sub_account_type}";
-            # All svg financial account will be B-book upon sign-up. Decisions to A-book will be done
-            # on a case by case basis manually
-            my $app_config = BOM::Config::Runtime->instance->app_config;
-            $sub_account_type .= "_Bbook" if $company_name eq 'svg' and not $app_config->system->mt5->suspend->auto_Bbook_svg_financial;
-        }
-
-        return "real\\${company_name}${sub_account_type}${account_category}${GBP}";
+        # real group mapping
+        my $orig_account_type = $account_type;
+        $account_type     = 'real';
+        $market_type      = $orig_account_type eq 'gaming' ? 'synthetic' : 'financial';
+        $server_type      = _get_server_type($account_type, $country, $market_type);
+        $sub_account_type = _get_sub_account_type($mt5_account_type, $account_category);
+        # All svg financial account will be B-book (put in hr[high-risk] upon sign-up. Decisions to A-book will be done
+        # on a case by case basis manually
+        my $app_config = BOM::Config::Runtime->instance->app_config;
+        # only consider b-booking financial for svg and samoa
+        my $apply_auto_b_book = (
+            $market_type eq 'financial' and ($landing_company_short eq 'svg'
+                or $landing_company_short eq 'samoa')
+                and not $app_config->system->mt5->suspend->auto_Bbook_svg_financial
+        );
+        $sub_account_type .= '-hr' if $market_type eq 'financial' and $sub_account_type ne 'stp' and not $apply_auto_b_book;
     }
+
+    return
+          ${account_type}
+        . ${server_type} . '\\'
+        . $market_type . '\\'
+        . join('_', map { lc $_ } ($landing_company_short, $sub_account_type, $currency));
+}
+
+=head2 _get_server_type
+
+Returns key of trading server that corresponds to the account type(demo/real) and country
+
+=over 4
+
+=item * account type
+
+=item * country
+
+=back
+
+Takes the following parameters:
+
+=over 4
+
+=item * C<$account_type> - string representing type of the MT5 sevrer (demo/real)
+
+=item * C<$country> - Alpha-2 code of the country 
+
+=back 
+
+Returns the trading server key 
+
+=cut
+
+# Register new users in this server by default
+my $DEFAULT_TRADING_SERVER_KEY = '01';
+
+sub _get_server_type {
+    my ($account_type, $country, $market_type) = @_;
+
+    my $server_routing_config = BOM::Config::mt5_server_routing();
+
+    # just in case we pass in the name of the country instead of the country code.
+    if (length $country != 2) {
+        $country = country2code($country);
+    }
+
+    my $server_type = $server_routing_config->{$account_type}->{$country}->{$market_type} // $DEFAULT_TRADING_SERVER_KEY;
+
+    # TODO (JB): To clean up rollback plan from backoffice just in case setup has error on additional trade server
+    my $method     = $account_type . $server_type;
+    my $app_config = BOM::Config::Runtime->instance->app_config->system->mt5->suspend;
+    if ($app_config->$method->all) {
+        $server_type = $DEFAULT_TRADING_SERVER_KEY;
+    }
+
+    return $server_type;
+}
+
+=head2 _get_sub_account_type
+
+Returns sub account type that corresponds to the mt5 account type and account category.
+
+Takes the following parameters:
+
+=over 4
+
+=item * C<$mt5_account_type> - string representing the mt5 account type (financial|financial_stp)
+
+=item * C<$account_category> - string representing mt5 account category (conventional|swap_free)
+
+=back
+
+=cut
+
+sub _get_sub_account_type {
+    my ($mt5_account_type, $account_category) = @_;
+
+    # $sub_account_type depends on $mt5_account_type and $account_category. It is a little confusing, but can't do much about it.
+    my $sub_account_type = 'std';
+    if (defined $mt5_account_type and $mt5_account_type eq 'financial_stp') {
+        $sub_account_type = 'stp';
+    } elsif (defined $account_category and $account_category eq 'swap_free') {
+        $sub_account_type = 'sf';
+    }
+
+    return $sub_account_type;
 }
 
 async_rpc "mt5_new_account",
@@ -379,15 +486,36 @@ async_rpc "mt5_new_account",
             override_code => 'ASK_FIX_DETAILS',
             details       => {missing => [@missing_fields]}}) if ($account_type ne "demo" and @missing_fields);
 
-    my $mt5_account_currency = $args->{currency} // $client->currency;
+    # Selecting a currency for a mt5 account can be pretty tricky. On mt5, each group has a denominated currency.
+    # The allowed currency for each landing company does not match the group we have on mt5. For example:
+    # - MF clients can choose between USD, EUR & GBP as binary account currency.
+    # - On mt5, we have only maltainvest EUR and maltainvest GBP groups.
+    #
+    # So, the logic of mt5 account currency is based on the following rules:
+    # 1. If client's selected currency is one of the available_mt5_currency_group then, it will be used as the mt5 account currency
+    # 2. Else, the landing company's default currency will be used.
+    #
+    # A practical example:
+    # - MF (residence: germany) client with selected account currency of USD. The mt5 account currency will be EUR.
+    # - MF (residence: germany) client with selected account currency of GBP. The mt5 account currency will be GBP.
+    my $default_currency       = $client->landing_company->get_default_currency($residence);
+    my $available_mt5_currency = $client->landing_company->available_mt5_currency_group();
+    my $selected_currency      = (any { $client->currency eq $_ } @$available_mt5_currency) ? $client->currency : $default_currency;
+    my $mt5_account_currency   = $args->{currency} // $selected_currency;
 
-    # As a temporary check, we will return an error when client currency is GBP,
-    # and the $args->{currency} is defined.
-    # We should remove this check when refactor the getting the group name.
-    return create_error_future('permission') if $client->currency eq 'GBP' && $mt5_account_currency ne $client->currency;
+    return create_error_future('permission') if $mt5_account_currency ne $selected_currency;
 
-    my $group = _mt5_group($company_name, $account_type, $mt5_account_type, $mt5_account_currency, $mt5_account_category);
-    return create_error_future('permission') if $group eq '';
+    my $group = _mt5_group({
+        country               => $residence,
+        landing_company_short => $company_name,
+        account_type          => $account_type,
+        mt5_account_type      => $mt5_account_type,
+        currency              => $mt5_account_currency,
+        sub_account_type      => $mt5_account_category
+    });
+
+    # something is wrong if we're not able to get group config
+    return create_error_future('permission') if $group eq '' || !get_mt5_account_type_config($group);
 
     my $config = request()->brand->countries_instance->countries_list->{$client->residence};
     if ($config->{mt5_age_verification}
@@ -422,7 +550,13 @@ async_rpc "mt5_new_account",
         $client->status->setnx('allow_document_upload', 'system', 'MT5_ACCOUNT_IS_CREATED');
         return create_error_future('AuthenticateAccount', {params => $client->loginid});
     }
-    if ($client->tax_residence and $account_type ne 'demo' and $group eq 'real\labuan_financial_stp') {
+
+    #TODO (JB): clean up old group name after we have migrated all accounts to new group
+    # - real\labuan_financial_stp
+    if (    $client->tax_residence
+        and $account_type ne 'demo'
+        and ($group eq 'real\labuan_financial_stp' or $group =~ /real\d{2}\\financial\\labuan_stp_usd/))
+    {
         # In case of having more than a tax residence, client residence will be replaced.
         my $selected_tax_residence = $client->tax_residence =~ /\,/g ? $client->residence : $client->tax_residence;
         my $tin_format             = $countries_instance->get_tin_format($selected_tax_residence);
@@ -456,31 +590,26 @@ async_rpc "mt5_new_account",
             my %existing_groups = map { $_->{group} => $_->{login} } grep { $_->{group} } @logins;
 
             # can't create account on the same group
-            if (my $login = $existing_groups{$group}) {
+            # TODO (JB): We can remove this after we've moved all the accounts to the new group name.
+            # Basically, for now real\svg is identical to real01\synthetic\svg_std_usd or real02\synthetic\svg_std_usd
+            if (my $identical = _is_identical_group($group, \%existing_groups)) {
                 return create_error_future(
                     'MT5Duplicate',
                     {
                         override_code => $error_code,
-                        params        => [$account_type, $login]});
+                        params        => [$account_type, $existing_groups{$identical}]});
             }
 
             # A client can only have either one of
             # real\vanuatu_financial or real\svg_financial or real\svg_financial_Bbook
             # ignore samoa for now, since their groups follow different pattern.
             if ($mt5_account_type eq 'financial' && $company_name ne 'samoa') {
-                my ($acct_type, $landing_company_name) = $group =~ /^([a-z]+)\\([a-z]+)_?/;
-                my %check_similar_group = (
-                    vanuatu => ['\svg_financial', '\svg_financial_Bbook'],
-                    svg     => ['\vanuatu_financial'],
-                );
-                if (my $similar = $check_similar_group{$landing_company_name}) {
-                    if (my $match = first { $existing_groups{$acct_type . $_} } @$similar) {
-                        return create_error_future(
-                            'MT5Duplicate',
-                            {
-                                override_code => $error_code,
-                                params        => [$account_type, $existing_groups{$match}]});
-                    }
+                if (my $similar = _is_similar_group($company_name, \%existing_groups)) {
+                    return create_error_future(
+                        'MT5Duplicate',
+                        {
+                            override_code => $error_code,
+                            params        => [$account_type, $existing_groups{$similar}]});
                 }
             }
 
@@ -763,13 +892,11 @@ sub _filter_settings {
 }
 
 sub get_mt5_account_type_config {
-
     my ($group_name) = shift;
 
     my $group_accounttype = lc($group_name);
 
     return BOM::Config::mt5_account_types()->{$group_accounttype};
-
 }
 
 sub set_mt5_account_settings {
@@ -1324,12 +1451,16 @@ async_rpc "mt5_deposit",
                 return create_error_future($error_code, {message => $error->{-message_to_client}});
             }
 
+            # TODO (JB): clean up old group name after we have migrated all accounts to new group
+            # - real\vanuatu_financial
             _store_transaction_redis({
                     loginid       => $fm_loginid,
                     mt5_id        => $to_mt5,
                     action        => 'deposit',
                     amount_in_USD => convert_currency($amount, $fm_client->currency, 'USD'),
-                }) if ($response->{mt5_data}->{group} eq 'real\vanuatu_financial');
+                })
+                if ($response->{mt5_data}->{group} eq 'real\vanuatu_financial'
+                or $response->{mt5_data}->{group} =~ /real\d{2}\\financial\\vanuatu_std-hr_usd/);
 
             my $txn_id = $txn->transaction_id;
             # 31 character limit for MT5 comments
@@ -1452,12 +1583,16 @@ async_rpc "mt5_withdrawal",
                                     id                 => $txn->{id},
                                     time               => $txn->{transaction_time}}});
 
+                        # TODO (JB): clean up old group name after we have migrated all accounts to new group
+                        # - real\vanuatu_financial
                         _store_transaction_redis({
                                 loginid       => $to_loginid,
                                 mt5_id        => $fm_mt5,
                                 action        => 'withdraw',
                                 amount_in_USD => $amount,
-                            }) if ($mt5_group eq 'real\vanuatu_financial');
+                            })
+                            if ($mt5_group eq 'real\vanuatu_financial'
+                            or $mt5_group =~ /real\d{2}\\financial\\vanuatu_std-hr_usd/);
 
                         return Future->done({
                             status                => 1,
@@ -1649,7 +1784,9 @@ sub _mt5_validate_and_get_amount {
                 and ($client->status->no_withdrawal_or_trading or $client->status->withdrawal_locked));
 
             # Deposit should be locked if mt5 vanuatu/labuan account is disabled
-            if ($action eq 'deposit' and any { $mt5_group eq $_ } qw/real\labuan_financial_stp real\vanuatu_financial/) {
+            if (    $action eq 'deposit'
+                and $mt5_group =~ /(?:labuan|vanuatu)/)
+            {
                 my $hex_rights   = BOM::Config::mt5_user_rights()->{'rights'};
                 my %known_rights = map { $_ => hex $hex_rights->{$_} } keys %$hex_rights;
                 my %rights       = map { $_ => $setting->{rights} & $known_rights{$_} ? 1 : 0 } keys %known_rights;
@@ -1807,18 +1944,11 @@ sub _mt5_validate_and_get_amount {
 sub _fetch_mt5_lc {
     my $settings = shift;
 
-    my $lc_short;
+    my $group_params = parse_mt5_group($settings->{group});
 
-    # This extracts the landing company name from the mt5 group name
-    # E.g. real\labuan -> labuan , real\vanuatu_financial -> vanuatu, real\svg_financial -> svg
+    return undef unless $group_params->{landing_company_short};
 
-    if ($settings->{group} =~ m/[a-zA-Z]+\\([a-zA-Z]+)($|_.+)/) {
-        $lc_short = $1;
-    }
-
-    return undef unless $lc_short;
-
-    my $landing_company = LandingCompany::Registry::get($lc_short);
+    my $landing_company = LandingCompany::Registry::get($group_params->{landing_company_short});
 
     return undef unless $landing_company;
 
@@ -1985,6 +2115,32 @@ sub _generate_password {
     # We are not using random string for future usage consideration
     my $pwd = substr(sha384_hex($seed_str . 'E3xsTE6BQ=='), 0, 20);
     return $pwd . 'Hx_0';
+}
+
+sub _is_identical_group {
+    my ($group, $existing_groups) = @_;
+
+    my $group_config = get_mt5_account_type_config($group);
+
+    foreach my $existing_group (map { get_mt5_account_type_config($_) } keys %$existing_groups) {
+        return $existing_group if defined $existing_group and all { $group_config->{$_} eq $existing_group->{$_} } keys %$group_config;
+    }
+
+    return undef;
+}
+
+sub _is_similar_group {
+    my ($landing_company_short, $existing_group) = @_;
+
+    my $similar_company = $landing_company_short eq 'vanuatu' ? 'svg' : $landing_company_short eq 'svg' ? 'vanuatu' : undef;
+
+    return undef unless $similar_company;
+
+    my $first =
+        first { $_ =~ /^real\\${similar_company}_financial(?:_Bbook)?$/ || $_ =~ /^real\d{2}\\financial\\${similar_company}_std(?:-hr)?_usd$/ }
+    keys %$existing_group;
+
+    return $first;
 }
 
 1;

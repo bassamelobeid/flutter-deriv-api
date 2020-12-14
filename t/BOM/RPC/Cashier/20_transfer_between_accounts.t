@@ -1322,8 +1322,8 @@ subtest 'MT5' => sub {
     $rpc_ct->call_ok('mt5_new_account', $params)->has_no_error('no error for financial_stp mt5_new_account');
 
     $params->{args} = {
-        account_from => 'MTR' . $ACCOUNTS{'real\svg_financial_Bbook'},
-        account_to   => 'MTR' . $ACCOUNTS{'real\labuan_financial_stp'},
+        account_from => 'MTR' . $ACCOUNTS{'real01\financial\svg_std_usd'},
+        account_to   => 'MTR' . $ACCOUNTS{'real01\financial\labuan_stp_usd'},
         currency     => "USD",
         amount       => 180                                               # this is the only deposit amount allowed by mock MT5
     };
@@ -1331,7 +1331,7 @@ subtest 'MT5' => sub {
         ->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'MT5->MT5 transfer error code')
         ->error_message_is('Transfer between two MT5 accounts is not allowed.', 'MT5->MT5 transfer error message');
 
-    $params->{args}{account_from} = 'MTD' . $ACCOUNTS{'demo\svg_financial'};
+    $params->{args}{account_from} = 'MTD' . $ACCOUNTS{'demo01\financial\svg_std_usd'};
     $params->{args}{account_to}   = $test_client->loginid;
     $rpc_ct->call_ok('transfer_between_accounts', $params)
         ->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'MT5 demo -> real account transfer error code')
@@ -1342,7 +1342,7 @@ subtest 'MT5' => sub {
     $params->{args}{account_from} = $test_client_btc->loginid;
     $params->{args}{currency}     = 'BTC';
     $params->{args}{amount}       = 1;
-    $params->{args}{account_to}   = 'MTR' . $ACCOUNTS{'real\svg_financial_Bbook'};
+    $params->{args}{account_to}   = 'MTR' . $ACCOUNTS{'real01\financial\svg_std_usd'};
     #set withdrawal_locked status to make sure for Real  -> MT5 transfer is not allowed
     $test_client_btc->status->set('withdrawal_locked', 'system', 'test');
     ok $test_client_btc->status->withdrawal_locked, "Real BTC account is withdrawal_locked";
@@ -1384,11 +1384,11 @@ subtest 'MT5' => sub {
             client_to_loginid   => $params->{args}{account_to},
             stash               => ignore(),
             accounts            => bag({
-                    loginid      => 'MTR' . $ACCOUNTS{'real\svg_financial_Bbook'},
+                    loginid      => 'MTR' . $ACCOUNTS{'real01\financial\svg_std_usd'},
                     balance      => num($DETAILS{balance}),
                     currency     => 'USD',
                     account_type => 'mt5',
-                    'mt5_group'  => 'real\\svg_financial_Bbook'
+                    'mt5_group'  => 'real01\financial\svg_std_usd'
                 },
                 {
                     loginid      => $test_client->loginid,
@@ -1404,7 +1404,7 @@ subtest 'MT5' => sub {
     # MT5 -> real
     $mock_client->mock(fully_authenticated => sub { return 0 });
 
-    $params->{args}{account_from} = 'MTR' . $ACCOUNTS{'real\svg_financial_Bbook'};
+    $params->{args}{account_from} = 'MTR' . $ACCOUNTS{'real01\financial\svg_std_usd'};
     $params->{args}{account_to}   = $test_client->loginid;
     $params->{args}{amount}       = 150;                                             # this is the only withdrawal amount allowed by mock MT5
 
@@ -1429,11 +1429,11 @@ subtest 'MT5' => sub {
             client_to_loginid   => $params->{args}{account_to},
             stash               => ignore(),
             accounts            => bag({
-                    loginid      => 'MTR' . $ACCOUNTS{'real\svg_financial_Bbook'},
+                    loginid      => 'MTR' . $ACCOUNTS{'real01\financial\svg_std_usd'},
                     balance      => num($DETAILS{balance}),
                     currency     => 'USD',
                     account_type => 'mt5',
-                    'mt5_group'  => 'real\\svg_financial_Bbook'
+                    'mt5_group'  => 'real01\financial\svg_std_usd'
                 },
                 {
                     loginid      => $test_client->loginid,
@@ -1458,7 +1458,7 @@ subtest 'MT5' => sub {
     #remove cashier_locked
     $test_client->status->clear_cashier_locked;
 
-    $params->{args}{account_from} = 'MTR' . $ACCOUNTS{'real\labuan_financial_stp'};
+    $params->{args}{account_from} = 'MTR' . $ACCOUNTS{'real01\financial\labuan_stp_usd'};
     $rpc_ct->call_ok('transfer_between_accounts', $params)
         ->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'Correct error code')
         ->error_message_like(
@@ -1477,13 +1477,13 @@ subtest 'MT5' => sub {
     $mock_client->mock(fully_authenticated => sub { return 1 });
 
     $params->{args}{account_from} = $test_client->loginid;
-    $params->{args}{account_to}   = 'MTR' . $ACCOUNTS{'real\labuan_financial_stp'};
+    $params->{args}{account_to}   = 'MTR' . $ACCOUNTS{'real01\financial\labuan_stp_usd'};
     $params->{args}{currency}     = 'EUR';
     $rpc_ct->call_ok('transfer_between_accounts', $params)
         ->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'Correct error code')
         ->error_message_is('Currency provided is different from account currency.', 'Correct message for wrong currency for real account_from');
 
-    $params->{args}{account_from} = 'MTR' . $ACCOUNTS{'real\labuan_financial_stp'};
+    $params->{args}{account_from} = 'MTR' . $ACCOUNTS{'real01\financial\labuan_stp_usd'};
     $params->{args}{account_to}   = $test_client->loginid;
     $rpc_ct->call_ok('transfer_between_accounts', $params)
         ->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'Correct error code')
@@ -1495,7 +1495,7 @@ subtest 'MT5' => sub {
 
         $params->{args}{amount}       = 180;
         $params->{args}{account_from} = $test_client->loginid;
-        $params->{args}{account_to}   = 'MTR' . $ACCOUNTS{'real\svg_financial_Bbook'};
+        $params->{args}{account_to}   = 'MTR' . $ACCOUNTS{'real01\financial\svg_std_usd'};
 
         $params->{token_type} = 'oauth_token';
         $rpc_ct->call_ok('transfer_between_accounts', $params)
@@ -1507,7 +1507,7 @@ subtest 'MT5' => sub {
         );
 
         $params->{args}{amount}       = 150;
-        $params->{args}{account_from} = 'MTR' . $ACCOUNTS{'real\svg_financial_Bbook'};
+        $params->{args}{account_from} = 'MTR' . $ACCOUNTS{'real01\financial\svg_std_usd'};
         $params->{args}{account_to}   = $test_client->loginid;
 
         $params->{token_type} = 'oauth_token';

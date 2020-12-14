@@ -24,7 +24,7 @@ my %DETAILS  = %Test::BOM::RPC::Accounts::ACCOUNT_DETAILS;
 
 my %GROUP_DETAILS = (
     currency => 'USD',
-    group    => 'real\svg',
+    group    => 'real01\synthetic\svg_std_usd',
     leverage => 300,
     company  => 'Deriv (SVG) LLC'
 );

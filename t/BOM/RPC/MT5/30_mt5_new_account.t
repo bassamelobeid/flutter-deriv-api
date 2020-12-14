@@ -158,9 +158,9 @@ subtest 'new account' => sub {
         },
     };
     $c->call_ok($method, $params)->has_no_error('no error for mt5_new_account without investPassword');
-    is($c->result->{login},           'MTR' . $ACCOUNTS{'real\svg'}, 'result->{login}');
-    is($c->result->{balance},         0,                             'Balance is 0 upon creation');
-    is($c->result->{display_balance}, '0.00',                        'Display balance is "0.00" upon creation');
+    is($c->result->{login},           'MTR' . $ACCOUNTS{'real01\synthetic\svg_std_usd'}, 'result->{login}');
+    is($c->result->{balance},         0,                                                 'Balance is 0 upon creation');
+    is($c->result->{display_balance}, '0.00',                                            'Display balance is "0.00" upon creation');
 
     BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
 
@@ -574,6 +574,148 @@ subtest 'VRTC to MLT and MF account switching' => sub {
     BOM::RPC::v3::MT5::Account::reset_throttler($mf_switch_client->loginid);
     $c->call_ok($method, $params)->has_no_error('financial account should be created');
     is($c->result->{account_type}, 'financial', 'account type should be financial');
+};
+
+subtest 'new account on addtional trade server' => sub {
+    my $mocked = Test::MockModule->new('BOM::Config');
+    $mocked->mock(
+        'mt5_server_routing',
+        sub {
+            return {
+                real => {},
+                demo => {}};
+        });
+    my $new_email  = 'abc' . $DETAILS{email};
+    my $new_client = create_client('CR', undef, {residence => 'za'});
+    my $token      = $m->create_token($new_client->loginid, 'test token');
+    $new_client->set_default_account('USD');
+    $new_client->email($new_email);
+
+    my $user = BOM::User->create(
+        email    => $new_email,
+        password => 's3kr1t',
+    );
+    $user->add_client($new_client);
+
+    my $method = 'mt5_new_account';
+    my $params = {
+        language => 'EN',
+        token    => $token,
+        args     => {
+            account_type => 'gaming',
+            email        => $new_email,
+            name         => $DETAILS{name},
+            mainPassword => $DETAILS{password}{main},
+            leverage     => 100,
+        },
+    };
+    note("creates a gaming account with old server config");
+    $c->call_ok($method, $params)->has_no_error('mt5 new account with old config za goes real01');
+    is($c->result->{balance},         0,             'Balance is 0');
+    is($c->result->{display_balance}, '0.00',        'Display balance is "0.00"');
+    is($c->result->{currency},        'USD',         'Currency is "USD"');
+    is($c->result->{login},           'MTR00001013', 'login is MTR00001013');
+
+    BOM::RPC::v3::MT5::Account::reset_throttler($new_client->loginid);
+    note('suspend mt5 real02. Tries to create financial account with new config.');
+    BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real02->all(1);
+    $mocked->unmock_all;
+    $params->{args}{account_type}     = 'financial';
+    $params->{args}{mt5_account_type} = 'financial';
+#    $c->call_ok($method, $params)->has_no_error('mt5 new account with new config');
+#    is($c->result->{balance},         0,             'Balance is 0');
+#    is($c->result->{display_balance}, '0.00',        'Display balance is "0.00"');
+#    is($c->result->{currency},        'USD',         'Currency is "USD"');
+#    is($c->result->{login},           'MTR00001016', 'login is MTR00001016');
+    BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real02->all(0);
+
+    note('unsuspend mt5 real02. Tries to create financial account with new config.');
+    BOM::RPC::v3::MT5::Account::reset_throttler($new_client->loginid);
+    $params->{args}{mt5_account_category} = 'swap_free';
+    $c->call_ok($method, $params)->has_no_error('mt5 new account with new config');
+    is($c->result->{login}, 'MTR20000002', 'login is MTR20000002');
+    $mocked->unmock_all;
+};
+
+subtest 'new account identical account check' => sub {
+    my $mock_mt5_rpc = Test::MockModule->new('BOM::RPC::v3::MT5::Account');
+    $mock_mt5_rpc->mock(
+        get_mt5_logins => sub {
+            return Future->done({
+                login    => 'MTR10001',
+                group    => 'real\svg',
+                balance  => 1000,
+                currency => 'USD',
+            });
+        });
+    my $new_email  = 'abcd' . $DETAILS{email};
+    my $new_client = create_client('CR', undef, {residence => 'za'});
+    my $token      = $m->create_token($new_client->loginid, 'test token');
+    $new_client->set_default_account('USD');
+    $new_client->email($new_email);
+
+    my $user = BOM::User->create(
+        email    => $new_email,
+        password => 's3kr1t',
+    );
+    $user->add_client($new_client);
+
+    my $method = 'mt5_new_account';
+    my $params = {
+        language => 'EN',
+        token    => $token,
+        args     => {
+            account_type => 'gaming',
+            email        => $new_email,
+            name         => $DETAILS{name},
+            mainPassword => $DETAILS{password}{main},
+            leverage     => 100,
+        },
+    };
+    note("creates a gaming account with existing account with old group name");
+    $c->call_ok($method, $params)->has_error->error_code_is('MT5CreateUserError', 'error code for identical account creation')
+        ->error_message_is(
+        'An account already exists with the information you provided. If you\'ve forgotten your username or password, please contact us.');
+};
+
+subtest 'country=za; creates financial account with existing gaming account while real02 disabled' => sub {
+    my $new_email  = 'abcdef' . $DETAILS{email};
+    my $new_client = create_client('CR', undef, {residence => 'za'});
+    my $token      = $m->create_token($new_client->loginid, 'test token 2');
+    $new_client->set_default_account('USD');
+    $new_client->email($new_email);
+
+    my $user = BOM::User->create(
+        email    => $new_email,
+        password => 's3kr1t',
+    );
+    $user->add_client($new_client);
+
+    my $method = 'mt5_new_account';
+    my $params = {
+        language => 'EN',
+        token    => $token,
+        args     => {
+            account_type => 'gaming',
+            email        => $new_email,
+            name         => $DETAILS{name},
+            mainPassword => $DETAILS{password}{main},
+            leverage     => 100,
+        },
+    };
+    my $result = $c->call_ok($method, $params)->has_no_error('gaming account successfully created')->result;
+    is $result->{account_type}, 'gaming', 'account_type=gaming';
+    is $result->{login}, 'MTR'. $ACCOUNTS{'real02\synthetic\svg_std_usd'}, 'created in group real02\synthetic\svg_std_usd';
+
+    BOM::RPC::v3::MT5::Account::reset_throttler($new_client->loginid);
+    note("disable real02 API calls.");
+    BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real02->all(1);
+
+    $params->{args}{account_type} = 'financial';
+    $params->{args}{mt5_account_type} = 'financial';
+    my $financial = $c->call_ok($method, $params)->has_no_error('financial account successfully created')->result;
+    is $financial->{account_type}, 'financial', 'account_type=financial';
+    is $financial->{login}, 'MTR'. $ACCOUNTS{'real01\financial\svg_std_usd'}, 'created in group real01\financial\svg_std_usd';
 };
 
 done_testing();

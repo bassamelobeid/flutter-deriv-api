@@ -2209,6 +2209,8 @@ rpc account_closure => sub {
         } if $balance > 0;
     }
 
+    # get_mt5_logins will return the accounts from all the available trade servers.
+    # If one trade server is disabled, we will still get the accounts from other trade servers
     my @mt5_accounts = BOM::RPC::v3::MT5::Account::get_mt5_logins($params->{client})->else(sub { return Future->done(); })->get;
     foreach my $mt5_account (@mt5_accounts) {
         next if $mt5_account->{group} =~ /^demo/;

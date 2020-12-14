@@ -89,11 +89,11 @@ subtest 'get settings' => sub {
         language => 'EN',
         token    => $token,
         args     => {
-            login => 'MTR' . $ACCOUNTS{'real\svg'},
+            login => 'MTR' . $ACCOUNTS{'real01\synthetic\svg_std_usd'},
         },
     };
     $c->call_ok($method, $params)->has_no_error('no error for mt5_get_settings');
-    is($c->result->{login},   'MTR' . $ACCOUNTS{'real\svg'}, 'result->{login}');
+    is($c->result->{login},   'MTR' . $ACCOUNTS{'real01\synthetic\svg_std_usd'}, 'result->{login}');
     is($c->result->{balance}, $DETAILS{balance},             'result->{balance}');
     is($c->result->{country}, "mt",                          'result->{country}');
 
@@ -116,7 +116,7 @@ subtest 'login list' => sub {
     is($c->result->[0]->{market_type},           'gaming',    "market_type result");
     is($c->result->[0]->{sub_account_type},      'financial', "sub_account_type result");
     is($c->result->[0]->{account_type},          'real',      "account_type result");
-    cmp_bag(\@accounts, ['MTR' . $ACCOUNTS{'real\svg'}], "mt5_login_list result");
+    cmp_bag(\@accounts, ['MTR' . $ACCOUNTS{'real01\synthetic\svg_std_usd'}], "mt5_login_list result");
 };
 
 subtest 'login list partly successfull result' => sub {
@@ -201,7 +201,7 @@ subtest 'login list with archived login id ' => sub {
     $c->call_ok($method, $params)->has_no_error('no error for mt5_login_list');
 
     my @accounts = map { $_->{login} } @{$c->result};
-    cmp_bag(\@accounts, ['MTR' . $ACCOUNTS{'real\svg'}], "mt5_login_list result");
+    cmp_bag(\@accounts, ['MTR' . $ACCOUNTS{'real01\synthetic\svg_std_usd'}], "mt5_login_list result");
     $mt5_async_mock->unmock('get_user');
     $mt5_acc_mock->unmock('_check_logins');
 };
@@ -265,7 +265,7 @@ subtest 'password check' => sub {
         language => 'EN',
         token    => $token,
         args     => {
-            login    => 'MTR' . $ACCOUNTS{'real\svg'},
+            login    => 'MTR' . $ACCOUNTS{'real01\synthetic\svg_std_usd'},
             password => $DETAILS{password}{main},
             type     => 'main',
         },
@@ -288,7 +288,7 @@ subtest 'password change' => sub {
         language => 'EN',
         token    => $token,
         args     => {
-            login         => 'MTR' . $ACCOUNTS{'real\svg'},
+            login         => 'MTR' . $ACCOUNTS{'real01\synthetic\svg_std_usd'},
             old_password  => $DETAILS{password}{main},
             new_password  => 'Ijkl6789',
             password_type => 'main'
@@ -300,7 +300,7 @@ subtest 'password change' => sub {
 
     is $emitted{"mt5_password_changed"}, undef, "mt5 password change event should not be emitted";
 
-    $params->{args}{login} = 'MTR' . $ACCOUNTS{'real\svg'};
+    $params->{args}{login} = 'MTR' . $ACCOUNTS{'real01\synthetic\svg_std_usd'};
 
     $c->call_ok($method, $params)->has_no_error('no error for mt5_password_change');
     # This call yields a truth integer directly, not a hash
@@ -310,7 +310,7 @@ subtest 'password change' => sub {
 
     # reset throller, test for password limit
     BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
-    $params->{args}->{login}        = 'MTR' . $ACCOUNTS{'real\svg'};
+    $params->{args}->{login}        = 'MTR' . $ACCOUNTS{'real01\synthetic\svg_std_usd'};
     $params->{args}->{old_password} = $DETAILS{password}{main};
     $params->{args}->{new_password} = 'Ijkl6789';
     $c->call_ok($method, $params)->has_no_error('no error for mt5_password_change');
@@ -478,7 +478,7 @@ subtest 'password reset' => sub {
         language => 'EN',
         token    => $token,
         args     => {
-            login             => 'MTR' . $ACCOUNTS{'real\svg'},
+            login             => 'MTR' . $ACCOUNTS{'real01\synthetic\svg_std_usd'},
             new_password      => 'Ijkl6789',
             password_type     => 'main',
             verification_code => $code
@@ -540,7 +540,7 @@ subtest 'investor password reset' => sub {
         language => 'EN',
         token    => $token,
         args     => {
-            login             => 'MTR' . $ACCOUNTS{'real\svg'},
+            login             => 'MTR' . $ACCOUNTS{'real01\synthetic\svg_std_usd'},
             new_password      => 'Abcd1234',
             password_type     => 'investor',
             verification_code => $code
@@ -566,7 +566,7 @@ subtest 'password check investor' => sub {
         language => 'EN',
         token    => $token,
         args     => {
-            login         => 'MTR' . $ACCOUNTS{'real\svg'},
+            login         => 'MTR' . $ACCOUNTS{'real01\synthetic\svg_std_usd'},
             password      => 'Abcd1234',
             password_type => 'investor'
         },

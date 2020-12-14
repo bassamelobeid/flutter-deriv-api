@@ -424,7 +424,7 @@ subtest 'get and set self_exclusion' => sub {
         }};
 
     my $mt5_loginid = $c->tcall('mt5_new_account', $mt5_params)->{login};
-    is($mt5_loginid, 'MTR' . $ACCOUNTS{'real\malta'}, 'MT5 loginid is correct: ' . $mt5_loginid);
+    is($mt5_loginid, 'MTR' . $ACCOUNTS{'real01\synthetic\malta_std_eur'}, 'MT5 loginid is correct: ' . $mt5_loginid);
 
     ## Verify an email was sent after opening an MT5 account, since user has
     ##  limits currently in place.

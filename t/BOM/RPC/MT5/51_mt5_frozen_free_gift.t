@@ -85,7 +85,7 @@ subtest 'frozen free gift' => sub {
 
     $params->{args} = {
         from_binary => $client->loginid,
-        to_mt5      => 'MTR' . $ACCOUNTS{'real\svg'},
+        to_mt5      => 'MTR' . $ACCOUNTS{'real01\synthetic\svg_std_usd'},
         amount      => 180,
     };
 };

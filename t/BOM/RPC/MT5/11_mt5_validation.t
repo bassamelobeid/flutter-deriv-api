@@ -84,7 +84,7 @@ $mocked_mt5->mock(
     },
     'get_group' => sub {
         return Future->done({
-            'group'    => $mt5_account_info->{group} // 'demo\svg',
+            'group'    => $mt5_account_info->{group} // 'demo01\synthetic\svg_std_usd',
             'currency' => 'USD',
             'leverage' => 500
         });
@@ -296,7 +296,7 @@ subtest 'CR account types - low risk' => sub {
         });
     ok($login, 'demo account successfully created for a low risk client');
     is $mt5_account_info->{country}, 'Afghanistan', 'requested country was masked by client_s country of residence';
-    is $mt5_account_info->{group},   'demo\svg',    'correct CR demo group';
+    is $mt5_account_info->{group},   'demo01\synthetic\svg_std_usd',    'correct CR demo group';
 
     $login = create_mt5_account->(
         $c, $token, $client,
@@ -304,7 +304,7 @@ subtest 'CR account types - low risk' => sub {
             account_type     => 'demo',
             mt5_account_type => 'financial'
         });
-    is $mt5_account_info->{group}, 'demo\svg_financial', 'correct CR financial demo group';
+    is $mt5_account_info->{group}, 'demo01\financial\svg_std_usd', 'correct CR financial demo group';
 
     $login = create_mt5_account->(
         $c, $token, $client,
@@ -312,12 +312,12 @@ subtest 'CR account types - low risk' => sub {
             account_type     => 'demo',
             mt5_account_type => 'financial_stp'
         });
-    is $mt5_account_info->{group}, 'demo\labuan_financial_stp', 'correct CR financial_stp demo group';
+    is $mt5_account_info->{group}, 'demo01\financial\labuan_stp_usd', 'correct CR financial_stp demo group';
 
     #real accounts
     financial_assessment($client, 'none');
     $login = create_mt5_account->($c, $token, $client, {account_type => 'gaming'});
-    is $mt5_account_info->{group}, 'real\svg', 'correct CR gaming group';
+    is $mt5_account_info->{group}, 'real01\synthetic\svg_std_usd', 'correct CR gaming group';
 
     $login = create_mt5_account->(
         $c, $token, $client,
@@ -326,7 +326,7 @@ subtest 'CR account types - low risk' => sub {
             mt5_account_type => 'financial'
         });
     ok $login, 'financial mt5 account is created without authentication and FA';
-    is $mt5_account_info->{group}, 'real\svg_financial_Bbook', 'correct CR financial group';
+    is $mt5_account_info->{group}, 'real01\financial\svg_std_usd', 'correct CR financial group';
 
     my $error = create_mt5_account->(
         $c, $token, $client,
@@ -359,7 +359,7 @@ subtest 'CR account types - low risk' => sub {
             mt5_account_type => 'financial_stp'
         });
     ok $login, 'financial_stp account created without financial assessment';
-    is $mt5_account_info->{group}, 'real\labuan_financial_stp', 'correct CR financial_stp group';
+    is $mt5_account_info->{group}, 'real01\financial\labuan_stp_usd', 'correct CR financial_stp group';
 };
 
 subtest 'CR account types - high risk' => sub {
@@ -385,7 +385,7 @@ subtest 'CR account types - high risk' => sub {
             account_type => 'demo'
         });
     ok($login, 'demo account successfully created for a high risk client');
-    is $mt5_account_info->{group}, 'demo\svg', 'correct CR demo group';
+    is $mt5_account_info->{group}, 'demo01\synthetic\svg_std_usd', 'correct CR demo group';
 
     $login = create_mt5_account->(
         $c, $token, $client,
@@ -393,7 +393,7 @@ subtest 'CR account types - high risk' => sub {
             account_type     => 'demo',
             mt5_account_type => 'financial'
         });
-    is $mt5_account_info->{group}, 'demo\svg_financial', 'correct CR financial demo group';
+    is $mt5_account_info->{group}, 'demo01\financial\svg_std_usd', 'correct CR financial demo group';
 
     $login = create_mt5_account->(
         $c, $token, $client,
@@ -401,7 +401,7 @@ subtest 'CR account types - high risk' => sub {
             account_type     => 'demo',
             mt5_account_type => 'financial_stp'
         });
-    is $mt5_account_info->{group}, 'demo\labuan_financial_stp', 'correct CR financial_stp demo group';
+    is $mt5_account_info->{group}, 'demo01\financial\labuan_stp_usd', 'correct CR financial_stp demo group';
 
     #real accounts
 
@@ -416,7 +416,7 @@ subtest 'CR account types - high risk' => sub {
     financial_assessment($client, 'financial_info');
     $login = create_mt5_account->($c, $token, $client, {account_type => 'gaming'});
     ok $login, 'gaming account created with finantial information alone';
-    is $mt5_account_info->{group}, 'real\svg', 'correct CR gaming group';
+    is $mt5_account_info->{group}, 'real01\synthetic\svg_std_usd', 'correct CR gaming group';
 
     $login = create_mt5_account->(
         $c, $token, $client,
@@ -425,7 +425,7 @@ subtest 'CR account types - high risk' => sub {
             mt5_account_type => 'financial'
         });
     ok $login, 'financial mt5 account is created without authentication';
-    is $mt5_account_info->{group}, 'real\svg_financial_Bbook', 'correct CR financial group';
+    is $mt5_account_info->{group}, 'real01\financial\svg_std_usd', 'correct CR financial group';
 
     my $error = create_mt5_account->(
         $c, $token, $client,
@@ -458,7 +458,7 @@ subtest 'CR account types - high risk' => sub {
             mt5_account_type => 'financial_stp'
         });
     ok $login, 'financial_stp account created without full financial assessment';
-    is $mt5_account_info->{group}, 'real\labuan_financial_stp', 'correct CR labuan_financial_stp group';
+    is $mt5_account_info->{group}, 'real01\financial\labuan_stp_usd', 'correct CR labuan_financial_stp group';
 };
 
 subtest 'MLT account types - low risk' => sub {
@@ -479,7 +479,7 @@ subtest 'MLT account types - low risk' => sub {
     #demo account
     my $login = create_mt5_account->($c, $token, $client, {account_type => 'demo'});
     ok($login, 'demo account successfully created for a low risk client');
-    is $mt5_account_info->{group}, 'demo\malta', 'correct MLT demo group';
+    is $mt5_account_info->{group}, 'demo01\synthetic\malta_std_eur', 'correct MLT demo group';
 
     $login = create_mt5_account->(
         $c, $token, $client,
@@ -488,7 +488,7 @@ subtest 'MLT account types - low risk' => sub {
             mt5_account_type => 'financial'
         });
     ok $login, 'MLT client can create a financial demo account';
-    is $mt5_account_info->{group}, 'demo\maltainvest_financial', 'correct MLT demo group';
+    is $mt5_account_info->{group}, 'demo01\financial\maltainvest_std_eur', 'correct MLT demo group';
 
     $login = create_mt5_account->(
         $c, $token, $client,
@@ -502,7 +502,7 @@ subtest 'MLT account types - low risk' => sub {
 
     #real accounts
     $login = create_mt5_account->($c, $token, $client, {account_type => 'gaming'});
-    is $mt5_account_info->{group}, 'real\malta', 'correct MLT gaming group';
+    is $mt5_account_info->{group}, 'real01\synthetic\malta_std_eur', 'correct MLT gaming group';
 
     create_mt5_account->(
         $c, $token, $client,
@@ -543,7 +543,7 @@ subtest 'MLT account types - high risk' => sub {
     #demo account
     my $login = create_mt5_account->($c, $token, $client, {account_type => 'demo'});
     ok($login, 'demo account successfully created for a high risk client');
-    is $mt5_account_info->{group}, 'demo\malta', 'correct MLT demo group';
+    is $mt5_account_info->{group}, 'demo01\synthetic\malta_std_eur', 'correct MLT demo group';
 
     $login = create_mt5_account->(
         $c, $token, $client,
@@ -552,7 +552,7 @@ subtest 'MLT account types - high risk' => sub {
             mt5_account_type => 'financial'
         });
     ok $login, 'MLT client can create a financial demo account';
-    is $mt5_account_info->{group}, 'demo\maltainvest_financial', 'correct MLT demo group';
+    is $mt5_account_info->{group}, 'demo01\financial\maltainvest_std_eur', 'correct MLT demo group';
 
     $login = create_mt5_account->(
         $c, $token, $client,
@@ -575,7 +575,7 @@ subtest 'MLT account types - high risk' => sub {
 
     financial_assessment($client, 'financial_info');
     $login = create_mt5_account->($c, $token, $client, {account_type => 'gaming'});
-    is $mt5_account_info->{group}, 'real\malta', 'correct MLT gaming group';
+    is $mt5_account_info->{group}, 'real01\synthetic\malta_std_eur', 'correct MLT gaming group';
 
     create_mt5_account->(
         $c, $token, $client,
@@ -618,7 +618,7 @@ subtest 'MF accout types' => sub {
     #demo accounts
     my $login = create_mt5_account->($c, $token, $client, {account_type => 'demo'});
     ok($login, 'demo gaming account successfully created for an MF client');
-    is $mt5_account_info->{group}, 'demo\malta', 'correct MF demo group';
+    is $mt5_account_info->{group}, 'demo01\synthetic\malta_std_eur', 'correct MF demo group';
 
     $login = create_mt5_account->(
         $c, $token, $client,
@@ -627,7 +627,7 @@ subtest 'MF accout types' => sub {
             mt5_account_type => 'financial'
         });
     ok($login, 'demo financial account successfully created for an MF client');
-    is $mt5_account_info->{group}, 'demo\maltainvest_financial', 'correct MF demo group';
+    is $mt5_account_info->{group}, 'demo01\financial\maltainvest_std_eur', 'correct MF demo group';
 
     create_mt5_account->(
         $c, $token, $client,
@@ -700,7 +700,7 @@ subtest 'MF accout types' => sub {
             mt5_account_type => 'financial'
         });
     ok($login, 'real financial account successfully created for an MF client');
-    is $mt5_account_info->{group}, 'real\maltainvest_financial', 'correct MF financial group';
+    is $mt5_account_info->{group}, 'real01\financial\maltainvest_std-hr_eur', 'correct MF financial group';
 
     create_mt5_account->(
         $c, $token, $client,
@@ -828,7 +828,7 @@ subtest 'VR account types - CR residence' => sub {
             account_type => 'demo'
         });
     ok($login, 'demo account successfully created for a virtual account');
-    is $mt5_account_info->{group}, 'demo\svg', 'correct VRTC gaming account';
+    is $mt5_account_info->{group}, 'demo01\synthetic\svg_std_usd', 'correct VRTC gaming account';
 
     $login = create_mt5_account->(
         $c, $token, $client,
@@ -836,7 +836,7 @@ subtest 'VR account types - CR residence' => sub {
             account_type     => 'demo',
             mt5_account_type => 'financial'
         });
-    is $mt5_account_info->{group}, 'demo\svg_financial', 'correct VRTC financial demo group';
+    is $mt5_account_info->{group}, 'demo01\financial\svg_std_usd', 'correct VRTC financial demo group';
 
     $login = create_mt5_account->(
         $c, $token, $client,
@@ -844,7 +844,7 @@ subtest 'VR account types - CR residence' => sub {
             account_type     => 'demo',
             mt5_account_type => 'financial_stp'
         });
-    is $mt5_account_info->{group}, 'demo\labuan_financial_stp', 'correct VRTC financial_stp demo group';
+    is $mt5_account_info->{group}, 'demo01\financial\labuan_stp_usd', 'correct VRTC financial_stp demo group';
 
     #real accounts
     create_mt5_account->(
@@ -904,7 +904,7 @@ subtest 'Virtual account types - EU residences' => sub {
             account_type     => 'demo',
             mt5_account_type => 'financial'
         });
-    is $mt5_account_info->{group}, 'demo\maltainvest_financial', 'correct VRTC financial demo group';
+    is $mt5_account_info->{group}, 'demo01\financial\maltainvest_std_eur', 'correct VRTC financial demo group';
 
     $login = create_mt5_account->(
         $c, $token, $client,
@@ -960,7 +960,7 @@ subtest 'Virtual account types - EU residences' => sub {
             account_type     => 'financial',
             mt5_account_type => 'financial'
         });
-    is $mt5_account_info->{group}, 'real\maltainvest_financial_GBP', 'correct VRTC financial demo group with GBP currency';
+    is $mt5_account_info->{group}, 'real01\financial\maltainvest_std-hr_gbp', 'correct VRTC financial demo group with eur currency';
 
 };
 
