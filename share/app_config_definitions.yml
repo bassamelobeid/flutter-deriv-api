@@ -858,17 +858,17 @@ system:
           isa: section
           contains:
             all:
-              description: "Suspend MT5 API calls"
+              description: "Suspend MT5 API calls on all trade servers"
               isa: Bool
               default: 0
               global: 1
             deposits:
-              description: "Suspend MT5 deposits"
+              description: "Suspend MT5 deposits on all trade servers"
               isa: Bool
               default: 0
               global: 1
             withdrawals:
-              description: "Suspend MT5 withdrawals"
+              description: "Suspend MT5 withdrawals on all trade servers"
               isa: Bool
               default: 0
               global: 1
@@ -877,16 +877,49 @@ system:
               isa: Bool
               default: 0
               global: 1
-            demo:
-              description: "Suspend MT5 API calls to demo"
+            demo01:
+              description: "Suspend MT5 API calls to demo01"
               isa: Bool
               default: 0
               global: 1
-            real:
-              description: "Suspend MT5 API calls to real"
-              isa: Bool
-              default: 0
-              global: 1
+            real01:
+              description: "Configuration to suspend mt5 real01"
+              isa: section
+              contains:
+                all:
+                  description: "Suspend MT5 API calls on real01"
+                  isa: Bool
+                  default: 0
+                  global: 1
+                deposits:
+                  description: "Suspend MT5 deposits on real01"
+                  isa: Bool
+                  default: 0
+                  global: 1
+                withdrawals:
+                  description: "Suspend MT5 withdrawals on real01"
+                  isa: Bool
+                  default: 0
+                  global: 1
+            real02:
+              description: "Configuration to suspend mt5 real02"
+              isa: section
+              contains:
+                all:
+                  description: "Suspend MT5 API calls on real02"
+                  isa: Bool
+                  default: 1
+                  global: 1
+                deposits:
+                  description: "Suspend MT5 deposits on real02"
+                  isa: Bool
+                  default: 0
+                  global: 1
+                withdrawals:
+                  description: "Suspend MT5 withdrawals on real02"
+                  isa: Bool
+                  default: 0
+                  global: 1
 marketing:
     description:  "Marketing Bonus Settings"
     isa: section

@@ -573,7 +573,7 @@ Returns the amount of time to wait before bumping fee for a transaction for each
 
 sub get_currency_wait_before_bump {
     my $currency = shift;
-    
+
     return app_config()->get('payments.crypto.fee_bump_wait_time.' . $currency);
 }
 

@@ -4,7 +4,7 @@ demo_labuan_financial_financial_stp: &demo_labuan_financial_financial_stp
   market_type: financial
   sub_account_type: financial_stp
 demo\labuan_financial_stp: *demo_labuan_financial_financial_stp
-demo\financial\labuan_stp_usd: *demo_labuan_financial_financial_stp
+demo01\financial\labuan_stp_usd: *demo_labuan_financial_financial_stp
 
 
 demo_maltainvest_financial_swap_free: &demo_maltainvest_financial_swap_free
@@ -12,8 +12,8 @@ demo_maltainvest_financial_swap_free: &demo_maltainvest_financial_swap_free
   landing_company_short: maltainvest
   market_type: financial
   sub_account_type: swap_free
-demo\financial\maltainvest_sf_eur: *demo_maltainvest_financial_swap_free
-demo\financial\maltainvest_sf_gbp: *demo_maltainvest_financial_swap_free
+demo01\financial\maltainvest_sf_eur: *demo_maltainvest_financial_swap_free
+demo01\financial\maltainvest_sf_gbp: *demo_maltainvest_financial_swap_free
 
 
 demo_maltainvest_financial_financial: &demo_maltainvest_financial_financial
@@ -23,8 +23,8 @@ demo_maltainvest_financial_financial: &demo_maltainvest_financial_financial
   sub_account_type: financial
 demo\maltainvest_financial: *demo_maltainvest_financial_financial
 demo\maltainvest_financial_gbp: *demo_maltainvest_financial_financial
-demo\financial\maltainvest_std_gbp: *demo_maltainvest_financial_financial
-demo\financial\maltainvest_std_eur: *demo_maltainvest_financial_financial
+demo01\financial\maltainvest_std_gbp: *demo_maltainvest_financial_financial
+demo01\financial\maltainvest_std_eur: *demo_maltainvest_financial_financial
 
 
 demo_samoa_financial_financial: &demo_samoa_financial_financial
@@ -32,8 +32,8 @@ demo_samoa_financial_financial: &demo_samoa_financial_financial
   landing_company_short: samoa
   market_type: financial
   sub_account_type: financial
-demo\financial\samoa_std_btc: *demo_samoa_financial_financial
-demo\financial\samoa_std_ust: *demo_samoa_financial_financial
+demo01\financial\samoa_std_btc: *demo_samoa_financial_financial
+demo01\financial\samoa_std_ust: *demo_samoa_financial_financial
 
 
 demo_svg_financial_swap_free: &demo_svg_financial_swap_free
@@ -41,7 +41,7 @@ demo_svg_financial_swap_free: &demo_svg_financial_swap_free
   landing_company_short: svg
   market_type: financial
   sub_account_type: swap_free
-demo\financial\svg_sf_usd: *demo_svg_financial_swap_free
+demo01\financial\svg_sf_usd: *demo_svg_financial_swap_free
 
 
 demo_svg_financial_financial: &demo_svg_financial_financial
@@ -50,7 +50,7 @@ demo_svg_financial_financial: &demo_svg_financial_financial
   market_type: financial
   sub_account_type: financial
 demo\svg_financial: *demo_svg_financial_financial
-demo\financial\svg_std_usd: *demo_svg_financial_financial
+demo01\financial\svg_std_usd: *demo_svg_financial_financial
 
 
 demo_vanuatu_financial_financial: &demo_vanuatu_financial_financial
@@ -59,7 +59,7 @@ demo_vanuatu_financial_financial: &demo_vanuatu_financial_financial
   market_type: financial
   sub_account_type: financial
 demo\vanuatu_financial: *demo_vanuatu_financial_financial
-demo\financial\vanuatu_std_usd: *demo_vanuatu_financial_financial
+demo01\financial\vanuatu_std_usd: *demo_vanuatu_financial_financial
 
 
 demo_malta_gaming_swap_free: &demo_malta_gaming_swap_free
@@ -67,7 +67,7 @@ demo_malta_gaming_swap_free: &demo_malta_gaming_swap_free
   landing_company_short: malta
   market_type: gaming
   sub_account_type: swap_free
-demo\synthetic\malta_sf_usd: *demo_malta_gaming_swap_free
+demo01\synthetic\malta_sf_eur: *demo_malta_gaming_swap_free
 
 
 demo_malta_gaming_financial: &demo_malta_gaming_financial
@@ -76,7 +76,7 @@ demo_malta_gaming_financial: &demo_malta_gaming_financial
   market_type: gaming
   sub_account_type: financial
 demo\malta: *demo_malta_gaming_financial
-demo\synthetic\malta_std_usd: *demo_malta_gaming_financial
+demo01\synthetic\malta_std_eur: *demo_malta_gaming_financial
 
 
 demo_samoa_gaming_financial: &demo_samoa_gaming_financial
@@ -84,8 +84,8 @@ demo_samoa_gaming_financial: &demo_samoa_gaming_financial
   landing_company_short: samoa
   market_type: gaming
   sub_account_type: financial
-demo\synthetic\samoa_std_btc: *demo_samoa_gaming_financial
-demo\synthetic\samoa_std_ust: *demo_samoa_gaming_financial
+demo01\synthetic\samoa_std_btc: *demo_samoa_gaming_financial
+demo01\synthetic\samoa_std_ust: *demo_samoa_gaming_financial
 
 
 demo_svg_gaming_swap_free: &demo_svg_gaming_swap_free
@@ -93,7 +93,7 @@ demo_svg_gaming_swap_free: &demo_svg_gaming_swap_free
   landing_company_short: svg
   market_type: gaming
   sub_account_type: swap_free
-demo\synthetic\svg_sf_usd: *demo_svg_gaming_swap_free
+demo01\synthetic\svg_sf_usd: *demo_svg_gaming_swap_free
 
 
 demo_svg_gaming_financial: &demo_svg_gaming_financial
@@ -102,7 +102,7 @@ demo_svg_gaming_financial: &demo_svg_gaming_financial
   market_type: gaming
   sub_account_type: financial
 demo\svg: *demo_svg_gaming_financial
-demo\synthetic\svg_std_usd: *demo_svg_gaming_financial
+demo01\synthetic\svg_std_usd: *demo_svg_gaming_financial
 
 
 real_bvi_financial_financial_stp: &real_bvi_financial_financial_stp

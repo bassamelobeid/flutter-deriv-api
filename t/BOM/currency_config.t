@@ -366,14 +366,14 @@ subtest 'Check Types of Suspension' => sub {
     subtest 'Only when cryptocurrency is suspended' => sub {
         $app_config->system->suspend->cryptocurrencies('BTC');
         ok BOM::Config::CurrencyConfig::is_crypto_currency_withdrawal_stopped('BTC'), 'Withdrawal for cryptocurrency is stopped';
-        ok BOM::Config::CurrencyConfig::is_crypto_currency_deposit_stopped('BTC'), 'Deposit for cryptocurrency is stopped';
+        ok BOM::Config::CurrencyConfig::is_crypto_currency_deposit_stopped('BTC'),    'Deposit for cryptocurrency is stopped';
         $app_config->system->suspend->cryptocurrencies('');
     };
 
     subtest 'Only when cryptocurrency is suspended' => sub {
         $app_config->system->suspend->cryptocurrencies('ETH');
         ok !(BOM::Config::CurrencyConfig::is_crypto_currency_withdrawal_stopped('BTC')), 'Withdrawal for cryptocurrency is stopped';
-        ok !(BOM::Config::CurrencyConfig::is_crypto_currency_deposit_stopped('BTC')), 'Deposit for cryptocurrency is stopped';
+        ok !(BOM::Config::CurrencyConfig::is_crypto_currency_deposit_stopped('BTC')),    'Deposit for cryptocurrency is stopped';
         $app_config->system->suspend->cryptocurrencies('');
     };
 
