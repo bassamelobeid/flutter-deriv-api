@@ -364,9 +364,21 @@ subtest 'get_bid' => sub {
         sell_price      => $contract->payout,
         country_code    => 'cr',
         landing_company => $landing_company,
+        transaction_ids => {buy => undef},
+        buy_price       => 100,
+        sell_time       => 1605753540,
+        purchase_time   => 1605753500,
     };
     my $result        = $c->call_ok('get_bid', $params)->has_no_system_error->has_no_error->result;
     my @expected_keys = (qw(
+            sell_price
+            is_sold
+            profit
+            profit_percentage
+            transaction_ids
+            buy_price
+            sell_time
+            purchase_time
             bid_price
             current_spot_time
             contract_id
@@ -405,7 +417,8 @@ subtest 'get_bid' => sub {
             expiry_time
     ));
     cmp_bag([sort keys %{$result}], [sort @expected_keys]);
-    is($result->{status}, 'open', 'get the right status');
+    is($result->{status}, 'open',                                       'get the right status');
+    is($result->{profit}, $params->{sell_price} - $params->{buy_price}, 'profit is calculated correctly');
     $contract = _create_contract();
 
     $params = {
@@ -416,6 +429,10 @@ subtest 'get_bid' => sub {
         sell_price      => $contract->payout,
         country_code    => 'cr',
         landing_company => $landing_company,
+        transaction_ids => {buy => undef},
+        buy_price       => 1,
+        sell_time       => 1605753540,
+        purchase_time   => 1605753500,
     };
 
     $result = $c->call_ok('get_bid', $params)->has_no_system_error->has_no_error->result;

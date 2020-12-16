@@ -356,6 +356,32 @@ sub get_bid {
                 from_pricer        => $format_limit_order,
             });
 
+            # (M)oved from bom-rpc populate_proposal_open_contract_response
+            my ($transaction_ids, $buy_price, $account_id, $purchase_time) =
+                @{$params}{qw/transaction_ids buy_price account_id purchase_time/};
+
+            $response->{transaction_ids} = $transaction_ids if defined $transaction_ids;
+            $response->{buy_price}       = $buy_price       if defined $buy_price;
+            $response->{account_id}      = $account_id      if defined $account_id;
+            $response->{is_sold}         = $is_sold         if defined $is_sold;
+            $response->{sell_time}       = $sell_time       if defined $sell_time;
+            $response->{purchase_time}   = $purchase_time   if defined $purchase_time;
+
+            $response->{sell_price} = formatnumber('price', $currency, $sell_price)
+                if defined $sell_price;
+
+            if (defined $response->{buy_price}
+                and (defined $response->{bid_price} or defined $response->{sell_price}))
+            {
+                my $cancellation_price  = $response->{cancellation} ? $response->{cancellation}->{ask_price} : 0;
+                my $main_contract_price = $response->{buy_price} - $cancellation_price;
+                my $profit              = ($response->{sell_price} // $response->{bid_price}) - $main_contract_price;
+
+                $response->{profit}            = formatnumber('price', $currency, $profit);
+                $response->{profit_percentage} = roundcommon(0.01, $profit / $main_contract_price * 100);
+            }
+            # (M)
+
             my $pen = $contract->pricing_engine_name;
             $pen =~ s/::/_/g;
             stats_timing('compute_price.sell.timing', 1000 * Time::HiRes::tv_interval($tv), {tags => ["pricing_engine:$pen"]});

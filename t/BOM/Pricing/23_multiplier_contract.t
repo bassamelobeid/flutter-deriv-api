@@ -258,6 +258,7 @@ subtest 'multiplier - get_bid' => sub {
     };
 
     my $expected = {
+        'is_sold'                    => 0,
         'entry_tick_time'            => ignore(),
         'current_spot_display_value' => '100.00',
         'stash'                      => {
@@ -338,6 +339,7 @@ subtest 'multiplier - get_bid' => sub {
     };
 
     $expected = {
+        'is_sold'                    => 0,
         'entry_tick_time'            => ignore(),
         'current_spot_display_value' => '100.00',
         'stash'                      => {

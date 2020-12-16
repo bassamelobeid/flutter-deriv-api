@@ -147,6 +147,7 @@ subtest 'get_bid' => sub {
 
     my $result        = $c->call_ok('get_bid', $params)->has_no_system_error->has_no_error->result;
     my @expected_keys = (qw(
+            is_sold
             bid_price
             current_spot_time
             contract_id

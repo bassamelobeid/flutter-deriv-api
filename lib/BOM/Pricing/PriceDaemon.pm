@@ -85,7 +85,11 @@ sub process_job {
     my $cmd          = $params->{price_daemon_cmd};
     my $current_time = time;
 
-    unless ($self->price_duplicate_spot) {
+    unless (
+        $self->price_duplicate_spot
+        # we must not wait for the next tick if a poc is sold
+        || ($cmd eq 'bid' && $params->{is_sold} == 1))
+    {
         my $underlying           = $self->_get_underlying_or_log($next, $params) or return undef;
         my $current_spot_ts      = $underlying->spot_tick->epoch;
         my $last_priced_contract = eval { decode_json_utf8($redis_pricer->get($next) // die 'default') } || {time => 0};
