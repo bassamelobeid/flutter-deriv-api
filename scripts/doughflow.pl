@@ -13,21 +13,31 @@ use Data::Dump 'pp';
 binmode STDOUT, ':encoding(UTF-8)';
 binmode STDERR, ':encoding(UTF-8)';
 
-my $usage = "Usage: $0 -a <action> -e <URL> -s <secret_key> -c <client_loginid> -l <debug|info|error>\n";
+my $usage =
+      "Usage: $0 -a <action> -e <URL> -s <secret_key> -c <client_loginid>"
+    . " [-l <debug|info|error>]"
+    . " [-t trace_id]"
+    . " [--amount 1]"
+    . " [-pp payment_processor]"
+    . " [-pm payment_method]"
+    . " [-p shared_loginid]"
+    . " [-pt CreditCard]"
+    . " [-id 491623******6886]\n";
 
 require Log::Any::Adapter;
 GetOptions(
-    'a|action=s'             => \my $action,
-    'e|endpoint=s'           => \my $endpoint_url,
-    's|secret_key=s'         => \my $secret_key,
-    'c|client_loginid=s'     => \my $client_loginid,
-    'l|log=s'                => \my $log_level,
-    't|trace_id=i'           => \my $trace_id,
-    'amount=i'               => \my $amount,
-    'pp|payment_processor=s' => \my $payment_processor,
-    'pm|payment_method=s'    => \my $payment_method,
-    # Only needed for `shared_payment_method`
-    'p|shared_loginid=s' => \my $shared_loginid,
+    'a|action=s'              => \my $action,
+    'e|endpoint=s'            => \my $endpoint_url,
+    's|secret_key=s'          => \my $secret_key,
+    'c|client_loginid=s'      => \my $client_loginid,
+    'l|log=s'                 => \my $log_level,
+    't|trace_id=i'            => \my $trace_id,
+    'amount=i'                => \my $amount,
+    'pp|payment_processor=s'  => \my $payment_processor,
+    'pm|payment_method=s'     => \my $payment_method,
+    'p|shared_loginid=s'      => \my $shared_loginid,      # Only needed for `shared_payment_method`
+    'pt|payment_type=s'       => \my $payment_type,
+    'id|account_identifier=s' => \my $account_identifier
 ) or die $usage;
 
 # endpoint for QA box is 127.0.0.1:8110
@@ -65,10 +75,12 @@ $trace_id          ||= do {
 };
 
 my $params = {
-    client_loginid => $client_loginid,
-    amount         => $amount,
-    currency_code  => $client->account->currency_code,
-    trace_id       => $trace_id,
+    client_loginid     => $client_loginid,
+    amount             => $amount,
+    currency_code      => $client->account->currency_code,
+    trace_id           => $trace_id,
+    payment_type       => $payment_type,
+    account_identifier => $account_identifier
 };
 
 # DF doesn't know both the payment processor and the payment method for all operations

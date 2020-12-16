@@ -179,12 +179,14 @@ sub write_transaction_line {
 
     my $client = $c->user;
 
-    my $currency_code     = $c->request_parameters->{currency_code};
-    my $transaction_id    = $c->request_parameters->{transaction_id};
-    my $trace_id          = $c->request_parameters->{trace_id};
-    my $amount            = $c->request_parameters->{amount};
-    my $payment_processor = $c->request_parameters->{payment_processor} // '';
-    my $payment_method    = $c->request_parameters->{payment_method};
+    my $currency_code      = $c->request_parameters->{currency_code};
+    my $transaction_id     = $c->request_parameters->{transaction_id};
+    my $trace_id           = $c->request_parameters->{trace_id};
+    my $amount             = $c->request_parameters->{amount};
+    my $payment_processor  = $c->request_parameters->{payment_processor} // '';
+    my $payment_method     = $c->request_parameters->{payment_method};
+    my $payment_type       = $c->request_parameters->{payment_type} // '';
+    my $account_identifier = $c->request_parameters->{account_identifier} // '';
 
     my $doughflow_datamapper = BOM::Database::DataMapper::Payment::DoughFlow->new({
         client_loginid => $c->user->loginid,
@@ -261,24 +263,28 @@ sub write_transaction_line {
     my $trx;
     my $event_args = {
         loginid        => $client->loginid,
-        trace_id       => $payment_args{trace_id},
-        amount         => $payment_args{amount},
-        payment_fee    => $payment_args{payment_fee},
-        currency       => $payment_args{currency},
-        payment_method => $payment_args{payment_method},
+        trace_id       => $trace_id,
+        amount         => $amount,
+        payment_fee    => $fee,
+        currency       => $currency_code,
+        payment_method => $payment_method,
     };
+
     if ($c->type eq 'deposit') {
         # should be executed before saving the payment in the database
         my $is_first_deposit = $client->is_first_deposit_pending;
 
         $trx = $client->payment_doughflow(%payment_args);
+
         BOM::Platform::Event::Emitter::emit(
             'payment_deposit',
             {
                 $event_args->%*,
-                transaction_id    => $trx->{id},
-                is_first_deposit  => $is_first_deposit,
-                payment_processor => $payment_processor    # only deposit has payment_processor
+                transaction_id     => $trx->{id},
+                is_first_deposit   => $is_first_deposit,
+                account_identifier => $account_identifier,
+                payment_processor  => $payment_processor,    # only deposit has payment_processor
+                payment_type       => $payment_type,
             }) if ($trx);
 
         # Social responsibility checks for MLT/MX clients

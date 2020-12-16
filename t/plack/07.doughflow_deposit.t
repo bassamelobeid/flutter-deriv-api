@@ -133,15 +133,17 @@ subtest 'emit payment_deposit' => sub {
 
     is_deeply $last_event{data},
         {
-        loginid           => $loginid,
-        payment_processor => 'QIWI',
-        transaction_id    => $trx->{id},
-        is_first_deposit  => 0,
-        trace_id          => 1235,
-        amount            => '1',
-        payment_fee       => '0',
-        currency          => 'USD',
-        payment_method    => 'VISA',
+        loginid            => $loginid,
+        payment_processor  => 'QIWI',
+        transaction_id     => $trx->{id},
+        is_first_deposit   => 0,
+        trace_id           => 1235,
+        amount             => '1',
+        payment_fee        => '0',
+        currency           => 'USD',
+        payment_method     => 'VISA',
+        payment_type       => '',
+        account_identifier => '',
         },
         'event args are correct';
 };
