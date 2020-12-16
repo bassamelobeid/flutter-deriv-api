@@ -41,22 +41,25 @@ $req = {
     "currency"      => "USD",
     "symbol"        => "R_50",
     "duration"      => 5,
-    "duration_unit" => "t",
+    "duration_unit" => "d",
 };
 
-$t->send_ok({json => $req})->message_ok;
+$t   = $t->send_ok({json => $req})->message_ok;
 $res = $json->decode(Encode::decode_utf8($t->message->[1]));
 my $uuid = $res->{proposal}->{id};
-ok $uuid, 'Should return id';
-is $res->{subscription}->{id}, $uuid, 'Subscription id with a correct value';
 
-$t->send_ok({json => $req})->message_ok;
-$res = $json->decode(Encode::decode_utf8($t->message->[1]));
-is $res->{error}->{code}, 'AlreadySubscribed', 'Correct error for already subscribed with same req_id';
+$t = $t->json_message_has('/proposal/id', 'Should return id')->json_message_is('/subscription/id', $uuid, 'Subscription id with a correct value');
 
-$t->send_ok({json => {forget_all => 'proposal'}})->message_ok;
-$res = $json->decode(Encode::decode_utf8($t->message->[1]));
-is scalar @{$res->{forget_all}}, 1, 'Correct number of subscriptions forgotten';
-is $res->{forget_all}->[0], $uuid, 'Correct subscription id forgotten';
+$t = $t->send_ok({json => $req})->message_ok->json_message_is('/error/code', 'AlreadySubscribed');
+
+# check that pricing-daemon is still streaming the original contract
+for (0 .. 2) {
+    $t = $t->message_ok->json_message_is('/proposal/id', $uuid)->json_message_is('/subscription/id', $uuid)
+        ->json_message_is('/proposal/payout', $req->{amount});
+}
+
+$t = $t->send_ok({json => {forget_all => 'proposal'}})->message_ok->json_message_is('/forget_all', [$uuid], 'Correct subscription id(s) forgotten');
+
+$t = $t->finish_ok;
 
 done_testing();
