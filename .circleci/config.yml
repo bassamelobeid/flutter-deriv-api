@@ -119,8 +119,11 @@ jobs:
     - run:
         <<: *5
         command: |
-          echo '--formatter TAP::Formatter::JUnit' >> .proverc
+          perl -MBOM::Test /home/git/regentmarkets/bom-pricing/bin/price_queue.pl &
+          perl -MBOM::Test /home/git/regentmarkets/bom-pricing/bin/price_daemon.pl --no-warmup=1 --workers=1 &
+          perl -MBOM::Test /home/git/regentmarkets/bom-transaction/bin/expiryd.pl -t 1 &
           make pricing
+          kill $(jobs -p)
         name: Pricing
     - store_test_results:
         path: /var/tmp/test-output

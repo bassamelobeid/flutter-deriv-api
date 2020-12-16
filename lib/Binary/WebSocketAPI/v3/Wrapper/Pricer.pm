@@ -240,12 +240,6 @@ sub _process_proposal_open_contract_response {
                         $c->l('You are already subscribed to [_1].', 'proposal_open_contract'));
                     $c->send({json => $error}, $req_storage);
                     return;
-                } else {
-                    # subscribe to transaction channel as when contract is manually sold we need to cancel streaming
-                    Binary::WebSocketAPI::v3::Wrapper::Transaction::transaction_channel(
-                        $c, 'subscribe', delete $contract->{account_id},    # should not go to client
-                        'sell', $args, $contract->{contract_id}, $uuid
-                    );
                 }
             }
             my $result = {$uuid ? (id => $uuid) : (), %{$contract}};
@@ -415,38 +409,6 @@ sub _create_pricer_channel {
         subscription => $subscription,
         uuid         => $uuid
     };
-}
-
-#
-# we're finishing POC stream on contract is sold (called from _close_proposal_open_contract_stream in Streamer.pm)
-#
-sub send_proposal_open_contract_last_time {
-    my ($c, $args, $contract_id, $stash_data) = @_;
-    Binary::WebSocketAPI::v3::Subscription->unregister_by_uuid($c, $args->{uuid});
-
-    $c->call_rpc({
-            args        => $stash_data,
-            method      => 'proposal_open_contract',
-            msg_type    => 'proposal_open_contract',
-            call_params => {
-                token       => $c->stash('token'),
-                contract_id => $contract_id
-            },
-            rpc_response_cb => sub {
-                my ($c, $rpc_response, $req_storage) = @_;
-
-                for my $each_contract (keys %{$rpc_response}) {
-                    delete $rpc_response->{$each_contract}->{account_id};
-                    $rpc_response->{$each_contract}->{limit_order} = delete $rpc_response->{$each_contract}->{limit_order_as_hashref}
-                        if $rpc_response->{$each_contract}->{limit_order_as_hashref};
-                }
-                return {
-                    proposal_open_contract => $rpc_response->{$contract_id} || {},
-                    msg_type               => 'proposal_open_contract',
-                    subscription           => {id => $args->{uuid}}};
-            }
-        });
-    return;
 }
 
 sub _unique_barriers {

@@ -61,14 +61,6 @@ has type => (
         die "type can only be buy, balance, transaction, sell" unless $allowed_types->{$_[0]};
     });
 
-has poc_uuid => (
-    is       => 'ro',
-    required => 0,
-    default  => sub { '' },
-    isa      => sub {
-        die "poc_uuid should be a uuid string" unless $_[0] =~ /^(?:\w{8}-\w{4}-\w{4}-\w{4}-\w{12})?$/;
-    });
-
 =head2 contract_id
 
 =cut
@@ -137,12 +129,6 @@ The channel name
 
 sub _build_channel { return 'TXNUPDATE::transaction_' . shift->account_id }
 
-sub BUILD {
-    my ($self) = @_;
-    die "poc_uuid is required for type 'sell'" if $self->type eq 'sell' && !$self->poc_uuid;
-    return undef;
-}
-
 # This method is used to find a subscription. Class name + _unique_key will be a unique index of the subscription objects.
 sub _unique_key {
     my $self = shift;
@@ -150,7 +136,7 @@ sub _unique_key {
         my $type = $self->balance_all_proxy ? 'balanceall' : 'balance';
         return $type . ':' . $self->account_id;
     }
-    return $self->type . ':' . $self->poc_uuid;
+    return $self->type . ':' . $self->account_id;
 }
 
 =head2 handle_error
@@ -194,40 +180,12 @@ sub handle_message {
             $self->_update_transaction($message)
                 if $type eq 'transaction';
 
-            $self->_close_proposal_open_contract_stream($message)
-                if $self->type eq 'sell' && $message->{action_type} eq 'sell';
-
             return Future->done;
         }
     )->on_fail(
         sub {
             $log->warn("ERROR - @_");
         })->retain;
-    return;
-}
-
-=head2 _close_proposal_open_contract_stream
-
-close proposal_open_contract stream if the contract sold
-
-=cut
-
-sub _close_proposal_open_contract_stream {
-    my ($self, $payload) = @_;
-    my $c           = $self->c;
-    my $args        = $self->args;
-    my $contract_id = $self->contract_id;
-    my $uuid        = $self->poc_uuid;
-
-    if (    exists $payload->{financial_market_bet_id}
-        and $contract_id
-        and $payload->{financial_market_bet_id} eq $contract_id)
-    {
-        $payload->{sell_time} = Date::Utility->new($payload->{sell_time})->epoch;
-        $payload->{uuid}      = $uuid;
-
-        Binary::WebSocketAPI::v3::Wrapper::Pricer::send_proposal_open_contract_last_time($c, $payload, $contract_id, $args);
-    }
     return;
 }
 
@@ -364,7 +322,7 @@ sub _create_poc_stream {
         }
     )->then(
         sub {
-            my $uuid = Binary::WebSocketAPI::v3::Wrapper::Pricer::pricing_channel_for_proposal_open_contract(
+            Binary::WebSocketAPI::v3::Wrapper::Pricer::pricing_channel_for_proposal_open_contract(
                 $c,
                 $poc_args,
                 {
@@ -379,13 +337,8 @@ sub _create_poc_stream {
                     purchase_time   => Date::Utility->new($payload->{purchase_time})->epoch,
                     sell_price      => undef,
                     sell_time       => undef,
-                })->{uuid};
+                });
 
-            # subscribe to transaction channel as when contract is manually sold we need to cancel streaming
-            #TODO chylli test not cover here ?
-            Binary::WebSocketAPI::v3::Wrapper::Transaction::transaction_channel($c, 'subscribe', $payload->{account_id},
-                'sell', $poc_args, $payload->{financial_market_bet_id}, $uuid)
-                if $uuid;
             return Future->done;
         });
 }

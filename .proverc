@@ -5,4 +5,5 @@
 -MBOM::Test::RPC::BinaryRpcRedis
 -MBOM::Test::Script::NotifyPub
 -MBOM::Test::Script::PricerDaemon
+-MBOM::Test::Script::PricerQueue
 -MBOM::Test::Script::ExperianMock

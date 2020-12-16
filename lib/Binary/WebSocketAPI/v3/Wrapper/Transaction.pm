@@ -88,7 +88,6 @@ sub _subscribe_to_contract {
 
     my $contract = _get_poc_params($contract_details);
 
-    my $account_id  = $contract->{account_id};
     my $contract_id = $contract->{contract_id};
     my $args        = {
         subscribe              => 1,
@@ -98,11 +97,6 @@ sub _subscribe_to_contract {
     $args->{req_id} = $req_args->{req_id} if exists $req_args->{req_id};
 
     my $uuid = Binary::WebSocketAPI::v3::Wrapper::Pricer::pricing_channel_for_proposal_open_contract($c, $args, $contract)->{uuid};
-    # subscribe to transaction channel as when contract is manually sold we need to cancel streaming
-    transaction_channel(
-        $c, 'subscribe', $account_id,    # should not go to client
-        'sell', $args, $contract_id, $uuid
-    );
 
     return $uuid;
 }
@@ -174,10 +168,9 @@ sub transaction {
 }
 
 sub transaction_channel {
-    my ($c, $action, $account_id, $type, $args, $contract_id, $poc_uuid) = @_;
+    my ($c, $action, $account_id, $type, $args, $contract_id) = @_;
 
     $contract_id //= $args->{contract_id};
-    $poc_uuid    //= '';
 
     my $worker = Binary::WebSocketAPI::v3::Subscription::Transaction->new(
         c           => $c,
@@ -185,7 +178,6 @@ sub transaction_channel {
         type        => $type,
         contract_id => $contract_id,
         args        => $args,
-        poc_uuid    => $poc_uuid,
     );
 
     my $already_registered_worker = $worker->already_registered;

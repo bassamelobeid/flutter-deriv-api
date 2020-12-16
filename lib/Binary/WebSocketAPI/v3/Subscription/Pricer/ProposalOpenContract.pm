@@ -26,26 +26,10 @@ sub do_handle_message {
     my $type = 'proposal_open_contract';
     my $results;
     unless ($results = $self->_is_response_or_self_invalid($type, $message)) {
-        my $passed_fields = $self->cache;
+        $message->{id} = $self->uuid;
 
-        $message->{id}              = $self->uuid;
-        $message->{transaction_ids} = $passed_fields->{transaction_ids};
-        $message->{buy_price}       = $passed_fields->{buy_price};
-        $message->{purchase_time}   = $passed_fields->{purchase_time};
-        $message->{is_sold}         = $passed_fields->{is_sold};
-        if ($message->{buy_price} and $message->{bid_price} and $message->{currency}) {
-            my $contract_cancellation = $message->{cancellation};
-            # we need to exclude cost of cancellation in profit/loss calculation to avoid confusion since
-            # pnl always refers to the main contract.
-            my $main_contract_price = $contract_cancellation ? $message->{buy_price} - $contract_cancellation->{ask_price} : $message->{buy_price};
-            $message->{profit}            = formatnumber('price', $message->{currency}, $message->{bid_price} - $main_contract_price);
-            $message->{profit_percentage} = roundcommon(0.01, $message->{profit} / $main_contract_price * 100);
-        }
-        $self->unregister
-            if $message->{is_sold};
-        $message->{longcode} = $passed_fields->{longcode};
+        $self->unregister if $message->{is_sold};
 
-        $message->{contract_id} = $self->args->{contract_id} if exists $self->args->{contract_id};
         $results = {
             msg_type     => $type,
             $type        => $message,
@@ -76,11 +60,6 @@ before DEMOLISH => sub {
     my ($self, $global) = @_;
     return undef if $global;
     return undef unless $self->c;
-    # We don't want to track this poc's selling action when we unsubscribe this stream
-    my @txn_subscriptons = Binary::WebSocketAPI::v3::Subscription::Transaction->get_by_class($self->c);
-    for my $s (@txn_subscriptons) {
-        $s->unregister if ($s->type eq 'sell' && $s->poc_uuid eq $self->uuid);
-    }
     return undef;
 };
 
