@@ -87,6 +87,25 @@ payments:
         - PCC_Ecommpay
         - PCC_ISignThis
       global: 1
+    reversible_balance_limits:
+      description: 'Percentage of reversible deposits a client is allowed to sell/withdraw. Can be overridden per loginid.'
+      isa: section
+      contains:
+        ctc:
+          description: 'Crypto cashier global limit'
+          isa: Num
+          global: 1
+          default: 100
+        p2p:
+          description: 'P2P global limit'
+          isa: Num
+          global: 1
+          default: 100
+    reversible_deposits_lookback:
+      description: 'Number of days within which a deposit can be counted as reversible.'
+      isa: Num
+      global: 1
+      default: 180
     p2p:
       description: 'Peer-to-peer payment system'
       isa: section
