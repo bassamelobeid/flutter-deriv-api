@@ -66,8 +66,8 @@ die "ERROR: client loginid must be specified. $usage"                          u
 my $client = BOM::User::Client->new({loginid => $client_loginid}) or die "Invalid login ID: $client_loginid";
 
 $amount            ||= 1;
-$payment_processor ||= 'AirTM';
-$payment_method    ||= 'AirTM';
+$payment_processor //= 'AirTM';
+$payment_method    //= 'AirTM';
 $trace_id          ||= do {
     my $rnd = int(rand(999999));
     $log->infof('Using random trace_id: %s', $rnd);
