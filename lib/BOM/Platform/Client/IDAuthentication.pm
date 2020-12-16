@@ -174,8 +174,8 @@ Checks if client is age verified, if not, set cashier lock on client
 =cut
 
 sub _age_verified {
-    my $self    = shift;
-    my $client  = $self->client;
+    my $self   = shift;
+    my $client = $self->client;
 
     if (!$client->status->age_verification) {
         $client->status->setnx('unwelcome', 'system', 'Age verification is needed after first deposit.');
