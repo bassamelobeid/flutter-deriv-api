@@ -94,6 +94,7 @@ subtest 'advertiser Registration' => sub {
         total_completion_rate => undef,
         total_orders_count    => num(0),
         show_name             => 0,
+        balance_available     => num(0),
         %params
     };
 
@@ -102,7 +103,7 @@ subtest 'advertiser Registration' => sub {
 
     my $other_client = BOM::Test::Helper::P2P::create_advertiser();
     $advertiser_info = $other_client->p2p_advertiser_info(id => $adv->{id});
-    delete $expected->@{qw/payment_info contact_info chat_user_id chat_token daily_buy daily_sell daily_buy_limit daily_sell_limit show_name/};
+    delete $expected->@{qw/payment_info contact_info chat_user_id chat_token daily_buy daily_sell daily_buy_limit daily_sell_limit show_name balance_available/};
     cmp_deeply($advertiser_info, $expected, 'sensitve fields hidden in advertiser_info for other client');
 };
 

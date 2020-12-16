@@ -429,11 +429,10 @@ subtest 'Buyer tries to place an order for an advert with a different currency' 
         amount => $amount,
         type   => 'sell'
     );
-
     my $client = BOM::Test::Helper::Client::create_client();
-
-    my $test = $client->p2p_advertiser_create(name => 'test nickname');
     $client->account('EUR');
+    
+    my $test = $client->p2p_advertiser_create(name => 'test nickname');
     $client->p2p_advertiser_update(is_approved => 1);
     isnt $client->account->currency_code, $advertiser->account->currency_code, 'Advertiser and buyer has different currencies';
 
@@ -462,9 +461,9 @@ subtest 'Buyer tries to place an order for an advert of another country' => sub 
     );
 
     my $client = BOM::Test::Helper::Client::create_client();
-    $client->p2p_advertiser_create(name => 'test nickname1');
     $client->account('USD');
     $client->residence('MY');
+    $client->p2p_advertiser_create(name => 'test nickname1');
     $client->p2p_advertiser_update(is_approved => 1);
 
     my $err = exception {
@@ -589,7 +588,7 @@ subtest 'Buyer tries to place an order for an advert of a non-listed advertiser'
     BOM::Test::Helper::P2P::reset_escrow();
 };
 
-subtest 'Buyer with empty balance tries to place an "sell" order' => sub {
+subtest 'Seller with empty balance tries to place an "sell" order' => sub {
     my $escrow    = BOM::Test::Helper::P2P::create_escrow();
     my $ad_amount = 100;
 
@@ -601,7 +600,7 @@ subtest 'Buyer with empty balance tries to place an "sell" order' => sub {
 
     my $buyer = BOM::Test::Helper::P2P::create_advertiser();
 
-    cmp_ok $buyer->account->balance, '==', 0, "The buyer's balance is 0";
+    cmp_ok $buyer->account->balance, '==', 0, "The seller's balance is 0";
 
     my $err = exception {
         $buyer->p2p_order_create(
@@ -612,7 +611,7 @@ subtest 'Buyer with empty balance tries to place an "sell" order' => sub {
         )
     };
 
-    is $err->{error_code}, 'OrderCreateFailClient', 'Could not create order, got error code OrderCreateFailClient';
+    is $err->{error_code}, 'OrderCreateFailClientBalance', 'Could not create order, got error code OrderCreateFailClientBalance';
 
     BOM::Test::Helper::P2P::reset_escrow();
 };

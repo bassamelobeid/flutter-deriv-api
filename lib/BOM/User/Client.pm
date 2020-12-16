@@ -2440,7 +2440,7 @@ sub p2p_order_create {
         advertiser_is_approved => 1,
         advertiser_is_listed   => 1,
         country                => $self->residence,
-        account_currency       => $self->currency
+        account_currency       => $self->currency,
     )->[0];
 
     die +{error_code => 'AdvertNotFound'} unless $advert_info;
@@ -2474,13 +2474,15 @@ sub p2p_order_create {
     if ($advert_type eq 'buy') {
         $order_type = 'sell';
         die +{error_code => 'SellProhibited'} unless $self->_p2p_validate_sell($self, $client_info);
-        die +{error_code => 'OrderPaymentInfoRequired'} if !trim($param{payment_info});
-        die +{error_code => 'OrderContactInfoRequired'} if !trim($param{contact_info});
+        die +{error_code => 'OrderCreateFailClientBalance'} if $amount > $self->balance_for_cashier('p2p');
+        die +{error_code => 'OrderPaymentInfoRequired'}     if !trim($param{payment_info});
+        die +{error_code => 'OrderContactInfoRequired'}     if !trim($param{contact_info});
         $amount_advertiser = $amount;
         $amount_client     = -$amount;
     } elsif ($advert_type eq 'sell') {
         $order_type = 'buy';
         die +{error_code => 'OrderCreateFailAdvertiser'} unless $self->_p2p_validate_sell($advertiser, $advertiser_info);
+        die +{error_code => 'OrderCreateFailAdvertiser'}         if $amount > $advertiser->balance_for_cashier('p2p');
         die +{error_code => 'OrderPaymentContactInfoNotAllowed'} if $payment_info or $contact_info;
         ($payment_info, $contact_info) = $advert_info->@{qw/payment_info contact_info/};
         $amount_advertiser = -$amount;
@@ -3035,14 +3037,17 @@ sub _p2p_adverts {
     die +{error_code => 'InvalidListOffset'} if defined $offset && $offset < 0;
 
     $param{max_order} = convert_currency(BOM::Config::Runtime->instance->app_config->payments->p2p->limits->maximum_order, 'USD', $self->currency);
+    $param{reversible_limit} = BOM::Config::Runtime->instance->app_config->payments->reversible_balance_limits->p2p / 100,
+        $param{reversible_lookback} = BOM::Config::Runtime->instance->app_config->payments->reversible_deposits_lookback,
 
-    $self->db->dbic->run(
+        $self->db->dbic->run(
         fixup => sub {
             $_->selectall_arrayref(
-                'SELECT * FROM p2p.advert_list(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                'SELECT * FROM p2p.advert_list(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
                 {Slice => {}},
                 @param{
-                    qw/id account_currency advertiser_id is_active type country can_order max_order advertiser_is_listed advertiser_is_approved client_loginid limit offset/
+                    qw/id account_currency advertiser_id is_active type country can_order max_order advertiser_is_listed advertiser_is_approved
+                        client_loginid limit offset show_deleted sort_by advertiser_name reversible_limit reversible_lookback/
                 });
         }) // [];
 }
@@ -3340,7 +3345,7 @@ sub _p2p_validate_sell {
             );
         });
 
-    return ($turnover + $mt5_net + $buy) > ($cc_deposits * ($turnover_required / 100));
+    return ($turnover + $mt5_net + $buy) >= ($cc_deposits * ($turnover_required / 100));
 }
 
 =head2 _advertiser_details
@@ -3375,11 +3380,15 @@ sub _advertiser_details {
     # We will manualy clean up this field in websocket
     # If you're adding any new field here please add it to websocket subscription clean up as well
     if ($self->loginid eq $advertiser->{client_loginid}) {
+
+        my $balance = $self->_p2p_validate_sell($self, $advertiser) ? $self->balance_for_cashier('p2p') : 0;
+
         $details->{payment_info} = $advertiser->{payment_info} // '';
         $details->{contact_info} = $advertiser->{contact_info} // '';
         $details->{chat_user_id} = $advertiser->{chat_user_id};
-        $details->{chat_token} = $advertiser->{chat_token} // '';
-        $details->{show_name}  = $advertiser->{show_name};
+        $details->{chat_token}        = $advertiser->{chat_token} // '';
+        $details->{show_name}         = $advertiser->{show_name};
+        $details->{balance_available} = financialrounding('amount', $advertiser->{account_currency}, $balance);
         # band limits are not returned by all db functions
         if ($advertiser->{limit_currency}) {
             $details->{daily_buy}        = financialrounding('amount', $advertiser->{account_currency}, $advertiser->{daily_buy});
@@ -5094,6 +5103,35 @@ sub needs_poi_verification {
     # Resubmissions
     return 1 if $self->status->allow_poi_resubmission;
     return 0;
+}
+
+=head2 balance_for_cashier
+
+Returns the irreversible balance available for the specified cashier.
+
+=over 4
+
+=item * C<cashier> Cashier name, must be a value of a key within runtime config payments.reversible_balance_limits
+
+=back
+
+Returns current irreversible balance for a cashier as a float. 
+
+=cut
+
+sub balance_for_cashier {
+    my ($self, $cashier) = @_;
+
+    my $global_limit = BOM::Config::Runtime->instance->app_config->payments->reversible_balance_limits->$cashier;
+    my $lookback     = BOM::Config::Runtime->instance->app_config->payments->reversible_deposits_lookback;
+
+    my ($result) = $self->db->dbic->run(
+        fixup => sub {
+            $_->selectrow_array('SELECT * FROM payment.get_available_balance_by_cashier(?,?,?,?)',
+                undef, $self->loginid, $cashier, $global_limit / 100, $lookback);
+        });
+
+    return $result;
 }
 
 =head2 propagate_status
