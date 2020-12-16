@@ -17,11 +17,13 @@ use BOM::Config::Redis;
 use DataDog::DogStatsd::Helper qw(stats_inc);
 use BOM::Config;
 
-use constant KEY_RETENTION_SECOND => 60;
+# the mejority of contracts are sold by expiryd, within 30s.
+# the 5m ttl is for the few that end up at riskd.
+use constant KEY_RETENTION_SECOND => 300;
 
 my $json = JSON::MaybeXS->new;
 
-=head2 delete_contract_parameters
+=head2 update_conract_parameters_ttl
 
 Utility method to set expiry of redis key to KEY_RETENTION_SECOND seconds.
 
@@ -30,7 +32,7 @@ used by other processes to send final contract details to client.
 
 =cut
 
-sub delete_contract_parameters {
+sub update_conract_parameters_ttl {
     my ($contract_id, $client) = @_;
 
     my $redis_pricer = BOM::Config::Redis::redis_pricer_shared_write;
@@ -43,6 +45,44 @@ sub delete_contract_parameters {
     return;
 }
 
+sub build_contract_parameters {
+    my ($client, $fmb) = @_;
+
+    my $sell_time;
+    my $purchase_time = 0 + Date::Utility->new($fmb->{purchase_time})->epoch;
+    $sell_time = 0 + Date::Utility->new($fmb->{sell_time})->epoch if $fmb->{sell_time};
+
+    my $transaction_ids = {buy => $fmb->{buy_transaction_id}};
+    $transaction_ids->{sell} = $fmb->{sell_transaction_id} if ($fmb->{sell_transaction_id});
+
+    my $contract_parameters = {
+        app_markup_percentage => 0,                                 # we charge app_markup on buy side only
+        short_code            => $fmb->{short_code},
+        contract_id           => $fmb->{id},
+        currency              => $client->currency,
+        is_sold               => $fmb->{is_sold} ? 1 : 0,           # JSON::PP::Boolean to 0 or 1
+        is_expired            => $fmb->{is_expired},
+        sell_price            => $fmb->{sell_price},
+        buy_price             => $fmb->{buy_price},
+        landing_company       => $client->landing_company->short,
+        account_id            => $fmb->{account_id},
+        purchase_time         => $purchase_time,
+        sell_time             => $sell_time,
+        transaction_ids       => $transaction_ids,
+    };
+
+    # country code is required for china because we have special offerings conditions.
+    if ($client->residence eq 'cn') {
+        $contract_parameters->{country_code} = $client->residence;
+    }
+
+    if ($fmb->{bet_class} eq 'multiplier') {
+        $contract_parameters->{limit_order} = extract_limit_orders($fmb);
+    }
+
+    return $contract_parameters;
+}
+
 =head2 set_contract_parameters
 
 Utility method to set contract parameters when a contract is purchased
@@ -50,32 +90,16 @@ Utility method to set contract parameters when a contract is purchased
 =cut
 
 sub set_contract_parameters {
-    my ($contract_params, $client) = @_;
+    my ($contract_parameters, $expiry_epoch) = @_;
 
     my $redis_pricer = BOM::Config::Redis::redis_pricer_shared_write;
-
-    my %hash = (
-        price_daemon_cmd => 'bid',
-        short_code       => $contract_params->{shortcode},
-        contract_id      => $contract_params->{contract_id},
-        currency         => $contract_params->{currency},
-        sell_time        => $contract_params->{sell_time},
-        is_sold          => $contract_params->{is_sold} + 0,
-        landing_company  => $client->landing_company->short,
-    );
-
-    # country code is needed in parameters for china because
-    # we have special offerings conditions.
-    $hash{country_code} = $client->residence              if $client->residence eq 'cn';
-    $hash{limit_order}  = $contract_params->{limit_order} if $contract_params->{limit_order};
-
-    my $redis_key = join '::', ('CONTRACT_PARAMS', $hash{contract_id}, $hash{landing_company});
+    my $redis_key    = join '::', ('CONTRACT_PARAMS', $contract_parameters->{contract_id}, $contract_parameters->{landing_company});
 
     my $default_expiry = 86400;
-    if (my $expiry = delete $contract_params->{expiry_time}) {
-        my $contract_expiry   = Date::Utility->new($expiry);
-        my $seconds_to_expiry = $contract_expiry->epoch - time;
-        # KEY_RETENTION_SECOND seconds after expiry is to cater for sell transaction delay due to settlement conditions.
+    if (defined $expiry_epoch) {
+        my $seconds_to_expiry = $expiry_epoch - time;
+        # add KEY_RETENTION_SECOND seconds after expiry,
+        # to cater for sell transaction delay due to settlement conditions.
         my $ttl = max($seconds_to_expiry, 0) + KEY_RETENTION_SECOND;
         $default_expiry = min($default_expiry, int($ttl));
     }
@@ -83,6 +107,11 @@ sub set_contract_parameters {
     if ($default_expiry <= 0) {
         warn "CONTRACT_PARAMS is not set for $redis_key because of invalid TTL";
     }
+
+    my %hash = (
+        price_daemon_cmd => 'bid',
+        %$contract_parameters,
+    );
 
     return $redis_pricer->set($redis_key, _serialized_args(\%hash), 'EX', $default_expiry) if $default_expiry > 0;
     return;

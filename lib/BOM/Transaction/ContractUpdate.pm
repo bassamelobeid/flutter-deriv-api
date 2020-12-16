@@ -265,6 +265,9 @@ sub update {
 
     return $res_table if $res_table->{error};
 
+    my $fmb = $self->_fmb_datamapper->get_contract_by_account_id_contract_id($self->client->default_account->id, $self->contract_id)->[0];
+    $self->fmb($fmb);
+
     my $res = $self->build_contract_update_response();
     $res->{updated_queue} = $self->_requeue_transaction();
 
@@ -272,24 +275,8 @@ sub update {
 }
 
 sub build_contract_update_response {
-    my $self = shift;
-
+    my $self     = shift;
     my $contract = $self->contract;
-    # we will need to resubscribe for the new proposal open contract when the contract
-    # parameters changed, if subscription is turned on. That's why we need contract_details.
-    my %common_details = (
-        account_id      => $self->client->account->id,
-        shortcode       => $self->fmb->{short_code},
-        contract_id     => $self->fmb->{id},
-        currency        => $self->client->currency,
-        buy_price       => $self->fmb->{buy_price},
-        sell_price      => $self->fmb->{sell_price},
-        sell_time       => $self->fmb->{sell_time},
-        purchase_time   => Date::Utility->new($self->fmb->{purchase_time})->epoch,
-        is_sold         => $self->fmb->{is_sold},
-        transaction_ids => {buy => $self->fmb->{buy_transaction_id}},
-        longcode        => localize($contract->longcode),
-    );
 
     my %new_orders = map { $_ => $self->$_ } grep { $self->$_ } keys %{$self->update_params};
     my $display    = $contract->available_orders_for_display(\%new_orders);
@@ -298,10 +285,7 @@ sub build_contract_update_response {
     return {
         take_profit => $display->{take_profit} // {},
         stop_loss   => $display->{stop_loss}   // {},
-        contract_details => {
-            %common_details,
-            limit_order => $self->contract->available_orders(\%new_orders),
-        }};
+    };
 }
 
 has [qw(take_profit stop_loss)] => (
