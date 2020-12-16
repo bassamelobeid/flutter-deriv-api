@@ -24,7 +24,7 @@
         "referrer": {
             "description": "[Optional] The URL of the web page where the Web SDK will be used.",
             "type": "string",
-            "pattern": "^https?://(?:[0-9a-zA-Z\\.-]+|\\*)\\/[\\%\\/\\w \\.-]*[\\*]?$"
+            "pattern": "^https?://(?:[0-9a-zA-Z\\.-]+|\\*)[-a-zA-Z0-9()@:%_\\+.~#?&/=]*$"
         },
         "service": {
             "description": "The service(s) to retrieve token(s) for.",
