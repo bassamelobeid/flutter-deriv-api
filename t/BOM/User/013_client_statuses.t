@@ -69,11 +69,11 @@ subtest 'Setter' => sub {
 
 subtest 'Set NX' => sub {
     ok $client->status->setnx('no_trading', 'staff1', 'reason1'), 'set_nx for new status';
-    is $client->status->no_trading->{staff_name}, 'staff1', 'staff_name was set';
-    is $client->status->no_trading->{reason}, 'reason1', 'reason was set';
+    is $client->status->no_trading->{staff_name}, 'staff1',  'staff_name was set';
+    is $client->status->no_trading->{reason},     'reason1', 'reason was set';
     ok !$client->status->setnx('no_trading', 'staff2', 'reason2'), 'set_nx for existing status';
-    is $client->status->no_trading->{staff_name}, 'staff1', 'staff_name was not replaced';
-    is $client->status->no_trading->{reason}, 'reason1', 'reason was not replaced';
+    is $client->status->no_trading->{staff_name}, 'staff1',  'staff_name was not replaced';
+    is $client->status->no_trading->{reason},     'reason1', 'reason was not replaced';
     $client->status->clear_no_trading;
 };
 

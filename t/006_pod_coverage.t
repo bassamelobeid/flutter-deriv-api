@@ -39,7 +39,8 @@ We ignore L<BOM::User::Client::Payments> because it fails on load. You can check
 
 =cut
 
-Test::Pod::CoverageChange::pod_coverage_syntax_ok(allowed_naked_packages => $allowed_naked_packages,
-    ignored_packages => ['BOM::User::Client::Payments']);
+Test::Pod::CoverageChange::pod_coverage_syntax_ok(
+    allowed_naked_packages => $allowed_naked_packages,
+    ignored_packages       => ['BOM::User::Client::Payments']);
 
 done_testing();

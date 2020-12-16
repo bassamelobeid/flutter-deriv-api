@@ -222,7 +222,7 @@ sub buy_contract {
     my ($client, $price, $multiplier) = @_;
     my $now      = Date::Utility->new();
     my $duration = '15s';
-    my $type = $multiplier ? 'MULTUP' : 'CALL';
+    my $type     = $multiplier ? 'MULTUP' : 'CALL';
 
     BOM::Database::Helper::FinancialMarketBet->new({
             account_data => {
@@ -230,24 +230,24 @@ sub buy_contract {
                 currency_code  => $client->account->currency_code,
             },
             bet_data => {
-                underlying_symbol => 'R_50',
-                duration          => $duration,
-                payout_price      => $price,
-                buy_price         => $price,
-                remark            => 'Test Remark',
-                purchase_time     => $now->db_timestamp,
-                start_time        => $now->db_timestamp,
-                expiry_time       => $now->plus_time_interval($duration)->db_timestamp,
-                settlement_time   => $now->plus_time_interval($duration)->db_timestamp,
-                is_expired        => 1,
-                is_sold           => 0,
-                bet_class         => $multiplier ? 'multiplier': 'higher_lower_bet',
-                bet_type          => $type,
-                short_code        => ($type. '_R_50_' . $price . '_' . $now->epoch . '_' . $now->plus_time_interval($duration)->epoch . '_S0P_0'),
-                relative_barrier  => 'S0P',
-                quantity          => 1,
-                multiplier        => 10,
-                basis_spot        => 1,
+                underlying_symbol   => 'R_50',
+                duration            => $duration,
+                payout_price        => $price,
+                buy_price           => $price,
+                remark              => 'Test Remark',
+                purchase_time       => $now->db_timestamp,
+                start_time          => $now->db_timestamp,
+                expiry_time         => $now->plus_time_interval($duration)->db_timestamp,
+                settlement_time     => $now->plus_time_interval($duration)->db_timestamp,
+                is_expired          => 1,
+                is_sold             => 0,
+                bet_class           => $multiplier ? 'multiplier' : 'higher_lower_bet',
+                bet_type            => $type,
+                short_code          => ($type . '_R_50_' . $price . '_' . $now->epoch . '_' . $now->plus_time_interval($duration)->epoch . '_S0P_0'),
+                relative_barrier    => 'S0P',
+                quantity            => 1,
+                multiplier          => 10,
+                basis_spot          => 1,
                 stop_out_order_date => $now->db_timestamp,
                 stop_out_order_amount => -1,
             },
