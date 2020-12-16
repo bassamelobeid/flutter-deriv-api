@@ -36,6 +36,7 @@ use BOM::Platform::Event::Emitter;
 use BOM::Platform::Client::CashierValidation;
 use BOM::Platform::Account::Real::default;
 use BOM::Platform::Event::Emitter;
+use BOM::Platform::Utility;
 use BOM::User::Client::PaymentAgent;
 use BOM::User::Client::Status;
 use BOM::User::Client::Account;
@@ -1836,8 +1837,21 @@ Return {
 sub validate_common_account_details {
     my ($self, $args) = @_;
 
-    my $residence = $self->residence;
+    my $residence       = $self->residence;
+    my @required_fields = $self->required_fields;
+
+    my $error_details;
     try {
+        # Validate required fields, they cannot be changed to empty
+        for my $key (sort keys $args->%*) {
+            if (any { $_ eq $key } @required_fields) {
+                unless (trim($args->{$key})) {
+                    $error_details = {field => $key};    # return field that has error
+                    die "InputValidationFailed\n";
+                }
+            }
+        }
+
         if ($args->{date_of_birth}) {
             $self->_validate_dob($args->{date_of_birth}, $residence);
         }
@@ -1888,10 +1902,11 @@ sub validate_common_account_details {
         $self->_validate_non_pep_time($args->{non_pep_declaration_time}) if $args->{non_pep_declaration_time};
 
         return undef;
-    } catch {
-        chomp(my $err = $@);
-
-        return {error => $err || 'UnknownError'};
+    } catch ($err) {
+        return {
+            error   => trim($err) || 'UnknownError',
+            details => $error_details,
+        }
     }
 }
 
@@ -1922,6 +1937,20 @@ sub _validate_non_pep_time {
     die "TooLateNonPepTime\n" if $non_pep_date->epoch > time;
 
     return undef;
+}
+
+=pod
+
+=head2 required_fields
+
+Returns a list of all requirements (signup, withdrawal, etc) for each landing company.
+
+=cut
+
+sub required_fields {
+    my $self = shift;
+
+    return @{BOM::Platform::Utility::hash_to_array($self->landing_company->requirements)};
 }
 
 =pod

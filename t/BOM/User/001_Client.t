@@ -12,6 +12,7 @@ use Test::MockModule;
 
 use BOM::User::Client;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use BOM::Test::Helper::Client qw( create_client );
 
 use Date::Utility;
 use Array::Utils qw(array_minus);
@@ -378,20 +379,15 @@ subtest "check duplicate accounts" => sub {
     delete $modified_details->{date_of_birth};
     $result = $third_client->check_duplicate_account($modified_details);
     is $result, undef, 'No duplicated account found, same phone number alone doesn\'t consider duplicate account';
-
 };
 
 subtest "immutable_fields and validate_immutable_fields" => sub {
     my $email     = 'immutable@test.com';
-    my $client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'VRTC',
-    });
+    my $client_vr = create_client('VRTC');
     $client_vr->email($email);
     $client_vr->save;
 
-    my $client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'CR',
-    });
+    my $client_cr = create_client('CR');
     $client_cr->email($email);
     $client_cr->tax_identification_number('123456789');
     $client_cr->place_of_birth('fr');
@@ -399,9 +395,7 @@ subtest "immutable_fields and validate_immutable_fields" => sub {
     $client_cr->account_opening_reason('Speculative');
     $client_cr->save;
 
-    my $client_mlt = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'MLT',
-    });
+    my $client_mlt = create_client('MLT');
     $client_mlt->email($email);
     $client_mlt->tax_identification_number('123456789');
     $client_mlt->place_of_birth('fr');
@@ -509,6 +503,66 @@ subtest "immutable_fields and validate_immutable_fields" => sub {
     $mock_lc->unmock_all;
 };
 
+subtest 'returns correct required_fields for each landing company' => sub {
+    my $email = 'required_fields_test@test.com';
+
+    my $client_cr = create_client('CR');
+    $client_cr->email($email);
+    $client_cr->save;
+
+    my $client_mlt = create_client('MLT');
+    $client_mlt->email($email);
+    $client_mlt->save;
+
+    my $client_mf = create_client('MF');
+    $client_mf->email($email);
+    $client_mf->save;
+
+    my $client_iom = create_client('MX');
+    $client_iom->email($email);
+    $client_iom->save;
+
+    my $user = BOM::User->create(
+        email          => $email,
+        password       => "hello",
+        email_verified => 1,
+    );
+
+    $user->add_client($client_cr);
+    $user->add_client($client_mlt);
+    $user->add_client($client_mf);
+    $user->add_client($client_iom);
+
+    subtest 'svg' => sub {
+        my @list            = qw(first_name last_name residence date_of_birth address_city address_line_1);
+        my @required_fields = $client_cr->required_fields;
+        cmp_bag \@required_fields, \@list, "List of required fields for svg is OK";
+        test_validation_on_required_fields(\@list, $client_cr);
+    };
+
+    subtest 'malta' => sub {
+        my @list            = qw(salutation citizen first_name last_name date_of_birth residence address_line_1 address_city);
+        my @required_fields = $client_mlt->required_fields;
+        cmp_bag \@required_fields, \@list, "List of required fields for malta is OK";
+        test_validation_on_required_fields(\@list, $client_mlt);
+    };
+
+    subtest 'maltainvest' => sub {
+        my @list =
+            qw(salutation citizen tax_residence tax_identification_number first_name last_name date_of_birth residence address_line_1 address_city account_opening_reason);
+        my @required_fields = $client_mf->required_fields;
+        cmp_bag \@required_fields, \@list, "List of required fields for maltainvest is OK";
+        test_validation_on_required_fields(\@list, $client_mf);
+    };
+
+    subtest 'iom' => sub {
+        my @list            = qw(salutation citizen first_name last_name date_of_birth residence address_line_1 address_city address_postcode);
+        my @required_fields = $client_iom->required_fields;
+        cmp_bag \@required_fields, \@list, "List of required fields for iom is OK";
+        test_validation_on_required_fields(\@list, $client_iom);
+    };
+};
+
 sub test_immutable_fields {
     my ($fields, $user, $message) = @_;
 
@@ -519,6 +573,19 @@ sub test_immutable_fields {
 
         my $landing_company = $client->landing_company->short;
         cmp_bag [$client->immutable_fields], $expected_list, "$msg - $landing_company";
+    }
+}
+
+sub test_validation_on_required_fields {
+    my ($list, $client) = @_;
+
+    subtest 'Validation on empty values on required fields' => sub {
+        for my $field (@$list) {
+            my $args  = {$field => "  \r  \f\t\n \t\t\t\r"};
+            my $error = $client->validate_common_account_details($args);
+            is $error->{error}, 'InputValidationFailed', 'error code is OK - InputValidationFailed';
+            is $error->{details}->{field}, $field, "error details is OK - $field";
+        }
     }
 }
 
