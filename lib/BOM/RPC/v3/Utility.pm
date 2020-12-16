@@ -412,6 +412,7 @@ sub error_map {
         'NoResidence'                => localize('Please set your country of residence.'),
         'SetExistingAccountCurrency' => localize('Please set the currency for your existing account [_1], in order to create more accounts.'),
         'P2PRestrictedCountry'       => localize("P2P cashier is unavailable in your country. Please provide a different account opening reason."),
+        'InputValidationFailed'      => localize("This field is required."),
     };
 }
 

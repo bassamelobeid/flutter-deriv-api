@@ -1255,7 +1255,6 @@ rpc set_settings => sub {
     my $params = shift;
 
     my $current_client = $params->{client};
-    my $error_map      = BOM::RPC::v3::Utility::error_map();
 
     my ($website_name, $client_ip, $user_agent, $language, $args) =
         @{$params}{qw/website_name client_ip user_agent language args/};
@@ -1314,14 +1313,7 @@ rpc set_settings => sub {
         }
 
         $error = $current_client->validate_common_account_details($args) || $current_client->check_duplicate_account($args);
-
-        if ($error) {
-            my $override_code = 'PermissionDenied';
-            #not sure if the $override_code = 'InputValidationFailed' is necessary , just safer to keep the return code as before
-            $override_code = 'InputValidationFailed' if $error->{error} eq 'InvalidPlaceOfBirth';
-            return BOM::RPC::v3::Utility::create_error_by_code($error->{error}, override_code => $override_code);
-        }
-
+        return BOM::RPC::v3::Utility::create_error_by_code($error->{error}, details => $error->{details}) if $error;
     }
 
     return BOM::RPC::v3::Utility::permission_error()
@@ -1394,12 +1386,6 @@ rpc set_settings => sub {
     my $account_opening_reason = $args->{'account_opening_reason'} // $current_client->account_opening_reason;
     my $secret_answer          = $args->{secret_answer} ? BOM::User::Utility::encrypt_secret_answer($args->{secret_answer}) : '';
     my $secret_question        = $args->{secret_question} // '';
-
-    #citizenship is mandatory for some clients,so we shouldnt let them to remove it
-    return BOM::RPC::v3::Utility::create_error({
-            code              => 'PermissionDenied',
-            message_to_client => localize('Citizenship is required.')}
-    ) if ((any { $_ eq "citizen" } $current_client->landing_company->requirements->{signup}->@*) && !$citizen);
 
     my ($needs_verify_address_trigger, $cil_message);
     if (   ($address1 and $address1 ne $current_client->address_1)

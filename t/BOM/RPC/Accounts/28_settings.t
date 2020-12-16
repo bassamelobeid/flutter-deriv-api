@@ -506,6 +506,11 @@ subtest 'set settings' => sub {
             'cannot send place_of_birth with a different value'
         );
     }
+
+    $test_client->set_authentication('ID_DOCUMENT', {status => 'pass'});
+    $test_client->save;
+    ok $test_client->fully_authenticated, 'client is authenticated';
+
     for my $tax_field (qw(tax_residence tax_identification_number)) {
         local $params->{args} = {
             $tax_field => '',
@@ -538,6 +543,11 @@ subtest 'set settings' => sub {
         like($res->{error}{message_to_client}, qr/"\Q$restricted_country"/, 'error message mentioned the country')
             or note explain $res->{error};
     }
+
+    $test_client->set_authentication('ID_DOCUMENT', {status => 'fail'});
+    $test_client->save;
+    ok !$test_client->fully_authenticated, 'client is not authenticated';
+
     for my $unrestricted_country (qw(id ru)) {
         local $params->{args} = {
             tax_residence             => $unrestricted_country,
@@ -619,7 +629,7 @@ subtest 'set settings' => sub {
         subtest 'empty/unspecified' => sub {
             $params->{token} = $token_mx;
             $params->{args}  = {%full_args, citizen => ''};
-            is($c->tcall($method, $params)->{error}{message_to_client}, 'Citizenship is required.', 'empty value for citizenship');
+            is($c->tcall($method, $params)->{error}{message_to_client}, 'This field is required.', 'empty value for citizenship');
         };
 
         $params->{token} = $token;
@@ -809,6 +819,25 @@ subtest 'set settings' => sub {
         "address line 1",
         "Was able to set settings correctly for second CR client"
     );
+};
+
+subtest 'set_settings on virtual account should not change real account settings' => sub {
+    my $get_settings_cr = $c->tcall('get_settings', {token => $token});
+
+    my $params = {
+        language   => 'EN',
+        token      => $token_vr,
+        client_ip  => '127.0.0.1',
+        user_agent => 'agent',
+        args       => {email_consent => '0'}};    # VR can change email_consent
+
+    is($c->tcall('set_settings', $params)->{status}, 1, 'VR account email_consent changed successfully');
+
+    my $result = $c->tcall('get_settings', {token => $token});
+    is($result->{email_consent}, $params->{args}{email_consent}, "CR account email_consent setting changed successfully");
+
+    my $expected_result = {$get_settings_cr->%*, email_consent => $params->{args}{email_consent}};
+    is_deeply($result, $expected_result, 'CR account settings remain unchanged');
 };
 
 done_testing();
