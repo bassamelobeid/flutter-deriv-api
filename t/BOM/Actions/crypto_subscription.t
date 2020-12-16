@@ -272,8 +272,8 @@ subtest "change_address_status" => sub {
 
     $rows = $dbic->run(
         fixup => sub {
-            my $sth = $_->prepare('select * from payment.find_crypto_by_addresses(?::VARCHAR[])');
-            $sth->execute([$transaction->{to}]);
+            my $sth = $_->prepare('select * from payment.find_crypto_deposit_by_address(?::VARCHAR)');
+            $sth->execute($transaction->{to});
             return $sth->fetchall_arrayref({});
         });
 
