@@ -25,6 +25,7 @@ use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Backoffice::Sysinit ();
 use BOM::Product::ContractFactory qw( produce_contract );
 use BOM::Backoffice::QuantsAuditLog;
+use BOM::Transaction::Utility;
 BOM::Backoffice::Sysinit::init();
 
 PrintContentType();
@@ -79,7 +80,7 @@ if (request()->param('whattodo') eq 'closeatzero') {
 
     my $fmbs = $fmb_mapper->get_fmb_by_id([$bet_ref]);
     if ($fmbs and @$fmbs) {
-        BOM::Database::Helper::FinancialMarketBet->new({
+        my $sold = BOM::Database::Helper::FinancialMarketBet->new({
                 account_data => {
                     client_loginid => $loginID,
                     currency_code  => $currency
@@ -101,6 +102,17 @@ if (request()->param('whattodo') eq 'closeatzero') {
                 ],
                 db => BOM::Database::ClientDB->new({broker_code => $broker})->db,
             })->batch_sell_bet;
+
+        for (@$sold) {
+            my $item                = $_;
+            my $contract_parameters = BOM::Transaction::Utility::build_contract_parameters(
+                $client,
+                {
+                    $item->{fmb}->%*,
+                    buy_transaction_id  => $item->{buy_txn_id},
+                    sell_transaction_id => $item->{txn}{id}});
+            BOM::Transaction::Utility::set_contract_parameters($contract_parameters, time);
+        }
     }
 
     # Logging
