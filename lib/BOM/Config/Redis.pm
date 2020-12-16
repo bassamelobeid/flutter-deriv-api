@@ -490,4 +490,30 @@ sub redis_rpc {
     return _redis('rpc', 'read', 10);
 }
 
+=head2 redis_payment_write
+
+    my $redis = BOM::Config::Redis::redis_payment_write();
+
+Returns a writable L<RedisDB> handle to our payment Redis service.
+
+=cut
+
+sub redis_payment_write {
+    $config->{payment} //= BOM::Config::redis_payment_config();
+    return _redis('payment', 'write', 10);
+}
+
+=head2 redis_payment
+
+    my $redis = BOM::Config::Redis::redis_payment();
+
+Returns a read-only L<RedisDB> handle to our payment Redis service.
+
+=cut
+
+sub redis_payment {
+    $config->{payment} //= BOM::Config::redis_payment_config();
+    return _redis('payment', 'read', 10);
+}
+
 1;

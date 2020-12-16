@@ -234,6 +234,21 @@ sub onfido_supported_documents {
     return $config;
 }
 
+=head2 redis_payment_config
+
+    BOM::Config::redis_payment_config()
+
+Loads and caches configuration for payment Redis instance
+
+Returns the loaded config
+
+=cut
+
+sub redis_payment_config {
+    state $config = YAML::XS::LoadFile('/etc/rmg/redis-payment.yml');
+    return $config;
+}
+
 =head2 qa_config
 
 Loads configuration file for QA devbox, available only on QA.
