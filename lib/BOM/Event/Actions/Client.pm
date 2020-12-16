@@ -15,48 +15,47 @@ Provides handlers for client-related events.
 
 no indirect;
 
-use Log::Any qw($log);
-use IO::Async::Loop;
-use Locale::Codes::Country qw(country_code2code);
+use Brands;
 use DataDog::DogStatsd::Helper;
-use Syntax::Keyword::Try;
-use Template::AutoFilter;
+use Date::Utility;
+use Digest::MD5;
+use Encode qw(decode_utf8 encode_utf8);
+use ExchangeRates::CurrencyConverter qw(convert_currency);
+use File::Temp;
+use Format::Util::Numbers qw(financialrounding);
+use Future::AsyncAwait;
+use Future::Utils qw(fmap0);
+use IO::Async::Loop;
+use JSON::MaybeUTF8 qw(decode_json_utf8 encode_json_utf8);
 use List::Util qw(any all first uniq);
 use List::UtilsBy qw(rev_nsort_by);
-use Future::Utils qw(fmap0);
-use Future::AsyncAwait;
-use JSON::MaybeUTF8 qw(decode_json_utf8 encode_json_utf8);
-use Date::Utility;
-use ExchangeRates::CurrencyConverter qw(convert_currency);
-use Encode qw(decode_utf8 encode_utf8);
-use Time::HiRes;
-use Format::Util::Numbers qw(financialrounding);
-use Encode qw(decode_utf8 encode_utf8);
-use Time::HiRes;
-use File::Temp;
-use Digest::MD5;
-use Brands;
+use Locale::Codes::Country qw(country_code2code);
+use Log::Any qw($log);
 use POSIX qw(strftime);
+use Syntax::Keyword::Try;
+use Template::AutoFilter;
+use Time::HiRes;
 
 use BOM::Config;
+use BOM::Config::Onfido;
+use BOM::Config::Redis;
 use BOM::Config::Runtime;
-use BOM::Platform::Context qw(localize request);
-use BOM::Platform::Email qw(send_email);
-use BOM::Platform::Client::IDAuthentication;
-use BOM::User;
-use BOM::User::Client;
-use BOM::User::Onfido;
 use BOM::Database::ClientDB;
 use BOM::Database::UserDB;
-use BOM::Platform::S3Client;
-use BOM::Platform::Event::Emitter;
-use BOM::Config::Redis;
 use BOM::Event::Services;
 use BOM::Event::Services::Track;
-use BOM::Config::Onfido;
 use BOM::Event::Utility qw(exception_logged);
-use BOM::User::Client::PaymentTransaction;
+use BOM::Platform::Client::IDAuthentication;
+use BOM::Platform::Context qw(localize request);
+use BOM::Platform::Email qw(send_email);
+use BOM::Platform::Event::Emitter;
 use BOM::Platform::Redis;
+use BOM::Platform::S3Client;
+use BOM::User;
+use BOM::User::Client;
+use BOM::User::Client::PaymentTransaction;
+use BOM::User::Onfido;
+use BOM::User::Record::Payment;
 
 # this one shoud come after BOM::Platform::Email
 use Email::Stuffer;
@@ -2024,9 +2023,12 @@ async sub payment_deposit {
     my $client = BOM::User::Client->new({loginid => $loginid})
         or die 'Could not instantiate client for login ID ' . $loginid;
 
-    my $is_first_deposit  = $args->{is_first_deposit};
-    my $payment_processor = $args->{payment_processor} // '';
-    my $transaction_id    = $args->{transaction_id} // '';
+    my $is_first_deposit   = $args->{is_first_deposit};
+    my $payment_processor  = $args->{payment_processor} // '';
+    my $transaction_id     = $args->{transaction_id} // '';
+    my $account_identifier = $args->{account_identifier};
+    my $payment_method     = $args->{payment_method} // '';
+    my $payment_type       = $args->{payment_type} // '';
 
     if ($is_first_deposit) {
         try {
@@ -2058,7 +2060,15 @@ async sub payment_deposit {
     if (defined $payment_processor) {
         # temp. check, only track Doughflow deposit payments for now
         # cos event is emitted from bom-crypto as well
-        return BOM::Event::Services::Track::payment_deposit($args);
+        BOM::Event::Services::Track::payment_deposit($args);
+
+        BOM::User::Record::Payment->new(
+            account_identifier => $account_identifier,
+            user_id            => $client->binary_user_id,
+            payment_method     => $payment_method,
+            payment_processor  => $payment_processor,
+            payment_type       => $payment_type,
+        )->save();
     }
 
     return;
