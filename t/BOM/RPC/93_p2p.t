@@ -37,6 +37,7 @@ $app_config->payments->p2p->enabled(1);
 $app_config->payments->p2p->available(1);
 $app_config->payments->p2p->available_for_countries([]);
 $app_config->payments->p2p->available_for_currencies($P2P_AVAILABLE_CURRENCIES);
+$app_config->payments->p2p->credit_card_turnover_requirement(0);
 
 my $email_advertiser = 'p2p_advertiser@test.com';
 my $email_client     = 'p2p_client@test.com';
@@ -290,7 +291,7 @@ subtest 'Adverts' => sub {
 
     BOM::Test::Helper::Client::top_up($client_advertiser, $client_advertiser->currency, $advert_params->{amount});
 
-    $params->{args} = {};
+    $params->{args} = { id => $advert->{id} };
     $res = $c->call_ok('p2p_advert_list', $params)->has_no_system_error->has_no_error->result->{list};
     cmp_ok $res->[0]->{id}, '==', $advert->{id}, 'p2p_advert_list returns advert';
 

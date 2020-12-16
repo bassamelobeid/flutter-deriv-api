@@ -89,11 +89,13 @@ our %ERROR_MAP = do {
         RateTooSmall                      => localize("Ad rate should not be less than [_1]. Please adjust the value."),
 
         # bom-user errors
-        AdvertIsDisabled          => localize("This ad is currently unavailable. Please choose another ad or check back later."),
-        OrderCreateFailAdvertiser => localize("This ad is currently unavailable. Please choose another ad or check back later."),
-        OrderCreateFailClient     => localize("There was a problem in placing this order. [_1]"),
-        AdvertiserNameRequired    => localize("Please provide your name."),
-        AdvertiserNameTaken       => localize("This name is already in use. Please provide a different name."),
+        AdvertIsDisabled             => localize("This ad is currently unavailable. Please choose another ad or check back later."),
+        OrderCreateFailAdvertiser    => localize("This ad is currently unavailable. Please choose another ad or check back later."),
+        OrderCreateFailClient        => localize("There was a problem in placing this order. [_1]"),
+        OrderCreateFailClientBalance => localize('The amount of the order exceeds your funds available in DP2P.'),
+        OrderCreateFailBalance       => localize("An order cannot be created for this amount at this time. Please try adjusting the amount."),
+        AdvertiserNameRequired       => localize("Please provide your name."),
+        AdvertiserNameTaken          => localize("This name is already in use. Please provide a different name."),
         AdvertiserNotApproved =>
             localize("Before you can post an ad, we need to verify your identity. Please complete your identity verification at Deriv.com."),
         AdvertiserNotFound      => localize("We can't find the advertiser. Please review the details and try again."),
@@ -170,6 +172,7 @@ our %DB_ERRORS = (
     BI237 => 'InvalidOrderCurrency',
     BI238 => 'ClientDailyOrderLimitExceeded',
     BI239 => 'OpenOrdersDeleteAdvert',
+    BI243 => 'OrderCreateFailBalance',
 );
 
 sub DB_ERROR_PARAMS {
