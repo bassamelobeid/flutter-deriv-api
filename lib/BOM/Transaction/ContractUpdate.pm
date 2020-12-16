@@ -81,9 +81,9 @@ sub _build_contract {
 
     my $fmb_dm = $self->_fmb_datamapper;
     # fmb reference with buy_transantion transaction ids (buy or buy and sell)
-    my $fmb = $fmb_dm->get_contract_by_account_id_contract_id($self->client->default_account->id, $self->contract_id)->[0];
+    my $fmb = $fmb_dm->get_contract_details_with_transaction_ids($self->contract_id)->[0];
 
-    return undef unless $fmb;
+    return undef unless $fmb && $fmb->{account_id} eq $self->client->default_account->id;
 
     $self->fmb($fmb);
 
@@ -265,7 +265,7 @@ sub update {
 
     return $res_table if $res_table->{error};
 
-    my $fmb = $self->_fmb_datamapper->get_contract_by_account_id_contract_id($self->client->default_account->id, $self->contract_id)->[0];
+    my $fmb = $self->_fmb_datamapper->get_contract_details_with_transaction_ids($self->contract_id)->[0];
     $self->fmb($fmb);
 
     my $res = $self->build_contract_update_response();
