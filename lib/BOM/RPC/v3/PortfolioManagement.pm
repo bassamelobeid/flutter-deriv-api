@@ -142,10 +142,10 @@ rpc proposal_open_contract => sub {
     } else {
         @fmbs = @{__get_open_contracts($client)};
     }
-    return populate_response_proposal_contract($client, $params, \@fmbs);
+    return populate_proposal_open_contract_response($client, $params, \@fmbs);
 };
 
-=head2 populate_response_proposal_contract
+=head2 populate_proposal_open_contract_response
 
 Will populate a new `proposal_open_contract` response for
 each of the contracts (contract_id or all the open contracts for this account id)
@@ -154,66 +154,24 @@ response.
 
 =cut
 
-sub populate_response_proposal_contract {
-    my ($client, $params, $contract_details) = @_;
+sub populate_proposal_open_contract_response {
+    my ($client, $params, $fmbs) = @_;
 
     my $response = {};
-    foreach my $fmb (@{$contract_details}) {
-        my $id = $fmb->{id};
-        my $sell_time;
-        my $is_sold = $fmb->{is_sold} ? 1 : 0;    #change value from a JSON::PP::Boolean to just 1 or 0  as per API Docs
-        $sell_time = 0 + Date::Utility->new($fmb->{sell_time})->epoch if $fmb->{sell_time};
-        my $contract = {
-            short_code            => $fmb->{short_code},
-            contract_id           => $id,
-            currency              => $client->currency,
-            is_expired            => $fmb->{is_expired},
-            is_sold               => $is_sold,
-            sell_price            => $fmb->{sell_price},
-            buy_price             => $fmb->{buy_price},
-            app_markup_percentage => $params->{app_markup_percentage},
-            landing_company       => $client->landing_company->short,
-            account_id            => $fmb->{account_id},
-            country_code          => $client->residence,
-        };
+    foreach my $fmb (@{$fmbs}) {
+        my $id                  = $fmb->{id};
+        my $contract_parameters = BOM::Transaction::Utility::build_contract_parameters($client, $fmb);
 
-        $contract->{limit_order} = BOM::Transaction::Utility::extract_limit_orders($fmb) if $fmb->{bet_class} eq 'multiplier';
-        $contract->{sell_time} //= $sell_time;
+        my $contract = BOM::Pricing::v3::Contract::get_bid($contract_parameters);
+        $response->{$id} = $contract;
 
-        $contract = BOM::Pricing::v3::Contract::get_bid($contract);
-        if ($contract->{error}) {
-            $response->{$id} = $contract;
-        } else {
-            my $transaction_ids = {buy => $fmb->{buy_transaction_id}};
-            $transaction_ids->{sell} = $fmb->{sell_transaction_id} if ($fmb->{sell_transaction_id});
-
-            $contract->{purchase_time}   = 0 + Date::Utility->new($fmb->{purchase_time})->epoch;
-            $contract->{transaction_ids} = $transaction_ids;
-            $contract->{buy_price}       = $fmb->{buy_price};
-            $contract->{account_id}      = $fmb->{account_id};
-            $contract->{is_sold}         = $is_sold;
-            $contract->{sell_time}       = 0 + $sell_time if $sell_time;
-            $contract->{sell_price}      = formatnumber('price', $client->currency, $fmb->{sell_price}) if defined $fmb->{sell_price};
-
-            if (defined $contract->{buy_price} and (defined $contract->{bid_price} or defined $contract->{sell_price})) {
-                my $contract_cancellation = $contract->{cancellation};
-                my $main_contract_price =
-                    $contract_cancellation ? $contract->{buy_price} - $contract_cancellation->{ask_price} : $contract->{buy_price};
-                $contract->{profit} =
-                    (defined $contract->{sell_price})
-                    ? formatnumber('price', $client->currency, $contract->{sell_price} - $main_contract_price)
-                    : formatnumber('price', $client->currency, $contract->{bid_price} - $main_contract_price);
-                $contract->{profit_percentage} = roundcommon(0.01, $contract->{profit} / $main_contract_price * 100);
-            }
-            $response->{$id} = $contract;
-
-            # if we're subscribing to proposal_open_contract and contract is not sold, then set CONTRACT_PARAMS here
-            BOM::Transaction::Utility::set_contract_parameters($contract, $client) if $params->{args}->{subscribe} and not $is_sold;
+        # set CONTRACT_PARAMS if we are subscribing to POC and the contract is not sold yet.
+        if (not $contract->{error} and $params->{args}->{subscribe} and not $contract->{is_sold}) {
+            BOM::Transaction::Utility::set_contract_parameters($contract_parameters);
         }
     }
 
     return $response;
-
 }
 
 =head2 get_contract_details_by_id

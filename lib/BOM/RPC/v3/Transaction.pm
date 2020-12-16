@@ -620,9 +620,10 @@ rpc contract_update => sub {
                     code              => 'ContractUpdateFailure',
                     message_to_client => localize($response->{error}),
                 });
-            }
-            if (my $contract_proposal_details = delete $response->{contract_details}) {
-                BOM::Transaction::Utility::set_contract_parameters($contract_proposal_details, $client);
+            } else {
+                # CLEANUP: set contract parameters only if a corresponding POC subscription exists.
+                my $contract_parameters = BOM::Transaction::Utility::build_contract_parameters($client, $updater->fmb);
+                BOM::Transaction::Utility::set_contract_parameters($contract_parameters);
             }
         } else {
             my $error = $updater->validation_error;
