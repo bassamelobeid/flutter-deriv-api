@@ -1,0 +1,18 @@
+<form action="[% self_post %]" method="post">
+    Percentage of reversible deposits a client is allowed to sell/withdraw per cashier. These values override the global settings.
+    <table>
+    [% FOR cashier IN global.keys.sort %]
+    <tr>
+        <td><b>[% cashier %]</b></td>
+        <td>
+            <input type="text" size="5" name="[% cashier %]_limit_new" value="[% client.$cashier.val %]"> (0-100%)  Global setting: [% global.$cashier %]%
+            <input type="hidden" name="[% cashier %]_limit_old" value="[% client.$cashier.val %]">
+        </td>
+    </tr>
+    [% END %]
+    </table>
+  <input type="hidden" name="whattodo" value="save_reversible_limits">
+  <input type="hidden" name="broker" value="[% broker %]">
+  <input type="hidden" name="loginID" value="[% loginid %]">
+  <input type=submit value="Save">
+</form>

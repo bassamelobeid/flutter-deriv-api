@@ -94,6 +94,10 @@ LoginID: <input type="text" name="loginID" value="[% request.params.loginID %]" 
             <td>Today turnover</td>
             <td>Buy: [% advertiser.account_currency %] [% advertiser.daily_buy %], sell: [% advertiser.account_currency %] [% advertiser.daily_sell %]</td>
         </tr>
+         <tr>
+            <td>P2P available balance</td>
+            <td>[% advertiser.account_currency %] [% p2p_balance %]</td>
+        </tr>        
         <tr>
             <td>Credit Card Sell Authorized</td>
             <td>
@@ -102,6 +106,7 @@ LoginID: <input type="text" name="loginID" value="[% request.params.loginID %]" 
                     <option value="0" [% !advertiser.cc_sell_authorized && 'selected' %]>NO</option>
                 </select>
                 &nbsp;&nbsp;(If YES, the advertiser is always allowed to sell funds derived from credit card deposits)
+                <p>Currently blocked: [% sell_blocked %]
             </td>
         </tr>        
         <tr>

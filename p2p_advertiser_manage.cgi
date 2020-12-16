@@ -13,6 +13,8 @@ use BOM::Database::ClientDB;
 use BOM::User::Client;
 use BOM::User::Utility;
 use BOM::Platform::Event::Emitter;
+use BOM::Config::Runtime;
+use Format::Util::Numbers qw(financialrounding);
 use Syntax::Keyword::Try;
 use Scalar::Util qw(looks_like_number);
 use List::Util qw(min max);
@@ -143,6 +145,10 @@ if ($output{advertiser}) {
                 $output{advertiser}->{client_loginid});
         });
     $output{bands} = [map { $_->[0] } @$bands];
+
+    my $client = BOM::User::Client->new({loginid => $output{advertiser}->{client_loginid}});
+    $output{p2p_balance}  = financialrounding('amount', $output{advertiser}->{account_currency}, $client->balance_for_cashier('p2p'));
+    $output{sell_blocked} = $client->_p2p_validate_sell($client, $output{advertiser}) ? 'no' : 'yes';
 
 } elsif ($input{loginID}) {
     try {

@@ -16,6 +16,7 @@ use List::Util qw(none uniq);
 use LandingCompany::Registry;
 use Finance::MIFIR::CONCAT qw(mifir_concat);
 use Format::Util::Numbers qw(financialrounding);
+use Scalar::Util qw(looks_like_number);
 
 use f_brokerincludeall;
 
@@ -401,6 +402,39 @@ if ($input{whattodo} eq 'uploadID') {
     }
     print $result;
     code_exit_BO(qq[<p><a href="$self_href">&laquo;Return to Client Details</a></p>]);
+}
+
+if ($input{whattodo} eq 'save_reversible_limits') {
+    my $result;
+    for my $param (keys %input) {
+        next unless my ($cashier) = $param =~ /(\w+)_limit_new/;
+        next unless $input{$param} ne ($input{$cashier . '_limit_old'} // '');
+        my $val = trim($input{$param});
+
+        try {
+            if ($val) {
+                die "$val is not numeric\n" unless looks_like_number($val);
+
+                $client->db->dbic->run(
+                    ping => sub {
+                        $_->do('SELECT betonmarkets.manage_client_limit_by_cashier(?,?,?);', undef, $loginid, $cashier, $val / 100);
+                    });
+            } else {
+                $client->db->dbic->run(
+                    ping => sub {
+                        $_->do('SELECT betonmarkets.delete_client_limit_by_cashier(?,?);', undef, $loginid, $cashier);
+                    });
+            }
+            $result .= "<br/><p style=\"color:#eeee00; font-weight:bold;\">Updated client limit for $cashier</p><br/>\n";
+        } catch ($e) {
+            $result .= "<br/><p style=\"color:red; font-weight:bold;\">Error saving reversible limit: $e.</p><br/>\n";
+        }
+    }
+
+    if ($result) {
+        print $result;
+        code_exit_BO(qq[<p><a href="$self_href">&laquo;Return to Client Details</a></p>]);
+    }
 }
 
 # Disabe 2FA if theres is a request for that.
@@ -1454,6 +1488,29 @@ if (not $client->is_virtual) {
         . '">'
         . $loginid
         . ' P2P Advertiser details</a>';
+
+    Bar('Reversible balance limits');
+
+    my $config = BOM::Config::Runtime->instance->app_config->payments->reversible_balance_limits;
+    my %global = map { $_ => $config->$_ } keys $config->definition->{contains}->%*;
+
+    my $client_limits = $client->db->dbic->run(
+        ping => sub {
+            $_->selectall_hashref(
+                'SELECT ROUND(limit_as_decimal_percent*100) AS val, payment_gateway_code FROM betonmarkets.client_limit_by_cashier WHERE client_loginid = ?',
+                'payment_gateway_code', undef, $loginid
+            );
+        });
+
+    BOM::Backoffice::Request::template()->process(
+        'backoffice/client_reversible_limits.tt',
+        {
+            global    => \%global,
+            client    => $client_limits,
+            self_post => $self_post,
+            broker    => $encoded_broker,
+            loginid   => $encoded_loginid,
+        });
 }
 
 Bar($user->{email} . " Login history");
