@@ -1411,6 +1411,18 @@ sub cancel {
     my ($fmb, $txn, $buy_txn_id);
     try {
         ($fmb, $txn, $buy_txn_id) = $fmb_helper->sell_bet;
+
+        my $contract_parameters = BOM::Transaction::Utility::build_contract_parameters(
+            $client,
+            {
+                $fmb->%*,
+                buy_transaction_id  => $buy_txn_id,
+                sell_transaction_id => $txn->{id}});
+        if ($self->contract->can('available_orders')) {
+            $contract_parameters->{limit_order} = $self->contract->available_orders;
+        }
+
+        BOM::Transaction::Utility::set_contract_parameters($contract_parameters, time);
         $error = 0;
     } catch {
         # if $error_status is defined, return it
