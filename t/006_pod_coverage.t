@@ -9,7 +9,7 @@ use Test::Pod::CoverageChange;
 # The number of naked (undocumented) subs should never be increased in this hashref.
 
 my $allowed_naked_packages = {
-    'BOM::Config'                         => 44,
+    'BOM::Config'                         => 42,
     'BOM::Config::Redis'                  => 1,
     'BOM::Config::RedisTransactionLimits' => 2,
     'BOM::Config::Runtime'                => 4,

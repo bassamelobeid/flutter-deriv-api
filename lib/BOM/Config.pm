@@ -214,6 +214,12 @@ sub mt5_user_rights {
     return $config;
 }
 
+=head2 mt5_server_routing
+
+Config for trade server routing for MT5.
+
+=cut
+
 sub mt5_server_routing {
     state $config = YAML::XS::LoadFile('/home/git/regentmarkets/bom-config/share/mt5_server_routing_by_country.yml');
     return $config;
@@ -223,6 +229,12 @@ sub mt5_account_types {
     state $config = YAML::XS::LoadFile('/home/git/regentmarkets/bom-config/share/mt5_account_types.yml');
     return $config;
 }
+
+=head2 mt5_webapi_config
+
+Config for trade server definition for MT5
+
+=cut
 
 sub mt5_webapi_config {
     state $config = YAML::XS::LoadFile('/etc/rmg/mt5webapi.yml');
