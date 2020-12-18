@@ -123,6 +123,34 @@ sub is_primary_website {
     return $is_primary_website ? 1 : 0;
 }
 
+=head2 is_internal
+
+Checks if the app is an internal App like Backoffice.  
+Currently only used to check if authentication is from impersonation.  
+
+=over 4
+
+=item * C<app_id> - application ID
+
+=back
+
+Returns true if the app is an internal one false otherwise.  
+
+=cut
+
+sub is_internal {
+    my ($self, $app_id) = @_;
+
+    my ($is_internal) = $self->dbic->run(
+        fixup => sub {
+            $_->selectrow_array("
+        SELECT is_internal FROM oauth.official_apps WHERE app_id = ?
+    ", undef, $app_id);
+        });
+
+    return $is_internal;
+}
+
 sub confirm_scope {
     my ($self, $app_id, $loginid) = @_;
 

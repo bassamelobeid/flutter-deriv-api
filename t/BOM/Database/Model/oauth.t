@@ -298,4 +298,31 @@ subtest 'get app by id' => sub {
     is $get_app1->{name}, $retrieved_app->{name}, 'app retrieved from DB and created app should be the same ';
 
 };
+subtest 'Is app internal' => sub {
+    my $app1 = $m->create_app({
+        name         => 'App internal',
+        scopes       => ['read', 'admin'],
+        user_id      => $test_user_id,
+        redirect_uri => 'https://www.example.com',
+        active       => 1
+    });
+
+    my $sql = 'INSERT INTO  oauth.official_apps VALUES (?, true, true)';
+    $m->dbic->dbh->do($sql, undef, $app1->{app_id});
+    is($m->is_internal($app1->{app_id}), 1, 'Is internal app true');
+
+    # Not Internal
+    my $app2 = $m->create_app({
+        name         => 'App internal',
+        scopes       => ['read', 'admin'],
+        user_id      => $test_user_id,
+        redirect_uri => 'https://www.example.com',
+        active       => 1
+    });
+
+    $sql = 'INSERT INTO  oauth.official_apps VALUES (?, true, false)';
+    $m->dbic->dbh->do($sql, undef, $app2->{app_id});
+    is($m->is_internal($app2->{app_id}), 0, 'Is internal app false');
+
+};
 done_testing();
