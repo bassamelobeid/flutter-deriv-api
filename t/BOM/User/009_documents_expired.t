@@ -312,16 +312,104 @@ subtest 'documents uploaded' => sub {
     $documents = $client->documents_uploaded();
     cmp_deeply($documents, $document_hash, 'correct structure for client documents with authentication status as under_review');
 
-    subtest 'siblings are considered for documents expiry' => sub {
-        my $dbh            = $client_mlt->db->dbic->dbh;
-        my $SQL            = 'UPDATE betonmarkets.client_authentication_document SET expiration_date = ?';
+    subtest 'Experian validated should not sync expired docs from siblings' => sub {
+        my $user = BOM::User->create(
+            email          => 'testing@binary.com',
+            password       => BOM::User::Password::hashpw('test'),
+            email_verified => 1,
+        );
+        my $client_mock = Test::MockModule->new('BOM::User::Client');
+        my $status_mock = Test::MockModule->new('BOM::User::Client::Status');
+        $status_mock->mock(
+            'proveid_requested',
+            sub {
+                return 1;
+            });
+
+        $status_mock->mock(
+            'age_verification',
+            sub {
+                return {reason => 'Experian results are sufficient to mark client as age verified.'};
+            });
+        $client_mock->mock(
+            'is_document_expiry_check_required',
+            sub {
+                return 1;
+            });
+
+        my $client_mf = create_client('MF');
+        my $dbh       = $client_mf->db->dbic->dbh;
+        $user->add_client($client_mf);
+
+        my $SQL         = 'SELECT * FROM betonmarkets.start_document_upload(?,?,?,?,?,?,?,?)';
+        my $sth_doc_new = $dbh->prepare($SQL);
+        $sth_doc_new->execute($client_mf->loginid, 'passport', 'PNG', 'yesterday', 55555, '75bada1e034d13b417083507db47ee4a', 'none', 'front');
+
+        $SQL = 'UPDATE betonmarkets.client_authentication_document SET expiration_date = ?';
         my $sth_doc_update = $dbh->prepare($SQL);
         $sth_doc_update->execute('yesterday');
 
+        my $id = $sth_doc_new->fetch()->[0];
+        $SQL = 'SELECT * FROM betonmarkets.finish_document_upload(?)';
+        my $sth_doc_finish = $dbh->prepare($SQL);
+        $sth_doc_finish->execute($id);
+
+        my $client_mx = create_client('MX');
+        $user->add_client($client_mx);
+        my $test = 'BOM::User::Client->documents_expired returns 0 for an Experian validated account';
+        is($client_mx->documents_expired(), 0, $test);
+        $client_mock->unmock_all;
+        $status_mock->unmock_all;
+    };
+
+    subtest 'Not validated by Experian should sync from siblings' => sub {
+        my $user = BOM::User->create(
+            email          => 'testing2@binary.com',
+            password       => BOM::User::Password::hashpw('test'),
+            email_verified => 1,
+        );
+        my $client_mock = Test::MockModule->new('BOM::User::Client');
+        my $status_mock = Test::MockModule->new('BOM::User::Client::Status');
+        $status_mock->mock(
+            'proveid_requested',
+            sub {
+                return 1;
+            });
+
+        $status_mock->mock(
+            'age_verification',
+            sub {
+                return {reason => 'Onfido upload ok.'};
+            });
+        $client_mock->mock(
+            'is_document_expiry_check_required',
+            sub {
+                return 1;
+            });
+
         my $client_mf = create_client('MF');
-        $user_client2->add_client($client_mf);
-        my $test = 'BOM::User::Client->documents_expired returns 1 if there are no documents for client but its sibling has an expired one';
-        is($client_mf->documents_expired(), 1, $test);
+        my $dbh       = $client_mf->db->dbic->dbh;
+        $user->add_client($client_mf);
+
+        my $SQL         = 'SELECT * FROM betonmarkets.start_document_upload(?,?,?,?,?,?,?,?)';
+        my $sth_doc_new = $dbh->prepare($SQL);
+        $sth_doc_new->execute($client_mf->loginid, 'passport', 'PNG', 'yesterday', 55555, '75bada1e034d13b417083507db47ee4a', 'none', 'front');
+
+        $SQL = 'UPDATE betonmarkets.client_authentication_document SET expiration_date = ?';
+        my $sth_doc_update = $dbh->prepare($SQL);
+        $sth_doc_update->execute('yesterday');
+
+        my $id = $sth_doc_new->fetch()->[0];
+        $SQL = 'SELECT * FROM betonmarkets.finish_document_upload(?)';
+        my $sth_doc_finish = $dbh->prepare($SQL);
+        $sth_doc_finish->execute($id);
+
+        my $client_mx = create_client('MX');
+        $user->add_client($client_mx);
+        my $test = 'BOM::User::Client->documents_expired returns 1 for a Non Experian validated account';
+        is($client_mx->documents_expired(), 1, $test);
+        $client_mock->unmock_all;
+        $status_mock->unmock_all;
     };
 
     subtest 'for multiple poi documents the latest expiration date is taken into account to flag poi expired' => sub {

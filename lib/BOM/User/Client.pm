@@ -722,9 +722,14 @@ sub documents_uploaded {
 
             # there should be no expiration date for POA
             next if $type eq 'proof_of_address';
-
             my $expires = $documents{$type}{documents}{$single_document->file_name}{expiry_date};
             next unless $expires;
+
+            # Dont propagate expiry if is age verified by Experian
+            # Note the only way we have to check if it was validated by Experian is checking the status reason
+            next
+                if $self->status->proveid_requested
+                and ($self->status->reason('age_verification') // '') =~ /Experian results are sufficient to mark client as age verified/;
 
             my $existing_expiry_date_epoch = $documents{$type}{expiry_date} // $expires;
             my $expiry_date;
