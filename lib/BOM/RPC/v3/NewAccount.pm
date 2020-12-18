@@ -164,9 +164,8 @@ rpc "verify_email",
     auth => 0,    # unauthenticated
     sub {
     my $params = shift;
-
-    my $email = lc $params->{args}->{verify_email};
-    my $args  = $params->{args};
+    my $email  = lc $params->{args}->{verify_email};
+    my $args   = $params->{args};
     return BOM::RPC::v3::Utility::invalid_email() unless Email::Valid->address($email);
 
     my $type = $params->{args}->{type};
@@ -218,7 +217,15 @@ rpc "verify_email",
             request_email($email, $verification->{account_opening_existing}->());
         }
     } elsif ($existing_user and ($type eq 'paymentagent_withdraw' or $type eq 'payment_withdraw')) {
-        request_email($email, $verification->{payment_withdraw}->());
+
+        if (_is_impersonating_client($params->{token})) {
+            return BOM::RPC::v3::Utility::create_error({
+                    code              => 'Permission Denied',
+                    message_to_client => localize('You can not perform a withdrawal while impersonating an account')});
+        } else {
+            request_email($email, $verification->{payment_withdraw}->());
+        }
+
     } elsif ($existing_user and $type eq 'mt5_password_reset') {
         request_email($email, $verification->{mt5_password_reset}->());
     }
@@ -226,6 +233,31 @@ rpc "verify_email",
     # always return 1, so not to leak client's email
     return {status => 1};
     };
+
+=head2 _is_impersonating_client
+
+Description: Checks if this is an internal app like backend - if so 
+we are impersonating an account.
+Takes the following arguments as named parameters
+
+=over 4
+
+=item - $token:  The token id used to authenticate with
+
+
+=back
+
+Returns a boolean
+
+=cut
+
+sub _is_impersonating_client {
+    my ($token) = @_;
+
+    my $oauth_db = BOM::Database::Model::OAuth->new;
+    my $app_id   = $oauth_db->get_app_id_by_token($token);
+    return $oauth_db->is_internal($app_id);
+}
 
 sub _update_professional_existing_clients {
 
