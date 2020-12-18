@@ -266,6 +266,11 @@ sub update {
     return $res_table if $res_table->{error};
 
     my $fmb = $self->_fmb_datamapper->get_contract_details_with_transaction_ids($self->contract_id)->[0];
+
+    # because of replication delay we need to bring it up to date
+    my $mult = $res_table->{$fmb->{id}};
+    $fmb = {$fmb->%*, $mult->%*};
+
     $self->fmb($fmb);
 
     my $res = $self->build_contract_update_response();
