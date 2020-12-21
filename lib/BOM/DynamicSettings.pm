@@ -212,6 +212,7 @@ sub get_settings_by_group {
                 system.suspend.transfer_currencies
                 system.suspend.onfido
                 system.suspend.p2p
+                system.mt5.new_trade_server
                 system.mt5.suspend.all
                 system.mt5.suspend.deposits
                 system.mt5.suspend.withdrawals
