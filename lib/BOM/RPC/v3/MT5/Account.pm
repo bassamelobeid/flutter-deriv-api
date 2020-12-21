@@ -14,7 +14,7 @@ use Locale::Country::Extra;
 use WebService::MyAffiliates;
 use Future::Utils qw(fmap1);
 use Format::Util::Numbers qw/financialrounding formatnumber/;
-use JSON::MaybeXS;
+use JSON::MaybeUTF8 qw(decode_json_utf8);
 use DataDog::DogStatsd::Helper qw(stats_inc stats_event);
 use Digest::SHA qw(sha384_hex);
 use LandingCompany::Registry;
@@ -345,13 +345,24 @@ sub _get_server_type {
         $country = country2code($country);
     }
 
+    # if it is not defined, set $server_type to $DEFAULT_TRADING_SERVER_KEY
     my $server_type = $server_routing_config->{$account_type}->{$country}->{$market_type} // $DEFAULT_TRADING_SERVER_KEY;
 
-    # TODO (JB): To clean up rollback plan from backoffice just in case setup has error on additional trade server
-    my $method     = $account_type . $server_type;
-    my $app_config = BOM::Config::Runtime->instance->app_config->system->mt5->suspend;
-    if ($app_config->$method->all) {
-        $server_type = $DEFAULT_TRADING_SERVER_KEY;
+    # Flexible rollback plan for future new trade server
+    my $mt5_app_config    = BOM::Config::Runtime->instance->app_config->system->mt5;
+    my $new_server_config = decode_json_utf8($mt5_app_config->new_trade_server);
+    my $method            = $account_type . $server_type;
+
+    if (my $new = $new_server_config->{$method}) {
+        if ($mt5_app_config->suspend->$method->all) {
+            $server_type = $DEFAULT_TRADING_SERVER_KEY;
+        } elsif ($new->{all}) {    # according to $server_routing_config
+            $server_type = $new->{all};
+        } elsif ($new->{$country} and $new->{$country}{$market_type}) {    # just this country & market tyep
+            $server_type = $new->{$country}{$market_type};
+        } else {
+            $server_type = $DEFAULT_TRADING_SERVER_KEY;
+        }
     }
 
     return $server_type;
