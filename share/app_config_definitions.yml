@@ -939,6 +939,11 @@ system:
                   isa: Bool
                   default: 0
                   global: 1
+        new_trade_server:
+          description: "This configuration is used to help with the launch of new trade server. E.g. to only route synthetic account from indonesia to real03 '{\"real03\":{\"id\":{\"synthetic\":\"03\"}}}' or to define real03 as a new trade server '{\"real03\":{\"all\":\"03\"}}'."
+          isa: json_string
+          default: '{}'
+          global: 1
 marketing:
     description:  "Marketing Bonus Settings"
     isa: section

@@ -1,6 +1,6 @@
 ---
 demo: {}
-# all countries in Africa continent is currently routed to trade server 02
+# all countries in Africa continent that allows a synthetic account will be routed to real02.
 real:
   ao: &by_market
     synthetic: '02'
