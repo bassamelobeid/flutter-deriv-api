@@ -21,10 +21,6 @@ real:
   tz: *by_market
   bi: *by_market
   rw: *by_market
-  so: *by_market
-  gn: *by_market
-  ke: *by_market
-  ug: *by_market
   ga: *by_market
   st: *by_market
   cg: *by_market
