@@ -288,6 +288,7 @@ sub get_settings_by_group {
                 payments.crypto.sweep_reserve_balance.BTC
                 payments.crypto.sweep_reserve_balance.LTC
                 payments.crypto.sweep_reserve_balance.ETH
+                payments.crypto.new_address_threshold
                 payments.crypto_withdrawal_approvals_required
                 payments.crypto_withdrawal_suspicious_check_required
                 payments.crypto.withdrawal_processing_max_duration
