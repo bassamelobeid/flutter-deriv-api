@@ -577,4 +577,29 @@ sub get_currency_wait_before_bump {
     return app_config()->get('payments.crypto.fee_bump_wait_time.' . $currency);
 }
 
+=head2 get_crypto_new_address_threshold
+
+Gets the new_address_threshold of each currencies
+
+=over 4
+
+=item * C<currency> - Currency code
+
+=back
+
+Returns the threshold to generate new address
+
+=cut
+
+sub get_crypto_new_address_threshold {
+    my $currency = shift;
+
+    my $new_address_threshold_list = JSON::MaybeUTF8::decode_json_utf8(app_config()->get('payments.crypto.new_address_threshold'));
+
+    my $new_address_threshold = $new_address_threshold_list->{$currency} // $new_address_threshold_list->{default};
+
+    return $new_address_threshold;
+
+}
+
 1;

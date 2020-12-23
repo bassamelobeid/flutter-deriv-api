@@ -404,6 +404,11 @@ payments:
               description: "ETH wait before bump in seconds"
               default: 43200
               global: 1
+        new_address_threshold:
+          description: "Threshold to hit to generate new address for the client"
+          isa: json_string
+          default: '{"default":50,"BTC":0.003,"LTC":1,"ETH":0.1,"IDK":700}'
+          global: 1
     transfer_between_accounts:
       description: 'Transfer between accounts config'
       isa: section
