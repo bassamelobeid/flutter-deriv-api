@@ -17,6 +17,9 @@ use BOM::CTC::Constants qw(:transaction :datadog);
 use BOM::CTC::Helper;
 use BOM::Event::Utility qw(exception_logged);
 
+use BOM::Config::Runtime;
+use BOM::Config::CurrencyConfig;
+
 my $cryptodb_dbic;
 
 sub cryptodb {
@@ -175,15 +178,19 @@ sub set_pending_transaction {
         my $result = update_transaction_status_to_pending($transaction, $address);
 
         if ($result) {
+
+            my $app_config = BOM::Config::Runtime->instance->app_config;
+            $app_config->check_for_update;
+
+            # we should retain the address if the deposit amount does not reach the specified threshold
+            my $retain_address = check_new_address_threshold($currency_code, $transaction->{amount});
+
             my ($emit, $error);
             try {
                 my $client_loginid = $payment[0]->{client_loginid};
 
-                $emit = BOM::Platform::Event::Emitter::emit(
-                    'new_crypto_address',
-                    {
-                        loginid => $client_loginid,
-                    });
+                $emit = emit_new_address_call($client_loginid, $retain_address, $address);
+
             } catch {
                 $error = $@;
             }
@@ -334,16 +341,75 @@ sub new_crypto_address {
 
     return undef unless LandingCompany::Registry::get_currency_type($currency) eq 'crypto';
 
-    try {
-        my $helper = BOM::CTC::Helper->new(client => $client);
-        my ($id, $address) = $helper->get_deposit_id_and_address();
-        return $address;
-    } catch {
-        $log->errorf('Failed to generate address for new_crypto_address event. Details: loginid %s, currency: %s, and error: %s',
-            $client->loginid, $currency, $@)
+    my $helper = BOM::CTC::Helper->new(client => $client);
+
+    if ($data->{retain_address}) {
+        # retain the address
+        try {
+            my $id = $helper->retain_deposit_address($data->{address});
+
+            die "There is already an address with NEW status for the client" unless $id;
+
+            # if there is id, means the address is successfully retained
+            return $id;
+
+        } catch ($e) {
+            $log->errorf('Failed to retain address for new_crypto_address event. Details: loginid %s, currency: %s, address: %s and error: %s',
+                $client->loginid, $currency, $data->{address}, $e)
+        }
+    } else {
+        try {
+            my ($id, $address) = $helper->get_deposit_id_and_address();
+            return $address;
+        } catch ($e) {
+            $log->errorf('Failed to generate address for new_crypto_address event. Details: loginid %s, currency: %s, and error: %s',
+                $client->loginid, $currency, $e)
+        }
     }
 
     return undef;
+}
+
+=head2 check_new_address_threshold
+
+Check if the amount reached the specified treshold to generate new address
+
+Returns 1 if it does not pass the threshold to generate new address
+Returns 0 if it passes the threshold to generate new address
+
+=cut
+
+sub check_new_address_threshold {
+
+    my ($currency, $amount) = @_;
+
+    use BOM::Config::CurrencyConfig;
+
+    my $new_address_threshold = BOM::Config::CurrencyConfig::get_crypto_new_address_threshold($currency);
+
+    return $new_address_threshold > $amount;
+
+}
+
+=head2 emit_new_address_call
+
+emits new_crypto_address event 
+
+=cut
+
+sub emit_new_address_call {
+
+    my ($client_loginid, $retain_address, $address) = @_;
+
+    my $emit = BOM::Platform::Event::Emitter::emit(
+        'new_crypto_address',
+        {
+            loginid        => $client_loginid,
+            retain_address => $retain_address,
+            address        => $address,
+        });
+
+    return $emit;
 }
 
 1;

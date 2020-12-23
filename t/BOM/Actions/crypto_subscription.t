@@ -20,7 +20,7 @@ use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_events_redis);
 use BOM::Platform::Event::Emitter;
 use IO::Async::Loop;
 use BOM::Event::Services;
-use List::Util qw(all);
+use List::Util qw(all any);
 use BOM::Test::Helper::Client qw( create_client top_up);
 use BOM::Test::Helper::ExchangeRates qw(populate_exchange_rates);
 
@@ -386,6 +386,98 @@ subtest "internal_transactions" => sub {
         fixup => sub { $_->selectrow_array('SELECT address from payment.ctc_find_new_deposit_address(?, ?)', undef, 'BTC', $client->loginid) });
 
     is $address, undef, 'no new address created when internal transactions was marked as pending';
+};
+
+subtest "New address threshold" => sub {
+
+    my $client = create_client();
+    $client->set_default_account('BTC');
+
+    my $helper = BOM::CTC::Helper->new(client => $client);
+
+    $mock_btc->mock(
+        get_new_address => sub {
+            return '4BLeXx1J9Tp3TBnQyHrhVxne9KqkAS9ABC',;
+        });
+
+    my ($id, $btc_address);
+
+    lives_ok {
+        ($id, $btc_address) = $helper->get_deposit_id_and_address;
+    }
+    'survived get_deposit_id_and_address';
+
+    my $transaction = {
+        currency     => 'BTC',
+        hash         => '427d42cfa0717e8d4ce8b453de74cc84f3156861df07173876f6cfebdcbc099b',
+        to           => $btc_address,
+        type         => 'receive',
+        fee          => 0.00002,
+        fee_currency => 'BTC',
+        amount       => 0.00001,
+        block        => 10,
+    };
+
+    # mocking address again to make sure the new address is different
+    # if the retain address is not called
+    my $new_address = '5CLeXx1J9Tp3TBnQyHrhVxne9KqkAS9DEF';
+    $mock_btc->mock(
+        get_new_address => sub {
+            return $new_address,;
+        });
+
+    $mock_subscription->mock(
+        emit_new_address_call => sub {
+            my ($client_loginid, $retain_address, $address) = @_;
+            my $data = {
+                loginid        => $client_loginid,
+                retain_address => $retain_address,
+                address        => $address,
+            };
+            BOM::Event::Actions::CryptoSubscription::new_crypto_address($data);
+        });
+
+    my $response = BOM::Event::Actions::CryptoSubscription::set_pending_transaction($transaction);
+    is $response, 1, "Correct status";
+
+    my $res = $dbic->run(
+        ping => sub {
+            my $sth = $_->prepare('SELECT address, status from payment.cryptocurrency where address = ?');
+            $sth->execute($btc_address)
+                or die $sth->errstr;
+            return $sth->fetchall_arrayref({});
+        });
+
+    is @$res, 2, "Correct number of same address record returned";
+    my $address_with_new_exist = any { $_->{status} eq 'NEW' } @$res;
+    is $address_with_new_exist, 1, "Address is retained";
+
+    $transaction->{amount} = 10;
+    $transaction->{hash}   = '427d42cfa0717e8d4ce8b453de74cc84f3156861df07173876f6cfebdcbc099c';
+
+    $response = BOM::Event::Actions::CryptoSubscription::set_pending_transaction($transaction);
+    is $response, 1, "Correct status";
+
+    $res = $dbic->run(
+        ping => sub {
+            my $sth = $_->prepare('SELECT address, status from payment.cryptocurrency where address = ?');
+            $sth->execute($btc_address)
+                or die $sth->errstr;
+            return $sth->fetchall_arrayref({});
+        });
+
+    is @$res, 2, "Correct number of same address record returned";
+
+    $res = $dbic->run(
+        ping => sub {
+            my $sth = $_->prepare('SELECT address, status from payment.cryptocurrency where address = ?');
+            $sth->execute($new_address)
+                or die $sth->errstr;
+            return $sth->fetchall_arrayref({});
+        });
+
+    is @$res, 1, "Correct response as address is not retained when the amount surpasses the threshold";
+
 };
 
 done_testing;
