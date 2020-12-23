@@ -176,6 +176,10 @@ sub check_one_result {
     };
 }
 
+# tick trades are not offered during quiet period, therefore ignore offerings validation.
+my $mock_offerings_validation = Test::MockModule->new('LandingCompany::Offerings');
+$mock_offerings_validation->mock(validate_offerings => sub { note "mocked LandingCompany::Offerings->validate_offerings returning nothing"; () });
+
 ####################################################################
 # real tests begin here
 ####################################################################
