@@ -119,6 +119,86 @@ my $POA_REASONS = {
     },
 };
 
+my $UNTRUSTED_STATUS = [{
+        'linktype'    => 'disabledlogins',
+        'comments'    => 'Disabled Accounts',
+        'code'        => 'disabled',
+        'show_reason' => 'yes',
+        'explanation' => "Restricts access to account, client  can't login.",
+    },
+    {
+        'linktype'    => 'lockcashierlogins',
+        'comments'    => 'Cashier Lock Section',
+        'code'        => 'cashier_locked',
+        'show_reason' => 'yes',
+        'explanation' => 'Restricts access to cashier, blocking both deposits and withdrawals.',
+    },
+    {
+        'linktype'    => 'unwelcomelogins',
+        'comments'    => 'Unwelcome Login ID (no deposits or trades)',
+        'code'        => 'unwelcome',
+        'show_reason' => 'yes',
+        'explanation' => 'Client can only login, close any open trades, withdraw any pending balance.',
+    },
+    {
+        'linktype'    => 'nowithdrawalortrading',
+        'comments'    => 'Disable Withdrawal and Trading',
+        'code'        => 'no_withdrawal_or_trading',
+        'show_reason' => 'yes',
+        'explanation' => 'Restricts trading and submission of withdrawal requests, deposits allowed.',
+    },
+    {
+        'linktype'    => 'lockwithdrawal',
+        'comments'    => 'Withdrawal Locked',
+        'code'        => 'withdrawal_locked',
+        'show_reason' => 'yes',
+        'explanation' => 'Restricts access to submit withdrawal requests. Client can deposit and trade.',
+    },
+    {
+        'linktype'    => 'lockmt5withdrawal',
+        'comments'    => 'MT5 Withdrawal Locked',
+        'code'        => 'mt5_withdrawal_locked',
+        'show_reason' => 'yes'
+    },
+    {
+        'linktype'    => 'duplicateaccount',
+        'comments'    => 'Duplicate account',
+        'code'        => 'duplicate_account',
+        'show_reason' => 'yes',
+        'explanation' => 'Blocks complete access to account.',
+    },
+    {
+        'linktype'    => 'professionalrequested',
+        'comments'    => 'Professional requested',
+        'code'        => 'professional_requested',
+        'show_reason' => 'no'
+    },
+    {
+        'linktype'    => 'allowdocumentupload',
+        'comments'    => 'Allow client to upload document',
+        'code'        => 'allow_document_upload',
+        'show_reason' => 'yes'
+    },
+    {
+        'linktype'    => 'internalclient',
+        'comments'    => 'Internal Client',
+        'code'        => 'internal_client',
+        'show_reason' => 'yes'
+    },
+    {
+        'linktype'    => 'notrading',
+        'comments'    => 'Disable Trading',
+        'code'        => 'no_trading',
+        'show_reason' => 'yes'
+    },
+    {
+        'linktype'    => 'sharedpaymentmethod',
+        'comments'    => 'Shared Payment Method Found',
+        'code'        => 'shared_payment_method',
+        'show_reason' => 'yes'
+    },
+];
+
 sub get_document_type_category_mapping {
     my %type_category_mapping;
     foreach my $category (keys %doc_type_categories) {
@@ -1055,86 +1135,30 @@ sub client_balance {
     return $account_dm->get_balance();
 }
 
+=head2 get_untrusted_types
+
+Returns untrusted status code info as an array ref.
+
+=cut
+
 sub get_untrusted_types {
-    return [{
-            'linktype'    => 'disabledlogins',
-            'comments'    => 'Disabled Accounts',
-            'code'        => 'disabled',
-            'show_reason' => 'yes'
-        },
-        {
-            'linktype'    => 'lockcashierlogins',
-            'comments'    => 'Cashier Lock Section',
-            'code'        => 'cashier_locked',
-            'show_reason' => 'yes'
-        },
-        {
-            'linktype'    => 'unwelcomelogins',
-            'comments'    => 'Unwelcome loginIDs',
-            'code'        => 'unwelcome',
-            'show_reason' => 'yes'
-        },
-        {
-            'linktype'    => 'nowithdrawalortrading',
-            'comments'    => 'Disable Withdrawal and Trading',
-            'code'        => 'no_withdrawal_or_trading',
-            'show_reason' => 'yes'
-        },
-        {
-            'linktype'    => 'lockwithdrawal',
-            'comments'    => 'Withdrawal Locked',
-            'code'        => 'withdrawal_locked',
-            'show_reason' => 'yes'
-        },
-        {
-            'linktype'    => 'lockmt5withdrawal',
-            'comments'    => 'MT5 Withdrawal Locked',
-            'code'        => 'mt5_withdrawal_locked',
-            'show_reason' => 'yes'
-        },
-        {
-            'linktype'    => 'duplicateaccount',
-            'comments'    => 'Duplicate account',
-            'code'        => 'duplicate_account',
-            'show_reason' => 'yes'
-        },
-        {
-            'linktype'    => 'professionalrequested',
-            'comments'    => 'Professional requested',
-            'code'        => 'professional_requested',
-            'show_reason' => 'no'
-        },
-        {
-            'linktype'    => 'allowdocumentupload',
-            'comments'    => 'Allow client to upload document',
-            'code'        => 'allow_document_upload',
-            'show_reason' => 'yes'
-        },
-        {
-            'linktype'    => 'internalclient',
-            'comments'    => 'Internal Client',
-            'code'        => 'internal_client',
-            'show_reason' => 'yes'
-        },
-        {
-            'linktype'    => 'notrading',
-            'comments'    => 'Disable Trading',
-            'code'        => 'no_trading',
-            'show_reason' => 'yes'
-        },
-        {
-            'linktype'    => 'sharedpaymentmethod',
-            'comments'    => 'Shared Payment Method Found',
-            'code'        => 'shared_payment_method',
-            'show_reason' => 'yes'
-        },
-    ];
+    return $UNTRUSTED_STATUS;
+}
+
+=head2 get_untrusted_types_hashref
+
+Returns untrusted status code info as a hashref keyed by status codes.
+
+=cut
+
+sub get_untrusted_types_hashref {
+    return {map { $_->{code} => $_ } @$UNTRUSTED_STATUS};
 }
 
 sub get_untrusted_type_by_code {
     my $code = shift;
 
-    my ($untrusted_type) = grep { $_->{code} eq $code } @{get_untrusted_types()};
+    my ($untrusted_type) = grep { $_->{code} eq $code } @$UNTRUSTED_STATUS;
 
     return $untrusted_type;
 }
@@ -1142,7 +1166,7 @@ sub get_untrusted_type_by_code {
 sub get_untrusted_type_by_linktype {
     my $linktype = shift;
 
-    my ($untrusted_type) = grep { $_->{linktype} eq $linktype } @{get_untrusted_types()};
+    my ($untrusted_type) = grep { $_->{linktype} eq $linktype } @$UNTRUSTED_STATUS;
 
     return $untrusted_type;
 }

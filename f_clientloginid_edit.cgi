@@ -1011,6 +1011,7 @@ BOM::Backoffice::Request::template()->process(
         broker       => $broker,
         clientid     => $loginid,
         actions      => [sort { $a->{comments} cmp $b->{comments} } @{get_untrusted_types()}],
+        actions_hash => get_untrusted_types_hashref(),
         p2p_approved => $p2p_approved,
     }) || die BOM::Backoffice::Request::template()->error();
 

@@ -129,19 +129,18 @@ Bar("Monitor client lists");
 
 print "Kindly select status to monitor clients on.";
 
+my $untrusted_status = get_untrusted_types_hashref();
+
 print "<br /><br /><form action=\""
     . request()->url_for('backoffice/f_viewclientsubset.cgi')
     . "\" method=get>"
     . "<input type=hidden name=broker value=$encoded_broker>"
     . "Select list : <select name=show>"
     . "<option value='age_verification'>Age Verified</option>"
-    . "<option value='disabled'>Disabled Accounts</option>"
     . "<option value='closed'>Closed Accounts</option>"
-    . "<option value='cashier_locked'>Cashier Locked Section</option>"
-    . "<option value='withdrawal_locked'>Withdrawal Locked Section</option>"
-    . "<option value='unwelcome'>Unwelcome loginIDs</option>"
-    . "<option value='no_trading'>Trading Disabled Accounts</option>"
-    . "<option value='no_withdrawal_or_trading'>Trading Disabled and Withdrawal Locked Accounts</option>"
+    . join('',
+    map { "<option value='$_'> $untrusted_status->{$_}->{comments} </option>" }
+        qw /disabled cashier_locked withdrawal_locked unwelcome no_trading no_withdrawal_or_trading/)
     . "</select>"
     . '<br /><input type=checkbox value="1" name="onlyfunded" id="chk_onlyfunded" /><label for="chk_onlyfunded">Only funded accounts</label> '
     . '<br /><input type=checkbox value="1" name="onlynonzerobalance" id="chk_onlynonzerobalance" /><label for="chk_onlynonzerobalance">Only nonzero balance</label> '

@@ -79,42 +79,18 @@
         </tr>
     </thead>
     <tbody>
+    [% FOREACH r IN actions %]
+        [% NEXT UNLESS r.explanation %]
         <tr>
-            <td>Disabled Accounts</td>
+            <td>[% r.comments %]</td>
             <td>
-                <a href="[% request.url_for('backoffice/show_audit_trail.cgi', {broker => broker, category => 'client_status_disabled'}) %]">
-                    Disabled Logins
+                <a href="[% request.url_for('backoffice/show_audit_trail.cgi', {broker => broker, category => 'client_status_' _ r.code }) %]">
+                    [% r.comments %]
                 </a>
             </td>
-            <td>Client cannot login into disabled account, if all user's accounts have been disabled, the system says: account is unavailable.</td>
+            <td>[% r.explanation %]</td>
         </tr>
-        <tr>
-            <td>Cashier Lock Section</td>
-            <td>
-                <a href="[% request.url_for('backoffice/show_audit_trail.cgi', {broker => broker, category => 'client_status_cashier_locked'}) %]">
-                    Lock Cashier Logins
-                </a>
-            </td>
-            <td>Client cannot make a deposit or withdrawal.</td>
-        </tr>
-        <tr>
-            <td>Unwelcome loginIDs</td>
-            <td>
-                <a href="[% request.url_for('backoffice/show_audit_trail.cgi', {broker => broker, category => 'client_status_unwelcome'}) %]">
-                    Unwelcome Logins
-                </a>
-            </td>
-            <td>Client can log in, close an open position, make a withdrawal but cannot deposit or open a new trade.</td>
-        </tr>
-        <tr>
-            <td>Withdrawal locked</td>
-            <td>
-                <a href="[% request.url_for('backoffice/show_audit_trail.cgi', {broker => broker, category => 'client_status_withdrawal_locked'}) %]">
-                    Locked Withdrawals
-                </a>
-            </td>
-            <td>Client cannot submit new withdrawal requests.</td>
-        </tr>
+    [% END %]
     </tbody>
 </table>
 <br />
