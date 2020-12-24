@@ -1261,6 +1261,15 @@ sub commission_multiplier {
     # backoffice tool.
     my $seasonality_multiplier = Quant::Framework::Spread::Seasonality->new->get_spread_seasonality($self->underlying->symbol, $self->date_start);
 
+    unless (defined $seasonality_multiplier) {
+        $self->_add_error({
+            message           => 'spread seasonality not defined for ' . $self->underlying->symbol,
+            message_to_client => $ERROR_MAPPING->{InvalidInputAsset},
+        });
+        # setting it max commission multiplier
+        $seasonality_multiplier = MAX_COMMISSION_MULTIPLIER;
+    }
+
     return min(MAX_COMMISSION_MULTIPLIER, max($ee_multiplier, $seasonality_multiplier, MIN_COMMISSION_MULTIPLIER));
 }
 

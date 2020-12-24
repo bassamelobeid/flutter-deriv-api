@@ -1062,4 +1062,25 @@ subtest 'variable stop out for crash/boom indices' => sub {
     };
 };
 
+subtest 'no warnings if spread multiplier is undefined' => sub {
+    my $now = Date::Utility->new;
+    BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks([100, $now->epoch, 'frxUSDJPY'], [102, $now->epoch + 1, 'frxUSDJPY'],);
+    my $args = {
+        bet_type     => 'MULTUP',
+        underlying   => 'frxGBPPLN',
+        date_start   => $now,
+        date_pricing => $now,
+        amount_type  => 'stake',
+        amount       => 100,
+        multiplier   => 50,
+        currency     => 'USD',
+        cancellation => '1h',
+    };
+    my $c = produce_contract($args);
+    ok !$c->is_valid_to_buy, 'invalid to buy';
+    is $c->primary_validation_error->message, 'spread seasonality not defined for frxGBPPLN',
+        'message - spread seasonality not defined for frxGBPPLN';
+    is $c->primary_validation_error->message_to_client, 'Trading is not offered for this asset.';
+};
+
 done_testing();
