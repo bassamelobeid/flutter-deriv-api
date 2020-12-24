@@ -179,7 +179,7 @@ sub _build_greek_market_prices {
 
     my $A      = $self->vvv_matrix;
     my $y      = $self->hedge_cost_matrix;
-    my $result = $A->transp->inv->mul($y);
+    my $result = $A->transp->simq($y);
 
     return {
         vega  => ($self->on_equities) ? 0 : $result->[0],
