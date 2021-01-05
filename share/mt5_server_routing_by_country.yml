@@ -1,10 +1,12 @@
 ---
 demo: {}
-# all countries in Africa continent that allows a synthetic account will be routed to real02.
+# all synthetic account sub-saharan countries will be routed to real02.
 real:
   ao: &by_market
     synthetic: '02'
     financial: '01'
+  bj: *by_market
+  bf: *by_market
   sz: *by_market
   sh: *by_market
   mu: *by_market
@@ -12,17 +14,38 @@ real:
   sc: *by_market
   mg: *by_market
   za: *by_market
+  tg: *by_market
+  ug: *by_market
   ls: *by_market
+  lr: *by_market
   na: *by_market
+  ne: *by_market
+  ng: *by_market
   zw: *by_market
   mz: *by_market
   mw: *by_market
+  ml: *by_market
+  mr: *by_market
   zm: *by_market
   tz: *by_market
   bi: *by_market
+  cm: *by_market
+  cf: *by_market
+  td: *by_market
   rw: *by_market
+  sn: *by_market
+  sl: *by_market
+  so: *by_market
   ga: *by_market
+  gm: *by_market
+  gh: *by_market
+  gn: *by_market
+  gw: *by_market
+  ke: *by_market
   st: *by_market
   cg: *by_market
+  ci: *by_market
+  er: *by_market
+  et: *by_market
   cd: *by_market
   bw: *by_market
