@@ -14,6 +14,10 @@ use BOM::Product::ContractFinder;
 use Date::Utility;
 use Scalar::Util::Numeric qw(isint);
 
+# use no-quiet period for this test
+my $mock_offerings = Test::MockModule->new('LandingCompany::Offerings');
+$mock_offerings->mock(is_asian_hours => sub { undef });
+
 my $now = Date::Utility->new;
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc('currency', {symbol => $_}) for qw(USD JPY AUD CAD EUR);
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc('index',    {symbol => $_}) for qw(OTC_AEX SYNAEX frxAUDUSD frxXPDUSD);
