@@ -36,7 +36,7 @@ LTC:
 ETH:
     withdrawal:
         timeout: "5d"
-        min_usd: 5
+        min_usd: 30
     subscription:
         rpc_timeout: 100
     protocol_cost: 0
