@@ -15,7 +15,6 @@ use BOM::OAuth::Static qw( get_message_mapping get_valid_device_types );
 use Locale::Codes::Country qw( code2country );
 use Email::Valid;
 use List::Util qw( none );
-use Data::Dumper;
 
 sub callback {
     my $c = shift;
@@ -63,14 +62,9 @@ sub callback {
     my $provider_data = $provider_result->{data};
     my $email         = _get_email($provider_data);
     my $provider_name = $provider_data->{user}->{identity}->{provider} // '';
+
     # Check that whether user has granted access to a valid email address in her/his social account
     unless ($email and Email::Valid->address($email)) {
-        unless ($provider_name) {
-            my $log = $c->app->log;
-            # Please investigate why provider_name is undef, and remove this debug info.
-            $log->error(sprintf("provider_name is undef at file %s line %d ", __FILE__, __LINE__));
-            $log->error(Dumper($data));
-        }
         $c->session(social_error => localize(get_message_mapping()->{INVALID_SOCIAL_EMAIL}, ucfirst $provider_name));
         return $c->redirect_to($redirect_uri);
     }
