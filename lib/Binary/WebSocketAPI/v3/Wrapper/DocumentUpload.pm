@@ -296,6 +296,7 @@ sub create_s3_instance {
         %{Binary::WebSocketAPI::Hooks::get_doc_auth_s3_conf($c)},
         max_retries   => 1,
         stall_timeout => UPLOAD_STALL_TIMEOUT,
+        ssl           => 1,
     );
 
     $c->loop->add($s3);
