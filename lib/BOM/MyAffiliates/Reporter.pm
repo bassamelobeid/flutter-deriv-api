@@ -116,6 +116,7 @@ sub upload_content {
         access_key => $config->{aws_access_key_id},
         secret_key => $config->{aws_secret_access_key},
         bucket     => $config->{aws_bucket},
+        ssl        => 1,
     );
     $loop->add($s3);
 
