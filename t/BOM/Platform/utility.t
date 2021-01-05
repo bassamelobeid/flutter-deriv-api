@@ -44,7 +44,7 @@ subtest 'hash_to_array' => sub {
             a => ['1', '2', '3'],
             # nested hash of arrays
             b => {
-                a => ['x', 'y', 'z'], # redundant key 'a'
+                a => ['x', 'y', 'z'],    # redundant key 'a'
                 c => ['4', '5', '6'],
                 d => ['7', '8', '9'],
             },

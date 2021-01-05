@@ -35,6 +35,7 @@ sub new {
             secret_key => $config->{aws_secret_access_key},
             bucket     => $config->{aws_bucket},
             timeout    => $config->{timeout},
+            ssl        => 1,
         );
         IO::Async::Loop->new->add($s3);
         $s3_services{$s3_hash_key} = $s3;
