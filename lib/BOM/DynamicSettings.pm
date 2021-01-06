@@ -224,6 +224,12 @@ sub get_settings_by_group {
                 system.mt5.suspend.real02.all
                 system.mt5.suspend.real02.deposits
                 system.mt5.suspend.real02.withdrawals
+                system.mt5.suspend.real03.all
+                system.mt5.suspend.real03.deposits
+                system.mt5.suspend.real03.withdrawals
+                system.mt5.suspend.real04.all
+                system.mt5.suspend.real04.deposits
+                system.mt5.suspend.real04.withdrawals
                 system.suspend.payout_freezing_funds
                 system.suspend.doughflow_deriv_sportsbooks
                 )
