@@ -1,51 +1,249 @@
 ---
 demo: {}
-# all synthetic account sub-saharan countries will be routed to real02.
 real:
-  ao: &by_market
+  # IRELAND TRADE SERVER
+  # We only use this trade server for Forex trading
+  # all EU countries and Australia
+  gb: &real01 # United Kingdom
+    synthetic: '01'
+    financial: '01'
+  im: *real01 # Isle of Man
+  at: *real01 # Austria
+  bg: *real01 # Bulgaria
+  cy: *real01 # Cyprus
+  cz: *real01 # Czechia
+  dk: *real01 # Denmark
+  ee: *real01 # Estonia
+  fi: *real01 # Finland
+  hr: *real01 # Croatia
+  hu: *real01 # Hungary
+  ie: *real01 # Ireland
+  lt: *real01 # Lithuania
+  lv: *real01 # Latvia
+  nl: *real01 # Netherlands
+  pl: *real01 # Poland
+  pt: *real01 # Portugal
+  ro: *real01 # Romania
+  se: *real01 # Sweden
+  si: *real01 # Slovenia
+  sk: *real01 # Slovakia
+  be: *real01 # Belgium
+  de: *real01 # Germany
+  es: *real01 # Spain
+  gr: *real01 # Greece
+  it: *real01 # Italy
+  lu: *real01 # Luxembourg
+  au: *real01 # Australia
+
+  # SOUTH AFRICA TRADE SERVER
+  # sub-saharan
+  ao: &real02 # Angola
     synthetic: '02'
     financial: '01'
-  bj: *by_market
-  bf: *by_market
-  sz: *by_market
-  sh: *by_market
-  mu: *by_market
-  km: *by_market
-  sc: *by_market
-  mg: *by_market
-  za: *by_market
-  tg: *by_market
-  ug: *by_market
-  ls: *by_market
-  lr: *by_market
-  na: *by_market
-  ne: *by_market
-  ng: *by_market
-  zw: *by_market
-  mz: *by_market
-  mw: *by_market
-  ml: *by_market
-  mr: *by_market
-  zm: *by_market
-  tz: *by_market
-  bi: *by_market
-  cm: *by_market
-  cf: *by_market
-  td: *by_market
-  rw: *by_market
-  sn: *by_market
-  sl: *by_market
-  so: *by_market
-  ga: *by_market
-  gm: *by_market
-  gh: *by_market
-  gn: *by_market
-  gw: *by_market
-  ke: *by_market
-  st: *by_market
-  cg: *by_market
-  ci: *by_market
-  er: *by_market
-  et: *by_market
-  cd: *by_market
-  bw: *by_market
+  bj: *real02 # Benin
+  bf: *real02 # Burkina Faso
+  sz: *real02 # Swaziland
+  sh: *real02 # Saint Helena, Ascension and Tristan da Cunha
+  mu: *real02 # Mauritius
+  km: *real02 # Comoros
+  sc: *real02 # Seychelles
+  mg: *real02 # Madagascar
+  za: *real02 # South Africa
+  tg: *real02 # Togo
+  ug: *real02 # Uganda
+  ls: *real02 # Lesotho
+  lr: *real02 # Liberia
+  na: *real02 # Namibia
+  ne: *real02 # Niger
+  ng: *real02 # Nigeria
+  zw: *real02 # Zimbabwe
+  mz: *real02 # Mozambique
+  mw: *real02 # Malawi
+  ml: *real02 # Mali
+  mr: *real02 # Mauritania
+  zm: *real02 # Zambia
+  tz: *real02 # Tanzania, United Republic of
+  bi: *real02 # Burundi
+  cm: *real02 # Cameroon
+  cf: *real02 # Central African Republic
+  td: *real02 # Chad
+  sn: *real02 # Senegal
+  sl: *real02 # Sierra Leone
+  so: *real02 # Somalia
+  ga: *real02 # Gabon
+  gm: *real02 # Gambia
+  gh: *real02 # Ghana
+  gn: *real02 # Guinea
+  gw: *real02 # Guinea-Bissau
+  ke: *real02 # Kenya
+  st: *real02 # Sao Tome and Principe
+  cg: *real02 # Congo
+  ci: *real02 # Cote d'Ivoire
+  er: *real02 # Eritrea
+  et: *real02 # Ethiopia
+  cd: *real02 # Congo (The Democratic Republic of the)
+  bw: *real02 # Botswana
+  yt: *real02 # Mayotte
+
+  # SINGAPORE TRADE SERVER
+  pk: &real03 # Pakistan
+    synthetic: '03'
+    financial: '01'
+  in: *real03 # India
+  nz: *real03 # New Zealand
+  bn: *real03 # Brunei Darussalam
+  mm: *real03 # Myanmar
+  kh: *real03 # Cambodia
+  tl: *real03 # Timor-Leste
+  id: *real03 # Indonesia
+  la: *real03 # Lao People's Democratic Republic
+  ph: *real03 # Philippines
+  sg: *real03 # Singapore
+  th: *real03 # Thailand
+  vn: *real03 # Viet Nam
+  kr: *real03 # Korea, Republic of
+  bd: *real03 # Bangladesh
+  lk: *real03 # Sri Lanka
+  np: *real03 # Nepal
+  bt: *real03 # Bhutan
+  mv: *real03 # Maldives
+  tw: *real03 # Taiwan, Province of China
+  mo: *real03 # Macao
+  cn: *real03 # China
+  jp: *real03 # Japan
+
+  # FRANKFURT TRADE SERVER
+  # south america
+  ar: &real04 # Argentina
+    synthetic: '04'
+    financial: '01'
+  bo: *real04 # Bolivia
+  br: *real04 # Brazil
+  cl: *real04 # Chile
+  co: *real04 # Colombia
+  ec: *real04 # Ecuador
+  fk: *real04 # Falkland Islands (Malvinas)
+  gf: *real04 # French Guiana
+  gp: *real04 # Guadeloupe
+  gy: *real04 # Guyana
+  pe: *real04 # Peru
+  sr: *real04 # Suriname
+  uy: *real04 # Uruguay
+  ve: *real04 # Venezuela
+  # north america
+  ag: *real04 # Antigua and Barbuda
+  ai: *real04 # Anguilla
+  aw: *real04 # Aruba
+  bb: *real04 # Barbados
+  bm: *real04 # Bermuda
+  bs: *real04 # Bahamas
+  bz: *real04 # Belize
+  cr: *real04 # Costa Rica
+  cu: *real04 # Cuba
+  dm: *real04 # Dominica
+  do: *real04 # Dominican Republic
+  gd: *real04 # Grenada
+  gt: *real04 # Guatemala
+  hn: *real04 # Honduras
+  ht: *real04 # Haiti
+  jm: *real04 # Jamaica
+  kn: *real04 # Saint Kitts and Nevis
+  lc: *real04 # Saint Lucia
+  mq: *real04 # Martinique
+  ms: *real04 # Montserrat
+  mx: *real04 # Mexico
+  ni: *real04 # Nicaragua
+  pa: *real04 # Panama
+  sv: *real04 # El Salvador
+  tt: *real04 # Trinidad and Tobago
+  vc: *real04 # Saint Vincent and the Grenadines
+  tc: *real04 # Turks and Caicos Islands
+  # all africa except for sub-saharan countries
+  gq: *real04 # Equatorial Guinea
+  dz: *real04 # Algeria
+  cv: *real04 # Cape Verde
+  tn: *real04 # Tunisia
+  eg: *real04 # Egypt
+  eh: *real04 # Western Sahara
+  ma: *real04 # Morocco
+  ly: *real04 # Libyan Arab Jamahiriya
+  dj: *real04 # Djibouti
+  sd: *real04 # Sudan
+  # all non-EU above afghanistan
+  kw: *real04 # Kuwait
+  kz: *real04 # Kazakhstan
+  uz: *real04 # Uzbekistan
+  bh: *real04 # Bahrain
+  tj: *real04 # Tajikistan
+  kg: *real04 # Kyrgyzstan
+  lb: *real04 # Lebanon
+  sy: *real04 # Syrian Arab Republic
+  tm: *real04 # Turkmenistan
+  iq: *real04 # Iraq
+  ps: *real04 # Palestinian Territory, Occupied
+  mn: *real04 # Mongolia
+  jo: *real04 # Jordan
+  tr: *real04 # Turkey
+  sa: *real04 # Saudi Arabia
+  qa: *real04 # Qatar
+  om: *real04 # Oman
+  af: *real04 # Afghanistan
+  ye: *real04 # Yemen
+  am: *real04 # Armenia
+  pg: *real04 # Papua New Guinea
+  sm: *real04 # San Marino
+  ru: *real04 # Russian Federation
+  cw: *real04 # Curacao
+  al: *real04 # Albania
+  nf: *real04 # Norfolk Island
+  io: *real04 # British Indian Ocean Territory
+  tv: *real04 # Tuvalu
+  cx: *real04 # Christmas Island
+  re: *real04 # Reunion
+  az: *real04 # Azerbaijan
+  is: *real04 # Iceland
+  ki: *real04 # Kiribati
+  tf: *real04 # French Southern Territories
+  sb: *real04 # Solomon Islands
+  ck: *real04 # Cook Islands
+  ky: *real04 # Cayman Islands
+  pm: *real04 # Saint Pierre and Miquelon
+  pn: *real04 # Pitcairn
+  pw: *real04 # Palau
+  gi: *real04 # Gibraltar
+  gl: *real04 # Greenland
+  sx: *real04 # Sint Maarten (Dutch part)
+  me: *real04 # Montenegro
+  ws: *real04 # Samoa
+  rs: *real04 # Serbia
+  hm: *real04 # Heard Island and McDonald Islands
+  ge: *real04 # Georgia
+  tk: *real04 # Tokelau
+  ad: *real04 # Andorra
+  li: *real04 # Liechtenstein
+  fj: *real04 # Fiji
+  bl: *real04 # Saint Barthelemy
+  pf: *real04 # French Polynesia
+  md: *real04 # Moldova, The Republic of
+  ch: *real04 # Switzerland
+  gs: *real04 # South Georgia and the South Sandwich Islands
+  mf: *real04 # Saint Martin (French part)
+  mc: *real04 # Monaco
+  by: *real04 # Belarus
+  nc: *real04 # New Caledonia
+  mk: *real04 # Macedonia, The former Yugoslav Republic of
+  mh: *real04 # Marshall Islands
+  sj: *real04 # Svalbard and Jan Mayen
+  bv: *real04 # Bouvet Island
+  fo: *real04 # Faroe Islands
+  nu: *real04 # Niue
+  fm: *real04 # Micronesia (Federated States of)
+  cc: *real04 # Cocos (Keeling) Islands
+  ua: *real04 # Ukraine
+  aq: *real04 # Antarctica
+  ax: *real04 # Aland Islands
+  va: *real04 # Holy See
+  wf: *real04 # Wallis and Futuna
+  to: *real04 # Tonga
+  ba: *real04 # Bosnia and Herzegovina
+  nr: *real04 # Nauru
