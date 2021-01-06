@@ -111,7 +111,11 @@ real_bvi_financial_financial_stp: &real_bvi_financial_financial_stp
   market_type: financial
   sub_account_type: financial_stp
 real01\financial\bvi_stp_usd: *real_bvi_financial_financial_stp
+# there's no financial account for real02, real03 and real04. But, just in case
+# we change our minds in the future.
 real02\financial\bvi_stp_usd: *real_bvi_financial_financial_stp
+real03\financial\bvi_stp_usd: *real_bvi_financial_financial_stp
+real04\financial\bvi_stp_usd: *real_bvi_financial_financial_stp
 
 
 real_labuan_financial_financial_stp: &real_labuan_financial_financial_stp
@@ -121,7 +125,11 @@ real_labuan_financial_financial_stp: &real_labuan_financial_financial_stp
   sub_account_type: financial_stp
 real\labuan_financial_stp: *real_labuan_financial_financial_stp
 real01\financial\labuan_stp_usd: *real_labuan_financial_financial_stp
+# there's no financial account for real02, real03 and real04. But, just in case
+# we change our minds in the future.
 real02\financial\labuan_stp_usd: *real_labuan_financial_financial_stp
+real03\financial\labuan_stp_usd: *real_labuan_financial_financial_stp
+real04\financial\labuan_stp_usd: *real_labuan_financial_financial_stp
 
 
 real_maltainvest_financial_swap_free: &real_maltainvest_financial_swap_free
@@ -131,8 +139,14 @@ real_maltainvest_financial_swap_free: &real_maltainvest_financial_swap_free
   sub_account_type: swap_free
 real01\financial\maltainvest_sf-hr_eur: *real_maltainvest_financial_swap_free
 real01\financial\maltainvest_sf-hr_gbp: *real_maltainvest_financial_swap_free
+# there's no financial account for real02, real03 and real04. But, just in case
+# we change our minds in the future.
 real02\financial\maltainvest_sf-hr_eur: *real_maltainvest_financial_swap_free
 real02\financial\maltainvest_sf-hr_gbp: *real_maltainvest_financial_swap_free
+real03\financial\maltainvest_sf-hr_eur: *real_maltainvest_financial_swap_free
+real03\financial\maltainvest_sf-hr_gbp: *real_maltainvest_financial_swap_free
+real04\financial\maltainvest_sf-hr_eur: *real_maltainvest_financial_swap_free
+real04\financial\maltainvest_sf-hr_gbp: *real_maltainvest_financial_swap_free
 
 
 real_maltainvest_financial_financial: &real_maltainvest_financial_financial
@@ -144,8 +158,14 @@ real\maltainvest_financial_gbp: *real_maltainvest_financial_financial
 real\maltainvest_financial: *real_maltainvest_financial_financial
 real01\financial\maltainvest_std-hr_eur: *real_maltainvest_financial_financial
 real01\financial\maltainvest_std-hr_gbp: *real_maltainvest_financial_financial
+# there's no financial account for real02, real03 and real04. But, just in case
+# we change our minds in the future.
 real02\financial\maltainvest_std-hr_eur: *real_maltainvest_financial_financial
 real02\financial\maltainvest_std-hr_gbp: *real_maltainvest_financial_financial
+real03\financial\maltainvest_std-hr_eur: *real_maltainvest_financial_financial
+real03\financial\maltainvest_std-hr_gbp: *real_maltainvest_financial_financial
+real04\financial\maltainvest_std-hr_eur: *real_maltainvest_financial_financial
+real04\financial\maltainvest_std-hr_gbp: *real_maltainvest_financial_financial
 
 
 real_samoa_financial_swap_free: &real_samoa_financial_swap_free
@@ -157,10 +177,20 @@ real01\financial\samoa_sf-hr_btc: *real_samoa_financial_swap_free
 real01\financial\samoa_sf-hr_ust: *real_samoa_financial_swap_free
 real01\financial\samoa_sf_btc: *real_samoa_financial_swap_free
 real01\financial\samoa_sf_ust: *real_samoa_financial_swap_free
+# there's no financial account for real02, real03 and real04. But, just in case
+# we change our minds in the future.
 real02\financial\samoa_sf-hr_btc: *real_samoa_financial_swap_free
 real02\financial\samoa_sf-hr_ust: *real_samoa_financial_swap_free
 real02\financial\samoa_sf_btc: *real_samoa_financial_swap_free
 real02\financial\samoa_sf_ust: *real_samoa_financial_swap_free
+real03\financial\samoa_sf-hr_btc: *real_samoa_financial_swap_free
+real03\financial\samoa_sf-hr_ust: *real_samoa_financial_swap_free
+real03\financial\samoa_sf_btc: *real_samoa_financial_swap_free
+real03\financial\samoa_sf_ust: *real_samoa_financial_swap_free
+real04\financial\samoa_sf-hr_btc: *real_samoa_financial_swap_free
+real04\financial\samoa_sf-hr_ust: *real_samoa_financial_swap_free
+real04\financial\samoa_sf_btc: *real_samoa_financial_swap_free
+real04\financial\samoa_sf_ust: *real_samoa_financial_swap_free
 
 
 real_samoa_financial_financial: &real_samoa_financial_financial
@@ -172,10 +202,20 @@ real01\financial\samoa_std-hr_btc: *real_samoa_financial_financial
 real01\financial\samoa_std-hr_ust: *real_samoa_financial_financial
 real01\financial\samoa_std_btc: *real_samoa_financial_financial
 real01\financial\samoa_std_ust: *real_samoa_financial_financial
+# there's no financial account for real02, real03 and real04. But, just in case
+# we change our minds in the future.
 real02\financial\samoa_std-hr_btc: *real_samoa_financial_financial
 real02\financial\samoa_std-hr_ust: *real_samoa_financial_financial
 real02\financial\samoa_std_btc: *real_samoa_financial_financial
 real02\financial\samoa_std_ust: *real_samoa_financial_financial
+real03\financial\samoa_std-hr_btc: *real_samoa_financial_financial
+real03\financial\samoa_std-hr_ust: *real_samoa_financial_financial
+real03\financial\samoa_std_btc: *real_samoa_financial_financial
+real03\financial\samoa_std_ust: *real_samoa_financial_financial
+real04\financial\samoa_std-hr_btc: *real_samoa_financial_financial
+real04\financial\samoa_std-hr_ust: *real_samoa_financial_financial
+real04\financial\samoa_std_btc: *real_samoa_financial_financial
+real04\financial\samoa_std_ust: *real_samoa_financial_financial
 
 
 real_svg_financial_swap_free: &real_svg_financial_swap_free
@@ -185,8 +225,14 @@ real_svg_financial_swap_free: &real_svg_financial_swap_free
   sub_account_type: swap_free
 real01\financial\svg_sf-hr_usd: *real_svg_financial_swap_free
 real01\financial\svg_sf_usd: *real_svg_financial_swap_free
+# there's no financial account for real02, real03 and real04. But, just in case
+# we change our minds in the future.
 real02\financial\svg_sf-hr_usd: *real_svg_financial_swap_free
 real02\financial\svg_sf_usd: *real_svg_financial_swap_free
+real03\financial\svg_sf-hr_usd: *real_svg_financial_swap_free
+real03\financial\svg_sf_usd: *real_svg_financial_swap_free
+real04\financial\svg_sf-hr_usd: *real_svg_financial_swap_free
+real04\financial\svg_sf_usd: *real_svg_financial_swap_free
 
 
 real_svg_financial_financial: &real_svg_financial_financial
@@ -198,8 +244,14 @@ real\svg_financial: *real_svg_financial_financial
 real\svg_financial_bbook: *real_svg_financial_financial
 real01\financial\svg_std-hr_usd: *real_svg_financial_financial
 real01\financial\svg_std_usd: *real_svg_financial_financial
+# there's no financial account for real02, real03 and real04. But, just in case
+# we change our minds in the future.
 real02\financial\svg_std-hr_usd: *real_svg_financial_financial
 real02\financial\svg_std_usd: *real_svg_financial_financial
+real03\financial\svg_std-hr_usd: *real_svg_financial_financial
+real03\financial\svg_std_usd: *real_svg_financial_financial
+real04\financial\svg_std-hr_usd: *real_svg_financial_financial
+real04\financial\svg_std_usd: *real_svg_financial_financial
 
 
 real_vanuatu_financial_financial: &real_vanuatu_financial_financial
@@ -209,7 +261,11 @@ real_vanuatu_financial_financial: &real_vanuatu_financial_financial
   sub_account_type: financial
 real\vanuatu_financial: *real_vanuatu_financial_financial
 real01\financial\vanuatu_std-hr_usd: *real_vanuatu_financial_financial
+# there's no financial account for real02, real03 and real04. But, just in case
+# we change our minds in the future.
 real02\financial\vanuatu_std-hr_usd: *real_vanuatu_financial_financial
+real03\financial\vanuatu_std-hr_usd: *real_vanuatu_financial_financial
+real04\financial\vanuatu_std-hr_usd: *real_vanuatu_financial_financial
 
 
 real_malta_gaming_swap_free: &real_malta_gaming_swap_free
@@ -219,6 +275,8 @@ real_malta_gaming_swap_free: &real_malta_gaming_swap_free
   sub_account_type: swap_free
 real01\synthetic\malta_sf_eur: *real_malta_gaming_swap_free
 real02\synthetic\malta_sf_eur: *real_malta_gaming_swap_free
+real03\synthetic\malta_sf_eur: *real_malta_gaming_swap_free
+real04\synthetic\malta_sf_eur: *real_malta_gaming_swap_free
 
 
 real_malta_gaming_financial: &real_malta_gaming_financial
@@ -229,6 +287,8 @@ real_malta_gaming_financial: &real_malta_gaming_financial
 real\malta: *real_malta_gaming_financial
 real01\synthetic\malta_std_eur: *real_malta_gaming_financial
 real02\synthetic\malta_std_eur: *real_malta_gaming_financial
+real03\synthetic\malta_std_eur: *real_malta_gaming_financial
+real04\synthetic\malta_std_eur: *real_malta_gaming_financial
 
 
 real_samoa_gaming_financial: &real_samoa_gaming_financial
@@ -240,6 +300,10 @@ real01\synthetic\samoa_std_btc: *real_samoa_gaming_financial
 real01\synthetic\samoa_std_ust: *real_samoa_gaming_financial
 real02\synthetic\samoa_std_btc: *real_samoa_gaming_financial
 real02\synthetic\samoa_std_ust: *real_samoa_gaming_financial
+real03\synthetic\samoa_std_btc: *real_samoa_gaming_financial
+real03\synthetic\samoa_std_ust: *real_samoa_gaming_financial
+real04\synthetic\samoa_std_btc: *real_samoa_gaming_financial
+real04\synthetic\samoa_std_ust: *real_samoa_gaming_financial
 
 
 real_svg_gaming_swap_free: &real_svg_gaming_swap_free
@@ -251,6 +315,10 @@ real01\synthetic\svg_sf-hr_usd: *real_svg_gaming_swap_free
 real01\synthetic\svg_sf_usd: *real_svg_gaming_swap_free
 real02\synthetic\svg_sf-hr_usd: *real_svg_gaming_swap_free
 real02\synthetic\svg_sf_usd: *real_svg_gaming_swap_free
+real03\synthetic\svg_sf-hr_usd: *real_svg_gaming_swap_free
+real03\synthetic\svg_sf_usd: *real_svg_gaming_swap_free
+real04\synthetic\svg_sf-hr_usd: *real_svg_gaming_swap_free
+real04\synthetic\svg_sf_usd: *real_svg_gaming_swap_free
 
 
 real_svg_gaming_financial: &real_svg_gaming_financial
@@ -264,6 +332,10 @@ real01\synthetic\svg_std-hr_usd: *real_svg_gaming_financial
 real01\synthetic\svg_std_usd: *real_svg_gaming_financial
 real02\synthetic\svg_std-hr_usd: *real_svg_gaming_financial
 real02\synthetic\svg_std_usd: *real_svg_gaming_financial
+real03\synthetic\svg_std-hr_usd: *real_svg_gaming_financial
+real03\synthetic\svg_std_usd: *real_svg_gaming_financial
+real04\synthetic\svg_std-hr_usd: *real_svg_gaming_financial
+real04\synthetic\svg_std_usd: *real_svg_gaming_financial
 
 real_svg_gaming_financial: &real_svg_gaming_financial
   account_type: real
@@ -276,4 +348,8 @@ real01\synthetic\svg_std-hr_usd: *real_svg_gaming_financial
 real01\synthetic\svg_std_usd: *real_svg_gaming_financial
 real02\synthetic\svg_std-hr_usd: *real_svg_gaming_financial
 real02\synthetic\svg_std_usd: *real_svg_gaming_financial
+real03\synthetic\svg_std-hr_usd: *real_svg_gaming_financial
+real03\synthetic\svg_std_usd: *real_svg_gaming_financial
+real04\synthetic\svg_std-hr_usd: *real_svg_gaming_financial
+real04\synthetic\svg_std_usd: *real_svg_gaming_financial
 

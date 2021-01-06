@@ -944,6 +944,44 @@ system:
                   isa: Bool
                   default: 0
                   global: 1
+            real03:
+              description: "Configuration to suspend mt5 real03"
+              isa: section
+              contains:
+                all:
+                  description: "Suspend MT5 API calls on real03"
+                  isa: Bool
+                  default: 1
+                  global: 1
+                deposits:
+                  description: "Suspend MT5 deposits on real03"
+                  isa: Bool
+                  default: 0
+                  global: 1
+                withdrawals:
+                  description: "Suspend MT5 withdrawals on real03"
+                  isa: Bool
+                  default: 0
+                  global: 1
+            real04:
+              description: "Configuration to suspend mt5 real04"
+              isa: section
+              contains:
+                all:
+                  description: "Suspend MT5 API calls on real04"
+                  isa: Bool
+                  default: 1
+                  global: 1
+                deposits:
+                  description: "Suspend MT5 deposits on real04"
+                  isa: Bool
+                  default: 0
+                  global: 1
+                withdrawals:
+                  description: "Suspend MT5 withdrawals on real04"
+                  isa: Bool
+                  default: 0
+                  global: 1
         new_trade_server:
           description: "This configuration is used to help with the launch of new trade server. E.g. to only route synthetic account from indonesia to real03 '{\"real03\":{\"id\":{\"synthetic\":\"03\"}}}' or to define real03 as a new trade server '{\"real03\":{\"all\":\"03\"}}'."
           isa: json_string
