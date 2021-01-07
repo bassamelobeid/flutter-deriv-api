@@ -771,7 +771,7 @@ sub _build_bid_response {
         underlying          => $contract->underlying->symbol,
         display_name        => localize($contract->underlying->display_name),
         is_expired          => $contract->is_expired,
-        is_forward_starting => $contract->is_forward_starting,
+        is_forward_starting => $contract->starts_as_forward_starting,
         is_path_dependent   => $contract->is_path_dependent,
         is_intraday         => $contract->is_intraday,
         date_start          => 0 + $contract->date_start->epoch,
