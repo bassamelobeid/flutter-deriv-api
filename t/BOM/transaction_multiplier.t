@@ -750,8 +750,8 @@ subtest 'buy multiplier with unsupported underlying' => sub {
 
         my $error = $txn->buy;
         ok $error, 'buy failed with error';
-        is $error->{-mesg},              'multiplier config undefined for frxGBPPLN', 'message is multiplier config undefined for frxGBPPLN';
-        is $error->{-message_to_client}, 'Trading is not offered for this asset.',    'message to client Trading is not offered for this asset.';
+        is $error->{-mesg},              'spread seasonality not defined for frxGBPPLN', 'message is spread seasonality not defined for frxGBPPLN';
+        is $error->{-message_to_client}, 'Trading is not offered for this asset.',       'message to client Trading is not offered for this asset.';
     };
 
     restore_time();

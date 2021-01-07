@@ -504,6 +504,7 @@ sub stats_stop {
             my $tags = {tags => ["broker:" . lc($broker), "virtual:" . ($broker =~ /^VR/ ? "yes" : "no"), @tags]};
             stats_count("transaction.buy.attempt", $xd->{attempt}, $tags);
             stats_count("transaction.buy.success", $xd->{success}, $tags);
+            stats_count("transaction.buy.success", $xd->{failure}, $tags);
         }
         return;
     }
@@ -1029,6 +1030,7 @@ sub batch_buy {
             $company_limits->add_buys(@clients);
 
             my $success = 0;
+            my $failure = 0;
             my $result  = $fmb_helper->batch_buy_bet;
             for my $el (@$list) {
                 my $res = shift @$result;
@@ -1046,6 +1048,7 @@ sub batch_buy {
                     } else {
                         @{$el}{qw/code message_to_client/} = @general_error;
                     }
+                    $failure++;
                 } else {
                     $el->{fmb} = $res->{fmb};
                     $el->{txn} = $res->{txn};
@@ -1063,6 +1066,7 @@ sub batch_buy {
             $company_limits->reverse_buys(map { $_->{client} } grep { defined $_->{error} } @$list);
 
             $stat{$broker}->{success} = $success;
+            $stat{$broker}->{failure} = $failure;
             $self->expiryq->enqueue_multiple_new_transactions(_get_params_for_expiryqueue($self), _get_list_for_expiryqueue($list));
         } catch {
             warn __PACKAGE__ . ':(' . __LINE__ . '): ' . $@;    # log it

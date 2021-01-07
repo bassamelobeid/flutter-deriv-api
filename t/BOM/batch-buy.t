@@ -256,6 +256,8 @@ subtest 'batch-buy success + multisell', sub {
             $mock_validation->mock(_validate_trade_pricing_adjustment =>
                     sub { note "mocked Transaction::Validation->_validate_trade_pricing_adjustment returning nothing"; undef });
             $mock_validation->mock(validate_tnc => sub { note "mocked Transaction::Validation->validate_tnc returning nothing"; undef });
+            $mock_validation->mock(
+                _validate_offerings_buy => sub { note "mocked Transaction::Validation->_validate_offerings_buy returning nothing"; undef });
 
             my $mock_transaction = Test::MockModule->new('BOM::Transaction');
             $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning '[]'"; [] });
@@ -365,6 +367,8 @@ subtest 'batch-buy success 2', sub {
             $mock_validation->mock(_validate_trade_pricing_adjustment =>
                     sub { note "mocked Transaction::Validation->_validate_trade_pricing_adjustment returning nothing"; undef });
             $mock_validation->mock(validate_tnc => sub { note "mocked Transaction::Validation->validate_tnc returning nothing"; undef });
+            $mock_validation->mock(
+                _validate_offerings_buy => sub { note "mocked Transaction::Validation->_validate_offerings_buy returning nothing"; undef });
             my $mock_transaction = Test::MockModule->new('BOM::Transaction');
             $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning '[]'"; [] });
 
@@ -427,6 +431,8 @@ subtest 'contract already started', sub {
             # _validate_trade_pricing_adjustment() is tested in trade_validation.t
             $mock_validation->mock(_validate_trade_pricing_adjustment =>
                     sub { note "mocked Transaction::Validation->_validate_trade_pricing_adjustment returning nothing"; undef });
+            $mock_validation->mock(
+                _validate_offerings_buy => sub { note "mocked Transaction::Validation->_validate_offerings_buy returning nothing"; undef });
             $mock_validation->mock(validate_tnc => sub { note "mocked Transaction::Validation->validate_tnc returning nothing"; undef });
 
             my $mock_transaction = Test::MockModule->new('BOM::Transaction');
@@ -491,6 +497,8 @@ subtest 'single contract fails in database', sub {
             # _validate_trade_pricing_adjustment() is tested in trade_validation.t
             $mock_validation->mock(_validate_trade_pricing_adjustment =>
                     sub { note "mocked Transaction::Validation->_validate_trade_pricing_adjustment returning nothing"; undef });
+            $mock_validation->mock(
+                _validate_offerings_buy => sub { note "mocked Transaction::Validation->_validate_offerings_buy returning nothing"; undef });
             $mock_validation->mock(validate_tnc => sub { note "mocked Transaction::Validation->validate_tnc returning nothing"; undef });
 
             my $mock_transaction = Test::MockModule->new('BOM::Transaction');
@@ -569,6 +577,8 @@ subtest 'batch-buy multiple databases and datadog', sub {
             # _validate_trade_pricing_adjustment() is tested in trade_validation.t
             $mock_validation->mock(_validate_trade_pricing_adjustment =>
                     sub { note "mocked Transaction::Validation->_validate_trade_pricing_adjustment returning nothing"; undef });
+            $mock_validation->mock(
+                _validate_offerings_buy => sub { note "mocked Transaction::Validation->_validate_offerings_buy returning nothing"; undef });
             $mock_validation->mock(validate_tnc => sub { note "mocked Transaction::Validation->validate_tnc returning nothing"; undef });
 
             my $mock_transaction = Test::MockModule->new('BOM::Transaction');
@@ -746,6 +756,8 @@ subtest 'batch_buy multiplier contract' => sub {
                 # _validate_trade_pricing_adjustment() is tested in trade_validation.t
                 $mock_validation->mock(_validate_trade_pricing_adjustment =>
                         sub { note "mocked Transaction::Validation->_validate_trade_pricing_adjustment returning nothing"; undef });
+                $mock_validation->mock(
+                    _validate_offerings_buy => sub { note "mocked Transaction::Validation->_validate_offerings_buy returning nothing"; undef });
                 $mock_validation->mock(validate_tnc => sub { note "mocked Transaction::Validation->validate_tnc returning nothing"; undef });
 
                 my $mock_transaction = Test::MockModule->new('BOM::Transaction');
