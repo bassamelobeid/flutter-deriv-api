@@ -118,8 +118,9 @@ sub authorize {
     my $date_first_contact = $c->param('date_first_contact') // '';
     eval {
         return unless $date_first_contact =~ /^[0-9]{4}-[0-9]{2}-[0-9]{2}$/;
-        return if Date::Utility->new($date_first_contact)->is_after(Date::Utility->today);
-        $c->session(date_first_contact => Date::Utility->new->date_yyyymmdd);
+        my $date = Date::Utility->new($date_first_contact);
+        return if $date->is_after(Date::Utility->today);
+        $c->session(date_first_contact => $date->date_yyyymmdd);
     };
     $c->session(signup_device => $c->param('signup_device')) if ($c->param('signup_device') // '') =~ /^\w+$/;
     # the regexes for the following fields should be the same as new_account_virtual send schema
