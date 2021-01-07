@@ -10,7 +10,7 @@ subtest 'Netherlands' => sub {
 
 subtest 'France' => sub {
     my %states = map { $_->{value} => 1 } @{BOM::Platform::Locale::get_state_option('fr')};
-    ok !$states{$_}, "$_ is not included in the list" foreach qw/BL WF/;
+    ok !$states{$_}, "$_ is not included in the list" foreach qw/BL WF PF PM/;
 };
 
 done_testing;
