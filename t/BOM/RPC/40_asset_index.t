@@ -9,6 +9,10 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Database::Model::OAuth;
 use Email::Stuffer::TestLinks;
+use Test::MockModule;
+
+my $mock = Test::MockModule->new('LandingCompany::Offerings');
+$mock->mock(is_asian_hours => sub { note 'mocked to non-asian hours'; return 0 });
 
 my $c = BOM::Test::RPC::QueueClient->new();
 

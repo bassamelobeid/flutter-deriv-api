@@ -24,8 +24,12 @@ our %MT5_ACCOUNTS = (
     'real01\financial\svg_std_usd'            => '00001016',
     'real01\synthetic\malta_std_eur'          => '00001000',
     'real\inactive_accounts_financial'        => '00002001',
-    'real02\synthetic\svg_std_usd'            => '20000001',
     'real01\financial\svg_sf_usd'             => '20000002',
+    'real02\synthetic\svg_std_usd'            => '20000001',
+    # real03 account
+    'real03\synthetic\svg_std_usd'            => '40000001',
+    # real04 account
+    'real04\synthetic\svg_std_usd'            => '60000001',
 );
 
 our $ADD_INACTIVE_ACCOUNT = 0;

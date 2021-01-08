@@ -81,11 +81,12 @@ subtest 'frozen free gift' => sub {
             leverage     => 100,
         },
     };
+    BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real03->all(0);
     $c->call_ok('mt5_new_account', $params)->has_no_error('no error for mt5_new_account');
 
     $params->{args} = {
         from_binary => $client->loginid,
-        to_mt5      => 'MTR' . $ACCOUNTS{'real01\synthetic\svg_std_usd'},
+        to_mt5      => 'MTR' . $ACCOUNTS{'real03\synthetic\svg_std_usd'},
         amount      => 180,
     };
 };

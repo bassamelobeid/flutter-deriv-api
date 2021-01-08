@@ -92,6 +92,7 @@ my $params = {
         leverage     => 100,
     },
 };
+BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real03->all(0);
 $c->call_ok('mt5_new_account', $params)->has_no_error('no error for mt5_new_account');
 
 sub _get_mt5transfer_from_transaction {
@@ -121,7 +122,7 @@ subtest 'deposit' => sub {
         token    => $token,
         args     => {
             from_binary => $loginid,
-            to_mt5      => 'MTR' . $ACCOUNTS{'real01\synthetic\svg_std_usd'},
+            to_mt5      => 'MTR' . $ACCOUNTS{'real03\synthetic\svg_std_usd'},
             amount      => 180,
         },
     };
@@ -165,7 +166,7 @@ subtest 'deposit' => sub {
     BOM::RPC::v3::MT5::Account::reset_throttler($loginid);
 
     $test_client->status->set('mt5_withdrawal_locked', 'system', 'testing');
-    $params->{args}{to_mt5} = 'MTR' . $ACCOUNTS{'real01\synthetic\svg_std_usd'};
+    $params->{args}{to_mt5} = 'MTR' . $ACCOUNTS{'real03\synthetic\svg_std_usd'};
     $c->call_ok($method, $params)->has_error('client is blocked from withdrawal')->error_code_is('MT5DepositError', 'error code is MT5DepositError')
         ->error_message_is('You cannot perform this action, as your account is withdrawal locked.');
     $test_client->status->clear_mt5_withdrawal_locked;
@@ -235,7 +236,7 @@ subtest 'virtual_deposit' => sub {
         language => 'EN',
         token    => $token,
         args     => {
-            to_mt5 => 'MTR' . $ACCOUNTS{'real01\synthetic\svg_std_usd'},
+            to_mt5 => 'MTR' . $ACCOUNTS{'real03\synthetic\svg_std_usd'},
             amount => 180,
         },
     };
@@ -290,7 +291,7 @@ subtest 'mx_deposit' => sub {
         token    => $token_mx,
         args     => {
             from_binary => $test_mx_client->loginid,
-            to_mt5      => 'MTR' . $ACCOUNTS{'real01\synthetic\svg_std_usd'},
+            to_mt5      => 'MTR' . $ACCOUNTS{'real03\synthetic\svg_std_usd'},
             amount      => 180,
         },
     };
@@ -321,7 +322,7 @@ subtest 'mx_withdrawal' => sub {
         language => 'EN',
         token    => $token_mx,
         args     => {
-            from_mt5  => 'MTR' . $ACCOUNTS{'real01\synthetic\svg_std_usd'},
+            from_mt5  => 'MTR' . $ACCOUNTS{'real03\synthetic\svg_std_usd'},
             to_binary => $test_mx_client->loginid,
             amount    => 350,
         },
@@ -347,7 +348,7 @@ subtest 'withdrawal' => sub {
         language => 'EN',
         token    => $token,
         args     => {
-            from_mt5  => 'MTR' . $ACCOUNTS{'real01\synthetic\svg_std_usd'},
+            from_mt5  => 'MTR' . $ACCOUNTS{'real03\synthetic\svg_std_usd'},
             to_binary => $test_client_vr->loginid,
             amount    => 150,
         },
@@ -483,7 +484,7 @@ subtest 'labuan withdrawal' => sub {
         ->error_message_like(qr/complete your financial assessment/);
 
     $account_mock->mock('_fetch_mt5_lc', sub { return LandingCompany::Registry::get('svg'); });
-    $params->{args}->{from_mt5} = 'MTR' . $ACCOUNTS{'real01\synthetic\svg_std_usd'};
+    $params->{args}->{from_mt5} = 'MTR' . $ACCOUNTS{'real03\synthetic\svg_std_usd'};
     BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
     $c->call_ok($method, $params)->has_no_error('Withdrawal allowed from svg mt5 account when sibling labuan account is withdrawal-locked');
     cmp_ok $test_client->default_account->balance, '==', 820 + 150 + 50, "Correct balance after withdrawal";
@@ -491,7 +492,7 @@ subtest 'labuan withdrawal' => sub {
     $test_client->financial_assessment({data => JSON::MaybeUTF8::encode_json_utf8(\%financial_data)});
     $test_client->save;
     $account_mock->mock('_fetch_mt5_lc', sub { return LandingCompany::Registry::get('labuan'); });
-    $params->{args}->{from_mt5} = 'MTR' . $ACCOUNTS{'real01\synthetic\svg_std_usd'};
+    $params->{args}->{from_mt5} = 'MTR' . $ACCOUNTS{'real03\synthetic\svg_std_usd'};
     BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
     $c->call_ok($method, $params)->has_no_error('Withdrawal unlocked for labuan mt5 after financial assessment');
     cmp_ok $test_client->default_account->balance, '==', 820 + 150 + 100, "Correct balance after withdrawal";
@@ -516,7 +517,7 @@ subtest 'mf_withdrawal' => sub {
         language => 'EN',
         token    => $token_mf,
         args     => {
-            from_mt5  => 'MTR' . $ACCOUNTS{'real01\synthetic\svg_std_usd'},
+            from_mt5  => 'MTR' . $ACCOUNTS{'real03\synthetic\svg_std_usd'},
             to_binary => $test_mf_client->loginid,
             amount    => 350,
         },
@@ -563,7 +564,7 @@ subtest 'mf_deposit' => sub {
         token    => $token_mf,
         args     => {
             from_binary => $test_mf_client->loginid,
-            to_mt5      => 'MTR' . $ACCOUNTS{'real01\synthetic\svg_std_usd'},
+            to_mt5      => 'MTR' . $ACCOUNTS{'real03\synthetic\svg_std_usd'},
             amount      => 350,
         },
     };

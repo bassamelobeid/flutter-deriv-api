@@ -157,8 +157,9 @@ subtest 'new account' => sub {
             leverage     => 100,
         },
     };
+    BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real03->all(0);
     $c->call_ok($method, $params)->has_no_error('no error for mt5_new_account without investPassword');
-    is($c->result->{login},           'MTR' . $ACCOUNTS{'real01\synthetic\svg_std_usd'}, 'result->{login}');
+    is($c->result->{login},           'MTR' . $ACCOUNTS{'real03\synthetic\svg_std_usd'}, 'result->{login}');
     is($c->result->{balance},         0,                                                 'Balance is 0 upon creation');
     is($c->result->{display_balance}, '0.00',                                            'Display balance is "0.00" upon creation');
 

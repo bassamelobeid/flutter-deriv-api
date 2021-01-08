@@ -317,7 +317,7 @@ subtest 'CR account types - low risk' => sub {
     #real accounts
     financial_assessment($client, 'none');
     $login = create_mt5_account->($c, $token, $client, {account_type => 'gaming'});
-    is $mt5_account_info->{group}, 'real01\synthetic\svg_std_usd', 'correct CR gaming group';
+    is $mt5_account_info->{group}, 'real04\synthetic\svg_std_usd', 'correct CR gaming group';
 
     $login = create_mt5_account->(
         $c, $token, $client,
@@ -416,7 +416,7 @@ subtest 'CR account types - high risk' => sub {
     financial_assessment($client, 'financial_info');
     $login = create_mt5_account->($c, $token, $client, {account_type => 'gaming'});
     ok $login, 'gaming account created with finantial information alone';
-    is $mt5_account_info->{group}, 'real01\synthetic\svg_std_usd', 'correct CR gaming group';
+    is $mt5_account_info->{group}, 'real04\synthetic\svg_std_usd', 'correct CR gaming group';
 
     $login = create_mt5_account->(
         $c, $token, $client,

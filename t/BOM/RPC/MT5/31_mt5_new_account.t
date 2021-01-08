@@ -25,6 +25,8 @@ my %ACCOUNTS       = %Test::BOM::RPC::Accounts::MT5_ACCOUNTS;
 my %DETAILS        = %Test::BOM::RPC::Accounts::ACCOUNT_DETAILS;
 my %financial_data = %Test::BOM::RPC::Accounts::FINANCIAL_DATA;
 
+
+BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real03->all(0);
 subtest 'create mt5 client with different currency' => sub {
     subtest 'svg' => sub {
         my $new_email  = $DETAILS{email};
@@ -53,7 +55,7 @@ subtest 'create mt5 client with different currency' => sub {
         };
         my $result = $c->call_ok($method, $params)->has_no_error('gaming account successfully created')->result;
         is $result->{account_type}, 'gaming';
-        is $result->{login},        'MTR' . $ACCOUNTS{'real01\synthetic\svg_std_usd'};
+        is $result->{login},        'MTR' . $ACCOUNTS{'real03\synthetic\svg_std_usd'};
 
         my $new_client_vr = create_client('VRTC');
         $new_client_vr->set_default_account('GBP');
@@ -345,7 +347,7 @@ subtest 'auto b-booking' => sub {
     BOM::Config::Runtime->instance->app_config->system->mt5->suspend->auto_Bbook_svg_financial(1);
     my $result = $c->call_ok($method, $params)->has_no_error('gaming account successfully created')->result;
     is $result->{account_type}, 'gaming';
-    is $result->{login}, 'MTR' . $ACCOUNTS{'real01\synthetic\svg_std_usd'}, 'gaming account not affected';
+    is $result->{login}, 'MTR' . $ACCOUNTS{'real03\synthetic\svg_std_usd'}, 'gaming account not affected';
 
     $params->{args}->{account_type}     = 'financial';
     $params->{args}->{mt5_account_type} = 'financial';
