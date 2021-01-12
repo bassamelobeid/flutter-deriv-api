@@ -25,7 +25,7 @@ use JSON::MaybeUTF8 qw( encode_json_utf8 decode_json_utf8 );
 use List::Util qw( pairmap );
 use Carp qw( croak );
 use Syntax::Keyword::Try;
-use Storable qw( dclone );
+use Storable qw(dclone);
 
 use Algorithm::Backoff;
 use DataDog::DogStatsd::Helper qw( stats_timing stats_inc );
@@ -196,14 +196,11 @@ sub run {
     my $self = shift;
 
     $self->{is_running} = 1;
-    $0 = sprintf(    ## no critic (RequireLocalizedPunctuationVars)
-        "bom-rpc-redis-%s: (new)",
-        $self->stream_name
-    );
+    $0 = "bom-rpc-redis: (new)";    ## no critic (RequireLocalizedPunctuationVars)
 
     local $SIG{TERM} = local $SIG{INT} = sub {
         local $SIG{ALRM} = sub {
-            $log->errorf("Took too long to shutdown, exited forcibly.\n");
+            $log->errorf("Tooks too long to shutting down, exited forcibly.\n");
             exit 1;
         };
         alarm 4;
@@ -456,9 +453,7 @@ sub _dispatch_request {
     my $result;
 
     # PRE-DISPATCH
-    $0 = sprintf(    ## no critic (RequireLocalizedPunctuationVars)
-        "bom-rpc-redis-%s: (dispatching %s)",
-        $self->stream_name, $params->{rpc});
+    $0 = sprintf("bom-rpc-redis: %s", $params->{rpc});    ## no critic (RequireLocalizedPunctuationVars)
 
     my $request_start = [Time::HiRes::gettimeofday];
     my $vsz_start     = _current_virtual_mem_size();
@@ -505,7 +500,7 @@ sub _dispatch_request {
     $usage = sprintf('%.2f', 100 * $usage / Time::HiRes::tv_interval($request_end, $recent[0]->[0]));
 
     $0 = sprintf(    ## no critic (RequireLocalizedPunctuationVars)
-        "bom-rpc-redis-%s: (idle since %s #req=%s us=%s%%)",
+        "bom-rpc-redis: %s category (idle since %s #req=%s us=%s%%)",
         $self->stream_name, $last_request_at, $self->{request_counter}, $usage
     );
 
