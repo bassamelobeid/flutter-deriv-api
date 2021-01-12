@@ -55,28 +55,14 @@ sub actions_config {
                 stash_params => [qw/ token_type /],
                 success      => \&Binary::WebSocketAPI::v3::Wrapper::Accounts::balance_success_handler,
                 response     => \&Binary::WebSocketAPI::v3::Wrapper::Accounts::balance_response_handler,
-                msg_group    => 'mt5_hybrid',
             }
         ],
 
-        [
-            'statement',
-            {
-                msg_group => 'mt5_hybrid',
-            }
-        ],
-
+        ['statement'],
         ['request_report'],
         ['account_statistics'],
         ['profit_table'],
-
-        [
-            'get_account_status',
-            {
-                msg_group => 'mt5_hybrid',
-            }
-        ],
-
+        ['get_account_status'],
         [
             'change_password',
             {
@@ -118,15 +104,12 @@ sub actions_config {
             }
         ],
         ['get_self_exclusion'],
-
         [
             'set_self_exclusion',
             {
-                response  => \&Binary::WebSocketAPI::v3::Wrapper::Accounts::set_self_exclusion_response_handler,
-                msg_group => 'mt5_hybrid',
+                response => \&Binary::WebSocketAPI::v3::Wrapper::Accounts::set_self_exclusion_response_handler,
             }
         ],
-
         [
             'api_token',
             {
@@ -208,12 +191,7 @@ sub actions_config {
         ['revoke_oauth_app'],
 
         ['topup_virtual'],
-        [
-            'get_limits',
-            {
-                msg_group => 'mt5_hybrid',
-            }
-        ],
+        ['get_limits'],
         ['paymentagent_list', {stash_params => [qw/ token /]}],
         [
             'paymentagent_withdraw',
@@ -234,10 +212,9 @@ sub actions_config {
         [
             'transfer_between_accounts',
             {
-                stash_params => [qw/ token_type /],
                 error        => \&Binary::WebSocketAPI::v3::Wrapper::Cashier::log_paymentagent_error,
                 response     => Binary::WebSocketAPI::v3::Wrapper::Cashier::get_response_handler('transfer_between_accounts'),
-                msg_group    => 'mt5_hybrid',
+                stash_params => [qw/ token_type /],
             }
         ],
         [
@@ -258,12 +235,7 @@ sub actions_config {
                 stash_params => [qw/ server_name client_ip user_agent /],
             }
         ],
-        [
-            'account_closure',
-            {
-                msg_group => 'mt5_hybrid',
-            },
-        ],
+        ['account_closure'],
         [
             'mt5_login_list',
             {

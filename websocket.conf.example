@@ -20,6 +20,6 @@ app->renderer->default_format('json');
     },
     rpc_url => "http://127.0.0.1:5005/",
     rpc_queue_response_timeout => 5,
-    rpc_queue_ignore_separations => "",
+
     default_backend => "rpc_redis",
 };
