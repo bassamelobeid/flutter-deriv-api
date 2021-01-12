@@ -767,4 +767,32 @@ sub check_app_id {
 
 }
 
+=head2 ignore_queue_separations
+
+Check for ignored queues and rewrite the proper category name before passing request forward
+
+=over 4
+
+=item * C<$c> - Connection context object
+
+=item * C<$req_storage> - Request data
+
+=back
+
+Returns void
+
+=cut
+
+sub ignore_queue_separations {
+    my ($c, $req_storage) = @_;
+
+    my $default_queue      = Mojo::WebSocketProxy::Backend::ConsumerGroups::DEFAULT_CATEGORY_NAME();
+    my $separation_enabled = $c->app->config->{rpc_queue_separation_enabled} // 0;
+    my $ignored_queues     = $c->app->config->{rpc_queue_ignore_separations};
+
+    $req_storage->{msg_group} = $default_queue if !$separation_enabled || exists $ignored_queues->{$req_storage->{msg_group} // ''};
+
+    return undef;
+}
+
 1;
