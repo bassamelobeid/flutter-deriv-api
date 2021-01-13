@@ -218,4 +218,139 @@ rpc website_status => sub {
     };
 };
 
+=head2 trading_servers
+
+    $trading_servers = trading_servers()
+
+Takes a single C<$params> hashref containing the following keys:
+
+=over 4
+
+=item * client (deriv client object)
+
+=over 4
+
+=item * args which contains the following keys:
+
+=item * platform (currently mt5)
+
+=item * environment (currently env_01)
+
+=back
+
+=back
+
+Returns an array of hashes for trade server config, sorted by
+recommended flag and sorted by region
+
+=cut
+
+rpc "trading_servers",
+    auth => 1,
+    sub {
+    my $params = shift;
+
+    my $client      = $params->{client};
+    my $platform    = $params->{args}{platform};
+    my $environment = $params->{args}{environment};
+
+    return generate_server_config(
+        residence   => $client->residence,
+        environment => $environment
+    );
+
+    };
+
+=head2 generate_server_config
+
+    generate_server_config(residence => $client->residence, environment => )
+
+Return the array of hash of trade servers configuration
+as per schema defined
+
+=cut
+
+sub generate_server_config {
+    my (%args) = @_;
+
+    my %server_config = (
+        "real01" => {
+            geolocation => {
+                region   => "Europe",
+                location => "Ireland",
+                sequence => 2
+            },
+            is_exclusive => 1,
+            disabled     => 0,
+            recommended  => 0,
+        },
+        "real02" => {
+            geolocation => {
+                region   => "Africa",
+                location => "South Africa",
+                sequence => 1
+            },
+            disabled    => 0,
+            recommended => 0,
+        },
+        "real03" => {
+            geolocation => {
+                region   => "Asia",
+                location => "Singapore",
+                sequence => 1
+            },
+            disabled    => 0,
+            recommended => 0,
+        },
+        "real04" => {
+            geolocation => {
+                region   => 'Europe',
+                location => "Frankfurt",
+                sequence => 1
+            },
+            disabled    => 0,
+            recommended => 0,
+        },
+    );
+
+    my $mt5_app_config        = BOM::Config::Runtime->instance->app_config->system->mt5;
+    my $server_routing_config = BOM::Config::mt5_server_routing();
+
+    my $is_mt5_completely_suspended = $mt5_app_config->suspend->all;
+    my $account_type                = 'real';
+    my $residence_config            = $server_routing_config->{real}->{$args{residence}};
+
+    $account_type .= $residence_config->{synthetic};
+
+    $server_config{$account_type}{recommended} = 1;
+
+    # its real01
+    if ($server_config{$account_type}{is_exclusive}) {
+        delete $server_config{$account_type}{is_exclusive};
+
+        $server_config{$account_type}{environment} = $args{environment};
+        $server_config{$account_type}{id}          = $account_type;
+        $server_config{$account_type}{disabled}    = $is_mt5_completely_suspended ? 1 : $mt5_app_config->suspend->$account_type->all;
+
+        push @{$server_config{$account_type}{supported_accounts}}, ('gaming', 'financial', 'financial_stp');
+
+        return [$server_config{$account_type}];
+    }
+
+    my @response = ();
+    foreach my $server_key (keys %server_config) {
+        next if $server_config{$server_key}{is_exclusive};
+
+        $server_config{$server_key}{environment} = $args{environment};
+        $server_config{$server_key}{id}          = $server_key;
+        $server_config{$server_key}{disabled}    = $is_mt5_completely_suspended ? 1 : $mt5_app_config->suspend->$server_key->all;
+
+        push @{$server_config{$server_key}{supported_accounts}}, 'gaming';
+
+        push @response, $server_config{$server_key};
+    }
+
+    return [sort { $b->{recommended} cmp $a->{recommended} or $a->{geolocation}{region} cmp $b->{geolocation}{region} } @response];
+}
+
 1;

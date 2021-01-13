@@ -9,6 +9,11 @@ use BOM::Config::CurrencyConfig;
 use BOM::Test::Helper::ExchangeRates qw/populate_exchange_rates/;
 use Format::Util::Numbers qw/financialrounding/;
 
+use BOM::User;
+use BOM::User::Client;
+use BOM::User::Password;
+use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+
 populate_exchange_rates();
 
 my $c = BOM::Test::RPC::QueueClient->new();
@@ -115,6 +120,131 @@ subtest 'crypto_config' => sub {
         "API:website_status:crypto_config=> Minimum withdrawal in USD is correct for $_"
     ) for @crypto_currency;
 
+};
+
+subtest 'trading_servers' => sub {
+    my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'MX',
+        residence   => 'gb',
+        citizen     => ''
+    });
+
+    my $email = 'sample+1@binary.com';
+
+    $test_client->email($email);
+    $test_client->save;
+
+    my $hash_pwd = BOM::User::Password::hashpw('jskjd8292922');
+
+    my $user = BOM::User->create(
+        email    => $email,
+        password => $hash_pwd
+    );
+    $user->add_client($test_client);
+
+    subtest 'Ireland' => sub {
+        my $response = BOM::RPC::v3::Static::generate_server_config(
+            residence   => $test_client->residence,
+            environment => 'env_01'
+        );
+
+        is scalar(@$response), 1, 'Only one server for country for Ireland server';
+        is $response->[0]->{id}, 'real01', 'correct id for the server';
+        is $response->[0]->{geolocation}{region},   'Europe',  'correct region for the server';
+        is $response->[0]->{geolocation}{location}, 'Ireland', 'correct location for the server';
+        is $response->[0]->{geolocation}{sequence}, '2',       'correct sequence for the server';
+        is $response->[1], undef, 'no additional server';
+    };
+
+    $email       = 'sample+2@binary.com';
+    $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+        residence   => 'in',
+    });
+    $test_client->email($email);
+    $test_client->save;
+
+    $user = BOM::User->create(
+        email    => $email,
+        password => $hash_pwd
+    );
+    $user->add_client($test_client);
+
+    subtest 'Asia' => sub {
+        my $response = BOM::RPC::v3::Static::generate_server_config(
+            residence   => $test_client->residence,
+            environment => 'env_01'
+        );
+
+        is scalar(@$response), 3, 'Correct number of servers for country';
+        is $response->[0]->{id},          'real03', 'correct id for the server';
+        is $response->[0]->{recommended}, 1,        'correct recommended';
+        is $response->[0]->{geolocation}{region},   'Asia',      'correct region for the server';
+        is $response->[0]->{geolocation}{location}, 'Singapore', 'correct location for the server';
+        is $response->[0]->{geolocation}{sequence}, '1',         'correct sequence for the server';
+        is $response->[1]->{recommended}, 0, 'Correctly set as not recommended';
+        is $response->[1]->{geolocation}{region}, 'Africa', 'Correctly sorted';
+    };
+
+    $email       = 'sample+3@binary.com';
+    $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+        residence   => 'za',
+    });
+    $test_client->email($email);
+    $test_client->save;
+
+    $user = BOM::User->create(
+        email    => $email,
+        password => $hash_pwd
+    );
+    $user->add_client($test_client);
+
+    subtest 'Africa' => sub {
+        my $response = BOM::RPC::v3::Static::generate_server_config(
+            residence   => $test_client->residence,
+            environment => 'env_01'
+        );
+
+        is scalar(@$response), 3, 'Correct number of servers for country';
+        is $response->[0]->{id},          'real02', 'correct id for the server';
+        is $response->[0]->{recommended}, 1,        'correct recommended';
+        is $response->[0]->{geolocation}{region},   'Africa',       'correct region for the server';
+        is $response->[0]->{geolocation}{location}, 'South Africa', 'correct location for the server';
+        is $response->[0]->{geolocation}{sequence}, '1',            'correct sequence for the server';
+        is $response->[1]->{recommended}, 0, 'Correctly set as not recommended';
+        is $response->[1]->{geolocation}{region}, 'Asia', 'Correctly sorted';
+    };
+
+    $email       = 'sample+4@binary.com';
+    $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+        residence   => 'br',
+    });
+    $test_client->email($email);
+    $test_client->save;
+
+    $user = BOM::User->create(
+        email    => $email,
+        password => $hash_pwd
+    );
+    $user->add_client($test_client);
+
+    subtest 'Frankfurt' => sub {
+        my $response = BOM::RPC::v3::Static::generate_server_config(
+            residence   => $test_client->residence,
+            environment => 'env_01'
+        );
+
+        is scalar(@$response), 3, 'Correct number of servers for country';
+        is $response->[0]->{id},          'real04', 'correct id for the server';
+        is $response->[0]->{recommended}, 1,        'correct recommended';
+        is $response->[0]->{geolocation}{region},   'Europe',    'correct region for the server';
+        is $response->[0]->{geolocation}{location}, 'Frankfurt', 'correct location for the server';
+        is $response->[0]->{geolocation}{sequence}, '1',         'correct sequence for the server';
+        is $response->[1]->{recommended}, 0, 'Correctly set as not recommended';
+        is $response->[1]->{geolocation}{region}, 'Africa', 'Correctly sorted';
+    };
 };
 
 done_testing();
