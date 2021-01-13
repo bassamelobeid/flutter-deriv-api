@@ -266,6 +266,7 @@ sub actions_config {
                 msg_group    => 'mt5',
             }
         ],
+        ['trading_servers'],
         [
             'document_upload',
             {
