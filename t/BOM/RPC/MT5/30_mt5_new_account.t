@@ -673,10 +673,8 @@ subtest 'new account identical account check' => sub {
             leverage     => 100,
         },
     };
-    note("creates a gaming account with existing account with old group name");
-    $c->call_ok($method, $params)->has_error->error_code_is('MT5CreateUserError', 'error code for identical account creation')
-        ->error_message_is(
-        'An account already exists with the information you provided. If you\'ve forgotten your username or password, please contact us.');
+    note("creates a gaming account with existing account with old group name on a different server is allowed");
+    $c->call_ok($method, $params)->has_no_error('can create synthetic account on real02 when clean has identical account on real01');
 };
 
 subtest 'country=za; creates financial account with existing gaming account while real02 disabled' => sub {

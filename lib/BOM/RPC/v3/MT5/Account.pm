@@ -193,8 +193,9 @@ sub mt5_accounts_lookup {
         )->then(
             sub {
                 my ($setting) = @_;
+
                 $setting = _filter_settings($setting,
-                    qw/account_type balance country currency display_balance email group landing_company_short leverage login name market_type sub_account_type/
+                    qw/account_type balance country currency display_balance email group landing_company_short leverage login name market_type sub_account_type server/
                 );
                 return Future->done($setting);
             }
@@ -265,8 +266,8 @@ mt5_account_category: conventional|swap_free|empty for financial_stp
 sub _mt5_group {
     my $args = shift;
 
-    my ($landing_company_short, $account_type, $mt5_account_type, $currency, $account_category, $country) =
-        @{$args}{qw(landing_company_short account_type mt5_account_type currency sub_account_type country)};
+    my ($landing_company_short, $account_type, $mt5_account_type, $currency, $account_category, $country, $user_input_trade_server) =
+        @{$args}{qw(landing_company_short account_type mt5_account_type currency sub_account_type country server)};
 
     # account creation for samoa if not allowed until the launch of deriv-crypto
     return '' if $landing_company_short eq 'samoa';
@@ -299,11 +300,14 @@ sub _mt5_group {
         $sub_account_type .= '-hr' if $market_type eq 'financial' and $sub_account_type ne 'stp' and not $apply_auto_b_book;
     }
 
-    return
-          ${account_type}
-        . ${server_type} . '\\'
-        . $market_type . '\\'
-        . join('_', map { lc $_ } ($landing_company_short, $sub_account_type, $currency));
+    # TODO (JB): Refactor this.
+    # - user is only allowed to create account on real02, real03 and real04 if he/she is not from Ireland trade server country list ($server_type = '01')
+    # - user from Ireland trade server country list will be allowed to create account on real01, real02, real03 and real04
+    return '' if (defined $user_input_trade_server and $server_type ne '01' and $user_input_trade_server eq 'real01');
+
+    my $mt5_trade_server = defined $user_input_trade_server ? $user_input_trade_server : ${account_type} . ${server_type};
+
+    return ${mt5_trade_server} . '\\' . $market_type . '\\' . join('_', map { lc $_ } ($landing_company_short, $sub_account_type, $currency));
 }
 
 =head2 _get_server_type
@@ -408,15 +412,20 @@ async_rpc "mt5_new_account",
     my ($client, $args) = @{$params}{qw/client args/};
 
     # extract request parameters
-    my $account_type         = delete $args->{account_type};
-    my $mt5_account_type     = delete $args->{mt5_account_type} // '';
-    my $mt5_account_category = delete $args->{mt5_account_category} // 'conventional';
+    my $account_type            = delete $args->{account_type};
+    my $mt5_account_type        = delete $args->{mt5_account_type} // '';
+    my $mt5_account_category    = delete $args->{mt5_account_category} // 'conventional';
+    my $user_input_trade_server = delete $args->{server};
 
     # input validation
     return create_error_future('SetExistingAccountCurrency') unless $client->default_account;
 
     my $invalid_account_type_error = create_error_future('InvalidAccountType');
     return $invalid_account_type_error if (not $account_type or $account_type !~ /^demo|gaming|financial$/);
+
+    # - demo account cannot select trade server
+    # - financial account cannot select trade server
+    return create_error_future('InvalidServerInput') if $account_type ne 'gaming' and defined $user_input_trade_server;
 
     $mt5_account_type     = '' if $account_type eq 'gaming';
     $mt5_account_category = '' if $mt5_account_type eq 'financial_stp' or $mt5_account_category !~ /^swap_free|conventional$/;
@@ -522,7 +531,8 @@ async_rpc "mt5_new_account",
         account_type          => $account_type,
         mt5_account_type      => $mt5_account_type,
         currency              => $mt5_account_currency,
-        sub_account_type      => $mt5_account_category
+        sub_account_type      => $mt5_account_category,
+        server                => $user_input_trade_server,
     });
 
     # something is wrong if we're not able to get group config
@@ -894,7 +904,7 @@ async_rpc "mt5_get_settings",
             return create_error_future('MT5AccountInactive') if !$settings->{active};
 
             $settings = _filter_settings($settings,
-                qw/account_type address balance city company country currency display_balance email group landing_company_short leverage login market_type name phone phonePassword state sub_account_type zipCode/
+                qw/account_type address balance city company country currency display_balance email group landing_company_short leverage login market_type name phone phonePassword state sub_account_type zipCode server/
             );
 
             return Future->done($settings);
@@ -921,7 +931,7 @@ sub set_mt5_account_settings {
 
     my $group_name = lc($settings->{group});
     my $config     = get_mt5_account_type_config($group_name);
-
+    $settings->{server}                = $config->{server};
     $settings->{active}                = $config->{landing_company_short} ? 1 : 0;
     $settings->{landing_company_short} = $config->{landing_company_short};
     $settings->{market_type}           = $config->{market_type};

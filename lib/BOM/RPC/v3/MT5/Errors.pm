@@ -22,6 +22,7 @@ my %category_message_mapping = do {
     local *localize = sub { die 'invalid parameter list - expecting a single string' unless @_ == 1; shift };
     (
         General                    => localize('A connection error happened while we were completing your request. Please try again later.'),
+        InvalidServerInput         => localize('Input parameter \'server\' is not supported for the account type.'),
         MT5APISuspendedError       => localize('MT5 is currently unavailable. Please try again later.'),
         MT5DepositSuspended        => localize('Deposits are currently unavailable. Please try again later.'),
         MT5WithdrawalSuspended     => localize('Withdrawals are currently unavailable. Please try again later.'),
