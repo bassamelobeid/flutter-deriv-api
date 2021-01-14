@@ -246,8 +246,16 @@ sub calculate_to_amount_with_fees {
 
     my $fee_calculated_by_percent = $amount * $fee_percent / 100;
 
-    my $min_fee     = get_min_unit($from_currency);
-    my $fee_applied = ($fee_calculated_by_percent < $min_fee) ? $min_fee : $fee_calculated_by_percent;
+    my $min_fee = get_min_unit($from_currency);
+    my $fee_applied;
+
+    if ($fee_percent == 0) {
+        $fee_applied = 0;
+    } elsif ($fee_calculated_by_percent < $min_fee) {
+        $fee_applied = $min_fee;
+    } else {
+        $fee_applied = $fee_calculated_by_percent;
+    }
 
     $amount = convert_currency(($amount - $fee_applied), $from_currency, $to_currency, $rate_expiry);
 
