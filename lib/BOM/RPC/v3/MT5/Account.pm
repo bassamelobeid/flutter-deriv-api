@@ -662,16 +662,18 @@ async_rpc "mt5_new_account",
                     # else get one associated with affiliate token
                     #only affiliate who is also an introducing Broker has mt5_account in myaffiliates
                     if ($client->myaffiliates_token and $account_type ne 'demo') {
-                        my $agent_login = _get_mt5_account_from_affiliate_token({
-                            token        => $client->myaffiliates_token,
-                            user         => $user,
-                            account_type => $account_type eq 'demo' ? 'demo' : 'real',
-                            country      => $residence,
-                            market       => $group =~ /financial/ ? 'financial' : 'synthetic',
-                        });
-                        $args->{agent} = $agent_login if $agent_login;
-                        $log->warnf("Unable to link %s MT5 account with myaffiliates token %s", $client->loginid, $client->myaffiliates_token)
-                            unless $agent_login;
+                        my $ib_affiliate_id = _get_ib_affiliate_id_from_token($client->myaffiliates_token);
+
+                        if ($ib_affiliate_id) {
+                            my $agent_login = _get_mt5_agent_account_id({
+                                affiliate_id => $ib_affiliate_id,
+                                user         => $user,
+                                server       => $user_input_trade_server
+                            });
+                            $args->{agent} = $agent_login if $agent_login;
+                            $log->warnf("Unable to link %s MT5 account with myaffiliates id %s", $client->loginid, $ib_affiliate_id)
+                                unless $agent_login;
+                        }
                     }
 
                     return BOM::MT5::User::Async::create_user($args);
@@ -1642,42 +1644,121 @@ async_rpc "mt5_withdrawal",
         });
     };
 
-sub _get_mt5_account_from_affiliate_token {
-    my $args = shift;
+=head2 _get_ib_affiliate_id_from_token
 
-    my ($user, $account_type, $country, $token, $market) =
-        @{$args}{qw(user account_type country token market)};
+    _get_ib_affiliate_id_from_token($token);
 
-    my $agent_id;
+Get IB's affiliate ID based on MyAffiliate token
 
-    if ($token) {
-        my $aff = WebService::MyAffiliates->new(
-            user    => BOM::Config::third_party()->{myaffiliates}->{user},
-            pass    => BOM::Config::third_party()->{myaffiliates}->{pass},
-            host    => BOM::Config::third_party()->{myaffiliates}->{host},
-            timeout => 10
-            )
-            or do {
-            stats_inc('myaffiliates.mt5.failure.connect', 1);
-            return 0;
-            };
+=over 4
 
-        my $myaffiliate_id = $aff->get_affiliate_id_from_token($token) or do {
-            stats_inc('myaffiliates.mt5.failure.get_aff_id', 1);
-            return 0;
+=item * C<$token> string that contains a valid MyAffiliate token
+
+=back
+
+Returns a C<$ib_affiliate_id> an integer representing MyAffiliate ID if it could find and link it to an IB, otherwise returns 0
+
+=cut
+
+sub _get_ib_affiliate_id_from_token {
+    my ($token) = @_;
+
+    my $ib_affiliate_id;
+
+    my $aff = WebService::MyAffiliates->new(
+        user    => BOM::Config::third_party()->{myaffiliates}->{user},
+        pass    => BOM::Config::third_party()->{myaffiliates}->{pass},
+        host    => BOM::Config::third_party()->{myaffiliates}->{host},
+        timeout => 10
+        )
+        or do {
+        stats_inc('myaffiliates.mt5.failure.connect', 1);
+        $log->warnf("Unable to connect to MyAffiliate to parse token %s", $token);
+        return 0;
         };
 
-        my $server_id = _get_server_type($account_type, $country, $market);
+    my $myaffiliate_id = $aff->get_affiliate_id_from_token($token) or do {
+        stats_inc('myaffiliates.mt5.failure.get_aff_id', 1);
+        $log->warnf("Unable to parse MyAffiliate token %s", $token);
+        return 0;
+    };
 
-        ($agent_id) = $user->dbic->run(
-            fixup => sub {
-                $_->selectrow_array(q{SELECT * FROM mt5.get_agent_id(?, ?)}, undef, $myaffiliate_id, $server_id);
-            });
+    if ($myaffiliate_id !~ /^\d+$/) {
+        $log->warnf("Unable to map token %s to an affiliate (%s)", $token, $myaffiliate_id);
+        return $ib_affiliate_id;
+    }
 
-        if (not $agent_id) {
-            stats_inc('myaffiliates.mt5.failure.no_info', 1);
-            return 0;
-        }
+    my $affiliate_user = $aff->get_user($myaffiliate_id) or do {
+        stats_inc('myaffiliates.mt5.failure.get_aff_id', 1);
+        $log->warnf("Unable to get MyAffiliate user %s from token %s", $myaffiliate_id, $token);
+        return 0;
+    };
+
+    try {
+        my @mt5_custom_var =
+            map { $_->{VALUE} =~ s/\s//rg; } grep { $_->{NAME} =~ s/\s//rg eq 'mt5_account' } $affiliate_user->{USER_VARIABLES}{VARIABLE}->@*;
+        $ib_affiliate_id = $myaffiliate_id if $mt5_custom_var[0];
+    } catch {
+        $log->warnf("Unable to process affiliate %s custom variables (%s)", $myaffiliate_id, $@);
+    }
+
+    return $ib_affiliate_id;
+}
+
+=head2 _get_mt5_agent_account_id
+
+    _get_mt5_agent_account_id({account_type => 'real', ...});
+
+Retrieve agent's MT5 account ID on the target server
+
+=over 4
+
+=item * C<$params> 
+
+hashref with the following keys
+
+=item * C<$user> 
+
+with the value of L<BOM::User> instance 
+
+=item * C<$account_type> 
+
+with the value of demo/real
+
+=item * C<$country> 
+
+with value of country 2 characters code, e.g. ID
+
+=item * C<$affiliate_id> 
+
+an integer representing MyAffiliate id as the output of _get_ib_affiliate_id_from_token
+
+=item * C<$market> 
+
+market type such financial/synthetic
+
+=back
+
+Return C<$agent_id> an integer representing agent's MT5 account ID if it could find a matching data and 0 otherwise
+
+=cut
+
+sub _get_mt5_agent_account_id {
+    my $args = shift;
+
+    my ($user, $affiliate_id, $server) =
+        @{$args}{qw(user affiliate_id server)};
+
+    my $server_id = $server =~ s/[a-z]*//r;
+
+    my ($agent_id) = $user->dbic->run(
+        fixup => sub {
+            $_->selectrow_array(q{SELECT * FROM mt5.get_agent_id(?, ?)}, undef, $affiliate_id, $server_id);
+        });
+
+    if (not $agent_id) {
+        stats_inc('myaffiliates.mt5.failure.no_info', 1);
+        return 0;
     }
 
     return $agent_id;
