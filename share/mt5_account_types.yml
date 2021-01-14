@@ -551,6 +551,10 @@ real\svg: *real_svg_gaming_financial
 real\svg_highrisk: *real_svg_gaming_financial
 real01\synthetic\svg_std-hr_usd: *real_svg_gaming_financial
 real01\synthetic\svg_std_usd: *real_svg_gaming_financial
+real01\synthetic\svg_std_usd_a: *real_svg_gaming_financial
+real01\synthetic\svg_std_usd_b: *real_svg_gaming_financial
+real01\synthetic\svg_std_usd_c: *real_svg_gaming_financial
+real01\synthetic\svg_std_usd_d: *real_svg_gaming_financial
 real02\synthetic\svg_std-hr_usd: &real02_svg_gaming_financial
   account_type: real
   landing_company_short: svg
