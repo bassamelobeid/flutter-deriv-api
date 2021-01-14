@@ -64,6 +64,11 @@ use BOM::User::Onfido;
 use constant DEFAULT_STATEMENT_LIMIT         => 100;
 use constant DOCUMENT_EXPIRING_SOON_INTERVAL => '1mo';
 
+# Set this to zero to *disable* any attempt to read the MT5 account
+# balances. This only affects the balance API call: it does not block other
+# other RPC calls which retrieve lists of accounts.
+use constant MT5_BALANCE_CALL_ENABLED => 0;
+
 my $allowed_fields_for_virtual = qr/set_settings|email_consent|residence|allow_copiers|non_pep_declaration/;
 my $email_field_labels         = {
     exclude_until          => 'Exclude from website until',
@@ -770,24 +775,26 @@ rpc balance => sub {
     my $mt5_real_total = 0;
     my $mt5_demo_total = 0;
 
-    my @mt5_accounts = BOM::RPC::v3::MT5::Account::get_mt5_logins($params->{client})->else(sub { return Future->done(); })->get;
+    if(MT5_BALANCE_CALL_ENABLED) {
+        my @mt5_accounts = BOM::RPC::v3::MT5::Account::get_mt5_logins($params->{client})->else(sub { return Future->done(); })->get;
 
-    for my $mt5_account (@mt5_accounts) {
-        my $is_demo   = $mt5_account->{group} =~ /^demo/ ? 1 : 0;
-        my $converted = convert_currency($mt5_account->{balance}, $mt5_account->{currency}, $total_currency);
-        $mt5_real_total += $converted unless $is_demo;
-        $mt5_demo_total += $converted if $is_demo;
+        for my $mt5_account (@mt5_accounts) {
+            my $is_demo   = $mt5_account->{group} =~ /^demo/ ? 1 : 0;
+            my $converted = convert_currency($mt5_account->{balance}, $mt5_account->{currency}, $total_currency);
+            $mt5_real_total += $converted unless $is_demo;
+            $mt5_demo_total += $converted if $is_demo;
 
-        $response->{accounts}{$mt5_account->{login}} = {
-            currency         => $mt5_account->{currency},
-            balance          => formatnumber('amount', $mt5_account->{currency}, $mt5_account->{balance}),
-            converted_amount => formatnumber('amount', $total_currency, $converted),
-            demo_account     => $is_demo,
-            type             => 'mt5',
-            currency_rate_in_total_currency =>
-                convert_currency(1, $mt5_account->{currency}, $total_currency),    # This rate is used for the future stream
-        };
+            $response->{accounts}{$mt5_account->{login}} = {
+                currency         => $mt5_account->{currency},
+                balance          => formatnumber('amount', $mt5_account->{currency}, $mt5_account->{balance}),
+                converted_amount => formatnumber('amount', $total_currency, $converted),
+                demo_account     => $is_demo,
+                type             => 'mt5',
+                currency_rate_in_total_currency =>
+                    convert_currency(1, $mt5_account->{currency}, $total_currency),    # This rate is used for the future stream
+            };
 
+        }
     }
 
     $response->{total} = {
