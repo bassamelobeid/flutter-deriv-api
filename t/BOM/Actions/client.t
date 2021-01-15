@@ -299,7 +299,7 @@ subtest "document upload request context" => sub {
 
     my $request;
     my $mocked_action = Test::MockModule->new('BOM::Event::Actions::Client');
-    $mocked_action->mock('_store_applicant_documents', sub { $request = request(); return undef });
+    $mocked_action->mock('_store_applicant_documents', sub { $request = request(); return Future->done; });
 
     lives_ok {
         BOM::Event::Actions::Client::client_verification({
@@ -1138,12 +1138,12 @@ subtest 'onfido resubmission' => sub {
 
     # Mock stuff
     my $mock_client = Test::MockModule->new('BOM::Event::Actions::Client');
+
     $mock_client->mock(
         '_check_applicant',
         sub {
             Future->done;
         });
-
     # First test, we expect counter to be +1
     $test_client->status->set('allow_poi_resubmission', 'test staff', 'reason');
     $test_client->copy_status_to_siblings('allow_poi_resubmission', 'test');

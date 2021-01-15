@@ -28,7 +28,6 @@ use Future::Utils qw(fmap0);
 use IO::Async::Loop;
 use JSON::MaybeUTF8 qw(decode_json_utf8 encode_json_utf8);
 use List::Util qw(any all first uniq);
-use List::UtilsBy qw(rev_nsort_by);
 use Locale::Codes::Country qw(country_code2code);
 use Log::Any qw($log);
 use POSIX qw(strftime);
@@ -356,15 +355,6 @@ async sub ready_for_authentication {
 
         $log->debugf('Processing ready_for_authentication event for %s (applicant ID %s)', $loginid, $applicant_id);
 
-        my @documents = $onfido->document_list(applicant_id => $applicant_id)->get;
-
-        $log->debugf('Have %d documents for applicant %s', 0 + @documents, $applicant_id);
-
-        my ($doc, $poa_doc) = rev_nsort_by {
-            ($_->side && $_->side eq 'front' ? 10 : 1) * ($ONFIDO_DOCUMENT_TYPE_PRIORITY{$_->type} // 0)
-        }
-        @documents;
-
         my $client = BOM::User::Client->new({loginid => $loginid})
             or die 'Could not instantiate client for login ID ' . $loginid;
 
@@ -447,7 +437,7 @@ async sub ready_for_authentication {
         await Future->wait_any(
             $loop->timeout_future(after => VERIFICATION_TIMEOUT)->on_fail(sub { $log->errorf('Time out waiting for Onfido verfication.') }),
 
-            _check_applicant($args, $onfido, $applicant_id, $broker, $loginid, $residence, $doc, $poa_doc, $redis_events_write, $client));
+            _check_applicant($args, $onfido, $applicant_id, $broker, $loginid, $residence, $redis_events_write, $client));
     } catch {
         my $e = $@;
         $log->errorf('Failed to process Onfido verification for %s: %s', $args->{loginid}, $e);
@@ -1763,7 +1753,7 @@ async sub _upload_documents {
 }
 
 async sub _check_applicant {
-    my ($args, $onfido, $applicant_id, $broker, $loginid, $residence, $doc, $poa_doc, $redis_events_write, $client) = @_;
+    my ($args, $onfido, $applicant_id, $broker, $loginid, $residence, $redis_events_write, $client) = @_;
 
     try {
         my $error_type;
@@ -1782,25 +1772,16 @@ async sub _check_applicant {
             # plus others that would require the feature to be enabled on the account:
             # - identity
             # - watchlist
-            # for facial similarity we are passing document id for document
             # that onfido will use to compare photo uploaded
+            # Document ID is not needed as Onfido will check for the most recently uploaded docs
+            # https://documentation.onfido.com/v2/#request-body-parameters-report
             reports => [{
-                    name      => 'document',
-                    documents => [$doc->id],
+                    name => 'document',
                 },
                 {
-                    name      => 'facial_similarity',
-                    variant   => 'standard',
-                    documents => [$doc->id],
+                    name    => 'facial_similarity',
+                    variant => 'standard',
                 },
-                # We also submit a POA document to see if we can extract any information from it
-                (
-                    $poa_doc
-                    ? {
-                        name      => 'document',
-                        documents => [$poa_doc->id],
-                        }
-                    : ())
             ],
             # async flag if true will queue checks for processing and
             # return a response immediately
