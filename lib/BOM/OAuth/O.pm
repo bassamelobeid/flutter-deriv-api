@@ -18,6 +18,7 @@ use DataDog::DogStatsd::Helper qw(stats_inc);
 use HTTP::BrowserDetect;
 
 use Brands;
+use LandingCompany::Registry;
 
 use BOM::Config::Runtime;
 use BOM::Config::Redis;
@@ -98,21 +99,27 @@ sub authorize {
         and ($c->csrf_token eq (defang($c->param('csrf_token')) // ''))
         and defang($c->param('login')))
     {
-        $filtered_clients = $c->_login($app) or return;
+        my $login = $c->_login($app) or return;
+        $filtered_clients = $login->{filtered_clients};
         $client           = $filtered_clients->[0];
-        $c->session('_is_logined', 1);
-        $c->session('_loginid',    $client->loginid);
-    } elsif ($c->req->method eq 'POST' and $c->session('_is_logined')) {
+        $c->session('_is_logged_in', 1);
+        $c->session('_loginid',      $client->loginid);
+        $c->session('_self_closed',  $login->{login_result}->{self_closed});
+    } elsif ($c->req->method eq 'POST' and $c->session('_is_logged_in')) {
+
         # Get loginid from Mojo Session
         $filtered_clients = $c->_get_client($app_id);
         $client           = $filtered_clients->[0];
     } elsif ($c->session('_oneall_user_id')) {
+
         # Get client from Oneall Social Login.
         my $oneall_user_id = $c->session('_oneall_user_id');
-        $filtered_clients = $c->_login($app, $oneall_user_id) or return;
+        my $login          = $c->_login($app, $oneall_user_id) or return;
+        $filtered_clients = $login->{filtered_clients};
         $client           = $filtered_clients->[0];
-        $c->session('_is_logined', 1);
-        $c->session('_loginid',    $client->loginid);
+        $c->session('_is_logged_in', 1);
+        $c->session('_loginid',      $client->loginid);
+        $c->session('_self_closed',  $login->{login_result}->{self_closed});
     }
 
     my $date_first_contact = $c->param('date_first_contact') // '';
@@ -193,6 +200,11 @@ sub authorize {
         );
     }
 
+    if ($c->session->{_self_closed}) {
+        my $result = $c->_handle_self_closed($filtered_clients, $app, $state);
+        return $result if $result;
+    }
+
     my $redirect_uri = $app->{redirect_uri};
 
     # confirm scopes
@@ -270,7 +282,7 @@ sub authorize {
     stats_inc('login.authorizer.success', {tags => ["brand:$brand_name", "two_factor_auth:$is_verified"]});
 
     # clear login session
-    delete $c->session->{_is_logined};
+    delete $c->session->{_is_logged_in};
     delete $c->session->{_loginid};
     delete $c->session->{_oneall_user_id};
     delete $c->session->{_otp_verified};
@@ -278,6 +290,153 @@ sub authorize {
     $c->session(expires => 1);
 
     $c->redirect_to($uri);
+}
+
+=head2 _handle_self_closed
+
+Handles the authorization of self-closed accounts. It returns null if it can reactivate
+the self-closed accounts, otherwise returns navigating to confirmation or redirect page.
+
+Arguments:
+
+=over 1
+
+=item C<$clients>
+
+A list of self-closed clients associated with the currently processed credentials.
+
+=item C<$app>
+
+The requested application. 
+
+=item C<$state>
+
+The state parameter of the request.
+
+=back
+
+=cut
+
+sub _handle_self_closed {
+    my ($c, $clients, $app, $state) = @_;
+
+    return unless $c->session->{_self_closed};
+
+    my @closed_clients = grep { $_->status->closed } @$clients;
+
+    return unless @closed_clients;
+
+    if (!($c->param('cancel_reactivate') || $c->param('confirm_reactivate'))) {
+        my $financial_reasons =
+            any { lc($_->status->closed->{reason} // '') =~ 'financial concerns|i have other financial priorities' } @closed_clients;
+
+        my $brand = $c->stash('brand');
+        return $c->render(
+            template          => $c->_get_template_name('reactivate-acc'),
+            layout            => $brand->name,
+            app               => $app,
+            r                 => $c->stash('request'),
+            resp_trading_url  => $brand->responsible_trading_url,
+            csrf_token        => $c->csrf_token,
+            website_domain    => $c->_website_domain($app->{id}),
+            financial_reasons => $financial_reasons,
+        );
+    }
+
+    delete $c->session->{_self_closed};
+
+    if ($c->param('cancel_reactivate')) {
+        # clear session for oneall login when reactivation is canceled
+        delete $c->session->{_oneall_user_id};
+        delete $c->session->{_otp_verified};
+
+        my $uri = Mojo::URL->new($app->{redirect_uri});
+        $uri .= '#error=reactivation_cancelled';
+        $uri .= '&state=' . $state if defined $state;
+
+        return $c->redirect_to($uri);
+    }
+
+    $c->_activate_accounts(\@closed_clients, $app);
+
+    return undef;
+}
+
+=head2 _activate_accounts
+
+Reactivates self-closed accounts of a user and sends email to client on each reactivated account.
+
+Arguments:
+
+=over 4
+
+=item C<closed_clients>
+
+An array-ref containing self-closed sibling accounts which are about to be reactivated.
+
+=item C<app>
+
+The db row representing the requested application.
+
+=back
+
+=cut
+
+sub _activate_accounts {
+    my ($c, $closed_clients, $app) = @_;
+    my $brand = $c->stash('brand');
+
+    # pick one of the activated siblings by the following order of priority:
+    # - social responsibility check is reqired (MLT and MX)
+    # - real account with fiat currency
+    # - real account with crypto currency
+    my $selected_account = (first { $_->landing_company->social_responsibility_check_required } @$closed_clients)
+        // (first { !$_->is_virtual && LandingCompany::Registry::get_currency_type($_->currency) eq 'fiat' } @$closed_clients)
+        // (first { !$_->is_virtual } @$closed_clients) // $closed_clients->[0];
+
+    my $reason = $selected_account->status->closed->{reason} // '';
+
+    $_->status->clear_disabled for @$closed_clients;
+
+    send_email({
+            to            => $brand->emails('social_responsibility'),
+            from          => $brand->emails('no-reply'),
+            subject       => $selected_account->loginid . ' has been reactivated',
+            template_name => 'account_reactivated_sr',
+            template_args => {
+                loginid => $selected_account->loginid,
+                email   => $selected_account->email,
+                reason  => $reason,
+            },
+            use_email_template    => 1,
+            email_content_is_html => 1,
+            use_event             => 1
+        }) if $selected_account->landing_company->social_responsibility_check_required;
+
+    send_email({
+            to            => $selected_account->email,
+            from          => $brand->emails('no-reply'),
+            subject       => localize(get_message_mapping()->{REACTIVATE_EMAIL_SUBJECT}),
+            template_name => 'account_reactivated',
+            template_args => {
+                loginid          => $selected_account->loginid,
+                needs_poi        => $selected_account->needs_poi_verification(),
+                profile_url      => $brand->profile_url,
+                resp_trading_url => $brand->responsible_trading_url,
+                live_chat_url    => $brand->live_chat_url,
+            },
+            template_loginid      => $selected_account->loginid,
+            use_email_template    => 1,
+            email_content_is_html => 1,
+            use_event             => 1
+        });
+
+    my $environment      = request()->login_env({user_agent => $c->req->headers->header('User-Agent')});
+    my $unknown_location = !$selected_account->user->logged_in_before_from_same_location($environment);
+
+    # perform postponed logging and notification
+    $selected_account->user->after_login(undef, $environment, $app->{id}, @$closed_clients);
+    $c->c($selected_account, $unknown_location, $app);
 }
 
 sub _login {
@@ -314,11 +473,9 @@ sub _login {
         return;
     }
 
-    my $filtered_clients = $result->{filtered_clients};
-
     # reset csrf_token
     delete $c->session->{csrf_token};
-    return $filtered_clients;
+    return $result;
 }
 
 # fetch social login feature status from settings
@@ -344,11 +501,14 @@ sub _get_client {
         loginid      => $c->session('_loginid'),
         db_operation => 'replica'
     });
-    return [] if $client->status->disabled;
+
+    return [] if $client->status->disabled && !$c->session->{_self_closed};
 
     my @filtered_clients = _filter_user_clients_by_app_id(
-        app_id => $app_id,
-        user   => $client->user
+        app_id              => $app_id,
+        user                => $client->user,
+        include_self_closed => $c->session->{_self_closed},
+
     );
 
     return \@filtered_clients;
@@ -442,9 +602,6 @@ sub _validate_login {
     my $email    = trim(lc defang($c->param('email')));
     my $password = $c->param('password');
 
-    my $r  = $c->stash('request');
-    my $ip = $r->client_ip || '';
-
     my $user;
 
     if ($oneall_user_id) {
@@ -476,7 +633,6 @@ sub _validate_login {
         return $err_var->("TEMP_DISABLED");
     }
 
-    # Get last login (this excludes impersonate) before current login to get last record
     my $new_env          = request()->login_env({user_agent => $c->req->headers->header('User-Agent')});
     my $unknown_location = !$user->logged_in_before_from_same_location($new_env);
 
@@ -487,11 +643,20 @@ sub _validate_login {
         app_id          => $app_id
     );
 
+    # Self-closed error is treated like a success; we'll try to reactivate accounts.
+    if (($result->{error_code} // '') eq 'AccountSelfClosed') {
+        $result = {
+            success     => 1,
+            self_closed => 1,
+        };
+    }
+
     return $err_var->($result->{error}) if exists $result->{error};
 
     my @filtered_clients = _filter_user_clients_by_app_id(
-        app_id => $app_id,
-        user   => $user
+        app_id              => $app_id,
+        user                => $user,
+        include_self_closed => $result->{self_closed},
     );
 
     return $err_var->("UNAUTHORIZED_ACCESS") unless @filtered_clients;
@@ -499,11 +664,34 @@ sub _validate_login {
     my $client = $filtered_clients[0];
 
     return $err_var->("TEMP_DISABLED") if grep { $client->loginid =~ /^$_/ } @{BOM::Config::Runtime->instance->app_config->system->suspend->logins};
-    return $err_var->("DISABLED")      if ($client->status->is_login_disallowed or $client->status->disabled);
+
+    my $client_is_disabled = $client->status->disabled && !($result->{self_closed} && $client->status->closed);
+    return $err_var->("DISABLED") if ($client->status->is_login_disallowed or $client_is_disabled);
+
+    # For self-closed accounts the following step is postponed until reactivation is finalized.
+    $c->_notify_login($client, $unknown_location, $app) unless $result->{self_closed};
+
+    return {
+        filtered_clients => \@filtered_clients,
+        user             => $user,
+        login_result     => $result,
+    };
+}
+
+=head2 _notify_login
+
+Tracks the login event and notifies client about successful login form a new (unknown) location.
+
+=cut
+
+sub _notify_login {
+    my ($c, $client, $unknown_location, $app) = @_;
 
     my $bd           = HTTP::BrowserDetect->new($c->req->headers->header('User-Agent'));
     my $country_code = uc($c->stash('request')->country_code // '');
     my $brand        = $c->stash('brand');
+    my $request      = $c->stash('request');
+    my $ip           = $request->client_ip || '';
 
     if (!$c->session('_is_social_signup')) {
         BOM::Platform::Event::Emitter::emit(
@@ -519,51 +707,32 @@ sub _validate_login {
                 }});
     }
 
-    _notify_unknown_login_by_email($c, $app, $client, $bd) if $unknown_location && $brand->send_signin_email_enabled();
+    if ($unknown_location && $brand->send_signin_email_enabled()) {
+        my $email_data = {
+            client_name => $client->first_name
+            ? ' ' . $client->first_name . ' ' . $client->last_name
+            : '',
+            country => $brand->countries_instance->countries->country_from_code($country_code) // $country_code,
+            device  => $bd->device                                                             // $bd->os_string,
+            browser => $bd->browser_string                                                     // $bd->browser,
+            app     => $app,
+            ip      => $ip,
+            language                  => lc($request->language),
+            start_url                 => 'https://' . lc($brand->website_name),
+            is_reset_password_allowed => _is_reset_password_allowed($app->{id}),
+        };
 
-    return {
-        filtered_clients => \@filtered_clients,
-        user             => $user
-    };
-}
-
-=head2 _notify_unknown_login_by_email
-
-Handle sending email using events to notify the user for new unknown login happened.
-
-=cut
-
-sub _notify_unknown_login_by_email {
-    my ($c, $app, $client, $bd) = @_;
-
-    my $request = $c->stash('request');
-    my $brand   = $c->stash('brand');
-
-    my $country_code = uc($request->country_code // '');
-
-    my $email_data = {
-        client_name => $client->first_name
-        ? ' ' . $client->first_name . ' ' . $client->last_name
-        : '',
-        country => $brand->countries_instance->countries->country_from_code($country_code) // $country_code,
-        device  => $bd->device                                                             // $bd->os_string,
-        browser => $bd->browser_string                                                     // $bd->browser,
-        app     => $app,
-        ip      => $request->client_ip,
-        language                  => lc($request->language),
-        start_url                 => 'https://' . lc($brand->website_name),
-        is_reset_password_allowed => _is_reset_password_allowed($app->{id})};
-
-    send_email({
-        to                    => $client->email,
-        subject               => localize(get_message_mapping()->{NEW_SIGNIN_SUBJECT}),
-        template_name         => 'unknown_login',
-        template_args         => $email_data,
-        template_loginid      => $client->loginid,
-        use_email_template    => 1,
-        email_content_is_html => 1,
-        use_event             => 1
-    });
+        send_email({
+            to                    => $client->email,
+            subject               => localize(get_message_mapping()->{NEW_SIGNIN_SUBJECT}),
+            template_name         => 'unknown_login',
+            template_args         => $email_data,
+            template_loginid      => $client->loginid,
+            use_email_template    => 1,
+            email_content_is_html => 1,
+            use_event             => 1
+        });
+    }
 }
 
 # TODO: Remove this when we agree to use all accounts for Mobytrader
@@ -572,10 +741,10 @@ sub _notify_unknown_login_by_email {
 sub _filter_user_clients_by_app_id {
     my (%args) = @_;
 
-    my $app_id = $args{app_id};
-    my $user   = $args{user};
+    my $app_id = delete $args{app_id};
+    my $user   = delete $args{user};
 
-    return $user->clients unless first { $_ == $app_id } APPS_LOGINS_RESTRICTED;
+    return $user->clients(%args) unless first { $_ == $app_id } APPS_LOGINS_RESTRICTED;
 
     return grep { $_ and $_->account and ($_->account->currency_code() // '') eq 'USD' } $user->clients_for_landing_company('svg');
 }
