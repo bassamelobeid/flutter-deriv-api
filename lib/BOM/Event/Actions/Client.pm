@@ -496,7 +496,6 @@ async sub client_verification {
             $new_applicant_flag ? BOM::User::Onfido::store_onfido_check($applicant_id, $check) : BOM::User::Onfido::update_onfido_check($check);
 
             my @all_report = await $check->reports->as_list;
-
             for my $each_report (@all_report) {
                 BOM::User::Onfido::store_onfido_report($check, $each_report);
             }
@@ -654,28 +653,45 @@ async sub client_verification {
 
 Gets the client's documents from Onfido and store in DB
 
+It takes the following params:
+
+=over 4
+
+=item * C<applicant_id> the Onfido Applicant's ID (string)
+
+=item * C<client> a L<BOM::User::Client> instance
+
+=item * C<check_reports> an arrayref of the current Onfido check reports (usually one for document and other for selfie checkup)
+
+=back
+
+Returns undef.
+
 =cut
 
 async sub _store_applicant_documents {
-    my ($applicant_id, $client, $all_report) = @_;
-    my $onfido    = _onfido();
-    my @documents = await $onfido->document_list(applicant_id => $applicant_id)->as_list;
-
+    my ($applicant_id, $client, $check_reports) = @_;
+    my $onfido               = _onfido();
     my $existing_onfido_docs = BOM::User::Onfido::get_onfido_document($client->binary_user_id);
+    my @documents;
 
     # Build hash index for onfido document id to report.
     my %report_for_doc_id;
-    for my $report (@{$all_report}) {
-        next unless $report->documents;
-
-        my @docs = grep { $_ && $_->{id} } @{$report->documents};
-        $report_for_doc_id{$_->{id}} = $report for @docs;
+    for my $report (@{$check_reports}) {
+        next unless $report->name eq 'document';
+        push @documents, map { $_->{id} } @{$report->documents};
+        $report_for_doc_id{$_->{id}} = $report for @{$report->documents};
     }
 
-    foreach my $doc (@documents) {
-        my (undef, $type, $side) = split /\./, $doc->file_name;
-        $type = $doc->type;
-        $side = $doc->side;
+    foreach my $document_id (@documents) {
+        # Fetch each document individually by applicant/id
+        my $doc = await $onfido->get_document_details(
+            applicant_id => $applicant_id,
+            document_id  => $document_id
+        );
+
+        my $type = $doc->type;
+        my $side = $doc->side;
         $side = $side && $ONFIDO_DOCUMENT_SIDE_MAPPING{$side} // 'front';
         $type = 'live_photo' if $side eq 'photo';
 
@@ -705,29 +721,34 @@ async sub _store_applicant_documents {
             });
     }
 
-    my @live_photos            = await $onfido->photo_list(applicant_id => $applicant_id)->as_list;
+    # Unfortunately, the Onfido API doesn't narrow down the live photos list to the given report/check
+    # We should capitulate and process the last one. Since selfies are the last step in the Frontend flow,
+    # this may not be that bad, feels inconvenient though.
+
+    my @live_photos = await $onfido->photo_list(applicant_id => $applicant_id)->as_list;
+
+    return undef unless scalar @live_photos;
+
+    my $photo                  = shift @live_photos;
     my $existing_onfido_photos = BOM::User::Onfido::get_onfido_live_photo($client->binary_user_id);
 
-    foreach my $photo (@live_photos) {
-        # Skip if document exist in our DB
-        next if $existing_onfido_photos && $existing_onfido_photos->{$photo->id};
+    # Skip if document exist in our DB
+    return undef if $existing_onfido_photos && $existing_onfido_photos->{$photo->id};
 
-        $log->debugf('Insert live photo data for user %s and document id %s', $client->binary_user_id, $photo->id);
+    $log->debugf('Insert live photo data for user %s and document id %s', $client->binary_user_id, $photo->id);
 
-        BOM::User::Onfido::store_onfido_live_photo($photo, $applicant_id);
+    BOM::User::Onfido::store_onfido_live_photo($photo, $applicant_id);
 
-        BOM::Platform::Event::Emitter::emit(
-            onfido_doc_ready_for_upload => {
-                type           => 'photo',
-                document_id    => $photo->id,
-                client_loginid => $client->loginid,
-                applicant_id   => $applicant_id,
-                file_type      => $photo->file_type,
-            });
+    BOM::Platform::Event::Emitter::emit(
+        onfido_doc_ready_for_upload => {
+            type           => 'photo',
+            document_id    => $photo->id,
+            client_loginid => $client->loginid,
+            applicant_id   => $applicant_id,
+            file_type      => $photo->file_type,
+        });
 
-    }
-
-    return;
+    return undef;
 }
 
 =head2 onfido_doc_ready_for_upload
