@@ -129,4 +129,60 @@ subtest 'non-Ireland client new account check' => sub {
     $c->call_ok($method, $params)->has_error->error_code_is('PermissionDenied')->error_message_is('Permission denied.');
 };
 
+subtest 'use default routing rule if server is not provided' => sub {
+    $test_client->myaffiliates_token('FakeToken');
+    $test_client->save;
+
+    my $mocked = Test::MockModule->new('BOM::RPC::v3::MT5::Account');
+    # fake affiliate id
+    $mocked->mock(_get_ib_affiliate_id_from_token => sub { return 12345 });
+
+    my $expected_agent_id = 1001;
+    _add_affiliate_account(
+        $test_client,
+        {
+            server         => '02',
+            mt5_account_id => $expected_agent_id,
+            binary_user_id => $test_client->user->id,
+            affiliate_id   => 12345,
+            account_type   => 'technical'
+        });
+    my $method = 'mt5_new_account';
+    my $args   = {
+        account_type         => 'gaming',
+        email                => 'abc' . $DETAILS{email},
+        name                 => $DETAILS{name},
+        mainPassword         => $DETAILS{password}{main},
+        leverage             => 100,
+        mt5_account_type     => 'financial',
+        mt5_account_category => 'swap_free',
+
+    };
+    my $params = {
+        language => 'EN',
+        token    => $token_vr,
+        args     => $args,
+    };
+
+    BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
+    note('no server as user input');
+    my $res = $c->call_ok($method, $params)->has_no_error->result;
+    is $res->{login}, 'MTR' . $ACCOUNTS{'real02\synthetic\svg_sf_usd'}, 'defaulted to account on real02';
+    is $res->{account_type}, 'gaming', 'gaming';
+    is $res->{agent}, $expected_agent_id, 'agent linked ' . $expected_agent_id;
+};
+
+sub _add_affiliate_account {
+    my ($client, $args) = @_;
+
+    $client->user->dbic->run(
+        ping => sub {
+            $_->selectrow_array(
+                q{SELECT * FROM mt5.add_affiliate_account(?, ?, ?, ?, ?)},
+                undef,                 $args->{server}, $args->{mt5_account_id},
+                $args->{affiliate_id}, $args->{binary_user_id},
+                $args->{account_type});
+        });
+}
+
 done_testing();

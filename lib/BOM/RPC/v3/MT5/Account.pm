@@ -668,7 +668,9 @@ async_rpc "mt5_new_account",
                             my $agent_login = _get_mt5_agent_account_id({
                                 affiliate_id => $ib_affiliate_id,
                                 user         => $user,
-                                server       => $user_input_trade_server
+                                server       => $user_input_trade_server,
+                                country      => $residence,
+                                market       => $group =~ /financial/ ? 'financial' : 'synthetic',
                             });
                             $args->{agent} = $agent_login if $agent_login;
                             $log->warnf("Unable to link %s MT5 account with myaffiliates id %s", $client->loginid, $ib_affiliate_id)
@@ -1746,10 +1748,17 @@ Return C<$agent_id> an integer representing agent's MT5 account ID if it could f
 sub _get_mt5_agent_account_id {
     my $args = shift;
 
-    my ($user, $affiliate_id, $server) =
-        @{$args}{qw(user affiliate_id server)};
+    my ($user, $affiliate_id, $server, $country, $market) =
+        @{$args}{qw(user affiliate_id server country market)};
 
-    my $server_id = $server =~ s/[a-z]*//r;
+    # $server may not be always available. Use default routing rule if $server is not provided
+    my $server_id;
+    if ($server) {
+        $server_id = $server =~ s/[a-z]*//r;
+    } else {
+        # only real account will call this method
+        $server_id = _get_server_type('real', $country, $market);
+    }
 
     my ($agent_id) = $user->dbic->run(
         fixup => sub {

@@ -26,6 +26,7 @@ our %MT5_ACCOUNTS = (
     'real\inactive_accounts_financial'        => '00002001',
     'real01\financial\svg_sf_usd'             => '20000002',
     'real02\synthetic\svg_std_usd'            => '20000001',
+    'real02\synthetic\svg_sf_usd'             => '20000003',
     # real03 account
     'real03\synthetic\svg_std_usd' => '40000001',
     # real04 account
