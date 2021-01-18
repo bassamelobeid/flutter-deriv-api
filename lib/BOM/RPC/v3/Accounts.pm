@@ -60,6 +60,7 @@ use BOM::RPC::v3::Services;
 use BOM::RPC::v3::Services::Onramp;
 use BOM::Config::Redis;
 use BOM::User::Onfido;
+use Locale::Country;
 
 use constant DEFAULT_STATEMENT_LIMIT         => 100;
 use constant DOCUMENT_EXPIRING_SOON_INTERVAL => '1mo';
@@ -1021,6 +1022,7 @@ sub _get_authentication_poi {
             onfido => {
                 is_country_supported => BOM::Config::Onfido::is_country_supported($country_code),
                 documents_supported  => BOM::Config::Onfido::supported_documents_for_country($country_code),
+                country_code         => uc(Locale::Country::country_code2code($country_code, LOCALE_CODE_ALPHA_2, LOCALE_CODE_ALPHA_3) // ""),
             }
         },
         defined $expiry_date ? (expiry_date => $expiry_date) : (),

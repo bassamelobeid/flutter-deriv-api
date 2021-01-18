@@ -220,7 +220,9 @@ subtest 'get account status' => sub {
                             services => {
                                 onfido => {
                                     is_country_supported => 1,
-                                    documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport']}}
+                                    documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport'],
+                                    country_code         => 'IDN'
+                                }}
                         },
                         needs_verification => [],
                     }
@@ -256,7 +258,9 @@ subtest 'get account status' => sub {
                             services => {
                                 onfido => {
                                     is_country_supported => 1,
-                                    documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport']}}
+                                    documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport'],
+                                    country_code         => 'IDN'
+                                }}
                         },
                         needs_verification => ["document", "identity"],
                     }
@@ -290,7 +294,9 @@ subtest 'get account status' => sub {
                             services => {
                                 onfido => {
                                     is_country_supported => 1,
-                                    documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport']}}
+                                    documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport'],
+                                    country_code         => 'IDN'
+                                }}
                         },
                         needs_verification => [],
                     }
@@ -322,7 +328,9 @@ subtest 'get account status' => sub {
                             services => {
                                 onfido => {
                                     is_country_supported => 1,
-                                    documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport']}}
+                                    documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport'],
+                                    country_code         => 'IDN'
+                                }}
                         },
                         needs_verification => ['identity'],
                     }
@@ -374,7 +382,9 @@ subtest 'get account status' => sub {
                             services    => {
                                 onfido => {
                                     is_country_supported => 1,
-                                    documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport']}}
+                                    documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport'],
+                                    country_code         => 'IDN'
+                                }}
                         },
                         needs_verification => [],
                     }
@@ -454,7 +464,9 @@ subtest 'get account status' => sub {
                                             'Passport',
                                             'Residence Permit',
                                             'Visa'
-                                        ]}}
+                                        ],
+                                        country_code => 'GBR',
+                                    }}
                             },
                             needs_verification => superbagof(qw(identity)),
                         }
@@ -490,7 +502,9 @@ subtest 'get account status' => sub {
                             services => {
                                 onfido => {
                                     is_country_supported => 1,
-                                    documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport']}}
+                                    documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport'],
+                                    country_code         => 'IDN'
+                                }}
                         },
                         needs_verification => [],
                     }
@@ -521,7 +535,9 @@ subtest 'get account status' => sub {
                             services => {
                                 onfido => {
                                     is_country_supported => 1,
-                                    documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport']}}
+                                    documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport'],
+                                    country_code         => 'IDN'
+                                }}
                         },
                         needs_verification => [],
                     }
@@ -554,7 +570,9 @@ subtest 'get account status' => sub {
                             services => {
                                 onfido => {
                                     is_country_supported => 1,
-                                    documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport']}}
+                                    documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport'],
+                                    country_code         => 'IDN'
+                                }}
                         },
                         needs_verification => ["document", "identity"],
                     }
@@ -586,7 +604,9 @@ subtest 'get account status' => sub {
                             services => {
                                 onfido => {
                                     is_country_supported => 1,
-                                    documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport']}}
+                                    documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport'],
+                                    country_code         => 'IDN'
+                                }}
                         },
                         needs_verification => ["document"],
                     }
@@ -653,7 +673,9 @@ subtest 'get account status' => sub {
                                 services => {
                                     onfido => {
                                         is_country_supported => 1,
-                                        documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport']}}
+                                        documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport'],
+                                        country_code         => 'IDN'
+                                    }}
                             },
                             needs_verification => [],
                         }
@@ -733,7 +755,9 @@ subtest 'get account status' => sub {
                                 services => {
                                     onfido => {
                                         is_country_supported => 1,
-                                        documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport']}}
+                                        documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport'],
+                                        country_code         => 'IDN'
+                                    }}
                             },
                             needs_verification => superbagof(),
                         }
@@ -770,7 +794,9 @@ subtest 'get account status' => sub {
                             services => {
                                 onfido => {
                                     is_country_supported => 1,
-                                    documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport']}}
+                                    documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport'],
+                                    country_code         => 'IDN'
+                                }}
                         },
                         needs_verification => ["document", "identity"],
                     }
@@ -807,7 +833,9 @@ subtest 'get account status' => sub {
                             services => {
                                 onfido => {
                                     is_country_supported => 1,
-                                    documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport']}}
+                                    documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport'],
+                                    country_code         => 'IDN'
+                                }}
                         },
                         needs_verification => [],
                     }
@@ -841,7 +869,9 @@ subtest 'get account status' => sub {
                             services => {
                                 onfido => {
                                     is_country_supported => 1,
-                                    documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport']}}
+                                    documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport'],
+                                    country_code         => 'IDN'
+                                }}
                         },
                         needs_verification => [],
                     }
@@ -878,7 +908,9 @@ subtest 'get account status' => sub {
                             services => {
                                 onfido => {
                                     is_country_supported => 1,
-                                    documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport']}}
+                                    documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport'],
+                                    country_code         => 'IDN'
+                                }}
                         },
                         needs_verification => [],
                     }
@@ -917,7 +949,9 @@ subtest 'get account status' => sub {
                                 services => {
                                     onfido => {
                                         is_country_supported => 1,
-                                        documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport']}}
+                                        documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport'],
+                                        country_code         => 'IDN'
+                                    }}
                             },
                             needs_verification => superbagof(qw(identity)),
                         }
@@ -952,7 +986,9 @@ subtest 'get account status' => sub {
                                 services => {
                                     onfido => {
                                         is_country_supported => 1,
-                                        documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport']}}
+                                        documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport'],
+                                        country_code         => 'IDN'
+                                    }}
                             },
                             needs_verification => superbagof(qw(document))}
                     },
@@ -990,7 +1026,9 @@ subtest 'get account status' => sub {
                             services => {
                                 onfido => {
                                     is_country_supported => 1,
-                                    documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport', 'Residence Permit', 'Visa']}}
+                                    documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport', 'Residence Permit', 'Visa'],
+                                    country_code         => 'AUT'
+                                }}
                         },
                         needs_verification => ["document", "identity"],
                     }
@@ -1023,7 +1061,9 @@ subtest 'get account status' => sub {
                             services => {
                                 onfido => {
                                     is_country_supported => 1,
-                                    documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport', 'Residence Permit', 'Visa']}}
+                                    documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport', 'Residence Permit', 'Visa'],
+                                    country_code         => 'AUT'
+                                }}
                         },
                         needs_verification => [],
                     }
@@ -1056,7 +1096,9 @@ subtest 'get account status' => sub {
                             services => {
                                 onfido => {
                                     is_country_supported => 1,
-                                    documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport', 'Residence Permit', 'Visa']}}
+                                    documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport', 'Residence Permit', 'Visa'],
+                                    country_code         => 'AUT'
+                                }}
                         },
                         needs_verification => ["document", "identity"],
                     }
@@ -1125,8 +1167,9 @@ subtest 'get account status' => sub {
                                 services    => {
                                     onfido => {
                                         is_country_supported => 1,
-                                        documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport', 'Residence Permit', 'Visa']}
-                                }
+                                        documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport', 'Residence Permit', 'Visa'],
+                                        country_code         => 'AUT'
+                                    }}
                             },
                             needs_verification => superbagof(qw(identity)),
                         }
@@ -1175,7 +1218,9 @@ subtest 'get account status' => sub {
                                         'Passport',
                                         'Residence Permit',
                                         'Visa'
-                                    ]}}
+                                    ],
+                                    country_code => 'GBR'
+                                }}
                         },
                         needs_verification => ["document", "identity"],
                     }
@@ -1225,7 +1270,9 @@ subtest 'get account status' => sub {
                                         'Passport',
                                         'Residence Permit',
                                         'Visa'
-                                    ]}}
+                                    ],
+                                    country_code => 'GBR'
+                                }}
                         },
                         needs_verification => ["document"],
                     }
@@ -1268,7 +1315,9 @@ subtest 'get account status' => sub {
                                         'Passport',
                                         'Residence Permit',
                                         'Visa'
-                                    ]}}
+                                    ],
+                                    country_code => 'GBR'
+                                }}
                         },
                         needs_verification => ["document"],
                         needs_verification => [],
@@ -1347,7 +1396,9 @@ subtest 'get account status' => sub {
                                             'Passport',
                                             'Residence Permit',
                                             'Visa'
-                                        ]}}
+                                        ],
+                                        country_code => 'GBR'
+                                    }}
                             },
                             needs_verification => superbagof(qw(identity)),
                         }
@@ -1396,7 +1447,9 @@ subtest 'get account status' => sub {
                                 services => {
                                     onfido => {
                                         is_country_supported => 1,
-                                        documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport']}}
+                                        documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport'],
+                                        country_code         => 'IDN'
+                                    }}
                             },
                             needs_verification => [],
                         }
@@ -1465,7 +1518,9 @@ subtest 'get account status' => sub {
                                 services    => {
                                     onfido => {
                                         is_country_supported => 1,
-                                        documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport']}}
+                                        documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport'],
+                                        country_code         => 'IDN'
+                                    }}
                             },
                             needs_verification => ["document", "identity"],
                         }
@@ -1529,7 +1584,8 @@ subtest 'get account status' => sub {
                             services => {
                                 onfido => {
                                     documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport'],
-                                    is_country_supported => 1
+                                    is_country_supported => 1,
+                                    country_code         => 'IDN',
                                 },
                             },
                         },
@@ -1584,7 +1640,9 @@ subtest 'get account status' => sub {
                                 services => {
                                     onfido => {
                                         is_country_supported => 1,
-                                        documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport']}}
+                                        documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport'],
+                                        country_code         => 'IDN'
+                                    }}
                             },
                             needs_verification => ["document"],
                         }
@@ -1639,7 +1697,9 @@ subtest 'get account status' => sub {
                                     services => {
                                         onfido => {
                                             is_country_supported => 1,
-                                            documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport']}}
+                                            documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport'],
+                                            country_code         => 'IDN'
+                                        }}
                                 },
                                 needs_verification => ["document"]}
                         },
@@ -1689,7 +1749,9 @@ subtest 'get account status' => sub {
                                     services    => {
                                         onfido => {
                                             is_country_supported => 1,
-                                            documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport']}}
+                                            documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport'],
+                                            country_code         => 'IDN'
+                                        }}
                                 },
                                 document => {
                                     status => "none",
@@ -1732,7 +1794,9 @@ subtest 'get account status' => sub {
                             services => {
                                 onfido => {
                                     is_country_supported => 1,
-                                    documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport']}}
+                                    documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport'],
+                                    country_code         => 'IDN'
+                                }}
                         },
                         needs_verification => ["document", "identity"]}
                 },
@@ -1767,7 +1831,9 @@ subtest 'get account status' => sub {
                             services => {
                                 onfido => {
                                     is_country_supported => 1,
-                                    documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport']}}
+                                    documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport'],
+                                    country_code         => 'IDN'
+                                }}
                         },
                         needs_verification => ["identity"]}
                 },
@@ -1834,7 +1900,9 @@ subtest "Test onfido is_country_supported" => sub {
                     services => {
                         onfido => {
                             is_country_supported => 0,
-                            documents_supported  => []}}
+                            documents_supported  => [],
+                            country_code         => 'ATA'
+                        }}
                 },
                 needs_verification => [],
             }
@@ -1864,7 +1932,9 @@ subtest "Test onfido is_country_supported" => sub {
                     services => {
                         onfido => {
                             is_country_supported => 1,
-                            documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport']}}
+                            documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport'],
+                            country_code         => 'IDN'
+                        }}
                 },
                 needs_verification => [],
             }
