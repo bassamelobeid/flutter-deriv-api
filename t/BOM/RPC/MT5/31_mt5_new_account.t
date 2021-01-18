@@ -25,7 +25,6 @@ my %ACCOUNTS       = %Test::BOM::RPC::Accounts::MT5_ACCOUNTS;
 my %DETAILS        = %Test::BOM::RPC::Accounts::ACCOUNT_DETAILS;
 my %financial_data = %Test::BOM::RPC::Accounts::FINANCIAL_DATA;
 
-
 BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real03->all(0);
 subtest 'create mt5 client with different currency' => sub {
     subtest 'svg' => sub {

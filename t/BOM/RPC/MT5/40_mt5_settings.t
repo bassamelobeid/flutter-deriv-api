@@ -95,8 +95,8 @@ subtest 'get settings' => sub {
     };
     $c->call_ok($method, $params)->has_no_error('no error for mt5_get_settings');
     is($c->result->{login},   'MTR' . $ACCOUNTS{'real03\synthetic\svg_std_usd'}, 'result->{login}');
-    is($c->result->{balance}, $DETAILS{balance},             'result->{balance}');
-    is($c->result->{country}, "mt",                          'result->{country}');
+    is($c->result->{balance}, $DETAILS{balance},                                 'result->{balance}');
+    is($c->result->{country}, "mt",                                              'result->{country}');
 
     $params->{args}{login} = "MTwrong";
     $c->call_ok($method, $params)->has_error('error for mt5_get_settings wrong login')

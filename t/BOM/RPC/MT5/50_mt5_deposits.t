@@ -415,8 +415,8 @@ subtest 'labuan withdrawal' => sub {
 
     $c->call_ok($method, $params)->has_no_error('no error for mt5_new_account without investPassword');
     is($c->result->{login},           'MTR' . $ACCOUNTS{'real01\financial\labuan_stp_usd'}, 'result->{login}');
-    is($c->result->{balance},         0,                                              'Balance is 0 upon creation');
-    is($c->result->{display_balance}, '0.00',                                         'Display balance is "0.00" upon creation');
+    is($c->result->{balance},         0,                                                    'Balance is 0 upon creation');
+    is($c->result->{display_balance}, '0.00',                                               'Display balance is "0.00" upon creation');
 
     $test_client->financial_assessment({data => '{}'});
     $test_client->save();

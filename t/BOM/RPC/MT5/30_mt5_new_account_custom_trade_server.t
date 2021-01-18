@@ -126,8 +126,7 @@ subtest 'non-Ireland client new account check' => sub {
     BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
     note('demo account cannot select trade server');
     BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real02->all(0);
-    $c->call_ok($method, $params)->has_error->error_code_is('PermissionDenied')
-        ->error_message_is('Permission denied.');
+    $c->call_ok($method, $params)->has_error->error_code_is('PermissionDenied')->error_message_is('Permission denied.');
 };
 
 done_testing();

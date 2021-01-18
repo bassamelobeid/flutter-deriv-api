@@ -26,6 +26,8 @@ use DataDog::DogStatsd::Helper qw(stats_timing stats_gauge);
 use Unicode::UTF8 qw(decode_utf8);
 use JSON::MaybeXS qw(decode_json);
 
+use Brands::Countries;
+
 use BOM::RPC::Registry '-dsl';
 
 use BOM::Config::Runtime;
@@ -272,6 +274,10 @@ as per schema defined
 
 sub generate_server_config {
     my (%args) = @_;
+
+    return [] unless $args{residence};
+
+    return [] if Brands::Countries->new()->restricted_country($args{residence});
 
     my %server_config = (
         "real01" => {

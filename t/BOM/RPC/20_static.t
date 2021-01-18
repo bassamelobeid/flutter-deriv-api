@@ -125,9 +125,25 @@ subtest 'crypto_config' => sub {
 subtest 'trading_servers' => sub {
     my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'MX',
-        residence   => 'gb',
+        residence   => '',
         citizen     => ''
     });
+
+    subtest 'check for restricted and undefined' => sub {
+        my $response = BOM::RPC::v3::Static::generate_server_config(
+            residence   => $test_client->residence,
+            environment => 'env_01'
+        );
+
+        is scalar(@$response), 0, 'empty response if residence is not defined';
+
+        $test_client->residence('rw');
+        $test_client->save;
+
+        is scalar(@$response), 0, 'empty response if residence is restricted';
+    };
+
+    $test_client->residence('gb');
 
     my $email = 'sample+1@binary.com';
 

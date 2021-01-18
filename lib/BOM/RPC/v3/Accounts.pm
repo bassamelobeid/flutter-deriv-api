@@ -775,7 +775,7 @@ rpc balance => sub {
     my $mt5_real_total = 0;
     my $mt5_demo_total = 0;
 
-    if(MT5_BALANCE_CALL_ENABLED) {
+    if (MT5_BALANCE_CALL_ENABLED) {
         my @mt5_accounts = BOM::RPC::v3::MT5::Account::get_mt5_logins($params->{client})->else(sub { return Future->done(); })->get;
 
         for my $mt5_account (@mt5_accounts) {

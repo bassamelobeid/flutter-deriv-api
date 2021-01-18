@@ -295,8 +295,8 @@ subtest 'CR account types - low risk' => sub {
             account_type => 'demo'
         });
     ok($login, 'demo account successfully created for a low risk client');
-    is $mt5_account_info->{country}, 'Afghanistan', 'requested country was masked by client_s country of residence';
-    is $mt5_account_info->{group},   'demo01\synthetic\svg_std_usd',    'correct CR demo group';
+    is $mt5_account_info->{country}, 'Afghanistan',                  'requested country was masked by client_s country of residence';
+    is $mt5_account_info->{group},   'demo01\synthetic\svg_std_usd', 'correct CR demo group';
 
     $login = create_mt5_account->(
         $c, $token, $client,

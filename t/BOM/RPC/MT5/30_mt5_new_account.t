@@ -704,17 +704,17 @@ subtest 'country=za; creates financial account with existing gaming account whil
     };
     my $result = $c->call_ok($method, $params)->has_no_error('gaming account successfully created')->result;
     is $result->{account_type}, 'gaming', 'account_type=gaming';
-    is $result->{login}, 'MTR'. $ACCOUNTS{'real02\synthetic\svg_std_usd'}, 'created in group real02\synthetic\svg_std_usd';
+    is $result->{login}, 'MTR' . $ACCOUNTS{'real02\synthetic\svg_std_usd'}, 'created in group real02\synthetic\svg_std_usd';
 
     BOM::RPC::v3::MT5::Account::reset_throttler($new_client->loginid);
     note("disable real02 API calls.");
     BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real02->all(1);
 
-    $params->{args}{account_type} = 'financial';
+    $params->{args}{account_type}     = 'financial';
     $params->{args}{mt5_account_type} = 'financial';
     my $financial = $c->call_ok($method, $params)->has_no_error('financial account successfully created')->result;
     is $financial->{account_type}, 'financial', 'account_type=financial';
-    is $financial->{login}, 'MTR'. $ACCOUNTS{'real01\financial\svg_std_usd'}, 'created in group real01\financial\svg_std_usd';
+    is $financial->{login}, 'MTR' . $ACCOUNTS{'real01\financial\svg_std_usd'}, 'created in group real01\financial\svg_std_usd';
 };
 
 done_testing();
