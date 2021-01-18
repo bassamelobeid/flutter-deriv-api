@@ -34,12 +34,6 @@ $loop->add(
         uri => BOM::Config::Redis::redis_config('mt5_user', 'write')->{uri},
     ));
 
-sub is_mt5_suspended {
-    my $app_config = BOM::Config::Runtime->instance->app_config;
-    return 1 if $app_config->system->mt5->suspend->all;
-    return 0;
-}
-
 my $connection_lost = 1;
 
 (
@@ -88,7 +82,8 @@ my $connection_lost = 1;
                         # We avoid the MT5 call if it's suspended, but also pause for
                         # a bit - no need to burn through the queue
                         # too quickly if it's only down temporarily
-                        return $loop->delay_future(after => 60) if is_mt5_suspended();
+                        BOM::Config::Runtime->instance->app_config->check_for_update();
+                        return $loop->delay_future(after => 5) if BOM::MT5::User::Async::is_suspended('', {login => $loginid});
 
                         return BOM::MT5::User::Async::get_user($loginid)->else(
                             sub {
