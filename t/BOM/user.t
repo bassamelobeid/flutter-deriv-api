@@ -157,6 +157,40 @@ subtest 'default loginid' => sub {
     };
 };
 
+subtest 'user clients' => sub {
+    my $user = BOM::User->create(
+        email    => random_email_address({domain => 'abc.com'}),
+        password => $hash_pwd,
+    );
+
+    my %clients =
+        map { $_ => BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => $_ eq 'virtual' ? 'VRTC' : 'CR', email => $email}) }
+        qw(
+        disabled
+        self_closed
+        enabled
+    );
+
+    $user->add_client($clients{$_}) for keys %clients;
+
+    $clients{disabled}->status->set('disabled', 'system', 'test');
+    $clients{self_closed}->status->set('closed',   'system', 'test');
+    $clients{self_closed}->status->set('disabled', 'system', 'test');
+
+    my @clients = $user->clients;
+    is scalar @clients, 1, 'Only one enabled account';
+    is $clients[0]->loginid, $clients{enabled}->loginid, 'correct enabled client loginid';
+
+    @clients = $user->clients(include_disabled => 1);
+    is scalar @clients, 3, 'All clients are returned';
+    is $clients[0]->loginid, $clients{enabled}->loginid, 'enabled client is placed at the begining of the list';
+
+    @clients = $user->clients(include_self_closed => 1);
+    is scalar @clients, 2, 'Two clients are returned';
+    is $clients[0]->loginid, $clients{enabled}->loginid,     'enabled client is placed at the begining of the list';
+    is $clients[1]->loginid, $clients{self_closed}->loginid, 'correct  self-closed loginid';
+};
+
 subtest 'accounts_by_category' => sub {
     my $user_by_category = BOM::User->create(
         email    => random_email_address({domain => 'binary.com'}),
@@ -224,7 +258,23 @@ subtest 'User Login' => sub {
         $client_vr->status->setnx('disabled', 'system', 'testing');
         $status = $user->login(%args);
         ok !$status->{success}, 'All account disabled, user cannot login';
-        ok $status->{error} =~ /account is unavailable/;
+        my $error_message = BOM::User::Static::CONFIG->{errors}->{AccountUnavailable};
+        ok $status->{error} =~ /$error_message/, 'Correct error message';
+    };
+
+    subtest 'can login if self-closed' => sub {
+        my $login_count = scalar $user->login_history(order => 'desc')->@*;
+
+        $client_vr->status->setnx('closed', 'system', 'testing');
+        is $user->clients(include_self_closed => 1), 1, 'There is only one client';
+        is_deeply $user->login(%args),
+            {
+            'error'      => 'Your account is deactivated. Please contact us via live chat.',
+            'error_code' => 'AccountSelfClosed'
+            },
+            'Correct  error for eslf-closed accounts';
+
+        is scalar scalar $user->login_history(order => 'desc')->@*, $login_count + 1, 'self-closed login is saved in history';
     };
 
     subtest 'with self excluded accounts' => sub {
@@ -343,7 +393,7 @@ subtest 'login_history' => sub {
     is(scalar @$login_history, 5, 'login_history limit ok');
 
     $login_history = $user->login_history;
-    is(scalar @$login_history, 12, 'login_history limit ok');
+    is(scalar @$login_history, 13, 'login_history limit ok');
 
     my $args = {
         action      => 'login',
@@ -356,7 +406,7 @@ subtest 'login_history' => sub {
 
     lives_ok { $user->add_login_history(%$args); } 'add login history';
     $login_history = $user->login_history(order => 'desc');
-    is(scalar @$login_history, 13, 'login_history ok');
+    is(scalar @$login_history, 14, 'login_history ok');
     my $last_login_history = $user->dbic->run(
         sub {
             $_->selectrow_hashref('select * from users.login_history where binary_user_id = ? order by id desc limit 1', undef, $user->id);
@@ -556,10 +606,10 @@ CONF
     }
     'setup';
 
-    # at this point we have 9 rows in the queue: 2x VRTC, 4x CR, 2x MT and 1x VRCH
+    # at this point we have 9 rows in the queue: 2x VRTC, 7x CR, 2x MT and 1x VRCH
     my $queue = $dbh->selectall_arrayref('SELECT binary_user_id, loginid FROM q.add_loginid');
 
-    is $dbh->selectcol_arrayref('SELECT count(*) FROM q.add_loginid')->[0], 18, 'got expected number of queue entries';
+    is $dbh->selectcol_arrayref('SELECT count(*) FROM q.add_loginid')->[0], 21, 'got expected number of queue entries';
 
     BOM::User::Script::MirrorBinaryUserId::run_once $dbh;
     is $dbh->selectcol_arrayref('SELECT count(*) FROM q.add_loginid')->[0], 0, 'all queue entries processed';

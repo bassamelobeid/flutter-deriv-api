@@ -587,7 +587,8 @@ It also returns 0 if there are no documents in sight.
 =cut
 
 sub documents_expired {
-    my $self      = shift;
+    my ($self) = @_;
+
     my $documents = $self->documents_uploaded();
 
     # no POI documents

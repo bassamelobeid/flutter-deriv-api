@@ -171,36 +171,80 @@ sub login {
         ATTEMPT_INTERVAL => '5 minutes'
     };
     my @clients;
-    my ($error, $log_as_failed) = (undef, 1);
+    my $error;
     my $too_many_attempts = $self->dbic->run(
         fixup => sub {
             $_->selectrow_arrayref('select users.too_many_login_attempts(?::BIGINT, ?::SMALLINT, ?::INTERVAL)',
                 undef, $self->{id}, MAX_FAIL_TIMES, ATTEMPT_INTERVAL)->[0];
         });
+
     if ($too_many_attempts) {
-        $error         = 'LoginTooManyAttempts';
-        $log_as_failed = 0;
+        $error = 'LoginTooManyAttempts';
     } elsif (!$is_social_login && !BOM::User::Password::checkpw($password, $self->{password})) {
         $error = 'IncorrectEmailPassword';
     } elsif (!(@clients = $self->clients)) {
-        $error = 'AccountUnavailable';
-    } else {
-        $log_as_failed = 0;
+        $error = $self->clients(include_self_closed => 1) ? 'AccountSelfClosed' : 'AccountUnavailable';
     }
 
-    state $error_mapping  = BOM::User::Static::get_error_mapping();
+    $self->after_login($error, $environment, $app_id, @clients);
+
+    state $error_mapping = BOM::User::Static::get_error_mapping();
+
+    return {
+        error      => $error_mapping->{$error},
+        error_code => $error
+    } if $error;
+
+    return {
+        success => 1,
+    };
+}
+
+=head2 after_login
+
+Finishes the processing of a login attempt by:
+    
+1- Saving the result in login history and redis
+
+2- setting gamstop self-exclusion if applicable
+
+It takes following args:
+    
+=over 4
+
+=item * C<$error> - The error code if there's any; B<undef> or 0 if login was successful.
+
+=item * C<$environment> - The runtime environment of the requesting web client represented as a string.
+
+=item * C<$app_id> - The application id used in websocket connection.
+
+=item * C<@clients> - An array consisting of the matched client objects (for successful login only).
+
+=back
+
+=cut
+
+sub after_login {
+    my ($self, $error, $environment, $app_id, @clients) = @_;
+    my $log_as_failed = ($error // '' eq 'LoginTooManyAttempts') ? 1 : 0;
+
     state $error_log_msgs = {
         LoginTooManyAttempts   => "failed login > " . MAX_FAIL_TIMES . " times",
         IncorrectEmailPassword => 'incorrect email or password',
         AccountUnavailable     => 'Account disabled',
         Success                => 'successful login',
+        AccountSelfClosed      => 'Account is self-closed',
     };
-    BOM::User::AuditLog::log($error_log_msgs->{$error || 'Success'}, $self->{email});
+    my $result = $error || 'Success';
+    BOM::User::AuditLog::log($error_log_msgs->{$result}, $self->{email});
+
     $self->dbic->run(
         fixup => sub {
             $_->do('select users.record_login_history(?,?,?,?,?)', undef, $self->{id}, $error ? 'f' : 't', $log_as_failed, $environment, $app_id);
         });
-    return {error => $error_mapping->{$error}} if $error;
+
+    return if $error;
+
     # store this login attempt in redis
     $self->_save_login_detail_redis($environment);
 
@@ -210,19 +254,25 @@ sub login {
         any { $client->landing_company->short eq $_ } ($countries_list->{$client->residence}->{gamstop_company} // [])->@*
     }
     @clients;
+
     BOM::User::Utility::set_gamstop_self_exclusion($gamstop_client) if $gamstop_client;
-    return {success => 1};
+
+    return undef;
 }
 
 =head2 clients
 
-Get my enabled client objects, in loginid order but with reals up first.  Use the replica db for speed.
+Gets corresponding client objects in loginid order but with real and enabled accounts up first.
+Uses the replica db for speed. 
+By default it returns only active (enabled) clients, but the result may include other clients base on the following named args:
 
 =over 4
 
-=item * C<include_disabled> - e.g. include_disabled=>1  will include disableds otherwise not.
+=item * C<include_disabled> - disabled accounts will be included in the result if this arg is true.
 
-=item * C<include_duplicated> - e.g. include_duplicated=>1  will include duplicated otherwise not.
+=item * C<include_duplicated> - if called with include_duplicated=>1, the result will include duplicate  accounts; otherwise not.
+
+=item * C<include_self_closed> - Self-closed clients will be included in the result if this arg is true.
 
 =back
 
@@ -236,10 +286,14 @@ sub clients {
 
     my @clients = @{$self->get_clients_in_sorted_order(include_duplicated => $include_duplicated)};
 
-    # todo should be refactor
-    @clients = grep { not $_->status->disabled } @clients unless $args{include_disabled};
+    # return all clients (disabled and self-closed clients included)
+    return @clients if $args{include_disabled};
 
-    return @clients;
+    #return self-closed or active clients only
+    return grep { $_->status->closed or not $_->status->disabled } @clients if $args{include_self_closed};
+
+    # return just active clients
+    return grep { not $_->status->disabled } @clients;
 }
 
 =head2 clients_for_landing_company
