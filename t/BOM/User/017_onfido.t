@@ -1,10 +1,13 @@
 use strict;
 use warnings;
-use Test::More tests => 7;
+use Test::More tests => 8;
 use Test::Exception;
 use Test::NoWarnings;
 use Test::Warn;
 use Test::Warnings;
+use Test::Deep;
+use Test::MockModule;
+use JSON::MaybeUTF8 qw(encode_json_utf8);
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Script::OnfidoMock;
@@ -166,5 +169,500 @@ subtest 'store & fetch report' => sub {
     my $result;
 
     lives_ok { $result = BOM::User::Onfido::get_all_onfido_reports($test_client->binary_user_id, $check->id) } "get report ok";
+
     is_deeply([sort keys %$result], [sort map { $_->id } @all_report], 'getting all reports ok');
+};
+
+subtest 'get consider reasons' => sub {
+    my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+        email       => 'qwerty@asdf.com'
+    });
+
+    my $test_user = BOM::User->create(
+        email          => $test_client->email,
+        password       => 'hey you',
+        email_verified => 1,
+    );
+    $test_user->add_client($test_client);
+    $test_client->binary_user_id($test_user->id);
+    $test_client->save;
+
+    # Do the needful mocks
+
+    my $onfido_mock = Test::MockModule->new('BOM::User::Onfido');
+    $onfido_mock->mock(
+        'get_latest_onfido_check',
+        sub {
+            return {
+                id     => 'TESTING',
+                status => 'complete',
+                result => 'consider',
+            };
+        });
+
+    # Every possible reason is here
+
+    my $breakdowns = {
+        data_comparison => {
+            first_name       => 1,
+            last_name        => 1,
+            date_of_birth    => 1,
+            issuing_country  => 1,
+            document_type    => 1,
+            document_numbers => 1,
+        },
+        visual_authenticity => {
+            original_document_present => [qw/photo_of_screen screenshot document_on_printed_paper scan/],
+            fonts                     => 1,
+            picture_face_integrity    => 1,
+            template                  => 1,
+            security_features         => 1,
+            digital_tampering         => 1,
+            other                     => 1,
+            face_detection            => 1,
+        },
+        data_validation => {
+            gender              => 1,
+            document_numbers    => 1,
+            document_expiration => 1,
+            expiry_date         => 1,
+            mrz                 => 1,
+        },
+        image_integrity => {
+            conclusive_document_quality => [
+                qw/obscured_data_points obscured_security_features abnormal_document_features watermarks_digital_text_overlay corner_removed punctured_document missing_back digital_document/
+            ],
+            image_quality => [
+                qw/dark_photo glare_on_photo blurred_photo covered_photo other_photo_issue damaged_document incorrect_side cut_off_document no_document_in_image two_documents_uploaded/
+            ],
+            supported_document => 1,
+            colour_picture     => 1,
+        },
+        data_consistency => {
+            date_of_expiry   => 1,
+            document_numbers => 1,
+            issuing_country  => 1,
+            document_type    => 1,
+            date_of_birth    => 1,
+            gender           => 1,
+            first_name       => 1,
+            last_name        => 1,
+            nationality      => 1,
+        },
+        age_validation => {
+            minimum_accepted_age => 1,
+        },
+        compromised_document => 1
+    };
+
+    # Cases to test
+
+    my $cases = [{
+            test      => 'Testing empty reasons',
+            reasons   => [],
+            breakdown => {},
+        }];
+
+    # Breakdown payload builder
+
+    my $breakdown_builder = sub {
+        my ($breakdown, $sub_breakdown, $properties) = @_;
+        return +{
+            $breakdown => {
+                result    => 'consider',
+                breakdown => {
+                    $sub_breakdown => {
+                        result     => 'consider',
+                        properties => $properties // {},
+                    }}}};
+    };
+
+    # Create a case for each possible reason
+
+    for my $breakdown (keys $breakdowns->%*) {
+        if (ref($breakdowns->{$breakdown}) eq 'HASH') {
+            for my $sub_breakdown (keys $breakdowns->{$breakdown}->%*) {
+                my $reasons = $breakdowns->{$breakdown}->{$sub_breakdown};
+
+                if (ref($reasons) eq 'ARRAY') {
+                    for my $reason ($breakdowns->{$breakdown}->{$sub_breakdown}->@*) {
+                        my $breakdown_payload = $breakdown_builder->(
+                            $breakdown,
+                            $sub_breakdown,
+                            {
+                                $reason => 'consider',
+                            });
+
+                        push @$cases,
+                            {
+                            test => 'Testing reason ' . $reason,
+                            reasons =>
+                                [join('.', $breakdown), join('.', $breakdown, $sub_breakdown), join('.', $breakdown, $sub_breakdown, $reason),],
+                            breakdown => $breakdown_payload,
+                            };
+                    }
+                } else {
+                    my $breakdown_payload = $breakdown_builder->($breakdown, $sub_breakdown);
+
+                    push @$cases,
+                        {
+                        test      => 'Testing reason ' . $sub_breakdown,
+                        reasons   => [join('.', $breakdown), join('.', $breakdown, $sub_breakdown),],
+                        breakdown => $breakdown_payload,
+                        };
+                }
+
+            }
+        } else {
+            push @$cases,
+                {
+                test      => 'Testing reason ' . $breakdown,
+                reasons   => [$breakdown],
+                breakdown => {
+                    $breakdown => {
+                        result => 'consider',
+                    }
+                },
+                };
+        }
+    }
+
+    # Create some multi reason cases
+    # Note only "consider" breakdowns -> sub-breakdowns -> reasons are added to the expected result
+
+    push @$cases, {
+        test    => 'Testing multiple reasons',
+        reasons => [
+            qw/
+                image_integrity
+                image_integrity.image_quality
+                image_integrity.image_quality.blurred_photo
+                image_integrity.image_quality.dark_photo
+                visual_authenticity
+                visual_authenticity.original_document_present
+                visual_authenticity.original_document_present.screenshot/
+        ],
+        breakdown => {
+            visual_authenticity => {
+                result    => 'consider',
+                breakdown => {
+                    original_document_present => {
+                        result     => 'consider',
+                        properties => {screenshot => 'consider'},
+                    }}
+            },
+            image_integrity => {
+                result    => 'consider',
+                breakdown => {
+                    image_quality => {
+                        result     => 'consider',
+                        properties => {
+                            dark_photo     => 'consider',
+                            glare_on_photo => 'clear',
+                            blurred_photo  => 'consider',
+                        },
+                    },
+                    conclusive_document_quality => {
+                        result     => 'clear',
+                        properties => {
+                            obscured_data_points => 'clear',
+                        },
+                    },
+                }
+            },
+        },
+    };
+
+    # Special case null document numbers
+
+    push @$cases,
+        {
+        test      => 'Testing special case null document numbers',
+        reasons   => [qw/data_validation data_validation.no_document_numbers/],
+        breakdown => {
+            data_validation => {
+                result    => 'consider',
+                breakdown => {
+                    document_numbers => {
+                        result => undef,
+                    }}
+            },
+        },
+        };
+
+    # Perform the test
+
+    subtest 'Breakdown coverage' => sub {
+        foreach my $case ($cases->@*) {
+            $onfido_mock->mock(
+                'get_all_onfido_reports',
+                sub {
+                    return {
+                        TESTING => {
+                            result    => 'consider',
+                            api_name  => 'document',
+                            breakdown => encode_json_utf8($case->{breakdown}),
+                        },
+                    };
+                });
+            my $reasons = BOM::User::Onfido::get_consider_reasons($test_client);
+            cmp_deeply($reasons, set($case->{reasons}->@*), $case->{test});
+        }
+    };
+
+    # Selfie case
+
+    subtest 'Selfie coverage' => sub {
+        my $tests = [{
+                reasons => [qw/selfie/],
+                reports => {
+                    SELFIE => {
+                        result   => 'consider',
+                        api_name => 'facial_similarity',
+                    }
+                },
+                test => 'Selfie issues'
+            },
+            {
+                reasons => [
+                    qw/
+                        selfie
+                        visual_authenticity
+                        visual_authenticity.original_document_present
+                        visual_authenticity.original_document_present.document_on_printed_paper/
+                ],
+                reports => {
+                    SELFIE => {
+                        result   => 'consider',
+                        api_name => 'facial_similarity',
+                    },
+                    DOC => {
+                        result    => 'consider',
+                        api_name  => 'document',
+                        breakdown => encode_json_utf8({
+                                visual_authenticity => {
+                                    result    => 'consider',
+                                    breakdown => {
+                                        original_document_present => {
+                                            result     => 'consider',
+                                            properties => {document_on_printed_paper => 'consider'},
+                                        }}
+                                },
+                            }
+                        ),
+                    }
+                },
+                test => 'Selfie issues mixed with documents issues'
+            }];
+
+        foreach my $test ($tests->@*) {
+            $onfido_mock->mock(
+                'get_all_onfido_reports',
+                sub {
+                    return $test->{reports};
+                });
+
+            my $reasons = BOM::User::Onfido::get_consider_reasons($test_client);
+            cmp_deeply($reasons, set($test->{reasons}->@*), $test->{test});
+        }
+    };
+
+    # Cover all execution branches
+
+    subtest 'Cover all execution branches' => sub {
+        $onfido_mock->mock(
+            'get_latest_onfido_check',
+            sub {
+                return {
+                    id     => 'TESTING',
+                    status => 'pending',
+                    result => 'none',
+                };
+            });
+
+        my $reasons = BOM::User::Onfido::get_consider_reasons($test_client);
+        cmp_deeply($reasons, set([]->@*), 'Pending check has empty results');
+
+        $onfido_mock->mock(
+            'get_latest_onfido_check',
+            sub {
+                return {
+                    id     => 'TESTING',
+                    status => 'complete',
+                    result => 'clear',
+                };
+            });
+
+        $reasons = BOM::User::Onfido::get_consider_reasons($test_client);
+        cmp_deeply($reasons, set([]->@*), 'A clear check has empty results');
+
+        $onfido_mock->mock(
+            'get_latest_onfido_check',
+            sub {
+                return {
+                    id     => 'TESTING',
+                    status => 'complete',
+                    result => 'consider',
+                };
+            });
+
+        $onfido_mock->mock(
+            'get_all_onfido_reports',
+            sub {
+                return {};
+            });
+
+        $reasons = BOM::User::Onfido::get_consider_reasons($test_client);
+        cmp_deeply($reasons, set([]->@*), 'Empty results if no report found');
+
+        $onfido_mock->mock(
+            'get_all_onfido_reports',
+            sub {
+                return {
+                    TESTING => {
+                        api_name => 'other',
+                    }};
+            });
+
+        $reasons = BOM::User::Onfido::get_consider_reasons($test_client);
+        cmp_deeply($reasons, set([]->@*), 'Empty results for api_name other');
+
+        $onfido_mock->mock(
+            'get_all_onfido_reports',
+            sub {
+                return {
+                    TESTING => {
+                        api_name => 'document',
+                        result   => 'clear'
+                    }};
+            });
+
+        $reasons = BOM::User::Onfido::get_consider_reasons($test_client);
+        cmp_deeply($reasons, set([]->@*), 'Empty results for clear report');
+    };
+
+    # Bogus breakdowns should not kill
+
+    subtest 'Unexpected format' => sub {
+        my $hit_dd;
+
+        $onfido_mock->mock(
+            'get_latest_onfido_check',
+            sub {
+                return {
+                    id     => 'TESTING',
+                    status => 'complete',
+                    result => 'consider',
+                };
+            });
+        $onfido_mock->mock(
+            'stats_inc',
+            sub {
+                $hit_dd = 1;
+                return undef;
+            });
+
+        my $tests = [{
+                payload => {
+                    test => {
+
+                    },
+                },
+                reasons => [],
+                hit_dd  => 0,
+            },
+            {
+                payload => {result => 'test'},
+                reasons => [],
+                hit_dd  => 0,
+            },
+            {
+                payload => 0,
+                reasons => [],
+                hit_dd  => 1,
+            },
+            {
+                payload => undef,
+                reasons => [],
+                hit_dd  => 0,
+            },
+            {
+                payload => '',
+                reasons => [],
+                hit_dd  => 1,
+            },
+            {
+                payload => 'hello world',
+                reasons => [],
+                hit_dd  => 1,
+            },
+            {
+                payload => {a => {breakdown => undef}},
+                reasons => [],
+                hit_dd  => 0,
+            },
+            {
+                payload => {breakdown => 1},
+                reasons => [],
+                hit_dd  => 0,
+            },
+            {
+                payload => {a => {properties => [1, 2, 3]}},
+                reasons => [],
+                hit_dd  => 0,
+            },
+            {
+                payload => {
+                    a => {
+                        result     => 'consider',
+                        properties => [1, 2, 3]}
+                },
+                reasons => [qw/a/],
+                hit_dd  => 0,
+            },
+            {
+                payload => {
+                    a => {
+                        result     => 'consider',
+                        properties => {
+                            c => 'consider',
+                            b => {}}}
+                },
+                reasons => [qw/a a.c/],
+                hit_dd  => 0,
+            },
+            {
+                payload => {properties => [qw/a b c/]},
+                reasons => [],
+                hit_dd  => 0,
+            }];
+
+        for my $test ($tests->@*) {
+            $onfido_mock->mock(
+                'get_all_onfido_reports',
+                sub {
+                    return {
+                        DOC => {
+                            result    => 'consider',
+                            api_name  => 'document',
+                            breakdown => ref($test->{payload}) ? encode_json_utf8($test->{payload}) : $test->{payload},
+                        }};
+                });
+
+            $hit_dd = 0;
+
+            lives_ok {
+                my $reasons = BOM::User::Onfido::get_consider_reasons($test_client);
+                cmp_deeply($reasons, set($test->{reasons}->@*), 'Expected results for bogus breakdown');
+            }
+            'Bogus breakdown should not kill';
+
+            is $hit_dd, $test->{hit_dd}, $test->{hit_dd} ? 'Dog correctly annoyed' : 'The good boy has deep sleep';
+        }
+    };
+
+    # Finish it
+
+    $onfido_mock->unmock_all;
 };

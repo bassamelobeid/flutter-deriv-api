@@ -14,7 +14,8 @@ use Syntax::Keyword::Try;
 use Date::Utility;
 use JSON::MaybeUTF8 qw(decode_json_utf8 encode_json_utf8);
 use Locale::Codes::Country qw(country_code2code);
-use List::Util qw(first);
+use List::Util qw(first uniq);
+use DataDog::DogStatsd::Helper qw(stats_inc);
 
 =head2 store_onfido_applicant
 
@@ -416,6 +417,159 @@ sub get_latest_check {
         report_document_status     => $report_document_status,
         report_document_sub_result => $report_document_sub_result,
     };
+}
+
+=head2 get_consider_reasons
+
+Extracts from the last onfido report the possible reasons under a consider status.
+
+The parsing is based on the Onfido official documentation 
+
+https://documentation.onfido.com/#document-report-breakdown-reasoning
+
+The breakdown field from the users.onfido_report table should store a structure like this (as beautified json):
+
+    {
+        "visual_authenticity": {
+            "result": "consider",
+            "breakdown": {
+            "security_features": {
+                "result": "clear",
+                "properties": {}
+            },
+            "original_document_present": {
+                "result": "consider",
+                    "properties": {
+                        "screenshot": "consider",
+                        "scan": "clear",
+                    }
+                }
+            }
+        }   
+    }
+
+In the example above, the `visual_authenticity` breakdown has `consider` result.
+Even though the sub-breakdown `security_features` is `clear`, the `original_document_present` sub-breakdown
+has a `consider` status and that's enough to flag the whole breakdown as `consider`.
+Furthermore, `original_document_present` has a reason noted in the `properties` section. The given
+reason was `screenshot`. Just like a breakdown, one `consider` reason is good enough to flag
+the whole sub-breakdown as `consider`.
+
+Note, for the sake of brevity, we limited the example to one breakdown, but there are more and is not 
+clear whether a specific breakdown will always be reported in this column, for general purposes
+we will assume each breakdown/sub-breakdown is optional.
+
+Takes the following arguments:
+
+=over 4
+
+=item * C<$client> - the given L<BOM::User::Client>
+
+=back
+
+Returns,
+    an arrayref of possible reasons why the document has been rejected
+
+=cut
+
+sub get_consider_reasons {
+    my $client = shift;
+    my @reasons;
+
+    if (my $onfido_check = get_latest_onfido_check($client->binary_user_id, undef, 1)) {
+        if ($onfido_check->{status} eq 'complete' and $onfido_check->{result} eq 'consider') {
+            my $onfido_reports = get_all_onfido_reports($client->binary_user_id, $onfido_check->{id});
+
+            for my $report (values $onfido_reports->%*) {
+                my $result = $report->{result} // '';
+                next unless $result eq 'consider';
+
+                # If the facial similarity is `consider` we directly inject the `selfie` reason.
+                my $api_name = $report->{api_name} // '';
+                push @reasons, 'selfie' if $api_name eq 'facial_similarity';
+
+                # For documents, scan the whole thing looking for `result` as `consider` or `unidentified`
+                # We may also look for a `properties` hash, in this case we scan each value for `consider` or `unidentified`.
+                next unless $api_name eq 'document';
+                my $breakdown_payload = eval { decode_json_utf8($report->{breakdown} // '{}') };
+                stats_inc('onfido.report.bogus_breakdown') unless defined $breakdown_payload;
+
+                $breakdown_payload //= {};
+                push @reasons, _extract_breakdown_reasons($breakdown_payload)->@*;
+            }
+        }
+    }
+
+    return [uniq @reasons];
+}
+
+=head2 _extract_breakdown_reasons
+
+Performs a recursive parsing of the breakdown JSON from Onfido.
+
+Any result with `consider` or `unidentified` within a breakdown should be deeply scanned for 
+possible detailed reasons.
+
+Each `property` should be scanned for reasons extracting, we are looking for either
+`consider` or `unidentified` again.
+
+Each breakdown may have nested breakdowns which must apply the same rules and so we hit recursion.
+
+It takes the following arguments:
+
+=over 4
+
+=item * C<payload> the original decoded json from the B<users.onfido_report> table, B<breakdown> field
+
+=item * C<reasons> the resulting arrayref being carried over the recursion
+
+=item * C<stack> the stack being carried over to feed the recursion
+
+=back
+
+Returns an arrayref of rejection reasons found.
+
+=cut
+
+sub _extract_breakdown_reasons {
+    my ($payload, $reasons, $stack) = @_;
+
+    $reasons //= [];
+
+    $stack //= [map { ref($payload->{$_}) eq 'HASH' ? +{$payload->{$_}->%*, name => $_} : () } keys $payload->%*];
+
+    return $reasons unless scalar $stack->@*;
+
+    my $next_stack = [];
+
+    for my $breakdown ($stack->@*) {
+        my $name   = $breakdown->{name};
+        my $result = $breakdown->{result} // '';
+
+        # Special case null document numbers
+        push $reasons->@*, 'data_validation.no_document_numbers' if $name eq 'data_validation.document_numbers' and not defined $breakdown->{result};
+
+        # Standalone consider or unidentified reason
+        next unless $result =~ /consider|unidentified/;
+        push $reasons->@*, $name;
+
+        # Analyze the `properties` hashref for detailed reasons
+        my $properties = {};
+        $properties = $breakdown->{properties} if ref($breakdown->{properties}) eq 'HASH';
+
+        for my $property (keys $properties->%*) {
+            my $property_result = $properties->{$property} // '';
+            push $reasons->@*, join('.', $name, $property) if $property_result =~ /consider|unidentified/;
+        }
+
+        # Do the same scanning on the child breakdowns
+        my $nested_breakdowns = {};
+        $nested_breakdowns = $breakdown->{breakdown} if ref($breakdown->{breakdown}) eq 'HASH';
+
+        push $next_stack->@*, map { +{$nested_breakdowns->{$_}->%*, name => join('.', $name, $_)} } keys $nested_breakdowns->%*;
+    }
+
+    return _extract_breakdown_reasons($payload, $reasons, $next_stack);
 }
 
 1;
