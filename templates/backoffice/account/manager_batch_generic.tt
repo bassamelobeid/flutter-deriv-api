@@ -20,7 +20,7 @@
     <tr>
         <th></th>
         <th>debit OR credit</th>
-        <th>bank_money_transfer OR affiliate_reward OR free_gift<br/>OR dormant_fee OR adjustment OR arbitrary_markup</th>
+        <th>bank_money_transfer OR affiliate_reward OR free_gift<br/>OR dormant_fee OR adjustment OR arbitrary_markup OR mt5_adjustment</th>
         <th></th>
         <th></th>
         <th>(Will appear on statement)</th>

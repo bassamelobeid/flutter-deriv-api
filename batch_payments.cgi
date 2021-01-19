@@ -201,16 +201,26 @@ read_csv_row_and_callback(
             my $err;
             my $trx;
             try {
-                $trx = $client->smart_payment(
-                    currency          => $currency,
-                    amount            => $signed_amount,
-                    payment_type      => $payment_type,
-                    remark            => $statement_comment,
-                    staff             => $clerk,
-                    payment_processor => $payment_processor,
-                    trace_id          => $trace_id,
-                    ($skip_validation ? (skip_validation => 1) : ()),
-                );
+                if ($payment_type eq 'mt5_adjustment') {
+                    $trx = $client->payment_mt5_transfer(
+                        currency     => $currency,
+                        amount       => $signed_amount,
+                        payment_type => 'mt5_transfer',
+                        remark       => $statement_comment,
+                        staff        => $clerk,
+                    );
+                } else {
+                    $trx = $client->smart_payment(
+                        currency          => $currency,
+                        amount            => $signed_amount,
+                        payment_type      => $payment_type,
+                        remark            => $statement_comment,
+                        staff             => $clerk,
+                        payment_processor => $payment_processor,
+                        trace_id          => $trace_id,
+                        ($skip_validation ? (skip_validation => 1) : ()),
+                    );
+                }
             } catch {
                 $client_account_table .= construct_row_line(%row, error => "Transaction Error: $@");
                 return;

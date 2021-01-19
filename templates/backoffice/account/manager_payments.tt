@@ -113,7 +113,7 @@
             <option value="test_account"        >Test Account</option>
             <option value="commission_paid"     >Commission Paid</option>
             <option value="voucher"             >Voucher</option>
-            <option value="mt5_transfer"        >MT5 Adjustment</option>
+            <option value="mt5_adjustment"      >MT5 Adjustment</option>
         </select>
     </td>
     <td style="text-align:center">
@@ -154,7 +154,7 @@
         [% INCLUDE 'backoffice/container/language_select.html.tt' languages = languages %]
     </td>
 </tr>
-<tr class="all_payment_types mt5_transfer"><td>Note: this will not credit/debit the MT5 account!</td></tr>
+<tr class="all_payment_types mt5_adjustment"><td>Note: this will not credit/debit the MT5 account!</td></tr>
 </table>
 
 <table>

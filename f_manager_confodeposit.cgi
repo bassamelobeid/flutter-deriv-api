@@ -245,11 +245,12 @@ try {
         }
     }
 
-    if ($payment_type eq 'mt5_transfer') {
+    if ($payment_type eq 'mt5_adjustment') {
         $client->payment_mt5_transfer(
             %params,
-            amount => $signed_amount,
-            staff  => $clerk,
+            payment_type => 'mt5_transfer',
+            amount       => $signed_amount,
+            staff        => $clerk,
         );
     } elsif ($ttype eq 'CREDIT' || $ttype eq 'DEBIT') {
         my $trx = $client->smart_payment(
