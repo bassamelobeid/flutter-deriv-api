@@ -34,11 +34,11 @@ my $permissions = {
     'f_rescind_listofaccounts.cgi' => ['Payments'],
     'crypto_admin.cgi'             => ['Crypto'],
 
-    'monthly_client_report.cgi'   => ['Accounts'],
-    'monthly_payments_report.cgi' => ['Accounts'],
-    'f_accountingreports.cgi'     => ['Accounts'],
-    'aggregate_balance.cgi'       => ['Accounts'],
-    'f_upload_ewallet.cgi'        => ['Accounts'],
+    'monthly_client_report.cgi'   => ['Accounts', 'Marketing'],
+    'monthly_payments_report.cgi' => ['Accounts', 'Marketing'],
+    'f_accountingreports.cgi'     => ['Accounts', 'Marketing'],
+    'aggregate_balance.cgi'       => ['Accounts', 'Marketing'],
+    'f_upload_ewallet.cgi'        => ['Accounts', 'Marketing'],
 
     'promocode_edit.cgi'            => ['Marketing'],
     'f_promotional.cgi'             => ['Marketing'],
@@ -92,7 +92,7 @@ my $permissions = {
 
     'download_document.cgi'       => ['CS',       'Compliance', 'Quants', 'IT'],
     'f_client_combined_audit.cgi' => ['CS',       'Compliance'],
-    'f_dailyturnoverreport.cgi'   => ['Accounts', 'Quants', 'IT'],
+    'f_dailyturnoverreport.cgi'   => ['Accounts', 'Quants', 'IT', 'Marketing'],
     'f_quant_query.cgi'           => ['Quants',   'CS'],
     'f_dynamic_settings.cgi'      => ['Quants',   'IT'],                           # it has extra internal logic inside
 

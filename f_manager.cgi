@@ -92,6 +92,36 @@ Bar("BATCH CREDIT/DEBIT CLIENTS ACCOUNT: DOUGHFLOW");
 
 $tt->process('backoffice/account/manager_batch_doughflow.tt') || die $tt->error();
 
+# RESCIND FREE GIFT
+Bar("RESCIND FREE GIFTS");
+
+print "If an account is opened, gets a free gift, but never trades for XX days, then rescind the free gift :";
+print " <font color=red>DO NOT RUN THIS FOR MLT DUE TO LGA REQUIREMENTS</font>";
+
+print "<form action=\""
+    . request()->url_for('backoffice/f_rescind_freegift.cgi')
+    . "\" method=post>"
+    . "<input type=hidden name=broker value=$encoded_broker>"
+    . "Days of inactivity: <input type=text size=8 name=inactivedays value=90 data-lpignore='true' /> "
+    . "<br />Message: <input type=text size=50 name=message value='Rescind of free gift for cause of inactivity' data-lpignore='true' /> "
+    . "<br /><select name=whattodo><option>Simulate<option>Do it for real !</select>"
+    . "<input type=submit value='Rescind free gifts'>"
+    . "</form>";
+
+Bar("CLEAN UP GIVEN LIST OF ACCOUNTS");
+
+print "Paste here a list of accounts to rescind all their cash balances (separate with commas):";
+
+print "<form action=\""
+    . request()->url_for('backoffice/f_rescind_listofaccounts.cgi')
+    . "\" method=post>"
+    . "<input type=hidden name=broker value=$encoded_broker>"
+    . "List of accounts: <input type=text size=60 name=listaccounts value='CBET1020,CBET1021' data-lpignore='true' /> (separate with commas)"
+    . "<br />Message: <input type=text size=65 name=message value='Account closed.' data-lpignore='true' /> "
+    . "<br /><select name=whattodo><option>Simulate<option>Do it for real !</select>"
+    . " <input type=submit value='Rescind these accounts!'>"
+    . "</form>";
+
 Bar("Crypto cashier");
 
 print '<a href="f_manager_crypto.cgi">Go to crypto cashier management page</a>';
