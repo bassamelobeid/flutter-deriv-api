@@ -208,6 +208,16 @@ if ($broker eq 'MF') {
         $client->save;
         setlocale(LC_CTYPE, $old_locale);
     }
+
+    if ($input{view_action} =~ qr/^mifir_/) {
+        my $event_args = {
+            loginid    => $loginid,
+            properties => {
+                updated_fields => {
+                    mifir_id => $client->mifir_id,
+                }}};
+        BOM::Platform::Event::Emitter::emit('profile_change', $event_args);
+    }
 }
 
 # sync authentication status to Doughflow
@@ -576,18 +586,8 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
                 $client_to_update->status->clear_age_verification;
             }
         }
-        # gb residents cant use demo account while not age verified.
-        # should remove unwelcome status once respective MX or MF marked
-        # as age verified.
-        my $vr_acc = BOM::User::Client->new({loginid => $client->user->bom_virtual_loginid});
-        if (    $client->residence eq 'gb'
-            and $vr_acc->status->unwelcome
-            and $vr_acc->status->unwelcome->{reason} eq 'Pending proof of age')
-        {
-            $vr_acc->status->clear_unwelcome;
-            $vr_acc->status->set('age_verification', $clerk, 'Age verified client from Backoffice.') unless $vr_acc->status->age_verification;
-        }
 
+        $client->update_status_after_auth_fa();
     }
     if (exists $input{professional_client}) {
         try {
@@ -904,18 +904,24 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
             if ($cli->loginid eq $loginid);
     }
 
-    if (any { defined $input{$_} } qw/first_name last_name dob_month dob_year dob_day/) {
+    my %updated_fields = map { defined $input{$_} ? ($_ => $client->$_) : () }
+        qw /account_opening_reason address_city address_line_1 address_line_2 address_postcode address_state
+        allow_copiers citizen first_name last_name phone
+        place_of_birth residence salutation secret_answer secret_question mifir_id tax_identification_number tax_residence/;
+
+    $updated_fields{date_of_birth} = $client->date_of_birth->ymd if any { defined $input{$_} } qw/dob_month dob_year dob_day/;
+
+    if (keys %updated_fields) {
         my $profile_change_args = {
             loginid    => $loginid,
-            properties => {
-                updated_fields => {
-                    first_name => $client->first_name,
-                    last_name  => $client->last_name,
-                    (defined $client->date_of_birth ? (date_of_birth => $client->date_of_birth->ymd) : ()),
-                }}};
-
+            properties => {updated_fields => \%updated_fields},
+        };
         BOM::Platform::Event::Emitter::emit('profile_change', $profile_change_args);
+
+        # This line is duplicated form profile_change event handler in order to avoid an additional page refresh when status codes are auto-removed.
+        $client->update_status_after_auth_fa();
     }
+
     # Sync onfido with latest updates
     BOM::Platform::Event::Emitter::emit('sync_onfido_details', {loginid => $client->loginid});
 
