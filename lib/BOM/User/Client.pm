@@ -2384,22 +2384,27 @@ sub p2p_advert_update {
         return $self->_advert_details([$advert_info])->[0];
     }
 
-    if ($param{delete}) {
-        my $open_orders = $self->_p2p_orders(
-            advert_id => $id,
-            status    => ['pending', 'buyer-confirmed', 'timed-out'],
-        );
-        die +{error_code => 'OpenOrdersDeleteAdvert'} if @$open_orders;
-    }
-
     # throw error if re-enabling this ad will cause duplicates or exceed limits
     if ($param{is_active}) {
         $self->_validate_advert_limits($advert_info->%*);
     }
 
     my $update = $self->db->dbic->run(
-        fixup => sub {
-            $_->selectrow_hashref('SELECT * FROM p2p.advert_update(?, ?, ?, ?, ?, ?, ?)',
+        txn => sub {
+            my $dbh = shift;
+
+            # lock advert row while checking open orders (order create will update the row)
+            $dbh->do('SELECT 1 FROM p2p.p2p_advert WHERE id = ? FOR UPDATE', undef, $id);
+
+            if ($param{delete}) {
+                my $open_orders = $self->_p2p_orders(
+                    advert_id => $id,
+                    status    => ['pending', 'buyer-confirmed', 'timed-out'],
+                );
+                die +{error_code => 'OpenOrdersDeleteAdvert'} if @$open_orders;
+            }
+
+            $dbh->selectrow_hashref('SELECT * FROM p2p.advert_update(?, ?, ?, ?, ?, ?, ?)',
                 undef, $id, @param{qw/is_active delete description payment_method payment_info contact_info/});
         });
 
@@ -2451,18 +2456,6 @@ sub p2p_order_create {
 
     die +{error_code => 'AdvertNotFound'} unless $advert_info;
     die +{error_code => 'InvalidAdvertOwn'} if $advert_info->{advertiser_loginid} eq $self->loginid;
-
-    die +{
-        error_code => 'OrderMaximumExceeded',
-        message_params =>
-            [formatnumber('amount', $advert_info->{account_currency}, $advert_info->{max_order_amount_actual}), $advert_info->{account_currency}]}
-        if $amount > $advert_info->{max_order_amount_actual};
-
-    die +{
-        error_code => 'OrderMinimumNotMet',
-        message_params =>
-            [formatnumber('amount', $advert_info->{account_currency}, $advert_info->{min_order_amount}), $advert_info->{account_currency}]}
-        if $amount < ($advert_info->{min_order_amount} // 0);
 
     my $advert_type = $advert_info->{type};
 
@@ -2544,8 +2537,39 @@ sub p2p_order_create {
 
     my $txn_time = Date::Utility->new->datetime;
     my $order    = $self->db->dbic->run(
-        fixup => sub {
-            $_->selectrow_hashref('SELECT * FROM p2p.order_create(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        txn => sub {
+            my $dbh = shift;
+
+            # lock advert row while checking advert limits
+            $dbh->do('SELECT 1 FROM p2p.p2p_advert WHERE id = ? FOR UPDATE', undef, $advert_id);
+
+            my $locked_advert = $self->_p2p_adverts(
+                id                     => $advert_id,
+                is_active              => 1,
+                can_order              => 1,
+                advertiser_is_approved => 1,
+                advertiser_is_listed   => 1,
+                country                => $self->residence,
+                account_currency       => $self->currency
+            )->[0];
+
+            die +{error_code => 'AdvertNotFound'} unless $locked_advert;
+
+            die +{
+                error_code     => 'OrderMaximumExceeded',
+                message_params => [
+                    formatnumber('amount', $locked_advert->{account_currency}, $locked_advert->{max_order_amount_actual}),
+                    $locked_advert->{account_currency}]}
+                if $amount > $locked_advert->{max_order_amount_actual};
+
+            die +{
+                error_code     => 'OrderMinimumNotMet',
+                message_params => [
+                    formatnumber('amount', $locked_advert->{account_currency}, $locked_advert->{min_order_amount}),
+                    $locked_advert->{account_currency}]}
+                if $amount < ($locked_advert->{min_order_amount} // 0);
+
+            return $dbh->selectrow_hashref('SELECT * FROM p2p.order_create(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
                 undef, $advert_id, $self->loginid, $escrow->loginid, $amount, $expiry, $payment_info, $contact_info, $source, $self->loginid,
                 $limit_per_day_per_client, $txn_time);
         });

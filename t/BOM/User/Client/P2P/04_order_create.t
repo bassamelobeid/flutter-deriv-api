@@ -320,13 +320,14 @@ subtest 'Creating order for advertiser own order' => sub {
     BOM::Test::Helper::P2P::reset_escrow();
 };
 
-subtest 'Creating order with negative amount' => sub {
+subtest 'Creating order below minimum amount' => sub {
     my $amount = 100;
 
     my $escrow = BOM::Test::Helper::P2P::create_escrow();
     my ($advertiser, $advert_info) = BOM::Test::Helper::P2P::create_advert(
-        amount => $amount,
-        type   => 'sell'
+        amount           => $amount,
+        min_order_amount => 2,
+        type             => 'sell'
     );
     my $client = BOM::Test::Helper::P2P::create_advertiser();
 
@@ -336,7 +337,7 @@ subtest 'Creating order with negative amount' => sub {
     my $err = exception {
         $client->p2p_order_create(
             advert_id => $advert_info->{id},
-            amount    => -1,
+            amount    => 1,
             expiry    => 7200,
         );
     };
@@ -673,12 +674,12 @@ subtest 'Buyer tries to place a "buy" order with an amount that exceeds the adve
         )
     };
 
-    is $err->{error_code}, 'OrderMaximumExceeded', 'Could not create order, got error code OrderMaximumExceeded';
+    is $err->{error_code}, 'OrderCreateFailAdvertiser', 'Could not create order, got error code OrderCreateFailAdvertiser';
 
     BOM::Test::Helper::P2P::reset_escrow();
 };
 
-subtest 'Buyer tries to place an order bigger than the ad amount' => sub {
+subtest 'Seller tries to place an order bigger than the ad amount' => sub {
     my $escrow    = BOM::Test::Helper::P2P::create_escrow();
     my $ad_amount = 50;
 
@@ -688,14 +689,14 @@ subtest 'Buyer tries to place an order bigger than the ad amount' => sub {
         type             => 'buy'
     );
 
-    my $buyer = BOM::Test::Helper::P2P::create_advertiser();
-
-    cmp_ok $buyer->account->balance, '==', 0, 'The buyer balance is 0';
+    my $buyer = BOM::Test::Helper::P2P::create_advertiser(balance => 100);
 
     my $err = exception {
         $buyer->p2p_order_create(
-            advert_id => $advert_info->{id},
-            amount    => $advert_info->{amount} * 2
+            advert_id    => $advert_info->{id},
+            amount       => $advert_info->{amount} * 2,
+            contact_info => 'xxx',
+            payment_info => 'xxx',
         )
     };
 

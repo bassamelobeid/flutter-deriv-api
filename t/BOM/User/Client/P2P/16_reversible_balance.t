@@ -70,7 +70,7 @@ subtest 'sell ads' => sub {
     is($client->p2p_advert_list(type => 'sell')->@*, 1, 'ad is shown');
 
     my $err = exception { $client->p2p_order_create(advert_id => $advert->{id}, amount => 25) };
-    is($err->{error_code}, 'OrderMaximumExceeded', 'cannot create order exceeding irreversible balance');
+    is($err->{error_code}, 'OrderCreateFailAdvertiser', 'cannot create order exceeding advertisers irreversible balance');
 
     $client->db->dbic->dbh->do('SELECT betonmarkets.manage_client_limit_by_cashier(?,?,?)', undef, $advertiser->loginid, 'p2p', 0.25);
     lives_ok { $order = $client->p2p_order_create(advert_id => $advert->{id}, amount => 25) } 'can create order after advertiser limit raised';
