@@ -18,7 +18,7 @@ __PACKAGE__->meta->setup(
         expiration_date            => { type => 'date' },
         comments                   => { type => 'varchar', default => '', length => 255, not_null => 1 },
         document_id                => { type => 'varchar', default => '', length => 30, not_null => 1 },
-        status                     => { type => 'enum', check_in => [ 'uploading', 'uploaded' ], db_type => 'status_type' },
+        status                     => { type => 'enum', check_in => [ 'uploading', 'uploaded', 'verified' ], db_type => 'status_type' },
         file_name                  => { type => 'varchar', length => 100 },
         checksum                   => { type => 'varchar', length => 40, not_null => 1 },
         upload_date                => { type => 'timestamp' },
