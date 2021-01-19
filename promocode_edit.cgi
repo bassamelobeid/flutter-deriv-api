@@ -4,7 +4,7 @@ package main;
 use strict;
 use warnings;
 
-use Scalar::Util 'looks_like_number';
+use Scalar::Util qw( blessed looks_like_number);
 use Syntax::Keyword::Try;
 use JSON::MaybeUTF8 qw(:v1);
 use Date::Utility;
@@ -20,7 +20,13 @@ BrokerPresentation('EDIT PROMOTIONAL CODE DETAILS');
 
 my %input = %{request()->params};
 
-sub is_valid_promocode { return uc($_[0]->{promocode} // '') =~ /^\s*[A-Z0-9_\-\.]+\s*$/ ? 1 : 0 }
+sub is_valid_promocode { return uc($_[0]->{promocode} // '') =~ /^\s*[A-Z0-9_\-\.]{1,20}\s*$/ ? 1 : 0 }
+
+if (!is_valid_promocode(\%input) && $input{save}) {
+    my $url = request()->url_for(sprintf 'backoffice/promocode_edit.cgi?broker=%s&isnew=1', $input{broker} || 'CR');
+    print qq{<a href="$url"><b>Create new promocode</a></b><hr>};
+    code_exit_BO("Must enter a valid promocode: must be letters and numbers, and no longer than 20 characters");
+}
 
 my $pc;
 if (my $code = $input{promocode}) {
@@ -38,6 +44,21 @@ my @messages;
 my $countries_instance = request()->brand->countries_instance;
 
 if ($input{save}) {
+    $input{amount}       = $input{promo_code_type} =~ /^(FREE_BET|GET_X_WHEN_DEPOSIT_Y)$/ ? $input{amount_fixed}       : $input{amount_dynamic};
+    $input{min_turnover} = $input{promo_code_type} eq 'FREE_BET'                          ? $input{min_turnover_fixed} : $input{min_turnover_dynamic};
+
+    for (qw/currency amount country min_turnover turnover_type min_deposit min_amount max_amount payment_processor/) {
+        if ($input{$_}) {
+            $pc->{_json}{$_} = $input{$_};
+        } else {
+            delete $pc->{_json}{$_};
+        }
+    }
+
+    for my $name (qw/ start_date expiry_date status promo_code_type description /) {
+        $pc->$name($input{$name}) if $input{$name};
+    }
+
     @messages = _validation_errors(%input);
 
     if (@messages == 0) {
@@ -68,11 +89,28 @@ if ($input{save}) {
                     delete $pc->{_json}{$_};
                 }
             }
-            $pc->promo_code_config(encode_json_text($pc->{_json}));
+
+            $pc->promo_code_config(JSON::MaybeXS->new->encode($pc->{_json}));
             $pc->save;
         };
         push @messages, ($@ || 'Save completed');
+
+        ## We want the new code to show up right away to the 'local' broker (almost always CR)
+        ## The cronjob will be just fine, even if we do a local insert right away
+        my $broker        = $input{broker} || 'CR';
+        my $client_dbh    = BOM::Database::ClientDB->new({broker_code => $broker})->db->dbic->dbh;
+        my $collector_dbh = $pc->db->dbic->dbh;
+        $collector_dbh->do('COPY (SELECT * FROM betonmarkets.promo_code WHERE code = ?) TO STDOUT', undef, $pc->code);
+        my $myvar = '';
+        $collector_dbh->pg_getcopydata($myvar);
+        $client_dbh->do('DELETE FROM betonmarkets.promo_code WHERE code = ?', undef, $pc->code);
+        $client_dbh->do('COPY betonmarkets.promo_code FROM STDIN');
+        $client_dbh->pg_putcopydata($myvar);
+        $client_dbh->pg_endcopy();
+        $client_dbh->commit();
+
     }
+
 }
 
 if ($pc) {
@@ -87,6 +125,8 @@ my $stash = {
     countries_instance => $countries_instance,
     is_valid_promocode => is_valid_promocode(\%input),
 };
+$stash->{isnew} = 1 if $input{isnew};
+
 BOM::Backoffice::Request::template()->process('backoffice/promocode_edit.html.tt', $stash)
     || die("in promocode_edit: " . BOM::Backoffice::Request::template()->error());
 
@@ -97,7 +137,7 @@ sub _validation_errors {
     my %input = @_;
     my @errors;
 
-    for (qw/country description amount/) {
+    for (qw/amount description country/) {
         $input{$_} || push @errors, "Field '$_' must be supplied";
     }
 
@@ -128,12 +168,12 @@ sub _validation_errors {
         if $input{min_amount} && $input{promo_code_type} ne 'GET_X_OF_DEPOSITS';
     push @errors, "MAXIMUM PAYOUT is only for GET_X_OF_DEPOSITS promotions"
         if $input{max_amount} && $input{promo_code_type} ne 'GET_X_OF_DEPOSITS';
-    if ($input{promo_code_type} eq 'GET_X_OF_DEPOSITS') {
-        push @errors, "Amount must be a percentage between 1 and 100"
-            if (looks_like_number($input{amount}) && ($input{amount} < 0.1 or $input{amount} > 100));
-    } else {
-        push @errors, "Amount must be a number between 0 and 999"
-            if (looks_like_number($input{amount}) && ($input{amount} < 0 or $input{amount} > 999));
+    if (defined $input{amount} and looks_like_number($input{amount})) {
+        if ($input{promo_code_type} eq 'GET_X_OF_DEPOSITS') {
+            push @errors, "Amount must be a percentage between 1 and 100" if ($input{amount} < 1 or $input{amount} > 100);
+        } else {
+            push @errors, "Amount must be a number between 0 and 999" if ($input{amount} < 0 or $input{amount} > 999);
+        }
     }
     push @errors, "TURNOVER TYPE cannot be specified for FREE_BET promotions"
         if $input{turnover_type} && $input{promo_code_type} eq 'FREE_BET';

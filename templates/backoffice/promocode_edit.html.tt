@@ -23,7 +23,16 @@ input.upper {
 \$(document).ready(function() {
     \$('#country_list').select2();
     \$('.datepick').datepicker({dateFormat: "yy-mm-dd"});
+    \$('#promo_code_type').change(pc_fields);
+    pc_fields();
 });
+
+function pc_fields() {
+    \$('.FREE_BET').hide();
+    \$('.GET_X_WHEN_DEPOSIT_Y').hide();
+    \$('.GET_X_OF_DEPOSITS').hide();
+    \$('.'+\$('#promo_code_type').val()).show();
+}
 </script>
 
 <a href=[% request.url_for('backoffice/f_promotional.cgi', broker => request.broker_code) | none %]>[Back to marketing tools]</a><br /><br />
@@ -35,19 +44,30 @@ input.upper {
 <form action="[% request.url_for('backoffice/promocode_edit.cgi') | none %]" method="post">
     <input type="submit" name="save" value="Save Promocode Details" />
     <input type="hidden" name="broker" value="[% request.broker_code %]" />
+    [% IF isnew %]<input type="hidden" name="isnew" value="1" />[% END %]
 
     <table id="promocode_edit">
         <tr>
             <td class="label">Promocode</td>
             <td>:
-                [% IF pc.code && is_valid_promocode %]
+                [% IF !isnew && pc.code && is_valid_promocode %]
                     [% pc.code %]
                     <input type="hidden" name="promocode" value="[% pc.code %]" />
                 [% ELSE %]
-                    <input type="text" class="upper" name="promocode" data-lpignore="true" />
+                    <input type="text" class="upper" name="promocode" data-lpignore="true" value="[% pc.code %]" />
                 [% END %]
             </td>
         </tr>
+        <tr>
+            <td class="label">Promocode Type</td>
+            <td>: <select id="promo_code_type" name="promo_code_type">
+                    [% FOREACH type_option = ['FREE_BET' 'GET_X_WHEN_DEPOSIT_Y' 'GET_X_OF_DEPOSITS'] %]
+                        [% selected = type_option == pc.promo_code_type? 'selected="selected"': '' %]
+                        <option value="[% type_option %]" [% selected %] > [% type_option %] </option>
+                    [% END %]
+                </select>
+            </td>
+        </tr>        
         <tr>
             <td class="label">Currency</td>
             <td>: <select name="currency">
@@ -59,65 +79,13 @@ input.upper {
             </td>
         </tr>
         <tr>
-            <td class="label">Amount</td>
-            <td>: <input type="text" name="amount" value="[% pc_json.amount %]" data-lpignore="true" /> For <b>FREE_BET</b> and <b>GET_X_WHEN_DEPOSIT_Y</b> this value is bonus amount (0-999), for <b>GET_X_OF_DEPOSITS</b> it is the percentage of deposit (1-100)</td>
-        </tr>
-        <tr>
-            <td class="label">Promocode Type</td>
-            <td>: <select name="promo_code_type">
-                    [% FOREACH type_option = ['FREE_BET' 'GET_X_WHEN_DEPOSIT_Y' 'GET_X_OF_DEPOSITS'] %]
-                        [% selected = type_option == pc.promo_code_type? 'selected="selected"': '' %]
-                        <option value="[% type_option %]" [% selected %] > [% type_option %] </option>
-                    [% END %]
-                </select>
-            </td>
-        </tr>
-        <tr>
-            <td class="label">Mininum Deposit </td>
-            <td>: <input type="text" name="min_deposit" value="[% pc_json.min_deposit %]" data-lpignore="true" /> Only applies for type <b>GET_X_WHEN_DEPOSIT_Y</b></td>
-        </tr>
-        <tr>
-            <td class="label">Minimum Turnover</td>
-            <td>: <input type="text" name="min_turnover" value="[% pc_json.min_turnover %]" data-lpignore="true" /> For <b>FREE_BET</b> this value is the amount. For <b>GET_X_WHEN_DEPOSIT_Y</b> and <b>GET_X_OF_DEPOSITS</b> this value is the multipler (default 5).</td>
-        </tr>
-        <tr>
-            <td class="label">Turnover Type</td>
-            <td>: <select name="turnover_type">
-                    <option value=''>--select--</option>
-                    [% FOREACH type_option = ['bonus','deposit'] %]
-                        [% selected = type_option == pc_json.turnover_type ? 'selected="selected"': '' %]
-                        <option value="[% type_option %]" [% selected %] > [% type_option %] </option>
-                    [% END %]
-                </select> Only applies for types <b>GET_X_WHEN_DEPOSIT_Y</b> and <b>GET_X_OF_DEPOSITS</b>. The turnover multipler will be applied to the value of the selected item (default: bonus)
-                
-            </td>
-        </tr>
-        <tr>
-            <td class="label">Minimum Payout</td>
-            <td>: <input type="text" name="min_amount" value="[% pc_json.min_amount %]" data-lpignore="true" /> Only applies for type <b>GET_X_OF_DEPOSITS</b></td>
-        </tr>         
-        <tr>
-            <td class="label">Maximum Payout</td>
-            <td>: <input type="text" name="max_amount" value="[% pc_json.max_amount %]" data-lpignore="true" /> Only applies for type <b>GET_X_OF_DEPOSITS</b></td>
-        </tr>        
-        <tr>
-            <td class="label">Payment Method</td>
-            <td>: <select name="payment_processor">
-                    <option value=''>--select--</option>
-                    [% FOREACH pp = ['ALL','Skrill','NETeller','NETellerDT','QIWI','PerfectM','FasaPay','ZingPay','Jeton','JetonWL','paysafe','SticPay','WebMoney','AirTM'] %]
-                        [% selected = pp == pc_json.payment_processor ? 'selected="selected"': '' %]
-                        <option value="[% pp %]" [% selected %] > [% pp %] </option>
-                    [% END %]
-                </select> Only applies for types <b>GET_X_WHEN_DEPOSIT_Y</b> and <b>GET_X_OF_DEPOSITS</b>
-            </td>
-        </tr>
-        <tr>
             <td class="label">Start Date</td>
             <td>:
-                [% IF pc.start_date %]
+                [% IF !isnew && pc.start_date %]
                     [% pc.start_date %]
+                    <input type="hidden" name="start_date" value="[% pc.start_date %]">
                 [% ELSE %]
-                    <input class="datepick" type="text" name="start_date" pattern="\d{4}-\d{2}-\d{2}" data-lpignore="true" /> Format: yyyy-mm-dd
+                    <input class="datepick" type="text" name="start_date" value="[% pc.start_date %]" pattern="\d{4}-\d{2}-\d{2}" data-lpignore="true" /> Format: yyyy-mm-dd
                 [% END %]
             </td>
         </tr>
@@ -154,6 +122,58 @@ input.upper {
                     [% selected = !pc.status? 'selected="selected"': '' %]
                     <option value="0" [% selected %] >Disabled</option>
                   </select>
+            </td>
+        </tr> 
+        <tr><td colspan="2"><hr/>Promo code type specific options:</td></tr>
+        <tr class="FREE_BET GET_X_WHEN_DEPOSIT_Y">
+            <td class="label">Amount</td>
+            <td>: <input type="text" name="amount_fixed" value="[% pc_json.amount %]" data-lpignore="true" /> Bonus payout amount (0-999)</td>
+        </tr>
+        <tr class="GET_X_OF_DEPOSITS">
+            <td class="label">Amount</td>
+            <td>: <input type="text" name="amount_dynamic" value="[% pc_json.amount %]" data-lpignore="true" /> Percentage of deposit (1-100)</td>
+        </tr>
+        <tr class="GET_X_WHEN_DEPOSIT_Y">
+            <td class="label">Minimum Deposit </td>
+            <td>: <input type="text" name="min_deposit" value="[% pc_json.min_deposit %]" data-lpignore="true" /> Client must deposit at least this amount to be eiligible.</b></td>
+        </tr>
+        <tr class="FREE_BET">
+            <td class="label">Minimum Turnover</td>
+            <td>: <input type="text" name="min_turnover_fixed" value="[% pc_json.min_turnover %]" data-lpignore="true" /> Minimum turnover amount to be eiligible.</td>
+        </tr>
+        <tr class="GET_X_WHEN_DEPOSIT_Y GET_X_OF_DEPOSITS">
+            <td class="label">Turnover requirement</td>
+            <td>: <input type="text" name="min_turnover_dynamic" value="[% pc_json.min_turnover %]" data-lpignore="true" /> Minimum turnover will be this value multipled by the selected turnover type.</td>
+        </tr>        
+        <tr class="GET_X_WHEN_DEPOSIT_Y GET_X_OF_DEPOSITS">
+            <td class="label">Turnover Type [% pc_json.turnover_type %]</td>
+            <td>: <select name="turnover_type" style="width:130px;">
+                    <option value=''>--select--</option>
+                    [% FOREACH type_option = ['bonus','deposit'] %]
+                        [% selected = type_option == pc_json.turnover_type ? 'selected="selected"': '' %]
+                        <option value="[% type_option %]" [% selected %] > [% type_option %] </option>
+                    [% END %]
+                </select> The turnover requirement will be applied to the value of the selected item (default: bonus)
+                
+            </td>
+        </tr>
+        <tr class="GET_X_OF_DEPOSITS">
+            <td class="label">Minimum Payout</td>
+            <td>: <input type="text" name="min_amount" value="[% pc_json.min_amount %]" data-lpignore="true" /> Bonus will be eilgible when calculated payout reaches this amount</b></td>
+        </tr>         
+        <tr class="GET_X_OF_DEPOSITS">
+            <td class="label">Maximum Payout</td>
+            <td>: <input type="text" name="max_amount" value="[% pc_json.max_amount %]" data-lpignore="true" /> Bonus amount will be capped at this amount</td>
+        </tr>        
+        <tr class="GET_X_WHEN_DEPOSIT_Y GET_X_OF_DEPOSITS">
+            <td class="label">Payment Method</td>
+            <td>: <select name="payment_processor" style="width:130px;">
+                    <option value=''>--select--</option>
+                    [% FOREACH pp = ['ALL','Skrill','NETeller','NETellerDT','QIWI','PerfectM','FasaPay','ZingPay','Jeton','JetonWL','paysafe','SticPay','WebMoney','AirTM'] %]
+                        [% selected = pp == pc_json.payment_processor ? 'selected="selected"': '' %]
+                        <option value="[% pp %]" [% selected %] > [% pp %] </option>
+                    [% END %]
+                </select> Doughflow processor to restrict eligible deposits
             </td>
         </tr>
     </table>
