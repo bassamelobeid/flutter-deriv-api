@@ -2025,12 +2025,9 @@ async sub payment_deposit {
     my $client = BOM::User::Client->new({loginid => $loginid})
         or die 'Could not instantiate client for login ID ' . $loginid;
 
-    my $is_first_deposit   = $args->{is_first_deposit};
-    my $payment_processor  = $args->{payment_processor} // '';
-    my $transaction_id     = $args->{transaction_id} // '';
-    my $account_identifier = $args->{account_identifier};
-    my $payment_method     = $args->{payment_method} // '';
-    my $payment_type       = $args->{payment_type} // '';
+    my $is_first_deposit  = $args->{is_first_deposit};
+    my $payment_processor = $args->{payment_processor} // '';
+    my $transaction_id    = $args->{transaction_id} // '';
 
     if ($is_first_deposit) {
         try {
@@ -2059,21 +2056,7 @@ async sub payment_deposit {
         $client->save;
     }
 
-    if (defined $payment_processor) {
-        # temp. check, only track Doughflow deposit payments for now
-        # cos event is emitted from bom-crypto as well
-        BOM::Event::Services::Track::payment_deposit($args);
-
-        BOM::User::Record::Payment->new(
-            account_identifier => $account_identifier,
-            user_id            => $client->binary_user_id,
-            payment_method     => $payment_method,
-            payment_processor  => $payment_processor,
-            payment_type       => $payment_type,
-        )->save();
-    }
-
-    return;
+    return BOM::Event::Services::Track::payment_deposit($args);
 }
 
 =head2 payment_withdrawal

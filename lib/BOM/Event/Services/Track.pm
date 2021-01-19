@@ -84,7 +84,7 @@ my %EVENT_PROPERTIES = (
         qw(dispute_reason disputer loginid user_role order_type order_id amount currency local_currency seller_user_id seller_nickname buyer_user_id buyer_nickname order_created_at brand)
     ],
     multiplier_hit_type => [qw(loginid contract_id hit_type profit sell_price currency)],
-    payment_deposit     => [qw(loginid payment_processor transaction_id is_first_deposit trace_id amount payment_fee currency payment_method)],
+    payment_deposit     => [qw(loginid payment_processor transaction_id is_first_deposit trace_id amount payment_fee currency payment_method remark)],
     payment_withdrawal  => [qw(loginid transaction_id trace_id amount payment_fee currency payment_method)],
     payment_withdrawal_reversal => [qw(loginid transaction_id trace_id amount payment_fee currency payment_method)],
 );
@@ -528,7 +528,7 @@ It is triggered for each B<payment_deposit> event emitted, delivering it to Segm
 
 sub payment_deposit {
     my ($args) = @_;
-    return _payment_doughflow_track($args, 'payment_deposit');
+    return _payment_track($args, 'payment_deposit');
 }
 
 =head2 payment_withdrawal
@@ -539,7 +539,7 @@ It is triggered for each B<payment_withdrawal> event emitted, delivering it to S
 
 sub payment_withdrawal {
     my ($args) = @_;
-    return _payment_doughflow_track($args, 'payment_withdrawal');
+    return _payment_track($args, 'payment_withdrawal');
 }
 
 =head2 payment_withdrawal_reversal
@@ -550,7 +550,7 @@ It is triggered for each B<payment_withdrawal_reversal> event emitted, deliverin
 
 sub payment_withdrawal_reversal {
     my ($args) = @_;
-    return _payment_doughflow_track($args, 'payment_withdrawal_reversal');
+    return _payment_track($args, 'payment_withdrawal_reversal');
 }
 
 sub p2p_order_created {
@@ -840,15 +840,15 @@ sub _p2p_properties {
     };
 }
 
-=head2 _payment_doughflow_track
+=head2 _payment_track
 
-Doughflow track event sub
+Doughflow & Cryptocashier payments track event sub
 
 It takes the following arguments:
 
 =over 4
 
-=item * C<args> The doughflow track event properties
+=item * C<args> The track event properties
 
 =item * C<event> The event name
 
@@ -856,7 +856,7 @@ It takes the following arguments:
 
 =cut
 
-sub _payment_doughflow_track {
+sub _payment_track {
     my ($args, $event) = @_;
 
     return track_event(
