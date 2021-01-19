@@ -116,9 +116,10 @@ sub create_order {
 }
 
 sub expire_order {
-    my ($client, $order_id) = @_;
+    my ($client, $order_id, $interval) = @_;
+    $interval //= '-1 day';
 
-    return $client->db->dbic->dbh->do("UPDATE p2p.p2p_order SET expire_time = NOW() - INTERVAL '1 day' WHERE id = $order_id");
+    return $client->db->dbic->dbh->do("UPDATE p2p.p2p_order SET expire_time = NOW() + INTERVAL '$interval' WHERE id = $order_id");
 }
 
 sub ready_to_refund {
