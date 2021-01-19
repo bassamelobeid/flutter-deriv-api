@@ -4645,58 +4645,54 @@ sub has_siblings {
 
 =head2 update_status_after_auth_fa
 
-Update the client's set statuses based on financial assessment changes or authentication,
+Checks status of the client after authentication, age verification or financial assessment, trying to remove certain account locks (status) automatically if possible.
+It's called with following params:
 
-Removing B<withdrawal_locked> status if:
+=over 4
 
-=over
-
-=item * client is withdrawal-locked with reason: 'FA needs to be completed' and client's financial assessment is completed
-
-=item * client is fully authenticated without expired documents and withdrawal-locked with reason containing: 'Pending authentication or FA'
-
-=back
-
-Removing B<allow_document_upload> status if:
-
-=over
-
-=item * client is completed financial assessment and fully authenticated without expired documents and allow_document_upload with reason containing: 'BECOME_HIGH_RISK' or 'Pending authentication or FA'
-
-=back
-
-Removing B<financial_assessment_required> status if:
-
-=over
-
-=item * client's financial assessment is completed.
+=item * C<$reason> - a string value used for setting reason of status codes (optional)
 
 =back
 
 =cut
 
-sub update_status_after_auth_fa() {
-    my $self = shift;
+sub update_status_after_auth_fa {
+    my ($self, $msg) = @_;
+
     return unless $self->user;
+
     for my $sibling ($self->user->clients) {
         if ($sibling->is_financial_assessment_complete) {
 
-            $sibling->status->clear_withdrawal_locked
-                if $sibling->status->withdrawal_locked
-                && $sibling->status->withdrawal_locked->{reason} =~ /FA needs to be completed/;
-
             $sibling->status->clear_financial_assessment_required;
 
-            if ($sibling->fully_authenticated && !$sibling->documents_expired) {
+            $sibling->status->clear_withdrawal_locked
+                if ($sibling->status->reason('withdrawal_locked') // '') =~ 'FA needs to be completed';
 
+            if ($sibling->fully_authenticated && !$sibling->documents_expired) {
                 $sibling->status->clear_withdrawal_locked
-                    if $sibling->status->withdrawal_locked
-                    && $sibling->status->withdrawal_locked->{reason} =~ 'Pending authentication or FA';
+                    if ($sibling->status->reason('withdrawal_locked') // '') =~ 'Pending authentication or FA';
 
                 $sibling->status->clear_allow_document_upload
-                    if $sibling->status->allow_document_upload
-                    && $sibling->status->allow_document_upload->{reason} =~ /BECOME_HIGH_RISK|Pending authentication or FA/;
+                    if ($sibling->status->reason('allow_document_upload') // '') =~ /BECOME_HIGH_RISK|Pending authentication or FA/;
             }
+        }
+
+        if ($sibling->get_poi_status(undef, 0) eq 'verified') {
+            # auto-unlock MLT clients locked after first deposit
+            $sibling->status->clear_unwelcome if ($sibling->status->reason('unwelcome') // '') =~ qr/Age verification is needed after first deposit/;
+        }
+    }
+
+    my $config = request()->brand->countries_instance->countries_list->{$self->residence};
+    if ($config->{ukgc_funds_protection} and $self->status->age_verification and $self->user->bom_virtual_loginid) {
+        # gb residents cant use demo account while not age verified.
+        # should remove unwelcome status once respective MX or MF marked
+        # as age verified.
+        my $vr_acc = BOM::User::Client->new({loginid => $self->user->bom_virtual_loginid});
+        if (($vr_acc->status->reason('unwelcome') // '') =~ 'Pending proof of age') {
+            $vr_acc->status->clear_unwelcome;
+            $vr_acc->status->setnx('age_verification', 'system', $msg // '');
         }
     }
 }
