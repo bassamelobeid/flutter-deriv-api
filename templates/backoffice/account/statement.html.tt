@@ -1,3 +1,5 @@
+[% USE date %]
+
 <div>
     <input type="button" value="View/edit [% loginid %] Details" onclick='location.href="[% clientedit_url %]"' />
     <input type="button" value="View [% loginid %] Profit" onclick='location.href="[% profit_url %]"' />
@@ -37,8 +39,8 @@
         <form action="[% self_post %]" method="get">
             <span>Quick jump to see another statement:</span>
             <input name="loginID" type="text" size=15 value="[% loginid %]" data-lpignore="true" />
-            <input name="startdate" type="text" size=15 value="[% startdate %]" placeholder="2016-12-20" class="datepick" data-lpignore="true" />
-            <input name="enddate" type="text" size=15 value="[% enddate %]" placeholder="2017-01-20" class="datepick" data-lpignore="true" />
+            <input name="startdate" type="text" size=15 value="[% startdate %]" placeholder="e.g. [% date.format(date.now, '%Y-%m-%d') %]" class="datepick" data-lpignore="true" />
+            <input name="enddate" type="text" size=15 value="[% enddate %]" placeholder="e.g. [% date.format(date.now, '%Y-%m-%d') %]" class="datepick" data-lpignore="true" />
             <input name="broker" type=hidden value="[% broker %]">
             <input name="currency" type="hidden" value="[% currency %]">
             <span tooltip="If specified, the result would contain only one transaction if found a match, otherwise nothing">
