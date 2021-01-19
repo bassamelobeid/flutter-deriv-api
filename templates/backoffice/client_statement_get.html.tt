@@ -1,9 +1,4 @@
 <br/>
-<div class="flat">
-    <form action="[% self_post %]" method="get">
-        <input type="text" size="15" maxlength="15" name="loginID" value="[% encoded_loginid %]" data-lpignore="true" />
-    </form>
-</div>
 
 <div class="flat">
     <form action="[% statement_url %]" method="get">

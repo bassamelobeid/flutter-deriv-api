@@ -958,7 +958,7 @@ if ($is_compliance) {
 my $p2p_advertiser = $client->p2p_advertiser_info;
 my $p2p_approved   = $p2p_advertiser ? $p2p_advertiser->{is_approved} : '';
 
-client_navigation($client, $self_post);
+client_search_and_navigation($client, $self_post);
 
 # view client's statement/portfolio/profit table
 my $history_url     = request()->url_for('backoffice/f_manager_history.cgi');

@@ -1398,9 +1398,9 @@ sub get_client_details {
     );
 }
 
-=head2 client_navigation
+=head2 client_search_and_navigation
 
-Description: Builds the previous next client navigation display
+Description: Builds the previous next client navigation display and let search clients by loginid and email address.
 
 =over 4
 
@@ -1414,13 +1414,30 @@ Returns  undef
 
 =cut
 
-sub client_navigation {
+sub client_search_and_navigation {
     my ($client, $self_post) = @_;
     Bar("NAVIGATION");
     print qq[<style>
     div.flat { display: inline-block }
     </style>
     ];
+
+    my $encoded_loginid = encode_entities($client->loginid);
+    my $email           = encode_entities($client->user->{email});
+    my $email_url       = request()->url_for('backoffice/client_email.cgi');
+
+    print qq{
+        <div class="flat">
+            <form action="$self_post" method="get">
+                <input type="text" size="15" maxlength="15" name="loginID" value="$encoded_loginid" data-lpignore="true" />
+            </form>
+        </div>
+        <div class="flat">
+            <form action="$email_url" method="get">
+                <input type="text" size="30" name="email" value="$email" placeholder="email\@domain.com" data-lpignore="true" />
+            </form>
+        </div>
+    };
 
 # find next and prev real clients but give up after a few tries in each direction.
     my $attempts = 3;

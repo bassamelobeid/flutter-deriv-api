@@ -40,19 +40,33 @@ my %input         = %{request()->params};
 my $email         = trim(lc defang($input{email}));
 my $encoded_email = encode_entities($email);
 
+my $retry_form = qq[
+        <form method="get">
+            Email: <input type="text" name="email" value="$encoded_email" size="30" placeholder="email\@domain.com" data-lpignore="true" />
+        </form>];
+
 my $new_email;
 my $encoded_new_email;
 if ($input{new_email}) {
     $new_email         = trim(lc defang($input{new_email}));
     $encoded_new_email = encode_entities($new_email);
-    if (not Email::Valid->address($new_email)) {
-        code_exit_BO("invalid email format [$encoded_new_email]", $title);
+}
+
+for my $email_address ($email, $new_email) {
+    next unless $email_address;
+    my $encoded_value = encode_entities($email_address);
+    if (not Email::Valid->address($email_address)) {
+        code_exit_BO("<p>ERROR: Invalid email format [$encoded_value]<p> $retry_form", $title);
     }
+}
+
+unless ($email) {
+    code_exit_BO("<p>ERROR: Email address is required<p> $retry_form", $title);
 }
 
 my $user = BOM::User->new(email => $email);
 if (not $user) {
-    code_exit_BO("ERROR: Clients with email <b>$encoded_email</b> not found.", $title);
+    code_exit_BO("<p>ERROR: Clients with email <b>$encoded_email</b> not found.</p> $retry_form", $title);
 }
 
 Bar($title);

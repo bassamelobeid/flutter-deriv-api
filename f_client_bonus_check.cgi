@@ -51,7 +51,7 @@ my $self_href       = $details{self_post};
 my $loginid         = $client->loginid;
 my $currency        = $client->currency;
 
-client_navigation($client, $self_post);
+client_search_and_navigation($client, $self_post);
 
 # End of header stuff
 ##################################################
