@@ -3,11 +3,9 @@
 use strict;
 use warnings;
 
-use Test::Exception;
-use Test::Fatal;
 use Test::More;
-use Test::Warnings;
 use Test::MockModule;
+use Test::Exception;
 
 use Net::Async::Blockchain::Transaction;
 use BOM::Event::Actions::CryptoSubscription;
@@ -21,7 +19,7 @@ use BOM::Platform::Event::Emitter;
 use IO::Async::Loop;
 use BOM::Event::Services;
 use List::Util qw(all any);
-use BOM::Test::Helper::Client qw( create_client top_up);
+use BOM::Test::Helper::Client qw(create_client top_up);
 use BOM::Test::Helper::ExchangeRates qw(populate_exchange_rates);
 
 initialize_events_redis();
@@ -40,6 +38,7 @@ $mock_btc->mock(
     get_new_address => sub {
         return 'mtXWDB6k5yC5v7TcwKZHB89SUp85yCKshy',;
     });
+
 my $mock_subscription = Test::MockModule->new('BOM::Event::Actions::CryptoSubscription');
 my $mock_platform     = Test::MockModule->new('BOM::Platform::Event::Emitter');
 
@@ -63,8 +62,12 @@ subtest "change_address_status" => sub {
     my $transaction_hash3 = "55adac01630d9f836b4075128190887c54ba56c5e0d991e90ecb7ebd487a0526";
     my $transaction_hash4 = "fbbe6717b6946bc426d52c8102dadb59a9250ea5368fb70eea69c152bc7cd4ef";
 
+    my $currency_code      = 'LTC';
+    my $currency           = BOM::CTC::Currency->new(currency_code => $currency_code);
+    my $reserved_addresses = $currency->get_reserved_addresses();
+
     my $transaction = {
-        currency => 'LTC',
+        currency => $currency_code,
         hash     => $transaction_hash1,
         to       => '36ob9DZcMYQkRHGFNJHjrEKP7N9RyTihHW',
         type     => 'receive',
@@ -73,7 +76,20 @@ subtest "change_address_status" => sub {
     };
 
     my $response = BOM::Event::Actions::CryptoSubscription::set_pending_transaction($transaction);
-    is $response, undef, "Nothing found in the database";
+    is $response->{error},
+        sprintf("%s Transaction not found for address: %s and transaction: %s", $transaction->{currency}, $transaction->{to}, $transaction->{hash}),
+        "Nothing found in the database";
+
+    $transaction->{from} = $reserved_addresses->[0];
+
+    $response = BOM::Event::Actions::CryptoSubscription::set_pending_transaction($transaction);
+    is $response->{error},
+        sprintf(
+        "%s Transaction not found but it is a sweep for address: %s and transaction: %s",
+        $transaction->{currency},
+        $transaction->{to}, $transaction->{hash}
+        ),
+        "Nothing found in the database but it is a sweep";
 
     my $client = create_client();
     $client->set_default_account('BTC');
@@ -88,26 +104,30 @@ subtest "change_address_status" => sub {
     $transaction->{to} = $btc_address;
 
     $response = BOM::Event::Actions::CryptoSubscription::set_pending_transaction($transaction);
-    is $response, undef, "Invalid currency";
+    is $response->{error},
+        sprintf("Invalid currency, expecting: %s, received: %s, for transaction: %s", $currency_code, $transaction->{currency}, $transaction->{hash}),
+        "Invalid currency";
 
-    ($transaction->{currency}, $transaction->{fee_currency}) = ('BTC', 'BTC');
+    $currency_code = 'BTC';
+    ($transaction->{currency}, $transaction->{fee_currency}) = ($currency_code, $currency_code);
 
     $response = BOM::Event::Actions::CryptoSubscription::set_pending_transaction($transaction);
-    is $response, undef, "Amount is zero";
+    is $response->{error}, sprintf("Amount is zero for transaction: %s", $transaction->{hash}), "Amount is zero";
 
     $transaction->{amount} = 0.1;
 
     $response = BOM::Event::Actions::CryptoSubscription::set_pending_transaction($transaction);
-    is $response, 1, "Correct status";
+    is $response->{status}, 1, "Correct status";
 
     $response = BOM::Event::Actions::CryptoSubscription::set_pending_transaction($transaction);
-    is $response, undef, "Can't set pending a transaction already pending";
+    is $response->{error}, sprintf("Address already confirmed by subscription for transaction: %s", $transaction->{hash}),
+        "Can't set pending a transaction already pending";
 
     $transaction->{hash}   = $transaction_hash2;
     $transaction->{amount} = 0.2;
 
     $response = BOM::Event::Actions::CryptoSubscription::set_pending_transaction($transaction);
-    is $response, 1, "Able to set pending a transaction to the same address with an different hash";
+    is $response->{status}, 1, "Able to set pending a transaction to the same address with an different hash";
 
     $mock_btc->mock(
         get_new_address => sub {
@@ -122,15 +142,16 @@ subtest "change_address_status" => sub {
 
     $transaction->{to} = $btc_address2;
     $response = BOM::Event::Actions::CryptoSubscription::set_pending_transaction($transaction);
-    is $response, 1, "Able to set pending the same transaction to two different addresses";
+    is $response->{status}, 1, "Able to set pending the same transaction to two different addresses";
 
     $response = BOM::Event::Actions::CryptoSubscription::set_pending_transaction($transaction);
-    is $response, undef, "Can't set pending a transaction already pending";
+    is $response->{error}, sprintf("Address already confirmed by subscription for transaction: %s", $transaction->{hash}),
+        "Can't set pending a transaction already pending";
 
     $transaction->{hash} = $transaction_hash4;
 
     $response = BOM::Event::Actions::CryptoSubscription::set_pending_transaction($transaction);
-    is $response, 1, "Able to set pending two pending transactions to the same address with an different hash";
+    is $response->{status}, 1, "Able to set pending two pending transactions to the same address with an different hash";
 
     my $start = Time::HiRes::time;
     my $rows  = $dbic->run(
@@ -177,7 +198,9 @@ subtest "change_address_status" => sub {
         });
 
     $response = BOM::Event::Actions::CryptoSubscription::set_pending_transaction($transaction);
-    is $response, undef, "Error inserting transaction in the database";
+    is $response->{error},
+        sprintf("Failed to emit event for currency: %s, transaction: %s, error: %s", $currency_code, $transaction->{hash}, "No error returned"),
+        "Error inserting transaction in the database";
 
     is_deeply $emitted_event{crypto_subscription}, $transaction, 'Event found after emit it again';
 
@@ -195,7 +218,7 @@ subtest "change_address_status" => sub {
     ok $is_transacton_inserted, "Transaction has been inserted with status NEW";
 
     $response = BOM::Event::Actions::CryptoSubscription::set_pending_transaction($transaction);
-    is $response, 1, "Update the transaction status to pending after emitting it again";
+    is $response->{status}, 1, "Update the transaction status to pending after emitting it again";
 
     $response = BOM::Event::Actions::CryptoSubscription::new_crypto_address({loginid => $client->loginid});
     is $response, '2N7MPismngmXWAHzUmyQ2wVG8s81CvqUkQS', 'got new address';
@@ -363,12 +386,12 @@ subtest "internal_transactions" => sub {
     $transaction->{to} = $btc_address;
 
     my $response = BOM::Event::Actions::CryptoSubscription::set_pending_transaction($transaction);
-    is $response, undef, "transaction with balance 0 but type eq receipt";
+    is $response->{error}, sprintf("Amount is zero for transaction: %s", $transaction->{hash}), "transaction with balance 0 but type eq receipt";
 
     $transaction->{type} = 'internal';
 
     $response = BOM::Event::Actions::CryptoSubscription::set_pending_transaction($transaction);
-    is $response, 1, "transaction with balance 0 but type eq internal";
+    is $response->{status}, 1, "transaction with balance 0 but type eq internal";
 
     my $rows = $dbic->run(
         fixup => sub {

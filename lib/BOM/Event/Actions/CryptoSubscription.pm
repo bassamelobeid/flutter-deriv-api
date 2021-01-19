@@ -92,14 +92,12 @@ sub set_pending_transaction {
     my $transaction   = shift;
     my $currency_code = $transaction->{currency};
     my $currency      = BOM::CTC::Currency->new(currency_code => $currency_code);
+    my $error;
 
-    # This check is just to be able to process the existing data in the Queue
-    # to avoid any failure or missing transactions
-    # We should remove it after processing all the old data
-    my $address = ref $transaction->{to} eq 'ARRAY' ? $transaction->{to}->[0] : $transaction->{to};
+    my $to_address   = $transaction->{to};
+    my $from_address = $transaction->{from};
 
     try {
-
         return undef unless $transaction->{type} && $transaction->{type} ne 'send';
 
         # get all the payments related to the `to` address from the transaction
@@ -108,8 +106,10 @@ sub set_pending_transaction {
         # transactions, so in this daemon we are going to always receive just 1 to 1 transactions.
         my $payment_rows = cryptodb()->run(
             fixup => sub {
-                my $sth = $_->prepare('select * from payment.ctc_get_deposit_by_address_and_currency(?,?)');
-                $sth->execute($address, $currency_code);
+                # we don't use the currency as parameter here because we need to know when the client sent
+                # a transaction to a different currency he/she should be doing
+                my $sth = $_->prepare('select * from payment.find_crypto_deposit_by_address(?)');
+                $sth->execute($to_address);
                 return $sth->fetchall_arrayref({});
             });
 
@@ -120,62 +120,103 @@ sub set_pending_transaction {
             # we don't want to print the error message since they are happening
             # correctly
 
-            unless (any { $currency->compare_addresses($address, $_) } $reserved_addresses->@*) {
-                $log->warnf("%s Transaction not found for address: %s and transaction: %s", $transaction->{currency}, $address, $transaction->{hash});
+            unless (any { $currency->compare_addresses($to_address, $_) || $currency->compare_addresses($from_address, $_) } $reserved_addresses->@*)
+            {
+                $error = sprintf(
+                    "%s Transaction not found for address: %s and transaction: %s",
+                    $transaction->{currency},
+                    $to_address, $transaction->{hash});
+                $log->warn($error);
                 stats_inc(DD_METRIC_PREFIX . 'subscription.set_pending', {tags => ['currency:' . $transaction->{currency}, 'status:failed']});
+            } else {
+                $error = sprintf(
+                    "%s Transaction not found but it is a sweep for address: %s and transaction: %s",
+                    $transaction->{currency},
+                    $to_address, $transaction->{hash});
+                $log->debug($error);
             }
             # we want to ignore the transaction anyway
             # since the sweeps and external transactions
             # do not require confirmation
-            return undef;
+            return {
+                status => 0,
+                error  => $error
+            };
         }
 
         my @payment = $payment_rows->@*;
 
+        # for now we just ignore this transaction, but we will need to do the rate
+        # conversion in the future
+        if (my $wrong_transaction = first { $_->{currency_code} ne $currency_code } @payment) {
+            $error = sprintf(
+                "Invalid currency, expecting: %s, received: %s, for transaction: %s",
+                $currency_code, $wrong_transaction->{currency_code},
+                $transaction->{hash});
+            $log->warn($error);
+            stats_inc(DD_METRIC_PREFIX . 'subscription.wrong_currency_deposit',
+                {tags => ['currency:' . $currency, 'wrong_currency:' . $transaction->{currency}]});
+            return {
+                status => 0,
+                error  => $error
+            };
+        }
+
         if (any { $_->{blockchain_txn} && $_->{blockchain_txn} eq $transaction->{hash} && $_->{status} ne 'NEW' } @payment) {
-            $log->debugf("Address already confirmed by subscription for transaction: %s", $transaction->{hash});
-            return undef;
+            $error = sprintf("Address already confirmed by subscription for transaction: %s", $transaction->{hash});
+            $log->debugf($error);
+            return {
+                status => 0,
+                error  => $error
+            };
         }
 
         # transaction already confirmed by confirmation daemon and does not have a transaction hash
         # in this case we can't risk to duplicate the transaction so we just ignore it
         # this is a check for the transactions which done before implement the subscription daemon
         if (any { $_->{status} ne 'NEW' && !$_->{blockchain_txn} } @payment) {
-            $log->debugf("Address already confirmed by confirmation daemon for transaction: %s", $transaction->{hash});
-            return undef;
-        }
-
-        # TODO: when the user send a transaction to a correct address but using
-        # a different currency, we need to change the currency in the DATABASE and set
-        # the transaction as pending.
-        if (any { $_->{currency_code} ne $currency_code } @payment) {
-            $log->warnf("Invalid currency for transaction: %s", $transaction->{hash});
-            stats_inc(DD_METRIC_PREFIX . 'subscription.set_pending', {tags => ['currency:' . $transaction->{currency}, 'status:failed']});
-            return undef;
+            $error = sprintf("Address already confirmed by confirmation daemon for transaction: %s", $transaction->{hash});
+            $log->debugf($error);
+            return {
+                status => 0,
+                error  => $error
+            };
         }
 
         # ignore transaction with 0 amount if it is not internal transfer
         unless ($currency->transaction_amount_not_zero($transaction)) {
-            $log->warnf("Amount is zero for transaction: %s", $transaction->{hash});
+            $error = sprintf("Amount is zero for transaction: %s", $transaction->{hash});
+            $log->warnf($error);
             stats_inc(DD_METRIC_PREFIX . 'subscription.set_pending', {tags => ['currency:' . $transaction->{currency}, 'status:failed']});
-            return undef;
+            return {
+                status => 0,
+                error  => $error
+            };
         }
 
         # for omnicore we need to check if the property id is correct
         if ($transaction->{property_id}
             && ($transaction->{property_id} + 0) != ($currency->get_property_id() + 0))
         {
-            $log->warnf("%s - Invalid property ID for transaction: %s", $currency_code, $transaction->{hash});
+            $error = sprintf("%s - Invalid property ID for transaction: %s", $currency_code, $transaction->{hash});
+            $log->warnf($error);
             stats_inc(DD_METRIC_PREFIX . 'subscription.set_pending', {tags => ['currency:' . $currency_code, 'status:failed']});
-            return undef;
+            return {
+                status => 0,
+                error  => $error
+            };
         }
 
         # insert new duplicated deposit if needed
         # requirements to insert a new deposit:
         #  - database already contains one or more transactions to the same address
-        return undef unless insert_new_deposit($transaction, \@payment);
+        $error = "Transaction already in the database";
+        return {
+            status => 0,
+            error  => $error
+        } unless insert_new_deposit($transaction, \@payment);
 
-        my $result = update_transaction_status_to_pending($transaction, $address);
+        my $result = update_transaction_status_to_pending($transaction, $to_address);
 
         if ($result) {
 
@@ -215,23 +256,31 @@ sub set_pending_transaction {
                 exception_logged();
             }
 
-            $log->warnf('Failed to emit event for currency: %s, transaction: %s, error: %s', $currency_code, $transaction->{hash}, $error)
+            $error = sprintf("Failed to emit event for currency: %s, transaction: %s, error: %s", $currency_code, $transaction->{hash}, $error);
+            $log->warnf($error)
                 unless $emit;
 
-            return undef;
+            return {
+                status => 0,
+                error  => $error
+            };
         }
 
         $log->debugf("Transaction status changed to pending: %s", $transaction->{hash});
         stats_inc(DD_METRIC_PREFIX . 'subscription.set_pending', {tags => ['currency:' . $transaction->{currency}, 'status:success']});
 
-    } catch {
-        $log->errorf("Subscription error: %s", $@);
+    } catch ($e) {
+        $error = sprintf("Subscription error: %s", $e);
+        $log->errorf($error);
         exception_logged();
         stats_inc(DD_METRIC_PREFIX . 'subscription.set_pending', {tags => ['currency:' . $transaction->{currency}, 'status:failed']});
-        return undef;
+        return {
+            status => 0,
+            error  => $error
+        };
     }
 
-    return 1;
+    return {status => 1};
 }
 
 =head2 insert_new_deposit
