@@ -230,7 +230,7 @@ sub set_pending_transaction {
             try {
                 my $client_loginid = $payment[0]->{client_loginid};
 
-                $emit = emit_new_address_call($client_loginid, $retain_address, $address);
+                $emit = emit_new_address_call($client_loginid, $retain_address, $to_address);
 
             } catch {
                 $error = $@;
@@ -442,7 +442,7 @@ sub check_new_address_threshold {
 
 =head2 emit_new_address_call
 
-emits new_crypto_address event 
+emits new_crypto_address event
 
 =cut
 

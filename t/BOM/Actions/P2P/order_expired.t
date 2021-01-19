@@ -29,7 +29,7 @@ subtest pending_order_expiry => sub {
         amount    => 100
     );
     BOM::Test::Helper::P2P::expire_order($client, $order->{id});
-    
+
     BOM::Event::Actions::P2P::order_expired({
         client_loginid => $client->loginid,
         order_id       => $order->{id},
