@@ -45,7 +45,6 @@ if (request()->http_method eq 'POST') {
         $action_result = BOM::Platform::Event::Emitter::emit(
             affiliate_sync_initiated => {
                 affiliate_id => $affiliate_id,
-                mt5_login    => $mt5_login,
                 email        => $input->{email},
             },
         ) ? 'success' : 'fail';
