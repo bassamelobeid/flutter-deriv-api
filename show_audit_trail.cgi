@@ -202,7 +202,7 @@ if ($loginid) {    # don't page for single login report
 my @allhdrs = ('no data found');
 @allhdrs = (@system_cols, 'table', @{_sort_headers(\%hdrs, $myself_args->{category})}) if @logs;
 
-my $logs = [sort { $a->{data}->{stamp} cmp $b->{data}->{stamp} } @logs];
+my $logs = [sort { $b->{data}->{stamp} cmp $a->{data}->{stamp} } @logs];
 
 my $stash = {
     hdrs          => \@allhdrs,
