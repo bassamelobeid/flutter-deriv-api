@@ -135,7 +135,7 @@ our %ERROR_MAP = do {
         ,    # Temporary error message should be removed after releasing KYC for p2p and we sure that clients updated mobile app.
         AdvertiserNotApprovedForOrder =>
             localize("Before you can place an order, we need to verify your identity. Please complete your identity verification at Deriv.com."),
-        OrderMaximumTempExceeded => localize("Maximum order amount at this time is [_1] [_2]. Please adjust the value or try up to 24 hours later."),
+        OrderMaximumTempExceeded => localize("Maximum order amount at this time is [_1] [_2]. Please adjust the value or try after 00:00 GMT."),
 
         # TODO these messages needs to be checked with copywritter team
         AdvertiserCreateChatError        => localize('An error occurred (chat user not created). Please try again later.'),
