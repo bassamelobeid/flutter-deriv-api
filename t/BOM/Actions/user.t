@@ -476,6 +476,34 @@ subtest 'user profile change event' => sub {
         $validate_mock->unmock_all;
         $sanctions_mock->unmock_all;
     };
+
+    subtest 'update_status_after_auth_fa called for tax and mifir_id updates' => sub {
+        my $mock_client          = Test::MockModule->new('BOM::User::Client');
+        my $update_status_called = 0;
+        $mock_client->mock('update_status_after_auth_fa', sub { $update_status_called += 1 });
+
+        my $args = {
+            loginid    => $test_client->loginid,
+            properties => {
+                loginid          => $test_client->loginid,
+                'updated_fields' => {
+                    'first_name' => 'Yakeen',
+                    'last_name'  => 'Doodle'
+                },
+            }};
+
+        $action_handler->($args)->get();
+        is $update_status_called, 0, 'update_status_after_auth_fa is not called when name is updated';
+
+        for my $field (qw/tax_residence tax_identification_number mifir_id/) {
+            $args->{properties}->{updated_fields} = {$field => 1};
+            $update_status_called = 0;
+            $action_handler->($args)->get();
+            is $update_status_called, 1, "update_status_after_auth_fa is called  when $field is updated";
+        }
+
+        $mock_client->unmock_all;
+    };
 };
 
 sub test_segment_customer {

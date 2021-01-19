@@ -67,10 +67,11 @@ sub profile_change {
     my @args   = @_;
     my $params = shift;
 
+    my $loginid = $params->{loginid};
+    my $client  = eval { BOM::User::Client->new({loginid => $loginid}) } or die 'Could not instantiate client for login ID ' . $loginid;
+
     # Apply sanctions on profile update
     if (any { exists $params->{properties}->{updated_fields}->{$_} } qw/first_name last_name date_of_birth/) {
-        my $loginid = $params->{loginid};
-        my $client  = BOM::User::Client->new({loginid => $loginid}) or die 'Could not instantiate client for login ID ' . $loginid;
 
         # Grab MT5 accounts and craft a summary
         my $mt5_logins = $client->user->mt5_logins_with_group;
@@ -90,6 +91,10 @@ sub profile_change {
             @comments,
         ));
     }
+
+    # Trigger auto-remove unwelcome status for MF clients
+    $client->update_status_after_auth_fa()
+        if any { $params->{properties}->{updated_fields}->{$_} } qw/mifir_id tax_residence tax_identification_number/;
 
     return BOM::Event::Services::Track::profile_change(@args);
 }
