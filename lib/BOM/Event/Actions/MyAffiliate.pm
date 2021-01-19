@@ -16,10 +16,11 @@ use Future::Utils 'fmap1';
 use BOM::MT5::User::Async;
 use BOM::Event::Utility qw(exception_logged);
 
+use constant MT5_ACCOUNT_RANGE_SEPARATOR => 10000000;
+
 async sub affiliate_sync_initiated {
-    my ($data)              = @_;
-    my $affiliate_id        = $data->{affiliate_id};
-    my $affiliate_mt5_login = $data->{mt5_login};
+    my ($data) = @_;
+    my $affiliate_id = $data->{affiliate_id};
 
     my $login_ids = _get_clean_loginids($affiliate_id);
     my @results;
@@ -33,7 +34,7 @@ async sub affiliate_sync_initiated {
 
         try {
             @{$result}{qw(mt5_logins error)} =
-                await _populate_mt5_affiliate_to_client($login_id, $affiliate_mt5_login);
+                await _populate_mt5_affiliate_to_client($login_id, $affiliate_id);
         } catch {
             $result->{error} = $@;
             exception_logged();
@@ -57,19 +58,20 @@ async sub affiliate_sync_initiated {
 }
 
 async sub _populate_mt5_affiliate_to_client {
-    my ($loginid, $affiliate_mt5_login) = @_;
+    my ($loginid, $affiliate_id) = @_;
 
     my $client = BOM::User::Client->new({loginid => $loginid});
+    my $user   = $client->user;
 
     die "Client with login id $loginid isn't found\n" unless $client;
 
-    my @mt5_logins = $client->user->mt5_logins;
+    my @mt5_logins = $user->mt5_logins;
 
     my @results = await fmap1(
         async sub {
             my $mt5_login = shift;
             try {
-                my $is_success = await _set_affiliate_for_mt5($mt5_login, $affiliate_mt5_login);
+                my $is_success = await _set_affiliate_for_mt5($user, $mt5_login, $affiliate_id);
                 return {login => $mt5_login} if $is_success;
                 return {};
             } catch {
@@ -96,7 +98,7 @@ async sub _populate_mt5_affiliate_to_client {
 }
 
 async sub _set_affiliate_for_mt5 {
-    my ($mt5_login, $affiliate_mt5_login) = @_;
+    my ($user, $mt5_login, $affiliate_id) = @_;
 
     # Skip demo accounts
     return 0 if $mt5_login =~ /^MTD/;
@@ -104,12 +106,24 @@ async sub _set_affiliate_for_mt5 {
     my $user_details = await BOM::MT5::User::Async::get_user($mt5_login);
 
     return 0 if $user_details->{group} =~ /^demo/;
-    return 0 if $user_details->{agent};
+
+    if (my $agent_id = $user_details->{agent}) {
+        my ($mt5_id) = $mt5_login =~ /${BOM::User->MT5_REGEX}(\d+)/;
+        return 0 if (abs($mt5_id - $agent_id) < MT5_ACCOUNT_RANGE_SEPARATOR);
+    }
+
+    my $trade_server_id = BOM::MT5::User::Async::get_trading_server_key({login => $mt5_login}, 'real');
+    my ($agent_id) = $user->dbic->run(
+        fixup => sub {
+            $_->selectrow_array(q{SELECT * FROM mt5.get_agent_id(?, ?)}, undef, $affiliate_id, $trade_server_id);
+        });
+
+    return 0 unless $agent_id;
 
     await BOM::MT5::User::Async::update_user({
         %{$user_details},
         login => $mt5_login,
-        agent => $affiliate_mt5_login
+        agent => $agent_id
     });
 
     return 1;
