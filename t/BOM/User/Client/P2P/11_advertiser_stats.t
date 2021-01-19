@@ -121,6 +121,7 @@ subtest 'sell ads' => sub {
         amount    => 1
     );
     set_fixed_time('2000-01-01 00:04:30', '%Y-%m-%d %H:%M:%S');    # +2h
+    BOM::Test::Helper::P2P::expire_order($client, $order->{id});
     $client->p2p_expire_order(id => $order->{id});
     $stats_cli->{buy_completion_rate} = $stats_cli->{total_completion_rate} = '25.00';
     check_stats($advertiser, $stats_adv, 'advertiser stats after order expired');
@@ -190,6 +191,7 @@ subtest 'buy ads' => sub {
         advert_id => $advert->{id},
         amount    => 1
     );
+    BOM::Test::Helper::P2P::expire_order($advertiser, $order->{id});
     $advertiser->p2p_expire_order(id => $order->{id});
     $stats_adv->{total_completion_rate} = '50.00';
     $stats_adv->{buy_completion_rate}   = '33.33';

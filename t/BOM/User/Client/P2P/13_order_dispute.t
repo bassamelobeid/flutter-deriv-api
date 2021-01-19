@@ -455,15 +455,12 @@ subtest 'Returning dispute fields' => sub {
             type => 'p2p_order_updated',
             data => {
                 client_loginid => $client->loginid,
-                order_id       => $response->{id},
+                order_id       => $new_order->{id},
                 order_event    => 'expired'
             }
         },
         'p2p_order_updated event emitted'
     );
-
-    cmp_deeply($response->{dispute_reason},   $expected_response->{dispute_reason},   'order_expire expected dispute_reason after cancel');
-    cmp_deeply($response->{disputer_loginid}, $expected_response->{disputer_loginid}, 'order_expire expected disputer_loginid after cancel');
 };
 
 done_testing();

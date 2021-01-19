@@ -2066,6 +2066,8 @@ use constant {
         sell => 'buy',
     },
     P2P_ORDER_DISPUTED_AT  => 'P2P::ORDER::DISPUTED_AT',
+    P2P_ORDER_EXPIRES_AT   => 'P2P::ORDER::EXPIRES_AT',
+    P2P_ORDER_TIMEDOUT_AT  => 'P2P::ORDER::TIMEDOUT_AT',
     P2P_STATS_REDIS_PREFIX => 'P2P::ADVERTISER_STATS',
     P2P_STATS_TTL_IN_DAYS  => 120,                         # days after which to prune redis stats
 };
@@ -2576,6 +2578,9 @@ sub p2p_order_create {
 
     $self->_p2p_order_stats_record('ORDER_CREATED', $order);
 
+    my $p2p_redis = BOM::Config::Redis->redis_p2p_write();
+    $p2p_redis->zadd(P2P_ORDER_EXPIRES_AT, Date::Utility->new($order->{expire_time})->epoch, join('|', $order->{id}, $self->loginid));
+
     BOM::Platform::Event::Emitter::emit(
         p2p_order_created => {
             client_loginid => $self->loginid,
@@ -2920,114 +2925,94 @@ sub p2p_create_order_dispute {
 
 The methods below are not called by RPC and, therefore, they are not needed to die in the 'P2P way'.
 
-=head2 p2p_timeout_refund
+=head2 p2p_expire_order
 
-Moves back the funds to the seller.
-The order should be in the state C<timed-out> and at least 30 days (by default but configurable) should have passed since C<expire_time>.
+Hanedles order expiry events, called by p2p_daemon via bom-events.
+Deletes redis keys used by p2p_daemon if order was proceseed or already completed.
+It is safe to be called multiple times.
 
-It takes a hash argument as:
+It takes the following named arguments:
 
 =over 4
 
-=item * C<id>: the id of the order
+=item * C<id> - the p2p order id that has expired
 
-=item * C<source>: the calling source
+=item * C<source> - app id
 
-=item * C<staff>: the calling staff
+=item * C<staff> - loginid or backoffice username
 
 =back
 
-Returns, the order itself with updated status C<refunded> on success, otherwise an exception is thrown.
-
-=cut
-
-sub p2p_timeout_refund {
-    my ($self, %param) = @_;
-
-    my $id          = $param{id} // die "no id provided to p2p_timeout_refund";
-    my $order       = $self->_p2p_orders(id => $id)->[0];
-    my $days_needed = BOM::Config::Runtime->instance->app_config->payments->p2p->refund_timeout;
-
-    # Note for non-rpc methods we don't craft the P2P error object
-    die sprintf('P2P Order not found: %d',     $id) unless $order;
-    die sprintf('Cannot refund P2P order: %d', $id) unless $order->{status} eq 'timed-out';
-
-    my $expire_time = Date::Utility->new($order->{expire_time});
-    # There are 86,400 seconds in a day
-    # Check whether we've reached the days required to move the funds back
-    die sprintf('P2P Order is not ready to refund: %d', $id) if Date::Utility::days_between(Date::Utility->new, $expire_time) < $days_needed;
-
-    my $escrow = $self->p2p_escrow;
-    die 'Escrow not found' unless $escrow;
-
-    my $txn_time = Date::Utility->new->datetime;
-    $self->db->dbic->txn(
-        fixup => sub {
-            $_->do('SELECT p2p.order_refund(?, ?, ?, ?, ?, ?)', undef, $order->{id}, $escrow->loginid, $param{source}, $param{staff}, 1, $txn_time);
-        });
-
-    stats_inc('p2p.order.timeout_refund');
-
-    BOM::Platform::Event::Emitter::emit(
-        p2p_order_updated => {
-            client_loginid => $self->loginid,
-            order_id       => $order->{id},
-            order_event    => 'timeout_refund',
-        });
-
-    return $self->_p2p_orders(id => $id)->[0];
-}
-
-=head2 p2p_expire_order
-
-Expire order in different states.
-Method returns order data in case if state of order was changed.
+Returns new status if it changed.
 
 =cut
 
 sub p2p_expire_order {
     my ($self, %param) = @_;
 
-    my $id    = $param{id} // die "no id provided to p2p_expire_order";
-    my $order = $self->_p2p_orders(id => $id)->[0];
-    die +{error_code => 'OrderNotFound'} unless $order;
+    my $order_id = $param{id}        // die 'No id provided to p2p_expire_order';
+    my $escrow   = $self->p2p_escrow // die 'P2P escrow not found';
+    my $txn_time = Date::Utility->new->datetime;
+    my $days_for_release = BOM::Config::Runtime->instance->app_config->payments->p2p->refund_timeout;
+    my $p2p_redis        = BOM::Config::Redis->redis_p2p_write();
+    my $redis_payload    = join('|', $order_id, $self->loginid);
 
-    my $status = $order->{status};
+    my ($old_status, $new_status, $expiry) = $self->db->dbic->txn(
+        fixup => sub {
+            $_->selectrow_array('SELECT * FROM p2p.order_expire(?, ?, ?, ?, ?, ?)',
+                undef, $order_id, $escrow->loginid, $param{source}, $param{staff}, $txn_time, $days_for_release);
+        });
 
-    my $result;
-    if ($status eq 'pending') {
-        my $escrow = $self->p2p_escrow;
-        die +{error_code => 'EscrowNotFound'} unless $escrow;
+    die 'Invalid order provided to p2p_expire_order' unless $old_status;
+    $new_status //= '';
 
-        my $txn_time    = Date::Utility->new->datetime;
-        my $is_refunded = 1;                              # order will have refunded status
+    my $order_complete     = any { $old_status eq $_ } qw(cancelled refunded completed disputed dispute-completed dispute-refunded);
+    my $hit_expire_refund  = ($old_status eq 'pending' and $new_status eq 'refunded');
+    my $hit_timeout        = ($old_status eq 'buyer-confirmed' and $new_status eq 'timed-out');
+    my $hit_timeout_refund = ($old_status eq 'timed-out' and $new_status eq 'refunded');
 
-        $result = $self->db->dbic->txn(
-            fixup => sub {
-                $_->selectrow_hashref('SELECT * FROM p2p.order_refund(?, ?, ?, ?, ?, ?)',
-                    undef, $order->{id}, $escrow->loginid, $param{source}, $param{staff}, $is_refunded, $txn_time);
-            });
-        $self->_p2p_order_stats_record('ORDER_REFUNDED', $result);
-    } elsif ($status eq 'buyer-confirmed') {
-        $result = $self->db->dbic->run(
-            fixup => sub {
-                $_->selectrow_hashref('SELECT * FROM p2p.order_update(?, ?, ?)', undef, $id, 'timed-out', undef);
-            });
+    # order hit timed out
+    if ($hit_timeout) {
+        $p2p_redis->zadd(P2P_ORDER_TIMEDOUT_AT, Date::Utility->new($expiry)->epoch, $redis_payload);
     }
 
-    if ($result) {
+    # order hit expiry time, or was already done, or already timed-out
+    if ($hit_expire_refund or $hit_timeout or $order_complete or $old_status eq 'timed-out') {
+        $p2p_redis->zrem(P2P_ORDER_EXPIRES_AT, $redis_payload);
+    }
 
+    # order hit time out expiry, or was already done (includes refunded)
+    if ($hit_timeout_refund or $order_complete) {
+        $p2p_redis->zrem(P2P_ORDER_TIMEDOUT_AT, $redis_payload);
+    }
+
+    if ($new_status eq 'refunded') {
+        $self->_p2p_order_stats_record('ORDER_REFUNDED', $self->_p2p_orders(id => $order_id)->[0]);
+    }
+
+    if ($hit_expire_refund or $hit_timeout) {
         stats_inc('p2p.order.expired');
 
         BOM::Platform::Event::Emitter::emit(
             p2p_order_updated => {
                 client_loginid => $self->loginid,
-                order_id       => $result->{id},
+                order_id       => $order_id,
                 order_event    => 'expired',
             });
     }
 
-    return $result;
+    if ($hit_timeout_refund) {
+        stats_inc('p2p.order.timeout_refund');
+
+        BOM::Platform::Event::Emitter::emit(
+            p2p_order_updated => {
+                client_loginid => $self->loginid,
+                order_id       => $order_id,
+                order_event    => 'timeout_refund',
+            });
+    }
+
+    return $new_status;
 }
 
 =head1 Private P2P methods
