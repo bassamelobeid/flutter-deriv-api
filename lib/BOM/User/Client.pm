@@ -711,7 +711,7 @@ sub documents_uploaded {
 
         foreach my $single_document ($each_sibling->client_authentication_document) {
             # consider only uploaded documents
-            next if ($single_document->status // '') ne 'uploaded';
+            next if ($single_document->status // '') !~ /^(uploaded|verified)$/;
 
             my $type                = 'other';
             my %doc_type_categories = DOCUMENT_TYPE_CATEGORIES();
