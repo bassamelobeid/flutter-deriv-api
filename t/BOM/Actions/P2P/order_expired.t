@@ -28,7 +28,8 @@ subtest pending_order_expiry => sub {
         advert_id => $advert->{id},
         amount    => 100
     );
-
+    BOM::Test::Helper::P2P::expire_order($client, $order->{id});
+    
     BOM::Event::Actions::P2P::order_expired({
         client_loginid => $client->loginid,
         order_id       => $order->{id},
@@ -52,6 +53,7 @@ subtest client_confirmed_order_expiry => sub {
     );
 
     $client->p2p_order_confirm(id => $order->{id});
+    BOM::Test::Helper::P2P::expire_order($client, $order->{id});
 
     BOM::Event::Actions::P2P::order_expired({
         client_loginid => $client->loginid,
@@ -77,6 +79,7 @@ for my $test_status (qw(completed cancelled refunded timed-out blocked)) {
         );
 
         BOM::Test::Helper::P2P::set_order_status($client, $order->{id}, $test_status);
+        BOM::Test::Helper::P2P::expire_order($client, $order->{id});
 
         BOM::Event::Actions::P2P::order_expired({
             client_loginid => $client->loginid,

@@ -321,6 +321,7 @@ subtest 'pending order expired' => sub {
         amount    => 100
     );
 
+    BOM::Test::Helper::P2P::expire_order($client, $order->{id}); 
     $client->p2p_expire_order(id => $order->{id});
     $order = $client->_p2p_orders(id => $order->{id})->[0];
     is $order->{status}, 'refunded', 'order status is changed';
@@ -383,6 +384,7 @@ subtest 'confirmed order expired' => sub {
     $order = $client->_p2p_orders(id => $order->{id})->[0];
     is $order->{status}, 'buyer-confirmed', 'corfirmed order status';
 
+    BOM::Test::Helper::P2P::expire_order($client, $order->{id}); 
     $client->p2p_expire_order(id => $order->{id});
     $order = $client->_p2p_orders(id => $order->{id})->[0];
     is $order->{status}, 'timed-out', 'Payed order status is changed to timed-out after expiration';

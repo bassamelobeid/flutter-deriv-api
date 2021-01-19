@@ -7,16 +7,12 @@ no indirect;
 use IO::Async::Loop;
 use Future::AsyncAwait;
 use BOM::Platform::Event::Emitter;
-use LandingCompany::Registry;
-use BOM::Database::ClientDB;
 use Time::HiRes;
 use Getopt::Long;
 use Log::Any qw($log);
-use List::Util qw(uniq);
 use Syntax::Keyword::Try;
 
 use BOM::Config::Runtime;
-use BOM::Platform::Context qw(request);
 use BOM::Config::Redis;
 use Date::Utility;
 
@@ -41,17 +37,16 @@ emits event for every order/advert, which state need to be updated.
 
 =cut
 
-# Seconds between each attempt at checking the database entries.
-use constant POLLING_INTERVAL => 60;
+# Seconds between each attempt at checking redis.
+use constant POLLING_INTERVAL => 1;
+# Keys will be recreated with this number of seconds in future.
+# So if bom-events fails and does not delete them, the job will run again after this time.
+use constant PROCESSING_RETRY => 30;
+# redis keys
 use constant P2P_ORDER_DISPUTED_AT => 'P2P::ORDER::DISPUTED_AT';
-use constant ONE_HOUR_IN_SECONDS => 3600;
+use constant P2P_ORDER_EXPIRES_AT  => 'P2P::ORDER::EXPIRES_AT';
+use constant P2P_ORDER_TIMEDOUT_AT => 'P2P::ORDER::TIMEDOUT_AT';
 
-# request brand name should be changed to 'deriv', otherwise the event will not be sent to Segment.
-request(BOM::Platform::Context::Request->new(
-    brand_name => 'deriv'
-));
-
-my @broker_codes = uniq map { $_->{broker_codes}->@* } grep { $_->{p2p_available} } values LandingCompany::Registry::get_loaded_landing_companies()->%*;
 my $app_config = BOM::Config::Runtime->instance->app_config;
 my $loop     = IO::Async::Loop->new;
 my $shutdown = $loop->new_future;
@@ -72,7 +67,7 @@ my %dbs;
 
         # Redis Polling
         # We'll raise LC tickets when dispute reaches a given threshold in hours.
-        my $dispute_threshold = Date::Utility->new()->epoch - ONE_HOUR_IN_SECONDS * ($app_config->payments->p2p->disputed_timeout // 24);
+        my $dispute_threshold = Date::Utility->new->minus_time_interval(($app_config->payments->p2p->disputed_timeout // 24).'h')->epoch;
         my %dispute_timeouts = $redis->zrangebyscore(P2P_ORDER_DISPUTED_AT, '-Inf', $dispute_threshold, 'WITHSCORES')->@*;
         $redis->zremrangebyscore(P2P_ORDER_DISPUTED_AT, '-Inf', $dispute_threshold);
 
@@ -89,58 +84,40 @@ my %dbs;
                 });
         }
         undef %dispute_timeouts;
+        
+        # Expired orders
+        my $expiry_threshold = Date::Utility->new()->epoch;
+        my %expired = $redis->zrangebyscore(P2P_ORDER_EXPIRES_AT, '-Inf', $expiry_threshold, 'WITHSCORES')->@*;
+        my %expired_updates = map { ( $expiry_threshold + PROCESSING_RETRY ) => $_ } keys %expired;
+        $redis->zadd(P2P_ORDER_EXPIRES_AT, %expired_updates) if %expired_updates;
+        
+        foreach my $payload (keys %expired) {
+            # Payload is P2P_ORDER_ID|CLIENT_LOGINID
+            my ($order_id, $client_loginid) = split(/\|/, $payload);
 
-        # Database Polling
-        for my $broker (@broker_codes) {
-            try {
-                $dbs{$broker} //= BOM::Database::ClientDB->new({broker_code => $broker})->db->dbh;
-            }
-            catch {
-                $log->warnf('Fail to connect to client db %s: %s', $broker, $@);
-            }
-            next unless $dbs{$broker};
-            # Stop quering db when feature is disabled
-            last if $app_config->system->suspend->p2p || !$app_config->payments->p2p->enabled;
-            $log->debug('P2P: Checking for expired orders');
-            try {
-                my $orders = $dbs{$broker}->selectall_arrayref('SELECT id, client_loginid FROM p2p.order_list_expired()', {Slice => {}});
-                
-                for my $order (@$orders) {
-                    $log->debugf('P2P: Emitting event to mark order as expired for order %s', $order->{id});
+            BOM::Platform::Event::Emitter::emit(
+                p2p_order_expired => {
+                    order_id => $order_id,
+                    client_loginid  => $client_loginid,
+                    expiry_started => [Time::HiRes::gettimeofday],
+                });
+        }
+        
+        # Orders that reached configured days after timeout
+        my $timeout_threshold = Date::Utility->new->minus_time_interval($app_config->payments->p2p->refund_timeout.'d')->epoch;
+        my %timedout = $redis->zrangebyscore(P2P_ORDER_TIMEDOUT_AT, '-Inf', $timeout_threshold, 'WITHSCORES')->@*;
+        my %timedout_updates = map { ( $timeout_threshold + PROCESSING_RETRY ) => $_ } keys %timedout;
+        $redis->zadd(P2P_ORDER_TIMEDOUT_AT, %timedout_updates) if %timedout_updates;
+        
+        foreach my $payload (keys %timedout) {
+            # Payload is P2P_ORDER_ID|CLIENT_LOGINID
+            my ($order_id, $client_loginid) = split(/\|/, $payload);
 
-                    BOM::Platform::Event::Emitter::emit(
-                        p2p_order_expired => {
-                            client_loginid => $order->{client_loginid},
-                            order_id       => $order->{id},
-                            expiry_started => [Time::HiRes::gettimeofday],
-                        });
-                }
-            }
-            catch ($error) {
-                $log->warnf('Failed to get expired P2P orders from client db %s: %s', $broker, $error);
-                delete $dbs{$broker};
-            }
-            next unless $dbs{$broker};
-            $log->debug('P2P: Checking for ready to refund orders');
-            try {
-                # The days needed to reach the refund are dynamically configured (default 30 days)
-                my $days_to_refund = $app_config->payments->p2p->refund_timeout;
-                my $sth = $dbs{$broker}->prepare('SELECT id, client_loginid FROM p2p.order_list_refundable(?)');
-                $sth->execute($days_to_refund);
-
-                while (my $order_data = $sth->fetchrow_hashref) {
-                    $log->debugf('P2P: Emitting event to move funds back, order %s', $order_data->{id});
-                    BOM::Platform::Event::Emitter::emit(
-                        p2p_timeout_refund => {
-                            client_loginid => $order_data->{client_loginid},
-                            order_id       => $order_data->{id},
-                        });
-                }
-            }
-            catch ($error) {
-                $log->warnf('Failed to get expired P2P orders from client db %s: %s', $broker, $error);
-                delete $dbs{$broker};
-            }
+            BOM::Platform::Event::Emitter::emit(
+                p2p_timeout_refund => {
+                    order_id => $order_id,
+                    client_loginid  => $client_loginid,
+            });
         }
 
         await Future->wait_any(

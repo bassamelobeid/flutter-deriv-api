@@ -119,7 +119,7 @@ subtest 'failing the refund' => sub {
         'Event was unsuccessful due to invalid order id';
 
     # Incorret status
-    BOM::Test::Helper::P2P::set_order_status($client, $order->{id}, 'pending');
+    BOM::Test::Helper::P2P::set_order_status($client, $order->{id}, 'cancelled');
     ok !BOM::Event::Actions::P2P::timeout_refund({
             client_loginid => $client->loginid,
             order_id       => $order->{id},
