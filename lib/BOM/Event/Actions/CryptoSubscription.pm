@@ -224,7 +224,7 @@ sub set_pending_transaction {
             $app_config->check_for_update;
 
             # we should retain the address if the deposit amount does not reach the specified threshold
-            my $retain_address = check_new_address_threshold($currency_code, $transaction->{amount});
+            my $retain_address = requires_address_retention($currency->currency_code, $address);
 
             my ($emit, $error);
             try {
@@ -241,7 +241,7 @@ sub set_pending_transaction {
                 $currency_code, ($payment[0]->{client_loginid} // ''), $transaction->{hash}, $error
             ) unless $emit;
         } else {
-            $log->warnf("Can't set the status to pending for tx: %s", $transaction->{hash});
+            $log->debugf("Can't set the status to pending for tx: %s", $transaction->{hash});
             stats_inc(DD_METRIC_PREFIX . 'subscription.set_pending', {tags => ['currency:' . $transaction->{currency}, 'status:failed']});
 
             # if we don't receive the response from the database we need to retry sending it
@@ -392,52 +392,42 @@ sub new_crypto_address {
 
     my $helper = BOM::CTC::Helper->new(client => $client);
 
-    if ($data->{retain_address}) {
-        # retain the address
-        try {
-            my $id = $helper->retain_deposit_address($data->{address});
-
-            die "There is already an address with NEW status for the client" unless $id;
-
-            # if there is id, means the address is successfully retained
-            return $id;
-
-        } catch ($e) {
-            $log->errorf('Failed to retain address for new_crypto_address event. Details: loginid %s, currency: %s, address: %s and error: %s',
-                $client->loginid, $currency, $data->{address}, $e)
-        }
-    } else {
-        try {
-            my ($id, $address) = $helper->get_deposit_id_and_address();
-            return $address;
-        } catch ($e) {
-            $log->errorf('Failed to generate address for new_crypto_address event. Details: loginid %s, currency: %s, and error: %s',
-                $client->loginid, $currency, $e)
-        }
+    try {
+        my ($id, $address) = $helper->get_deposit_id_and_address($data->{retain_address} ? $data->{address} // undef : undef);
+        return $address;
+    } catch ($e) {
+        stats_inc(DD_METRIC_PREFIX . 'subscription.new_address', {tags => ['currency:' . $currency, 'status:failed']});
     }
 
     return undef;
 }
 
-=head2 check_new_address_threshold
+=head2 requires_address_retention
 
-Check if the amount reached the specified treshold to generate new address
+Check if the amount sent by the client plus the other transactions already sent to this address
+are bigger than the value we have configured as threshold.
 
-Returns 1 if it does not pass the threshold to generate new address
-Returns 0 if it passes the threshold to generate new address
+=over 4
+
+=item * C<currency_code> currency code
+
+=item * C<address> client deposit address
+
+=back
+
+Returns 1 if the address needs to be retained and 0 to a new address generation.
 
 =cut
 
-sub check_new_address_threshold {
+sub requires_address_retention {
+    my ($currency_code, $address) = @_;
+    my $db_helper = BOM::CTC::Database->new();
 
-    my ($currency, $amount) = @_;
+    my $configured_threshold = BOM::Config::CurrencyConfig::get_crypto_new_address_threshold($currency_code);
+    # we need to get the sum of amount for all the deposit transactions to this address
+    my $address_total_balance_received = $db_helper->get_total_amount_received_by_address($address, $currency_code) // 0;
 
-    use BOM::Config::CurrencyConfig;
-
-    my $new_address_threshold = BOM::Config::CurrencyConfig::get_crypto_new_address_threshold($currency);
-
-    return $new_address_threshold > $amount;
-
+    return $configured_threshold > $address_total_balance_received ? 1 : 0;
 }
 
 =head2 emit_new_address_call

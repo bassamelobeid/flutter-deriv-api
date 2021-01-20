@@ -503,4 +503,89 @@ subtest "New address threshold" => sub {
 
 };
 
+subtest "new_crypto_address" => sub {
+    my $first_address = 'tb1q2nx3ey8a0659x5k0reuctvqs3xfrm4wg2awh43';
+    $mock_btc->mock(
+        get_new_address => sub {
+            return $first_address;
+        });
+
+    my $currency = BOM::CTC::Currency->new(currency_code => 'BTC');
+
+    my $client = create_client();
+    $client->set_default_account($currency->currency_code);
+
+    my $helper   = BOM::CTC::Helper->new(client => $client);
+    my $response = BOM::Event::Actions::CryptoSubscription::new_crypto_address({loginid => $client->loginid});
+    ok $response, "address generation ok";
+
+    my $address = $response;
+
+    my $threshold = BOM::Config::CurrencyConfig::get_crypto_new_address_threshold($currency->currency_code);
+    # This is a very low amount just to check if the address will not be new after
+    # the check on the first transaction
+    my $amount = 0.00001;
+
+    my $checked_threshold = BOM::Event::Actions::CryptoSubscription::requires_address_retention($currency, $address, $amount);
+    is $checked_threshold, 1, "correct response for keep the address retained";
+
+    my $second_address = 'tb1qr0y0djpk4tq7tek97tnjs5f334z267qzpmfldp';
+    $mock_btc->mock(
+        get_new_address => sub {
+            return $second_address;
+        });
+
+    $response = BOM::Event::Actions::CryptoSubscription::new_crypto_address({loginid => $client->loginid});
+    is $address, $response, "same address returned when the address is new even if the retain address is not passed";
+
+    $response = BOM::Event::Actions::CryptoSubscription::new_crypto_address({
+        loginid        => $client->loginid,
+        retain_address => 1,
+        address        => $address
+    });
+    is $address, $response, "same address returned when the retain_address is passed";
+
+    my $transaction = {
+        currency     => $currency->currency_code,
+        hash         => '427d42cfa0717e8d4ce8b453de74cc84f3156861df07173876f6cfebdcbc099a',
+        to           => $address,
+        type         => 'receive',
+        fee          => 0.00001,
+        fee_currency => $currency->currency_code,
+        amount       => $amount,
+        block        => 10,
+    };
+
+    $response = BOM::Event::Actions::CryptoSubscription::set_pending_transaction($transaction);
+    is $response, 1, "Update the transaction status to pending";
+
+    $amount = $threshold;
+
+    $checked_threshold = BOM::Event::Actions::CryptoSubscription::requires_address_retention($currency->currency_code, $address);
+    is $checked_threshold, 1, "correct response for keep the address retained even with 1 deposit";
+
+    $transaction->{amount} = 0.1;
+    $transaction->{hash}   = "aaa";
+
+    $response = BOM::Event::Actions::CryptoSubscription::set_pending_transaction($transaction);
+    is $response, 1, "Update the transaction status to pending";
+
+    $checked_threshold = BOM::Event::Actions::CryptoSubscription::requires_address_retention($currency->currency_code, $address);
+    is $checked_threshold, 0, "correct response for address retention not needed";
+
+    $response = BOM::Event::Actions::CryptoSubscription::new_crypto_address({loginid => $client->loginid});
+    is $second_address, $response, "different address returned when the address is not new";
+
+    my $res = $dbic->run(
+        ping => sub {
+            my $sth = $_->prepare('SELECT address from payment.cryptocurrency where client_loginid = ? and status = ?');
+            $sth->execute($client->loginid, 'NEW')
+                or die $sth->errstr;
+            return $sth->fetchall_arrayref({});
+        });
+
+    is @$res, 1, "Correct response as address is not retained when the amount surpasses the threshold";
+    is $res->[0]->{address}, $second_address, "correct new address";
+};
+
 done_testing;
