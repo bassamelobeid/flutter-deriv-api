@@ -248,6 +248,9 @@ sub reason {
     my ($self, $status_code) = @_;
 
     my $status = $self->$status_code // return undef;
+
+    $status = {} unless ref($status) eq 'HASH';
+
     return $status->{reason};
 }
 

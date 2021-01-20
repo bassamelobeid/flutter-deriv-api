@@ -941,19 +941,14 @@ sub get_limit_for_account_balance {
     my $max_bal            = BOM::Config::client_limits()->{max_balance};
     my $curr               = $self->currency;
     my $config_max_balance = $self->is_virtual ? $max_bal->{virtual}->{$curr} : $max_bal->{real}->{$curr};
-    if (defined($config_max_balance)) {
-        push @maxbalances, $config_max_balance;
-    } else {
-        local $log->context->{loginid} = $self->loginid;
-        $log->warn("No such currency $curr in BOM::Config::Client_limits");
-    }
+    push @maxbalances, $config_max_balance if defined $config_max_balance;
 
     my $self_max_balance = $self->get_self_exclusion ? $self->get_self_exclusion->max_balance : undef;
     if (defined($self_max_balance)) {
         push @maxbalances, $self_max_balance;
     }
 
-    return List::Util::min(@maxbalances);
+    return List::Util::min(@maxbalances) // 0;
 }
 
 sub get_limit_for_daily_turnover {
@@ -1076,7 +1071,7 @@ sub get_limit_for_payout {
 
     my $max_payout = BOM::Config::client_limits()->{max_payout_open_positions};
 
-    return $max_payout->{$self->currency};
+    return $max_payout->{$self->currency} // 0;
 }
 
 sub get_limit {
