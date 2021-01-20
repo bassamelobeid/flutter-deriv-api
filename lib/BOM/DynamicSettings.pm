@@ -287,14 +287,12 @@ sub get_settings_by_group {
                 system.stop.cryptocurrencies_withdrawal
                 system.suspend.experimental_currencies
                 payments.crypto.deposit_required_confirmations
-                payments.crypto.fee_bump_wait_time.BTC
-                payments.crypto.fee_bump_wait_time.LTC
-                payments.crypto.fee_bump_wait_time.ETH
-                payments.crypto.restricted_countries
-                payments.crypto.sweep_reserve_balance.BTC
-                payments.crypto.sweep_reserve_balance.LTC
-                payments.crypto.sweep_reserve_balance.ETH
+                payments.crypto.fee_bump_wait_time
+                payments.crypto.fee_limit_usd
+                payments.crypto.minimum_safe_amount
                 payments.crypto.new_address_threshold
+                payments.crypto.restricted_countries
+                payments.crypto.sweep_reserve_balance
                 payments.crypto_withdrawal_approvals_required
                 payments.crypto_withdrawal_suspicious_check_required
                 payments.crypto.withdrawal_processing_max_duration
@@ -329,21 +327,11 @@ sub get_settings_by_group {
                 payments.p2p.credit_card_check_period
                 )]};
 
-    my $app_config = BOM::Config::Runtime->instance->app_config;
-
-    # Add all `payments.crypto.minimum_safe_amount.*` keys to `crypto`
-    my @safe_amount_list = keys $app_config->payments->crypto->minimum_safe_amount->{definition}->{contains}->%*;
-    push $group_settings->{crypto}->@*, (map { "payments.crypto.minimum_safe_amount.$_" } @safe_amount_list);
-
-    # Add all `payments.crypto.fee_limit_usd.*` keys to `crypto`
-    my @fee_limit_usd_list = keys $app_config->payments->crypto->fee_limit_usd->{definition}->{contains}->%*;
-    push $group_settings->{crypto}->@*, (map { "payments.crypto.fee_limit_usd.$_" } @fee_limit_usd_list);
-
     my $settings;
 
     if ($group eq 'others') {
         my @grouped_settings = map { @{$group_settings->{$_}} } keys %$group_settings;
-        my @all_settings     = $app_config->all_keys();
+        my @all_settings     = BOM::Config::Runtime->instance->app_config->all_keys();
 
         my @filtered_settings;
         #find other settings that are not in groups
