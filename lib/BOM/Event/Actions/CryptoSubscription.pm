@@ -224,7 +224,7 @@ sub set_pending_transaction {
             $app_config->check_for_update;
 
             # we should retain the address if the deposit amount does not reach the specified threshold
-            my $retain_address = requires_address_retention($currency->currency_code, $address);
+            my $retain_address = requires_address_retention($currency->currency_code, $to_address);
 
             my ($emit, $error);
             try {
