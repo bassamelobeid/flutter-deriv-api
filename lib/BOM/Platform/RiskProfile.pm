@@ -464,8 +464,8 @@ sub get_current_profile_definitions {
         if (@submarket_list) {
             my @list = map { {
                     name           => $_->display_name,
-                    turnover_limit => formatnumber('amount', $currency, $limit_ref->{$_->risk_profile}{turnover}{$currency}),
-                    payout_limit   => formatnumber('amount', $currency, $limit_ref->{$_->risk_profile}{payout}{$currency}),
+                    turnover_limit => formatnumber('amount', $currency, $limit_ref->{$_->risk_profile}{turnover}{$currency} // 0),
+                    payout_limit   => formatnumber('amount', $currency, $limit_ref->{$_->risk_profile}{payout}{$currency} // 0),
                     profile_name   => $_->risk_profile
                 }
             } @submarket_list;
@@ -474,8 +474,8 @@ sub get_current_profile_definitions {
             push @{$limits{$market->name}},
                 +{
                 name           => $market->display_name,
-                turnover_limit => formatnumber('amount', $currency, $limit_ref->{$market->risk_profile}{turnover}{$currency}),
-                payout_limit   => formatnumber('amount', $currency, $limit_ref->{$market->risk_profile}{payout}{$currency}),
+                turnover_limit => formatnumber('amount', $currency, $limit_ref->{$market->risk_profile}{turnover}{$currency} // 0),
+                payout_limit   => formatnumber('amount', $currency, $limit_ref->{$market->risk_profile}{payout}{$currency} // 0),
                 profile_name   => $market->risk_profile,
                 };
         }

@@ -294,6 +294,69 @@ subtest 'get_current_profile_definitions' => sub {
             cmp_deeply($general->{$profile}, bag(@{$expected->{$broker}->{$profile}}), "$broker $profile");
         }
     }
+
+    subtest 'Disabled currencies' => sub {
+        my $tests = ['BCH', 'DOGE', 'ADA'];
+        my $currency;
+
+        my $client_mock = Test::MockModule->new('BOM::User::Client');
+        $client_mock->mock(
+            'currency',
+            sub {
+                $currency;
+            });
+
+        my $config_mock = Test::MockModule->new('BOM::Config');
+        $config_mock->mock(
+            'quants',
+            sub {
+                return {
+                    risk_profile => {
+                        # Just in case the testing currencies are implemented some day
+                        # turn all the currencies off
+                    }};
+            });
+
+        for ($tests->@*) {
+            $currency = $_;
+
+            subtest 'Testing ' . $currency => sub {
+                my $client  = create_client('CR');
+                my $general = BOM::Platform::RiskProfile::get_current_profile_definitions($client);
+
+                for (($general->{commodities} // [])->@*) {
+                    ok defined $_->{turnover_limit}, 'Turnover Limit is defined';
+                    ok defined $_->{payout_limit},   'Payout Limit is defined';
+                    is $_->{turnover_limit} + 0, 0, 'Turnover Limit defaulted to 0';
+                    is $_->{payout_limit} + 0,   0, 'Payout Limit defaulted to 0';
+                }
+
+                for (($general->{indices} // [])->@*) {
+                    ok defined $_->{turnover_limit}, 'Turnover Limit is defined';
+                    ok defined $_->{payout_limit},   'Payout Limit is defined';
+                    is $_->{turnover_limit} + 0, 0, 'Turnover Limit defaulted to 0';
+                    is $_->{payout_limit} + 0,   0, 'Payout Limit defaulted to 0';
+                }
+
+                for (($general->{forex} // [])->@*) {
+                    ok defined $_->{turnover_limit}, 'Turnover Limit is defined';
+                    ok defined $_->{payout_limit},   'Payout Limit is defined';
+                    is $_->{turnover_limit} + 0, 0, 'Turnover Limit defaulted to 0';
+                    is $_->{payout_limit} + 0,   0, 'Payout Limit defaulted to 0';
+                }
+
+                for (($general->{synthetic_index} // [])->@*) {
+                    ok defined $_->{turnover_limit}, 'Turnover Limit is defined';
+                    ok defined $_->{payout_limit},   'Payout Limit is defined';
+                    is $_->{turnover_limit} + 0, 0, 'Turnover Limit defaulted to 0';
+                    is $_->{payout_limit} + 0,   0, 'Payout Limit defaulted to 0';
+                }
+            }
+        }
+
+        $client_mock->unmock_all;
+        $config_mock->unmock_all;
+    }
 };
 
 subtest 'check for risk_profile consistency' => sub {
