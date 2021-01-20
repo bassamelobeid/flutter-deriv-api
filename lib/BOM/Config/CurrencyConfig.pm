@@ -547,14 +547,16 @@ To get the fee limit for the withdrawal.
 
 =back
 
-Returns the fee_limit_usd for the withdrawal of the currency.
+Returns the C<fee_limit_usd> for the withdrawal of the currency.
 
 =cut
 
 sub get_crypto_withdrawal_fee_limit {
     my $currency = shift;
 
-    return app_config()->get('payments.crypto.fee_limit_usd.' . $currency);
+    my $fee_limit_usd = JSON::MaybeUTF8::decode_json_utf8(app_config()->get('payments.crypto.fee_limit_usd'));
+
+    return $fee_limit_usd->{$currency};
 }
 
 =head2 get_currency_wait_before_bump
@@ -574,7 +576,53 @@ Returns the amount of time to wait before bumping fee for a transaction for each
 sub get_currency_wait_before_bump {
     my $currency = shift;
 
-    return app_config()->get('payments.crypto.fee_bump_wait_time.' . $currency);
+    my $fee_bump_wait_time = JSON::MaybeUTF8::decode_json_utf8(app_config()->get('payments.crypto.fee_bump_wait_time'));
+
+    return $fee_bump_wait_time->{$currency};
+}
+
+=head2 get_minimum_safe_amount
+
+To get the minimum safe amount for the currency.
+
+=over 4
+
+=item * C<currency> - Currency code
+
+=back
+
+Returns the C<minimum_safe_amount> for the currency.
+
+=cut
+
+sub get_minimum_safe_amount {
+    my $currency = shift;
+
+    my $minimum_safe_amount = JSON::MaybeUTF8::decode_json_utf8(app_config()->get('payments.crypto.minimum_safe_amount'));
+
+    return $minimum_safe_amount->{$currency};
+}
+
+=head2 get_sweep_reserve_balance
+
+To get the reverse balance for sweep.
+
+=over 4
+
+=item * C<currency> - Currency code
+
+=back
+
+Returns the C<sweep_reserve_balance> for the currency.
+
+=cut
+
+sub get_sweep_reserve_balance {
+    my $currency = shift;
+
+    my $sweep_reserve_balance = JSON::MaybeUTF8::decode_json_utf8(app_config()->get('payments.crypto.sweep_reserve_balance'));
+
+    return $sweep_reserve_balance->{$currency};
 }
 
 =head2 get_crypto_new_address_threshold

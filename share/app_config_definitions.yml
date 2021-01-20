@@ -54,8 +54,8 @@ cgi:
     terms_conditions_versions:
       description: "Current version for terms and conditions per brand (brand name as key, version as value). WARNING: Clients from particular landing companies (IOM/Malta/Maltainvest) will be blocked from trading and accessing cashier when T&Cs are updated until they manually approve them."
       isa: json_string
-      default: '{ "binary": "Version 48 2019-05-10", "deriv": "Version 4.2.0 2020-08-07" }' 
-      global: 1      
+      default: '{ "binary": "Version 48 2019-05-10", "deriv": "Version 4.2.0 2020-08-07" }'
+      global: 1
 payments:
   description: "Control parameters for cashier and other payment systems"
   isa: section
@@ -215,171 +215,19 @@ payments:
           global: 1
         sweep_reserve_balance:
           description: "Reserve Balance of Sweep"
-          isa: section
-          contains:
-            BTC:
-              isa: Num
-              description: "Reserve balance for BTC sweep"
-              default: 40
-              global: 1
-            LTC:
-              isa: Num
-              description: "Reserve balance for LTC sweep"
-              default: 500
-              global: 1
-            ETH:
-              isa: Num
-              description: "Reserve balance for ETH sweep"
-              default: 120
-              global: 1
+          isa: json_string
+          default: '{"BTC":50,"ETH":240,"LTC":1000}'
+          global: 1
         minimum_safe_amount:
           description: "Minimum safe amount"
-          isa: section
-          contains:
-            BTC:
-              isa: Num
-              description: "BTC minimum safe amount"
-              default: 10
-              global: 1
-            LTC:
-              isa: Num
-              description: "LTC minimum safe amount"
-              default: 30
-              global: 1
-            ETH:
-              isa: Num
-              description: "ETH minimum safe amount"
-              default: 40
-              global: 1
-            BUSD:
-              isa: Num
-              description: "BUSD minimum safe amount"
-              default: 6500
-              global: 1
-            DAI:
-              isa: Num
-              description: "DAI minimum safe amount"
-              default: 6500
-              global: 1
-            EURS:
-              isa: Num
-              description: "EURS minimum safe amount"
-              default: 6500
-              global: 1
-            IDK:
-              isa: Num
-              description: "IDK minimum safe amount"
-              default: 0
-              global: 1
-            PAX:
-              isa: Num
-              description: "PAX minimum safe amount"
-              default: 6500
-              global: 1
-            TUSD:
-              isa: Num
-              description: "TUSD minimum safe amount"
-              default: 6500
-              global: 1
-            USB:
-              isa: Num
-              description: "USB minimum safe amount"
-              default: 0
-              global: 1
-            USDC:
-              isa: Num
-              description: "USDC minimum safe amount"
-              default: 6500
-              global: 1
-            USDK:
-              isa: Num
-              description: "USDK minimum safe amount"
-              default: 6500
-              global: 1
-            UST:
-              isa: Num
-              description: "UST minimum safe amount"
-              default: 6500
-              global: 1
-            eUSDT:
-              isa: Num
-              description: "eUSDT minimum safe amount"
-              default: 6500
-              global: 1
+          isa: json_string
+          default: '{"BTC":10,"BUSD":6500,"DAI":6500,"ETH":40,"EURS":6500,"eUSDT":6500,"IDK":0,"LTC":30,"PAX":6500,"TUSD":6500,"USB":0,"USDC":1,"USDK":6500,"UST":6500}'
+          global: 1
         fee_limit_usd:
           description: "Fee limit for withdrawal"
-          isa: section
-          contains:
-            BTC:
-              isa: Num
-              description: "BTC withdrawal fee limit"
-              default: 10
-              global: 1
-            LTC:
-              isa: Num
-              description: "LTC withdrawal fee limit"
-              default: 2
-              global: 1
-            ETH:
-              isa: Num
-              description: "ETH withdrawal fee limit"
-              default: 2
-              global: 1
-            BUSD:
-              isa: Num
-              description: "BUSD withdrawal fee limit"
-              default: 10
-              global: 1
-            DAI:
-              isa: Num
-              description: "DAI withdrawal fee limit"
-              default: 10
-              global: 1
-            EURS:
-              isa: Num
-              description: "EURS withdrawal fee limit"
-              default: 10
-              global: 1
-            IDK:
-              isa: Num
-              description: "IDK withdrawal fee limit"
-              default: 2
-              global: 1
-            PAX:
-              isa: Num
-              description: "PAX withdrawal fee limit"
-              default: 10
-              global: 1
-            TUSD:
-              isa: Num
-              description: "TUSD withdrawal fee limit"
-              default: 10
-              global: 1
-            USB:
-              isa: Num
-              description: "USB withdrawal fee limit"
-              default: 10
-              global: 1
-            USDC:
-              isa: Num
-              description: "USDC withdrawal fee limit"
-              default: 10
-              global: 1
-            USDK:
-              isa: Num
-              description: "USDK withdrawal fee limit"
-              default: 10
-              global: 1
-            UST:
-              isa: Num
-              description: "UST withdrawal fee limit"
-              default: 10
-              global: 1
-            eUSDT:
-              isa: Num
-              description: "eUSDT withdrawal fee limit"
-              default: 10
-              global: 1
+          isa: json_string
+          default: '{"BTC":10,"BUSD":10,"DAI":10,"ETH":5,"EURS":10,"eUSDT":10,"IDK":2,"LTC":2,"PAX":10,"TUSD":10,"USB":10,"USDC":10,"USDK":10,"UST":10}'
+          global: 1
         restricted_countries:
           description: "Countries where crypto withdrawals are restricted, separated by comma. Clients in these countries must have made a prior crypto deposit. Country code can be in lower case."
           isa: ArrayRef
@@ -387,23 +235,9 @@ payments:
           global: 1
         fee_bump_wait_time:
           description: "Time to wait before bumping transaction"
-          isa: section
-          contains:
-            BTC:
-              isa: Num
-              description: "BTC wait before bump in seconds"
-              default: 43200
-              global: 1
-            LTC:
-              isa: Num
-              description: "LTC wait before bump in seconds"
-              default: 43200
-              global: 1
-            ETH:
-              isa: Num
-              description: "ETH wait before bump in seconds"
-              default: 43200
-              global: 1
+          isa: json_string
+          default: '{"BTC":43200,"ETH":43200,"LTC":43200}'
+          global: 1
         new_address_threshold:
           description: "Threshold to hit to generate new address for the client"
           isa: json_string
