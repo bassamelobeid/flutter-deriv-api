@@ -65,11 +65,13 @@ subtest "change_address_status" => sub {
     my $currency_code      = 'LTC';
     my $currency           = BOM::CTC::Currency->new(currency_code => $currency_code);
     my $reserved_addresses = $currency->get_reserved_addresses();
+    my $from_address       = $currency->get_new_address();
 
     my $transaction = {
         currency => $currency_code,
         hash     => $transaction_hash1,
         to       => '36ob9DZcMYQkRHGFNJHjrEKP7N9RyTihHW',
+        from     => $from_address,
         type     => 'receive',
         amount   => 0,
         block    => 10,
@@ -101,14 +103,14 @@ subtest "change_address_status" => sub {
     }
     'survived get_deposit_id_and_address';
 
+    $currency_code = 'BTC';
     $transaction->{to} = $btc_address;
 
     $response = BOM::Event::Actions::CryptoSubscription::set_pending_transaction($transaction);
     is $response->{error},
-        sprintf("Invalid currency, expecting: %s, received: %s, for transaction: %s", $currency_code, $transaction->{currency}, $transaction->{hash}),
+        sprintf("Invalid currency, expecting: %s, received: %s, for transaction: %s", $transaction->{currency}, $currency_code, $transaction->{hash}),
         "Invalid currency";
 
-    $currency_code = 'BTC';
     ($transaction->{currency}, $transaction->{fee_currency}) = ($currency_code, $currency_code);
 
     $response = BOM::Event::Actions::CryptoSubscription::set_pending_transaction($transaction);
@@ -363,6 +365,9 @@ subtest "internal_transactions" => sub {
     $client->set_default_account('BTC');
     my $helper = BOM::CTC::Helper->new(client => $client);
 
+    my $currency     = BOM::CTC::Currency->new(currency_code => 'BTC');
+    my $from_address = $currency->get_new_address();
+
     $mock_btc->mock(
         get_new_address => sub {
             return '3QLeXx1J9Tp3TBnQyHrhVxne9KqkAS9JSR',;
@@ -374,6 +379,7 @@ subtest "internal_transactions" => sub {
         type     => 'receipt',
         amount   => 0,
         block    => 100,
+        from     => $from_address,
     };
 
     my $btc_address;
@@ -430,10 +436,14 @@ subtest "New address threshold" => sub {
     }
     'survived get_deposit_id_and_address';
 
+    my $currency     = BOM::CTC::Currency->new(currency_code => 'BTC');
+    my $from_address = $currency->get_new_address();
+
     my $transaction = {
         currency     => 'BTC',
         hash         => '427d42cfa0717e8d4ce8b453de74cc84f3156861df07173876f6cfebdcbc099b',
         to           => $btc_address,
+        from         => $from_address,
         type         => 'receive',
         fee          => 0.00002,
         fee_currency => 'BTC',
@@ -461,7 +471,7 @@ subtest "New address threshold" => sub {
         });
 
     my $response = BOM::Event::Actions::CryptoSubscription::set_pending_transaction($transaction);
-    is $response, 1, "Correct status";
+    is $response->{status}, 1, "Correct status";
 
     my $res = $dbic->run(
         ping => sub {
@@ -479,7 +489,7 @@ subtest "New address threshold" => sub {
     $transaction->{hash}   = '427d42cfa0717e8d4ce8b453de74cc84f3156861df07173876f6cfebdcbc099c';
 
     $response = BOM::Event::Actions::CryptoSubscription::set_pending_transaction($transaction);
-    is $response, 1, "Correct status";
+    is $response->{status}, 1, "Correct status";
 
     $res = $dbic->run(
         ping => sub {
