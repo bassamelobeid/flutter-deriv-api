@@ -1,0 +1,19 @@
+<p>Please select the market and upload the respective dividend files for comparison. Currently, we only support comparison for BB and GBE.</p>
+
+<form action="[% upload_url | none %]" method="POST" enctype="multipart/form-data" id="upload_dividend_comparison_form">
+<fieldset  [% IF disabled %] disabled title='no write access' [% END %]>
+    <table>
+        <tr><INPUT type=hidden name="broker" value="[% broker %]"></tr>
+        <tr><INPUT type=hidden name="whattodo" value="compare_dividend"></tr>
+        <tr>
+            <SELECT name="market">
+                <option value="stocks">Stocks</option>
+                <option value="indices">Stock Indices</option>
+            </SELECT>
+        </tr>
+        <tr><td>BB file</td><td><INPUT type="file" name="bb_filetoupload" id="bb_compare" value="" size="45"></td></tr>
+        <tr><td>GBE file</td><td><INPUT type="file" name="gbe_filetoupload" id="gbe_compare" value="" size="45"></td></tr>
+        <tr><td><INPUT type="submit" id="upload_dividend_compare_submit" value="Compare file"></td></tr>
+    </table>
+</fieldset>
+</form>

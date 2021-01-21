@@ -32,6 +32,32 @@ if ($broker !~ /^\w+$/) { die "Bad broker code $broker in $0"; }
 
 master_live_server_error() unless ((grep { $_ eq 'binary_role_master_server' } @{BOM::Config::node()->{node}->{roles}}));
 
+Bar("Compare Dividend");
+print generate_dividend_comparison_form({
+    broker     => $broker,
+    upload_url => request()->url_for('backoffice/quant/market_data_mgmt/quant_market_tools_backoffice.cgi'),
+});
+
+if (request()->param('whattodo') and request()->param('whattodo') eq 'compare_dividend') {
+    my $cgi              = CGI->new;
+    my $market           = $cgi->param('market');
+    my $bb_filetoupload  = $cgi->param('bb_filetoupload');
+    my $gbe_filetoupload = $cgi->param('gbe_filetoupload');
+    print compare_dividend_point($bb_filetoupload, $gbe_filetoupload, $market);
+}
+
+Bar("Upload Dividend Point");
+print generate_dividend_point_upload_form({
+    broker     => $broker,
+    upload_url => request()->url_for('backoffice/quant/market_data_mgmt/quant_market_tools_backoffice.cgi'),
+});
+
+if (request()->param('whattodo') and request()->param('whattodo') eq 'upload_dividend_point') {
+    my $cgi          = CGI->new;
+    my $market       = $cgi->param('market');
+    my $filetoupload = $cgi->param('dividend_point_file');
+    print upload_dividend_point($filetoupload, $market);
+}
 # Upload Dividend
 # Currently we can get a list of forecast dividend from Bloomberg but in excel format
 Bar("Upload Dividend");
@@ -41,10 +67,9 @@ print generate_dividend_upload_form({
 });
 
 if (request()->param('whattodo') and request()->param('whattodo') eq 'process_dividend') {
-    my $cgi                      = CGI->new;
-    my $filetoupload             = $cgi->param('filetoupload');
-    my $update_discrete_dividend = request()->param('update_discrete_dividend');
-    print process_dividend($filetoupload, $update_discrete_dividend);
+    my $cgi          = CGI->new;
+    my $filetoupload = $cgi->param('filetoupload');
+    print process_dividend($filetoupload);
     BOM::Backoffice::QuantsAuditLog::log($staff, "uploaddividendfile", "Uploading $filetoupload");
 }
 

@@ -1,5 +1,4 @@
-<p>If you are uploading with the Bloomberg forecasted dividend( BDVD), click BB'</p>
-<p>If you are uploading with SD implied dividend data, click SD'</p>
+<p>Upload bloomberg dividend (for pricing)</p>
 
 <form action="[% upload_url | none %]" method="POST" enctype="multipart/form-data" id="upload_dividend_excel_form">
 <fieldset  [% IF disabled %] disabled title='no write access' [% END %]>
@@ -7,7 +6,6 @@
         <tr><INPUT type=hidden name="broker" value="[% broker %]"></tr>
         <tr><INPUT type=hidden name="whattodo" value="process_dividend"></tr>
         <tr><td>Please select the file to upload</td><td><INPUT type="file" name="filetoupload" id="upload_dividend_excel_file_field" value="" size="45"></td></tr>
-        <tr><td>Please select the source of the file</td><td><INPUT type=radio name=update_discrete_dividend value="BB"> BB <INPUT type=radio name=update_discrete_dividend value="SD" checked="checked"> SD</td></tr>
         <tr><td><INPUT type="submit" id="upload_dividend_excel_submit" value="Process Excel File"></td></tr>
     </table>
 </fieldset>

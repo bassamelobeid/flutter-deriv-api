@@ -1,0 +1,18 @@
+<table>
+    <tr>
+        <th>Symbol</th>
+        <th>Ex-Date</th>
+        <th>GBE point</th>
+        <th>BB point</th>
+        <th>Difference (%)</th>
+    </tr>
+    [% FOREACH d IN data %]
+        <tr>
+            <td>$d.symbol</td>
+            <td>$d.date</td>
+            <td>$d.gbe</td>
+            <td>$d.bb</td>
+            <td>$d.diff</td>
+        </tr>
+    [% END %]
+</table>
