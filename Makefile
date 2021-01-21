@@ -1,9 +1,16 @@
+TESTS=test syntax
+
 M=[ -t 1 ] && echo -e 'making \033[01;33m$@\033[00m' || echo 'making $@'
-P=/etc/rmg/bin/prove --timer -rvl -I lib
+P=/etc/rmg/bin/prove --timer -rvl
 PROVE=p () { $M; echo '$P' "$$@"; $P "$$@"; }; p
 
+test_all: $(TESTS)
+
 test:
-	@$(PROVE) t/
+	@$(PROVE) t/BOM
+
+syntax:
+	@$(PROVE) t/*.t
 
 tidy:
 	find . -name '*.p?.bak' -delete
