@@ -1,16 +1,12 @@
 <style>
- table {
-  padding-bottom: 2%;
- }
-
  th {
   background-color: lightgray;
  }
-
- td {
-  text-align: center;
- }
 </style>
+
+
+<tr>
+    <td bgcolor="#ffffff" align="left" style="padding: 40px 30px 10px 30px;" class="mobile-lowsidepadding darkmodelowblack">
 
 [% IF success.number_of_successes > 0 -%]
  <h3>Anonymization was successful for [% success.number_of_successes %] clients. you can find the list of loginids in attached file.</h3>
@@ -34,3 +30,5 @@
 </table>
 [% END -%]
 
+</td>
+</tr>

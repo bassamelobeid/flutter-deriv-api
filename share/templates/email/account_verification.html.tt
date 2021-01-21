@@ -1,8 +1,23 @@
-<p>[% l("Dear [_1] [_2],", client.first_name, client.last_name) %]</p>
+<tr>
+    <td align="left" style="padding: 40px 30px 10px 30px; background-color: #ffffff;" class="mobile-lowsidepadding darkmodeblack">
+        <p style="margin:0;font-family: 'IBM Plex Sans', Arial, sans-serif; font-size: 16px; line-height: 1.5 ; color: #333333; font-weight: 400;" class="darkcolor-subtext">[% l("Thank you for verifying your address and identity. You can now trade, make deposits, and withdraw your funds without interruption.") %]</p>
+    </td>
+</tr>
+<!-- button1 -->
+<tr>
+    <td bgcolor="#ffffff" align="center" style="padding: 20px 30px 45px 30px; color: #333333; font-family: 'IBM Plex Sans', Arial, sans-serif; font-size: 16px; font-weight: 400; line-height: 24px;" class="darkmodeblack">
+        <!--[if (gte mso 9)|(IE)]>
+        <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="https://app.deriv.com" style="height:40px;v-text-anchor:middle;width:200px;" arcsize="10%" strokecolor="#ff444f" fillcolor="#ff444f">
+        <w:anchorlock/>
+        <center style="color:#ffffff;font-family:sans-serif;font-size:14px;font-weight:bold;">[% l("Great, take me to Deriv") %]</center>
+        </v:roundrect>
+        <![endif]-->
+        <a class="button" href="https://app.deriv.com" style="mso-hide:all;"><span>[% l("Great, take me to Deriv") %]</span></a>
+    </td>
+</tr>
+<tr>
+    <td align="left" style="padding: 15px 30px 20px 30px; background-color: #ffffff;" class="mobile-lowsidepadding darkmodeblack">
+        <p style="margin:0;font-family: 'IBM Plex Sans', Arial, sans-serif; font-size: 16px; line-height: 1.5 ; color: #333333; font-weight: 400;" class="darkcolor-subtext">[% l("Need help? ") %] <a href="https://deriv.com/contact-us" style="color: #ff444f !important" > [% l("Contact us") %]</a> [% l("via live chat.") %] </p>
+    </td>
+</tr>
 
-<p>[% l("We're pleased to inform you that we've verified your account. All account features are now enabled and you can enjoy a seamless trading experience.") %]</p>
-
-<p>[% l("Please [_1]contact us[_2] if you need further assistance.", '<a href="' _ contact_url _ '">', '</a>') %] </p>
-
-<p>[% l("Regards,") %]</p>
-<p>[% l("Team [_1]", website_name) %]</p>

@@ -75,12 +75,7 @@ mailbox_clear();
 
 BOM::Event::Actions::Client::_email_client_age_verified($test_client);
 
-my $msg = mailbox_search(subject => qr/Age and identity verification/);
-like($msg->{body}, qr/Dear bRaD pItT/, "Correct user in message");
-
-like($msg->{body}, qr~https://deriv.com/contact-us~, "Url Added");
-
-like($msg->{body}, qr/Team Deriv.com/, "Website  Added");
+my $msg = mailbox_search(subject => qr/Your identity is verified/);
 
 is($msg->{from}, 'no-reply@deriv.com', 'Correct from Address');
 $test_client->status->set('age_verification');
@@ -88,7 +83,7 @@ $test_client->status->set('age_verification');
 mailbox_clear();
 BOM::Event::Actions::Client::_email_client_age_verified($test_client);
 
-$msg = mailbox_search(subject => qr/Age and identity verification/);
+$msg = mailbox_search(subject => qr/Your identity is verified/);
 is($msg, undef, "Didn't send email when already age verified");
 
 mailbox_clear();
@@ -99,7 +94,7 @@ my $test_client_mx = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
 
 BOM::Event::Actions::Client::_email_client_age_verified($test_client_mx);
 
-$msg = mailbox_search(subject => qr/Age and identity verification/);
+$msg = mailbox_search(subject => qr/Your identity is verified/);
 is($msg, undef, 'No email for non CR account');
 
 my $test_client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
@@ -107,12 +102,7 @@ my $test_client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
 });
 BOM::Event::Actions::Client::email_client_account_verification({loginid => $test_client_cr->loginid});
 
-$msg = mailbox_search(subject => qr/Account verification/);
-
-like($msg->{body}, qr/verified your account/,        "Correct message");
-like($msg->{body}, qr~https://deriv.com/contact-us~, "Url Added");
-
-like($msg->{body}, qr/Team Deriv.com/, "Website  Added");
+$msg = mailbox_search(subject => qr/Your address and identity have been verified successfully/);
 
 my $args = {
     document_type     => 'proofaddress',
@@ -1275,7 +1265,7 @@ subtest 'onfido resubmission' => sub {
 
         BOM::Event::Actions::Client::_set_age_verification($test_client);
 
-        my $msg = mailbox_search(subject => qr/Age and identity verification/);
+        my $msg = mailbox_search(subject => qr/Your identity is verified/);
         ok($msg, 'Valid email sent to client for resubmission passed');
     };
 

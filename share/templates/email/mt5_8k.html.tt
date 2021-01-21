@@ -1,16 +1,12 @@
 <style>
- table {
-  padding-bottom: 2%;
- }
-
  th {
   background-color: lightgray;
  }
-
- td {
-  text-align: center;
- }
 </style>
+
+<tr>
+    <td bgcolor="#ffffff" align="left" style="padding: 40px 30px 10px 30px;" class="mobile-lowsidepadding darkmodelowblack">
+
 <h2>Client has just exceeded 8k USD in [% action %]</h2>
 <table>
  <tbody align="left">
@@ -40,3 +36,6 @@
   </tr>
  </tbody>
 </table>
+
+</td>
+</tr>

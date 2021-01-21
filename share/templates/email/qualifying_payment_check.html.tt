@@ -1,16 +1,12 @@
 <style>
- table {
-  padding-bottom: 2%;
- }
-
  th {
   background-color: lightgray;
  }
-
- td {
-  text-align: center;
- }
 </style>
+
+<tr>
+    <td bgcolor="#ffffff" align="left" style="padding: 40px 30px 10px 30px;" class="mobile-lowsidepadding darkmodelowblack">
+
 <h2>Client [% loginid %] has breached the following thresholds:</h2>
 <table>
  <tbody>
@@ -65,3 +61,6 @@
  </tr>
 </tbody>
 </table>
+
+</td>
+</tr>

@@ -1254,21 +1254,25 @@ sub _email_client_age_verified {
         website_name => $website_name,
         contact_url  => $brand->contact_url,
     };
-    my $email_subject = localize("Age and identity verification");
+    my $email_subject = localize("Your identity is verified");
     my $tt            = Template->new(ABSOLUTE => 1);
 
     try {
         $tt->process(TEMPLATE_PREFIX_PATH . 'age_verified.html.tt', $data_tt, \my $html);
         die "Template error: @{[$tt->error]}" if $tt->error;
         send_email({
-            from                  => $from_email,
-            to                    => $client->email,
-            subject               => $email_subject,
-            message               => [$html],
-            use_email_template    => 1,
-            email_content_is_html => 1,
-            skip_text2html        => 1,
-        });
+                from          => $from_email,
+                to            => $client->email,
+                subject       => $email_subject,
+                message       => [$html],
+                template_args => {
+                    name  => $client->first_name,
+                    title => localize("Your identity is verified"),
+                },
+                use_email_template    => 1,
+                email_content_is_html => 1,
+                skip_text2html        => 1,
+            });
     } catch {
         $log->warn($@);
         exception_logged();
@@ -1308,21 +1312,26 @@ sub email_client_account_verification {
         contact_url  => $brand->contact_url,
     };
 
-    my $email_subject = localize("Account verification");
+    my $email_subject = localize("Your address and identity have been verified successfully");
     my $tt            = Template->new(ABSOLUTE => 1);
 
     try {
         $tt->process(TEMPLATE_PREFIX_PATH . 'account_verification.html.tt', $data_tt, \my $html);
         die "Template error: @{[$tt->error]}" if $tt->error;
         send_email({
-            from                  => $from_email,
-            to                    => $client->email,
-            subject               => $email_subject,
-            message               => [$html],
-            use_email_template    => 1,
-            email_content_is_html => 1,
-            skip_text2html        => 1,
-        });
+                from          => $from_email,
+                to            => $client->email,
+                subject       => $email_subject,
+                message       => [$html],
+                template_args => {
+                    name          => $client->first_name,
+                    title         => localize("Your address and identity are verified"),
+                    title_padding => 90,
+                },
+                use_email_template    => 1,
+                email_content_is_html => 1,
+                skip_text2html        => 1,
+            });
     } catch {
         $log->warn($@);
         exception_logged();
@@ -1361,20 +1370,23 @@ sub _send_email_account_closure_client {
 
 sub _send_email_underage_disable_account {
     my ($client) = @_;
-    my $brand = request->brand;
 
-    my $website_name  = $brand->website_name;
-    my $email_subject = localize('We closed your [_1] account', $website_name);
+    my $website_name  = ucfirst BOM::Config::domain()->{default_domain};
+    my $email_subject = localize("Your account has been closed");
 
     send_email({
-        to                    => $client->email,
-        subject               => $email_subject,
-        template_name         => 'close_account_underage',
-        template_args         => {website_name => $website_name},
-        use_email_template    => 1,
-        email_content_is_html => 1,
-        use_event             => 1,
-    });
+            to            => $client->email,
+            subject       => $email_subject,
+            template_name => 'close_account_underage',
+            template_args => {
+                website_name => $website_name,
+                name         => $client->first_name,
+                title        => localize("We've closed your account"),
+            },
+            use_email_template    => 1,
+            email_content_is_html => 1,
+            use_event             => 1,
+        });
 
     return undef;
 }
@@ -2228,29 +2240,6 @@ sub client_promo_codes_upload {
     return 1;
 }
 
-sub _send_email_withdrawal_locked {
-    my ($client, $support_email) = @_;
-
-    my $website_name  = ucfirst BOM::Config::domain()->{default_domain};
-    my $email_subject = localize('Please authenticate your account to enable withdrawals and transfers');
-
-    send_email({
-            to            => $client->email,
-            from          => $support_email,
-            subject       => $email_subject,
-            template_name => 'withdrawal_locked',
-            template_args => {
-                client_fname => $client->first_name,
-                website_name => $website_name
-            },
-            use_email_template    => 1,
-            email_content_is_html => 1,
-            use_event             => 1,
-        });
-
-    return undef;
-}
-
 =head2 signup
 
 It is triggered for each B<signup> event emitted.
@@ -2650,6 +2639,8 @@ sub _send_shared_payment_method_email {
             template_args => {
                 client_first_name => $client_first_name,
                 client_last_name  => $client_last_name,
+                name              => $client_first_name,
+                title             => localize('Shared payment method'),
                 lang              => $lang,
                 ask_poi           => !$client->status->age_verification,
             },

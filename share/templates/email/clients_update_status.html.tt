@@ -1,3 +1,6 @@
+<tr>
+    <td bgcolor="#ffffff" align="left" style="padding: 40px 30px 10px 30px;" class="mobile-lowsidepadding darkmodelowblack">
+
 <h2>Following high-risk clients are set withdrawal_locked & allow_document_upload because of pending authentication or FA.<br/><br/></h2>
 <table border='1'>
   <tr><th>Client-DB</th></tr>
@@ -19,3 +22,6 @@
    </tr>
 [% END %]
 </table>
+
+</td>
+</tr>
