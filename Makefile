@@ -1,14 +1,17 @@
-TESTS=unit_test_product_contract \
+CORETESTS=unit_test_product_contract \
       unit_test_product_all \
+
+ALLTESTS=test syntax 
 
 M=[ -t 1 ] && echo -e 'making \033[01;33m$@\033[00m' || echo 'making $@'
 D=$(CURDIR)
 P=/etc/rmg/bin/prove -v --timer -I$D/lib -I$D -I$D/t
 PROVE=p () { $M; echo '$P' "$$@"; $P "$$@"; }; p
 
-test: $(TESTS)
+test_all: $(ALLTESTS)
+test: $(CORETESTS)
 
-unit_test_syntax:
+syntax:
 	@$(PROVE) t/*.t
 
 unit_test_initial:

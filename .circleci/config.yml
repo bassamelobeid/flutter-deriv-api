@@ -53,7 +53,7 @@ jobs:
           name: Code structure and syntax
           command: |
             echo '--formatter TAP::Formatter::JUnit' >> .proverc
-            make unit_test_syntax
+            make syntax
       - store_test_results:
           path: /var/tmp/test-output
   filehash:
