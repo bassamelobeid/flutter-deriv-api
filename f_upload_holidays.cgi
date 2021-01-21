@@ -103,7 +103,7 @@ sub _save_early_closes_calendar {
         my $exchange        = Finance::Exchange->create_exchange($exchange_name);
         my $partial_trading = $exchange->market_times->{partial_trading};
         if (not $partial_trading) {
-            print "$exchange_name does not have partial trading configuration but it has early closes. Please check. \n";
+            print "$exchange_name does not have partial trading configuration but it has early closes. Please check.<br/> \n";
             next;
         }
 
@@ -111,10 +111,18 @@ sub _save_early_closes_calendar {
 
             my $epoch = Date::Utility->new($date)->epoch;
 
-            my $description =
+            my $partial_trading_close =
                   $calendar->is_in_dst_at($exchange, $epoch)
-                ? $partial_trading->{dst_close}->interval
-                : $partial_trading->{standard_close}->interval;
+                ? $partial_trading->{dst_close}
+                : $partial_trading->{standard_close};
+
+            if (not $partial_trading_close) {
+                print
+                    "$exchange_name does have partial trading configuration, however missing either dst_close/standard_close config. Please check.<br/> \n";
+                next;
+            }
+
+            my $description = $partial_trading_close->interval;
             push @{$calendar_data->{$date}{$description}}, $exchange_name;
         }
     }
