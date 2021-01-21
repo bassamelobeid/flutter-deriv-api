@@ -12,27 +12,33 @@
 
 limits: [
 {
-    hits_required: 3,
-    losses: 650,
-    turnover: 20000,
-    num_contract: 850,
-    deposit_amount: 800,
-    deposit_count: 15
+    losses: 750,
+    net_deposits: 750,
+    net_income: No FA filled
 },
 {
-    hits_required: 2,
-    losses: 850,
-    turnover: 25000,
-    num_contract: 1500,
-    deposit_amount: 1300,
-    deposit_count: 20
+    losses: 750,
+    net_deposits: 750,
+    net_income: 24999
 },
 {
-    hits_required: 1,
-    losses: 1000,
-    turnover: 30000,
-    num_contract: 3000,
-    deposit_amount: 1800,
-    deposit_count: 30
-}
+    losses: 1500,
+    net_deposits: 1500,
+    net_income: 25000
+},
+{
+    losses: 1500,
+    net_deposits: 1500,
+    net_income: 50000
+},
+{
+    losses: 1500,
+    net_deposits: 1500,
+    net_income: 100000
+},
+{
+    losses: 1500,
+    net_deposits: 1500,
+    net_income: 500000
+},
 ]
