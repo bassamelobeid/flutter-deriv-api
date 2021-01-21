@@ -1,13 +1,16 @@
-TESTS=unit_test_market
+TESTS=test syntax 
 
 M=[ -t 1 ] && echo -e 'making \033[01;33m$@\033[00m' || echo 'making $@'
-D=$(CURDIR)
-P=/etc/rmg/bin/prove --timer -I$D/lib -I$D -I$D/t  -I/home/git/regentmarkets/bom-postgres/lib
+P=/etc/rmg/bin/prove -vrl --timer 
 PROVE=p () { $M; echo '$P' "$$@"; $P "$$@"; }; p
-test: $(TESTS)
 
-unit_test_market:
-	@$(PROVE) -vr t/
+test_all: $(TESTS)
+
+test:
+	@$(PROVE)  t/BOM
+
+syntax:
+	@$(PROVE) t/*.t
 
 tidy:
 	find . -name '*.p?.bak' -delete

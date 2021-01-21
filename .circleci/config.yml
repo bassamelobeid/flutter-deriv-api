@@ -41,7 +41,22 @@ alias:
       PERL_TEST_HARNESS_DUMP_TAP: /var/tmp/test-output
 
 jobs:
-  build:
+  syntax:
+    <<: *default
+    steps:
+    - *ssh_keys
+    - *git
+    - *services
+    - *wait_services
+    - run:
+        <<: *tests
+        command: |
+          echo '--formatter TAP::Formatter::JUnit' >> .proverc
+          make syntax
+        name: Code structure and syntax
+    - store_test_results:
+        path: /var/tmp/test-output
+  core:
     <<: *default
     steps:
       - *ssh_keys
@@ -53,7 +68,7 @@ jobs:
           name: Market unit test
           command: |
             echo '--formatter TAP::Formatter::JUnit' >> .proverc
-            make unit_test_market
+            make test
       - store_test_results:
           path: /var/tmp/test-output
   code_coverage:
@@ -71,7 +86,9 @@ jobs:
 workflows:
   build-workflow:
     jobs:
-    - build:
+    - syntax:
+        context: perl  
+    - core:
         context: perl
   daily:
     jobs:
