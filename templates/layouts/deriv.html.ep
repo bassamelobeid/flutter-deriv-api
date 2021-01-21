@@ -1,3 +1,9 @@
+<%
+    # doing this because the frontend is sending the chinese language as
+    # zh_cn instead of zn-cn
+    my $language =   (lc $r->language ne 'en')?lc($r->language):'';
+    $language    =~ s/_/-/;
+%>
 <!DOCTYPE html>
 <html>
     <head>
@@ -520,7 +526,7 @@
                 font-size: 1.6rem;
                 margin-bottom: 2.4rem;
             }
-            
+
             .reactivate-description a {
                 font-size: 1.6rem;
             }
@@ -547,7 +553,7 @@
     </head>
     <body class="oauth">
         <header>
-            <a id="logo" href="https://<%= $website_domain %>/">
+            <a id="logo" href="https://<%= $website_domain %>/<%= lc($language) %>">
                 <svg xmlns="http://www.w3.org/2000/svg" width="160" height="27" viewBox="0 0 160 27">
                     <defs>
                         <linearGradient id="fspki0leya" x1="50%" x2="50%" y1="0%" y2="100%">
