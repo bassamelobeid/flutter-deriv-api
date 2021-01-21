@@ -698,8 +698,37 @@ subtest 'test update social signup' => sub {
     is($user->has_social_signup, 0, 'has_social_signup is false now');
 };
 
+subtest 'test update preferred language' => sub {
+    ok(!defined($user->preferred_language), 'preferred language is not defined');
+    lives_ok { $user->setnx_preferred_language('EN'); } 'set preferred language if not exists works without error';
+    is $user->preferred_language, 'EN', 'preferred language set correctly';
+    lives_ok { $user->setnx_preferred_language('FA'); } 'set preferred language if not exists called without error';
+    is $user->preferred_language, 'EN', 'preferred language didn\'t change since it was set before';
+
+    my $new_user = BOM::User->new(id => $user->id);
+    is_deeply($new_user, $user, 'get same object after updated');
+
+    lives_ok { $user->update_preferred_language('FA'); } 'do update';
+    is $user->preferred_language, 'FA', 'preferred language updated correctly';
+
+    local $SIG{__WARN__} = undef;
+
+    throws_ok { $user->update_preferred_language(''); } qr/violates check constraint/, 'updating with undef value got DB error';
+    is $user->preferred_language, 'FA', 'preferred language is still same DE correctly';
+
+    throws_ok { $user->update_preferred_language('a'); } qr/violates check constraint/, 'updating with single character value got DB error';
+    is $user->preferred_language, 'FA', 'preferred language is still same DE correctly';
+
+    throws_ok { $user->update_preferred_language('AS '); } qr/violates check constraint/, 'updating with more than 2 characters value got DB error';
+    is $user->preferred_language, 'FA', 'preferred language is still same DE correctly';
+
+    $new_user = BOM::User->new(id => $user->id);
+    is_deeply($new_user, $user, 'get same object after updated');
+};
+
 subtest 'is_region_eu' => sub {
     my ($client_vr, $client_mlt, $client_mx, $client_cr);
+
     lives_ok {
         $client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
             broker_code => 'VRTC',
