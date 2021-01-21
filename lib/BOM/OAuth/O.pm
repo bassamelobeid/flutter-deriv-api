@@ -709,6 +709,8 @@ sub _notify_login {
 
     if ($unknown_location && $brand->send_signin_email_enabled()) {
         my $email_data = {
+            name        => $client->first_name,
+            title       => localize("New device login"),
             client_name => $client->first_name
             ? ' ' . $client->first_name . ' ' . $client->last_name
             : '',
