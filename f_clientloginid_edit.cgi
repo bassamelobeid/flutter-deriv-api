@@ -618,7 +618,7 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
         && $client->landing_company->social_responsibility_check_required)
     {
 
-        my $key_name = $loginid . '_sr_risk_status';
+        my $key_name = $loginid . ':sr_risk_status';
         my $redis    = BOM::Config::Redis::redis_events_write();
 
         # There is no need to store clients with low risk in redis, as it is default

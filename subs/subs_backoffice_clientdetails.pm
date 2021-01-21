@@ -534,7 +534,7 @@ sub print_client_details {
         self_exclusion_enabled             => $self_exclusion_enabled,
         show_allow_professional_client     => $client->landing_company->support_professional_client,
         show_social_responsibility_client  => $client->landing_company->social_responsibility_check_required,
-        social_responsibility_risk_status  => BOM::Config::Redis::redis_events_write()->get($client->loginid . '_sr_risk_status') // 'low',
+        social_responsibility_risk_status  => BOM::Config::Redis::redis_events_write()->get($client->loginid . ':sr_risk_status') // 'low',
         professional_status                => get_professional_status($client),
         show_funds_message                 => ($config->{ukgc_funds_protection} and not $client->is_virtual),
         show_risk_approval                 => ($client->landing_company->short eq 'maltainvest'),
