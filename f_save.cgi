@@ -162,7 +162,7 @@ if ($filen =~ m!^vol/master([a-zA-Z0-9]{2,20}(?:-[a-zA-Z0-9]{2,20})?)\.interest$
             $rate  = $2;
             if ($tenor == 0 or $tenor < 1 or $tenor > 733) {
                 $err_cond = 'improper days (' . $tenor . ')';
-            } elsif ($rate <= -2) {
+            } elsif ($rate < -5) {
                 $err_cond = 'too low rate (' . $rate . ')';
             } elsif ($rate > 20) {
                 $err_cond = 'too high rate (' . $rate . ')';
