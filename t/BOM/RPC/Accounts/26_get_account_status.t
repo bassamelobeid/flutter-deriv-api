@@ -6,6 +6,7 @@ use Test::Deep;
 use Test::Mojo;
 use Test::MockModule;
 use Test::BOM::RPC::QueueClient;
+use List::Util;
 use Encode;
 use JSON::MaybeUTF8 qw(encode_json_utf8);
 use Encode qw(encode);
@@ -119,6 +120,7 @@ $user_mlt_mf->add_client($test_client_mf);
 
 my $m              = BOM::Platform::Token::API->new;
 my $token          = $m->create_token($test_client->loginid, 'test token');
+my $token_vr       = $m->create_token($test_client_cr_vr->loginid, 'test token');
 my $token_cr       = $m->create_token($test_client_cr->loginid, 'test token');
 my $token_disabled = $m->create_token($test_client_disabled->loginid, 'test token');
 my $token_mx       = $m->create_token($test_client_mx->loginid, 'test token');
@@ -129,6 +131,67 @@ my $c = Test::BOM::RPC::QueueClient->new();
 my $method = 'get_account_status';
 subtest 'get account status' => sub {
     subtest "account generic" => sub {
+
+        subtest 'cashier statuses' => sub {
+            my $mocked_cashier_validation = Test::MockModule->new("BOM::Platform::Client::CashierValidation");
+
+            my $result = $c->tcall('get_account_status', {token => $token_vr});
+            cmp_deeply(
+                $result->{status},
+                ['financial_information_not_complete', 'trading_experience_not_complete', 'cashier_locked',],
+                "cashier is locked for virtual accounts"
+            );
+
+            $mocked_cashier_validation->mock('is_cashier_full_locked', sub { return 1 });
+            $result = $c->tcall('get_account_status', {token => $token_cr});
+            cmp_deeply(
+                $result->{status},
+                ['financial_information_not_complete', 'trading_experience_not_complete', 'cashier_locked',],
+                "cashier is locked correctly."
+            );
+
+            $mocked_cashier_validation->mock('is_cashier_full_locked', sub { return undef });
+            $result = $c->tcall('get_account_status', {token => $token_cr});
+            cmp_deeply(
+                $result->{status},
+                ['financial_information_not_complete', 'trading_experience_not_complete',],
+                "cashier is not locked for correctly"
+            );
+
+            $mocked_cashier_validation->mock('is_withdrawal_locked', 1);
+            $result = $c->tcall('get_account_status', {token => $token_cr});
+            cmp_deeply(
+                $result->{status},
+                ['financial_information_not_complete', 'trading_experience_not_complete', 'withdrawal_locked',],
+                "withdrawal is locked correctly"
+            );
+
+            $mocked_cashier_validation->mock('is_withdrawal_locked', undef);
+            $result = $c->tcall('get_account_status', {token => $token_cr});
+            cmp_deeply(
+                $result->{status},
+                ['financial_information_not_complete', 'trading_experience_not_complete',],
+                "withdrawal is not locked correctly"
+            );
+
+            $mocked_cashier_validation->mock('is_deposit_locked', sub { return 1 });
+            $result = $c->tcall('get_account_status', {token => $token_cr});
+            cmp_deeply(
+                $result->{status},
+                ['financial_information_not_complete', 'trading_experience_not_complete', 'deposit_locked',],
+                "deposit is not locked correctly"
+            );
+
+            $mocked_cashier_validation->mock('is_deposit_locked', sub { return 0 });
+            $result = $c->tcall('get_account_status', {token => $token_cr});
+            cmp_deeply(
+                $result->{status},
+                ['financial_information_not_complete', 'trading_experience_not_complete',],
+                "deposit is not locked correctly"
+            );
+
+            $mocked_cashier_validation->unmock_all();
+        };
 
         subtest 'validations' => sub {
             is($c->tcall($method, {token => '12345'})->{error}{message_to_client}, 'The token is invalid.', 'invalid token error');
