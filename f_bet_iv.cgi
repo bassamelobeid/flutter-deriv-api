@@ -113,23 +113,6 @@ Download Filename: <input type=text size=20 name=filename value='scheduled.out' 
 <input type=submit value='Download File'>
 </form>~;
 
-# Dividend comparison tool
-Bar("Compare Dividend Point");
-print generate_dividend_comparison_form({
-        broker     => $broker,
-        upload_url => request()->url_for('backoffice/quant/market_data_mgmt/quant_market_tools_backoffice.cgi'),
-    },
-    $disabled_write
-);
-
-Bar("Upload Dividend Point");
-print generate_dividend_point_upload_form({
-        broker     => $broker,
-        upload_url => request()->url_for('backoffice/quant/market_data_mgmt/quant_market_tools_backoffice.cgi'),
-    },
-    $disabled_write
-);
-
 # Upload Dividend
 # Currently we can get a list of forecast dividend from Bloomberg but in excel format
 Bar("Upload Dividend");
