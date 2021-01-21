@@ -219,7 +219,7 @@ sub run {
             # Second condition: If the first condition meet, check if the implied rate is reasonable compare to market rates.
             # Example: If the implied rate is 8% but the market rate itself is around 7%, then that high implied rate is reasonable
 
-            if ($implied_rates->{$forward_day} > 15 or $implied_rates->{$forward_day} < -3) {
+            if ($implied_rates->{$forward_day} > 15 or $implied_rates->{$forward_day} < -5) {
                 $report->{$implied_symbol} = {
                     success => 0,
                     reason  => 'The implied rate for '
