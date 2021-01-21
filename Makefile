@@ -1,17 +1,20 @@
-TESTS=unit_test_marketdataautoupdater
+TESTS=test syntax
 
 M=[ -t 1 ] && echo -e 'making \033[01;33m$@\033[00m' || echo 'making $@'
 D=$(CURDIR)
-P=/etc/rmg/bin/prove -v --timer -I$D/lib -I$D -I$D/t  -I/home/git/regentmarkets/bom-postgres/lib
+P=/etc/rmg/bin/prove -vlr --timer -I$D/t  -I/home/git/regentmarkets/bom-postgres/lib
 PROVE=p () { $M; echo '$P' "$$@"; $P "$$@"; }; p
-test: $(TESTS)
+test_all: $(TESTS)
 
-unit_test_marketdataautoupdater:
-	@$(PROVE) -r t/
+test:
+	@$(PROVE) t/BOM
+
+syntax:
+	@$(PROVE) t/*.t
 
 tidy:
 	find . -name '*.p?.bak' -delete
-	. /etc/profile.d/perl5.sh;find lib t -name '*.p[lm]' -o -name '*.t' | xargs perltidy -pro=/home/git/regentmarkets/cpan/rc/.perltidyrc --backup-and-modify-in-place -bext=tidyup
+	find lib t -name '*.p[lm]' -o -name '*.t' | xargs perltidy -pro=/home/git/regentmarkets/cpan/rc/.perltidyrc --backup-and-modify-in-place -bext=tidyup
 	find . -name '*.tidyup' -delete
 
 cover:
