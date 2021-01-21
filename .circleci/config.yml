@@ -37,7 +37,22 @@ default: &5
   shell: /bin/bash -leo pipefail
   working_directory: /home/git/regentmarkets/bom-postgres
 jobs:
-  build:
+  syntax:
+    <<: *5
+    steps:
+    - *1
+    - *2
+    - *3
+    - *4
+    - run:
+        <<: *environment
+        command: |
+          echo '--formatter TAP::Formatter::JUnit' >> .proverc
+          make syntax
+        name: Code structure and syntax
+    - store_test_results:
+        path: /var/tmp/test-output
+  core:
     <<: *5
     steps:
     - *1
@@ -51,7 +66,7 @@ jobs:
           sudo tee -a /etc/hosts < hosts.db
           cat /etc/hosts
           make test
-        name: Run tests
+        name: Core tests
     - store_test_results:
         path: /var/tmp/test-output
   code_coverage:
@@ -68,7 +83,9 @@ version: 2
 workflows:
   build-workflow:
     jobs: &6
-    - build:
+    - syntax:
+        context: perl
+    - core:
         context: perl
   daily:
     jobs: *6

@@ -1,22 +1,26 @@
-TESTS=syntax \
+CORETESTS=unit_test_database_datamapper \
+      unit_test_database_model \
+      unit_test_database_all \
+
+ALLTESTS=syntax \
       unit_test_database_datamapper \
       unit_test_database_model \
       unit_test_database_all \
 
 M=[ -t 1 ] && echo -e 'making \033[01;33m$@\033[00m' || echo 'making $@'
 D=$(CURDIR)
-P=/etc/rmg/bin/prove -v --timer -I$D/lib -I$D -I$D/t
+P=/etc/rmg/bin/prove -rv --timer -I$D/lib -I$D -I$D/t
 PROVE=p () { $M; echo '$P' "$$@"; $P "$$@"; }; p
 
-test: $(TESTS)
+test: $(CORETESTS)
 
-test_all: test
+test_all: $(ALLTESTS)
 
 unit_test_database_datamapper:
-	@$(PROVE) -r t/BOM/Database/DataMapper/
+	@$(PROVE) t/BOM/Database/DataMapper/
 
 unit_test_database_model:
-	@$(PROVE) -r t/BOM/Database/Model/
+	@$(PROVE) t/BOM/Database/Model/
 
 unit_test_database_all:
 	@$(PROVE) t/BOM/Database/*.t
