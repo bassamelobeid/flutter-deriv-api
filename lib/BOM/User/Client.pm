@@ -97,6 +97,10 @@ use constant {
     ],
 };
 
+use constant {
+    SR_UNWELCOME_REASON => 'Social responsibility thresholds breached - Pending financial assessment',
+};
+
 # this email address should not be added into brand as it is specific to internal system
 my $SUBJECT_RE = qr/(New Sign-Up|Update Address)/;
 
@@ -541,7 +545,7 @@ sub risk_level {
 
     if ($self->landing_company->social_responsibility_check_required && !$self->financial_assessment) {
         $risk = 'high'
-            if BOM::Config::Redis::redis_events()->get($self->loginid . '_sr_risk_status');
+            if BOM::Config::Redis::redis_events()->get($self->loginid . ':sr_risk_status');
     }
 
     return $risk;
@@ -578,10 +582,53 @@ sub is_financial_assessment_complete {
     return 1;
 }
 
+=head2 get_financial_assessment
+
+returns the asked value of the field of the clien't financial assessment.
+if no field parameter is passed, it returns the whole FA object.
+if the FA does not exist it returns undef.
+
+=over
+
+=item * C<BOM::User> - required.
+
+=item * C<Financial Assessment> - A value of Financial Assessment JSON data field and can be any of the following:
+
+=over
+
+=item * net_income, employment_industry, source_of_wealth, account_turnover, occupation, employment_status, income_source, estimated_worth, education_level
+
+=back
+
+=back
+
+Returns B<value> of field or the whole B<data field> if field is null.
+
+=cut
+
+sub get_financial_assessment {
+    my $self  = shift;
+    my $field = shift;
+
+    my $value;
+
+    try {
+        $value = $self->db->dbic->run(
+            fixup => sub {
+                $_->selectrow_array('SELECT * FROM betonmarkets.financial_assessment(?, ?)', undef, $self->loginid, $field);
+            });
+
+    } catch ($e) {
+        die $log->errorf('An error occurred getting the financial assessment of client %s : %s', $self->loginid, $e);
+    }
+
+    return $value;
+}
+
 =head2 documents_expired
 
-documents_expired returns a boolean indicating if this client has all his 
-POI documents expired (note at least one non expired document make this method return 0). 
+documents_expired returns a boolean indicating if this client has all his
+POI documents expired (note at least one non expired document make this method return 0).
 It also returns 0 if there are no documents in sight.
 
 =cut
@@ -776,7 +823,7 @@ It may take the following arguments:
 Returns
     boolean indicating that all the document types checked are non-expired
 
-=cut 
+=cut
 
 sub has_valid_documents {
     my ($self, $documents, $type) = @_;
@@ -1604,22 +1651,34 @@ sub increment_social_responsibility_values {
     my ($self, $sr_hashref) = @_;
     my $loginid = $self->loginid;
 
-    my $hash_name  = 'social_responsibility';
-    my $event_name = $loginid . '_sr_check';
+    my $event_name = $loginid . ':sr_check:';
 
-    my $redis = BOM::Config::Redis::redis_events_write();
+    my $redis = BOM::Config::Redis::redis_events();
 
-    foreach my $attribute (keys %$sr_hashref) {
-        my $field_name = $loginid . '_' . $attribute;
-        my $value      = $sr_hashref->{$attribute};
+    # We only queue if the client is at low-risk only (low-risk means no '$loginid:sr_risk_status' key in redis)
+    if (!$redis->get($loginid . ':sr_risk_status')) {
 
-        $redis->hincrbyfloat($hash_name, $field_name, $value);
+        foreach my $attribute (keys %$sr_hashref) {
+            my $field_name = $event_name . $attribute;
+            my $value      = $sr_hashref->{$attribute};
+
+            $redis->multi();
+
+            $redis->set(
+                $field_name,
+                '0',
+                'EX' => 86400 * 30,
+                'NX'
+            );
+
+            $redis->incrbyfloat($field_name, $value);
+
+            $redis->exec();
+
+        }
+
+        BOM::Platform::Event::Emitter::emit('social_responsibility_check', {loginid => $loginid});
     }
-
-    # This is only set once; there is no point to queue again and again
-    # We only queue if the client is at low-risk only (low-risk means it is not in the hash)
-    BOM::Platform::Event::Emitter::emit('social_responsibility_check', {loginid => $loginid})
-        if (!$redis->get($loginid . '_sr_risk_status') && $redis->hsetnx($hash_name, $event_name, 1));
 
     return undef;
 }
@@ -3310,8 +3369,8 @@ sub _p2p_validate_sell {
     my ($cc_deposits) = $self->db->dbic->run(
         fixup => sub {
             $_->selectrow_array(
-                "SELECT SUM(p.amount) FROM payment.payment p 
-                JOIN payment.doughflow d ON d.payment_id = p.id 
+                "SELECT SUM(p.amount) FROM payment.payment p
+                JOIN payment.doughflow d ON d.payment_id = p.id
                 WHERE p.account_id = ?
                 AND d.payment_processor = ANY(?)
                 AND p.payment_time > NOW() - ? * INTERVAL '1 month'",
@@ -3324,7 +3383,7 @@ sub _p2p_validate_sell {
     my ($turnover) = $self->db->dbic->run(
         fixup => sub {
             $_->selectrow_array(
-                "SELECT COALESCE(SUM(buy_price),0) FROM bet.financial_market_bet 
+                "SELECT COALESCE(SUM(buy_price),0) FROM bet.financial_market_bet
                 WHERE bet_class <> 'multiplier' AND account_id = ? AND purchase_time > NOW() - ? * INTERVAL '1 month'",
                 undef,
                 $client->account->id, $check_period
@@ -3334,7 +3393,7 @@ sub _p2p_validate_sell {
     my ($mt5_net) = $self->db->dbic->run(
         fixup => sub {
             $_->selectrow_array(
-                "SELECT COALESCE(SUM(amount)*-1,0) FROM payment.payment  
+                "SELECT COALESCE(SUM(amount)*-1,0) FROM payment.payment
                 WHERE account_id = ? AND payment_type_code = 'mt5_transfer' AND payment_time > NOW() - ? * INTERVAL '1 month'",
                 undef,
                 $client->account->id, $check_period
@@ -3344,11 +3403,11 @@ sub _p2p_validate_sell {
     my ($buy) = $self->db->dbic->run(
         fixup => sub {
             $_->selectrow_array(
-                "SELECT COALESCE(SUM(o.amount),0) FROM p2p.p2p_transaction t 
-               JOIN p2p.p2p_order o ON o.id = t.order_id 
+                "SELECT COALESCE(SUM(o.amount),0) FROM p2p.p2p_transaction t
+               JOIN p2p.p2p_order o ON o.id = t.order_id
                JOIN p2p.p2p_advert a ON a.id = o.advert_id
                WHERE t.type = 'order_complete_payment'
-               AND t.transaction_time > NOW() - ? * INTERVAL '1 month' 
+               AND t.transaction_time > NOW() - ? * INTERVAL '1 month'
                AND ((a.type = 'buy' AND a.advertiser_id = ?) OR (a.type = 'sell' AND o.client_loginid = ?))",
                 undef,
                 $check_period, $advertiser->{id}, $client->loginid
@@ -4722,6 +4781,14 @@ sub update_status_after_auth_fa {
             }
         }
 
+        if ($sibling->is_financial_assessment_complete) {
+            # Clear unwelcome status for clients without financial assessment and have breached
+            # social responsibility thresholds
+            $sibling->status->clear_unwelcome
+                if ref $sibling->status->unwelcome eq "HASH"
+                && $sibling->status->unwelcome->{reason} eq SR_UNWELCOME_REASON;
+        }
+
         if ($sibling->get_poi_status(undef, 0) eq 'verified') {
             # auto-unlock MLT clients locked after first deposit
             $sibling->status->clear_unwelcome if ($sibling->status->reason('unwelcome') // '') =~ qr/Age verification is needed after first deposit/;
@@ -5170,7 +5237,7 @@ Returns the irreversible balance available for the specified cashier.
 
 =back
 
-Returns current irreversible balance for a cashier as a float. 
+Returns current irreversible balance for a cashier as a float.
 
 =cut
 
@@ -5191,7 +5258,7 @@ sub balance_for_cashier {
 
 =head2 propagate_status
 
-This sub performs an C<BOM::User::Status::upsert> of the desired status on 
+This sub performs an C<BOM::User::Status::upsert> of the desired status on
 each real account the client owns.
 
 Note we cannot C<BOM::User::Client::copy_status_to_siblings> as it does not
@@ -5222,10 +5289,10 @@ sub propagate_status {
 
 =head2 propagate_clear_status
 
-This sub performs an C<BOM::User::Status::_clear> of the desired status on 
+This sub performs an C<BOM::User::Status::_clear> of the desired status on
 each real account the client owns.
 
-Note we cannot C<BOM::User::Client::clear_status_and_sync_to_siblings> 
+Note we cannot C<BOM::User::Client::clear_status_and_sync_to_siblings>
 as it does not perform cross LC operations (e.g. MLT -> MF).
 
 =over 4

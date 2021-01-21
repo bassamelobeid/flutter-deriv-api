@@ -20,6 +20,7 @@ use BOM::Test::Helper::Utility qw(random_email_address);
 use BOM::User;
 use BOM::User::Password;
 use BOM::MT5::User::Async;
+use BOM::Test::Helper::FinancialAssessment;
 
 my $email    = 'abc@binary.com';
 my $password = 'jskjd8292922';
@@ -771,6 +772,35 @@ subtest 'fail if mt5 api return empty login' => sub {
         group          => 'real/something'
     });
     like($f->failure, qr/Empty login returned/, 'MT5 create_user failed, no/empty login returned');
+};
+
+subtest 'test get_financial_assessment' => sub {
+    my $client_mx = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'MX',
+    });
+    my $client_mlt = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'MLT',
+    });
+    
+    ok !$client_mx->get_financial_assessment, 'No financial assessment for client MX';
+    ok !$client_mlt->get_financial_assessment, 'No financial assessment for client MLT';
+
+    ok !$client_mx->get_financial_assessment('jibbabi'), 'No financial assessment for client MX';
+    ok !$client_mlt->get_financial_assessment('net_income'), 'No financial assessment for client MLT';
+
+    my $data = BOM::Test::Helper::FinancialAssessment::get_fulfilled_hash();
+    $client_mx->financial_assessment({data => JSON::MaybeUTF8::encode_json_utf8($data)});
+    $client_mx->save;
+
+    $client_mlt->financial_assessment({data => JSON::MaybeUTF8::encode_json_utf8($data)});
+    $client_mlt->save;
+
+    ok $client_mx->get_financial_assessment, 'Financial assessment for client MX exists (returned whole object)';
+    ok $client_mlt->get_financial_assessment, 'Financial assessment for client MLT exists (returned whole object)';
+
+    ok !$client_mx->get_financial_assessment('jibbabi'), 'Field does not exist for financial assessment for client MX';
+    ok $client_mlt->get_financial_assessment('net_income'), 'Field exists for financial assessment for client MLT';
+
 };
 
 done_testing;

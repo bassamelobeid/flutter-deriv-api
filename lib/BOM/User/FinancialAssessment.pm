@@ -19,11 +19,6 @@ use base qw (Exporter);
 our @EXPORT_OK =
     qw(update_financial_assessment build_financial_assessment is_section_complete decode_fa decode_obsolete_data should_warn get_section format_to_new);
 
-use constant {
-    SR_UNWELCOME_STAFF_NAME => 'system',
-    SR_UNWELCOME_REASON     => 'Social responsibility thresholds breached - Pending fill of financial assessment',
-};
-
 my $config = BOM::Config::financial_assessment_fields();
 
 =head2 update_financial_assessment
@@ -60,18 +55,6 @@ sub update_financial_assessment {
         $cli->financial_assessment({data => encode_json_utf8($data_to_be_saved)});
         $cli->save;
     }
-
-    # Clear unwelcome status for clients without financial assessment and have breached
-    # social responsibility thresholds
-    my $redis    = BOM::Config::Redis::redis_events_write();
-    my $key_name = $client->loginid . '_sr_risk_status';
-
-    $client->status->clear_unwelcome
-        if $client->landing_company->social_responsibility_check_required
-        && $client->status->unwelcome
-        && $client->status->unwelcome->{staff_name} eq SR_UNWELCOME_STAFF_NAME
-        && $client->status->unwelcome->{reason} eq SR_UNWELCOME_REASON
-        && $redis->get($key_name);
 
     $client->update_status_after_auth_fa();
 
