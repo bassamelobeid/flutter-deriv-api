@@ -536,7 +536,7 @@ subtest "new_crypto_address" => sub {
     # the check on the first transaction
     my $amount = 0.00001;
 
-    my $checked_threshold = BOM::Event::Actions::CryptoSubscription::requires_address_retention($currency, $address, $amount);
+    my $checked_threshold = BOM::Event::Actions::CryptoSubscription::requires_address_retention($currency->currency_code, $address);
     is $checked_threshold, 1, "correct response for keep the address retained";
 
     my $second_address = 'tb1qr0y0djpk4tq7tek97tnjs5f334z267qzpmfldp';
@@ -567,7 +567,7 @@ subtest "new_crypto_address" => sub {
     };
 
     $response = BOM::Event::Actions::CryptoSubscription::set_pending_transaction($transaction);
-    is $response, 1, "Update the transaction status to pending";
+    is $response->{status}, 1, "Update the transaction status to pending";
 
     $amount = $threshold;
 
@@ -578,7 +578,7 @@ subtest "new_crypto_address" => sub {
     $transaction->{hash}   = "aaa";
 
     $response = BOM::Event::Actions::CryptoSubscription::set_pending_transaction($transaction);
-    is $response, 1, "Update the transaction status to pending";
+    is $response->{status}, 1, "Update the transaction status to pending";
 
     $checked_threshold = BOM::Event::Actions::CryptoSubscription::requires_address_retention($currency->currency_code, $address);
     is $checked_threshold, 0, "correct response for address retention not needed";
