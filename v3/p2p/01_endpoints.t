@@ -521,85 +521,91 @@ subtest 'p2p_advert_update' => sub {
 subtest 'show real names' => sub {
     BOM::Test::Helper::P2P::bypass_sendbird();
 
-    my $advertiser_names = { first_name => 'john', last_name  => 'smith' };
-    my $client_names = { first_name => 'mary', last_name  => 'jane' };    
-    
-    my $advertiser = BOM::Test::Helper::P2P::create_advertiser(balance=>100, client_details => { %$advertiser_names });
+    my $advertiser_names = {
+        first_name => 'john',
+        last_name  => 'smith'
+    };
+    my $client_names = {
+        first_name => 'mary',
+        last_name  => 'jane'
+    };
+
+    my $advertiser = BOM::Test::Helper::P2P::create_advertiser(
+        balance        => 100,
+        client_details => {%$advertiser_names});
     my $token_advertiser = BOM::Platform::Token::API->new->create_token($advertiser->loginid, 'test token', ['payments']);
-    
+
     $t->await::authorize({authorize => $token_advertiser});
     my $resp = $t->await::p2p_advertiser_update({
-            p2p_advertiser_update => 1,
-            show_name             => 1,
-        });
+        p2p_advertiser_update => 1,
+        show_name             => 1,
+    });
     ok $resp->{p2p_advertiser_update}{show_name}, 'advertiser update enable show_name';
     cmp_deeply($resp->{p2p_advertiser_update}, superhashof($advertiser_names), 'advertiser update names returned');
-    
+
     $resp = $t->await::p2p_advertiser_update({
-            p2p_advertiser_update => 1,
-        });
+        p2p_advertiser_update => 1,
+    });
     cmp_deeply($resp->{p2p_advertiser_update}, superhashof($advertiser_names), 'empty advertiser update names returned');
 
     my $ad = $t->await::p2p_advert_create({
             p2p_advert_create => 1,
-            type => 'sell',
-            amount => 100,
-            rate   => 1,
-            min_order_amount => 1,
-            max_order_amount => 10,
-            payment_method => 'bank_transfer',
-            contact_info  => 'x',
-            payment_info => 'x',
+            type              => 'sell',
+            amount            => 100,
+            rate              => 1,
+            min_order_amount  => 1,
+            max_order_amount  => 10,
+            payment_method    => 'bank_transfer',
+            contact_info      => 'x',
+            payment_info      => 'x',
         })->{p2p_advert_create};
     cmp_deeply($ad->{advertiser_details}, superhashof($advertiser_names), 'create ad names returned');
-    
+
     $resp = $t->await::p2p_advert_update({
-            p2p_advert_update => 1,
-            id => $ad->{id},
-        });    
+        p2p_advert_update => 1,
+        id                => $ad->{id},
+    });
     cmp_deeply($resp->{p2p_advert_update}{advertiser_details}, superhashof($advertiser_names), 'update ad names returned');
-    
-    
-    my $client = BOM::Test::Helper::P2P::create_advertiser(client_details => { %$client_names });
+
+    my $client       = BOM::Test::Helper::P2P::create_advertiser(client_details => {%$client_names});
     my $token_client = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token', ['payments']);
-    
+
     $t->await::authorize({authorize => $token_client});
-    
+
     $t->await::p2p_advertiser_update({
-            p2p_advertiser_update => 1,
-            show_name             => 1,
-        });
-    
+        p2p_advertiser_update => 1,
+        show_name             => 1,
+    });
+
     $resp = $t->await::p2p_advertiser_info({
-            p2p_advertiser_info => 1,
-            id => $advertiser->p2p_advertiser_info->{id},
-        });
-    cmp_deeply($resp->{p2p_advertiser_info}, superhashof($advertiser_names), 'advertiser info other client real names returned');        
+        p2p_advertiser_info => 1,
+        id                  => $advertiser->p2p_advertiser_info->{id},
+    });
+    cmp_deeply($resp->{p2p_advertiser_info}, superhashof($advertiser_names), 'advertiser info other client real names returned');
 
     my $order = $t->await::p2p_order_create({
             p2p_order_create => 1,
-            advert_id => $ad->{id},
-            amount => 10,
+            advert_id        => $ad->{id},
+            amount           => 10,
         })->{p2p_order_create};
-    cmp_deeply($order->{advertiser_details}, superhashof($advertiser_names), 'create order advertiser names returned');  
-    cmp_deeply($order->{client_details}, superhashof($client_names), 'create order client names returned');  
+    cmp_deeply($order->{advertiser_details}, superhashof($advertiser_names), 'create order advertiser names returned');
+    cmp_deeply($order->{client_details},     superhashof($client_names),     'create order client names returned');
 
     $resp = $t->await::p2p_order_info({
         p2p_order_info => 1,
-        id => $order->{id},
+        id             => $order->{id},
     });
-    cmp_deeply($resp->{p2p_order_info}{advertiser_details}, superhashof($advertiser_names), 'order info advertiser names returned');  
-    cmp_deeply($resp->{p2p_order_info}{client_details}, superhashof($client_names), 'order info client names returned');
+    cmp_deeply($resp->{p2p_order_info}{advertiser_details}, superhashof($advertiser_names), 'order info advertiser names returned');
+    cmp_deeply($resp->{p2p_order_info}{client_details},     superhashof($client_names),     'order info client names returned');
 
     BOM::Test::Helper::P2P::set_order_disputable($client, $order->{id});
 
     $resp = $t->await::p2p_order_dispute({
             p2p_order_dispute => 1,
             dispute_reason    => 'seller_not_released',
-            id                => $order->{id}
-        });
-    cmp_deeply($resp->{p2p_order_dispute}{advertiser_details}, superhashof($advertiser_names), 'order dispute advertiser names returned');  
-    cmp_deeply($resp->{p2p_order_dispute}{client_details}, superhashof($client_names), 'order dispute client names returned');
+            id                => $order->{id}});
+    cmp_deeply($resp->{p2p_order_dispute}{advertiser_details}, superhashof($advertiser_names), 'order dispute advertiser names returned');
+    cmp_deeply($resp->{p2p_order_dispute}{client_details},     superhashof($client_names),     'order dispute client names returned');
 };
 
 $t->finish_ok;

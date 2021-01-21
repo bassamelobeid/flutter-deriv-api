@@ -20,7 +20,8 @@
             "balance",
             "landing_company_name",
             "is_virtual",
-            "email"
+            "email",
+            "preferred_language"
          ],
          "properties" : {
             "country" : {
@@ -66,6 +67,10 @@
             "email" : {
                "type" : "string",
                "pattern" : "^[_2]$"
+            },
+            "preferred_language" : {
+               "type" : "string",
+               "pattern" : "^[A-Z]{0,2}$"
             }
          },
          "type" : "object"

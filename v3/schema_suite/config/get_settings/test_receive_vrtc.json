@@ -18,7 +18,8 @@
             "email",
             "country_code",
             "user_hash",
-            "immutable_fields"
+            "immutable_fields",
+            "preferred_language"
          ],
          "properties" : {
             "email_consent" : {
@@ -48,6 +49,10 @@
                "items" : {
                   "type" : "string"
                }
+            },
+            "preferred_language" : {
+               "type" : "string",
+               "pattern" : "^[A-Z]{0,2}$"
             }
          }
       },

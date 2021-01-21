@@ -24,7 +24,8 @@
             "balance",
             "email",
             "is_virtual",
-            "landing_company_name"
+            "landing_company_name",
+            "preferred_language"
          ],
          "type" : "object",
          "properties" : {
@@ -101,6 +102,10 @@
             "landing_company_name" : {
                "pattern" : "^malta$",
                "type" : "string"
+            },
+            "preferred_language" : {
+               "type" : "string",
+               "pattern" : "^[A-Z]{0,2}$"
             }
          }
       },
