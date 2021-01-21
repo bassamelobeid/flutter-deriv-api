@@ -2325,8 +2325,9 @@ Get a single advert by $id.
 
 sub p2p_advert_info {
     my ($self, %param) = @_;
-    my $id   = $param{id} // return;
-    my $list = $self->_p2p_adverts(id => $id);
+    return unless $param{id};
+    $param{client_loginid} = $self->loginid if $param{use_client_limits};
+    my $list = $self->_p2p_adverts(%param);
     return $self->_advert_details($list, undef, 1)->[0];
 }
 

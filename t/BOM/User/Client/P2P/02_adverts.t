@@ -717,4 +717,23 @@ subtest 'Deleting ads' => sub {
     BOM::Test::Helper::P2P::reset_escrow();
 };
 
+subtest 'p2p_advert_info' => sub {
+
+    my ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert(type => 'buy', min_order_amount => 10, max_order_amount => 100);
+    my $client = BOM::Test::Helper::P2P::create_advertiser(balance => 50);
+
+    is $client->p2p_advert_info(id => -1), undef, 'non existant ad id returns undef';
+    is $client->p2p_advert_info(), undef, 'missing id param returns undef';
+
+    subtest 'use_client_limits' => sub {
+        
+        cmp_ok $client->p2p_advert_info(id => $advert->{id})->{max_order_amount_limit}, '==', 100, 'raw limit';
+        cmp_ok $client->p2p_advert_info(id => $advert->{id}, use_client_limits=>1)->{max_order_amount_limit}, '==', 50, 'limit considers client balance';
+        
+        my $client2 = BOM::Test::Helper::P2P::create_advertiser();
+        cmp_ok $client2->p2p_advert_info(id => $advert->{id}, use_client_limits=>1)->{max_order_amount_limit}, '==', 0, 'unorderable ad is returned';
+    };
+};
+    
+
 done_testing();
