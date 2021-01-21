@@ -20,6 +20,8 @@ use Quant::Framework::VolSurface::Delta;
 use Volatility::EconomicEvents;
 use Scalar::Util qw(looks_like_number);
 
+use Data::Dumper;
+
 use constant {
     EE_KEY    => 'ECONOMIC_EVENTS_CALENDAR',
     NAMESPACE => 'economic_events',
@@ -42,7 +44,7 @@ sub run {
 
         # Only use data since yesterday for the rest of operations.
         my $yesterday                 = Date::Utility->today->epoch - 86400;
-        my @three_weeks_future_events = grep { $_->{release_date} >= $yesterday } @$consolidate_events;
+        my @three_weeks_future_events = grep { defined $_->{release_date} and $_->{release_date} >= $yesterday } @$consolidate_events;
 
         Quant::Framework::EconomicEventCalendar->new(
             events           => \@three_weeks_future_events,
