@@ -8,8 +8,8 @@ use DBI;
 use DBD::Pg;
 use IO::Select;
 use Syntax::Keyword::Try;
-use RedisDB;
 use JSON::MaybeXS;
+use Log::Any qw($log);
 use BOM::Platform::Email qw(send_email);
 
 my $json = JSON::MaybeXS->new;
@@ -17,22 +17,34 @@ my %notification_cache;
 my $cache_epoch = Date::Utility->today->epoch;
 
 sub _publish {
-    my $redis = shift;
-    my $msg   = shift;
+    my ($msg, $new_clients_limit) = @_;
+    $log->debugf('Client with binary user id %s crossed a limit of %s', $msg->{binary_user_id}, $msg->{limit_amount});
+    # Only send email warnings when limit is crossed from what we've specified for new clients
+    # trello.com/c/S4BGlHHv/1754-remove-user-limit-email-notification
+    if ($msg->{type} =~ /^user/ && defined $new_clients_limit && $msg->{current_amount} < $new_clients_limit) {
+        $log->debugf(
+            'Skip sending notification email for %s on user %s: %s < %s',
+            $msg->{type},
+            $msg->{binary_user_id},
+            $msg->{current_amount},
+            $new_clients_limit
+        );
+        return;
+    }
 
     my ($subject, $email_list, $status);
     # trading is suspended. So sound the alarm!
     if ($msg->{current_amount} >= $msg->{limit_amount}) {
         $status = 'disabled';
         $subject =
-            $msg->{type} =~ /^(global)/
+            $msg->{type} =~ /^global/
             ? "TRADING SUSPENDED! $msg->{type} LIMIT is crossed for landing company $msg->{landing_company}."
             : "TRADING SUSPENDED! $msg->{type} LIMIT is crossed for user $msg->{binary_user_id} loginid $msg->{client_loginid}.";
         $email_list = 'x-quants@binary.com,x-marketing@binary.com,compliance@binary.com,x-cs@binary.com';
     } else {
         $status = 'threshold_crossed';
         $subject =
-            $msg->{type} =~ /^(global)/
+            $msg->{type} =~ /^global/
             ? "$msg->{type} THRESHOLD is crossed for landing company $msg->{landing_company}."
             : "$msg->{type} THRESHOLD is crossed for user $msg->{binary_user_id}. loginid $msg->{client_loginid}";
         $email_list = 'x-quants@binary.com';
@@ -107,32 +119,33 @@ sub _db {
         });
 }
 
-sub _redis {
-    my $config = YAML::XS::LoadFile('/etc/rmg/chronicle.yml');
-    return RedisDB->new(
-        host     => $config->{write}->{host},
-        port     => $config->{write}->{port},
-        password => $config->{write}->{password});
+sub _get_new_clients_limit {
+    my $dbh = shift;
+    my $lc_loss_limit =
+        $dbh->selectcol_arrayref(q/SELECT potential_loss FROM betonmarkets.user_specific_limits WHERE binary_user_id IS NULL AND client_type='new'/);
+    return $lc_loss_limit->[0] // undef;
 }
 
 sub run {
     my $databases = shift;
-
     my %kids;
 
     local $SIG{INT} = sub {
-        say "$$: Got signal: @_";
+        my $signame = shift;
+        $log->infof('%d: Got signal: %s', $$, $signame);
         foreach my $p (values %kids) {
             next unless exists $p->{pid};
-            say "$$: Killing $p->{pid} (lc: $p->{lc})";
+            $log->debugf('%d: Killing %d (lc: %s)', $$, $p->{pid}, $p->{lc});
             kill TERM => $p->{pid};
         }
     };
     local $SIG{TERM} = $SIG{INT};
 
     my $conn = _master_db_connections();
-    foreach my $lc (keys %{$conn}) {
-        say "$$: setting up config $lc";
+    my @lcs  = keys %{$conn};
+    $log->infof('%d: setting up configs for %s', $$, \@lcs);
+    foreach my $lc (@lcs) {
+        $log->debugf('%d: setting up config %s', $$, $lc);
 
         my $connection_details = $conn->{$lc};
         my $pid;
@@ -156,26 +169,26 @@ sub run {
         %kids = ();
 
         # child
-        say "$$: starting to listen on $connection_details->{ip}/$connection_details->{dbname} ($lc)";
+        $log->debugf('%d: starting to listen on %s/%s (%s)',
+            $$, $connection_details->{ip}, $connection_details->{dbname}, $lc);
 
         while (1) {
             try {
-                my $redis = _redis();
-                my $dbh   = _db($connection_details);
+                my $dbh = _db($connection_details);
                 $dbh->do("LISTEN trade_warning");
-                my $sel = IO::Select->new;
+                my $limit = _get_new_clients_limit($dbh);
+                my $sel   = IO::Select->new;
                 $sel->add($dbh->{pg_socket});
                 while ($sel->can_read) {
                     while (my $notify = $dbh->pg_notifies) {
                         my ($name, $pid, $payload) = @$notify;
                         my $msg = $json->decode($payload);
                         $msg->{landing_company} = $connection_details->{lc};
-                        _publish($redis, $msg);
+                        _publish($msg, $limit);
                     }
                 }
-
-            } catch {
-                warn "$0 ($$): saw exception: $@";
+            } catch ($e) {
+                $log->warnf('%s (%d): saw exception: %s', $0, $$, $e);
                 sleep 1;
             }
         }
@@ -185,8 +198,9 @@ sub run {
     while (keys %kids) {
         my $pid = wait();
         my $cf  = delete $kids{$pid};
-        say "$$: Parent saw $pid ($cf->{lc}) exiting" if $cf;
+        $log->debugf('%d: Parent saw %d (%s) exiting', $$, $pid, $cf->{lc}) if $cf;
     }
+    $log->info('Stopping binary_limits-notification serivce - TradeWarning process terminated');
     return 0;
 }
 
