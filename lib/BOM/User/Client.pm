@@ -1711,6 +1711,8 @@ sub is_document_expiry_check_required {
 
     return 1 if ($self->aml_risk_classification // '') eq 'high';
 
+    return 1 if $self->get_payment_agent;
+
     return 0;
 }
 

@@ -542,4 +542,68 @@ subtest 'Empty POI but has a POA' => sub {
     $mock_client->unmock_all;
 };
 
+subtest 'Payment Agent has expired documents' => sub {
+    my $mock_client = Test::MockModule->new('BOM::User::Client');
+    my $mock_lc     = Test::MockModule->new('LandingCompany');
+    my $risk;
+    my $pa;
+
+    $mock_lc->mock(
+        'documents_expiration_check_required',
+        sub {
+            return 0;
+        });
+
+    $mock_client->mock(
+        'aml_risk_classification',
+        sub {
+            return $risk;
+        });
+
+    $mock_client->mock(
+        'get_payment_agent',
+        sub {
+            return $pa;
+        });
+
+    $risk = 'low';
+    $pa   = 1;
+    ok $client_cr->is_document_expiry_check_required, 'Expire check required for PA low risk';
+
+    $risk = 'high';
+    $pa   = 1;
+    ok $client_cr->is_document_expiry_check_required, 'Expire check required for PA high risk';
+
+    $risk = 'low';
+    $pa   = 0;
+    ok !$client_cr->is_document_expiry_check_required, 'Expire check not required for non PA low risk';
+
+    $risk = 'high';
+    $pa   = 0;
+    ok $client_cr->is_document_expiry_check_required, 'Expire check required for non PA high risk';
+
+    subtest 'Documents' => sub {
+        my $docs;
+
+        $mock_client->mock(
+            'documents_uploaded',
+            sub {
+                return $docs;
+            });
+
+        $docs = {
+            'proof_of_address' => {
+                'is_expired' => 1,
+            }};
+
+        $risk = 'low';
+        $pa   = 0;
+        ok $client_cr->has_valid_documents($docs), 'Expire check not required';
+
+        $risk = 'low';
+        $pa   = 1;
+        ok !$client_cr->has_valid_documents($docs), 'Invalid documents';
+    }
+};
+
 done_testing();
