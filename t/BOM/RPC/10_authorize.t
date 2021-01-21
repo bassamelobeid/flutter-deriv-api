@@ -646,6 +646,12 @@ subtest 'upgradeable_landing_companies svg' => sub {
 my $new_token;
 subtest 'logout' => sub {
     ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $test_client->loginid);
+    $c->call_ok(
+        'authorize',
+        {
+            language => 'EN',
+            token    => $token
+        })->has_no_error->result;
 
     my $res = BOM::RPC::v3::Accounts::api_token({
             client => $test_client,
@@ -676,11 +682,20 @@ subtest 'logout' => sub {
 
     #check login history
     ($new_token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $test_client->loginid);
+    $c->call_ok(
+        'authorize',
+        {
+            language => 'EN',
+            token    => $new_token
+        })->has_no_error->result;
+
     my $history_records = $c->call_ok(
         'login_history',
         {
             token => $new_token,
             args  => {limit => 1}})->has_no_error->result->{records};
+
+    note explain $history_records;
     is($history_records->[0]{action}, 'logout', 'the last history is logout');
     like($history_records->[0]{environment}, qr/IP=1.1.1.1 IP_COUNTRY=ID User_AGENT= LANG=EN/, "environment is correct");
 

@@ -1943,4 +1943,427 @@ subtest "Test onfido is_country_supported" => sub {
     );
 };
 
+my $test_client_experian = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    broker_code => 'MX',
+    residence   => 'gb',
+});
+$test_client_experian->email('sample_experian@binary.com');
+$test_client_experian->set_default_account('GBP');
+$test_client_experian->save;
+my $user_experian = BOM::User->create(
+    email    => 'user_experian@binary.com',
+    password => $hash_pwd
+);
+
+$user_experian->add_client($test_client_experian);
+my $token_client_experian = $m->create_token($test_client_experian->loginid, 'test token');
+
+subtest 'Experian validated account' => sub {
+    $test_client_experian->status->upsert('age_verification',  'test', 'Experian results are sufficient to mark client as age verified.');
+    $test_client_experian->status->upsert('proveid_requested', 'test', 'ProveID request has been made for this account.');
+    $test_client_experian->set_authentication('ID_ONLINE', {status => 'pass'});
+    my $mocked_client = Test::MockModule->new(ref($test_client));
+
+    subtest 'Low Risk' => sub {
+        $test_client_experian->aml_risk_classification('low');
+        $test_client_experian->save;
+
+        my $result = $c->tcall($method, {token => $token_client_experian});
+        cmp_deeply(
+            $result,
+            {
+                currency_config => {
+                    "GBP" => {
+                        is_deposit_suspended    => 0,
+                        is_withdrawal_suspended => 0,
+                    }
+                },
+                status => [
+                    'age_verification',      'authenticated',
+                    'allow_document_upload', 'financial_information_not_complete',
+                    'trading_experience_not_complete',
+                ],
+                risk_classification           => 'low',
+                prompt_client_to_authenticate => 0,
+                authentication                => {
+                    document => {
+                        status => "verified",
+                    },
+                    identity => {
+                        status   => "verified",
+                        services => {
+                            onfido => {
+                                is_country_supported => 1,
+                                documents_supported  => [
+                                    'Asylum Registration Card',
+                                    'Certificate of Naturalisation',
+                                    'Driving Licence',
+                                    'Home Office Letter',
+                                    'Immigration Status Document',
+                                    'National Identity Card',
+                                    'Passport',
+                                    'Residence Permit',
+                                    'Visa'
+                                ],
+                                country_code => 'GBR'
+                            }}
+                    },
+                    needs_verification => []}
+            },
+            'Experian validated low risk account does not need POI validation'
+        );
+    };
+
+    subtest 'High Risk' => sub {
+        $test_client_experian->aml_risk_classification('high');
+        $test_client_experian->save;
+
+        my $result = $c->tcall($method, {token => $token_client_experian});
+        cmp_deeply(
+            $result,
+            {
+                currency_config => {
+                    "GBP" => {
+                        is_deposit_suspended    => 0,
+                        is_withdrawal_suspended => 0,
+                    }
+                },
+                status => [
+                    'age_verification',                'authenticated',
+                    'allow_document_upload',           'financial_information_not_complete',
+                    'trading_experience_not_complete', 'financial_assessment_not_complete',
+                ],
+                risk_classification           => 'high',
+                prompt_client_to_authenticate => 0,
+                authentication                => {
+                    document => {
+                        status => "none",
+                    },
+                    identity => {
+                        status   => "none",
+                        services => {
+                            onfido => {
+                                is_country_supported => 1,
+                                documents_supported  => [
+                                    'Asylum Registration Card',
+                                    'Certificate of Naturalisation',
+                                    'Driving Licence',
+                                    'Home Office Letter',
+                                    'Immigration Status Document',
+                                    'National Identity Card',
+                                    'Passport',
+                                    'Residence Permit',
+                                    'Visa'
+                                ],
+                                country_code => 'GBR'
+                            }}
+                    },
+                    needs_verification => supersetof('identity', 'document')}
+            },
+            'Experian validated high risk account needs POI and POA validation'
+        );
+
+        subtest 'Client uploaded POA' => sub {
+            $mocked_client->mock(
+                'documents_uploaded',
+                sub {
+                    return {
+                        proof_of_address => {
+                            is_pending => 1,
+                        }};
+                });
+
+            my $result = $c->tcall($method, {token => $token_client_experian});
+            cmp_deeply(
+                $result,
+                {
+                    currency_config => {
+                        "GBP" => {
+                            is_deposit_suspended    => 0,
+                            is_withdrawal_suspended => 0,
+                        }
+                    },
+                    status => [
+                        'age_verification',                'authenticated',
+                        'allow_document_upload',           'financial_information_not_complete',
+                        'trading_experience_not_complete', 'financial_assessment_not_complete',
+                    ],
+                    risk_classification           => 'high',
+                    prompt_client_to_authenticate => 0,
+                    authentication                => {
+                        document => {
+                            status => "pending",
+                        },
+                        identity => {
+                            status   => "none",
+                            services => {
+                                onfido => {
+                                    is_country_supported => 1,
+                                    documents_supported  => [
+                                        'Asylum Registration Card',
+                                        'Certificate of Naturalisation',
+                                        'Driving Licence',
+                                        'Home Office Letter',
+                                        'Immigration Status Document',
+                                        'National Identity Card',
+                                        'Passport',
+                                        'Residence Permit',
+                                        'Visa'
+                                    ],
+                                    country_code => 'GBR'
+                                }}
+                        },
+                        needs_verification => ['identity']}
+                },
+                'Experian validated high risk account has pending status after Docs upload'
+            );
+
+            subtest 'POA uploaded is approved in the BO' => sub {
+                # The BO drops all the authentications before setting it up again
+                $_->delete for @{$test_client_experian->client_authentication_method};
+                $test_client_experian->set_authentication('ID_DOCUMENT', {status => 'pass'});
+
+                $mocked_client->mock(
+                    'documents_uploaded',
+                    sub {
+                        return {
+                            proof_of_address => {
+                                is_pending => 0,
+                            }};
+                    });
+
+                my $result = $c->tcall($method, {token => $token_client_experian});
+                cmp_deeply(
+                    $result,
+                    {
+                        currency_config => {
+                            "GBP" => {
+                                is_deposit_suspended    => 0,
+                                is_withdrawal_suspended => 0,
+                            }
+                        },
+                        status => [
+                            'age_verification',                'authenticated',
+                            'allow_document_upload',           'financial_information_not_complete',
+                            'trading_experience_not_complete', 'financial_assessment_not_complete',
+                        ],
+                        risk_classification           => 'high',
+                        prompt_client_to_authenticate => 0,
+                        authentication                => {
+                            document => {
+                                status => "verified",
+                            },
+                            identity => {
+                                status   => "verified",
+                                services => {
+                                    onfido => {
+                                        is_country_supported => 1,
+                                        documents_supported  => [
+                                            'Asylum Registration Card',
+                                            'Certificate of Naturalisation',
+                                            'Driving Licence',
+                                            'Home Office Letter',
+                                            'Immigration Status Document',
+                                            'National Identity Card',
+                                            'Passport',
+                                            'Residence Permit',
+                                            'Visa'
+                                        ],
+                                        country_code => 'GBR'
+                                    }}
+                            },
+                            needs_verification => []}
+                    },
+                    'Former Experian validated high risk account has verified POA and POI when fully authenticated'
+                );
+            };
+        };
+
+        subtest 'Client uploaded Onfido docs' => sub {
+            my $mocked_onfido = Test::MockModule->new('BOM::User::Onfido');
+            my $onfido_document_status;
+
+            $mocked_onfido->mock(
+                'get_latest_check',
+                sub {
+                    return {
+                        report_document_status     => $onfido_document_status,
+                        report_document_sub_result => undef,
+                    };
+                });
+
+            $onfido_document_status = 'in_progress';
+
+            my $result = $c->tcall($method, {token => $token_client_experian});
+            cmp_deeply(
+                $result,
+                {
+                    currency_config => {
+                        "GBP" => {
+                            is_deposit_suspended    => 0,
+                            is_withdrawal_suspended => 0,
+                        }
+                    },
+                    status => [
+                        'age_verification',                'authenticated',
+                        'allow_document_upload',           'financial_information_not_complete',
+                        'trading_experience_not_complete', 'financial_assessment_not_complete',
+                    ],
+                    risk_classification           => 'high',
+                    prompt_client_to_authenticate => 0,
+                    authentication                => {
+                        document => {
+                            status => "verified",
+                        },
+                        identity => {
+                            status   => "pending",
+                            services => {
+                                onfido => {
+                                    is_country_supported => 1,
+                                    documents_supported  => [
+                                        'Asylum Registration Card',
+                                        'Certificate of Naturalisation',
+                                        'Driving Licence',
+                                        'Home Office Letter',
+                                        'Immigration Status Document',
+                                        'National Identity Card',
+                                        'Passport',
+                                        'Residence Permit',
+                                        'Visa'
+                                    ],
+                                    country_code => 'GBR'
+                                }}
+                        },
+                        needs_verification => []}
+                },
+                'Experian validated high risk account has pending status after Onfido upload'
+            );
+
+            $mocked_onfido->unmock_all;
+
+            subtest 'Onfido docs are accepted' => sub {
+                $test_client_experian->status->upsert('age_verification', 'system', 'Onfido - age verified');
+
+                my $result = $c->tcall($method, {token => $token_client_experian});
+                cmp_deeply(
+                    $result,
+                    {
+                        currency_config => {
+                            "GBP" => {
+                                is_deposit_suspended    => 0,
+                                is_withdrawal_suspended => 0,
+                            }
+                        },
+                        status => [
+                            'age_verification',                'authenticated',
+                            'allow_document_upload',           'financial_information_not_complete',
+                            'trading_experience_not_complete', 'financial_assessment_not_complete',
+                        ],
+                        risk_classification           => 'high',
+                        prompt_client_to_authenticate => 0,
+                        authentication                => {
+                            document => {
+                                status => "verified",
+                            },
+                            identity => {
+                                status   => "verified",
+                                services => {
+                                    onfido => {
+                                        is_country_supported => 1,
+                                        documents_supported  => [
+                                            'Asylum Registration Card',
+                                            'Certificate of Naturalisation',
+                                            'Driving Licence',
+                                            'Home Office Letter',
+                                            'Immigration Status Document',
+                                            'National Identity Card',
+                                            'Passport',
+                                            'Residence Permit',
+                                            'Visa'
+                                        ],
+                                        country_code => 'GBR'
+                                    }}
+                            },
+                            needs_verification => []}
+                    },
+                    'Former Experian validated high risk does not need POI as the validator is Onfido now'
+                );
+            };
+
+            subtest 'Onfido docs expired' => sub {
+                my $mocked_client = Test::MockModule->new(ref($test_client_experian));
+                $mocked_client->mock(
+                    'documents_uploaded',
+                    sub {
+                        return {
+                            proof_of_identity => {
+                                documents => {
+                                    $test_client_experian->loginid
+                                        . '_passport' => {
+                                        expiry_date => Date::Utility->new->minus_time_interval('1d')->epoch,
+                                        type        => 'passport',
+                                        format      => 'pdf',
+                                        id          => 1,
+                                        status      => 'uploaded'
+                                        },
+                                },
+                                expiry_date => Date::Utility->new->minus_time_interval('1d')->epoch,
+                                is_expired  => 1,
+                            },
+                        };
+                    });
+
+                my $result = $c->tcall($method, {token => $token_client_experian});
+                cmp_deeply(
+                    $result,
+                    {
+                        currency_config => {
+                            "GBP" => {
+                                is_deposit_suspended    => 0,
+                                is_withdrawal_suspended => 0,
+                            }
+                        },
+                        status => [
+                            'age_verification',                'authenticated',
+                            'allow_document_upload',           'financial_information_not_complete',
+                            'trading_experience_not_complete', 'financial_assessment_not_complete',
+                            'document_expired',
+                        ],
+                        risk_classification           => 'high',
+                        prompt_client_to_authenticate => 0,
+                        authentication                => {
+                            document => {
+                                status => "verified",
+                            },
+                            identity => {
+                                status      => "expired",
+                                expiry_date => re('.*'),
+                                services    => {
+                                    onfido => {
+                                        is_country_supported => 1,
+                                        documents_supported  => [
+                                            'Asylum Registration Card',
+                                            'Certificate of Naturalisation',
+                                            'Driving Licence',
+                                            'Home Office Letter',
+                                            'Immigration Status Document',
+                                            'National Identity Card',
+                                            'Passport',
+                                            'Residence Permit',
+                                            'Visa'
+                                        ],
+                                        country_code => 'GBR'
+                                    }}
+                            },
+                            needs_verification => ['identity']}
+                    },
+                    'Former Experian validated high risk account has expired status after Onfido upload and docs expired'
+                );
+
+                $mocked_client->unmock_all;
+            };
+        };
+    };
+};
+
 done_testing();
