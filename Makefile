@@ -1,12 +1,20 @@
+TESTS=test syntax 
+
+M=[ -t 1 ] && echo -e 'making \033[01;33m$@\033[00m' || echo 'making $@'
+P=/etc/rmg/bin/prove -vrl --timer 
+PROVE=p () { $M; echo '$P' "$$@"; $P "$$@"; }; p
+
+test_all: $(TESTS)
+
 test:
-	/etc/rmg/bin/prove -lvr t/
+	@$(PROVE) t/BOM
 
 pod_test:
-	/etc/rmg/bin/prove -vlr t/*pod*.t
+	@$(PROVE) t/*pod*.t
 
 
 syntax:
-	/etc/rmg/bin/prove --norc t/*.t
+	@$(PROVE) --norc t/*.t
 
 tidy:
 	find . -name '*.p?.bak' -delete
