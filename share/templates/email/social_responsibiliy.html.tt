@@ -15,12 +15,14 @@
    <th scope="col">Threshold attribute</th>
    <th scope="col">Threshold value</th>
    <th scope="col">Client value</th>
+   <th scope="col">Client net income</th>
   </tr>
   [% FOREACH info IN breached_info -%]
   <tr>
     <td>[% info.attribute %]</td>
     <td>[% info.threshold_val %]</td>
     <td>[% info.client_val %]</td>
+    <td>[% info.net_income %]</td>
   </tr>
   [% END -%]
  </tbody>

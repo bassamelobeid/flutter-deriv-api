@@ -22,7 +22,7 @@ use Digest::MD5;
 use Encode qw(decode_utf8 encode_utf8);
 use ExchangeRates::CurrencyConverter qw(convert_currency);
 use File::Temp;
-use Format::Util::Numbers qw(financialrounding);
+use Format::Util::Numbers qw(financialrounding formatnumber);
 use Future::AsyncAwait;
 use Future::Utils qw(fmap0);
 use IO::Async::Loop;
@@ -96,6 +96,7 @@ use constant ONFIDO_AGE_EMAIL_PER_USER_TIMEOUT                 => $ENV{ONFIDO_AG
 use constant ONFIDO_AGE_BELOW_EIGHTEEN_EMAIL_PER_USER_PREFIX   => 'ONFIDO::AGE::BELOW::EIGHTEEN::EMAIL::PER::USER::';
 use constant ONFIDO_ADDRESS_REQUIRED_FIELDS                    => qw(address_postcode residence);
 use constant ONFIDO_UPLOAD_TIMEOUT_SECONDS                     => 30;
+use constant SR_CHECK_TIMEOUT                                  => 5;
 
 # Redis TTLs
 use constant TTL_ONFIDO_APPLICANT_CONTEXT_HOLDER => 240 * 60 * 60;    # 10 days in seconds
@@ -182,6 +183,17 @@ my %ONFIDO_DOCUMENT_TYPE_PRIORITY = (
 );
 
 my %allowed_synchronizable_documents_type = map { $_ => 1 } (POA_DOCUMENTS_TYPE, POI_DOCUMENTS_TYPE);
+
+# Mapping to convert our database entries for 'net_income'
+# in json field of financial_assessment to values which will be
+# easier to make the sr checks
+my %NET_INCOME = (
+    'Over $500,000'       => '500000',
+    '$100,001 - $500,000' => '100000',
+    '$50,001 - $100,000'  => '50000',
+    '$25,000 - $50,000'   => '25000',
+    'Less than $25,000'   => '24999',
+);
 
 my $loop = IO::Async::Loop->new;
 $loop->add(my $services = BOM::Event::Services->new);
@@ -1570,60 +1582,59 @@ sub social_responsibility_check {
     my $data  = shift;
     my $brand = request->brand;
 
-    my $loginid = $data->{loginid};
+    my $loginid = $data->{loginid} or die "Missing loginid";
+
+    my $client = BOM::User::Client->new({loginid => $loginid}) or die "Invalid loginid: $loginid";
 
     my $redis = BOM::Config::Redis::redis_events();
 
-    my $hash_key   = 'social_responsibility';
-    my $event_name = $loginid . '_sr_check';
+    my $lock_key     = join q{-} => ('SOCIAL_RESPONSIBILITY_CHECK', $loginid,);
+    my $acquire_lock = BOM::Platform::Redis::acquire_lock($lock_key, SR_CHECK_TIMEOUT);
+    $log->warn("Social responsibility check already running for client: $loginid") unless $acquire_lock;
+    return unless $acquire_lock;
+
+    my $event_name = $loginid . ':sr_check:';
 
     my $client_sr_values = {};
 
-    foreach my $sr_key (qw/num_contract turnover losses deposit_amount deposit_count/) {
-        $client_sr_values->{$sr_key} = $redis->hget($hash_key, $loginid . '_' . $sr_key) // 0;
+    foreach my $sr_key (qw/losses net_deposits/) {
+        $client_sr_values->{$sr_key} = $redis->get($event_name . $sr_key) // 0;
     }
 
-    # Remove flag from redis
-    $redis->hdel($hash_key, $event_name);
+    #get the net income of the client
+    my $fa_net_income = $client->get_financial_assessment('net_income');
 
-    foreach my $threshold_list (@{BOM::Config::social_responsibility_thresholds()->{limits}}) {
+    # if the query returns undef value it means the client
+    # hasn't filled the FA.
+    my $client_net_income = $fa_net_income ? $NET_INCOME{$fa_net_income} : "No FA filled";
 
-        my $hits_required = $threshold_list->{hits_required};
+    my $threshold_list = first { $_->{net_income} eq $client_net_income } BOM::Config::social_responsibility_thresholds()->{limits}->@*;
 
-        my @breached_info;
+    unless ($threshold_list) {
+        $log->errorf('Net Annual Income of client %s does not much any of the values', $client->loginid);
+        BOM::Platform::Redis::release_lock($lock_key);
+        return undef;
+    }
 
-        my $hits = 0;
+    my @breached_info;
 
-        foreach my $attribute (keys %$client_sr_values) {
+    foreach my $attribute (keys %$client_sr_values) {
 
-            my $client_attribute_val = $client_sr_values->{$attribute};
-            my $threshold_val        = $threshold_list->{$attribute};
+        my $client_attribute_val = $client_sr_values->{$attribute};
+        my $threshold_val        = $threshold_list->{$attribute};
 
-            if ($client_attribute_val >= $threshold_val) {
+        if ($client_attribute_val >= $threshold_val) {
 
-                # For losses, turnover, and amount: standardize to 2 decimal places
-                # TODO: Use currency conversion instead of sprintf
-                unless (any { $_ eq $attribute } qw/deposit_count num_contract/) {
-                    $client_attribute_val = sprintf("%.2f", $client_attribute_val);
-                    $threshold_val        = sprintf("%.2f", $threshold_val);
-                }
+            $client_attribute_val = formatnumber('amount', $client->currency, $client_attribute_val);
+            $threshold_val        = formatnumber('amount', $client->currency, $threshold_val);
 
-                push @breached_info,
-                    {
-                    attribute     => $attribute,
-                    client_val    => $client_attribute_val,
-                    threshold_val => $threshold_val
-                    };
-
-                $hits++;
-            }
-        }
-
-        last unless $hits;
-
-        if ($hits >= $hits_required) {
-
-            my $client = BOM::User::Client->new({loginid => $loginid});
+            push @breached_info,
+                {
+                attribute     => $attribute,
+                client_val    => $client_attribute_val,
+                threshold_val => $threshold_val,
+                net_income    => $fa_net_income // "No FA filled",
+                };
 
             my $system_email  = $brand->emails('system');
             my $sr_email      = $brand->emails('social_responsibility');
@@ -1631,8 +1642,10 @@ sub social_responsibility_check {
 
             # Client cannot trade or deposit without a financial assessment check
             # Hence, they will be put under unwelcome
-            $client->status->set('unwelcome', 'system', 'Social responsibility thresholds breached - Pending fill of financial assessment')
-                unless ($client->financial_assessment() or $client->status->unwelcome);
+            $client->status->setnx('unwelcome', 'system', 'Social responsibility thresholds breached - Pending financial assessment')
+                unless ($client_net_income ne "No FA filled" or $client->status->unwelcome);
+            $client->status->setnx('financial_assessment_required', 'system', 'Social responsibility thresholds breached')
+                unless ($client_net_income ne "No FA filled");
 
             my $tt = Template::AutoFilter->new({
                 ABSOLUTE => 1,
@@ -1645,11 +1658,11 @@ sub social_responsibility_check {
             };
 
             # Remove keys from redis
-            $redis->hdel($hash_key, $loginid . '_' . $_) for keys %$client_sr_values;
+            $redis->del($event_name . $_) for keys %$client_sr_values;
 
             # Set the client's SR risk status as at-risk and keep it like that for 30 days
             # TODO: Remove this when we move from redis to database
-            my $sr_status_key = $loginid . '_sr_risk_status';
+            my $sr_status_key = $loginid . ':sr_risk_status';
             $redis->set(
                 $sr_status_key => 'high',
                 EX             => 86400 * 30
@@ -1661,16 +1674,17 @@ sub social_responsibility_check {
 
                 die "failed to send social responsibility email ($loginid)"
                     unless Email::Stuffer->from($system_email)->to($sr_email)->subject($email_subject)->html_body($html)->send();
-
+                BOM::Platform::Redis::release_lock($lock_key);
                 return undef;
             } catch {
                 $log->warn($@);
                 exception_logged();
+                BOM::Platform::Redis::release_lock($lock_key);
                 return undef;
             }
         }
     }
-
+    BOM::Platform::Redis::release_lock($lock_key);
     return undef;
 }
 
