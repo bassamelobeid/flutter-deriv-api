@@ -139,8 +139,9 @@ sub get_verification {
 subtest 'Password Reset Verification' => sub {
     my $verification_type = 'reset_password';
     my $verification      = get_verification($verification_type);
+    my $brand_name        = ucfirst $brand->name;
 
-    is $verification->{subject}, "Reset your $website_name account password", 'reset password verification subject';
+    is $verification->{subject}, "Get a new $brand_name account password", 'reset password verification subject';
     is $verification->{message}, get_verification_message('reset_password'), 'Password Reset with token';
 
     $user_mocked->mock('new', sub { return bless {has_social_signup => 1}, 'BOM::User' });
@@ -170,7 +171,7 @@ subtest 'Account Opening (new) Verification' => sub {
 subtest 'Payment Withdraw Verification' => sub {
     my $verification = get_verification('payment_withdraw', 0);
 
-    is $verification->{subject}, "Verify your withdrawal request - $website_name", 'Payment Withdraw subject';
+    is $verification->{subject}, "Verify your withdrawal request", 'Payment Withdraw subject';
     is $verification->{message}, get_verification_message('payment_withdraw'), 'Payment Withdraw with token';
 
     $verification = get_verification('payment_withdraw', 1);

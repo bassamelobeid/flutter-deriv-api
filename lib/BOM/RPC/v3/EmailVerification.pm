@@ -74,10 +74,11 @@ sub email_verification {
     my ($code, $website_name, $verification_uri, $language, $source, $app_name, $type, $email) =
         @{$args}{qw/code website_name verification_uri language source app_name type email/};
 
-    my ($has_social_signup, $user_name);
+    my ($has_social_signup, $user_name, $name);
     if (my $user = BOM::User->new(email => $email)) {
         $has_social_signup = $user->{has_social_signup};
         $user_name         = ($user->clients)[0]->last_name if $user->clients;
+        $name              = ($user->clients)[0]->first_name if $user->clients;
     }
 
     my $brand  = request()->brand;
@@ -103,13 +104,16 @@ sub email_verification {
         account_opening_new => sub {
             my $subject =
                 $brand->name eq 'deriv'
-                ? localize('Verify your account for Deriv')
+                ? localize("One more step to create your account")
                 : localize('Verify your email address - [_1]', $website_name);
 
             return {
                 subject       => $subject,
                 template_name => 'account_opening_new',
-                template_args => {(
+                template_args => {
+                    name  => $name,
+                    title => localize("You're nearly there!"),
+                    (
                         $verification_uri
                         ? (verification_url => _build_verification_url('signup', $args))
                         : ()
@@ -120,7 +124,7 @@ sub email_verification {
         },
         account_opening_existing => sub {
             my $subject =
-                  $brand->name eq 'deriv' ? localize('Unsuccessful Deriv account creation')
+                  $brand->name eq 'deriv' ? localize('Your email address is already in use')
                 : $source == 1            ? localize('Duplicate email address submitted - [_1]', $website_name)
                 :                           localize('Duplicate email address submitted to [_1] (powered by [_2])', $app_name, $website_name);
 
@@ -129,6 +133,8 @@ sub email_verification {
                 template_name => 'account_opening_existing',
                 template_args => {
                     login_url => 'https://oauth.' . lc($brand->website_name) . '/oauth2/authorize?app_id=' . $source . '&brand=' . $brand->name,
+                    name      => $name,
+                    title     => localize('Your email address looks familiar'),
                     %common_args,
                 },
             };
@@ -138,9 +144,12 @@ sub email_verification {
             my $action          = $is_paymentagent                 ? 'payment_agent_withdraw' : $type;
 
             return {
-                subject       => localize('Verify your withdrawal request - [_1]', $website_name),
+                subject       => localize('Verify your withdrawal request'),
                 template_name => 'payment_withdraw',
-                template_args => {(
+                template_args => {
+                    name  => $name,
+                    title => localize('Do you wish to withdraw funds?'),
+                    (
                         $verification_uri
                         ? (verification_url => _build_verification_url($action, $args))
                         : ()
@@ -151,10 +160,25 @@ sub email_verification {
             };
         },
         reset_password => sub {
+            my $subject       = localize('Get a new [_1] account password', ucfirst $brand->name);
+            my $template_name = 'reset_password_request';
+            my $title         = localize("Forgot your password? Let's get you a new one.");
+            my $title_padding = 100;
+            if ($has_social_signup && $brand->name ne 'binary') {
+                $subject       = localize("Forgot your social password?");
+                $template_name = 'lost_password_has_social_login';
+                $title         = localize("Forgot your social password?");
+                $title_padding = undef;
+            }
             return {
-                subject       => localize('Reset your [_1] account password', $website_name),
-                template_name => 'reset_password_request',
-                template_args => {(
+                subject       => $subject,
+                template_name => $template_name,
+                template_args => {
+                    name          => $name,
+                    title         => $title,
+                    title_padding => $title_padding,
+                    brand_name    => ucfirst $brand->name,
+                    (
                         $verification_uri
                         ? (verification_url => _build_verification_url('reset_password', $args))
                         : ()
@@ -164,10 +188,19 @@ sub email_verification {
             };
         },
         mt5_password_reset => sub {
+            my $subject =
+                $brand->name eq 'deriv'
+                ? localize("Your DMT5 account new password request")
+                : localize('[_1] New MT5 Password Request', ucfirst $brand->name);
+
             return {
-                subject       => localize('[_1] New MT5 Password Request', $website_name),
+                subject       => $subject,
                 template_name => 'mt5_password_reset',
-                template_args => {(
+                template_args => {
+                    name          => $name,
+                    title         => localize("Forgot your password? Let's get you a new one."),
+                    title_padding => 100,
+                    (
                         $verification_uri
                         ? (verification_url => _build_verification_url('mt5_password_reset', $args))
                         : ()
@@ -177,19 +210,25 @@ sub email_verification {
             };
         },
         closed_account => sub {
-            my $subject;
+            my ($subject, $title, $title_padding);
             if ($type eq 'account_opening') {
-                $subject = localize('Signup unsuccessful');
+                $subject = $title = localize("We're unable to sign you up");
             } elsif ($type eq 'reset_password') {
-                $subject = localize('Password reset unsuccessful');
+                $subject = $title = localize("We couldn't reset your password");
             } else {
-                $subject = localize('Email verification unsuccessful');
+                $subject       = $title = localize("We couldn't verify your email address");
+                $title_padding = 90;
             }
 
             return {
                 subject       => $subject,
                 template_name => 'verify_email_closed_account',
-                template_args => {%common_args},
+                template_args => {
+                    name          => $name,
+                    title         => $title,
+                    title_padding => $title_padding,
+                    %common_args,
+                },
             };
         }
     };

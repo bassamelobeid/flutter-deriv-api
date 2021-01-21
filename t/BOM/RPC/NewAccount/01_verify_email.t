@@ -130,7 +130,7 @@ subtest 'Reset password for exists user' => sub {
 
     my $msg = mailbox_search(
         email   => lc($params[1]->{args}->{verify_email}),
-        subject => qr/Reset your .* account password/
+        subject => qr/Get a new .* account password/
     );
     ok $msg, 'Email sent successfully';
 };
@@ -222,7 +222,7 @@ subtest 'Closed account' => sub {
 
     my $msg = mailbox_search(
         email   => $params[1]->{args}->{verify_email},
-        subject => qr/Signup unsuccessful/
+        subject => qr/We're unable to sign you up/
     );
     ok $msg, 'Correct email received for signup attempt on closed account';
 
@@ -249,7 +249,7 @@ subtest 'Closed account' => sub {
 
     $msg = mailbox_search(
         email   => $params[1]->{args}->{verify_email},
-        subject => qr/Password reset unsuccessful/
+        subject => qr/We couldn't reset your password/
     );
     ok $msg, 'Correct email received for reset password attempt on closed account';
 
@@ -261,7 +261,7 @@ subtest 'Closed account' => sub {
 
     $msg = mailbox_search(
         email   => $params[1]->{args}->{verify_email},
-        subject => qr/Email verification unsuccessful/
+        subject => qr/We couldn't verify your email address/
     );
     ok $msg, 'Correct email received for payment withdraw attempt on closed account';
 };

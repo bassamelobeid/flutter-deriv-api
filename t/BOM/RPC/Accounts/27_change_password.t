@@ -191,7 +191,7 @@ subtest 'change password' => sub {
     $params->{args}{new_password} = $new_password;
     mailbox_clear();
     is($c->tcall($method, $params)->{status}, 1, 'update password correctly');
-    my $subject = 'Your password has been changed.';
+    my $subject = 'Your new Deriv account password';
     my $msg     = mailbox_search(
         email   => $email,
         subject => qr/\Q$subject\E/

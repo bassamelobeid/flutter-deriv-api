@@ -807,11 +807,13 @@ rpc paymentagent_transfer => sub {
         payment_agent => 0,
     );
 
+    my $name  = $client_to->first_name;
+    my $title = localize("We've completed a transfer");
     send_email({
         to                    => $client_to->email,
         subject               => localize('Acknowledgement of Money Transfer'),
         template_name         => 'pa_transfer_confirm',
-        template_args         => _template_args($website_name, $client_to, $client_fm, $amount, $currency),
+        template_args         => _template_args($website_name, $client_to, $client_fm, $amount, $currency, $name, $title),
         use_email_template    => 1,
         email_content_is_html => 1,
         use_event             => 1,
@@ -1142,11 +1144,13 @@ rpc paymentagent_withdraw => sub {
         payment_agent => 0,
     );
 
+    my $name  = $pa_client->first_name;
+    my $title = localize("You have received funds");
     send_email({
         to                    => $paymentagent->email,
-        subject               => localize('Acknowledgement of Withdrawal Request'),
+        subject               => localize('You have received funds'),
         template_name         => 'pa_withdraw_confirm',
-        template_args         => _template_args($website_name, $client, $pa_client, $amount, $currency),
+        template_args         => _template_args($website_name, $client, $pa_client, $amount, $currency, $name, $title),
         use_email_template    => 1,
         email_content_is_html => 1,
         use_event             => 1,
@@ -1873,7 +1877,7 @@ sub _check_facility_availability {
 }
 
 sub _template_args {
-    my ($website_name, $client, $pa_client, $amount, $currency) = @_;
+    my ($website_name, $client, $pa_client, $amount, $currency, $name, $title) = @_;
 
     my $client_name = $client->first_name . ' ' . $client->last_name;
 
@@ -1882,6 +1886,8 @@ sub _template_args {
         amount            => $amount,
         currency          => $currency,
         client_loginid    => $client->loginid,
+        name              => $name,
+        title             => $title,
         client_name       => encode_entities($client_name),
         client_salutation => encode_entities($client->salutation),
         client_first_name => encode_entities($client->first_name),

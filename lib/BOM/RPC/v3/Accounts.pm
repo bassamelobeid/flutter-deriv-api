@@ -1128,17 +1128,27 @@ rpc change_password => sub {
         $oauth->revoke_tokens_by_loginid($obj->loginid);
     }
 
+    my $brand       = request()->brand;
+    my $contact_url = $brand->contact_url({
+            source   => $params->{source},
+            language => $params->{language}});
+
     my $email = $client->email;
     BOM::User::AuditLog::log('password has been changed', $email);
     send_email({
-        to                 => $client->email,
-        subject            => localize('Your password has been changed.'),
-        template_name      => 'reset_password_confirm',
-        template_args      => {email => $email},
-        use_email_template => 1,
-        template_loginid   => $client->loginid,
-        use_event          => 1,
-    });
+            to            => $client->email,
+            subject       => $brand->name eq 'deriv' ? localize('Your new Deriv account password') : localize('Your password has been changed.'),
+            template_name => 'reset_password_confirm',
+            template_args => {
+                email       => $email,
+                name        => $client->first_name,
+                title       => localize("You've got a new password"),
+                contact_url => $contact_url,
+            },
+            use_email_template => 1,
+            template_loginid   => $client->loginid,
+            use_event          => 1,
+        });
 
     return {status => 1};
 };
@@ -1206,16 +1216,26 @@ rpc "reset_password",
         $user_connect->remove_connect($user->{id}, $_) for @providers;
     }
 
+    my $brand       = request()->brand;
+    my $contact_url = $brand->contact_url({
+            source   => $params->{source},
+            language => $params->{language}});
+
     BOM::User::AuditLog::log('password has been reset', $email, $args->{verification_code});
     send_email({
-        to                 => $email,
-        subject            => localize('Your password has been reset.'),
-        template_name      => 'reset_password_confirm',
-        template_args      => {email => $email},
-        use_email_template => 1,
-        template_loginid   => $client->loginid,
-        use_event          => 1,
-    });
+            to            => $email,
+            subject       => localize('Your password has been reset.'),
+            template_name => 'reset_password_confirm',
+            template_args => {
+                email       => $email,
+                name        => $client->first_name,
+                title       => localize("Your password has been reset"),
+                contact_url => $contact_url,
+            },
+            use_email_template => 1,
+            template_loginid   => $client->loginid,
+            use_event          => 1,
+        });
 
     return {status => 1};
     };
@@ -1655,6 +1675,8 @@ sub _send_update_account_settings_email {
                 salutation     => BOM::Platform::Locale::translate_salutation($current_client->salutation),
                 first_name     => $current_client->first_name,
                 last_name      => $current_client->last_name,
+                name           => $current_client->first_name,
+                title          => localize('Change in account settings'),
                 website_name   => $website_name,
             },
         });
@@ -1882,7 +1904,8 @@ rpc set_self_exclusion => sub {
 
         my $field_date = eval { Date::Utility->new($value) };
 
-        return $validation_error_sub->($field, localize('Exclusion time conversion error.'), localize('Invalid date format.')) unless $field_date;
+        return $validation_error_sub->($field, localize('Exclusion time conversion error.'), localize('Invalid date format.'))
+            unless $field_date;
 
         return $error_sub->($field_settings->{after_today}->{message}, $field) if $field_date->is_before(Date::Utility->new);
 
