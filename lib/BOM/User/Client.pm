@@ -3837,6 +3837,46 @@ sub _p2p_advertiser_stats_get {
     return $stats;
 }
 
+=head2 p2p_order_status_history
+
+Get the list of status changes of the specified order.
+
+Note the list is in chronologically ascending order.
+
+Note the list never returns two consecutive repeated status.
+
+The hashref keys for each status change is described as follow:
+
+=over 4
+
+=item * stamp, the timestamp of the status
+
+=item * status, the updated status
+
+=back
+
+It takes the following parameters:
+
+=over 4
+
+=item * order_id, the id of the order
+
+=back
+
+Returns,
+    a ref to the list described.
+
+=cut
+
+sub p2p_order_status_history {
+    my ($self, $order_id) = @_;
+
+    return $self->db->dbic->run(
+        fixup => sub {
+            $_->selectall_arrayref('SELECT * FROM p2p.order_status_history(?)', {Slice => {}}, $order_id);
+        }) // [];
+}
+
 =head1 METHODS - Payments
 
 =cut
