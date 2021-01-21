@@ -737,7 +737,7 @@ method subscribe( $connection, $connection_number ) {
     my $params      = $self->get_params( $contract_type, $symbol );
     my $retry_count = 0;
 
-    while ( !$params || $retry_count < 5 ) {
+    while ( !$params &&  $retry_count < 5 ) {
         $symbol = $active_symbols->[ int( rand( $active_symbols->@* ) ) ];
         $contract_type = $contract_types[ int( rand(@contract_types) ) ];
         $params        = $self->get_params( $contract_type, $symbol );
