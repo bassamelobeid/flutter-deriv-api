@@ -209,6 +209,7 @@ $rpc_response = {
             'type'                            => 'deriv',
             'account_id'                      => $client->default_account->id,
             'currency_rate_in_total_currency' => 1,
+            status                            => 1,
         },
         'MTR00001' => {
             'balance'                         => '-10',
@@ -217,6 +218,7 @@ $rpc_response = {
             'demo_account'                    => 0,
             'type'                            => 'mt5',
             'currency_rate_in_total_currency' => 1,
+            status                            => 1,
         }}};
 
 $res = $t->await::balance({
@@ -248,6 +250,7 @@ my $expected_res = {
                 'currency'         => 'EUR',
                 'demo_account'     => 0,
                 'type'             => 'deriv',
+                status             => 1,
             },
             'MTR00001' => {
                 'balance'          => '-10',
@@ -255,6 +258,7 @@ my $expected_res = {
                 'currency'         => 'USD',
                 'demo_account'     => 0,
                 'type'             => 'mt5',
+                status             => 1,
             }}
     },
     'echo_req' => {
@@ -266,6 +270,7 @@ my $expected_res = {
     'msg_type' => 'balance',
     'req_id'   => 1000013
 };
+
 $expected_res->{balance}{id}      = $res->{balance}{id};
 $expected_res->{subscription}{id} = $res->{balance}{id};
 is_deeply(
