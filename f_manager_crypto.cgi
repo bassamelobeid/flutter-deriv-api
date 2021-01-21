@@ -58,19 +58,10 @@ sub notify_crypto_withdrawal_rejected {
 
     my $brand = request()->brand;
 
-    my $email_subject;
-    if ($reason eq "authentication_needed") {
-        $email_subject = localize("Your crypto withdrawal request could not be completed");
-
-    } elsif ($reason eq "less_trade_back_to_fiat_account" || $reason eq "crypto_low_trade") {
-        $email_subject = localize("Your crypto withdrawal request was declined");
-
-    } else {
-        $email_subject = localize("Your withdrawal request has been declined");
-    }
-
-    my $email_data = {
-        name           => $client->full_name,
+    my $email_subject = localize('Your withdrawal request has been declined');
+    my $email_data    = {
+        name           => $client->first_name,
+        title          => localize("We were unable to process your withdrawal"),
         reason         => $reason,
         client_loginid => $client->loginid,
         brand_name     => ucfirst $brand->name,

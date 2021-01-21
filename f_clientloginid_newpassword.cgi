@@ -45,39 +45,33 @@ my $token = BOM::Platform::Token->new({
         created_for => 'reset_password'
     })->token;
 
-my $lang = request()->language;
-my $link = "https://www.binary.com/" . lc($lang) . "/redirect.html?action=reset_password&lang=$lang&code=$token";
-
-my $lost_pass_email;
-
 my $brand = request()->brand;
-
-my $email_template = $has_social_login ? "email/lost_password_has_social_login.html.tt" : "email/lost_password.html.tt";
-
-BOM::Backoffice::Request::template()->process(
-    $email_template,
-    {
-        link         => $link,
-        client_name  => $client_name =~ /^ *$/ ? 'there' : $client_name,
-        website_name => ucfirst BOM::Config::domain()->{default_domain},
-    },
-    \$lost_pass_email
-);
-
-# email link to client
-Bar('emailing change password link to ' . $loginID);
+my $lang  = request()->language;
+my $link  = $brand->default_url() . "/" . lc($lang) . "/redirect.html?action=reset_password&lang=$lang&code=$token";
 
 print '<p class="success_message">Emailing change password link to ' . encode_entities($client_name) . ' at ' . encode_entities($email) . ' ...</p>';
 
 my $result = send_email({
-    from                  => $brand->emails('support'),
-    to                    => $email,
-    subject               => localize('Reset your [_1] account password', ucfirst BOM::Config::domain()->{default_domain}),
-    message               => [$lost_pass_email,],
-    template_loginid      => $loginID,
-    use_email_template    => 1,
-    email_content_is_html => 1,
-});
+        from          => $brand->emails('support'),
+        to            => $email,
+        subject       => localize('Get a new [_1] account password', ucfirst $brand->name),
+        template_name => $has_social_login ? "lost_password_has_social_login" : "lost_password",
+        template_args => {
+            name  => $client->first_name,
+            title => $has_social_login ? localize("Forgot your social password?") : localize("Forgot your password? Let's get you a new one."),
+            title_padding    => $has_social_login ? undef : 100,
+            email            => $email,
+            link             => $link,
+            verification_url => $link,
+            client_name      => $client_name =~ /^ *$/ ? 'there' : $client_name,
+            website_name     => ucfirst $brand->name,
+            brand_name       => ucfirst $brand->name,
+        },
+        template_loginid      => $loginID,
+        use_email_template    => 1,
+        email_content_is_html => 1,
+        use_event             => 1,
+    });
 
 print '<p>New password issuance RESULT: ' . ($result) ? 'success' : 'fail' . '</p>';
 

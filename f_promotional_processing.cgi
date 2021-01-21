@@ -109,6 +109,7 @@ sub process_bonus_claim {
     my $client_name = ucfirst join(' ', (BOM::Platform::Locale::translate_salutation($client->salutation), $client->first_name, $client->last_name));
     my $email_subject = localize("Your bonus request - [_1]", $client->loginid);
     my $email_content;
+    my $template_name;
     my $loginid = $client->loginid;
     my $result;
 
@@ -137,18 +138,14 @@ sub process_bonus_claim {
                 staff    => $clerk,
             );
         }
-
-        BOM::Backoffice::Request::template()->process(
-            'email/bonus_approve.html.tt',
-            {
-                name         => $client_name,
-                currency     => $currency,
-                amount       => $amount,
-                tac_url      => $tac_url,
-                website_name => $brand->website_name,
-            },
-            \$email_content
-        ) || return "$loginid: bonus credited but send email failed: " . BOM::Backoffice::Request::template()->error;
+        $template_name = 'bonus_approve';
+        $email_content = {
+            name         => $client_name,
+            currency     => $currency,
+            amount       => $amount,
+            tac_url      => $tac_url,
+            website_name => $brand->website_name,
+        };
 
         $result = "$loginid: bonus credited ($currency $amount)";
 
@@ -160,15 +157,12 @@ sub process_bonus_claim {
             $client->save();
         }
 
-        BOM::Backoffice::Request::template()->process(
-            'email/bonus_reject.html.tt',
-            {
-                name         => $client_name,
-                tac_url      => $tac_url,
-                website_name => $brand->website_name,
-            },
-            \$email_content
-        ) || return "$loginid: failed to send rejection email: " . BOM::Backoffice::Request::template()->error;
+        $template_name = 'bonus_reject';
+        $email_content = {
+            name         => $client_name,
+            tac_url      => $tac_url,
+            website_name => $brand->website_name,
+        };
 
         $result = "$loginid: bonus rejected";
     }
@@ -178,10 +172,12 @@ sub process_bonus_claim {
             from                  => request()->brand->emails('support'),
             to                    => $client->email,
             subject               => $email_subject,
-            message               => [$email_content],
+            template_name         => $template_name,
+            template_args         => $email_content,
             template_loginid      => $client->loginid,
             email_content_is_html => 1,
             use_email_template    => 1,
+            use_event             => 1,
         });
     }
     return $result;

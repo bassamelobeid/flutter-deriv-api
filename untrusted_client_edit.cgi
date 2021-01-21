@@ -232,8 +232,9 @@ sub notify_submission_of_documents_for_pending_payout {
     my $email_subject = 'Verify your identity and address for your Deriv or Binary account';
     my $due_date      = Date::Utility->today->plus_time_interval('3d');
     my $email_data    = {
-        name => $client->first_name,
-        date => join(' ', $due_date->day_of_month, $due_date->month_as_string, $due_date->year),
+        name  => $client->first_name,
+        title => "Just one more step to withdraw your funds",
+        date  => join(' ', $due_date->day_of_month, $due_date->month_as_string, $due_date->year),
     };
     send_email({
         to                    => $client->email,

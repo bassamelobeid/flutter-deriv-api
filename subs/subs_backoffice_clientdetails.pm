@@ -1835,6 +1835,7 @@ sub notify_resubmission_of_poi_poa_documents {
     my $email_subject = 'We couldn\'t verify your account';
     my $email_data    = {
         name           => $client->first_name,
+        title          => "We couldn't verify your account",
         poi_remark     => $poi_selection,
         poa_remark     => $poa_selection,
         client_loginid => $client->loginid,

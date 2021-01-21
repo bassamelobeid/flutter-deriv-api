@@ -1,3 +1,5 @@
+<tr>
+    <td bgcolor="#ffffff" align="left" style="padding: 40px 30px 10px 30px;" class="mobile-lowsidepadding darkmodelowblack">
 [%
  # Cannot use proper tables and formatting here: the email is parsed by the helpdesk system and a text version is used
 -%]
@@ -17,4 +19,4 @@ Login ID&nbsp;&nbsp;Reason&nbsp;&nbsp;First Name&nbsp;&nbsp;Last Name&nbsp;&nbsp
 [% client.duplicated_loginid %]&nbsp;
 [% END -%]
 <br>
-
+</td></tr>
