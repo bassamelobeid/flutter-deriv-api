@@ -5,7 +5,7 @@ use Test::More;
 use Test::Deep;
 use Test::Mojo;
 use Test::MockModule;
-use Test::BOM::RPC::Client;
+use Test::BOM::RPC::QueueClient;
 use LandingCompany::Registry;
 use Format::Util::Numbers qw/formatnumber/;
 use Scalar::Util qw/looks_like_number/;
@@ -197,8 +197,7 @@ BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     quote      => 80
 });
 
-my $t = Test::Mojo->new('BOM::RPC::Transport::HTTP');
-my $c = Test::BOM::RPC::Client->new(ua => $t->app->ua);
+my $c = Test::BOM::RPC::QueueClient->new;
 
 my $contract_expired = {
     underlying   => $underlying,

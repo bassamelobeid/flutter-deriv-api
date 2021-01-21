@@ -4,7 +4,7 @@ use utf8;
 use Test::More;
 use Test::Deep;
 use Test::Mojo;
-use Test::BOM::RPC::Client;
+use Test::BOM::RPC::QueueClient;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Platform::Token::API;
 use BOM::Test::Helper::Token;
@@ -37,8 +37,7 @@ $test_client_mf->payment_free_gift(
     remark   => 'free gift',
 );
 
-my $t = Test::Mojo->new('BOM::RPC::Transport::HTTP');
-my $c = Test::BOM::RPC::Client->new(ua => $t->app->ua);
+my $c = Test::BOM::RPC::QueueClient->new;
 
 my $method = 'account_statistics';
 subtest 'account statistics' => sub {

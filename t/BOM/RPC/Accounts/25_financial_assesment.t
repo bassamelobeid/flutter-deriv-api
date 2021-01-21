@@ -5,7 +5,7 @@ use Test::More;
 use Test::Deep;
 use Test::Mojo;
 use Test::MockModule;
-use Test::BOM::RPC::Client;
+use Test::BOM::RPC::QueueClient;
 use LandingCompany::Registry;
 use Scalar::Util qw/looks_like_number/;
 use BOM::Platform::Token::API;
@@ -139,8 +139,7 @@ my $token_mlt     = $m->create_token($test_client_mlt->loginid, 'test token');
 my $token_mf      = $m->create_token($test_client_mf->loginid, 'test token');
 my $token_only_vr = $m->create_token($test_client_only_vr->loginid, 'test token');
 
-my $t = Test::Mojo->new('BOM::RPC::Transport::HTTP');
-my $c = Test::BOM::RPC::Client->new(ua => $t->app->ua);
+my $c = Test::BOM::RPC::QueueClient->new;
 
 my @emit_args;
 my $mock_emitter = Test::MockModule->new('BOM::Platform::Event::Emitter');
