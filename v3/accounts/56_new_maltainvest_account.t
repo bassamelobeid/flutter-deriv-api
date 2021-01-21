@@ -147,6 +147,8 @@ subtest 'MLT upgrade to MF account' => sub {
         my $client = BOM::User::Client->new({loginid => $loginid});
         isnt($client->financial_assessment->data, undef, 'has financial assessment');
     };
+    
+    
 };
 
 subtest 'VR upgrade to MF - Germany' => sub {
@@ -178,6 +180,207 @@ subtest 'VR upgrade to MF - Germany' => sub {
 
         is($client->place_of_birth, 'de',    'correct place of birth');
         is($client->tax_residence,  'de,nl', 'correct tax residence');
+    };
+};
+
+subtest 'validate whitespace in required fields for maltainvest account' => sub {
+    # create VR acc, authorize
+    my ($vr_client, $user) = create_vr_account({
+        email           => 'test11+de@binary.com',
+        client_password => 'abc123',
+        residence       => 'de',
+    });
+    my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $vr_client->loginid);
+    $t->await::authorize({authorize => $token});
+
+    subtest 'validate whitespace in first_name' => sub {
+        my %details = (%client_details, %$mf_details);
+        delete $details{new_account_real};
+        $details{first_name}                = '    ';
+        $details{residence}                 = 'de';
+        $details{phone}                     = '+442072343457';
+        $details{tax_identification_number} = '11122233344';
+        my $res = $t->await::new_account_maltainvest(\%details);
+        test_schema('new_account_maltainvest', $res);
+
+        is($res->{msg_type}, 'new_account_maltainvest');
+        is($res->{error}->{code}, 'InputValidationFailed', "Input field is invalid");
+        is($res->{error}->{message}, 'Input validation failed: first_name', "Checked that validation failed for first_name");
+    };
+    
+    subtest 'validate whitespace in last_name' => sub {
+        my %details = (%client_details, %$mf_details);
+        delete $details{new_account_real};
+        $details{last_name}                = '    ';
+        $details{residence}                 = 'de';
+        $details{phone}                     = '+442072343457';
+        $details{tax_identification_number} = '11122233344';
+        my $res = $t->await::new_account_maltainvest(\%details);
+        test_schema('new_account_maltainvest', $res);
+
+        is($res->{msg_type}, 'new_account_maltainvest');
+        is($res->{error}->{code}, 'InputValidationFailed', "Input field is invalid");
+        is($res->{error}->{message}, 'Input validation failed: last_name', "Checked that validation failed for last_name");
+    };
+    
+    subtest 'validate whitespace in tax_identification_number' => sub {
+        my %details = (%client_details, %$mf_details);
+        delete $details{new_account_real};
+        $details{tax_identification_number} = '    ';
+        $details{first_name} = 'John';
+        $details{last_name} = 'Doe';
+        $details{residence}                 = 'de';
+        $details{phone}                     = '+442072343457';
+        my $res = $t->await::new_account_maltainvest(\%details);
+        test_schema('new_account_maltainvest', $res);
+
+        is($res->{msg_type}, 'new_account_maltainvest');
+        is($res->{error}->{code}, 'InputValidationFailed', "Input field is invalid");
+        is($res->{error}->{message}, 'Input validation failed: tax_identification_number', "Checked that validation failed for tax_identification_number");
+    };
+    
+    subtest 'validate whitespace in address_line_1' => sub {
+        my %details = (%client_details, %$mf_details);
+        delete $details{new_account_real};
+        $details{address_line_1}                = '    ';
+        $details{residence}                 = 'de';
+        $details{phone}                     = '+442072343457';
+        $details{tax_identification_number} = '11122233344';
+        my $res = $t->await::new_account_maltainvest(\%details);
+        test_schema('new_account_maltainvest', $res);
+
+        is($res->{msg_type}, 'new_account_maltainvest');
+        is($res->{error}->{code}, 'InputValidationFailed', "Input field is invalid");
+        is($res->{error}->{message}, 'Input validation failed: address_line_1', "Checked that validation failed for address_line_1");
+    };
+    
+    subtest 'validate non permitted chars in address_line_1' => sub {
+        my %details = (%client_details, %$mf_details);
+        delete $details{new_account_real};
+        $details{address_line_1}                = "~111";
+        $details{residence}                 = 'de';
+        $details{phone}                     = '+442072343457';
+        $details{tax_identification_number} = '11122233344';
+        my $res = $t->await::new_account_maltainvest(\%details);
+        test_schema('new_account_maltainvest', $res);
+
+        is($res->{msg_type}, 'new_account_maltainvest');
+        is($res->{error}->{code}, 'InputValidationFailed', "Input field is invalid");
+        is($res->{error}->{message}, 'Input validation failed: address_line_1', "Checked that validation failed for address_line_1");
+    };
+    
+    subtest 'validate whitespace in address_city' => sub {
+        my %details = (%client_details, %$mf_details);
+        delete $details{new_account_real};
+        $details{address_city}                = '    ';
+        $details{residence}                 = 'de';
+        $details{phone}                     = '+442072343457';
+        $details{tax_identification_number} = '11122233344';
+        my $res = $t->await::new_account_maltainvest(\%details);
+        test_schema('new_account_maltainvest', $res);
+
+        is($res->{msg_type}, 'new_account_maltainvest');
+        is($res->{error}->{code}, 'InputValidationFailed', "Input field is invalid");
+        is($res->{error}->{message}, 'Input validation failed: address_city', "Checked that validation failed for address_city");
+    };
+    
+    subtest 'validate character count in address_city success' => sub {
+        my %details = (%client_details, %$mf_details);
+        delete $details{new_account_real};
+        $details{address_city}                = 'Taumatawhakatangihangakoauauotamateaturipukakapikimaungahoronukupokaiwhenuakitanatahu';
+        $details{residence}                 = 'de';
+        $details{phone}                     = '+442072343457';
+        $details{tax_identification_number} = '11122233344';
+        my $res = $t->await::new_account_maltainvest(\%details);
+        test_schema('new_account_maltainvest', $res);
+
+        is($res->{msg_type}, 'new_account_maltainvest');
+        is($res->{error}->{code}, 'DuplicateAccount', "Input field is valid so it will fail for DuplicateAccount");
+    };
+    
+    subtest 'validate character count in address_city failed' => sub {
+        my %details = (%client_details, %$mf_details);
+        delete $details{new_account_real};
+        $details{address_city}               = "ThisIsACityNameWithMoreThanHundredLettersThisIsACityNameWithMoreThanHundredLettersThisIsACityNameWithMoreThanHundredLettersThisIsACityNameWithMoreThanHundredLetters";
+        $details{residence}                 = 'de';
+        $details{phone}                     = '+442072343457';
+        $details{tax_identification_number} = '11122233344';
+        my $res = $t->await::new_account_maltainvest(\%details);
+        test_schema('new_account_maltainvest', $res);
+        is($res->{msg_type}, 'new_account_maltainvest');
+        is($res->{error}->{code}, 'InputValidationFailed', "Input field is invalid");
+        is($res->{error}->{message}, 'Input validation failed: address_city', "Checked that validation failed for address_city");
+    };
+};
+
+subtest 'unicode character test in required fields for maltainvest account' => sub {
+    # create VR acc, authorize
+    my ($vr_client, $user) = create_vr_account({
+        email           => 'test12+de@binary.com',
+        client_password => 'abc123',
+        residence       => 'de',
+    });
+    my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $vr_client->loginid);
+    $t->await::authorize({authorize => $token});
+
+    subtest 'validate unicode character in first_name' => sub {
+        my %details = (%client_details, %$mf_details);
+        delete $details{new_account_real};
+        $details{first_name}                = "%Shan^&tanu";
+        $details{residence}                 = 'de';
+        $details{phone}                     = '+442072343457';
+        $details{tax_identification_number} = '11122233344';
+        my $res = $t->await::new_account_maltainvest(\%details);
+        test_schema('new_account_maltainvest', $res);
+
+        is($res->{msg_type}, 'new_account_maltainvest');
+        is($res->{error}->{code}, 'InputValidationFailed', "Input field is invalid");
+        is($res->{error}->{message}, 'Input validation failed: first_name', "Checked that validation failed for first_name");
+    };
+    
+    subtest 'validate unicode character in last_name' => sub {
+        my %details = (%client_details, %$mf_details);
+        delete $details{new_account_real};
+        $details{last_name}                = "*P\$ti\@l";
+        $details{residence}                 = 'de';
+        $details{phone}                     = '+442072343457';
+        $details{tax_identification_number} = '11122233344';
+        my $res = $t->await::new_account_maltainvest(\%details);
+        test_schema('new_account_maltainvest', $res);
+
+        is($res->{msg_type}, 'new_account_maltainvest');
+        is($res->{error}->{code}, 'InputValidationFailed', "Input field is invalid");
+        is($res->{error}->{message}, 'Input validation failed: last_name', "Checked that validation failed for last_name");
+    };
+    
+    subtest 'validate unicode character in address_line_1' => sub {
+        my %details = (%client_details, %$mf_details);
+        delete $details{new_account_real};
+        $details{address_line_1}            = "47\%Select*from Address";
+        $details{residence}                 = 'de';
+        $details{phone}                     = '+442072343457';
+        $details{tax_identification_number} = '11122233344';
+        my $res = $t->await::new_account_maltainvest(\%details);
+        test_schema('new_account_maltainvest', $res);
+
+        is($res->{msg_type}, 'new_account_maltainvest');
+        is($res->{error}->{code}, 'InputValidationFailed', "Input field is invalid");
+        is($res->{error}->{message}, 'Input validation failed: address_line_1', "Checked that validation failed for address_line_1");
+    };
+    
+    subtest 'validate unicode character in address_city' => sub {
+        my %details = (%client_details, %$mf_details);
+        delete $details{new_account_real};
+        $details{address_city}                = "\%Cyber\%Jaya\%";
+        $details{residence}                 = 'de';
+        $details{phone}                     = '+442072343457';
+        $details{tax_identification_number} = '11122233344';
+        my $res = $t->await::new_account_maltainvest(\%details);
+        test_schema('new_account_maltainvest', $res);
+
+        is($res->{msg_type}, 'new_account_maltainvest');
+        is($res->{error}->{code}, 'InputValidationFailed', "Input field is invalid");
+        is($res->{error}->{message}, 'Input validation failed: address_city', "Checked that validation failed for address_city");
     };
 };
 
@@ -266,6 +469,287 @@ subtest 'MX client can upgrade to MF' => sub {
             is($res->{msg_type}, 'new_account_maltainvest');
             is($res->{error}->{code}, undef, "MX upgrade to MF ok");
         };
+    };
+};
+
+subtest 'validate whitespace in required fields for real account' => sub {
+
+    # Create vr account
+    my ($first_vr_client, $user) = create_vr_account({
+        email           => 'myunique+email1@binary.com',
+        residence       => 'af',
+        client_password => 'abc123',
+    });
+
+    my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $first_vr_client->loginid);
+    $t->await::authorize({authorize => $token});
+
+    subtest 'validate whitespace in first_name' => sub {
+
+        my %details = %client_details;
+        $details{first_name} = "   ";
+        $details{residence} = 'af';
+        $details{phone}     = '+4420'
+            . rand_chars(
+            set  => 'numeric',
+            size => 8
+            );
+        my $res = $t->await::new_account_real(\%details, {timeout => 10});
+
+        test_schema('new_account_real', $res);
+
+        is($res->{msg_type}, 'new_account_real');
+        is($res->{error}->{code}, 'InputValidationFailed', "Input field is invalid");
+        is($res->{error}->{message}, 'Input validation failed: first_name', "Checked that validation failed for first_name");
+    };
+    
+    subtest 'validate whitespace in last_name' => sub {
+
+        my %details = %client_details;
+        $details{last_name} = "   ";
+        $details{residence} = 'af';
+        $details{phone}     = '+4420'
+            . rand_chars(
+            set  => 'numeric',
+            size => 8
+            );
+        my $res = $t->await::new_account_real(\%details, {timeout => 10});
+
+        test_schema('new_account_real', $res);
+
+        is($res->{msg_type}, 'new_account_real');
+        is($res->{error}->{code}, 'InputValidationFailed', "Input field is invalid");
+        is($res->{error}->{message}, 'Input validation failed: last_name', "Checked that validation failed for last_name");
+    };
+    
+    subtest 'validate whitespace in address_line_1' => sub {
+
+        my %details = %client_details;
+        $details{address_line_1} = "   ";
+        $details{residence} = 'af';
+        $details{phone}     = '+4420'
+            . rand_chars(
+            set  => 'numeric',
+            size => 8
+            );
+        my $res = $t->await::new_account_real(\%details, {timeout => 10});
+
+        test_schema('new_account_real', $res);
+
+        is($res->{msg_type}, 'new_account_real');
+        is($res->{error}->{code}, 'InputValidationFailed', "Input field is invalid");
+        is($res->{error}->{message}, 'Input validation failed: address_line_1', "Checked that validation failed for address_line_1");
+    };
+    
+    subtest 'validate non permitted chars in address_line_1' => sub {
+
+        my %details = %client_details;
+        $details{address_line_1} = "~111";
+        $details{residence} = 'af';
+        $details{phone}     = '+4420'
+            . rand_chars(
+            set  => 'numeric',
+            size => 8
+            );
+        my $res = $t->await::new_account_real(\%details, {timeout => 10});
+
+        test_schema('new_account_real', $res);
+
+        is($res->{msg_type}, 'new_account_real');
+        is($res->{error}->{code}, 'InputValidationFailed', "Input field is invalid");
+        is($res->{error}->{message}, 'Input validation failed: address_line_1', "Checked that validation failed for address_line_1");
+    };
+    
+    subtest 'validate whitespace in address_city' => sub {
+
+        my %details = %client_details;
+        $details{address_city} = " ";
+        $details{residence} = 'af';
+        $details{phone}     = '+4420'
+            . rand_chars(
+            set  => 'numeric',
+            size => 8
+            );
+        my $res = $t->await::new_account_real(\%details, {timeout => 10});
+
+        test_schema('new_account_real', $res);
+
+        is($res->{msg_type}, 'new_account_real');
+        is($res->{error}->{code}, 'InputValidationFailed', "Input field is invalid");
+        is($res->{error}->{message}, 'Input validation failed: address_city', "Checked that validation failed for address_city");
+    };
+    
+    subtest 'validate character count in address_city success' => sub {
+        my %details = %client_details;
+        $details{address_city} = "Taumatawhakatangihangakoauauotamateaturipukakapikimaungahoronukupokaiwhenuakitanatahu";
+        $details{residence} = 'af';
+        $details{phone}     = '+4420'
+            . rand_chars(
+            set  => 'numeric',
+            size => 8
+            );
+        my $res = $t->await::new_account_real(\%details, {timeout => 10});
+
+        test_schema('new_account_real', $res);
+        is($res->{msg_type}, 'new_account_real');
+        is($res->{error}->{code}, undef, "Input field is valid");
+    };
+    
+    subtest 'validate character count in address_city error' => sub {
+        my %details = %client_details;
+        $details{address_city} = "ThisIsACityNameWithMoreThanHundredLettersThisIsACityNameWithMoreThanHundredLettersThisIsACityNameWithMoreThanHundredLettersThisIsACityNameWithMoreThanHundredLetters";
+        $details{residence} = 'af';
+        $details{phone}     = '+4420'
+            . rand_chars(
+            set  => 'numeric',
+            size => 8
+            );
+        my $res = $t->await::new_account_real(\%details, {timeout => 10});
+
+        test_schema('new_account_real', $res);
+        is($res->{msg_type}, 'new_account_real');
+        is($res->{error}->{code}, 'InputValidationFailed', "Input field is invalid");
+        is($res->{error}->{message}, 'Input validation failed: address_city', "Checked that validation failed for address_city");
+    };
+    
+    subtest 'validate numbers in address_city at start' => sub {
+        my %details = %client_details;
+        $details{address_city} = "2Cyberjaya";
+        $details{residence} = 'af';
+        $details{phone}     = '+4420'
+            . rand_chars(
+            set  => 'numeric',
+            size => 8
+            );
+        my $res = $t->await::new_account_real(\%details, {timeout => 10});
+
+        test_schema('new_account_real', $res);
+        is($res->{msg_type}, 'new_account_real');
+        is($res->{error}->{code}, 'InputValidationFailed', "Input field is invalid");
+        is($res->{error}->{message}, 'Input validation failed: address_city', "Checked that city name should not contain a number");
+    };
+    
+    subtest 'validate numbers in address_city everywhere else' => sub {
+        my %details = %client_details;
+        $details{address_city} = "Cyberjaya2";
+        $details{residence} = 'af';
+        $details{phone}     = '+4420'
+            . rand_chars(
+            set  => 'numeric',
+            size => 8
+            );
+        my $res = $t->await::new_account_real(\%details, {timeout => 10});
+
+        test_schema('new_account_real', $res);
+        is($res->{msg_type}, 'new_account_real');
+        is($res->{error}->{code}, 'InputValidationFailed', "Input field is invalid");
+        is($res->{error}->{message}, 'Input validation failed: address_city', "Checked that city name should not contain a number");
+    };
+    
+    subtest 'validate whitespace in tax_identification_number' => sub {
+        my %details = %client_details;
+        $details{tax_identification_number} = "   ";
+        $details{residence} = 'af';
+        $details{phone}     = '+4420'
+            . rand_chars(
+            set  => 'numeric',
+            size => 8
+            );
+        my $res = $t->await::new_account_real(\%details, {timeout => 10});
+
+        test_schema('new_account_real', $res);
+        is($res->{msg_type}, 'new_account_real');
+        is($res->{error}->{code}, 'InputValidationFailed', "Input field is invalid");
+        is($res->{error}->{message}, 'Input validation failed: tax_identification_number', "Checked that validation fails for tax_identification_number");
+    };
+};
+
+subtest 'unicode character test in required fields for real account' => sub {
+
+    # Create vr account
+    my ($first_vr_client, $user) = create_vr_account({
+        email           => 'myunique+email2@binary.com',
+        residence       => 'af',
+        client_password => 'abc123',
+    });
+
+    my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $first_vr_client->loginid);
+    $t->await::authorize({authorize => $token});
+
+    subtest 'validate unicode character in first_name' => sub {
+
+        my %details = %client_details;
+        $details{first_name} = "%Shan^&tanu";
+        $details{residence} = 'af';
+        $details{phone}     = '+4420'
+            . rand_chars(
+            set  => 'numeric',
+            size => 8
+            );
+        my $res = $t->await::new_account_real(\%details, {timeout => 10});
+
+        test_schema('new_account_real', $res);
+
+        is($res->{msg_type}, 'new_account_real');
+        is($res->{error}->{code}, 'InputValidationFailed', "Input field is invalid");
+        is($res->{error}->{message}, 'Input validation failed: first_name', "Checked that validation failed for first_name");
+    };
+    
+    subtest 'validate unicode character in last_name' => sub {
+
+        my %details = %client_details;
+        $details{last_name} = "*P\$ti\@l";
+        $details{residence} = 'af';
+        $details{phone}     = '+4420'
+            . rand_chars(
+            set  => 'numeric',
+            size => 8
+            );
+        my $res = $t->await::new_account_real(\%details, {timeout => 10});
+
+        test_schema('new_account_real', $res);
+
+        is($res->{msg_type}, 'new_account_real');
+        is($res->{error}->{code}, 'InputValidationFailed', "Input field is invalid");
+        is($res->{error}->{message}, 'Input validation failed: last_name', "Checked that validation failed for last_name");
+    };
+    
+    subtest 'validate unicode character in address_line_1' => sub {
+
+        my %details = %client_details;
+        $details{address_line_1} = "47\%Select*from Address";
+        $details{residence} = 'af';
+        $details{phone}     = '+4420'
+            . rand_chars(
+            set  => 'numeric',
+            size => 8
+            );
+        my $res = $t->await::new_account_real(\%details, {timeout => 10});
+
+        test_schema('new_account_real', $res);
+
+        is($res->{msg_type}, 'new_account_real');
+        is($res->{error}->{code}, 'InputValidationFailed', "Input field is invalid");
+        is($res->{error}->{message}, 'Input validation failed: address_line_1', "Checked that validation failed for address_line_1");
+    };
+    
+    subtest 'validate unicode character in address_city' => sub {
+
+        my %details = %client_details;
+        $details{address_city} = "\%Cyber\%Jaya\%";
+        $details{residence} = 'af';
+        $details{phone}     = '+4420'
+            . rand_chars(
+            set  => 'numeric',
+            size => 8
+            );
+        my $res = $t->await::new_account_real(\%details, {timeout => 10});
+
+        test_schema('new_account_real', $res);
+
+        is($res->{msg_type}, 'new_account_real');
+        is($res->{error}->{code}, 'InputValidationFailed', "Input field is invalid");
+        is($res->{error}->{message}, 'Input validation failed: address_city', "Checked that validation failed for address_city");
     };
 };
 
