@@ -25,7 +25,7 @@ test_sendrecv_params 'proposal/test_send.json', 'proposal/test_offerings_validat
 # invalid contract type
 test_sendrecv_params 'proposal/test_send.json', 'proposal/test_input_validation_error.json', '100', 'INVALID', 'R_100', '5', 'm';
 # invalid contract duration
-test_sendrecv_params 'proposal/test_send.json', 'proposal/test_buy_exception.json', '100', 'ASIANU', 'R_100', '0', 't';
+test_sendrecv_params 'proposal/test_send.json', 'proposal/test_buy_duration_exception.json', '100', 'ASIANU', 'R_100', '0', 't';
 # invalid underlying symbol
 test_sendrecv_params 'proposal/test_send.json', 'proposal/test_buy_exception.json', '100', 'ASIANU', 'INVALID', '5', 't';
 

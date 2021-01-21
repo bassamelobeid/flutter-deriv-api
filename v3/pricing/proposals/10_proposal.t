@@ -62,7 +62,7 @@ is $res->{error}->{code}, 'InputValidationFailed', 'Schema validation fails with
 
 $req->{duration} = "99999999";
 $res = $t->await::proposal($req);
-is $res->{error}->{code}, 'ContractCreationFailure', 'Duration validation fails with huge duration';
+is $res->{error}->{code}, 'OfferingsValidationFailure', 'Duration validation fails with huge duration';
 
 delete $req->{duration};
 $req->{date_expiry} = 9999999999;
