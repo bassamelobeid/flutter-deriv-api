@@ -73,6 +73,10 @@ use BOM::Product::Pricing::Engine::Intraday::Index;
 use BOM::Product::Pricing::Engine::VannaVolga::Calibrated;
 use BOM::Product::Pricing::Greeks::BlackScholes;
 
+use constant {
+    MAX_DURATION => 60 * 60 * 24 * 365 * 2    #2 years in seconds
+};
+
 my $ERROR_MAPPING   = BOM::Product::Static::get_error_mapping();
 my $GENERIC_MAPPING = BOM::Product::Static::get_generic_mapping();
 
@@ -226,6 +230,11 @@ has pricing_spot => (
 
 has exit_tick => (
     is         => 'ro',
+    lazy_build => 1,
+);
+
+has date_expiry => (
+    is         => 'rw',
     lazy_build => 1,
 );
 
@@ -660,6 +669,8 @@ sub _build_opposite_contract_for_sale {
     delete $opp_parameters{starts_as_forward_starting};
     # duration could be set for an opposite contract from bad hash reference reused.
     delete $opp_parameters{duration};
+    # Populate date expiry
+    $opp_parameters{date_expiry} = $self->date_expiry;
 
     if (not $self->is_forward_starting) {
         if ($self->entry_tick) {
@@ -710,6 +721,8 @@ sub _build_opposite_contract {
     # Don't set the shortcode, as it will change between these.
     delete $opp_parameters{'shortcode'};
     # Save a round trip.. copy market data
+    # Populate date expiry
+    $opp_parameters{date_expiry} = $self->date_expiry;
     foreach my $vol_param (qw(volsurface fordom forqqq domqqq)) {
         $opp_parameters{$vol_param} = $self->$vol_param;
     }
@@ -871,6 +884,74 @@ sub _build_exit_tick {
     }
 
     return $exit_tick;
+}
+
+sub _build_date_expiry {
+
+    my $self = shift;
+
+    my $date_expiry;
+
+    my $duration = $self->duration;
+    if ($duration !~ /[0-9]+(t|m|d|s|h)/) {
+        BOM::Product::Exception->throw(
+            error_code => 'TradingDurationNotAllowed',
+            details    => {field => 'duration'},
+        );
+    } else {
+        # sanity check for duration. Date::Utility throws exception if you're trying
+        # to create an object that's too ridiculous far in the future.
+
+        my $expected_feed_frequency = $self->underlying->generation_interval->seconds;
+        # defaults to 2-second if not specified
+        $expected_feed_frequency = 2 if $expected_feed_frequency == 0;
+        try {
+            my ($duration_amount, $duration_unit) = $duration =~ /([0-9]+)(t|m|d|s|h)/;
+            my $interval = $duration;
+            $interval = $duration_amount * $expected_feed_frequency if $duration_unit eq 't';
+
+            my $duration_in_seconds = $self->date_start->plus_time_interval($interval)->epoch - $self->date_start->epoch;
+            die if ($self->category->has_user_defined_expiry) && ($duration_in_seconds > MAX_DURATION);
+        } catch {
+            BOM::Product::Exception->throw(
+                error_code => 'TradingDurationNotAllowed',
+                details    => {field => 'duration'});
+        }
+        if (my ($tick_count) = $duration =~ /^([0-9]+)t$/) {
+            $date_expiry = $self->date_start->plus_time_interval($expected_feed_frequency * $self->tick_count);
+        } else {
+            my $underlying  = $self->underlying;
+            my $start_epoch = $self->date_start;
+            $date_expiry = $start_epoch->plus_time_interval($duration);
+
+            if ($duration =~ /d$/) {
+                # Daily bet expires at the end of day, so here you go
+                if (my $closing = $self->trading_calendar->closing_on($underlying->exchange, $date_expiry)) {
+                    $date_expiry = $closing;
+                } else {
+                    my $regular_day   = $self->trading_calendar->regular_trading_day_after($underlying->exchange, $date_expiry);
+                    my $regular_close = $self->trading_calendar->closing_on($underlying->exchange, $regular_day);
+                    $date_expiry = Date::Utility->new($date_expiry->date_yyyymmdd . ' ' . $regular_close->time_hhmmss);
+                }
+            }
+        }
+    }
+
+    if ($self->category->has_user_defined_expiry) {
+        my $start  = Date::Utility->new($self->date_start);
+        my $expiry = Date::Utility->new($date_expiry);
+
+        BOM::Product::Exception->throw(
+            error_code => 'SameExpiryStartTime',
+            details    => {field => defined($self->duration) ? 'duration' : 'date_expiry'},
+        ) if $start->epoch == $expiry->epoch;
+        BOM::Product::Exception->throw(
+            error_code => 'PastExpiryTime',
+            details    => {field => 'date_expiry'},
+        ) if $expiry->is_before($start);
+    }
+
+    return $date_expiry;
 }
 
 # TO DO, landing_company to be moved out from Contract.

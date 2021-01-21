@@ -787,7 +787,7 @@ subtest 'invalid expiry times' => sub {
     ok($bet->is_valid_to_buy, '..but when we are open at the end, validates just fine.');
 
     $bet_params->{duration} = '9999999d';
-    my $error = exception { produce_contract($bet_params); };
+    my $error = exception { produce_contract($bet_params)->date_expiry; };
     isa_ok $error, 'BOM::Product::Exception';
     is $error->message_to_client->[0], 'Trading is not offered for this duration.';
 

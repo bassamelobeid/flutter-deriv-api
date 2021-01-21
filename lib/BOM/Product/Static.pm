@@ -71,6 +71,7 @@ my $config = {
         MarketNotOpenTryVolatility     => 'The market must be open at the start time. Try out the Synthetic Indices which are always open.',
         MarketPricePayoutClose         => 'Contract market price is too close to final payout.',
         MissingDividendMarketData      => 'Trading is suspended due to missing market (dividend) data.',
+        DuplicateExpiry                => 'Please enter only [_1] or [_2].',
         MissingEither                  => 'Please specify either [_1] or [_2].',
         MissingMarketData              => 'Trading is suspended due to missing market data.',
         MissingSpotMarketData          => 'Trading is suspended due to missing market (spot too far) data.',

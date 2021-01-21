@@ -130,17 +130,12 @@ But, we need an expiry time for every contract the database. Hence, hard-coding 
 
 =cut
 
-has date_expiry => (
-    is      => 'ro',
-    lazy    => 1,
-    builder => '_build_date_expiry',
-);
+override 'date_expiry' => sub {
 
-sub _build_date_expiry {
     my $self = shift;
 
     return $self->date_start->plus_time_interval(100 * 365 . 'd');
-}
+};
 
 =head2 take_profit
 

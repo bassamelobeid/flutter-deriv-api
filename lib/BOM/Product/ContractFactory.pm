@@ -81,7 +81,7 @@ sub produce_contract {
 
     $params_ref = BOM::Product::Categorizer->new(parameters => $params_ref)->get();
 
-    _validate_input_parameters($params_ref);
+    _validate_input_parameters($params_ref) unless $params_ref->{skip_contract_input_validation};
 
     my $product_type = $params_ref->{product_type} // 'basic';
     $product_type =~ s/_//;
@@ -119,8 +119,7 @@ sub _validate_input_parameters {
         error_args => ['date_start'],
         details    => {field => 'date_start'},
     ) unless $params->{date_start};    # date_expiry is validated in BOM::Product::Categorizer
-
-    if ($params->{category}->has_user_defined_expiry) {
+    if ($params->{category}->has_user_defined_expiry and defined $params->{date_expiry}) {
         my $start  = Date::Utility->new($params->{date_start});
         my $expiry = Date::Utility->new($params->{date_expiry});
 

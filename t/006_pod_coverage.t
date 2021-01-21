@@ -12,7 +12,7 @@ my $allowed_naked_packages = {
     'BOM::Product::ContractFinder'                                => 4,
     'BOM::Product::Exception'                                     => 1,
     'BOM::Product::Types'                                         => 0,
-    'BOM::Product::Categorizer'                                   => 8,
+    'BOM::Product::Categorizer'                                   => 7,
     'BOM::Product::LimitOrder'                                    => 4,
     'BOM::Product::Pricing::Engine'                               => 7,
     'BOM::Product::Pricing::Greeks'                               => 7,
@@ -21,7 +21,7 @@ my $allowed_naked_packages = {
     'BOM::Product::Role::NonBinary'                               => 2,
     'BOM::Product::Role::HighLowTicks'                            => 10,
     'BOM::Product::Role::Vanilla'                                 => 0,
-    'BOM::Product::Role::Multiplier'                              => 51,
+    'BOM::Product::Role::Multiplier'                              => 50,
     'BOM::Product::Role::HighLowRuns'                             => 6,
     'BOM::Product::Role::Lookback'                                => 11,
     'BOM::Product::Role::Asian'                                   => 4,
@@ -88,7 +88,9 @@ my $allowed_naked_packages = {
 
 my $ignored_packages = ['BOM::Product::Contract', 'BOM::Product::ContractPricer',];
 
-Test::Pod::CoverageChange::pod_coverage_syntax_ok(allowed_naked_packages => $allowed_naked_packages,
-    ignored_packages => $ignored_packages);
+Test::Pod::CoverageChange::pod_coverage_syntax_ok(
+    allowed_naked_packages => $allowed_naked_packages,
+    ignored_packages       => $ignored_packages
+);
 
 done_testing();

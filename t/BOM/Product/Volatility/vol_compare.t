@@ -92,7 +92,6 @@ sub price_contracts {
         low_barrier  => 99.01,
         currency     => 'USD',
         payout       => 100,
-        date_expiry  => $date_expiry,
         date_start   => $date_start,
         date_pricing => $date_start,
     });

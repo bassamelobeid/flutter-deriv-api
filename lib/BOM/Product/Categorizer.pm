@@ -43,6 +43,7 @@ use BOM::Config;
 
 my $epsilon                   = machine_epsilon();
 my $minimum_multiplier_config = BOM::Config::quants()->{lookback_limits};
+my $contract_type_config      = Finance::Contract::Category::get_all_contract_types();
 
 use constant {
     MAX_DURATION => 60 * 60 * 24 * 365 * 2    #2 years in seconds
@@ -66,6 +67,26 @@ sub BUILD {
     my %copy = %{$self->parameters};
     $self->_parameters(\%copy);
 
+    my $skip_contract_input_validation = $self->_parameters->{skip_contract_input_validation} || 0;
+
+    $self->_validate_contract_type unless $skip_contract_input_validation;
+    $self->_initialize_contract_type;
+
+    # there's no point proceeding if contract type is invalid
+    if ($self->_parameters->{bet_type} ne 'INVALID') {
+
+        $self->_initialize_parameters();
+
+        unless ($skip_contract_input_validation) {
+            $self->_validate_barrier;
+            $self->_validate_stake_min_max;
+            $self->_validate_multiplier;
+        }
+
+        $self->_initialize_barrier();
+        $self->_initialize_other_parameters();
+    }
+
     return;
 }
 
@@ -78,42 +99,25 @@ The only public method in this module. This gives you the initialized contract p
 sub get {
     my $self = shift;
 
-    $self->_initialize_contract_type();
-
-    # there's no point proceeding if contract type is invalid
-    if ($self->_parameters->{bet_type} ne 'INVALID') {
-        $self->_initialize_barrier();
-        $self->_initialize_underlying();
-        $self->_initialize_other_parameters();
-    }
-
     delete $self->_parameters->{build_parameters};
     $self->_parameters->{build_parameters} = {%{$self->_parameters}};
 
     return $self->_parameters;
 }
 
+=head2 _initialize_contract_type
+
+Initialization of contract type
+
+=cut
+
 sub _initialize_contract_type {
     my $self = shift;
 
     my $params = $self->_parameters;
 
-    unless ($params->{bet_type}) {
-        BOM::Product::Exception->throw(
-            error_code => 'MissingRequiredContractParams',
-            error_args => ['bet_type'],
-            details    => {field => 'contract_type'},
-        );
-    }
-
     # just in case we have someone who doesn't know it needs to be all caps!
     $params->{bet_type} = uc $params->{bet_type};
-    my $contract_type_config = Finance::Contract::Category::get_all_contract_types();
-
-    unless (exists $contract_type_config->{$params->{bet_type}}) {
-        $params->{bet_type} = 'INVALID';
-        return;
-    }
 
     my $contract_type = $params->{bet_type};
     my %c_type_config = %{$contract_type_config->{$contract_type}};
@@ -130,7 +134,232 @@ sub _initialize_contract_type {
     return;
 }
 
+sub _initialize_parameters {
+    my $self = shift;
+
+    my $params = $self->_parameters;
+
+    BOM::Product::Exception->throw(
+        error_code => 'MissingRequiredContractParams',
+        error_args => ['underlying'],
+        details    => {field => 'symbol'},
+    ) unless $params->{underlying};
+
+    if (!(blessed $params->{underlying} and $params->{underlying}->isa('Quant::Framework::Underlying'))) {
+        $params->{underlying} = create_underlying($params->{underlying});
+    }
+
+    # if underlying is not defined, then some settings are default to 'config'
+    if ($params->{underlying}->market eq 'config') {
+        BOM::Product::Exception->throw(
+            error_code => 'InvalidInputAsset',
+            details    => {field => 'symbol'},
+        );
+    }
+
+    # If they gave us a date for start and pricing, then we need to create_underlying using that.
+    # date_pricing is set for back-pricing purposes
+    if (exists $params->{date_pricing}) {
+        $params->{date_pricing} = Date::Utility->new($params->{date_pricing});
+        if (not($params->{underlying}->for_date and $params->{underlying}->for_date->is_same_as($params->{date_pricing}))) {
+            $params->{underlying} = create_underlying($params->{underlying}->symbol, $params->{date_pricing});
+        }
+    }
+
+    BOM::Product::Exception->throw(
+        error_code => 'MissingRequiredContractParams',
+        error_args => ['currency'],
+        details    => {field => 'currency'},
+    ) unless $params->{currency};
+
+    $params->{payout_currency_type} //= LandingCompany::Registry::get_currency_type($params->{currency});
+
+    if (exists $params->{payout} and exists $params->{stake}) {
+        BOM::Product::Exception->throw(
+            error_code => 'MissingEither',
+            error_args => ['payout', 'stake'],
+            details    => {field => 'basis'},
+        );
+    }
+
+    # these are for the sake of not fixing every unit tests!
+    if (exists $params->{stake}) {
+        $params->{amount}      = delete $params->{stake};
+        $params->{amount_type} = 'stake';
+    } elsif (exists $params->{payout}) {
+        $params->{amount}      = delete $params->{payout};
+        $params->{amount_type} = 'payout';
+    }
+
+    # _user_input_stake could come from $contract->build_parameters if make_similar_contract is used
+    if (defined $params->{_user_input_stake} and not(defined $params->{amount} and defined $params->{amount_type})) {
+        $params->{amount}      = delete $params->{_user_input_stake};
+        $params->{amount_type} = 'stake';
+    }
+
+    return;
+}
+
 sub _initialize_barrier {
+    my $self = shift;
+
+    my $params = $self->_parameters;
+
+    # first check if we are expecting any barrier for this contract type
+    unless ($params->{has_user_defined_barrier}) {
+        # barrier(s) on contracts for sale is built by us so they can be exempted.
+        my @available_barriers = ('barrier', 'high_barrier', 'low_barrier');
+
+        # if we build this contract for sale, do some cleanup here.
+        delete $params->{$_} for @available_barriers;
+        return;
+    }
+
+    # double barrier contract
+    if ($params->{category}->two_barriers) {
+        my ($high_barrier, $low_barrier);
+        if (exists $params->{high_barrier} and exists $params->{low_barrier}) {
+            ($high_barrier, $low_barrier) = @{$params}{'high_barrier', 'low_barrier'};
+        } elsif (exists $params->{supplied_high_barrier} and exists $params->{supplied_low_barrier}) {
+            ($high_barrier, $low_barrier) = @{$params}{'supplied_high_barrier', 'supplied_low_barrier'};
+        }
+
+        # house keeping
+        delete $params->{$_} for qw(high_barrier low_barrier);
+        $params->{supplied_high_barrier} = $high_barrier;
+        $params->{supplied_low_barrier}  = $low_barrier;
+    } else {
+        my $barrier = $params->{barrier} // $params->{supplied_barrier};
+
+        # house keeping
+        delete $params->{barrier};
+        $params->{supplied_barrier} = $barrier;
+    }
+
+    return;
+}
+
+sub _initialize_other_parameters {
+    my $self = shift;
+
+    my $params = $self->_parameters;
+
+    # house keeping.
+    delete $params->{shortcode};
+    delete $params->{expiry_daily};
+    delete $params->{is_intraday};
+
+    # set date start if not given. If we want to price a contract starting now, date_start should never be provided!
+    unless ($params->{date_start}) {
+        # An undefined or missing date_start implies that we want a bet which starts now.
+        $params->{date_start} = Date::Utility->new;
+        # Force date_pricing to be similarly set, but make sure we know below that we did this, for speed reasons.
+        $params->{pricing_new} = 1;
+    } else {
+        $params->{date_start} = Date::Utility->new($params->{date_start});
+    }
+
+    $params->{date_expiry} = Date::Utility->new($params->{date_expiry}) if defined $params->{date_expiry};
+
+    if (defined $params->{duration}) {
+        if (my ($tick_count) = $params->{duration} =~ /^([0-9]+)t$/) {
+            $params->{tick_expiry} = 1;
+            $params->{tick_count}  = $tick_count;
+        }
+    }
+
+    #TODO: remove this
+    $params->{landing_company} //= 'virtual';
+
+    unless (exists $params->{date_start}) {
+        BOM::Product::Exception->throw(
+            error_code => 'MissingRequiredContractParams',
+            error_args => ['date_start'],
+            details    => {field => 'date_start'},
+        );
+    }
+
+    if ($params->{category}->has_user_defined_expiry and defined($params->{date_expiry})) {
+        my $duration_in_seconds = $params->{date_expiry}->epoch - $params->{date_start}->epoch;
+        if ($duration_in_seconds > MAX_DURATION) {
+            BOM::Product::Exception->throw(
+                error_code => 'TradingDurationNotAllowed',
+                details    => {field => 'duration'});
+        }
+    }
+
+    if ($params->{category}->has_user_defined_expiry) {
+        BOM::Product::Exception->throw(
+            error_code => 'DuplicateExpiry',
+            error_args => ['duration', 'date_expiry'],
+            details    => {field => 'duration'},
+        ) if (defined $params->{duration} and defined $params->{date_expiry});
+        BOM::Product::Exception->throw(
+            error_code => 'MissingEither',
+            error_args => ['duration', 'date_expiry'],
+            details    => {field => 'duration'},
+        ) unless (defined $params->{date_expiry} or defined $params->{duration});
+    } elsif ($params->{pricing_new} and (defined $params->{date_expiry} or defined $params->{duration})) {
+        BOM::Product::Exception->throw(
+            error_code => 'InvalidExpiry',
+            error_args => [$params->{bet_type}],
+            details    => {field => 'duration'},
+        );
+    }
+
+    # only do this conversion here.
+    if ($params->{amount_type}) {
+        $params->{amount_type} = '_user_input_stake' if $params->{amount_type} eq 'stake';
+        $params->{$params->{amount_type}} = $params->{amount};
+    }
+
+    delete $params->{$_} for qw(amount amount_type);
+
+    if (my $orders = delete $params->{limit_order}) {
+        $params->{_order} = ref($orders) eq 'ARRAY' ? _to_hashref($orders) : $orders;
+    }
+
+    return;
+}
+
+=head2 _validate_contract_type
+
+Validation of user defined contract type.
+
+=cut
+
+sub _validate_contract_type {
+
+    my $self = shift;
+
+    my $params = $self->_parameters;
+
+    unless ($params->{bet_type}) {
+        BOM::Product::Exception->throw(
+            error_code => 'MissingRequiredContractParams',
+            error_args => ['bet_type'],
+            details    => {field => 'contract_type'},
+        );
+    }
+
+    $params->{bet_type} = uc $params->{bet_type};
+
+    unless (exists $contract_type_config->{$params->{bet_type}}) {
+        $params->{bet_type} = 'INVALID';
+    }
+
+    return;
+
+}
+
+=head2 _validate_barrier
+
+Validation of user defined barrier.
+
+=cut
+
+sub _validate_barrier {
+
     my $self = shift;
 
     my $params = $self->_parameters;
@@ -145,8 +374,6 @@ sub _initialize_barrier {
                 details    => {field => 'barrier'},
             );
         }
-        # if we build this contract for sale, do some cleanup here.
-        delete $params->{$_} for @available_barriers;
         return;
     }
 
@@ -192,11 +419,6 @@ sub _initialize_barrier {
                 );
             }
         }
-
-        # house keeping
-        delete $params->{$_} for qw(high_barrier low_barrier);
-        $params->{supplied_high_barrier} = $high_barrier;
-        $params->{supplied_low_barrier}  = $low_barrier;
     } else {
         if (exists $params->{high_barrier} and exists $params->{low_barrier}) {
             BOM::Product::Exception->throw(
@@ -217,199 +439,22 @@ sub _initialize_barrier {
                 details    => {field => 'barrier'},
             );
         }
-
-        # house keeping
-        delete $params->{barrier};
-        $params->{supplied_barrier} = $barrier;
     }
 
     return;
 }
 
-sub _initialize_underlying {
+=head2 _validate_stake_min_max
+
+Validation of stake/payout range
+
+=cut
+
+sub _validate_stake_min_max {
+
     my $self = shift;
 
     my $params = $self->_parameters;
-
-    BOM::Product::Exception->throw(
-        error_code => 'MissingRequiredContractParams',
-        error_args => ['underlying'],
-        details    => {field => 'symbol'},
-    ) unless $params->{underlying};
-
-    if (!(blessed $params->{underlying} and $params->{underlying}->isa('Quant::Framework::Underlying'))) {
-        $params->{underlying} = create_underlying($params->{underlying});
-    }
-
-    # if underlying is not defined, then some settings are default to 'config'
-    if ($params->{underlying}->market eq 'config') {
-        BOM::Product::Exception->throw(
-            error_code => 'InvalidInputAsset',
-            details    => {field => 'symbol'},
-        );
-    }
-
-    # If they gave us a date for start and pricing, then we need to create_underlying using that.
-    # date_pricing is set for back-pricing purposes
-    if (exists $params->{date_pricing}) {
-        $params->{date_pricing} = Date::Utility->new($params->{date_pricing});
-        if (not($params->{underlying}->for_date and $params->{underlying}->for_date->is_same_as($params->{date_pricing}))) {
-            $params->{underlying} = create_underlying($params->{underlying}->symbol, $params->{date_pricing});
-        }
-    }
-
-    return;
-}
-
-sub _initialize_other_parameters {
-    my $self = shift;
-
-    my $params = $self->_parameters;
-
-    # house keeping.
-    delete $params->{shortcode};
-    delete $params->{expiry_daily};
-    delete $params->{is_intraday};
-
-    BOM::Product::Exception->throw(
-        error_code => 'MissingRequiredContractParams',
-        error_args => ['currency'],
-        details    => {field => 'currency'},
-    ) unless $params->{currency};
-
-    # set date start if not given. If we want to price a contract starting now, date_start should never be provided!
-    unless ($params->{date_start}) {
-        # An undefined or missing date_start implies that we want a bet which starts now.
-        $params->{date_start} = Date::Utility->new;
-        # Force date_pricing to be similarly set, but make sure we know below that we did this, for speed reasons.
-        $params->{pricing_new} = 1;
-    } else {
-        $params->{date_start} = Date::Utility->new($params->{date_start});
-    }
-
-    if (defined $params->{date_expiry}) {
-        # to support legacy shortcode where expiry date is date string in dd-mmm-yy format
-        if (Date::Utility::is_ddmmmyy($params->{date_expiry})) {
-            my $exchange = $params->{underlying}->exchange;
-            $params->{date_expiry} = $self->_trading_calendar->closing_on($exchange, Date::Utility->new($params->{date_expiry}));
-            # contract bought expires on a non-trading day
-            unless ($params->{date_expiry}) {
-                BOM::Product::Exception->throw(
-                    error_code => 'TradingDayExpiry',
-                    details    => {field => $params->{duration} ? 'duration' : 'date_expiry'},
-                );
-            }
-        } else {
-            $params->{date_expiry} = Date::Utility->new($params->{date_expiry});
-        }
-    }
-
-    #TODO: remove this
-    $params->{landing_company}      //= 'virtual';
-    $params->{payout_currency_type} //= LandingCompany::Registry::get_currency_type($params->{currency});
-
-    if (defined $params->{duration}) {
-        my $duration = $params->{duration};
-        if ($duration !~ /[0-9]+(t|m|d|s|h)/) {
-            BOM::Product::Exception->throw(
-                error_code => 'TradingDurationNotAllowed',
-                details    => {field => 'duration'},
-            );
-        } else {
-            # sanity check for duration. Date::Utility throws exception if you're trying
-            # to create an object that's too ridiculous far in the future.
-
-            my $expected_feed_frequency = $params->{underlying}->generation_interval->seconds;
-            # defaults to 2-second if not specified
-            $expected_feed_frequency = 2 if $expected_feed_frequency == 0;
-            try {
-                my ($duration_amount, $duration_unit) = $duration =~ /([0-9]+)(t|m|d|s|h)/;
-                my $interval = $duration;
-                $interval = $duration_amount * $expected_feed_frequency if $duration_unit eq 't';
-
-                my $duration_in_seconds = $params->{date_start}->plus_time_interval($interval)->epoch - $params->{date_start}->epoch;
-                die if ($params->{category}->has_user_defined_expiry) && ($duration_in_seconds > MAX_DURATION);
-            } catch {
-                BOM::Product::Exception->throw(
-                    error_code => 'TradingDurationNotAllowed',
-                    details    => {field => 'duration'});
-            }
-            if (my ($tick_count) = $duration =~ /^([0-9]+)t$/) {
-                $params->{tick_expiry} = 1;
-                $params->{tick_count}  = $tick_count;
-                $params->{date_expiry} = $params->{date_start}->plus_time_interval($expected_feed_frequency * $params->{tick_count});
-            } else {
-                my $underlying  = $params->{underlying};
-                my $start_epoch = $params->{date_start};
-                $params->{date_expiry} = $start_epoch->plus_time_interval($duration);
-
-                if ($duration =~ /d$/) {
-                    # Daily bet expires at the end of day, so here you go
-                    if (my $closing = $self->_trading_calendar->closing_on($underlying->exchange, $params->{date_expiry})) {
-                        $params->{date_expiry} = $closing;
-                    } else {
-                        my $regular_day   = $self->_trading_calendar->regular_trading_day_after($underlying->exchange, $params->{date_expiry});
-                        my $regular_close = $self->_trading_calendar->closing_on($underlying->exchange, $regular_day);
-                        $params->{date_expiry} = Date::Utility->new($params->{date_expiry}->date_yyyymmdd . ' ' . $regular_close->time_hhmmss);
-                    }
-                }
-            }
-        }
-    }
-
-    unless (exists $params->{date_start}) {
-        BOM::Product::Exception->throw(
-            error_code => 'MissingRequiredContractParams',
-            error_args => ['date_start'],
-            details    => {field => 'date_start'},
-        );
-    }
-
-    if ($params->{category}->has_user_defined_expiry and defined($params->{date_expiry})) {
-        my $duration_in_seconds = $params->{date_expiry}->epoch - $params->{date_start}->epoch;
-        if ($duration_in_seconds > MAX_DURATION) {
-            BOM::Product::Exception->throw(
-                error_code => 'TradingDurationNotAllowed',
-                details    => {field => 'duration'});
-        }
-    }
-
-    if ($params->{category}->has_user_defined_expiry) {
-        BOM::Product::Exception->throw(
-            error_code => 'MissingEither',
-            error_args => ['duration', 'date_expiry'],
-            details    => {field => 'duration'},
-        ) if not $params->{date_expiry};
-    } elsif ($params->{pricing_new} and $params->{date_expiry}) {
-        BOM::Product::Exception->throw(
-            error_code => 'InvalidExpiry',
-            error_args => [$params->{bet_type}],
-            details    => {field => 'duration'},
-        );
-    }
-
-    if (exists $params->{payout} and exists $params->{stake}) {
-        BOM::Product::Exception->throw(
-            error_code => 'MissingEither',
-            error_args => ['payout', 'stake'],
-            details    => {field => 'basis'},
-        );
-    }
-
-    # these are for the sake of not fixing every unit tests!
-    if (exists $params->{stake}) {
-        $params->{amount}      = delete $params->{stake};
-        $params->{amount_type} = 'stake';
-    } elsif (exists $params->{payout}) {
-        $params->{amount}      = delete $params->{payout};
-        $params->{amount_type} = 'payout';
-    }
-
-    # _user_input_stake could come from $contract->build_parameters if make_similar_contract is used
-    if (defined $params->{_user_input_stake} and not(defined $params->{amount} and defined $params->{amount_type})) {
-        $params->{amount}      = delete $params->{_user_input_stake};
-        $params->{amount_type} = 'stake';
-    }
 
     if ($params->{category}->require_basis) {
         BOM::Product::Exception->throw(
@@ -447,6 +492,22 @@ sub _initialize_other_parameters {
         ) if (defined $params->{amount_type} and $params->{amount});
     }
 
+    return;
+
+}
+
+=head2 _validate_multiplier
+
+Validation of minimum multiplier
+
+=cut
+
+sub _validate_multiplier {
+
+    my $self = shift;
+
+    my $params = $self->_parameters;
+
     if ($params->{category}->require_multiplier) {
         BOM::Product::Exception->throw(
             error_code => 'MissingRequiredContractParams',
@@ -479,18 +540,8 @@ sub _initialize_other_parameters {
         ) if (defined $params->{multiplier});
     }
 
-    # only do this conversion here.
-    if ($params->{amount_type}) {
-        $params->{amount_type} = '_user_input_stake' if $params->{amount_type} eq 'stake';
-        $params->{$params->{amount_type}} = $params->{amount};
-    }
-    delete $params->{$_} for qw(amount amount_type);
-
-    if (my $orders = delete $params->{limit_order}) {
-        $params->{_order} = ref($orders) eq 'ARRAY' ? _to_hashref($orders) : $orders;
-    }
-
     return;
+
 }
 
 sub _to_hashref {
