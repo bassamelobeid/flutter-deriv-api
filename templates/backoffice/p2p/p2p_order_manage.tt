@@ -100,12 +100,13 @@ Order ID: <input type="text" name="order_id" value="[% order.id %]" size=20 data
         </tr>        
     </table>
 
-    <h3>Transactions</h3>
+    <h3>Order History</h3>
     <table border="1" class="collapsed">
         <thead>
             <tr>
                 <th scope="col">Time</th>
-                <th scope="col">Type</th>
+                <th scope="col">Status</th>
+                <th scope="col">TX Type</th>
                 <th scope="col"></th>
                 <th scope="col">TX ID</th>
                 <th scope="col">Loginid</th>
@@ -117,26 +118,35 @@ Order ID: <input type="text" name="order_id" value="[% order.id %]" size=20 data
         </thead>
         <tbody>
             [% FOREACH t = transactions %]
-            <tr>
-                <td rowspan=2>[% t.transaction_time %]</td>
-                <td rowspan=2>[% t.type %]</td>
-                <td>From</td>
-                <td>[% t.src_id %]</td>
-                <td>[% t.src_loginid %]</td>
-                <td>[% t.src_amount %]</td>
-                <td>[% t.src_action_type %]</td>
-                <td>[% t.src_payment_id %]</td>
-                <td>[% t.src_staff %]</td>
-            </tr>
-            <tr>
-                <td>To</td>
-                <td>[% t.dest_id %]</td>
-                <td>[% t.dest_loginid %]</td>
-                <td>[% t.dest_amount %]</td>
-                <td>[% t.dest_action_type %]</td>
-                <td>[% t.dest_payment_id %]</td>
-                <td>[% t.dest_staff %]</td>
-            </tr>
+                [% IF t.type %]
+                    <tr>
+                        <td rowspan=2>[% t.transaction_time %]</td>
+                        <td rowspan=2>[% t.status %]</td>
+                        <td rowspan=2>[% t.type %]</td>
+                        <td>From</td>
+                        <td>[% t.src_id %]</td>
+                        <td>[% t.src_loginid %]</td>
+                        <td>[% t.src_amount %]</td>
+                        <td>[% t.src_action_type %]</td>
+                        <td>[% t.src_payment_id %]</td>
+                        <td>[% t.src_staff %]</td>
+                    </tr>
+                    <tr>
+                        <td>To</td>
+                        <td>[% t.dest_id %]</td>
+                        <td>[% t.dest_loginid %]</td>
+                        <td>[% t.dest_amount %]</td>
+                        <td>[% t.dest_action_type %]</td>
+                        <td>[% t.dest_payment_id %]</td>
+                        <td>[% t.dest_staff %]</td>
+                    </tr>
+                [% ELSE %]
+                    <tr>
+                        <td>[% t.transaction_time %]</td>
+                        <td>[% t.status %]</td>
+                        <td colspan=8></td>
+                    </tr>
+                [% END %]
             [% END %]
         </tbody>
     </table>

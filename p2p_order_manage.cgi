@@ -189,6 +189,29 @@ if (my $id = $input{order_id}) {
 $chat_messages //= [];
 $chat_messages = [map { prep_chat_message($_, $order) } @{$chat_messages}];
 
+if ($order) {
+    my $order_client    = BOM::User::Client->new({loginid => $order->{client_loginid}});
+    my $status_history  = $order_client->p2p_order_status_history($order->{id});
+    my $status_by_stamp = +{map { Date::Utility->new($_->{stamp})->datetime_yyyymmdd_hhmmss => $_->{status} } reverse $status_history->@*};
+    my $status_bag      = +{map { $_->{status} => Date::Utility->new($_->{stamp})->datetime_yyyymmdd_hhmmss } $status_history->@*};
+
+    # We try to pair a transaction with its correspondent status by timestamp
+    foreach ($transactions->@*) {
+        my $stamp = Date::Utility->new($_->{transaction_time})->datetime_yyyymmdd_hhmmss;
+
+        if (defined $status_by_stamp->{$stamp}) {
+            $_->{status} = $status_by_stamp->{$stamp};
+            delete $status_bag->{$_->{status}};
+        }
+    }
+
+    # If a status is not matching a transaction, just push it and generate an empty tx row
+    push @$transactions, (map { +{status => $_, transaction_time => $status_bag->{$_}} } keys %$status_bag);
+    # Finally, sort by timestamp
+    $transactions =
+        [sort { Date::Utility->new($a->{transaction_time})->epoch cmp Date::Utility->new($b->{transaction_time})->epoch } $transactions->@*];
+}
+
 BOM::Backoffice::Request::template()->process(
     'backoffice/p2p/p2p_order_manage.tt',
     {
