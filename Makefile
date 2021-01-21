@@ -1,12 +1,14 @@
+TESTS=test syntax 
+
 M=[ -t 1 ] && echo -e 'making \033[01;33m$@\033[00m' || echo 'making $@'
-D=$(CURDIR)
 export SKIP_EMAIL=1
-I=-I$D/lib -I$D -I/home/git/regentmarkets/cpan/local/lib
-P=/etc/rmg/bin/prove -v --timer $I
+P=/etc/rmg/bin/prove -lvr --timer 
 PROVE=p () { $M; echo '$P' "$$@"; $P "$$@"; }; p
 
+test_all: $(TESTS)
+
 test:
-	@$(PROVE) -r t/
+	@$(PROVE) t/BOM
 
 tidy:
 	find . -name '*.p?.bak' -delete

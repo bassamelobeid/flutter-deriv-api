@@ -37,7 +37,7 @@ default: &6
   shell: /bin/bash -leo pipefail
   working_directory: /home/git/regentmarkets/bom-config
 jobs:
-  build:
+  core:
     <<: *6
     steps:
     - *1
@@ -49,9 +49,24 @@ jobs:
         command: |
           echo '--formatter TAP::Formatter::JUnit' >> .proverc
           make test
-        name: Run tests
+        name: Core tests
     - store_test_results:
         path: /var/tmp/test-output
+  syntax:
+      <<: *6
+      steps:
+      - *1
+      - *2
+      - *3
+      - *4
+      - run:
+          <<: *5
+          command: |
+            echo '--formatter TAP::Formatter::JUnit' >> .proverc
+            make syntax
+          name: Code structure and syntax
+      - store_test_results:
+          path: /var/tmp/test-output
   code_coverage:
     <<: *6
     steps:
@@ -68,7 +83,9 @@ version: 2
 workflows:
   build-workflow:
     jobs: &7
-    - build:
+    - syntax:
+        context: perl
+    - core:
         context: perl
   daily:
     jobs: *7
