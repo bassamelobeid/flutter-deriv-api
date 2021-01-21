@@ -76,8 +76,10 @@ Note about terminology:
 
 #### TEST
 ```bash
-# run all test scripts
+# run all core test scripts
 make test
+# run code structure and syntax tests
+make syntax
 # run one script
 prove t/BOM/user.t
 # run one script with perl
