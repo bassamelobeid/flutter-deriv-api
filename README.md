@@ -23,7 +23,6 @@ Return: 1
 
 # TEST
 
-    # test this repo
-    make test
-    # test all repo under regentmarkets and binary-com
-    make test_all
+    make test       # Core tests in this repo
+    make syntax     # Code structure and syntax
+    make test_all   # test all repo under regentmarkets and binary-com    

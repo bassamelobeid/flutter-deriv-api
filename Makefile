@@ -1,4 +1,7 @@
 SUBDIRS=$(wildcard /home/git/regentmarkets/*) $(wildcard /home/git/binary-com/*)
+M=[ -t 1 ] && echo -e 'making \033[01;33m$@\033[00m' || echo 'making $@'
+P=/etc/rmg/bin/prove -lrv -It/lib -MTest::Warnings
+PROVE=p () { $M; echo '$P' "$$@"; $P "$$@"; }; p
 
 test_all: $(SUBDIRS)
 
@@ -12,7 +15,10 @@ tidy:
 	find . -name '*.tidyup' -delete
 
 test:
-	/etc/rmg/bin/prove -vlr --exec 'perl -Ilib -It/lib -MTest::Warnings' t/
+	@$(PROVE) t/BOM t/bin
+
+syntax:
+	@$(PROVE) t/*.t
 
 doc:
 	pod2markdown lib/BOM/Test.pm > README.md
