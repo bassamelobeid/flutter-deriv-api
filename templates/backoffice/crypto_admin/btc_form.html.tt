@@ -10,7 +10,6 @@
                   <option disabled selected value> -- select an option -- </option>
                   <option value="get_wallet_balance">Wallet balance</option>
                   <option value="get_main_address_balance">Main address balance</option>
-                  <option value="get_newaddress">Get new address</option>
                   <option value="get_blockcount">Block count</option>
                   <option value="get_estimate_smartfee">Estimate smart fee</option>
                   <option value="get_blockchain_info">Blockchain info</option>

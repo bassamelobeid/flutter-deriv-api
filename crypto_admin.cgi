@@ -202,7 +202,6 @@ sub _get_function_map {
         get_wallet_balance => sub { $currency_wrapper->get_wallet_balance()->{$currency_selected} },
         get_main_address_balance => sub { $currency_wrapper->get_main_address_balance()->{$currency_selected} },
         get_address_balance      => sub { $address ? $currency_wrapper->get_address_balance($address) : die "Please enter address"; },
-        get_newaddress           => sub { $currency_wrapper->get_new_bo_address() },
         get_estimate_smartfee    => sub { $currency_wrapper->get_estimated_fee() },
         list_receivedby_address  => sub { $currency_wrapper->list_receivedby_address($receivedby_minconf, $input->{address_filter}) },
         get_blockcount           => sub { $currency_wrapper->last_block() },
@@ -217,7 +216,6 @@ sub _get_function_map {
 
     return +{
         list_unspent_utxo     => sub { $currency_wrapper->get_unspent_transactions($lu_utxo_address ? [$lu_utxo_address] : [], $confirmations_req) },
-        get_newaddress        => sub { $currency_wrapper->get_new_bo_address() },
         get_estimate_smartfee => sub { $currency_wrapper->get_estimated_fee() },
         list_receivedby_address  => sub { $currency_wrapper->list_receivedby_address($receivedby_minconf, $input->{address_filter}) },
         get_blockcount           => sub { $currency_wrapper->last_block() },
