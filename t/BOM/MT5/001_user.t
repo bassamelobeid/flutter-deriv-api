@@ -22,7 +22,7 @@ my $BACKOFF_TTL       = 60;
 
 subtest 'MT5 Timeout logic handle' => sub {
     my $mock_server_key = Test::MockModule->new('BOM::MT5::User::Async');
-    $mock_server_key->mock('_get_trading_server_key', sub { 'main' });
+    $mock_server_key->mock('get_trading_server_key', sub { 'main' });
 
     my $timeout_return = {
         error => 'ConnectionTimeout',
@@ -215,7 +215,7 @@ subtest 'MT5 suspended' => sub {
             login       => 'MTR1023',
             new_deposit => 1
         });
-    is($fail_result, 'MT5REAL01DepositSuspended', 'deposit suspended when set deposit suspended');
+    is($fail_result, 'MT5REALDepositSuspended', 'deposit suspended when set deposit suspended');
     $fail_result = BOM::MT5::User::Async::is_suspended(
         $deposit_cmd,
         {
@@ -242,7 +242,7 @@ subtest 'MT5 suspended' => sub {
             login       => 'MTR1023',
             new_deposit => -1
         });
-    is($fail_result, 'MT5REAL01WithdrawalSuspended', 'withdrawals suspended when set withdrawals suspended');
+    is($fail_result, 'MT5REALWithdrawalSuspended', 'withdrawals suspended when set withdrawals suspended');
 
     $fail_result = {};
     BOM::MT5::User::Async::_invoke_mt5(
@@ -268,7 +268,7 @@ subtest 'MT5 suspended' => sub {
         BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real01->all(1);
         for my $cmd (@cmds) {
             my $fail_result = BOM::MT5::User::Async::is_suspended($cmd, {login => 'MTR1023'}) // {};
-            is($fail_result, 'MT5REAL01APISuspendedError', "mt5 $cmd suspeneded for MTR1023 when set real as true");
+            is($fail_result, 'MT5REALAPISuspendedError', "mt5 $cmd suspeneded for MTR1023 when set real as true");
             my $pass_result = BOM::MT5::User::Async::is_suspended($cmd, {login => 'MTD1023'});
             ok !$pass_result, "mt5 $cmd not suspended for MTD1023 when set real as true";
         }
@@ -277,7 +277,7 @@ subtest 'MT5 suspended' => sub {
         BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real02->all(1);
         for my $cmd (@cmds) {
             my $fail_result = BOM::MT5::User::Async::is_suspended($cmd, {login => 'MTR20000000'}) // {};
-            is($fail_result, 'MT5REAL02APISuspendedError', "mt5 $cmd suspeneded for MTR20000000 when set real as true");
+            is($fail_result, 'MT5REALAPISuspendedError', "mt5 $cmd suspeneded for MTR20000000 when set real as true");
             my $pass_result = BOM::MT5::User::Async::is_suspended($cmd, {login => 'MTD1023'});
             ok !$pass_result, "mt5 $cmd not suspended for MTD1023 when set real as true";
         }
@@ -292,7 +292,7 @@ subtest 'MT5 suspended' => sub {
                 login       => 'MTR1023',
                 new_deposit => 1
             }) // {};
-        is($fail_result, 'MT5REAL01DepositSuspended', "mt5 $deposit_cmd suspeneded for MTR1023 when set real01->deposits as true");
+        is($fail_result, 'MT5REALDepositSuspended', "mt5 $deposit_cmd suspeneded for MTR1023 when set real01->deposits as true");
         my $pass_result = BOM::MT5::User::Async::is_suspended(
             $deposit_cmd,
             {
@@ -309,7 +309,7 @@ subtest 'MT5 suspended' => sub {
                 login       => 'MTR1023',
                 new_deposit => -1
             }) // {};
-        is($fail_result, 'MT5REAL01WithdrawalSuspended', "mt5 $deposit_cmd suspeneded for MTR1023 when set real01->withdrawals as true");
+        is($fail_result, 'MT5REALWithdrawalSuspended', "mt5 $deposit_cmd suspeneded for MTR1023 when set real01->withdrawals as true");
         $pass_result = BOM::MT5::User::Async::is_suspended(
             $deposit_cmd,
             {

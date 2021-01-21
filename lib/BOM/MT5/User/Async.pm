@@ -100,7 +100,7 @@ sub _get_server_type_by_prefix {
     die "Unexpected prefix $prefix";
 }
 
-=head2 _get_trading_server_key
+=head2 get_trading_server_key
 
 Returns key of trading server which the request should be sent to
 
@@ -129,7 +129,7 @@ Returns a string (key of the trading server).
 
 =cut
 
-sub _get_trading_server_key {
+sub get_trading_server_key {
     my ($param, $srv_type) = @_;
     my $config = BOM::Config::mt5_webapi_config();
 
@@ -224,19 +224,19 @@ sub is_suspended {
     return 'MT5APISuspendedError' if $suspend->all;
 
     my $srv_type     = _get_server_type_by_prefix(_get_prefix($param));
-    my $server_key   = _get_trading_server_key($param, $srv_type);
+    my $server_key   = get_trading_server_key($param, $srv_type);
     my $which_server = $srv_type . $server_key;
 
-    return 'MT5DEMOAPISuspendedError'                    if $srv_type eq 'demo' and $suspend->can($which_server) and $suspend->$which_server;
-    return 'MT5REAL' . $server_key . 'APISuspendedError' if $srv_type eq 'real' and $suspend->can($which_server) and $suspend->$which_server->all;
-    return undef                                         if $cmd ne 'UserDepositChange';
+    return 'MT5DEMOAPISuspendedError' if $srv_type eq 'demo' and $suspend->can($which_server) and $suspend->$which_server;
+    return 'MT5REALAPISuspendedError' if $srv_type eq 'real' and $suspend->can($which_server) and $suspend->$which_server->all;
+    return undef                      if $cmd ne 'UserDepositChange';
 
     if ($param->{new_deposit} > 0) {
-        return 'MT5REAL' . $server_key . 'DepositSuspended'
+        return 'MT5REALDepositSuspended'
             if $suspend->deposits
             or ($suspend->$which_server->can('deposits') and $suspend->$which_server->deposits);
     } else {
-        return 'MT5REAL' . $server_key . 'WithdrawalSuspended'
+        return 'MT5REALWithdrawalSuspended'
             if $suspend->withdrawals
             or ($suspend->$which_server->can('withdrawals') and $suspend->$which_server->withdrawals);
     }
@@ -312,7 +312,7 @@ sub _invoke_mt5 {
     try {
         $prefix   = _get_prefix($param);
         $srv_type = _get_server_type_by_prefix($prefix);
-        $srv_key  = _get_trading_server_key($param, $srv_type);
+        $srv_key  = get_trading_server_key($param, $srv_type);
     } catch {
         $log->infof('Error in proccessing mt5 request: %s', $@);
         return _future_error({code => 'General'});

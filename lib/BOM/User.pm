@@ -58,8 +58,10 @@ for my $k (@fields) {
 }
 
 use constant {
-    MT5_REGEX     => qr/^MT[DR]?(?=\d+$)/,
-    VIRTUAL_REGEX => qr/^VR/,
+    MT5_REGEX      => qr/^MT[DR]?(?=\d+$)/,
+    MT5_REAL_REGEX => qr/^MT[R]?(?=\d+$)/,
+    MT5_DEMO_REGEX => qr/^MTD(?=\d+$)/,
+    VIRTUAL_REGEX  => qr/^VR/,
 };
 
 sub create {
@@ -429,10 +431,10 @@ Check if user has any mt5 regulated account - currently its only Labuan
 sub has_mt5_regulated_account {
     my $self = shift;
 
-    my @all_mt5_loginids = $self->get_mt5_loginids;
     # We want to check the real mt5 accounts, so we filter out MTD, then reverse sort,
     # that will move MTR first, and latest created id first
-    my @loginids = reverse sort grep { !/^MTD\d+/ } @all_mt5_loginids;
+    my @all_mt5_loginids = $self->get_mt5_loginids('real');
+    my @loginids         = reverse sort @all_mt5_loginids;
     for my $loginid (@loginids) {
         my $group = BOM::MT5::User::Async::get_user($loginid)->else(sub { Future->done({}) })->get->{group};
         # TODO (JB): to remove old group mapping once all accounts are moved to new group
@@ -683,9 +685,23 @@ sub is_payment_agents_suspended_in_country {
     return any { $_ eq $country } @$suspended_countries;
 }
 
+=head2 get_mt5_loginids
+
+my $mt5_loginids = $self->get_mt5_loginids(); # all mt5 loginids
+my $mt5_real = $self->get_mt5_loginids('real'); real mt5 loginids
+
+=cut
+
 sub get_mt5_loginids {
-    my $self = shift;
-    return (sort grep { $_ =~ MT5_REGEX } $self->loginids);
+    my ($self, $account_type) = @_;
+
+    my $regex = MT5_REGEX;
+    if ($account_type) {
+        # $account_type of 'real', 'gaming' and 'financial' are real accounts
+        $regex = $account_type eq 'demo' ? MT5_DEMO_REGEX : MT5_REAL_REGEX;
+    }
+
+    return (sort grep { $_ =~ $regex } $self->loginids);
 }
 
 =head2 get_loginid_for_mt5_id
