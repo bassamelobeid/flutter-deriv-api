@@ -1,0 +1,3 @@
+# Circleci need this file to build the dependency tree.
+# And our release procedure need an empty repositories.yml in all tagged repositories even
+# it doesn't depend on any other repository.
