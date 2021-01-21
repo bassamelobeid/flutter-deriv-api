@@ -880,11 +880,6 @@ sub buy {
     $self->transaction_id($txn->{id});
     $self->contract_id($fmb->{id});
 
-    $client->increment_social_responsibility_values({
-            turnover     => $fmb->{buy_price},
-            num_contract => 1
-        }) if $client->landing_company->social_responsibility_check_required;
-
     # For soft realtime expiration notification.
     $self->expiryq->enqueue_new_transaction(_get_params_for_expiryqueue($self));
 
