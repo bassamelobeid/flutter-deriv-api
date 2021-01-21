@@ -2,6 +2,7 @@
     "token": "[_1]",
     "client_ip": "211.24.127.133",
     "user_agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/54.0.2840.98 Safari/537.36",
+    "preferred_language": "DE",
     "language": "EN",
     "args": {
       "set_settings": "1",

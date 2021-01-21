@@ -72,6 +72,10 @@ rpc authorize => sub {
     });
     return BOM::RPC::v3::Utility::invalid_token_error() unless $client;
 
+    my $user = $client->user;
+
+    $user->setnx_preferred_language($params->{language}) if $params->{language};
+
     $params->{app_id} = $params->{source};
     my $app_id = $params->{app_id};
 
@@ -83,7 +87,6 @@ rpc authorize => sub {
             code              => 'AccountDisabled',
             message_to_client => BOM::Platform::Context::localize("Account is disabled.")}) unless $client->is_available;
 
-    my $user = $client->user;
     my $token_type;
 
     if (length $token == 15) {
@@ -148,6 +151,7 @@ rpc authorize => sub {
         country                       => $client->residence,
         landing_company_name          => $lc->short,
         landing_company_fullname      => $lc->name,
+        preferred_language            => $user->preferred_language,
         scopes                        => $scopes,
         is_virtual                    => $client->is_virtual ? 1 : 0,
         upgradeable_landing_companies => _get_upgradeable_landing_companies(\@active_client_list, $client),

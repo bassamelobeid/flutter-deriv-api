@@ -19,7 +19,8 @@
       "account_list",
       "upgradeable_landing_companies",
       "user_id",
-      "local_currencies"
+      "local_currencies",
+      "preferred_language"
    ],
    "properties" : {
       "fullname" : {
@@ -139,6 +140,10 @@
       "user_id" : {
          "type" : "string",
          "pattern" : "^[0-9]+$"
+      },
+      "preferred_language" : {
+         "type" : "string",
+         "pattern": "^[A-Z]{0,2}$"
       }
    }
 }

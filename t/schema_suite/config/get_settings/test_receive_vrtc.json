@@ -8,7 +8,8 @@
       "email",
       "residence",
       "immutable_fields",
-      "user_hash"
+      "user_hash",
+      "preferred_language"
    ],
    "title" : null,
    "additionalProperties" : null,
@@ -48,6 +49,10 @@
          "items" : {
             "type" : "string"
          }
+      },
+      "preferred_language" : {
+         "type" : "string",
+         "pattern": "^[A-Z]{0,2}$"
       }
    }
 }
