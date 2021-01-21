@@ -24,6 +24,7 @@ __PACKAGE__->meta->setup(
         is_totp_enabled    => { type => 'boolean' },
         date_first_contact => { type => 'date' },
         signup_device      => { type => 'enum', check_in => [ 'mobile', 'desktop' ], db_type => 'signup_device_type' },
+        preferred_language => { type => 'text' },
     ],
 
     primary_key_columns => [ 'id' ],
