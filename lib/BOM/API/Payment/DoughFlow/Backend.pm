@@ -288,10 +288,8 @@ sub write_transaction_line {
             }) if ($trx);
 
         # Social responsibility checks for MLT/MX clients
-        $client->increment_social_responsibility_values({
-                deposit_amount => $amount,
-                deposit_count  => 1
-            }) if ($client->landing_company->social_responsibility_check_required);
+        $client->increment_social_responsibility_values({net_deposits => $amount})
+            if ($client->landing_company->social_responsibility_check_required);
 
         _handle_qualifying_payments($client, $amount, $c->type) if $client->landing_company->qualifying_payment_check_required;
     } elsif ($c->type =~ /^(payout_created|payout_inprogress)$/) {
@@ -306,6 +304,11 @@ sub write_transaction_line {
         $payment_args{amount} = -$amount;
         $trx = $client->payment_doughflow(%payment_args);
         BOM::Platform::Event::Emitter::emit('payment_withdrawal', {$event_args->%*, transaction_id => $trx->{id}}) if ($trx);
+
+        # Social responsibility checks for MLT/MX clients
+        $client->increment_social_responsibility_values({
+                net_deposits => -$amount,
+            }) if ($client->landing_company->social_responsibility_check_required);
 
         _handle_qualifying_payments($client, $amount, $c->type) if $client->landing_company->qualifying_payment_check_required;
     } elsif ($c->type =~ /^(payout_cancelled|payout_rejected)$/) {
