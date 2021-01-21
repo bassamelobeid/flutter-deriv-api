@@ -753,6 +753,7 @@ rpc balance => sub {
                 account_id       => '',
                 demo_account     => $sibling->is_virtual ? 1 : 0,
                 type             => 'deriv',
+                status           => 0,
             };
             next;
         }
@@ -770,31 +771,44 @@ rpc balance => sub {
             type             => 'deriv',
             currency_rate_in_total_currency =>
                 convert_currency(1, $sibling->account->currency_code, $total_currency),    # This rate is used for the future stream
+            status => 1,
         };
     }
 
     my $mt5_real_total = 0;
     my $mt5_demo_total = 0;
 
-    if (MT5_BALANCE_CALL_ENABLED) {
+    if (_mt5_balance_call_enabled()) {
         my @mt5_accounts = BOM::RPC::v3::MT5::Account::get_mt5_logins($params->{client})->else(sub { return Future->done(); })->get;
 
         for my $mt5_account (@mt5_accounts) {
-            my $is_demo   = $mt5_account->{group} =~ /^demo/ ? 1 : 0;
-            my $converted = convert_currency($mt5_account->{balance}, $mt5_account->{currency}, $total_currency);
-            $mt5_real_total += $converted unless $is_demo;
-            $mt5_demo_total += $converted if $is_demo;
+            if (my $error = $mt5_account->{error}) {
+                my $mt5_login    = $error->{details}{login};
+                my $account_type = BOM::MT5::User::Async::get_account_type($mt5_login);
+                $response->{accounts}{$mt5_login} = {
+                    currency         => '',
+                    balance          => '0.00',
+                    converted_amount => '0.00',
+                    type             => 'mt5',
+                    demo_account     => $account_type eq 'demo' ? 1 : 0,
+                    status           => 0,
+                };
+            } else {
+                my $is_demo   = $mt5_account->{group} =~ /^demo/ ? 1 : 0;
+                my $converted = convert_currency($mt5_account->{balance}, $mt5_account->{currency}, $total_currency);
+                $is_demo ? $mt5_demo_total : $mt5_real_total += $converted;
 
-            $response->{accounts}{$mt5_account->{login}} = {
-                currency         => $mt5_account->{currency},
-                balance          => formatnumber('amount', $mt5_account->{currency}, $mt5_account->{balance}),
-                converted_amount => formatnumber('amount', $total_currency, $converted),
-                demo_account     => $is_demo,
-                type             => 'mt5',
-                currency_rate_in_total_currency =>
-                    convert_currency(1, $mt5_account->{currency}, $total_currency),    # This rate is used for the future stream
-            };
-
+                $response->{accounts}{$mt5_account->{login}} = {
+                    currency         => $mt5_account->{currency},
+                    balance          => formatnumber('amount', $mt5_account->{currency}, $mt5_account->{balance}),
+                    converted_amount => formatnumber('amount', $total_currency, $converted),
+                    demo_account     => $is_demo,
+                    type             => 'mt5',
+                    currency_rate_in_total_currency =>
+                        convert_currency(1, $mt5_account->{currency}, $total_currency),    # This rate is used for the future stream
+                    status => 1,
+                };
+            }
         }
     }
 
@@ -2217,10 +2231,16 @@ rpc account_closure => sub {
     }
 
     # get_mt5_logins will return the accounts from all the available trade servers.
-    # If one trade server is disabled, we will still get the accounts from other trade servers
+    # If one trade server is disabled, these accounts will be marked as inaccessible.
     my @mt5_accounts = BOM::RPC::v3::MT5::Account::get_mt5_logins($params->{client})->else(sub { return Future->done(); })->get;
+    my %mt5_accounts_inaccessible;
     foreach my $mt5_account (@mt5_accounts) {
-        next if $mt5_account->{group} =~ /^demo/;
+        if ($mt5_account->{error} and $mt5_account->{error}{code} eq 'MT5AccountInaccessible') {
+            $mt5_accounts_inaccessible{$mt5_account->{error}{details}{login}} = $mt5_account->{error}->{message_to_client};
+            next;
+        }
+
+        next if defined $mt5_account->{group} and $mt5_account->{group} =~ /^demo/;
 
         if ($mt5_account->{balance} > 0) {
             $accounts_with_balance{$mt5_account->{login}} = {
@@ -2247,6 +2267,14 @@ rpc account_closure => sub {
                     %accounts_with_balance   ? (balance        => \%accounts_with_balance)   : (),
                     %accounts_with_positions ? (open_positions => \%accounts_with_positions) : (),
                 }});
+    }
+
+    if (%mt5_accounts_inaccessible) {
+        my @accounts_to_fix = uniq(keys %mt5_accounts_inaccessible);
+        return BOM::RPC::v3::Utility::create_error({
+                code              => 'MT5AccountInaccessible',
+                message_to_client => localize(
+                    'The following MT5 account(s) are temporarily inaccessible: [_1]. Please try again later.', join(', ', @accounts_to_fix))});
     }
 
     # This for-loop is for disabling the accounts
@@ -2467,5 +2495,15 @@ rpc reality_check => sub {
 
     return $summary;
 };
+
+=head2 _mt5_balance_call_method
+
+Static method holding value of MT5_BALANCE_CALL_ENABLED
+
+=cut
+
+sub _mt5_balance_call_enabled {
+    return MT5_BALANCE_CALL_ENABLED;
+}
 
 1;

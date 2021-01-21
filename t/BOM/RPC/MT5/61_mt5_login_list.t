@@ -57,8 +57,6 @@ subtest 'country=za; creates financial account with existing gaming account whil
     is $result->{login}, 'MTR' . $ACCOUNTS{'real02\synthetic\svg_std_usd'}, 'created in group real02\synthetic\svg_std_usd';
 
     BOM::RPC::v3::MT5::Account::reset_throttler($new_client->loginid);
-    note("disable real02 API calls.");
-    BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real02->all(1);
 
     $params->{args}{account_type}     = 'financial';
     $params->{args}{mt5_account_type} = 'financial';
@@ -73,11 +71,17 @@ subtest 'country=za; creates financial account with existing gaming account whil
         args     => {},
     };
 
+    note("disable real02 API calls.");
+    BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real02->all(1);
     my $login_list = $c->call_ok($method, $params)->has_no_error('has no error for mt5_login_list')->result;
-    ok scalar(@$login_list) == 1, 'one account';
+    ok scalar(@$login_list) == 2, 'two accounts';
     is $login_list->[0]->{account_type}, 'real';
     is $login_list->[0]->{group},        'real01\financial\svg_std_usd';
     is $login_list->[0]->{login},        'MTR' . $ACCOUNTS{'real01\financial\svg_std_usd'};
+    # second account inaccessible because API call is disabled
+    ok $login_list->[1]->{error}, 'inaccessible account shows error';
+    is $login_list->[1]->{error}{details}{login}, 'MTR' . $ACCOUNTS{'real02\synthetic\svg_std_usd'};
+    is $login_list->[1]->{error}{message_to_client}, 'MT5 is currently unavailable. Please try again later.';
 };
 
 done_testing();

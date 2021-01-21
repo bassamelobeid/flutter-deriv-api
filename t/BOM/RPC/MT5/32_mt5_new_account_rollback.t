@@ -64,11 +64,12 @@ subtest 'create mt5 client with different currency' => sub {
 
         BOM::RPC::v3::MT5::Account::reset_throttler($new_client->loginid);
 
+        # If you have account on any of the disable server, no new account creation is allowed
+        # This will be improved when we have more information on which account is disabled.
         note("set app_config->system->mt5->real02->all(1)");
         $app_config->system->mt5->suspend->real02->all(1);
-        $result = $c->call_ok($method, $params)->has_no_error('gaming account successfully created')->result;
-        is $result->{account_type}, 'gaming';
-        is $result->{login},        'MTR' . $ACCOUNTS{'real01\synthetic\svg_std_usd'};
+        $c->call_ok($method, $params)->has_error->error_code_is('MT5CreateUserError')
+            ->error_message_is('MT5 is currently unavailable. Please try again later.');
 
         BOM::RPC::v3::MT5::Account::reset_throttler($new_client->loginid);
 
@@ -88,7 +89,7 @@ subtest 'create mt5 client with different currency' => sub {
         note("set app_config->system->mt5->new_trade_server('{}')");
         $app_config->system->mt5->new_trade_server('{}');
 
-        $result = $c->call_ok($method, $params)->has_error->error_code_is('MT5REAL02APISuspendedError');
+        $result = $c->call_ok($method, $params)->has_error->error_code_is('MT5REALAPISuspendedError');
     };
 
     subtest 'define new trade server for south africa synthetic' => sub {

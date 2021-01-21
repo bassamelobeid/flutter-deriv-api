@@ -12,6 +12,7 @@ use BOM::User::Password;
 use BOM::User;
 use BOM::User::Client;
 use BOM::Test::Helper::Token;
+use Test::BOM::RPC::Accounts;
 
 BOM::Test::Helper::Token::cleanup_redis_tokens();
 
@@ -23,12 +24,12 @@ my $m = BOM::Platform::Token::API->new;
 my $c = Test::BOM::RPC::QueueClient->new();
 
 my $method = 'account_closure';
-subtest 'account closure' => sub {
-    my $args = {
-        "account_closure" => 1,
-        "reason"          => 'Financial concerns'
-    };
+my $args = {
+    "account_closure" => 1,
+    "reason"          => 'Financial concerns'
+};
 
+subtest 'account closure' => sub {
     my $email = 'def456@email.com';
 
     # Create user
@@ -315,6 +316,93 @@ subtest 'Account closure MT5 balance' => sub {
             message_to_client => 'Please close open positions and withdraw all funds from your MTR1 account(s) before proceeding.'
         }};
     is_deeply($res, $expected, 'MT5 account has balance and open positions');
+    $mock_mt5->unmock_all();
+};
+
+@BOM::MT5::User::Async::MT5_WRAPPER_COMMAND = ($^X, 't/lib/mock_binary_mt5.pl');
+
+my %ACCOUNTS       = %Test::BOM::RPC::Accounts::MT5_ACCOUNTS;
+my %DETAILS        = %Test::BOM::RPC::Accounts::ACCOUNT_DETAILS;
+my %financial_data = %Test::BOM::RPC::Accounts::FINANCIAL_DATA;
+
+subtest 'account_closure with mt5 API disabled' => sub {
+    my $email       = 'cr@binary.com';
+    my $password    = 'jskjd8292922';
+    my $hash_pwd    = BOM::User::Password::hashpw($password);
+    my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+    });
+
+    $test_client->email($email);
+    $test_client->save;
+
+    my $test_loginid = $test_client->loginid;
+    my $user         = BOM::User->create(
+        email    => $email,
+        password => $hash_pwd
+    );
+    $user->add_client($test_client);
+    my $token = $m->create_token($test_loginid, 'test token');
+
+    $test_client->set_default_account('USD');
+    $test_client->save;
+
+    # mt5 account
+    my $mt5_params = {
+        language => 'EN',
+        token    => $token,
+        args     => {
+            account_type => 'gaming',
+            country      => 'id',
+            email        => $DETAILS{email},
+            name         => $DETAILS{name},
+            mainPassword => $DETAILS{password}{main},
+            leverage     => 100,
+        },
+    };
+    BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real03->all(0);
+    my $mt5_acc = $c->tcall('mt5_new_account', $mt5_params);
+
+    ok $mt5_acc->{login}, 'mt5 account is created';
+
+    note ('suspend real03 mt5 API');
+    BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real03->all(1);
+    my $res = $c->tcall(
+        $method,
+        {
+            token => $token,
+            args  => $args
+        });
+
+    ok $res->{error}, 'properly throws an error';
+    is $res->{error}->{code}, 'MT5AccountInaccessible', 'error code is MT5AccountInaccessible';
+    is $res->{error}->{message_to_client}, 'The following MT5 account(s) are temporarily inaccessible: MTR40000001. Please try again later.';
+
+    note ('enable real03 mt5 API');
+    BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real03->all(0);
+    BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real03->deposits(1);
+    $res = $c->tcall(
+        $method,
+        {
+            token => $token,
+            args  => $args
+        });
+
+    note ('since this is mocked mt5 account data, I won\'t want to change it.');
+    is $res->{error}->{code}, 'AccountHasBalanceOrOpenPositions', 'account has balance error instead of server disabled.';
+
+    BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real03->deposits(0);
+    BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real03->withdrawals(1);
+
+    $res = $c->tcall(
+        $method,
+        {
+            token => $token,
+            args  => $args
+        });
+
+    note ('since this is mocked mt5 account data, I won\'t want to change it.');
+    is $res->{error}->{code}, 'AccountHasBalanceOrOpenPositions', 'account has balance error instead of server disabled.';
 };
 
 done_testing();

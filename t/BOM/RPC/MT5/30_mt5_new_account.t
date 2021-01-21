@@ -712,7 +712,7 @@ subtest 'country=za; creates financial account with existing gaming account whil
 
     $params->{args}{account_type}     = 'financial';
     $params->{args}{mt5_account_type} = 'financial';
-    my $financial = $c->call_ok($method, $params)->has_no_error('financial account successfully created')->result;
+    my $financial = $c->call_ok($method, $params)->has_no_error->result;
     is $financial->{account_type}, 'financial', 'account_type=financial';
     is $financial->{login}, 'MTR' . $ACCOUNTS{'real01\financial\svg_std_usd'}, 'created in group real01\financial\svg_std_usd';
 };

@@ -143,6 +143,8 @@ Takes the following parameter:
 
 =item * C<params> hashref that contains a C<BOM::User::Client>
 
+=item * C<params> string to represent account type (gaming|demo|financial) or default to undefined.
+
 =back
 
 Returns a Future holding list of MT5 account information or a failed future with error information
@@ -150,9 +152,9 @@ Returns a Future holding list of MT5 account information or a failed future with
 =cut
 
 sub get_mt5_logins {
-    my ($client) = @_;
+    my ($client, $account_type) = @_;
 
-    return mt5_accounts_lookup($client)->then(
+    return mt5_accounts_lookup($client, $account_type)->then(
         sub {
             my (@logins) = @_;
             my @valid_logins = grep { defined $_ and $_ } @logins;
@@ -174,7 +176,7 @@ Takes the following parameter:
 
 =item * C<params> hashref that contains a C<BOM::User::Client>
 
-=item * C<args> - additional parameters to retrieve all accounts
+=item * C<params> string to represent account type (gaming|demo|financial) or default to undefined.
 
 =back
 
@@ -183,10 +185,11 @@ Returns a Future holding list of MT5 account information (or undef) or a failed 
 =cut
 
 sub mt5_accounts_lookup {
-    my ($client) = @_;
+    my ($client, $account_type) = @_;
 
     my $f = fmap1 {
         my $login = shift;
+
         return mt5_get_settings({
                 client => $client,
                 args   => {login => $login}}
@@ -196,7 +199,7 @@ sub mt5_accounts_lookup {
 
                 $setting = _filter_settings($setting,
                     qw/account_type balance country currency display_balance email group landing_company_short leverage login name market_type sub_account_type server/
-                );
+                ) if !$setting->{error};
                 return Future->done($setting);
             }
         )->catch(
@@ -212,7 +215,7 @@ sub mt5_accounts_lookup {
                 return Future->fail($resp);
             });
     }
-    foreach        => [grep { !BOM::MT5::User::Async::is_suspended('', {login => $_}) } $client->user->get_mt5_loginids],
+    foreach        => [$client->user->get_mt5_loginids($account_type)],
         concurrent => 4;
     # purely to keep perlcritic+perltidy happy :(
 
@@ -604,11 +607,29 @@ async_rpc "mt5_new_account",
                 ($mt5_account_type) ? (mt5_account_type => $mt5_account_type) : ()});
     }
 
-    return get_mt5_logins($client)->then(
+    return get_mt5_logins($client, $account_type)->then(
         sub {
             my (@logins) = @_;
 
-            my %existing_groups = map { $_->{group} => $_->{login} } grep { $_->{group} } @logins;
+            my %existing_groups;
+            my $trade_server_error;
+            foreach my $mt5_account (@logins) {
+                if ($mt5_account->{error} and $mt5_account->{error}{code} eq 'MT5AccountInaccessible') {
+                    $trade_server_error = $mt5_account->{error};
+                    last;
+                }
+
+                $existing_groups{$mt5_account->{group}} = $mt5_account->{login} if $mt5_account->{group};
+            }
+
+            if ($trade_server_error) {
+                return create_error_future(
+                    'MT5AccountCreationSuspended',
+                    {
+                        override_code => $error_code,
+                        message       => $trade_server_error->{message_to_client},
+                    });
+            }
 
             # can't create account on the same group
             # TODO (JB): We can remove this after we've moved all the accounts to the new group name.
@@ -901,6 +922,23 @@ async_rpc "mt5_get_settings",
 
     # MT5 login not belongs to user
     return create_error_future('permission') unless _check_logins($client, [$login]);
+
+    if (BOM::MT5::User::Async::is_suspended('', {login => $login})) {
+        my $account_type = BOM::MT5::User::Async::get_account_type($login);
+        my $server_id    = BOM::MT5::User::Async::get_trading_server_key({login => $login}, $account_type);
+        my $resp         = {
+            error => {
+                code    => 'MT5AccountInaccessible',
+                details => {
+                    login        => $login,
+                    account_type => $account_type,
+                    server       => ${account_type} . ${server_id},
+                },
+                message_to_client => localize('MT5 is currently unavailable. Please try again later.'),
+            }};
+        return Future->done($resp);
+    }
+
     return _get_user_with_group($login)->then(
         sub {
             my ($settings) = @_;

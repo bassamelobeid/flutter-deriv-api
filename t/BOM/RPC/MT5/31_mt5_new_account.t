@@ -364,4 +364,44 @@ subtest 'auto b-booking' => sub {
     BOM::Config::Runtime->instance->app_config->system->mt5->suspend->auto_Bbook_svg_financial(0);
 };
 
+subtest 'real & demo split on account creation' => sub {
+    my $new_email  = 'cr+' . $DETAILS{email};
+    my $new_client = create_client('CR', undef, {residence => 'za'});
+    my $token      = $m->create_token($new_client->loginid, 'test token 2');
+    $new_client->set_default_account('USD');
+    $new_client->email($new_email);
+
+    my $user = BOM::User->create(
+        email    => $new_email,
+        password => 's3kr1t',
+    );
+    $user->add_client($new_client);
+
+    my $method = 'mt5_new_account';
+    my $params = {
+        language => 'EN',
+        token    => $token,
+        args     => {
+            account_type => 'gaming',
+            email        => $new_email,
+            name         => $DETAILS{name},
+            mainPassword => $DETAILS{password}{main},
+            leverage     => 100,
+        },
+    };
+    BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real02->all(0);
+    my $result = $c->call_ok($method, $params)->has_no_error('gaming account successfully created')->result;
+    is $result->{account_type}, 'gaming';
+    is $result->{login},        'MTR' . $ACCOUNTS{'real02\synthetic\svg_std_usd'};
+
+    note("disable real02 trade server's API");
+    BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real02->all(1);
+
+    BOM::RPC::v3::MT5::Account::reset_throttler($new_client->loginid);
+    $params->{args}->{account_type} = 'demo';
+    $result = $c->call_ok($method, $params)->has_no_error('gaming account successfully created')->result;
+    is $result->{account_type}, 'demo';
+    is $result->{login},        'MTD' . $ACCOUNTS{'demo01\synthetic\svg_std_usd'};
+};
+
 done_testing();

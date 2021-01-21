@@ -11,6 +11,7 @@ use BOM::Platform::Token::API;
 use BOM::User::Password;
 use BOM::User;
 use BOM::Test::Helper::Token;
+use Test::BOM::RPC::Accounts;
 
 BOM::Test::Helper::Token::cleanup_redis_tokens();
 
@@ -249,6 +250,7 @@ subtest 'balance' => sub {
                     'type'                            => 'deriv',
                     'demo_account'                    => 0,
                     'converted_amount'                => '1500.00',
+                    'status'                          => 1,
                 },
                 $bal_mlt->loginid => {
                     'currency_rate_in_total_currency' => 1,
@@ -258,6 +260,7 @@ subtest 'balance' => sub {
                     'type'                            => 'deriv',
                     'demo_account'                    => 0,
                     'converted_amount'                => '1000.00',
+                    'status'                          => 1,
                 },
                 $bal_vr->loginid => {
                     'currency_rate_in_total_currency' => 1,
@@ -267,6 +270,7 @@ subtest 'balance' => sub {
                     'type'                            => 'deriv',
                     'demo_account'                    => 1,
                     'converted_amount'                => '0.00',
+                    'status'                          => 1,
                 }}
         },
         'result is correct for mix of real, virtual and disabled clients'
@@ -312,6 +316,7 @@ subtest 'balance' => sub {
                 'type'                            => 'deriv',
                 'demo_account'                    => 0,
                 'converted_amount'                => '0.00',
+                'status'                          => 1,
             },
             $test_client_vr->loginid => {
                 'currency_rate_in_total_currency' => 1.5,
@@ -321,6 +326,7 @@ subtest 'balance' => sub {
                 'type'                            => 'deriv',
                 'demo_account'                    => 1,
                 'converted_amount'                => '0.00',
+                'status'                          => 1,
             },
             $test_client_mf->loginid => {
                 'account_id'       => '',
@@ -329,6 +335,7 @@ subtest 'balance' => sub {
                 'type'             => 'deriv',
                 'demo_account'     => 0,
                 'converted_amount' => '0.00',
+                'status'           => 0,
             }}};
 
     is_deeply($result, $expected_result, 'mt5 result is ok');

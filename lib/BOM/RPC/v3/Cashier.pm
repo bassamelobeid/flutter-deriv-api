@@ -1288,7 +1288,7 @@ rpc transfer_between_accounts => sub {
     if (not $loginid_from or not $loginid_to) {
         if (($args->{accounts} // '') eq 'all' and not(BOM::Config::Runtime->instance->app_config->system->mt5->suspend->all)) {
             my @mt5_accounts = BOM::RPC::v3::MT5::Account::get_mt5_logins($client)->else(sub { return Future->done(); })->get;
-            for my $mt5_acc (grep { $_->{group} !~ /^demo/ } @mt5_accounts) {
+            for my $mt5_acc (grep { not $_->{error} and $_->{group} !~ /^demo/ } @mt5_accounts) {
                 push @accounts,
                     {
                     loginid      => $mt5_acc->{login},
@@ -1304,7 +1304,7 @@ rpc transfer_between_accounts => sub {
             accounts => \@accounts
         };
     }
-    my @mt5_logins          = $client->user->get_mt5_loginids;
+    my @mt5_logins          = $client->user->get_mt5_loginids();
     my $is_mt5_loginid_from = any { $loginid_from eq $_ } @mt5_logins;
     my $is_mt5_loginid_to   = any { $loginid_to eq $_ } @mt5_logins;
 
