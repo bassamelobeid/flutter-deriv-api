@@ -5,6 +5,7 @@ use Future;
 use Test::More;
 use Test::Exception;
 use Test::MockModule;
+use Test::Deep;
 use Guard;
 use Log::Any::Test;
 use Log::Any qw($log);
@@ -1265,19 +1266,14 @@ subtest 'onfido resubmission' => sub {
         is($resubmission_context, 0, 'Resubmission Context is deleted');
     };
 
-    subtest "client_verification on resubmission, verification success" => sub {
-        # As I don't have/know a valid payload from onfido, I'm going to test _update_client_status instead
+    subtest "_set_age_verification on resubmission, verification success" => sub {
+        # As I don't have/know a valid payload from onfido, I'm going to test _set_age_verification instead
         mailbox_clear();
 
         my $req = BOM::Platform::Context::Request->new(language => 'EN');
         request($req);
 
-        BOM::Event::Actions::Client::_update_client_status(
-            client       => $test_client,
-            status       => 'age_verification',
-            message      => 'Onfido - age verified',
-            resubmission => 1
-        );
+        BOM::Event::Actions::Client::_set_age_verification($test_client);
 
         my $msg = mailbox_search(subject => qr/Age and identity verification/);
         ok($msg, 'Valid email sent to client for resubmission passed');
@@ -1430,6 +1426,49 @@ subtest 'POA flag removal' => sub {
             ok !$test_client->status->_get('allow_poa_resubmission'), 'POA flag successfully gone';
         };
     }
+};
+
+subtest 'Overwrite Experian reason' => sub {
+    # Set the Experian state
+    $test_client->status->upsert('age_verification',  'test', 'Experian results are sufficient to mark client as age verified.');
+    $test_client->status->upsert('proveid_requested', 'test', 'ProveID request has been made for this account.');
+
+    my $status_mock = Test::MockModule->new(ref($test_client->status));
+    my $upsert_called;
+
+    $status_mock->mock(
+        'upsert',
+        sub {
+            $upsert_called = 1;
+            return $status_mock->original('upsert')->(@_);
+        });
+
+    # Overwrite the Experian reason
+    BOM::Event::Actions::Client::_set_age_verification($test_client);
+
+    ok $upsert_called, 'Upsert was called';
+    cmp_deeply $test_client->status->_get('age_verification'),
+        {
+        reason             => 'Onfido - age verified',
+        staff_name         => 'system',
+        status_code        => 'age_verification',
+        last_modified_date => re('.*'),
+        },
+        'The Experian reason was overwritten by system';
+
+    # If the status does not have the Experian reason, don't overwrite it
+    $upsert_called = 0;
+    BOM::Event::Actions::Client::_set_age_verification($test_client);
+
+    ok !$upsert_called, 'Upsert was not called';
+    cmp_deeply $test_client->status->_get('age_verification'),
+        {
+        reason             => 'Onfido - age verified',
+        staff_name         => 'system',
+        status_code        => 'age_verification',
+        last_modified_date => re('.*'),
+        },
+        'The Experian reason was not overwritten this time';
 };
 
 done_testing();

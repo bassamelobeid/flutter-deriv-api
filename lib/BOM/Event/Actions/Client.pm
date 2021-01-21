@@ -520,7 +520,6 @@ async sub client_verification {
             # Consume resubmission context
             my $redis_replicated_write = _redis_replicated_write();
             await $redis_replicated_write->connect;
-            my $resubmission = await $redis_replicated_write->get(ONFIDO_IS_A_RESUBMISSION_KEY_PREFIX . $client->binary_user_id);
             await $redis_replicated_write->del(ONFIDO_IS_A_RESUBMISSION_KEY_PREFIX . $client->binary_user_id);
 
             # Skip facial similarity:
@@ -559,15 +558,9 @@ async sub client_verification {
                     # Age verified if report is clear and age is above minimum allowed age, otherwise send an email to notify cs
                     # Get the minimum age from the client's residence
                     my $min_age = $brand->countries_instance->minimum_age_for_country($client->residence);
-                    if (Date::Utility->new($first_dob)->is_before(Date::Utility->new->_minus_years($min_age))) {
-                        _update_client_status(
-                            client       => $client,
-                            status       => 'age_verification',
-                            message      => 'Onfido - age verified',
-                            sync         => 1,
-                            resubmission => $resubmission
-                        );
 
+                    if (Date::Utility->new($first_dob)->is_before(Date::Utility->new->_minus_years($min_age))) {
+                        _set_age_verification($client);
                     } else {
                         my $siblings = $client->real_account_siblings_information(include_disabled => 0);
 
@@ -1026,11 +1019,7 @@ async sub _address_verification {
         DataDog::DogStatsd::Helper::stats_inc('smartystreet.verification.success', {tags => ['verify_address:' . $status]});
         $log->debugf('Address verified with accuracy of locality level by smartystreet.');
 
-        _update_client_status(
-            client  => $client,
-            status  => 'address_verified',
-            message => 'SmartyStreets - address verified',
-        );
+        _set_address_verified($client);
     }
 
     my $redis_events_write = _redis_events_write();
@@ -1127,36 +1116,96 @@ SQL
     };
 }
 
-sub _update_client_status {
-    my (%args) = @_;
+=head2 _set_address_verified 
 
-    my $client      = $args{client};
-    my $status_code = $args{status};
+This method sets the specified client as B<address_verified> by SmartyStreets.
 
-    $log->debugf('Updating status on %s to %s (%s)', $client->loginid, $status_code, $args{message});
+It takes the following arguments:
+
+=over 4
+
+=item * C<client> an instance of L<BOM::User::Client>
+
+=back
+
+Returns undef.
+
+=cut
+
+sub _set_address_verified {
+    my $client      = shift;
+    my $status_code = 'address_verified';
+    my $reason      = 'SmartyStreets - address verified';
+    my $staff       = 'system';
+
+    $log->debugf('Updating status on %s to %s (%s)', $client->loginid, $status_code, $reason);
+
+    BOM::Platform::Event::Emitter::emit('p2p_advertiser_updated', {client_loginid => $client->loginid});
+
+    $client->status->setnx($status_code, $staff, $reason);
+
+    return undef;
+}
+
+=head2 _set_age_verification 
+
+This method sets the specified client as B<age_verification> by Onfido.
+
+It also propagates the status across siblings.
+
+It takes the following arguments:
+
+=over 4
+
+=item * C<client> an instance of L<BOM::User::Client>
+
+=back
+
+Returns undef.
+
+=cut
+
+sub _set_age_verification {
+    my $client      = shift;
+    my $status_code = 'age_verification';
+    my $reason      = 'Onfido - age verified';
+    my $staff       = 'system';
+
+    my $setter = sub {
+        my $c = shift;
+        $c->status->upsert($status_code, $staff, $reason) if $client->status->is_experian_validated;
+        $c->status->setnx($status_code, $staff, $reason) unless $client->status->is_experian_validated;
+    };
+
+    $log->debugf('Updating status on %s to %s (%s)', $client->loginid, $status_code, $reason);
 
     # to push FE notification when advertiser becomes approved via db trigger
     BOM::Platform::Event::Emitter::emit('p2p_advertiser_updated', {client_loginid => $client->loginid});
 
-    _email_client_age_verified($client) if $status_code eq 'age_verification';
+    _email_client_age_verified($client);
 
-    $client->status->setnx($status_code, 'system', $args{message});
-
-    # We should sync age verification between allowed landing companies.
-    if ($args{sync}) {
-        my @allowed_lc_to_sync = @{$client->landing_company->allowed_landing_companies_for_age_verification_sync};
-        # Apply age verification for one client per each landing company since we have a DB trigger that sync age verification between the same landing companies.
-        my @clients_to_update =
-            map { [$client->user->clients_for_landing_company($_)]->[0] // () } @allowed_lc_to_sync;
-        push @clients_to_update, $client;
-        foreach my $cli (@clients_to_update) {
-            $cli->status->setnx($status_code, 'system', $args{message});
+    $setter->($client);
+    # gb residents cant use demo account while not age verified.
+    # should remove unwelcome status once respective MX or MF marked
+    # as age verified.
+    if ($client->residence eq 'gb') {
+        my $vr_acc = BOM::User::Client->new({loginid => $client->user->bom_virtual_loginid});
+        if ($vr_acc->status->unwelcome and $vr_acc->status->unwelcome->{reason} eq 'Pending proof of age') {
+            $vr_acc->status->clear_unwelcome;
+            $setter->($vr_acc);
         }
     }
 
-    $client->update_status_after_auth_fa($args{message});
+    # We should sync age verification between allowed landing companies.
+    my @allowed_lc_to_sync = @{$client->landing_company->allowed_landing_companies_for_age_verification_sync};
+    # Apply age verification for one client per each landing company since we have a DB trigger that sync age verification between the same landing companies.
+    my @clients_to_update =
+        map { [$client->user->clients_for_landing_company($_)]->[0] // () } @allowed_lc_to_sync;
+    $setter->($_) foreach (@clients_to_update);
 
-    return;
+    $client->update_status_after_auth_fa($reason);
+
+    return undef;
 }
 
 =head2 account_closure
