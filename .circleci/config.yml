@@ -48,7 +48,7 @@ jobs:
         <<: *5
         command: |
           sudo tee -a /etc/hosts < /home/git/regentmarkets/bom-postgres/hosts.db && make test
-        name: Test
+        name: core tests
     - store_test_results:
         path: /var/tmp/test-output
   syntax:

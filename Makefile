@@ -1,12 +1,12 @@
 CURRENT_BRANCH_SAFE=$(shell git rev-parse --abbrev-ref HEAD | sed 's|/|_|g')
 
+TESTS=test syntax localize
+
 M=[ -t 1 ] && echo -e 'making \033[01;33m$@\033[00m' || echo 'making $@'
-P=/etc/rmg/bin/prove -v --timer -rl
+P=/etc/rmg/bin/prove -lrv --timer 
 PROVE=p () { $M; echo '$P' "$$@"; $P "$$@"; }; p
 
-default:
-	@echo "You must specify target. The following targets available:"
-	@echo "  tidy         - Run perltidy"
+test_all: $(TESTS)
 
 tidy:
 	find . -name '*.p?.bak' -delete
