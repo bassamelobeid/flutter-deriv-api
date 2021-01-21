@@ -432,6 +432,26 @@ subtest 'Propagate Clear' => sub {
     }
 };
 
+subtest 'Is Experian Validated' => sub {
+    my $email     = 'experian@validated.com';
+    my $client_mx = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'MX',
+    });
+    $client_mx->email($email);
+    $client_mx->save;
+
+    $client_mx->status->set('age_verification',  'test', 'Experian results are sufficient to mark client as age verified.');
+    $client_mx->status->set('proveid_requested', 'test', 'ProveID request has been made for this account.');
+    ok $client_mx->status->is_experian_validated, 'Experian validated account';
+
+    $client_mx->status->clear_proveid_requested;
+    ok !$client_mx->status->is_experian_validated, 'The proveid_requested status is missing';
+
+    $client_mx->status->set('proveid_requested', 'test', 'ProveID request has been made for this account.');
+    $client_mx->status->upsert('age_verification', 'test', 'Age verified client from Backoffice.');
+    ok !$client_mx->status->is_experian_validated, 'The Reason is not the one we are looking for';
+};
+
 done_testing();
 
 sub reset_client_statuses {

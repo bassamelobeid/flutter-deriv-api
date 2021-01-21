@@ -268,6 +268,23 @@ subtest 'get_poi_status' => sub {
             $onfido_document_status = 'in_progress';
             is $test_client_cr->get_poi_status, 'pending', 'Client POI status is pending';
             $mocked_client->unmock_all;
+
+            subtest 'pending is above everything' => sub {
+                $mocked_client->mock('fully_authenticated',                   sub { return 0 });
+                $mocked_client->mock('is_document_expiry_check_required_mt5', sub { return 1 });
+                $mocked_client->mock(
+                    'documents_uploaded',
+                    sub {
+                        return {
+                            proof_of_identity => {
+                                is_expired => 1,
+                            }};
+                    });
+
+                $onfido_document_status = 'in_progress';
+                is $test_client_cr->get_poi_status, 'pending', 'Client POI status is still expired';
+                $mocked_client->unmock_all;
+            };
         };
 
         subtest 'POI status is pending' => sub {
@@ -300,7 +317,12 @@ subtest 'get_poi_status' => sub {
                         }};
                 });
 
-            is $test_client_cr->get_poi_status, 'pending', 'Client POI status is expired';
+            is $test_client_cr->get_poi_status, 'pending', 'Client POI status is pending';
+
+            subtest 'even when fully authenticated' => sub {
+                $mocked_client->mock('fully_authenticated', sub { return 1 });
+                is $test_client_cr->get_poi_status, 'pending', 'Client POI status is still pending';
+            };
             $mocked_client->unmock_all;
         };
 
@@ -554,6 +576,16 @@ subtest 'needs_poa_verification' => sub {
                 });
 
             ok !$test_client_cr->needs_poa_verification, 'POA is not needed';
+
+            $mocked_client->mock('get_poa_status', sub { return 'pending' });
+            ok !$test_client_cr->needs_poa_verification, 'POA is not needed when status is pending';
+
+            subtest 'POA flag exception' => sub {
+                $resubmission = 1;
+                ok $test_client_cr->needs_poa_verification, 'POA resubmission flags has more weight';
+                $resubmission = 0;
+            };
+
             $mocked_client->unmock_all;
         };
 
@@ -744,6 +776,28 @@ subtest 'needs_poi_verification' => sub {
 
             $mocked_client->unmock_all;
             $mocked_status->unmock_all;
+
+            $mocked_client->mock('is_verification_required', sub { return 1 });
+            $mocked_client->mock('get_poi_status',           sub { return 'pending' });
+            $mocked_client->mock(
+                'documents_uploaded',
+                sub {
+                    return {
+                        proof_of_identity => {
+                            documents => 'something',
+                        }};
+                });
+
+            $onfido_check = undef;
+            ok !$test_client_cr->needs_poi_verification, 'POI is not needed as the current status is pending';
+
+            subtest 'POI flag exception' => sub {
+                $mocked_status->mock('allow_poi_resubmission', sub { return 1 });
+                ok $test_client_cr->needs_poi_verification, 'POI resubmission flags has more weight';
+            };
+
+            $mocked_client->unmock_all;
+            $mocked_status->unmock_all;
         };
 
         subtest 'Verification is needed' => sub {
@@ -770,7 +824,7 @@ subtest 'needs_poi_verification' => sub {
             $mocked_status->unmock_all;
 
             $mocked_client->mock('is_verification_required', sub { return 0 });
-            $mocked_client->mock('get_poi_status',           sub { return 'pending' });
+            $mocked_client->mock('get_poi_status',           sub { return 'none' });
             $mocked_client->mock(
                 'documents_uploaded',
                 sub {
@@ -783,7 +837,7 @@ subtest 'needs_poi_verification' => sub {
             $mocked_status->unmock_all;
 
             $mocked_client->mock('is_verification_required', sub { return 0 });
-            $mocked_client->mock('get_poi_status',           sub { return 'pending' });
+            $mocked_client->mock('get_poi_status',           sub { return 'none' });
             $mocked_client->mock(
                 'documents_uploaded',
                 sub {
@@ -796,7 +850,7 @@ subtest 'needs_poi_verification' => sub {
             $mocked_status->unmock_all;
 
             $mocked_client->mock('is_verification_required', sub { return 0 });
-            $mocked_client->mock('get_poi_status',           sub { return 'pending' });
+            $mocked_client->mock('get_poi_status',           sub { return 'none' });
             $mocked_client->mock(
                 'documents_uploaded',
                 sub {
@@ -809,7 +863,7 @@ subtest 'needs_poi_verification' => sub {
             $mocked_status->unmock_all;
 
             $mocked_client->mock('is_verification_required', sub { return 1 });
-            $mocked_client->mock('get_poi_status',           sub { return 'pending' });
+            $mocked_client->mock('get_poi_status',           sub { return 'none' });
             $mocked_client->mock(
                 'documents_uploaded',
                 sub {
@@ -823,7 +877,7 @@ subtest 'needs_poi_verification' => sub {
             $mocked_status->unmock_all;
 
             $mocked_client->mock('is_verification_required', sub { return 1 });
-            $mocked_client->mock('get_poi_status',           sub { return 'pending' });
+            $mocked_client->mock('get_poi_status',           sub { return 'none' });
             $mocked_client->mock(
                 'documents_uploaded',
                 sub {
@@ -867,6 +921,22 @@ subtest 'needs_poi_verification' => sub {
             ok !$test_client_mf->needs_poi_verification, 'POI is not needed';
             $mocked_client->unmock_all;
             $mocked_status->unmock_all;
+
+            $mocked_client->mock('is_verification_required', sub { return 1 });
+            $mocked_client->mock('get_poi_status',           sub { return 'pending' });
+            $mocked_client->mock(
+                'documents_uploaded',
+                sub {
+                    return {
+                        proof_of_identity => {
+                            documents => 'something',
+                        }};
+                });
+
+            $onfido_check = undef;
+            ok !$test_client_mf->needs_poi_verification, 'POI is not needed as the current status is pending';
+            $mocked_client->unmock_all;
+            $mocked_status->unmock_all;
         };
 
         subtest 'Verification is needed' => sub {
@@ -893,7 +963,7 @@ subtest 'needs_poi_verification' => sub {
             $mocked_status->unmock_all;
 
             $mocked_client->mock('is_verification_required', sub { return 1 });
-            $mocked_client->mock('get_poi_status',           sub { return 'pending' });
+            $mocked_client->mock('get_poi_status',           sub { return 'none' });
             $mocked_client->mock(
                 'documents_uploaded',
                 sub {
@@ -906,7 +976,7 @@ subtest 'needs_poi_verification' => sub {
             $mocked_status->unmock_all;
 
             $mocked_client->mock('is_verification_required', sub { return 1 });
-            $mocked_client->mock('get_poi_status',           sub { return 'pending' });
+            $mocked_client->mock('get_poi_status',           sub { return 'none' });
             $mocked_client->mock(
                 'documents_uploaded',
                 sub {
@@ -919,7 +989,7 @@ subtest 'needs_poi_verification' => sub {
             $mocked_status->unmock_all;
 
             $mocked_client->mock('is_verification_required', sub { return 1 });
-            $mocked_client->mock('get_poi_status',           sub { return 'pending' });
+            $mocked_client->mock('get_poi_status',           sub { return 'none' });
             $mocked_client->mock(
                 'documents_uploaded',
                 sub {
@@ -932,7 +1002,7 @@ subtest 'needs_poi_verification' => sub {
             $mocked_status->unmock_all;
 
             $mocked_client->mock('is_verification_required', sub { return 1 });
-            $mocked_client->mock('get_poi_status',           sub { return 'pending' });
+            $mocked_client->mock('get_poi_status',           sub { return 'none' });
             $mocked_client->mock(
                 'documents_uploaded',
                 sub {
@@ -946,7 +1016,7 @@ subtest 'needs_poi_verification' => sub {
             $mocked_status->unmock_all;
 
             $mocked_client->mock('is_verification_required', sub { return 1 });
-            $mocked_client->mock('get_poi_status',           sub { return 'pending' });
+            $mocked_client->mock('get_poi_status',           sub { return 'none' });
             $mocked_client->mock(
                 'documents_uploaded',
                 sub {
@@ -1157,6 +1227,370 @@ subtest 'Sign up' => sub {
         ok $test_client->needs_poa_verification, 'POA is needed for unauthenticated MX account without deposits';
         $mocked_client->unmock_all;
     };
+};
+
+subtest 'Experian validated accounts' => sub {
+    my $test_client = BOM::User::Client->rnew(
+        broker_code => 'MX',
+        residence   => 'gb',
+        citizen     => 'gb',
+        email       => 'nowthatsan@email.com',
+        loginid     => 'MLT235711'
+    );
+
+    subtest 'POI' => sub {
+        my $mocked_client = Test::MockModule->new(ref($test_client));
+        my $mocked_status = Test::MockModule->new(ref($test_client->status));
+        my $risk;
+        my $docs;
+        my $auth_method;
+
+        $mocked_client->mock(
+            'documents_uploaded',
+            sub {
+                return $docs;
+            });
+        $mocked_client->mock(
+            'aml_risk_classification',
+            sub {
+                $risk;
+            });
+        $mocked_status->mock(
+            'age_verification',
+            sub {
+                {reason => 'Experian results are sufficient to mark client as age verified.'}
+            });
+        $mocked_status->mock(
+            'proveid_requested',
+            sub {
+                {reason => 'ProveID request has been made for this account.'}
+            });
+        $mocked_client->mock(
+            'get_authentication',
+            sub {
+                my (undef, $method) = @_;
+                return bless({status => 'pass'}, 'BOM::Database::AutoGenerated::Rose::ClientAuthenticationMethod') if $method eq $auth_method;
+                return undef;
+            });
+
+        subtest 'Low risk' => sub {
+            $auth_method = 'ID_ONLINE';
+            $risk        = 'low';
+            $docs        = {};
+
+            ok !$test_client->needs_poi_verification, 'Does not need POI verification';
+            is $test_client->get_poi_status, 'verified', 'POI status is verified';
+        };
+
+        subtest 'High risk' => sub {
+            $auth_method = 'ID_ONLINE';
+            $risk        = 'high';
+            $docs        = {};
+
+            ok $test_client->needs_poi_verification, 'POI verification needed';
+            is $test_client->get_poi_status, 'none', 'POI status is none';
+        };
+
+        subtest 'High risk but the client has uploaded docs' => sub {
+            $auth_method = 'ID_ONLINE';
+            $risk        = 'high';
+            $docs        = {
+                proof_of_identity => {
+                    is_pending => 1,
+                }};
+
+            ok !$test_client->needs_poi_verification, 'POI verification not needed';
+            is $test_client->get_poi_status, 'pending', 'POI status is pending';
+        };
+
+        subtest 'Under rejected Onfido' => sub {
+            $auth_method = 'ID_ONLINE';
+            $risk        = 'high';
+
+            my $mocked_onfido = Test::MockModule->new('BOM::User::Onfido');
+            $mocked_onfido->mock(
+                'get_latest_check',
+                sub {
+                    return {
+                        report_document_status     => 'complete',
+                        report_document_sub_result => 'rejected',
+                    };
+                });
+
+            $docs = {
+                proof_of_identity => {
+                    is_expired => 0,
+                }};
+
+            ok $test_client->needs_poi_verification, 'Does need POI verification';
+            is $test_client->get_poi_status, 'rejected', 'POI status is rejected';
+            $mocked_onfido->unmock_all;
+        };
+
+        subtest 'Under rejected Onfido but fully auth with scans' => sub {
+            $auth_method = 'ID_DOCUMENT';
+            $risk        = 'high';
+
+            my $mocked_onfido = Test::MockModule->new('BOM::User::Onfido');
+            $mocked_onfido->mock(
+                'get_latest_check',
+                sub {
+                    return {
+                        report_document_status     => 'complete',
+                        report_document_sub_result => 'rejected',
+                    };
+                });
+
+            $docs = {
+                proof_of_identity => {
+                    is_expired => 0,
+                }};
+            ok !$test_client->needs_poi_verification, 'Does not need POI verification';
+            is $test_client->get_poi_status, 'verified', 'POI status is verified';
+            $mocked_onfido->unmock_all;
+        };
+
+        subtest 'High risk but the verification is from BO' => sub {
+            $auth_method = 'ID_ONLINE';
+            $risk        = 'high';
+            $docs        = {
+                proof_of_identity => {
+                    is_pending => 0,
+                }};
+
+            $mocked_status->mock(
+                'age_verification',
+                sub {
+                    {reason => 'Age verified client from Backoffice.'}
+                });
+            ok !$test_client->needs_poi_verification, 'Does not need POI verification';
+            is $test_client->get_poi_status, 'verified', 'POI status is verified';
+        };
+
+        $mocked_client->unmock_all;
+        $mocked_status->unmock_all;
+    };
+
+    subtest 'POA' => sub {
+        my $mocked_client = Test::MockModule->new(ref($test_client));
+        my $mocked_status = Test::MockModule->new(ref($test_client->status));
+        my $auth_method;
+        my $risk;
+        my $docs;
+
+        $mocked_client->mock(
+            'documents_uploaded',
+            sub {
+                return $docs;
+            });
+        $mocked_client->mock(
+            'aml_risk_classification',
+            sub {
+                $risk;
+            });
+        $mocked_status->mock(
+            'proveid_requested',
+            sub {
+                {reason => 'ProveID request has been made for this account.'}
+            });
+
+        $mocked_client->mock(
+            'get_authentication',
+            sub {
+                my (undef, $method) = @_;
+                return bless({status => 'pass'}, 'BOM::Database::AutoGenerated::Rose::ClientAuthenticationMethod') if $method eq $auth_method;
+                return undef;
+            });
+
+        subtest 'Low risk' => sub {
+            $auth_method = 'ID_ONLINE';
+            $risk        = 'low';
+            $docs        = {};
+
+            ok !$test_client->needs_poa_verification, 'Does not need POA verification';
+            is $test_client->get_poa_status, 'verified', 'POA status is verified';
+        };
+
+        subtest 'High risk' => sub {
+            $auth_method = 'ID_ONLINE';
+            $risk        = 'high';
+            $docs        = {};
+
+            ok $test_client->needs_poa_verification, 'POA verification needed';
+            is $test_client->get_poa_status, 'none', 'POA status is none';
+        };
+
+        subtest 'High risk but the client has uploaded docs' => sub {
+            $auth_method = 'ID_ONLINE';
+            $risk        = 'high';
+            $docs        = {
+                proof_of_address => {
+                    is_pending => 1,
+                }};
+
+            ok !$test_client->needs_poa_verification, 'POA verification not needed';
+            is $test_client->get_poa_status, 'pending', 'POA status is pending';
+        };
+
+        subtest 'High risk but BO has verified' => sub {
+            $auth_method = 'ID_DOCUMENT';
+            $risk        = 'high';
+            $docs        = {
+                proof_of_address => {
+                    is_pending => 0,
+                }};
+
+            ok !$test_client->needs_poa_verification, 'Does not need POA verification';
+            is $test_client->get_poa_status, 'verified', 'POA status is verified';
+        };
+
+        $mocked_client->unmock_all;
+        $mocked_status->unmock_all;
+    };
+};
+
+subtest 'Ignore age verification' => sub {
+    my $test_client = BOM::User::Client->rnew(
+        broker_code => 'MX',
+        residence   => 'gb',
+        citizen     => 'gb',
+        email       => 'nowthatsan@email.com',
+        loginid     => 'MLT235711'
+    );
+
+    my $mocked_client = Test::MockModule->new(ref($test_client));
+    my $mocked_status = Test::MockModule->new(ref($test_client->status));
+    my $auth_method;
+    my $is_experian_validated;
+    my $risk;
+
+    $mocked_status->mock(
+        'is_experian_validated',
+        sub {
+            return $is_experian_validated;
+        });
+
+    $mocked_client->mock(
+        'get_authentication',
+        sub {
+            my (undef, $method) = @_;
+            return bless({status => 'pass'}, 'BOM::Database::AutoGenerated::Rose::ClientAuthenticationMethod') if $method eq $auth_method;
+            return undef;
+        });
+
+    $mocked_client->mock(
+        'aml_risk_classification',
+        sub {
+            return $risk;
+        });
+
+    subtest 'Ignored - base case' => sub {
+        $auth_method           = 'ID_ONLINE';
+        $is_experian_validated = 1;
+        $risk                  = 'high';
+        ok $test_client->ignore_age_verification, 'Age verification is ignored';
+    };
+
+    subtest 'Not ignored - fully authenticated with scan / notarized' => sub {
+        $auth_method           = 'ID_NOTARIZED';
+        $is_experian_validated = 1;
+        $risk                  = 'high';
+        ok !$test_client->ignore_age_verification, 'Age verification is not ignored ID_NOTARIZED';
+
+        $auth_method           = 'ID_DOCUMENT';
+        $is_experian_validated = 1;
+        $risk                  = 'high';
+        ok !$test_client->ignore_age_verification, 'Age verification is not ignored ID_DOCUMENT';
+    };
+
+    subtest 'Not ignored - low risk' => sub {
+        $auth_method           = 'ID_ONLINE';
+        $is_experian_validated = 1;
+        $risk                  = 'low';
+        ok !$test_client->ignore_age_verification, 'Age verification is not ignored';
+    };
+
+    subtest 'Not ignored - not experian validated' => sub {
+        $auth_method           = 'ID_ONLINE';
+        $is_experian_validated = 0;
+        $risk                  = 'low';
+        ok !$test_client->ignore_age_verification, 'Age verification is not ignored';
+    };
+
+    $mocked_client->unmock_all;
+    $mocked_status->unmock_all;
+};
+
+subtest 'Ignore address verification' => sub {
+    my $test_client = BOM::User::Client->rnew(
+        broker_code => 'MX',
+        residence   => 'gb',
+        citizen     => 'gb',
+        email       => 'nowthatsan@email.com',
+        loginid     => 'MLT235711'
+    );
+
+    my $mocked_client = Test::MockModule->new(ref($test_client));
+    my $mocked_status = Test::MockModule->new(ref($test_client->status));
+    my $auth_method;
+    my $proveid_requested;
+    my $risk;
+
+    $mocked_status->mock(
+        'proveid_requested',
+        sub {
+            return $proveid_requested;
+        });
+
+    $mocked_client->mock(
+        'get_authentication',
+        sub {
+            my (undef, $method) = @_;
+            return bless({status => 'pass'}, 'BOM::Database::AutoGenerated::Rose::ClientAuthenticationMethod') if $method eq $auth_method;
+            return undef;
+        });
+
+    $mocked_client->mock(
+        'aml_risk_classification',
+        sub {
+            return $risk;
+        });
+
+    subtest 'Ignored - base case' => sub {
+        $auth_method       = 'ID_ONLINE';
+        $proveid_requested = 1;
+        $risk              = 'high';
+        ok $test_client->ignore_address_verification, 'Address verification is ignored';
+    };
+
+    subtest 'Not ignored - fully authenticated with scan / notarized' => sub {
+        $auth_method       = 'ID_NOTARIZED';
+        $proveid_requested = 1;
+        $risk              = 'high';
+        ok !$test_client->ignore_address_verification, 'Address verification is not ignored ID_NOTARIZED';
+
+        $auth_method       = 'ID_DOCUMENT';
+        $proveid_requested = 1;
+        $risk              = 'high';
+        ok !$test_client->ignore_address_verification, 'Address verification is not ignored ID_DOCUMENT';
+    };
+
+    subtest 'Not ignored - low risk' => sub {
+        $auth_method       = 'ID_ONLINE';
+        $proveid_requested = 1;
+        $risk              = 'low';
+        ok !$test_client->ignore_address_verification, 'Address verification is not ignored';
+    };
+
+    subtest 'Not ignored - not proveid_requested' => sub {
+        $auth_method       = 'ID_ONLINE';
+        $proveid_requested = 0;
+        $risk              = 'low';
+        ok !$test_client->ignore_address_verification, 'Address verification is not ignored';
+    };
+
+    $mocked_client->unmock_all;
+    $mocked_status->unmock_all;
 };
 
 done_testing();

@@ -727,10 +727,7 @@ sub documents_uploaded {
             next unless $expires;
 
             # Dont propagate expiry if is age verified by Experian
-            # Note the only way we have to check if it was validated by Experian is checking the status reason
-            next
-                if $self->status->proveid_requested
-                and ($self->status->reason('age_verification') // '') =~ /Experian results are sufficient to mark client as age verified/;
+            next if $self->status->is_experian_validated and $type eq 'proof_of_identity';
 
             my $existing_expiry_date_epoch = $documents{$type}{expiry_date} // $expires;
             my $expiry_date;
@@ -753,7 +750,7 @@ sub documents_uploaded {
     if (scalar(keys %documents) and exists $documents{proof_of_address}) {
         if (($self->authentication_status // '') eq 'needs_action') {
             $documents{proof_of_address}{is_rejected} = 1;
-        } elsif (not $self->fully_authenticated) {
+        } elsif (not $self->fully_authenticated or $self->ignore_address_verification) {
             $documents{proof_of_address}{is_pending} = 1;
         }
     }
@@ -4961,7 +4958,7 @@ sub get_poa_status {
 
     return 'rejected' if $is_rejected;
 
-    return 'verified' if $self->fully_authenticated;
+    return 'verified' if $self->fully_authenticated and not $self->ignore_address_verification;
 
     return 'none';
 }
@@ -5002,7 +4999,11 @@ sub get_poi_status {
     $report_document_sub_result //= '';
     $report_document_status     //= '';
 
-    if ($self->fully_authenticated || $self->status->age_verification) {
+    return 'pending' if any { $_ eq $report_document_status } qw/in_progress awaiting_applicant/;
+
+    return 'pending' if $is_poi_pending;
+
+    if (!$self->ignore_age_verification && ($self->fully_authenticated || $self->status->age_verification)) {
         return 'expired' if $is_poi_already_expired && $is_document_expiry_check_required;
         return 'verified';
     }
@@ -5011,11 +5012,7 @@ sub get_poi_status {
 
     return 'rejected' if any { $_ eq $report_document_sub_result } qw/rejected caution/;
 
-    return 'pending' if any { $_ eq $report_document_status } qw/in_progress awaiting_applicant/;
-
     return 'expired' if $is_poi_already_expired && $is_document_expiry_check_required;
-
-    return 'pending' if $is_poi_pending;
 
     return 'none';
 }
@@ -5048,6 +5045,13 @@ sub needs_poa_verification {
     # From POA status
     return 1 if any { $_ eq $status } qw/expired rejected/;
 
+    # Resubmissions
+    return 1 if $self->status->allow_poa_resubmission;
+
+    return 0 if $status eq 'pending';
+
+    return 1 if $self->ignore_address_verification;
+
     # Not fully authenticated rules
     unless ($self->fully_authenticated) {
         my $poa_documents    = $documents->{proof_of_address}->{documents};
@@ -5055,8 +5059,6 @@ sub needs_poa_verification {
         return 1 if $is_required_auth and not $poa_documents;
     }
 
-    # Resubmissions
-    return 1 if $self->status->allow_poa_resubmission;
     return 0;
 }
 
@@ -5085,8 +5087,12 @@ sub needs_poi_verification {
     $documents //= $self->documents_uploaded();
     $status    //= $self->get_poi_status($documents);
 
+    # Resubmissions
+    return 1 if $self->status->allow_poi_resubmission;
+
     # From POI status
     return 1 if $status eq 'expired';
+    return 0 if $status eq 'pending';
 
     # Not age verified and not fully authenticated (de morgan law)
     unless ($self->status->age_verification or $self->fully_authenticated) {
@@ -5106,8 +5112,8 @@ sub needs_poi_verification {
         return 1 if $is_required_auth and not $user_check;
     }
 
-    # Resubmissions
-    return 1 if $self->status->allow_poi_resubmission;
+    # The age verification should be valid
+    return 1 if $self->ignore_age_verification;
     return 0;
 }
 
@@ -5196,6 +5202,78 @@ sub propagate_clear_status {
     $_->status->_clear($status_code) foreach @clients;
 
     return undef;
+}
+
+=head2 ignore_age_verification
+
+We may want to override or invalidate the age verification under 
+specific circumstances.
+
+Exception: when client is fully authenticated through scans / notarized docs (because that's a non Experian full auth)
+
+Rules:
+
+=over 4
+
+=item * High Risk profile and Experian validated account
+
+=back
+
+It returns 1 when we invalidate the age verification, 0 otherwise.
+
+=cut
+
+sub ignore_age_verification {
+    my ($self) = @_;
+
+    # Do not apply to fully authenticated with scans / notarized docs
+    return 0 if any { $_ ? $_->{status} eq 'pass' : 0 } map { $self->get_authentication($_) } qw/ID_DOCUMENT ID_NOTARIZED/;
+
+    # High risk profiles
+    my $risk = $self->aml_risk_classification // '';
+
+    if ($risk eq 'high') {
+        # Disregard experian authentication under high risk
+        return 1 if $self->status->is_experian_validated;
+    }
+
+    return 0;
+}
+
+=head2 ignore_address_verification
+
+We may want to override or invalidate the address verification under 
+specific circumstances.
+
+Rules:
+
+=over 4
+
+=item * High Risk profile and Experian validated account (ID_ONLINE)
+
+=back
+
+It returns 1 when we invalidate the authentication, 0 otherwise.
+
+=cut
+
+sub ignore_address_verification {
+    my ($self) = @_;
+
+    # High risk profiles
+    my $risk = $self->aml_risk_classification // '';
+
+    if ($risk eq 'high') {
+        # Disregard experian authentication under high risk
+        my $auth = $self->get_authentication('ID_ONLINE');
+
+        return 0 unless $auth;
+        return 0 unless $auth->status eq 'pass';
+        return 0 unless $self->status->proveid_requested;
+        return 1;
+    }
+
+    return 0;
 }
 
 1;

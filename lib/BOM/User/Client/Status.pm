@@ -320,6 +320,28 @@ sub has_any {
     return any { $is_required{$_} } $self->all->@*;
 }
 
+=head2 is_experian_validated
+
+Check if the account has been verified by Experian.
+
+Heuristic approach.
+
+Returns 1 if Experian validated, 0 otherwise.
+
+=cut
+
+sub is_experian_validated {
+    my ($self) = @_;
+
+    return 0 unless $self->proveid_requested;
+
+    my $reason = $self->reason('age_verification') // '';
+
+    return 1 if $reason =~ /Experian results are sufficient to mark client as age verified/;
+
+    return 0;
+}
+
 ################################################################################
 
 =head1 METHODS - Private
@@ -441,4 +463,5 @@ sub _get_all_clients_status {
     return $list;
 
 }
+
 1;
