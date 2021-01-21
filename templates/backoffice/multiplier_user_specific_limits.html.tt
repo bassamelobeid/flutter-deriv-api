@@ -33,15 +33,17 @@
 <br/>
 
 <form id='custom_volume_limits'>
-<table style="width:100%">
-    <tr>
+<table class="collapsed hover alternate" border=1 style="width:100%" >
+    <tr align="center">
         <th>Client loginid</th>
         <th>Volume limit</th>
         <th>Underlying symbol</th>
         <th>Comment</th>
+        <th>Action</th>
+        <th>Process</th>
     </tr>
     [% FOREACH data IN existing_volume_limits %]
-    <tr id='limit-[% data.uniq_key %]'>
+    <tr id='limit-[% data.uniq_key %]' align="center">
         <td>[% data.loginid %]</td>
         <td>[% data.volume_limit %]</td>
         <td>[% data.symbol || '-' %]</td>
@@ -50,7 +52,7 @@
             onClick="DeleteCustomLimit('[% data.loginid %]', '[% data.uniq_key %]')"
             type="button">delete</button>
         </td>
-        <td class='user_limit_result'></td>
+        <td class='user_limit_result'>..</td>
     </tr>
     [% END %]
 </table>
