@@ -96,7 +96,7 @@ subtest 'buy with invalid duration using contract_parameters' => sub {
 };
 
 subtest 'get proposal with invalid days duration' => sub {
-    $c->call_ok('send_ask', {args => $ask_params})->has_no_system_error->has_error->error_code_is('ContractCreationFailure', 'correct error code');
+    $c->call_ok('send_ask', {args => $ask_params})->has_no_system_error->has_error->error_code_is('OfferingsValidationFailure', 'correct error code');
 };
 
 subtest 'get proposal with invalid symbol' => sub {
@@ -114,7 +114,7 @@ $buy_params->{contract_parameters}{duration_unit} = 'h';
 $ask_params->{duration_unit} = 'h';
 
 subtest 'get proposal with invalid hours duration' => sub {
-    $c->call_ok('send_ask', {args => $ask_params})->has_no_system_error->has_error->error_code_is('ContractCreationFailure', 'correct error code');
+    $c->call_ok('send_ask', {args => $ask_params})->has_no_system_error->has_error->error_code_is('OfferingsValidationFailure', 'correct error code');
 };
 
 subtest 'buy with invalid hours duration' => sub {
@@ -125,7 +125,7 @@ $buy_params->{contract_parameters}{duration_unit} = 'm';
 $ask_params->{duration_unit} = 'm';
 
 subtest 'get proposal with invalid minutes duration' => sub {
-    $c->call_ok('send_ask', {args => $ask_params})->has_no_system_error->has_error->error_code_is('ContractCreationFailure', 'correct error code');
+    $c->call_ok('send_ask', {args => $ask_params})->has_no_system_error->has_error->error_code_is('OfferingsValidationFailure', 'correct error code');
 };
 
 subtest 'buy with invalid minutes duration' => sub {
@@ -136,7 +136,7 @@ $buy_params->{contract_parameters}{duration_unit} = 's';
 $ask_params->{duration_unit} = 's';
 
 subtest 'get proposal with invalid seconds duration' => sub {
-    $c->call_ok('send_ask', {args => $ask_params})->has_no_system_error->has_error->error_code_is('ContractCreationFailure');
+    $c->call_ok('send_ask', {args => $ask_params})->has_no_system_error->has_error->error_code_is('OfferingsValidationFailure');
 };
 
 subtest 'buy with invalid seconds duration' => sub {
@@ -147,7 +147,7 @@ $buy_params->{contract_parameters}{duration_unit} = 't';
 $ask_params->{duration_unit} = 't';
 
 subtest 'get proposal with invalid ticks duration' => sub {
-    $c->call_ok('send_ask', {args => $ask_params})->has_no_system_error->has_error->error_code_is('ContractCreationFailure', 'correct error code');
+    $c->call_ok('send_ask', {args => $ask_params})->has_no_system_error->has_error->error_code_is('OfferingsValidationError', 'correct error code');
 };
 
 subtest 'buy with invalid ticks duration' => sub {
