@@ -88,6 +88,13 @@
                                                         1,
                                                         0
                                                     ]
+                                                },
+                                                "last_rejected": {
+                                                    "description": "Show the last Onfido reported reasons for the rejected cases",
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "string"
+                                                    }
                                                 }
                                             }
                                         }
