@@ -992,15 +992,6 @@ rpc get_account_status => sub {
 
     push(@$status, 'financial_assessment_not_complete') unless $client->is_financial_assessment_complete();
 
-    my $cashier_locked = BOM::Platform::Client::CashierValidation::is_cashier_full_locked($client);
-    if ($cashier_locked) {
-        push @$status, 'cashier_locked';
-    } else {
-        push @$status, 'deposit_locked' if BOM::Platform::Client::CashierValidation::is_deposit_locked($client);
-        push @$status, 'withdrawal_locked'
-            if BOM::Platform::Client::CashierValidation::is_withdrawal_locked($client);
-    }
-
     my $is_document_expiry_check_required = $client->is_document_expiry_check_required_mt5();
     my $authentication                    = _get_authentication(
         client                            => $client,
@@ -1023,7 +1014,7 @@ rpc get_account_status => sub {
     } $client->currency;
 
     return {
-        status                        => [uniq @$status],
+        status                        => $status,
         risk_classification           => $client->risk_level(),
         prompt_client_to_authenticate => $client->is_verification_required(check_authentication_status => 1),
         authentication                => $authentication,
