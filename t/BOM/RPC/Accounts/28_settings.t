@@ -528,9 +528,9 @@ subtest 'set settings' => sub {
         );
     }
 
-    $test_client->set_authentication('ID_DOCUMENT', {status => 'pass'});
-    $test_client->save;
-    ok $test_client->fully_authenticated, 'client is authenticated';
+    $test_client_X_mf->set_authentication('ID_DOCUMENT', {status => 'pass'});
+    $test_client_X_mf->save;
+    ok $test_client_X_mf->fully_authenticated, 'client is authenticated';
 
     for my $tax_field (qw(tax_residence tax_identification_number)) {
         local $params->{args} = {
@@ -565,9 +565,9 @@ subtest 'set settings' => sub {
             or note explain $res->{error};
     }
 
-    $test_client->set_authentication('ID_DOCUMENT', {status => 'fail'});
-    $test_client->save;
-    ok !$test_client->fully_authenticated, 'client is not authenticated';
+    $test_client_X_mf->set_authentication('ID_DOCUMENT', {status => 'fail'});
+    $test_client_X_mf->save;
+    ok !$test_client_X_mf->fully_authenticated, 'client is not authenticated';
 
     for my $unrestricted_country (qw(id ru)) {
         local $params->{args} = {
@@ -859,18 +859,18 @@ subtest 'set settings' => sub {
 };
 
 subtest 'set_settings on virtual account should not change real account settings' => sub {
-    my $get_settings_cr = $c->tcall('get_settings', {token => $token});
+    my $get_settings_cr = $c->tcall('get_settings', {token => $token_Y_cr_1});
 
     my $params = {
         language   => 'EN',
-        token      => $token_vr,
+        token      => $token_Q_vr,
         client_ip  => '127.0.0.1',
         user_agent => 'agent',
         args       => {email_consent => '0'}};    # VR can change email_consent
 
     is($c->tcall('set_settings', $params)->{status}, 1, 'VR account email_consent changed successfully');
 
-    my $result = $c->tcall('get_settings', {token => $token});
+    my $result = $c->tcall('get_settings', {token => $token_Y_cr_1});
     is($result->{email_consent}, $params->{args}{email_consent}, "CR account email_consent setting changed successfully");
 
     my $expected_result = {$get_settings_cr->%*, email_consent => $params->{args}{email_consent}};

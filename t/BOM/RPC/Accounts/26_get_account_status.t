@@ -282,6 +282,7 @@ subtest 'get account status' => sub {
                             status   => "none",
                             services => {
                                 onfido => {
+                                    last_rejected        => [],
                                     is_country_supported => 1,
                                     documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport'],
                                     country_code         => 'IDN'
@@ -320,6 +321,7 @@ subtest 'get account status' => sub {
                             status   => "none",
                             services => {
                                 onfido => {
+                                    last_rejected        => [],
                                     is_country_supported => 1,
                                     documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport'],
                                     country_code         => 'IDN'
@@ -356,6 +358,7 @@ subtest 'get account status' => sub {
                             status   => "verified",
                             services => {
                                 onfido => {
+                                    last_rejected        => [],
                                     is_country_supported => 1,
                                     documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport'],
                                     country_code         => 'IDN'
@@ -390,6 +393,7 @@ subtest 'get account status' => sub {
                             status   => "expired",
                             services => {
                                 onfido => {
+                                    last_rejected        => [],
                                     is_country_supported => 1,
                                     documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport'],
                                     country_code         => 'IDN'
@@ -444,6 +448,7 @@ subtest 'get account status' => sub {
                             expiry_date => Date::Utility->new->plus_time_interval('1d')->epoch,
                             services    => {
                                 onfido => {
+                                    last_rejected        => [],
                                     is_country_supported => 1,
                                     documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport'],
                                     country_code         => 'IDN'
@@ -516,6 +521,7 @@ subtest 'get account status' => sub {
                                 expiry_date => re('\d+'),
                                 services    => {
                                     onfido => {
+                                        last_rejected        => [],
                                         is_country_supported => 1,
                                         documents_supported  => [
                                             'Asylum Registration Card',
@@ -564,6 +570,7 @@ subtest 'get account status' => sub {
                             status   => "none",
                             services => {
                                 onfido => {
+                                    last_rejected        => [],
                                     is_country_supported => 1,
                                     documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport'],
                                     country_code         => 'IDN'
@@ -597,6 +604,7 @@ subtest 'get account status' => sub {
                             status   => "none",
                             services => {
                                 onfido => {
+                                    last_rejected        => [],
                                     is_country_supported => 1,
                                     documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport'],
                                     country_code         => 'IDN'
@@ -632,6 +640,7 @@ subtest 'get account status' => sub {
                             status   => "none",
                             services => {
                                 onfido => {
+                                    last_rejected        => [],
                                     is_country_supported => 1,
                                     documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport'],
                                     country_code         => 'IDN'
@@ -666,6 +675,7 @@ subtest 'get account status' => sub {
                             status   => "verified",
                             services => {
                                 onfido => {
+                                    last_rejected        => [],
                                     is_country_supported => 1,
                                     documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport'],
                                     country_code         => 'IDN'
@@ -735,6 +745,7 @@ subtest 'get account status' => sub {
                                 status   => "verified",
                                 services => {
                                     onfido => {
+                                        last_rejected        => [],
                                         is_country_supported => 1,
                                         documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport'],
                                         country_code         => 'IDN'
@@ -817,6 +828,7 @@ subtest 'get account status' => sub {
                                 status   => "verified",
                                 services => {
                                     onfido => {
+                                        last_rejected        => [],
                                         is_country_supported => 1,
                                         documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport'],
                                         country_code         => 'IDN'
@@ -856,6 +868,7 @@ subtest 'get account status' => sub {
                             status   => "none",
                             services => {
                                 onfido => {
+                                    last_rejected        => [],
                                     is_country_supported => 1,
                                     documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport'],
                                     country_code         => 'IDN'
@@ -895,6 +908,7 @@ subtest 'get account status' => sub {
                             status   => "verified",
                             services => {
                                 onfido => {
+                                    last_rejected        => [],
                                     is_country_supported => 1,
                                     documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport'],
                                     country_code         => 'IDN'
@@ -931,6 +945,7 @@ subtest 'get account status' => sub {
                             status   => "verified",
                             services => {
                                 onfido => {
+                                    last_rejected        => [],
                                     is_country_supported => 1,
                                     documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport'],
                                     country_code         => 'IDN'
@@ -970,6 +985,7 @@ subtest 'get account status' => sub {
                             status   => "none",
                             services => {
                                 onfido => {
+                                    last_rejected        => [],
                                     is_country_supported => 1,
                                     documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport'],
                                     country_code         => 'IDN'
@@ -1011,6 +1027,7 @@ subtest 'get account status' => sub {
                                 status   => "none",
                                 services => {
                                     onfido => {
+                                        last_rejected        => [],
                                         is_country_supported => 1,
                                         documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport'],
                                         country_code         => 'IDN'
@@ -1048,6 +1065,7 @@ subtest 'get account status' => sub {
                                 status   => "none",
                                 services => {
                                     onfido => {
+                                        last_rejected        => [],
                                         is_country_supported => 1,
                                         documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport'],
                                         country_code         => 'IDN'
@@ -1088,6 +1106,7 @@ subtest 'get account status' => sub {
                             status   => "none",
                             services => {
                                 onfido => {
+                                    last_rejected        => [],
                                     is_country_supported => 1,
                                     documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport', 'Residence Permit', 'Visa'],
                                     country_code         => 'AUT'
@@ -1123,6 +1142,7 @@ subtest 'get account status' => sub {
                             status   => "none",
                             services => {
                                 onfido => {
+                                    last_rejected        => [],
                                     is_country_supported => 1,
                                     documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport', 'Residence Permit', 'Visa'],
                                     country_code         => 'AUT'
@@ -1158,6 +1178,7 @@ subtest 'get account status' => sub {
                             status   => "none",
                             services => {
                                 onfido => {
+                                    last_rejected        => [],
                                     is_country_supported => 1,
                                     documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport', 'Residence Permit', 'Visa'],
                                     country_code         => 'AUT'
@@ -1229,6 +1250,7 @@ subtest 'get account status' => sub {
                                 expiry_date => re('\d+'),
                                 services    => {
                                     onfido => {
+                                        last_rejected        => [],
                                         is_country_supported => 1,
                                         documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport', 'Residence Permit', 'Visa'],
                                         country_code         => 'AUT'
@@ -1270,6 +1292,7 @@ subtest 'get account status' => sub {
                             status   => "none",
                             services => {
                                 onfido => {
+                                    last_rejected        => [],
                                     is_country_supported => 1,
                                     documents_supported  => [
                                         'Asylum Registration Card',
@@ -1322,6 +1345,7 @@ subtest 'get account status' => sub {
                             status   => "verified",
                             services => {
                                 onfido => {
+                                    last_rejected        => [],
                                     is_country_supported => 1,
                                     documents_supported  => [
                                         'Asylum Registration Card',
@@ -1367,6 +1391,7 @@ subtest 'get account status' => sub {
                             status   => "verified",
                             services => {
                                 onfido => {
+                                    last_rejected        => [],
                                     is_country_supported => 1,
                                     documents_supported  => [
                                         'Asylum Registration Card',
@@ -1448,6 +1473,7 @@ subtest 'get account status' => sub {
                                 expiry_date => re('\d+'),
                                 services    => {
                                     onfido => {
+                                        last_rejected        => [],
                                         is_country_supported => 1,
                                         documents_supported  => [
                                             'Asylum Registration Card',
@@ -1509,6 +1535,7 @@ subtest 'get account status' => sub {
                                 status   => "verified",
                                 services => {
                                     onfido => {
+                                        last_rejected        => [],
                                         is_country_supported => 1,
                                         documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport'],
                                         country_code         => 'IDN'
@@ -1580,6 +1607,7 @@ subtest 'get account status' => sub {
                                 expiry_date => $result->{authentication}{identity}{expiry_date},
                                 services    => {
                                     onfido => {
+                                        last_rejected        => [],
                                         is_country_supported => 1,
                                         documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport'],
                                         country_code         => 'IDN'
@@ -1646,6 +1674,7 @@ subtest 'get account status' => sub {
                             status   => "verified",
                             services => {
                                 onfido => {
+                                    last_rejected        => [],
                                     documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport'],
                                     is_country_supported => 1,
                                     country_code         => 'IDN',
@@ -1702,6 +1731,7 @@ subtest 'get account status' => sub {
                                 status   => "verified",
                                 services => {
                                     onfido => {
+                                        last_rejected        => [],
                                         is_country_supported => 1,
                                         documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport'],
                                         country_code         => 'IDN'
@@ -1759,6 +1789,7 @@ subtest 'get account status' => sub {
                                     status   => "verified",
                                     services => {
                                         onfido => {
+                                            last_rejected        => [],
                                             is_country_supported => 1,
                                             documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport'],
                                             country_code         => 'IDN'
@@ -1811,6 +1842,7 @@ subtest 'get account status' => sub {
                                     expiry_date => $result->{authentication}{identity}{expiry_date},
                                     services    => {
                                         onfido => {
+                                            last_rejected        => [],
                                             is_country_supported => 1,
                                             documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport'],
                                             country_code         => 'IDN'
@@ -1856,6 +1888,7 @@ subtest 'get account status' => sub {
                             status   => "none",
                             services => {
                                 onfido => {
+                                    last_rejected        => [],
                                     is_country_supported => 1,
                                     documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport'],
                                     country_code         => 'IDN'
@@ -1893,6 +1926,7 @@ subtest 'get account status' => sub {
                             status   => "none",
                             services => {
                                 onfido => {
+                                    last_rejected        => [],
                                     is_country_supported => 1,
                                     documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport'],
                                     country_code         => 'IDN'
@@ -1962,6 +1996,7 @@ subtest "Test onfido is_country_supported" => sub {
                     status   => "none",
                     services => {
                         onfido => {
+                            last_rejected        => [],
                             is_country_supported => 0,
                             documents_supported  => [],
                             country_code         => 'ATA'
@@ -1994,6 +2029,7 @@ subtest "Test onfido is_country_supported" => sub {
                     status   => "none",
                     services => {
                         onfido => {
+                            last_rejected        => [],
                             is_country_supported => 1,
                             documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport'],
                             country_code         => 'IDN'
@@ -2042,9 +2078,9 @@ subtest 'Experian validated account' => sub {
                     }
                 },
                 status => [
-                    'age_verification',      'authenticated',
-                    'allow_document_upload', 'financial_information_not_complete',
-                    'trading_experience_not_complete',
+                    'age_verification',                'authenticated',
+                    'allow_document_upload',           'financial_information_not_complete',
+                    'trading_experience_not_complete', 'cashier_locked',
                 ],
                 risk_classification           => 'low',
                 prompt_client_to_authenticate => 0,
@@ -2056,6 +2092,7 @@ subtest 'Experian validated account' => sub {
                         status   => "verified",
                         services => {
                             onfido => {
+                                last_rejected        => [],
                                 is_country_supported => 1,
                                 documents_supported  => [
                                     'Asylum Registration Card',
@@ -2095,6 +2132,7 @@ subtest 'Experian validated account' => sub {
                     'age_verification',                'authenticated',
                     'allow_document_upload',           'financial_information_not_complete',
                     'trading_experience_not_complete', 'financial_assessment_not_complete',
+                    'cashier_locked',
                 ],
                 risk_classification           => 'high',
                 prompt_client_to_authenticate => 0,
@@ -2106,6 +2144,7 @@ subtest 'Experian validated account' => sub {
                         status   => "none",
                         services => {
                             onfido => {
+                                last_rejected        => [],
                                 is_country_supported => 1,
                                 documents_supported  => [
                                     'Asylum Registration Card',
@@ -2150,6 +2189,7 @@ subtest 'Experian validated account' => sub {
                         'age_verification',                'authenticated',
                         'allow_document_upload',           'financial_information_not_complete',
                         'trading_experience_not_complete', 'financial_assessment_not_complete',
+                        'cashier_locked',
                     ],
                     risk_classification           => 'high',
                     prompt_client_to_authenticate => 0,
@@ -2161,6 +2201,7 @@ subtest 'Experian validated account' => sub {
                             status   => "none",
                             services => {
                                 onfido => {
+                                    last_rejected        => [],
                                     is_country_supported => 1,
                                     documents_supported  => [
                                         'Asylum Registration Card',
@@ -2209,6 +2250,7 @@ subtest 'Experian validated account' => sub {
                             'age_verification',                'authenticated',
                             'allow_document_upload',           'financial_information_not_complete',
                             'trading_experience_not_complete', 'financial_assessment_not_complete',
+                            'cashier_locked',
                         ],
                         risk_classification           => 'high',
                         prompt_client_to_authenticate => 0,
@@ -2220,6 +2262,7 @@ subtest 'Experian validated account' => sub {
                                 status   => "verified",
                                 services => {
                                     onfido => {
+                                        last_rejected        => [],
                                         is_country_supported => 1,
                                         documents_supported  => [
                                             'Asylum Registration Card',
@@ -2271,6 +2314,7 @@ subtest 'Experian validated account' => sub {
                         'age_verification',                'authenticated',
                         'allow_document_upload',           'financial_information_not_complete',
                         'trading_experience_not_complete', 'financial_assessment_not_complete',
+                        'cashier_locked',
                     ],
                     risk_classification           => 'high',
                     prompt_client_to_authenticate => 0,
@@ -2282,6 +2326,7 @@ subtest 'Experian validated account' => sub {
                             status   => "pending",
                             services => {
                                 onfido => {
+                                    last_rejected        => [],
                                     is_country_supported => 1,
                                     documents_supported  => [
                                         'Asylum Registration Card',
@@ -2321,6 +2366,7 @@ subtest 'Experian validated account' => sub {
                             'age_verification',                'authenticated',
                             'allow_document_upload',           'financial_information_not_complete',
                             'trading_experience_not_complete', 'financial_assessment_not_complete',
+                            'cashier_locked',
                         ],
                         risk_classification           => 'high',
                         prompt_client_to_authenticate => 0,
@@ -2332,6 +2378,7 @@ subtest 'Experian validated account' => sub {
                                 status   => "verified",
                                 services => {
                                     onfido => {
+                                        last_rejected        => [],
                                         is_country_supported => 1,
                                         documents_supported  => [
                                             'Asylum Registration Card',
@@ -2390,7 +2437,7 @@ subtest 'Experian validated account' => sub {
                             'age_verification',                'authenticated',
                             'allow_document_upload',           'financial_information_not_complete',
                             'trading_experience_not_complete', 'financial_assessment_not_complete',
-                            'document_expired',
+                            'cashier_locked',                  'document_expired',
                         ],
                         risk_classification           => 'high',
                         prompt_client_to_authenticate => 0,
@@ -2403,6 +2450,7 @@ subtest 'Experian validated account' => sub {
                                 expiry_date => re('.*'),
                                 services    => {
                                     onfido => {
+                                        last_rejected        => [],
                                         is_country_supported => 1,
                                         documents_supported  => [
                                             'Asylum Registration Card',
@@ -2427,6 +2475,95 @@ subtest 'Experian validated account' => sub {
             };
         };
     };
+};
+
+subtest 'Rejected reasons' => sub {
+    my $test_client_rejected = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+        residence   => 'br',
+    });
+    $test_client_rejected->email('testing.rejected+reasons@binary.com');
+    $test_client_rejected->set_default_account('USD');
+    $test_client_rejected->save;
+
+    my $user_rejected = BOM::User->create(
+        email    => 'testing.rejected+reasons@binary.com',
+        password => 'hey you'
+    );
+
+    $user_rejected->add_client($test_client_rejected);
+
+    my $token_rejected = $m->create_token($test_client_rejected->loginid, 'test token');
+
+    my $onfido_mock = Test::MockModule->new('BOM::User::Onfido');
+    my $poi_status  = 'rejected';
+    my $reasons     = [];
+
+    $onfido_mock->mock(
+        'get_consider_reasons',
+        sub {
+            return $reasons;
+        });
+
+    my $client_mock = Test::MockModule->new('BOM::User::Client');
+    $client_mock->mock(
+        'get_poi_status',
+        sub {
+            return $poi_status;
+        });
+
+    my %catalog = %BOM::RPC::v3::Accounts::RejectedOnfidoReasons;
+    my $tests   = [map { +{reasons => [$_], poi_status => 'rejected', expected => [$catalog{$_}], test => "Testing $_",} } keys %catalog];
+
+    # Adding more cases
+
+    push $tests->@*,
+        {
+        reasons    => [qw/too much garbage/],
+        expected   => [],
+        test       => 'Not declared reasons are filtered out',
+        poi_status => 'suspected',
+        };
+
+    push $tests->@*,
+        {
+        reasons    => ['data_comparison.first_name', 'data_comparison.last_name'],
+        expected   => ["Your name on the document you provided doesn't match your profile. Please check and try again."],
+        test       => 'Duplicated message is reported once',
+        poi_status => 'suspected',
+        };
+
+    push $tests->@*,
+        {
+        reasons  => ['data_comparison.first_name', 'age_validation.minimum_accepted_age', 'selfie', 'garbage'],
+        expected => [
+            "Your name on the document you provided doesn't match your profile. Please check and try again.",
+            "Your age in the document you provided appears to be below 18 years. We're only allowed to offer our services to clients above 18 years old, so we'll need to close your account. If you have a balance in your account, contact us via live chat and we'll help to withdraw your funds before your account is closed.",
+            "We were unable to verify your selfie because it's not clear. Please take a clearer photo and try again. Ensure that there's enough light where you are and that your entire face is in the frame."
+        ],
+        test       => 'Multiple messages reported',
+        poi_status => 'suspected',
+        };
+
+    push $tests->@*,
+        {
+        reasons    => ['data_comparison.first_name', 'age_validation.minimum_accepted_age', 'selfie', 'garbage'],
+        expected   => [],
+        test       => 'Empty rejected messages for verified account',
+        poi_status => 'verified',
+        };
+
+    for my $test ($tests->@*) {
+        $reasons    = $test->{reasons};
+        $poi_status = $test->{poi_status};
+
+        my $result        = $c->tcall($method, {token => $token_rejected});
+        my $last_rejected = $result->{authentication}->{identity}->{services}->{onfido}->{last_rejected};
+        cmp_deeply($last_rejected, $test->{expected}, $test->{test});
+    }
+
+    $onfido_mock->unmock_all;
+    $client_mock->unmock_all;
 };
 
 done_testing();
