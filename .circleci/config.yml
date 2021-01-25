@@ -92,7 +92,9 @@ workflows:
         context: perl
   daily:
     jobs:
-    - build:
+    - syntax:
+        context: perl  
+    - core:
         context: perl
     triggers:
     - schedule:
