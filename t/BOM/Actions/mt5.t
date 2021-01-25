@@ -118,6 +118,7 @@ subtest 'mt5 track event' => sub {
             'account_type'     => 'gaming',
             'language'         => 'EN',
             'mt5_group'        => 'real\\svg',
+            'mt5_server'       => 'real02',
             'mt5_login_id'     => 'MTR90000',
             'language'         => 'EN',
             'cs_email'         => 'test_cs@bin.com',
@@ -154,6 +155,9 @@ subtest 'mt5 track event' => sub {
                 'type_label'        => ucfirst $type_label,
                 'mt5_integer_id'    => '90000',
                 brand               => 'deriv',
+                mt5_server_location => 'South Africa',
+                mt5_server_region   => 'Africa',
+                mt5_server          => 'real02',
             }
             },
             'properties are set properly for new mt5 account event';
@@ -223,6 +227,7 @@ subtest 'sanctions' => sub {
         'account_type'     => 'gaming',
         'language'         => 'EN',
         'mt5_group'        => 'real\svg',
+        'mt5_server'       => 'real02',
         'mt5_login_id'     => 'MTR90000',
         'language'         => 'EN',
         'cs_email'         => 'test_cs@bin.com',
@@ -325,8 +330,26 @@ subtest 'mt5 account opening mail' => sub {
                             email   => $mt5_client->email,
                             subject => qr/\Q$subject\E/
                         );
-                        ok(!$email, 'Email not sent for deriv customer') if $brand eq 'deriv';
-                        ok($email,  'Email sent for binary customer')    if $brand eq 'binary';
+                        ok(!$email, 'Email not sent for deriv customer')                                 if $brand eq 'deriv';
+                        ok(!$email, 'Email not sent for binary customer as mt5_server was not provided') if $brand eq 'binary';
+
+                        $args->{mt5_server} = 'real02';
+
+                        $action_handler = BOM::Event::Process::get_action_mappings()->{new_mt5_signup};
+                        $result         = $action_handler->($args)->get;
+
+                        # Note for binary requests we expect undef
+                        $expected_mt5_result = $brand eq 'deriv' ? 1 : undef;
+                        is $result, $expected_mt5_result, "Successfull MT5 account opening for $brand customer ($lang), $type $category account";
+
+                        # Note subject is localized
+                        $subject = localize('MT5 [_1] Account Created.', ucfirst $category);
+                        $email   = mailbox_search(
+                            email   => $mt5_client->email,
+                            subject => qr/\Q$subject\E/
+                        );
+                        ok(!$email, 'Email not sent for deriv customer')                         if $brand eq 'deriv';
+                        ok($email,  'Email sent for binary customer as mt5_server was provided') if $brand eq 'binary';
 
                         # The next line caused warnings :-/
                         #next unless $email;
@@ -348,6 +371,7 @@ subtest 'mt5 account opening mail' => sub {
                                         mt5_loginid       => $expected_mt5_loginid,
                                         mt5_category      => $category,
                                         mt5_type_label    => ucfirst $type_label =~ s/stp$/STP/r,
+                                        mt5_region        => 'Africa',
                                         client_first_name => $mt5_client->first_name,
                                         lang              => $lang,
                                         website_name      => $brand_ref->website_name

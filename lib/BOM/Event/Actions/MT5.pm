@@ -17,6 +17,7 @@ use BOM::Config::Redis;
 use BOM::Config;
 use BOM::Event::Services::Track;
 use BOM::Platform::Client::Sanctions;
+use BOM::Config::MT5;
 
 use Email::Stuffer;
 use YAML::XS;
@@ -26,6 +27,7 @@ use List::Util qw(any);
 use Path::Tiny qw(tempdir);
 use JSON::MaybeUTF8 qw/encode_json_utf8/;
 use DataDog::DogStatsd::Helper;
+use Syntax::Keyword::Try;
 
 use Future;
 use IO::Async::Loop;
@@ -221,12 +223,22 @@ sub new_mt5_signup {
         );
     }
 
-    # Sending email to client about mt5 account opening
-    send_mt5_account_opening_email({
-        mt5_login_id => $id,
-        mt5_group    => $data->{mt5_group},
-        client       => $client
-    });
+    try {
+        my $mt5_server_geolocation = BOM::Config::MT5->new(server_id => $data->{mt5_server})->server_geolocation();
+
+        $data->{mt5_server_region}   = $mt5_server_geolocation->{region};
+        $data->{mt5_server_location} = $mt5_server_geolocation->{location};
+
+        # Sending email to client about mt5 account opening
+        send_mt5_account_opening_email({
+            mt5_login_id => $id,
+            mt5_group    => $data->{mt5_group},
+            mt5_region   => $data->{mt5_server_region},
+            client       => $client
+        });
+    } catch ($e) {
+        $log->errorf('Unable to send email to client for new mt5 account open due to error: %s', $e);
+    }
 
     # Add email params to track signup event
     $data->{client_first_name} = $client->first_name;
@@ -313,6 +325,7 @@ sub send_mt5_account_opening_email {
                 mt5_loginid       => $mt5_loginid,
                 mt5_category      => $mt5_category,
                 mt5_type_label    => $mt5_type_label,
+                mt5_region        => $params->{mt5_region},
                 client_first_name => $client_first_name,
                 lang              => $lang,
                 website_name      => $website_name
