@@ -53,6 +53,8 @@ use constant MT5_SVG_FINANCIAL_REAL_LEVERAGE => 1000;
 
 use constant MT5_VIRTUAL_MONEY_DEPOSIT_COMMENT => 'MT5 Virtual Money deposit';
 
+use constant MT5_FINANCIAL_DEFAULT_SERVER => 'real01';
+
 my $error_registry = BOM::RPC::v3::MT5::Errors->new();
 my $error_handler  = sub {
     my $err = shift;
@@ -275,20 +277,18 @@ sub _mt5_group {
     # account creation for samoa if not allowed until the launch of deriv-crypto
     return '' if $landing_company_short eq 'samoa';
 
-    my ($server_type, $market_type, $sub_account_type);
+    my $market_type = _get_market_type($account_type, $mt5_account_type);
+
+    my ($server_type, $sub_account_type);
     if ($account_type eq 'demo') {
         # $server_type is defaulted to 01 for demo since we do not have demo trade server cluster
-        $server_type = '01';
-        # if $mt5_account_type is undefined, it maps to $market_type=synthetic, else $market_type=financial
-        $market_type      = $mt5_account_type ? 'financial' : 'synthetic';
+        $server_type      = '01';
         $sub_account_type = _get_sub_account_type($mt5_account_type, $account_category);
         # we need to override the currency here because virtual account default currency is all in USD
         $currency = LandingCompany::Registry::get($landing_company_short)->get_default_currency($country);
     } else {
         # real group mapping
-        my $orig_account_type = $account_type;
         $account_type     = 'real';
-        $market_type      = $orig_account_type eq 'gaming' ? 'synthetic' : 'financial';
         $server_type      = _get_server_type($account_type, $country, $market_type);
         $sub_account_type = _get_sub_account_type($mt5_account_type, $account_category);
         # All svg financial account will be B-book (put in hr[high-risk] upon sign-up. Decisions to A-book will be done
@@ -306,7 +306,7 @@ sub _mt5_group {
     # TODO (JB): Refactor this.
     # - user is only allowed to create account on real02, real03 and real04 if he/she is not from Ireland trade server country list ($server_type = '01')
     # - user from Ireland trade server country list will be allowed to create account on real01, real02, real03 and real04
-    return '' if (defined $user_input_trade_server and $server_type ne '01' and $user_input_trade_server eq 'real01');
+    return '' if (defined $user_input_trade_server and $server_type ne '01' and $user_input_trade_server eq MT5_FINANCIAL_DEFAULT_SERVER);
 
     my $mt5_trade_server = defined $user_input_trade_server ? $user_input_trade_server : ${account_type} . ${server_type};
 
@@ -528,6 +528,10 @@ async_rpc "mt5_new_account",
 
     return create_error_future('permission') if $mt5_account_currency ne $selected_currency;
 
+    my $server_domain_type = $account_type eq 'demo' ? 'demo' : 'real';
+    $user_input_trade_server //=
+        $server_domain_type . _get_server_type($server_domain_type, $residence, _get_market_type($account_type, $mt5_account_type));
+
     my $group = _mt5_group({
         country               => $residence,
         landing_company_short => $company_name,
@@ -721,7 +725,9 @@ async_rpc "mt5_new_account",
                             mt5_group        => $group,
                             mt5_login_id     => $mt5_login,
                             cs_email         => $brand->emails('support'),
-                            language         => $params->{language}});
+                            language         => $params->{language},
+                            mt5_server       => $user_input_trade_server,
+                        });
 
                     # Compliance team must be notified if a client under Deriv (Europe) Limited
                     #   opens an MT5 account while having limitations on their account.
@@ -2297,6 +2303,26 @@ sub _is_similar_group {
     keys %$existing_group;
 
     return $first;
+}
+
+=head2 _get_market_type
+
+Return the market type for the mt5 account details
+
+=cut
+
+sub _get_market_type {
+    my ($account_type, $mt5_account_type) = @_;
+
+    my $market_type = '';
+    if ($account_type eq 'demo') {
+        # if $mt5_account_type is undefined, it maps to $market_type=synthetic, else $market_type=financial
+        $market_type = $mt5_account_type ? 'financial' : 'synthetic';
+    } else {
+        $market_type = $account_type eq 'gaming' ? 'synthetic' : 'financial';
+    }
+
+    return $market_type;
 }
 
 1;
