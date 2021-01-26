@@ -5314,6 +5314,15 @@ sub propagate_clear_status {
     return undef;
 }
 
+
+=head2 is_wallet
+
+Returns whether this client instance is a wallet.
+
+=cut
+
+sub is_wallet { (ref shift) =~ /Wallet$/ }
+
 =head2 ignore_age_verification
 
 We may want to override or invalidate the age verification under 
