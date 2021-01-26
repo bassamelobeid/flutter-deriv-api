@@ -19,8 +19,7 @@
       "account_list",
       "upgradeable_landing_companies",
       "user_id",
-      "local_currencies",
-      "preferred_language"
+      "local_currencies"
    ],
    "properties" : {
       "email" : {
@@ -140,10 +139,6 @@
       "user_id" : {
          "pattern" : "^[0-9]+$",
          "type" : "string"
-      },
-      "preferred_language" : {
-         "type" : "string",
-         "pattern": "^[A-Z]{0,2}$"
       }
    }
 }

@@ -19,8 +19,7 @@
       "country",
       "date_of_birth",
       "first_name",
-      "non_pep_declaration",
-      "preferred_language"
+      "non_pep_declaration"
    ],
    "description" : null,
    "type" : "object",
@@ -117,10 +116,6 @@
          "items" : {
             "type" : "string"
          }
-      },
-      "preferred_language" : {
-         "type" : "string",
-         "pattern": "^[A-Z]{0,2}$"
       }
    }
 }

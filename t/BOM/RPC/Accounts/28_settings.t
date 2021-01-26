@@ -27,76 +27,72 @@ my $tnc_version = 'Version 1 2020-01-01';
 $app_config->cgi->terms_conditions_versions('{ "deriv": "' . $tnc_version . '" }');
 
 # init db
-my $token_gen = BOM::Platform::Token::API->new;
-my $hash_pwd  = BOM::User::Password::hashpw('jskjd8292922');
+my $email    = 'abc@binary.com';
+my $password = 'jskjd8292922';
+my $hash_pwd = BOM::User::Password::hashpw($password);
 
-my $email_X = 'abc@binary.com';
-my $email_Y = 'sample@binary.com';
-my $email_T = 'mlt_mf@binary.com';
-my $email_Q = 'abcd@binary.com';
+my $email_1    = 'abcd@binary.com';
+my $password_1 = 'jskjd82929223';
+my $hash_pwd_1 = BOM::User::Password::hashpw($password_1);
 
-# User X
-my $user_X = BOM::User->create(
-    email    => $email_X,
-    password => $hash_pwd
-);
-
-my $test_client_X_mf = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'MF',
 });
 
-$test_client_X_mf->email($email_X);
-$test_client_X_mf->save;
+$test_client->email($email);
+$test_client->save;
 
-my $test_client_X_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+my $test_client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code              => 'VRTC',
     non_pep_declaration_time => undef
 });
-$test_client_X_vr->email($email_X);
-$test_client_X_vr->save;
+$test_client_vr->email($email);
+$test_client_vr->save;
 
-$user_X->add_client($test_client_X_mf);
-$user_X->add_client($test_client_X_vr);
-
-# User Y
-my $user_Y = BOM::User->create(
-    email    => $email_Y,
+my $user = BOM::User->create(
+    email    => $email,
     password => $hash_pwd
 );
+$user->add_client($test_client);
+$user->add_client($test_client_vr);
 
-my $test_client_Y_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+my $user2 = BOM::User->create(
+    email    => $email_1,
+    password => $hash_pwd_1
+);
+my $test_client_cr_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'VRTC',
 });
 
-$test_client_Y_vr->email($email_Y);
-$test_client_Y_vr->save;
+$test_client_cr_vr->email('sample@binary.com');
+$test_client_cr_vr->save;
 
-my $test_client_Y_cr_citizen_AT = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+my $test_client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'CR',
     citizen     => 'at',
 });
-$test_client_Y_cr_citizen_AT->email($email_Y);
-$test_client_Y_cr_citizen_AT->set_default_account('USD');
-$test_client_Y_cr_citizen_AT->save;
+$test_client_cr->email('sample@binary.com');
+$test_client_cr->set_default_account('USD');
+$test_client_cr->save;
 
-my $test_client_Y_cr_1 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+my $test_client_cr_2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'CR',
 });
-$test_client_Y_cr_1->email($email_Y);
-$test_client_Y_cr_1->save;
+$test_client_cr_2->email('sample@binary.com');
+$test_client_cr_2->save;
 
-my $test_client_Y_cr_2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+my $test_client_cr_3 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'CR',
 });
-$test_client_Y_cr_2->email($email_Y);
-$test_client_Y_cr_2->save;
+$test_client_cr_3->email('sample@binary.com');
+$test_client_cr_3->save;
 
 my $payment_agent_args = {
-    payment_agent_name    => $test_client_Y_cr_2->first_name,
+    payment_agent_name    => $test_client_cr_3->first_name,
     currency_code         => 'USD',
     url                   => 'http://www.example.com/',
-    email                 => $test_client_Y_cr_2->email,
-    phone                 => $test_client_Y_cr_2->phone,
+    email                 => $test_client_cr_3->email,
+    phone                 => $test_client_cr_3->phone,
     information           => 'Test Info',
     summary               => 'Test Summary',
     commission_deposit    => 0,
@@ -105,88 +101,84 @@ my $payment_agent_args = {
 };
 
 #make him payment agent
-$test_client_Y_cr_2->payment_agent($payment_agent_args);
-$test_client_Y_cr_2->save;
+$test_client_cr_3->payment_agent($payment_agent_args);
+$test_client_cr_3->save;
 #set countries for payment agent
-$test_client_Y_cr_2->get_payment_agent->set_countries(['id', 'in']);
+$test_client_cr_3->get_payment_agent->set_countries(['id', 'in']);
 
-$user_Y->add_client($test_client_Y_vr);
-$user_Y->add_client($test_client_Y_cr_citizen_AT);
-$user_Y->add_client($test_client_Y_cr_1);
-$user_Y->add_client($test_client_Y_cr_2);
-
-# User T
-my $user_T = BOM::User->create(
-    email    => $email_T,
+my $user_cr = BOM::User->create(
+    email    => 'sample@binary.com',
     password => $hash_pwd
 );
 
-my $test_client_T_mx = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+$user_cr->add_client($test_client_cr_vr);
+$user_cr->add_client($test_client_cr);
+$user_cr->add_client($test_client_cr_2);
+$user_cr->add_client($test_client_cr_3);
+
+my $test_client_disabled = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    broker_code => 'MF',
+});
+
+$test_client_disabled->status->set('disabled', 1, 'test disabled');
+
+my $test_client_mx = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'MX',
     residence   => 'gb',
     citizen     => ''
 });
-$test_client_T_mx->email($email_T);
+$test_client_mx->email($email);
 
-my $test_client_T_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'VRTC'});
+my $test_client_vr_2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'VRTC'});
 
-$test_client_T_vr->email($email_T);
-$test_client_T_vr->set_default_account('USD');
-$test_client_T_vr->save;
+$test_client_vr_2->email($email);
+$test_client_vr_2->set_default_account('USD');
+$test_client_vr_2->save;
 
-my $test_client_T_mlt = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+my $email_mlt_mf    = 'mltmf@binary.com';
+my $test_client_mlt = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'MLT',
     residence   => 'at',
 });
-$test_client_T_mlt->email($email_T);
-$test_client_T_mlt->set_default_account('EUR');
-$test_client_T_mlt->save;
+$test_client_mlt->email($email_mlt_mf);
+$test_client_mlt->set_default_account('EUR');
+$test_client_mlt->save;
 
-my $test_client_T_mf = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+my $test_client_mf = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'MF',
     residence   => 'at',
 });
-$test_client_T_mf->email($email_T);
-$test_client_T_mf->save;
+$test_client_mf->email($email_mlt_mf);
+$test_client_mf->save;
 
-$user_T->add_client($test_client_T_vr);
-$user_T->add_client($test_client_T_mlt);
-$user_T->add_client($test_client_T_mf);
-
-# User Q
-my $user_Q = BOM::User->create(
-    email    => $email_Q,
+my $user_mlt_mf = BOM::User->create(
+    email    => $email_mlt_mf,
     password => $hash_pwd
 );
+$user_mlt_mf->add_client($test_client_vr_2);
+$user_mlt_mf->add_client($test_client_mlt);
+$user_mlt_mf->add_client($test_client_mf);
 
-my $test_client_Q_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+my $test_client_vr_3 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'VRTC',
     residence   => 'id'
 });
-$user_Q->add_client($test_client_Q_vr);
-$test_client_Q_vr->email($email_Q);
-$test_client_Q_vr->set_default_account('USD');
-$test_client_Q_vr->save;
+$user2->add_client($test_client_vr_3);
+$test_client_vr_3->email($email_1);
+$test_client_vr_3->set_default_account('USD');
+$test_client_vr_3->save;
 
-# Client disabled
-my $test_client_disabled = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code => 'MF',
-});
-$test_client_disabled->status->set('disabled', 1, 'test disabled');
-my $token_disabled = $token_gen->create_token($test_client_disabled->loginid, 'test token');
-
-my $token_X_mf = $token_gen->create_token($test_client_X_mf->loginid, 'test token');
-my $token_X_vr = $token_gen->create_token($test_client_X_vr->loginid, 'test token');
-
-my $token_Y_cr_citizen_AT = $token_gen->create_token($test_client_Y_cr_citizen_AT->loginid, 'test token');
-my $token_Y_cr_1          = $token_gen->create_token($test_client_Y_cr_1->loginid,          'test token');
-my $token_Y_cr_2          = $token_gen->create_token($test_client_Y_cr_2->loginid,          'test token');
-
-my $token_T_mx  = $token_gen->create_token($test_client_T_mx->loginid,  'test token');
-my $token_T_mlt = $token_gen->create_token($test_client_T_mlt->loginid, 'test token');
-my $token_T_mf  = $token_gen->create_token($test_client_T_mf->loginid,  'test token');
-
-my $token_Q_vr = $token_gen->create_token($test_client_Q_vr->loginid, 'test token');
+my $m              = BOM::Platform::Token::API->new;
+my $token          = $m->create_token($test_client->loginid, 'test token');
+my $token_cr       = $m->create_token($test_client_cr->loginid, 'test token');
+my $token_cr_2     = $m->create_token($test_client_cr_2->loginid, 'test token');
+my $token_cr_3     = $m->create_token($test_client_cr_3->loginid, 'test token');
+my $token_disabled = $m->create_token($test_client_disabled->loginid, 'test token');
+my $token_vr       = $m->create_token($test_client_vr->loginid, 'test token');
+my $token_mx       = $m->create_token($test_client_mx->loginid, 'test token');
+my $token_mlt      = $m->create_token($test_client_mlt->loginid, 'test token');
+my $token_mf       = $m->create_token($test_client_mf->loginid, 'test token');
+my $token_vr_3     = $m->create_token($test_client_vr_3->loginid, 'test token');
 
 my $c = Test::BOM::RPC::QueueClient->new();
 
@@ -208,7 +200,7 @@ subtest 'get settings' => sub {
         $c->tcall(
             $method,
             {
-                token => $token_X_mf,
+                token => $token,
             }
         )->{error}{message_to_client},
         'The token is invalid.',
@@ -226,10 +218,10 @@ subtest 'get settings' => sub {
         'check authorization'
     );
 
-    $user_Y->update_preferred_language('FA');
     my $params = {
-        token => $token_Y_cr_citizen_AT,
+        token => $token_cr,
     };
+
     my $result = $c->tcall($method, $params);
     note explain $result;
     is_deeply(
@@ -245,7 +237,7 @@ subtest 'get settings' => sub {
             'address_postcode'               => '232323',
             'phone'                          => '+15417543010',
             'last_name'                      => 'pItT',
-            'email'                          => $email_Y,
+            'email'                          => 'sample@binary.com',
             'address_line_2'                 => '301',
             'address_city'                   => 'Beverly Hills',
             'address_line_1'                 => 'Civic Center',
@@ -259,39 +251,31 @@ subtest 'get settings' => sub {
             'account_opening_reason'         => undef,
             'request_professional_status'    => 0,
             'citizen'                        => 'at',
-            'user_hash'                      => hmac_sha256_hex($user_Y->email, BOM::Config::third_party()->{elevio}->{account_secret}),
+            'user_hash'                      => hmac_sha256_hex($user_cr->email, BOM::Config::third_party()->{elevio}->{account_secret}),
             'has_secret_answer'              => 1,
             'non_pep_declaration'            => 1,
             'immutable_fields'               => ['residence', 'secret_answer', 'secret_question'],
-            'preferred_language'             => 'FA',
         });
 
-    $user_X->update_preferred_language('AZ');
-    $params->{token} = $token_X_mf;
-    $test_client_X_mf->user->set_tnc_approval;
-    $result = $c->tcall($method, $params);
-
-    is($result->{client_tnc_status},  $tnc_version, 'tnc status set');
-    is($result->{preferred_language}, 'AZ',         'preferred_language set');
-
-    $user_Q->update_preferred_language('EN');
-    $params->{token} = $token_Q_vr;
+    $params->{token} = $token;
+    $test_client->user->set_tnc_approval;
+    is($c->tcall($method, $params)->{client_tnc_status}, $tnc_version, 'tnc status set');
+    $params->{token} = $token_vr_3;
     is_deeply(
         $c->tcall($method, $params),
         {
-            'email'              => $email_Q,
-            'country'            => 'Indonesia',
-            'residence'          => 'Indonesia',
-            'country_code'       => 'id',
-            'email_consent'      => '0',
-            'user_hash'          => hmac_sha256_hex($user_Q->email, BOM::Config::third_party()->{elevio}->{account_secret}),
-            'immutable_fields'   => ['residence'],
-            'preferred_language' => 'EN'
+            'email'            => 'abcd@binary.com',
+            'country'          => 'Indonesia',
+            'residence'        => 'Indonesia',
+            'country_code'     => 'id',
+            'email_consent'    => '0',
+            'user_hash'        => hmac_sha256_hex($user2->email, BOM::Config::third_party()->{elevio}->{account_secret}),
+            'immutable_fields' => ['residence']
         },
         'vr client return less messages when it does not have real sibling'
     );
 
-    $params->{token} = $token_X_vr;
+    $params->{token} = $token_vr;
     $result = $c->tcall($method, $params);
     is_deeply(
         $result,
@@ -306,7 +290,7 @@ subtest 'get settings' => sub {
             'address_postcode'               => '232323',
             'phone'                          => '+15417543010',
             'last_name'                      => 'pItT',
-            'email'                          => $email_X,
+            'email'                          => 'abc@binary.com',
             'address_line_2'                 => '301',
             'address_city'                   => 'Beverly Hills',
             'address_line_1'                 => 'Civic Center',
@@ -320,19 +304,15 @@ subtest 'get settings' => sub {
             'account_opening_reason'         => undef,
             'request_professional_status'    => 0,
             'citizen'                        => 'at',
-            'user_hash'                      => hmac_sha256_hex($user_X->email, BOM::Config::third_party()->{elevio}->{account_secret}),
+            'user_hash'                      => hmac_sha256_hex($user->email, BOM::Config::third_party()->{elevio}->{account_secret}),
             'has_secret_answer'              => 1,
             'non_pep_declaration'            => 0,
             'immutable_fields'               => ['residence'],
-            'preferred_language'             => 'AZ'
         },
         'vr client return real account information when it has sibling'
     );
-    $user_X->update_preferred_language('DE');
-    $result = $c->tcall($method, $params);
-    is $result->{preferred_language}, 'DE', 'preferred language reset';
 
-    $params->{token} = $token_Y_cr_2;
+    $params->{token} = $token_cr_3;
     $result = $c->tcall($method, $params);
     my $expected = {
         'country'                        => 'Indonesia',
@@ -345,7 +325,7 @@ subtest 'get settings' => sub {
         'address_postcode'               => '232323',
         'phone'                          => '+15417543010',
         'last_name'                      => 'pItT',
-        'email'                          => $email_Y,
+        'email'                          => 'sample@binary.com',
         'address_line_2'                 => '301',
         'address_city'                   => 'Beverly Hills',
         'address_line_1'                 => 'Civic Center',
@@ -359,25 +339,24 @@ subtest 'get settings' => sub {
         'account_opening_reason'         => undef,
         'request_professional_status'    => 0,
         'citizen'                        => 'at',
-        'user_hash'                      => hmac_sha256_hex($user_Y->email, BOM::Config::third_party()->{elevio}->{account_secret}),
+        'user_hash'                      => hmac_sha256_hex($user_cr->email, BOM::Config::third_party()->{elevio}->{account_secret}),
         'has_secret_answer'              => 1,
         'non_pep_declaration'            => 1,
         'immutable_fields'               => ['residence', 'secret_answer', 'secret_question'],
-        'preferred_language'             => 'FA',
     };
     is_deeply($result, $expected, 'return 1 for authenticated payment agent');
 
-    $test_client_Y_cr_2->set_authentication('ID_DOCUMENT', {status => 'pass'});
-    $test_client_Y_cr_2->save;
-    ok $test_client_Y_cr_2->fully_authenticated, 'client is authenticated';
+    $test_client_cr_3->set_authentication('ID_DOCUMENT', {status => 'pass'});
+    $test_client_cr_3->save;
+    ok $test_client_cr_3->fully_authenticated, 'client is authenticated';
     $result = $c->tcall($method, $params);
     $expected->{immutable_fields} =
         ['citizen', 'date_of_birth', 'first_name', 'last_name', 'residence', 'salutation', 'secret_answer', 'secret_question'];
     is_deeply($result, $expected, 'immutable fields changed after authentication');
-    $test_client_Y_cr_2->set_authentication('ID_DOCUMENT', {status => 'fail'});
-    $test_client_Y_cr_2->save;
+    $test_client_cr_3->set_authentication('ID_DOCUMENT', {status => 'fail'});
+    $test_client_cr_3->save;
 
-    ok !$test_client_Y_cr_2->fully_authenticated, 'authentication is removed';
+    ok !$test_client_cr_3->fully_authenticated, 'authentication is removed';
     $result = $c->tcall($method, $params);
     $expected->{immutable_fields} = ['residence', 'secret_answer', 'secret_question'];
     is_deeply($result, $expected, 'immutable fields changed back to pre-authentication list');
@@ -421,16 +400,16 @@ subtest 'set settings' => sub {
         'This account is unavailable.',
         'check authorization'
     );
-    my $mocked_client = Test::MockModule->new(ref($test_client_X_mf));
+    my $mocked_client = Test::MockModule->new(ref($test_client));
     my $params        = {
         language   => 'EN',
-        token      => $token_X_vr,
+        token      => $token_vr,
         client_ip  => '127.0.0.1',
         user_agent => 'agent',
         args       => {address1 => 'Address 1'}};
     # in normal case the vr client's residence should not be null, so I update is as '' to simulate null
-    $test_client_X_vr->residence('');
-    $test_client_X_vr->save();
+    $test_client_vr->residence('');
+    $test_client_vr->save();
     is($c->tcall($method, $params)->{error}{message_to_client}, 'Permission denied.', "vr client can only update residence");
     # here I mocked function 'save' to simulate the db failure.
     $mocked_client->mock('save', sub { return undef });
@@ -448,11 +427,11 @@ subtest 'set settings' => sub {
     $params->{args}{residence} = 'kr';
     $result = $c->tcall($method, $params);
     is($result->{status}, 1, 'vr account update residence successfully');
-    $test_client_X_vr->load;
-    isnt($test_client_X_mf->address_1, 'Address 1', 'But vr account only update residence');
+    $test_client_vr->load;
+    isnt($test_client->address_1, 'Address 1', 'But vr account only update residence');
 
     # test real account
-    $params->{token} = $token_X_mf;
+    $params->{token} = $token;
     # Need to delete this parameter so this next call returns the error of interest
     delete $params->{args}{residence};
     my %full_args = (
@@ -610,12 +589,12 @@ subtest 'set settings' => sub {
     # so I mocked this function to check it is called.
     my $add_note_called;
     $mocked_client->mock('add_note', sub { $add_note_called = 1; });
-    my $old_latest_environment = $test_client_X_mf->latest_environment;
+    my $old_latest_environment = $test_client->latest_environment;
     mailbox_clear();
     $params->{args}->{email_consent} = 1;
 
-    $test_client_X_mf->set_authentication('ID_DOCUMENT', {status => 'pass'});
-    $test_client_X_mf->save;
+    $test_client->set_authentication('ID_DOCUMENT', {status => 'pass'});
+    $test_client->save;
 
     $params->{args}{tax_identification_number} = '111-222-543';
     $params->{args}{tax_residence}             = 'de';
@@ -635,42 +614,30 @@ subtest 'set settings' => sub {
     $params->{args}{tax_identification_number} = '111-222-543';
     $params->{args}{tax_residence}             = 'ru';
     is($c->tcall($method, $params)->{status}, 1, 'update successfully');
-    my $res = $c->tcall('get_settings', {token => $token_X_mf});
+    my $res = $c->tcall('get_settings', {token => $token});
     is($res->{tax_identification_number}, $params->{args}{tax_identification_number}, "Check tax information");
     is($res->{tax_residence},             $params->{args}{tax_residence},             "Check tax information");
 
     ok($add_note_called, 'add_note is called for authenticated call, so the email should be sent to support address');
 
-    $test_client_X_mf->get_authentication('ID_DOCUMENT')->delete;
-    $test_client_X_mf->status->clear_professional;
-    $test_client_X_mf->save;
-
-    subtest 'preferred language setting' => sub {
-        $params->{token} = $token_X_mf;
-
-        $params->{args} = {%full_args, preferred_language => 'FA'};
-        is($c->tcall($method, $params)->{status},                                   1,    'update successfully');
-        is($c->tcall('get_settings', {token => $token_X_mf})->{preferred_language}, 'FA', 'preferred language updated.');
-
-        $params->{args} = {%full_args, preferred_language => undef};
-        is($c->tcall($method, $params)->{status},                                   1,    'update successfully');
-        is($c->tcall('get_settings', {token => $token_X_mf})->{preferred_language}, 'FA', 'preferred language updated.');
-    };
+    $test_client->get_authentication('ID_DOCUMENT')->delete;
+    $test_client->status->clear_professional;
+    $test_client->save;
 
     subtest 'Check for citizenship value' => sub {
 
         subtest 'empty/unspecified' => sub {
-            $params->{token} = $token_T_mx;
+            $params->{token} = $token_mx;
             $params->{args}  = {%full_args, citizen => ''};
             is($c->tcall($method, $params)->{error}{message_to_client}, 'This field is required.', 'empty value for citizenship');
         };
 
-        $params->{token} = $token_X_mf;
+        $params->{token} = $token;
 
         subtest 'invalid' => sub {
             $params->{args} = {%full_args, citizen => 'xx'};
-            $test_client_X_mf->citizen('');
-            $test_client_X_mf->save();
+            $test_client->citizen('');
+            $test_client->save();
             is(
                 $c->tcall($method, $params)->{error}{message_to_client},
                 'Sorry, our service is not available for your country of citizenship.',
@@ -680,27 +647,27 @@ subtest 'set settings' => sub {
 
         subtest 'different value' => sub {
             $params->{args} = {%full_args, citizen => 'bt'};
-            $test_client_X_mf->citizen('at');
-            $test_client_X_mf->save();
+            $test_client->citizen('at');
+            $test_client->save();
             is($c->tcall($method, $params)->{error}{message_to_client}, 'Your citizenship cannot be changed.', 'different value for citizenship');
         };
         subtest 'restricted countries' => sub {
             for my $restricted_country (qw(us ir hk my)) {
                 $params->{args} = {%full_args, citizen => $restricted_country};
-                $test_client_X_mf->citizen('');
-                $test_client_X_mf->save();
-                is($c->tcall($method, $params)->{status},                        1,                   'update successfully');
-                is($c->tcall('get_settings', {token => $token_X_mf})->{citizen}, $restricted_country, "Restricted country value for citizenship");
+                $test_client->citizen('');
+                $test_client->save();
+                is($c->tcall($method, $params)->{status},                   1,                   'update successfully');
+                is($c->tcall('get_settings', {token => $token})->{citizen}, $restricted_country, "Restricted country value for citizenship");
 
             }
         };
         subtest 'po box' => sub {
             subtest 'regulated account' => sub {
-                $test_client_T_mx->citizen('gb');
-                $test_client_T_mx->save;
+                $test_client_mx->citizen('gb');
+                $test_client_mx->save;
 
                 my $params = {
-                    token      => $token_T_mx,
+                    token      => $token_mx,
                     language   => 'EN',
                     client_ip  => '127.0.0.1',
                     user_agent => 'agent',
@@ -711,11 +678,11 @@ subtest 'set settings' => sub {
             };
 
             subtest 'unregulated account' => sub {
-                $test_client_Y_cr_citizen_AT->citizen('br');
-                $test_client_Y_cr_citizen_AT->save;
+                $test_client_cr->citizen('br');
+                $test_client_cr->save;
 
                 my $params = {
-                    token      => $token_Y_cr_citizen_AT,
+                    token      => $token_cr,
                     language   => 'EN',
                     client_ip  => '127.0.0.1',
                     user_agent => 'agent',
@@ -727,30 +694,30 @@ subtest 'set settings' => sub {
         };
     };
     subtest 'non-pep declaration' => sub {
-        is $test_client_X_vr->non_pep_declaration_time, undef, 'non-pep declaration time is undefined for virtual accounts';
-        $params->{token} = $token_X_vr;
+        is $test_client_vr->non_pep_declaration_time, undef, 'non-pep declaration time is undefined for virtual accounts';
+        $params->{token} = $token_vr;
         $params->{args}  = {non_pep_declaration => 1};
         is($c->tcall($method, $params)->{status}, 1, 'vr account updated successfully');
-        $test_client_X_vr->load;
-        is $test_client_X_vr->non_pep_declaration_time, undef, 'non-pep declaration is not changed for virtual accounts';
+        $test_client_vr->load;
+        is $test_client_vr->non_pep_declaration_time, undef, 'non-pep declaration is not changed for virtual accounts';
 
-        for my $client ($test_client_Y_cr_citizen_AT, $test_client_Y_cr_1) {
+        for my $client ($test_client_cr, $test_client_cr_2) {
             $client->non_pep_declaration_time('1999-01-01 00:00:00');
             $client->save;
             $client->load;
             is $client->non_pep_declaration_time, '1999-01-01 00:00:00', 'Declaration time is set to a test value';
         }
-        $params->{token} = $token_Y_cr_citizen_AT;
+        $params->{token} = $token_cr;
         $params->{args}  = {%full_args, non_pep_declaration => 1};
         is($c->tcall($method, $params)->{status}, 1, 'update successfully');
 
-        for my $client ($test_client_Y_cr_citizen_AT, $test_client_Y_cr_1) {
+        for my $client ($test_client_cr, $test_client_cr_2) {
             $client->load;
             is $client->non_pep_declaration_time, '1999-01-01 00:00:00', 'Decaration time is not changed if it isnt empty';
         }
 
         # simulate a client with empty non-pep declaration time (because it's impossible to set it to null for real accounts in DB)
-        my $mocked_client = Test::MockModule->new(ref($test_client_X_mf));
+        my $mocked_client = Test::MockModule->new(ref($test_client));
         $mocked_client->mock(
             non_pep_declaration_time => sub {
                 my ($self) = @_;
@@ -767,20 +734,20 @@ subtest 'set settings' => sub {
         $mocked_client->unmock_all;
         restore_time();
 
-        for my $client ($test_client_Y_cr_citizen_AT, $test_client_Y_cr_1) {
+        for my $client ($test_client_cr, $test_client_cr_2) {
             $client->load;
             is $client->non_pep_declaration_time, '2018-02-15 00:00:00', 'Decaration time is changed for siblings if it is null';
         }
     };
 
-    $params->{token} = $token_X_mf;
-    $test_client_X_mf->load();
+    $params->{token} = $token;
+    $test_client->load();
 
-    isnt($test_client_X_mf->latest_environment, $old_latest_environment, "latest environment updated");
+    isnt($test_client->latest_environment, $old_latest_environment, "latest environment updated");
 
     my $subject = 'Your new Deriv personal details';
     my $msg     = mailbox_search(
-        email   => $test_client_X_mf->email,
+        email   => $test_client->email,
         subject => qr/\Q$subject\E/
     );
     ok($msg, 'send a email to client');
@@ -789,16 +756,16 @@ subtest 'set settings' => sub {
 
     $params->{args}->{request_professional_status} = 1;
 
-    $params->{token} = $token_Y_cr_citizen_AT;
+    $params->{token} = $token_cr;
     is(
         $c->tcall($method, $params)->{error}{message_to_client},
         'Professional status is not applicable to your account.',
         'professional status is not applicable for all countries'
     );
 
-    $params->{token} = $token_X_mf;
+    $params->{token} = $token;
     is($c->tcall($method, $params)->{status}, 1, 'update successfully');
-    $subject = $test_client_X_mf->loginid . ' requested for professional status';
+    $subject = $test_client->loginid . ' requested for professional status';
     $msg     = mailbox_search(
         email   => 'compliance@deriv.com',
         subject => qr/\Q$subject\E/
@@ -813,7 +780,7 @@ subtest 'set settings' => sub {
         'professional status is already requested'
     );
 
-    $res = $c->tcall('get_settings', {token => $token_X_mf});
+    $res = $c->tcall('get_settings', {token => $token});
     is($res->{request_professional_status}, 1, "Was able to request professional status");
 
     # test that postcode is optional for non-MX clients and required for MX clients
@@ -822,22 +789,22 @@ subtest 'set settings' => sub {
     $params->{args} = {%full_args};
     is($c->tcall($method, $params)->{status}, 1, 'postcode is optional for non-MX clients and can be set to null');
 
-    $params->{token} = $token_T_mx;
+    $params->{token} = $token_mx;
     $params->{args}{account_opening_reason} = 'Income Earning';
 
     delete $emitted->{profile_change};
     # setting account settings for one client also updates for clients that have a different landing company
-    $params->{token} = $token_T_mlt;
+    $params->{token} = $token_mlt;
     $params->{args}->{place_of_birth} = 'ir';
     is($c->tcall($method, $params)->{status}, 1, 'update successfully');
     ok($emitted->{profile_change}, 'profile_change emit exist');
 
     is_deeply $emitted->{profile_change}->{properties}->{updated_fields}, $params->{args}, "updated fields are correctly sent to track event";
-    is($c->tcall('get_settings', {token => $token_T_mlt})->{address_line_1}, "address line 1", "Was able to set settings for MLT client");
-    is($c->tcall('get_settings', {token => $token_T_mf})->{address_line_1},  "address line 1", "Was able to set settings for MF client");
+    is($c->tcall('get_settings', {token => $token_mlt})->{address_line_1}, "address line 1", "Was able to set settings for MLT client");
+    is($c->tcall('get_settings', {token => $token_mf})->{address_line_1},  "address line 1", "Was able to set settings for MF client");
 
     # setting account settings for one client updates for all clients with the same landing company
-    $params->{token} = $token_Y_cr_1;
+    $params->{token} = $token_cr_2;
     is($c->tcall($method, $params)->{status}, 1, 'update successfully');
     ok($emitted->{profile_change}, 'profile_change emit exist');
     is_deeply $emitted->{profile_change}->{properties}->{updated_fields},
@@ -846,13 +813,9 @@ subtest 'set settings' => sub {
         'address_postcode' => ''
         },
         "updated fields are correctly sent to track event";
+    is($c->tcall('get_settings', {token => $token_cr})->{address_line_1}, "address line 1", "Was able to set settings correctly for CR client");
     is(
-        $c->tcall('get_settings', {token => $token_Y_cr_citizen_AT})->{address_line_1},
-        "address line 1",
-        "Was able to set settings correctly for CR client"
-    );
-    is(
-        $c->tcall('get_settings', {token => $token_Y_cr_1})->{address_line_1},
+        $c->tcall('get_settings', {token => $token_cr_2})->{address_line_1},
         "address line 1",
         "Was able to set settings correctly for second CR client"
     );

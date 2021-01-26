@@ -70,7 +70,7 @@ use constant DOCUMENT_EXPIRING_SOON_INTERVAL => '1mo';
 # other RPC calls which retrieve lists of accounts.
 use constant MT5_BALANCE_CALL_ENABLED => 0;
 
-my $allowed_fields_for_virtual = qr/set_settings|email_consent|residence|allow_copiers|non_pep_declaration|preferred_language/;
+my $allowed_fields_for_virtual = qr/set_settings|email_consent|residence|allow_copiers|non_pep_declaration/;
 my $email_field_labels         = {
     exclude_until          => 'Exclude from website until',
     max_balance            => 'Maximum account cash balance',
@@ -1378,10 +1378,9 @@ rpc get_settings => sub {
         country   => $country,
         residence => $country
         , # Everywhere else in our responses to FE, we pass the residence key instead of country. However, we need to still pass in country for backwards compatibility.
-        country_code       => $country_code,
-        email_consent      => ($user and $user->{email_consent}) ? 1 : 0,
-        preferred_language => $user->preferred_language,
-        immutable_fields   => [$client->immutable_fields()],
+        country_code     => $country_code,
+        email_consent    => ($user and $user->{email_consent}) ? 1 : 0,
+        immutable_fields => [$client->immutable_fields()],
         (
               ($user and BOM::Config::third_party()->{elevio}{account_secret})
             ? (user_hash => hmac_sha256_hex($user->email, BOM::Config::third_party()->{elevio}{account_secret}))
@@ -1513,8 +1512,6 @@ rpc set_settings => sub {
     }
 
     my $user = $current_client->user;
-
-    $user->update_preferred_language($args->{preferred_language}) if $args->{preferred_language};
 
     # email consent is per user whereas other settings are per client
     # so need to save it separately

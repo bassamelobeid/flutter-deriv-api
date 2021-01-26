@@ -123,7 +123,6 @@ subtest $method => sub {
         'is_virtual'                    => '0',
         'country'                       => 'id',
         'landing_company_fullname'      => 'Deriv (SVG) LLC',
-        "preferred_language"            => 'EN',
         'upgradeable_landing_companies' => [$landing_company],
         'account_list'                  => [{
                 'currency'             => '',

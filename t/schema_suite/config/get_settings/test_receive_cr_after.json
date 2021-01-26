@@ -23,8 +23,7 @@
       "salutation",
       "is_authenticated_payment_agent",
       "client_tnc_status",
-      "non_pep_declaration",
-      "preferred_language"
+      "non_pep_declaration"
    ],
    "properties" : {
       "date_of_birth" : {
@@ -117,10 +116,6 @@
          "items" : {
             "type" : "string"
          }
-      },
-      "preferred_language" : {
-         "type" : "string",
-         "pattern": "^[A-Z]{0,2}$"
       }
    }
 }
