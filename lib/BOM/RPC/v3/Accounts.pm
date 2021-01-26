@@ -133,10 +133,10 @@ our %RejectedOnfidoReasons = do {
             "We're unable to verify the document you provided because it contains markings or text that should not be on your document. Please provide a clear photo or a scan of your original identity document."
         ),
         'visual_authenticity.original_document_present.document_on_printed_paper' => localize(
-            "We're unable to verify the document you provided because it appears to be a printed copy. Please provide a clear photoof your original identity document."
+            "We're unable to verify the document you provided because it appears to be a printed copy. Please provide a clear photo of your original identity document."
         ),
         'visual_authenticity.original_document_present.screenshot' => localize(
-            "We're unable to verify the document you provided because it appears to be a screenshot. Please provide a clear photoof your original identity document."
+            "We're unable to verify the document you provided because it appears to be a screenshot. Please provide a clear photo of your original identity document."
         ),
         'visual_authenticity.original_document_present.photo_of_screen' => localize(
             "We're unable to verify the document you provided because it appears to be a photo of a device screen. Please provide a clear photo of your original identity document."
@@ -1436,6 +1436,7 @@ rpc set_settings => sub {
     # TODO Please rename this to updated_fields once you refactor this function to remove deriv set settings email.
     my $updated_fields_for_track = _find_updated_fields($params);
 
+    my $brand              = request()->brand;
     my $countries_instance = request()->brand->countries_instance();
     my ($residence, $allow_copiers) =
         ($args->{residence}, $args->{allow_copiers});
@@ -1685,7 +1686,7 @@ rpc set_settings => sub {
 
     # send email only if there was any changes
     if (scalar keys %$updated_fields_for_track) {
-        _send_update_account_settings_email($args, $current_client, $updated_fields_for_track, $allow_copiers, $website_name);
+        _send_update_account_settings_email($args, $current_client, $updated_fields_for_track, $allow_copiers, $website_name, $brand);
         BOM::Platform::Event::Emitter::emit(
             'profile_change',
             {
@@ -1712,7 +1713,7 @@ sub _contains_any {
 }
 
 sub _send_update_account_settings_email {
-    my ($args, $current_client, $updated_fields, $allow_copiers, $website_name) = @_;
+    my ($args, $current_client, $updated_fields, $allow_copiers, $website_name, $brand) = @_;
 
     # lookup state name by id
     my $lookup_state =
@@ -1782,8 +1783,10 @@ sub _send_update_account_settings_email {
         _contains_any($updated_fields, 'request_professional_status')];
 
     send_email({
-            to                    => $current_client->email,
-            subject               => $current_client->loginid . ' ' . localize('Change in account settings'),
+            to      => $current_client->email,
+            subject => $brand->name eq 'deriv'
+            ? localize('Your new Deriv personal details')
+            : $current_client->loginid . ' ' . localize('Change in account settings'),
             use_email_template    => 1,
             email_content_is_html => 1,
             use_event             => 1,
@@ -1795,7 +1798,7 @@ sub _send_update_account_settings_email {
                 first_name     => $current_client->first_name,
                 last_name      => $current_client->last_name,
                 name           => $current_client->first_name,
-                title          => localize('Change in account settings'),
+                title          => localize('Your personal details have been updated'),
                 website_name   => $website_name,
             },
         });
