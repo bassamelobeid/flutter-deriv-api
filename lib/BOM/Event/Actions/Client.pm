@@ -1357,25 +1357,19 @@ sub _send_email_account_closure_client {
 
     my $client = BOM::User::Client->new({loginid => $loginid});
 
-    my $client_email_template = localize(
-        "\
-        <p><b>We're sorry you're leaving.</b></p>
-        <p>You have requested to close your [_1] accounts. This is to confirm that all your accounts have been terminated successfully.</p>
-        <p>Thank you.</p>
-        Team [_1]
-        ",
-        $brand->website_name,
-    );
-
     send_email({
-        from                  => $brand->emails('support'),
-        to                    => $client->email,
-        subject               => localize("We're sorry you're leaving"),
-        message               => [$client_email_template],
-        use_email_template    => 1,
-        email_content_is_html => 1,
-        skip_text2html        => 1,
-    });
+            from          => $brand->emails('support'),
+            to            => $client->email,
+            subject       => localize("We're sorry you're leaving"),
+            template_name => 'account_closure',
+            template_args => {
+                name       => $client->first_name,
+                brand_name => ucfirst $brand->name,
+            },
+            use_email_template    => 1,
+            email_content_is_html => 1,
+            use_event             => 1,
+        });
 
     return undef;
 }
