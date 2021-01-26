@@ -48,7 +48,7 @@ Create new record in table users.binary_user
 =cut
 
 my @fields =
-    qw(id email password email_verified utm_source utm_medium utm_campaign app_id email_consent gclid_url has_social_signup secret_key is_totp_enabled signup_device date_first_contact utm_data preferred_language);
+    qw(id email password email_verified utm_source utm_medium utm_campaign app_id email_consent gclid_url has_social_signup secret_key is_totp_enabled signup_device date_first_contact);
 
 # generate attribute accessor
 for my $k (@fields) {
@@ -67,14 +67,14 @@ use constant {
 sub create {
     my ($class, %args) = @_;
     croak "email and password are mandatory" unless (exists($args{email}) && exists($args{password}));
-
-    if ($args{utm_data}) {
-        $args{utm_data} = keys %{$args{utm_data}} ? encode_json($args{utm_data}) : undef;
-    }
-
     my @new_values = @args{@fields};
     shift @new_values;    #remove id value
     my $placeholders = join ",", ('?') x @new_values;
+
+    if ($args{utm_data} && keys %{$args{utm_data}}) {
+        push @new_values => encode_json($args{utm_data});
+        $placeholders .= ",?::JSONB";
+    }
 
     my $sql    = "select * from users.create_user($placeholders)";
     my $result = $class->dbic->run(
@@ -1017,39 +1017,6 @@ sub current_tnc_version {
     my $tnc_config   = decode_json($tnc_versions);
     my $brand_name   = request()->brand->name;
     return $tnc_config->{$brand_name};
-}
-
-=head2 setnx_preferred_language
-
-Set preferred language if not exists
-
-=cut
-
-sub setnx_preferred_language {
-    my ($self, $lang_code) = @_;
-
-    $self->update_preferred_language($lang_code) if !$self->{preferred_language};
-}
-
-=head2 update_preferred_language
-
-Update user's preferred language
-
-Returns 2 char-length language code
-
-=cut
-
-sub update_preferred_language {
-    my ($self, $lang_code) = @_;
-
-    my $result = $self->dbic->run(
-        fixup => sub {
-            $_->selectrow_array('select * from users.update_preferred_language(?, ?)', undef, $self->{id}, uc $lang_code);
-        });
-
-    $self->{preferred_language} = $result if $result;
-
-    return $self->{preferred_language};
 }
 
 1;
