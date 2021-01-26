@@ -91,10 +91,6 @@
                "type" : "string"
             }
          },
-         "preferred_language" : {
-            "type" : "string",
-            "pattern" : "^[A-Z]{0,2}$"
-         },
          "required" : [
             "email",
             "is_virtual",
@@ -105,8 +101,7 @@
             "landing_company_fullname",
             "loginid",
             "currency",
-            "country",
-            "preferred_language"
+            "country"
          ]
       }
    }

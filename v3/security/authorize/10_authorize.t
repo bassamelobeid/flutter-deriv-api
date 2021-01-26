@@ -63,6 +63,7 @@ $user->add_client($client);
 my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $loginid);
 
 $authorize = $t->await::authorize({authorize => $token});
+
 is $authorize->{msg_type}, 'authorize';
 is $authorize->{authorize}->{email},   $email;
 is $authorize->{authorize}->{loginid}, $loginid;
@@ -80,7 +81,6 @@ ok $stash->{currency},             'Should store currency to stash';
 ok $stash->{landing_company_name}, 'Should store landing_company_name to stash';
 ok exists $stash->{is_virtual}, 'Should store is_virtual to stash';
 ok !$authorize->{authorize}->{account_id}, 'Shouldnt return account_id';
-is $authorize->{authorize}->{preferred_language}, $stash->{language}, 'preferred language set correctly';
 is scalar @{$authorize->{authorize}->{account_list}}, 1, 'correct number of corresponding account';
 
 ## it's ok after authorize

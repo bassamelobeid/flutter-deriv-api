@@ -7,6 +7,5 @@
   "address_postcode": "123456",
   "phone": "+15417543010",
   "email_consent": 1,
-  "allow_copiers": 1,
-  "preferred_language": "DE"
+  "allow_copiers": 1
 }

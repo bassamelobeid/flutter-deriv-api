@@ -97,8 +97,7 @@
             "loginid",
             "scopes",
             "currency",
-            "country",
-            "preferred_language"
+            "country"
          ]
       },
       "echo_req" : {},

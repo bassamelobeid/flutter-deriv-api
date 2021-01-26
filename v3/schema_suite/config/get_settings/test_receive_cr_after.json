@@ -30,8 +30,7 @@
             "country_code",
             "address_city",
             "non_pep_declaration",
-            "immutable_fields",
-            "preferred_language"
+            "immutable_fields"
          ],
          "properties" : {
             "address_state" : {
@@ -125,10 +124,6 @@
                "items" : {
                   "type" : "string"
                }
-            },
-            "preferred_language" : {
-               "type" : "string",
-               "pattern" : "^[A-Z]{0,2}$"
             }
          }
       },
