@@ -38,12 +38,30 @@ use BOM::Platform::Email qw(send_email);
 use BOM::Platform::Context;
 use Brands;
 use constant REJECTION_REASONS => {
-    low_trade                       => {reason => 'less trade/no trade'},
-    back_to_fiat                    => {reason => 'back to fiat account'},
-    crypto_low_trade                => {reason => 'insufficient trade (manual refund to card)'},
-    authentication_needed           => {reason => 'authentication needed'},
-    less_trade_back_to_fiat_account => {reason => 'less trade, back to fiat account'},
-    default                         => {reason => 'contact CS'}};
+    low_trade => {
+        reason => 'less trade/no trade',
+        remark => 'Low trade, ask client for justification and to request a new payout'
+    },
+    back_to_fiat => {
+        reason => 'back to fiat account',
+        remark => 'Deposit was done via fiat, the client needs to withdraw via fiat account'
+    },
+    crypto_low_trade => {
+        reason => 'insufficient trade (manual refund to card)',
+        remark => 'Low Trade, need to manual refund back to the card, the client needs to confirm the refund'
+    },
+    authentication_needed => {
+        reason => 'authentication needed',
+        remark => 'Authentication needed'
+    },
+    less_trade_back_to_fiat_account => {
+        reason => 'less trade, back to fiat account',
+        remark => 'Deposit was done via fiat, traded less hence needs to withdraw via fiat'
+    },
+    default => {
+        reason => 'contact CS',
+        remark => 'contact CS'
+    }};
 
 BOM::Backoffice::Sysinit::init();
 
@@ -337,7 +355,9 @@ if ($view_action eq 'withdrawals') {
             if (uc($rejection_reason) =~ /SELECT REJECTION REASON/) {
                 code_exit_BO("Please select a reason for rejection to notify client");
             }
-            $set_remark .= "[$rejection_reason]";
+            code_exit_BO("Unexpected rejection reason") if !defined REJECTION_REASONS->{$rejection_reason};
+            my $remark = REJECTION_REASONS->{$rejection_reason}->{remark};
+            $set_remark .= "[$remark]";
         }
 
         # Check payment limit
