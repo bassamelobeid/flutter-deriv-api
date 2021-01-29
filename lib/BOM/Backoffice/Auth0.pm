@@ -49,8 +49,9 @@ sub login {
     my $user = BOM::Backoffice::Auth0::user_by_access_token($access_token);
     if ($user) {
         $user->{token} = $access_token;
+
         BOM::Config::Redis::redis_replicated_write()->set("BINARYBOLOGIN::" . $access_token, encode_json_utf8($user));
-        BOM::Config::Redis::redis_replicated_write()->expire("BINARYBOLOGIN::" . $access_token, 24 * 3600);
+        BOM::Config::Redis::redis_replicated_write()->expire("BINARYBOLOGIN::" . $access_token, 7 * 24 * 3600);
 
         return $user;
     }
