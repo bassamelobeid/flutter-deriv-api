@@ -11,11 +11,15 @@ use IPC::Run3;
 use Syntax::Keyword::Try;
 use Data::UUID;
 use Time::HiRes;
-use DataDog::DogStatsd::Helper;
+use DataDog::DogStatsd::Helper qw(stats_inc stats_timing);
 use IO::Async::Loop;
 use Log::Any qw($log);
 use YAML::XS qw(LoadFile);
 use Locale::Country qw(country2code);
+use Future;
+
+use BOM::MT5::Utility::CircuitBreaker;
+use BOM::Config::Runtime;
 use BOM::Config;
 
 # Overrideable in unit tests
@@ -59,12 +63,10 @@ my $error_category_mapping = {
     10019                      => 'NoMoney'
 };
 
-my $FAILCOUNT_KEY           = 'system.mt5.connection_fail_count';
-my $LOCK_KEY                = 'system.mt5.connection_status';
-my $TRIAL_FLAG              = 'system.mt5.connection_check';
-my $BACKOFF_THRESHOLD       = 20;
-my $BACKOFF_TTL             = 60;
 my $MAIN_TRADING_SERVER_KEY = '01';
+
+# Mapping from trade server name to BOM::MT5::Utility::CircuitBreaker instances
+my $circuit_breaker_cache = {};
 
 sub _get_error_mapping {
     my $error_code = shift;
@@ -246,7 +248,7 @@ sub is_suspended {
 
 =head2 _invoke_mt5
 
-Call mt5 api and return result wrapped in C<Future> object
+Call MT5 API if the requests to the MT5 server are allowed or return a failure future with connection error.
 
 =over 4
 
@@ -269,6 +271,73 @@ sub _invoke_mt5 {
                 }));
     }
 
+    my ($srv_type, $prefix, $srv_key);
+    try {
+        $prefix   = _get_prefix($param);
+        $srv_type = _get_server_type_by_prefix($prefix);
+        $srv_key  = get_trading_server_key($param, $srv_type);
+    } catch {
+        $log->infof('Error in proccessing mt5 request: %s', $@);
+        return Future->fail(_future_error({code => 'General'}));
+    }
+
+    my $dd_tags             = ["mt5:$cmd", "server_type:$srv_type", "server_code:$srv_key"];
+    my $circuit_breaker_key = $srv_type . "_" . $srv_key;
+    my $circuit_breaker     = do {
+        $circuit_breaker_cache->{$circuit_breaker_key} //= BOM::MT5::Utility::CircuitBreaker->new(
+            server_type => $srv_type,
+            server_code => $srv_key
+        );
+    };
+
+    my $request_state = $circuit_breaker->request_state();
+    unless ($request_state->{allowed}) {
+        stats_inc('mt5.call.blocked', {tags => $dd_tags});
+        return Future->fail(_future_error({ret_code => 10}));
+    }
+
+    stats_inc('mt5.call.test_request', {tags => $dd_tags}) if $request_state->{testing};
+
+    return _invoke($cmd, $srv_type, $srv_key, $prefix, $param)->on_ready(
+        sub {
+            my $f = shift;
+            $circuit_breaker->circuit_reset() if $f->is_done;
+
+            if ($f->is_failed) {
+                my $error_code = $f->failure->{code} // '';
+                if ($error_code eq $error_category_mapping->{9} || $error_code eq $error_category_mapping->{10}) {
+                    stats_inc('mt5.call.connection_fail', {tags => $dd_tags});
+                    $circuit_breaker->record_failure();
+                }
+            }
+        });
+}
+
+=head2 _invoke
+
+Call mt5 api and return result wrapped in C<Future> object
+
+=over 4
+
+=item * C<cmd>              - MT5 cmd
+
+=item * C<prefix>           - Login ID prefix
+
+=item * C<srv_type>         - MT5 server type (demo, real)
+
+=item * C<srv_key>          - MT5 server code (e.g 01)
+
+=item * C<param>            - The params in hashref used by cmd
+
+=back
+
+Returns Future object. Future object will be done if succeed, fail otherwise.
+
+=cut
+
+sub _invoke {
+    my ($cmd, $srv_type, $srv_key, $prefix, $param) = @_;
+
     my $in = encode_json(_prepare_params(%$param));
 
     # IO::Async keeps this around as a singleton, so it's safe to call ->new, and
@@ -278,57 +347,21 @@ sub _invoke_mt5 {
     my $loop          = IO::Async::Loop->new;
     my $f             = $loop->new_future;
     my $request_start = [Time::HiRes::gettimeofday];
-    my $redis         = BOM::Config::Redis::redis_mt5_user_write();
-    my $failcount     = $redis->get($FAILCOUNT_KEY) // 0;
-    my $lock          = $redis->get($LOCK_KEY) // 0;
-    my $trying        = 0;
-    # Backoff if we have tried 20 without being able to connect.
-    if ($failcount >= $BACKOFF_THRESHOLD) {
-        $redis->set($LOCK_KEY, 1);
-        DataDog::DogStatsd::Helper::stats_inc('mt5.call.blocked', {tags => ["mt5:$cmd"]});
-        return $f->fail(_future_error({ret_code => 10}));
-    } elsif ($lock) {
-        my $is_worker_checking = $redis->get($TRIAL_FLAG) // 0;
-        if ($is_worker_checking) {
-            DataDog::DogStatsd::Helper::stats_inc('mt5.call.blocked', {tags => ["mt5:$cmd"]});
-            return $f->fail(_future_error({ret_code => 10}));
-        } else {
-            # Set trial flag, so only one worker checks if we are able to connect.
-            # Make sure flag has TTL so its removed in case worker dies mid call.
-            my $flag_set = $redis->set(
-                $TRIAL_FLAG => 1,
-                EX          => 30,
-                "NX"
-            ) // 0;
-            # in case Flag was already set, we will get 0 so prevent call since a worker already trying to.
-            unless ($flag_set) {
-                DataDog::DogStatsd::Helper::stats_inc('mt5.call.blocked', {tags => ["mt5:$cmd"]});
-                return $f->fail(_future_error({ret_code => 10}));
-            }
-            $trying = 1;
-        }
-    }
-    my ($srv_type, $prefix, $srv_key);
-    try {
-        $prefix   = _get_prefix($param);
-        $srv_type = _get_server_type_by_prefix($prefix);
-        $srv_key  = get_trading_server_key($param, $srv_type);
-    } catch {
-        $log->infof('Error in proccessing mt5 request: %s', $@);
-        return _future_error({code => 'General'});
-    }
 
-    $loop->run_child(
+    my $dd_tags     = ["mt5:$cmd", "server_type:$srv_type", "server_code:$srv_key"];
+    my $process_pid = $loop->run_child(
         command   => [@MT5_WRAPPER_COMMAND, $cmd, $srv_type, $srv_key],
         stdin     => $in,
         on_finish => sub {
             my (undef, $exitcode, $out, $err) = @_;
-            warn "MT5 PHP call nonzero status: $exitcode\n" if $exitcode;
-            warn "MT5 PHP call error: $err from $in\n"      if defined($err) && length($err);
+            $log->errorf("MT5 PHP call error: %s from %s", $err, $in) if defined($err) && length($err);
 
-            DataDog::DogStatsd::Helper::stats_timing('mt5.call.timing', (1000 * Time::HiRes::tv_interval($request_start)), {tags => ["mt5:$cmd"]});
+            stats_timing('mt5.call.timing', (1000 * Time::HiRes::tv_interval($request_start)), {tags => $dd_tags});
 
             if ($exitcode) {
+                stats_inc('mt5.call.php_nonzero_status', {tags => $dd_tags});
+                $log->debugf("MT5 PHP call nonzero status: %s", $exitcode);
+
                 return $f->fail(
                     "binary_mt5 exited non-zero status ($exitcode)",
                     mt5 => $cmd,
@@ -341,23 +374,13 @@ sub _invoke_mt5 {
                 $out = decode_json($out);
 
                 if ($out->{error}) {
-                    # Update connection trials counter in Redis, with 1 minute TTL
-                    # code 10 is 'no connection' & 9 'connection timeout'
-                    if ($out->{ret_code} == 10 || $out->{ret_code} == 9) {
-                        DataDog::DogStatsd::Helper::stats_inc('mt5.call.connection_fail');
-                        if ($lock) {
-                            # If our last try was failed also, set key to threshold straight away.
-                            $redis->setex($FAILCOUNT_KEY, $BACKOFF_TTL, $BACKOFF_THRESHOLD);
-                        } else {
-                            $redis->incr($FAILCOUNT_KEY);
-                            $redis->expire($FAILCOUNT_KEY, $BACKOFF_TTL);
-                        }
-                    }
+
                     # needed as both of them return same code for different reason.
                     if (($cmd eq 'UserAdd' or $cmd eq 'UserPasswordCheck') and $out->{ret_code} == 3006) {
                         $out->{ret_code} .= $cmd;
                     }
                     $f->fail(_future_error($out));
+
                 } else {
                     # Append login prefixes for mt5 used id.
                     if ($out->{user} && $out->{user}{login}) {
@@ -365,9 +388,6 @@ sub _invoke_mt5 {
                     } elsif ($out->{login}) {
                         $out->{login} = $prefix . $out->{login};
                     }
-
-                    # Unset Lock since we got a success call.
-                    $redis->set($LOCK_KEY, 0) if $lock;
                     $f->done($out);
                 }
             } catch {
@@ -375,12 +395,27 @@ sub _invoke_mt5 {
                 chomp $e;
                 $f->fail($e, mt5 => $cmd);
             }
-            $redis->del($TRIAL_FLAG) if $trying;
-
         },
     );
 
-    return $f;
+    my $process_timeout = BOM::Config::mt5_webapi_config()->{request_timeout} // 15;
+
+    # Catch will be triggered whenever $f fails due to any reason
+    # Or when timout reaches before PHP process respond. In this case we trigger connectionTimeout error
+    #   and kill the PHP process which hasn't responded on time
+    return Future->wait_any($f, $loop->timeout_future(after => $process_timeout))->catch(
+        sub {
+            my ($err) = @_;
+
+            if ($err eq 'Timeout') {
+
+                # Kill PHP process if timeout reaches before any response
+                kill 9, $process_pid;
+                return Future->fail(_future_error({ret_code => 9}));
+            }
+
+            return Future->fail($err);
+        });
 }
 
 sub create_user {

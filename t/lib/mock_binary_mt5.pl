@@ -81,5 +81,11 @@ sub cmd_UserPasswordChange {
 }
 
 sub cmd_UserPasswordCheck {
-    # Not used by any bom-user tests
+    # This call always return successful response after 2 seconds
+    # If you mock actual mt5 process timeout to 1, you should never receive this response but ConnectionTimeout
+    my ($input) = @_;
+
+    sleep(2);
+
+    return {ret_code => MT_RET_OK};
 }

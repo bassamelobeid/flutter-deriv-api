@@ -7,20 +7,18 @@ use Test::More;
 use Test::Deep qw(cmp_deeply);
 use Test::MockModule;
 use Test::Fatal;
-use BOM::Test::Data::Utility::UnitTestRedis;
-use BOM::MT5::User::Async;
-use BOM::User::Utility qw(parse_mt5_group);
+
 use Syntax::Keyword::Try;
-use BOM::Config::Runtime;
 use Scope::Guard qw(guard);
 use Locale::Country qw(country2code);
 
-my $FAILCOUNT_KEY     = 'system.mt5.connection_fail_count';
-my $LOCK_KEY          = 'system.mt5.connection_status';
-my $BACKOFF_THRESHOLD = 20;
-my $BACKOFF_TTL       = 60;
+use BOM::Test::Data::Utility::UnitTestRedis;
+use BOM::MT5::User::Async;
+use BOM::User::Utility qw(parse_mt5_group);
+use BOM::Config::Runtime;
+use BOM::MT5::Utility::CircuitBreaker;
 
-subtest 'MT5 Timeout logic handle' => sub {
+subtest 'MT5 Circuit Breaker' => sub {
     my $mock_server_key = Test::MockModule->new('BOM::MT5::User::Async');
     $mock_server_key->mock('get_trading_server_key', sub { 'main' });
 
@@ -28,69 +26,84 @@ subtest 'MT5 Timeout logic handle' => sub {
         error => 'ConnectionTimeout',
         code  => 'ConnectionTimeout'
     };
+
     my $blocked_return = {
         error => undef,
         code  => 'NoConnection'
     };
+
     @BOM::MT5::User::Async::MT5_WRAPPER_COMMAND = ($^X, 't/lib/mock_binary_mt5.pl');
     my $details = {group => 'real//svg_financial'};
-    my $redis   = BOM::Config::Redis::redis_mt5_user_write();
-    # reset all redis keys.
-    $redis->del($FAILCOUNT_KEY);
-    $redis->del($LOCK_KEY);
-    for my $i (1 .. 24) {
+
+    my $circuit_breaker = BOM::MT5::Utility::CircuitBreaker->new(
+        server_type => 'real',
+        server_code => 'main'
+    );
+
+    # reset the circuit status before start testing
+    $circuit_breaker->circuit_reset();
+
+    # 1st Circuit is closed, this mean the requests are allowed
+    ok $circuit_breaker->_is_circuit_closed(), "Circuit is closed";
+
+    # 2nd We will perform 21 failure request to exceed the failure threshold
+    for my $i (1 .. 21) {
         try {
             # this will produce a fialed response
             BOM::MT5::User::Async::create_user($details)->get;
-        } catch {
-            my $result = $@;
-            # We will keep trying to connect for the first 20 calls.
-            if ($i <= 20) {
-                cmp_deeply($result, $timeout_return, 'Returned timedout connection');
+        } catch ($e) {
+            cmp_deeply($e, $timeout_return, 'Returned timedout connection');
 
-                is $redis->get($FAILCOUNT_KEY), $i,           'Fail counter count is updated';
-                is $redis->ttl($FAILCOUNT_KEY), $BACKOFF_TTL, 'Fail counter TTL is updated';
-                # After that we will set a failure flag, and block further requests
-            } elsif ($i == 21) {
-                cmp_deeply($result, $blocked_return, 'Call has been blocked');
-                is $redis->get($LOCK_KEY), 1, 'lock has been set';
-            } elsif ($i > 21) {
-                # further calls will be blocked.
-                cmp_deeply($result, $blocked_return, 'Call has been blocked');
-            }
+            my $redis_keys_value = $circuit_breaker->_get_keys_value();
+            is $redis_keys_value->{failure_count}, $i, 'Fail counter count is updated';
+            ok $redis_keys_value->{last_failure_time}, 'Last failure time is updated';
         }
     }
 
-    is $redis->get($LOCK_KEY), 1, 'lock has been set';
+    # After exceed the failure threshold, the circuit status should be open
+    ok $circuit_breaker->_is_circuit_open(), "Circuit is open";
+
+    # The requests are not allowed when the circuit is open
     try {
         # This call will be blocked.
         BOM::MT5::User::Async::get_user('MTR1000')->get;
         is 1, 0, 'This wont be executed';
-    } catch {
-        my $result = $@;
-        cmp_deeply($result, $blocked_return, 'Call has been blocked.');
+    } catch ($e) {
+        cmp_deeply($e, $blocked_return, 'Call has been blocked.');
     }
 
-    # Expire the key. as if a minute has passed.
-    $redis->expire($FAILCOUNT_KEY, 0);
+    # We block the requests for 30 seconds
+    # After that the circuit status will be half-open
+    # We will update the last failure time to speed it.
+    my $redis                 = BOM::Config::Redis::redis_mt5_user_write();
+    my $last_failuer_time_key = 'system.mt5.real_main.last_failure_time';
+    $redis->set($last_failuer_time_key, time - 60);
+    ok $circuit_breaker->_is_circuit_half_open(), "Circuit is half-open";
 
+    # We will consider the first request after the circuit status changed to half-open as a test request.
+    # If the test request has failed, the circuit will be open and we will block the requests for the next 30 seconds.
     try {
         # This call will be timedout.
         BOM::MT5::User::Async::create_user($details)->get;
         is 1, 0, 'This wont be executed';
-    } catch {
-        my $result = $@;
-        cmp_deeply($result, $timeout_return, 'Returned timedout connection');
+    } catch ($e) {
+        cmp_deeply($e, $timeout_return, 'Returned timedout connection');
+        my $redis_keys_value = $circuit_breaker->_get_keys_value();
+        is $redis_keys_value->{failure_count}, 22, 'Fail counter count is updated';
+        ok $redis_keys_value->{last_failure_time}, 'Last failure time is updated';
+        ok $circuit_breaker->_is_circuit_open(), "Circuit is open";
     }
 
-    # Expire the key. as if a minute has passed.
-    $redis->expire($FAILCOUNT_KEY, 0);
+    # Update the circuit status to half open again
+    $redis->set($last_failuer_time_key, time - 60);
+
     # Do a successful call
-    is $redis->get($LOCK_KEY), 1, 'lock has been set';
+    ok $circuit_breaker->_is_circuit_half_open(), 'circuit status is half open';
     my $first_success = BOM::MT5::User::Async::get_user('MTR1000')->get;
     is $first_success->{login}, 'MTR1000', 'Return is correct';
-    # Flags should be reset.
-    is $redis->get($LOCK_KEY), 0, 'lock has been reset';
+
+    # Circuit breaker should be reset.
+    ok $circuit_breaker->_is_circuit_closed(), 'circuit status is closed';
 
     $mock_server_key->unmock_all();
 };
@@ -169,7 +182,7 @@ subtest 'parse mt5 group' => sub {
             market_type           => undef,
             currency              => undef,
         },
-        ''    => {
+        '' => {
             landing_company_short => undef,
             account_type          => undef,
             sub_account_type      => undef,
@@ -330,6 +343,44 @@ subtest 'MT5 suspended' => sub {
         }
         BOM::Config::Runtime->instance->app_config->system->mt5->suspend->demo01(0);
     };
+};
+
+subtest 'MT5 ConnectionTimeout Error' => sub {
+    my $mock_server_key = Test::MockModule->new('BOM::MT5::User::Async');
+    $mock_server_key->mock('get_trading_server_key', sub { 'main' });
+
+    my $timeout_return = {
+        error => undef,
+        code  => 'ConnectionTimeout'
+    };
+    @BOM::MT5::User::Async::MT5_WRAPPER_COMMAND = ($^X, 't/lib/mock_binary_mt5.pl');
+
+    my $details = {
+        login    => 'MTR1000',
+        password => 'FakePass',
+    };
+
+    my $mock_config = Test::MockModule->new('BOM::Config');
+    $mock_config->mock('mt5_webapi_config', sub { +{request_timeout => 1} });
+
+    my $circuit_breaker = BOM::MT5::Utility::CircuitBreaker->new(
+        server_type => 'real',
+        server_code => 'main'
+    );
+
+    # reset the circuit status before start testing
+    $circuit_breaker->circuit_reset();
+
+    try {
+        # This call will be timedout.
+        BOM::MT5::User::Async::password_check($details)->get;
+        is 1, 0, 'This wont be executed';
+    } catch ($e) {
+        cmp_deeply($e, $timeout_return, 'Returned timedout connection');
+        my $redis_keys_value = $circuit_breaker->_get_keys_value();
+        is $redis_keys_value->{failure_count}, 1, 'Fail counter count is updated';
+        ok $redis_keys_value->{last_failure_time}, 'Last failure time is updated';
+    }
 };
 
 done_testing;

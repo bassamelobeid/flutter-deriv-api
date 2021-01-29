@@ -67,7 +67,7 @@ subtest 'Social responsibility status removal' => sub {
     $mocked_client->mock('is_financial_assessment_complete' => sub { return 0 });
 
     ok !$client_mlt->is_financial_assessment_complete, 'MLT is not FA completed';
-    ok !$client_mx->is_financial_assessment_complete, 'MX is not FA completed';
+    ok !$client_mx->is_financial_assessment_complete,  'MX is not FA completed';
     ok !$client_mx2->is_financial_assessment_complete, 'MX2 is not FA completed';
 
     $client_mlt->update_status_after_auth_fa;
@@ -77,14 +77,14 @@ subtest 'Social responsibility status removal' => sub {
     undef $client_mlt->{status};
 
     ok $client_mlt->status->unwelcome, "Status was not removed for the MLT client";
-    ok $client_mx->status->unwelcome, "Status was not removed for the MX client";
+    ok $client_mx->status->unwelcome,  "Status was not removed for the MX client";
     ok $client_mx2->status->unwelcome, "Status was not removed for the MX2 client with another reason";
 
     #FA completed
     $mocked_client->mock('is_financial_assessment_complete' => sub { return 1 });
 
     ok $client_mlt->is_financial_assessment_complete, 'MLT is FA completed';
-    ok $client_mx->is_financial_assessment_complete, 'MX is FA completed';
+    ok $client_mx->is_financial_assessment_complete,  'MX is FA completed';
     ok $client_mx2->is_financial_assessment_complete, 'MX2 is FA completed';
 
     $client_mlt->update_status_after_auth_fa;
@@ -94,7 +94,7 @@ subtest 'Social responsibility status removal' => sub {
     undef $client_mlt->{status};
 
     ok !$client_mlt->status->unwelcome, "Status was removed for the MLT client";
-    ok !$client_mx->status->unwelcome, "Status was removed for the MX client";
+    ok !$client_mx->status->unwelcome,  "Status was removed for the MX client";
     ok $client_mx2->status->unwelcome, "Status was not removed for the MX2 client with another reason";
 
     $mocked_client->unmock_all();
@@ -129,7 +129,6 @@ subtest 'MLT unwelcome status (after first deposit) removal' => sub {
 
     $mocked_client->unmock_all();
 };
-
 
 subtest 'VR unwelcome status for GB clients' => sub {
     for ($client_mx, $client_vr) {

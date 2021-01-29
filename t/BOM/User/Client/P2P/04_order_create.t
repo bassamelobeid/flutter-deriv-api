@@ -432,7 +432,7 @@ subtest 'Buyer tries to place an order for an advert with a different currency' 
     );
     my $client = BOM::Test::Helper::Client::create_client();
     $client->account('EUR');
-    
+
     my $test = $client->p2p_advertiser_create(name => 'test nickname');
     $client->p2p_advertiser_update(is_approved => 1);
     isnt $client->account->currency_code, $advertiser->account->currency_code, 'Advertiser and buyer has different currencies';

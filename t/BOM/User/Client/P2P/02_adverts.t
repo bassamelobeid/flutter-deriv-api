@@ -103,7 +103,8 @@ subtest 'advertiser Registration' => sub {
 
     my $other_client = BOM::Test::Helper::P2P::create_advertiser();
     $advertiser_info = $other_client->p2p_advertiser_info(id => $adv->{id});
-    delete $expected->@{qw/payment_info contact_info chat_user_id chat_token daily_buy daily_sell daily_buy_limit daily_sell_limit show_name balance_available/};
+    delete $expected->@{
+        qw/payment_info contact_info chat_user_id chat_token daily_buy daily_sell daily_buy_limit daily_sell_limit show_name balance_available/};
     cmp_deeply($advertiser_info, $expected, 'sensitve fields hidden in advertiser_info for other client');
 };
 
@@ -719,21 +720,30 @@ subtest 'Deleting ads' => sub {
 
 subtest 'p2p_advert_info' => sub {
 
-    my ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert(type => 'buy', min_order_amount => 10, max_order_amount => 100);
+    my ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert(
+        type             => 'buy',
+        min_order_amount => 10,
+        max_order_amount => 100
+    );
     my $client = BOM::Test::Helper::P2P::create_advertiser(balance => 50);
 
     is $client->p2p_advert_info(id => -1), undef, 'non existant ad id returns undef';
     is $client->p2p_advert_info(), undef, 'missing id param returns undef';
 
     subtest 'use_client_limits' => sub {
-        
+
         cmp_ok $client->p2p_advert_info(id => $advert->{id})->{max_order_amount_limit}, '==', 100, 'raw limit';
-        cmp_ok $client->p2p_advert_info(id => $advert->{id}, use_client_limits=>1)->{max_order_amount_limit}, '==', 50, 'limit considers client balance';
-        
+        cmp_ok $client->p2p_advert_info(
+            id                => $advert->{id},
+            use_client_limits => 1
+        )->{max_order_amount_limit}, '==', 50, 'limit considers client balance';
+
         my $client2 = BOM::Test::Helper::P2P::create_advertiser();
-        cmp_ok $client2->p2p_advert_info(id => $advert->{id}, use_client_limits=>1)->{max_order_amount_limit}, '==', 0, 'unorderable ad is returned';
+        cmp_ok $client2->p2p_advert_info(
+            id                => $advert->{id},
+            use_client_limits => 1
+        )->{max_order_amount_limit}, '==', 0, 'unorderable ad is returned';
     };
 };
-    
 
 done_testing();

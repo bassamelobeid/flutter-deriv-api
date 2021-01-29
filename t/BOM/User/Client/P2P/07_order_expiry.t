@@ -18,10 +18,10 @@ BOM::Test::Helper::P2P::bypass_sendbird();
 my $config = BOM::Config::Runtime->instance->app_config->payments->p2p;
 my $redis  = BOM::Config::Redis->redis_p2p();
 
-my $expire_key = 'P2P::ORDER::EXPIRES_AT';
+my $expire_key  = 'P2P::ORDER::EXPIRES_AT';
 my $timeout_key = 'P2P::ORDER::TIMEDOUT_AT';
 
-my $original_expiry = $config->order_timeout;
+my $original_expiry  = $config->order_timeout;
 my $original_timeout = $config->refund_timeout;
 
 scope_guard {
@@ -29,8 +29,8 @@ scope_guard {
     $config->refund_timeout($original_timeout);
 };
 
-$config->order_timeout(7200); #seconds
-$config->refund_timeout(30);  #days
+$config->order_timeout(7200);    #seconds
+$config->refund_timeout(30);     #days
 
 my %last_event;
 my $mock_events = Test::MockModule->new('BOM::Platform::Event::Emitter');
@@ -66,8 +66,8 @@ my @test_cases = (
             before => 0,
             after  => 0
         },
-        status      => 'pending',
-        expiry      => '2 minute',
+        status     => 'pending',
+        expiry     => '2 minute',
         expire_key => 1,
     },
     {
@@ -90,9 +90,9 @@ my @test_cases = (
             before => 0,
             after  => 100
         },
-        status     => 'refunded',
-        expiry     => '0 minute',
-        event      => 1,        
+        status => 'refunded',
+        expiry => '0 minute',
+        event  => 1,
     },
     {
         test_name          => 'Buy in pending state expired ages ago',
@@ -114,10 +114,10 @@ my @test_cases = (
             before => 0,
             after  => 100
         },
-        status     => 'refunded',
-        expiry     => '-100 day',
-        event      => 1,
-    },    
+        status => 'refunded',
+        expiry => '-100 day',
+        event  => 1,
+    },
     {
         test_name          => 'Buy order at buyer-confirmed state not ready to expire',
         type               => 'sell',
@@ -138,10 +138,10 @@ my @test_cases = (
             before => 0,
             after  => 0
         },
-        status      => 'buyer-confirmed',
-        expiry      => '2 minute',
+        status     => 'buyer-confirmed',
+        expiry     => '2 minute',
         expire_key => 1,
-    },    
+    },
     {
         test_name          => 'Buy order at buyer-confirmed state at expiry time',
         type               => 'sell',
@@ -162,12 +162,12 @@ my @test_cases = (
             before => 0,
             after  => 0
         },
-        status  => 'timed-out',
-        expiry  => '0 minute',
+        status      => 'timed-out',
+        expiry      => '0 minute',
         timeout_key => 1,
-        event      => 1,
+        event       => 1,
     },
-    
+
     # Sell orders
     {
         test_name          => 'Sell order expire at pending state',
@@ -190,7 +190,7 @@ my @test_cases = (
             after  => 0
         },
         status => 'refunded',
-        event      => 1,        
+        event  => 1,
     },
     {
         test_name          => 'Sell order expire at buyer-confirmed state',
@@ -212,9 +212,9 @@ my @test_cases = (
             before => 0,
             after  => 0
         },
-        status => 'timed-out',
+        status      => 'timed-out',
         timeout_key => 1,
-        event      => 1,        
+        event       => 1,
     },
 );
 
@@ -288,29 +288,34 @@ for my $test_case (@test_cases) {
         is($order_data->{status}, $test_case->{status}, 'Status for new order is correct');
         cmp_ok($order_data->{amount}, '==', $amount, 'Amount for new order is correct');
         is($order_data->{advert_details}{type}, $test_case->{type}, 'Description for new order is correct');
-        
+
         my $redis_item = join '|', $order->{id}, $client->loginid;
-        is($redis->zscore($expire_key, $redis_item) ? 1 : undef, $test_case->{expire_key}, 'expire key existence');
+        is($redis->zscore($expire_key,  $redis_item) ? 1 : undef, $test_case->{expire_key},  'expire key existence');
         is($redis->zscore($timeout_key, $redis_item) ? 1 : undef, $test_case->{timeout_key}, 'timeout key existence');
 
         is(($last_event{data}->{order_event} // '') eq 'expired' ? 1 : undef, $test_case->{event}, 'event fired as expected');
-        
+
         BOM::Test::Helper::P2P::reset_escrow();
     };
 }
 
 subtest 'timed out orders' => sub {
     BOM::Test::Helper::P2P::create_escrow();
-    
+
     my ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert;
-    my ($client, $order) = BOM::Test::Helper::P2P::create_order(advert_id => $advert->{id});
+    my ($client,     $order)  = BOM::Test::Helper::P2P::create_order(advert_id => $advert->{id});
     my $redis_item = join '|', $order->{id}, $client->loginid;
-    
+
     ok $redis->zscore($expire_key, $redis_item), 'redis expire item present';
     BOM::Test::Helper::P2P::set_order_status($client, $order->{id}, 'buyer-confirmed');
     BOM::Test::Helper::P2P::expire_order($client, $order->{id}, '0 hour');
-    
-    is $client->p2p_expire_order(id => $order->{id}, source => 5, staff  => 'AUTOEXPIRY'), 'timed-out', 'status changed to timed-out';
+
+    is $client->p2p_expire_order(
+        id     => $order->{id},
+        source => 5,
+        staff  => 'AUTOEXPIRY'
+        ),
+        'timed-out', 'status changed to timed-out';
     ok !$redis->zscore($expire_key, $redis_item), 'redis expire item removed';
     ok $redis->zscore($timeout_key, $redis_item), 'redis timeout item present';
 
@@ -326,15 +331,25 @@ subtest 'timed out orders' => sub {
         },
         'p2p_order_updated event emitted for expired'
     );
-    
+
     BOM::Test::Helper::P2P::expire_order($client, $order->{id}, '-28 day');
-    ok !$client->p2p_expire_order(id => $order->{id}, source => 5, staff  => 'AUTOEXPIRY'), 'no status change for early expiry';
+    ok !$client->p2p_expire_order(
+        id     => $order->{id},
+        source => 5,
+        staff  => 'AUTOEXPIRY'
+        ),
+        'no status change for early expiry';
     ok !$redis->zscore($expire_key, $redis_item), 'redis expire item still removed';
     ok $redis->zscore($timeout_key, $redis_item), 'redis timeout item still present';
 
     BOM::Test::Helper::P2P::expire_order($client, $order->{id}, '-30 day');
-    is $client->p2p_expire_order(id => $order->{id}, source => 5, staff  => 'AUTOEXPIRY'), 'refunded', 'status changes to refunded';
-    ok !$redis->zscore($expire_key, $redis_item), 'redis expire item still removed';
+    is $client->p2p_expire_order(
+        id     => $order->{id},
+        source => 5,
+        staff  => 'AUTOEXPIRY'
+        ),
+        'refunded', 'status changes to refunded';
+    ok !$redis->zscore($expire_key,  $redis_item), 'redis expire item still removed';
     ok !$redis->zscore($timeout_key, $redis_item), 'redis timeout item removed';
 
     cmp_deeply(
@@ -352,50 +367,75 @@ subtest 'timed out orders' => sub {
 
     # add an old key which would not usually be there
     $redis->zadd($timeout_key, Date::Utility->new->minus_time_interval('30d')->epoch, $redis_item);
-    ok !$client->p2p_expire_order(id => $order->{id}, source => 5, staff  => 'AUTOEXPIRY'), 'no status change for repeat timeout';
+    ok !$client->p2p_expire_order(
+        id     => $order->{id},
+        source => 5,
+        staff  => 'AUTOEXPIRY'
+        ),
+        'no status change for repeat timeout';
     ok !$redis->zscore($timeout_key, $redis_item), 'redis timeout item removed for repeat timeout';
-    
+
     BOM::Test::Helper::P2P::reset_escrow();
 };
 
 subtest 'repeat expiry' => sub {
     BOM::Test::Helper::P2P::create_escrow();
-    
+
     subtest 'refunded order' => sub {
         my ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert;
-        my ($client, $order) = BOM::Test::Helper::P2P::create_order(advert_id => $advert->{id});
-        my $redis_item = join '|', $order->{id}, $client->loginid;   
-        
+        my ($client,     $order)  = BOM::Test::Helper::P2P::create_order(advert_id => $advert->{id});
+        my $redis_item = join '|', $order->{id}, $client->loginid;
+
         BOM::Test::Helper::P2P::expire_order($client, $order->{id}, '0 hour');
-        is $client->p2p_expire_order(id => $order->{id}, source => 5, staff  => 'AUTOEXPIRY'), 'refunded', 'status is now refunded';
-        
+        is $client->p2p_expire_order(
+            id     => $order->{id},
+            source => 5,
+            staff  => 'AUTOEXPIRY'
+            ),
+            'refunded', 'status is now refunded';
+
         $redis->zadd($expire_key, Date::Utility->new->minus_time_interval('1d')->epoch, $redis_item);
-        ok !$client->p2p_expire_order(id => $order->{id}, source => 5, staff  => 'AUTOEXPIRY'), 'no status change for repeat expiry';
+        ok !$client->p2p_expire_order(
+            id     => $order->{id},
+            source => 5,
+            staff  => 'AUTOEXPIRY'
+            ),
+            'no status change for repeat expiry';
         ok !$redis->zscore($expire_key, $redis_item), 'redis expiry item removed for repeat expiry';
     };
 
     subtest 'timed-out order' => sub {
         my ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert;
-        my ($client, $order) = BOM::Test::Helper::P2P::create_order(advert_id => $advert->{id});
+        my ($client,     $order)  = BOM::Test::Helper::P2P::create_order(advert_id => $advert->{id});
         my $redis_item = join '|', $order->{id}, $client->loginid;
-        
+
         BOM::Test::Helper::P2P::set_order_status($client, $order->{id}, 'buyer-confirmed');
         BOM::Test::Helper::P2P::expire_order($client, $order->{id}, '0 hour');
-        is $client->p2p_expire_order(id => $order->{id}, source => 5, staff  => 'AUTOEXPIRY'), 'timed-out', 'status is now timed-out';
+        is $client->p2p_expire_order(
+            id     => $order->{id},
+            source => 5,
+            staff  => 'AUTOEXPIRY'
+            ),
+            'timed-out', 'status is now timed-out';
 
         $redis->zadd($expire_key, Date::Utility->new->minus_time_interval('1d')->epoch, $redis_item);
-        ok !$client->p2p_expire_order(id => $order->{id}, source => 5, staff  => 'AUTOEXPIRY'), 'no status change for repeat expiry';
+        ok !$client->p2p_expire_order(
+            id     => $order->{id},
+            source => 5,
+            staff  => 'AUTOEXPIRY'
+            ),
+            'no status change for repeat expiry';
         ok !$redis->zscore($expire_key, $redis_item), 'redis expiry item removed for repeat expiry';
     };
-        
+
     BOM::Test::Helper::P2P::reset_escrow();
 };
 
 subtest 'errors' => sub {
-     my $escrow = BOM::Test::Helper::P2P::create_escrow();
+    my $escrow = BOM::Test::Helper::P2P::create_escrow();
 
     my ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert;
-    my ($client, $order) = BOM::Test::Helper::P2P::create_order(advert_id => $advert->{id});
+    my ($client,     $order)  = BOM::Test::Helper::P2P::create_order(advert_id => $advert->{id});
 
     my $exception = exception {
         $client->p2p_expire_order();
@@ -427,7 +467,7 @@ subtest 'errors' => sub {
     like $exception, qr/P2P escrow not found/, 'P2P escrow not found';
 
     $mock->unmock_all;
-    
+
     BOM::Test::Helper::P2P::reset_escrow();
 };
 

@@ -5314,7 +5314,6 @@ sub propagate_clear_status {
     return undef;
 }
 
-
 =head2 is_wallet
 
 Returns whether this client instance is a wallet.
