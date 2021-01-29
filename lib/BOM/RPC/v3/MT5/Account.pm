@@ -12,7 +12,6 @@ use Syntax::Keyword::Try;
 use File::ShareDir;
 use Locale::Country::Extra;
 use WebService::MyAffiliates;
-use Future::Utils qw(fmap1);
 use Format::Util::Numbers qw/financialrounding formatnumber/;
 use JSON::MaybeUTF8 qw(decode_json_utf8);
 use DataDog::DogStatsd::Helper qw(stats_inc stats_event);
@@ -189,10 +188,9 @@ Returns a Future holding list of MT5 account information (or undef) or a failed 
 sub mt5_accounts_lookup {
     my ($client, $account_type) = @_;
 
-    my $f = fmap1 {
-        my $login = shift;
-
-        return mt5_get_settings({
+    my @futures;
+    for my $login ($client->user->get_mt5_loginids($account_type)) {
+        my $f = mt5_get_settings({
                 client => $client,
                 args   => {login => $login}}
         )->then(
@@ -216,12 +214,23 @@ sub mt5_accounts_lookup {
 
                 return Future->fail($resp);
             });
+        push @futures, $f;
     }
-    foreach        => [$client->user->get_mt5_loginids($account_type)],
-        concurrent => 4;
-    # purely to keep perlcritic+perltidy happy :(
 
-    return $f;
+    # The reason for using wait_all instead of fmap here is:
+    # to guaranty the MT5 circuit breaker test request will not be canceled when failing the other requests.
+    # Note: using ->without_cancel to avoid cancel the future is not working
+    # because our RPC is not totally async, where the worker will start processing another request after return the response
+    # so the future in the background will never end
+    return Future->wait_all(@futures)->then(
+        sub {
+            my @futures_result = @_;
+            my $failed_future  = first { $_->is_failed } @futures_result;
+            return Future->fail($failed_future->failure) if $failed_future;
+
+            my @result = map { $_->result } @futures_result;
+            return Future->done(@result);
+        });
 }
 
 # limit number of requests to once per minute
