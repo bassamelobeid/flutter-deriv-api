@@ -44,4 +44,20 @@ sub landing_company {
     return LandingCompany::Registry::get($self->config->{landing_company});
 }
 
+=head2 is_wallet
+
+Returns whether this client instance is a wallet.
+
+=cut
+
+sub is_wallet { 1 }
+
+=head2 can_trade
+
+Returns whether this client instance can perform trading.
+
+=cut
+
+sub can_trade { 0 }
+
 1;

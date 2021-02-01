@@ -30,6 +30,7 @@ use Rose::DB::Object::Util qw(:all);
 use Rose::Object::MakeMethods::Generic scalar => ['self_exclusion_cache'];
 
 use LandingCompany::Registry;
+use LandingCompany::Wallet;
 
 use BOM::Platform::S3Client;
 use BOM::Platform::Event::Emitter;
@@ -43,6 +44,7 @@ use BOM::User::Client::Account;
 use BOM::User::Phone;
 use BOM::User::FinancialAssessment;
 use BOM::User::Utility;
+use BOM::User::Wallet;
 use BOM::Database::UserDB;
 use BOM::Database::ClientDB;
 use BOM::Database::DataMapper::Account;
@@ -5324,7 +5326,37 @@ Returns whether this client instance is a wallet.
 
 =cut
 
-sub is_wallet { (ref shift) =~ /Wallet$/ }
+sub is_wallet { 0 }
+
+=head2 can_trade
+
+Returns whether this client instance can perform trading.
+
+=cut
+
+sub can_trade { 1 }
+
+=head2 get_client_instance
+
+Returns a client or wallet instance from a loginid.
+
+=over 4
+
+=item * C<loginid> - string
+
+=back
+
+=cut
+
+sub get_client_instance {
+    my ($self, $loginid) = @_;
+
+    my ($broker_code) = $loginid =~ /(^[a-zA-Z]+)/;
+
+    my $class = LandingCompany::Wallet::get_wallet_for_broker($broker_code) ? 'BOM::User::Wallet' : 'BOM::User::Client';
+
+    return $class->new({loginid => $loginid});
+}
 
 =head2 ignore_age_verification
 
