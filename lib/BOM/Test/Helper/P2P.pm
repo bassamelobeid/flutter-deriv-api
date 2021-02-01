@@ -203,8 +203,4 @@ sub set_order_disputable {
         });
 }
 
-sub purge_redis {
-    BOM::Config::Redis->redis_p2p_write()->flushdb();
-}
-
 1;

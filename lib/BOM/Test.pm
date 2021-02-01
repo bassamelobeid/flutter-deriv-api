@@ -2,11 +2,13 @@ package BOM::Test;
 
 use strict;
 use warnings;
+
 use Dir::Self;
 use Class::Method::Modifiers qw(install_modifier);
 use RedisDB;
 use Mojo::Redis2;
 use Path::Tiny;
+use File::Find::Rule;
 use Syntax::Keyword::Try;
 use YAML::XS;
 use constant REDIS_KEY_COUNTER => 'redis_key_counter';
@@ -157,26 +159,9 @@ sub purge_redis {
     my %flushed_redis;
     # Here we get configuration from yml file directly, not get redis instance from BOM::Config::Redis
     # to avoid loading BOM::Config in this file
-    my $config_dir      = '/etc/rmg';
-    my @redis_yml_files = qw(
-        redis-replicated.yml
-        redis-pricer.yml
-        redis-pricer-subscription.yml
-        redis-pricer-shared.yml
-        redis-exchangerates.yml
-        redis-feed.yml
-        redis-mt5user.yml
-        redis-events.yml
-        redis-rpc.yml
-        redis-transaction.yml
-        redis-transaction-limits.yml
-        redis-auth.yml
-        redis-p2p.yml
-        ws-redis.yml
-    );
+    my @redis_yml_files = File::Find::Rule->file->name(qr/\.*redis.*\.yml/)->in('/etc/rmg');
 
     for my $redis_yml (@redis_yml_files) {
-        $redis_yml = path("$config_dir/$redis_yml");
         my $config_content = YAML::XS::LoadFile("$redis_yml");
         for my $config_key (keys %$config_content) {
             next unless $config_key =~ /write/;
