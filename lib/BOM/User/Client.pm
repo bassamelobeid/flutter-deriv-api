@@ -2436,7 +2436,7 @@ sub p2p_advert_update {
 
     # return current advert details if nothing changed
     unless ($param{delete} or grep { exists $advert_info->{$_} and $param{$_} ne $advert_info->{$_} } keys %param) {
-        delete $advert_info->{max_order_amount_actual};    # not relevant for advertiser
+        delete $advert_info->@{qw/max_order_amount_actual advertiser_completion/};    # not usually returned by this call
         return $self->_advert_details([$advert_info])->[0];
     }
 
@@ -2743,13 +2743,15 @@ sub p2p_order_cancel {
 
     my $escrow      = $self->p2p_escrow;
     my $is_refunded = 0;                   # order will have cancelled status
+    my $is_manual   = 0;                   # this is not a manual cancellation
+    my $buyer_fault = 1;                   # this will negatively affect the buyer's completion rate
 
     my $txn_time = Date::Utility->new->datetime;
 
     my $update = $self->db->dbic->run(
         fixup => sub {
-            $_->selectrow_hashref('SELECT * FROM p2p.order_refund(?, ?, ?, ?, ?, ?)',
-                undef, $id, $escrow->loginid, $param{source}, $self->loginid, $is_refunded, $txn_time);
+            $_->selectrow_hashref('SELECT * FROM p2p.order_refund(?, ?, ?, ?, ?, ?, ?, ?)',
+                undef, $id, $escrow->loginid, $param{source}, $self->loginid, $is_refunded, $txn_time, $is_manual, $buyer_fault);
         });
 
     $self->_p2p_order_stats_record('ORDER_REFUNDED', $update);
@@ -3007,6 +3009,7 @@ sub p2p_expire_order {
     my $order_id = $param{id}        // die 'No id provided to p2p_expire_order';
     my $escrow   = $self->p2p_escrow // die 'P2P escrow not found';
     my $txn_time = Date::Utility->new->datetime;
+
     my $days_for_release = BOM::Config::Runtime->instance->app_config->payments->p2p->refund_timeout;
     my $p2p_redis        = BOM::Config::Redis->redis_p2p_write();
     my $redis_payload    = join('|', $order_id, $self->loginid);
@@ -3524,8 +3527,9 @@ sub _advert_details {
                 : ()
             ),
             advertiser_details => {
-                id   => $advert->{advertiser_id},
-                name => $advert->{advertiser_name},
+                id              => $advert->{advertiser_id},
+                name            => $advert->{advertiser_name},
+                completion_rate => defined $advert->{advertiser_completion} ? sprintf("%.1f", $advert->{advertiser_completion} * 100) : undef,
                 $advert->{advertiser_show_name}
                 ? (
                     first_name => $advert->{advertiser_first_name},
