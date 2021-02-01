@@ -16,14 +16,15 @@
 [% BLOCK bulk_verify_controls %]
 <table>
     <tr>
-        <th class="selection_display_text">None selected</th>
+        <td class="selection_display_text">None selected</td>
         <td>
-            <form action="[% controller_url %]" onsubmit="return bulkConfirm();" method="POST">
+            <form action="[% controller_url %]" onsubmit="return bulkConfirm();" method="POST" class="bulk_actions">
                 <input type="hidden" name="currency" value="[%currency%]" />
                 <input type="hidden" name="view_action" value="withdrawals" />
                 <input type="hidden" class="selected_transactions" name="selected_transactions" value="" />
-                <input type="hidden" name="action" value='bulkVerify' />
-                <input type="submit" value='Bulk Verify' />
+                <button name="action" value="bulkSave" disabled>Bulk <span class="action">Remark</span></button>
+                <button name="action" value="bulkReject" disabled>Bulk <span class="action reject">Reject</span></button>
+                <button name="action" value="bulkVerify" disabled>Bulk <span class="action verify">Verify</span></button>
             </form>
         </td>
     </tr>
@@ -43,11 +44,27 @@
     table tr.selected, table tr.selected:hover {
         background: #D0E3C4 !important;
     }
+    .selection_display_text {
+        background: #ddc;
+        padding: 3px 7px;
+    }
+    .action {
+        font-weight: bold;
+        font-size: inherit;
+    }
+    button:not([disabled]) .action.reject, input[value='Reject'] {
+        color: darkred;
+    }
+    button:not([disabled]) .action.verify, input[value='Verify']:not([disabled]) {
+        color: darkgreen;
+    }
 </style>
 <table class="hover collapsed alternate" border="1" width="100%">
     <thead>
-        <th>Status</th>
-        <th>Description</th>
+        <tr>
+            <th>Status</th>
+            <th>Description</th>
+        </tr>
     </thead>
     <tbody>
         [% IF view_action == 'deposits' || view_action == 'search' %]
@@ -150,7 +167,7 @@
                 [% END %]
                 [% IF view_type == 'pending' && trx.transaction_type == 'withdrawal' && view_action == 'withdrawals' %]
                     <td>
-                       <input type="checkbox" value="[% trx.id %]" data-amount="[% trx.amount %]" data-client_loginid="[% trx.client_loginid %]" onclick="bulkToggleSelected(this)" />
+                       <input type="checkbox" value="[% trx.id %]" data-amount="[% trx.amount %]" data-loginid="[% trx.client_loginid %]" onclick="bulkToggleSelected(this)" />
                     </td>
                 [% END %]
                 <td valign="top">
@@ -208,7 +225,7 @@
                         <br/>
                         [% IF trx.status == 'LOCKED' %]
                         <form action="[% controller_url %]" onsubmit="return confirm('Do you really want to continue?');" method="POST">
-                            <input type="hidden" name="db_row_id" value="[% trx.id %]"/>
+                            <input type="hidden" name="trx_id" value="[% trx.id %]"/>
                             <input type="hidden" name="broker" value="[% broker %]"/>
                             <input type="hidden" name="address" value="[% trx.address %]"/>
                             <input type="hidden" name="currency" value="[% trx.currency_code %]"/>
@@ -218,7 +235,7 @@
                             <br/>
                             <label>
                                 Set Remark:<br/>
-                                <textarea name="set_remark" placeholder="Replaces current remark" data-trxid="[% trx.id %]" onchange="bulkUpdateRemark(this)"></textarea>
+                                <textarea name="remark" placeholder="Replaces current remark" data-trxid="[% trx.id %]" oninput="bulkUpdateRemark(this)"></textarea>
                             </label>
                             <br/>
                             <input type="submit" name="action" value="Save"/>
@@ -229,9 +246,9 @@
                             [% ELSE %]
                                 <input type="submit" name="action" value="Verify"/>
                             [% END %]
-                            </br>
-                            <select name="rejection_reason">
-                                <option>-Select Rejection Reason-</option>
+                            <br/>
+                            <select name="rejection_reason" data-trxid="[% trx.id %]" onchange="bulkUpdateReason(this)">
+                                <option value="">--- Select Rejection Reason ---</option>
                                 [% FOREACH option IN rejection_reasons %]
                                     <option value="[% option.index %]">[% option.reason %]</option>
                                 [% END %]
@@ -341,9 +358,10 @@ function bulkToggleSelected(el_chk) {
 
     if (is_selected) {
         selected_transactions[trx_id] = {
-            amount: el_chk.getAttribute('data-amount'),
-            client_loginid: el_chk.getAttribute('data-client_loginid'),
-            remark: el_row.querySelector('textarea[name="set_remark"]').value.trim(),
+            amount          : el_chk.getAttribute('data-amount'),
+            loginid         : el_chk.getAttribute('data-loginid'),
+            remark          : el_row.querySelector('textarea[name="remark"]').value.trim(),
+            rejection_reason: el_row.querySelector('select[name="rejection_reason"]').value,
         };
     } else {
         delete selected_transactions[trx_id];
@@ -361,6 +379,15 @@ function bulkUpdateRemark(el_remark) {
     }
 }
 
+function bulkUpdateReason(el_rejection_reason) {
+    const trx_id = el_rejection_reason.getAttribute('data-trxid');
+
+    if (selected_transactions[trx_id]) {
+        selected_transactions[trx_id].rejection_reason = el_rejection_reason.value;
+        bulkUpdateForm();
+    }
+}
+
 function bulkUpdateForm() {
     // Populate hidden value
     document.querySelectorAll('.selected_transactions').forEach((el_hidden) => {
@@ -368,32 +395,54 @@ function bulkUpdateForm() {
     });
 
     // Update the message
-    const bulk_data    = bulkCalculate();
-    const message_text = bulk_data.trx_count
-        ? `\${bulk_data.trx_count} transaction\${bulk_data.trx_count > 1 ? 's' : ''} selected (\${bulk_data.remarks_count} remark\${bulk_data.remarks_count > 1 ? 's' : ''}). Total amount is: \${bulk_data.total_amount} [% currency %]`
+    const bulk_data              = bulkCalculate();
+    const trx_count              = bulk_data.trx_count;
+    const has_sufficient_remarks = bulk_data.remarks_count === trx_count;
+    const has_sufficient_reasons = bulk_data.reasons_count === trx_count;
+
+    const pluralForm     = (name, count) => `\${name}\${count > 1 ? 's' : ''}`;
+    const createCountMsg = (name, count, is_ok) => `<span style="color: \${is_ok ? 'darkgreen' : 'darkred'};"><b>\${count}</b> \${pluralForm(name, count)}</span>`;
+
+    const message_text = trx_count
+        ? `<b>\${bulk_data.trx_count}</b> \${pluralForm('Transaction', trx_count)} selected
+            (
+                \${createCountMsg('Remark',           bulk_data.remarks_count, has_sufficient_remarks)},
+                \${createCountMsg('Rejection reason', bulk_data.reasons_count, has_sufficient_reasons)}
+            ).
+            Total amount is: <b>\${bulk_data.total_amount} [% currency %]</b>`
         : 'None selected';
     document.querySelectorAll('.selection_display_text').forEach((el_selection_text) => {
         el_selection_text.innerHTML = message_text;
+    });
+
+    document.querySelectorAll('.bulk_actions button').forEach((el_btn) => {
+        const should_enable = trx_count
+            && (el_btn.value !== 'bulkSave'   || has_sufficient_remarks)  // remark button
+            && (el_btn.value !== 'bulkReject' || has_sufficient_reasons); // reject button
+
+        el_btn[should_enable ? 'removeAttribute' : 'setAttribute']('disabled', 'disabled');
+        el_btn[should_enable || !trx_count ? 'removeAttribute' : 'setAttribute']('tooltip', 'Required data not entered!');
     });
 }
 
 function bulkCalculate() {
     const trx_ids_list = Object.keys(selected_transactions);
 
-    let decimal_places;
-    let total_amount  = 0;
-    let remarks_count = 0;
+    let decimal_places = 0;
+    let total_amount   = 0;
+    let remarks_count  = 0;
+    let reasons_count  = 0;
 
     trx_ids_list.forEach((trx_id) => {
-        if (typeof decimal_places === 'undefined') {
-            decimal_places = (selected_transactions[trx_id].amount.split('.')[1] || '').length;
-        }
+        decimal_places = decimal_places || (selected_transactions[trx_id].amount.split('.')[1] || '').length;
         total_amount  += parseFloat(selected_transactions[trx_id].amount);
-        remarks_count += selected_transactions[trx_id].remark.length ? 1 : 0;
+        remarks_count += !!selected_transactions[trx_id].remark.length;
+        reasons_count += !!selected_transactions[trx_id].rejection_reason.length;
     });
 
     return {
         remarks_count,
+        reasons_count,
         trx_count   : trx_ids_list.length,
         total_amount: total_amount.toFixed(decimal_places),
     };
@@ -408,8 +457,9 @@ function bulkConfirm() {
     }
 
     return confirm(
-        `Do you really want to do Bulk Verification as below?
-  - Selected transactions: \${bulk_data.trx_count} (remarks: \${bulk_data.remarks_count})
+        `Are you sure you want to perform Bulk action as below?
+  - Selected transactions: \${bulk_data.trx_count}
+      (Remarks: \${bulk_data.remarks_count}, Rejection reasons: \${bulk_data.reasons_count})
   - Total Amount: \${bulk_data.total_amount} [% currency %]`
     );
 }

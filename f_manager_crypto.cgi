@@ -301,12 +301,11 @@ try {
 }
 
 if ($view_action eq 'withdrawals') {
-    my $get_balance               = $currency_wrapper->get_main_address_balance();
-    my $suspicious_check_required = BOM::Config::Runtime->instance->app_config->payments->crypto_withdrawal_suspicious_check_required;
+    my $main_address_balance = $currency_wrapper->get_main_address_balance();
 
     print "<b>Available Balance(s) for Payout:</b>";
-    for my $currency_of_balance (sort keys %$get_balance) {
-        my $balance        = Math::BigFloat->new($get_balance->{$currency_of_balance});
+    for my $currency_of_balance (sort keys %$main_address_balance) {
+        my $balance        = Math::BigFloat->new($main_address_balance->{$currency_of_balance});
         my $remaining_text = '';
         if ($currency_of_balance eq $currency) {
             my $remaining = $balance->copy->bsub($pending_withdrawal_amount);
@@ -338,110 +337,42 @@ if ($view_action eq 'withdrawals') {
     code_exit_BO("Invalid selection to view type of transactions.")
         if not $view_type or $view_type !~ /^(?:pending|verified|rejected|cancelled|processing|performing_blockchain_txn|sent|error)$/;
 
-    if ($action and $action =~ /^(?:Save|Verify|Reject)$/) {
-        my $amount           = request()->param('amount');
-        my $loginid          = request()->param('loginid');
-        my $set_remark       = request()->param('set_remark');
-        my $rejection_reason = request()->param('rejection_reason');
-        my $db_row_id        = request()->param('db_row_id');
+    if (my ($is_bulk, $trx_action) = ($action || '') =~ /^(bulk|)(Save|Verify|Reject)$/) {
+        my @params_list;
+        if ($is_bulk) {
+            my $selected_transactions = request->param('selected_transactions');
+            code_exit_BO("ERROR: No withdrawal transaction is selected for <b>Bulk $trx_action</b>.") unless $selected_transactions;
 
-        code_exit_BO("Invalid request. DB row id is null, please ask the IT team to investigate it.") unless $db_row_id;
-
-        my $client = BOM::User::Client->new({loginid => $loginid});
-        code_exit_BO("The client withdrawal is locked") if $action eq 'Verify' and $client->status->withdrawal_locked;
-
-        if ($action eq 'Reject') {
-            # Error for rejection with no reason
-            if (uc($rejection_reason) =~ /SELECT REJECTION REASON/) {
-                code_exit_BO("Please select a reason for rejection to notify client");
-            }
-            code_exit_BO("Unexpected rejection reason") if !defined REJECTION_REASONS->{$rejection_reason};
-            my $remark = REJECTION_REASONS->{$rejection_reason}->{remark};
-            $set_remark .= "[$remark]";
-        }
-
-        # Check payment limit
-        my $over_limit = BOM::Backoffice::Script::ValidateStaffPaymentLimit::validate($staff, in_usd($amount, $currency));
-        code_exit_BO($over_limit->get_mesg()) if $over_limit;
-
-        my @client_siblings = map { $_->loginid } $client->siblings->@*;
-        my $error;
-        ($error) = $dbic->run(ping => sub { $_->selectrow_array('SELECT payment.ctc_set_remark(?, ?)', undef, $db_row_id, $set_remark) })
-            if $action eq 'Save';
-        my $approvals_required = BOM::Config::Runtime->instance->app_config->payments->crypto_withdrawal_approvals_required;
-        $approvals_required = '{"":2}' if $suspicious_check_required && $client->user->is_crypto_withdrawal_suspicious();
-
-        ($error) = $dbic->run(
-            ping => sub {
-                $_->selectrow_array(
-                    'SELECT payment.ctc_set_withdrawal_verified(?, ?::JSONB, ?, ?, ?)',
-                    undef, $db_row_id, $approvals_required, $staff, ($set_remark || undef),
-                    \@client_siblings
-                );
-            }) if $action eq 'Verify';
-        ($error) = $dbic->run(
-            ping => sub { $_->selectrow_array('SELECT payment.ctc_set_withdrawal_rejected(?, ?, ?)', undef, $db_row_id, $set_remark, $staff) })
-            if $action eq 'Reject';
-
-        code_exit_BO("ERROR: $error. Please check with someone from IT team before proceeding.")
-            if ($error);
-
-        notify_crypto_withdrawal_rejected($loginid, $rejection_reason) if $action eq 'Reject';
-    }
-
-    if ($action and $action eq 'bulkVerify') {
-
-        my $selected_transactions = request->param('selected_transactions');
-        code_exit_BO('ERROR: No withdrawal transaction is selected for <b>bulkVerify</b>.') unless $selected_transactions;
-
-        my $list_to_verified;
-
-        # just a safety net just in case there is some invalid data sent from BO
-        try {
-            $list_to_verified = decode_json($selected_transactions);
-        } catch {
-            code_exit_BO('ERROR: Invalid JSON format for id and amount received. Please contact BE.');
-        }
-
-        my $combined_error = '';
-
-        my $approvals_required = BOM::Config::Runtime->instance->app_config->payments->crypto_withdrawal_approvals_required;
-
-        for my $withdrawal_id (sort keys $list_to_verified->%*) {
-            my %transaction_info  = $list_to_verified->{$withdrawal_id}->%*;
-            my $withdrawal_amount = $transaction_info{amount};
-            my $withdrawal_remark = $transaction_info{remark};
-            my $client_loginid    = $transaction_info{client_loginid};
-            my $client            = BOM::User::Client->new({loginid => $client_loginid});
-
-            if ($client->status->withdrawal_locked) {
-                $combined_error .= "Error in verifying transaction id: $withdrawal_id. The client $client_loginid withdrawal is locked <br />";
-                next;
+            my $bulk_data;
+            try {
+                $bulk_data = decode_json($selected_transactions);
+            } catch {
+                code_exit_BO('ERROR: Invalid JSON format for bulk action on withdrawal transactions received. Please contact BE.');
             }
 
-            $approvals_required = '{"":2}' if $suspicious_check_required && $client->user->is_crypto_withdrawal_suspicious();
-
-            my $over_limit = BOM::Backoffice::Script::ValidateStaffPaymentLimit::validate($staff, in_usd($withdrawal_amount, $currency));
-            # only skip those that does exceeds the staff's payment limit without stopping the operation
-            if ($over_limit) {
-                $combined_error .= "Error in verifying transaction id: $withdrawal_id. " . $over_limit->get_mesg() . '<br />';
-                next;
-            }
-
-            my @client_siblings = map { $_->loginid } $client->siblings->@*;
-            my $error           = $dbic->run(
-                ping => sub {
-                    $_->selectrow_array(
-                        'SELECT payment.ctc_set_withdrawal_verified(?, ?::JSONB, ?, ?, ?)',
-                        undef, $withdrawal_id, $approvals_required, $staff, ($withdrawal_remark || undef),
-                        \@client_siblings
-                    );
-                });
-
-            $combined_error .= "Error in verifying transaction id: $withdrawal_id. Error: $error<br />" if $error;
+            @params_list = map { +{$bulk_data->{$_}->%*, trx_id => $_} } sort keys $bulk_data->%*;
+        } else {
+            my %params = request()->params->%*;
+            @params_list = {%params{qw(trx_id amount remark rejection_reason loginid)}};
         }
 
-        code_exit_BO($combined_error) if $combined_error;
+        my %trx_actions_map = (
+            Save   => \&withdrawal_save_remark,
+            Verify => \&withdrawal_verify,
+            Reject => \&withdrawal_reject,
+        );
+        my @errors;
+        for my $params (@params_list) {
+            my $trx_error = $trx_actions_map{$trx_action}->(
+                $params->%*,
+                dbic     => $dbic,
+                staff    => $staff,
+                currency => $currency,
+            );
+            push @errors, $trx_error || ();
+        }
+
+        code_exit_BO(join '<br />', @errors) if @errors;
     }
 
     my $ctc_status = $view_type eq 'pending' ? 'LOCKED' : uc($view_type);
@@ -661,3 +592,135 @@ EOF
 }
 
 code_exit_BO();
+
+=head2 withdrawal_save_remark
+
+Sets the remark for a withdrawal transaction.
+
+Takes the following named arguments:
+
+=over 4
+
+=item * C<trx_id> - Transaction ID
+
+=item * C<remark> - The remark text to be set
+
+=back
+
+Returns error if there is any.
+
+=cut
+
+sub withdrawal_save_remark {
+    my %args = @_;
+
+    my ($trx_id, $remark, $dbic) = @args{qw(trx_id remark dbic)};
+
+    my $error = $dbic->run(
+        ping => sub {
+            $_->selectrow_array('SELECT payment.ctc_set_remark(?, ?)', undef, $trx_id, $remark);
+        });
+
+    return $error;
+}
+
+=head2 withdrawal_verify
+
+Verifies a withdrawal transaction and sets a remark if provided.
+
+Takes the following named arguments:
+
+=over 4
+
+=item * C<trx_id> - Transaction ID
+
+=item * C<amount> - Amount of the transaction
+
+=item * C<remark> - (optional) The remark text to be set
+
+=item * C<loginid> - Client's loginid
+
+=item * C<staff> - The staff name
+
+=back
+
+Returns error if there is any.
+
+=cut
+
+sub withdrawal_verify {
+    my %args = @_;
+
+    my ($trx_id, $amount, $remark, $loginid, $staff, $dbic, $currency) = @args{qw(trx_id amount remark loginid staff dbic currency)};
+    my $client = BOM::User::Client->new({loginid => $loginid});
+
+    return "Error in verifying transaction id: $trx_id. The client $loginid withdrawal is locked."
+        if $client->status->withdrawal_locked;
+
+    my $over_limit = BOM::Backoffice::Script::ValidateStaffPaymentLimit::validate($staff, in_usd($amount, $currency));
+    return "Error in verifying transaction id: $trx_id. " . $over_limit->get_mesg()
+        if $over_limit;
+
+    my $suspicious_check_required = BOM::Config::Runtime->instance->app_config->payments->crypto_withdrawal_suspicious_check_required;
+    my $approvals_required        = BOM::Config::Runtime->instance->app_config->payments->crypto_withdrawal_approvals_required;
+    $approvals_required = '{"":2}' if $suspicious_check_required && $client->user->is_crypto_withdrawal_suspicious();
+    my @client_siblings = map { $_->loginid } $client->siblings->@*;
+    my $error           = $dbic->run(
+        ping => sub {
+            $_->selectrow_array(
+                'SELECT payment.ctc_set_withdrawal_verified(?, ?::JSONB, ?, ?, ?)',
+                undef, $trx_id, $approvals_required, $staff, ($remark || undef),
+                \@client_siblings,
+            );
+        });
+
+    return $error;
+}
+
+=head2 withdrawal_reject
+
+Rejects a withdrawal transaction and sets the remark accordingly.
+
+Takes the following named arguments:
+
+=over 4
+
+=item * C<trx_id> - Transaction ID
+
+=item * C<remark> - (optional) The remark text to be set
+
+=item * C<rejection_reason> - The reason for rejecting the withdrawal
+
+=item * C<loginid> - Client's loginid
+
+=item * C<staff> - The staff name
+
+=back
+
+Returns error if there is any.
+
+=cut
+
+sub withdrawal_reject {
+    my %args = @_;
+
+    my ($trx_id, $remark, $rejection_reason, $loginid, $staff, $dbic) = @args{qw(trx_id remark rejection_reason loginid staff dbic)};
+
+    code_exit_BO('Please select a reason for rejection to notify client')
+        unless $rejection_reason;
+
+    code_exit_BO('Unexpected rejection reason')
+        unless defined REJECTION_REASONS->{$rejection_reason};
+
+    $remark .= "[@{[ REJECTION_REASONS->{$rejection_reason}->{remark} ]}]";
+
+    my $error = $dbic->run(
+        ping => sub {
+            $_->selectrow_array('SELECT payment.ctc_set_withdrawal_rejected(?, ?, ?)', undef, $trx_id, $remark, $staff);
+        });
+
+    notify_crypto_withdrawal_rejected($loginid, $rejection_reason)
+        unless $error;
+
+    return $error;
+}
