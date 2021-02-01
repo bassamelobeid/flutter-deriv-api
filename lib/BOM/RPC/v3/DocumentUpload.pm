@@ -20,7 +20,7 @@ use BOM::User::Client;
 
 our @EXPORT_OK = qw(MAX_FILE_SIZE);
 
-use constant MAX_FILE_SIZE => 8 * 2**20;
+use constant MAX_FILE_SIZE => 10 * 2**20;
 
 requires_auth('trading', 'wallet');
 
