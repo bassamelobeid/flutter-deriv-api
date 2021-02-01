@@ -293,7 +293,8 @@ subtest 'Adverts' => sub {
 
     $params->{args} = {id => $advert->{id}};
     $res = $c->call_ok('p2p_advert_list', $params)->has_no_system_error->has_no_error->result->{list};
-    cmp_ok $res->[0]->{id}, '==', $advert->{id}, 'p2p_advert_list returns advert';
+    my @ads = grep { $advert->{id} == $_->{id} } $res->@*;
+    ok @ads, 'p2p_advert_list returns advert';
 
     $params->{args}                 = $advert_params;
     $params->{args}{local_currency} = 'BBB';
