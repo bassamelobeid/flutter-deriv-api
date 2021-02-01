@@ -67,17 +67,19 @@ if (my $action = $input{action} and $p2p_write) {
         my $txn_time = Date::Utility->new->datetime;
         my $staff    = BOM::Backoffice::Auth0::get_staffname();
 
+        # Both refund and complete are currently hardcoded with p_buyer_fault=TRUE and p_fraud=TRUE, which negatively affect completion rate.
+        # In https://trello.com/c/L71K579J/274-8-p2p-advertiserbarblock-30 this will be changed and CS will have the option to set no fraud.
         if ($action eq 'refund') {
             $db->run(
                 fixup => sub {
-                    $_->do('SELECT p2p.order_refund(?, ?, ?, ?, ?, ?, ?)', undef, $input{order_id}, $escrow, 4, $staff, 't', $txn_time, 1);
+                    $_->do('SELECT p2p.order_refund(?, ?, ?, ?, ?, ?, ?, ?)', undef, $input{order_id}, $escrow, 4, $staff, 't', $txn_time, 1, 1);
                 });
         }
 
         if ($action eq 'complete') {
             $db->run(
                 fixup => sub {
-                    $_->do('SELECT p2p.order_complete(?, ?, ?, ?, ?, ?)', undef, $input{order_id}, $escrow, 4, $staff, $txn_time, 1);
+                    $_->do('SELECT p2p.order_complete(?, ?, ?, ?, ?, ?, ?)', undef, $input{order_id}, $escrow, 4, $staff, $txn_time, 1, 1);
                 });
         }
         BOM::Platform::Event::Emitter::emit(
