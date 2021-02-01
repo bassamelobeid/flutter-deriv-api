@@ -1383,18 +1383,26 @@ sub get_client_details {
     my $encoded_broker  = encode_entities($broker);
     my $clerk           = BOM::Backoffice::Auth0::get_staffname();
 
+    my $affiliate_mt5_accounts_db = $user->dbic->run(
+        fixup => sub {
+            $_->selectall_arrayref(q{SELECT * FROM mt5.list_user_accounts(?)}, {Slice => {}}, $user->id);
+        });
+
+    my %affiliate_mt5_accounts = map { 'MTR' . $_->{mt5_account_id} => $_ } @$affiliate_mt5_accounts_db;
+
     return (
-        client          => $client,
-        user            => $user,
-        encoded_loginid => $encoded_loginid,
-        mt_logins       => \@mt_logins,
-        user_clients    => \@user_clients,
-        broker          => $broker,
-        encoded_broker  => $encoded_broker,
-        is_virtual_only => $is_virtual_only,
-        clerk           => $clerk,
-        self_post       => $self_post,
-        self_href       => $self_href,
+        client                 => $client,
+        user                   => $user,
+        encoded_loginid        => $encoded_loginid,
+        mt_logins              => \@mt_logins,
+        affiliate_mt5_accounts => \%affiliate_mt5_accounts,
+        user_clients           => \@user_clients,
+        broker                 => $broker,
+        encoded_broker         => $encoded_broker,
+        is_virtual_only        => $is_virtual_only,
+        clerk                  => $clerk,
+        self_post              => $self_post,
+        self_href              => $self_href,
     );
 }
 

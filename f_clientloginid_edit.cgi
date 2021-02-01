@@ -90,6 +90,7 @@ my $clerk           = $details{clerk};
 my $self_post       = $details{self_post};
 my $self_href       = $details{self_href};
 my $loginid         = $client->loginid;
+my $aff_mt_accounts = $details{affiliate_mt5_accounts};
 
 # Enabling onfido resubmission
 my $redis             = BOM::Config::Redis::redis_replicated_write();
@@ -1153,7 +1154,21 @@ foreach my $mt_ac ($mt_logins->@*) {
     } else {
         print ' (<span title="Try refreshing in a minute or so">no group info yet</span>)';
     }
+
+    if (defined $aff_mt_accounts->{$mt_ac} and $aff_mt_accounts->{$mt_ac}{mt5_account_type} eq 'main') {
+        print sprintf(" (Aff. %s main acc.)", $aff_mt_accounts->{$mt_ac}{mt5_myaffiliate_id});
+    }
     print "</li>";
+}
+
+# show MT5 affiliate technical accounts
+foreach my $mt_ac (keys %$aff_mt_accounts) {
+    next if $aff_mt_accounts->{$mt_ac}{mt5_account_type} eq 'main';
+
+    print sprintf(
+        "<li style='color: #555'>%s (Aff. %s %s acc. on %s)</li>",
+        encode_entities($mt_ac),                      $aff_mt_accounts->{$mt_ac}{mt5_myaffiliate_id},
+        $aff_mt_accounts->{$mt_ac}{mt5_account_type}, $aff_mt_accounts->{$mt_ac}{mt5_server_id});
 }
 
 print "</ul>";
