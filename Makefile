@@ -48,6 +48,6 @@ doc:
 
 cover:
 	cover -delete
-	HARNESS_PERL_SWITCHES=-MDevel::Cover DEVEL_COVER_OPTIONS=-'ignore,^t/' /etc/rmg/bin/prove --timer --norc -It/lib -MBOM::Test -rl  $$(find t/BOM/Product/ -mindepth 1 -maxdepth 1 -type d| grep -v ContractFinder)
+	PERL5OPT=-MBOM::Test HARNESS_PERL_SWITCHES=-MDevel::Cover DEVEL_COVER_OPTIONS=-'ignore,^t/' /etc/rmg/bin/prove --timer --norc -It/lib -rl $$(find t/BOM -name "*.t" | grep -vE 'memtest|benchmark|ContractFinder')
 	cover -report coveralls
 
