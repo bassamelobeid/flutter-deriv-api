@@ -1,12 +1,12 @@
 use strict;
 use warnings;
+
 use Log::Any::Test;
 use Test::More;
 use Test::Mojo;
 use Test::Deep;
 use Test::MockModule;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
-use BOM::Test::Helper::Token qw(cleanup_redis_tokens);
 use BOM::Platform::Token::API;
 use BOM::Config::Runtime;
 use BOM::RPC::v3::P2P;
@@ -20,10 +20,7 @@ BEGIN {
 
 use BOM::Test::RPC::QueueClient;
 
-cleanup_redis_tokens();
-
 BOM::Test::Helper::P2P::bypass_sendbird();
-BOM::Test::Helper::P2P::purge_redis();
 
 my $dummy_method = 'test_p2p_controller';
 
