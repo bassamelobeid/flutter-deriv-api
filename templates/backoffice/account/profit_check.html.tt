@@ -7,3 +7,4 @@
 
 <br />
 <input type="button" value="View [% loginid %] Statement" onclick='location.href="[% statement_url %]"' />
+<input type="button" value="View [% loginid %] Crypto Statement" onclick='location.href="[% crypto_statement_url %]"' />

@@ -56,19 +56,19 @@
     <div class="Blacklabel whitelabel collapsed">
         <span class="close">&#x229E;</span>
         <span>&#x229F;</span>
-        CRYPTOCURRENCY ACTIVITY: [% trx_type.upper %]
+        CRYPTOCURRENCY ACTIVITY: [% txn_type.upper %]
     </div>
     <div class="contents">
         <div class="filter">
-            <form method="POST">
+            <form method="POST" action="[% self_url %]">
                 <b>Address: </b>
-                <input type="text" name="[% trx_type %]_address_search" autocomplete="off"/>
-                <button type="submit" name="action" value="[% trx_type %]_address_search">search</button>
+                <input type="text" name="[% txn_type %]_address_search" autocomplete="off"/>
+                <button type="submit" name="action" value="[% txn_type %]_address_search">search</button>
                 <label><strong>[% search_message | none %]</strong></label>
             </form>
         </div>
         <div id="crypto" class="grd-parent grd-grid-12">
-            <a name="[% trx_type %]"></a>
+            <a name="[% txn_type %]"></a>
             <div style="margin-bottom:10px">
                 <label>
                     <strong>Client:</strong> <a href="[% details_link %]" target="_blank"> [% loginid %] </a>
@@ -169,3 +169,4 @@
         </div>
     </div>
 </div>
+

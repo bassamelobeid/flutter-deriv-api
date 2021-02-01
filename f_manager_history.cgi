@@ -25,11 +25,7 @@ use BOM::Database::ClientDB;
 use BOM::ContractInfo;
 use BOM::Backoffice::Sysinit ();
 use BOM::Config;
-use BOM::CTC::Currency;
-use BOM::Cryptocurrency::Helper qw(reprocess_address get_crypto_transactions);
 BOM::Backoffice::Sysinit::init();
-
-use constant CRYPTO_DEFAULT_TRANSACTION_COUNT => 50;
 
 PrintContentType();
 
@@ -198,6 +194,13 @@ BOM::Backoffice::Request::template()->process(
                 enddate   => Date::Utility->today()->date,
             }
         ),
+        crypto_statement_url => request()->url_for(
+            'backoffice/f_manager_crypto_history.cgi',
+            {
+                loginID => $loginID,
+                broker  => $client->broker,
+            }
+        ),
         summary           => $summary,
         total_deposits    => $total_deposits,
         total_withdrawals => $total_withdrawals,
@@ -214,118 +217,6 @@ BOM::Backoffice::Request::template()->process(
     },
 ) || die BOM::Backoffice::Request::template()->error();
 
-# ========== Crypto Transactions ==========
-my $render_crypto_transactions = sub {
-    my ($trx_type) = @_;
-
-    return undef unless BOM::Config::CurrencyConfig::is_valid_crypto_currency($currency);
-
-    my $offset_param = "crypto_${trx_type}_offset";
-    my $offset       = max(request()->param($offset_param) // 0, 0);
-    my $limit        = max(request()->param('limit') // 0, 0) || CRYPTO_DEFAULT_TRANSACTION_COUNT;
-    my $search_param = "${trx_type}_address_search";
-
-    my ($search_address, $search_message);
-    $search_address = trim(request()->param($search_param))        if $action && $action eq $search_param && trim(request()->param($search_param));
-    $search_message = "Search result for address: $search_address" if $search_address;
-
-    my %params = (
-        loginid        => $client->loginid,
-        limit          => $limit,
-        offset         => $offset,
-        address        => $search_address,
-        sort_direction => 'DESC'
-    );
-    my @trxns = get_crypto_transactions($trx_type, %params)->@*;
-
-    my $exchange_rate;
-    try {
-        $exchange_rate = in_usd(1.0, $currency);
-    } catch {
-        code_exit_BO("No exchange rate found for currency $currency. Please contact IT.");
-    }
-
-    my $transaction_uri = URI->new($currency_wrapper->get_transaction_blockchain_url);
-    my $address_uri     = URI->new($currency_wrapper->get_address_blockchain_url);
-
-    my $details_link = request()->url_for(
-        'backoffice/f_clientloginid_edit.cgi',
-        {
-            broker  => $broker,
-            loginID => $client->loginid
-        });
-
-    my %fiat           = get_fiat_login_id_for($client->loginid, $broker);
-    my %client_details = (
-        loginid      => $client->loginid,
-        details_link => "$details_link",
-        fiat_loginid => $fiat{fiat_loginid},
-        fiat_link    => "$fiat{fiat_link}",
-    );
-
-    for my $trx (@trxns) {
-        $trx->{amount} //= 0;    # it will be undef on newly generated addresses
-        $trx->{usd_amount} = formatnumber('amount', 'USD', $trx->{amount} * $exchange_rate);
-    }
-
-    my ($trx_id_to_reprocess, $reprocess_result);
-    if ($trx_type eq 'deposit' && $action && $action eq 'reprocess_address') {
-        $trx_id_to_reprocess = request()->param('db_row_id');
-        $reprocess_result    = reprocess_address($currency_wrapper, request()->param('address_to_reprocess'));
-    }
-
-    my $make_pagination_url = sub {
-        my ($offset_value) = @_;
-        return request()->url_for(
-            'backoffice/f_manager_history.cgi',
-            {
-                request()->params->%*,
-                $offset_param => max($offset_value, 0),
-            })->fragment($trx_type);
-    };
-    my $prev_url = $offset                 ? $make_pagination_url->($offset - $limit) : undef;
-    my $next_url = $limit == scalar @trxns ? $make_pagination_url->($offset + $limit) : undef;
-
-    my $tt = BOM::Backoffice::Request::template;
-    $tt->process(
-        'backoffice/crypto_cashier/manage_crypto_transactions_cs.tt',
-        {
-            transactions    => \@trxns,
-            broker          => $broker,
-            currency        => $currency,
-            transaction_uri => $transaction_uri,
-            address_uri     => $address_uri,
-            testnet         => BOM::Config::on_qa() ? 1 : 0,
-            trx_type        => $trx_type,
-            search_message  => $search_message,
-            pagination      => {
-                prev_url => $prev_url,
-                next_url => $next_url,
-                range    => ($offset + !!@trxns) . ' - ' . ($offset + @trxns),
-            },
-            reprocess => {
-                trx_id => $trx_id_to_reprocess,
-                result => $reprocess_result,
-            },
-            %client_details,
-        }) || die $tt->error();
-};
-
 BarEnd();
-
-$render_crypto_transactions->($_) for qw(deposit withdrawal);
-
-print <<QQ;
-<script type="text/javascript" language="javascript">
-    \$('div.blacklabel.whitelabel.collapsed').click(function(e) {
-        e.preventDefault();
-        var element = \$(this);
-        element.children('span').toggle();
-
-        var content_element = element.siblings('div.contents');
-        content_element.toggle();
-    });
-</script>
-QQ
 
 code_exit_BO();

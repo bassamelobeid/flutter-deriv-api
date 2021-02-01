@@ -63,6 +63,7 @@ my $permissions = {
     'f_investigative.cgi'             => ['CS'],
     'f_makeclientdcc.cgi'             => ['CS'],
     'f_manager_history.cgi'           => ['CS'],
+    'f_manager_crypto_history.cgi'    => ['CS'],
     'f_manager_statement.cgi'         => ['CS'],
     'f_popupclientsearch.cgi'         => ['CS'],
     'f_profit_check.cgi'              => ['CS'],

@@ -77,6 +77,13 @@ BOM::Backoffice::Request::template()->process(
                 broker  => $client->broker,
             }
         ),
+        crypto_statement_url => request()->url_for(
+            'backoffice/f_manager_crypto_history.cgi',
+            {
+                loginID => $loginID,
+                broker  => $client->broker,
+            }
+        ),
     },
 ) || die BOM::Backoffice::Request::template()->error();
 

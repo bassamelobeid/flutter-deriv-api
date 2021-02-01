@@ -601,6 +601,17 @@ sub build_client_statement_form {
         . '<input type="checkbox" name="all_in_one_page" id="all_in_one_page_statement" /><label for="all_in_one_page_statement">Show All Transactions</label> '
         . '<input type="checkbox" value="yes" name="depositswithdrawalsonly" id="depositswithdrawalsonly" /><label for="depositswithdrawalsonly">Deposits and Withdrawals only</label> '
         . '<input type="submit" value="Client Statement">'
+        . '</FORM>'
+        # ------- CRYPTO -------
+        . '<hr><FORM ACTION="'
+        . request()->url_for('backoffice/f_manager_crypto_history.cgi')
+        . '" METHOD="POST" onsubmit="return validate_month(\'statement\')">'
+        . 'Check Crypto Statement of LoginID: <input id="statement_loginID" name="loginID" type="text" size="15" data-lpignore="true" value="'
+        . $broker . '"/> '
+        . '<input type="hidden" name="broker" value="'
+        . $broker . '">'
+        . '<input type="hidden" name="l" value="EN">'
+        . '<input type="submit" value="Client Crypto Statement">'
         . '</FORM>';
 }
 

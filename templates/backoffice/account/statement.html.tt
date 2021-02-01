@@ -3,6 +3,7 @@
 <div>
     <input type="button" value="View/edit [% loginid %] Details" onclick='location.href="[% clientedit_url %]"' />
     <input type="button" value="View [% loginid %] Profit" onclick='location.href="[% profit_url %]"' />
+    <input type="button" value="View [% loginid %] Crypto Statement" onclick='location.href="[% crypto_statement_url %]"' />
 </div>
 <br />
 
