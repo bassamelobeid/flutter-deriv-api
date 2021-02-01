@@ -251,3 +251,4 @@ real:
   no: *real04 # Norway
   vg: *real04 # Virgin Islands (British)
   an: *real04 # Netherlands Antilles
+  ss: *real04 # South sudan
