@@ -717,4 +717,41 @@ subtest 'country=za; creates financial account with existing gaming account whil
     is $financial->{login}, 'MTR' . $ACCOUNTS{'real01\financial\svg_std_usd'}, 'created in group real01\financial\svg_std_usd';
 };
 
+subtest 'country=au, financial account' => sub {
+    my $new_email  = 'au' . $DETAILS{email};
+    my $new_client = create_client('CR', undef, {residence => 'au'});
+    my $token      = $m->create_token($new_client->loginid, 'test token 2');
+    $new_client->set_default_account('AUD');
+    $new_client->email($new_email);
+
+    my $user = BOM::User->create(
+        email    => $new_email,
+        password => 's3kr1t',
+    );
+    $user->add_client($new_client);
+
+    my $method = 'mt5_new_account';
+    my $params = {
+        language => 'EN',
+        token    => $token,
+        args     => {
+            account_type     => 'financial',
+            mt5_account_type => 'financial',
+            email            => $new_email,
+            name             => $DETAILS{name},
+            mainPassword     => $DETAILS{password}{main},
+            leverage         => 100,
+        },
+    };
+    my $result = $c->call_ok($method, $params)->has_no_error('gaming account successfully created')->result;
+    is $result->{account_type}, 'financial', 'account_type=financial';
+    is $result->{login}, 'MTR' . $ACCOUNTS{'real01\financial\svg_std_usd'}, 'created in group real01\financial\svg_std_usd';
+
+    BOM::RPC::v3::MT5::Account::reset_throttler($new_client->loginid);
+    $params->{args}->{account_type} = 'demo';
+    $result = $c->call_ok($method, $params)->has_no_error('gaming account successfully created')->result;
+    is $result->{account_type}, 'demo', 'account_type=demo';
+    is $result->{login}, 'MTD' . $ACCOUNTS{'demo01\financial\svg_std_usd'}, 'created in group demo01\financial\svg_std_usd';
+};
+
 done_testing();

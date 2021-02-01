@@ -293,8 +293,6 @@ sub _mt5_group {
         # $server_type is defaulted to 01 for demo since we do not have demo trade server cluster
         $server_type      = '01';
         $sub_account_type = _get_sub_account_type($mt5_account_type, $account_category);
-        # we need to override the currency here because virtual account default currency is all in USD
-        $currency = LandingCompany::Registry::get($landing_company_short)->get_default_currency($country);
     } else {
         # real group mapping
         $account_type     = 'real';
@@ -527,13 +525,23 @@ async_rpc "mt5_new_account",
     # 1. If client's selected currency is one of the available_mt5_currency_group then, it will be used as the mt5 account currency
     # 2. Else, the landing company's default currency will be used.
     #
+    # If the default currency is not in the $landing_company->available_mt5_currency_group, it will be directed to the first available currency.
+    #
     # A practical example:
     # - MF (residence: germany) client with selected account currency of USD. The mt5 account currency will be EUR.
     # - MF (residence: germany) client with selected account currency of GBP. The mt5 account currency will be GBP.
-    my $default_currency       = $client->landing_company->get_default_currency($residence);
-    my $available_mt5_currency = $client->landing_company->available_mt5_currency_group();
-    my $selected_currency      = (any { $client->currency eq $_ } @$available_mt5_currency) ? $client->currency : $default_currency;
-    my $mt5_account_currency   = $args->{currency} // $selected_currency;
+    # - SVG (residence: australia) client with selected account current of AUD. The mt5 account currency will be USD.
+    my $default_currency       = LandingCompany::Registry::get($company_name)->get_default_currency($residence);
+    my $available              = $client->landing_company->available_mt5_currency_group();
+    my %available_mt5_currency = map { $_ => 1 } @$available;
+
+    # For virtual account, because we have clients from svg, malta and maltainvest under the same virtual
+    # landing company, we will stick to $default_currency in mt5 group selection.
+    my $selected_currency =
+          ($account_type ne 'demo' && $available_mt5_currency{$client->currency}) ? $client->currency
+        : $available_mt5_currency{$default_currency}                              ? $default_currency
+        :                                                                           $available->[0];
+    my $mt5_account_currency = $args->{currency} // $selected_currency;
 
     return create_error_future('permission') if $mt5_account_currency ne $selected_currency;
 
