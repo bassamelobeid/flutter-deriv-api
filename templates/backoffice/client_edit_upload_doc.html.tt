@@ -122,8 +122,8 @@ function check_is_expiration_date_optional(i){
 function file_size_validation(file) {
   var FileSize = file.files[0].size / (1024 * 1024);
 
-  // Maximum is 8MB
-  var max_size = 8;
+  // Maximum is 10MB
+  var max_size = 10;
   if(FileSize > max_size) {
     alert ("Exceeds maximum size of " + max_size + "MB");
     file.value = "";
