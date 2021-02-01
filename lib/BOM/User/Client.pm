@@ -2570,16 +2570,12 @@ sub p2p_order_create {
         };
     }
 
-    my $client_ad_info = $self->_p2p_advertisers(loginid => $self->loginid)->[0];
-    if ($client_ad_info) {
-        # For client inverted advert type needs to be checked, for example in a sell advert, client is buyer, so we need to check their daily_buy_limit
-        my $client_limit_remaining = $client_ad_info->{'daily_' . $order_type . '_limit'} - $client_ad_info->{'daily_' . $order_type};
-        die +{
-            error_code => 'OrderMaximumTempExceeded',
-            message_params =>
-                [formatnumber('amount', $client_ad_info->{account_currency}, $client_limit_remaining), $client_ad_info->{account_currency}]}
-            if $amount > $client_limit_remaining;
-    }
+    # For client inverted advert type needs to be checked, for example in a sell advert, client is buyer, so we need to check their daily_buy_limit
+    my $client_limit_remaining = $client_info->{'daily_' . $order_type . '_limit'} - $client_info->{'daily_' . $order_type};
+    die +{
+        error_code     => 'OrderMaximumTempExceeded',
+        message_params => [formatnumber('amount', $client_info->{account_currency}, $client_limit_remaining), $client_info->{account_currency}]}
+        if $amount > $client_limit_remaining;
 
     my $escrow = $self->p2p_escrow;
 
@@ -3367,9 +3363,11 @@ sub _p2p_validate_sell {
     return 1 if $advertiser->{cc_sell_authorized};
     return 1 if $client->get_payment_agent();
 
-    my $card_processors   = BOM::Config::Runtime->instance->app_config->payments->credit_card_processors;
     my $turnover_required = BOM::Config::Runtime->instance->app_config->payments->p2p->credit_card_turnover_requirement;
-    my $check_period      = BOM::Config::Runtime->instance->app_config->payments->p2p->credit_card_check_period;
+    return 1 if $turnover_required <= 0;
+
+    my $card_processors = BOM::Config::Runtime->instance->app_config->payments->credit_card_processors;
+    my $check_period    = BOM::Config::Runtime->instance->app_config->payments->p2p->credit_card_check_period;
 
     my ($cc_deposits) = $self->db->dbic->run(
         fixup => sub {
