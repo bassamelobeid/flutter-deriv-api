@@ -248,7 +248,7 @@ recommended flag and sorted by region
 =cut
 
 rpc "trading_servers",
-    auth => 1,
+    auth => ['trading', 'wallet'],
     sub {
     my $params = shift;
 

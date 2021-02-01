@@ -20,7 +20,7 @@ use BOM::Transaction;
 use BOM::Transaction::Utility;
 use BOM::Pricing::v3::Contract;
 
-requires_auth();
+requires_auth('trading');
 
 rpc "portfolio",
     category => 'account',

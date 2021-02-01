@@ -218,7 +218,7 @@ rpc logout => sub {
 
 rpc(
     "account_security",
-    auth => 1,
+    auth => ['trading', 'wallet'],
     sub {
         my $params        = shift;
         my $token_details = $params->{token_details};

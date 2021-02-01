@@ -33,7 +33,7 @@ use BOM::User::Client;
 use BOM::User::FinancialAssessment qw(update_financial_assessment decode_fa);
 use BOM::User;
 
-requires_auth();
+requires_auth('trading', 'wallet');
 
 sub _create_oauth_token {
     my ($app_id, $loginid) = @_;
@@ -42,7 +42,7 @@ sub _create_oauth_token {
 }
 
 rpc "new_account_virtual",
-    auth => 0,    # unauthenticated
+    auth => [],    # unauthenticated
     sub {
     my $params = shift;
     my $args   = $params->{args};
@@ -161,7 +161,7 @@ sub get_app_name {
 }
 
 rpc "verify_email",
-    auth => 0,    # unauthenticated
+    auth => [],    # unauthenticated
     sub {
     my $params = shift;
     my $email  = lc $params->{args}->{verify_email};

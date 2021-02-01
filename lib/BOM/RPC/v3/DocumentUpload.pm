@@ -22,7 +22,7 @@ our @EXPORT_OK = qw(MAX_FILE_SIZE);
 
 use constant MAX_FILE_SIZE => 8 * 2**20;
 
-requires_auth();
+requires_auth('trading', 'wallet');
 
 rpc document_upload => sub {
     my $params = shift;

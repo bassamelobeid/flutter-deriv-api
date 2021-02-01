@@ -34,7 +34,7 @@ use Date::Utility;
 use constant DEFAULT_CONTRACT_UPDATE_HISTORY_LIMIT => 500;
 my $json = JSON::MaybeXS->new;
 
-requires_auth();
+requires_auth('trading');
 
 my $nonbinary_list = 'LBFLOATCALL|LBFLOATPUT|LBHIGHLOW';
 

@@ -36,7 +36,7 @@ use Log::Any qw($log);
 # Currently all functionality is restricted to users with
 # valid accounts. There's little harm in allowing a list
 # of orders or adverts, but also no value to us in doing so.
-requires_auth();
+requires_auth('wallet');
 
 use constant RESTRICTED_CLIENT_STATUSES => [qw(
         unwelcome

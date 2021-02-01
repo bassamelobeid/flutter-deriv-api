@@ -50,7 +50,8 @@ use BOM::Database::DataMapper::Payment;
 use BOM::Database::DataMapper::PaymentAgent;
 use BOM::Database::ClientDB;
 use BOM::Platform::Event::Emitter;
-requires_auth();
+
+requires_auth('wallet');
 
 use Log::Any qw($log);
 
@@ -467,7 +468,7 @@ rpc get_limits => sub {
 };
 
 rpc "paymentagent_list",
-    auth => 0,    # unauthenticated
+    auth => [],    # unauthenticated
     sub {
     my $params = shift;
 

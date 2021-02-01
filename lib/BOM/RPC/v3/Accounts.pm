@@ -233,7 +233,7 @@ our %RejectedOnfidoReasons = do {
 
 my $json = JSON::MaybeXS->new;
 
-requires_auth();
+requires_auth('trading', 'wallet');
 
 =head2 payout_currencies
 
@@ -273,7 +273,7 @@ Returns a sorted arrayref of valid payout currencies
 =cut
 
 rpc "payout_currencies",
-    auth => 0,    # unauthenticated
+    auth => [],    # unauthenticated
     sub {
     my $params = shift;
 
@@ -307,7 +307,7 @@ rpc "payout_currencies",
     };
 
 rpc "landing_company",
-    auth => 0,    # unauthenticated
+    auth => [],    # unauthenticated
     sub {
     my $params = shift;
 
@@ -402,7 +402,7 @@ Returns a hashref containing the keys from __build_landing_company($lc)
 =cut
 
 rpc "landing_company_details",
-    auth => 0,    # unauthenticated
+    auth => [],    # unauthenticated
     sub {
     my $params = shift;
 
@@ -1273,7 +1273,7 @@ rpc change_password => sub {
 };
 
 rpc "reset_password",
-    auth => 0,    # unauthenticated
+    auth => [],    # unauthenticated
     sub {
     my $params = shift;
     my $args   = $params->{args};

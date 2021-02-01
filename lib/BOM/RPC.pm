@@ -6,6 +6,7 @@ no indirect;
 
 use Syntax::Keyword::Try;
 use Scalar::Util q(blessed);
+use List::Util qw(any);
 use Time::HiRes qw();
 use Brands;
 
@@ -16,6 +17,7 @@ use BOM::Platform::Context::Request;
 use BOM::RPC::Registry;
 use BOM::User::Client;
 use BOM::Database::Rose::DB;
+use BOM::Config::Runtime;
 use BOM::RPC::v3::Utility qw(log_exception);
 use BOM::RPC::v3::Accounts;
 use BOM::RPC::v3::Static;
@@ -123,7 +125,7 @@ sub wrap_rpc_sub {
             return $verify_app_res if $verify_app_res->{error};
         }
 
-        if ($def->is_auth) {
+        if ($def->auth and $def->auth->@*) {
             if (my $client = $params->{client}) {
                 # If there is a $client object but is not a Valid BOM::User::Client we return an error
                 unless (blessed $client && $client->isa('BOM::User::Client')) {
@@ -137,10 +139,19 @@ sub wrap_rpc_sub {
                 return BOM::RPC::v3::Utility::invalid_token_error()
                     unless $token_details and exists $token_details->{loginid};
 
-                my $client = BOM::User::Client->new({loginid => $token_details->{loginid}});
+                my $client = BOM::User::Client->get_client_instance($token_details->{loginid});
 
                 if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {
                     return $auth_error;
+                }
+
+                unless (BOM::Config::Runtime->instance->app_config->system->suspend->wallets) {
+                    my @auth = $def->auth->@*;
+                    unless (($client->can_trade and any { $_ eq 'trading' } @auth) or ($client->is_wallet and any { $_ eq 'wallet' } @auth)) {
+                        return BOM::RPC::v3::Utility::create_error({
+                                code              => 'PermissionDenied',
+                                message_to_client => localize('This resource cannot be accessed by this account type.')});
+                    }
                 }
 
                 $params->{client} = $client;

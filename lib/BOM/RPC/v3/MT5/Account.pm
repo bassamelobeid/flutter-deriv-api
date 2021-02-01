@@ -40,7 +40,7 @@ use BOM::Platform::Event::Emitter;
 use BOM::Transaction;
 use BOM::User::FinancialAssessment qw(is_section_complete decode_fa);
 
-requires_auth();
+requires_auth('wallet');
 
 use constant MT5_ACCOUNT_THROTTLE_KEY_PREFIX => 'MT5ACCOUNT::THROTTLE::';
 

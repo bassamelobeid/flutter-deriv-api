@@ -32,7 +32,7 @@ frontend and carry out processes in accordance to the event.
 
 =cut
 
-requires_auth();
+requires_auth('trading', 'wallet');
 
 rpc notification_event => sub {
     my $params = shift;

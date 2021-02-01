@@ -16,7 +16,7 @@ use DataDog::DogStatsd::Helper;
 
 use BOM::RPC::Registry '-dsl';
 
-requires_auth();
+requires_auth('wallet');
 
 rpc app_register => sub {
     my $params = shift;

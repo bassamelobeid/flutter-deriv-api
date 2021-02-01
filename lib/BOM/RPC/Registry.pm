@@ -12,7 +12,7 @@ use Scalar::Util qw(blessed);
 use Struct::Dumb qw(readonly_struct);
 
 readonly_struct
-    ServiceDef        => [qw(name code category is_auth is_async caller)],
+    ServiceDef        => [qw(name code category auth is_async caller)],
     named_constructor => 1;
 
 =head1 DOMAIN-SPECIFIC-LANGUAGE
@@ -110,7 +110,7 @@ sub import_dsl_into {
         },
 
         requires_auth => sub {
-            $auth_all = 1;
+            $auth_all = \@_;
         },
     );
 
@@ -162,7 +162,7 @@ sub register {
         name     => $name,
         code     => $code,
         category => $args{category},
-        is_auth  => !!$args{auth},
+        auth     => $args{auth},
         is_async => !!$args{async},
         caller   => $args{caller});
     return;
