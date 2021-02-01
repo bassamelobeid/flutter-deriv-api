@@ -22,5 +22,5 @@ pod_test:
 
 cover:
 	cover -delete
-	HARNESS_PERL_SWITCHES=-MDevel::Cover DEVEL_COVER_OPTIONS=-'ignore,^t/' /etc/rmg/bin/prove --timer --norc  -MBOM::Test -rl  t/BOM/Pricing/
+	PERL5OPT='-MBOM::Test -MBOM::Test::Initializations' HARNESS_PERL_SWITCHES=-MDevel::Cover DEVEL_COVER_OPTIONS=-'ignore,^t/' /etc/rmg/bin/prove --timer --norc -rl  t/BOM/Pricing/
 	cover -report coveralls
