@@ -19,7 +19,6 @@ use Guard;
 BOM::Config::Runtime->instance->app_config->payments->p2p->limits->count_per_day_per_client(10);
 BOM::Test::Helper::P2P::bypass_sendbird();
 BOM::Test::Helper::P2P::create_escrow();
-BOM::Test::Helper::P2P::purge_redis();    # can fail in circle-ci without this
 
 my ($advertiser, $client, $advert, $order);
 
@@ -35,7 +34,6 @@ my %default_stats = (
     'basic_verification'    => 0,
     'full_verification'     => 0,
 );
-my @stats_keys = keys %default_stats;
 my $stats_cli  = {%default_stats};
 my $stats_adv  = {%default_stats};
 
