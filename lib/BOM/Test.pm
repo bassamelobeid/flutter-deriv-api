@@ -56,14 +56,17 @@ BEGIN {
         return env() =~ /production/;
     }
 
-    # This function should not be around, development environment is legacy
-    # This needs further discussion to make sure all agree to remove this environment
-    # TODO: ~Jack
-    sub on_development {
-        return env() =~ /^development/;
+=head2 on_ci
+
+check the current environment is ci environment
+
+=cut
+
+    sub on_ci {
+        return env() eq 'ci';
     }
 
-    die "wrong env. Can't run test" unless (on_qa() or on_development());
+    die "wrong env. Can't run test" unless (on_qa() or on_ci());
 
     ## no critic (Variables::RequireLocalizedPunctuationVars)
     # set a env variable to represent we are in testing mode

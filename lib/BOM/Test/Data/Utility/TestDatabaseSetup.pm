@@ -135,7 +135,7 @@ sub _create_dbs {
     # Because we have different database setups for devbox and CI, foreign servers need to configured differently
     # depending on the environment.
     my $foreign_server_setup_sql = $self->_db_migrations_dir . '/devbox_foreign_servers_for_testdb.sql';
-    if (BOM::Test::on_development()) {    # Circle CI test
+    if (BOM::Test::on_ci()) {
         $foreign_server_setup_sql = $self->_db_migrations_dir . '/circleci_foreign_servers_for_testdb.sql';
     }
 
