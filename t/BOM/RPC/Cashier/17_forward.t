@@ -6,12 +6,12 @@ use Test::Mojo;
 use Test::MockModule;
 use Test::FailWarnings;
 use Test::Warnings qw(warning);
-use BOM::Test::RPC::QueueClient;
 
 use MojoX::JSON::RPC::Client;
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
+use BOM::Test::RPC::QueueClient;
 use BOM::Test::Helper::FinancialAssessment;
 use BOM::RPC::v3::Cashier;
 use BOM::RPC::v3::Accounts;

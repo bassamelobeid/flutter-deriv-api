@@ -16,10 +16,9 @@ use Format::Util::Numbers qw/financialrounding get_min_unit formatnumber/;
 
 use BOM::User::Client;
 use BOM::RPC::v3::MT5::Account;
-
-use BOM::Test::RPC::QueueClient;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
+use BOM::Test::RPC::QueueClient;
 use BOM::Test::Helper::ExchangeRates qw/populate_exchange_rates populate_exchange_rates_db/;
 use BOM::Platform::Token;
 use Email::Stuffer::TestLinks;

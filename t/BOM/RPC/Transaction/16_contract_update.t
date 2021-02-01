@@ -2,7 +2,6 @@
 use strict;
 use warnings;
 
-use BOM::Test::RPC::QueueClient;
 use Test::Most;
 use Test::Mojo;
 use Test::MockTime::HiRes qw(set_relative_time restore_time);
@@ -19,6 +18,7 @@ use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use BOM::Test::RPC::QueueClient;
 use BOM::Test::Helper::Client qw(top_up);
 use BOM::Config::Redis;
 use ExpiryQueue;

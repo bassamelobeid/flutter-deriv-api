@@ -3,9 +3,9 @@ use warnings;
 
 use Test::More;
 use Test::MockModule;
-use BOM::Test::RPC::QueueClient;
 use Test::Mojo;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use BOM::Test::RPC::QueueClient;
 use BOM::MT5::User::Async;
 use BOM::Platform::Token;
 use BOM::User;
@@ -51,7 +51,7 @@ subtest 'frozen free gift' => sub {
     $client->set_authentication('ID_DOCUMENT', {status => 'pass'});
 
     $client->db->dbic->dbh->do(
-        q/insert into betonmarkets.promo_code (code, promo_code_type, promo_code_config, start_date, expiry_date, status, description) 
+        q/insert into betonmarkets.promo_code (code, promo_code_type, promo_code_config, start_date, expiry_date, status, description)
         values ('PROMO1','FREE_BET','{"country":"ALL","amount":"200","currency":"ALL"}', now() - interval '1 month', now() + interval '1 month','t','test') /
     );
 

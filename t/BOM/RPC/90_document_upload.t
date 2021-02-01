@@ -1,7 +1,6 @@
 use strict;
 use warnings;
 
-use BOM::Test::RPC::QueueClient;
 use Test::More;
 use Test::Mojo;
 use Test::Warn;
@@ -10,6 +9,7 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Database::Model::OAuth;
 use List::Util qw( all );
 use BOM::RPC::v3::DocumentUpload qw(MAX_FILE_SIZE);
+use BOM::Test::RPC::QueueClient;
 
 my $c = BOM::Test::RPC::QueueClient->new();
 

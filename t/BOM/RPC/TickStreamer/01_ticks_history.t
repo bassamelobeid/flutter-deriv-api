@@ -13,8 +13,8 @@ use File::Temp;
 
 use BOM::Config::Chronicle;
 use Quant::Framework;
-use BOM::Test::RPC::QueueClient;
 use BOM::Test::Data::Utility::FeedTestDatabase qw/:init/;
+use BOM::Test::RPC::QueueClient;
 use BOM::Populator::TickFile;
 use BOM::Populator::InsertTicks;
 use BOM::MarketData qw(create_underlying_db);

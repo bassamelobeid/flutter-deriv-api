@@ -1,12 +1,12 @@
 use strict;
 use warnings;
 use utf8;
-use BOM::Test::RPC::QueueClient;
 use Test::Most;
 use Test::Mojo;
 use Data::Dumper;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
+use BOM::Test::RPC::QueueClient;
 use BOM::Database::Model::OAuth;
 use Email::Stuffer::TestLinks;
 use Test::MockModule;

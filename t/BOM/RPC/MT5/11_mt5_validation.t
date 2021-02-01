@@ -7,11 +7,11 @@ use Test::Mojo;
 use Test::MockModule;
 use Locale::Country::Extra;
 
-use BOM::Test::RPC::QueueClient;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
-use BOM::Test::Helper::Client qw(create_client);
 use BOM::Test::Data::Utility::UnitTestRedis;
+use BOM::Test::RPC::QueueClient;
+use BOM::Test::Helper::Client qw(create_client);
 use BOM::User;
 use BOM::Database::Model::OAuth;
 use BOM::User::Password;

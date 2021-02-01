@@ -7,10 +7,11 @@ use Test::Fatal qw(lives_ok);
 
 use BOM::Platform::Client::IDAuthentication;
 use BOM::Platform::ProveID;
-use BOM::Test::RPC::QueueClient;
 use BOM::User::Client;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
+use BOM::Test::RPC::QueueClient;
+
 use Test::MockModule;
 
 use BOM::Test::Helper::FinancialAssessment;

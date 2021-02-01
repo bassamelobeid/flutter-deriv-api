@@ -5,7 +5,7 @@ use Test::More;
 use Test::Deep;
 use Test::Mojo;
 use Test::MockModule;
-use Test::BOM::RPC::QueueClient;
+use List::Util;
 use Encode;
 use JSON::MaybeUTF8 qw(encode_json_utf8);
 use Encode qw(encode);
@@ -15,6 +15,7 @@ use BOM::Platform::Token::API;
 use BOM::User::Password;
 use BOM::User;
 use BOM::Test::Helper::Token;
+use Test::BOM::RPC::QueueClient;
 
 use BOM::Config::Redis;
 

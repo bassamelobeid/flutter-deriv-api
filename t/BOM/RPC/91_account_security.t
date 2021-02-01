@@ -9,8 +9,8 @@ use Convert::Base32;
 use BOM::User;
 use BOM::User::Password;
 use BOM::Platform::Token::API;
-use BOM::Test::RPC::QueueClient;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use BOM::Test::RPC::QueueClient;
 use Email::Stuffer::TestLinks;
 
 my $rpc_ct;

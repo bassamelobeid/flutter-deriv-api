@@ -1,11 +1,12 @@
 use strict;
 use warnings;
-use BOM::Test::RPC::QueueClient;
 use Test::Most;
 use Test::Mojo;
 use Test::MockModule;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis;
+use BOM::Test::RPC::QueueClient;
+
 use BOM::User;
 use utf8;
 use BOM::Platform::Token;

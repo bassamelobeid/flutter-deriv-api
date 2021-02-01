@@ -5,12 +5,12 @@ use Test::More;
 use Test::Deep;
 use Test::Mojo;
 use Test::MockModule;
-use Test::BOM::RPC::QueueClient;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use Email::Address::UseXS;
 use BOM::Test::Email qw(:no_event);
 use BOM::Platform::Token::API;
 use BOM::Test::Helper::Token;
+use Test::BOM::RPC::QueueClient;
 
 BOM::Test::Helper::Token::cleanup_redis_tokens();
 

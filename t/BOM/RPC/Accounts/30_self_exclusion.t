@@ -4,7 +4,6 @@ use utf8;
 use Test::More;
 use Test::Deep;
 use Test::Mojo;
-use Test::BOM::RPC::QueueClient;
 use Email::Address::UseXS;
 use BOM::Test::Email qw(:no_event);
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
@@ -13,6 +12,7 @@ use BOM::User;
 use BOM::User::Password;
 use BOM::Test::Helper::Token;
 use Test::BOM::RPC::Accounts;
+use Test::BOM::RPC::QueueClient;
 
 BOM::Test::Helper::Token::cleanup_redis_tokens();
 

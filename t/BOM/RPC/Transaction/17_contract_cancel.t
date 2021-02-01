@@ -2,12 +2,10 @@
 use strict;
 use warnings;
 
-use BOM::Test::RPC::QueueClient;
 use Test::Most;
 use Test::Mojo;
 use Test::MockModule;
 use Test::Deep;
-
 use Date::Utility;
 use Data::Dumper;
 
@@ -17,6 +15,7 @@ use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use BOM::Test::RPC::QueueClient;
 use BOM::Config::Redis;
 use ExpiryQueue;
 use BOM::Config::Chronicle;

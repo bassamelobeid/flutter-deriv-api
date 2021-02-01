@@ -7,8 +7,6 @@ use Test::Fatal qw(lives_ok);
 
 use MojoX::JSON::RPC::Client;
 use BOM::User::Password;
-
-use BOM::Test::RPC::QueueClient;
 use BOM::Test::Data::Utility::UnitTestDatabase;
 use BOM::Test::Email qw(:no_event);
 use BOM::RPC::v3::Utility;
@@ -16,6 +14,7 @@ use BOM::Platform::Token::API;
 use BOM::Database::Model::AccessToken;
 use BOM::User;
 use BOM::Test::Helper::Token qw(cleanup_redis_tokens);
+use BOM::Test::RPC::QueueClient;
 
 use utf8;
 

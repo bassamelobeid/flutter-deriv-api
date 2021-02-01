@@ -5,13 +5,13 @@ use Test::More;
 use Test::Deep;
 use Test::Mojo;
 use Test::MockModule;
-use Test::BOM::RPC::QueueClient;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Platform::Token::API;
 use BOM::User::Password;
 use BOM::User;
 use BOM::Test::Helper::Token;
 use Test::BOM::RPC::Accounts;
+use Test::BOM::RPC::QueueClient;
 
 BOM::Test::Helper::Token::cleanup_redis_tokens();
 

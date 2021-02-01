@@ -1,11 +1,11 @@
 use strict;
 use warnings;
-use BOM::Test::RPC::QueueClient;
 use Test::More;
 use Test::Mojo;
 use Email::Address::UseXS;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis;
+use BOM::Test::RPC::QueueClient;
 use BOM::Test::Email qw(:no_event);
 use BOM::User;
 use utf8;

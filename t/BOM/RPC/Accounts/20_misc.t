@@ -5,7 +5,6 @@ use Test::More;
 use Test::Deep;
 use Test::Mojo;
 use Test::MockModule;
-use Test::BOM::RPC::QueueClient;
 use BOM::Test::Helper::FinancialAssessment;
 use LandingCompany::Registry;
 use BOM::RPC::v3::Utility;
@@ -17,6 +16,7 @@ use Scalar::Util qw/looks_like_number/;
 use Email::Address::UseXS;
 use Digest::SHA qw(hmac_sha256_hex);
 use BOM::Test::Email qw(:no_event);
+use Test::BOM::RPC::QueueClient;
 
 sub get_values {
     my $in = shift;

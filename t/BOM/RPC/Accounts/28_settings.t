@@ -6,10 +6,11 @@ use Test::Deep;
 use Test::Mojo;
 use Test::MockModule;
 use Test::MockTime qw(set_fixed_time restore_time);
-use Test::BOM::RPC::QueueClient;
 use BOM::Test::Helper::FinancialAssessment;
 use BOM::Test::Helper::Token;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use Test::BOM::RPC::QueueClient;
+
 use Email::Address::UseXS;
 use Digest::SHA qw(hmac_sha256_hex);
 use BOM::Test::Email qw(:no_event);

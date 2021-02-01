@@ -1,7 +1,5 @@
 use strict;
 use warnings;
-
-use BOM::Test::RPC::QueueClient;
 use Test::Fatal qw/ exception/;
 use Test::Most;
 use Test::Mojo;
@@ -10,6 +8,7 @@ use Test::MockModule;
 use Test::Warn;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
+use BOM::Test::RPC::QueueClient;
 use BOM::Test::Helper::Client qw( top_up );
 use BOM::Database::Model::OAuth;
 use BOM::User::Password;

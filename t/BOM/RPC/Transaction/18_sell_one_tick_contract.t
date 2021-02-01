@@ -6,8 +6,6 @@ use Test::Most;
 use Test::Mojo;
 use Test::MockModule;
 
-use BOM::Test::RPC::QueueClient;
-
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
@@ -19,6 +17,7 @@ use Date::Utility;
 use Postgres::FeedDB;
 use BOM::Transaction;
 use BOM::Test::Data::Utility::UnitTestMarketData;
+use BOM::Test::RPC::QueueClient;
 
 my $expected_result = {
     error => {

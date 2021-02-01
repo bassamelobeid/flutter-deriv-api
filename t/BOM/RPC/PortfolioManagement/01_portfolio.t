@@ -8,11 +8,10 @@ use Test::MockModule;
 use MojoX::JSON::RPC::Client;
 use Data::Dumper;
 
-use BOM::Test::RPC::QueueClient;
-
 use BOM::Test::Data::Utility::UnitTestDatabase;
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
+use BOM::Test::RPC::QueueClient;
 use BOM::Platform::Token::API;
 use BOM::Database::ClientDB;
 use BOM::Database::Model::OAuth;

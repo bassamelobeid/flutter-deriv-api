@@ -5,10 +5,10 @@ use Test::Mojo;
 use Test::MockModule;
 use JSON::MaybeUTF8;
 
-use BOM::Test::RPC::QueueClient;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis;
+use BOM::Test::RPC::QueueClient;
 use BOM::Test::Helper::Client qw(create_client top_up);
 use BOM::MT5::User::Async;
 use BOM::Platform::Token;
