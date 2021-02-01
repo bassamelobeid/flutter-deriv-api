@@ -1,5 +1,6 @@
 use strict;
 use warnings;
+
 use Test::More;
 use Test::Deep;
 use FindBin qw/$Bin/;
@@ -17,9 +18,6 @@ use BOM::Platform::Token::API;
 use BOM::Config::Runtime;
 use BOM::Config::Chronicle;
 use Guard;
-
-cleanup_redis_tokens();
-BOM::Test::Helper::P2P::purge_redis();
 
 my $app_config = BOM::Config::Runtime->instance->app_config;
 $app_config->chronicle_writer(BOM::Config::Chronicle::get_chronicle_writer());

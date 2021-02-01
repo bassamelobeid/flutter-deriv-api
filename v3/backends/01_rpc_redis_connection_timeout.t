@@ -61,7 +61,7 @@ subtest 'Consumer service unavailability' => sub {
     $rpc_redis->stop_script();
     ok !kill(0, $pid), 'Consumer worker process killed successfully';
 
-    flush_redis();
+    $redis->flushdb();
 
     ok $response = send_request($request, 'states_list'), 'Response received after stopping Consumer';
     ok $response->{error}, 'Response contains error paramater';
@@ -99,12 +99,11 @@ subtest 'Consumer service unavailability' => sub {
 
     $rpc_redis->stop_script();
     ok !kill(0, $pid), 'Consumer worker process killed successfully';
-    flush_redis();
+
+    $redis->flushdb();
 };
 
 subtest 'redis connnection loss' => sub {
-    my $requst = {states_list => 'be'};
-
     # switch to rpc redis backend
     my $rpc_redis       = BOM::Test::Script::RpcRedis->new();
     my $expected_result = {
@@ -157,11 +156,6 @@ sub send_request {
     return $result;
 }
 
-sub flush_redis {
-    $redis->execute("FLUSHDB");
-
-    return undef;
-}
 done_testing();
 
 1;
