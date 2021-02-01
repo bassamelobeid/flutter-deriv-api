@@ -232,17 +232,11 @@ try {
 
     if ($payment_type eq 'external_cashier') {
         code_exit_BO("Remarks is mandatory for doughflow payments.") unless $remark;
-        if ($ttype eq 'CREDIT') {
-            # check if its withdrawal reversal
-            # transaction_id is not required in that case
-            if ($remark =~ 'DoughFlow withdrawal_reversal') {
-                delete $params{transaction_id};
-            } else {
-                code_exit_BO("Transaction id is mandatory for doughflow credit.") if not $params{transaction_id};
-                code_exit_BO(
-                    "Transaction id provided does not match with one provided in remark (it should be in format like: transaction_id=33232).")
-                    if $remark !~ /transaction_id=$params{transaction_id}/;
-            }
+
+        if ($ttype eq 'CREDIT' and $remark !~ /withdrawal_reversal/i) {
+            code_exit_BO("Transaction id is mandatory for doughflow credit.") if not $params{transaction_id};
+            code_exit_BO("Transaction id provided does not match with one provided in remark (it should be in format like: transaction_id=33232).")
+                if $remark !~ /transaction_id=$params{transaction_id}/;
         }
     }
 
