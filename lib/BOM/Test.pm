@@ -10,6 +10,7 @@ use Path::Tiny;
 use Syntax::Keyword::Try;
 use YAML::XS;
 use constant REDIS_KEY_COUNTER => 'redis_key_counter';
+my $perl5opt;
 
 =head1 NAME
 
@@ -82,9 +83,15 @@ BEGIN {
 
     # remove PERL5OPT which could cause confusion when forking to perls
     # different from our own (e.g. from binary-com/perl to /usr/bin/perl)
-    delete $ENV{PERL5OPT};
+    $perl5opt = delete $ENV{PERL5OPT};
 }
 
+END {
+    # make cover test HARNESS_PERL_SWITCHES conflict with --exec,
+    # so we need PERL5OPT to load BOM::Test only for make cover test
+    $ENV{PERL5OPT} = $perl5opt if $ENV{HARNESS_PERL_SWITCHES} && $perl5opt;    ## no critic (Variables::RequireLocalizedPunctuationVars)
+
+}
 # Redis test database index, used by Redis 'SELECT' command to change the database in the test env.
 my $REDIS_DB_INDEX = 10;
 # To avoid running too many Redis instances on QA machines at the same time, the test script will share Redis instances with the services
