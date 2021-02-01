@@ -43,7 +43,7 @@ ETH:
     decimal_places: 18
     safe_gas_price: 20000000000 # Wei
     internal_transaction_max_age: 8 # Hours
-    cold_wallet:
+    sweep:
         min_transfer: 10 # ETH
         max_transfer: 100 # ETH
         address: 0x067f48d1bbaab135cfbe43535cc34312facc54a1 # multis.co address
@@ -97,6 +97,10 @@ USDC:
         min_usd: 25
     protocol_cost: 0
     decimal_places: 6
+    sweep:
+        min_transfer: 100
+        max_transfer: 2000
+        address: 0x067f48d1BbaAb135cFBe43535Cc34312FACc54a1
 USDK:
     withdrawal:
         timeout: "3d"

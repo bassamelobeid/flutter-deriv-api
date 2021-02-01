@@ -216,7 +216,7 @@ payments:
         sweep_reserve_balance:
           description: "Reserve Balance of Sweep"
           isa: json_string
-          default: '{"BTC":50,"ETH":240,"LTC":1000}'
+          default: '{"BTC":50,"ETH":240,"LTC":1000, "USDC":5000}'
           global: 1
         minimum_safe_amount:
           description: "Minimum safe amount"
