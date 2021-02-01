@@ -72,6 +72,25 @@ BEGIN {
     }
 }
 
+=head2 _is_redirect_testcases_to_svg
+
+This method checks whether in ci or qa testdb environement and not a collector
+
+Returns true if the condition satisfied otherwise false
+
+=cut
+
+sub _is_redirect_testcases_to_svg {
+    my $self = shift;
+
+    my $db_postfix = $ENV{DB_POSTFIX} // '';
+
+    my $test_db_on_qa = (BOM::Config::on_qa() and $db_postfix eq '_test');
+    my $test_on_ci    = BOM::Config::on_ci();
+
+    return (($test_db_on_qa or $test_on_ci) and $self->{operation} ne 'collector');
+}
+
 sub _build_db {
     my $self   = shift;
     my $domain = $environment->{$self->broker_code};
@@ -84,11 +103,7 @@ sub _build_db {
 
     # TODO: This part should not be around once we have unit_test cluster ~ JACK
     # redirect all of our client testcases to svg except for collector
-    $domain = ((
-            (BOM::Config::on_qa() and $db_postfix eq '_test')
-                or BOM::Config::on_development())
-            and $self->{operation} ne 'collector'
-    ) ? 'svg' : $domain;
+    $domain = $self->_is_redirect_testcases_to_svg() ? 'svg' : $domain;
 
     my $type = $self->operation;
 
