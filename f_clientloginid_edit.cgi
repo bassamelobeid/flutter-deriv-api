@@ -147,6 +147,10 @@ if (defined $input{run_onfido_check}) {
     code_exit_BO(qq[<p><a href="$self_href">&laquo;Return to Client Details<a/></p>]);
 }
 
+# Deleting checked statuses
+my $status_op_summary = status_op_processor($client, \%input);
+print $status_op_summary if $status_op_summary;
+
 if ($input{delete_checked_documents} and $input{del_document_list}) {
     my $documents = $input{del_document_list};
     my @documents = ref $documents ? @$documents : ($documents);

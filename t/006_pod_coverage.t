@@ -51,7 +51,7 @@ my $allowed_naked_packages = {
     'BOM::Backoffice::Request::Base'                     => 11,
     'BOM::Backoffice::Request::Role'                     => 4,
     'BOM::MarketData::Display::VolatilitySurface'        => 8,
-    'BOM::Backoffice::CGI::SettingWebsiteStatus'         => 52
+    'BOM::Backoffice::CGI::SettingWebsiteStatus'         => 54
 };
 
 Test::Pod::CoverageChange::pod_coverage_syntax_ok(allowed_naked_packages => $allowed_naked_packages);

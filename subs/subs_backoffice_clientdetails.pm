@@ -629,6 +629,38 @@ sub link_for_remove_status_from_all_siblings {
         . (defined($messages->{enabled}) ? $messages->{enabled} : 'remove from all siblings <i>(including ' . $loginid . ')</i>') . '</a>';
 }
 
+=head2 siblings_status_summary
+
+Gets a brief description of the given status syncing among the client siblings.
+
+Takes the following arguments:
+
+=over 4
+
+=item * C<client> the client instance
+
+=item * C<code> the given status code
+
+=back
+
+Returns a string.
+
+=cut
+
+sub siblings_status_summary {
+    my ($client, $code) = @_;
+
+    return "<span style='color: gray'>doesn't have siblings across the same landing company</span>" unless $client->has_siblings();
+
+    my $sibling_loginids_without_status = $client->get_sibling_loginids_without_status($code);
+
+    return '<span style="color: gray">status synced among siblings</span>' if scalar $sibling_loginids_without_status->@* == 0;
+
+    my $siblings = join ', ', $sibling_loginids_without_status->@*;
+
+    return "<span style='color: gray'>some siblings are not synced: $siblings</span>";
+}
+
 sub link_for_copy_status_status_to_siblings {
     my ($loginid, $status_code, $messages) = @_;
     my $client                          = BOM::User::Client->new({'loginid' => $loginid});
@@ -694,39 +726,33 @@ sub build_client_warning_message {
     my %client_status =
         map { $_ => $client->status->$_ } @{$client->status->all};
     foreach my $type (@{get_untrusted_types()}) {
-        my $code = $type->{code};
-        my $remove_from_landing_company_accounts_link =
-            $client->has_siblings()
-            ? link_for_remove_status_from_all_siblings($login_id, $code)
-            : '<span style="color: gray">' . "doesn't have siblings across the same landing company" . '</span>';
-        my $copy_to_landing_company_accounts_link =
-            $client->has_siblings()
-            ? link_for_copy_status_status_to_siblings($login_id, $code)
-            : '<span style="color: gray">' . "doesn't have siblings across the same landing company" . '</span>';
+        my $code             = $type->{code};
+        my $siblings_summary = siblings_status_summary($client, $code);
+
         if (my $disabled = $client->status->$code) {
             delete $client_status{$type->{code}};
             push(
                 @output,
                 {
-                    clerk                                => $disabled->{staff_name},
-                    reason                               => $disabled->{reason},
-                    warning                              => 'red',
-                    section                              => $type->{comments},
-                    editlink                             => $edit_client_with_status->($type->{linktype}),
-                    removelink                           => $remove_client_from->($type->{linktype}),
-                    remove_from_landing_company_accounts => $remove_from_landing_company_accounts_link,
-                    copy_to_landing_company_accounts     => $copy_to_landing_company_accounts_link
+                    clerk            => $disabled->{staff_name},
+                    reason           => $disabled->{reason},
+                    warning          => 'red',
+                    code             => $code,
+                    section          => $type->{comments},
+                    editlink         => $edit_client_with_status->($type->{linktype}),
+                    siblings_summary => $siblings_summary
                 });
         }
     }
 
     # build the table
     my $output =
-          '<table border="1" class="collapsed hover alternate"><thead><tr>'
+          '<form method="POST">'
+        . '<table border="1" class="collapsed hover alternate"><thead><tr>'
+        . '<th>&nbsp;</th>'
         . '<th>STATUS</th>'
         . '<th>REASON/INFO</th>'
         . '<th>STAFF</th>'
-        . '<th colspan="2">REMOVE</th>'
         . '<th>SYNC</th>'
         . '</tr></thead><tbody>';
 
@@ -740,6 +766,9 @@ sub build_client_warning_message {
             }
 
             $output .= '<tr>'
+                . '<td align="center">'
+                . '<input type="checkbox" name="status_checked" value="'
+                . $output_rows->{'code'} . '" />' . '</td>'
                 . '<td align="left" style="color:'
                 . $output_rows->{'warning'}
                 . ';"><strong>'
@@ -752,13 +781,7 @@ sub build_client_warning_message {
                 . $output_rows->{'clerk'}
                 . '</b></td>'
                 . '<td><b>'
-                . $output_rows->{'removelink'}
-                . '</b></td>'
-                . '<td><b>'
-                . $output_rows->{'remove_from_landing_company_accounts'}
-                . '</b></td>'
-                . '<td><b>'
-                . $output_rows->{'copy_to_landing_company_accounts'}
+                . $output_rows->{'siblings_summary'}
                 . '</b></td></tr>';
         }
     }
@@ -767,6 +790,7 @@ sub build_client_warning_message {
     for my $status (sort keys %client_status) {
         my $info = $client_status{$status};
         $output .= '<tr>'
+            . '<td>&nbsp;</td>'
             . '<td align="left">'
             . $status . '</td>'
             . '<td><b>'
@@ -778,6 +802,12 @@ sub build_client_warning_message {
             . '<td colspan="4">&nbsp;</td>' . '</tr>';
     }
     $output .= '</tbody></table>';
+    $output .= '<p>';
+    $output .= '<button name="status_op" value="remove">Remove Selected</button> ';
+    $output .= '<button name="status_op" value="remove_siblings">Remove Selected including Siblings</button> ';
+    $output .= '<button name="status_op" value="sync">Copy Selected to Siblings</button>';
+    $output .= '</p>';
+    $output .= '</form>';
 
     $output .= qq~
     <script type="text/javascript" language="javascript">
@@ -796,6 +826,96 @@ sub build_client_warning_message {
     ~;
 
     return $output;
+}
+
+=head2 status_op_processor
+
+Given a input and a client, this sub will process the given statuses expecting multiple
+statsues passed.
+
+It takes the following arguments:
+
+=over 4
+
+=item * C<client> - the client instance
+
+=item * C<input> - a hashref of the user inputs
+
+=back
+
+The input should have a B<status_op> key that may contain:
+
+=over 4
+
+=item * C<remove> - this op performs a status removal from the client
+
+=item * C<remove_siblings> - the same as `remove` but will also remove the status from siblings
+
+=item * C<sync> - this op copies the given statuses to the siblings
+
+=back
+
+From the input hashref we will look for a `status_checked` value that can either be an arrayref or string (must check for that).
+This value represents the given status codes.
+
+Returns a summary to print out or undef if nothing happened.
+
+=cut
+
+sub status_op_processor {
+    my ($client, $input) = @_;
+    my $status_op      = $input->{status_op};
+    my $status_checked = $input->{status_checked} // [];
+    $status_checked = [$status_checked] unless ref($status_checked);
+
+    return undef unless $status_op;
+    return undef unless scalar $status_checked->@*;
+
+    my $loginid = $client->loginid;
+    my $summary = '';
+
+    for my $status ($status_checked->@*) {
+        try {
+            if ($status_op eq 'remove') {
+                my $client_status_clearer_method_name = 'clear_' . $status;
+                $client->status->$client_status_clearer_method_name;
+                $summary .=
+                    "<font color='lightgreen'><b>SUCCESS :</b></font>&nbsp;&nbsp;<b>$status</b>&nbsp;&nbsp;has been removed from <b>$loginid</b><br/>";
+            } elsif ($status_op eq 'remove_siblings') {
+                $summary .= status_op_processor(
+                    $client,
+                    {
+                        status_checked => [$status],
+                        status_op      => 'remove',
+                    });
+
+                my $updated_client_loginids = $client->clear_status_and_sync_to_siblings($status, BOM::Backoffice::Auth0::get_staffname());
+                my $siblings                = join ', ', $updated_client_loginids->@*;
+
+                if (scalar $updated_client_loginids->@*) {
+                    $summary .=
+                        "<font color='lightgreen'><b>SUCCESS :</b></font>&nbsp;&nbsp;<b>$status</b>&nbsp;&nbsp;has been removed from siblings:<b>$siblings</b><br/>";
+                }
+            } elsif ($status_op eq 'sync') {
+                my $updated_client_loginids = $client->copy_status_to_siblings($status, BOM::Backoffice::Auth0::get_staffname());
+                my $siblings                = join ', ', $updated_client_loginids->@*;
+
+                if (scalar $updated_client_loginids->@*) {
+                    $summary .=
+                        "<font color='lightgreen'><b>SUCCESS :</b></font>&nbsp;&nbsp;<b>$status</b>&nbsp;&nbsp;has been copied to siblings:<b>$siblings</b><br/>";
+                }
+            }
+        } catch {
+            my $fail_op = 'process';
+            $fail_op = 'remove'               if $status_op eq 'remove';
+            $fail_op = 'remove from siblings' if $status_op eq 'remove_siblings';
+            $fail_op = 'copy to siblings'     if $status_op eq 'sync';
+
+            $summary .= "<font color=red><b>ERROR :</b></font>&nbsp;&nbsp;Failed to $fail_op, status <b>$status</b>. Please try again.<br/>";
+        }
+    }
+
+    return $summary;
 }
 
 ## get_untrusted_client_reason ###############################
