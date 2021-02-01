@@ -133,7 +133,6 @@ sub on_development {
     return env() =~ /^development/;
 }
 
-# WARNING If you want to add one more redis configure file, please don't forget to add it into BOM::Test::purge_redis also.
 sub redis_replicated_config {
     state $config = YAML::XS::LoadFile('/etc/rmg/redis-replicated.yml');
     return $config;
