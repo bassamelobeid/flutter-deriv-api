@@ -680,6 +680,11 @@ system:
           isa: Bool
           default: 1
           global: 1
+        wallets:
+          description: "Suspend Wallets - e.g. allow wallet-only RPC calls to be accessed by trading accounts"
+          isa: Bool
+          default: 1
+          global: 1
     stop:
       description: "Stop one or more of our services"
       isa: section
