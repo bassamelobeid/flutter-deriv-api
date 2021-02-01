@@ -35,5 +35,5 @@ syntax:
 
 cover:
 	cover -delete
-	HARNESS_PERL_SWITCHES=-MDevel::Cover DEVEL_COVER_OPTIONS=-'ignore,^t/' /etc/rmg/bin/prove --timer -rl --norc -MBOM::Test -MBOM::Test::Script::ExperianMock t/BOM/
+	PERL5OPT=-MBOM::Test HARNESS_PERL_SWITCHES=-MDevel::Cover DEVEL_COVER_OPTIONS=-'ignore,^t/' /etc/rmg/bin/prove --timer -rl --norc  -MBOM::Test::Script::ExperianMock t/BOM/
 	cover -report coveralls
