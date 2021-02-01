@@ -344,8 +344,8 @@ subtest 'create advert (sell)' => sub {
             qw( amount amount_display max_order_amount max_order_amount_display min_order_amount min_order_amount_display remaining_amount remaining_amount_display payment_info contact_info)
         };
         cmp_deeply($resp->{p2p_advert_info}, \%expected, 'Advert info sensitive fields hidden');
-
     };
+    
 };
 
 subtest 'create order (buy)' => sub {
@@ -600,6 +600,26 @@ subtest 'show real names' => sub {
         });
     cmp_deeply($resp->{p2p_order_dispute}{advertiser_details}, superhashof($advertiser_names), 'order dispute advertiser names returned');  
     cmp_deeply($resp->{p2p_order_dispute}{client_details}, superhashof($client_names), 'order dispute client names returned');
+};
+
+subtest 'ad list name search' => sub {
+    $t->await::authorize({authorize => $token_advertiser});
+    
+    $client_advertiser->p2p_advertiser_update(name => 'aaa');
+    
+    $resp = $t->await::p2p_advert_list({
+            p2p_advert_list => 1,
+            sort_by => 'completion',
+            advertiser_name => 'a'});
+    
+    ok $resp->{p2p_advert_list}{list}->@*, 'got results';
+    
+    $resp = $t->await::p2p_advert_list({
+            p2p_advert_list => 1,
+            sort_by => 'completion',
+            advertiser_name => 'b'});
+    
+    ok !$resp->{p2p_advert_list}{list}->@*, 'got no results';
 };
 
 $t->finish_ok;
