@@ -65,11 +65,13 @@ sub proposal {
             success => sub {
                 my ($c, $rpc_response, $req_storage) = @_;
                 my $cache = {
-                    longcode            => $rpc_response->{longcode},
-                    contract_parameters => delete $rpc_response->{contract_parameters},
-                    payout              => $rpc_response->{payout},
-                    skip_basis_override => delete $rpc_response->{skip_basis_override} // 0,
-                    skip_streaming      => delete $rpc_response->{skip_streaming} // 0,
+                    longcode             => $rpc_response->{longcode},
+                    contract_parameters  => delete $rpc_response->{contract_parameters},
+                    payout               => $rpc_response->{payout},
+                    skip_streaming       => delete $rpc_response->{skip_streaming} // 0,
+                    subscription_channel => delete $rpc_response->{subscription_channel},
+                    subchannel           => delete $rpc_response->{subchannel},
+                    channel              => delete $rpc_response->{channel},
                 };
                 $cache->{contract_parameters}->{app_markup_percentage} = $c->stash('app_markup_percentage') // 0;
                 $req_storage->{uuid} = _pricing_channel_for_proposal($c, $req_storage->{args}, $cache, 'Proposal')->{uuid};
@@ -311,29 +313,12 @@ sub _serialize_contract_parameters {
 sub _pricing_channel_for_proposal {
     my ($c, $args, $cache, $class) = @_;
 
-    my $price_daemon_cmd = 'price';
-
-    my %args_hash = %{$args};
-    if (not $cache->{skip_basis_override} and $args_hash{basis} and defined $args_hash{amount}) {
-        $args_hash{amount} = 1000;
-        $args_hash{basis}  = 'payout';
-    }
-
-    delete $args_hash{passthrough};
-
-    $args_hash{language}         = $c->stash('language') || 'EN';
-    $args_hash{price_daemon_cmd} = $price_daemon_cmd;
-    $args_hash{landing_company}  = $c->landing_company_name;
-    # use residence when available, fall back to IP country
-    $args_hash{country_code}           = $c->stash('residence') || $c->stash('country_code');
-    $args_hash{skips_price_validation} = 1;
-
-    my $pricer_args = _serialized_args(\%args_hash);    # name of the redis set on redis-pricer holding subchannel's as values.
-    my $subchannel    = _serialize_contract_parameters($cache->{contract_parameters});   # parameters needed by price-daemon for price-adjustment.
-    my $redis_channel = $pricer_args . '::' . $subchannel;                               # name of the redis channel that price-daemon publishes into.
+    my $channel              = $cache->{channel};                 # name of the redis set on redis-pricer holding subchannel's as values.
+    my $subchannel           = $cache->{subchannel};              # parameters needed by price-daemon for price-adjustment.
+    my $subscription_channel = $cache->{subscription_channel};    # name of the redis channel that price-daemon publishes into.
 
     # uuid is needed regardless of whether its subscription or not
-    return _create_pricer_channel($c, $args, $redis_channel, $subchannel, $pricer_args, $class, $cache, $cache->{skip_streaming});
+    return _create_pricer_channel($c, $args, $subscription_channel, $subchannel, $channel, $class, $cache, $cache->{skip_streaming});
 }
 
 sub pricing_channel_for_proposal_open_contract {
