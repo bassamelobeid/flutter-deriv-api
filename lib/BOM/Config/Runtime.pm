@@ -13,11 +13,6 @@ has 'app_config' => (
     lazy_build => 1,
 );
 
-has quant_config => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
 my $instance;
 
 BEGIN {
@@ -37,16 +32,6 @@ sub _build_app_config {
         definition_yml   => '/home/git/regentmarkets/bom-config/share/app_config_definitions.yml',
         chronicle_reader => BOM::Config::Chronicle::get_chronicle_reader(),
         setting_name     => BOM::Config->brand->name,
-    );
-}
-
-sub _build_quant_config {
-    my $self = shift;
-    return App::Config::Chronicle->new(
-        definition_yml   => '/home/git/regentmarkets/bom-config/share/limits.yml',
-        chronicle_reader => BOM::Config::Chronicle::get_chronicle_reader(),
-        chronicle_writer => BOM::Config::Chronicle::get_chronicle_writer(),
-        setting_name     => 'limits',
     );
 }
 

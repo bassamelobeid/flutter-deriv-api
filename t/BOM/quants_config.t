@@ -33,6 +33,7 @@ subtest 'save_config' => sub {
         'throws if unknown underlying symbol';
     throws_ok { $qc->save_config('commission', +{%$args, ITM_1 => 'frxUSDJPY'}) } qr/invalid input for ITM_1/,
         'throws if unknown floor rate is invalid';
+    throws_ok { $qc->save_config('xxxxx', $args) } qr/unregconized config type/, 'throws if unregconized config type';
     ok $qc->save_config('commission', $args), 'config saved';
     my $saved = $qc->chronicle_reader->get('quants_config', 'commission')->{test};
     is_deeply $saved->{contract_type},   [split ',', $args->{contract_type}],   'contract_type matches';
@@ -166,9 +167,22 @@ subtest '_cleanup' => sub {
     ok !@$configs, 'it did not get saved';
 };
 
+subtest 'multiplier_config' => sub {
+    $qc = BOM::Config::QuantsConfig->new(
+        chronicle_reader => BOM::Config::Chronicle::get_chronicle_reader(Date::Utility->new),
+        chronicle_writer => BOM::Config::Chronicle::get_chronicle_writer,
+        recorded_date    => Date::Utility->new
+    );
+
+    ok $qc->get_multiplier_config('maltainvest', 'frxUSDJPY'), 'get_multiplier_config';
+    ok $qc->get_multiplier_config(undef,         'R_100'),     'get_multiplier_config common';
+    my $args = $qc->get_multiplier_config_default();
+    ok $qc->save_config('multiplier_config::common::R_10', $args->{common}{R_10}), 'multiplier_config saved';
+    ok !BOM::Config::Chronicle::clear_connections(), 'clear_connections';
+};
+
 sub clear_config {
     $qc->chronicle_writer->set('quants_config', 'commission', +{}, Date::Utility->new);
-
 }
 
 done_testing();

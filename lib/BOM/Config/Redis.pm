@@ -179,12 +179,6 @@ sub redis_pricer_subscription_write {
 
 Returns a readable L<RedisDB> handle to our shared pricer Redis service.
 
-=head2 redis_pricer_shared_write
-
-    my $redis = BOM::Config::Redis::redis_pricer_shared_write();
-
-Returns a writable L<RedisDB> handle to our shared shared pricer Redis service.
-
 =cut
 
 sub redis_pricer_shared {
@@ -192,6 +186,14 @@ sub redis_pricer_shared {
     my %args = @_;
     return _redis('pricer_shared', 'read', $args{timeout} // 10);
 }
+
+=head2 redis_pricer_shared_write
+
+    my $redis = BOM::Config::Redis::redis_pricer_shared_write();
+
+Returns a writable L<RedisDB> handle to our shared shared pricer Redis service.
+
+=cut
 
 sub redis_pricer_shared_write {
     $config->{pricer_shared} //= BOM::Config::redis_pricer_shared_config();
