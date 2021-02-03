@@ -267,8 +267,6 @@ responses.
 $BOM::Test::WebsocketAPI::Data::rpc_response = sub {
     my ($request) = @_;
 
-    my $subscribe = $request->{params}->{args}->{subscribe} ? 1 : 0;
-
     my $req_key = req_key($request);
 
     my $module = $rpc_req_to_module->{$req_key};
@@ -291,7 +289,6 @@ $BOM::Test::WebsocketAPI::Data::rpc_response = sub {
 
         # create new contract on buy - first need to clone all params
         local $_ = clone($_) if $request->{method} eq 'buy';
-        $_->{subscribe} = $subscribe;
 
         # then create the new contract
         if ($request->{method} eq 'buy') {
