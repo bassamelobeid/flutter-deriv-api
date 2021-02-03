@@ -18,6 +18,7 @@ my $allowed_naked_packages = {
     'BOM::RPC::Feed::Writer'                => 11,
     'BOM::RPC::v3::CopyTrading'             => 0,
     'BOM::RPC::v3::P2P'                     => 2,
+    'BOM::RPC::v3::Pricing'                 => 0,
     'BOM::RPC::v3::Transaction'             => 6,
     'BOM::RPC::v3::Contract'                => 4,
     'BOM::RPC::v3::Static'                  => 1,
