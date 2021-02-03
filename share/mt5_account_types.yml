@@ -116,6 +116,14 @@ demo_svg_gaming_financial: &demo_svg_gaming_financial
 demo\svg: *demo_svg_gaming_financial
 demo01\synthetic\svg_std_usd: *demo_svg_gaming_financial
 
+demo_bvi_financial_financial_stp: &demo_bvi_financial_financial_stp
+  account_type: demo
+  landing_company_short: bvi
+  market_type: financial
+  sub_account_type: financial_stp
+  server: demo01
+demo\bvi_financial_stp: *demo_bvi_financial_financial_stp
+demo01\financial\bvi_stp_usd: *demo_bvi_financial_financial_stp
 
 real_bvi_financial_financial_stp: &real_bvi_financial_financial_stp
   account_type: real
