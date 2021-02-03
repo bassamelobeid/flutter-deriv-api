@@ -84,7 +84,6 @@ sub _is_redirect_testcases_to_svg {
     my $self = shift;
 
     my $db_postfix = $ENV{DB_POSTFIX} // '';
-
     my $test_db_on_qa = (BOM::Config::on_qa() and $db_postfix eq '_test');
     my $test_on_ci    = BOM::Config::on_ci();
 
@@ -142,7 +141,7 @@ sub _cached_db {
         $db->dbic->dbh->selectall_arrayref('SELECT audit.set_staff(?::TEXT, ?::CIDR)', undef, @ENV{qw/AUDIT_STAFF_NAME AUDIT_STAFF_IP/});
     }
 
-    if (BOM::Config->env() =~ /(^development$)|(^qa)/
+    if ((BOM::Config->on_qa() or BOM::Config->on_ci()))
         and $self->{operation} =~ /^(replica|backoffice_replica)$/)
     {
         # Currently in QA/CI environments, the database is setup such that user is able
