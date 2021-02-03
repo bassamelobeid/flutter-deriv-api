@@ -83,7 +83,7 @@ Returns true if the condition satisfied otherwise false
 sub _is_redirect_testcases_to_svg {
     my $self = shift;
 
-    my $db_postfix = $ENV{DB_POSTFIX} // '';
+    my $db_postfix    = $ENV{DB_POSTFIX} // '';
     my $test_db_on_qa = (BOM::Config::on_qa() and $db_postfix eq '_test');
     my $test_on_ci    = BOM::Config::on_ci();
 
