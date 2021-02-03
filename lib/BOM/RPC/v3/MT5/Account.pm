@@ -589,7 +589,7 @@ async_rpc "mt5_new_account",
             and not $client->status->crs_tin_information);
     }
     if (    $account_type ne 'demo'
-        and $company_name eq 'labuan'
+        and ($company_name eq 'labuan' or $company_name eq 'bvi')
         and not $client->fully_authenticated)
     {
         $client->status->setnx('allow_document_upload', 'system', 'MT5_ACCOUNT_IS_CREATED');
@@ -598,9 +598,13 @@ async_rpc "mt5_new_account",
 
     #TODO (JB): clean up old group name after we have migrated all accounts to new group
     # - real\labuan_financial_stp
-    if (    $client->tax_residence
+    if (
+            $client->tax_residence
         and $account_type ne 'demo'
-        and ($group eq 'real\labuan_financial_stp' or $group =~ /real\d{2}\\financial\\labuan_stp_usd/))
+        and (  $group eq 'real\labuan_financial_stp'
+            or $group =~ /real\d{2}\\financial\\labuan_stp_usd/
+            or $group eq 'real\bvi_financial_stp'
+            or $group =~ /real\d{2}\\financial\\bvi_stp_usd/))
     {
         # In case of having more than a tax residence, client residence will be replaced.
         my $selected_tax_residence = $client->tax_residence =~ /\,/g ? $client->residence : $client->tax_residence;
@@ -1964,7 +1968,7 @@ sub _mt5_validate_and_get_amount {
 
             # Deposit should be locked if mt5 vanuatu/labuan account is disabled
             if (    $action eq 'deposit'
-                and $mt5_group =~ /(?:labuan|vanuatu)/)
+                and $mt5_group =~ /(?:labuan|vanuatu|bvi)/)
             {
                 my $hex_rights   = BOM::Config::mt5_user_rights()->{'rights'};
                 my %known_rights = map { $_ => hex $hex_rights->{$_} } keys %$hex_rights;
@@ -2211,7 +2215,7 @@ sub _validate_client {
 
     my $mt5_lc_short = $mt5_lc->short;
 
-    unless (($lc eq 'svg' and ($mt5_lc_short eq 'vanuatu' or $mt5_lc_short eq 'labuan'))
+    unless (($lc eq 'svg' and ($mt5_lc_short eq 'vanuatu' or $mt5_lc_short eq 'labuan' or $mt5_lc_short eq 'bvi'))
         or ($lc eq 'maltainvest' and $mt5_lc_short eq 'malta')
         or ($lc eq 'malta'       and $mt5_lc_short eq 'maltainvest')
         or $mt5_lc_short eq $lc)
