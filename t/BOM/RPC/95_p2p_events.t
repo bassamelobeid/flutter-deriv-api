@@ -3,6 +3,7 @@ use warnings;
 
 use Test::More;
 use Test::MockModule;
+use Test::Deep;
 
 use BOM::Test::Helper::P2P;
 use BOM::RPC::v3::P2P;
@@ -10,12 +11,9 @@ use BOM::Config::Runtime;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 
-my @emit_args;
+my @emitted;
 my $mock_emitter = Test::MockModule->new('BOM::Platform::Event::Emitter');
-$mock_emitter->mock(
-    'emit' => sub {
-        @emit_args = @_;
-    });
+$mock_emitter->mock('emit' => sub { push @emitted, [@_]; });
 
 BOM::Test::Helper::P2P::bypass_sendbird();
 my $escrow = BOM::Test::Helper::P2P::create_escrow();
@@ -36,8 +34,7 @@ subtest 'p2p order create and confirm' => sub {
     );
     my $client = BOM::Test::Helper::P2P::create_advertiser(balance => 100);
 
-    undef @emit_args;
-
+    @emitted = ();
     $call_args = {
         client => $client,
         args   => {
@@ -46,60 +43,105 @@ subtest 'p2p order create and confirm' => sub {
         },
     };
     my $order = BOM::RPC::v3::P2P::p2p_order_create($call_args);
-    is scalar @emit_args, 2, 'emitter is called';
-    is $emit_args[0], 'p2p_order_created', 'emitted event name is correct';
 
-    is_deeply $emit_args[1],
-        {
-        client_loginid => $client->loginid,
-        order_id       => $order->{id}
-        },
-        'order-created event args are correct';
-
-    undef @emit_args;
+    cmp_deeply(
+        \@emitted,
+        bag(
+            [
+                'p2p_order_created',
+                {
+                    client_loginid => $client->loginid,
+                    order_id       => $order->{id},
+                },
+            ],
+            [
+                'p2p_advertiser_updated',
+                {
+                    client_loginid => $client->loginid,
+                }
+            ],
+            [
+                'p2p_advertiser_updated',
+                {
+                    client_loginid => $advertiser->loginid,
+                }
+            ]             
+        ),
+        'expected events for order create'
+    );
+        
+    @emitted = ();
     $call_args->{args} = {
         id => $order->{id},
     };
     my $result = BOM::RPC::v3::P2P::p2p_order_confirm($call_args);
-    is_deeply $result,
+    cmp_deeply(
+        $result,
         {
-        id     => $order->{id},
-        status => 'buyer-confirmed'
+            id     => $order->{id},
+            status => 'buyer-confirmed'
         },
-        'order is successfully confirmed';
-    is scalar @emit_args, 2, 'emitter is called';
-    is $emit_args[0], 'p2p_order_updated', 'emitted event name is correct';
+        'order is successfully confirmed'
+    );
+        
+    cmp_deeply(
+        \@emitted,
+        [
+            [
+                'p2p_order_updated',
+                {
+                    client_loginid => $client->loginid,
+                    order_id       => $order->{id},
+                    order_event    => 'confirmed',
+                },
+            ],
 
-    is_deeply $emit_args[1],
-        {
-        client_loginid => $client->loginid,
-        order_id       => $order->{id},
-        order_event    => 'confirmed',
-        },
-        'buyer confirmation event args are correct';
-
-    undef @emit_args;
+            
+        ],
+        'expected event for order confirmation'
+    );
+        
+    @emitted = ();
     $call_args->{client} = $advertiser;
     $call_args->{args}   = {
         id => $order->{id},
     };
     $result = BOM::RPC::v3::P2P::p2p_order_confirm($call_args);
-    is_deeply $result,
+    cmp_deeply( 
+        $result,
         {
-        id     => $order->{id},
-        status => 'completed'
+            id     => $order->{id},
+            status => 'completed'
         },
-        'order is successfully completed';
-    is scalar @emit_args, 2, 'emitter is called';
-    is $emit_args[0], 'p2p_order_updated', 'emitted event name is correct';
+        'order is successfully completed'
+    );
 
-    is_deeply $emit_args[1],
-        {
-        client_loginid => $advertiser->loginid,
-        order_id       => $order->{id},
-        order_event    => 'confirmed',
-        },
-        'buyer confirmation event args are correct';
+    cmp_deeply(
+        \@emitted,
+        bag(
+            [
+                'p2p_order_updated',
+                {
+                    client_loginid => $advertiser->loginid,
+                    order_id       => $order->{id},
+                    order_event    => 'confirmed',
+                },
+            ],
+            [
+                'p2p_advertiser_updated',
+                {
+                    client_loginid => $client->loginid,
+                }
+            ],
+            [
+                'p2p_advertiser_updated',
+                {
+                    client_loginid => $advertiser->loginid,
+                }
+            ]            
+        ),
+        'expected event for order completion'
+    );
 };
 
 subtest 'p2p order create and cancel' => sub {
@@ -109,8 +151,7 @@ subtest 'p2p order create and cancel' => sub {
     );
     my $client = BOM::Test::Helper::P2P::create_advertiser(balance => 100);
 
-    undef @emit_args;
-
+    @emitted = ();
     $call_args = {
         client => $client,
         args   => {
@@ -119,37 +160,75 @@ subtest 'p2p order create and cancel' => sub {
         },
     };
     my $order = BOM::RPC::v3::P2P::p2p_order_create($call_args);
-    is scalar @emit_args, 2, 'emitter is called';
-    is $emit_args[0], 'p2p_order_created', 'emitted event name is correct';
 
-    is_deeply $emit_args[1],
-        {
-        client_loginid => $client->loginid,
-        order_id       => $order->{id}
-        },
-        'order-created event args are correct';
+    cmp_deeply(
+        \@emitted,
+        bag(
+            [
+                'p2p_order_created',
+                {
+                    client_loginid => $client->loginid,
+                    order_id       => $order->{id},
+                },
+            ],
+            [
+                'p2p_advertiser_updated',
+                {
+                    client_loginid => $client->loginid,
+                }
+            ],
+            [
+                'p2p_advertiser_updated',
+                {
+                    client_loginid => $advertiser->loginid,
+                }
+            ]            
+        ),
+        'expected events for order create'
+    );
 
-    undef @emit_args;
+    @emitted = ();
     $call_args->{args} = {
         id => $order->{id},
     };
     my $result = BOM::RPC::v3::P2P::p2p_order_cancel($call_args);
-    is_deeply $result,
+    cmp_deeply(
+        $result,
         {
-        id     => $order->{id},
-        status => 'cancelled'
+            id     => $order->{id},
+            status => 'cancelled'
         },
-        'order is successfully cancelled';
-    is scalar @emit_args, 2, 'emitter is called';
-    is $emit_args[0], 'p2p_order_updated', 'emitted event name is correct';
+        'order is successfully cancelled'
+    );
 
-    is_deeply $emit_args[1],
-        {
-        client_loginid => $client->loginid,
-        order_id       => $order->{id},
-        order_event    => 'cancelled',
-        },
-        'cancellation event args are correct';
+    cmp_deeply( 
+        \@emitted,
+        bag(
+            [
+                'p2p_order_updated',
+                {
+                    client_loginid => $client->loginid,
+                    order_id       => $order->{id},
+                    order_event    => 'cancelled',
+                },
+                
+            ],
+            [
+                'p2p_advertiser_updated',
+                {
+                    client_loginid => $client->loginid,
+                }
+            ],
+            [
+                'p2p_advertiser_updated',
+                {
+                    client_loginid => $advertiser->loginid,
+                }
+            ]              
+        ),
+        'expected events emitted for cancellation'
+    );
+ 
 };
 
 subtest 'Order dispute (type buy)' => sub {
@@ -167,17 +246,23 @@ subtest 'Order dispute (type buy)' => sub {
         dispute_reason => 'seller_not_released',
     };
 
-    undef @emit_args;
+    @emitted = ();
     my $result = BOM::RPC::v3::P2P::p2p_order_dispute($params);
-    is scalar @emit_args, 2, 'emitter is called';
-    is $emit_args[0], 'p2p_order_updated', 'emitted event name is correct';
-    is_deeply $emit_args[1],
-        {
-        client_loginid => $client->loginid,
-        order_id       => $order->{id},
-        order_event    => 'dispute',
-        },
-        'dispute event args are correct';
+
+    cmp_deeply(
+        \@emitted,
+        [
+            [
+                'p2p_order_updated',
+                {
+                    client_loginid => $client->loginid,
+                    order_id       => $order->{id},
+                    order_event    => 'dispute',
+                },
+            ],
+        ],
+        'expected event for dispute'
+    );    
 };
 
 done_testing()
