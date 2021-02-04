@@ -60,7 +60,7 @@ subtest 'create mt5 client with different currency' => sub {
         };
         my $result = $c->call_ok($method, $params)->has_no_error('gaming account successfully created')->result;
         is $result->{account_type}, 'gaming';
-        is $result->{login},        'MTR' . $ACCOUNTS{'real02\synthetic\svg_std_usd'};
+        is $result->{login},        'MTR' . $ACCOUNTS{'real\p01_ts02\synthetic\svg_std_usd\01'};
 
         BOM::RPC::v3::MT5::Account::reset_throttler($new_client->loginid);
 
@@ -68,8 +68,7 @@ subtest 'create mt5 client with different currency' => sub {
         # This will be improved when we have more information on which account is disabled.
         note("set app_config->system->mt5->real02->all(1)");
         $app_config->system->mt5->suspend->real02->all(1);
-        $c->call_ok($method, $params)->has_error->error_code_is('MT5CreateUserError')
-            ->error_message_is('MT5 is currently unavailable. Please try again later.');
+        $result = $c->call_ok($method, $params)->has_error->error_code_is('MT5CreateUserError')->error_message_is('MT5 is currently unavailable. Please try again later.');
 
         BOM::RPC::v3::MT5::Account::reset_throttler($new_client->loginid);
 
@@ -125,7 +124,7 @@ subtest 'create mt5 client with different currency' => sub {
         };
         my $result = $c->call_ok($method, $params)->has_no_error('gaming account successfully created')->result;
         is $result->{account_type}, 'gaming';
-        is $result->{login},        'MTR' . $ACCOUNTS{'real02\synthetic\svg_std_usd'};
+        is $result->{login},        'MTR' . $ACCOUNTS{'real\p01_ts02\synthetic\svg_std_usd\01'};
 
         $new_email  = 'abcd' . $DETAILS{email};
         $new_client = create_client('CR', undef, {residence => 'tz'});
@@ -145,7 +144,7 @@ subtest 'create mt5 client with different currency' => sub {
 
         $result = $c->call_ok($method, $params)->has_no_error('gaming account successfully created')->result;
         is $result->{account_type}, 'gaming';
-        is $result->{login},        'MTR' . $ACCOUNTS{'real01\synthetic\svg_std_usd'};
+        is $result->{login},        'MTR' . $ACCOUNTS{'real\p01_ts01\synthetic\svg_std_usd\01'};
 
     };
 };

@@ -507,18 +507,18 @@ subtest 'Get accounts list for transfer_between_accounts' => sub {
     $rpc_ct->call_ok('mt5_new_account', $params)->has_no_error('no error for financial_stp mt5_new_account');
 
     my @mt5_accounts = ({
-            loginid      => 'MTR' . $ACCOUNTS{'real01\financial\svg_std_usd'},
+            loginid      => 'MTR' . $ACCOUNTS{'real\p01_ts01\financial\svg_std_usd'},
             balance      => num($DETAILS{balance}),
             currency     => 'USD',
             account_type => 'mt5',
-            mt5_group    => 'real01\financial\svg_std_usd'
+            mt5_group    => 'real\p01_ts01\financial\svg_std_usd'
         },
         {
-            loginid      => 'MTR' . $ACCOUNTS{'real01\financial\labuan_stp_usd'},
+            loginid      => 'MTR' . $ACCOUNTS{'real\p01_ts01\financial\labuan_stp_usd'},
             balance      => num($DETAILS{balance}),
             currency     => 'USD',
             account_type => 'mt5',
-            mt5_group    => 'real01\financial\labuan_stp_usd'
+            mt5_group    => 'real\p01_ts01\financial\labuan_stp_usd'
         },
     );
     $params->{args} = {accounts => 'all'};

@@ -8,6 +8,8 @@ use warnings;
 #   t/lib/mock_binary_mt5.pl
 
 our %MT5_ACCOUNTS = (
+    # TODO (JB): to clean up old mt5 groups in test
+    # FROM HERE
     'demo01\financial\svg_std_usd'            => '00001001',
     'demo01\financial\svg_stp_usd'            => '00001002',
     'demo01\financial\labuan_std_usd'         => '00001003',
@@ -31,6 +33,43 @@ our %MT5_ACCOUNTS = (
     'real03\synthetic\svg_std_usd' => '40000001',
     # real04 account
     'real04\synthetic\svg_std_usd' => '60000001',
+    # TO HERE
+
+    'demo\p01_ts01\financial\svg_std_usd'            => '1001001',
+    'demo\p01_ts01\financial\svg_stp_usd'            => '1001002',
+    'demo\p01_ts01\financial\labuan_std_usd'         => '1001003',
+    'demo\p01_ts01\financial\labuan_stp_usd'         => '1001004',
+    'demo\p01_ts01\synthetic\svg_std_usd'            => '1001005',
+    'demo\p01_ts01\financial\maltainvest_std_gbp'    => '1001006',
+    'demo\p01_ts01\financial\maltainvest_std_eur'    => '1001007',
+    'real\p01_ts01\synthetic\malta_std_eur'          => '1001010',
+    'real\p01_ts01\financial\maltainvest_std-hr_eur' => '1001011',
+    'real\p01_ts01\financial\maltainvest_std-hr_gbp' => '1001012',
+    'real\p01_ts01\synthetic\svg_std_usd\01'         => '1001013',
+    'real\p01_ts01\synthetic\svg_std_usd\02'         => '1001013',
+    'real\p01_ts01\synthetic\svg_std_usd\03'         => '1001013',
+    'real\p01_ts01\synthetic\svg_std_usd\04'         => '1001013',
+    'real\p01_ts01\financial\svg_std-hr_usd'         => '1001014',
+    'real\p01_ts01\financial\labuan_stp_usd'         => '1001015',
+    'real\p01_ts01\financial\svg_std_usd'            => '1001016',
+    'real\p01_ts01\synthetic\malta_std_eur'          => '1001000',
+    'real\inactive_accounts_financial'               => '1002001',
+    'real\p01_ts01\financial\svg_sf_usd'             => '21000002',
+    'real\p01_ts02\synthetic\svg_std_usd\01'         => '21000001',
+    'real\p01_ts02\synthetic\svg_std_usd\02'         => '21000001',
+    'real\p01_ts02\synthetic\svg_std_usd\03'         => '21000001',
+    'real\p01_ts02\synthetic\svg_std_usd\04'         => '21000001',
+    'real\p01_ts02\synthetic\svg_sf_usd'             => '21000003',
+    # real03 account
+    'real\p01_ts03\synthetic\svg_std_usd\01' => '41000001',
+    'real\p01_ts03\synthetic\svg_std_usd\02' => '41000001',
+    'real\p01_ts03\synthetic\svg_std_usd\03' => '41000001',
+    'real\p01_ts03\synthetic\svg_std_usd\04' => '41000001',
+    # real04 account
+    'real\p01_ts04\synthetic\svg_std_usd\01' => '61000001',
+    'real\p01_ts04\synthetic\svg_std_usd\02' => '61000001',
+    'real\p01_ts04\synthetic\svg_std_usd\03' => '61000001',
+    'real\p01_ts04\synthetic\svg_std_usd\04' => '61000001',
 );
 
 our $ADD_INACTIVE_ACCOUNT = 0;

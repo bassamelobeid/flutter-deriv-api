@@ -54,7 +54,7 @@ subtest 'create mt5 client with different currency' => sub {
         };
         my $result = $c->call_ok($method, $params)->has_no_error('gaming account successfully created')->result;
         is $result->{account_type}, 'gaming';
-        is $result->{login},        'MTR' . $ACCOUNTS{'real03\synthetic\svg_std_usd'};
+        is $result->{login},        'MTR' . $ACCOUNTS{'real\p01_ts03\synthetic\svg_std_usd\01'};
 
         my $new_client_vr = create_client('VRTC');
         $new_client_vr->set_default_account('GBP');
@@ -70,7 +70,7 @@ subtest 'create mt5 client with different currency' => sub {
         $params->{args}->{account_type} = 'demo';
         $result = $c->call_ok($method, $params)->has_no_error->result;
         is $result->{account_type}, 'demo';
-        is $result->{login},        'MTD' . $ACCOUNTS{'demo01\synthetic\svg_std_usd'};
+        is $result->{login},        'MTD' . $ACCOUNTS{'demo\p01_ts01\synthetic\svg_std_usd'};
     };
 
     subtest 'mf - country=gb' => sub {
@@ -107,7 +107,7 @@ subtest 'create mt5 client with different currency' => sub {
         };
         my $result = $c->call_ok($method, $params)->has_no_error('financial account successfully created')->result;
         is $result->{account_type}, 'financial';
-        is $result->{login},        'MTR' . $ACCOUNTS{'real01\financial\maltainvest_std-hr_eur'};
+        is $result->{login},        'MTR' . $ACCOUNTS{'real\p01_ts01\financial\maltainvest_std-hr_eur'};
 
         $client    = create_client('MF', undef, {residence => 'gb'});
         $new_email = 'mf+usd@binary.com';
@@ -130,7 +130,7 @@ subtest 'create mt5 client with different currency' => sub {
 
         $result = $c->call_ok($method, $params)->has_no_error('financial account successfully created')->result;
         is $result->{account_type}, 'financial';
-        is $result->{login},        'MTR' . $ACCOUNTS{'real01\financial\maltainvest_std-hr_gbp'};
+        is $result->{login},        'MTR' . $ACCOUNTS{'real\p01_ts01\financial\maltainvest_std-hr_gbp'};
 
         $client    = create_client('MF', undef, {residence => 'gb'});
         $new_email = 'mf+gbp@binary.com';
@@ -165,7 +165,7 @@ subtest 'create mt5 client with different currency' => sub {
         delete $params->{args}->{currency};
         $result = $c->call_ok($method, $params)->has_no_error->result;
         is $result->{account_type}, 'demo';
-        is $result->{login},        'MTD' . $ACCOUNTS{'demo01\financial\maltainvest_std_gbp'};
+        is $result->{login},        'MTD' . $ACCOUNTS{'demo\p01_ts01\financial\maltainvest_std_gbp'};
     };
 
     subtest 'mf - country=de' => sub {
@@ -204,7 +204,7 @@ subtest 'create mt5 client with different currency' => sub {
         BOM::RPC::v3::MT5::Account::reset_throttler($client->loginid);
         my $result = $c->call_ok($method, $params)->has_no_error('financial account successfully created')->result;
         is $result->{account_type}, 'financial';
-        is $result->{login},        'MTR' . $ACCOUNTS{'real01\financial\maltainvest_std-hr_gbp'};
+        is $result->{login},        'MTR' . $ACCOUNTS{'real\p01_ts01\financial\maltainvest_std-hr_gbp'};
 
         $client    = create_client('MF', undef, {residence => 'de'});
         $new_email = 'mfde+usd@binary.com';
@@ -228,7 +228,7 @@ subtest 'create mt5 client with different currency' => sub {
         BOM::RPC::v3::MT5::Account::reset_throttler($client->loginid);
         $result = $c->call_ok($method, $params)->has_no_error('financial account successfully created')->result;
         is $result->{account_type}, 'financial';
-        is $result->{login},        'MTR' . $ACCOUNTS{'real01\financial\maltainvest_std-hr_eur'};
+        is $result->{login},        'MTR' . $ACCOUNTS{'real\p01_ts01\financial\maltainvest_std-hr_eur'};
 
         $client    = create_client('MF', undef, {residence => 'de'});
         $new_email = 'mfde+eur@binary.com';
@@ -252,7 +252,7 @@ subtest 'create mt5 client with different currency' => sub {
         BOM::RPC::v3::MT5::Account::reset_throttler($client->loginid);
         $result = $c->call_ok($method, $params)->has_no_error('financial account successfully created')->result;
         is $result->{account_type}, 'financial';
-        is $result->{login},        'MTR' . $ACCOUNTS{'real01\financial\maltainvest_std-hr_eur'};
+        is $result->{login},        'MTR' . $ACCOUNTS{'real\p01_ts01\financial\maltainvest_std-hr_eur'};
 
         my $new_client_vr = create_client('VRTC', undef, {residence => 'de'});
         $new_client_vr->set_default_account('USD');
@@ -265,7 +265,7 @@ subtest 'create mt5 client with different currency' => sub {
         delete $params->{args}->{currency};
         $result = $c->call_ok($method, $params)->has_no_error->result;
         is $result->{account_type}, 'demo';
-        is $result->{login},        'MTD' . $ACCOUNTS{'demo01\financial\maltainvest_std_eur'};
+        is $result->{login},        'MTD' . $ACCOUNTS{'demo\p01_ts01\financial\maltainvest_std_eur'};
     };
 
     subtest 'mf - counrty=de no real' => sub {
@@ -304,7 +304,7 @@ subtest 'create mt5 client with different currency' => sub {
         BOM::RPC::v3::MT5::Account::reset_throttler($client->loginid);
         my $result = $c->call_ok($method, $params)->has_no_error('financial account successfully created')->result;
         is $result->{account_type}, 'demo';
-        is $result->{login},        'MTD' . $ACCOUNTS{'demo01\financial\maltainvest_std_eur'};
+        is $result->{login},        'MTD' . $ACCOUNTS{'demo\p01_ts01\financial\maltainvest_std_eur'};
     };
 };
 
@@ -346,20 +346,20 @@ subtest 'auto b-booking' => sub {
     BOM::Config::Runtime->instance->app_config->system->mt5->suspend->auto_Bbook_svg_financial(1);
     my $result = $c->call_ok($method, $params)->has_no_error('gaming account successfully created')->result;
     is $result->{account_type}, 'gaming';
-    is $result->{login}, 'MTR' . $ACCOUNTS{'real03\synthetic\svg_std_usd'}, 'gaming account not affected';
+    is $result->{login}, 'MTR' . $ACCOUNTS{'real\p01_ts03\synthetic\svg_std_usd\01'}, 'gaming account not affected';
 
     $params->{args}->{account_type}     = 'financial';
     $params->{args}->{mt5_account_type} = 'financial';
     BOM::RPC::v3::MT5::Account::reset_throttler($new_client->loginid);
     $result = $c->call_ok($method, $params)->has_no_error('gaming account successfully created')->result;
     is $result->{account_type}, 'financial';
-    is $result->{login}, 'MTR' . $ACCOUNTS{'real01\financial\svg_std-hr_usd'}, 'routed to financial high risk';
+    is $result->{login}, 'MTR' . $ACCOUNTS{'real\p01_ts01\financial\svg_std-hr_usd'}, 'routed to financial high risk';
 
     $params->{args}->{mt5_account_type} = 'financial_stp';
     BOM::RPC::v3::MT5::Account::reset_throttler($new_client->loginid);
     $result = $c->call_ok($method, $params)->has_no_error('gaming account successfully created')->result;
     is $result->{account_type}, 'financial';
-    is $result->{login}, 'MTR' . $ACCOUNTS{'real01\financial\labuan_stp_usd'}, 'financial stp account no high risk flag';
+    is $result->{login}, 'MTR' . $ACCOUNTS{'real\p01_ts01\financial\labuan_stp_usd'}, 'financial stp account no high risk flag';
     #reset
     BOM::Config::Runtime->instance->app_config->system->mt5->suspend->auto_Bbook_svg_financial(0);
 };
@@ -392,7 +392,7 @@ subtest 'real & demo split on account creation' => sub {
     BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real02->all(0);
     my $result = $c->call_ok($method, $params)->has_no_error('gaming account successfully created')->result;
     is $result->{account_type}, 'gaming';
-    is $result->{login},        'MTR' . $ACCOUNTS{'real02\synthetic\svg_std_usd'};
+    is $result->{login},        'MTR' . $ACCOUNTS{'real\p01_ts02\synthetic\svg_std_usd\01'};
 
     note("disable real02 trade server's API");
     BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real02->all(1);
@@ -401,7 +401,7 @@ subtest 'real & demo split on account creation' => sub {
     $params->{args}->{account_type} = 'demo';
     $result = $c->call_ok($method, $params)->has_no_error('gaming account successfully created')->result;
     is $result->{account_type}, 'demo';
-    is $result->{login},        'MTD' . $ACCOUNTS{'demo01\synthetic\svg_std_usd'};
+    is $result->{login},        'MTD' . $ACCOUNTS{'demo\p01_ts01\synthetic\svg_std_usd'};
 };
 
 done_testing();

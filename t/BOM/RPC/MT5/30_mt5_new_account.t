@@ -159,9 +159,9 @@ subtest 'new account' => sub {
     };
     BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real03->all(0);
     $c->call_ok($method, $params)->has_no_error('no error for mt5_new_account without investPassword');
-    is($c->result->{login},           'MTR' . $ACCOUNTS{'real03\synthetic\svg_std_usd'}, 'result->{login}');
-    is($c->result->{balance},         0,                                                 'Balance is 0 upon creation');
-    is($c->result->{display_balance}, '0.00',                                            'Display balance is "0.00" upon creation');
+    is($c->result->{login},           'MTR' . $ACCOUNTS{'real\p01_ts03\synthetic\svg_std_usd\01'}, 'result->{login}');
+    is($c->result->{balance},         0,                                                           'Balance is 0 upon creation');
+    is($c->result->{display_balance}, '0.00',                                                      'Display balance is "0.00" upon creation');
 
     BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
 
@@ -611,14 +611,14 @@ subtest 'new account on addtional trade server' => sub {
         },
     };
     note("creates a gaming account with old server config");
-    $c->call_ok($method, $params)->has_no_error('mt5 new account with old config za goes real01');
-    is($c->result->{balance},         0,             'Balance is 0');
-    is($c->result->{display_balance}, '0.00',        'Display balance is "0.00"');
-    is($c->result->{currency},        'USD',         'Currency is "USD"');
-    is($c->result->{login},           'MTR00001013', 'login is MTR00001013');
+    $c->call_ok($method, $params)->has_no_error('mt5 new account with old config za goes real\p01_ts01');
+    is($c->result->{balance},         0,                                                           'Balance is 0');
+    is($c->result->{display_balance}, '0.00',                                                      'Display balance is "0.00"');
+    is($c->result->{currency},        'USD',                                                       'Currency is "USD"');
+    is($c->result->{login},           'MTR' . $ACCOUNTS{'real\p01_ts01\synthetic\svg_std_usd\01'}, 'login is MTR00001013');
 
     BOM::RPC::v3::MT5::Account::reset_throttler($new_client->loginid);
-    note('suspend mt5 real02. Tries to create financial account with new config.');
+    note('suspend mt5 real\p01_ts02. Tries to create financial account with new config.');
     BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real02->all(1);
     $mocked->unmock_all;
     $params->{args}{account_type}     = 'financial';
@@ -627,14 +627,14 @@ subtest 'new account on addtional trade server' => sub {
 #    is($c->result->{balance},         0,             'Balance is 0');
 #    is($c->result->{display_balance}, '0.00',        'Display balance is "0.00"');
 #    is($c->result->{currency},        'USD',         'Currency is "USD"');
-#    is($c->result->{login},           'MTR00001016', 'login is MTR00001016');
+#    is($c->result->{login},           'MTR000\p01_ts01\p01_ts016', 'login is MTR000\p01_ts01\p01_ts016');
     BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real02->all(0);
 
-    note('unsuspend mt5 real02. Tries to create financial account with new config.');
+    note('unsuspend mt5 real\p01_ts02. Tries to create financial account with new config.');
     BOM::RPC::v3::MT5::Account::reset_throttler($new_client->loginid);
     $params->{args}{mt5_account_category} = 'swap_free';
     $c->call_ok($method, $params)->has_no_error('mt5 new account with new config');
-    is($c->result->{login}, 'MTR20000002', 'login is MTR20000002');
+    is($c->result->{login}, 'MTR' . $ACCOUNTS{'real\p01_ts01\financial\svg_sf_usd'}, 'login is MTR20000002');
     $mocked->unmock_all;
 };
 
@@ -643,7 +643,7 @@ subtest 'new account identical account check' => sub {
     $mock_mt5_rpc->mock(
         get_mt5_logins => sub {
             return Future->done({
-                login    => 'MTR10001',
+                login    => 'MTR100\p01_ts01',
                 group    => 'real\svg',
                 balance  => 1000,
                 currency => 'USD',
@@ -674,10 +674,10 @@ subtest 'new account identical account check' => sub {
         },
     };
     note("creates a gaming account with existing account with old group name on a different server is allowed");
-    $c->call_ok($method, $params)->has_no_error('can create synthetic account on real02 when clean has identical account on real01');
+    $c->call_ok($method, $params)->has_no_error('can create synthetic account on real\p01_ts02 when clean has identical account on real\p01_ts01');
 };
 
-subtest 'country=za; creates financial account with existing gaming account while real02 disabled' => sub {
+subtest 'country=za; creates financial account with existing gaming account while real\p01_ts02 disabled' => sub {
     my $new_email  = 'abcdef' . $DETAILS{email};
     my $new_client = create_client('CR', undef, {residence => 'za'});
     my $token      = $m->create_token($new_client->loginid, 'test token 2');
@@ -704,7 +704,7 @@ subtest 'country=za; creates financial account with existing gaming account whil
     };
     my $result = $c->call_ok($method, $params)->has_no_error('gaming account successfully created')->result;
     is $result->{account_type}, 'gaming', 'account_type=gaming';
-    is $result->{login}, 'MTR' . $ACCOUNTS{'real02\synthetic\svg_std_usd'}, 'created in group real02\synthetic\svg_std_usd';
+    is $result->{login}, 'MTR' . $ACCOUNTS{'real\p01_ts02\synthetic\svg_std_usd\01'}, 'created in group real\p01_ts02\synthetic\svg_std_usd\01';
 
     BOM::RPC::v3::MT5::Account::reset_throttler($new_client->loginid);
     note("disable real02 API calls.");
@@ -714,7 +714,7 @@ subtest 'country=za; creates financial account with existing gaming account whil
     $params->{args}{mt5_account_type} = 'financial';
     my $financial = $c->call_ok($method, $params)->has_no_error->result;
     is $financial->{account_type}, 'financial', 'account_type=financial';
-    is $financial->{login}, 'MTR' . $ACCOUNTS{'real01\financial\svg_std_usd'}, 'created in group real01\financial\svg_std_usd';
+    is $financial->{login}, 'MTR' . $ACCOUNTS{'real\p01_ts01\financial\svg_std_usd'}, 'created in group real\p01_ts01\financial\svg_std_usd';
 };
 
 subtest 'country=au, financial account' => sub {
@@ -745,13 +745,13 @@ subtest 'country=au, financial account' => sub {
     };
     my $result = $c->call_ok($method, $params)->has_no_error('gaming account successfully created')->result;
     is $result->{account_type}, 'financial', 'account_type=financial';
-    is $result->{login}, 'MTR' . $ACCOUNTS{'real01\financial\svg_std_usd'}, 'created in group real01\financial\svg_std_usd';
+    is $result->{login}, 'MTR' . $ACCOUNTS{'real\p01_ts01\financial\svg_std_usd'}, 'created in group real\p01_ts01\financial\svg_std_usd';
 
     BOM::RPC::v3::MT5::Account::reset_throttler($new_client->loginid);
     $params->{args}->{account_type} = 'demo';
     $result = $c->call_ok($method, $params)->has_no_error('gaming account successfully created')->result;
     is $result->{account_type}, 'demo', 'account_type=demo';
-    is $result->{login}, 'MTD' . $ACCOUNTS{'demo01\financial\svg_std_usd'}, 'created in group demo01\financial\svg_std_usd';
+    is $result->{login}, 'MTD' . $ACCOUNTS{'demo\p01_ts01\financial\svg_std_usd'}, 'created in group demo\p01_ts01\financial\svg_std_usd';
 };
 
 done_testing();

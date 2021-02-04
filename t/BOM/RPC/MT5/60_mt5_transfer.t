@@ -148,7 +148,7 @@ subtest 'multi currency transfers' => sub {
         token    => $token,
         args     => {
             from_binary => $client_eur->loginid,
-            to_mt5      => 'MTR' . $ACCOUNTS{'real03\synthetic\svg_std_usd'},
+            to_mt5      => 'MTR' . $ACCOUNTS{'real\p01_ts03\synthetic\svg_std_usd\01'},
             amount      => $eur_test_amount,
         },
     };
@@ -157,7 +157,7 @@ subtest 'multi currency transfers' => sub {
         language => 'EN',
         token    => $token,
         args     => {
-            from_mt5  => 'MTR' . $ACCOUNTS{'real03\synthetic\svg_std_usd'},
+            from_mt5  => 'MTR' . $ACCOUNTS{'real\p01_ts03\synthetic\svg_std_usd\01'},
             to_binary => $client_eur->loginid,
             amount    => $usd_test_amount,
         },
@@ -527,7 +527,7 @@ subtest 'Transfers Limits' => sub {
         token    => $token,
         args     => {
             from_binary => $client->loginid,
-            to_mt5      => 'MTR' . $ACCOUNTS{'real03\synthetic\svg_std_usd'},
+            to_mt5      => 'MTR' . $ACCOUNTS{'real\p01_ts03\synthetic\svg_std_usd\01'},
             amount      => 1
         },
     };
@@ -563,7 +563,7 @@ subtest 'Transfers Limits' => sub {
         language => 'EN',
         token    => $token,
         args     => {
-            from_mt5  => 'MTR' . $ACCOUNTS{'real03\synthetic\svg_std_usd'},
+            from_mt5  => 'MTR' . $ACCOUNTS{'real\p01_ts03\synthetic\svg_std_usd\01'},
             to_binary => $client->loginid,
             amount    => 0.5,
         },
@@ -597,7 +597,7 @@ subtest 'Suspended Transfers Currencies' => sub {
             token    => $token,
             args     => {
                 from_binary => $client_cr_btc->loginid,
-                to_mt5      => 'MTR' . $ACCOUNTS{'real03\synthetic\svg_std_usd'},
+                to_mt5      => 'MTR' . $ACCOUNTS{'real\p01_ts03\synthetic\svg_std_usd\01'},
                 amount      => 1
             },
         };
@@ -623,7 +623,7 @@ subtest 'Simple withdraw' => sub {
         language => 'EN',
         token    => $token,
         args     => {
-            from_mt5  => 'MTR' . $ACCOUNTS{'real03\synthetic\svg_std_usd'},
+            from_mt5  => 'MTR' . $ACCOUNTS{'real\p01_ts03\synthetic\svg_std_usd\01'},
             to_binary => $client->loginid,
             amount    => 100,
         },
@@ -658,7 +658,7 @@ subtest 'offer_to_clients' => sub {
         language => 'EN',
         token    => $token,
         args     => {
-            to_mt5      => 'MTR' . $ACCOUNTS{'real03\synthetic\svg_std_usd'},
+            to_mt5      => 'MTR' . $ACCOUNTS{'real\p01_ts03\synthetic\svg_std_usd\01'},
             from_binary => $client_cr->loginid,
             amount      => 100,
         },
@@ -674,7 +674,7 @@ subtest 'offer_to_clients' => sub {
         language => 'EN',
         token    => $token,
         args     => {
-            from_mt5  => 'MTR' . $ACCOUNTS{'real03\synthetic\svg_std_usd'},
+            from_mt5  => 'MTR' . $ACCOUNTS{'real\p01_ts03\synthetic\svg_std_usd\01'},
             to_binary => $client_cr->loginid,
             amount    => 100,
         },

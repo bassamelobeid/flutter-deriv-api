@@ -52,6 +52,7 @@ use constant MT5_SVG_FINANCIAL_REAL_LEVERAGE => 1000;
 
 use constant MT5_VIRTUAL_MONEY_DEPOSIT_COMMENT => 'MT5 Virtual Money deposit';
 
+my $MT5_PLATFORM_STR = 'p01';
 use constant MT5_FINANCIAL_DEFAULT_SERVER => 'real01';
 
 my $error_registry = BOM::RPC::v3::MT5::Errors->new();
@@ -288,14 +289,16 @@ sub _mt5_group {
 
     my $market_type = _get_market_type($account_type, $mt5_account_type);
 
-    my ($server_type, $sub_account_type);
+    my ($server_type, $sub_account_type, $group_type);
     if ($account_type eq 'demo') {
+        $group_type = $account_type;
         # $server_type is defaulted to 01 for demo since we do not have demo trade server cluster
         $server_type      = '01';
         $sub_account_type = _get_sub_account_type($mt5_account_type, $account_category);
     } else {
         # real group mapping
         $account_type     = 'real';
+        $group_type       = $account_type;
         $server_type      = _get_server_type($account_type, $country, $market_type);
         $sub_account_type = _get_sub_account_type($mt5_account_type, $account_category);
         # All svg financial account will be B-book (put in hr[high-risk] upon sign-up. Decisions to A-book will be done
@@ -315,9 +318,30 @@ sub _mt5_group {
     # - user from Ireland trade server country list will be allowed to create account on real01, real02, real03 and real04
     return '' if (defined $user_input_trade_server and $server_type ne '01' and $user_input_trade_server eq MT5_FINANCIAL_DEFAULT_SERVER);
 
-    my $mt5_trade_server = defined $user_input_trade_server ? $user_input_trade_server : ${account_type} . ${server_type};
+    # We only have a sub-group for a specific group (real\synthetic\svg_std_usd). We believed MT5 can't handle too many
+    # accounts in the real group despite having the similar account numbers in demo server. So, just do it.
+    # We have four sub-groups (01, 02, 03 & 04) and the accounts are randomly distributed.
+    my $sub_group;
+    if (    $landing_company_short eq 'svg'
+        and $sub_account_type eq 'std'
+        and lc($currency) eq 'usd'
+        and $market_type eq 'synthetic'
+        and $group_type eq 'real')
+    {
+        my $rand = 1 + int(rand(4));
+        $sub_group = '0' . $rand;
+    }
 
-    return ${mt5_trade_server} . '\\' . $market_type . '\\' . join('_', map { lc $_ } ($landing_company_short, $sub_account_type, $currency));
+    if ($user_input_trade_server) {
+        ($server_type) = $user_input_trade_server =~ /^(?:real|demo)(\d+)$/;
+    }
+
+    my @group_bits =
+        ($group_type, "${MT5_PLATFORM_STR}_ts${server_type}", $market_type, join('_', ($landing_company_short, $sub_account_type, $currency)));
+    push @group_bits, $sub_group if defined $sub_group;
+
+    # just making sure everything is lower case!
+    return lc(join('\\', @group_bits));
 }
 
 =head2 _get_server_type
@@ -602,9 +626,9 @@ async_rpc "mt5_new_account",
             $client->tax_residence
         and $account_type ne 'demo'
         and (  $group eq 'real\labuan_financial_stp'
-            or $group =~ /real\d{2}\\financial\\labuan_stp_usd/
+            or $group =~ /real(?:\\${MT5_PLATFORM_STR}_ts)?\d{2}\\financial\\labuan_stp_usd/
             or $group eq 'real\bvi_financial_stp'
-            or $group =~ /real\d{2}\\financial\\bvi_stp_usd/))
+            or $group =~ /real(?:\\${MT5_PLATFORM_STR}_ts)?\d{2}\\financial\\bvi_stp_usd/))
     {
         # In case of having more than a tax residence, client residence will be replaced.
         my $selected_tax_residence = $client->tax_residence =~ /\,/g ? $client->residence : $client->tax_residence;
@@ -1562,7 +1586,7 @@ async_rpc "mt5_deposit",
                     amount_in_USD => convert_currency($amount, $fm_client->currency, 'USD'),
                 })
                 if ($response->{mt5_data}->{group} eq 'real\vanuatu_financial'
-                or $response->{mt5_data}->{group} =~ /real\d{2}\\financial\\vanuatu_std-hr_usd/);
+                or $response->{mt5_data}->{group} =~ /real(?:\\${MT5_PLATFORM_STR}_ts)?\d{2}\\financial\\vanuatu_std-hr_usd/);
 
             my $txn_id = $txn->transaction_id;
             # 31 character limit for MT5 comments
@@ -1699,7 +1723,7 @@ async_rpc "mt5_withdrawal",
                                 amount_in_USD => $amount,
                             })
                             if ($mt5_group eq 'real\vanuatu_financial'
-                            or $mt5_group =~ /real\d{2}\\financial\\vanuatu_std-hr_usd/);
+                            or $mt5_group =~ /real(?:\\${MT5_PLATFORM_STR}_ts)?\d{2}\\financial\\vanuatu_std-hr_usd/);
 
                         return Future->done({
                             status                => 1,
@@ -1880,6 +1904,7 @@ sub _mt5_validate_and_get_amount {
 
             my $mt5_group = $setting->{group};
             my $mt5_lc    = _fetch_mt5_lc($setting);
+
             return create_error_future('InvalidMT5Group') unless $mt5_lc;
 
             my $requirements = $mt5_lc->requirements->{after_first_deposit}->{financial_assessment} // [];
@@ -2330,8 +2355,11 @@ sub _is_similar_group {
 
     return undef unless $similar_company;
 
-    my $first =
-        first { $_ =~ /^real\\${similar_company}_financial(?:_Bbook)?$/ || $_ =~ /^real\d{2}\\financial\\${similar_company}_std(?:-hr)?_usd$/ }
+    my $first = first {
+        $_ =~ /^real\\${similar_company}_financial(?:_Bbook)?$/
+            || $_ =~ /^real(?:\\${MT5_PLATFORM_STR}_ts)?\d{2}\\financial\\${similar_company}_std(?:-hr)?_usd$/
+
+    }
     keys %$existing_group;
 
     return $first;

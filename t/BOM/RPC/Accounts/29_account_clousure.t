@@ -376,7 +376,7 @@ subtest 'account_closure with mt5 API disabled' => sub {
 
     ok $res->{error}, 'properly throws an error';
     is $res->{error}->{code}, 'MT5AccountInaccessible', 'error code is MT5AccountInaccessible';
-    is $res->{error}->{message_to_client}, 'The following MT5 account(s) are temporarily inaccessible: MTR40000001. Please try again later.';
+    is $res->{error}->{message_to_client}, 'The following MT5 account(s) are temporarily inaccessible: MTR41000001. Please try again later.';
 
     note('enable real03 mt5 API');
     BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real03->all(0);
