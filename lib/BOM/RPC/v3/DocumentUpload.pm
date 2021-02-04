@@ -101,15 +101,11 @@ sub successful_upload {
 
     my $client_id = $client->loginid;
 
-    try {
-        $client->db->dbic->run(
-            ping => sub {
-                $_->selectrow_array('SELECT * FROM betonmarkets.set_document_under_review(?)', undef, $client_id);
-            });
-    } catch {
-        log_exception();
-        warn 'Unable to change client status in the db';
-        return create_upload_error();
+    # set client status as under_review if it is not already authenticated or under_review
+    my $client_status = $client->authentication_status // '';
+    unless ($client->fully_authenticated || $client_status eq 'under_review') {
+        $client->set_authentication('ID_DOCUMENT', {status => 'under_review'});
+        $client->save();
     }
 
     BOM::Platform::Event::Emitter::emit(
