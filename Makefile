@@ -2,6 +2,7 @@ M=[ -t 1 ] && echo -e 'making \033[01;33m$@\033[00m' || echo 'making $@'
 MOJO_LOG_LEVEL?=info
 export MOJO_LOG_LEVEL
 P=/etc/rmg/bin/prove --timer -v -rl
+C=PERL5OPT=-MBOM::Test HARNESS_PERL_SWITCHES=-MDevel::Cover DEVEL_COVER_OPTIONS=-'ignore,bom-websocket-tests,ignore,^t/' /etc/rmg/bin/prove --timer -rl
 
 PROVE=p () { $M; echo '$P' "$$@"; $P "$$@"; }; p
 
@@ -53,3 +54,15 @@ doc: $(msc_graphs) $(dot_graphs)
 
 %.dot.png: %.dot
 	dot -Tpng < $< > $@
+
+cover:
+	sed -i '/--exec/d'  .proverc
+	$C --norc $$(find t/ -type f | grep -v 00)
+	$C /home/git/regentmarkets/bom-websocket-tests/v3/schema_suite/
+	$C /home/git/regentmarkets/bom-websocket-tests/v3/security/
+	$C /home/git/regentmarkets/bom-websocket-tests/v3/accounts/
+	$C /home/git/regentmarkets/bom-websocket-tests/v3/misc/
+	$C /home/git/regentmarkets/bom-websocket-tests/v3/p2p/
+	$C /home/git/regentmarkets/bom-websocket-tests/v3/pricing/
+	$C --norc /home/git/regentmarkets/bom-websocket-tests/v3/backends/
+	cover -report coveralls
