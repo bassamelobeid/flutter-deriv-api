@@ -26,8 +26,9 @@ my $p2p_write      = BOM::Backoffice::Auth0::has_authorisation(['P2PWrite']);
 my $config         = BOM::Config::third_party();
 my $sendbird_token = $config->{sendbird}->{api_token};
 
-my %input           = %{request()->params};
-my $broker          = request()->broker_code;
+my %input  = %{request()->params};
+my $broker = request()->broker_code;
+
 my %dispute_reasons = (
     seller_not_released => 'Seller did not release funds',
     buyer_overpaid      => 'Buyer paid too much',
@@ -54,15 +55,15 @@ Bar('P2P Order details/management');
 
 if (my $action = $input{action} and $p2p_write) {
     try {
-        my ($status, $currency) = $db->run(
+        my $check = $db->run(
             fixup => sub {
-                $_->selectrow_array('SELECT status, account_currency FROM p2p.order_list(?,NULL,NULL,NULL)', undef, $input{order_id});
+                $_->selectrow_hashref('SELECT * FROM p2p.order_list(?,NULL,NULL,NULL)', undef, $input{order_id});
             });
 
-        die "Order is in $status status and cannot be resolved now.\n"
-            unless $status eq 'disputed';
-        $escrow = get_escrow($broker, $currency);
-        die "No escrow account is defined for $currency.\n" unless $escrow;
+        die "Order is in " . $check->{status} . " status and cannot be resolved now.\n"
+            unless $check->{status} eq 'disputed';
+        $escrow = get_escrow($broker, $check->{account_currency});
+        die "No escrow account is defined for " . $check->{account_currency} . ".\n" unless $escrow;
 
         my $txn_time = Date::Utility->new->datetime;
         my $staff    = BOM::Backoffice::Auth0::get_staffname();
@@ -82,12 +83,22 @@ if (my $action = $input{action} and $p2p_write) {
                     $_->do('SELECT p2p.order_complete(?, ?, ?, ?, ?, ?, ?)', undef, $input{order_id}, $escrow, 4, $staff, $txn_time, 1, 1);
                 });
         }
+
         BOM::Platform::Event::Emitter::emit(
             p2p_order_updated => {
                 client_loginid => $input{disputer_loginid},
                 order_id       => $input{order_id},
                 order_event    => "dispute_$action",
             });
+
+        for my $order_loginid ($check->{client_loginid}, $check->{advertiser_loginid}) {
+            BOM::Platform::Event::Emitter::emit(
+                p2p_advertiser_updated => {
+                    client_loginid => $order_loginid,
+                },
+            );
+        }
+
     } catch {
         my $error = ref $@ eq 'ARRAY' ? join ', ', $@->@* : $@;
         print '<p style="color:red; font-weight:bold;">' . $error . '</p>';
