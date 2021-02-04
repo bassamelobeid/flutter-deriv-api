@@ -1222,14 +1222,23 @@ sub _set_age_verification {
 
 =head2 account_closure
 
-Called when a client closes their accounts, sends an email to CS and tracks the event.
+Called when a client closes their accounts, sends an email to the client and tracks the event.
 
 =cut
 
 sub account_closure {
     my $data = shift;
 
-    _send_email_account_closure_client($data->{loginid});
+    my $client = BOM::User::Client->new({loginid => $data->{loginid}});
+
+    send_email({
+        to                    => $client->email,
+        subject               => localize("Your accounts are deactivated"),
+        template_name         => 'account_closure',
+        use_email_template    => 1,
+        email_content_is_html => 1,
+        use_event             => 1,
+    });
 
     return BOM::Event::Services::Track::account_closure($data);
 }
@@ -1348,29 +1357,6 @@ sub email_client_account_verification {
         $log->warn($@);
         exception_logged();
     }
-    return undef;
-}
-
-sub _send_email_account_closure_client {
-    my ($loginid) = @_;
-    my $brand = request->brand;
-
-    my $client = BOM::User::Client->new({loginid => $loginid});
-
-    send_email({
-            from          => $brand->emails('support'),
-            to            => $client->email,
-            subject       => localize("We're sorry you're leaving"),
-            template_name => 'account_closure',
-            template_args => {
-                name       => $client->first_name,
-                brand_name => ucfirst $brand->name,
-            },
-            use_email_template    => 1,
-            email_content_is_html => 1,
-            use_event             => 1,
-        });
-
     return undef;
 }
 

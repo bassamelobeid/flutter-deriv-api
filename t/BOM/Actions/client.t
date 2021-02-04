@@ -646,8 +646,13 @@ subtest 'account closure' => sub {
     );
     request($req);
 
+    my $email_args;
+    my $mock_client = Test::MockModule->new('BOM::Event::Actions::Client');
+    $mock_client->redefine('send_email', sub { $email_args = shift; });
+
     undef @identify_args;
     undef @track_args;
+    undef $email_args;
 
     my $loginid = $test_client->loginid;
 
@@ -686,6 +691,17 @@ subtest 'account closure' => sub {
         },
         'track context and properties are correct.';
 
+    is_deeply $email_args,
+        {
+        'to'                    => $test_client->email,
+        'subject'               => 'Your accounts are deactivated',
+        'template_name'         => 'account_closure',
+        'email_content_is_html' => 1,
+        'use_email_template'    => 1,
+        'use_event'             => 1
+        },
+        'correct email is sent';
+
     undef @identify_args;
     undef @track_args;
 
@@ -698,6 +714,8 @@ subtest 'account closure' => sub {
     is $result, undef, 'Empty result';
     is scalar @identify_args, 0, 'No identify event is triggered when brand is binary';
     is scalar @track_args,    0, 'No track event is triggered when brand is binary';
+
+    $mock_client->unmock_all;
 };
 
 subtest 'transfer between accounts event' => sub {
