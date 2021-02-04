@@ -34,8 +34,8 @@ my %default_stats = (
     'basic_verification'    => 0,
     'full_verification'     => 0,
 );
-my $stats_cli  = {%default_stats};
-my $stats_adv  = {%default_stats};
+my $stats_cli = {%default_stats};
+my $stats_adv = {%default_stats};
 
 subtest 'errors' => sub {
     my $cli = BOM::Test::Helper::Client::create_client();

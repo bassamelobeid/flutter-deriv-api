@@ -303,7 +303,7 @@ sub _invoke_mt5 {
             my $f = shift;
             $circuit_breaker->circuit_reset() if $f->is_done;
 
-            if ($f->is_failed) {
+            if ($f->is_failed && (ref $f->failure eq "HASH")) {
                 my $error_code = $f->failure->{code} // '';
                 if ($error_code eq $error_category_mapping->{9} || $error_code eq $error_category_mapping->{10}) {
                     stats_inc('mt5.call.connection_fail', {tags => $dd_tags});

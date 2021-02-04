@@ -19,14 +19,15 @@ subtest 'initial methods' => sub {
 
     $mock_lc_wallet->mock(get_wallet_for_broker => sub { undef });
 
-    throws_ok { BOM::User::Wallet->new({ loginid => $client->loginid }) } qr/Broker code CR is not a wallet/, 'cannot instantiate wallet for non-wallet broker';
-    
+    throws_ok { BOM::User::Wallet->new({loginid => $client->loginid}) } qr/Broker code CR is not a wallet/,
+        'cannot instantiate wallet for non-wallet broker';
+
     my $client_client = BOM::User::Client->get_client_instance($client->loginid);
     isa_ok($client_client, 'BOM::User::Client', 'get_client_instance()');
     ok(!$client_client->is_wallet, 'wallet client is_wallet is false');
-    ok($client_client->can_trade, 'wallet client can_trade is true'); 
-    
-    my $dummy_config = { landing_company => 'test_lc' };
+    ok($client_client->can_trade,  'wallet client can_trade is true');
+
+    my $dummy_config = {landing_company => 'test_lc'};
     $mock_lc_wallet->mock(get_wallet_for_broker => sub { $dummy_config });
 
     my $wallet;
@@ -35,10 +36,10 @@ subtest 'initial methods' => sub {
 
     my $wallet_client = BOM::User::Client->get_client_instance($wallet->loginid);
     isa_ok($wallet_client, 'BOM::User::Wallet', 'get_client_instance()');
-    ok($wallet_client->is_wallet, 'wallet client is_wallet is true');
-    ok(!$wallet_client->can_trade, 'wallet client can_trade is false');   
-    
-    my $dummy_lc_data = { testing => 'some value' };
+    ok($wallet_client->is_wallet,  'wallet client is_wallet is true');
+    ok(!$wallet_client->can_trade, 'wallet client can_trade is false');
+
+    my $dummy_lc_data = {testing => 'some value'};
 
     my $mock_lc_registry = Test::MockModule->new('LandingCompany::Registry');
 

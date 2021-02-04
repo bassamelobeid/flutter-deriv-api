@@ -1754,7 +1754,7 @@ sub is_verification_required {
 
     # we need to check if mt5 group is for
     # labuan - regulated one, if yes then it needs authentication
-    return 1 if $self->user->has_mt5_regulated_account();
+    return 1 if $args{has_mt5_regulated_account} // $self->user->has_mt5_regulated_account();
 
     return 0;
 }
@@ -1790,11 +1790,11 @@ cashier for client if they have mt5 regulated accounts
 =cut
 
 sub is_document_expiry_check_required_mt5 {
-    my $self = shift;
+    my ($self, %args) = @_;
 
     return 1 if $self->is_document_expiry_check_required();
 
-    return 1 if $self->user->has_mt5_regulated_account();
+    return 1 if $args{has_mt5_regulated_account} // $self->user->has_mt5_regulated_account();
 
     return 0;
 }
@@ -5163,6 +5163,8 @@ It takes the following params:
 
 =item * C<status> the current poa status (optional)
 
+=item * C<is_required_auth> the account verification status (optional)
+
 =back
 
 Returns,
@@ -5171,7 +5173,7 @@ Returns,
 =cut
 
 sub needs_poa_verification {
-    my ($self, $documents, $status) = @_;
+    my ($self, $documents, $status, $is_required_auth) = @_;
     # Note optional arguments will be resolved if not provided
     $documents //= $self->documents_uploaded();
     $status    //= $self->get_poa_status($documents);
@@ -5188,8 +5190,8 @@ sub needs_poa_verification {
 
     # Not fully authenticated rules
     unless ($self->fully_authenticated) {
-        my $poa_documents    = $documents->{proof_of_address}->{documents};
-        my $is_required_auth = $self->is_verification_required(check_authentication_status => 1);
+        my $poa_documents = $documents->{proof_of_address}->{documents};
+        $is_required_auth //= $self->is_verification_required(check_authentication_status => 1);
         return 1 if $is_required_auth and not $poa_documents;
     }
 
@@ -5208,6 +5210,8 @@ It takes the following params:
 
 =item * C<status> the current poi status (optional)
 
+=item * C<is_required_auth> the account verification status (optional)
+
 =back
 
 Returns,
@@ -5216,7 +5220,7 @@ Returns,
 =cut
 
 sub needs_poi_verification {
-    my ($self, $documents, $status) = @_;
+    my ($self, $documents, $status, $is_required_auth) = @_;
     # Note optional arguments will be resolved if not provided
     $documents //= $self->documents_uploaded();
     $status    //= $self->get_poi_status($documents);
@@ -5233,7 +5237,7 @@ sub needs_poi_verification {
         # If shared payment method, the POI is required
         return 1 if $self->status->shared_payment_method;
 
-        my $is_required_auth = $self->is_verification_required(check_authentication_status => 1);
+        $is_required_auth //= $self->is_verification_required(check_authentication_status => 1);
         return 1 if $is_required_auth and $status eq 'none';
         # Try to infer state from onfido results
         my $onfido        = BOM::User::Onfido::get_latest_check($self);
