@@ -924,11 +924,18 @@ rpc get_account_status => sub {
 
     push(@$status, 'financial_assessment_not_complete') unless $client->is_financial_assessment_complete();
 
-    my $is_document_expiry_check_required = $client->is_document_expiry_check_required_mt5();
-    my $authentication                    = _get_authentication(
-        client                            => $client,
-        is_document_expiry_check_required => $is_document_expiry_check_required
+    my $has_mt5_regulated_account         = $user->has_mt5_regulated_account();
+    my $is_document_expiry_check_required = $client->is_document_expiry_check_required_mt5(has_mt5_regulated_account => $has_mt5_regulated_account);
+    my $is_verification_required          = $client->is_verification_required(
+        check_authentication_status => 1,
+        has_mt5_regulated_account   => $has_mt5_regulated_account
     );
+    my $authentication = _get_authentication(
+        client                            => $client,
+        is_document_expiry_check_required => $is_document_expiry_check_required,
+        is_verification_required          => $is_verification_required,
+    );
+
     if ($is_document_expiry_check_required) {
         # check if the user's documents are expired or expiring soon
         my $expiry_soon_date = Date::Utility->new()->plus_time_interval(DOCUMENT_EXPIRING_SOON_INTERVAL)->epoch;
@@ -948,7 +955,7 @@ rpc get_account_status => sub {
     return {
         status                        => $status,
         risk_classification           => $client->risk_level(),
-        prompt_client_to_authenticate => $client->is_verification_required(check_authentication_status => 1),
+        prompt_client_to_authenticate => $is_verification_required,
         authentication                => $authentication,
         currency_config               => \%currency_config,
     };
@@ -1046,8 +1053,8 @@ sub _get_authentication {
     my $poi_status = $authentication_object->{identity}->{status};
     # The `needs_verification` array is built from the following hash keys
     my %needs_verification_hash;
-    $needs_verification_hash{identity} = 1 if $client->needs_poi_verification($documents, $poi_status);
-    $needs_verification_hash{document} = 1 if $client->needs_poa_verification($documents, $poa_status);
+    $needs_verification_hash{identity} = 1 if $client->needs_poi_verification($documents, $poi_status, $args{is_verification_required});
+    $needs_verification_hash{document} = 1 if $client->needs_poa_verification($documents, $poa_status, $args{is_verification_required});
     # Craft the `needs_verification` array
     $authentication_object->{needs_verification} = [sort keys %needs_verification_hash];
     return $authentication_object;

@@ -24,7 +24,7 @@ my $m = BOM::Platform::Token::API->new;
 my $c = Test::BOM::RPC::QueueClient->new();
 
 my $method = 'account_closure';
-my $args = {
+my $args   = {
     "account_closure" => 1,
     "reason"          => 'Financial concerns'
 };
@@ -365,7 +365,7 @@ subtest 'account_closure with mt5 API disabled' => sub {
 
     ok $mt5_acc->{login}, 'mt5 account is created';
 
-    note ('suspend real03 mt5 API');
+    note('suspend real03 mt5 API');
     BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real03->all(1);
     my $res = $c->tcall(
         $method,
@@ -378,7 +378,7 @@ subtest 'account_closure with mt5 API disabled' => sub {
     is $res->{error}->{code}, 'MT5AccountInaccessible', 'error code is MT5AccountInaccessible';
     is $res->{error}->{message_to_client}, 'The following MT5 account(s) are temporarily inaccessible: MTR40000001. Please try again later.';
 
-    note ('enable real03 mt5 API');
+    note('enable real03 mt5 API');
     BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real03->all(0);
     BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real03->deposits(1);
     $res = $c->tcall(
@@ -388,7 +388,7 @@ subtest 'account_closure with mt5 API disabled' => sub {
             args  => $args
         });
 
-    note ('since this is mocked mt5 account data, I won\'t want to change it.');
+    note('since this is mocked mt5 account data, I won\'t want to change it.');
     is $res->{error}->{code}, 'AccountHasBalanceOrOpenPositions', 'account has balance error instead of server disabled.';
 
     BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real03->deposits(0);
@@ -401,7 +401,7 @@ subtest 'account_closure with mt5 API disabled' => sub {
             args  => $args
         });
 
-    note ('since this is mocked mt5 account data, I won\'t want to change it.');
+    note('since this is mocked mt5 account data, I won\'t want to change it.');
     is $res->{error}->{code}, 'AccountHasBalanceOrOpenPositions', 'account has balance error instead of server disabled.';
 };
 

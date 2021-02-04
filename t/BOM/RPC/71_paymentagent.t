@@ -599,7 +599,8 @@ for my $transfer_currency (@fiat_currencies, @crypto_currencies) {
         $Alice->add_client_authentication_document($auth_document_args);
         $Alice->save;
         $res = BOM::RPC::v3::Cashier::paymentagent_transfer($testargs);
-        is($res->{error}{message_to_client}, 'Your identity documents have expired. Visit your account profile to submit your valid documents and unlock your cashier.', $test);
+        is($res->{error}{message_to_client},
+            'Your identity documents have expired. Visit your account profile to submit your valid documents and unlock your cashier.', $test);
 
         $test = 'Transfer works if only one client authentication documents is expired';
         $auth_document_args->{expiration_date} = '2999-12-31';

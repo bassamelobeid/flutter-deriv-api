@@ -80,12 +80,19 @@ my $test_client_disabled = BOM::Test::Data::Utility::UnitTestDatabase::create_cl
 
 $test_client_disabled->status->set('disabled', 1, 'test disabled');
 
+my $email_mx       = 'mx@binary.com';
 my $test_client_mx = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'MX',
     residence   => 'gb',
     citizen     => ''
 });
-$test_client_mx->email($email);
+$test_client_mx->email($email_mx);
+
+my $user_mx = BOM::User->create(
+    email    => $email_mx,
+    password => $hash_pwd
+);
+$user_mx->add_client($test_client_mx);
 
 my $test_client_vr_2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'VRTC',
