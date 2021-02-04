@@ -185,6 +185,9 @@ my $c = Test::BOM::RPC::QueueClient->new();
 
 my $method = 'get_settings';
 subtest 'get settings' => sub {
+    my $poi_status  = 'none';
+    my $mock_client = Test::MockModule->new('BOM::User::Client');
+    $mock_client->redefine('get_poi_status' => sub { return $poi_status });
     is($c->tcall($method, {token => '12345'})->{error}{message_to_client}, 'The token is invalid.', 'invalid token error');
 
     is(
@@ -347,20 +350,18 @@ subtest 'get settings' => sub {
     };
     is_deeply($result, $expected, 'return 1 for authenticated payment agent');
 
-    $test_client_cr_3->set_authentication('ID_DOCUMENT', {status => 'pass'});
-    $test_client_cr_3->save;
-    ok $test_client_cr_3->fully_authenticated, 'client is authenticated';
-    $result = $c->tcall($method, $params);
+    $poi_status = 'verified';
+    $result     = $c->tcall($method, $params);
     $expected->{immutable_fields} =
         ['citizen', 'date_of_birth', 'first_name', 'last_name', 'residence', 'salutation', 'secret_answer', 'secret_question'];
     is_deeply($result, $expected, 'immutable fields changed after authentication');
-    $test_client_cr_3->set_authentication('ID_DOCUMENT', {status => 'fail'});
-    $test_client_cr_3->save;
 
-    ok !$test_client_cr_3->fully_authenticated, 'authentication is removed';
-    $result = $c->tcall($method, $params);
+    $poi_status                   = 'none';
+    $result                       = $c->tcall($method, $params);
     $expected->{immutable_fields} = ['residence', 'secret_answer', 'secret_question'];
     is_deeply($result, $expected, 'immutable fields changed back to pre-authentication list');
+
+    $mock_client->unmock_all;
 };
 
 $method = 'set_settings';
@@ -432,6 +433,9 @@ subtest 'set settings' => sub {
     isnt($test_client->address_1, 'Address 1', 'But vr account only update residence');
 
     # test real account
+    my $poi_status = 'none';
+    $mocked_client->redefine('get_poi_status' => sub { return $poi_status });
+
     $params->{token} = $token;
     # Need to delete this parameter so this next call returns the error of interest
     delete $params->{args}{residence};
@@ -508,9 +512,7 @@ subtest 'set settings' => sub {
         );
     }
 
-    $test_client->set_authentication('ID_DOCUMENT', {status => 'pass'});
-    $test_client->save;
-    ok $test_client->fully_authenticated, 'client is authenticated';
+    $poi_status = 'verified';
 
     for my $tax_field (qw(tax_residence tax_identification_number)) {
         local $params->{args} = {
@@ -545,9 +547,7 @@ subtest 'set settings' => sub {
             or note explain $res->{error};
     }
 
-    $test_client->set_authentication('ID_DOCUMENT', {status => 'fail'});
-    $test_client->save;
-    ok !$test_client->fully_authenticated, 'client is not authenticated';
+    $poi_status = 'none';
 
     for my $unrestricted_country (qw(id ru)) {
         local $params->{args} = {
@@ -557,6 +557,7 @@ subtest 'set settings' => sub {
         my $res = $c->tcall($method, $params);
         is($res->{status}, 1, 'unrestricted country ' . $unrestricted_country . ' for tax residence is allowed') or note explain $res;
     }
+
     {
         local $full_args{account_opening_reason} = 'Hedging';
         $params->{args} = {%full_args};
@@ -583,7 +584,7 @@ subtest 'set settings' => sub {
         'Sorry, an error occurred while processing your request.',
         'return error if cannot save'
     );
-    $mocked_client->unmock_all;
+    $mocked_client->unmock('save');
 
     # add_note should send an email to support address,
     # but it is disabled when the test is running on travis-ci
@@ -594,24 +595,22 @@ subtest 'set settings' => sub {
     mailbox_clear();
     $params->{args}->{email_consent} = 1;
 
-    $test_client->set_authentication('ID_DOCUMENT', {status => 'pass'});
-    $test_client->save;
-
-    $params->{args}{tax_identification_number} = '111-222-543';
-    $params->{args}{tax_residence}             = 'de';
+    $poi_status = 'verified';
+    $params->{args}->{tax_identification_number} = $test_client->tax_identification_number;
     is(
         $c->tcall($method, $params)->{error}{message_to_client},
         'Your tax residence cannot be changed.',
         'Can not change tax residence for MF once it has been authenticated.'
     );
     $params->{args}{tax_identification_number} = '111-222-333';
-    $params->{args}{tax_residence}             = 'ru';
+    $params->{args}{tax_residence}             = $test_client->tax_residence;
     is(
         $c->tcall($method, $params)->{error}{message_to_client},
         'Your tax identification number cannot be changed.',
         'Can not change tax identification number for MF once it has been authenticated.'
     );
 
+    $mocked_client->redefine('fully_authenticated' => sub { return 1 });
     $params->{args}{tax_identification_number} = '111-222-543';
     $params->{args}{tax_residence}             = 'ru';
     is($c->tcall($method, $params)->{status}, 1, 'update successfully');
@@ -620,10 +619,8 @@ subtest 'set settings' => sub {
     is($res->{tax_residence},             $params->{args}{tax_residence},             "Check tax information");
 
     ok($add_note_called, 'add_note is called for authenticated call, so the email should be sent to support address');
-
-    $test_client->get_authentication('ID_DOCUMENT')->delete;
-    $test_client->status->clear_professional;
-    $test_client->save;
+    $mocked_client->unmock('fully_authenticated');
+    $poi_status = 'none';
 
     subtest 'Check for citizenship value' => sub {
 
