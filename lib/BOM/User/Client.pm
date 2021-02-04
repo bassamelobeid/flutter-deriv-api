@@ -4233,6 +4233,7 @@ sub payment_account_transfer {
     my $lc_lifetime_limit  = delete $args{lc_lifetime_limit};
     my $lc_for_days        = delete $args{lc_for_days};
     my $lc_limit_for_days  = delete $args{lc_limit_for_days};
+    my $txn_details        = delete $args{txn_details};
 
     # if client has no default account then error out
     my $fmAccount = $fmClient->default_account || die "Client does not have a default account\n";
@@ -4284,17 +4285,20 @@ sub payment_account_transfer {
         # here we rely on ->set_default_account above
         # which makes sure the `write` database is used.
         my $response;
+
+        $txn_details = Encode::encode_utf8($json->encode($txn_details)) if $txn_details;
+
         my $records = $dbic->run(
             # Error handling for code below is tricky; it returns a string for normal DB  errors,
             # and an array ref for custom DB errors (starts with "BI").
             ping => sub {
                 my $sth = $_->prepare(
-                    'SELECT (v_from_trans).id, (v_from_trans).transaction_time FROM payment.payment_account_transfer(?,?,?,?,?,?,?, ?,?,?,?,?,?, ?,?,?)'
+                    'SELECT (v_from_trans).id, (v_from_trans).transaction_time FROM payment.payment_account_transfer(?,?,?,?,?,?,?, ?,?,?,?,?,?, ?,?,?,?)'
                 );
                 $sth->execute(
-                    $fmClient->loginid,  $toClient->loginid, $currency,    $amount, $to_amount, $fmStaff,
-                    $toStaff,            $fmRemark,          $toRemark,    $source, $fees,      $gateway_code,
-                    $is_agent_to_client, $lc_lifetime_limit, $lc_for_days, $lc_limit_for_days
+                    $fmClient->loginid,  $toClient->loginid, $currency,    $amount,            $to_amount, $fmStaff,
+                    $toStaff,            $fmRemark,          $toRemark,    $source,            $fees,      $gateway_code,
+                    $is_agent_to_client, $lc_lifetime_limit, $lc_for_days, $lc_limit_for_days, $txn_details,
                 );
                 return $sth->fetchall_arrayref({});
             });
@@ -4312,31 +4316,37 @@ sub payment_account_transfer {
     #       account and fail to credit into the other. We need to
     #       investigate a safe implementation or drop it altogether.
     my ($fmTrx) = $fmAccount->add_payment_transaction({
-        amount               => -$amount,
-        payment_gateway_code => $gateway_code,
-        payment_type_code    => 'internal_transfer',
-        status               => 'OK',
-        staff_loginid        => $fmStaff,
-        remark               => $fmRemark,
-        account_id           => $fmAccount->id,
-        staff_loginid        => $fmStaff,
-        source               => $source,
-        transfer_fees        => $fees,
-    });
+            amount               => -$amount,
+            payment_gateway_code => $gateway_code,
+            payment_type_code    => 'internal_transfer',
+            status               => 'OK',
+            staff_loginid        => $fmStaff,
+            remark               => $fmRemark,
+            account_id           => $fmAccount->id,
+            staff_loginid        => $fmStaff,
+            source               => $source,
+            transfer_fees        => $fees,
+        },
+        undef,
+        $txn_details
+    );
 
     # Enforce list context for consistency with the above - for some reason
     # we don't do anything with the result though
     (undef) = $toAccount->add_payment_transaction({
-        amount               => $to_amount,
-        payment_gateway_code => $gateway_code,
-        payment_type_code    => 'internal_transfer',
-        status               => 'OK',
-        staff_loginid        => $toStaff,
-        remark               => $toRemark,
-        account_id           => $toAccount->id,
-        staff_loginid        => $toStaff,
-        source               => $source,
-    });
+            amount               => $to_amount,
+            payment_gateway_code => $gateway_code,
+            payment_type_code    => 'internal_transfer',
+            status               => 'OK',
+            staff_loginid        => $toStaff,
+            remark               => $toRemark,
+            account_id           => $toAccount->id,
+            staff_loginid        => $toStaff,
+            source               => $source,
+        },
+        undef,
+        $txn_details
+    );
 
     $emit_transfer_event->($fmTrx);
 
@@ -4416,6 +4426,11 @@ sub payment_ctc {
         transaction_hash => $transaction_hash,
     };
 
+    my $txn_details = {
+        $ctc_values->%*,
+        address => $args{address},
+    };
+
     my ($trx) = $account->add_payment_transaction({
             amount               => $amount,
             payment_gateway_code => 'ctc',
@@ -4425,7 +4440,8 @@ sub payment_ctc {
             remark               => $remark,
             account_id           => $account->id,
         },
-        $ctc_values
+        $ctc_values,
+        $txn_details,
     );
 
     BOM::User::Client::PaymentNotificationQueue->add(
@@ -4478,20 +4494,24 @@ sub payment_mt5_transfer {
     my $staff        = $args{staff}        || 'system';
     my $fees         = $args{fees};
     my $source       = $args{source};
+    my $txn_details  = $args{txn_details};
 
     my $account = $self->set_default_account($currency);
 
     my ($trx) = $account->add_payment_transaction({
-        amount               => $amount,
-        payment_gateway_code => 'account_transfer',
-        payment_type_code    => $payment_type,
-        status               => 'OK',
-        staff_loginid        => $staff,
-        remark               => $remark,
-        account_id           => $account->id,
-        source               => $source,
-        transfer_fees        => $fees,
-    });
+            amount               => $amount,
+            payment_gateway_code => 'account_transfer',
+            payment_type_code    => $payment_type,
+            status               => 'OK',
+            staff_loginid        => $staff,
+            remark               => $remark,
+            account_id           => $account->id,
+            source               => $source,
+            transfer_fees        => $fees,
+        },
+        undef,
+        $txn_details,
+    );
 
     $self->user->daily_transfer_incr('mt5');
 

@@ -157,21 +157,26 @@ First parameter takes the following arguments as named parameters:
 =item status => string
 =item staff_loginid => string
 =item remark =>string
+=item txn_details => hashref
 
 =back
 
 Second parameter takes a hash ref, where each key maps to a corresponding
 column name in the payments child table.
 
+Third parameter takes a hash ref to be written to the transaction.transaction_details table.
+It not provided, will use the second parameter if available.
+
 Returns a PaymentTransaction object
 
 =cut
 
 sub add_payment_transaction {
-    my $self                       = shift;
-    my $payment_params             = shift;
-    my $child_payment_table_params = shift;
+    my ($self, $payment_params, $child_payment_table_params, $txn_details) = @_;
+
     $payment_params->{account_id} = $self->id;
+    # try to store useful metadata in transaction_details table
+    $txn_details //= $child_payment_table_params;
 
     my @bind_params = (
         @$payment_params{
@@ -179,12 +184,13 @@ sub add_payment_transaction {
                 staff_loginid payment_time transaction_time status
                 remark transfer_fees quantity source/
         },
-        $child_payment_table_params ? Encode::encode_utf8($json->encode($child_payment_table_params)) : undef
+        $child_payment_table_params ? Encode::encode_utf8($json->encode($child_payment_table_params)) : undef,
+        $txn_details                ? Encode::encode_utf8($json->encode($txn_details))                : undef
     );
 
     my $txn = $self->db->dbic->run(
         fixup => sub {
-            $_->selectrow_hashref("SELECT t.* from payment.add_payment_transaction(?,?,?,?,?,?,?,?,?,?,?,?,?) t", undef, @bind_params);
+            $_->selectrow_hashref("SELECT t.* from payment.add_payment_transaction(?,?,?,?,?,?,?,?,?,?,?,?,?,?) t", undef, @bind_params);
         });
 
     return BOM::User::Client::PaymentTransaction->new(%$txn);
