@@ -61,6 +61,7 @@ use BOM::RPC::v3::Services::Onramp;
 use BOM::Config::Redis;
 use BOM::User::Onfido;
 use Locale::Country;
+use DataDog::DogStatsd::Helper qw(stats_gauge);
 
 use constant DEFAULT_STATEMENT_LIMIT         => 100;
 use constant DOCUMENT_EXPIRING_SOON_INTERVAL => '1mo';
@@ -494,6 +495,24 @@ rpc "statement",
     category => 'account',
     sub {
     my $params = shift;
+
+    {
+        # Send metrics to understand how users are using this call
+        my $args                = $params->{args};
+        my $duration_in_seconds = 0;
+        $duration_in_seconds = $args->{date_to} - $args->{date_from} if ($args->{date_to}   && $args->{date_from});
+        $duration_in_seconds = time - $args->{date_from}             if ($args->{date_from} && !$args->{date_to});
+        # make it -1 if there is only date_to
+        $duration_in_seconds = -1 if ($args->{date_to} && !$args->{date_from});
+
+        my $action_type      = $args->{action_type} // 'all';
+        my $first_page       = $args->{offset} ? 0 : 1;
+        my $with_description = $args->{description} ? 1 : 0;
+
+        my $tags = ["action_type:$action_type", "with_description:$with_description", "first_page:$first_page"];
+        stats_gauge("bom_rpc.v_3.statement.analysis.duration", $duration_in_seconds, {tags => $tags});
+        stats_gauge("bom_rpc.v_3.statement.analysis.limit", $args->{limit} // DEFAULT_STATEMENT_LIMIT, {tags => $tags});
+    }
 
     my $app_config = BOM::Config::Runtime->instance->app_config;
     if ($app_config->system->suspend->expensive_api_calls) {
