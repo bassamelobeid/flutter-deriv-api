@@ -201,12 +201,12 @@ subtest "limits are persisted across connnections for the same client" => sub {
 
     my $c2 = $t->app->build_controller;
     my $f  = Binary::WebSocketAPI::Hooks::reached_limit_check($c2, 'portfolio', 0);
-    lives_ok { $f->get } "1st attempt is still allowed";
+    dies_ok { $f->get } "1st attempt is not allowed";
 
     $process_queue->();
 
     $f = Binary::WebSocketAPI::Hooks::reached_limit_check($c2, 'portfolio', 0);
-    dies_ok { $f->get } "but not any longer";
+    dies_ok { $f->get } "2nd attempt is not allowed";
 };
 
 subtest "get error code (verify_email)" => sub {

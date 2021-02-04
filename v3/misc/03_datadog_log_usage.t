@@ -10,6 +10,7 @@ use Test::MockObject;
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Platform::Token::API;
 use BOM::User;
+use List::Util qw/first/;
 
 use await;
 
@@ -40,7 +41,8 @@ ok $timing->[1]->[1], 'Should log timing';
 is $timing->[1]->[2]->{tags}->[0], 'rpc:website_status', 'Should set tag with rpc method name';
 
 is $stats->[0]->[0], 'bom_websocket_api.unknown_ip.count';
-is $stats->[2]->[1]->{tags}->[0], 'origin:test.com', 'Should set req origin';
+my $call_stat = first { $_->[0] eq 'bom_websocket_api.v_3.call.all' } @$stats;
+is $call_stat->[1]->{tags}->[0], 'origin:test.com', 'Should set req origin';
 
 @$timing = ();
 my %contractParameters = (
