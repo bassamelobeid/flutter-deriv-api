@@ -442,7 +442,7 @@ window.addEventListener('DOMContentLoaded', init_text_validations, false);
                     "There are no uploaded documents for $client.loginid - $client.full_name";
                 END
             %]
-            [%  IF client_for_prove %]
+            [%  IF client_for_prove && !client_for_prove.is_virtual %]
             <br/>
             [%
                 raw_url  = 'backoffice/view_192_raw_response.cgi';
@@ -482,7 +482,7 @@ window.addEventListener('DOMContentLoaded', init_text_validations, false);
                     <br/>
             [% # client_for_prove
             END %]
-            [% IF client.residence == 'gb' %]
+            [% IF client.residence == 'gb' && !client.is_virtual %]
                     <input type="submit" name="do_id_check" value="Submit a new ProveID request"/>
                 [% IF proveID.has_saved_xml or proveID.has_saved_pdf %]
                 <br/>

@@ -464,7 +464,7 @@ if ($input{whattodo} eq 'disable_2fa' and $user->is_totp_enabled) {
 }
 
 # PERFORM ON-DEMAND ID CHECKS
-if (my $check_str = $input{do_id_check}) {
+if (my $check_str = $input{do_id_check} && !$client->is_virtual) {
     try {
         BOM::Platform::Client::IDAuthentication->new(client => $client)->proveid;
     } catch {
