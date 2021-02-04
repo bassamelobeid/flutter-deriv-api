@@ -2029,7 +2029,7 @@ sub immutable_fields {
 
     my @immutable = grep { $self->$_ } PROFILE_FIELDS_IMMUTABLE_AFTER_AUTH->@*;
 
-    return @immutable if $self->fully_authenticated();
+    return @immutable if $self->get_poi_status() =~ qr/verified|expired/;
 
     # the remaining part is for un-authenticated clients only
 
