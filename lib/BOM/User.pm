@@ -439,10 +439,11 @@ sub has_mt5_regulated_account {
     my @loginids = reverse sort @all_mt5_loginids;
     return Future->wait_all(map { BOM::MT5::User::Async::get_user($_) } @loginids)->then(
         sub {
+            # TODO (JB): to remove old group mapping once all accounts are moved to new group
             return Future->done(1) if any {
                 $_->is_done
                     && ($_->result->{group} =~ /^(?!demo)[a-z]+\\(?!svg)[a-z]+(?:_financial)/
-                    || $_->result->{group} =~ /^real(?:01|02|03|04)\\financial\\(?!svg)/)
+                    || $_->result->{group} =~ /^real(\\p01_ts)?(?:01|02|03|04)\\financial\\(?!svg)/)
             }
             @_;
             return Future->done(0);

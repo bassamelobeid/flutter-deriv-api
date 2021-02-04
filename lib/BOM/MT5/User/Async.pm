@@ -151,7 +151,7 @@ sub get_trading_server_key {
     if ($param->{group}) {
         for my $server_key (keys $config->{$srv_type}->%*) {
             my $suffix = $config->{$srv_type}->{$server_key}->{group_suffix};
-            return $server_key if ($suffix and $param->{group} =~ /^(real$suffix|demo$suffix)\\.*$/);
+            return $server_key if ($suffix and $param->{group} =~ /^(real|demo)(\\p01_ts)?$suffix\\.*$/);
         }
     }
 
