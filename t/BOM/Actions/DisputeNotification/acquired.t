@@ -81,6 +81,10 @@ my $unsupported_acquired_event = {
     },
 };
 
+my $mocked_datadog = Test::MockModule->new('DataDog::DogStatsd::Helper');
+my @datadog_args;
+$mocked_datadog->redefine('stats_inc', sub { @datadog_args = @_ });
+
 subtest 'Acquired sent events' => sub {
     for my $event (keys %payloads) {
         my $action_handler = BOM::Event::Process::get_action_mappings()->{dispute_notification};
@@ -106,6 +110,7 @@ subtest 'Unsupported provider' => sub {
     is scalar @emails_sent, 0, 'Intially no e-mail was sent';
 
     $action_handler->($unsupported_provider);
+    is $datadog_args[0], "event.dispute_notification.unsupported_provider.acquire_clearly_wrong", 'Stats for unsuppoted provider are increased';
 
     @emails_sent = BOM::Test::Email::email_list();
 
@@ -120,7 +125,10 @@ subtest 'Unsupported acquired event' => sub {
     @emails_sent = BOM::Test::Email::email_list();
     is scalar @emails_sent, 0, 'Intially no e-mail was sent';
 
-    throws_ok { $action_handler->($unsupported_acquired_event) } qr/Event not supported/, 'Acquired event is not supported';
+    lives_ok { $action_handler->($unsupported_acquired_event) } "Sub don't dies on unsupported event";
+
+    is $datadog_args[0], "event.dispute_notification.acquired.unsupported." . $unsupported_acquired_event->{data}->{event},
+        'Stat for acquired.com unsupported event is increased';
 
     @emails_sent = BOM::Test::Email::email_list();
 

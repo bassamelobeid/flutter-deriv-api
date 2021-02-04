@@ -1,0 +1,97 @@
+[% IF event == 'fraud_flagged' %]
+<h2>[iSignThis] New frauds found<br/><br/></h2>
+[% END %]
+[% IF event == 'dispute_flagged' %]
+<h2>[iSignThis] New disputes found<br/><br/></h2>
+[% END %]
+[% IF event == 'chargeback_flagged' %]
+<h2>[iSignThis] New chargebacks found<br/><br/></h2>
+[% END %]
+[% IF event == 'manual_risk_review' %]
+<h2>[iSignThis] New manual risks review found<br/><br/></h2>
+[% END %]
+iSignThis transaction id: [% id %]
+<table border="1">
+   <thead>
+      <tr>
+         <th colspan="4">Original Message</th>
+         <th rowspan="2">Event</th>
+         <th rowspan="2">State</th>
+         <th rowspan="2">Compound State</th>
+         <th colspan="4">Card Reference</th>
+         <th colspan="2">Payment Amount</th>
+         <th colspan="2">Response Code</th>
+      </tr>
+      <tr>
+         <td>Merchant id</td>
+         <td>Transaction id</td>
+         <td>Reference</td>
+         <td>Account identifier</td>
+         <td>Masked PAN</td>
+         <td>Card brand</td>
+         <td>Expiry date</td>
+         <td>Recurring id</td>
+         <td>Currency</td>
+         <td>Amount</td>
+         <td>Code</td>
+         <td>Description</td>
+      </tr>
+   </thead>
+   <tbody>
+      <tr>
+         <td>[% original_message.merchant_id %]</td>
+         <td>[% original_message.transaction_id %]</td>
+         <td>[% original_message.reference %]</td>
+         <td>[% original_message.account.identifier %]</td>
+         <td>[% event %]</td>
+         <td>[% state %]</td>
+         <td>[% compound_state %]</td>
+         <td>[% card_reference.masked_pan %]</td>
+         <td>[% card_reference.card_brand %]</td>
+         <td>[% card_reference.expiry_date %]</td>
+         <td>[% card_reference.recurring_id %]</td>
+         <td>[% payment_amount.currency %]</td>
+         <td>[% payment_amount.amount / 100.0 %]</td>
+         <td>[% response_code %]</td>
+         <td>[% response_code_description %]</td>
+      </tr>
+   </tbody>
+</table>
+<br/>
+<br/>
+<table border='1'>
+   <thead>
+      <tr>
+         <th colspan="10">Payment Provider Responses</th>
+      </tr>
+      <tr>
+         <td>Operation type</td>
+         <td>Operation successful</td>
+         <td>Provider type</td>
+         <td>Provider name</td>
+         <td>Request currency</td>
+         <td>Reference code</td>
+         <td>Provider reference code</td>
+         <td>Response id</td>
+         <td>Status code</td>
+         <td>Status code description</td>
+      </tr>
+   </thead>
+   <tbody>
+    [% FOREACH response = payment_provider_responses %]
+      <tr>
+         <td>[% response.operation_type %]</td>
+         <td>[% response.operation_successful %]</td>
+         <td>[% response.provider_type %]</td>
+         <td>[% response.provider_name %]</td>
+         <td>[% response.request_currency %]</td>
+         <td>[% response.reference_code %]</td>
+         <td>[% response.provider_reference_code %]</td>
+         <td>[% response.response_id %]</td>
+         <td>[% response.status_code %]</td>
+         <td>[% response.status_description %]</td>
+      </tr>
+    [% END %]
+   </tbody>
+</table>
+

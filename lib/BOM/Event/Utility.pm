@@ -9,6 +9,14 @@ our @EXPORT_OK = qw(try_logged exception_logged);
 use Syntax::Keyword::Try;
 use constant GENERIC_DD_STATS_KEY => 'bom.events.exception';
 
+=head1 NAME
+
+BOM::Event::Utility
+
+=head1 DESCRIPTION
+
+Provides general utilities.
+
 =head2 exception_logged
 
 A function to log exceptions in bom-events to the Datadog metrics.

@@ -17,6 +17,16 @@ use BOM::CTC::Constants qw(:transaction :datadog);
 use BOM::CTC::Helper;
 use BOM::Event::Utility qw(exception_logged);
 
+=head1 NAME
+
+BOM::Event::Actions::CryptoSubscription
+
+=head1 DESCRIPTION
+
+Provides event handlers for crypto subscriptions.
+
+=cut
+
 use BOM::Config::Runtime;
 use BOM::Config::CurrencyConfig;
 

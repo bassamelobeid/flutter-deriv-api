@@ -13,6 +13,7 @@ use BOM::Event::Actions::Client;
 use BOM::Event::Actions::CustomerStatement;
 use BOM::Event::Actions::MT5;
 use BOM::Event::Actions::Client;
+use BOM::Event::Actions::Client::DisputeNotification;
 use BOM::Event::Actions::Contract;
 use BOM::Event::Actions::CryptoSubscription;
 use BOM::Event::Actions::Anonymization;
@@ -94,7 +95,7 @@ my $action_mapping = {
     crypto_withdrawal           => \&BOM::Event::Actions::Client::handle_crypto_withdrawal,
     client_promo_codes_upload   => \&BOM::Event::Actions::Client::client_promo_codes_upload,
     shared_payment_method_found => \&BOM::Event::Actions::Client::shared_payment_method_found,
-    dispute_notification        => \&BOM::Event::Actions::Client::dispute_notification,
+    dispute_notification        => \&BOM::Event::Actions::Client::DisputeNotification::dispute_notification,
 };
 
 =head1 METHODS

@@ -21,6 +21,16 @@ use BOM::Platform::Context qw(request);
 use BOM::Platform::Locale qw(get_state_by_id);
 use BOM::Database::Model::UserConnect;
 
+=head1 NAME
+
+BOM::Event::Services::Track
+
+=head1 DESCRIPTION
+
+ Provides functions for tracking events.
+
+=cut
+
 my %EVENT_PROPERTIES = (
     identify => [
         qw (address age available_landing_companies avatar birthday company created_at description email first_name gender id landing_companies last_name name phone provider title username website currencies country unsubscribed)
