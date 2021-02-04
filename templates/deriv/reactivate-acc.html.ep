@@ -11,7 +11,7 @@
             <%if ($financial_reasons) { %>
                 <%== l('You deactivated your account due to financial reasons.') %>
             <% } %>
-            <%== l('By reactivating your account, you agree that we will not be responsible for any losses you incur while trading. Please read our [_1]responsible trading[_2] page for more information.', '<a target="_blank" href="' . sprintf("<a href='https://www.%s/%sresponsible-trading'>", $website_domain, lc($language)) . '">' , '</a>') %>
+            <%== l('By reactivating your account, you agree that we will not be responsible for any losses you incur while trading. Please read our [_1]responsible trading[_2] page for more information.', '<a target="_blank" href="' . sprintf("https://www.%s/%sresponsible-trading", $website_domain, lc($language)) . '">' , '</a>') %>
         </p>
         <form method="POST">
             <input type="hidden" name="csrf_token" value="<%= $csrf_token %>" />
