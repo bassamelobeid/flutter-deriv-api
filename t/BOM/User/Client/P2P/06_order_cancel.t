@@ -363,22 +363,32 @@ for my $test_case (@test_cases) {
         if ($test_case->{error}) {
             ok !@emitted_events, 'no events emitted';
         } else {
-            my @expected_events = ([
-                    'p2p_order_updated',
-                    {
-                        client_loginid => $loginid,
-                        order_id       => $order->{id},
-                        order_event    => 'confirmed'
-                    }
-                ],
+            cmp_deeply( 
+                \@emitted_events,
+                bag(
+                    [
+                        'p2p_order_updated',
+                        {
+                            client_loginid => $loginid,
+                            order_id       => $order->{id},
+                            order_event    => 'cancelled',
+                        }
+                    ],
+                    [
+                        'p2p_advertiser_updated',
+                        {
+                            client_loginid => $client->loginid,
+                        }
+                    ],
+                    [
+                        'p2p_advertiser_updated',
+                        {
+                            client_loginid => $advertiser->loginid,
+                        }
+                    ],                    
+                ),
+                'expected events emitted'
             );
-            if ($test_case->{status} =~ /^(completed|cancelled|refunded)$/) {
-                push @expected_events,
-                    (
-                    ['p2p_advertiser_updated', {client_loginid => $client->loginid}],
-                    ['p2p_advertiser_updated', {client_loginid => $advertiser->loginid}],
-                    );
-            }
         }
 
         BOM::Test::Helper::P2P::reset_escrow();

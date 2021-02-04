@@ -22,17 +22,9 @@ populate_exchange_rates();
 BOM::Config::Runtime->instance->app_config->payments->p2p->escrow([]);
 BOM::Test::Helper::P2P::bypass_sendbird();
 
-my %last_event;
+my @emitted_events;
 my $mock_events = Test::MockModule->new('BOM::Platform::Event::Emitter');
-$mock_events->mock(
-    'emit',
-    sub {
-        my ($type, $data) = @_;
-        %last_event = (
-            type => $type,
-            data => $data
-        );
-    });
+$mock_events->mock('emit' => sub { push @emitted_events, [@_] });
 
 subtest 'Creating new buy order' => sub {
 
@@ -92,6 +84,8 @@ subtest 'Creating new buy order' => sub {
         );
     };
     is $err1->{error_code}, 'OrderPaymentContactInfoNotAllowed', 'Cannot provide payment/contact info for buy order';
+    
+    @emitted_events = ();    
 
     my $new_order = $client->p2p_order_create(
         advert_id => $advert_info->{id},
@@ -103,14 +97,29 @@ subtest 'Creating new buy order' => sub {
     ok($advertiser->account->balance == 0,         'Money is withdrawn from advertiser account');
 
     cmp_deeply(
-        \%last_event,
-        {
-            type => 'p2p_order_created',
-            data => {
-                client_loginid => $client->loginid,
-                order_id       => $new_order->{id}}
-        },
-        'p2p_order_created event emitted'
+        \@emitted_events,
+        bag(
+            [
+                'p2p_order_created',
+                {
+                    client_loginid => $client->loginid,
+                    order_id       => $new_order->{id},
+                }
+            ],
+            [
+                'p2p_advertiser_updated',
+                {
+                    client_loginid => $client->loginid,
+                }
+            ],
+            [
+                'p2p_advertiser_updated',
+                {
+                    client_loginid => $advertiser->loginid,
+                }
+            ],
+        ),
+        'p2p_order_created and p2p_advertiser_updated events emitted'
     );
 
     BOM::Test::Helper::P2P::reset_escrow();

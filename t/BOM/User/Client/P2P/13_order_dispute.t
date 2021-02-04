@@ -21,17 +21,9 @@ populate_exchange_rates();
 BOM::Config::Runtime->instance->app_config->payments->p2p->escrow([]);
 BOM::Test::Helper::P2P::bypass_sendbird();
 
-my %last_event;
+my @emitted_events;
 my $mock_events = Test::MockModule->new('BOM::Platform::Event::Emitter');
-$mock_events->mock(
-    'emit',
-    sub {
-        my ($type, $data) = @_;
-        %last_event = (
-            type => $type,
-            data => $data
-        );
-    });
+$mock_events->mock('emit' => sub { push @emitted_events, \@_ });
 
 subtest 'Order dispute (type buy)' => sub {
     my $time      = time;
@@ -62,6 +54,8 @@ subtest 'Order dispute (type buy)' => sub {
     );
 
     BOM::Test::Helper::P2P::set_order_disputable($client, $new_order->{id});
+    @emitted_events = ();
+    
     my $response = $client->p2p_create_order_dispute(
         id             => $new_order->{id},
         dispute_reason => 'seller_not_released',
@@ -74,15 +68,17 @@ subtest 'Order dispute (type buy)' => sub {
     };
 
     cmp_deeply(
-        \%last_event,
-        {
-            type => 'p2p_order_updated',
-            data => {
-                client_loginid => $client->loginid,
-                order_id       => $new_order->{id},
-                order_event    => 'dispute'
-            }
-        },
+        \@emitted_events,
+        [
+            [
+                'p2p_order_updated',
+                {
+                    client_loginid => $client->loginid,
+                    order_id       => $new_order->{id},
+                    order_event    => 'dispute'
+                }
+            ]
+        ],
         'p2p_order_updated event emitted'
     );
 
@@ -445,21 +441,37 @@ subtest 'Returning dispute fields' => sub {
     cmp_deeply($response->{dispute_details}, $expected_response, 'order_info expected response after dispute');
 
     BOM::Test::Helper::P2P::set_order_status($client, $new_order->{id}, 'pending');
+    @emitted_events = ();
+    
     $response = $client->p2p_expire_order(
         id => $new_order->{id},
     );
 
     cmp_deeply(
-        \%last_event,
-        {
-            type => 'p2p_order_updated',
-            data => {
-                client_loginid => $client->loginid,
-                order_id       => $new_order->{id},
-                order_event    => 'expired'
-            }
-        },
-        'p2p_order_updated event emitted'
+        \@emitted_events,
+        bag(
+            [
+                'p2p_order_updated',
+                {
+                    client_loginid => $client->loginid,
+                    order_id       => $new_order->{id},
+                    order_event    => 'expired',
+                }
+            ],
+            [
+                'p2p_advertiser_updated',
+                {
+                    client_loginid => $client->loginid,
+                }
+            ],
+            [
+                'p2p_advertiser_updated',
+                {
+                    client_loginid => $advertiser->loginid,
+                }
+            ]            
+        ),
+        'exepcted events emitted'
     );
 };
 

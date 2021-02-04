@@ -32,17 +32,9 @@ scope_guard {
 $config->order_timeout(7200);    #seconds
 $config->refund_timeout(30);     #days
 
-my %last_event;
+my @emitted_events;
 my $mock_events = Test::MockModule->new('BOM::Platform::Event::Emitter');
-$mock_events->mock(
-    'emit',
-    sub {
-        my ($type, $data) = @_;
-        %last_event = (
-            type => $type,
-            data => $data
-        );
-    });
+$mock_events->mock('emit' => sub { push @emitted_events, \@_ });
 
 my @test_cases = (
     #Buy orders:
@@ -269,6 +261,7 @@ for my $test_case (@test_cases) {
 
         BOM::Test::Helper::P2P::set_order_status($client, $order->{id}, $test_case->{init_status});
         BOM::Test::Helper::P2P::expire_order($client, $order->{id}, $test_case->{expiry});
+        @emitted_events = ();
 
         my $err = exception {
             $client->p2p_expire_order(
@@ -293,8 +286,43 @@ for my $test_case (@test_cases) {
         is($redis->zscore($expire_key,  $redis_item) ? 1 : undef, $test_case->{expire_key},  'expire key existence');
         is($redis->zscore($timeout_key, $redis_item) ? 1 : undef, $test_case->{timeout_key}, 'timeout key existence');
 
-        is(($last_event{data}->{order_event} // '') eq 'expired' ? 1 : undef, $test_case->{event}, 'event fired as expected');
+        if ($test_case->{event}) {
+            my @expected_events = (
+                [
+                    'p2p_order_updated',
+                    {
+                        client_loginid => $client->loginid,
+                        order_id       => $order->{id},
+                        order_event    => 'expired',
+                    }
+                ],                
+            );
+            if ($test_case->{status} eq 'refunded') {
+                push @expected_events,                     
+                    [
+                        'p2p_advertiser_updated',
+                        {
+                            client_loginid => $client->loginid,
+                        }
+                    ],
+                    [
+                        'p2p_advertiser_updated',
+                        {
+                            client_loginid => $advertiser->loginid,
+                        }
+                    ];
+            }
 
+            cmp_deeply( 
+                \@emitted_events,
+                bag(@expected_events),
+                'expected event emitted'
+            );
+        }
+        else {
+            ok !@emitted_events, 'no events emitted';
+        } 
+        
         BOM::Test::Helper::P2P::reset_escrow();
     };
 }
@@ -310,35 +338,32 @@ subtest 'timed out orders' => sub {
     BOM::Test::Helper::P2P::set_order_status($client, $order->{id}, 'buyer-confirmed');
     BOM::Test::Helper::P2P::expire_order($client, $order->{id}, '0 hour');
 
-    is $client->p2p_expire_order(
-        id     => $order->{id},
-        source => 5,
-        staff  => 'AUTOEXPIRY'
-        ),
-        'timed-out', 'status changed to timed-out';
+    @emitted_events = ();
+    
+    is $client->p2p_expire_order(id => $order->{id}, source => 5, staff  => 'AUTOEXPIRY'), 'timed-out', 'status changed to timed-out';
+
     ok !$redis->zscore($expire_key, $redis_item), 'redis expire item removed';
     ok $redis->zscore($timeout_key, $redis_item), 'redis timeout item present';
 
-    cmp_deeply(
-        \%last_event,
-        {
-            type => 'p2p_order_updated',
-            data => {
-                client_loginid => $client->loginid,
-                order_id       => $order->{id},
-                order_event    => 'expired'
-            }
-        },
-        'p2p_order_updated event emitted for expired'
+    cmp_deeply( 
+        \@emitted_events,
+        [
+            [
+                'p2p_order_updated',
+                {
+                    client_loginid => $client->loginid,
+                    order_id       => $order->{id},
+                    order_event    => 'expired',
+                }
+            ],
+        ],
+        'expected events emitted'
     );
 
     BOM::Test::Helper::P2P::expire_order($client, $order->{id}, '-28 day');
-    ok !$client->p2p_expire_order(
-        id     => $order->{id},
-        source => 5,
-        staff  => 'AUTOEXPIRY'
-        ),
-        'no status change for early expiry';
+
+    @emitted_events = ();
+    ok !$client->p2p_expire_order(id => $order->{id}, source => 5, staff  => 'AUTOEXPIRY'), 'no status change for early expiry';
     ok !$redis->zscore($expire_key, $redis_item), 'redis expire item still removed';
     ok $redis->zscore($timeout_key, $redis_item), 'redis timeout item still present';
 
@@ -352,17 +377,31 @@ subtest 'timed out orders' => sub {
     ok !$redis->zscore($expire_key,  $redis_item), 'redis expire item still removed';
     ok !$redis->zscore($timeout_key, $redis_item), 'redis timeout item removed';
 
-    cmp_deeply(
-        \%last_event,
-        {
-            type => 'p2p_order_updated',
-            data => {
-                client_loginid => $client->loginid,
-                order_id       => $order->{id},
-                order_event    => 'timeout_refund'
-            }
-        },
-        'p2p_order_updated event emitted for timeout_refund'
+    cmp_deeply( 
+        \@emitted_events,
+        bag(
+            [
+                'p2p_order_updated',
+                {
+                    client_loginid => $client->loginid,
+                    order_id       => $order->{id},
+                    order_event    => 'timeout_refund',
+                }
+            ],
+            [
+                'p2p_advertiser_updated',
+                {
+                    client_loginid => $client->loginid,
+                }
+            ],
+            [
+                'p2p_advertiser_updated',
+                {
+                    client_loginid => $advertiser->loginid,
+                }
+            ],             
+        ),
+        'expected events emitted'
     );
 
     # add an old key which would not usually be there

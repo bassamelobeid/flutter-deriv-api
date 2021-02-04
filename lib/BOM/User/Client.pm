@@ -2639,6 +2639,14 @@ sub p2p_order_create {
             order_id       => $order->{id},
         });
 
+    for my $order_loginid ($order->{client_loginid}, $order->{advertiser_loginid}) {
+        BOM::Platform::Event::Emitter::emit(
+            p2p_advertiser_updated => {
+                client_loginid => $order_loginid,
+            },
+        );
+    }
+
     return $self->_order_details([$order])->[0];
 }
 
@@ -2711,6 +2719,16 @@ sub p2p_order_confirm {
             order_event    => 'confirmed',
         });
 
+    if ($update->{status} eq 'completed') {
+        for my $order_loginid ($update->{client_loginid}, $update->{advertiser_loginid}) {
+            BOM::Platform::Event::Emitter::emit(
+                p2p_advertiser_updated => {
+                    client_loginid => $order_loginid,
+                },
+            );
+        }
+    }
+
     return $update;
 }
 
@@ -2760,6 +2778,14 @@ sub p2p_order_cancel {
             order_id       => $id,
             order_event    => 'cancelled',
         });
+
+    for my $order_loginid ($update->{client_loginid}, $update->{advertiser_loginid}) {
+        BOM::Platform::Event::Emitter::emit(
+            p2p_advertiser_updated => {
+                client_loginid => $order_loginid,
+            },
+        );
+    }
 
     return $update;
 }
@@ -3065,6 +3091,18 @@ sub p2p_expire_order {
                 order_id       => $order_id,
                 order_event    => 'timeout_refund',
             });
+    }
+
+    if ($hit_expire_refund or $hit_timeout_refund) {
+        # order was refunded, need to update advertisers
+        my $order_info = $self->_p2p_orders(id => $order_id)->[0];
+        for my $order_loginid ($order_info->{client_loginid}, $order_info->{advertiser_loginid}) {
+            BOM::Platform::Event::Emitter::emit(
+                p2p_advertiser_updated => {
+                    client_loginid => $order_loginid,
+                },
+            );
+        }
     }
 
     return $new_status;
@@ -3835,13 +3873,6 @@ sub _p2p_order_stats_record {
     # clean up time storage, they won't be needed again for this order because it's either compelete or cancelled
     $redis->hdel(P2P_STATS_REDIS_PREFIX . '::ORDER_CREATION_TIMES', $order->{id});
     $redis->hdel(P2P_STATS_REDIS_PREFIX . '::BUY_CONFIRM_TIMES',    $order->{id});
-
-    for my $loginid ($order->{advertiser_loginid}, $order->{client_loginid}) {
-        BOM::Platform::Event::Emitter::emit(
-            p2p_advertiser_updated => {
-                client_loginid => $loginid,
-            });
-    }
 
     return;
 }
