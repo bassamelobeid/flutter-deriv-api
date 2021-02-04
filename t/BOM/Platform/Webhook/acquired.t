@@ -2,23 +2,24 @@ use Test::More;
 use Test::Mojo;
 use Test::Deep;
 use Test::MockModule;
-use BOM::Platform::Acquired::Webhook;
 use BOM::Config;
-use Digest::SHA qw(hmac_sha256_hex);
 use Mojo::JSON qw(encode_json);
 use Digest::SHA qw(sha256_hex);
 
-my $t                = Test::Mojo->new('BOM::Platform::Acquired::Webhook');
+my $t                = Test::Mojo->new('BOM::Platform::Webhook');
 my $config           = BOM::Config::third_party();
 my $company_hashcode = $config->{acquired}->{company_hashcode} // 'dummy';
-my $collector_mock   = Test::MockModule->new('BOM::Platform::Acquired::Webhook::Collector');
+my $collector_mock   = Test::MockModule->new('BOM::Platform::Webhook::Acquired');
 my $emit_mock        = Test::MockModule->new('BOM::Platform::Event::Emitter');
 my $mock_params;
 my $expected_data;
 
+my @metrics;
+
 $collector_mock->mock(
     'stats_inc',
     sub {
+        push @metrics, @_;
         return 1;
     });
 
@@ -49,7 +50,22 @@ subtest 'Hash Mismatch' => sub {
         hash       => 'invalid'
     };
     my $json = encode_json $payload;
-    $t->post_ok('/', json => $payload)->status_is(401)->json_is(undef);
+    @metrics = ();
+    $t->post_ok('/acquired', json => $payload)->status_is(401)->json_is(undef);
+    is $metrics[0], 'bom_platform.acquired.webhook.hash_mismatch', 'Hash mismatch reported';
+};
+
+subtest 'Bogus Payload' => sub {
+    my $payload = {
+        id         => 1,
+        timestamp  => 16000000000,
+        company_id => 'deriv',
+        event      => 'fraud_new',
+    };
+    my $json = encode_json $payload;
+    @metrics = ();
+    $t->post_ok('/acquired', json => $payload)->status_is(401)->json_is(undef);
+    is $metrics[0], 'bom_platform.acquired.webhook.bogus_payload', 'Bogus payload reported';
 };
 
 subtest 'Correct hash, event fraud_new emitted' => sub {
@@ -83,7 +99,9 @@ subtest 'Correct hash, event fraud_new emitted' => sub {
 
     my $json = encode_json $payload;
     $expected_data = $payload;
-    $t->post_ok('/', json => $payload)->status_is(200)->json_is('ok');
+    @metrics       = ();
+    $t->post_ok('/acquired', json => $payload)->status_is(200)->json_is('ok');
+    is $metrics[0], 'bom_platform.acquired.webhook.fraud_new', 'Fraud new event reported';
 };
 
 subtest 'Correct hash, event dispute_new emitted' => sub {
@@ -119,7 +137,9 @@ subtest 'Correct hash, event dispute_new emitted' => sub {
 
     my $json = encode_json $payload;
     $expected_data = $payload;
-    $t->post_ok('/', json => $payload)->status_is(200)->json_is('ok');
+    @metrics       = ();
+    $t->post_ok('/acquired', json => $payload)->status_is(200)->json_is('ok');
+    is $metrics[0], 'bom_platform.acquired.webhook.dispute_new', 'Dispute new event reported';
 };
 
 $collector_mock->unmock_all;

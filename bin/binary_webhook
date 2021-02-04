@@ -1,0 +1,16 @@
+#!/usr/bin/env perl
+
+use strict;
+use warnings;
+use BOM::Platform::Webhook;
+
+=head2 binary_webhook
+
+This scripts runs a Mojolicious service meant to handle the different
+webhooks the company may need.
+
+=cut
+
+return BOM::Platform::Webhook->new if caller;
+
+1;

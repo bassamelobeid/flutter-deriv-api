@@ -1,4 +1,4 @@
-package BOM::Platform::Acquired::Webhook::Collector;
+package BOM::Platform::Webhook::Acquired;
 
 use strict;
 use warnings;
@@ -26,7 +26,7 @@ sub collect {
         $self->send_event;
         return $self->render(json => 'ok');
     } catch ($error) {
-        $log->errorf('Request failure: %s', $error);
+        stats_inc('bom_platform.acquired.webhook.bogus_payload') if $error =~ /we expected/;
         return $self->rendered(401);
     }
 }
@@ -86,7 +86,7 @@ sub validates {
 
     return 1 if $hash eq $sha_expected;
 
-    $log->errorf('Hash verification failed: expected [%s] seen [%s]', $sha_expected, $hash);
+    stats_inc('bom_platform.acquired.webhook.hash_mismatch');
     return 0;
 }
 
