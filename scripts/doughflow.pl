@@ -13,33 +13,6 @@ use Data::Dump 'pp';
 binmode STDOUT, ':encoding(UTF-8)';
 binmode STDERR, ':encoding(UTF-8)';
 
-my $usage =
-      "Usage: $0 -a <action> -e <URL> -s <secret_key> -c <client_loginid>"
-    . " [-l <debug|info|error>]"
-    . " [-t trace_id]"
-    . " [--amount 1]"
-    . " [-pp payment_processor]"
-    . " [-pm payment_method]"
-    . " [-p shared_loginid]"
-    . " [-pt CreditCard]"
-    . " [-id 491623******6886]\n";
-
-require Log::Any::Adapter;
-GetOptions(
-    'a|action=s'              => \my $action,
-    'e|endpoint=s'            => \my $endpoint_url,
-    's|secret_key=s'          => \my $secret_key,
-    'c|client_loginid=s'      => \my $client_loginid,
-    'l|log=s'                 => \my $log_level,
-    't|trace_id=i'            => \my $trace_id,
-    'amount=i'                => \my $amount,
-    'pp|payment_processor=s'  => \my $payment_processor,
-    'pm|payment_method=s'     => \my $payment_method,
-    'p|shared_loginid=s'      => \my $shared_loginid,      # Only needed for `shared_payment_method`
-    'pt|payment_type=s'       => \my $payment_type,
-    'id|account_identifier=s' => \my $account_identifier
-) or die $usage;
-
 # endpoint for QA box is 127.0.0.1:8110
 # 'update_payout' does a withdrawal.
 my $actions = {
@@ -50,8 +23,43 @@ my $actions = {
     'update_payout'         => 'post',
     'approve_payout'        => '',
     'reject_payout'         => '',
-    'shared_payment_method' => 'post'
+    'shared_payment_method' => 'post',
 };
+
+my $usage = "
+Usage: $0 
+    -a, --action               One of ".(join ', ',keys %$actions)."
+    -e, --endpoint             Doughflow api url 
+    -s, --secret_key           Secret key
+    -c, --client_loginid       Client loginid 
+    -t, --trace_id             Trace ID. Optional, default is a random number.
+    --amount                   Optional, default is 1.
+    -pm, --payment_method      Optional, default is AirTM
+    -pp, --payment_processor   Optional, default is AirTM
+    -f, --fee                  Optional
+    -p, --shared_loginid       For shared payment method
+    -pt, --payment_type        Payment type e.g. CreditCard
+    -id, --account_identifier  Account identifier e.g. masked credit card number
+    -l, --log                  debug, info or error
+";
+
+require Log::Any::Adapter;
+GetOptions(
+    'a|action=s'             => \my $action,
+    'e|endpoint=s'           => \my $endpoint_url,
+    's|secret_key=s'         => \my $secret_key,
+    'c|client_loginid=s'     => \my $client_loginid,
+    'l|log=s'                => \my $log_level,
+    't|trace_id=i'           => \my $trace_id,
+    'amount=f'               => \my $amount,
+    'f|fee=f'                => \my $fee,
+    'pp|payment_processor=s' => \my $payment_processor,
+    'pm|payment_method=s'    => \my $payment_method,
+    'p|shared_loginid=s'     => \my $shared_loginid,  # Only needed for `shared_payment_method`
+    'pt|payment_type=s'       => \my $payment_type,
+    'id|account_identifier=s' => \my $account_identifier    
+);
+die $usage unless ($action && $endpoint_url && $secret_key && $client_loginid);
 
 $log_level ||= 'info';
 Log::Any::Adapter->import(qw(Stdout), log_level => $log_level);
@@ -75,12 +83,13 @@ $trace_id          ||= do {
 };
 
 my $params = {
-    client_loginid     => $client_loginid,
-    amount             => $amount,
-    currency_code      => $client->account->currency_code,
-    trace_id           => $trace_id,
+    client_loginid => $client_loginid,
+    amount         => $amount,
+    currency_code  => $client->account->currency_code,
+    trace_id       => $trace_id,
     payment_type       => $payment_type,
-    account_identifier => $account_identifier
+    account_identifier => $account_identifier,
+    defined $fee ? ( fee => $fee ) : (),
 };
 
 # DF doesn't know both the payment processor and the payment method for all operations
