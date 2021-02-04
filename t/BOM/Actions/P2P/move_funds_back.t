@@ -146,14 +146,14 @@ subtest 'segment tracking' => sub {
     my $track_mock   = Test::MockModule->new('BOM::Event::Services::Track');
     my $mock_segment = Test::MockModule->new('WebService::Async::Segment::Customer');
     my @segment_args;
-    my $mock_args;
+    my @emitted_events;
     my $track_args;
     my @track_event_args;
 
     $emit_mock->mock(
         'emit',
         sub {
-            $mock_args = {@_};
+            push @emitted_events, \@_;
             return 1;
         });
 
@@ -196,7 +196,8 @@ subtest 'segment tracking' => sub {
         advertiser => $advertiser->account->balance,
         escrow     => $escrow->account->balance,
     };
-
+    
+    @emitted_events = ();
     BOM::Test::Helper::P2P::ready_to_refund($client, $order->{id});
     ok BOM::Event::Actions::P2P::timeout_refund({
             client_loginid => $client->loginid,
@@ -211,8 +212,34 @@ subtest 'segment tracking' => sub {
             order_id       => $order->{id},
             order_event    => 'timeout_refund',
         }};
+        
 
-    cmp_deeply $update_expected, $mock_args, 'Order updated event got the right arguments';
+    cmp_deeply(
+        \@emitted_events,
+        bag(
+            [
+                'p2p_order_updated',
+                {
+                    client_loginid => $client->loginid,
+                    order_id       => $order->{id},
+                    order_event    => 'timeout_refund',
+                }
+            ],
+            [
+                'p2p_advertiser_updated',
+                 {
+                   client_loginid => $client->loginid,
+                 }                   
+            ],
+            [
+                'p2p_advertiser_updated',
+                 {
+                   client_loginid => $advertiser->loginid,
+                 }                   
+            ],
+        ),
+        'expected events emitted for timeout refund'
+    );
 
     # Call order updated event
     ok BOM::Event::Actions::P2P::order_updated($update_expected->{p2p_order_updated}), 'Order updated event was successful';
