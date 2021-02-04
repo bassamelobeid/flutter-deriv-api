@@ -1246,12 +1246,12 @@ sub get_transfer_fee_remark {
 
     return "Includes transfer fee of "
         . formatnumber(
-        amount => $args{currency},
+        amount => $args{fees_currency},
         $args{fee_calculated_by_percent})
-        . " $args{currency} ($args{fee_percent}%)."
-        if $args{fee_calculated_by_percent} >= $args{minimum_fee};
+        . " $args{fees_currency} ($args{fees_percent}%)."
+        if $args{fee_calculated_by_percent} >= $args{min_fee};
 
-    return "Includes the minimum transfer fee of $args{minimum_fee} $args{currency}.";
+    return "Includes the minimum transfer fee of $args{min_fee} $args{fees_currency}.";
 }
 
 rpc transfer_between_accounts => sub {
@@ -1565,14 +1565,19 @@ rpc transfer_between_accounts => sub {
     }
     my $response;
     try {
-        my $remark            = "Account transfer from $loginid_from to $loginid_to.";
-        my $additional_remark = get_transfer_fee_remark(
+        my $remark = "Account transfer from $loginid_from to $loginid_to.";
+
+        my %txn_details = (
+            from_login                => $loginid_from,
+            to_login                  => $loginid_to,
             fees                      => $fees,
-            fee_percent               => $fees_percent,
-            currency                  => $currency,
-            minimum_fee               => $min_fee,
-            fee_calculated_by_percent => $fee_calculated_by_percent
+            fees_percent              => $fees_percent,
+            fees_currency             => $currency,
+            min_fee                   => $min_fee,
+            fee_calculated_by_percent => $fee_calculated_by_percent,
         );
+
+        my $additional_remark = get_transfer_fee_remark(%txn_details);
 
         $remark = "$remark $additional_remark" if $additional_remark;
 
@@ -1588,6 +1593,7 @@ rpc transfer_between_accounts => sub {
             source            => $source,
             fees              => $fees,
             gateway_code      => 'account_transfer',
+            txn_details       => \%txn_details,
         );
     } catch {
         my $err_str = (ref $@ eq 'ARRAY') ? "@$@" : $@;

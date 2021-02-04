@@ -490,73 +490,6 @@ sub __build_landing_company {
     };
 }
 
-=head2 _translate_payment_remark
-
-Takes transaction hash ($txn) as args and returns the localized payment remark.
-
-=cut
-
-sub _translate_payment_remark {
-    my ($txn, $loginid) = @_;
-
-    #MT5 remark example.
-    # 'Transfer from CR90000004 to MT5 account real 540161 Includes transfer fee of BTC 0.00300000 (2%).'
-    my $payment_remark;
-
-    if (defined $txn->{mt5_account_id}) {
-        my $account_type = ($txn->{mt5_account_id} =~ /^MTD/) ? localize('demo') : localize('real');
-        my $mt5_int_id   = $txn->{mt5_account_id} =~ s/${\BOM::User->MT5_REGEX}//r;                    # This one is just the numeric ID
-
-        if ($txn->{action_type} eq 'withdrawal') {
-            $payment_remark =
-                (defined $txn->{transfer_fees} and $txn->{transfer_fees} > 0)
-                ? localize('Transfer from [_1] to MT5 account [_2] [_3] includes transfer fee of [_4] [_5] (2%).',
-                $txn->{staff_loginid}, $account_type, $mt5_int_id, $txn->{transfer_fees}, $txn->{mt5_currency_code})
-                : localize('Transfer from [_1] to MT5 account [_2] [_3] ', $txn->{staff_loginid}, $account_type, $mt5_int_id);
-        } elsif ($txn->{action_type} eq 'deposit') {
-            $payment_remark =
-                (defined $txn->{transfer_fees} and $txn->{transfer_fees} > 0)
-                ? localize('Transfer from MT5 account [_1] [_2] to [_3] includes transfer fee of [_4] [_5] (2%).',
-                $account_type, $mt5_int_id, $txn->{staff_loginid}, $txn->{transfer_fees}, $txn->{mt5_currency_code})
-                : localize('Transfer from MT5 account [_1] [_2] to [_3] ', $account_type, $mt5_int_id, $txn->{staff_loginid});
-        }
-    }
-
-    if (my $p2p_type = $txn->{p2p_type}) {
-        if ($p2p_type eq 'order_create') {
-            if ($loginid ne $txn->{p2p_client_loginid}) {
-                return localize(
-                    'P2P order [_1] created by [_2] ([_3]) - seller funds held',
-                    $txn->{p2p_order_id},
-                    $txn->{p2p_client_nickname},
-                    $txn->{p2p_client_loginid});
-            } else {
-                return localize('P2P order [_1] created - seller funds held', $txn->{p2p_order_id});
-            }
-        } elsif ($p2p_type eq 'order_complete_escrow') {
-            return localize('P2P order [_1] completed - seller funds released', $txn->{p2p_order_id});
-        } elsif ($p2p_type eq 'order_complete_payment') {
-            my @seller =
-                $txn->{p2p_advert_type} eq 'sell'
-                ? (($txn->{p2p_advertiser_nickname} // '-'), $txn->{p2p_advertiser_loginid})
-                : (($txn->{p2p_client_nickname} // '-'), $txn->{p2p_client_loginid});
-            my @buyer =
-                $txn->{p2p_advert_type} eq 'buy'
-                ? (($txn->{p2p_advertiser_nickname} // '-'), $txn->{p2p_advertiser_loginid})
-                : (($txn->{p2p_client_nickname} // '-'), $txn->{p2p_client_loginid});
-            if ($txn->{p2p_direction} eq 'to') {
-                return localize('P2P order [_1] completed - payment from [_2] ([_3])', $txn->{p2p_order_id}, @seller);
-            } elsif ($txn->{p2p_direction} eq 'from') {
-                return localize('P2P order [_1] completed - payment to [_2] ([_3])', $txn->{p2p_order_id}, @buyer);
-            }
-        } elsif ($p2p_type eq 'order_cancel') {
-            return localize('P2P order [_1] cancelled - seller funds released', $txn->{p2p_order_id});
-        }
-    }
-
-    return $payment_remark // $txn->{payment_remark};
-}
-
 rpc "statement",
     category => 'account',
     sub {
@@ -614,9 +547,8 @@ rpc "statement",
             if ($txn->{short_code}) {
                 $struct->{longcode} = $longcodes->{longcodes}->{$txn->{short_code}} // localize('Could not retrieve contract details');
             } else {
-                $struct->{longcode} = _translate_payment_remark($txn, $client->loginid);
+                $struct->{longcode} = $txn->{payment_remark};
             }
-
             $struct->{shortcode} = $txn->{short_code};
         }
 

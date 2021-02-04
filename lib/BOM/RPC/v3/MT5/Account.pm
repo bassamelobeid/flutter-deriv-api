@@ -1504,22 +1504,28 @@ async_rpc "mt5_deposit",
                 my $min_fee                   = $response->{min_fee};
                 my $mt5_login_id              = $to_mt5 =~ s/${\BOM::User->MT5_REGEX}//r;
                 $comment = "Transfer from $fm_loginid to MT5 account $account_type $mt5_login_id";
-                my $additional_comment = BOM::RPC::v3::Cashier::get_transfer_fee_remark(
+
+                # transaction metadata for statement remarks
+                my %txn_details = (
+                    mt5_account               => $mt5_login_id,
                     fees                      => $fees,
-                    fee_percent               => $fees_percent,
-                    currency                  => $fees_currency,
-                    minimum_fee               => $min_fee,
+                    fees_percent              => $fees_percent,
+                    fees_currency             => $fees_currency,
+                    min_fee                   => $min_fee,
                     fee_calculated_by_percent => $fee_calculated_by_percent
                 );
+
+                my $additional_comment = BOM::RPC::v3::Cashier::get_transfer_fee_remark(%txn_details);
                 $comment = "$comment $additional_comment" if $additional_comment;
 
                 ($txn) = $fm_client->payment_mt5_transfer(
-                    amount   => -$amount,
-                    currency => $fm_client->currency,
-                    staff    => $fm_loginid,
-                    remark   => $comment,
-                    fees     => $fees,
-                    source   => $source,
+                    amount      => -$amount,
+                    currency    => $fm_client->currency,
+                    staff       => $fm_loginid,
+                    remark      => $comment,
+                    fees        => $fees,
+                    source      => $source,
+                    txn_details => \%txn_details,
                 );
 
                 _record_mt5_transfer($fm_client->db->dbic, $txn->payment_id, -$response->{mt5_amount}, $to_mt5, $response->{mt5_currency_code});
@@ -1622,16 +1628,20 @@ async_rpc "mt5_withdrawal",
             my $fee_calculated_by_percent = $response->{calculated_fee};
             my $min_fee                   = $response->{min_fee};
 
-            my $mt5_login_id       = $fm_mt5 =~ s/${\BOM::User->MT5_REGEX}//r;
-            my $comment            = "Transfer from MT5 account $account_type $mt5_login_id to $to_loginid.";
-            my $additional_comment = BOM::RPC::v3::Cashier::get_transfer_fee_remark(
+            my $mt5_login_id = $fm_mt5 =~ s/${\BOM::User->MT5_REGEX}//r;
+            my $comment      = "Transfer from MT5 account $account_type $mt5_login_id to $to_loginid.";
+
+            # transaction metadata for statement remarks
+            my %txn_details = (
+                mt5_account               => $mt5_login_id,
                 fees                      => $fees,
-                fee_percent               => $fees_percent,
-                currency                  => $fees_currency,
-                minimum_fee               => $min_fee,
+                fees_currency             => $fees_currency,
+                fees_percent              => $fees_percent,
+                min_fee                   => $min_fee,
                 fee_calculated_by_percent => $fee_calculated_by_percent
             );
 
+            my $additional_comment = BOM::RPC::v3::Cashier::get_transfer_fee_remark(%txn_details);
             $comment = "$comment $additional_comment" if $additional_comment;
 
             # 31 character limit for MT5 comments
@@ -1650,12 +1660,13 @@ async_rpc "mt5_withdrawal",
                     try {
                         # deposit to Binary a/c
                         my ($txn) = $to_client->payment_mt5_transfer(
-                            amount   => $mt5_amount,
-                            currency => $to_client->currency,
-                            staff    => $to_loginid,
-                            remark   => $comment,
-                            fees     => $fees_in_client_currency,
-                            source   => $source,
+                            amount      => $mt5_amount,
+                            currency    => $to_client->currency,
+                            staff       => $to_loginid,
+                            remark      => $comment,
+                            fees        => $fees_in_client_currency,
+                            source      => $source,
+                            txn_details => \%txn_details,
                         );
 
                         _record_mt5_transfer($to_client->db->dbic, $txn->payment_id, $amount, $fm_mt5, $mt5_currency_code);

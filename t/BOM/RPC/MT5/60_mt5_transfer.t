@@ -1,6 +1,7 @@
 use strict;
 use warnings;
 use Test::More;
+use Test::Deep;
 use Test::Mojo;
 use Test::MockModule;
 use Format::Util::Numbers qw/financialrounding get_min_unit/;
@@ -104,6 +105,20 @@ sub _get_mt5transfer_from_transaction {
             );
         });
     return $result;
+}
+
+sub _get_transaction_details {
+    my ($dbic, $transaction_id) = @_;
+
+    my ($result) = $dbic->run(
+        fixup => sub {
+            $_->selectrow_array(
+                'select details from transaction.transaction_details where transaction_id = ?',
+                undef,
+                $transaction_id,
+            );
+        });
+    return JSON::MaybeUTF8::decode_json_utf8($result);
 }
 
 subtest 'multi currency transfers' => sub {
@@ -226,6 +241,19 @@ subtest 'multi currency transfers' => sub {
             is($mt5_transfer->{mt5_amount}, -100 * $after_fiat_fee * $EUR_USD, 'Correct amount recorded');
         };
 
+        cmp_deeply(
+            _get_transaction_details($test_client->db->dbic, $c->result->{binary_transaction_id}),
+            {
+                mt5_account => $ACCOUNTS{'real03\synthetic\svg_std_usd'},
+                fees => num(2),
+                fees_currency => 'EUR',
+                fees_percent => num(2),
+                min_fee => num(0.01),
+                fee_calculated_by_percent => num(2),
+            },
+            'metadata saved correctly in transaction_details table',
+        );
+
         $prev_bal = $client_eur->account->balance;
         BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
 
@@ -244,6 +272,19 @@ subtest 'multi currency transfers' => sub {
             is($mt5_transfer->{mt5_amount}, 100, 'Correct amount recorded');
         };
 
+        cmp_deeply(
+            _get_transaction_details($test_client->db->dbic, $c->result->{binary_transaction_id}),
+            {
+                mt5_account => $ACCOUNTS{'real03\synthetic\svg_std_usd'},
+                fees => num(2),
+                fees_currency => 'USD',
+                fees_percent => num(2),
+                min_fee => num(0.01),
+                fee_calculated_by_percent => num(2),                
+            },
+            'metadata saved correctly in transaction_details table',
+        );
+        
         $redis->hmset(
             'exchange_rates::EUR_USD',
             quote => $EUR_USD,
@@ -589,6 +630,19 @@ subtest 'Simple withdraw' => sub {
     };
 
     $c->call_ok('mt5_withdrawal', $params)->has_no_error('can withdraw even when mt5_withdrawal_locked');
+    
+    cmp_deeply(
+        _get_transaction_details($test_client->db->dbic, $c->result->{binary_transaction_id}),
+        {
+            mt5_account => $ACCOUNTS{'real03\synthetic\svg_std_usd'},
+            fees => num(0),
+            fees_currency => 'USD',
+            fees_percent => num(0),
+            min_fee => undef,
+            fee_calculated_by_percent => num(0),            
+        },
+        'metadata saved correctly in transaction_details table',
+    );
 };
 
 subtest 'offer_to_clients' => sub {

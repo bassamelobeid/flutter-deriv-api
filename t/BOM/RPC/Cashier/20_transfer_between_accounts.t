@@ -13,6 +13,7 @@ use MojoX::JSON::RPC::Client;
 use POSIX qw/ ceil /;
 use ExchangeRates::CurrencyConverter qw(in_usd convert_currency);
 use Format::Util::Numbers qw/financialrounding get_min_unit formatnumber/;
+use JSON::MaybeUTF8;
 
 use BOM::User::Client;
 use BOM::RPC::v3::MT5::Account;
@@ -371,6 +372,20 @@ subtest 'validation' => sub {
     );
 
     $result = $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->has_no_error->result;
+    
+    cmp_deeply(
+        _get_transaction_details($client_cr, $result->{transaction_id}),
+        {
+            from_login                => $client_cr->loginid,
+            to_login                  => $cr_dummy->loginid,
+            fees                      => num(0.1),
+            fee_calculated_by_percent => num(0.1),
+            fees_currency             => 'USD',
+            fees_percent              => num(1),
+            min_fee                   => num(0.01),
+        },
+        'metadata saved correctly in transaction_details table'
+    );
 
     # set an invalid value to minimum
     my $invalid_min = 0.01;
@@ -1695,3 +1710,18 @@ subtest 'fiat to crypto limits' => sub {
 };
 
 done_testing();
+
+
+sub _get_transaction_details {
+    my ($client, $transaction_id) = @_;
+
+    my ($result) = $client->db->dbic->run(
+        fixup => sub {
+            $_->selectrow_array(
+                'select details from transaction.transaction_details where transaction_id = ?',
+                undef,
+                $transaction_id,
+            );
+        });
+    return JSON::MaybeUTF8::decode_json_utf8($result);
+}
