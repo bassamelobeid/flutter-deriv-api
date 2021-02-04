@@ -9,6 +9,7 @@ use Time::Duration::Concise;
 use Variable::Disposition qw/retain_future/;
 use YAML::XS qw(LoadFile);
 use Log::Any qw($log);
+use Cache::LRU;
 
 sub register {
     my ($self, $app) = @_;
@@ -48,11 +49,14 @@ sub register {
 
 sub _update_redis {
     my ($c, $name, $ttl) = @_;
-    my $local_storage = $c->stash->{rate_limits} //= {};
-    my $diff          = $local_storage->{$name}{pending};
 
-    $local_storage->{$name}{pending}            = 0;
-    $local_storage->{$name}{update_in_progress} = 1;
+    my $diff = _limits_cache($c, $name)->{pending};
+    # update_in_progress blocks other updates from starting
+    _limits_cache(
+        $c, $name,
+        pending            => 0,
+        update_in_progress => 1
+    );
 
     my $client_id = $c->rate_limitations_key;
     my $redis     = $c->app->ws_redis_master;
@@ -71,8 +75,11 @@ sub _update_redis {
                 return $f->fail($error);
             }
             # overwrite by force speculatively calculated value
-            $local_storage->{$name}{value}              = $count;
-            $local_storage->{$name}{update_in_progress} = 0;
+            _limits_cache(
+                $c, $name,
+                value              => $count,
+                update_in_progress => 0
+            );
             # print "[debug] update from redis $name => $count\n";
 
             # Count should always go up, or expire. If we had no key or expired,
@@ -95,7 +102,7 @@ sub _update_redis {
                 $f->done;
             }
             # retrigger scheduled updates
-            if ($local_storage->{$name}{pending}) {
+            if (_limits_cache($c, $name)->{pending}) {
                 _update_redis($c, $name, $ttl);
             }
         });
@@ -124,16 +131,19 @@ sub _set_key_expiry {
 
 sub _check_single_limit {
     my ($c, $limit_descriptor) = @_;
-    my $name          = $limit_descriptor->{name};
-    my $local_storage = $c->stash->{rate_limits} //= {};
+    my $name = $limit_descriptor->{name};
     # update value speculatively (i.e. before getting real values from redis)
-    ++$local_storage->{$name}{pending};
-    my $value  = ++$local_storage->{$name}{value};
+    my $local_storage = _limits_cache($c, $name);
+    _limits_cache(
+        $c, $name,
+        pending => ++$local_storage->{pending},
+        value   => ++$local_storage->{value});
+    my $value  = $local_storage->{value};
     my $result = $value <= $limit_descriptor->{limit};
     # print "[debug] $name check => $result (value: $value)\n";
 
     my $f =
-        $local_storage->{$name}{update_in_progress}
+        _limits_cache($c, $name)->{update_in_progress}
         ? Future->done
         : _update_redis($c, $name, $limit_descriptor->{ttl});
     return ($result, $f);
@@ -182,6 +192,37 @@ sub _app_rate_limit_is_disabled {
     my $disable_rate_limit = $c->app->ws_redis_master->get($app_redis_key) // 0;
 
     return $disable_rate_limit eq 'bypass';
+}
+
+=head2 _limits_cache
+
+Creates an application level LRU cache if it doesn't exist.
+This will persist limit info on this worker after reconnect if the IP and user agent are the same.
+
+=over 4
+
+=item * C<$c> - websocket connection object
+
+=item * C<$name> - limit name
+
+=item * C<%updates> - optional key/value pairs to update
+
+=back
+
+Returns hashref of cached values for the provided $name.
+
+=cut
+
+sub _limits_cache {
+    my ($c, $name, %updates) = @_;
+    my $cache       = $c->app->{_binary}{rate_limits} //= Cache::LRU->new(size => 10000);
+    my $client_id   = $c->rate_limitations_key;
+    my $cache_entry = $cache->get($client_id) // {};
+    if (%updates) {
+        $cache_entry->{$name}{$_} = $updates{$_} for keys %updates;
+        $cache->set($client_id, $cache_entry);
+    }
+    return $cache_entry->{$name} // {};
 }
 
 1;
