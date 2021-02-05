@@ -60,6 +60,8 @@ my $vr_details = {
         address_state      => 'BA',
         salutation         => 'Ms',
         myaffiliates_token => 'this is token',
+        email_consent      => 0,
+        lc_email_consent   => 1,
     },
     MLT => {
         email              => 'foo+nl@binary.com',
@@ -68,6 +70,8 @@ my $vr_details = {
         address_state      => '',
         salutation         => 'Mr',
         myaffiliates_token => 'this is token',
+        email_consent      => 1,
+        lc_email_consent   => 0,
     },
     MX => {
         email              => 'foo+gb@binary.com',
@@ -76,6 +80,8 @@ my $vr_details = {
         address_state      => 'BIR',
         salutation         => 'Mrs',
         myaffiliates_token => 'this is token',
+        email_consent      => 1,
+        lc_email_consent   => 0,
     },
 };
 
@@ -124,7 +130,8 @@ subtest 'create account' => sub {
         lives_ok {
             my $vr_acc = create_vr_acc($vr_details->{$broker});
             ($vr_client, $user) = @{$vr_acc}{'client', 'user'};
-            is($vr_client->myaffiliates_token, 'this is token', 'myaffiliates token ok');
+            is($vr_client->myaffiliates_token, 'this is token',                         'myaffiliates token ok');
+            is($user->email_consent,           $vr_details->{$broker}->{email_consent}, 'email consent ok');
         }
         'create VR acc';
 
@@ -137,6 +144,7 @@ subtest 'create account' => sub {
         is($real_client->broker, $broker, 'Successfully create ' . $real_client->loginid);
         # test account_opening_reason
         is($real_client->account_opening_reason, $real_client_details{account_opening_reason}, "Account Opening Reason should be the same");
+        is($real_client->user->email_consent,    $vr_details->{$broker}->{email_consent},      'email consent ok');
 
         # MF acc
         if ($broker eq 'MLT' or $broker eq 'MX') {
@@ -148,6 +156,30 @@ subtest 'create account' => sub {
             my $data = decode_fa($cl->financial_assessment());
             is $data->{forex_trading_experience}, '0-1 year', "got the forex trading experience";
         }
+
+        # Prepare for the email_consent-less test
+        $vr_details->{$broker}->{email} = 'test_' . $vr_details->{$broker}->{email};
+        delete $vr_details->{$broker}->{email_consent};
+    }
+
+    foreach my $broker (keys %$vr_details) {
+        my ($real_acc, $vr_client, $real_client, $user);
+        lives_ok {
+            my $vr_acc = create_vr_acc($vr_details->{$broker});
+            ($vr_client, $user) = @{$vr_acc}{'client', 'user'};
+            is($vr_client->myaffiliates_token, 'this is token',                            'myaffiliates token ok');
+            is($user->email_consent,           $vr_details->{$broker}->{lc_email_consent}, 'default email consent from LC is ok');
+        }
+        'create VR acc';
+
+        # real acc
+        lives_ok {
+            $real_acc = create_real_acc($vr_client, $user, $broker);
+            ($real_client, $user) = @{$real_acc}{'client', 'user'};
+        }
+        "create $broker acc OK, after verify email";
+        is($real_client->broker,              $broker,                                    'Successfully create ' . $real_client->loginid);
+        is($real_client->user->email_consent, $vr_details->{$broker}->{lc_email_consent}, 'default email consent from LC is ok');
     }
 
     # test create account in 2016-02-29
@@ -447,6 +479,7 @@ sub create_vr_acc {
                 residence          => $args->{residence},
                 has_social_signup  => $args->{social_signup},
                 myaffiliates_token => $args->{myaffiliates_token},
+                email_consent      => $args->{email_consent},
             }});
 }
 

@@ -61,13 +61,15 @@ sub create_account {
     my $gclid_url         = $details->{gclid_url};
     my $has_social_signup = $details->{has_social_signup} // 0;
     my $signup_device     = $details->{signup_device};
+    my $email_consent     = $details->{email_consent};
+
+    # If not defined take it from the LC
+    if (not defined $email_consent) {
+        my $country_company = $brand_country_instance->real_company_for_country($residence);
+        $email_consent = $country_company ? LandingCompany::Registry::get($country_company)->marketing_email_consent->{default} : 0;
+    }
 
     try {
-        # Any countries covered by GDPR should default to not sending email, but we would like to
-        # include other users in our default marketing emails.
-        my $country_company = $brand_country_instance->real_company_for_country($residence);
-        my $email_consent   = $country_company ? LandingCompany::Registry::get($country_company)->email_consent->{default} : 0;
-
         $user = BOM::User->create(
             email             => $email,
             password          => $password,
