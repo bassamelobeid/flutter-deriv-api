@@ -490,6 +490,7 @@ subtest 'signup event' => sub {
         email          => $virtual_client2->email,
         password       => "hello",
         email_verified => 1,
+        email_consent  => 1,
     );
 
     $user2->add_client($virtual_client2);
@@ -528,7 +529,6 @@ subtest 'signup event' => sub {
         }
         },
         'context is properly set for signup';
-
     ($customer, %args) = @track_args;
     is_deeply \%args,
         {
@@ -553,7 +553,8 @@ subtest 'signup event' => sub {
                 postal_code => '',
                 country     => Locale::Country::code2country($virtual_client2->residence),
             },
-            brand => 'deriv',
+            brand         => 'deriv',
+            email_consent => 1,
         }
         },
         'properties is properly set for virtual account signup';
@@ -623,9 +624,10 @@ subtest 'signup event' => sub {
                 postal_code => $test_client->address_postcode,
                 country     => Locale::Country::code2country($test_client->residence),
             },
-            type     => 'real',
-            provider => 'email',
-            brand    => 'deriv',
+            type          => 'real',
+            provider      => 'email',
+            brand         => 'deriv',
+            email_consent => 1,
         }
         },
         'properties is set properly for real account signup event';
