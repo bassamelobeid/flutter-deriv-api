@@ -67,6 +67,7 @@ rpc "new_account_virtual",
         country => uc($params->{country_code} // ''),
         details => {
             email           => $email,
+            email_consent   => $args->{email_consent},
             client_password => $args->{client_password},
             residence       => $args->{residence},
             source          => $params->{source},

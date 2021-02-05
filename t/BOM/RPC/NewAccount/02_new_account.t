@@ -130,6 +130,7 @@ subtest $method => sub {
     $params->{args}->{gclid_url}          = 'FQdb3wodOkkGBgCMrlnPq42q8C';
     $params->{args}->{date_first_contact} = $date_first_contact;
     $params->{args}->{signup_device}      = 'mobile';
+    $params->{args}->{email_consent}      = 1;
 
     my $expected_utm_data = {
         utm_campaign_id  => 111017190001,
@@ -286,6 +287,70 @@ subtest $method => sub {
             'new virtual account doesn\'t have password_reset_required status');
 
         BOM::Config::Runtime->instance->app_config->system->suspend->universal_password(1);    # disable universal password
+    };
+
+    subtest 'email consent given' => sub {
+        my $vr_email = 'consent_given' . rand(999) . '@binary.com';
+        $params->{args}->{verification_code} = BOM::Platform::Token->new(
+            email       => $vr_email,
+            created_for => 'account_opening'
+        )->token;
+
+        $params->{args}->{residence}     = 'gb';
+        $params->{args}->{email_consent} = 1;
+        $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error('If verification code is ok - account created successfully')
+            ->result_value_is(sub { shift->{currency} },     'USD', 'It should return new account data')
+            ->result_value_is(sub { ceil shift->{balance} }, 10000, 'It should return new account data');
+
+        ok $emitted{'signup_' . $rpc_ct->result->{client_id}}, "signup event emitted";
+
+        $user = BOM::User->new(
+            email => $vr_email,
+        );
+        is $user->{email_consent}, 1, 'email consent is given';
+    };
+
+    subtest 'email consent not given' => sub {
+        my $vr_email = 'not_consent' . rand(999) . '@binary.com';
+        $params->{args}->{verification_code} = BOM::Platform::Token->new(
+            email       => $vr_email,
+            created_for => 'account_opening'
+        )->token;
+
+        $params->{args}->{residence}     = 'gb';
+        $params->{args}->{email_consent} = 0;
+        $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error('If verification code is ok - account created successfully')
+            ->result_value_is(sub { shift->{currency} },     'USD', 'It should return new account data')
+            ->result_value_is(sub { ceil shift->{balance} }, 10000, 'It should return new account data');
+
+        ok $emitted{'signup_' . $rpc_ct->result->{client_id}}, "signup event emitted";
+
+        $user = BOM::User->new(
+            email => $vr_email,
+        );
+        is $user->{email_consent}, 0, 'email consent is not given';
+    };
+
+    subtest 'email consent undefined' => sub {
+        my $vr_email = 'undefined_consent' . rand(999) . '@binary.com';
+        $params->{args}->{verification_code} = BOM::Platform::Token->new(
+            email       => $vr_email,
+            created_for => 'account_opening'
+        )->token;
+
+        $params->{args}->{residence} = 'gb';
+        delete $params->{args}->{email_consent};
+
+        $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error('If verification code is ok - account created successfully')
+            ->result_value_is(sub { shift->{currency} },     'USD', 'It should return new account data')
+            ->result_value_is(sub { ceil shift->{balance} }, 10000, 'It should return new account data');
+
+        ok $emitted{'signup_' . $rpc_ct->result->{client_id}}, "signup event emitted";
+
+        $user = BOM::User->new(
+            email => $vr_email,
+        );
+        is $user->{email_consent}, 0, 'email consent not given';
     };
 };
 

@@ -512,6 +512,9 @@ subtest 'set settings' => sub {
         );
     }
 
+    $test_client->set_authentication('ID_DOCUMENT', {status => 'pass'});
+    $test_client->save;
+    ok $test_client->fully_authenticated, 'client is authenticated';
     $poi_status = 'verified';
 
     for my $tax_field (qw(tax_residence tax_identification_number)) {
@@ -547,6 +550,9 @@ subtest 'set settings' => sub {
             or note explain $res->{error};
     }
 
+    $test_client->set_authentication('ID_DOCUMENT', {status => 'fail'});
+    $test_client->save;
+    ok !$test_client->fully_authenticated, 'client is not authenticated';
     $poi_status = 'none';
 
     for my $unrestricted_country (qw(id ru)) {
