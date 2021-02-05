@@ -743,6 +743,67 @@ subtest 'fail if mt5 api return empty login' => sub {
         group          => 'real/something'
     });
     like($f->failure, qr/Empty login returned/, 'MT5 create_user failed, no/empty login returned');
+    $mock->unmock_all;
+};
+
+subtest 'update_mt5_passwords' => sub {
+    my $mock = Test::MockModule->new('BOM::MT5::User::Async');
+    $mock->mock(
+        password_change => sub {
+            my ($args) = @_;
+
+            if ($args->{new_password} ne 'Ijkl6789') {
+                return Future->fail({
+                    error => 'UserPasswordChange',
+                    code  => 'UserPasswordChange',
+                });
+            }
+
+            return Future->done({status => 1});
+        });
+
+    subtest 'should fail if mt5 password_change has error' => sub {
+        like($client_cr->user->update_mt5_passwords('hEllo123')->failure->{error}, qr/UserPasswordChange/, 'mt5 password_change failed');
+    };
+
+    subtest 'should return { status => 1 } on success' => sub {
+        is $client_cr->user->update_mt5_passwords('Ijkl6789')->result->{status}, 1, 'mt5 password_change is OK';
+    };
+
+    $mock->unmock_all;
+};
+
+subtest 'update_all_passwords' => sub {
+    my $mock = Test::MockModule->new('BOM::MT5::User::Async');
+    $mock->mock(
+        password_change => sub {
+            my ($args) = @_;
+
+            if ($args->{new_password} ne 'Ijkl6789') {
+                return Future->fail({
+                    error => 'UserPasswordChange',
+                    code  => 'UserPasswordChange',
+                });
+            }
+
+            return Future->done({status => 1});
+        });
+
+    subtest 'universal password' => sub {
+        BOM::Config::Runtime->instance->app_config->system->suspend->universal_password(0);    # enable universal password
+
+        subtest 'should fail if mt5 password_change has error' => sub {
+            dies_ok { $client_cr->user->update_all_passwords('hEllo123') } "mt5 password_change failed";
+        };
+
+        subtest 'should return 1 on success' => sub {
+            is $client_cr->user->update_all_passwords('Ijkl6789'), 1, 'all passwords change is OK';
+        };
+
+        BOM::Config::Runtime->instance->app_config->system->suspend->universal_password(1);    # disable universal password
+    };
+
+    $mock->unmock_all;
 };
 
 subtest 'test get_financial_assessment' => sub {

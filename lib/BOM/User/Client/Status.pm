@@ -29,7 +29,7 @@ my @status_codes = qw(
     social_signup  trusted  pa_withdrawal_explicitly_allowed  financial_assessment_required
     address_verified  no_withdrawal_or_trading no_trading  allow_document_upload internal_client
     closed  transfers_blocked  shared_payment_method  personal_details_locked
-    allow_poi_resubmission  allow_poa_resubmission
+    allow_poi_resubmission  allow_poa_resubmission migrated_universal_password
 );
 
 for my $code (@status_codes) {

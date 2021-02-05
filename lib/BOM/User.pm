@@ -1023,4 +1023,79 @@ sub current_tnc_version {
     return $tnc_config->{$brand_name};
 }
 
+=head2 update_mt5_passwords
+
+Update all mt5 passwords for the user.
+
+=over 4
+
+=item * C<$new_password> - new user password
+
+=back
+
+Returns L<Future> object.
+
+=cut
+
+sub update_mt5_passwords {
+    my ($self, $new_password) = @_;
+
+    my @mt5_logins = $self->mt5_logins;
+
+    my @futures = map { BOM::MT5::User::Async::password_change({login => $_, new_password => $new_password, type => 'main'}) } @mt5_logins;
+
+    return Future->needs_all(@futures);
+}
+
+=head2 update_all_passwords
+
+Update clients and mt5 passwords for the user.
+
+=over 4
+
+=item * C<$new_password> - new user password
+
+=item * C<$type> - 'reset_password' or 'change_password'
+
+=back
+
+Returns 1 on success, otherwise return error
+
+=cut
+
+sub update_all_passwords {
+    my ($self, $new_password, $type) = @_;
+    my $is_reset_password = ($type && $type eq 'reset_password') || 0;
+    my $log               = '';
+
+    # update mt5 passwords
+    if (!BOM::Config::Runtime->instance->app_config->system->suspend->universal_password) {
+        $self->update_mt5_passwords($new_password)->get;
+        $log = $is_reset_password ? 'MT5 password has been reset' : 'MT5 password has been changed';
+        BOM::User::AuditLog::log($log, $self->email);
+    }
+
+    # update user & clients passwords
+    my $hash_pw = BOM::User::Password::hashpw($new_password);
+    $self->update_password($hash_pw);
+
+    my $oauth   = BOM::Database::Model::OAuth->new;
+    my @clients = $self->clients;
+    for my $client (@clients) {
+        $client->password($hash_pw);
+        $client->save;
+        $oauth->revoke_tokens_by_loginid($client->loginid);
+
+        if (!BOM::Config::Runtime->instance->app_config->system->suspend->universal_password) {
+            $client->status->set('migrated_universal_password', 'SYSTEM', 'Client has migrated to universal password')
+                unless $client->status->migrated_universal_password;
+        }
+    }
+
+    $log = $is_reset_password ? 'your password has been reset' : 'your password has been changed';
+    BOM::User::AuditLog::log($log, $self->email);
+
+    return 1;
+}
+
 1;
