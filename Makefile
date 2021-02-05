@@ -1,10 +1,10 @@
-#################### Makefile Command Documentation ####################
-## https://github.com/regentmarkets/development-workflow/blob/master/Makefile.md
-########################################################################
+TESTS=test syntax json_schemas
 
 M=[ -t 1 ] && echo -e 'making \033[01;33m$@\033[00m' || echo 'making $@'
-P=/etc/rmg/bin/prove -v --timer -rl
+P=/etc/rmg/bin/prove -vrl --timer
 PROVE=p () { $M; echo '$P' "$$@"; $P "$$@"; }; p
+
+test_all: $(TESTS)
 
 syntax:
 	@$(PROVE) t/*.t
