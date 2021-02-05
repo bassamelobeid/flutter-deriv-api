@@ -196,7 +196,7 @@ subtest 'segment tracking' => sub {
         advertiser => $advertiser->account->balance,
         escrow     => $escrow->account->balance,
     };
-    
+
     @emitted_events = ();
     BOM::Test::Helper::P2P::ready_to_refund($client, $order->{id});
     ok BOM::Event::Actions::P2P::timeout_refund({
@@ -212,12 +212,10 @@ subtest 'segment tracking' => sub {
             order_id       => $order->{id},
             order_event    => 'timeout_refund',
         }};
-        
 
     cmp_deeply(
         \@emitted_events,
-        bag(
-            [
+        bag([
                 'p2p_order_updated',
                 {
                     client_loginid => $client->loginid,
@@ -227,15 +225,15 @@ subtest 'segment tracking' => sub {
             ],
             [
                 'p2p_advertiser_updated',
-                 {
-                   client_loginid => $client->loginid,
-                 }                   
+                {
+                    client_loginid => $client->loginid,
+                }
             ],
             [
                 'p2p_advertiser_updated',
-                 {
-                   client_loginid => $advertiser->loginid,
-                 }                   
+                {
+                    client_loginid => $advertiser->loginid,
+                }
             ],
         ),
         'expected events emitted for timeout refund'

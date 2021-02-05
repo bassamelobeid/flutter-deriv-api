@@ -110,6 +110,11 @@ sub set_pending_transaction {
     try {
         return undef unless $transaction->{type} && $transaction->{type} ne 'send';
 
+        return undef
+            if ($from_address
+            && (lc $from_address eq lc $currency->account_config->{account}->{address})
+            && ($transaction->{type} eq TRANSACTION_TYPE_INTERNAL));
+
         # get all the payments related to the `to` address from the transaction
         # since this is only for deposits we don't care about the `from` address
         # also, the subscription daemon takes care about the multiple receivers

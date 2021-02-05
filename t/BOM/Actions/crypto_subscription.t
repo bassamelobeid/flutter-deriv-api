@@ -598,4 +598,46 @@ subtest "new_crypto_address" => sub {
     is $res->[0]->{address}, $second_address, "correct new address";
 };
 
+subtest "Skip ETH fee transaction" => sub {
+    my $client = create_client();
+    $client->set_default_account('ETH');
+    my $helper = BOM::CTC::Helper->new(client => $client);
+
+    my $mock_eth = Test::MockModule->new('BOM::CTC::Currency::ETH');
+    $mock_eth->mock(
+        get_new_address => sub {
+            return '0x63D264afFf99944ba1523f88DDba08B611350a8D',;
+        });
+
+    my ($id, $eth_address) = $helper->get_deposit_id_and_address;
+
+    my $currency     = BOM::CTC::Currency->new(currency_code => 'ETH');
+    my $main_address = $currency->account_config->{account}->{address};
+
+    my $transaction = {
+        'type'         => 'internal',
+        'block'        => 118333,
+        'amount'       => '0.00093976',
+        'hash'         => '0x69faf1857fb8cca53e84bc7a0cd11d1c1ffee7dbb3e2372e84f15b5792cbcafa',
+        'currency'     => 'ETH',
+        'from'         => $main_address,
+        'fee_currency' => 'ETH',
+        'property_id'  => undef,
+        'to'           => $eth_address,
+        'fee'          => '2310000000000000'
+    };
+
+    my $response = BOM::Event::Actions::CryptoSubscription::set_pending_transaction($transaction);
+
+    my $res = $dbic->run(
+        ping => sub {
+            my $sth = $_->prepare('SELECT * from payment.cryptocurrency where address = ?');
+            $sth->execute($eth_address)
+                or die $sth->errstr;
+            return $sth->fetchall_arrayref({});
+        });
+
+    is $res->[0]->{status}, 'NEW', "correct transaction status";
+};
+
 done_testing;
