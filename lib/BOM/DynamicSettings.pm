@@ -233,6 +233,7 @@ sub get_settings_by_group {
                 system.mt5.suspend.real04.withdrawals
                 system.suspend.payout_freezing_funds
                 system.suspend.doughflow_deriv_sportsbooks
+                system.suspend.universal_password
                 )
         ],
         quant => [qw(
