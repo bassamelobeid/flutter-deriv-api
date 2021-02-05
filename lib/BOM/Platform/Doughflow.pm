@@ -32,8 +32,7 @@ sub get_sportsbook {
         return 'test';
     }
 
-    my $landing_company      = LandingCompany::Registry->get_by_broker($broker);
-    my $landing_company_name = $landing_company->name;
+    my $landing_company = LandingCompany::Registry->get_by_broker($broker);
 
     if (is_deriv_sportsbooks_enabled()) {
         $sportsbook = get_sportsbook_mapping_by_landing_company($landing_company->short) . ' ' . $currency;

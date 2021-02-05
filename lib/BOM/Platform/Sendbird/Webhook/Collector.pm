@@ -91,7 +91,7 @@ Return,
 =cut
 
 sub _unexpected_format {
-    my ($self, $unexpected) = @_;
+    my $self = shift;
     stats_inc('bom_platform.sendbird.webhook.bogus_payload');
     return;
 }

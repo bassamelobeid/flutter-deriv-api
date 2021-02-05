@@ -616,8 +616,7 @@ Deletes existing reports from Experian if they exist, GDPR requirement
 =cut
 
 sub delete_existing_reports {
-    my $self   = shift;
-    my $client = $self->client;
+    my $self = shift;
 
     $self->_old_xml_file->remove() if $self->_old_xml_file;
     $self->_old_pdf_file->remove() if $self->_old_pdf_file;

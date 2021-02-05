@@ -14,7 +14,9 @@ package BOM::Platform::Locale;
 use strict;
 use warnings;
 use feature "state";
-use utf8;    # to support source-embedded country name strings in this module
+
+use utf8;             # to support source-embedded country name strings in this module
+use JSON::MaybeXS;    #Locale::SubCountry using JSON::XS, so we should use JSON::MaybeXS before that
 use Locale::SubCountry;
 
 use BOM::Config::Runtime;

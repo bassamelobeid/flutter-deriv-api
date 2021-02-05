@@ -1,33 +1,33 @@
-TESTS=unit_test_platform_client \
-      unit_test_platform_all \
-      unit_test_system
+TESTS=test syntax 
 
 M=[ -t 1 ] && echo -e 'making \033[01;33m$@\033[00m' || echo 'making $@'
 export SKIP_EMAIL=1
-P=/etc/rmg/bin/prove -v --timer -rl
+P=/etc/rmg/bin/prove -vrl --timer 
 PROVE=p () { $M; echo '$P' "$$@"; $P "$$@"; }; p
+
+test_all: $(TESTS)
 
 test:
 	@$(PROVE) t/BOM
 
 unit_test_platform_client:
-	@$(PROVE) -r t/BOM/Platform/Client/
+	@$(PROVE) t/BOM/Platform/Client/
 
 unit_test_platform_all:
-	@$(PROVE) -r $$(ls -1d t/BOM/Platform/* | grep -v -e /Client)
+	@$(PROVE) $$(ls -1d t/BOM/Platform/* | grep -v -e /Client)
 
 unit_test_system:
-	@$(PROVE) -r t/BOM/System/
+	@$(PROVE) t/BOM/System/
 
 leaktest:
-	@$(PROVE) -r t/BOM/leaks
+	@$(PROVE) t/BOM/leaks
 
 pod_test:
 	@$(PROVE) t/*pod*.t
 
 tidy:
 	find . -name '*.p?.bak' -delete
-	. /etc/profile.d/perl5.sh;find lib t -name '*.p[lm]' -o -name '*.t' | xargs perltidy -pro=/home/git/regentmarkets/cpan/rc/.perltidyrc --backup-and-modify-in-place -bext=tidyup
+	find lib t -name '*.p[lm]' -o -name '*.t' | xargs perltidy -pro=/home/git/regentmarkets/cpan/rc/.perltidyrc --backup-and-modify-in-place -bext=tidyup
 	find . -name '*.tidyup' -delete
 
 syntax:

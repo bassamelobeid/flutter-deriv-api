@@ -79,7 +79,7 @@ sub copy_status_from_siblings {
 
 sub after_register_client {
     my $args = shift;
-    my ($client, $user, $details, $ip, $country) = @{$args}{qw(client user details ip country)};
+    my ($client, $user) = @{$args}{qw(client user details ip country)};
 
     unless ($client->is_virtual) {
         $client->user->set_tnc_approval;
@@ -93,7 +93,6 @@ sub after_register_client {
         })->check();
 
     my $client_loginid = $client->loginid;
-    my $client_name    = join(' ', $client->salutation, $client->first_name, $client->last_name);
 
     if ($client->landing_company->short eq 'iom'
         and (length $client->first_name < 3 or length $client->last_name < 3))

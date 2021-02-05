@@ -127,7 +127,7 @@ sub _get_new_clients_limit {
 }
 
 sub run {
-    my $databases = shift;
+
     my %kids;
 
     local $SIG{INT} = sub {
@@ -169,8 +169,7 @@ sub run {
         %kids = ();
 
         # child
-        $log->debugf('%d: starting to listen on %s/%s (%s)',
-            $$, $connection_details->{ip}, $connection_details->{dbname}, $lc);
+        $log->debugf('%d: starting to listen on %s/%s (%s)', $$, $connection_details->{ip}, $connection_details->{dbname}, $lc);
 
         while (1) {
             try {

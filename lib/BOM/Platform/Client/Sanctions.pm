@@ -75,7 +75,7 @@ sub check {
     $client->save;
 
     # we don't mark or log fully_authenticated clients
-    return if (not $sanctioned_info->{matched} or $client->fully_authenticated and !$self->recheck_authenticated_clients);
+    return if (!$sanctioned_info->{matched} || $client->fully_authenticated && !$self->recheck_authenticated_clients);
 
     my $client_loginid = $client->loginid;
     my $client_name    = join(' ', $client->salutation, $client->first_name, $client->last_name);

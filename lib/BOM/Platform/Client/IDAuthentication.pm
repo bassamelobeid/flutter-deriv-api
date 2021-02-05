@@ -110,7 +110,6 @@ sub proveid {
     my ($credit_reference)         = $xml->findnodes('/Search/Result/CreditReference');
     my ($credit_reference_summary) = $xml->findnodes('/Search/Result/CreditReference/CreditReferenceSummary');
     my ($kyc_summary)              = $xml->findnodes('/Search/Result/Summary/KYCSummary');
-    my ($report_summary)           = $xml->findnodes('/Search/Result/Summary/ReportSummary/DatablocksSummary');
 
     if (($credit_reference->getAttribute('Type') =~ /NoMatch|Error/) || (!$kyc_summary->hasChildNodes)) {
         $self->_process_not_found;
@@ -210,9 +209,8 @@ Fetches the proveid result of the client from Experian through BOM::Platform::Pr
 =cut
 
 sub _fetch_proveid {
-    my $self    = shift;
-    my $client  = $self->client;
-    my $loginid = $client->loginid;
+    my $self   = shift;
+    my $client = $self->client;
 
     my $result;
     try {

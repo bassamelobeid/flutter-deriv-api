@@ -75,7 +75,7 @@ sub param {
 }
 
 sub brand {
-    my ($self, %args) = @_;
+    my $self = shift;
 
     return Brands->new(
         name   => $self->brand_name,
