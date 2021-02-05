@@ -73,6 +73,8 @@ use constant GENERIC_DD_STATS_KEY               => 'bom.rpc.exception';
 # - all characters ASCII index should be within ( )[space] to (~)[tilde] indexes range
 use constant REGEX_PASSWORD_VALIDATION => qr/^(?=.*[a-z])(?=.*[0-9])(?=.*[A-Z])[ -~]{8,25}$/;
 
+use constant MAX_PASSWORD_CHECK_ATTEMPTS => 5;
+
 =head2 validation_checks
 
 Performs a list of given Transaction Validation checks for a given client.
@@ -363,6 +365,49 @@ sub validate_mt5_password {
     return 'MT5SamePassword' if defined $main_pwd && defined $invest_pwd && $main_pwd eq $invest_pwd;
 
     return undef;
+}
+
+=head2 validate_password_with_attempts
+
+Check new password against user password.
+
+=over 4
+
+=item * C<$new_password> - new password
+
+=item * C<$user_password> - current password
+
+=item * C<$loginid> - client loginid
+
+=back
+
+Returns undef on success, returns error code otherwise. 
+
+=cut
+
+sub validate_password_with_attempts {
+    my ($new_password, $user_password, $loginid) = @_;
+    my $redis = BOM::Config::Redis::redis_replicated_write();
+    my $key   = "PASSWORD_CHECK_COUNTER:$loginid";
+
+    $redis->set(
+        $key,
+        MAX_PASSWORD_CHECK_ATTEMPTS,
+        'EX' => 60,    # expires after 1min
+        'NX'
+    );
+
+    if ($redis->get($key) == 0) {
+        return 'PasswordReset';
+    }
+
+    unless (BOM::User::Password::checkpw($new_password, $user_password)) {
+        $redis->incrbyfloat($key, -1);
+        return 'PasswordError';
+    }
+
+    $redis->del($key);
+    return;
 }
 
 sub mask_app_id {
@@ -726,6 +771,36 @@ sub set_professional_status {
     return $error if $error;
 
     send_professional_requested_email($client->loginid, $client->residence) if $set_prof_request;
+
+    return undef;
+}
+
+=head2 set_migrated_universal_password_status
+
+Set migrated_universal_password status for newly created accounts.
+
+It takes:
+
+=over 4
+
+=item * C<client> A L<BOM::User::Client> instance.
+
+=back
+
+Returns undef, otherwise returns error.
+
+=cut
+
+sub set_migrated_universal_password_status {
+    my ($client) = @_;
+
+    unless ($client->status->migrated_universal_password) {
+        try {
+            $client->status->set('migrated_universal_password', 'SYSTEM', 'Client has migrated to universal password');
+        } catch {
+            return client_error();
+        }
+    }
 
     return undef;
 }

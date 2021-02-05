@@ -3,6 +3,7 @@ use warnings;
 
 use Test::More;
 use Test::Mojo;
+use Test::Deep;
 use Test::MockModule;
 use Test::FailWarnings;
 use Test::Warn;
@@ -251,6 +252,40 @@ subtest $method => sub {
         $client = BOM::User::Client->new({loginid => $rpc_ct->result->{client_id}});
         is $client->non_pep_declaration_time, undef,
             'non_pep_self_declaration_time is empty for virtual accounts even when rpc is called with param set to 1';
+
+        BOM::Config::Runtime->instance->app_config->system->suspend->universal_password(0);    # enable universal password
+
+        my $params->{token} = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token');
+        $rpc_ct->call_ok('get_account_status', $params);
+
+        cmp_deeply(
+            $rpc_ct->result->{status},
+            superbagof(qw(password_reset_required)),
+            'new virtual account doesn\'t have password_reset_required status'
+        );
+        BOM::Config::Runtime->instance->app_config->system->suspend->universal_password(1);    # disable universal password
+    };
+
+    subtest 'new_account_virtual - universal password' => sub {
+        BOM::Config::Runtime->instance->app_config->system->suspend->universal_password(0);    # enable universal password
+
+        my $vr_email = 'new_email' . rand(999) . '@binary.com';
+        my $params->{args}->{verification_code} = BOM::Platform::Token->new(
+            email       => $vr_email,
+            created_for => 'account_opening'
+        )->token;
+        $params->{args}->{client_password} = '123Abcd!';
+
+        $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error('virtual account created');
+        my $vclient = BOM::User::Client->new({loginid => $rpc_ct->result->{client_id}});
+
+        $params->{token} = BOM::Platform::Token::API->new->create_token($vclient->loginid, 'test token');
+        $rpc_ct->call_ok('get_account_status', $params);
+
+        cmp_deeply($rpc_ct->result->{status}, noneof(qw(password_reset_required)),
+            'new virtual account doesn\'t have password_reset_required status');
+
+        BOM::Config::Runtime->instance->app_config->system->suspend->universal_password(1);    # disable universal password
     };
 };
 
@@ -289,7 +324,7 @@ subtest $method => sub {
             });
 
             $user->add_client($vclient);
-        }
+        };
         'Initial users and clients';
     };
 
@@ -508,6 +543,53 @@ subtest $method => sub {
 
         $rpc_ct->call_ok('get_settings', {token => $rpc_ct->result->{oauth_token}})->result;
         cmp_ok($rpc_ct->result->{place_of_birth}, 'eq', $client_details->{place_of_birth}, 'place_of_birth cannot be changed');
+    };
+
+    subtest 'new_account_real - universal password' => sub {
+        BOM::Config::Runtime->instance->app_config->system->suspend->universal_password(0);    # enable universal password
+        $rpc_ct->call_ok('get_account_status', $params);
+        cmp_deeply($rpc_ct->result->{status}, superbagof(qw(password_reset_required)), 'previous account has password_reset_required status');
+
+        # Create a new virtual account
+        my $password = 'Abcd33!@%';
+        my $hash_pwd = BOM::User::Password::hashpw($password);
+        $email = 'new_email_' . rand(999) . '@binary.com';
+        $user  = BOM::User->create(
+            email          => $email,
+            password       => $hash_pwd,
+            email_verified => 1,
+        );
+
+        $vclient = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+            broker_code => 'VRTC',
+            email       => $email,
+        });
+        $vclient->status->set('migrated_universal_password', 'test', 'test');
+        $user->add_client($vclient);
+        # Create new real account from virtual account
+        $params->{token} = BOM::Platform::Token::API->new->create_token($vclient->loginid, 'test token');
+
+        $params->{args}->{first_name}    = 'first name';
+        $params->{args}->{last_name}     = 'last name';
+        $params->{args}->{residence}     = 'id';
+        $params->{args}->{date_of_birth} = '1990-10-12';
+        $params->{args}->{currency}      = 'USD';
+        $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error->result_value_is(
+            sub { shift->{landing_company} },
+            'Deriv (SVG) LLC',
+            'It should return new account data'
+        )->result_value_is(sub { shift->{landing_company_shortcode} }, 'svg', 'It should return new account data');
+
+        my $client_cr = BOM::User::Client->new({loginid => $rpc_ct->result->{client_id}});
+        $params->{token} = BOM::Platform::Token::API->new->create_token($client_cr->loginid, 'test token');
+        $rpc_ct->call_ok('get_account_status', $params);
+        cmp_deeply(
+            $rpc_ct->result->{status},
+            noneof(qw(password_reset_required)),
+            'newly created account doesn\'t have password_reset_required status'
+        );
+
+        BOM::Config::Runtime->instance->app_config->system->suspend->universal_password(1);    # disable universal password
     };
 };
 
@@ -950,6 +1032,55 @@ subtest $method => sub {
         my $cl = BOM::User::Client->new({loginid => $result->{client_id}});
         ok $cl->non_pep_declaration_time,
             'non_pep_declaration_time is auto-initialized with no non_pep_delclaration in args (test create_account call)';
+    };
+
+    subtest 'new_account_maltainvest - universal password' => sub {
+        BOM::Config::Runtime->instance->app_config->system->suspend->universal_password(0);    # enable universal password
+
+        my $password = 'Abcd33!@';
+        my $hash_pwd = BOM::User::Password::hashpw($password);
+
+        $email = 'virtual_email_2' . rand(999) . '@binary.com';
+        $user  = BOM::User->create(
+            email          => $email,
+            password       => $hash_pwd,
+            email_verified => 1,
+        );
+        my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+            broker_code => 'VRTC',
+            email       => $email,
+            residence   => 'de',
+        });
+        $client->status->set('migrated_universal_password', 'test', 'test');
+        $user->add_client($client);
+
+        $params->{token} = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token');
+        $rpc_ct->call_ok('get_account_status', $params);
+
+        cmp_deeply($rpc_ct->result->{status}, noneof(qw(password_reset_required)),
+            'new virtual account doesn\'t have password_reset_required status');
+
+        $params->{args}->{residence}       = 'de';
+        $params->{args}->{secret_answer}   = 'test';
+        $params->{args}->{secret_question} = 'test';
+        ($params->{args}->{$_} = $_) =~ s/_// for qw/first_name last_name address_city/;
+        $params->{args}->{phone}         = '+62 21 12345558';
+        $params->{args}->{date_of_birth} = '1990-09-23';
+
+        $rpc_ct->call_ok($method, $params);
+        ok $rpc_ct->result->{client_id}, "Germany users can create MF account from the virtual account";
+
+        my $client_mf = BOM::User::Client->new({loginid => $rpc_ct->result->{client_id}});
+        $params->{token} = BOM::Platform::Token::API->new->create_token($client_mf->loginid, 'test token');
+        $rpc_ct->call_ok('get_account_status', $params);
+
+        cmp_deeply(
+            $rpc_ct->result->{status},
+            noneof(qw(password_reset_required)),
+            'newly created account doesn\'t have password_reset_required status'
+        );
+
+        BOM::Config::Runtime->instance->app_config->system->suspend->universal_password(1);    # disable universal password
     };
 
     subtest 'Create new account maltainvest without MLT' => sub {

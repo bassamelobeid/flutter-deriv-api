@@ -943,6 +943,10 @@ rpc get_account_status => sub {
 
     push(@$status, 'financial_assessment_not_complete') unless $client->is_financial_assessment_complete();
 
+    if (!BOM::Config::Runtime->instance->app_config->system->suspend->universal_password) {
+        push(@$status, 'password_reset_required') unless $client->status->migrated_universal_password;
+    }
+
     my $has_mt5_regulated_account         = $user->has_mt5_regulated_account();
     my $is_document_expiry_check_required = $client->is_document_expiry_check_required_mt5(has_mt5_regulated_account => $has_mt5_regulated_account);
     my $is_verification_required          = $client->is_verification_required(
@@ -1195,37 +1199,20 @@ rpc change_password => sub {
             user_pass    => $user->{password}});
     return $err if $err;
 
-    my $new_password = BOM::User::Password::hashpw($args->{new_password});
-    $user->update_password($new_password);
-
-    my $oauth = BOM::Database::Model::OAuth->new;
-    for my $obj (@clients) {
-        $obj->password($new_password);
-        $obj->save;
-        $oauth->revoke_tokens_by_loginid($obj->loginid);
-    }
-
-    my $brand       = request()->brand;
-    my $contact_url = $brand->contact_url({
-            source   => $params->{source},
-            language => $params->{language}});
-
-    my $email = $client->email;
-    BOM::User::AuditLog::log('password has been changed', $email);
-    send_email({
-            to            => $client->email,
-            subject       => $brand->name eq 'deriv' ? localize('Your new Deriv account password') : localize('Your password has been changed.'),
-            template_name => 'reset_password_confirm',
-            template_args => {
-                email       => $email,
-                name        => $client->first_name,
-                title       => localize("You've got a new password"),
-                contact_url => $contact_url,
-            },
-            use_email_template => 1,
-            template_loginid   => $client->loginid,
-            use_event          => 1,
+    try {
+        $client->user->update_all_passwords($args->{new_password}, 'change_password');
+        my $brand       = request()->brand;
+        my $contact_url = $brand->contact_url({
+                source   => $params->{source},
+                language => $params->{language}});
+        _send_reset_password_confirmation_email($client, 'change_password', $brand, $contact_url);
+    } catch {
+        log_exception();
+        return BOM::RPC::v3::Utility::create_error({
+            code              => 'PasswordChangeError',
+            message_to_client => localize("We were unable to change your password due to an unexpected error. Please try again."),
         });
+    }
 
     return {status => 1};
 };
@@ -1273,14 +1260,19 @@ rpc "reset_password",
         return $pass_error;
     }
 
-    my $new_password = BOM::User::Password::hashpw($args->{new_password});
-    $user->update_password($new_password);
-
-    my $oauth = BOM::Database::Model::OAuth->new;
-    for my $obj (@clients) {
-        $obj->password($new_password);
-        $obj->save;
-        $oauth->revoke_tokens_by_loginid($obj->loginid);
+    try {
+        $client->user->update_all_passwords($args->{new_password}, 'reset_password');
+        my $brand       = request()->brand;
+        my $contact_url = $brand->contact_url({
+                source   => $params->{source},
+                language => $params->{language}});
+        _send_reset_password_confirmation_email($client, 'reset_password', $brand, $contact_url);
+    } catch {
+        log_exception();
+        return BOM::RPC::v3::Utility::create_error({
+            code              => 'PasswordResetError',
+            message_to_client => localize("We were unable to reset your password due to an unexpected error. Please try again."),
+        });
     }
 
     # if user have social signup and decided to proceed, update has_social_signup to false
@@ -1293,29 +1285,62 @@ rpc "reset_password",
         $user_connect->remove_connect($user->{id}, $_) for @providers;
     }
 
-    my $brand       = request()->brand;
-    my $contact_url = $brand->contact_url({
-            source   => $params->{source},
-            language => $params->{language}});
-
-    BOM::User::AuditLog::log('password has been reset', $email, $args->{verification_code});
-    send_email({
-            to            => $email,
-            subject       => localize('Your password has been reset.'),
-            template_name => 'reset_password_confirm',
-            template_args => {
-                email       => $email,
-                name        => $client->first_name,
-                title       => localize("Your password has been reset"),
-                contact_url => $contact_url,
-            },
-            use_email_template => 1,
-            template_loginid   => $client->loginid,
-            use_event          => 1,
-        });
-
     return {status => 1};
     };
+
+=head2 _send_reset_password_confirmation_email
+
+Sends reset or change password confirmation email to the user.
+
+It takes the following named params:
+
+=over 4
+
+=item * C<client> A L<BOM::User::Client> instance.
+
+=item * C<type> 'reset_password' or 'change_password'
+
+=back
+
+Returns undef.
+
+=cut
+
+sub _send_reset_password_confirmation_email {
+    my ($client, $type, $brand, $contact_url) = @_;
+
+    my $is_reset_password = $type eq 'reset_password';
+    my $subject =
+        $is_reset_password
+        ? localize('Your password has been reset.')
+        : ($brand->name eq 'deriv' ? localize('Your new Deriv account password') : localize('Your password has been changed.'));
+    my $email      = $client->email;
+    my $email_args = {
+        to            => $email,
+        subject       => $subject,
+        template_name => 'reset_password_confirm',
+        template_args => {
+            email       => $email,
+            name        => $client->first_name,
+            title       => localize("You've got a new password"),
+            contact_url => $contact_url
+        },
+        use_email_template => 1,
+        template_loginid   => $client->loginid,
+        use_event          => 1,
+    };
+
+    if (!BOM::Config::Runtime->instance->app_config->system->suspend->universal_password) {
+        $email_args->{subject} = $is_reset_password ? localize("You've set your password") : localize("You've changed your password");
+        $email_args->{template_args}->{is_universal_password} = 1;
+        $email_args->{template_args}->{title}                 = $email_args->{subject};
+        delete $email_args->{template_loginid};    # don't need this in new reset_password_confirm email
+    }
+
+    send_email($email_args);
+
+    return undef;
+}
 
 rpc get_settings => sub {
     my $params = shift;

@@ -464,12 +464,31 @@ async_rpc "mt5_new_account",
     $mt5_account_type     = '' if $account_type eq 'gaming';
     $mt5_account_category = '' if $mt5_account_type eq 'financial_stp' or $mt5_account_category !~ /^swap_free|conventional$/;
 
-    my $passwd_validation_err = BOM::RPC::v3::Utility::validate_mt5_password({
-        email           => $client->email,
-        main_password   => $args->{mainPassword} // '',
-        invest_password => $args->{investPassword} // '',
-    });
-    return create_error_future($passwd_validation_err) if $passwd_validation_err;
+    if (!BOM::Config::Runtime->instance->app_config->system->suspend->universal_password) {
+        # validate new password
+        my $error = BOM::RPC::v3::Utility::validate_password_with_attempts($args->{mainPassword}, $client->user->password, $client->loginid);
+        return create_error_future($error) if $error;
+
+        # validate new password against mt5 password validation
+        # it should never hit this error, but in case it did
+        # we ask users to reset their password
+        return create_error_future(
+            'IncorrectMT5PasswordFormat',
+            {
+                message => localize("Sorry, we couldn't verify your password. Please reset your password."),
+            })
+            if BOM::RPC::v3::Utility::validate_mt5_password({
+                email         => $client->email,
+                main_password => $args->{mainPassword} // '',
+            });
+    } else {
+        my $passwd_validation_err = BOM::RPC::v3::Utility::validate_mt5_password({
+            email           => $client->email,
+            main_password   => $args->{mainPassword} // '',
+            invest_password => $args->{investPassword} // '',
+        });
+        return create_error_future($passwd_validation_err) if $passwd_validation_err;
+    }
 
     $args->{investPassword} = _generate_password($args->{mainPassword}) unless $args->{investPassword};
 

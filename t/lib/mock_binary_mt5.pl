@@ -55,7 +55,7 @@ sub cmd_UserAdd {
         error    => 'password formatting is wrong',
     } if $input->{mainPassword} eq SIMPLE_PASSWORD;
 
-    $input->{mainPassword} eq $DETAILS{password}->{main}
+    $input->{mainPassword} eq $DETAILS{password}->{main} || $input->{mainPassword} eq "Ijkl6789"
         or die "UserAdd with unexpected mainPassword=$input->{mainPassword}\n";
 
     #disable check since password is generated auto when it is not provided

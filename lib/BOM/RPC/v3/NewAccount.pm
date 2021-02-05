@@ -86,6 +86,11 @@ rpc "new_account_virtual",
             code              => $acc->{error},
             message_to_client => BOM::RPC::v3::Utility::error_map()->{$acc->{error}}}) if $acc->{error};
 
+    if (!BOM::Config::Runtime->instance->app_config->system->suspend->universal_password) {
+        my $error = BOM::RPC::v3::Utility::set_migrated_universal_password_status($acc->{client});
+        return $error if $error;
+    }
+
     # Check if it is from UK, instantly mark it as unwelcome
     my $config = request()->brand->countries_instance->countries_list->{$acc->{client}->residence};
     if ($config->{virtual_age_verification}) {
@@ -273,6 +278,33 @@ sub _update_professional_existing_clients {
     return undef;
 }
 
+=head2 _update_migrated_universal_password_existing_clients
+
+Update migrate_universal_password of each clients for the user.
+
+=over 4
+
+=item * C<$clients> - list of clients
+
+=back
+
+Returns undef on success, otherwise return error
+
+=cut
+
+sub _update_migrated_universal_password_existing_clients {
+    my ($clients) = @_;
+
+    if ($clients) {
+        foreach my $client (@{$clients}) {
+            my $error = BOM::RPC::v3::Utility::set_migrated_universal_password_status($client);
+            return $error if $error;
+        }
+    }
+
+    return undef;
+}
+
 sub _get_professional_details_clients {
     my ($user, $args) = @_;
 
@@ -367,8 +399,13 @@ rpc new_account_real => sub {
     my ($clients, $professional_status, $professional_requested) = _get_professional_details_clients($user, $args);
 
     my $val = _update_professional_existing_clients($clients, $professional_status, $professional_requested);
-
     return $val if $val;
+
+    my $sibling_has_migrated_universal_password_status = any { $_->status->migrated_universal_password } $user->clients;
+    if (!BOM::Config::Runtime->instance->app_config->system->suspend->universal_password && $sibling_has_migrated_universal_password_status) {
+        $val = _update_migrated_universal_password_existing_clients($clients);
+        return $val if $val;
+    }
 
     my $lock = BOM::Platform::Redis::acquire_lock($client->user_id, 10);
     return BOM::RPC::v3::Utility::rate_limit_error() if not $lock;
@@ -407,6 +444,11 @@ rpc new_account_real => sub {
     $error = BOM::RPC::v3::Utility::set_professional_status($new_client, $professional_status, $professional_requested);
 
     return $error if $error;
+
+    if (!BOM::Config::Runtime->instance->app_config->system->suspend->universal_password && $sibling_has_migrated_universal_password_status) {
+        $error = BOM::RPC::v3::Utility::set_migrated_universal_password_status($new_client);
+        return $error if $error;
+    }
 
     if ($args->{currency}) {
         my $currency_set_result = BOM::RPC::v3::Accounts::set_account_currency({
@@ -508,6 +550,12 @@ rpc new_account_maltainvest => sub {
     my $val = _update_professional_existing_clients($clients, $professional_status, $professional_requested);
     return $val if $val;
 
+    my $sibling_has_migrated_universal_password_status = any { $_->status->migrated_universal_password } $user->clients;
+    if (!BOM::Config::Runtime->instance->app_config->system->suspend->universal_password && $sibling_has_migrated_universal_password_status) {
+        $val = _update_migrated_universal_password_existing_clients($clients);
+        return $val if $val;
+    }
+
     my $acc = BOM::Platform::Account::Real::maltainvest::create_account({
         ip          => $params->{client_ip} // '',
         country     => uc($params->{country_code} // ''),
@@ -543,9 +591,14 @@ rpc new_account_maltainvest => sub {
     } catch {
         return BOM::RPC::v3::Utility::client_error()
     };
-    $error = BOM::RPC::v3::Utility::set_professional_status($new_client, $professional_status, $professional_requested);
 
+    $error = BOM::RPC::v3::Utility::set_professional_status($new_client, $professional_status, $professional_requested);
     return $error if $error;
+
+    if (!BOM::Config::Runtime->instance->app_config->system->suspend->universal_password && $sibling_has_migrated_universal_password_status) {
+        $error = BOM::RPC::v3::Utility::set_migrated_universal_password_status($new_client);
+        return $error if $error;
+    }
 
     $user->add_login_history(
         action      => 'login',

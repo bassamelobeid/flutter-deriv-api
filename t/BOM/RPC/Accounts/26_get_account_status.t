@@ -527,6 +527,45 @@ subtest 'get account status' => sub {
                 'Intial CR status is correct'
             );
 
+            subtest 'get_account_status - universal password' => sub {
+                BOM::Config::Runtime->instance->app_config->system->suspend->universal_password(0);    # enable universal password
+
+                my $result = $c->tcall($method, {token => $token_cr});
+                cmp_deeply(
+                    $result,
+                    {
+                        currency_config => {
+                            "USD" => {
+                                is_deposit_suspended    => 0,
+                                is_withdrawal_suspended => 0,
+                            }
+                        },
+                        status              => [qw(financial_information_not_complete trading_experience_not_complete password_reset_required)],
+                        risk_classification => 'low',
+                        prompt_client_to_authenticate => '0',
+                        authentication                => {
+                            document => {
+                                status => "none",
+                            },
+                            identity => {
+                                status   => "none",
+                                services => {
+                                    onfido => {
+                                        last_rejected        => [],
+                                        is_country_supported => 1,
+                                        documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport'],
+                                        country_code         => 'IDN'
+                                    }}
+                            },
+                            needs_verification => [],
+                        }
+                    },
+                    'Intial CR status is correct'
+                );
+
+                BOM::Config::Runtime->instance->app_config->system->suspend->universal_password(1);    # disable universal password
+            };
+
             $test_client_cr->status->set('withdrawal_locked', 'system', 'For test purposes');
             $result = $c->tcall($method, {token => $token_cr});
             cmp_deeply(

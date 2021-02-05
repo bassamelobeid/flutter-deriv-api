@@ -95,6 +95,8 @@ my %category_message_mapping = do {
         MT5DepositLocked => localize('You cannot make a deposit because your MT5 account is disabled. Please contact our Customer Support team.'),
         TransferBetweenDifferentCurrencies =>
             localize('Your account currencies need to be the same. Please choose accounts with matching currencies and try again.'),
+        PasswordError => localize('That password is incorrect. Please try again.'),
+        PasswordReset => localize('Please reset your password to continue.'),
     );
 };
 

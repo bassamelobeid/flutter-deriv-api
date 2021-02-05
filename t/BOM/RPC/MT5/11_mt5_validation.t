@@ -107,9 +107,11 @@ subtest 'new account' => sub {
     $test_client->set_default_account('USD');
     $test_client->save();
 
-    my $user = BOM::User->create(
+    my $password = 'Abcd33@!';
+    my $hash_pwd = BOM::User::Password::hashpw($password);
+    my $user     = BOM::User->create(
         email    => 'test.account@binary.com',
-        password => 'Abcd33@!',
+        password => $hash_pwd,
     );
     $user->add_client($test_client);
 
@@ -184,6 +186,19 @@ subtest 'new account' => sub {
     $c->call_ok($method, $params)->has_error->error_code_is('MT5PasswordEmailLikenessError')
         ->error_message_is('You cannot use your email address as your password.', 'Correct error message for using email as mainPassword');
     $params->{args}->{mainPassword} = 'Abcd33@!';
+
+    BOM::Config::Runtime->instance->app_config->system->suspend->universal_password(0);    # enable universal password
+
+    $params->{args}->{mainPassword} = 'This password should not pass';
+    $c->call_ok($method, $params)->has_error->error_code_is('PasswordError')
+        ->error_message_is('That password is incorrect. Please try again.',
+        'Correct error message for using binary account password as mainPassword');
+
+    $params->{args}->{mainPassword} = $password;
+    delete $params->{args}->{investPassword};
+    $c->call_ok($method, $params)->has_no_error('No error creating new account using binary account password');
+
+    BOM::Config::Runtime->instance->app_config->system->suspend->universal_password(1);    # disable universal password
 
     $params->{args}->{mainPassword} = '123sdadasd';
     $c->call_ok($method, $params)->has_error->error_code_is('IncorrectMT5PasswordFormat')
