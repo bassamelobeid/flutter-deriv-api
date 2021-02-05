@@ -680,6 +680,11 @@ system:
           isa: Bool
           default: 1
           global: 1
+        universal_password:
+          description: "Suspend syncing binary account password to MT5 account passwords"
+          isa: Bool
+          default: 1
+          global: 1
         wallets:
           description: "Suspend Wallets - e.g. allow wallet-only RPC calls to be accessed by trading accounts"
           isa: Bool
