@@ -244,7 +244,7 @@ subtest 'multi currency transfers' => sub {
         cmp_deeply(
             _get_transaction_details($test_client->db->dbic, $c->result->{binary_transaction_id}),
             {
-                mt5_account => $ACCOUNTS{'real03\synthetic\svg_std_usd'},
+                mt5_account => $ACCOUNTS{'real\p01_ts03\synthetic\svg_std_usd\01'},
                 fees => num(2),
                 fees_currency => 'EUR',
                 fees_percent => num(2),
@@ -275,7 +275,7 @@ subtest 'multi currency transfers' => sub {
         cmp_deeply(
             _get_transaction_details($test_client->db->dbic, $c->result->{binary_transaction_id}),
             {
-                mt5_account => $ACCOUNTS{'real03\synthetic\svg_std_usd'},
+                mt5_account => $ACCOUNTS{'real\p01_ts03\synthetic\svg_std_usd\01'},
                 fees => num(2),
                 fees_currency => 'USD',
                 fees_percent => num(2),
@@ -634,7 +634,7 @@ subtest 'Simple withdraw' => sub {
     cmp_deeply(
         _get_transaction_details($test_client->db->dbic, $c->result->{binary_transaction_id}),
         {
-            mt5_account => $ACCOUNTS{'real03\synthetic\svg_std_usd'},
+            mt5_account => $ACCOUNTS{'real\p01_ts03\synthetic\svg_std_usd\01'},
             fees => num(0),
             fees_currency => 'USD',
             fees_percent => num(0),

@@ -247,7 +247,7 @@ subtest 'change_password - universal password' => sub {
     my $result = $c->tcall('mt5_new_account', $mt5_params);
     ok $result, 'no error for mt5_new_account';
     my $mt5_loginid = $result->{login};
-    is($mt5_loginid, 'MTR' . $accounts{'real03\synthetic\svg_std_usd'}, 'MT5 loginid is correct: ' . $mt5_loginid);
+    is($mt5_loginid, 'MTR' . $accounts{'real\p01_ts03\synthetic\svg_std_usd\01'}, 'MT5 loginid is correct: ' . $mt5_loginid);
 
     BOM::Config::Runtime->instance->app_config->system->suspend->universal_password(0);    # enable universal password
 
