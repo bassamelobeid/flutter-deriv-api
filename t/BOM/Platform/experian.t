@@ -6,6 +6,7 @@ set_fixed_time("939988800");
 use Test::Most 'no_plan';
 use Test::MockModule;
 use BOM::Platform::ProveID;
+use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Helper::Client qw(create_client);
 use BOM::Config;
 use Test::Exception;
