@@ -39,6 +39,7 @@ use BOM::RPC::v3::Pricing;
 use BOM::RPC::v3::MarketData;
 use BOM::RPC::v3::Notification;
 use BOM::RPC::v3::P2P;
+use BOM::RPC::v3::Trading;
 
 # TODO(leonerd): Maybe guard this by a flag of some kind so it isn't loaded by
 # default?
