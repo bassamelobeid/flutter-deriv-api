@@ -1,0 +1,108 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "Trading Platform: New Account (response)",
+    "description": "Create Trading account Receive",
+    "type": "object",
+    "required": [
+        "echo_req",
+        "msg_type"
+    ],
+    "properties": {
+        "trading_platform_new_account": {
+            "title": "trading_platform_new_account",
+            "description": "New Trading account details",
+            "type": "object",
+            "properties": {
+                "account_id": {
+                    "description": "ID of Trading account.",
+                    "type": "string"
+                },
+                "account_type": {
+                    "description": "Account type.",
+                    "type": "string",
+                    "enum": [
+                        "demo",
+                        "real"
+                    ]
+                },
+                "balance": {
+                    "description": "Balance of the Trading account.",
+                    "type": "number"
+                },
+                "country": {
+                    "description": "Residence of the Trading account.",
+                    "type": "string"
+                },
+                "currency": {
+                    "description": "Currency of the Trading account.",
+                    "type": "string"
+                },
+                "display_balance": {
+                    "description": "Account balance, formatted to appropriate decimal places.",
+                    "type": "string"
+                },
+                "landing_company_short": {
+                    "description": "Landing company shortcode of the Trading account.",
+                    "type": "string",
+                    "enum": [
+                        "bvi",
+                        "labuan",
+                        "malta",
+                        "maltainvest",
+                        "samoa",
+                        "svg",
+                        "vanuatu"
+                    ]
+                },
+                "login": {
+                    "description": "Login name used to log in into Trading platform",
+                    "type": "string"
+                },
+                "market_type": {
+                    "description": "Market type",
+                    "type": "string",
+                    "enum": [
+                        "financial",
+                        "gaming"
+                    ]
+                },
+                "name": {
+                    "description": "Name of the owner of the Trading account.",
+                    "type": "string"
+                },
+                "platform": {
+                    "description": "Pass the trading platform name",
+                    "type": "string",
+                    "default": "dxtrader",
+                    "enum": [
+                        "dxtrader"
+                    ]
+                },
+                "sub_account_type": {
+                    "description": "Sub account type",
+                    "type": "string",
+                    "enum": [
+                        "financial",
+                        "financial_stp",
+                        "swap_free"
+                    ]
+                }
+            }
+        },
+        "echo_req": {
+            "description": "Echo of the request made.",
+            "type": "object"
+        },
+        "msg_type": {
+            "description": "Action name of the request made.",
+            "type": "string",
+            "enum": [
+                "trading_platform_new_account"
+            ]
+        },
+        "req_id": {
+            "description": "Optional field sent in request to map to response, present only when request contains `req_id`.",
+            "type": "integer"
+        }
+    }
+}

@@ -1,0 +1,8 @@
+{
+    "trading_platform_new_account": 1,
+    "account_type": "demo",
+    "market_type": "financial",
+    "name": "Peter Pan",
+    "password": "C0rrect_p4ssword",
+    "platform": "dxtrader"
+}

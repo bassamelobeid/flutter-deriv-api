@@ -332,6 +332,10 @@ sub actions_config {
         ['p2p_advertiser_stats'],
         ['p2p_chat_create'],
         ['p2p_order_dispute'],
+        ['trading_platform_accounts'],
+        ['trading_platform_deposit'],
+        ['trading_platform_new_account'],
+        ['trading_platform_withdrawal'],
     ];
 }
 

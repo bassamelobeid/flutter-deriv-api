@@ -1,0 +1,7 @@
+{
+    "trading_platform_deposit": 1,
+    "amount": 1000,
+    "from_account": "CR100001",
+    "platform": "dxtrader",
+    "to_account": "DX1000"
+}

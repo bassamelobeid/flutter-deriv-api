@@ -1,0 +1,95 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "Trading Platform: New Account (request)",
+    "description": "This call creates new Trading account, either demo or real money.",
+    "hidden": 1,
+    "type": "object",
+    "auth_required": 1,
+    "auth_scopes": [
+        "admin"
+    ],
+    "additionalProperties": false,
+    "required": [
+        "trading_platform_new_account",
+        "account_type",
+        "market_type",
+        "name",
+        "password",
+        "platform"
+    ],
+    "properties": {
+        "trading_platform_new_account": {
+            "description": "Must be `1`",
+            "type": "integer",
+            "enum": [
+                1
+            ]
+        },
+        "account_type": {
+            "description": "Account type.",
+            "type": "string",
+            "enum": [
+                "demo",
+                "real"
+            ]
+        },
+        "currency": {
+            "description": "[Optional] Trading account currency, the default value will be the qualified account currency.",
+            "type": "string",
+            "pattern": "^(|[a-zA-Z0-9]{2,20})$"
+        },
+        "dry_run": {
+            "description": "[Optional] If set to 1, only validation is performed.",
+            "type": "integer",
+            "default": 0,
+            "enum": [
+                0,
+                1
+            ]
+        },
+        "market_type": {
+            "description": "Market type",
+            "type": "string",
+            "enum": [
+                "financial",
+                "gaming"
+            ]
+        },
+        "name": {
+            "description": "Client's name. The maximum length here is 101 characters.",
+            "type": "string",
+            "pattern": "^.{1,101}$"
+        },
+        "password": {
+            "description": "The master password of the account. For validation (Accepts any printable ASCII character. Must be within 8-25 characters, and include numbers, lowercase and uppercase letters. Must not be the same as the user's email address). This field is required.",
+            "type": "string",
+            "pattern": "^(?=.*[a-z])(?=.*[0-9])(?=.*[A-Z])[ -~]{8,25}$",
+            "sensitive": 1
+        },
+        "platform": {
+            "description": "Pass the trading platform name",
+            "type": "string",
+            "default": "dxtrader",
+            "enum": [
+                "dxtrader"
+            ]
+        },
+        "sub_account_type": {
+            "description": "[Optional] Sub account type",
+            "type": "string",
+            "enum": [
+                "financial",
+                "financial_stp",
+                "swap_free"
+            ]
+        },
+        "passthrough": {
+            "description": "[Optional] Used to pass data through the websocket, which may be retrieved via the `echo_req` output field.",
+            "type": "object"
+        },
+        "req_id": {
+            "description": "[Optional] Used to map request to response.",
+            "type": "integer"
+        }
+    }
+}
