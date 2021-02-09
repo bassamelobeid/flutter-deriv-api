@@ -1,6 +1,7 @@
 use strict;
 use warnings;
 use Test::More;
+use Test::MockObject;
 use JSON::MaybeUTF8 qw/decode_json_utf8/;
 use Data::Dumper;
 use FindBin qw/$Bin/;
@@ -134,7 +135,7 @@ $redis->on(
     message => sub {
         my ($self, $msg, $channel) = @_;
 
-        Binary::WebSocketAPI::v3::Wrapper::Streamer::send_notification($shared_info, $msg, $channel);
+        Binary::WebSocketAPI::v3::Wrapper::Streamer::send_broadcast_notification($shared_info, $msg, $channel);
     });
 is($redis->set($is_on_key, 1), 'OK');
 $t = build_wsapi_test(
@@ -173,5 +174,27 @@ unless ($pid) {
 sleep 2;
 
 $t->finish_ok;
+
+subtest 'Deploy notifications' => sub {
+    my $res;
+
+    my $mock_c = Test::MockObject->new();
+    $mock_c->set_true('tx');
+    $mock_c->mock(send => sub { $res = $_[1] });
+    $mock_c->mock(l    => sub { return $_[1] });
+
+    my $shared_info = +{
+        broadcast_notifications => {
+            1 => {
+                c              => $mock_c,
+                website_status => +{}}}};
+
+    no warnings qw(redefine once);
+    local *Binary::WebSocketAPI::v3::Wrapper::Streamer::ws_redis_master = sub { {shared_info => $shared_info} };
+
+    Binary::WebSocketAPI::v3::Wrapper::Streamer::send_deploy_notification();
+
+    is $res->{json}{website_status}{site_status}, 'updating', 'Notification about deplou was sent';
+};
 
 done_testing();
