@@ -22,6 +22,11 @@ use Binary::WebSocketAPI::v3::Subscription::Feed;
 use DataDog::DogStatsd::Helper qw(stats_inc);
 my $json = JSON::MaybeXS->new;
 
+use constant {
+    DEPLOY_NOTIFICATION_STATUS  => 'updating',
+    DEPLOY_NOTIFICATION_MESSAGE => 'release_due',
+};
+
 sub get_status_msg {
     my ($c, $status_code) = @_;
 
@@ -118,11 +123,47 @@ sub website_status {
     return;
 }
 
-sub send_notification {
+=head2 send_broadcast_notification
+
+Send broadcast notification to all client who is subscribed on `website_status`.
+Notification will be sent only in case broadcast notification is enabled.
+
+=cut
+
+sub send_broadcast_notification {
+    return unless ws_redis_master()->get("NOTIFY::broadcast::is_on");
+
+    return _send_notification(@_);
+}
+
+=head2 send_deploy_notification
+
+Send a notification with status updating to all client who is subscribed on website_status
+
+=cut
+
+sub send_deploy_notification {
+    my $shared = ws_redis_master->{shared_info};
+
+    return _send_notification(
+        $shared,
+        {
+            site_status => DEPLOY_NOTIFICATION_STATUS,
+            message     => DEPLOY_NOTIFICATION_MESSAGE,
+        },
+    );
+}
+
+=head2 _send_notification
+
+Private method for sending broadcast notifications for website_status subscription
+
+=cut
+
+sub _send_notification {
     my ($shared, $message, $channel) = @_;
 
     return if !$shared || !ref $shared || !$shared->{broadcast_notifications} || !ref $shared->{broadcast_notifications};
-    my $is_on_key = 0;
     foreach my $c_addr (keys %{$shared->{broadcast_notifications}}) {
         unless (defined $shared->{broadcast_notifications}{$c_addr}{c}) {
             # connection gone...
@@ -136,11 +177,6 @@ sub send_notification {
             ws_redis_master->unsubscribe([$channel])
                 if (scalar keys %{$shared->{broadcast_notifications}}) == 0 && $channel;
             next;
-        }
-
-        unless ($is_on_key) {
-            $is_on_key = "NOTIFY::broadcast::is_on";             ### TODO: to config
-            return unless ws_redis_master()->get($is_on_key);    ### Need 1 for continuing
         }
 
         $message = eval { $json->decode(Encode::decode_utf8($message)) } unless ref $message eq 'HASH';

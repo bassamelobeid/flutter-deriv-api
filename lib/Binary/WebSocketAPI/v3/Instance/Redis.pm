@@ -64,7 +64,7 @@ our %INSTANCES;
 my %message_handler = (
     ws_redis_master => sub {
         my ($redis, $msg, $channel) = @_;
-        Binary::WebSocketAPI::v3::Wrapper::Streamer::send_notification($redis->{shared_info}, $msg, $channel)
+        Binary::WebSocketAPI::v3::Wrapper::Streamer::send_broadcast_notification($redis->{shared_info}, $msg, $channel)
             if $channel eq 'NOTIFY::broadcast::channel';
     });
 

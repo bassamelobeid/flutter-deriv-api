@@ -18,6 +18,7 @@ use Binary::WebSocketAPI::Hooks;
 
 use Binary::WebSocketAPI::v3::Wrapper::DocumentUpload;
 use Binary::WebSocketAPI::v3::Instance::Redis qw( check_connections ws_redis_master redis_rpc );
+use Binary::WebSocketAPI::v3::Wrapper::Streamer;
 
 use Brands;
 use Encode;
@@ -319,6 +320,7 @@ sub startup {
             max_response_size => 600000,                                                # change and test this if we ever increase ticks history count
             opened_connection => \&Binary::WebSocketAPI::Hooks::on_client_connect,
             finish_connection => \&Binary::WebSocketAPI::Hooks::on_client_disconnect,
+            before_shutdown => \&Binary::WebSocketAPI::v3::Wrapper::Streamer::send_deploy_notification,
 
             # helper config
             url             => \&Binary::WebSocketAPI::Hooks::assign_rpc_url,           # make url for manually called actions
