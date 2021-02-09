@@ -54,7 +54,7 @@ use BOM::User;
 use BOM::User::Client;
 use BOM::User::Client::PaymentTransaction;
 use BOM::User::Onfido;
-use BOM::User::Record::Payment;
+use BOM::User::PaymentRecord;
 
 # this one shoud come after BOM::Platform::Email
 use Email::Stuffer;
@@ -2072,9 +2072,12 @@ async sub payment_deposit {
     my $client = BOM::User::Client->new({loginid => $loginid})
         or die 'Could not instantiate client for login ID ' . $loginid;
 
-    my $is_first_deposit  = $args->{is_first_deposit};
-    my $payment_processor = $args->{payment_processor} // '';
-    my $transaction_id    = $args->{transaction_id} // '';
+    my $is_first_deposit   = $args->{is_first_deposit};
+    my $payment_processor  = $args->{payment_processor} // '';
+    my $transaction_id     = $args->{transaction_id} // '';
+    my $account_identifier = $args->{account_identifier};
+    my $payment_method     = $args->{payment_method} // '';
+    my $payment_type       = $args->{payment_type} // '';
 
     if ($is_first_deposit) {
         try {
@@ -2103,7 +2106,50 @@ async sub payment_deposit {
         $client->save;
     }
 
+    if (defined $payment_processor) {
+        my $record = BOM::User::PaymentRecord->new(user_id => $client->binary_user_id);
+
+        $record->add_payment(
+            account_identifier => $account_identifier,
+            payment_method     => $payment_method,
+            payment_processor  => $payment_processor,
+            payment_type       => $payment_type,
+        );
+
+        my $total_payment_accounts = $record->get_distinct_payment_accounts_for_time_period(period => 90);
+        my $payment_accounts_limit = $client->user->payment_accounts_limit();
+
+        if ($total_payment_accounts >= $payment_accounts_limit && !$record->is_flagged('reported')) {
+            on_user_payment_accounts_limit_reached(
+                loginid => $client->loginid,
+                limit   => $payment_accounts_limit
+            );
+
+            $record->set_flag(
+                name   => 'reported',
+                expire => 24 * 60 * 60
+            );
+        }
+    }
+
     return BOM::Event::Services::Track::payment_deposit($args);
+}
+
+=head2 on_user_payment_accounts_limit_reached
+
+Send an email to x-fraud@binary.com warn about the limit that has been reached for the user
+
+=cut
+
+sub on_user_payment_accounts_limit_reached {
+    my %args = @_;
+
+    send_email({
+        from    => '<no-reply@deriv.com>',
+        to      => 'x-fraud@deriv.com',
+        subject => sprintf('Allowed credit cards limit reached by %s', $args{loginid}),
+        message => [sprintf("The maximum allowed credit cards limit per user of %d has been reached by %s.", $args{limit}, $args{loginid})]    #
+    });
 }
 
 =head2 payment_withdrawal

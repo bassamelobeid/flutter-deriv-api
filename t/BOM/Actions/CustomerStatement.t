@@ -18,8 +18,6 @@ use BOM::Event::Actions::CustomerStatement;
 use BOM::Test::Email;
 use BOM::Test::Helper::P2P;
 
-use Email::Stuffer::TestLinks;
-
 use Date::Utility;
 use Data::Dumper;
 
