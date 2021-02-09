@@ -278,6 +278,7 @@ sub get_settings_by_group {
                 payments.reversible_balance_limits.ctc
                 payments.reversible_balance_limits.p2p
                 payments.reversible_deposits_lookback
+                payments.custom_payment_accounts_limit_per_user
                 )
         ],
         crypto => [qw(

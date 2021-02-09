@@ -5,7 +5,7 @@ use Test::More;
 use Test::Exception;
 use BOM::DynamicSettings;
 
-subtest '_validate_tnc_string' => sub {
+subtest 'BOM::DynamicSettings::_validate_tnc_string' => sub {
     subtest 'cannot set a lower version' => sub {
         my @cases = ({
                 old    => '{ "binary": "Version 48 2019-05-10", "deriv": "Version 4.2.0 2020-08-07" }',
