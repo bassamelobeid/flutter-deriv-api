@@ -76,3 +76,4 @@ max_payout_open_positions:
     UST: 50000
     eUSDT: 50000
 max_open_bets_default: 100
+max_payment_accounts_per_user: 5

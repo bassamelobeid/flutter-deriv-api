@@ -106,6 +106,11 @@ payments:
       isa: Num
       global: 1
       default: 180
+    custom_payment_accounts_limit_per_user:
+      description: 'Limits for allowed number of payment accounts per user, system default limit is used if custom limit is blank; format: {"binary_user_id": maximum_allowed_credit_cards}; example: {"1":5}'
+      isa: json_string
+      default: '{}'
+      global: 1
     p2p:
       description: 'Peer-to-peer payment system'
       isa: section
