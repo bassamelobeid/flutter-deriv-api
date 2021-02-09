@@ -1098,4 +1098,20 @@ sub update_all_passwords {
     return 1;
 }
 
+=head2 payment_accounts_limit
+
+Returns the maximum allowed payment accounts for this user.
+
+=cut
+
+sub payment_accounts_limit {
+    my $self         = shift;
+    my $json         = JSON::MaybeXS->new;
+    my $custom_limit = $json->decode(        #
+        BOM::Config::Runtime->instance->app_config->payments->custom_payment_accounts_limit_per_user
+    )->{$self->{id}};
+    my $default_limit = BOM::Config::client_limits()->{max_payment_accounts_per_user};
+    return $custom_limit // $default_limit;
+}
+
 1;

@@ -55,7 +55,7 @@ subtest 'Order dispute (type buy)' => sub {
 
     BOM::Test::Helper::P2P::set_order_disputable($client, $new_order->{id});
     @emitted_events = ();
-    
+
     my $response = $client->p2p_create_order_dispute(
         id             => $new_order->{id},
         dispute_reason => 'seller_not_released',
@@ -69,15 +69,13 @@ subtest 'Order dispute (type buy)' => sub {
 
     cmp_deeply(
         \@emitted_events,
-        [
-            [
+        [[
                 'p2p_order_updated',
                 {
                     client_loginid => $client->loginid,
                     order_id       => $new_order->{id},
                     order_event    => 'dispute'
-                }
-            ]
+                }]
         ],
         'p2p_order_updated event emitted'
     );
@@ -442,15 +440,14 @@ subtest 'Returning dispute fields' => sub {
 
     BOM::Test::Helper::P2P::set_order_status($client, $new_order->{id}, 'pending');
     @emitted_events = ();
-    
+
     $response = $client->p2p_expire_order(
         id => $new_order->{id},
     );
 
     cmp_deeply(
         \@emitted_events,
-        bag(
-            [
+        bag([
                 'p2p_order_updated',
                 {
                     client_loginid => $client->loginid,
@@ -468,8 +465,7 @@ subtest 'Returning dispute fields' => sub {
                 'p2p_advertiser_updated',
                 {
                     client_loginid => $advertiser->loginid,
-                }
-            ]            
+                }]
         ),
         'exepcted events emitted'
     );

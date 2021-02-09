@@ -84,8 +84,8 @@ subtest 'Creating new buy order' => sub {
         );
     };
     is $err1->{error_code}, 'OrderPaymentContactInfoNotAllowed', 'Cannot provide payment/contact info for buy order';
-    
-    @emitted_events = ();    
+
+    @emitted_events = ();
 
     my $new_order = $client->p2p_order_create(
         advert_id => $advert_info->{id},
@@ -98,8 +98,7 @@ subtest 'Creating new buy order' => sub {
 
     cmp_deeply(
         \@emitted_events,
-        bag(
-            [
+        bag([
                 'p2p_order_created',
                 {
                     client_loginid => $client->loginid,

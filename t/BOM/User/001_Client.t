@@ -506,7 +506,7 @@ subtest "immutable_fields and validate_immutable_fields" => sub {
             test_immutable_fields([], $test_user, 'the immutable field is editable again by removing the status flag');
         }
     };
-    
+
     $mock_client->unmock_all;
     $mock_lc->unmock_all;
 };

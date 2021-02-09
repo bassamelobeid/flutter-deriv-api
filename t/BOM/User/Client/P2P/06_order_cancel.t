@@ -363,10 +363,9 @@ for my $test_case (@test_cases) {
         if ($test_case->{error}) {
             ok !@emitted_events, 'no events emitted';
         } else {
-            cmp_deeply( 
+            cmp_deeply(
                 \@emitted_events,
-                bag(
-                    [
+                bag([
                         'p2p_order_updated',
                         {
                             client_loginid => $loginid,
@@ -385,7 +384,7 @@ for my $test_case (@test_cases) {
                         {
                             client_loginid => $advertiser->loginid,
                         }
-                    ],                    
+                    ],
                 ),
                 'expected events emitted'
             );

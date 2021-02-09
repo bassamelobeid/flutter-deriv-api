@@ -287,42 +287,35 @@ for my $test_case (@test_cases) {
         is($redis->zscore($timeout_key, $redis_item) ? 1 : undef, $test_case->{timeout_key}, 'timeout key existence');
 
         if ($test_case->{event}) {
-            my @expected_events = (
-                [
+            my @expected_events = ([
                     'p2p_order_updated',
                     {
                         client_loginid => $client->loginid,
                         order_id       => $order->{id},
                         order_event    => 'expired',
                     }
-                ],                
+                ],
             );
             if ($test_case->{status} eq 'refunded') {
-                push @expected_events,                     
+                push @expected_events,
                     [
-                        'p2p_advertiser_updated',
-                        {
-                            client_loginid => $client->loginid,
-                        }
+                    'p2p_advertiser_updated',
+                    {
+                        client_loginid => $client->loginid,
+                    }
                     ],
                     [
-                        'p2p_advertiser_updated',
-                        {
-                            client_loginid => $advertiser->loginid,
-                        }
-                    ];
+                    'p2p_advertiser_updated',
+                    {
+                        client_loginid => $advertiser->loginid,
+                    }];
             }
 
-            cmp_deeply( 
-                \@emitted_events,
-                bag(@expected_events),
-                'expected event emitted'
-            );
-        }
-        else {
+            cmp_deeply(\@emitted_events, bag(@expected_events), 'expected event emitted');
+        } else {
             ok !@emitted_events, 'no events emitted';
-        } 
-        
+        }
+
         BOM::Test::Helper::P2P::reset_escrow();
     };
 }
@@ -339,16 +332,20 @@ subtest 'timed out orders' => sub {
     BOM::Test::Helper::P2P::expire_order($client, $order->{id}, '0 hour');
 
     @emitted_events = ();
-    
-    is $client->p2p_expire_order(id => $order->{id}, source => 5, staff  => 'AUTOEXPIRY'), 'timed-out', 'status changed to timed-out';
+
+    is $client->p2p_expire_order(
+        id     => $order->{id},
+        source => 5,
+        staff  => 'AUTOEXPIRY'
+        ),
+        'timed-out', 'status changed to timed-out';
 
     ok !$redis->zscore($expire_key, $redis_item), 'redis expire item removed';
     ok $redis->zscore($timeout_key, $redis_item), 'redis timeout item present';
 
-    cmp_deeply( 
+    cmp_deeply(
         \@emitted_events,
-        [
-            [
+        [[
                 'p2p_order_updated',
                 {
                     client_loginid => $client->loginid,
@@ -363,7 +360,12 @@ subtest 'timed out orders' => sub {
     BOM::Test::Helper::P2P::expire_order($client, $order->{id}, '-28 day');
 
     @emitted_events = ();
-    ok !$client->p2p_expire_order(id => $order->{id}, source => 5, staff  => 'AUTOEXPIRY'), 'no status change for early expiry';
+    ok !$client->p2p_expire_order(
+        id     => $order->{id},
+        source => 5,
+        staff  => 'AUTOEXPIRY'
+        ),
+        'no status change for early expiry';
     ok !$redis->zscore($expire_key, $redis_item), 'redis expire item still removed';
     ok $redis->zscore($timeout_key, $redis_item), 'redis timeout item still present';
 
@@ -377,10 +379,9 @@ subtest 'timed out orders' => sub {
     ok !$redis->zscore($expire_key,  $redis_item), 'redis expire item still removed';
     ok !$redis->zscore($timeout_key, $redis_item), 'redis timeout item removed';
 
-    cmp_deeply( 
+    cmp_deeply(
         \@emitted_events,
-        bag(
-            [
+        bag([
                 'p2p_order_updated',
                 {
                     client_loginid => $client->loginid,
@@ -399,7 +400,7 @@ subtest 'timed out orders' => sub {
                 {
                     client_loginid => $advertiser->loginid,
                 }
-            ],             
+            ],
         ),
         'expected events emitted'
     );
