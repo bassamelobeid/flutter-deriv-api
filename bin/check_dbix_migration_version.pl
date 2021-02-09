@@ -8,7 +8,7 @@ use strict;
 use warnings;
 use DBI;
 
-my @host = (qw/ cr vr mf mlt mx /);
+my @host = (qw/ cr vr mf mlt mx dw vrdw /);
 
 my $COM      = 'SELECT value FROM dbix_migration';
 my $oldvalue = '';
