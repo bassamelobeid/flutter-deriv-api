@@ -95,8 +95,8 @@ subtest 'get settings' => sub {
     };
     $c->call_ok($method, $params)->has_no_error('no error for mt5_get_settings');
     is($c->result->{login},   'MTR' . $ACCOUNTS{'real\p01_ts03\synthetic\svg_std_usd\01'}, 'result->{login}');
-    is($c->result->{balance}, $DETAILS{balance},                                 'result->{balance}');
-    is($c->result->{country}, "mt",                                              'result->{country}');
+    is($c->result->{balance}, $DETAILS{balance},                                           'result->{balance}');
+    is($c->result->{country}, "mt",                                                        'result->{country}');
 
     $params->{args}{login} = "MTwrong";
     $c->call_ok($method, $params)->has_error('error for mt5_get_settings wrong login')
@@ -500,14 +500,6 @@ subtest 'password reset' => sub {
     ok(Email::Valid->address($email_data->{to}),                'email to is an email address');
     ok(Email::Valid->address($email_data->{from}),              'email from is an email address');
     is($email_data->{subject}, 'Your MT5 password has been reset.', 'email subject is correct');
-    is(
-        @{$email_data->{message}}[0],
-        sprintf(
-            'The password for your MT5 account %s has been reset. If this request was not performed by you, please immediately contact Customer Support.',
-            $email_data->{to}),
-        'email message is correct'
-    );
-    ok($msg, "email received");
 
     $code = BOM::Platform::Token->new({
             email       => $DETAILS{email},
@@ -550,13 +542,6 @@ subtest 'investor password reset' => sub {
     $c->call_ok($method, $params)->has_no_error('no error for mt5_password_change');
     # This call yields a truth integer directly, not a hash
     is($c->result, 1, 'result');
-
-    my $subject = 'Your MT5 password has been reset.';
-    my $msg     = mailbox_search(
-        email   => $DETAILS{email},
-        subject => qr/\Q$subject\E/
-    );
-    ok($msg, "email received");
 
     $demo_account_mock->unmock;
 };

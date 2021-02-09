@@ -1428,17 +1428,21 @@ async_rpc "mt5_password_reset",
             if ($status->{error}) {
                 return create_error_future($status->{code}, {override_code => 'MT5PasswordChangeError'});
             }
-
+            my $brand       = request()->brand;
+            my $contact_url = $brand->contact_url($params);
             send_email({
-                    from    => Brands->new(name => request()->brand)->emails('support'),
+                    from    => Brands->new(name => $brand)->emails('support'),
                     to      => $email,
-                    subject => localize('Your MT5 password has been reset.'),
-                    message => [
-                        localize(
-                            'The password for your MT5 account [_1] has been reset. If this request was not performed by you, please immediately contact Customer Support.',
-                            $email
-                        )
-                    ],
+                    subject => $brand->name eq 'deriv' ? localize('Your new DMT5 account password') : localize('Your MT5 password has been reset.'),
+                    template_name => 'mt5_password_reset_notification',
+                    template_args => {
+                        name        => $client->first_name,
+                        title       => localize("You've got a new password"),
+                        loginid     => $login,
+                        email       => $email,
+                        contact_url => $contact_url,
+                    },
+                    use_event             => 1,
                     use_email_template    => 1,
                     email_content_is_html => 1,
                     template_loginid      => ucfirst BOM::MT5::User::Async::get_account_type($login) . ' ' . $login =~ s/${\BOM::User->MT5_REGEX}//r,
