@@ -80,7 +80,9 @@ rpc residence_list => sub {
             text  => $country_name,
             $phone_idd  ? (phone_idd  => $phone_idd)  : (),
             $tin_format ? (tin_format => $tin_format) : ()};
-        if ($countries_instance->restricted_country($country_code)) {
+        if ($countries_instance->restricted_country($country_code)
+            || !$countries_instance->is_signup_allowed($country_code))
+        {
             $option->{disabled} = 'DISABLED';
         } elsif (request()->country_code eq $country_code) {
             $option->{selected} = 'selected';

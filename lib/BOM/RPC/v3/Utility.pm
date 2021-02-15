@@ -540,6 +540,8 @@ sub validate_make_new_account {
     my $gaming_company     = $countries_instance->gaming_company_for_country($residence);
     my $financial_company  = $countries_instance->financial_company_for_country($residence);
 
+    return create_error_by_code('InvalidAccount') unless $countries_instance->is_signup_allowed($residence);
+
     return create_error_by_code('InvalidAccount') unless ($gaming_company or $financial_company);
 
     return create_error_by_code('InvalidResidence') if ($countries_instance->restricted_country($residence));
