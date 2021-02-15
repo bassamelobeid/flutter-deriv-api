@@ -661,11 +661,9 @@ sub withdrawal_verify {
     return "Error in verifying transaction id: $trx_id. " . $over_limit->get_mesg()
         if $over_limit;
 
-    my $suspicious_check_required = BOM::Config::Runtime->instance->app_config->payments->crypto_withdrawal_suspicious_check_required;
-    my $approvals_required        = BOM::Config::Runtime->instance->app_config->payments->crypto_withdrawal_approvals_required;
-    $approvals_required = '{"":2}' if $suspicious_check_required && $client->user->is_crypto_withdrawal_suspicious();
-    my @client_siblings = map { $_->loginid } $client->siblings->@*;
-    my $error           = $dbic->run(
+    my $approvals_required = BOM::Config::Runtime->instance->app_config->payments->crypto_withdrawal_approvals_required;
+    my @client_siblings    = map { $_->loginid } $client->siblings->@*;
+    my $error              = $dbic->run(
         ping => sub {
             $_->selectrow_array(
                 'SELECT payment.ctc_set_withdrawal_verified(?, ?::JSONB, ?, ?, ?)',
