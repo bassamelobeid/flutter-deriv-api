@@ -37,7 +37,7 @@ So it's your task to update those repos.
 =cut
 
 my $config_file = shift || '.circleci/config.yml';
-my $job = shift;
+my $job         = shift;
 $config_file = path($config_file)->absolute;
 my $config = LoadFile($config_file->stringify);
 for my $job (values $config->{jobs}->%*) {

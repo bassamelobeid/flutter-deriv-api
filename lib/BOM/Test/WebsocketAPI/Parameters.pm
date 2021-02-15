@@ -329,7 +329,7 @@ for my $type (qw(buy sell)) {
             client_last_name      => 'jane',
             client_loginid        => 'CR002',
             is_incoming           => sprintf("%.0f\n", rand(1)),
-            contact_info          => 'Тестовый заказ',        # to check UTF decoding
+            contact_info          => 'Тестовый заказ',                     # to check UTF decoding
             payment_info          => 'Payment Information',
             payment_method        => 'bank_transfer',
             chat_channel_url      => 'chatty channel',

@@ -23,7 +23,7 @@ This script is used to prepare a test environment and create and start a C<BOM::
 BOM::Test::Helper::P2P::bypass_sendbird();
 
 my $redis_cfg = BOM::Config::Redis::redis_config('rpc', 'write');
-my $consumer = BOM::RPC::Transport::Redis->new(
+my $consumer  = BOM::RPC::Transport::Redis->new(
     worker_index => 1,
     redis_uri    => $redis_cfg->{uri},
 );

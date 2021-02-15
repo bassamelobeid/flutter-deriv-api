@@ -72,8 +72,8 @@ sub build_mojo_test {
 }
 
 sub build_wsapi_test {
-    my $args    = shift || {};
-    my $headers = shift || {};
+    my $args     = shift || {};
+    my $headers  = shift || {};
     my $callback = shift;
 
     # We use 1 by default for these tests, unless a value is provided.

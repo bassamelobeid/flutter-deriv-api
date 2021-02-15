@@ -38,7 +38,7 @@ sub dsn {
     my $db                  = shift || $self->_db_name;
     my $connection_settings = $self->_connection_parameters;
     my $port                = $db eq 'pgbouncer' ? $connection_settings->{pgbouncer_port} : $connection_settings->{port};
-    my $host                = $db eq 'pgbouncer' ? '/var/run/postgresql' : $connection_settings->{host};
+    my $host                = $db eq 'pgbouncer' ? '/var/run/postgresql'                  : $connection_settings->{host};
     return 'dbi:Pg:dbname=' . $db . ';host=' . $host . ';port=' . $port;
 }
 

@@ -63,23 +63,22 @@ $SIG{__DIE__} = sub {
 # File calling arguments
 GetOptions(
     "r|reset-clients" => \(my $reset_clients = 0),
-    "s|sendbird" => \(my $use_sendbird = 0),
-    "d|disputes" => \(my $disputes = 0),
-    "o|order" => \(my $create_order = 0),
+    "s|sendbird"      => \(my $use_sendbird  = 0),
+    "d|disputes"      => \(my $disputes      = 0),
+    "o|order"         => \(my $create_order  = 0),
 );
 
 unless ($use_sendbird) {
     no strict 'refs';
     no warnings;
-    *WebService::SendBird::create_user = sub { 
+    *WebService::SendBird::create_user = sub {
         return WebService::SendBird::User->new(
-            api_client => 1,
-            user_id    => 'dummy',
+            api_client     => 1,
+            user_id        => 'dummy',
             session_tokens => [{
-                'session_token' => 'dummy',
-                'expires_at'    => time + 7200 
-            }]            
-        );
+                    'session_token' => 'dummy',
+                    'expires_at'    => time + 7200
+                }]);
     };
     $log->info('Sendbird is disabled. You can enable with --sendbird 1');
 }
@@ -91,9 +90,9 @@ sub section_title {
 sub create_client {
     my (%args) = @_;
     my $email = delete($args{email}) or die 'need email';
-    my $password = delete($args{password}) // 'binary123';
-    my $balance  = delete($args{balance})  // 0;
-    my $currency = delete($args{currency}) // 'USD';
+    my $password        = delete($args{password}) // 'binary123';
+    my $balance         = delete($args{balance})  // 0;
+    my $currency        = delete($args{currency}) // 'USD';
     my $hashed_password = BOM::User::Password::hashpw($password);
 
     $log->infof('Creating user with email %s', $email);
@@ -165,24 +164,24 @@ sub token_for_client {
         );
 
     section_title('OAuth App');
-    
-    my $app_id = 1408;
+
+    my $app_id  = 1408;
     my $auth_db = BOM::Database::AuthDB::rose_db()->dbic;
-    
+
     my $app = $auth_db->run(
         fixup => sub {
             $_->selectrow_hashref("SELECT * FROM oauth.apps WHERE id = $app_id");
         });
-    
+
     if ($app) {
         $log->infof('Found existing OAuth app ID %d - %s', $app->{id}, $app);
-    }
-    else {
+    } else {
         $app = $auth_db->run(
             fixup => sub {
-                $_->selectrow_hashref('INSERT INTO oauth.apps (id, binary_user_id, name, scopes, redirect_uri, verification_uri) VALUES (?,?,?,?,?,?) RETURNING *', 
-                    undef,
-                    $app_id, $app_user->id, 'P2P Cashier', [qw(read payments admin)], 'deriv://dp2p/redirect', 'https://p2p-cashier.deriv.com')
+                $_->selectrow_hashref(
+                    'INSERT INTO oauth.apps (id, binary_user_id, name, scopes, redirect_uri, verification_uri) VALUES (?,?,?,?,?,?) RETURNING *',
+                    undef, $app_id, $app_user->id, 'P2P Cashier', [qw(read payments admin)], 'deriv://dp2p/redirect',
+                    'https://p2p-cashier.deriv.com');
             });
         $log->infof('Created OAuth app ID %d - %s', $app->{id}, $app);
     }
@@ -213,7 +212,7 @@ my $client = create_client(
 );
 
 unless ($client->p2p_advertiser_info) {
-    $client->p2p_advertiser_create(name => 'client '.$client->loginid);
+    $client->p2p_advertiser_create(name => 'client ' . $client->loginid);
 }
 
 $client->p2p_advertiser_update(
@@ -249,7 +248,7 @@ $log->infof('Maximum order  configured is %s',   BOM::Config::Runtime->instance-
 
 # ===== Advertiser Create =====
 section_title('Advertiser Create');
-$advertiser->p2p_advertiser_create(name => 'advertiser '.$advertiser->loginid);
+$advertiser->p2p_advertiser_create(name => 'advertiser ' . $advertiser->loginid);
 $advertiser->p2p_advertiser_update(
     is_listed   => 1,
     is_approved => 1,
@@ -293,16 +292,15 @@ if ($create_order) {
 
     my $order_buy = $client->p2p_order_create(
         advert_id => $advert_sell->{id},
-        amount    => $advert_sell->{min_order_amount}
-    );
+        amount    => $advert_sell->{min_order_amount});
 
     $log->infof('Order info: %s', $order_buy);
 
     section_title('Creating Sell Order');
-    
+
     # We'll create an ad for client so we can have a sell order as well
     unless ($client->p2p_advertiser_info) {
-        $client->p2p_advertiser_create(name => 'advertiser '.$client->loginid);
+        $client->p2p_advertiser_create(name => 'advertiser ' . $client->loginid);
     }
     $client->p2p_advertiser_update(
         is_listed   => 1,
@@ -327,8 +325,8 @@ if ($create_order) {
 
     # Sell order
     my $order_sell = $advertiser->p2p_order_create(
-        advert_id => $advert_buy->{id},
-        amount    => $advert_buy->{min_order_amount},
+        advert_id    => $advert_buy->{id},
+        amount       => $advert_buy->{min_order_amount},
         payment_info => 'Come home with one of those giant checks',
         contact_info => 'Yell my name three times'
     );
@@ -340,17 +338,17 @@ if ($create_order) {
 if ($disputes) {
     section_title('Creating Disputes');
 
-    for((1..3)) {
+    for ((1 .. 3)) {
         my $order_buy = $client->p2p_order_create(
             advert_id => $advert_sell->{id},
-            amount    => $advert_sell->{min_order_amount}
-        );
+            amount    => $advert_sell->{min_order_amount});
 
-        $client->db->dbic->dbh->do("UPDATE p2p.p2p_order SET status = 'timed-out',  expire_time = NOW() - INTERVAL '1 day' WHERE id = " . $order_buy->{id});
+        $client->db->dbic->dbh->do(
+            "UPDATE p2p.p2p_order SET status = 'timed-out',  expire_time = NOW() - INTERVAL '1 day' WHERE id = " . $order_buy->{id});
 
         my $response = $client->p2p_create_order_dispute(
-            id                   => $order_buy->{id},
-            dispute_reason       => 'seller_release_none',
+            id             => $order_buy->{id},
+            dispute_reason => 'seller_release_none',
         );
 
         $log->infof('Dispute info: %s', $response);

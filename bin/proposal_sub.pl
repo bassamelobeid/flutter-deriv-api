@@ -62,12 +62,10 @@ GetOptions(
     'h|help'            => \my $help,
 );
 
-pod2usage(
-    {
+pod2usage({
         -verbose  => 99,
         -sections => "NAME|SYNOPSIS|DESCRIPTION"
-    }
-) if $help;
+    }) if $help;
 
 # Set Defaults
 $app_id        = $app_id        // 1003;
@@ -75,13 +73,13 @@ $end_point     = $end_point     // 'ws://127.0.0.1:5004';
 $connections   = $connections   // 1;
 $subscriptions = $subscriptions // 5;
 $forget_time   = $forget_time   // 0;
-$test_duration   = $test_duration   // 0;
+$test_duration = $test_duration // 0;
 
-Log::Any::Adapter->set( 'Stderr', log_level => 'debug' ) if $debug;
+Log::Any::Adapter->set('Stderr', log_level => 'debug') if $debug;
 
 my @markets_to_use;
 if ($markets) {
-    @markets_to_use = split( ',', $markets );
+    @markets_to_use = split(',', $markets);
 }
 
 my %valid_markets = (
@@ -92,14 +90,12 @@ my %valid_markets = (
 );
 
 for (@markets_to_use) {
-    if ( !defined( $valid_markets{$_} ) ) {
+    if (!defined($valid_markets{$_})) {
         say 'Invalid Market Type: ' . $_;
-        pod2usage(
-            {
-                -verbose  => 99,
-                -sections => "NAME|SYNOPSIS|DESCRIPTION"
-            }
-        );
+        pod2usage({
+            -verbose  => 99,
+            -sections => "NAME|SYNOPSIS|DESCRIPTION"
+        });
     }
 }
 
@@ -207,7 +203,7 @@ has $loop;
 
 BUILD {
     (%args) = @_;
-    $json        = JSON::MaybeXS->new( pretty => 1 );
+    $json        = JSON::MaybeXS->new(pretty => 1);
     $multipliers = {
         s => 1,
         m => 1,
@@ -229,34 +225,31 @@ Returns integer 1 when complete
 method run_tests() {
 
     my $main_connection =
-      $self->create_connection( $args{end_point}, $args{app_id}, $args{token} );
+        $self->create_connection($args{end_point}, $args{app_id}, $args{token});
 
-    $active_symbols =
-      $self->get_active_symbols( $main_connection, $args{markets} );
-    $log->debug( "Active Symbols \n" . "@$active_symbols" );
-    if ( !@$active_symbols ) { die "No Active Symbols Available" }
+    $active_symbols = $self->get_active_symbols($main_connection, $args{markets});
+    $log->debug("Active Symbols \n" . "@$active_symbols");
+    if (!@$active_symbols) { die "No Active Symbols Available" }
 
-    $contracts_for =
-      $self->get_contracts_for( $main_connection, $active_symbols );
+    $contracts_for = $self->get_contracts_for($main_connection, $active_symbols);
 
     # Will cause script to exit when test_duration is reached.
-    my $test_length_timer = $self->test_length_timer( $args{test_duration} );
+    my $test_length_timer = $self->test_length_timer($args{test_duration});
 
     # Main Loop starts up the number of connections to the Websocket API.
     my $main_loop = fmap0 {
         try {
             my ($connection_number) = @_;
-            $self->create_subscriptions( $connection_number, $contracts_for );
-        }
-        catch ($e){
+            $self->create_subscriptions($connection_number, $contracts_for);
+        } catch ($e) {
 
             warn 'Failed ' . $e;
             return Future->done;
         }
     }
-    foreach      => [ ( 1 .. $args{number_of_connections} ) ],
-      concurrent => $args{number_of_connections};
-    Future->wait_all( $main_loop, $test_length_timer )->get();
+    foreach        => [(1 .. $args{number_of_connections})],
+        concurrent => $args{number_of_connections};
+    Future->wait_all($main_loop, $test_length_timer)->get();
 
     return 1;
 
@@ -279,14 +272,12 @@ Returns a L<Future>
 
 =cut
 
-method test_length_timer( $test_duration = 0 ) {
+method test_length_timer($test_duration = 0) {
     my $test_run_length;
     if ($test_duration) {
-        $test_run_length = $loop->delay_future( after => $test_duration )
-          ->on_done( sub { say 'finished after ' . $test_duration; } );
-    }
-    else {
-        $test_run_length = $loop->new_future; # A Future that will never be done.
+        $test_run_length = $loop->delay_future(after => $test_duration)->on_done(sub { say 'finished after ' . $test_duration; });
+    } else {
+        $test_run_length = $loop->new_future;    # A Future that will never be done.
     }
     return $test_run_length;
 }
@@ -307,21 +298,20 @@ Returns a L<Future>
 
 =cut
 
-async method create_subscriptions( $connection_number, $contracts_for ) {
+async method create_subscriptions($connection_number, $contracts_for) {
     say 'Connection Number ' . $connection_number;
     my $connection =
-      $self->create_connection( $args{end_point}, $args{app_id}, $args{token} );
+        $self->create_connection($args{end_point}, $args{app_id}, $args{token});
     return fmap0 {
         try {
-            $self->subscribe( $connection, $connection_number );
-        }
-        catch ($e) {
+            $self->subscribe($connection, $connection_number);
+        } catch ($e) {
             warn 'Creating a subscription Failed ' . $e;
             return Future->done;
         }
     }
-    foreach      => [ ( 1 .. $args{number_of_subscriptions} ) ],
-      concurrent => $args{number_of_subscriptions};
+    foreach        => [(1 .. $args{number_of_subscriptions})],
+        concurrent => $args{number_of_subscriptions};
 
 }
 
@@ -345,43 +335,37 @@ Returns a L<Net::Async::BinaryWS>
 
 =cut
 
-method create_connection( $end_point, $app_id, $token ) {
+method create_connection($end_point, $app_id, $token) {
 
     $loop->add(
         my $connection = Net::Async::BinaryWS->new(
             endpoint => $end_point,
             app_id   => $app_id,
-        )
-    );
+        ));
     Future->wait_any(
         $connection->connected->then(
             sub {
                 if ($token) {
-                    return $connection->api->authorize( authorize => $token )
-                      ->on_fail(
+                    return $connection->api->authorize(authorize => $token)->on_fail(
                         sub {
                             warn 'Authorize Failed ' . shift->body->message;
                             Future->done;
-                        }
-                      );
+                        });
 
-                }
-                else {
+                } else {
                     return Future->done;
                 }
 
             }
         ),
-        $loop->timeout_future( after => TIMEOUT )->on_fail(
+        $loop->timeout_future(after => TIMEOUT)->on_fail(
             sub {
                 die("timeout connecting to $end_point");
-            }
-        )
+            })
     )->transform(
         done => sub {
             $connection;
-        }
-    )->get;
+        })->get;
 
     return $connection;
 }
@@ -403,47 +387,46 @@ Returns an Array with two items first is the number portion of the duration, sec
 
 =cut
 
-method durations( $min, $max ) {
+method durations($min, $max) {
 
     # min and max look like 1d , 2m etc
-    my ( ( $min_amount, $min_unit ), ( $max_amount, $max_unit ) ) =
-      map { $_ =~ /(\d+)(\w)$/ } ( $min, $max );
+    my (($min_amount, $min_unit), ($max_amount, $max_unit)) =
+        map { $_ =~ /(\d+)(\w)$/ } ($min, $max);
 
-    if ( $min_unit eq $max_unit ) {
-        return ( $self->random_generator( $min_amount, $max_amount ),
-            $min_unit );
+    if ($min_unit eq $max_unit) {
+        return ($self->random_generator($min_amount, $max_amount), $min_unit);
     }
 
-    # Anything past here the max and min duration types are different. 
-   #
-    my $duration_unit = 'm'; #default duration unit
+    # Anything past here the max and min duration types are different.
+    #
+    my $duration_unit = 'm';    #default duration unit
 
-    if ( $min_unit eq 's' ) { # The only unit max can be has to be minutes or larger.
+    if ($min_unit eq 's') {     # The only unit max can be has to be minutes or larger.
         $min_unit   = 'm';
         $min_amount = 1;
-    } elsif ($min_unit eq 't' and $max_unit eq 's') {  # Only thing that can be smaller than a second is a tick
-        $min_unit ='s';
-        $min_amount = 1;
+    } elsif ($min_unit eq 't' and $max_unit eq 's') {    # Only thing that can be smaller than a second is a tick
+        $min_unit      = 's';
+        $min_amount    = 1;
         $duration_unit = 's';
-    } elsif ($min_unit eq 't') { # min is type ticks but max is not seconds so must be minutes or greater.
-        $min_unit = 'm';
+    } elsif ($min_unit eq 't') {                         # min is type ticks but max is not seconds so must be minutes or greater.
+        $min_unit   = 'm';
         $min_amount = 1;
     }
-    
+
     # standardize durations
     my $min_standardized = $min_amount * $multipliers->{$min_unit};
     my $max_standardized = $max_amount * $multipliers->{$max_unit};
 
-    my $random_duration = $self->random_generator( $min_standardized, $max_standardized );
+    my $random_duration = $self->random_generator($min_standardized, $max_standardized);
 
     # You can express hours in minutes but once you get to days
     # you need to use Days or it causes errors with trades not ending
     # on a whole day.
-    if ( $random_duration >= 1440 ) {
-        $random_duration = int( $random_duration / 1440 );
+    if ($random_duration >= 1440) {
+        $random_duration = int($random_duration / 1440);
         $duration_unit   = 'd';
     }
-    return ( $random_duration, $duration_unit );
+    return ($random_duration, $duration_unit);
 
 }
 
@@ -465,8 +448,8 @@ Returns an integer between min and max.
 
 =cut
 
-method random_generator( $min, $max ) {
-    return int( rand( $max - $min ) + $min );
+method random_generator($min, $max) {
+    return int(rand($max - $min) + $min);
 
 }
 
@@ -490,24 +473,22 @@ Returns a HashRef of L<Binary::API::AvailableContracts> keyed by symbol and then
 
 =cut
 
-method get_contracts_for( $connection, $symbols ) {
+method get_contracts_for($connection, $symbols) {
     my %contracts_for;
 
     my $contracts_for_requests = fmap0 {
         my ($symbol) = @_;
-        my $response =
-          $connection->api->contracts_for( contracts_for => $symbol )->then(
+        my $response = $connection->api->contracts_for(contracts_for => $symbol)->then(
             sub {
                 my $response = shift;
-                for my $contract ( $response->body->available ) {
-                    $contracts_for{$symbol}{ $contract->contract_type } =
-                      $contract;
+                for my $contract ($response->body->available) {
+                    $contracts_for{$symbol}{$contract->contract_type} = $contract;
                 }
                 return Future->done;
-            }
-          );
+            });
     }
-    foreach => [@$symbols], concurrent => 1;
+    foreach        => [@$symbols],
+        concurrent => 1;
     $contracts_for_requests->get();
 
     return \%contracts_for;
@@ -531,23 +512,19 @@ Returns an array of currently active symbols as string  ['R_10','R_100', ....]
 
 =cut
 
-method get_active_symbols( $connection, $markets_to_use ) {
-    my $assets =
-      $connection->api->active_symbols( product_type => 'basic', )->on_fail(
+method get_active_symbols($connection, $markets_to_use) {
+    my $assets = $connection->api->active_symbols(
+        product_type => 'basic',
+    )->on_fail(
         sub {
             warn 'Get Active Symbols Failed  Message: ' . shift->body->message;
-        }
-    )->get;
+        })->get;
 
     my %market_check = map { $_ => 1 } @$markets_to_use;
     my @active_symbols =
-      map { $_->symbol }
-      grep {
-              $_->exchange_is_open
-          and not $_->is_trading_suspended
-          and ( !scalar(@$markets_to_use)
-            or defined( $market_check{ $_->market } ) )
-      } $assets->body->symbols;
+        map  { $_->symbol }
+        grep { $_->exchange_is_open and not $_->is_trading_suspended and (!scalar(@$markets_to_use) or defined($market_check{$_->market})) }
+        $assets->body->symbols;
 
     return \@active_symbols;
 }
@@ -579,25 +556,25 @@ method forex_duration_adjustments(%attrs) {
     my $max                 = $attrs{max};
     my ($max_duration_type) = $attrs{max} =~ /\d+(\w)/;
     my $dt                  = DateTime->now;
-    if ( $attrs{sub_market} ne 'smart_fx' ) {
+    if ($attrs{sub_market} ne 'smart_fx') {
 
         # Allow for weekends
-        if ( $max_duration_type eq 'd' and $attrs{max} ne '1d' ) {
+        if ($max_duration_type eq 'd' and $attrs{max} ne '1d') {
             my $dow     = $dt->day_of_week;
             my $max_day = 6 - $dow;
 
             # we are running on Saturday or Sunday so extend max to Friday
-            if ( $dow < 1 ) { $max_day = $max_day + 6 }
+            if ($dow < 1) { $max_day = $max_day + 6 }
             $max = ($max_day) . 'd';
         }
     }
-    if ( $dt->hour > 20 && $dt->hour < 24 ) {
-        return ( 0, 0 ) if $max_duration_type eq 't';
+    if ($dt->hour > 20 && $dt->hour < 24) {
+        return (0, 0) if $max_duration_type eq 't';
         $min = '5h';
-        $max = '16h' if ( $attrs{sub_market} eq 'smart_fx' );
+        $max = '16h' if ($attrs{sub_market} eq 'smart_fx');
 
     }
-    return ( $min, $max );
+    return ($min, $max);
 }
 
 =head2 get_params
@@ -620,9 +597,9 @@ Returns a HashRef of proposal attributes.
 
 =cut
 
-method get_params( $contract_type, $symbol ) {
+method get_params($contract_type, $symbol) {
 
-    if ( !defined( $contracts_for->{$symbol}->{$contract_type} ) ) {
+    if (!defined($contracts_for->{$symbol}->{$contract_type})) {
         return undef;
     }
     my $contract   = $contracts_for->{$symbol}->{$contract_type};
@@ -630,15 +607,15 @@ method get_params( $contract_type, $symbol ) {
     my $sub_market = $contract->submarket;
     my $min        = $contract->min_contract_duration;
     my $max        = $contract->max_contract_duration;
-    if ( $market eq 'forex' ) {
-        ( $min, $max ) = $self->forex_duration_adjustments(
+    if ($market eq 'forex') {
+        ($min, $max) = $self->forex_duration_adjustments(
             min        => $min,
             max        => $max,
             sub_market => $sub_market
         );
         return undef if !$min;
     }
-    my ( $duration, $duration_unit ) = $self->durations( $min, $max );
+    my ($duration, $duration_unit) = $self->durations($min, $max);
 
     my $put_call = {
         amount        => 10,
@@ -682,26 +659,23 @@ method get_params( $contract_type, $symbol ) {
 
     };
 
-    if ( $market eq 'forex' ) {
+    if ($market eq 'forex') {
         delete $contract_params->{$contract_type}->{barrier};
     }
-    if ( $sub_market eq 'minor_pairs' ) {
+    if ($sub_market eq 'minor_pairs') {
         my $current_time = DateTime->now();
         my $additional_time;
-        if ( $current_time->hour >= 21 && $current_time->hour <= 23 ) {
+        if ($current_time->hour >= 21 && $current_time->hour <= 23) {
             # ensure start time is out side of the restricted time
-            $additional_time = 3 * 60 * 60;   
-        }
-        else {
+            $additional_time = 3 * 60 * 60;
+        } else {
             $additional_time = 1000;    # give a buffer
         }
-        $contract_params->{$contract_type}->{date_start} =
-          time + $additional_time;
+        $contract_params->{$contract_type}->{date_start} = time + $additional_time;
     }
 
     return $contract_params->{$contract_type};
 }
-
 
 =head2 subscribe
 
@@ -722,81 +696,67 @@ Returns a L<Future>
 
 =cut
 
-method subscribe( $connection, $connection_number ) {
+method subscribe($connection, $connection_number) {
     my $sub;
     my $first  = 1;
     my $future = $loop->new_future;
     my $symbol =
-      $active_symbols->[ int( rand( scalar( $active_symbols->@* ) ) ) ];
-    my @contract_types = qw(PUT CALL PUTE CALLE);    
-    my $contract_type = $contract_types[ int( rand(@contract_types) ) ];
-    say 'Subscribing to '
-      . $symbol
-      . ' using using connection number '
-      . $connection_number;
-    my $params      = $self->get_params( $contract_type, $symbol );
+        $active_symbols->[int(rand(scalar($active_symbols->@*)))];
+    my @contract_types = qw(PUT CALL PUTE CALLE);
+    my $contract_type  = $contract_types[int(rand(@contract_types))];
+    say 'Subscribing to ' . $symbol . ' using using connection number ' . $connection_number;
+    my $params      = $self->get_params($contract_type, $symbol);
     my $retry_count = 0;
 
-    while ( !$params &&  $retry_count < 5 ) {
-        $symbol = $active_symbols->[ int( rand( $active_symbols->@* ) ) ];
-        $contract_type = $contract_types[ int( rand(@contract_types) ) ];
-        $params        = $self->get_params( $contract_type, $symbol );
-        $log->debug(
-" Trying to get params for $contract_type , $symbol for the $retry_count time"
-        );
+    while (!$params && $retry_count < 5) {
+        $symbol        = $active_symbols->[int(rand($active_symbols->@*))];
+        $contract_type = $contract_types[int(rand(@contract_types))];
+        $params        = $self->get_params($contract_type, $symbol);
+        $log->debug(" Trying to get params for $contract_type , $symbol for the $retry_count time");
         $retry_count++;
     }
-    $log->debug( "Subscribing with \n" . $json->encode($params) );
+    $log->debug("Subscribing with \n" . $json->encode($params));
     my $subscription;
     try {
-        $subscription =
-          $connection->api->subscribe( "proposal" => $params )->each(
+        $subscription = $connection->api->subscribe("proposal" => $params)->each(
             sub {
                 my ($response) = @_;
 
                 say " current subscriptions " . keys(%subs);
                 $sub = $response->body->id;
                 say 'Symbol ' . $symbol;
-                $subs{ $response->body->id } = $symbol;
-                if ( $first && $args{forget_time} ) {
+                $subs{$response->body->id} = $symbol;
+                if ($first && $args{forget_time}) {
 
-                    $loop->delay_future(
-                        after => int( rand( $args{forget_time} ) ) )->then(
+                    $loop->delay_future(after => int(rand($args{forget_time})))->then(
                         sub {
                             say 'time forgettting ' . $sub . ' ' . $symbol;
-                            $connection->api->forget( forget => $sub )
-                              ->on_done(
-                                sub { delete $subs{$sub}; $subscription->done; }
-                            )->on_fail(
+                            $connection->api->forget(forget => $sub)->on_done(sub { delete $subs{$sub}; $subscription->done; })->on_fail(
                                 sub {
                                     say " unable to forget $sub";
                                     warn Dumper(@_);
-                                }
-                            );
-                        }
-                    )->retain;
+                                });
+                        })->retain;
 
                     $first = 0;
                 }
             }
         )->completed()->on_fail(
             sub {
-                $log->warn( "Failed to start subscription with params \n"
-                      . $json->encode($params)
-                      . shift->body->message );
+                $log->warn("Failed to start subscription with params \n" . $json->encode($params) . shift->body->message);
 
                 #retry to subscribe again with new params.
-                $self->subscribe( $connection, $connection_number );
+                $self->subscribe($connection, $connection_number);
 
             }
         )->on_done(
             sub {
                 say "done";
-                $self->subscribe( $connection, $connection_number );
-            }
-        );
-    }
-    catch ($e){ warn $e };
+                $self->subscribe($connection, $connection_number);
+            });
+    } catch ($e) {
+        warn $e
+    };
     return $future;
 }
 1;

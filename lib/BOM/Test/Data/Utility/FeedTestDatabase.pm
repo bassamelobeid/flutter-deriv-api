@@ -100,7 +100,7 @@ sub create_historical_ticks {
 
     my $tick_data          = LoadFile('/home/git/regentmarkets/bom-test/data/suite_ticks.yml')->{DECIMATE_frxUSDJPY_15s_DEC};
     my $default_underlying = $args->{underlying} // 'frxUSDJPY';
-    my $default_start      = $args->{epoch} // time;
+    my $default_start      = $args->{epoch}      // time;
     my $key                = "DECIMATE_" . $default_underlying . "_15s_DEC";
 
     my $redis = BOM::Config::Redis::redis_replicated_write();
@@ -118,9 +118,9 @@ sub create_redis_ticks {
 
     my $ticks             = $args->{ticks}      // die 'ticks are required.';
     my $underlying_symbol = $args->{underlying} // die 'underlying is required.';
-    my $type  = $args->{type} eq 'decimate' ? '_15s_DEC' : '_31m_FULL';
-    my $redis = BOM::Config::Redis::redis_replicated_write();
-    my $key   = 'DECIMATE_' . $underlying_symbol . $type;
+    my $type              = $args->{type} eq 'decimate' ? '_15s_DEC' : '_31m_FULL';
+    my $redis             = BOM::Config::Redis::redis_replicated_write();
+    my $key               = 'DECIMATE_' . $underlying_symbol . $type;
 
     $redis->zadd($key, $_->{epoch}, $encoder->encode($_)) for @$ticks;
 

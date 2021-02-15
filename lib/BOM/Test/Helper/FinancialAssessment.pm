@@ -14,8 +14,8 @@ sub _get_by_index {
 my $first = sub {
     return (sort keys %{$_[0]})[0];
 };
-my $min = sub { return _get_by_index($_[0], 0) };
-my $max = sub { return _get_by_index($_[0], -1) };
+my $min   = sub { return _get_by_index($_[0], 0) };
+my $max   = sub { return _get_by_index($_[0], -1) };
 my $types = {
     'first' => $first,
     'min'   => $min,

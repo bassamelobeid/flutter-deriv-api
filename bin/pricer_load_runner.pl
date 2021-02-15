@@ -95,23 +95,21 @@ GetOptions(
     'h|help'            => \my $help,
 );
 
-pod2usage(
-    {
+pod2usage({
         -verbose  => 99,
         -sections => "NAME|SYNOPSIS|DESCRIPTION"
-    }
-) if $help;
+    }) if $help;
 
 # Set Defaults
 $check_time            = $check_time            // 120;
 $initial_subscriptions = $initial_subscriptions // 10;
-if ( !$hostname ) {
+if (!$hostname) {
     $hostname = hostname();
 }
-my @mails_to = split( ',', $mail_to ) if $mail_to;
+my @mails_to = split(',', $mail_to) if $mail_to;
 $iterations = $iterations // 1;
 my @markets_to_use = ("forex", "synthetic_index", "indices", "commodities");
-@markets_to_use = split( ',', $markets ) if ($markets);
+@markets_to_use = split(',', $markets) if ($markets);
 my %valid_markets = (
     'forex'           => 1,
     'synthetic_index' => 1,
@@ -120,48 +118,46 @@ my %valid_markets = (
 );
 
 for (@markets_to_use) {
-    if ( !defined( $valid_markets{$_} ) ) {
+    if (!defined($valid_markets{$_})) {
         say 'Invalid Market Type: ' . $_;
-        pod2usage(
-            {
-                -verbose  => 99,
-                -sections => "NAME|SYNOPSIS|DESCRIPTION"
-            }
-        );
+        pod2usage({
+            -verbose  => 99,
+            -sections => "NAME|SYNOPSIS|DESCRIPTION"
+        });
     }
 }
 my $api_key = $ENV{DD_API_KEY};
 my $app_key = $ENV{DD_APP_KEY};
-if ( ( !$api_key || !$app_key ) and ( -e '/etc/rmg/loadtest_datadog.yml' ) ) {
+if ((!$api_key || !$app_key) and (-e '/etc/rmg/loadtest_datadog.yml')) {
     my $data_dog_keys = YAML::Tiny->read('/etc/rmg/loadtest_datadog.yml');
     $api_key = $data_dog_keys->[0]->{DD_API_KEY};
     $app_key = $data_dog_keys->[0]->{DD_APP_KEY};
 }
-if ( !$app_key || !$api_key ) {
-    die
-" You need to set the DD_API_KEY and DD_APP_KEY variables or populate /etc/rmg/loadtest_datadog.yml";
+if (!$app_key || !$api_key) {
+    die " You need to set the DD_API_KEY and DD_APP_KEY variables or populate /etc/rmg/loadtest_datadog.yml";
 }
 
 my $smtp_transport;
 
-if ( -e '/etc/rmg/loadtest_smtp_secrets.yml' ) {
+if (-e '/etc/rmg/loadtest_smtp_secrets.yml') {
     my $smtp_keys = YAML::Tiny->read('/etc/rmg/loadtest_smtp_secrets.yml');
     $smtp_keys      = $smtp_keys->[0];
     $smtp_transport = Email::Sender::Transport::SMTP->new(
         host          => $smtp_keys->{SMTP_SERVER},
         port          => $smtp_keys->{SMTP_PORT},
         sasl_username => $smtp_keys->{SMTP_USER},
-        sasl_password => $smtp_keys->{SMTP_PASSWORD}
-    );
+        sasl_password => $smtp_keys->{SMTP_PASSWORD});
 
 }
 
 my $command = '/home/git/regentmarkets/bom-test/bin/proposal_sub.pl';
 my $json    = JSON->new();
 my $loop    = IO::Async::Loop->new();
-my $http =
-  Net::Async::HTTP->new(
-    headers => { DD_API_KEY => $api_key, DD_APPLICATION_KEY => $app_key } );
+my $http    = Net::Async::HTTP->new(
+    headers => {
+        DD_API_KEY         => $api_key,
+        DD_APPLICATION_KEY => $app_key
+    });
 my $queue_size_query    = "sum:pricer_daemon.queue.size{host:$hostname}";
 my $overflow_size_query = "sum:pricer_daemon.queue.overflow{host:$hostname}";
 my $start               = 1;
@@ -170,10 +166,8 @@ my $market = shift @markets_to_use;
 
 my $test_start_time = time;    #used to build the Datadog link in the email.
 my $test_end_time   = 0;
-my $pid =
-  open( my $fh, "-|",
-    "$command -s $initial_subscriptions -c 5 -r $check_time -m $market&" )
-  or die $!;
+my $pid             = open(my $fh, "-|", "$command -s $initial_subscriptions -c 5 -r $check_time -m $market&")
+    or die $!;
 
 # I guess because this runs a shell then the script that the PID is always 1 higher than
 # returned.  This may not be reliable but since this is just a test running script maybe
@@ -197,66 +191,59 @@ END {
 # after an initial start up time it will stop the testing and send the results.
 # Otherwise it will adjust the subscription amount and run the test again.
 my $run_recorder;
-my $subscriptions  = $initial_subscriptions;
-my $number_of_runs = 1;
-my $new_market = 0;
+my $subscriptions          = $initial_subscriptions;
+my $number_of_runs         = 1;
+my $new_market             = 0;
 my $overflow_buffer_amount = get_overflow_buffer_amount($check_time);
 
 $timer = IO::Async::Timer::Periodic->new(
     interval => $check_time,
 
     on_tick => sub {
-        my ( $overflow_amount, $max_queue_size ) = check_stats();
+        my ($overflow_amount, $max_queue_size) = check_stats();
 
         # We have completed a cycle so kill off the current load test
         `kill $pid` if $pid;
         $pid = undef;
-        if ( $overflow_amount == 0 || $start == 1 ) {
+        if ($overflow_amount == 0 || $start == 1) {
 
             #this will catch it if we start with our subscription number too high and overflow straight away.
-            if ( $overflow_amount > 0 && $start ) {
+            if ($overflow_amount > 0 && $start) {
                 say 'Overflowed on First run,  reducing subscription count';
-                $subscriptions -= int( $subscriptions * .3 );
-            }
-            else {
+                $subscriptions -= int($subscriptions * .3);
+            } else {
                 say ' No Overflow at ' . $max_queue_size;
                 # check if its first run of next market. It should be running with $initial_subscription & we don't need to increase the number.
-                $subscriptions += int( $subscriptions * .3 ) unless($new_market);
+                $subscriptions += int($subscriptions * .3) unless ($new_market);
                 $start = 0;
             }
             $new_market = 0;
-            $pid =
-              open( my $fh, "-|",
-                "$command -s $subscriptions -c 5 -r $check_time -m $market&" )
-              or die $!;
+            $pid        = open(my $fh, "-|", "$command -s $subscriptions -c 5 -r $check_time -m $market&")
+                or die $!;
             $pid++;
-        }
-        else {
-            if ( $number_of_runs < $iterations ) {
+        } else {
+            if ($number_of_runs < $iterations) {
                 say 'Run Number ' . $number_of_runs;
 
                 say 'Overflowed at queue_size ' . $max_queue_size;
-                $run_recorder->{$market}->{$number_of_runs}
-                  ->{overflowed_queue_size} = $max_queue_size;
+                $run_recorder->{$market}->{$number_of_runs}->{overflowed_queue_size} = $max_queue_size;
                 $start = 1;
                 $number_of_runs++;
                 $subscriptions = $initial_subscriptions;
-            }
-            else {
+            } else {
                 $test_end_time = time;
-                $run_recorder->{$market}->{$number_of_runs}
-                  ->{overflowed_queue_size} = $max_queue_size;
+                $run_recorder->{$market}->{$number_of_runs}->{overflowed_queue_size} = $max_queue_size;
                 say 'Overflowed at queue_size ' . $max_queue_size;
                 say Dumper($run_recorder);
-                if( $market = shift @markets_to_use) {
-                    say "trying to get next market ".$market;
-                    $start = 1;
+                if ($market = shift @markets_to_use) {
+                    say "trying to get next market " . $market;
+                    $start          = 1;
                     $number_of_runs = 1;
-                    $subscriptions = $initial_subscriptions;
-                    $new_market = 1;
+                    $subscriptions  = $initial_subscriptions;
+                    $new_market     = 1;
                 } else {
-                    if (scalar(@mails_to)){email_result( $run_recorder, \@mails_to, $smtp_transport );}
-                    if ($report) { report_result($run_recorder) }
+                    if (scalar(@mails_to)) { email_result($run_recorder, \@mails_to, $smtp_transport); }
+                    if ($report)           { report_result($run_recorder) }
                     $timer->stop;
                     $loop->stop;
                 }
@@ -288,25 +275,24 @@ sub check_stats {
     my $max_queue_size  = 0;
     my $overflow_amount = 0;
     my $current_time    = time;
-    my $past_time =
-      ( $current_time - $check_time ) + 60; #ignore the first minute of startup.
-    my $uri = URI->new('https://api.datadoghq.com/api/v1/query');
+    my $past_time       = ($current_time - $check_time) + 60;                   #ignore the first minute of startup.
+    my $uri             = URI->new('https://api.datadoghq.com/api/v1/query');
     $uri->query_form_hash(
         from  => $past_time,
         to    => $current_time,
         query => $queue_size_query
     );
 
-    my $queue_size_request =
-      $http->do_request( uri => URI->new( $uri ), )->on_done(
+    my $queue_size_request = $http->do_request(
+        uri => URI->new($uri),
+    )->on_done(
         sub {
             my @results = process_response(shift);
             die "No Queue size available from Datadog, check API details"
-              if !@results;
+                if !@results;
             $max_queue_size = max(@results);
             say 'Queue Size ' . $max_queue_size;
-        }
-      )->on_fail( sub { die "unable to get queue_size_stats" } );
+        })->on_fail(sub { die "unable to get queue_size_stats" });
 
     $uri->query_form_hash(
         from  => $past_time,
@@ -314,25 +300,24 @@ sub check_stats {
         query => $overflow_size_query
     );
     my $overflow_size_request = $http->do_request(
-        uri => URI->new( $uri ),
+        uri => URI->new($uri),
 
-      )->on_done(
+    )->on_done(
         sub {
             my @results = process_response(shift);
             die "No overflow size available from Datadog, check API details"
-              if !@results;
-            my @overflowed = grep { ( $_ > 0 ) } @results;
+                if !@results;
+            my @overflowed = grep { ($_ > 0) } @results;
             $overflow_amount = scalar @overflowed;
             say 'Overflowed ' . scalar @overflowed . ' of ' . scalar @results;
-        }
-      )->on_fail( sub { die "unable to get queue_overflow_stats" } );
-    Future->needs_all( $queue_size_request, $overflow_size_request )->get();
+        })->on_fail(sub { die "unable to get queue_overflow_stats" });
+    Future->needs_all($queue_size_request, $overflow_size_request)->get();
     #handle the case when there is momentary overflow
     my $overflow_amount_minus_buffer = 0;
-    if($overflow_amount) {
-            $overflow_amount_minus_buffer = ($overflow_amount > $overflow_buffer_amount)? $overflow_amount - $overflow_buffer_amount:0;
+    if ($overflow_amount) {
+        $overflow_amount_minus_buffer = ($overflow_amount > $overflow_buffer_amount) ? $overflow_amount - $overflow_buffer_amount : 0;
     }
-    return ( $overflow_amount_minus_buffer, $max_queue_size );
+    return ($overflow_amount_minus_buffer, $max_queue_size);
 }
 
 =head2 process_response
@@ -377,37 +362,31 @@ Returns undef
 
 =cut
 
-
 sub email_result {
-    my ( $overflow_data, $mails_to, $smtp_transport ) = @_;
+    my ($overflow_data, $mails_to, $smtp_transport) = @_;
     say "emailing result";
 
     #Add a bit of buffer either side  so there is context to the graphs.
-    my $dashboard_start_time = ( $test_start_time - 300 ) * 1000;
-    my $dashboard_end_time   = ( $test_end_time + 300 ) * 1000;
+    my $dashboard_start_time = ($test_start_time - 300) * 1000;
+    my $dashboard_end_time   = ($test_end_time + 300) * 1000;
     my $body                 = "Here are the stats for the Load testing run \n";
-    foreach my $market ( keys(%$overflow_data) ) {
+    foreach my $market (keys(%$overflow_data)) {
         $body .= "market - $market\n Overflowed at \n";
-        foreach my $run ( keys( $overflow_data->{$market}->%* ) ) {
+        foreach my $run (keys($overflow_data->{$market}->%*)) {
 
-            $body .= "- "
-              . $overflow_data->{$market}->{$run}->{overflowed_queue_size}
-              . "\n";
+            $body .= "- " . $overflow_data->{$market}->{$run}->{overflowed_queue_size} . "\n";
         }
     }
     $body .= "
     Datadog link = https://app.datadoghq.com/dashboard/27a-7ws-tk3/pricer-daily-load-testing?from_ts=$dashboard_start_time&live=false&to_ts=$dashboard_end_time; 
     ";
-    my $email_stuffer =
-      Email::Stuffer->from('loadtest@binary.com')->to(@$mails_to)
-      ->subject('Load Test Results')->text_body($body);
+    my $email_stuffer = Email::Stuffer->from('loadtest@binary.com')->to(@$mails_to)->subject('Load Test Results')->text_body($body);
     if ($smtp_transport) {
         $email_stuffer->transport($smtp_transport);
     }
     $email_stuffer->send_or_die;
     return undef;
 }
-
 
 =head2 report_result
 
@@ -426,21 +405,20 @@ Returns undef
 =cut
 
 sub report_result {
-    my($overflow_data) = @_;
-    foreach my $market ( keys(%$overflow_data) ) {
-        my $total; 
+    my ($overflow_data) = @_;
+    foreach my $market (keys(%$overflow_data)) {
+        my $total;
         my $count = 0;
-        foreach my $run ( keys( $overflow_data->{$market}->%* ) ) {
+        foreach my $run (keys($overflow_data->{$market}->%*)) {
             $count++;
-            $total+=$overflow_data->{$market}->{$run}->{overflowed_queue_size}
+            $total += $overflow_data->{$market}->{$run}->{overflowed_queue_size};
         }
-        my $average = $total/$count; 
-        stats_gauge('pricer_daemon.loadtest', $average , {tags => ['tag:'.$market]});
+        my $average = $total / $count;
+        stats_gauge('pricer_daemon.loadtest', $average, {tags => ['tag:' . $market]});
     }
 
-    return undef
+    return undef;
 }
-
 
 =head2 get_overflow_buffer_amount
 
@@ -460,5 +438,5 @@ Returns integer value of buffer amount
 
 sub get_overflow_buffer_amount {
     my $check_time_amount = @_;
-    return int($check_time_amount/60);
+    return int($check_time_amount / 60);
 }

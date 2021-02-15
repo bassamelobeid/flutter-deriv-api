@@ -33,7 +33,7 @@ my $request_body;
     no warnings qw(redefine);    ## no critic (ProhibitNoWarnings)
 
     *Mojo::WebSocketProxy::Backend::ConsumerGroups::request = sub {
-        $request_body = {$_[1]->@*};
+        $request_body          = {$_[1]->@*};
         $request_body->{args}  = decode_json_utf8($request_body->{args})  if $request_body->{args};
         $request_body->{stash} = decode_json_utf8($request_body->{stash}) if $request_body->{stash};
 
