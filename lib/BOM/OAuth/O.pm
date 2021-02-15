@@ -384,7 +384,6 @@ The db row representing the requested application.
 
 sub _activate_accounts {
     my ($c, $closed_clients, $app) = @_;
-    my $brand = $c->stash('brand');
 
     # pick one of the activated siblings by the following order of priority:
     # - social responsibility check is reqired (MLT and MX)
@@ -395,40 +394,13 @@ sub _activate_accounts {
         // (first { !$_->is_virtual } @$closed_clients) // $closed_clients->[0];
 
     my $reason = $selected_account->status->closed->{reason} // '';
-
     $_->status->clear_disabled for @$closed_clients;
 
-    send_email({
-            to            => $brand->emails('social_responsibility'),
-            from          => $brand->emails('no-reply'),
-            subject       => $selected_account->loginid . ' has been reactivated',
-            template_name => 'account_reactivated_sr',
-            template_args => {
-                loginid => $selected_account->loginid,
-                email   => $selected_account->email,
-                reason  => $reason,
-            },
-            use_email_template    => 1,
-            email_content_is_html => 1,
-            use_event             => 1
-        }) if $selected_account->landing_company->social_responsibility_check_required;
-
-    send_email({
-            to            => $selected_account->email,
-            from          => $brand->emails('no-reply'),
-            subject       => localize(get_message_mapping()->{REACTIVATE_EMAIL_SUBJECT}),
-            template_name => 'account_reactivated',
-            template_args => {
-                loginid          => $selected_account->loginid,
-                needs_poi        => $selected_account->needs_poi_verification(),
-                profile_url      => $brand->profile_url,
-                resp_trading_url => $brand->responsible_trading_url,
-                live_chat_url    => $brand->live_chat_url,
-            },
-            template_loginid      => $selected_account->loginid,
-            use_email_template    => 1,
-            email_content_is_html => 1,
-            use_event             => 1
+    BOM::Platform::Event::Emitter::emit(
+        'account_reactivated',
+        {
+            loginid        => $selected_account->loginid,
+            closure_reason => $reason
         });
 
     my $environment      = request()->login_env({user_agent => $c->req->headers->header('User-Agent')});

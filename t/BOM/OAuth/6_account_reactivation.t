@@ -15,7 +15,6 @@ use BOM::Config::Redis;
 use BOM::User::Static;
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
-use BOM::Test::Email qw/ :no_event /;
 
 my $redis = BOM::Config::Redis::redis_auth_write();
 my $oauth = BOM::Database::Model::OAuth->new;
@@ -84,6 +83,7 @@ sub test_successful_login {
 
     is $t->tx->res->dom->at('input[name=csrf_token]'), undef, 'no csrf token';
     is($t->tx->res->error, undef, 'No error') or warn explain $t->tx->res->error;
+
     my $url = $t->tx->res->headers->location;
     cmp_ok $url, '!~', qr/error/, 'No error in the redirect url';
     like $url, qr/$loginid/, 'Real account loginid appears in the redirect url';
@@ -122,7 +122,6 @@ subtest 'login fails for disabled accounts' => sub {
 
 subtest 'login fails if activation is cancelled' => sub {
     close_accounts($user, 'test', 1);
-    mailbox_clear();
 
     # just CR account is self-closed
     $client_cr->status->set('closed', 'system', 'test');
@@ -166,7 +165,6 @@ subtest 'login fails if activation is cancelled' => sub {
 
 subtest 'login succeeds for self-closed accounts' => sub {
     close_accounts($user, 'test', 1);
-    mailbox_clear();
 
     # just CR account is self-closed
     $client_cr->status->set('closed', 'system', 'test');
@@ -203,15 +201,10 @@ subtest 'login succeeds for self-closed accounts' => sub {
 
     undef $client_vr->{status};    # let status reloaded
     ok $client_vr->status->disabled, 'VR sibling is still disabled';
-
-    my $received_email = mailbox_search(email => $email);
-    is $received_email->{subject}, 'Welcome back! Your account is ready.', 'Reactivation email subject is correct';
-    is mailbox_search(email => $brand->emails('social_responsibility')), undef, 'no social responsibility email is sent';
 };
 
 subtest 'reactivation - closed for financial concerns' => sub {
     close_accounts($user, 'financial concerns');
-    mailbox_clear();
 
     $t = $t->get_ok("/authorize?app_id=$app_id&brand=deriv")->content_like(qr/login/);
     my $csrf_token = $t->tx->res->dom->at('input[name=csrf_token]')->val;
@@ -241,15 +234,9 @@ subtest 'reactivation - closed for financial concerns' => sub {
     is $client_cr->status->closed,   undef, 'CR client is reactivated';
     is $client_vr->status->disabled, undef, 'VR client is enabled';
     is $client_vr->status->closed,   undef, 'VR client is enabled';
-
-    my $received_email = mailbox_search(email => $email);
-    is $received_email->{subject}, 'Welcome back! Your account is ready.', 'Reactivation email subject is correct';
-    is mailbox_search(email => $brand->emails('social_responsibility')), undef, 'no social responsibility email is sent';
 };
 
 subtest 'social responsibility email' => sub {
-    mailbox_clear();
-
     my $email_mlt = 'reactivate_mlt@binary.com';
     my $user_mlt  = BOM::User->create(
         email    => $email_mlt,
@@ -279,13 +266,6 @@ subtest 'social responsibility email' => sub {
             confirm_reactivate => 1,
         });
     test_successful_login($t, $client_mlt->loginid);
-
-    my $received_email = mailbox_search(email => $brand->emails('social_responsibility'));
-    is $received_email->{subject}, $client_mlt->loginid . ' has been reactivated', 'SR email subject is correct';
-};
-
-subtest 'reactivation emails' => sub {
-    ok 1;
 };
 
 done_testing();
