@@ -96,6 +96,7 @@ my $action_mapping = {
     client_promo_codes_upload   => \&BOM::Event::Actions::Client::client_promo_codes_upload,
     shared_payment_method_found => \&BOM::Event::Actions::Client::shared_payment_method_found,
     dispute_notification        => \&BOM::Event::Actions::Client::DisputeNotification::dispute_notification,
+    account_reactivated         => \&BOM::Event::Actions::Client::account_reactivated,
 };
 
 =head1 METHODS

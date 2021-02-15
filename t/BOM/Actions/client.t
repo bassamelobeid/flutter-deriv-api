@@ -643,7 +643,7 @@ subtest 'signup event' => sub {
 subtest 'account closure' => sub {
     my $req = BOM::Platform::Context::Request->new(
         brand_name => 'deriv',
-        language   => 'ID',
+        language   => 'EN',
         app_id     => $app_id,
     );
     request($req);
@@ -679,7 +679,7 @@ subtest 'account closure' => sub {
         context => {
             active => 1,
             app    => {name => 'deriv'},
-            locale => 'ID'
+            locale => 'EN'
         },
         event      => 'account_closure',
         properties => {
@@ -1479,6 +1479,54 @@ subtest 'Overwrite Experian reason' => sub {
         last_modified_date => re('.*'),
         },
         'The Experian reason was not overwritten this time';
+};
+
+subtest 'account_reactivated' => sub {
+    my @email_args;
+    my $mock_event = Test::MockModule->new('BOM::Event::Actions::Client');
+    $mock_event->redefine('send_email', sub { push @email_args, shift; });
+
+    my $needs_verification = 0;
+    my $mock_client        = Test::MockModule->new('BOM::User::Client');
+    $mock_client->redefine('needs_poi_verification', sub { return $needs_verification; });
+
+    my $social_responsibility = 0;
+    my $mock_landing_company  = Test::MockModule->new('LandingCompany');
+    $mock_landing_company->redefine('social_responsibility_check_required', sub { return $social_responsibility; });
+
+    my $call_args = {
+        loginid => $test_client->loginid,
+        reason  => 'test reason'
+    };
+    my $handler = BOM::Event::Process::get_action_mappings()->{account_reactivated};
+
+    mailbox_clear();
+    ok $handler->($call_args), 'Event processed successfully';
+    my $msg = mailbox_search(subject => qr/Welcome back! Your account is ready./);
+    ok $msg, 'Email to client is found';
+    like $msg->{body},   qr/Check your personal details/, 'Email contains link to profile page';
+    unlike $msg->{body}, qr/Upload your documents/,       'No link to POI page';
+    is_deeply $msg->{to}, [$test_client->email], 'Client email address is correct';
+
+    $needs_verification = 1;
+    mailbox_clear();
+    ok $handler->($call_args), 'Event processed successfully';
+    $msg = mailbox_search(subject => qr/Welcome back! Your account is ready./);
+    ok $msg, 'Email to client is found';
+    unlike $msg->{body}, qr/Check your personal details/, 'Email contains link to profile page';
+    like $msg->{body},   qr/Upload your documents/,       'No link to POI page';
+    is_deeply $msg->{to}, [$test_client->email], 'Client email address is correct';
+
+    ok $handler->($call_args), 'Event processed successfully';
+    $msg = mailbox_search(subject => qr/has been reactivated/);
+    ok !$msg, 'No SR email is sent';
+
+    $social_responsibility = 1;
+    mailbox_clear();
+    ok $handler->($call_args), 'Event processed successfully';
+    $msg = mailbox_search(subject => qr/has been reactivated/);
+    ok $msg, 'Email to SR team is found';
+    is_deeply $msg->{to}, [request->brand->emails('social_responsibility')], 'SR email address is correct';
 };
 
 done_testing();

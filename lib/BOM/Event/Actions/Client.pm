@@ -1243,6 +1243,54 @@ sub account_closure {
     return BOM::Event::Services::Track::account_closure($data);
 }
 
+=head2 account_reactivated
+
+It's the handler for the event emitted on account reactivation, sending emails to the client and social responsibility team.
+
+=cut
+
+sub account_reactivated {
+    my $args = shift;
+
+    my $client = BOM::User::Client->new({loginid => $args->{loginid}});
+    my $brand  = request->brand;
+
+    BOM::Platform::Email::send_email({
+            to            => $client->email,
+            from          => $brand->emails('no-reply'),
+            subject       => localize('Welcome back! Your account is ready.'),
+            template_name => 'account_reactivated',
+            template_args => {
+                loginid          => $client->loginid,
+                needs_poi        => $client->needs_poi_verification(),
+                profile_url      => $brand->profile_url,
+                resp_trading_url => $brand->responsible_trading_url,
+                live_chat_url    => $brand->live_chat_url,
+            },
+            template_loginid      => $client->loginid,
+            use_email_template    => 1,
+            email_content_is_html => 1,
+            use_event             => 0
+        });
+
+    BOM::Platform::Email::send_email({
+            to            => $brand->emails('social_responsibility'),
+            from          => $brand->emails('no-reply'),
+            subject       => $client->loginid . ' has been reactivated',
+            template_name => 'account_reactivated_sr',
+            template_args => {
+                loginid => $client->loginid,
+                email   => $client->email,
+                reason  => $args->{closure_reason},
+            },
+            use_email_template    => 1,
+            email_content_is_html => 1,
+            use_event             => 0
+        }) if $client->landing_company->social_responsibility_check_required;
+
+    return 1;
+}
+
 =head2 _email_client_age_verified
 
 Emails client when they have been successfully age verified.
