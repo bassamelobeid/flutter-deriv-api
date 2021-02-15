@@ -316,7 +316,7 @@ for my $status (qw(completed)) {
                 who_confirm        => $who_confirm,
                 error              => 'OrderConfirmCompleted',
                 init_status        => $status,
-                client_balance     => $type eq 'sell' ? 0 : 100,
+                client_balance     => $type eq 'sell' ? 0   : 100,
                 advertiser_balance => $type eq 'sell' ? 100 : 0,
                 escrow             => {
                     before => 100,
@@ -348,7 +348,7 @@ for my $status (qw(cancelled blocked refunded)) {
                 who_confirm        => $who_confirm,
                 error              => 'OrderConfirmCompleted',
                 init_status        => $status,
-                client_balance     => $type eq 'sell' ? 0 : 100,
+                client_balance     => $type eq 'sell' ? 0   : 100,
                 advertiser_balance => $type eq 'sell' ? 100 : 0,
                 escrow             => {
                     before => 100,

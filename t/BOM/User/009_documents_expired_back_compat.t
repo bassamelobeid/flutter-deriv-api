@@ -479,7 +479,7 @@ subtest 'has valid documents' => sub {
             }};
 
         ok !$client_cr->has_valid_documents($docs, 'proof_of_identity'), 'Invalid due to expired POI';
-        ok $client_cr->has_valid_documents($docs, 'other'), 'Valid due to non expired Other';
+        ok $client_cr->has_valid_documents($docs,  'other'),             'Valid due to non expired Other';
 
         $docs = {
             'other' => {
@@ -489,8 +489,8 @@ subtest 'has valid documents' => sub {
                 'is_expired' => 0,
             }};
 
-        ok $client_cr->has_valid_documents($docs, 'proof_of_identity'), 'Valid due to non expired POI';
-        ok !$client_cr->has_valid_documents($docs, 'other'), 'Invalid due to expired Other';
+        ok $client_cr->has_valid_documents($docs,  'proof_of_identity'), 'Valid due to non expired POI';
+        ok !$client_cr->has_valid_documents($docs, 'other'),             'Invalid due to expired Other';
     };
 
     subtest 'expiry check not required' => sub {

@@ -296,7 +296,7 @@ subtest 'get consider reasons' => sub {
 
                         push @$cases,
                             {
-                            test => 'Testing reason ' . $reason,
+                            test    => 'Testing reason ' . $reason,
                             reasons =>
                                 [join('.', $breakdown), join('.', $breakdown, $sub_breakdown), join('.', $breakdown, $sub_breakdown, $reason),],
                             breakdown => $breakdown_payload,

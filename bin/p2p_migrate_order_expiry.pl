@@ -18,9 +18,9 @@ my $redis = BOM::Config::Redis->redis_p2p_write();
 $redis->del(P2P_ORDER_EXPIRES_AT, P2P_ORDER_TIMEDOUT_AT);
 
 my $collector_db = BOM::Database::ClientDB->new({
-    broker_code => 'FOG',
-    operation   => 'collector',
-})->db->dbic;
+        broker_code => 'FOG',
+        operation   => 'collector',
+    })->db->dbic;
 
 my $brokers = $collector_db->run(
     fixup => sub {
@@ -30,16 +30,15 @@ my $brokers = $collector_db->run(
 for my $broker (@$brokers) {
     say "processing $broker";
     my $db = BOM::Database::ClientDB->new({broker_code => uc $broker})->db->dbic;
-    
+
     my $orders = $db->run(
-        fixup => sub { 
-            $_->selectall_arrayref("SELECT * FROM p2p.p2p_order WHERE status IN ('pending', 'buyer-confirmed', 'timed-out')",
-                {Slice => {}});
-    });
-    
+        fixup => sub {
+            $_->selectall_arrayref("SELECT * FROM p2p.p2p_order WHERE status IN ('pending', 'buyer-confirmed', 'timed-out')", {Slice => {}});
+        });
+
     my $c = 0;
     for my $order (@$orders) {
-        my $item = $order->{id}.'|'.$order->{client_loginid};
+        my $item = $order->{id} . '|' . $order->{client_loginid};
 
         if ($order->{status} =~ /^(pending|buyer-confirmed)$/) {
             $redis->zadd(P2P_ORDER_EXPIRES_AT, Date::Utility->new($order->{expire_time})->epoch, $item);
@@ -49,7 +48,7 @@ for my $broker (@$brokers) {
         if ($order->{status} eq 'timed-out') {
             $redis->zadd(P2P_ORDER_TIMEDOUT_AT, Date::Utility->new($order->{expire_time})->epoch, $item);
             $c++;
-        }        
+        }
     }
     say "- $c orders procssed";
 }

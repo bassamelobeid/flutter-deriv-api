@@ -162,9 +162,9 @@ subtest 'Creating new buy order' => sub {
             disputer_loginid => undef,
         },
     };
-    cmp_deeply($new_order, $expected_order, 'order_create expected response');
-    cmp_deeply($client->p2p_order_list, [$expected_order], 'order_list() returns correct info');
-    cmp_deeply($client->p2p_order_info(id => $new_order->{id}), $expected_order, 'order_info() returns correct info');
+    cmp_deeply($new_order,                                      $expected_order,   'order_create expected response');
+    cmp_deeply($client->p2p_order_list,                         [$expected_order], 'order_list() returns correct info');
+    cmp_deeply($client->p2p_order_info(id => $new_order->{id}), $expected_order,   'order_info() returns correct info');
 };
 
 subtest 'Creating two orders from two clients' => sub {
@@ -777,7 +777,7 @@ subtest 'Order view permissions' => sub {
 
     my $client2 = BOM::Test::Helper::P2P::create_advertiser();
 
-    ok $client1->p2p_order_info(id => $order->{id}), "order_info: cannot see own order";
+    ok $client1->p2p_order_info(id  => $order->{id}), "order_info: cannot see own order";
     ok !$client2->p2p_order_info(id => $order->{id}), "order_info: cannot see other client's orders";
 
     ok $client1->p2p_order_list(id => $order->{id}), "order_list: cannot see own order";

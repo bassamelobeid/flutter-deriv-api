@@ -37,9 +37,9 @@ $loop->new_future;
 sub create_client {
     my (%args) = @_;
     my $email = delete($args{email}) or die 'need email';
-    my $password = delete($args{password}) // 'binary123';
-    my $balance  = delete($args{balance})  // 100;
-    my $currency = delete($args{currency}) // 'USD';
+    my $password        = delete($args{password}) // 'binary123';
+    my $balance         = delete($args{balance})  // 100;
+    my $currency        = delete($args{currency}) // 'USD';
     my $hashed_password = BOM::User::Password::hashpw($password);
     $log->infof('Creating user with email %s', $email);
     my $user = BOM::User->create(

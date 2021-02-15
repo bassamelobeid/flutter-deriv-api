@@ -27,14 +27,10 @@ subtest "Client load and saving." => sub {
     "Can create client object 'BOM::User::Client::get_instance({'loginid' => $login_id})'";
 
     isa_ok($client, 'BOM::User::Client');
-    is($client->loginid, $login_id, 'Test $client->loginid');
-    is(
-        $client->first_name,
-        '†•…‰™œŠŸž€ΑΒΓΔΩαβγδωАБВГДабвгд∀∂∈ℝ∧∪≡∞↑↗↨↻⇣┐┼╔╘░►☺',
-        'Test $client->first_name'
-    );
-    is($client->last_name, '♀ﬁ�⑀₂ἠḂӥẄɐː⍎אԱა Καλημέρα κόσμε, コンニチハ', 'Test $client->last_name');
-    is($client->password,  '48elKjgSSiaeD5v233716ab5',                                                                'Test $client->password');
+    is($client->loginid,    $login_id,                                            'Test $client->loginid');
+    is($client->first_name, '†•…‰™œŠŸž€ΑΒΓΔΩαβγδωАБВГДабвгд∀∂∈ℝ∧∪≡∞↑↗↨↻⇣┐┼╔╘░►☺', 'Test $client->first_name');
+    is($client->last_name,  '♀ﬁ�⑀₂ἠḂӥẄɐː⍎אԱა Καλημέρα κόσμε, コンニチハ',              'Test $client->last_name');
+    is($client->password,   '48elKjgSSiaeD5v233716ab5',                           'Test $client->password');
 
     $client->first_name('Eric');
     $client->last_name('Clapton');
@@ -61,24 +57,23 @@ subtest "Client load and saving." => sub {
     is($client->fully_authenticated(), 1, "CR0007 - fully authenticated");
 
     my $client_details = {
-        'loginid'          => 'CR5089',
-        'email'            => 'felix@regentmarkets.com',
-        'client_password'  => '960f984285701c6d8dba5dc71c35c55c0397ff276b06423146dde88741ddf1af',
-        'broker_code'      => 'CR',
-        'allow_login'      => 1,
-        'last_name'        => 'The cat',
-        'first_name'       => 'Felix',
-        'date_of_birth'    => '1951-01-01',
-        'address_postcode' => '47650',
-        'address_state'    => '',
-        'secret_question'  => 'Name of your pet',
-        'date_joined'      => '2007-11-29',
-        'email'            => 'felix@regentmarkets.com',
+        'loginid'            => 'CR5089',
+        'email'              => 'felix@regentmarkets.com',
+        'client_password'    => '960f984285701c6d8dba5dc71c35c55c0397ff276b06423146dde88741ddf1af',
+        'broker_code'        => 'CR',
+        'allow_login'        => 1,
+        'last_name'          => 'The cat',
+        'first_name'         => 'Felix',
+        'date_of_birth'      => '1951-01-01',
+        'address_postcode'   => '47650',
+        'address_state'      => '',
+        'secret_question'    => 'Name of your pet',
+        'date_joined'        => '2007-11-29',
+        'email'              => 'felix@regentmarkets.com',
         'latest_environment' =>
             '31-May-10 02h09GMT 99.99.99.63 Mozilla 5.0 (X11; U; Linux i686; en-US; rv:1.9.2.3) Gecko 20100401 Firefox 3.6.3 LANG=EN SKIN=',
-        'address_city' => 'Subang Jaya',
-        'address_line_1' =>
-            '†•…‰™œŠŸž€ΑΒΓΔΩαβγδωАБВГДабвгд∀∂∈ℝ∧∪≡∞↑↗↨↻⇣┐┼╔╘░►☺',
+        'address_city'          => 'Subang Jaya',
+        'address_line_1'        => '†•…‰™œŠŸž€ΑΒΓΔΩαβγδωАБВГДабвгд∀∂∈ℝ∧∪≡∞↑↗↨↻⇣┐┼╔╘░►☺',
         'secret_answer'         => '::ecp::52616e646f6d495633363368676674792dd36b78f1d98017',
         'address_line_2'        => '♀ﬁ�⑀₂ἠḂӥẄɐː⍎אԱა Καλημέρα κόσμε, コンニチハ',
         'restricted_ip_address' => '',
@@ -142,11 +137,11 @@ subtest "Client load and saving." => sub {
 
     $client2 = BOM::User::Client->rnew(%$client_details);
 
-    is($client2->loginid,   $client_details->{'loginid'},         'compare loginid between client object instantize with another client hash ref');
-    is($client2->broker,    $client_details->{'broker_code'},     'compare broker between client object instantize with another client hash ref');
-    is($client2->password,  $client_details->{'client_password'}, 'compare password between client object instantize with another client hash ref');
-    is($client2->email,     $client_details->{'email'},           'compare email between client object instantize with client another hash ref');
-    is($client2->last_name, $client_details->{'last_name'},       'compare last_name between client object instantize with another client hash ref');
+    is($client2->loginid,    $client_details->{'loginid'},         'compare loginid between client object instantize with another client hash ref');
+    is($client2->broker,     $client_details->{'broker_code'},     'compare broker between client object instantize with another client hash ref');
+    is($client2->password,   $client_details->{'client_password'}, 'compare password between client object instantize with another client hash ref');
+    is($client2->email,      $client_details->{'email'},           'compare email between client object instantize with client another hash ref');
+    is($client2->last_name,  $client_details->{'last_name'},       'compare last_name between client object instantize with another client hash ref');
     is($client2->first_name, $client_details->{'first_name'}, 'compare first_name between client object instantize with another client hash ref');
 };
 

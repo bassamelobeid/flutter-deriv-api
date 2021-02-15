@@ -631,8 +631,8 @@ subtest 'clients_for_landing_company' => sub {
     );
     my @clients = $user->clients_for_landing_company('svg');
     is(scalar @clients, 2, "one cr account");
-    is_deeply([map { $_->landing_company->short } @clients], [('svg') x 2], 'lc correct');
-    is_deeply([map { $_->loginid } @clients], [qw/CR10000 CR10001/], "clients are correct");
+    is_deeply([map { $_->landing_company->short } @clients], [('svg') x 2],         'lc correct');
+    is_deeply([map { $_->loginid } @clients],                [qw/CR10000 CR10001/], "clients are correct");
 };
 
 # test load without password

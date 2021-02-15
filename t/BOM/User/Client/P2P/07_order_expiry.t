@@ -219,7 +219,7 @@ for my $status (qw(cancelled completed disputed dispute-completed dispute-refund
             amount             => 100,
             error              => undef,
             init_status        => $status,
-            client_balance     => $type eq 'sell' ? 0 : 100,
+            client_balance     => $type eq 'sell' ? 0   : 100,
             advertiser_balance => $type eq 'sell' ? 100 : 0,
             escrow             => {
                 before => 100,

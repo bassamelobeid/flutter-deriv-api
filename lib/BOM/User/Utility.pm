@@ -164,7 +164,7 @@ sub login_details_identifier {
 
     my $browser_info = HTTP::BrowserDetect->new($user_agent);
 
-    my $device  = $browser_info->device         || $browser_info->os_string || 'unknown';
+    my $device  = $browser_info->device || $browser_info->os_string || 'unknown';
     my $browser = $browser_info->browser_string || 'unknown';
 
     return ($country || 'unknown') . '::' . $device . '::' . $browser;
@@ -215,9 +215,9 @@ sub parse_mt5_group {
         $landing_company_short = $2;
         my $subtype = $3;
         $currency         = lc($4 // 'usd');
-        $server_type      = '01';                                                        # default to 01 for old group
-        $market_type      = (not $subtype) ? 'synthetic' : 'financial';
-        $sub_account_type = (defined $subtype and $subtype =~ /stp$/) ? 'stp' : 'std';
+        $server_type      = '01';              # default to 01 for old group
+        $market_type      = (not $subtype)                            ? 'synthetic' : 'financial';
+        $sub_account_type = (defined $subtype and $subtype =~ /stp$/) ? 'stp'       : 'std';
     } elsif ($group =~ /^(real|demo)(?:\\p01_ts)?(\d{2})\\(synthetic|financial)\\([a-z]+)_(.*)_(\w+)(?:\\\d{2})?$/) {
         $account_type          = $1;
         $server_type           = $2;

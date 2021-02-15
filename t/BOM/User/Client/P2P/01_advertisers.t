@@ -147,9 +147,9 @@ subtest 'Updating advertiser fields' => sub {
         'Error when advertiser is not approved'
     );
 
-    ok $advertiser->p2p_advertiser_update(is_approved => 1)->{is_approved}, 'Enabling approval';
-    ok $advertiser->p2p_advertiser_update(is_listed   => 1)->{is_listed},   'Switch flag is_listed to true';
-    ok !$advertiser->p2p_advertiser_update(is_approved => 0)->{is_listed}, 'Unapproving switches is_listed to false';
+    ok $advertiser->p2p_advertiser_update(is_approved  => 1)->{is_approved}, 'Enabling approval';
+    ok $advertiser->p2p_advertiser_update(is_listed    => 1)->{is_listed},   'Switch flag is_listed to true';
+    ok !$advertiser->p2p_advertiser_update(is_approved => 0)->{is_listed},   'Unapproving switches is_listed to false';
 
     cmp_deeply(
         exception {

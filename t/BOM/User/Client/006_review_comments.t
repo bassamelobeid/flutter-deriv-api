@@ -35,7 +35,7 @@ subtest 'Get comments' => sub {
 
     my $res2 = $client->get_comments();
     is scalar($res2->@*), 1, "Get one added comment";
-    is $res2->[0]{id}, $comment_id, 'Comment id is correct';
+    is $res2->[0]{id},      $comment_id, 'Comment id is correct';
     is $res2->[0]{comment}, 'Test comment', 'Comment text is correct';
     is $res2->[0]{author},  'test',         'Comment author is correct';
 

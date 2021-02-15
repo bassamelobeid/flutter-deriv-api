@@ -223,7 +223,7 @@ for my $status (qw(cancelled)) {
                 who_cancel         => $who_cancel,
                 error              => 'OrderAlreadyCancelled',
                 init_status        => $status,
-                client_balance     => $type eq 'sell' ? 0 : 100,
+                client_balance     => $type eq 'sell' ? 0   : 100,
                 advertiser_balance => $type eq 'sell' ? 100 : 0,
                 escrow             => {
                     before => 100,
@@ -255,7 +255,7 @@ for my $status (qw(completed timed-out blocked refunded)) {
                 who_cancel         => $who_cancel,
                 error              => 'PermissionDenied',
                 init_status        => $status,
-                client_balance     => $type eq 'sell' ? 0 : 100,
+                client_balance     => $type eq 'sell' ? 0   : 100,
                 advertiser_balance => $type eq 'sell' ? 100 : 0,
                 escrow             => {
                     before => 100,
@@ -290,7 +290,7 @@ for my $status (qw(pending buyer-confirmed completed cancelled timed-out blocked
                 who_cancel         => $who_cancel,
                 error              => 'OrderNoEditExpired',
                 init_status        => $status,
-                client_balance     => $type eq 'sell' ? 0 : 100,
+                client_balance     => $type eq 'sell' ? 0   : 100,
                 advertiser_balance => $type eq 'sell' ? 100 : 0,
                 escrow             => {
                     before => 100,

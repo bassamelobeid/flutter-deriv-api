@@ -1122,7 +1122,7 @@ sub get_limit_for_payout {
 
 sub get_limit {
     my $self = shift;
-    my $args = shift || die 'get_limit needs args';
+    my $args = shift        || die 'get_limit needs args';
     my $for  = $args->{for} || die 'get_limit needs a "for" arg';
 
     $for = 'get_limit_for_' . $for;
@@ -1478,8 +1478,8 @@ sub real_account_siblings_information {
         $siblings->{$cl->loginid} = {
             loginid              => $cl->loginid,
             landing_company_name => $cl->landing_company->short,
-            currency => $acc ? $acc->currency_code()                                        : '',
-            balance  => $acc ? formatnumber('amount', $acc->currency_code(), $acc->balance) : "0.00",
+            currency             => $acc ? $acc->currency_code()                                        : '',
+            balance              => $acc ? formatnumber('amount', $acc->currency_code(), $acc->balance) : "0.00",
             }
             unless (!$include_self && ($cl->loginid eq $self->loginid));
     }
@@ -2042,7 +2042,7 @@ sub immutable_fields {
         next if $sibling->is_virtual;
 
         my $company_settings             = $sibling->landing_company->changeable_fields;
-        my $changeable_fields_in_company = $company_settings->{only_before_auth} // [];
+        my $changeable_fields_in_company = $company_settings->{only_before_auth}            // [];
         my $changeable_if_not_locked     = $company_settings->{personal_details_not_locked} // [];
 
         $changeable_fields_in_company = [array_minus(@$changeable_fields_in_company, @$changeable_if_not_locked)]
@@ -2681,7 +2681,7 @@ sub p2p_order_list {
     $param{loginid} = $self->loginid;
     $param{status} =
         $param{active}
-        ? ['pending', 'buyer-confirmed', 'timed-out', 'disputed']
+        ? ['pending',   'buyer-confirmed', 'timed-out', 'disputed']
         : ['completed', 'cancelled', 'refunded', 'dispute-refunded', 'dispute-completed']
         if exists $param{active};
 
@@ -3048,9 +3048,9 @@ sub p2p_expire_order {
     $new_status //= '';
 
     my $order_complete     = any { $old_status eq $_ } qw(cancelled refunded completed disputed dispute-completed dispute-refunded);
-    my $hit_expire_refund  = ($old_status eq 'pending' and $new_status eq 'refunded');
+    my $hit_expire_refund  = ($old_status eq 'pending'         and $new_status eq 'refunded');
     my $hit_timeout        = ($old_status eq 'buyer-confirmed' and $new_status eq 'timed-out');
-    my $hit_timeout_refund = ($old_status eq 'timed-out' and $new_status eq 'refunded');
+    my $hit_timeout_refund = ($old_status eq 'timed-out'       and $new_status eq 'refunded');
 
     # order hit timed out
     if ($hit_timeout) {
@@ -3493,9 +3493,9 @@ sub _advertiser_details {
 
         my $balance = $self->_p2p_validate_sell($self, $advertiser) ? $self->balance_for_cashier('p2p') : 0;
 
-        $details->{payment_info} = $advertiser->{payment_info} // '';
-        $details->{contact_info} = $advertiser->{contact_info} // '';
-        $details->{chat_user_id} = $advertiser->{chat_user_id};
+        $details->{payment_info}      = $advertiser->{payment_info} // '';
+        $details->{contact_info}      = $advertiser->{contact_info} // '';
+        $details->{chat_user_id}      = $advertiser->{chat_user_id};
         $details->{chat_token}        = $advertiser->{chat_token} // '';
         $details->{show_name}         = $advertiser->{show_name};
         $details->{balance_available} = financialrounding('amount', $advertiser->{account_currency}, $balance);
@@ -3551,8 +3551,8 @@ sub _advert_details {
             (
                 $self->loginid eq $advert->{advertiser_loginid}    # only advert owner can see these fields
                 ? (
-                    payment_info => $advert->{payment_info} // '',
-                    contact_info => $advert->{contact_info} // '',
+                    payment_info             => $advert->{payment_info} // '',
+                    contact_info             => $advert->{contact_info} // '',
                     amount                   => financialrounding('amount', $advert->{account_currency}, $advert->{amount}),
                     amount_display           => formatnumber('amount', $advert->{account_currency}, $advert->{amount}),
                     min_order_amount         => financialrounding('amount', $advert->{account_currency}, $advert->{min_order_amount}),
@@ -3625,8 +3625,8 @@ sub _order_details {
                 : (),
             },
             client_details => {
-                id   => $order->{client_id}   // '',
-                name => $order->{client_name} // '',
+                id      => $order->{client_id}   // '',
+                name    => $order->{client_name} // '',
                 loginid => $order->{client_loginid},
                 $order->{client_show_name}
                 ? (
@@ -3911,9 +3911,9 @@ sub _p2p_advertiser_stats_get {
 
     my $stats = {
         total_orders_count => $redis->hget(P2P_STATS_REDIS_PREFIX . '::ORDER_COMPLETED_TOTAL', $loginid) // 0,
-        buy_orders_count   => $redis->zcount($key_prefix . '::ORDER_COMPLETED::BUY', $start_ts, '+inf'),
+        buy_orders_count   => $redis->zcount($key_prefix . '::ORDER_COMPLETED::BUY',  $start_ts, '+inf'),
         sell_orders_count  => $redis->zcount($key_prefix . '::ORDER_COMPLETED::SELL', $start_ts, '+inf'),
-        cancel_time_avg    => @cancel_times ? sprintf("%.0f", List::Util::sum(@cancel_times) / @cancel_times) : undef,
+        cancel_time_avg    => @cancel_times  ? sprintf("%.0f", List::Util::sum(@cancel_times) / @cancel_times)   : undef,
         release_time_avg   => @release_times ? sprintf("%.0f", List::Util::sum(@release_times) / @release_times) : undef,
     };
 
@@ -3980,8 +3980,8 @@ sub p2p_order_status_history {
 
 sub validate_payment {
     my ($self, %args) = @_;
-    my $currency = $args{currency} || die "no currency\n";
-    my $amount   = $args{amount}   || die "no amount\n";
+    my $currency    = $args{currency} || die "no currency\n";
+    my $amount      = $args{amount}   || die "no amount\n";
     my $action_type = $amount > 0 ? 'deposit' : 'withdrawal';
     my $account     = $self->default_account || die "no account\n";
     my $accbal      = $account->balance;
@@ -4136,7 +4136,7 @@ sub deposit_virtual_funds {
     $self->is_virtual || die "not a virtual client\n";
 
     my $landing_company                 = $self->landing_company;
-    my $currency                        = $self->currency // 'USD';
+    my $currency                        = $self->currency                                   // 'USD';
     my $virtual_account_default_balance = $landing_company->virtual_account_default_balance // 10000;
 
     # default_account not exists when first time init virtual balance
@@ -4247,13 +4247,13 @@ sub payment_legacy_payment {
 sub payment_account_transfer {
     my ($fmClient, %args) = @_;
 
-    my $toClient = delete $args{toClient} || die "no toClient";
-    my $currency = delete $args{currency} || die "no currency";
-    my $amount   = delete $args{amount}   || die "no amount";
+    my $toClient  = delete $args{toClient} || die "no toClient";
+    my $currency  = delete $args{currency} || die "no currency";
+    my $amount    = delete $args{amount}   || die "no amount";
     my $to_amount = delete $args{to_amount};
     # fees can be zero as well
     my $fees               = delete $args{fees} // die "no fees";
-    my $staff              = delete $args{staff} || 'system';
+    my $staff              = delete $args{staff}   || 'system';
     my $toStaff            = delete $args{toStaff} || $staff;
     my $fmStaff            = delete $args{fmStaff} || $staff;
     my $remark             = delete $args{remark};
@@ -4440,11 +4440,11 @@ sub payment_doughflow {
 sub payment_ctc {
     my ($self, %args) = @_;
 
-    my $currency  = $args{currency}  || die "no currency";
-    my $amount    = $args{amount}    || die "no amount";
-    my $remark    = $args{remark}    || '';
-    my $staff     = $args{staff}     || 'system';
-    my $crypto_id = $args{crypto_id} || die "no crypto_id";
+    my $currency         = $args{currency}  || die "no currency";
+    my $amount           = $args{amount}    || die "no amount";
+    my $remark           = $args{remark}    || '';
+    my $staff            = $args{staff}     || 'system';
+    my $crypto_id        = $args{crypto_id} || die "no crypto_id";
     my $transaction_hash = $args{transaction_hash};
 
     my $action_type = $amount > 0 ? 'deposit' : 'withdrawal';
@@ -5082,7 +5082,7 @@ sub get_account_details {
         currency             => $self->account ? $self->account->currency_code : '',
         landing_company_name => $self->landing_company->short,
         is_disabled          => $self->status->disabled ? 1 : 0,
-        is_virtual => $self->is_virtual ? 1 : 0,
+        is_virtual           => $self->is_virtual       ? 1 : 0,
         $exclude_until ? (excluded_until => Date::Utility->new($exclude_until)->epoch) : ()};
 }
 
