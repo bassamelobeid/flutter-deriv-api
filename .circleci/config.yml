@@ -217,7 +217,7 @@ jobs:
         command: |
           script/websocket_schema_update.sh
         name: Update developer.binary.com schema documentation
-  code_cover:
+  code_coverage:
     <<: *6
     steps:
     - *1
