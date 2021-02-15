@@ -189,7 +189,7 @@
                                 <a href="[% trx.statement_link %]" target="_blank">Statement</a><br />
                                 <a href="[% trx.profit_link %]" target="_blank">Profit</a>
                             </td>
-                            <td><button onClick="viewFiatLogin(this, '[% trx.client_loginid %]', '[% broker %]', '[% fetch_url %]')"> FIAT login</button></td>
+                            <td><button onClick="viewFiatStatement(this, '[% trx.client_loginid %]', '[% broker %]', '[% fetch_url %]')"> FIAT Statement</button></td>
                             <td></td>
                         </tr>
                         <tr><th>Payment ID:</th><td>[% trx.payment_id %]</td></tr>
@@ -317,7 +317,7 @@
 
 <script>
 
-function viewFiatLogin(elem, loginID, brokerCode, fetchURL) {
+function viewFiatStatement(elem, loginID, brokerCode, fetchURL) {
     var td_result = elem.parentNode.nextElementSibling;
     td_result.innerHTML = "<span style='color:green'> Fetching ..</span>";
 
@@ -332,7 +332,7 @@ function viewFiatLogin(elem, loginID, brokerCode, fetchURL) {
            try {
                var fiat = \$.parseJSON(data);
                if (fiat.loginid)
-                  td_result.innerHTML = "<a href='" + fiat.link + "' target='_blank'> " + fiat.loginid + "</a>";
+                  td_result.innerHTML = "<a href='" + fiat.statement + "' target='_blank'> " + fiat.loginid + "</a>";
                else
                   td_result.innerHTML = "no fiat";
            }

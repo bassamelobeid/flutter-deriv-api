@@ -18,11 +18,13 @@ BOM::Backoffice::Sysinit::init();
 my $json = JSON::MaybeXS->new;
 
 if (request()->param('fiat_details')) {
-    my %fiat_details = get_fiat_login_id_for(request()->param('login_id'), request()->param('broker_code'));
-    my $fiat_loginid = $fiat_details{fiat_loginid};
-    my $fiat_link    = $fiat_details{fiat_link};
+    my %fiat_details   = get_fiat_login_id_for(request()->param('login_id'), request()->param('broker_code'));
+    my $fiat_loginid   = $fiat_details{fiat_loginid};
+    my $fiat_link      = $fiat_details{fiat_link};
+    my $fiat_statement = $fiat_details{fiat_statement};
     print $json->encode({
-        loginid => $fiat_loginid,
-        link    => "$fiat_link",
+        loginid   => $fiat_loginid,
+        link      => "$fiat_link",
+        statement => "$fiat_statement"
     });
 }

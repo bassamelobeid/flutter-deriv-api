@@ -1657,7 +1657,7 @@ client following these rules:
 
 =back
 
-Returns Hash with keys `fiat_loginid` and `fiat_link`
+Returns Hash with keys `fiat_loginid`, `fiat_link` and `fiat_statement`
 
 =cut
 
@@ -1691,6 +1691,12 @@ sub get_fiat_login_id_for {
     $fiat_details{fiat_loginid} = $fiat_loginid;
     $fiat_details{fiat_link}    = request()->url_for(
         'backoffice/f_clientloginid_edit.cgi',
+        {
+            broker  => $broker,
+            loginID => $fiat_loginid
+        });
+    $fiat_details{fiat_statement} = request()->url_for(
+        'backoffice/f_manager_history.cgi',
         {
             broker  => $broker,
             loginID => $fiat_loginid
