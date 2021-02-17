@@ -1,31 +1,19 @@
-<table id="currency_info" class="border">
-    <tr><th colspan=2>[% currency %] Info</th></tr>
+[% BLOCK info_row %]
     <tr>
-        <th class="right">Main address</th>
-        <td>[% main_address %]</td>
-    </tr>
-    <tr>
-        <th class="right">Exchange rate ([% currency %]/USD)</th>
-        <td>[% exchange_rate %]</td>
-    </tr>
-    <tr>
-        <th class="right">Min sweep limit</th>
+        <th class="right">[% name %]</th>
         <td>
-            [% IF sweep_limit_min %]
-                [% sweep_limit_min %] [% currency %]
-            [% ELSE %]
-                No limit specified
-            [% END %]
+            [% value || 'Not specified' %] [% value and show_currency ? currency : '' %]
         </td>
     </tr>
+[% END %]
+
+<table class="border">
     <tr>
-        <th class="right">Max sweep limit</th>
-        <td>
-            [% IF sweep_limit_min %]
-                [% sweep_limit_max %] [% currency %]
-            [% ELSE %]
-                No limit specified
-            [% END %]
-        </td>
+        <th colspan="2">[% currency %] Info</th>
     </tr>
+    [% INCLUDE info_row name = 'Main address',                         value = main_address %]
+    [% INCLUDE info_row name = 'Exchange Rate (' _ currency _ '/USD)', value = exchange_rate %]
+    [% INCLUDE info_row name = 'Min Sweep Limit',                      value = sweep_limit_min,       show_currency = 1 %]
+    [% INCLUDE info_row name = 'Max Sweep Limit',                      value = sweep_limit_max,       show_currency = 1 %]
+    [% INCLUDE info_row name = 'Sweep Reserve Limit',                  value = sweep_reserve_balance, show_currency = 1 %]
 </table>

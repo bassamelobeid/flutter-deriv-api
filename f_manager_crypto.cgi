@@ -139,9 +139,10 @@ my $blockchain_address     = $currency_wrapper->get_address_blockchain_url();
 my $blockchain_transaction = $currency_wrapper->get_transaction_blockchain_url();
 code_exit_BO('No currency urls for ' . $currency) unless $blockchain_transaction and $blockchain_address;
 
-my $exchange_rate   = eval { in_usd(1.0, $currency) } // 'N.A.';
-my $sweep_limit_max = $currency_wrapper->config->{sweep}{max_transfer};
-my $sweep_limit_min = $currency_wrapper->config->{sweep}{min_transfer};
+my $exchange_rate         = eval { in_usd(1.0, $currency) } // 'N.A.';
+my $sweep_limit_max       = $currency_wrapper->config->{sweep}{max_transfer};
+my $sweep_limit_min       = $currency_wrapper->config->{sweep}{min_transfer};
+my $sweep_reserve_balance = $currency_wrapper->sweep_reserve_balance();
 
 my $transaction_uri = URI->new($blockchain_transaction);
 my $address_uri     = URI->new($blockchain_address);
@@ -160,11 +161,12 @@ Bar("$currency Info");
 $tt->process(
     'backoffice/crypto_cashier/crypto_info.html.tt',
     {
-        exchange_rate   => $exchange_rate,
-        currency        => $currency,
-        main_address    => $main_address,
-        sweep_limit_max => $sweep_limit_max,
-        sweep_limit_min => $sweep_limit_min,
+        exchange_rate         => $exchange_rate,
+        currency              => $currency,
+        main_address          => $main_address,
+        sweep_limit_max       => $sweep_limit_max,
+        sweep_limit_min       => $sweep_limit_min,
+        sweep_reserve_balance => $sweep_reserve_balance,
     }) || die $tt->error();
 
 ## CTC
