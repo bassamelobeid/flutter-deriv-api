@@ -405,8 +405,8 @@ sub _create_contract {
         currency              => 'USD',
         current_tick          => $args{current_tick} // $tick,
         multiplier            => 100,
-        date_start            => $args{date_start} // $date_start,
-        date_expiry           => $args{date_expiry} // $date_expiry,
+        date_start            => $args{date_start}            // $date_start,
+        date_expiry           => $args{date_expiry}           // $date_expiry,
         app_markup_percentage => $args{app_markup_percentage} // 0,
 
         # this is not what we want to test here.

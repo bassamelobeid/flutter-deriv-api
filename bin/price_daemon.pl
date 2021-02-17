@@ -21,7 +21,7 @@ $ua->env_proxy;
 my $response = $ua->get("http://169.254.169.254/latest/meta-data/local-ipv4");
 
 # Since this is only available in AWS, default to localhost for other environments
-my $internal_ip = $response->is_success? $response->content: '127.0.0.1';
+my $internal_ip = $response->is_success ? $response->content : '127.0.0.1';
 
 GetOptions(
     "workers=i"              => \my $workers,

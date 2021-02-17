@@ -277,7 +277,7 @@ subtest 'multiplier - get_bid' => sub {
         'date_expiry'       => ignore(),
         'entry_spot'        => 100,
         'currency'          => 'USD',
-        'limit_order' =>
+        'limit_order'       =>
             ['stop_out', ['basis_spot', 100, 'order_amount', '-100.00', 'order_date', ignore(), 'order_type', 'stop_out', 'commission', ignore()]],
         'limit_order_as_hashref' => {
             'stop_out' => {
@@ -359,7 +359,7 @@ subtest 'multiplier - get_bid' => sub {
         'entry_spot'        => 100,
         'currency'          => 'USD',
         'limit_order'       => [
-            'stop_out', ['basis_spot', 100, 'order_amount', '-100.00', 'order_date', ignore(), 'order_type', 'stop_out', 'commission', ignore()],
+            'stop_out',     ['basis_spot', 100, 'order_amount', '-100.00', 'order_date', ignore(), 'order_type', 'stop_out', 'commission', ignore()],
             'cancellation', ['price', ignore()]
         ],
         'limit_order_as_hashref' => {

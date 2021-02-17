@@ -368,9 +368,9 @@ sub _create_contract {
         current_tick          => $args{current_tick} // $tick,
         payout                => 10,
         amount_type           => 'payout',
-        date_start            => $args{date_start} // $date_start,
-        date_expiry           => $args{date_expiry} // $date_expiry,
-        barrier               => $args{barrier} // 'S0P',
+        date_start            => $args{date_start}            // $date_start,
+        date_expiry           => $args{date_expiry}           // $date_expiry,
+        barrier               => $args{barrier}               // 'S0P',
         app_markup_percentage => $args{app_markup_percentage} // 0,
 
         # this is not what we want to test here.

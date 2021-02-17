@@ -165,7 +165,7 @@ Returns an arrayref containing values returned by the generate_asset_index($coun
 sub asset_index {
     my $params               = shift;
     my $landing_company_name = $params->{args}{landing_company};
-    my $language             = $params->{language} // 'en';
+    my $language             = $params->{language}     // 'en';
     my $country_code         = $params->{country_code} // '';
 
     my $token_details = $params->{token_details};
@@ -184,7 +184,7 @@ sub asset_index {
 sub trading_durations {
     my $params               = shift;
     my $landing_company_name = $params->{args}{landing_company};
-    my $language             = $params->{language} // 'en';
+    my $language             = $params->{language}     // 'en';
     my $country_code         = $params->{country_code} // '';
 
     my $token_details = $params->{token_details};
@@ -518,14 +518,14 @@ sub _get_permitted_expiries {
                    $actual_et eq 'tick'
                 or $actual_et eq 'no_expiry'
             )
-            ? sort { $a <=> $b } map                   { $_->[1] } @remaining
+            ? sort { $a          <=> $b } map          { $_->[1] } @remaining
             : sort { $a->seconds <=> $b->seconds } map { Time::Duration::Concise::Localize->new(interval => $_->[1]) } @remaining;
         my @maxs =
             (
                    $actual_et eq 'tick'
                 or $actual_et eq 'no_expiry'
             )
-            ? sort { $b <=> $a } map                   { $_->[2] } @remaining
+            ? sort { $b          <=> $a } map          { $_->[2] } @remaining
             : sort { $b->seconds <=> $a->seconds } map { Time::Duration::Concise::Localize->new(interval => $_->[2]) } @remaining;
         $result->{$actual_et} = {
             min => $mins[0],

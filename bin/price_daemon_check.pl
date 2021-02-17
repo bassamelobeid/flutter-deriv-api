@@ -27,8 +27,7 @@ for (
     my $e = 0;
     try {
         %entry = @{JSON::MaybeXS->new->decode(Encode::decode_utf8($redis->get($_)))};
-    }
-    catch {
+    } catch {
         $e = 1;
     }
     next if $e;

@@ -306,7 +306,7 @@ sub get_bid {
         $bet_params->{is_sold}               = $is_sold;
         $bet_params->{app_markup_percentage} = $app_markup_percentage // 0;
         $bet_params->{landing_company}       = $landing_company;
-        $bet_params->{sell_time}             = $sell_time if $is_sold;
+        $bet_params->{sell_time}             = $sell_time  if $is_sold;
         $bet_params->{sell_price}            = $sell_price if defined $sell_price;
         $contract                            = produce_contract($bet_params);
     } catch {
@@ -792,10 +792,10 @@ sub _build_bid_response {
         $response->{barrier}       = undef;
     }
     $response->{reset_time}       = 0 + $contract->reset_spot->epoch if $contract->reset_spot;
-    $response->{multiplier}       = $contract->multiplier unless ($contract->is_binary);
+    $response->{multiplier}       = $contract->multiplier                 unless ($contract->is_binary);
     $response->{validation_error} = localize($params->{validation_error}) unless $params->{is_valid_to_sell};
     $response->{current_spot}     = $contract->current_spot if $contract->underlying->feed_license eq 'realtime';
-    $response->{tick_count}       = $contract->tick_count if $contract->expiry_type eq 'tick';
+    $response->{tick_count}       = $contract->tick_count   if $contract->expiry_type eq 'tick';
 
     if ($contract->is_binary) {
         $response->{payout} = $contract->payout;
