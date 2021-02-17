@@ -5483,4 +5483,21 @@ sub ignore_address_verification {
     return 0;
 }
 
+=head2 payment_accounts_limit
+
+Returns the maximum allowed payment accounts for this client.
+
+=cut
+
+sub payment_accounts_limit {
+    my $self = shift;
+    my $custom_limit =
+        $json->decode(BOM::Config::Runtime->instance->app_config->payments->custom_payment_accounts_limit_per_user)->{$self->user->{id}};
+    my $limits_per_broker = BOM::Config::client_limits()->{max_client_payment_accounts_per_broker_code} // {};
+    my $account_broker_code_limit = $limits_per_broker->{$self->{broker_code}};
+    my $default_limit             = BOM::Config::client_limits()->{max_payment_accounts_per_user};
+
+    return $custom_limit // $account_broker_code_limit // $default_limit;
+}
+
 1;
