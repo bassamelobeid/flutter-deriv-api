@@ -77,3 +77,7 @@ max_payout_open_positions:
     eUSDT: 50000
 max_open_bets_default: 100
 max_payment_accounts_per_user: 5
+max_client_payment_accounts_per_broker_code:
+  MF: 7
+  MLT: 7
+  MX: 7
