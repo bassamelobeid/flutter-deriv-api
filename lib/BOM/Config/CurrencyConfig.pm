@@ -378,7 +378,7 @@ Returns 1 if the currency is currently suspended, otherwise 0.
 sub is_crypto_currency_suspended {
     my $currency = shift;
 
-    die 'Expected currency code parameter.' unless $currency;
+    die 'Expected currency code parameter.'               unless $currency;
     die "Failed to accept $currency as a cryptocurrency." unless is_valid_crypto_currency($currency);
 
     my $suspended_currencies = get_suspended_crypto_currencies();

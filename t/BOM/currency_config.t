@@ -236,7 +236,7 @@ subtest 'transfer_between_accounts_fees' => sub {
             my $from_def      = LandingCompany::Registry::get_currency_definition($from_currency);
             my $to_def        = LandingCompany::Registry::get_currency_definition($to_currency);
             my $from_category = $from_def->{stable} ? 'stable' : $from_def->{type};
-            my $to_category   = $to_def->{stable} ? 'stable' : $to_def->{type};
+            my $to_category   = $to_def->{stable}   ? 'stable' : $to_def->{type};
             my $expected_fee  = -1;
             if (($from_def->{type} ne 'crypto' or $to_def->{type} ne 'crypto') and $from_currency ne $to_currency) {
                 $expected_fee = $currency_fees->{"${from_currency}_$to_currency"} // $default_fees->{"${from_category}_$to_category"} // -1;

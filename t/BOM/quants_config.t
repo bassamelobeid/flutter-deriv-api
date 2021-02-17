@@ -38,7 +38,7 @@ subtest 'save_config' => sub {
     my $saved = $qc->chronicle_reader->get('quants_config', 'commission')->{test};
     is_deeply $saved->{contract_type},   [split ',', $args->{contract_type}],   'contract_type matches';
     is_deeply $saved->{currency_symbol}, [split ',', $args->{currency_symbol}], 'currency_symbol matches';
-    is $saved->{ITM_1}, $args->{ITM_1}, 'ITM_1 matches';
+    is $saved->{ITM_1},                  $args->{ITM_1}, 'ITM_1 matches';
 };
 
 subtest 'delete_config' => sub {

@@ -64,33 +64,32 @@ sub upload_redis {
     my $keys    = $r->keys('*');
     my %data    = map { $_ => {$r->hgetall($_)->@*} } $keys->@*;
     my $content = encode_json(\%data);
-    
+
     try {
         $s3->put_object(
             key   => $file_name,
             value => $content
         )->get;
-    }
-    catch {
+    } catch {
         die "Failed to upload redis dump data to S3. Error is $@.";
     }
 }
 
 sub download_redis {
-    my $data      = decode_json($s3->get_object(key => $file_name)->get);
-    my $writer    = BOM::Config::Redis::redis_exchangerates_write();
+    my $data   = decode_json($s3->get_object(key => $file_name)->get);
+    my $writer = BOM::Config::Redis::redis_exchangerates_write();
 
     foreach my $record_key (keys %$data) {
-    
+
         my $content = $data->{$record_key};
         my @details;
-        
+
         push @details, $_, $content->{$_} for keys %$content;
-    
+
         $writer->hmset($record_key, @details);
     }
     print "Updated redis_exchangerates successful\n";
 }
 
-if ($upload_redis) {upload_redis};
-if ($download_redis) {download_redis};
+if ($upload_redis)   { upload_redis }
+if ($download_redis) { download_redis }

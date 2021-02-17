@@ -28,12 +28,12 @@ my $s3   = Net::Async::Webservice::S3->new(
     access_key => $config->{aws_access_key_id},
     secret_key => $config->{aws_secret_access_key},
     bucket     => $config->{aws_bucket},
-    ssl        => 1, 
+    ssl        => 1,
 );
 $loop->add($s3);
 
 my $namespace = 'NORMALIZED_INDEX_COEF';
-my $content = $s3->get_object(key => $file_name)->get;
+my $content   = $s3->get_object(key => $file_name)->get;
 # The content will be as follow:
 #    frxEURUSD => {
 #        start   => '2018-09-25',
