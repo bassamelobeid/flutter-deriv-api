@@ -60,8 +60,8 @@ $platform_mock->mock(
     });
 
 sub do_client_login {
-    my $agent = shift // 'chrome';
-    my $brand = shift // 'binary';
+    my $agent        = shift // 'chrome';
+    my $brand        = shift // 'binary';
     my $agent_header = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.79 Safari/537.36';
     my $t            = Test::Mojo->new('BOM::OAuth');
     $email    = shift // $email;

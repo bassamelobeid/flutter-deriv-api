@@ -166,8 +166,8 @@ sub callback {
 
 # simple redirect since .html does not support POST from oneall
 sub redirect {
-    my $c                = shift;
-    my $dir              = $c->param('dir') // '';
+    my $c   = shift;
+    my $dir = $c->param('dir') // '';
     my $connection_token = $c->param('connection_token') // $c->_get_provider_token() // '';
 
     return $c->redirect_to($dir . '?connection_token=' . $connection_token);

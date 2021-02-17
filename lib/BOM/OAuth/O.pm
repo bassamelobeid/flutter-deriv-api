@@ -585,7 +585,7 @@ sub _validate_login {
 
     } else {
 
-        return $err_var->("INVALID_EMAIL") unless ($email and Email::Valid->address($email));
+        return $err_var->("INVALID_EMAIL")    unless ($email and Email::Valid->address($email));
         return $err_var->("INVALID_PASSWORD") unless $password;
 
         $user = BOM::User->new(email => $email);
@@ -686,11 +686,11 @@ sub _notify_login {
             client_name => $client->first_name
             ? ' ' . $client->first_name . ' ' . $client->last_name
             : '',
-            country => $brand->countries_instance->countries->country_from_code($country_code) // $country_code,
-            device  => $bd->device                                                             // $bd->os_string,
-            browser => $bd->browser_string                                                     // $bd->browser,
-            app     => $app,
-            ip      => $ip,
+            country                   => $brand->countries_instance->countries->country_from_code($country_code) // $country_code,
+            device                    => $bd->device                                                             // $bd->os_string,
+            browser                   => $bd->browser_string                                                     // $bd->browser,
+            app                       => $app,
+            ip                        => $ip,
             language                  => lc($request->language),
             start_url                 => 'https://' . lc($brand->website_name),
             is_reset_password_allowed => _is_reset_password_allowed($app->{id}),
