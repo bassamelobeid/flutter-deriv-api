@@ -33,8 +33,7 @@ Log::Any::Adapter->import(qw(Stdout), log_level => $log_level);
 if ($past_date) {
     try {
         Date::Utility->new($past_date);
-    }
-    catch {
+    } catch {
         die 'Invalid date. Please use yyyy-mm-dd format.';
     }
 }
@@ -43,14 +42,14 @@ my $brand_object = Brands->new(name => $brand);
 
 try {
     my $processing_date = Date::Utility->new($past_date // (time - 86400));
-    my $reporter = BOM::MyAffiliates::TurnoverReporter->new(
+    my $reporter        = BOM::MyAffiliates::TurnoverReporter->new(
         processing_date => $processing_date,
         brand           => $brand_object,
     );
 
     my @csv = $reporter->activity();
     $log->infof('No CSV data for affiliate turnover report for %s', $processing_date->date_yyyymmdd) unless @csv;
-    die "No CSV data for " . $processing_date->date_yyyymmdd unless @csv;
+    die "No CSV data for " . $processing_date->date_yyyymmdd                                         unless @csv;
 
     my $output_dir = $reporter->directory_path();
     $output_dir->mkpath unless ($output_dir->exists);
@@ -61,15 +60,15 @@ try {
     $output_filepath->spew_utf8(@csv);
     $log->debugf('Data file name %s created.', $output_filepath);
 
-    my $zip        = Archive::Zip->new();
+    my $zip = Archive::Zip->new();
     $zip->addFile($output_filepath->stringify, $output_filepath->basename);
 
     $log->debugf('Sending email for affiliate turnover report');
 
-    my $output_zip = "myaffiliates_" . $brand_object->name . '_' . $reporter->output_file_prefix() . $processing_date->date_yyyymmdd . ".zip";
+    my $output_zip      = "myaffiliates_" . $brand_object->name . '_' . $reporter->output_file_prefix() . $processing_date->date_yyyymmdd . ".zip";
     my $output_zip_path = path("/tmp")->child($output_zip)->stringify;
 
-    my $statsd          = DataDog::DogStatsd->new;
+    my $statsd = DataDog::DogStatsd->new;
 
     my @warn_msgs;
     try {
@@ -84,8 +83,7 @@ try {
             warn 'Failed to generate MyAffiliates turnover report: ', "MyAffiliates turnover report failed to generate zip archive";
             exit 1;
         }
-    }
-    catch {
+    } catch {
         my $error = $@;
         $statsd->event('Failed to generate MyAffiliates turnover report', "MyAffiliates turnover report failed to generate zip archive with $error");
         warn 'Failed to generate MyAffiliates turnover report: ', "MyAffiliates turnover report failed to generate zip archive with $error";
@@ -99,11 +97,10 @@ try {
         });
 
     $reporter->send_report(
-        subject    => 'CRON generate_affiliate_turnover_daily (' . $brand_object->name . ') for date ' . $processing_date->date_yyyymmdd,
+        subject => 'CRON generate_affiliate_turnover_daily (' . $brand_object->name . ') for date ' . $processing_date->date_yyyymmdd,
         message => ["Find links to download CSV that was generated:\n" . $download_url],
     );
-}
-catch {
+} catch {
     my $error = $@;
     DataDog::DogStatsd->new->event('Affiliate Turnover Report Failed', "TurnoverReporter failed to generate csv files due: $error");
     warn "TurnoverReporter failed to generate csv files due to: $error";

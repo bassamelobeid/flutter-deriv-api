@@ -33,19 +33,18 @@ alarm 1800;
 if ($past_date) {
     try {
         Date::Utility->new($past_date);
-    }
-    catch {
+    } catch {
         die 'Invalid date. Please use yyyy-mm-dd format.';
     }
 }
 
-my $to_date = Date::Utility->new($past_date // (time - 86400));
+my $to_date   = Date::Utility->new($past_date // (time - 86400));
 my $from_date = Date::Utility->new('01-' . $to_date->month_as_string . '-' . $to_date->year);
 
 my $statsd          = DataDog::DogStatsd->new;
 my $processing_date = Date::Utility->new($from_date->epoch);
 
-my $zip        = Archive::Zip->new();
+my $zip = Archive::Zip->new();
 
 my $brand_object = Brands->new(name => $brand);
 my @warn_msgs;
@@ -92,8 +91,7 @@ while ($to_date->days_between($processing_date) >= 0) {
         $output_filepath->spew_utf8(@csv);
         $log->debugf('Data file name %s created.', $output_filepath);
         $zip->addFile($output_filepath->stringify, $output_filepath->basename);
-    }
-    catch {
+    } catch {
         my $error = $@;
         $statsd->event('Failed to generate MyAffiliates PL report', "MyAffiliates PL report failed to generate csv files due: $error");
         push @warn_msgs, "failed to generate report $output_filepath due: $error";
@@ -102,7 +100,12 @@ while ($to_date->days_between($processing_date) >= 0) {
     $processing_date = $next_date;
 }
 
-my $output_zip = "myaffiliates_" . $brand_object->name . '_' . $reporter->output_file_prefix() . $from_date->date_yyyymmdd . "-" . $to_date->date_yyyymmdd . ".zip";
+my $output_zip =
+      "myaffiliates_"
+    . $brand_object->name . '_'
+    . $reporter->output_file_prefix()
+    . $from_date->date_yyyymmdd . "-"
+    . $to_date->date_yyyymmdd . ".zip";
 my $output_zip_path = path("/tmp")->child($output_zip)->stringify;
 try {
     unless ($zip->numberOfMembers) {
@@ -116,8 +119,7 @@ try {
         warn 'Failed to generate MyAffiliates PL report: ', "MyAffiliates PL report failed to generate zip archive";
         exit 1;
     }
-}
-catch {
+} catch {
     my $error = $@;
     $statsd->event('Failed to generate MyAffiliates PL report', "MyAffiliates PL report failed to generate zip archive with $error");
     warn 'Failed to generate MyAffiliates PL report: ', "MyAffiliates PL report failed to generate zip archive with $error";
@@ -140,8 +142,7 @@ try {
             . $to_date->date_yyyymmdd,
         message => ["Find links to download CSV that was generated:\n" . $download_url],
     );
-}
-catch {
+} catch {
     my $error = $@;
     $statsd->event('Failed to generate MyAffiliates PL report', "MyAffiliates PL report failed to upload to S3 due: $error");
     warn 'Failed to generate MyAffiliates PL report: ', "MyAffiliates PL report failed to upload to S3 due: $error";

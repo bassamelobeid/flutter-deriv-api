@@ -47,7 +47,10 @@ sub run {
     $output_filepath->spew_utf8(@csv);
     $log->debugf('Data file name %s created.', $output_filepath);
 
-    my $reporter_download_url = _get_download_url(reporter => $reporter, output_filepath => $output_filepath);
+    my $reporter_download_url = _get_download_url(
+        reporter        => $reporter,
+        output_filepath => $output_filepath
+    );
 
     my $reporter_deriv = BOM::MyAffiliates::GenerateRegistrationDaily->new(
         processing_date => $processing_date,
@@ -71,12 +74,20 @@ sub run {
     $output_filepath->spew_utf8(@output);
     $log->debugf('Data file name %s created.', $output_filepath);
 
-    my $reporter_deriv_download_url = _get_download_url(reporter => $reporter_deriv, output_filepath => $output_filepath);
+    my $reporter_deriv_download_url = _get_download_url(
+        reporter        => $reporter_deriv,
+        output_filepath => $output_filepath
+    );
 
     $log->debugf('Sending email for affiliate registration report');
     $reporter->send_report(
-        subject    => 'CRON registrations: Report for ' . Date::Utility->new->datetime_yyyymmdd_hhmmss_TZ,
-        message    => ['Find links to download CSV that was generated in "' . join(',', $reporter->headers()) . '" format' . "\n $reporter_download_url \n $reporter_deriv_download_url"],
+        subject => 'CRON registrations: Report for ' . Date::Utility->new->datetime_yyyymmdd_hhmmss_TZ,
+        message => [
+                  'Find links to download CSV that was generated in "'
+                . join(',', $reporter->headers())
+                . '" format'
+                . "\n $reporter_download_url \n $reporter_deriv_download_url"
+        ],
     );
 }
 
@@ -103,16 +114,17 @@ sub _get_output_file_path {
 sub _get_download_url {
     my (%args) = @_;
 
-    my $reporter = $args{reporter};
+    my $reporter        = $args{reporter};
     my $output_filepath = $args{output_filepath};
 
-    my $zip        = Archive::Zip->new();
+    my $zip = Archive::Zip->new();
     $zip->addFile($output_filepath->stringify, $output_filepath->basename);
 
-    my $output_zip = "myaffiliates_" . $reporter->brand->name . '_' . $reporter->output_file_prefix() . $reporter->processing_date->date_yyyymmdd . ".zip";
+    my $output_zip =
+        "myaffiliates_" . $reporter->brand->name . '_' . $reporter->output_file_prefix() . $reporter->processing_date->date_yyyymmdd . ".zip";
     my $output_zip_path = path("/tmp")->child($output_zip)->stringify;
 
-    my $statsd          = DataDog::DogStatsd->new;
+    my $statsd = DataDog::DogStatsd->new;
     my @warn_msgs;
     try {
         unless ($zip->numberOfMembers) {
@@ -126,10 +138,10 @@ sub _get_download_url {
             warn 'Failed to generate MyAffiliates registration report: ', "MyAffiliates registration report failed to generate zip archive";
             exit 1;
         }
-    }
-    catch {
+    } catch {
         my $error = $@;
-        $statsd->event('Failed to generate MyAffiliates registration report', "MyAffiliates registration report failed to generate zip archive with $error");
+        $statsd->event('Failed to generate MyAffiliates registration report',
+            "MyAffiliates registration report failed to generate zip archive with $error");
         warn 'Failed to generate MyAffiliates registration report: ', "MyAffiliates registration report failed to generate zip archive with $error";
         exit 1;
     }
