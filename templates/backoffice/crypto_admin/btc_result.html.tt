@@ -1,27 +1,17 @@
 <style type="text/css">
-table td{
-    padding-top:4px;
-}
-.label{
-    width:20%;
-    text-align:right;
-    text-transform:uppercase;
-    vertical-align:top;
-}
-#list_receivedby_address{
-    max-height:2000px;
-    overflow:scroll;
+#list_receivedby_address {
+    max-height: 2000px;
 }
 </style>
 
 [% IF response.error %]
 
-    <p style="color:red"><b>[%response.error%]</b></p>
+    <p class="error">[%response.error%]</p>
 
 [% ELSE %]
 
     <div class="tab">
-      <button onclick="toggleResponse()" style="font-size:20px;">Show Alternate View</button>
+      <button onclick="toggleResponse()" class="btn btn--secondary">Show alternate view</button>
     </div>
     <br>
     <div id='fomatted_response'>
@@ -29,7 +19,7 @@ table td{
             [% CASE 'list_unspent_utxo' %]
                 <p>Total number of response: [% response.size %]</p>
                 [% FOREACH unspent_utxo IN response %]
-                <table>
+                <table class="border">
                     <tr>
                         <th>Address</th>
                         <td><b>$unspent_utxo.address</b></td>
@@ -76,7 +66,7 @@ table td{
 
             [% CASE 'get_transaction' %]
                 <p>Total number of response: [% response.keys.size %]</p>
-                <table id='transaction'>
+                <table class="border" id='transaction'>
                   <tr>
                     <th>Address</th>
                     <th>Amount</th>
@@ -96,10 +86,10 @@ table td{
                 </table>
 
             [% CASE 'list_receivedby_address' %]
-                <div id='list_receivedby_address'>
+                <div id='list_receivedby_address' class="scrollable">
                     <p>Total number of response: [% response.size %]</p>
                     [% FOREACH record IN response %]
-                        <table>
+                        <table class="border">
                             <tr>
                                 <th>Address</th>
                                 <td><b>[% record.address %]</b></td>
@@ -149,13 +139,13 @@ table td{
                 
             [% CASE 'calculate_withdrawal_fee' %]
                 [% IF response.error %]
-                    <p style='color:red'>Error; [% response %]</p>
+                    <p class='error'>Error; [% response %]</p>
                 [% ELSE %]
                     <p>Withdrawal fee: <b>[% response.fee %] [% currency %]</b></p>
                 [% END %]
                 
             [% CASE 'get_blockchain_info' %]
-                <table>
+                <table class="border">
                     <tr>
                         <th>size_on_disk</th>
                         <td>[% response.size_on_disk %]</td>
@@ -215,7 +205,7 @@ table td{
                     <tr>
                         <th>softforks</th>
                         <td>
-                            <table>
+                            <table class="border">
                             [% FOREACH softfork IN response.softforks.keys %]
                                 <th rowspan=3>[% softfork %]</th>
                                 <th>height</th>
@@ -238,7 +228,7 @@ table td{
         [% END %]
     </div>
 
-    <div id='raw_response' style="display:none; width:1200px; word-wrap: break-word;"><p>[% response_json %]</p></div>
+    <div id='raw_response' style="display:none;" class="scrollable"><p>[% response_json %]</p></div>
 
 [% END %]
 

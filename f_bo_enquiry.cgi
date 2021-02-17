@@ -20,57 +20,58 @@ if ($broker eq 'FOG') {
 if ($broker ne 'FOG') {
     my $encoded_broker = encode_entities($broker);
     # CLIENT ACCOUNTS
-    Bar("VIEW CLIENT ACCOUNTS");
+    Bar("View client accounts");
 
     # Client Portfolio
     print
-        "<p>Note : This function shows the client portfolio in exactly the same way as the client sees them on the client Website. Therefore, in the Portfolio, 'Sale Prices' of contracts include the Company markup fee.</p>";
-    print "<FORM ACTION=\"" . request()->url_for('backoffice/f_manager_statement.cgi') . "\" METHOD=\"POST\">";
-    print "Check Portfolio of LoginID: <input id='portfolio_loginID' name=loginID type=text size=15 value='$encoded_broker' data-lpignore='true' /> ";
-    print "<input type=hidden name=outputtype value=table>";
-    print "<INPUT type=hidden name=\"broker\" value=\"$encoded_broker\">";
-    print "<INPUT type=hidden name=\"l\" value=\"EN\">";
-    print "<INPUT type=\"submit\" value=\"Client Portfolio\">";
-    print "</FORM>";
+        "<p>NOTE: This function shows the client portfolio in exactly the same way as the client sees them on the client Website. Therefore, in the Portfolio, 'Sale Prices' of contracts include the Company markup fee.</p>";
+    print "<form action=\"" . request()->url_for('backoffice/f_manager_statement.cgi') . "\" method=\"post\" class=\"row\">";
+    print
+        "<label>Check Portfolio of Login ID:</label><input id='portfolio_loginID' name=loginID type=text size=15 value='$encoded_broker' data-lpignore='true' /> ";
+    print "<input type='hidden' name='outputtype' value=table>";
+    print "<input type='hidden' name=\"broker\" value=\"$encoded_broker\">";
+    print "<input type='hidden' name=\"l\" value=\"EN\">";
+    print "<input type=\"submit\" class='btn btn--primary' value=\"Client portfolio\">";
+    print "</form>";
 
     # Client Credit/Debit Statement
     print build_client_statement_form($broker);
 
-    print "<hr/><FORM ACTION=\""
+    print
+        "<hr><p class=\"error grd-margin-bottom\" ><b>Show All Transaction</b>, may fail for clients with huge number of transaction, so use this feature only when required.</p>";
+    print "<form action=\""
         . request()->url_for('backoffice/f_profit_table.cgi')
-        . "\" METHOD=\"POST\" onsubmit='return validate_month(\"profit_table\")' >";
+        . "\" method=\"post\" onsubmit='return validate_month(\"profit_table\")' class=\"row\">";
     print
-        "<span style=\"color:red;\"><b>Show All Transaction</b>, may fail for clients with huge number of transaction, so use this feature only when required.</span><br/>";
-    print
-        "Check Profit Table of LoginID: <input id='profit_check_loginID' name=loginID type=text size=15 value='$encoded_broker' data-lpignore='true' /> ";
-    print "From: <input name='first_purchase_time' type='text' size='10' value='"
+        "<label>Check Profit Table of Login ID:</label><input id='profit_check_loginID' name=loginID type=text size=15 value='$encoded_broker' data-lpignore='true' /> ";
+    print "<label>From:</label><input name='first_purchase_time' type='text' size='10' value='"
         . Date::Utility->today()->_minus_months(1)->date
         . "' required pattern='\\d{4}-\\d{2}-\\d{2}' class='datepick' id='profit_table_startdate' data-lpignore='true' /> ";
-    print "To: <input name='last_purchase_time' type='text' size='10' value='"
+    print "<label>To:</label><input name='last_purchase_time' type='text' size='10' value='"
         . Date::Utility->today()->date
         . "' required pattern='\\d{4}-\\d{2}-\\d{2}' class='datepick' id='profit_table_enddate' data-lpignore='true'/> ";
-    print "<INPUT type=hidden name=\"broker\" value=\"$encoded_broker\">";
-    print "<INPUT type=hidden name=\"l\" value=\"EN\">";
+    print "<input type=hidden name=\"broker\" value=\"$encoded_broker\">";
+    print "<input type=hidden name=\"l\" value=\"EN\">";
     print
-        "<INPUT type=checkbox name=\"all_in_one_page\" id=\"all_in_one_page_profit\" /><label for=\"all_in_one_page_profit\">Show All Transactions</label> ";
-    print "<INPUT type=\"submit\" value=\"Client Profit Table\">";
-    print "</FORM>";
+        "<label for=\"all_in_one_page_profit\"><input type=checkbox name=\"all_in_one_page\" id=\"all_in_one_page_profit\" />Show All Transactions</label> ";
+    print "<input type=\"submit\" class=\"btn btn--primary\" value=\"Client profit table\">";
+    print "</form>";
 
-    print "<hr/><FORM ACTION=\""
+    print "<hr><form action=\""
         . request()->url_for('backoffice/f_profit_check.cgi')
-        . "\" METHOD=\"POST\" onsubmit=\"return validate_month('profit')\">";
+        . "\" method=\"post\" onsubmit=\"return validate_month('profit')\">";
     print
-        "Check Profit of LoginID : <input id='profit_check_loginID' name=loginID type=text size=15 value='$encoded_broker' data-lpignore='true' /> ";
-    print "From: <input name=startdate type=text size=10 value='"
+        "<label>Check Profit of Login ID:</label><input id='profit_check_loginID' name=loginID type=text size=15 value='$encoded_broker' data-lpignore='true' /> ";
+    print "<label>From:</label><input name=startdate type=text size=10 value='"
         . Date::Utility->today()->_minus_months(1)->date
         . "' required pattern='\\d{4}-\\d{2}-\\d{2}' class='datepick' id='profit_startdate' data-lpignore='true' /> ";
-    print "To: <input name=enddate type=text size=10 value='"
+    print "<label>To:</label><input name=enddate type=text size=10 value='"
         . Date::Utility->today()->date
         . "' required pattern='\\d{4}-\\d{2}-\\d{2}' class='datepick' id='profit_enddate' data-lpignore='true' /> ";
-    print "<INPUT type=hidden name=\"broker\" value=\"$encoded_broker\">";
-    print "<INPUT type=hidden name=\"l\" value=\"EN\">";
-    print "<INPUT type=\"submit\" value=\"Client Profit\">";
-    print "</FORM>";
+    print "<input type=hidden name=\"broker\" value=\"$encoded_broker\">";
+    print "<input type=hidden name=\"l\" value=\"EN\">";
+    print "<input type=\"submit\" class=\"btn btn--primary\" value=\"Client profit\">";
+    print "</form>";
 
     # LIST CLIENT WITHDRAWAL LIMITS
     Bar("List client withdrawal limits");
@@ -78,13 +79,13 @@ if ($broker ne 'FOG') {
         "This function will let you view a client's payment history - i.e. how much he deposited by credit card, paypal, etc., and how much the system will let him withdraw in turn by each method.<P>";
 
     print "<form method=post action='" . request()->url_for('backoffice/c_listclientlimits.cgi') . "'>";
-    print "LoginID: ";
+    print "<label>Login ID:</label>";
 
     print "<input type=text size=15 name='login' onChange='CheckLoginIDformat(this)' value='' data-lpignore='true' /> ";
-    print " <a href=\"javascript:WinPopupSearchClients();\"><font class=smallfont>[Search]</font></a> ";
+    print " <a class='btn btn--secondary' href=\"javascript:WinPopupSearchClients();\">Search</a>";
 
-    print "<INPUT type=hidden name=\"broker\" value=\"$encoded_broker\">";
-    print "<input type=submit value='LIST CLIENT WITHDRAWAL LIMITS'>";
+    print "<input type=hidden name=\"broker\" value=\"$encoded_broker\">";
+    print "<input type=submit class='btn btn--primary' value='List client withdrawal limits'>";
     print "</form>";
     print q{
 <script type="text/javascript" language="javascript">
@@ -111,7 +112,6 @@ function validate_month(name){
     }
     return true;
 }
-
 $(document).ready(function() {
       $('.datepick').datepicker({dateFormat: "yy-mm-dd"});
 });
@@ -121,13 +121,11 @@ $(document).ready(function() {
     Bar("Find Transaction By Ref. (ID)");
     print qq~
         <form method="post" action="~ . request()->url_for('backoffice/f_manager_history.cgi') . qq~">
-            <label for="findtransid_loginid">LoginID: </label>
+            <label for="findtransid_loginid">Login ID:</label>
             <input type="text" name="loginID" id="findtransid_loginid" required size="15" data-lpignore="true" />
-
             <label for="findtransid_transid">Transaction Ref.: </label>
             <input type="number" name="transactionID" id="findtransid_transid" required data-lpignore="true" />
-
-            <input type="submit" value="Find Transaction By Ref. (ID)" />
+            <input type="submit" class="btn btn--primary" value="Find transaction by Ref. (ID)" />
         </form>
     ~;
 }

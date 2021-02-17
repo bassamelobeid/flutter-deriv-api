@@ -1,44 +1,49 @@
 [% USE date %]
 
-<div>
-    <input type="button" value="View/edit [% loginid %] Details" onclick='location.href="[% clientedit_url %]"' />
-    <input type="button" value="View [% loginid %] Profit" onclick='location.href="[% profit_url %]"' />
-    <input type="button" value="View [% loginid %] Crypto Statement" onclick='location.href="[% crypto_statement_url %]"' />
+<div class="row">
+    <input type="button" class="btn btn--primary"  value="View [% loginid %] details" onclick='location.href="[% clientedit_url %]"' />
+    <input type="button" class="btn btn--primary"  value="View [% loginid %] profit" onclick='location.href="[% profit_url %]"' />
+    <input type="button" class="btn btn--primary"  value="View [% loginid %] Crypto statement" onclick='location.href="[% crypto_statement_url %]"' />
 </div>
-<br />
+
+<hr>
 
 [% INCLUDE 'backoffice/account/statement_summary.html.tt' %]
 
-<div style="margin:5px 0;">
-    <form action="[% self_post %]" method="get">
-        <span>Client deposits/withdrawals for the lifetime of the account: </span>
-        <input name="loginID" type="hidden" value="[% loginid %]">
-        <input name="broker" type="hidden" value="[% broker %]">
-        <input name="currency" type="hidden" value="[% currency %]">
-        <input name="action" type="hidden" value="gross_transactions">
-        <input type="submit" value="view">
-    </form>
-</div>
+<br>
+<form action="[% self_post %]" method="get" class="row">
+    <label>Client deposits/withdrawals for the lifetime of the account:</label>
+    <input name="loginID" type="hidden" value="[% loginid %]">
+    <input name="broker" type="hidden" value="[% broker %]">
+    <input name="currency" type="hidden" value="[% currency %]">
+    <input name="action" type="hidden" value="gross_transactions">
+    <input type="submit" class="btn btn--primary" value="View">
+</form>
 
 [% IF total_deposits %]
-<hr>
-<div>
-    <h3>Client deposits/withdrawals for the lifetime of the account: </h3>
-    <ul>
-        <li><b>Total Deposits:</b> [% total_deposits %] [% currency %]</li>
-        <li><b>Total Withdrawals:</b> [% total_withdrawals %] [% currency %] </li>
-    </ul>
+<div class="row notify notify--secondary">
+    <div class="grd-grid-2">
+        <strong>Total Deposits</strong><br>
+        <p>[% total_deposits %] [% currency %]</p>
+    </div>
+    <div class="grd-grid-2">
+        <strong>Total Withdrawals</strong><br>
+        <p>[% total_withdrawals %] [% currency %]</p>
+    </div>
 </div>
-<hr>
 [% END %]
 
+<hr>
+
 <div>
-    <div class="grd-margin-bottom" style="color:red;">
-        NOTE: <b>Show All Transactions</b>, may fail for clients with a huge number of transactions, so use this feature only when required.
+    <h3>Show all transactions</h3>
+    <div class="grd-margin-bottom">
+        <p class="error">NOTE: may fail for clients with a huge number of transactions, so use this feature only when required.</p>
     </div>
     <div>
         <form action="[% self_post %]" method="get">
-            <span>Quick jump to see another statement:</span>
+            <div class="row">
+            <label>Quick jump to see another statement:</label>
             <input name="loginID" type="text" size=15 value="[% loginid %]" data-lpignore="true" />
             <input name="startdate" type="text" size=15 value="[% startdate %]" placeholder="e.g. [% date.format(date.now, '%Y-%m-%d') %]" class="datepick" data-lpignore="true" />
             <input name="enddate" type="text" size=15 value="[% enddate %]" placeholder="e.g. [% date.format(date.now, '%Y-%m-%d') %]" class="datepick" data-lpignore="true" />
@@ -48,65 +53,76 @@
                 <label for="transactionID">Transaction Ref.: </label>
                 <input name="transactionID" id="transactionID" type="number" size=15 value="[% transaction_id %]" data-lpignore="true" />
             </span>
-            <div style = "padding-left: 195px;">
+            </div>
+            <div class="row "style="padding-left: 235px;">
                 <input name="all_in_one_page" id="all_in_one_page" type="checkbox">
-                <label for="all_in_one_page">Show All Transactions</label>
+                <label for="all_in_one_page">Show all transactions</label>
 
                 <input name="depositswithdrawalsonly" id="depositswithdrawalsonly" type="checkbox" value="yes">
-                <label for="depositswithdrawalsonly">Deposits and Withdrawals only</label>
+                <label for="depositswithdrawalsonly">Deposits and withdrawals only</label>
 
                 <input name="l" type="hidden" value="EN">
-                <input type=submit value="view">
+                <input type=submit class="btn btn--primary" value="View">
             </div>
         </form>
     </div>
 </div>
 
 [%# Note: keep the table in one row, so that it takes less vertical space in page %]
-<br />
-<div>
-    <table class="hover collapsed" border="1">
-        <tr>
-            <th>Login ID</th>
-            <td class="copy-on-click">[% loginid %]</td>
-            <th>Name</th>
-            <td class="copy-on-click">[% client.name %]</td>
-            <th>Email</th>
-            <td class="copy-on-click">[% client.email %]</td>
-            <th>Country</th>
-            <td>[% client.country %]</td>
-            <th>Residence</th>
-            <td>[% client.residence %]</td>
-            <th>Tel</th>
-            <td>[% client.tel %]</td>
-            <th>Date Joined</th>
-            <td>[% client.date_joined %]</td>
-        </tr>
-    </table>
+<br>
+<div class="row row-align-top notify notify--secondary">
+    <div class="grd-grid-2">
+        <strong>Login ID</strong>
+        <div class="copy-on-click">[% loginid %]</div>
+    </div>
+    <div class="grd-grid-2">
+        <strong>Name</strong>
+        <div class="copy-on-click">[% client.name %]</div>
+    </div>
+    <div class="grd-grid-2">
+        <strong>Email</strong>
+        <div class="copy-on-click">[% client.email %]</div>
+    </div>
+    <div class="grd-grid-1">
+        <strong>Country</strong>
+        <div>[% client.country %]</div>
+    </div>
+    <div class="grd-grid-1">
+        <strong>Residence</strong>
+        <div>[% client.residence %]</div>
+    </div>
+    <div class="grd-grid-2">
+        <strong>Tel</strong>
+        <div>[% client.tel %]</div>
+    </div>
+    <div class="grd-grid-2">
+        <strong>Date Joined</strong>
+        <div>[% client.date_joined %]</div>
+    </div>
 </div>
 
-<div class="grd-parent grd-grid-12 table-header grd-row-padding">
+<div class="row grd-parent grd-grid-12">
     <div class="grd-grid-10">
         <b>Balance on [% now.date %]</b>
     </div>
-    <div class="grd-grid-2 right-aligned">
+    <div class="grd-grid-2 right">
         <b>[% currency %] [% formatnumber('amount', currency, balance) %]</b>
     </div>
 </div>
 
 [% MACRO pagination(is_top) BLOCK %]
     [% IF NOT transaction_id %]
-<div class="grd-parent grd-grid-12">
+<div class="row grd-parent grd-grid-12">
     <div class="grd-grid-2 left-aligned">
-        <a class="pjaxload button"
-           href="[% request.url_for('backoffice/f_manager_history.cgi', { loginID => loginid, overview_fm_date => client_summary_ranges.from, overview_to_date=>client_summary_ranges.to, startdate => transactions.first.transaction_time, currency => currency, depositswithdrawalsonly => depositswithdrawalsonly }) | none %]"><span>&laquo;Newer</span></a>
+        <a class="pjaxload link"
+           href="[% request.url_for('backoffice/f_manager_history.cgi', { loginID => loginid, overview_fm_date => client_summary_ranges.from, overview_to_date=>client_summary_ranges.to, startdate => transactions.first.transaction_time, currency => currency, depositswithdrawalsonly => depositswithdrawalsonly }) | none %]"><span>&laquo; Newer</span></a>
     </div>
     <div class="grd-grid-8 center-aligned">
         <b>[% transactions.first.date.datetime %] --- [% transactions.last.date.datetime %]</b>
     </div>
     <div class="grd-grid-2 right-aligned">
-        <a class="pjaxload button"
-           href="[% request.url_for('backoffice/f_manager_history.cgi', { loginID => loginid, overview_fm_date => client_summary_ranges.from, overview_to_date=>client_summary_ranges.to, enddate => transactions.last.transaction_time, currency => currency, depositswithdrawalsonly => depositswithdrawalsonly }) | none %]"><span>Older&raquo;</span></a>
+        <a class="pjaxload link"
+           href="[% request.url_for('backoffice/f_manager_history.cgi', { loginID => loginid, overview_fm_date => client_summary_ranges.from, overview_to_date=>client_summary_ranges.to, enddate => transactions.last.transaction_time, currency => currency, depositswithdrawalsonly => depositswithdrawalsonly }) | none %]"><span>Older &raquo;</span></a>
     </div>
 </div>
     [% ELSIF is_top %]
@@ -118,7 +134,8 @@
 
 [% pagination(1) | none %]
 
-<table id="statement-table" class="hover alternate collapsed" border="1" width="100%">
+<div class="row scrollable">
+<table id="statement-table" class="hover alternate border full-width">
     <thead>
         <tr>
             <th>Date</th>
@@ -136,12 +153,12 @@
 
     [% IF transactions.size == 0 %]
     <tr>
-        <td align="center" colspan="9" style="color: red;">
-            <strong>
+        <td align="center" colspan="9">
+            <strong class="error">
                 [%
                 transaction_id
                     ? 'No transaction found matching client: ' _ loginid _ ' transaction id: ' _ transaction_id
-                    : 'There are no items during this period'
+                    : 'There are no items during this period.'
                 %]
             </strong>
         </td>
@@ -157,7 +174,7 @@
 
         [% IF transaction.financial_market_bet_id.defined %]
             <td>
-                <a href="[% request.url_for('backoffice/quant/pricing/bpot.cgi', {currency => currency, limit_order => transaction.limit_order, shortcode => transaction.short_code , purchase_time => transaction.purchase_time, loginid => loginid, transaction_id => transaction.id}) | none %]">
+                <a class="link link--primary" href="[% request.url_for('backoffice/quant/pricing/bpot.cgi', {currency => currency, limit_order => transaction.limit_order, shortcode => transaction.short_code , purchase_time => transaction.purchase_time, loginid => loginid, transaction_id => transaction.id}) | none %]">
                     [% transaction.id %]
                 </a>
             </td>
@@ -186,9 +203,9 @@
 
             [% IF transaction.action_type == 'deposit' %]
                 <td class="right-aligned"></td>
-                <td class="right-aligned credit-amount-st">[% currency %] <b>[% formatnumber('amount', currency, transaction.absolute_amount) %]</b></td>
+                <td class="right-aligned text-green">[% currency %] <b>[% formatnumber('amount', currency, transaction.absolute_amount) %]</b></td>
             [% ELSE %]
-                <td class="right-aligned debit-amount-st">[% currency %] <b>[% formatnumber('amount', currency, transaction.absolute_amount) %]</b></td>
+                <td class="right-aligned text-red">[% currency %] <b>[% formatnumber('amount', currency, transaction.absolute_amount) %]</b></td>
                 <td class="right-aligned"></td>
             [% END %]
 
@@ -213,13 +230,10 @@
     [% END %]
     </tbody>
 </table>
-
+</div>
 [% pagination(0) | none %]
 
 <style>
-    #statement-table td {
-        padding: 15px;
-    }
     .app-id .app-name {
         visibility: hidden;
         background-color: black;
@@ -234,11 +248,5 @@
     }
     .app-id:hover .app-name {
         visibility: visible;
-    }
-    .debit-amount-st{
-        color: #EB3322;
-    }
-    .credit-amount-st{
-        color: #377D21;
     }
 </style>

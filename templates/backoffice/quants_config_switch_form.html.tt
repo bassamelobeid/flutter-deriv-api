@@ -1,20 +1,24 @@
 <fieldset  [% IF disabled %] disabled title='no write access' [% END %]>
-<table class='pretty' id='config_status_form'>
+<table id='config_status_form'>
     [% IF old_config %]
         <p>Not the latest copy of app config. Please refresh this page!</p>
     [% END %]
+    <thead>
     <tr>
         <th>Config Name</th>
         <th>Status</th>
     </tr>
+    </thead>
+    <tbody>
     [% FOREACH config IN config_status %]
         <tr class="[% config.key %]">
             <td>[% config.display_name %]</td>
             <td class='config_status'>[% IF config.status == 1 %] ON [% ELSE %] OFF [% END %]</td>
-            <td class='config_button'>[% IF config.status == 1%] <button onClick="UpdateConfigStatus('[% config.key %]', 0)">turn off</button> [% ELSE %] <button onClick="UpdateConfigStatus('[% config.key %]', 1)">turn on</button> [% END %]</td>
+            <td class='config_button'>[% IF config.status == 1%] <button class="btn btn--secondary" onClick="UpdateConfigStatus('[% config.key %]', 0)">Turn off</button> [% ELSE %] <button class="btn btn--primary" onClick="UpdateConfigStatus('[% config.key %]', 1)">Turn on</button> [% END %]</td>
             <td class='result'></td>
         </tr>
     [% END %]
+    </tbody>
 </table>
 </fieldset>
 
@@ -34,13 +38,13 @@
             success: function(data) {
                 var config = \$.parseJSON(data);
                 if (config.error) {
-                    result.text(config.error).css('color', 'red');
+                    result.text(config.error).css('color', 'var(--color-red)');
                 } else {
                     var status = config.status == 1 ? 'ON' : 'OFF';
                     el.find('td.config_status').text(status);
-                    var button = config.status == 1 ? '<button onClick="UpdateConfigStatus(\''+config_type+'\', 0)">turn off</button>' : '<button onClick="UpdateConfigStatus(\''+config_type+'\', 1)">turn on</button>';
+                    var button = config.status == 1 ? '<button class="btn btn--secondary" onClick="UpdateConfigStatus(\''+config_type+'\', 0)">Turn off</button>' : '<button class="btn btn--primary" onClick="UpdateConfigStatus(\''+config_type+'\', 1)">Turn on</button>';
                     el.find('td.config_button').html(button);
-                    result.text('config updated').css('color', 'green');
+                    result.text('config updated').css('color', 'var(--color-green-2)');
                 }
             }
         });

@@ -26,7 +26,7 @@ my $bbdl = Bloomberg::FileDownloader->new();
 Bar("BBDL Directory Listing");
 #don't allow from devserver, to avoid uploading wrong files
 if (not BOM::Config::on_production()) {
-    print "<font color=red>Sorry, you cannot connect to Bloomberg's ftp from a development server. Please use a live server.</font>";
+    print "<p class='error'>Sorry, you cannot connect to Bloomberg's ftp from a development server. Please use a live server.</p>";
     code_exit_BO();
 }
 

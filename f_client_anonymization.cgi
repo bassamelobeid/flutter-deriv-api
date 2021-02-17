@@ -28,19 +28,19 @@ print "<form id='generateDCC' action='"
     . request()->url_for('backoffice/f_client_anonymization_dcc.cgi')
     . "' method='POST' class='bo_ajax_form' enctype='multipart/form-data'>"
     . "<input type='hidden' name='l' value='EN'>"
-    . "Transaction type: <select name='transtype'>"
+    . "<label>Transaction type:</label><select name='transtype'>"
     . "<option value='Anonymize client'>Anonymize client details</option>"
     . "<option value='Delete customerio record'>Delete client customerio record</option>"
     . "</select><br><br>"
-    . "<p><b>Provide Loginid for individual anonymization or attach a file for bulk anonymization:</b></p>"
-    . "Loginid : <input type='text' name='clientloginid' size='15' data-lpignore='true'>"
-    . "<br><br>File : <input type='file' name='bulk_loginids' style='width: 150px'>"
-    . "<br><br><input type='submit' value='Make Dual Control Code (by "
+    . "<p><b>Provide Login ID for individual anonymization or attach a file for bulk anonymization:</b></p>"
+    . "<label>Login ID:</label><input type='text' name='clientloginid' size='15' data-lpignore='true'>"
+    . "<label>File:</label><input type='file' name='bulk_loginids'>"
+    . "<br><br><input type='submit' class='btn btn--primary' value='Make Dual Control Code (by "
     . encode_entities($clerk) . ")'>"
     . "</form>";
 
 Bar("START ANONYMIZATION");
-print "<b>WARNING : THIS WILL RESULT IN PERMANENT DATA LOSS</b><br><br>
+print "<b class='error'>WARNING : THIS WILL RESULT IN PERMANENT DATA LOSS</b><br><br>
     Anonymization will make the following changes:<br>
     <ul>
     <li>Replace first and last names with deleted+loginid</li>
@@ -60,32 +60,33 @@ print "<form id='clientAnonymization' action='"
     . request()->url_for('backoffice/f_client_anonymization.cgi')
     . "' method='post' enctype='multipart/form-data'>"
     . "<input type='hidden' name='l' value='EN'>"
-    . "<p><b>Provide Loginid for individual anonymization or attach a file for bulk anonymization:</b></p>"
-    . "Loginid : <input type='text' name='clientloginid' size='15' placeholder='required' data-lpignore='true' value='"
+    . "<p><b>Provide Login ID for individual anonymization or attach a file for bulk anonymization:</b></p>"
+    . "<label>Login ID:</label><input type='text' name='clientloginid' size='15' placeholder='required' data-lpignore='true' value='"
     . $loginid . "'>"
-    . "<br><br>File : <input type='file' name='bulk_anonymization' style='width: 150px'>"
-    . "<br><br>DCC : <input type='text' name='DCcode' size='50' data-lpignore='true' value='"
+    . "<br><br><label>File:</label><input type='file' name='bulk_anonymization'>"
+    . "<br><br><label>DCC:</label><input type='text' name='DCcode' size='50' data-lpignore='true' value='"
     . $prev_dcc . "'>"
     . "<br><br><input type='checkbox' name='verification' id='chk_verify' value='true'> <label for='chk_verify'>I understand this action is irreversible ("
     . encode_entities($clerk)
-    . ")</label><br><br><input type='submit' name='transtype' value='Anonymize client'/>"
-    . " <input type='submit' name='transtype' value='Delete customerio record'/>"
+    . ")</label><br><br><input type='submit' class='btn btn--red' name='transtype' value='Anonymize client'/>"
+    . " <input type='submit' class='btn btn--secondary' name='transtype' value='Delete customerio record'/>"
     . "</form>";
 
 if ($transaction_type eq 'Anonymize client') {
     #Error checking
-    code_exit_BO(_get_display_message("ERROR: Please provide client loginid or loginids file"))
+    code_exit_BO(_get_display_error_message("ERROR: Please provide client loginid or loginids file"))
         if not $input->{clientloginid} and not $input->{bulk_anonymization};
-    code_exit_BO(_get_display_message("ERROR: You can not request for client and bulk anonymization at the same time. Please provide one of them."))
+    code_exit_BO(
+        _get_display_error_message("ERROR: You can not request for client and bulk anonymization at the same time. Please provide one of them."))
         if $input->{clientloginid} and $input->{bulk_anonymization};
-    code_exit_BO(_get_display_message("ERROR: Please provide a dual control code"))  unless $input->{DCcode};
-    code_exit_BO(_get_display_message("ERROR: You must check the verification box")) unless $input->{verification};
+    code_exit_BO(_get_display_error_message("ERROR: Please provide a dual control code"))  unless $input->{DCcode};
+    code_exit_BO(_get_display_error_message("ERROR: You must check the verification box")) unless $input->{verification};
     my ($file, $csv, $lines, $bulk_upload);
     if ($input->{clientloginid}) {
         my $dcc_error = BOM::DualControl->new({
                 staff           => $clerk,
                 transactiontype => $input->{transtype}})->validate_client_anonymization_control_code($input->{DCcode}, $loginid);
-        code_exit_BO(_get_display_message("ERROR: " . $dcc_error->get_mesg())) if $dcc_error;
+        code_exit_BO(_get_display_error_message("ERROR: " . $dcc_error->get_mesg())) if $dcc_error;
     }
     if ($bulk_upload = $input->{bulk_anonymization}) {
         try {
@@ -93,13 +94,13 @@ if ($transaction_type eq 'Anonymize client') {
             $csv   = Text::CSV->new();
             $lines = $csv->getline_all($file);
         } catch {
-            code_exit_BO(_get_display_message("ERROR: " . $@)) if $@;
+            code_exit_BO(_get_display_error_message("ERROR: " . $@)) if $@;
         }
         my $dcc_error = BOM::DualControl->new({
                 staff           => $clerk,
                 transactiontype => $input->{transtype}}
         )->validate_batch_anonymization_control_code($input->{DCcode}, sha1_hex(join q{} => map { join q{} => $_->@* } $lines->@*));
-        code_exit_BO(_get_display_message("ERROR: " . $dcc_error->get_mesg())) if $dcc_error;
+        code_exit_BO(_get_display_error_message("ERROR: " . $dcc_error->get_mesg())) if $dcc_error;
     }
     if ($input->{transtype} eq 'Anonymize client') {
         # Start anonymization for a client
@@ -127,10 +128,9 @@ if ($transaction_type eq 'Anonymize client') {
                 die "$bulk_upload: only csv files allowed\n" unless $bulk_upload =~ /\.csv$/i;
 
                 BOM::Platform::Event::Emitter::emit('bulk_anonymization', {data => $lines});
-                print '<p style="color:green; font-weight:bold;">'
-                    . " $bulk_upload is being processed. An email will be sent to compliance when the job completes.</p>";
+                print '<p class="notify">' . " $bulk_upload is being processed. An email will be sent to compliance when the job completes.</p>";
             } catch {
-                print '<p style="color:red; font-weight:bold;">ERROR: ' . $@ . '</p>' if $@;
+                print '<p class="notify notify--warning">ERROR: ' . $@ . '</p>' if $@;
             }
         }
     }
@@ -151,12 +151,12 @@ if ($transaction_type eq 'Delete customerio record') {
 
 sub _get_display_message {
     my $message = shift;
-    return "<p><h2>$message</h2></p>";
+    return "<p class='success'>$message</p>";
 }
 
 sub _get_display_error_message {
     my $message = shift;
-    return "<p><h2><font color=red>$message</font></h2></p>";
+    return "<p class='error'>$message</p>";
 }
 
 code_exit_BO();

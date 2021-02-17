@@ -43,9 +43,9 @@ $reason = ($additional_info) ? $reason . ' - ' . $additional_info : $reason;
 local $\ = "\n";
 my ($printline, @invalid_logins);
 
-Bar("UNTRUSTED/DISABLE CLIENT");
+$clientID || code_exit_BO('Login ID is mandatory.', "UNTRUSTED/DISABLE CLIENT");
 
-$clientID || code_exit_BO('Login id is mandatory.');
+Bar("UNTRUSTED/DISABLE CLIENT");
 
 LOGIN:
 foreach my $login_id (split(/\s+/, $clientID)) {
@@ -68,7 +68,7 @@ foreach my $login_id (split(/\s+/, $clientID)) {
             if (@{get_open_contracts($client)}) {
                 my $encoded_login_id = link_for_clientloginid_edit($login_id);
                 $printline =
-                    "<font color=red><b>ERROR :</b></font>&nbsp;&nbsp;Account <b>$encoded_login_id</b> cannot be marked as disabled as account has open positions. Please check account portfolio.";
+                    "<span class='error'>ERROR:</span>&nbsp;&nbsp;Account <b>$encoded_login_id</b> cannot be marked as disabled as account has open positions. Please check account portfolio.";
             } else {
                 $printline = execute_set_status({%common_args_for_execute_method, status_code => 'disabled'});
             }
@@ -153,7 +153,7 @@ foreach my $login_id (split(/\s+/, $clientID)) {
 }
 
 if (scalar @invalid_logins > 0) {
-    print "<font color=red><b>ERROR :</b></font>&nbsp;&nbsp;Unable to find these clients <b>"
+    print "<span class='error'>ERROR:</span>&nbsp;&nbsp;Unable to find these clients <b>"
         . join(',', @invalid_logins)
         . "</b>. Please check and try again.";
 }
@@ -173,7 +173,7 @@ sub execute_set_status {
         my $status_code = $params->{status_code};
         if ($status_code) {
             return
-                "<font color=red><b>ERROR :</font></b>&nbsp;&nbsp;<b>$encoded_login_id $encoded_reason ($encoded_clerk)</b>&nbsp;&nbsp;has not been saved, cannot override existing status reason</b>"
+                "<span class='error'>ERROR:</span>&nbsp;&nbsp;<b>$encoded_login_id $encoded_reason ($encoded_clerk)</b>&nbsp;&nbsp;has not been saved, cannot override existing status reason</b>"
                 if $client->status->$status_code;
             $client->status->set($status_code, $params->{clerk}, $params->{reason});
         }
@@ -181,10 +181,10 @@ sub execute_set_status {
         $params->{override}->() if $params->{override};
 
         return
-            "<font color=green><b>SUCCESS :</font></b>&nbsp;&nbsp;<b>$encoded_login_id $encoded_reason ($encoded_clerk)</b>&nbsp;&nbsp;has been saved to  <b>$file_name</b>";
+            "<span class='success'>SUCCESS:</span>&nbsp;&nbsp;<b>$encoded_login_id $encoded_reason ($encoded_clerk)</b>&nbsp;&nbsp;has been saved to  <b>$file_name</b>";
     } catch {
         return
-            "<font color=red><b>ERROR :</font></b>&nbsp;&nbsp;<b>$encoded_login_id $encoded_reason ($encoded_clerk)</b>&nbsp;&nbsp;has not been saved to  <b>$file_name</b>";
+            "<span class='error'>ERROR:</span>>&nbsp;&nbsp;<b>$encoded_login_id $encoded_reason ($encoded_clerk)</b>&nbsp;&nbsp;has not been saved to  <b>$file_name</b>";
     }
 }
 
@@ -207,15 +207,15 @@ sub execute_remove_status {
         }
 
         return
-            "<font color=green><b>SUCCESS :</b></font>&nbsp;&nbsp;<b>$encoded_login_id $encoded_reason ($encoded_clerk)</b>&nbsp;&nbsp;has been removed from  <b>$file_name</b>";
+            "<span class='success'>SUCCESS:</span>&nbsp;&nbsp;<b>$encoded_login_id $encoded_reason ($encoded_clerk)</b>&nbsp;&nbsp;has been removed from  <b>$file_name</b>";
     } catch {
-        return "<font color=red><b>ERROR :</b></font>&nbsp;&nbsp;Failed to enable this client <b>$encoded_login_id</b>. Please try again.";
+        return "<span class='error'>ERROR:</span>&nbsp;&nbsp;Failed to enable this client <b>$encoded_login_id</b>. Please try again.";
     }
 }
 
 sub print_error_and_exit {
     my $error_msg = shift;
-    print "<br /><font color=red><b>ERROR : $error_msg</b></font><br /><br />";
+    print "<p class='notify notify--danger'>ERROR : $error_msg</span>";
     code_exit_BO();
 }
 

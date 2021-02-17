@@ -10,7 +10,7 @@
         <td><input type="text" name="non_financial_commission" value="[% existing_config.non_financial %]" name="non_financial"></input></td>
     </tr>
     <tr>
-        <td><input type="button" onClick="SaveMultiplierAffiliateCommission()" value="Update Commission"></td>
+        <td><input type="button" class="btn btn--primary" onClick="SaveMultiplierAffiliateCommission()" value="Update Commission"></td>
         <td class="save_multiplier_affiliate_commission"></td>
     </tr>
 </table>
@@ -40,9 +40,9 @@ function SaveMultiplierAffiliateCommission(){
         success: function(data) {
             var config = \$.parseJSON(data);
             if (config.error) {
-                result.text(config.error).css('color', 'red');
+                result.text(config.error).css('color', 'var(--color-red)');
             } else {
-                result.text('saved').css('color', 'green');
+                result.text('saved').css('color', 'var(--green-2)');
             }
         }
     });

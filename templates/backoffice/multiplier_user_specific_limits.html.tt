@@ -21,27 +21,28 @@
         <td>(optional) comment</td>
     </tr>
     <tr>
-        <td><input type="button" onClick="SaveMultiplierUserLmit()" value="Add New Limit/Update"></td>
+        <td><input type="button" class="btn btn--primary" onClick="SaveMultiplierUserLmit()" value="Add New Limit/Update"></td>
         <td class="user_limit_result"></td>
     </tr>
 </table>
 </form>
 
 <hr/>
-<br/>
-<h3>EXISTING LIMITS</h3>
-<br/>
 
+<h3>EXISTING LIMITS</h3>
 <form id='custom_volume_limits'>
-<table class="collapsed hover alternate" border=1 style="width:100%" >
+<table class="small full-width hover alternate border">
+    <thead>
     <tr align="center">
-        <th>Client loginid</th>
+        <th>Client Login ID</th>
         <th>Volume limit</th>
         <th>Underlying symbol</th>
         <th>Comment</th>
         <th>Action</th>
         <th>Process</th>
     </tr>
+    </thead>
+    <tbody>
     [% FOREACH data IN existing_volume_limits %]
     <tr id='limit-[% data.uniq_key %]' align="center">
         <td>[% data.loginid %]</td>
@@ -50,11 +51,12 @@
         <td>[% data.comment || '-' %]</td>
         <td><button
             onClick="DeleteCustomLimit('[% data.loginid %]', '[% data.uniq_key %]')"
-            type="button">delete</button>
+            type="button" class="btn btn--secondary">Delete</button>
         </td>
         <td class='user_limit_result'>..</td>
     </tr>
     [% END %]
+    </tbody>
 </table>
 </form>
 
@@ -84,9 +86,9 @@ function SaveMultiplierUserLmit(){
         success: function(data) {
             var config = \$.parseJSON(data);
             if (config.error) {
-                result.text(config.error).css('color', 'red');
+                result.text(config.error).css('color', 'var(--color-red)');
             } else {
-                result.text('saved').css('color', 'green');
+                result.text('saved').css('color', 'var(--color-green-2)');
             }
         }
     });
@@ -107,9 +109,9 @@ function DeleteCustomLimit(loginid, uniq_key) {
         success: function(data) {
             var config = \$.parseJSON(data);
             if (config.error) {
-                result.text(config.error).css('color', 'red');
+                result.text(config.error).css('color', 'var(--color-red)');
             } else {
-                result.text('removed').css('color', 'green');
+                result.text('removed').css('color', 'var(--color-green-2)');
                 el.remove();
             }
         }

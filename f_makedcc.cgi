@@ -139,14 +139,14 @@ if ($input->{'dcctype'} eq 'file_content') {
         . 'Comment/reminder: '
         . $input->{reminder} . '</p>';
 
-    print "<p>Note: "
+    print "<div>Note: "
         . encode_entities($input->{'clientloginid'}) . " is "
         . encode_entities($client->salutation) . ' '
         . encode_entities($client->first_name) . ' '
         . encode_entities($client->last_name);
-    print "<br><b />PS: make sure you didn't get the currency wrong! You chose <font color=red>"
+    print "<br>PS: make sure you didn't get the currency wrong! You chose <span class='error'>"
         . encode_entities($input->{'currency'})
-        . "</font></b></p>";
+        . "</span></div>";
 
     # Logging
     Path::Tiny::path(BOM::Backoffice::Config::config()->{log}->{deposit})

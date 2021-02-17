@@ -77,8 +77,8 @@ Returns the message as a string containing HTML tags.
 sub _render_message {
     my ($is_success, $message) = @_;
 
-    my ($color, $title) = $is_success ? ('green', 'SUCCESS') : ('red', 'ERROR');
-    return "<p style='color: $color;'><strong>$title:</strong> $message</p>";
+    my ($class, $title) = $is_success ? ('success', 'SUCCESS') : ('error', 'ERROR');
+    return "<p class='$class'><strong>$title:</strong> $message</p>";
 }
 
 =head2 get_crypto_withdrawal_pending_total

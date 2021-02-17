@@ -12,17 +12,17 @@
     <table>
     [% IF show_login %]
         <tr>
-            <td>Login ID :</td>
+            <td><label>Login ID:</label></td>
             <td><input type="text" size="15" name="login_id" value="[% clientid %]" data-lpignore="true" /></td>
         </tr>
     [% ELSE %]
         <input type="hidden" name="login_id" value="[% clientid %]" />
     [% END %]
         <tr>
-            <td>Action :</td>
+            <td><label>ACTION:</label></td>
             <td>
                 <select name="untrusted_action_type">
-                    <option>--------------------SELECT AN ACTION--------------------</option>
+                    <option>------------------- SELECT AN ACTION -----------------</option>
                     [% FOREACH r IN actions%]
                     [% NEXT IF r.show_reason == 'no' %]
                     <option value="[% r.linktype %]"[% IF r.linktype == selected_untrusted_action %]selected[% END %]>[% r.comments %]</option>
@@ -31,10 +31,10 @@
             </td>
         </tr>
         <tr>
-            <td>Reason :</td>
+            <td class="top"><label>REASON:</label></td>
             <td>
                 <select id="untrusted_reasonlist" name="untrusted_reason">
-                    <option>--------------------SELECT A REASON--------------------</option>
+                    <option>------------------- SELECT A REASON -------------------</option>
                     [% FOREACH key IN reasons.keys.sort %]
                     <optgroup label="[% reasons.$key.name %]">
                         [% FOREACH reason IN reasons.$key.reasons.sort %]
@@ -44,33 +44,23 @@
                     [% END %]
                 </select>
                 <span>Editing status reason is not allowed, you need to delete the existing and create new one.</span>
-                <br />
                 <input type="text" size="92" name="additional_info" placeholder="Please specify here (optional)" data-lpignore="true" />
             </td>
         </tr>
-        <tr>
-            <td></td>
-            <td>
-                <input type="hidden" name="broker" value="[% broker %]">
-                <input type="hidden" name="untrusted_action" value="insert_data">
-                <input type="hidden" name="p2p_approved" value="[% p2p_approved %]">
-                <input type="submit" value="Go">
-            </td>
-        </tr>
     </table>
+
+    <input type="hidden" name="broker" value="[% broker %]">
+    <input type="hidden" name="untrusted_action" value="insert_data">
+    <input type="hidden" name="p2p_approved" value="[% p2p_approved %]">
+    <input type="submit" class="btn btn--red" value="Save">
 </form>
 
 [% IF show_untrusted %]
 [%# display log differences for untrusted client section %]
 <hr>
-<div class="grd-margin-top">
-    <b>View changes to this untrusted client section.</b>
-    <br />
-    To view all the changes made to each status, kindly click on each of the link below:
-</div>
-
-<br />
-<table border="1" class="hover alternate collapsed">
+<h3>View changes to this untrusted client section</h3>
+<p>To view all the changes made to each status, kindly click on each of the link below:</p>
+<table class="hover alternate collapsed">
     <thead>
         <tr>
             <th>Untrusted section</th>
@@ -84,7 +74,7 @@
         <tr>
             <td>[% r.comments %]</td>
             <td>
-                <a href="[% request.url_for('backoffice/show_audit_trail.cgi', {broker => broker, category => 'client_status_' _ r.code }) %]">
+                <a class="link" href="[% request.url_for('backoffice/show_audit_trail.cgi', {broker => broker, category => 'client_status_' _ r.code }) %]">
                     [% r.comments %]
                 </a>
             </td>
@@ -93,20 +83,17 @@
     [% END %]
     </tbody>
 </table>
-<br />
 
 [%# view all disabled accounts details %]
 <hr>
-<div class="grd-margin-top">
-    <b>To view all disabled accounts and their a/c details</b>
-</div>
+<h3>View all disabled accounts and their a/c details</h3>
 <form action="[% request.url_for('backoffice/f_viewclientsubset.cgi') %]" method="get">
     <input type="hidden" name="broker" value="[% encoded_broker %]">
     <input type="hidden" name="show" value="disabled">
-    <br />
-    <input type="checkbox" id="chk_only_with_more_equity" value="1" checked name="onlylarge">
-    <label for="chk_only_with_more_equity">Only those with more than $5 equity</label>
-    <br />
-    <input type="submit" value="Monitor Disabled Accounts">
+    <div class="row">
+        <input type="checkbox" id="chk_only_with_more_equity" value="1" checked name="onlylarge">
+        <label for="chk_only_with_more_equity">Only those with more than $5 equity</label>
+    </div>
+    <input type="submit" class="btn btn--primary" value="Monitor disabled accounts">
 </form>
 [% END %]

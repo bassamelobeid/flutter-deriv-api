@@ -121,7 +121,7 @@ sub get_self_exclusion_form {
         ],
         'error' => {
             'id'    => 'errorMAXCASHBAL',
-            'class' => 'errorfield',
+            'class' => 'error',
         },
         'comment' => {
             'class' => 'hint',
@@ -148,7 +148,7 @@ sub get_self_exclusion_form {
         ],
         'error' => {
             'id'    => 'errorDAILYTURNOVERLIMIT',
-            'class' => 'errorfield',
+            'class' => 'error',
         },
         'comment' => {
             'class' => 'hint',
@@ -175,7 +175,7 @@ sub get_self_exclusion_form {
         ],
         'error' => {
             'id'    => 'errorDAILYLOSSLIMIT',
-            'class' => 'errorfield',
+            'class' => 'error',
         },
         'comment' => {
             'class' => 'hint',
@@ -202,7 +202,7 @@ sub get_self_exclusion_form {
         ],
         'error' => {
             'id'    => 'error7DAYTURNOVERLIMIT',
-            'class' => 'errorfield',
+            'class' => 'error',
         },
         'comment' => {
             'class' => 'hint',
@@ -229,7 +229,7 @@ sub get_self_exclusion_form {
         ],
         'error' => {
             'id'    => 'error7DAYLOSSLIMIT',
-            'class' => 'errorfield',
+            'class' => 'error',
         },
         'comment' => {
             'class' => 'hint',
@@ -256,7 +256,7 @@ sub get_self_exclusion_form {
         ],
         'error' => {
             'id'    => 'error30DAYTURNOVERLIMIT',
-            'class' => 'errorfield',
+            'class' => 'error',
         },
         'comment' => {
             'class' => 'hint',
@@ -283,7 +283,7 @@ sub get_self_exclusion_form {
         ],
         'error' => {
             'id'    => 'error30DAYLOSSLIMIT',
-            'class' => 'errorfield',
+            'class' => 'error',
         },
         'comment' => {
             'class' => 'hint',
@@ -309,7 +309,7 @@ sub get_self_exclusion_form {
         ],
         'error' => {
             'id'    => 'errorDAILYDEPOSITLIMIT',
-            'class' => 'errorfield',
+            'class' => 'error',
         },
         'comment' => {
             'class' => 'hint',
@@ -334,7 +334,7 @@ sub get_self_exclusion_form {
         ],
         'error' => {
             'id'    => 'error7DAYDEPOSITLIMIT',
-            'class' => 'errorfield',
+            'class' => 'error',
         },
         'comment' => {
             'class' => 'hint',
@@ -359,7 +359,7 @@ sub get_self_exclusion_form {
         ],
         'error' => {
             'id'    => 'error30DAYDEPOSITLIMIT',
-            'class' => 'errorfield',
+            'class' => 'error',
         },
         'comment' => {
             'class' => 'hint',
@@ -386,7 +386,7 @@ sub get_self_exclusion_form {
         ],
         'error' => {
             'id'    => 'errorMAXOPENPOS',
-            'class' => 'errorfield',
+            'class' => 'error',
         }};
 
     #input field for Session duration limit,
@@ -416,7 +416,7 @@ sub get_self_exclusion_form {
         ],
         'error' => {
             'id'    => 'errorSESSIONDURATION',
-            'class' => 'errorfield',
+            'class' => 'error',
         },
         'comment' => {
             'class' => 'hint',
@@ -443,7 +443,7 @@ sub get_self_exclusion_form {
         ],
         'error' => {
             'id'    => 'errorEXCLUDEUNTIL',
-            'class' => 'errorfield',
+            'class' => 'error',
         },
         'comment' => {
             'class' => 'hint',
@@ -469,7 +469,7 @@ sub get_self_exclusion_form {
         ],
         'error' => {
             'id'    => 'errorTIMEOUTUNTIL',
-            'class' => 'errorfield',
+            'class' => 'error',
         },
         'comment' => {
             'class' => 'hint',
@@ -505,10 +505,11 @@ sub get_self_exclusion_form {
             'name'  => 'submit',
             'type'  => 'submit',
             'value' => 'Update Settings',
+            'class' => 'btn btn--primary'
         },
         'error' => {
             'id'    => 'invalidinputfound',
-            'class' => 'errorfield'
+            'class' => 'error'
         },
 
     };
@@ -679,7 +680,7 @@ sub get_payment_agent_registration_form {
         },
         'error' => {
             'id'    => 'errorpa_name',
-            'class' => 'errorfield'
+            'class' => 'error'
         },
         'validation' => [{
                 'type'    => 'regexp',
@@ -702,7 +703,7 @@ sub get_payment_agent_registration_form {
         },
         'error' => {
             'id'    => 'errorpa_summary',
-            'class' => 'errorfield'
+            'class' => 'error'
         },
     };
 
@@ -720,7 +721,7 @@ sub get_payment_agent_registration_form {
         },
         'error' => {
             'id'    => 'errorpa_email',
-            'class' => 'errorfield'
+            'class' => 'error'
         },
         'validation' => [{
                 'type'    => 'regexp',
@@ -748,7 +749,7 @@ sub get_payment_agent_registration_form {
         },
         'error' => {
             'id'    => 'errorpa_tel',
-            'class' => 'errorfield',
+            'class' => 'error',
         },
         'validation' => [
             # min length = 6
@@ -785,7 +786,7 @@ sub get_payment_agent_registration_form {
         },
         'error' => {
             'id'    => 'errorpa_url',
-            'class' => 'errorfield'
+            'class' => 'error'
         },
         'validation' => [{
                 'type'    => 'regexp',
@@ -820,7 +821,7 @@ sub get_payment_agent_registration_form {
         ],
         'error' => {
             'id'    => 'errorpa_comm_depo',
-            'class' => 'errorfield'
+            'class' => 'error'
         },
     };
 
@@ -849,7 +850,7 @@ sub get_payment_agent_registration_form {
         ],
         'error' => {
             'id'    => 'errorpa_comm_with',
-            'class' => 'errorfield'
+            'class' => 'error'
         },
     };
 
@@ -866,7 +867,7 @@ sub get_payment_agent_registration_form {
         },
         'error' => {
             'id'    => 'errorpa_max_withdrawal',
-            'class' => 'errorfield'
+            'class' => 'error'
         },
         'validation' => [{
                 'type'    => 'regexp',
@@ -889,7 +890,7 @@ sub get_payment_agent_registration_form {
         },
         'error' => {
             'id'    => 'errorpa_min_withdrawal',
-            'class' => 'errorfield'
+            'class' => 'error'
         },
         'validation' => [{
                 'type'    => 'regexp',
@@ -916,7 +917,7 @@ sub get_payment_agent_registration_form {
         'error' => {
             'text'  => '',
             'id'    => 'errorpa_info',
-            'class' => 'errorfield'
+            'class' => 'error'
         },
         'validation' => [{
                 'type'    => 'regexp',
@@ -941,7 +942,7 @@ sub get_payment_agent_registration_form {
         },
         'error' => {
             'id'    => 'errorpa_suported_banks',
-            'class' => 'errorfield'
+            'class' => 'error'
         },
         'validation' => [{
                 'type'    => 'regexp',
@@ -993,7 +994,7 @@ sub get_payment_agent_registration_form {
         },
         'error' => {
             'id'    => 'errorpa_countries',
-            'class' => 'errorfield'
+            'class' => 'error'
         },
         'validation' => [{
                 'type'    => 'regexp',
@@ -1021,6 +1022,7 @@ sub get_payment_agent_registration_form {
             'name'  => 'submit',
             'type'  => 'submit',
             'value' => 'Submit',
+            'class' => 'btn btn--primary',
         }};
 
     my $form_action = request()->url_for("/paymentagent/application");

@@ -5,7 +5,7 @@
 <p><strong>"As Win"</strong>: sell the contract for <strong>full payout</strong></p>
 <form METHOD="POST">
 <fieldset  [% IF disabled %] disabled title='no write access' [% END %]>
-<table cellspacing=0 cellpadding=5 border="1">
+<table class="border">
     <tr>
         <th>Contract Ref. No.</th>
         <th>Client Login</th>
@@ -20,7 +20,7 @@
     </tr>
     [% FOREACH contract IN unsettled %]
     <tr>
-    <td><a href="[% request.url_for('backoffice/f_manager_history.cgi', { loginID => contract.loginid, currency => contract.currency }) | none %]">[% contract.ref %]</a></td>
+    <td><a class="link" href="[% request.url_for('backoffice/f_manager_history.cgi', { loginID => contract.loginid, currency => contract.currency }) | none %]">[% contract.ref %]</a></td>
         <td>[% contract.loginid %]</td>
         <td>[% contract.shortcode %]</td>
         <td>[% contract.reason %]</td>
@@ -34,7 +34,7 @@
     [% END %]
 </table>
 <hr/>
-<input type="submit" name="perform_actions"  value="Perform Selected Actions"/>
+<input type="submit" class="btn btn--red" name="perform_actions"  value="Perform Selected Actions"/>
 <input type="hidden" name="broker"  value="[% broker_code %]"/>
 </fieldset>
 </form>

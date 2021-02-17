@@ -7,7 +7,7 @@
 [% FOREACH broker IN data.closed_pl.pl.$broker_index.keys.sort %]
     <h3 style="outline: none">
         <strong>[% broker %] :</strong>
-          <span style="color: [% data.closed_pl.pl.$broker_index.$broker.total_closed_pl != '' AND data.closed_pl.pl.$broker_index.$broker.total_closed_pl > 0 ? 'green' : 'red' %]">
+          <span style="color: [% data.closed_pl.pl.$broker_index.$broker.total_closed_pl != '' AND data.closed_pl.pl.$broker_index.$broker.total_closed_pl > 0 ? 'var(--color-green-2)' : 'var(--color-red)' %]">
                 Closed_PL: USD [% data.closed_pl.pl.$broker_index.$broker.total_closed_pl %]
           <span>
     </h3>  
@@ -18,7 +18,7 @@
 [% IF market != 'total_closed_pl' %]
     <h3 style="outline: none">
         <strong>[% market %] :</strong>
-        <span style="color: [% data.closed_pl.pl.$broker_index.$broker.$index.$market.total_closed_pl > 0 ? 'green' : 'red' %]">
+        <span style="color: [% data.closed_pl.pl.$broker_index.$broker.$index.$market.total_closed_pl > 0 ? 'var(--color-green-2)' : 'var(--color-red)' %]">
                 Closed PL: USD [% data.closed_pl.pl.$broker_index.$broker.$index.$market.total_closed_pl %]
         <span>
     </h3>
@@ -27,7 +27,7 @@
            [% IF expiry != 'total_closed_pl' %]
                 <h3 style="outline: none">
                     <strong>[% expiry %] :</strong>
-                    <span style="color: [% data.closed_pl.pl.$broker_index.$broker.$index.$market.$expiry.total_closed_pl > 0 ? 'green' : 'red' %]">
+                    <span style="color: [% data.closed_pl.pl.$broker_index.$broker.$index.$market.$expiry.total_closed_pl > 0 ? 'var(--color-green-2)' : 'var(--color-red)' %]">
                            Closed_PL: USD [% data.closed_pl.pl.$broker_index.$broker.$index.$market.$expiry.total_closed_pl %]
                     <span>
                 </h3>
@@ -38,7 +38,7 @@
           				[% IF atm != 'total_closed_pl' %]
                              <h3 style="outline: none">
                                 <strong>[% atm == 'atm' ? atm : 'non_atm (including digits and lookback)' %] :</strong>
-                                <span style="color: [% data.closed_pl.pl.$broker_index.$broker.$index.$market.$expiry.$atm.total_closed_pl > 0 ? 'green' : 'red' %]">
+                                <span style="color: [% data.closed_pl.pl.$broker_index.$broker.$index.$market.$expiry.$atm.total_closed_pl > 0 ? 'var(--color-green-2)' : 'var(--color-red)' %]">
                                       Closed_PL: USD [% data.closed_pl.pl.$broker_index.$broker.$index.$market.$expiry.$atm.total_closed_pl %]
                                 <span>
                              </h3>
@@ -48,7 +48,7 @@
                                         [% FOREACH underlying IN data.closed_pl.pl.$broker_index.$broker.$index.$market.$expiry.$atm.$uindex.keys %]
                                             <div style="line-height: 24px;">
                                                 <b>[% underlying %] </b> :
-                                                <span style="color: [% data.closed_pl.pl.$broker_index.$broker.$index.$market.$expiry.$atm.$uindex.$underlying.total_closed_pl > 0 ? 'green' : 'red' %]">
+                                                <span style="color: [% data.closed_pl.pl.$broker_index.$broker.$index.$market.$expiry.$atm.$uindex.$underlying.total_closed_pl > 0 ? 'var(--color-green-2)' : 'var(--color-red)' %]">
                                                       Closed_PL: USD [% data.closed_pl.pl.$broker_index.$broker.$index.$market.$expiry.$atm.$uindex.$underlying.total_closed_pl %]
                                                 <span>
                                              </div>
@@ -80,7 +80,7 @@
 [% FOREACH broker IN data.previous_closed_pl.pl.$broker_index.keys.sort %]
     <h3 style="outline: none">
         <strong>[% broker %] :</strong>
-          <span style="color: [% data.previous_closed_pl.pl.$broker_index.$broker.total_closed_pl != '' AND data.previous_closed_pl.pl.$broker_index.$broker.total_closed_pl > 0 ? 'green' : 'red' %]">
+          <span style="color: [% data.previous_closed_pl.pl.$broker_index.$broker.total_closed_pl != '' AND data.previous_closed_pl.pl.$broker_index.$broker.total_closed_pl > 0 ? 'var(--color-green-2)' : 'var(--color-red)' %]">
                 Closed_PL: USD [% data.previous_closed_pl.pl.$broker_index.$broker.total_closed_pl %]
           <span>
     </h3>  
@@ -91,7 +91,7 @@
 [% IF market != 'total_closed_pl' %]
     <h3 style="outline: none">
         <strong>[% market %] :</strong>
-        <span style="color: [% data.previous_closed_pl.pl.$broker_index.$broker.$index.$market.total_closed_pl > 0 ? 'green' : 'red' %]">
+        <span style="color: [% data.previous_closed_pl.pl.$broker_index.$broker.$index.$market.total_closed_pl > 0 ? 'var(--color-green-2)' : 'var(--color-red)' %]">
                 Closed PL: USD [% data.previous_closed_pl.pl.$broker_index.$broker.$index.$market.total_closed_pl %]
         <span>
     </h3>
@@ -100,7 +100,7 @@
            [% IF expiry != 'total_closed_pl' %]
                 <h3 style="outline: none">
                     <strong>[% expiry %] :</strong>
-                    <span style="color: [% data.previous_closed_pl.pl.$broker_index.$broker.$index.$market.$expiry.total_closed_pl > 0 ? 'green' : 'red' %]">
+                    <span style="color: [% data.previous_closed_pl.pl.$broker_index.$broker.$index.$market.$expiry.total_closed_pl > 0 ? 'var(--color-green-2)' : 'var(--color-red)' %]">
                            Closed_PL: USD [% data.previous_closed_pl.pl.$broker_index.$broker.$index.$market.$expiry.total_closed_pl %]
                     <span>
                 </h3>
@@ -111,7 +111,7 @@
           				[% IF atm != 'total_closed_pl' %]
                              <h3 style="outline: none">
                                 <strong>[% atm == 'atm' ? atm : 'non_atm (including digits and lookback)' %] :</strong>
-                                <span style="color: [% data.previous_closed_pl.pl.$broker_index.$broker.$index.$market.$expiry.$atm.total_closed_pl > 0 ? 'green' : 'red' %]">
+                                <span style="color: [% data.previous_closed_pl.pl.$broker_index.$broker.$index.$market.$expiry.$atm.total_closed_pl > 0 ? 'var(--color-green-2)' : 'var(--color-red)' %]">
                                       Closed_PL: USD [% data.previous_closed_pl.pl.$broker_index.$broker.$index.$market.$expiry.$atm.total_closed_pl %]
                                 <span>
                              </h3>
@@ -121,7 +121,7 @@
                                         [% FOREACH underlying IN data.previous_closed_pl.pl.$broker_index.$broker.$index.$market.$expiry.$atm.$uindex.keys %]
                                             <div style="line-height: 24px;">
                                                 <b>[% underlying %] </b> :
-                                                <span style="color: [% data.previous_closed_pl.pl.$broker_index.$broker.$index.$market.$expiry.$atm.$uindex.$underlying.total_closed_pl > 0 ? 'green' : 'red' %]">
+                                                <span style="color: [% data.previous_closed_pl.pl.$broker_index.$broker.$index.$market.$expiry.$atm.$uindex.$underlying.total_closed_pl > 0 ? 'var(--color-green-2)' : 'var(--color-red)' %]">
                                                       Closed_PL: USD [% data.previous_closed_pl.pl.$broker_index.$broker.$index.$market.$expiry.$atm.$uindex.$underlying.total_closed_pl %]
                                                 <span>
                                              </div>
@@ -152,8 +152,8 @@
     <h3 style="outline: none">
         <strong>[% broker %] :</strong>
         <span>
-            Total Payout: <font color=blue><b>USD [% data.open_bet.pl.$broker_id.$broker.total_payout %]</b></font>,
-            Total Turnover : <font color=brown><b>USD [% data.open_bet.pl.$broker_id.$broker.total_turnover %]</b></font>
+            Total Payout: <span style="color: var(--color-blue)"><b>USD [% data.open_bet.pl.$broker_id.$broker.total_payout %]</b></span>,
+            Total Turnover : <span style="color: var(--color-yellow-1)"><b>USD [% data.open_bet.pl.$broker_id.$broker.total_turnover %]</b></span>
         </span>
     </h3>
    <div class="_accordion_open_market" style="width: 550px">
@@ -164,8 +164,8 @@
       <h3 style="outline: none">
         <strong>[% market %] :</strong>
         <span>
-            Payout: <font color=blue><b>USD [% data.open_bet.pl.$broker_id.$broker.$index.$market.total_payout %]</b></font>,
-            Turnover : <font color=brown><b>USD [% data.open_bet.pl.$broker_id.$broker.$index.$market.total_turnover %]</b></font>
+            Payout: <span style="color: var(--color-blue)"><b>USD [% data.open_bet.pl.$broker_id.$broker.$index.$market.total_payout %]</b></span>,
+            Turnover : <span style="color: var(--color-yellow-1)"><b>USD [% data.open_bet.pl.$broker_id.$broker.$index.$market.total_turnover %]</b></span>
         </span>
       </h3>
     <div class="_accordion_open_expiry" style="width: 500px">
@@ -174,8 +174,8 @@
                 <h3 style="outline: none">
                     <strong>[% expiry %] :</strong>
                     <span>
-                        Payout: <font color=blue><b>USD [% data.open_bet.pl.$broker_id.$broker.$index.$market.$expiry.total_payout %]</b></font>, 
-                        Turnover : <font color=brown><b>USD [% data.open_bet.pl.$broker_id.$broker.$index.$market.$expiry.total_turnover %]</b></font>
+                        Payout: <span style="color: var(--color-blue)"><b>USD [% data.open_bet.pl.$broker_id.$broker.$index.$market.$expiry.total_payout %]</b></span>, 
+                        Turnover : <span style="color: var(--color-yellow-1)"><b>USD [% data.open_bet.pl.$broker_id.$broker.$index.$market.$expiry.total_turnover %]</b></span>
                     </span>
                 </h3>
             [% END %]
@@ -186,8 +186,8 @@
                              <h3 style="outline: none">
                                 <strong>[% atm == 'atm' ? atm : 'non_atm (including digits and lookback)' %] :</strong>
                                 <span>
-                                        Payout: <font color=blue><b>USD [% data.open_bet.pl.$broker_id.$broker.$index.$market.$expiry.$atm.total_payout %]</b></font>,
-                                        Turnover : <font color=brown><b>USD [% data.open_bet.pl.$broker_id.$broker.$index.$market.$expiry.$atm.total_turnover %]</b></font>
+                                        Payout: <span style="color: var(--color-blue)"><b>USD [% data.open_bet.pl.$broker_id.$broker.$index.$market.$expiry.$atm.total_payout %]</b></span>,
+                                        Turnover : <span style="color: var(--color-yellow-1)"><b>USD [% data.open_bet.pl.$broker_id.$broker.$index.$market.$expiry.$atm.total_turnover %]</b></span>
                                 <span>
                              </h3>
                              <div>
@@ -197,8 +197,8 @@
                                             <div style="line-height: 24px;">
                                                 <b>[% underlying %]</b> : 
                                                 <span>
-                                                    Payout: <font color=blue><b>USD [% data.open_bet.pl.$broker_id.$broker.$index.$market.$expiry.$atm.$uindex.$underlying.total_payout %]</b></font>,
-                                                    Turnover : <font color=brown><b>USD [% data.open_bet.pl.$broker_id.$broker.$index.$market.$expiry.$atm.$uindex.$underlying.total_turnover %]</b></font>
+                                                    Payout: <span style="color: var(--color-blue)"><b>USD [% data.open_bet.pl.$broker_id.$broker.$index.$market.$expiry.$atm.$uindex.$underlying.total_payout %]</b></span>,
+                                                    Turnover : <span style="color: var(--color-yellow-1)"><b>USD [% data.open_bet.pl.$broker_id.$broker.$index.$market.$expiry.$atm.$uindex.$underlying.total_turnover %]</b></span>
                                                 </span>
                                              </div>
                                         [% END %]

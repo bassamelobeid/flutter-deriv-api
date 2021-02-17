@@ -24,9 +24,9 @@ table#show_log_list_table td.old_changed {
 }
 </style>
 
-<a href="[% url_to_client | none %]">&laquo; return to client details</a>
+<a href="[% url_to_client | none %]">&laquo; Return to client details</a>
 
-<table border="1" id="show_log_list_table">
+<table id="show_log_list_table">
     [% INCLUDE pager %]
     <tr>
         [% FOREACH table_header = table_headers  %]
@@ -45,7 +45,7 @@ table#show_log_list_table td.old_changed {
             <td>[% log.client_loginid %]</td>
             <td>[% log.table_name %]</td>
             <td>
-                <table border="1" width="100%">
+                <table class="full-width">
                 <tr>
                         <td> </td>
                     [% FOREACH detail_header = log_detail_keys %]

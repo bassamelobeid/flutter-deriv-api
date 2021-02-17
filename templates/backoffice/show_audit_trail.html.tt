@@ -23,44 +23,42 @@
     .hidden_show {
         background: #000000;
         color: #ffffff;
+        padding: 0 4px;
     }
     #group_display span {
         cursor: pointer;
         display: inline-block;
         font-weight: bold;
-        margin-left: 10px;
-        color: #060;
-        background: #ddc;
-        padding: 3px 5px;
+        background: var(--color-grey-4);
+        padding: 4px 8px;
         border-bottom: 2px solid transparent;
     }
-    #group_display span.selected, #group_display span:hover {
-        border-bottom-color: #060;
-        background: #eed;
+    #group_display span.selected {
+        border-bottom: 2px solid var(--color-red);
     }
-    table#show_log_list_table td {
-        background: #eeeedd;
-        white-space: nowrap;
+    #group_display span:hover {
+        background: var(--color-grey-3);
     }
-    table#show_log_list_table td div{
-        height: 16px;
-        overflow: hidden;
-        padding: 1px;
+    table#show_log_list_table th, table#show_log_list_table td {
+        font-size: 1.4rem;
     }
     table#show_log_list_table td div.changed {
-        background: #ffaaaa;
+        padding: 0 4px;
+        background: var(--color-pink);
     }
     table#show_log_list_table td div.unavailable {
-        background: #999999;
+        padding: 0 4px;
+        background: var(--color-grey-2);
+        height: 20px;
     }
 </style>
 
-<a href="[% url_to_client | none %]">&laquo; return to client details</a><br>
+<a class="link" href="[% url_to_client | none %]">&laquo; Return to client details</a><br><br>
 
-[% IF hidden_cols %]Note: some contents are hidden (those having black background). <button onclick="showHidden()">Show them</button>, if you need.<br>[% END %]
+[% IF hidden_cols %]NOTE: some contents are hidden (those having black background). <button class="btn btn--secondary" onclick="showHidden()">Show them</button>, if you need.<br>[% END %]
 
 <p id="group_display">
-    Display:
+    <label>Display:</label>
     <span>All columns</span>
     [% FOREACH group IN groups_config.keys.sort %]
         <span data-group="[% group %]">[% group.upper %] columns</span>
@@ -68,12 +66,16 @@
 </p>
 
 [% INCLUDE pager %]
-<table id="show_log_list_table">
+<div class="scrollable">
+<table id="show_log_list_table" class="border hover nowrap small">
+    <thead>
     <tr>
         [% FOREACH hdr = hdrs  %]
             <th [% groups_class(hdr) %]>[% titles.$hdr || hdr.replace('_', ' ').ucfirst %]</th>
         [% END %]
     </tr>
+    </thead>
+    <tbody>
     [% FOREACH log = logs %]
         <tr>
             [% FOREACH hdr = hdrs;
@@ -90,21 +92,22 @@
             [% END %]
         </tr>
     [% END %]
+    </tbody>
 </table>
 [% INCLUDE pager %]
 
 [% BLOCK pager %]
     <div rowcount="[%rowcount%]"></div>
-    [% IF pages > 1 %]
+    [% IF pages > 1 %]  
         [% pages_less1 = pages - 1 %]
         [% page_url = url_to_myself _ "&pagesize=$pagesize" %]
-        <a href="[% page_url _ "&page=0" | none %]">|<</a>
-        <a href="[% page_url _ "&page=$prev" | none %]"><</a>
+        <a class="link" href="[% page_url _ "&page=0" | none %]">|<</a>
+        <a class="link" href="[% page_url _ "&page=$prev" | none %]"><</a>
         [% FOREACH page IN [ 0..pages_less1 ] %]
-           <a href="[% page_url _ "&page=$page" | none %]">[% page + 1 %]</a>
+           <a class="link" href="[% page_url _ "&page=$page" | none %]">[% page + 1 %]</a>
         [% END %]
-        <a href="[% page_url _ "&page=$next" | none %]">></a>
-        <a href="[% page_url _ "&page=$pages_less1" | none %]">>|</a>
+        <a class="link" href="[% page_url _ "&page=$next" | none %]">></a>
+        <a class="link" href="[% page_url _ "&page=$pages_less1" | none %]">>|</a>
     [% END %]
 [% END %]
 

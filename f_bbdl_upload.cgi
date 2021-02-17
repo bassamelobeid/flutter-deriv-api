@@ -19,6 +19,7 @@ use BOM::Backoffice::Auth0;
 BOM::Backoffice::Sysinit::init();
 
 PrintContentType();
+BrokerPresentation('BBDL UPLOAD');
 
 my $cgi      = CGI->new;
 my $filename = $cgi->param('filename');
@@ -29,7 +30,7 @@ my $title = 'Upload a file to BBDL';
 
 #don't allow from devserver, to avoid uploading wrong files
 if (not BOM::Config::on_production()) {
-    code_exit_BO('Sorry, you cannot upload files from a development server. Please use a live server.', $title);
+    code_exit_BO('<p class="error">Sorry, you cannot upload files from a development server. Please use a live server.</p>', $title);
 }
 
 Bar($title);
@@ -39,7 +40,7 @@ my $sftp = $bbdl->login;
 
 my $message;
 if (length($filename) >= 25) {
-    $message = "<font color=red>Error: filename length exceeds 25 characters.</font>";
+    $message = "<p class='error'>Error: filename length exceeds 25 characters.</p>";
 } else {
     my $temp_dir = '/tmp';
     path($temp_dir . '/' . $filename)->spew_utf8($content);
@@ -52,7 +53,7 @@ if (length($filename) >= 25) {
 
     $sftp->put($temp_dir . '/' . $filename, $filename);
     if ($sftp->error) {
-        $message = "<p>Upload Failed: " . $sftp->error . '</p>';
+        $message = "<p class='error'>Upload Failed: " . $sftp->error . '</p>';
     } else {
         $message =
               '<p>Successfully uploaded file['

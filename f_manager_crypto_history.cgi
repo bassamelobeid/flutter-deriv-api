@@ -61,7 +61,7 @@ my $currency_wrapper = BOM::CTC::Currency->new(currency_code => $currency);
 my $action = request()->param('action');
 
 # print other untrusted section warning in backoffice
-print build_client_warning_message(encode_entities($loginid)) . '<br />';
+print build_client_warning_message(encode_entities($loginid));
 
 my $client_edit_url = request()->url_for(
     'backoffice/f_clientloginid_edit.cgi',
@@ -93,10 +93,10 @@ my $self_url = request()->url_for(
         broker  => $client->broker,
     });
 
-print "<div style='margin:5px 0;'>"
-    . "<input type='button' value='View/edit $loginid Details' onclick='location.href=\"$client_edit_url\"' />"
-    . "<input type='button' value='View $loginid Profit' onclick='location.href=\"$client_profit_url\"' />"
-    . "<input type='button' value='View $loginid Statement' onclick='location.href=\"$client_statement_url\"' />"
+print "<div class='row'>"
+    . "<input class='btn btn--primary' type='button' value='View $loginid details' onclick='location.href=\"$client_edit_url\"' />"
+    . "<input class='btn btn--primary' type='button' value='View $loginid profit' onclick='location.href=\"$client_profit_url\"' />"
+    . "<input class='btn btn--primary' type='button' value='View $loginid statement' onclick='location.href=\"$client_statement_url\"' />"
     . "</div>";
 
 my $render_crypto_transactions = sub {
@@ -206,39 +206,42 @@ my $client_name      = $client->full_name;
 my $client_email     = $client->email;
 my $client_joined_at = $client->date_joined;
 
-print "<div style='margin:5px 0;'>"
-    . '<table class="hover collapsed" border="1">' . '<tr>'
-    . '<th>Login ID</th>'
-    . "<td class='copy-on-click'>$loginid</td>"
-    . '<th>Name</th>'
-    . "<td class='copy-on-click'>$client_name</td>"
-    . '<th>Email</th>'
-    . "<td class='copy-on-click'>$client_email</td>"
-    . '<th>Country</th>'
-    . "<td>$country</td>"
-    . '<th>Residence</th>'
-    . "<td>$residence</td>"
-    . '<th>Tel</th>'
-    . "<td>$tel</td>"
-    . '<th>Date Joined</th>'
-    . "<td>$client_joined_at</td>"
-    . '</tr></table></div><br/>';
+print qq~
+<div class="row row-align-top notify notify--secondary">
+    <div class="grd-grid-2">
+        <strong>Login ID</strong>
+        <div class="copy-on-click">$loginid</div>
+    </div>
+    <div class="grd-grid-2">
+        <strong>Name</strong>
+        <div class="copy-on-click">$client_name</div>
+    </div>
+    <div class="grd-grid-2">
+        <strong>Email</strong>
+        <div class="copy-on-click">$client_email</div>
+    </div>
+    <div class="grd-grid-1">
+        <strong>Country</strong>
+        <div>$country</div>
+    </div>
+    <div class="grd-grid-1">
+        <strong>Residence</strong>
+        <div>$residence</div>
+    </div>
+    <div class="grd-grid-2">
+        <strong>Tel</strong>
+        <div>$tel</div>
+    </div>
+    <div class="grd-grid-2">
+        <strong>Date Joined</strong>
+        <div>$client_joined_at</div>
+    </div>
+</div>
+~;
 
 $render_crypto_transactions->($_) for qw(deposit withdrawal);
 
 BarEnd();
-
-print <<QQ;
-<script type="text/javascript" language="javascript">
-    \$('div.blacklabel.whitelabel.collapsed').click(function(e) {
-        e.preventDefault();
-        var element = \$(this);
-        element.children('span').toggle();
-        var content_element = element.siblings('div.contents');
-        content_element.toggle();
-    });
-</script>
-QQ
 
 code_exit_BO();
 

@@ -1,7 +1,5 @@
-<br />
-
 <form enctype="multipart/form-data" ACTION="[% self_post %]" method="POST" onsubmit="return validate_document_info()">
-  <label for="docnationalityselect">Nationality (as per identity document, it can be different from residence, updates only with Passport and Proof ID upload)</label>
+  <label for="docnationalityselect">Nationality (as per identity document, it can be different from residence, updates only with Passport and Proof ID upload):</label>
   <select id="docnationalityselect" name="docnationality">
     <option value="">Please select</option>
     [% FOREACH c IN countries.all_country_names.sort %]
@@ -9,9 +7,9 @@
         <option value="[% cc %]">[% c %]</option>
     [% END %]
   </select>
-  <br>
 
-<table style="width: 1200px">
+<div class="scrollable">
+<table class="nowrap">
 [% FOR n IN [1..4] %]
 <tr>
   <td>File [% n %]:</td>
@@ -46,7 +44,7 @@
       <option value="photo" disabled>Photo</option>
     </select>
   <td>
-  <td>*<input type="FILE" name="FILE_[% n %]" style="width: 150px" onchange="file_size_validation(this)"></td>
+  <td>*<input type="FILE" name="FILE_[% n %]" onchange="file_size_validation(this)"></td>
   <td align="right">
     <div id="expiration_date_div_[% n %]" anch>
       Expiration date:
@@ -73,11 +71,13 @@
 </tr>
 [% END %]
 </table>
+</div>
 
   <input type="hidden" name="whattodo" value="uploadID">
   <input type="hidden" name="broker" value="[% broker %]">
   <input type="hidden" name="loginID" value="[% loginid %]">
-  <input type=submit value="Upload new ID doc.">
+  <br/>
+  <input type=submit class="btn btn--primary" value="Upload new ID doc.">
 </form>
 <script type="text/javascript" language="javascript">
 

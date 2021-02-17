@@ -1,34 +1,28 @@
 [% WRAPPER layout title='MAKE DUAL CONTROL CODE' %]
     <form id='generateDCC' action="[% request.url_for('backoffice/f_makeclientdcc.cgi') | none %]" method='get' class='bo_ajax_form'>
-        <input type='hidden' name='l' value='EN'><br>
+        <input type='hidden' name='l' value='EN'>
         <input type='hidden' name='transtype' value='Edit affiliates token'>
-        Loginid : <input type='text' name='clientloginid' placeholder='required' value='[% loginid %]' data-lpignore='true' />
-        <br><br><input type='submit' value='Make Dual Control Code (by [% clerk %] )'>
+        <label>Login ID:</label><input type='text' name='clientloginid' placeholder='required' value='[% loginid %]' data-lpignore='true' />
+        <br><br><input type='submit' class="btn btn--primary" value='Make Dual Control Code (by [% clerk %] )'>
     </form>
 [% END %]
 
 [% WRAPPER layout title="CLIENT AFFILIATE INFO" %]
     <form id='EditclientAffiliatesToken' action="[% request.url_for('backoffice/f_change_affiliates_token.cgi') | none %]" method='post'>
         <input type='hidden' name='l' value='EN'>
-        Loginid : <input type='text' name='ClientLoginid' placeholder='required' value='[% ClientLoginid %]' data-lpignore='true' />
-        Affiliate Token : <input type='text' maxlength="32" name='affiliate_token' value='[% affiliate_token %]' data-lpignore='true' />
-        <br><br>DCC : <input type='text' name='DCcode' placeholder='required' value='[% prev_dcc %]' data-lpignore='true' />
+        <label>Login ID:</label><input type='text' name='ClientLoginid' placeholder='required' value='[% ClientLoginid %]' data-lpignore='true' />
+        <label>Affiliate Token:</label><input type='text' maxlength="32" name='affiliate_token' value='[% affiliate_token %]' data-lpignore='true' />
+        <br><br><label>DCC:</label><input type='text' name='DCcode' placeholder='required' value='[% prev_dcc %]' data-lpignore='true' />
         <br><br><input type='checkbox' name='verification' id='chk_verify_token' value='true' /><label for='chk_verify_token'>I understand this action is irreversible ([% clerk %])</label>
-        <br><br><input type='submit' name='EditAffiliatesToken' value='Edit affiliates token'/>
+        <br><br><input type='submit' name='EditAffiliatesToken' class="btn btn--primary" value='Edit affiliates token'/>
     </form>
 [% END %]
 
 [% BLOCK layout %]
-    <table class="BlackCandy" rules="all" frame="void" border="1" cellpadding="1" cellspacing="2" width="100%">
-        <tbody>
-            <tr class="Blacklabel">
-                <td class="whitelabel" colspan="2">[% title %]</td>
-            </tr>
-            <tr>
-                <td align="left" style="padding-left: 10px;">
-                [% content | none %]
-                </td>
-            </tr>
-        </tbody>
-    </table>
+    <div class="card">
+        <div class="card__label">[% title %]</div>
+        <div class="card__content">
+            [% content | none %]
+        </div>
+    </div>
 [% END %]

@@ -113,12 +113,12 @@ foreach my $market (@markets) {
     };
 }
 
-BrokerPresentation();
+BrokerPresentation('Update Volatility');
 
 my $now = Date::Utility->new;
 Bar('Update Volatility ' . $now->date_ddmmmyy . '   ' . $now->hour . $now->minute . ' GMT');
 
-print q~<table width='100%'>~;
+print q~<table class='full-width'>~;
 print '<tr>';
 print '<td>';
 print get_update_volatilities_form({
@@ -131,7 +131,7 @@ print q~<td align=right>~;
 print "<form method=post action='" . request()->url_for('backoffice/quant/market_data_mgmt/update_volatilities/save_used_volatilities.cgi') . "'>";
 print "<input type=hidden name=markets value='" . encode_entities($markets) . "'>";
 print "<input type=hidden name=warndifference value='" . encode_entities($warndifference) . "'>";
-print "<input id='confirm_volatility' type=submit  value='    CONFIRM ALL     '>";
+print "<input id='confirm_volatility' type=submit class='btn btn--red' value='Confirm all'>";
 print "</form>";
 print '</td>';
 print '</tr>';
@@ -140,7 +140,7 @@ print '</table>';
 foreach my $market (@markets) {
     Bar("$market matrices");
 
-    print '<TABLE width="99%" BORDER="2" bgcolor="#00AAAA">';
+    print '<table class="border">';
     print '<TR>';
 
     # The 'Volatily in Use'

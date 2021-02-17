@@ -56,20 +56,20 @@ Bar("$loginID ($client_email) Portfolio");
 print "<form style=\"float:left\" action=\"" . request()->url_for('backoffice/f_clientloginid_edit.cgi') . "\" METHOD=get>";
 print "<input type=hidden name=broker value=$encoded_broker>";
 print "<input type=hidden name=loginID value=\"$encoded_loginID\">";
-print "<INPUT type=\"submit\" value=\"EDIT $encoded_loginID DETAILS\">";
+print "<INPUT type=\"submit\" class=\"btn btn--primary\" value=\"Edit $encoded_loginID details\">";
 print "</form> <form style=\"float:right\" action=\"" . request()->url_for('backoffice/f_manager_statement.cgi') . "\" method=\"POST\">
 Quick jump to see another portfolio: <input name=loginID type=text size=15 value='$encoded_broker' data-lpignore='true' />";
 print "<input type=hidden name=\"outputtype\" value=\"table\">";
 print "<input type=hidden name=\"broker\" value=\"$encoded_broker\">";
 print "<input type=hidden name=\"l\" value=\"EN\">";
-print "<INPUT type=\"submit\" value=\"Go\"></form>
+print "<INPUT type=\"submit\" class=\"btn btn--primary\" value=\"Go\"></form>
 
 <form style=\"float:left\" action=\"" . request()->url_for('backoffice/f_manager_history.cgi') . "\" method=\"POST\">
 <input type=hidden name=\"loginID\" value=\"$encoded_loginID\" />
 <input type=hidden name=\"broker\" value=\"$encoded_broker\" />
 <input type=hidden name=\"l\" value=\"EN\" />
-<input type=submit value=\"CLIENT STATEMENT\" />
-</form><div style=\"clear:both\"></div>";
+<input type=submit class=\"btn btn--primary\" value=\"Client statement\" />
+</form><div style=\"clear:both\"></div><br>";
 
 BOM::Transaction::sell_expired_contracts({
     client => $client,

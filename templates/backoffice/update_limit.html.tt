@@ -1,4 +1,4 @@
-<p>Update custom limits (Please set either risk profile or commission for your entry): </p>
+<h3>Update custom limits (Please set either risk profile or commission for your entry)</h3>
 <form action="[% url | none %]" method="POST">
     <fieldset  [% IF disabled %] disabled title='no write access' [% END %]>
     <table>
@@ -63,7 +63,7 @@
             <td> No of open contracts for non binary options. e.g. 5 (applied only if contract_category is lookback)</td>
         </tr>
         <tr>
-            <td>Client loginid: </td>
+            <td>Client Login ID: </td>
             <td><input type="text" name="client_loginid" size="15" value='' data-lpignore="true" /></td>
             <td> e.g. CR10001 (include this if you wish to limit a specific client)</td>
         </tr>
@@ -89,14 +89,14 @@
             <td> e.g '2018-01-02 21:00', optional end time for the limit - format is YYYY-MM-DD HH:MI:SS </td>
         </tr>
         <tr>
-            <td><input type="submit" name="update_limit" value="Update"></td>
+            <td><input type="submit" class="btn btn--primary" name="update_limit" value="Update"></td>
         </tr>
     </table>
     </fieldset>
 </form>
 
-<p>Delete custom limit by ID: </p>
-
+<br>
+<h3>Delete custom limit by ID</h3>
 <form action="[% url | none %]" method="POST">
     <fieldset  [% IF disabled %] disabled title='no write access' [% END %]>
     <table>
@@ -106,29 +106,29 @@
             <td> e.g. The ID of the custom limit</td>
         </tr>
         <tr>
-            <td>Client loginid: </td>
+            <td>Client Login ID: </td>
             <td><input type="text" name="client_loginid" size="15" value='' data-lpignore="true" /></td>
             <td> e.g. CR10001 (include this if you wish to limit a specific client)</td>
         </tr>
         <tr>
-            <td><input type="submit" name="delete_limit" value="Update"></td>
+            <td><input type="submit" class="btn btn--primary" name="delete_limit" value="Update"></td>
         </tr>
     </table>
     </fieldset>
 </form>
 
-<p>Delete client from custom client limits: </p>
-
+<br>
+<h3>Delete client from custom client limits</h3>
 <form action="[% url | none %]" method="POST">
     <fieldset  [% IF disabled %] disabled title='no write access' [% END %]>
     <table>
         <tr>
-            <td>Client loginid: </td>
+            <td>Client Login ID: </td>
             <td><input type="text" name="client_loginid" size="15" value='' data-lpignore="true" /></td>
             <td> e.g. CR10001</td>
         </tr>
         <tr>
-            <td><input type="submit" name="delete_client" value="Update"></td>
+            <td><input type="submit" class="btn btn--primary" name="delete_client" value="Update"></td>
         </tr>
     </table>
     </fieldset>

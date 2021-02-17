@@ -1,33 +1,30 @@
 <style>
 form {display: inline-block;}
-.pa_table td, .pa_table th { border: 1px solid #eee; padding: 5px; }
-#count {padding-left: 1em; color: green; font-weight: bold;}
-#not-found{display:block;color:red; text-align:center;width:100%; padding:20px}
 </style>
 
 <form action="[% submit_form_url %]" method="post" class="grd-margin-bottom">
-    Select country:
+    <label>Select country:</label>
     <select name="country">
         [% FOREACH entry IN countries_list.sort %]
             <option value="[% entry %]"[% IF entry == selected_country %] selected[% END %]>[% countries_list.$entry %]</option>
         [% END %]
     </select>
-    Currency:
+    <label>Currency:</label>
     <select name="currency">
         [% FOREACH entry IN currency_options %]
             <option value="[% entry %]"[% IF entry == selected_currency %] selected[% END %]>[% entry %]</option>
         [% END %]
     </select>
-    <input type="submit" name="submit" value="submit">
+    <input type="submit" class="btn btn--primary" name="submit" value="submit">
 </form>
 
 [% IF records.size > 0 %]
-    <span id="count">Number of payment agents in <strong>[% countries_list.$selected_country %] : [% records.size  %]</strong></span>
+    <span id="count" class="success">Number of payment agents in <strong>[% countries_list.$selected_country %] : [% records.size  %]</strong></span>
 [% END %]
 
-<table class="pa_table sortable collapsed hover alternate">
+<table class="border sortable collapsed hover alternate">
     <tr>
-        <th>LoginID</th>
+        <th>Login ID</th>
         <th>Name</th>
         <th>Email</th>
         <th>Phone Number</th>
@@ -43,8 +40,8 @@ form {display: inline-block;}
     </tr>
     <tbody>
         [% IF records.size == 0 AND selected_country != "" %]
-            <tr><td colspan="13">
-                <span id="not-found">
+            <tr><td colspan="13" class="center">
+                <span id="not-found" class="error">
                     No payment agent is available in <strong>[% countries_list.$selected_country %]</strong> with <strong>[% selected_currency %]</strong> currency
                 </span>
             </td></tr>
@@ -52,7 +49,7 @@ form {display: inline-block;}
     [% FOREACH entry IN records.keys.sort %]
         <tr>
             <td>
-                <a href="f_clientloginid_edit.cgi?broker=CR&loginID=[% records.$entry.client_loginid %]">
+                <a class="link" href="f_clientloginid_edit.cgi?broker=CR&loginID=[% records.$entry.client_loginid %]">
                     [% records.$entry.client_loginid %]
                 </a>
             </td>

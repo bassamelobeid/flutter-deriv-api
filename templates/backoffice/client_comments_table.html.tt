@@ -1,11 +1,13 @@
-<table class="collapsed hover alternate" border="1">
-    <tbody>
+<table class="alternate">
+    <thead>
         <tr>
             <th>Comment</th>
             <th>Author</th>
             <th>Date</th>
             <th colspan="2">Actions</th>
         </tr>
+    </thead>
+    <tbody>
         [% FOREACH record IN comments %]
         <tr>
             <td style="max-width: 800px;">[% record.comment | html | html_line_break %]</td>
@@ -17,7 +19,7 @@
                     <input type="hidden" name="action" value="show_edit_form" />
                     <input type="hidden" name="csrf" value="[% csrf %]" />
                     <input type="hidden" name="id" value="[% record.id %]" />
-                    <input type="submit" value="Edit">
+                    <input class="btn btn--primary" type="submit" value="Edit">
                 </form>
             </td>
             <td>
@@ -27,7 +29,7 @@
                     <input type="hidden" name="csrf" value="[% csrf %]" />
                     <input type="hidden" name="id" value="[% record.id %]" />
                     <input type="hidden" name="checksum" value="[% record.checksum %]" />
-                    <input type="submit" value="Delete">
+                    <input class="btn btn--secondary" type="submit" value="Delete">
                 </form>
             </td>
         </tr>

@@ -24,14 +24,14 @@ my $broker        = request()->param('broker') // request()->broker_code;
 my $encoded_login = encode_entities($login);
 
 if ($login !~ /^$broker\d+$/) {
-    print "Error: Wrong loginid $encoded_login, please select correct broker code";
+    print "Error: Wrong Login ID $encoded_login, please select correct broker code";
     code_exit_BO();
 }
 
 my $client = eval { BOM::User::Client::get_instance({'loginid' => uc $login, db_operation => 'backoffice_replica'}) };
 
 if (not $client) {
-    print "Error: wrong loginid ($encoded_login) could not get client instance";
+    print "Error: Wrong Login ID ($encoded_login) could not get client instance";
     code_exit_BO();
 }
 
@@ -51,9 +51,10 @@ if (not $access_token) {
     print "Error: not able to impersonate $encoded_login";
 }
 
-print
-    "$encoded_login impersonated, please click on link below to view client account. <b>MAKE SURE YOU LOGOUT FROM CLIENT ACCOUNT ON BINARY.COM AFTER YOU ARE DONE!</b><br>";
-
-print "<a href='" . $bo_app->{redirect_uri} . "?acct1=$login&token1=$access_token' target='_blank'>Click here</a>";
+print "<p>$encoded_login impersonated, please click the button below to view client account:</p>";
+print "<p><a class='btn btn--primary' href='"
+    . $bo_app->{redirect_uri}
+    . "?acct1=$login&token1=$access_token' target='_blank'>View client account</a></p>";
+print "<p class='error'>MAKE SURE YOU LOGOUT FROM CLIENT ACCOUNT ON BINARY.COM AFTER YOU ARE DONE!</p>";
 
 code_exit_BO();

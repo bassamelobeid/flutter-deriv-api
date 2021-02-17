@@ -12,12 +12,12 @@
     <tr><td>Max multiplier </td><td> : <input type="text" name="max_multiplier" data-lpignore="true" /></td></tr>
     <tr><td>Commission_adjustment </td><td> : <input type="text" name="multiplier_commission_adjustment" data-lpignore="true" /></td></tr>
     <tr><td>DC Commission </td><td> : <input type="text" name="dc_commission" data-lpignore="true" /></td></tr>
-    <tr><td></td><button onclick="saveCustomMultiplierCommission()" style="margin-left: 20px;">Save</button></td><td class="result"></td></tr>
+    <tr><td></td><button onclick="saveCustomMultiplierCommission()" style="margin-left: 8px;" class="btn btn--red">Save</button></td><td class="result"></td></tr>
 </table>
 </fieldset>
 
-<div id='custom_multiplier_commission_table'>
-</div>
+<br>
+<div id='custom_multiplier_commission_table' class="scrollable"></div>
 
 <script>
     function saveCustomMultiplierCommission() {
@@ -28,7 +28,7 @@
         var end_time = \$('#custom_multiplier_commission_end_time').val();
         var date_re = /^(\d{10}|\d{4}-\d{2}-\d{2}( \d{2}:\d{2}:\d{2})?)\$/;
         if(!date_re.test(start_time) || !date_re.test(end_time)){
-            result.text("Invaild DateTime entered").css('color', 'red');
+            result.text("Invaild DateTime entered").css('color', 'var(--color-red)');
             return true;
         }
 
@@ -49,7 +49,7 @@
                 success: function(data){
                     var config = \$.parseJSON(data);
                     if (config.error) {
-                        result.text('Failed: '+ config.error).css('color', 'red').show();
+                        result.text('Failed: '+ config.error).css('color', 'var(--color-red)').show();
                     } else {
                         appendTable('custom_multiplier_commission_table',config);
                         result.hide();
@@ -66,8 +66,8 @@
     }
 
     function createTable(id, config) {
-        var table = '<table id="'+id+'">';
-        table += '<tr><td>Updated by</td><td>Name</td><td>Underlying Symbol</td><td>Currency Symbol</td><td>Start</td><td>End</td><td>Min mult</td><td>Max mult</td><td>Comm adj</td><td>DC comm</td></tr>';
+        var table = '<table id="'+id+'" class="border">';
+        table += '<thead><tr><th>Updated by</th><th>Name</th><th>Underlying Symbol</th><th>Currency Symbol</th><th>Start</th><th>End</th><th>Min mult</th><th>Max mult</th><th>Comm adj</th><th>DC comm</th></tr></thead>';
         if (config.length > 0) {
             for (var i=0; i < config.length; i++) {
                 table += '<tr id="'+config[i].name+'"><td>'+config[i].staff+'</td><td>'+config[i].name+'</td><td>'+config[i].underlying_symbol+'</td><td>'+config[i].currency_symbol+'</td><td>'+config[i].start_time+'</td><td>'+config[i].end_time+'</td><td>'+config[i].min_multiplier+'</td><td>' + config[i].max_multiplier +'</td><td>' +config[i].commission_adjustment+ '</td><td>' + config[i].dc_commission + '</td><td><button onclick="deleteConfig(\''+config[i].name+'\')">Delete</button></td><td class="result"></td></tr>';
@@ -102,9 +102,6 @@
 </script>
 
 <style>
-    table {
-        border-collapse: collapse;
-    }
     #custom_multiplier_commission_table td {
         border: 1px solid #dddddd;
         text-align: left;

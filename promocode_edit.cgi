@@ -24,8 +24,9 @@ sub is_valid_promocode { return uc($_[0]->{promocode} // '') =~ /^\s*[A-Z0-9_\-\
 
 if (!is_valid_promocode(\%input) && $input{save}) {
     my $url = request()->url_for(sprintf 'backoffice/promocode_edit.cgi?broker=%s&isnew=1', $input{broker} || 'CR');
-    print qq{<a href="$url"><b>Create new promocode</a></b><hr>};
-    code_exit_BO("Must enter a valid promocode: must be letters and numbers, and no longer than 20 characters");
+    print qq{<p class="notify notify--danger">Must enter a valid promocode: must be letters and numbers, and no longer than 20 characters</p>};
+    print qq{<a class="btn btn--primary" href="$url">Create new promocode</a>};
+    code_exit_BO();
 }
 
 my $pc;

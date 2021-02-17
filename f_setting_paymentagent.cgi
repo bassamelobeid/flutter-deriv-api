@@ -27,7 +27,7 @@ my $encoded_loginid = encode_entities($loginid);
 Bar('Payment Agent Setting');
 
 print
-    "<b>Please note that payment agent account currency will be same as client account currency & allowed country of service will be as per target countries provided.</b><br/><br/>";
+    "<p>NOTE: Payment agent account currency will be the same as client's account currency & allowed country of service will be as per target countries provided.</p>";
 
 if ($whattodo eq 'create') {
     my $client = BOM::User::Client->new({loginid => $loginid});
@@ -130,7 +130,7 @@ if ($whattodo eq 'show') {
     code_exit_BO("Invalid Countries: could not add countries.")
         unless ($client->get_payment_agent->set_countries(\@countries));
 
-    print "<p style=\"color:green; font-weight:bold;\">Successfully updated payment agent details for [$encoded_loginid]</p>";
+    print "<p class='success'>Successfully updated payment agent details for [$encoded_loginid]</p><br/>";
 
     my $auditt_href = request()->url_for(
         "backoffice/show_audit_trail.cgi",
@@ -147,8 +147,8 @@ if ($whattodo eq 'show') {
             loginID => $loginid
         });
 
-    print qq(<a href="$auditt_href">&laquo; Show payment-agent audit trail for $encoded_loginid</a><br/><br/>);
-    print qq(<a href="$return_href">&laquo; Return to client details<a/>);
+    print qq(<a class='link' href="$auditt_href">&laquo; Show payment-agent audit trail for $encoded_loginid</a><br/>);
+    print qq(<a class='link' href="$return_href">&laquo; Return to client details<a/>);
 
     code_exit_BO();
 }

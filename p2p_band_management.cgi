@@ -46,9 +46,9 @@ if ($input{edit}) {
                     "UPDATE p2p.p2p_country_trade_band SET max_daily_buy = ?, max_daily_sell =? WHERE country = ? AND trade_band = LOWER(?) AND currency = ?",
                     undef, @input{qw/max_daily_buy max_daily_sell country trade_band currency/});
             });
-        print '<p style="color:green; font-weight:bold;">Band configuration updated</p>';
+        print '<p class="success">Band configuration updated</p>';
     } catch {
-        print '<p style="color:red; font-weight:bold;">Failed to save band:' . $@ . '</p>';
+        print '<p class="error">Failed to save band:' . $@ . '</p>';
     }
 }
 
@@ -60,9 +60,9 @@ if ($action eq 'delete') {
                 $_->do("DELETE FROM p2p.p2p_country_trade_band WHERE country = ? AND trade_band = LOWER(?) AND currency = ?",
                     undef, @input{qw/country trade_band currency/});
             });
-        print '<p style="color:green; font-weight:bold;">Band deleted</p>';
+        print '<p class="success">Band deleted</p>';
     } catch {
-        print '<p style="color:red; font-weight:bold;">Failed to delete band:' . $@ . '</p>';
+        print '<p class="error">Failed to delete band:' . $@ . '</p>';
     }
     delete @input{qw/country trade_band currency max_daily_buy max_daily_sell action/};
     $action = 'new';
@@ -99,9 +99,9 @@ if ($input{save} or $input{copy}) {
                     "INSERT INTO p2p.p2p_country_trade_band (country, trade_band, currency, max_daily_buy, max_daily_sell) VALUES (?,LOWER(?),?,?,?)",
                     undef, @input{@fields});
             });
-        print '<p style="color:green; font-weight:bold;">New band configuration saved</p>';
+        print '<p class="success">New band configuration saved</p>';
     } catch {
-        print '<p style="color:red; font-weight:bold;">Failed to save band: ' . $@ . '</p>';
+        print '<p class="error">Failed to save band: ' . $@ . '</p>';
     }
     $action = 'new';
 }

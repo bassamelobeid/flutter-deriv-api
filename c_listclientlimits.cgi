@@ -23,7 +23,7 @@ BrokerPresentation('CLIENT LIMITS FOR ' . $encoded_login);
 my $client = eval { BOM::User::Client::get_instance({'loginid' => $login, db_operation => 'backoffice_replica'}) };
 
 if (!$client) {
-    code_exit_BO("ERROR: Wrong loginID $encoded_login");
+    code_exit_BO("Error: Wrong Login ID $encoded_login");
 }
 
 my $curr = $client->currency;

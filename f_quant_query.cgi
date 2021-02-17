@@ -58,6 +58,7 @@ if (my $il = request()->param('investigate_list')) {
     }
     $reflist = substr($reflist, 0, -2);
 
+    Bar('Quant Query');
     BOM::Backoffice::Request::template()->process(
         'backoffice/quant_query.html.tt',
         {

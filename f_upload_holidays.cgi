@@ -15,12 +15,12 @@ use Date::Utility;
 use Quant::Framework::Calendar;
 use BOM::Backoffice::Auth0;
 use BOM::Backoffice::QuantsAuditLog;
+
 PrintContentType();
+BrokerPresentation("Upload Calendar");
 
 my $staff = BOM::Backoffice::Auth0::get_staffname();
 use BOM::Backoffice::Request qw(request);
-
-PrintContentType();
 
 my %input = %{request()->params};
 
@@ -30,16 +30,21 @@ my $calendar_hash;
 my $calendar_name;
 
 if ($input{upload_excel}) {
+    my $title    = 'Upload Excel file contains exchange or currencies holiday from Bloomberg';
     my $cgi      = CGI->new;
     my $file     = $cgi->param('filetoupload');
     my $fh       = File::Temp->new(SUFFIX => '.csv');
     my $filename = $fh->filename;
+
+    code_exit_BO("<p class='error'>Please select a CSV file</p>", $title) unless ($file);
     copy($file, $filename);
     my $type_to_parser = $calendar_type eq 'holidays' ? 'exchange_holiday' : $calendar_type;
     $calendar_hash = Bloomberg::BloombergCalendar::parse_calendar($filename, $type_to_parser);
     # since partial_trading is handled separately in the function below, calendar_name is set to holidays
     $calendar_name = 'holidays';
-    _save_early_closes_calendar($calendar_hash->{early_closes_data}, $staff) if defined $calendar_hash->{early_closes_data};
+    code_exit_BO("<p class='error'>Invalid CSV</p>", $title) unless (defined $calendar_hash->{early_closes_data});
+    _save_early_closes_calendar($calendar_hash->{early_closes_data}, $staff);
+
 } elsif ($input{manual_holiday_upload}) {
     $calendar_name = 'holidays';
     $calendar_type = 'manual_' . $calendar_type;
@@ -48,7 +53,7 @@ if ($input{upload_excel}) {
     my $holiday_date = $input{holiday_date};
     my $holiday_desc = $input{holiday_desc};
     # sanity check
-    die "Incomplete entry\n" unless ($symbol_str and $holiday_date and $holiday_desc);
+    code_exit_BO("<p class='error'>Incomplete entry</p>", 'Manual holiday calendar update tool') unless ($symbol_str and $holiday_date and $holiday_desc);
     my $existing = {};
     $existing = BOM::Config::Chronicle::get_chronicle_reader()->get('holidays', 'manual_holidays') unless $input{delete};
     my $date_key = Date::Utility->new($holiday_date)->truncate_to_day->epoch;
@@ -64,10 +69,10 @@ if ($input{upload_excel}) {
     my $time       = $input{time};
 
     # sanity check
-    die "Incomplete entry\n" unless ($symbol_str and $date and $time);
+    code_exit_BO("<p class='error'>Incomplete entry</p>", 'Manual partial trading calendar update tool') unless ($symbol_str and $date and $time);
 
     my $time_regex = qr/^(?:(?:[0-1][0-9])|(?:[2][0-3]))h(?:[0-5][0-9])m$/;
-    die "Invalid time format" if $time !~ $time_regex;
+    code_exit_BO("<p class='error'>Invalid time format</p>", 'Manual partial trading calendar update tool') if $time !~ $time_regex;
 
     my $existing = {};
     $existing = BOM::Config::Chronicle::get_chronicle_reader()->get($calendar_name, $calendar_type) unless $input{delete};
@@ -91,7 +96,7 @@ sub save_calendar {
         chronicle_writer => BOM::Config::Chronicle::get_chronicle_writer(),
     )->$action;
     BOM::Backoffice::QuantsAuditLog::log($staff, 'save_calendar', "Upload calendar[$calendar_name] type[$calendar_type]");
-    return $updated;
+    code_exit_BO("<p class='success'>Uploaded successfully.</p>", "Upload calendar[$calendar_name] type[$calendar_type]");
 }
 
 # format data for early_closes data from our source.
@@ -137,7 +142,5 @@ sub _save_early_closes_calendar {
     )->save;
 
     BOM::Backoffice::QuantsAuditLog::log($staff, 'save_calendar', "Manually update partial trading calendar");
-    return;
+    code_exit_BO("<p class='success'>Uploaded successfully.</p>", "Manually update partial trading calendar");
 }
-
-code_exit_BO();

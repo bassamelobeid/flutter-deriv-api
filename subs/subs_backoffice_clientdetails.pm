@@ -124,7 +124,7 @@ my $UNTRUSTED_STATUS = [{
         'comments'    => 'Disabled Accounts',
         'code'        => 'disabled',
         'show_reason' => 'yes',
-        'explanation' => "Restricts access to account, client  can't login.",
+        'explanation' => "Restricts access to account, client can't login.",
     },
     {
         'linktype'    => 'lockcashierlogins',
@@ -356,7 +356,7 @@ sub print_client_details {
     my $user = $client->user;
 
     # User should be accessable from client by loginid
-    print "<p style='color:red;'>User doesn't exist. This client is unlinked. Please, investigate.<p>"
+    print "<p class='error'>User doesn't exist. This client is unlinked. Please, investigate.<p>"
         and die
         unless $user;
 
@@ -406,12 +406,13 @@ sub print_client_details {
             no_edit     => 1
         ) for grep { $_ ne $client->loginid } @siblings;
 
-        $show_uploaded_documents .= 'To edit following documents please select corresponding user<br>' . $siblings_docs
+        $show_uploaded_documents .= 'To edit following documents, please select corresponding user<br>' . $siblings_docs
             if $siblings_docs;
 
         if ($show_uploaded_documents) {
             my $confirm_box = qq{javascript:return get_checked_files()};
-            $show_uploaded_documents .= qq{<button name="delete_checked_documents" value = "1" onclick="$confirm_box">Delete Checked Files</button>};
+            $show_uploaded_documents .=
+                qq{<button name="delete_checked_documents" value = "1" onclick="$confirm_box" class="btn btn--red">Delete checked files</button>};
         }
     }
 
@@ -427,7 +428,7 @@ sub print_client_details {
         $can_decode_secret_answer = 1;
     } catch {
         $can_decode_secret_answer = 0;
-        warn "ERROR: Loginid: " . $client->loginid . " - $@";
+        warn "ERROR: Login ID: " . $client->loginid . " - $@";
     }
 
     # MARKETING SECTION
@@ -580,16 +581,15 @@ sub print_client_details {
 sub build_client_statement_form {
     my $broker = shift @_;
     return
-          '<hr><FORM ACTION="'
+        '<hr><p class="error grd-margin-bottom"><b>Show All Transaction</b>, may fail for clients with huge number of transaction, so use this feature only when required.</p><FORM ACTION="'
         . request()->url_for('backoffice/f_manager_history.cgi')
         . '" METHOD="POST" onsubmit="return validate_month(\'statement\')">'
-        . '<span style="color:red;"><b>Show All Transaction</b>, may fail for clients with huge number of transaction, so use this feature only when required.</span><br/>'
-        . 'Check Statement of LoginID: <input id="statement_loginID" name="loginID" type="text" size="15" data-lpignore="true" value="'
+        . '<div class="row"><label>Check Statement of Login ID:</label><input id="statement_loginID" name="loginID" type="text" size="15" data-lpignore="true" value="'
         . $broker . '"/> '
-        . 'From: <input name="startdate" type="text" size="10" value="'
+        . '<label>From:</label><input name="startdate" type="text" size="10" value="'
         . Date::Utility->today()->_minus_months(1)->date
         . '" required pattern="\d{4}-\d{2}-\d{2}" class="datepick" id="statement_startdate" data-lpignore="true" /> '
-        . 'To: <input name="enddate" type="text" size="10" value="'
+        . '<label>To:</label><input name="enddate" type="text" size="10" value="'
         . Date::Utility->today()->date
         . '" required pattern="\d{4}-\d{2}-\d{2}" class="datepick" id="statement_enddate" data-lpignore="true" /> '
         . '<input type="hidden" name="broker" value="'
@@ -597,21 +597,21 @@ sub build_client_statement_form {
         . '<SELECT name="currency_dropdown"><option value="default">client\'s default currency</option>'
         . get_currency_options()
         . '</SELECT>'
-        . '<input type="hidden" name="l" value="EN">'
+        . '</div><input type="hidden" name="l" value="EN">'
         . '<input type="checkbox" name="all_in_one_page" id="all_in_one_page_statement" /><label for="all_in_one_page_statement">Show All Transactions</label> '
         . '<input type="checkbox" value="yes" name="depositswithdrawalsonly" id="depositswithdrawalsonly" /><label for="depositswithdrawalsonly">Deposits and Withdrawals only</label> '
-        . '<input type="submit" value="Client Statement">'
+        . '<input type="submit" class="btn btn--primary" value="Client statement">'
         . '</FORM>'
         # ------- CRYPTO -------
         . '<hr><FORM ACTION="'
         . request()->url_for('backoffice/f_manager_crypto_history.cgi')
         . '" METHOD="POST" onsubmit="return validate_month(\'statement\')">'
-        . 'Check Crypto Statement of LoginID: <input id="statement_loginID" name="loginID" type="text" size="15" data-lpignore="true" value="'
+        . '<label>Check Crypto Statement of Login ID:</label><input id="statement_loginID" name="loginID" type="text" size="15" data-lpignore="true" value="'
         . $broker . '"/> '
         . '<input type="hidden" name="broker" value="'
         . $broker . '">'
         . '<input type="hidden" name="l" value="EN">'
-        . '<input type="submit" value="Client Crypto Statement">'
+        . '<input class="btn btn--primary" type="submit" value="Client Crypto statement">'
         . '</FORM>';
 }
 
@@ -623,12 +623,12 @@ sub link_for_remove_status_from_all_siblings {
     $messages //= {};
 
     return
-          '<span style="color: gray">'
+          '<span class="text-muted">'
         . (defined($messages->{disabled}) ? $messages->{disabled} : 'status has not been set to its siblings')
         . '</span>'
         if scalar @{$sibling_loginids_without_status} == scalar @{$siblings};
 
-    return '<a href="'
+    return '<a class="link link--primary" href="'
         . request()->url_for(
         'backoffice/sync_client_status.cgi',
         {
@@ -661,27 +661,27 @@ Returns a string.
 sub siblings_status_summary {
     my ($client, $code) = @_;
 
-    return "<span style='color: gray'>doesn't have siblings across the same landing company</span>" unless $client->has_siblings();
+    return "<span class='text-muted'>doesn't have siblings across the same landing company</span>" unless $client->has_siblings();
 
     my $sibling_loginids_without_status = $client->get_sibling_loginids_without_status($code);
 
-    return '<span style="color: gray">status synced among siblings</span>' if scalar $sibling_loginids_without_status->@* == 0;
+    return '<span class="text-muted">status synced among siblings</span>' if scalar $sibling_loginids_without_status->@* == 0;
 
     my $siblings = join ', ', $sibling_loginids_without_status->@*;
 
-    return "<span style='color: gray'>some siblings are not synced: $siblings</span>";
+    return "<span class='text-muted'>some siblings are not synced: $siblings</span>";
 }
 
 sub link_for_copy_status_status_to_siblings {
-    my ($loginid, $status_code, $messages) = @_;
+    my ($loginid, $status_code, $messages, $cl) = @_;
     my $client                          = BOM::User::Client->new({'loginid' => $loginid});
     my $sibling_loginids_without_status = $client->get_sibling_loginids_without_status($status_code);
     $messages //= {};
 
-    return '<span style="color: gray">' . (defined($messages->{disabled}) ? $messages->{disabled} : 'status synced among siblings') . '</span>'
+    return '<span class="text-muted">' . (defined($messages->{disabled}) ? $messages->{disabled} : 'status synced among siblings') . '</span>'
         if scalar @{$sibling_loginids_without_status} == 0;
 
-    return '<a href="'
+    return '<a class="link link--primary" href="'
         . request()->url_for(
         'backoffice/sync_client_status.cgi',
         {
@@ -706,7 +706,7 @@ sub build_client_warning_message {
 
     my $edit_client_with_status = sub {
         my $action_type = shift;
-        return '<a href="'
+        return '<a class="link" href="'
             . request()->url_for(
             "backoffice/f_clientloginid.cgi",
             {
@@ -720,7 +720,7 @@ sub build_client_warning_message {
 
     my $remove_client_from = sub {
         my $action_type = shift;
-        return '<a href="'
+        return '<a class="link link--primary" href="'
             . request()->url_for(
             "backoffice/untrusted_client_edit.cgi",
             {
@@ -757,17 +757,17 @@ sub build_client_warning_message {
     }
 
     # build the table
-    my $output =
-          '<form method="POST">'
-        . '<table border="1" class="collapsed hover alternate"><thead><tr>'
-        . '<th>&nbsp;</th>'
-        . '<th>STATUS</th>'
-        . '<th>REASON/INFO</th>'
-        . '<th>STAFF</th>'
-        . '<th>SYNC</th>'
-        . '</tr></thead><tbody>';
-
+    my $output;
     if (@output) {
+        $output =
+            '<form method="POST" class="row">'
+            . '<div class="row"><table class="collapsed hover alternate"><thead><tr>'
+            . '<th>&nbsp;</th>'
+            . '<th>Status</th>'
+            . '<th>Reason/Info</th>'
+            . '<th>Staff</th>'
+            . '<th>Sync</th>'
+            . '</tr></thead><tbody>';
         my $trusted_section;
         foreach my $output_rows (@output) {
             if (   $output_rows->{'editlink'} =~ /trusted_action_type=(\w+)/
@@ -782,7 +782,7 @@ sub build_client_warning_message {
                 . $output_rows->{'code'} . '" />' . '</td>'
                 . '<td align="left" style="color:'
                 . $output_rows->{'warning'}
-                . ';"><strong>'
+                . '"><strong>'
                 . (uc $output_rows->{'section'})
                 . '</strong></td>'
                 . '<td><b>'
@@ -795,46 +795,46 @@ sub build_client_warning_message {
                 . $output_rows->{'siblings_summary'}
                 . '</b></td></tr>';
         }
+
+        # Show all remaining status info
+        for my $status (sort keys %client_status) {
+            my $info = $client_status{$status};
+            $output .= '<tr>'
+                . '<td>&nbsp;</td>'
+                . '<td align="left">'
+                . $status . '</td>'
+                . '<td><b>'
+                . ($info->{reason} // '')
+                . '</b></td>'
+                . '<td><b>'
+                . ($info->{staff_name} // '')
+                . '</b></td>'
+                . '<td colspan="4">&nbsp;</td>' . '</tr>';
+        }
+        $output .= '</tbody></table></div>';
+        $output .= '<p>';
+        $output .= '<button class="btn btn--primary" name="status_op" value="remove">Remove selected</button> ';
+        $output .= '<button class="btn btn--primary" name="status_op" value="remove_siblings">Remove selected including siblings</button> ';
+        $output .= '<button class="btn btn--primary" name="status_op" value="sync">Copy selected to siblings</button>';
+        $output .= '</p>';
+        $output .= '</form>';
+
+        $output .= qq~
+        <script type="text/javascript" language="javascript">
+            function append_dccode(linkobj)
+            {
+                var dcc_staff_id = 'dcc_staff_'+linkobj.id;
+                var dcc_id       = 'dcc_'+linkobj.id;
+
+                var dccstaff = \$('#'+dcc_staff_id).val();
+                var dcc      = \$('#'+dcc_id).val();
+
+                linkobj.href.replace(/\&dcstaff.+/,'');
+                linkobj.href = linkobj.href + '&dccstaff=' + dccstaff + '&dcc=' + dcc;
+            }
+        </script>
+        ~;
     }
-
-    # Show all remaining status info
-    for my $status (sort keys %client_status) {
-        my $info = $client_status{$status};
-        $output .= '<tr>'
-            . '<td>&nbsp;</td>'
-            . '<td align="left">'
-            . $status . '</td>'
-            . '<td><b>'
-            . ($info->{reason} // '')
-            . '</b></td>'
-            . '<td><b>'
-            . ($info->{staff_name} // '')
-            . '</b></td>'
-            . '<td colspan="4">&nbsp;</td>' . '</tr>';
-    }
-    $output .= '</tbody></table>';
-    $output .= '<p>';
-    $output .= '<button name="status_op" value="remove">Remove Selected</button> ';
-    $output .= '<button name="status_op" value="remove_siblings">Remove Selected including Siblings</button> ';
-    $output .= '<button name="status_op" value="sync">Copy Selected to Siblings</button>';
-    $output .= '</p>';
-    $output .= '</form>';
-
-    $output .= qq~
-    <script type="text/javascript" language="javascript">
-         function append_dccode(linkobj)
-         {
-            var dcc_staff_id = 'dcc_staff_'+linkobj.id;
-            var dcc_id       = 'dcc_'+linkobj.id;
-
-            var dccstaff = \$('#'+dcc_staff_id).val();
-            var dcc      = \$('#'+dcc_id).val();
-
-            linkobj.href.replace(/\&dcstaff.+/,'');
-            linkobj.href = linkobj.href + '&dccstaff=' + dccstaff + '&dcc=' + dcc;
-         }
-    </script>
-    ~;
 
     return $output;
 }
@@ -891,7 +891,7 @@ sub status_op_processor {
                 my $client_status_clearer_method_name = 'clear_' . $status;
                 $client->status->$client_status_clearer_method_name;
                 $summary .=
-                    "<font color='lightgreen'><b>SUCCESS :</b></font>&nbsp;&nbsp;<b>$status</b>&nbsp;&nbsp;has been removed from <b>$loginid</b><br/>";
+                    "<div class='notify'><b>SUCCESS :</b>&nbsp;&nbsp;<b>$status</b>&nbsp;&nbsp;has been removed from <b>$loginid</b></div>";
             } elsif ($status_op eq 'remove_siblings') {
                 $summary .= status_op_processor(
                     $client,
@@ -905,7 +905,7 @@ sub status_op_processor {
 
                 if (scalar $updated_client_loginids->@*) {
                     $summary .=
-                        "<font color='lightgreen'><b>SUCCESS :</b></font>&nbsp;&nbsp;<b>$status</b>&nbsp;&nbsp;has been removed from siblings:<b>$siblings</b><br/>";
+                        "<div class='notify'><b>SUCCESS :</b><&nbsp;&nbsp;<b>$status</b>&nbsp;&nbsp;has been removed from siblings:<b>$siblings</b></div>";
                 }
             } elsif ($status_op eq 'sync') {
                 my $updated_client_loginids = $client->copy_status_to_siblings($status, BOM::Backoffice::Auth0::get_staffname());
@@ -913,7 +913,7 @@ sub status_op_processor {
 
                 if (scalar $updated_client_loginids->@*) {
                     $summary .=
-                        "<font color='lightgreen'><b>SUCCESS :</b></font>&nbsp;&nbsp;<b>$status</b>&nbsp;&nbsp;has been copied to siblings:<b>$siblings</b><br/>";
+                        "<div class='notify'><b>SUCCESS :</b>&nbsp;&nbsp;<b>$status</b>&nbsp;&nbsp;has been copied to siblings:<b>$siblings</b></div>";
                 }
             }
         } catch {
@@ -922,7 +922,7 @@ sub status_op_processor {
             $fail_op = 'remove from siblings' if $status_op eq 'remove_siblings';
             $fail_op = 'copy to siblings'     if $status_op eq 'sync';
 
-            $summary .= "<font color=red><b>ERROR :</b></font>&nbsp;&nbsp;Failed to $fail_op, status <b>$status</b>. Please try again.<br/>";
+            $summary .= "<div class='notify notify--danger'><b>ERROR :</b>&nbsp;&nbsp;Failed to $fail_op, status <b>$status</b>. Please try again.</div>";
         }
     }
 
@@ -999,7 +999,7 @@ sub date_html {
         eval {
             my $formatted = Date::Utility->new($date)->date_yyyymmdd;
             $date = $formatted;
-        } or $label = "<span style='color:red;'>$label (invalid)</span>";
+        } or $label = "<span class='error'>$label (invalid)</span>";
     }
 
     return
@@ -1072,7 +1072,7 @@ SQL
                 ($doc_types_categories{$document_type} && $doc_types_categories{$document_type}{title})
                 ? $doc_types_categories{$document_type}{title}
                 : $doc_types_categories{other}{title}) . ":";
-            $links .= qq(<tr><td colspan='7'><b> $category_title </b></td></tr>);
+            $links .= qq(<tr><th colspan='7' class='left'>$category_title</th></tr>);
         }
         $last_category_idx = $category_idx;
 
@@ -1096,17 +1096,17 @@ SQL
 
         my $required_mark = $poi_doc ? '*' : ' ';
 
-        my $input = '<td align="right">';
+        my $input = '<td align="left">';
         $input .=
             $expirable_doc
-            ? date_html('expiration_date', $expiration_date, 'expires on', $id, 0, $extra)
-            : ($no_date_doc ? '' : date_html('issue_date', $issue_date, 'issued on', $id, 0, $extra));
+            ? date_html('expiration_date', $expiration_date, 'Expires on:', $id, 0, $extra)
+            : ($no_date_doc ? '' : date_html('issue_date', $issue_date, 'Issued on:', $id, 0, $extra));
         $input .= "</td>";
 
         $input .=
-            qq{<td align="right"> document id $required_mark<input type="text" style="width:100px" maxlength="30" name="document_id_$id" value="$document_id" data-lpignore="true" $extra> </td>};
+            qq{<td align="left"><label>Document ID:</label>$required_mark<input type="text" style="width:100px" maxlength="30" name="document_id_$id" value="$document_id" data-lpignore="true" $extra> </td>};
         $input .=
-            qq{<td> comments <input type="text" style="width:100px" maxlength="255" name="comments_$id" value="$comments" data-lpignore="true" $extra> </td>};
+            qq{<td><label>Comments:</label><input type="text" style="width:100px" maxlength="255" name="comments_$id" value="$comments" data-lpignore="true" $extra> </td>};
 
         my $s3_client =
             BOM::Platform::S3Client->new(BOM::Config::s3()->{document_auth});
@@ -1114,17 +1114,17 @@ SQL
 
         my $expired_poi_hint =
             ($expirable_doc && $poi_doc && $expiration_date && Date::Utility::today()->date gt $expiration_date)
-            ? qq{ style="color:red" title="expired" }
+            ? qq{ class="error" title="expired" }
             : "";
 
         $links .=
-            qq{<tr><td width="20" dir="rtl" $expired_poi_hint > &#9658; </td><td><a href="$url" target="_blank">$file_name</a></td>$age_display$input};
+            qq{<tr><td width="20" dir="rtl" $expired_poi_hint > &#9658; </td><td><a class="link link--primary" href="$url" target="_blank">$file_name</a></td>$age_display$input};
 
         $links .= qq{<td><input type="checkbox" class='files_checkbox' name="del_document_list" value="$id-$loginid-$file_name"><td>};
 
         $links .= "</tr>";
     }
-    $links = "<table>$links</table>" if $links;
+    $links = "<table class='full-width'>$links</table>" if $links;
 
     return $links;
 }
@@ -1464,9 +1464,9 @@ sub get_client_details {
 
         BrokerPresentation("CLIENT DETAILS");
         code_exit_BO(
-            qq[<p>Login Id is required</p>
+            qq[<p>Login ID is required</p>
             <form action="$self_post" method="get">
-            Login ID: <input type="text" name="loginID" size="15" data-lpignore="true" />
+            <label>Login ID:</label><input type="text" name="loginID" size="15" data-lpignore="true" />
             </form>]
         );
     }
@@ -1488,13 +1488,13 @@ sub get_client_details {
         my $message =
             $well_formatted
             ? "Client [$encoded_loginid] not found."
-            : "Invalid loginid provided.";
+            : "Invalid Login ID provided.";
 
+        print "<p class='notify notify--danger'>ERROR: $message </p>";
         code_exit_BO(
-            qq[<p>ERROR: $message </p>
-            <form action="$self_post" method="get">
-                Try Again: <input type="text" name="loginID" size="15" value="$encoded_loginid" data-lpignore="true" />
-                <input type="submit" value="Search" />
+            qq[<form action="$self_post" method="get">
+                <label>Try again:</label><input type="text" name="loginID" size="15" value="$encoded_loginid" data-lpignore="true" />
+                <input type="submit" class="btn btn--primary" value="Search" />
             </form>]
         );
     }
@@ -1556,26 +1556,21 @@ Returns  undef
 sub client_search_and_navigation {
     my ($client, $self_post) = @_;
     Bar("NAVIGATION");
-    print qq[<style>
-    div.flat { display: inline-block }
-    </style>
-    ];
 
     my $encoded_loginid = encode_entities($client->loginid);
     my $email           = encode_entities($client->user->{email});
     my $email_url       = request()->url_for('backoffice/client_email.cgi');
 
+    print '<div class="row">';
+
     print qq{
-        <div class="flat">
-            <form action="$self_post" method="get">
-                <input type="text" size="15" maxlength="15" name="loginID" value="$encoded_loginid" data-lpignore="true" />
-            </form>
-        </div>
-        <div class="flat">
-            <form action="$email_url" method="get">
-                <input type="text" size="30" name="email" value="$email" placeholder="email\@domain.com" data-lpignore="true" />
-            </form>
-        </div>
+        <form action="$self_post" method="get">
+            <input type="text" size="15" maxlength="15" name="loginID" value="$encoded_loginid" data-lpignore="true" />
+        </form>
+
+        <form action="$email_url" method="get">
+            <input type="text" size="30" name="email" value="$email" placeholder="email\@domain.com" data-lpignore="true" />
+        </form>
     };
 
 # find next and prev real clients but give up after a few tries in each direction.
@@ -1601,29 +1596,27 @@ sub client_search_and_navigation {
 
     if ($prev_client) {
         print qq{
-        <div class="flat">
         <form action="$self_post" method="get">
         <input type="hidden" name="loginID" value="$encoded_prev_loginid">
-        <input type="submit" value="Previous Client ($encoded_prev_loginid)">
+        <input type="submit" class="btn btn--red" value="Previous client ($encoded_prev_loginid)">
         </form>
-        </div>
         }
     } else {
-        print qq{<div class="flat">(No Client down to $encoded_prev_loginid)</div>};
+        print qq{<span class="btn btn--disabled">No client down to $encoded_prev_loginid</span>};
     }
 
     if ($next_client) {
         print qq{
-        <div class="flat">
         <form action="$self_post" method="get">
         <input type="hidden" name="loginID" value="$encoded_next_loginid">
-        <input type="submit" value="Next client ($encoded_next_loginid)">
+        <input type="submit" class="btn btn--red" value="Next client ($encoded_next_loginid)">
         </form>
-        </div>
         }
     } else {
-        print qq{<div class="flat">(No client up to $encoded_next_loginid)</div>};
+        print qq{<span class="btn btn--disabled">No client up to $encoded_next_loginid</span>};
     }
+
+    print '</div>';
     return undef;
 }
 
@@ -1800,7 +1793,7 @@ sub link_for_clientloginid_edit {
     my $login_id = shift;
 
     return
-          '<a href="'
+          '<a class="link link--primary" href="'
         . request()->url_for("backoffice/f_clientloginid_edit.cgi", {loginID => encode_entities($login_id)}) . '">'
         . encode_entities($login_id) . '</a>';
 }

@@ -21,12 +21,12 @@ sub process_dividend {
 
     my ($data, $skipped);
     ($data, $skipped) = read_discrete_forecasted_dividend_from_excel_files($fh, $vendor);
-    die 'No data was read' if not keys %$data;
+    return '<p class="error">No data was read</p>' if not keys %$data;
     save_dividends($data);
 
     my $number_of_underlyings_processed = scalar keys %$data;
     my $skipped_string                  = join ',', @$skipped;
-    my $success_msg = 'Processed dividends for ' . $number_of_underlyings_processed . ' underlyings. Skipped [' . $skipped_string . ']';
+    my $success_msg = '<p class="success">Processed dividends for ' . $number_of_underlyings_processed . ' underlyings. Skipped [' . $skipped_string . ']</p>';
 
     return $success_msg;
 }
@@ -69,7 +69,7 @@ sub save_dividends {
 
             $dividends->save;
         } catch {
-            print " We are having error for $symbol: $@";
+            print "<p class='error'>We are having error for $symbol: $@</p>";
         }
     }
     return;
@@ -127,7 +127,7 @@ sub read_discrete_forecasted_dividend_from_excel_files {
             try {
                 $spot = $underlying->spot // create_underlying('OTC_' . $symbol)->spot;
             } catch {
-                print "<p style=\"color:red; font-weight:bold;\">$@</p>";
+                print "<p class='error'>$@</p>";
             }
 
         }

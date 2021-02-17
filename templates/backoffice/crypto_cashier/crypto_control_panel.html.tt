@@ -10,41 +10,41 @@
     <br>
     <input type="hidden" name="broker" value="[% broker %]">
 <!-- Recon -->
-        <button type="submit" name="view_action" value="reconcil">Reconciliation</button>
+        <button type="submit" class="btn btn--primary" name="view_action" value="reconcil">Reconciliation</button>
         <input type="text" name="start_date" class="datepick" value="[% start_date %]" required pattern="\d{4}-\d{2}-\d{2}" size="12" data-lpignore="true" />
         <input type="text" name="end_date" class="datepick" value="[% end_date %]" required pattern="\d{4}-\d{2}-\d{2}" size="12" data-lpignore="true" />
         <input type="checkbox" name="include_new" id="include_new" [% IF include_new %] checked [% END %]><label for="include_new">Show new addresses</label>
         [% IF currency == 'UST' %]<input type="checkbox" name="fee_recon" id="fee_recon"><label for="fee_recon">Show BTC recon</label>[% END %]
     <br><br>
 <!-- Search -->
-        <button type="submit" name="view_action" value="search">Search</button>
+        <button type="submit" class="btn btn--primary" name="view_action" value="search">Search</button>
         <select name="search_type">
-            <option value="loginid">Loginid</option>
+            <option value="loginid">Login ID</option>
             <option value="address">Address</option>
         </select>
         <input type="text" name="search_query" data-lpignore="true" size="40" />
     <br><br>
 <!-- Manual Confirmation -->
-        <button type="submit" name="view_action" value="reprocess_confirmation">Reprocess Address</button>
+        <button type="submit" class="btn btn--primary" name="view_action" value="reprocess_confirmation">Reprocess address</button>
         <label for="address_to_reprocess">Address</label>
         <input type="text" name="address_to_reprocess" id="address_to_reprocess" data-lpignore="true" size="40" />
     <br><br>
 <!-- Deposit -->
-    <button type="submit" name="view_action" value="deposits">Deposit Transactions</button>
+    <button type="submit" class="btn btn--primary" name="view_action" value="deposits">Deposit transactions</button>
     <br><br>
 <!-- Withdrawal -->
-    <button type="submit" name="view_action" value="withdrawals">Withdrawal Transactions</button>
+    <button type="submit" class="btn btn--primary" name="view_action" value="withdrawals">Withdrawal transactions</button>
     <input type="checkbox" id="show_all_pendings" name="show_all_pendings" [% IF show_all_pendings %] checked [% END %]>
     <label for="show_all_pendings"> Show all pending payouts </label>
     <input type="checkbox" id="show_one_authorised" name="show_one_authorised" [% IF show_one_authorised %] checked [% END %]>
     <label for="show_one_authorised"> Show One Authorised pending payouts </label>
     <br><br>
-    <button type="submit" name="view_action" value="auto_reject_insufficient">Auto-reject withdrawals with insufficient balance</button>
+    <button type="submit" class="btn btn--primary" name="view_action" value="auto_reject_insufficient">Auto-reject withdrawals with insufficient balance</button>
     <br><br>
     Pending Client Payouts : <strong> [% pending_withdrawal_amount %] [% currency %] </strong>
     <br><br>
 <!-- Tools -->
-    <button type="submit" name="view_action" value="run">Run</button>
+    <button type="submit" class="btn btn--primary" name="view_action" value="run">Run</button>
     <select name="command">
         <option value="getbalance" [% IF cmd == "getbalance" %] selected="selected" [% END %]>Get Balance</option>
         <option value="getwallet" [% IF cmd == "getwallet" %] selected="selected" [% END %]>Get Wallet Balance</option>

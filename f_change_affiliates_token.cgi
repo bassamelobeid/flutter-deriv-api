@@ -34,7 +34,6 @@ my $self_post = request()->url_for('backoffice/f_change_affiliates_token.cgi');
 # given a bad-enough loginID, BrokerPresentation can die, leaving an unformatted screen..
 # let the client-check offer a chance to retry.
 BrokerPresentation("AFFILIATE TOKEN DCC");
-
 # Not available for Virtual Accounts
 if (($loginid =~ BOM::User->VIRTUAL_REGEX) || ($loginid =~ BOM::User->MT5_REGEX)) {
     code_exit_BO("We're sorry but the Affiliate Token is not available for this type of Accounts.", 'CHANGE Client AFFILIATE TOKEN DCC');
@@ -63,7 +62,7 @@ if ($input->{EditAffiliatesToken}) {
 
     my $ClientLoginid  = trim(uc $input->{ClientLoginid});
     my $well_formatted = check_client_login_id($ClientLoginid);
-    code_exit_BO(_get_display_error_message("ERROR: Invalid loginid provided!")) unless $well_formatted;
+    code_exit_BO(_get_display_error_message("ERROR: Invalid Login ID provided!")) unless $well_formatted;
     if (($ClientLoginid =~ /^VR/) || ($ClientLoginid =~ /^MT[DR]?\d+$/)) {
         code_exit_BO(_get_display_error_message("ERROR: Affiliate Token is not available for this type of Accounts.!"));
     }
@@ -95,10 +94,10 @@ if ($input->{EditAffiliatesToken}) {
         $cli->myaffiliates_token($affiliate_token);
 
         if (not $cli->save) {
-            code_exit_BO("<p style=\"color:red; font-weight:bold;\">ERROR : Could not update client details for client $ClientLoginid</p></p>");
+            code_exit_BO("<p class=\"error\">ERROR : Could not update client details for client $ClientLoginid</p></p>");
         }
 
-        print "<p style=\"color:#eeee00; font-weight:bold;\">Client " . $cli->loginid . " saved</p>";
+        print "<p class=\"notify\">Client " . $cli->loginid . " saved</p>";
     }
 
     my $msg =

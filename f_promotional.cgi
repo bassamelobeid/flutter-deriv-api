@@ -77,7 +77,7 @@ if (@$pcs) {
     }
     print '<ul>';
     for my $currency_label (sort keys %pcs_by_currency) {
-        printf qq{<li><a href="%s" onclick="%s">%s currency</a></li>\n},
+        printf qq{<li><a class="link" href="%s" onclick="%s">%s currency</a></li>\n},
             request()->url_for(
             'backoffice/f_promotional.cgi',
             {
@@ -88,7 +88,7 @@ if (@$pcs) {
             "window.location=this.href + '&expiry_select=' + document.getElementById('expiry_select').value; return(false);",
             $currency_label;
     }
-    printf qq{<li><a href="%s" onclick="%s">ALL promocodes</a></li>\n},
+    printf qq{<li><a class="link" href="%s" onclick="%s">ALL promocodes</a></li>\n},
         request()->url_for(
         'backoffice/f_promotional.cgi',
         {
@@ -101,36 +101,30 @@ if (@$pcs) {
 
     print 'The Free Gift promotional codes are:';
 
-    print << "EOT";
-<style>
-table.promo { border-collapse: collapse }
-table.promo, table.promo th, table.promo td { border: 1px solid black; }
-table.promo td { padding: 2px 4px 3px 4px; text-align: center; }
-table.promo td.code { font-family: monospace; font-weight: bolder; }
-table.promo td.money { text-align: right; white-space: nowrap; }
-table.promo td.nowrap { white-space: nowrap; }
-</style>
-<table class="promo sortable hover">
-<tr>
- <th>CODE</th>
- <th>CURRENCY</th>
- <th>AMOUNT</th>
- <th>MIN DEPOSIT</th>
- <th>MIN TURNOVER</th>
- <th>TURNOVER TYPE</th>
- <th>MIN PAYOUT</th>
- <th>MAX MAXOUT</th>
- <th>PAYMENT METHOD</th>
- <th>START DATE<br></th>
- <th>EXPIRY DATE<br>(red=expired)</th>
- <th>TYPE</th>
- <th>COUNTRY</th>
- <th>DESCRIPTION</th>
- <th>STATUS</th>
- <th>EDIT</th>
-</tr>
-EOT
-
+    print qq{
+<div class="scrollable">
+<table class="sortable hover border alternate">
+    <thead>
+        <tr>
+            <th>Code</th>
+            <th>Currency</th>
+            <th>Amount</th>
+            <th>Min. deposit</th>
+            <th>Min. turnover</th>
+            <th>Turnover type</th>
+            <th>Min. payout</th>
+            <th>Max. maxout</th>
+            <th>Payment method</th>
+            <th>Start date<br></th>
+            <th>Expiry date<br>(red=expired)</th>
+            <th>Type</th>
+            <th>Country</th>
+            <th>Description</th>
+            <th>Status</th>
+            <th>Edit</th>
+        </tr>
+    </thead>
+};
     for my $pc (@$pcs) {
 
         ## Skip there is no currency, or we are not viewing this specific one
@@ -142,7 +136,7 @@ EOT
         $input{expiry_select} ||= 0;
         if ($pc->expiry_date && $pc->expiry_date->epoch < time()) {
             next if 2 == $input{expiry_select};
-            $expiry_date = sprintf '<span style="color: %s">%s</span>', '#8C001A', $pc->expiry_date->ymd;
+            $expiry_date = sprintf '<span class="%s">%s</span>', 'text-red', $pc->expiry_date->ymd;
         } elsif ($pc->expiry_date) {
             next if 1 == $input{expiry_select};
             $expiry_date = $pc->expiry_date->ymd;
@@ -175,7 +169,7 @@ EOT
                 broker    => $broker,
                 promocode => $pc->code,
             });
-        $show{link} = qq[<a target="_blank" href="$href">Edit</a>];
+        $show{link} = qq[<a class="link link--primary" target="_blank" href="$href">Edit</a>];
 
         print qq{
 <tr>
@@ -199,19 +193,19 @@ EOT
 };
     }
 
-    print '</table>';
+    print '</table></div>';
 }
 
-print '<i>Note: to track signups, see the log files in the Perl log files section.</i>';
+print '<br><i>NOTE: to track signups, see the log files in the Perl log files section.</i>';
 
 # Adding new promocode
-print '<br><hr>' . '<p><b>' . '<font color=green size=3>Add new promocode: </font>' . '</b></p>';
+print '<hr>';
 
 printf '
 <form method=get action="%s">
 <input name=broker value="%s" type=hidden></input>
 <input type="hidden" name="isnew" value="1" />
-<input type=submit value="Add new promocode"> Note: Click this button to add new promocode
+<input type=submit class="btn btn--primary" value="Add new promocode">
 </form>
 ', request()->url_for('backoffice/promocode_edit.cgi'), $broker;
 
@@ -238,10 +232,9 @@ if (my $bulk_upload = $input{bulk_promo_upload}) {
                 file  => $bulk_upload,
                 data  => $lines
             }) or die "Failed to emit assign_promo_codes event - please check with Backend team.\n";
-        print '<p style="color:green; font-weight:bold;">'
-            . " $bulk_upload is being processed. An email will be sent to $email when the job completes.</p>";
+        print '<p class="success">' . " $bulk_upload is being processed. An email will be sent to $email when the job completes.</p>";
     } catch {
-        print '<p style="color:red; font-weight:bold;">ERROR: ' . $@ . '</p>';
+        print '<p class="error">ERROR: ' . $@ . '</p>';
     }
 }
 
@@ -249,12 +242,12 @@ my $clerk = BOM::Backoffice::Auth0::get_staffname() // '';
 
 print
     '<l><li>Applies bonus codes to clients if the code is valid and the client does not have a promo code.</li><li>CSV format, comma separated</li><li>No header</li><li>2 columns: client id, bonus code</li></l>'
-    . '<form method="post" enctype="multipart/form-data">'
-    . '<br>File:&nbsp;<input type="file" required name="bulk_promo_upload" style="width: 150px">'
-    . '<br>Notify when done:&nbsp;<input type="email" required name="bulk_promo_notify_email" value="'
+    . '<br><form method="post" enctype="multipart/form-data">'
+    . '<div class="row"><label>File:</label><input type="file" required name="bulk_promo_upload"></div>'
+    . '<div class="row"><label>Notify when done:</label><input type="email" required name="bulk_promo_notify_email" value="'
     . $clerk
-    . '@binary.com">'
-    . '<br><input type=submit value="Upload">'
+    . '@binary.com"></div>'
+    . '<input type=submit class="btn btn--primary" value="Upload">'
     . '</form>';
 
 # PROMO CODE APPROVAL TOOL
@@ -263,7 +256,8 @@ Bar('PROMO CODE APPROVAL TOOL');
 my ($output, $table_elements, $input_elements);
 
 my $table_header = sprintf '<br /><form method="post" action="%s">
-<table border=1 cellpadding=3 cellspacing=1 id="PROMO_CODE_APPROVAL" class="sortable">
+<table id="PROMO_CODE_APPROVAL" class="border sortable">
+<thead>
 <tr>
 <th>Approve</th>
 <th>Reject</th>
@@ -282,7 +276,8 @@ my $table_header = sprintf '<br /><form method="post" action="%s">
 <th>Account status</th>
 <th>Notify client?</th>
 <th>Further details</th>
-</tr>', request()->url_for('backoffice/f_promotional_processing.cgi');
+</tr>
+</thead>', request()->url_for('backoffice/f_promotional_processing.cgi');
 
 my @clients = BOM::User::Client->by_promo_code(
     broker_code => $broker,
@@ -299,7 +294,7 @@ foreach my $client (@clients) {
            $client->status->disabled
         || $client->status->cashier_locked
         || $client->status->unwelcome;
-    my $color    = $dodgy ? 'red'                 : '';
+    my $class    = $dodgy ? 'error'               : '';
     my $disabled = $dodgy ? 'disabled="disabled"' : '';
     my $client_name          = $client->salutation . ' ' . $client->first_name . ' ' . $client->last_name;
     my $client_residence     = Locale::Country::code2country($client->residence);
@@ -375,21 +370,21 @@ foreach my $client (@clients) {
 
     $total_turnover ||= '&nbsp;';
 
-    my $bonuscheck_link = '<a href="'
+    my $bonuscheck_link = '<a class="link link--primary" href="'
         . request()->url_for(
         'backoffice/f_client_bonus_check.cgi',
         {
             broker  => $broker,
             loginID => $client_login
         }) . '" target=_blank>bonus check</a>';
-    my $clientdetail_link = '<a href="'
+    my $clientdetail_link = '<a class="link link--primary" href="'
         . request()->url_for(
         'backoffice/f_clientloginid_edit.cgi',
         {
             broker  => $broker,
             loginID => $client_login
         }) . '" target=_blank>client details</a>';
-    my $statement_link = '<a href="'
+    my $statement_link = '<a class="link link--primary" href="'
         . request()->url_for(
         'backoffice/f_manager_history.cgi',
         {
@@ -410,19 +405,19 @@ foreach my $client (@clients) {
             <td><center><input name="${client_login}_promo" value="A" type="radio" $disabled ></center></td>
             <td><center><input name="${client_login}_promo" value="R" type="radio"           ></center>
             <input type="hidden" name="${client_login}_amount" value="$amount"></td>
-            <td><font color="$color">$datetime</font></td>
-            <td><font color="$color">${\($pc->code)}</font></td>
-            <td><font color="$color">${\($pc->promo_code_type)}</font></td>
-            <td><font color="$color">${\($pc->{_json}{currency})} $amount</font></td>
-            <td><font color="$color">$client_login</font></td>
-            <td><font color="$color">$client_name</font></td>
-            <td><font color="$color">$client_residence</font></td>
-            <td><font color="$color">&nbsp;</font></td>
-            <td><font color="$color">$client_ip</font></td>
-            <td><font color="$color">$total_turnover</font></td>
-            <td><font color="$color">$account_age</font></td>
-            <td><font color="$color">$client_authenticated</font></td>
-            <td><font color="$color">$check_account</font></td>
+            <td class="$class">$datetime</td>
+            <td class="$class">${\($pc->code)}</td>
+            <td class="$class">${\($pc->promo_code_type)}</td>
+            <td class="$class">${\($pc->{_json}{currency})} $amount</td>
+            <td class="$class">$client_login</td>
+            <td class="$class">$client_name</td>
+            <td class="$class">$client_residence</td>
+            <td class="$class">&nbsp;</td>
+            <td class="$class">$client_ip</td>
+            <td class="$class">$total_turnover</td>
+            <td class="$class">$account_age</td>
+            <td class="$class">$client_authenticated</td>
+            <td class="$class">$check_account</td>
             <td><center><input name="${client_login}_notify" type="checkbox" checked="checked"></center></td>
             <td>$bonuscheck_link, $clientdetail_link, $statement_link</td>
         </tr>
@@ -431,7 +426,7 @@ foreach my $client (@clients) {
 
 my $table_end =
       '</table>'
-    . '<br /><input type="submit" value="Save">'
+    . '<br /><input type="submit" class="btn btn--red" value="Save">'
     . '<input type=hidden name="save_file" value="save">'
     . '<input type=hidden name="broker" value="'
     . $broker . '">'
@@ -440,7 +435,7 @@ my $table_end =
 if ($table_elements) {
     $output .= $table_header . $table_elements . $table_end;
 } else {
-    $output .= '<br /><p>There are no clients in the pending promotional code approval list.</p><br />';
+    $output .= '<p>There are no clients in the pending promotional code approval list.</p>';
 }
 
 print $output;
@@ -455,6 +450,6 @@ BOM::Backoffice::Request::template()->process(
 
 Bar('Payment Agent List');
 my $pa_list_url = request()->url_for('backoffice/f_payment_agent_list.cgi', {broker => $broker});
-print qq[<p><a href="$pa_list_url">Display list of payment agents</a></p>];
+print qq[<p><a class="btn btn--primary" href="$pa_list_url">Display list of payment agents</a></p>];
 
 code_exit_BO();

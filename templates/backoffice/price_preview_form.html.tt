@@ -1,11 +1,11 @@
 <p>Price table will calculate the Mid price ((vanilla call + vanilla put)/2) of the next 7 days. If you need to check prices for more than one week, please use the provided *Pricing From* field.</p>
-<p>*Pricing From* will only support forward pricing. For back pricing, please use BPOT.</p>
+<p><b>* Pricing from*</b> will only support forward pricing. For back pricing, please use BPOT.</p>
 <table id='price_preview_form'>
     <tr>
-        <td>Symbol Filter: </td><td><input type='text' name='symbol' data-lpignore='true' /></td>
+        <td>Symbol filter: </td><td><input type='text' name='symbol' data-lpignore='true' /></td>
     </tr>
     <tr>
-        <td>Pricing From: </td><td><input type='text' name='pricing_date' data-lpignore='true' /></td><td> * defaults to current date if left empty (e.g. 2018-02-28)</td>
+        <td>Pricing from: </td><td><input type='text' name='pricing_date' data-lpignore='true' /></td><td> <i>* defaults to current date if left empty (e.g. 2018-02-28)</i></td>
     </tr>
     <tr>
         <td>
@@ -19,14 +19,15 @@
         </td>
     </tr>
     <tr>
-        <td><button onclick="updatePricePreview()">Price</button></td>
+        <td><button onclick="updatePricePreview()" class="btn btn--primary">Price</button></td>
         <td class='result'></td>
     </tr>
 </table>
 
-<p><b>Price Table:</b> * defaults to showing USD pairs</p>
+<hr>
+<p><b>Price Table:</b> <i>* defaults to showing USD pairs</i></p>
 <div id='price_preview_original'></div>
-
+<br>
 <p><b>To Compare:</b></p>
 <div id='price_preview_compare'>
 <p>empty</p>

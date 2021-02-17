@@ -34,13 +34,16 @@ my $lastmonth      = $now->months_ahead(-1);
 # Daily Turnover Report
 Bar("DAILY TURNOVER REPORT");
 
-print '<form action="' . request()->url_for('backoffice/f_dailyturnoverreport.cgi') . '" method="post" onsubmit="return validate_month()">';
+print '<form action="'
+    . request()->url_for('backoffice/f_dailyturnoverreport.cgi')
+    . '" method="post" onsubmit="return validate_month()" class="row">';
 print "<input type=hidden name=broker value=$encoded_broker>";
 my $today = Date::Utility->today;
 my $month = $today->year . '-' . sprintf("%02d", $today->month);
 
-print 'Month: <input type=text size=12 name=month value="' . $month . '" required pattern="\d{4}-\d{2}" data-lpignore="true" />';
-print "<br /><input type=\"submit\" value=\"Daily Turnover Report\"> CLICK ONLY ONCE! Be patient if slow to respond.";
+print '<label>Month:</label><input type=text size=12 name=month value="' . $month . '" required pattern="\d{4}-\d{2}" data-lpignore="true" />';
+print
+    "<input type=\"submit\" class=\"btn btn--primary\" value=\"Daily turnover report\"><strong class=\"error\">CLICK ONLY ONCE!</strong>&nbsp;&nbsp;Be patient if slow to respond.";
 print "</form>";
 
 Bar("Monthly Client Reports");
@@ -54,8 +57,8 @@ Bar("Monthly Client Reports");
 
 Bar("USEFUL EXCHANGE RATES");
 
-print "The following exchange rates are from our exchange rates listener. They are live rates as of right now ("
-    . Date::Utility->new->datetime . ")" . "<ul>";
+print "<p>The following exchange rates are from our exchange rates listener. They are live rates as of right now ("
+    . Date::Utility->new->datetime . ")<p>" . "<ul>";
 
 my $currency_pairs = BOM::Config::currency_pairs_backoffice()->{currency_pairs};
 
@@ -68,7 +71,7 @@ foreach my $pair (@$currency_pairs) {
         print "<li>" . $pair_name . " : " . $underlying_spot . "</li>";
     } catch {
         warn "Failed to get exchange rate for $pair_name - $@\n";
-        print '<li>' . $pair_name . ': <span style="color:red;">ERROR</span></li>';
+        print '<li>' . $pair_name . ': <span class="error">ERROR</span></li>';
     }
 
 }
@@ -77,7 +80,7 @@ print "</ul>";
 
 print qq~
     <p>Inter-bank interest rates (from BBDL=Bloomberg Data License):</p>
-    <table class='hover alternate collapsed' border='1'>
+    <table class='hover alternate collapsed border'>
         <thead>
             <tr>
                 <th>Currency</th>
@@ -104,7 +107,7 @@ foreach my $currency_symbol (qw(AUD GBP EUR USD HKD)) {
             . '%</td></tr>';
     } catch {
         warn "Failed to get currency interest rates for $currency_symbol - $@\n";
-        print '<tr><td>' . $currency_symbol . '</td><td colspan="2" style="color:red;">ERROR</td></tr>';
+        print '<tr><td>' . $currency_symbol . '</td><td colspan="2" class="error">ERROR</td></tr>';
     }
 }
 print '</tbody></table>';
@@ -114,8 +117,8 @@ Bar("Aggregate Balance Per Currency");
 print '<form action="'
     . request()->url_for('backoffice/aggregate_balance.cgi')
     . '" method=get>'
-    . '<br/>Run this only on master server.'
-    . ' <input type=submit value="Generate">'
+    . '<label>Run this only on master server:</label>'
+    . '<input type="submit" class="btn btn--primary" value="Generate" />'
     . '</form>';
 
 print <<QQ;

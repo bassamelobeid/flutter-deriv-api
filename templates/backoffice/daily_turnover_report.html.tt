@@ -1,24 +1,24 @@
 <div>
-    <p>View Daily Turnover Report</p>
+    <h3>Daily turnover report</h3>
     <form action="[% request.url_for('backoffice/f_dailyturnoverreport.cgi') | none %]" method="post" onsubmit="return validate_month()">
-        Month: <input type="text" size="12" name="month" value="[% this_month %]" required pattern="\d{4}-\d{2}" data-lpignore="true" />
-        <br/><br/>
-        <input type="submit" value="View Daily Turnover Report"></input>
+        <label>Month:</label><input type="text" size="12" name="month" value="[% this_month %]" required pattern="\d{4}-\d{2}" data-lpignore="true" />
+        <input type="submit" class="btn btn--primary" value="View daily turnover report"></input>
     </form>
 </div>
 <hr/>
-<br/>
 
 [% IF dtr.risk_report %]
-<p>See, also: <a href="[% dtr.risk_report | none %]">the lastest risk dashboard</a></p>
+<p>See, also: <a class="link link--primary" href="[% dtr.risk_report | none %]">the latest Risk Dashboard</a></p>
 [% END %]
 [% IF dtr.mtm_calc_time %]
     <p id='mtm_last_calculated_time'>Latest marked to market calculation prices at [% dtr.mtm_calc_time %]</p>
 [% END %]
 [% IF dtr.initial_note %]
-    <p>[% dtr.initial_note %]</p>
+    <p><i>* [% dtr.initial_note %]</i></p>
 [% END %]
-    <table id="dtr" border="1" cellpadding="1" cellspacing="0">
+<div class="scrollable">
+    <table id="dtr" class="border hover">
+        <thead>
         <tr>
             <th>DATE</th>
             [% FOREACH currency IN dtr.currencies.sort %]
@@ -33,6 +33,8 @@
             <th>PL ON DAY</th>
             <th>Active Clients</th>
         </tr>
+        </thead>
+        <tbody>
             [% FOREACH day IN dtr.days %]
                 <tr[% IF day.is_weekend %] class="weekend"[% END %]>
                     <td>[% day.date %]</td>
@@ -65,34 +67,34 @@
             <td>N/A</td>
             <td>N/A</td>
         </tr>
+        </tbody>
     </table>
-
+</div>
 [% IF dtr.summarize_turnover %]
 <br>
-    <table id="summary">
+    <table id="summary" class='bg-highlight'>
         <thead>
-    <caption>Amounts in USD. Projections based on a <strong>[% dtr.pct_month_completed %]%</strong> complete marked-to-model month.</caption>
-<tr><th/><th>Current</th><th>Projected</th></tr>
+            <tr><th/><th>Current</th><th>Projected</th></tr>
         </thead>
         <tbody>
-    <tr><th>Turnover</th><td>[% commas(dtr.all_USD_buys) %]</td><td>[% commas(dtr.projected_turnover) %]</td></tr>
-    <tr><th>Profit</th><td>[% commas(dtr.estimated_pl) %]</td><td>[% commas(dtr.projected_pl) %]</td></tr>
-    <tr><th>Hold</th><td colspan="2" class="shared">[% dtr.pct_hold %]%</td></tr>
+            <tr><th>Turnover</th><td>[% commas(dtr.all_USD_buys) %]</td><td>[% commas(dtr.projected_turnover) %]</td></tr>
+            <tr><th>Profit</th><td>[% commas(dtr.estimated_pl) %]</td><td>[% commas(dtr.projected_pl) %]</td></tr>
+            <tr><th>Hold</th><td colspan="2" class="shared">[% dtr.pct_hold %]%</td></tr>
         </tbody>
+        <caption>Amounts in USD. Projections based on a <strong>[% dtr.pct_month_completed %]%</strong> complete marked-to-model month.</caption>
     </table>
 [% END %]
 
 <style type="text/css">
-    #dtr span.warning { color:red; }
+    #dtr span.warning, span.warning * { color:var(--color-red); }
     #dtr th { text-align: left; }
     #dtr td { white-space: nowrap; }
-    #dtr td.up { color: green; }
-    #dtr td.down { color: red; }
-    #dtr tr.weekend td { background-color:#ffb; }
-#summary { background-color: #cfd; }
-#summary th { font-weight: normal; font-size: medium; }
-#summary td { text-align: right; font-weight: bold; font-size: medium; padding: 5px;}
-#summary td.shared { text-align: center;}
+    #dtr td.up, td.up * { color: var(--color-green-2); }
+    #dtr td.down, td.down * { color: var(--color-red); }
+    #dtr tr.weekend td { background-color: var(--color-grey-1); }
+#summary th { font-weight: normal; font-size: medium; border: 1px solid white; background-color: var(--color-grey-1); }
+#summary td { text-align: right; font-weight: bold; font-size: medium; padding: 5px; border: 1px solid white; }
+#summary td.shared { text-align: center; }
 #summary caption { caption-side: bottom; font-size: small;  }
 
 </style>

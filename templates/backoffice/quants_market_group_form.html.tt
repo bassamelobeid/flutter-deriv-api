@@ -31,7 +31,7 @@
         <td> (required)</td>
     </tr>
     <tr>
-        <td><button onClick="UpdateMarketGroup()" type="button">Update</button></td><td class="result"></td>
+        <td><button onClick="UpdateMarketGroup()" type="button" class="btn btn--primary">Update</button></td><td class="result"></td>
     </tr>
 </table>
 </fieldset>
@@ -53,9 +53,9 @@
             success: function(data) {
                 var config = \$.parseJSON(data);
                 if (config.error) {
-                    result.text(config.error).css('color', 'red');
+                    result.text(config.error).css('color', 'var(--color-red)');
                 } else {
-                    result.text('successfully updated').css('color', 'green');
+                    result.text('successfully updated').css('color', 'var(--color-green-2)');
                 }
             }
         });

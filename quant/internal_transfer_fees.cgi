@@ -63,7 +63,7 @@ if ($submit) {
         $app_config->set({
             'payments.transfer_between_accounts.fees.by_currency' => $fee_by_currency,
         });
-        $currency_msg = "<p style='color:green'><strong>SUCCESS: Transfer fees by currency saved.</strong></p>";
+        $currency_msg = "<p class='success'><strong>SUCCESS: Transfer fees by currency saved.</strong></p>";
     }
 
     if (   $fiat_fiat != request()->param('fiat_fiat')
@@ -85,7 +85,7 @@ if ($submit) {
             'payments.transfer_between_accounts.fees.default.crypto_fiat' => $crypto_fiat,
             'payments.transfer_between_accounts.fees.default.stable_fiat' => $stable_fiat
         });
-        $defaults_msg = "<p style='color:green'><strong>SUCCESS: Default transfer fees saved.</strong></p>";
+        $defaults_msg = "<p class='success'><strong>SUCCESS: Default transfer fees saved.</strong></p>";
     }
 }
 

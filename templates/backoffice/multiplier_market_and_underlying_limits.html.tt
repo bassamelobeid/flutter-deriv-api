@@ -1,9 +1,7 @@
 <p>
-
-
 <b>max volume</b>, is calculated as follows:
 
-<h3>max volume = max stake * max volume positions * max multiplier</h3>
+<p class="notify notify--secondary">max volume = max stake * max volume positions * max multiplier</p>
 
 <ul>
   <li>Risk profile, defines the "max stake" per contract - see the table at the top of the page.</li>
@@ -21,7 +19,7 @@ Setting it for a market is a shortcut for setting it on the individual underlyin
 If there is no risk profile defined for a given underlying (or it's corresponding market), the default limits will be used.
 </p>
 
-<form id='multiplier_market_or_underlying_limits'>
+<form id='multiplier_market_or_underlying_limits' class="scrollable">
 <table>
     <tr>
         <td>Risk profile:</td>
@@ -53,22 +51,24 @@ If there is no risk profile defined for a given underlying (or it's correspondin
         </td>
     </tr>
     <tr>
-        <td><input type="button" onClick="SaveMultiplierOrUnderlyingLimit()" value="Add New Limit / Override Existing Limit"></td>
+        <td><input type="button" class="btn btn--primary" onClick="SaveMultiplierOrUnderlyingLimit()" value="Add New Limit / Override Existing Limit"></td>
         <td class="save_market_and_underlying_limit_result"></td>
     </tr>
 </table>
 </form>
 
 <hr/>
-<br/>
 
-<b>DEFAULT LIMITS</b>
-<table>
+<p><b>DEFAULT LIMITS</b></p>
+<table class="small hover alternate">
+    <thead>
     <tr>
         <th>Market</th>
         <th>Risk Profile</th>
         <th>Max Volume Positions</th>
     </tr>
+    </thead>
+    <tbody>
     [% FOREACH data IN market_limits_default %]
         <tr>
             <td>[% data.market %]</td>
@@ -76,17 +76,21 @@ If there is no risk profile defined for a given underlying (or it's correspondin
             <td>[% data.max_volume_positions %]</td>
         </tr>
     [% END %]
+    </tbody>
 </table>
 
 <br/>
-<b>EXISTING LIMITS</b>
+<p><b>EXISTING LIMITS</b></p>
 <form>
-<table>
+<table class="small hover alternate">
+    <thead>
     <tr>
         <th>Market</th>
         <th>Risk Profile</th>
         <th>Max Volume Positions</th>
     </tr>
+    </thead>
+    <tbody>
     [% FOREACH data IN market_limits %]
     <tr id='multiplier-limit-[% data.market %]'>
         <td>[% data.market %]</td>
@@ -94,19 +98,24 @@ If there is no risk profile defined for a given underlying (or it's correspondin
         <td>[% data.max_volume_positions %]</td>
         <td><button
             onClick="DeleteMarketOrUnderlyingLimit({ market: '[% data.market %]' })"
-            type="button">delete</button>
+            type="button" class="btn btn--secondary">Delete</button>
         </td>
         <td class='delete_market_or_underlying_limit_result'></td>
     </tr>
     [% END %]
+    </tbody>
 </table>
 
-<table>
+<br>
+<table class="small hover alternate">
+    <thead>
     <tr>
         <th>Underlying</th>
         <th>Risk Profile</th>
         <th>Max Volume Positions</th>
     </tr>
+    </thead>
+    <tbody>
     [% FOREACH data IN symbol_limits %]
     <tr id='multiplier-limit-[% data.symbol %]'>
         <td>[% data.symbol %]</td>
@@ -114,11 +123,12 @@ If there is no risk profile defined for a given underlying (or it's correspondin
         <td>[% data.max_volume_positions %]</td>
         <td><button
             onClick="DeleteMarketOrUnderlyingLimit({ symbol: '[% data.symbol %]' })"
-            type="button">delete</button>
+            type="button" class="btn btn--secondary">Delete</button>
         </td>
         <td class='delete_market_or_underlying_limit_result'></td>
     </tr>
     [% END %]
+    </tbody>
 </table>
 </form>
 
@@ -149,9 +159,9 @@ function SaveMultiplierOrUnderlyingLimit(){
         success: function(data) {
             var config = \$.parseJSON(data);
             if (config.error) {
-                result.text(config.error).css('color', 'red');
+                result.text(config.error).css('color', 'var(--color-red)');
             } else {
-                result.text('saved').css('color', 'green');
+                result.text('saved').css('color', 'var(--color-green-2)');
             }
         }
     });
@@ -170,9 +180,9 @@ function DeleteMarketOrUnderlyingLimit(data) {
         success: function(data) {
             var config = \$.parseJSON(data);
             if (config.error) {
-                result.text(config.error).css('color', 'red');
+                result.text(config.error).css('color', 'var(--color-red)');
             } else {
-                result.text('removed').css('color', 'green');
+                result.text('removed').css('color', 'var(--green-2)');
                 el.remove();
             }
         }

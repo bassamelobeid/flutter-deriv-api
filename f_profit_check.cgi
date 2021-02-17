@@ -24,13 +24,13 @@ PrintContentType();
 BrokerPresentation($encoded_loginID . ' Profit Analysis', '', '');
 
 if ($loginID !~ /^(\D+)(\d+)$/) {
-    code_exit_BO("Error: wrong loginID ($encoded_loginID) could not get client instance.");
+    code_exit_BO("Error: Wrong Login ID ($encoded_loginID) could not get client instance.");
 }
 
 my $client = eval { BOM::User::Client::get_instance({'loginid' => $loginID, db_operation => 'backoffice_replica'}) };
 
 unless ($client) {
-    code_exit_BO("Error: wrong loginID ($encoded_loginID) could not get client instance.");
+    code_exit_BO("Error: Wrong Login ID ($encoded_loginID) could not get client instance.");
 }
 
 my $default_account = $client->default_account;

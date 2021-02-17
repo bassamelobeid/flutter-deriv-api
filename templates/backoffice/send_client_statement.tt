@@ -1,11 +1,11 @@
 <form action="[% action %]" method="get" id="send_statement_form">
-    <label for="from">From Date</label>
+    <label for="from">From date:</label>
     <input type="text" name="from" id="from" value="[% today %] 00:00:00" required pattern="^\d{4}-\d{2}-\d{2}( \d{2}:\d{2}:\d{2})?\$" data-lpignore="true" />
 
-    <label for="to">To Date</label>
+    <label for="to">To date:</label>
     <input type="text" name="to" id="to" value="[% today %] 23:59:59" required pattern="^\d{4}-\d{2}-\d{2}( \d{2}:\d{2}:\d{2})?\$" data-lpignore="true" />
     <input type="hidden" id="broker" name="broker" value="[% broker %]">
     <input type="hidden" id="client_id" name="client_id" value="[% client_id %]">
 
-    <input type="submit" value="send statement">
+    <input type="submit" class="btn btn--red" value="Send statement">
 </form>

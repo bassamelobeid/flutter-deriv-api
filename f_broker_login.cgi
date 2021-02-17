@@ -27,9 +27,9 @@ BrokerPresentation('STAFF LOGIN PAGE');
 
 if ((grep { $_ eq 'binary_role_master_server' } @{BOM::Config::node()->{node}->{roles}}) && !BOM::Config::on_qa()) {
     print qq~
-        <div id="live_server_warning">
-            <h1>YOU ARE ON THE MASTER LIVE SERVER</h1>
-            This is the server on which to edit most system files (except those that are specifically to do with a specific broker code).
+        <div id="live_server_warning" class="notify notify--warning">
+            <h3>YOU ARE ON THE MASTER LIVE SERVER</h3>
+            <span>This is the server on which to edit most system files (except those that are specifically to do with a specific broker code).</span>
         </div>~;
 }
 
@@ -43,308 +43,266 @@ my $brokerselection = 'Broker code : '
 # TRANSACTION REPORTS
 if (BOM::Backoffice::Auth0::has_authorisation(['CS'])) {
     print qq~
-    <table class="container GreenDarkCandy" rules="all" frame="void" border="1" cellpadding="1" cellspacing="2" width="100%">
-        <tbody>
-            <tr class="GreenLabel">
-                <td class="whitelabel" colspan="2">TRANSACTION REPORTS</td>
-            </tr>
-            <tr>
-                <td align="center" width="50%">
-                    <div class="section-title">TRANSACTION REPORTS</div>
-                    <form action="~ . request()->url_for('backoffice/f_bo_enquiry.cgi') . qq~" method="get"><font size=2>
-                        <b>$brokerselection</b>
-                        &nbsp;<input type="submit" value="TRANSACTION REPORTS">
-                    </font></form>
-                </td>
-            </tr>
-        </tbody>
-    </table>~;
+    <div class="card">
+        <div class="card__label">
+            Transaction reports
+        </div>
+        <div class="card__content">
+            <h3>Transaction reports</h3>
+            <form action="~ . request()->url_for('backoffice/f_bo_enquiry.cgi') . qq~" method="get">
+                <label>$brokerselection</label>
+                <input type="submit" class="btn btn--primary" value="Transaction reports">
+            </form>
+        </div>
+    </div>~;
 }
 
 # ACCOUNTING REPORTS
 if (BOM::Backoffice::Auth0::has_authorisation(['Accounts'])) {
     print qq~
-    <table class="container GreenDark2Candy" rules="all" frame="void" border="1" cellpadding="1" cellspacing="2" width="100%">
-        <tbody>
-            <tr class="GreenLabel">
-                <td class="whitelabel" colspan="2">ACCOUNTING REPORTS</td>
-            </tr>
-            <tr>
-                <td align="center">
-                    <div class="section-title">ACCOUNTING REPORTS</div>
-                    <form action="~ . request()->url_for('backoffice/f_accountingreports.cgi') . qq~" method="get"><font size=2>
-                        <b>$brokerselection</b>
-                        &nbsp;<input type="submit" value="ACCOUNTING REPORTS">
-                    </font></form>
-                </td>
-            </tr>
-        </tbody>
-    </table>~;
+    <div class="card">
+        <div class="card__label">
+            Accounting reports
+        </div>
+        <div class="card__content">
+            <h3>Accounting reports</h3>
+            <form action="~ . request()->url_for('backoffice/f_accountingreports.cgi') . qq~" method="get">
+                <label>$brokerselection</label>
+                <input type="submit" class="btn btn--primary" value="Accounting reports">
+            </form>
+        </div>
+    </div>~;
 }
 
-# MANUAL INPUT OF DEPOSITS & WITHDRAWALS
+# MANUAL input OF DEPOSITS & WITHDRAWALS
 if (BOM::Backoffice::Auth0::has_authorisation(['Payments'])) {
     print qq~
-        <table class="container GreyCandy" rules="all" frame="void" border="1" cellpadding="1" cellspacing="2" width="100%">
-            <tbody>
-                <tr class="GreyLabel">
-                    <td class="whitelabel" colspan="2">DEPOSITS & WITHDRAWALS</td>
-                </tr>
-                <tr>
-                    <td align="center">
-                        <div class="section-title">MANUAL INPUT OF DEPOSITS & WITHDRAWALS</div>
-                        <form action="~ . request()->url_for('backoffice/f_manager.cgi') . qq~" method="post"><font size=2>
-                            <b>$brokerselection</b>
-                            &nbsp;<input type="submit" value="DEPOSITS & WITHDRAWALS">
-                        </font></form>
-                    </td>
-                </tr>
-            </tbody>
-        </table>~;
+    <div class="card">
+        <div class="card__label">
+            Deposits & withdrawals
+        </div>
+        <div class="card__content">
+            <h3>Manual input of deposit & withdrawals</h3>
+            <form action="~ . request()->url_for('backoffice/f_manager.cgi') . qq~" method="post">
+                <label>$brokerselection</label>
+                <input type="submit" class="btn btn--primary" value="Deposits & withdrawals">
+            </form>
+        </div>
+    </div>~;
 }
 
 # CLIENT DETAILS RECORDS
 if (BOM::Backoffice::Auth0::has_authorisation(['CS'])) {
     print qq~
-    <table class="container Grey2Candy" rules="all" frame="void" border="1" cellpadding="1" cellspacing="2" width="100%">
-        <tbody>
-            <tr class="GreyLabel">
-                <td class="whitelabel">CLIENT MANAGEMENT</td>
-                <td class="whitelabel">CONTRACT DETAILS</td>
-            </tr>
-            <tr>
-                <td align="center" width="50%">
-                    <div class="section-title">CLIENT DETAILS<br />(Client names, addresses, etc)</div>
-                    <form action="~ . request()->url_for('backoffice/f_clientloginid.cgi') . qq~" method="get"><font size=2>
-                        <b>$brokerselection</b>
-                        &nbsp;<input type="submit" value="CLIENT DETAILS">
-                    </font></form>
-                </td>
-                <td align="center" width="50%">
-                    <div class="section-title">BET PRICE OVER TIME</div>
-                    <form action="~ . request()->url_for('backoffice/quant/pricing/bpot.cgi', {broker => $broker}) . qq~" method="post"><font size=2>
-                        <input type="submit" value="BET PRICE OVER TIME">
-                    </font></form>
-                </td>
-            </tr>
-        </tbody>
-    </table>~;
+        <div class="card">
+            <div class="card__label">
+                Client management
+            </div>
+            <div class="card__content">
+                <h3>Client details (Client names, addresses, etc) </h3>
+                <form action="~ . request()->url_for('backoffice/f_clientloginid.cgi') . qq~" method="get">
+                    <label>$brokerselection</label>
+                    <input type="submit" class="btn btn--primary" value="Client details">
+                </form>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card__label">
+                Contract details
+            </div>
+            <div class="card__content">
+                <h3>Bet price over time</h3>
+                <form action="~ . request()->url_for('backoffice/quant/pricing/bpot.cgi', {broker => $broker}) . qq~" method="post">
+                    <input type="submit" class="btn btn--primary" value="Bet price over time">
+                </form>
+            </div>
+        </div>~;
 }
 
 # INVESTIGATIVE TOOLS
 print qq~
-<table class="container Grey2Candy" rules="all" frame="void" border="1" cellpadding="1" cellspacing="2" width="100%">
-    <tbody>
-        <tr class="GreyLabel">
-            <td class="whitelabel" colspan="2">INVESTIGATIVE TOOLS</td>
-        </tr>
-        <tr>
-            <td align="center" width="50%">
-                <div class="section-title">INVESTIGATIVE TOOLS</div>
-                <form action="~ . request()->url_for('backoffice/f_investigative.cgi') . qq~" method="get"><font size=2>
-                    <b>CIL :</b> <select name=mycil>
-                        <option>CS</option>
-                        <option>IT</option>
-                        <option>IA</option>
-                        <option>QUANTS</option>
-                    </select>
-                    &nbsp;<b>$brokerselection</b>
-                    &nbsp;<input type="submit" value="INVESTIGATIVE TOOLS">
-                </font></form>
-            </td>
-        </tr>
-    </tbody>
-</table>~;
+<div class="card">
+    <div class="card__label">
+        Investigative tools
+    </div>
+    <div class="card__content">
+        <h3>Investigative tools</h3>
+        <form action="~ . request()->url_for('backoffice/f_investigative.cgi') . qq~" method="get">
+            <label>CIL :</label>
+            <select name="mycil">
+                <option>CS</option>
+                <option>IT</option>
+                <option>IA</option>
+                <option>QUANTS</option>
+            </select>
+            <label>$brokerselection</label>
+            <input type="submit" class="btn btn--primary" value="Investigative tools">
+        </form>
+    </div>
+</div>~;
 
 # App management
 if (BOM::Backoffice::Auth0::has_authorisation(['Marketing'])) {
     print qq~
-        <table class="container Grey2Candy" rules="all" frame="void" border="1" cellpadding="1" cellspacing="2" width="100%">
-            <tbody>
-                <tr class="GreyLabel">
-                    <td class="whitelabel" colspan="2">App management</td>
-                </tr>
-                <tr>
-                    <td align="center" width="50%">
-                        <div class="section-title">App management</div>
-                        <a href="f_app_management.cgi">Go to app management</a>
-                    </td>
-                </tr>
-            </tbody>
-        </table>~;
+    <div class="card">
+        <div class="card__label">
+            App management
+        </div>
+        <div class="card__content">
+            <h3>App management</h3>
+            <a href="f_app_management.cgi" class="btn btn--primary">Go to app management</a>
+        </div>
+    </div>~;
 }
 
 # MARKETING
 if (BOM::Backoffice::Auth0::has_authorisation(['Marketing'])) {
     print qq~
-    <table class="container RedCandy" rules="all" frame="void" border="1" cellpadding="1" cellspacing="2" width="100%">
-        <tbody>
-            <tr class="RedLabel">
-                <td class="whitelabel" colspan="2">MARKETING</td>
-            </tr>
-            <tr>
-                <td align="center" width="50%">
-                    <div class="section-title">MARKETING TOOLS</div>
-                    <form action="~ . request()->url_for('backoffice/f_promotional.cgi') . qq~" method="get"><font size=2>
-                        <b>$brokerselection</b>
-                        &nbsp;<input type="submit" value="MARKETING">
-                    </font></form>
-                </td>
-            </tr>
-        </tbody>
-    </table>~;
+    <div class="card">
+        <div class="card__label">
+            Marketing
+        </div>
+        <div class="card__content">
+            <h3>Marketing tools</h3>
+            <form action="~ . request()->url_for('backoffice/f_promotional.cgi') . qq~" method="get">
+                <label>$brokerselection</label>
+                <input type="submit" class="btn btn--primary" value="Marketing">
+            </form>
+        </div>
+    </div>~;
 }
 
 # P2P
 print qq~
-    <table class="container GreyCandy" rules="all" frame="void" border="1" cellpadding="1" cellspacing="2" width="100%">
-        <tbody>
-            <tr class="GreenLabel">
-                <td class="whitelabel" colspan="2">P2P</td>
-            </tr>~;
-
+    <div class="card">
+        <div class="card__label">
+            P2P
+        </div>
+        <div class="card__content grid2col border">~;
 my $band_mgt     = BOM::Backoffice::Auth0::has_authorisation(['QuantsWrite']);
 my $p2p_settings = BOM::Backoffice::Auth0::has_authorisation(['Quants']) && BOM::Backoffice::Auth0::has_authorisation(['IT']);
 
 if ($band_mgt or $p2p_settings) {
     print qq~
-            <tr>
-                <td align="center" width="50%">~;
-    if ($band_mgt) {
-        print qq~
-                    <div class="section-title">BAND CONFIGURATION</div>
-                    <form action="~ . request()->url_for('backoffice/p2p_band_management.cgi') . qq~" method="get"><font size=2>
-                        <b>$brokerselection</b>
-                        &nbsp;<input type="submit" value="GO">
-                    </font></form>~;
-    }
-    print qq~
-                </td>
-                <td align="center" valign="top" width="50%">~;
+            <div class="card__content">
+                <h3>Band configuration</h3>
+                <form action="~ . request()->url_for('backoffice/p2p_band_management.cgi') . qq~" method="get">
+                    <label>$brokerselection</label>
+                    <input type="submit" class="btn btn--primary" value="Go">
+                </form>
+            </div>~;
     if ($p2p_settings) {
         print qq~
-                    <div class="section-title">DYNAMIC SETTINGS</div>
-                    <a href="p2p_dynamic_settings.cgi">Go to P2P dynamic settings</a>~;
+            <div class="card__content">
+                <h3>Dynamic settings</h3>
+                <form action="~ . request()->url_for('backoffice/p2p_band_management.cgi') . qq~" method="get">
+                    <a href="p2p_dynamic_settings.cgi" class="btn btn--primary">Go to P2P dynamic settings</a>
+                </form>
+            </div>~;
     }
-    print qq~
-                </td>
-            </tr>~;
 }
+
 print qq~
-            <tr>
-                <td align="center" width="50%">
-                    <div class="section-title">SEARCH ORDER</div>
-                    <form action="~ . request()->url_for('backoffice/p2p_order_list.cgi') . qq~" method="get"><font size="2">
-                        <b>$brokerselection</b>
-                        &nbsp;<input type="submit" value="GO">
-                    </font></form>
-                </td>
-                <td align="center" width="50%">
-                    <div class="section-title">ORDER DETAILS/MANAGEMENT</div>
-                    <form action="~ . request()->url_for('backoffice/p2p_order_manage.cgi') . qq~" method="get"><font size="2">
-                        <b>$brokerselection</b>
-                        &nbsp;<input type="submit" value="GO">
-                    </font></form>
-                </td>
-            </tr>
-            <tr>
-                <td align="center" width="50%">
-                    <div class="section-title">ADVERTISER MANAGEMENT</div>
-                    <form action="~ . request()->url_for('backoffice/p2p_advertiser_manage.cgi') . qq~" method="get"><font size="2">
-                        <b>$brokerselection</b>
-                        &nbsp;<input type="submit" value="GO">
-                    </font></form>
-                </td>
-                <td align="center" width="50%">
-                    <!-- for future use -->
-                </td>
-            </tr>
-        </tbody>
-    </table>~;
+            <div class="card__content">
+                <h3>Search order</h3>
+                <form action="~ . request()->url_for('backoffice/p2p_order_list.cgi') . qq~" method="get">
+                    <label>$brokerselection</label>
+                    <input type="submit" class="btn btn--primary" value="Go">
+                </form>
+            </div>
+            <div class="card__content">
+                <h3>Order details/management</h3>
+                <form action="~ . request()->url_for('backoffice/p2p_order_manage.cgi') . qq~" method="get">
+                    <label>$brokerselection</label>
+                    <input type="submit" class="btn btn--primary" value="Go">
+                </form>
+            </div>
+            <div class="card__content">
+                <h3>Advertiser management</h3>
+                <form action="~ . request()->url_for('backoffice/p2p_advertiser_manage.cgi') . qq~" method="get">
+                    <label>$brokerselection</label>
+                    <input type="submit" class="btn btn--primary" value="Go">
+                </form>
+            </div>
+            <div class="card__content">
+                <!-- for future use -->
+            </div>
+        </div>
+    </div>~;
 
 if (BOM::Backoffice::Auth0::has_authorisation(['Quants'])) {
     print qq~
-    <table class="container Grey3Candy" rules="all" frame="void" border="1" cellpadding="1" cellspacing="2" width="100%">
-        <tbody>
-            <tr class="GreyLabel">
-                <td class="whitelabel" colspan="2">QUANT TOOLS</td>
-            </tr>
-            <tr>
-                <td align="center">
-                    <div class="section-title">RISK DASHBOARD test</div>
-                    <form action="~ . request()->url_for('backoffice/quant/risk_dashboard.cgi') . qq~" method="post"><font size="2">
-                        <input type="submit" value="RISK DASHBOARD">
-                    </font></form>
-                </td>
-                <td align="center" width="50%">
-                    <div class="section-title">QUANTS RISK MANAGEMENT TOOL</div>
-                    <form action="~ . request()->url_for('backoffice/quant/quants_config.cgi') . qq~" method="post"><font size=2>
-                        <b>$brokerselection</b>
-                        &nbsp;<input type="submit" value="GO">
-                    </font></form>
-                </td>
-            </tr>
-            <tr>
-                <td align="center" width="50%">
-                    <div class="section-title">QUANT MARKET DATA</div>
-                    <form action="~ . request()->url_for('backoffice/f_bet_iv.cgi') . qq~" method="post"><font size=2>
-                        &nbsp;<input type="submit" value="QUANT MARKET DATA">
-                    </font></form>
-                </td>
-                <td align="center" width="50%">
-                    <div class="section-title">CONTRACT SETTLEMENT</div>
-                    <form action="~ . request()->url_for('backoffice/quant/settle_contracts.cgi') . qq~" method="post"><font size=2>
-                        <b>$brokerselection</b>
-                        &nbsp;<input type="submit" value="CONTRACT SETTLEMENT">
-                    </font></form>
-                </td>
-            </tr>
-            <tr>
-                <td align="center" width="50%">
-                    <div class="section-title">CREATE MANUAL TRANSACTION</div>
-                    <form action="~ . request()->url_for('backoffice/quant/pricing/f_dealer.cgi') . qq~" method="post"><font size=2>
-                        <b>$brokerselection</b>
-                        &nbsp;<input type="submit" value="CREATE MANUAL TRANSACTION ">
-                    </font></form>
-                </td>
-                <td align="center" width="50%">
-                    <div class="section-title">BET PRICE OVER TIME</div>
-                    <form action="~ . request()->url_for('backoffice/quant/pricing/bpot.cgi', {broker => $broker}) . qq~" method="post"><font size=2>
-                        <input type="submit" value="BET PRICE OVER TIME">
-                    </font></form>
-                </td>
-            </tr>
-            <tr>
-                <td align="center" width="50%">
-                    <div class="section-title">PRODUCT MANAGEMENT</div>
-                    <form action="~ . request()->url_for('backoffice/quant/product_management.cgi') . qq~" method="post"><font size=2>
-                        <input type="submit" value="PRODUCT MANAGEMENT">
-                    </font></form>
-                </td>
-                <td align="center" width="50%">
-                    <div class="section-title">INTERNAL TRANSFER FEES</div>
-                    <form action="~ . request()->url_for('backoffice/quant/internal_transfer_fees.cgi') . qq~" method="post"><font size=2>
-                        <input type="submit" value="INTERNAL TRANSFER FEES">
-                    </font></form>
-                </td>
-            </tr>
-            <tr>
-                <td align="center" width="50%">
-                    <div class="section-title">EXISTING LIMITED CLIENTS</div>
-                    <form action="~ . request()->url_for('backoffice/quant/client_limit.cgi') . qq~" method="post"><font size=2>
-                        <b>$brokerselection</b>
-                        &nbsp;<input type="submit" value="EXISTING LIMITED CLIENTS">
-                    </font></form>
-                </td>
-                <td align="center" width="50%">
-                    <div class="section-title">MULTIPLIER RISK MANAGEMENT TOOL</div>
-                    <form action="~ . request()->url_for('backoffice/quant/multiplier_risk_management.cgi') . qq~" method="post"><font size=2>
-                        &nbsp;<input type="submit" value="GO">
-                    </font></form>
-                </td>
-            </tr>
-        </tbody>
-    </table>~;
+    <div class="card">
+        <div class="card__label">
+            Quant tools
+        </div>
+        <div class="card__content grid2col border">
+            <div class="card__content">
+                <h3>Risk dashboard test</h3>
+                <form action="~ . request()->url_for('backoffice/quant/risk_dashboard.cgi') . qq~" method="post">
+                    <input type="submit" class="btn btn--primary" value="Risk dashboard">
+                </form>
+            </div>
+            <div class="card__content">
+                <h3>Quants risk management tool</h3>
+                <form action="~ . request()->url_for('backoffice/quant/quants_config.cgi') . qq~" method="post">
+                    <label>$brokerselection</label>
+                    <input type="submit" class="btn btn--primary" value="Go">
+                </form>
+            </div>
+            <div class="card__content">
+                <h3>Quant market data</h3>
+                <form action="~ . request()->url_for('backoffice/f_bet_iv.cgi') . qq~" method="post">
+                    <input type="submit" class="btn btn--primary" value="Quant market data">
+                </form>
+            </div>
+            <div class="card__content">
+                <h3>Contract settlement</h3>
+                <form action="~ . request()->url_for('backoffice/quant/settle_contracts.cgi') . qq~" method="post">
+                    <label>$brokerselection</label>
+                    <input type="submit" class="btn btn--primary" value="Contract settlement">
+                </form>
+            </div>
+            <div class="card__content">
+                <h3>Create manual transaction</h3>
+                <form action="~ . request()->url_for('backoffice/quant/pricing/f_dealer.cgi') . qq~" method="post">
+                    <label>$brokerselection</label>
+                    <input type="submit" class="btn btn--primary" value="Create manual transaction">
+                </form>
+            </div>
+            <div class="card__content">
+                <h3>Bet price over time</h3>
+                <form action="~ . request()->url_for('backoffice/quant/pricing/bpot.cgi', {broker => $broker}) . qq~" method="post">
+                    <input type="submit" class="btn btn--primary" value="Bet price over time">
+                </form>
+            </div>
+            <div class="card__content">
+                <h3>Product management</h3>
+                <form action="~ . request()->url_for('backoffice/quant/product_management.cgi') . qq~" method="post">
+                    <input type="submit" class="btn btn--primary" value="Product management">
+                </form>
+            </div>
+            <div class="card__content">
+                <h3>Internal transfer fees</h3>
+                <form action="~ . request()->url_for('backoffice/quant/internal_transfer_fees.cgi') . qq~" method="post">
+                    <input type="submit" class="btn btn--primary" value="Internal transfer fees">
+                </form>
+            </div>
+            <div class="card__content">
+                <h3>Existing limited clients</h3>
+                <form action="~ . request()->url_for('backoffice/quant/client_limit.cgi') . qq~" method="post">
+                    <label>$brokerselection</label>
+                    <input type="submit" class="btn btn--primary" value="Existing limited clients">
+                </form>
+            </div>
+            <div class="card__content">
+                <h3>Multiplier risk management tool</h3>
+                <form action="~ . request()->url_for('backoffice/quant/multiplier_risk_management.cgi') . qq~" method="post">
+                    <input type="submit" class="btn btn--primary" value="Go">
+                </form>
+            </div>
+        </div>
+    </div>~;
 }
 
 # WEBSITE CUSTOMIZATION
@@ -355,46 +313,36 @@ if (BOM::Backoffice::Auth0::has_authorisation(['IT'])) {
         selected_item => 'shutdown_suspend',
     );
     print qq~
-    <table class="container BlueCandy" rules="all" frame="void" border="1" cellpadding="1" cellspacing="2" width="100%">
-        <tbody>
-            <tr class="BlueLabel">
-                <td class="whitelabel" colspan="2">WEBSITE CUSTOMIZATION & SHUTDOWN</td>
-            </tr>
-            <tr>
-                <td align="center">
-                    <div class="section-title"><a name="dynamic_settings"></a>DYNAMIC SETTINGS</div>
-                    <form action="~ . request()->url_for('backoffice/f_dynamic_settings.cgi') . qq~" method="get"><font size=2>
-                        <b>Group: </b>
-                        $group_select
-                        <input type=hidden name=broker value=FOG>
-                        <input type=hidden name=page value=global>
-                        <input type=hidden name=l value=EN>
-                        &nbsp;<input type="submit" value="DYNAMIC SETTINGS">
-                    </font></form>
-                </td>
-            </tr>
-        </tbody>
-    </table>~;
+    <div class="card">
+        <div class="card__label">
+            Website customization & shutdown
+        </div>
+        <div class="card__content">
+            <h3>Dynamic settings</h3>
+            <form action="~ . request()->url_for('backoffice/f_dynamic_settings.cgi') . qq~" method="get">
+                <label>Group: </label>
+                $group_select
+                <input type=hidden name=broker value=FOG>
+                <input type=hidden name=page value=global>
+                <input type=hidden name=l value=EN>
+                <input type="submit" class="btn btn--primary" value="Dynamic settings">
+            </form>
+        </div>
+    </div>~;
 }
 
 # WEBSITE STATUS
 if (BOM::Backoffice::Auth0::has_authorisation(['CSWrite'])) {
     print qq~
-    <table class="container Grey2Candy" rules="all" frame="void" border="1" cellpadding="1" cellspacing="2" width="100%">
-        <tbody>
-            <tr class="GreyLabel">
-                <td class="whitelabel" colspan="2">WEBSITE STATUS</td>
-            </tr>
-            <tr>
-                <td align="center" width="50%">
-                    <div class="section-title">Website Status</div>
-                    <a href="f_setting_website_status.cgi">Go to website status page</a>
-                </td>
-            </tr>
-        </tbody>
-    </table>~;
+    <div class="card">
+        <div class="card__label">
+            Website status
+        </div>
+        <div class="card__content">
+            <h3>Website status</h3>
+            <a href="f_setting_website_status.cgi" class="btn btn--primary">Go to website status page</a>
+        </div>
+    </div>~;
 }
-
-print "<style>table.container td:not(.whitelabel) { padding: 5px; }</style>";
 
 code_exit_BO();

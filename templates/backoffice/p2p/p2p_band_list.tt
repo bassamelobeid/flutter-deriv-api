@@ -7,7 +7,7 @@
         <li>Band is low, country is default, currency is USD</li>
     </ol>
 
-<table border="1" class="sortable collapsed">
+<table class="sortable border">
     <thead>
         <tr>
             <th scope="col">Country</th>
@@ -21,7 +21,7 @@
     <tbody>
 
     [% FOREACH b = bands %]
-        <tr[% IF b.country == 'default' %] style="background-color:palegreen;"[% END %]>
+        <tr[% IF b.country == 'default' %] class="bg-highlight"[% END %]>
             <td>
                 [% IF countries_list.${b.country} %]
                     [% countries_list.${b.country}.name %] ([% b.country %])
@@ -45,7 +45,7 @@
                         [% IF b.country != 'default' %]<option value="delete">Delete</option>[% END %]
                         <option value="copy">Copy</option>
                     </select>
-                    <button type="submit">Go</button>
+                    <button class="btn btn--primary" type="submit">Go</button>
                 </form>
                 
             </td>

@@ -2,124 +2,78 @@
     <INPUT type=hidden name='currency' value='[% currency %]'/>
 
     <!--Wallet functions-->
-    <table>
-        <tr>
-            <th>Wallet Functions (w/o param)</th>
-            <td>
-                <select name="req_type">
-                  <option disabled selected value> -- select an option -- </option>
-                  <option value="get_wallet_balance">Wallet balance</option>
-                  <option value="get_main_address_balance">Main address balance</option>
-                  <option value="get_blockcount">Block count</option>
-                  <option value="get_estimate_smartfee">Estimate smart fee</option>
-                  <option value="get_blockchain_info">Blockchain info</option>
-                </select>
-            </td>
-            <td><button type=submit />Get</button></td>
-        </tr>
-    </table>
-    <br>
-    <table>
-        <tr>
-            <th>Wallet Functions (with params)</th>
-            <td>
-                <select id="func_list_w_params"  onchange="showSelected(this.value)">
-                  <option disabled selected value> -- select an option -- </option>
-                  <option value="list_unspent_utxo">List Unspent UTXO</option>
-                  <option value="get_address_balance">Get address balance</option>
-                  <option value="get_transaction">Get transaction info</option>
-                  <option value="list_receivedby_address">List receivedbyaddress</option>
-                  <option value="calculate_withdrawal_fee">Calculate withdrawal fee</option>
-                </select>
-            </td>
-        </tr>
-    </table>
+    <label>Wallet functions (w/o param):</label>
+    <select name="req_type">
+        <option disabled selected value> -- select an option -- </option>
+        <option value="get_wallet_balance">Wallet balance</option>
+        <option value="get_main_address_balance">Main address balance</option>
+        <option value="get_blockcount">Block count</option>
+        <option value="get_estimate_smartfee">Estimate smart fee</option>
+        <option value="get_blockchain_info">Blockchain info</option>
+    </select>
 
-    <br>
+    <label>Wallet functions (with params):</label>
+    <select id="func_list_w_params"  onchange="showSelected(this.value)">
+        <option disabled selected value> -- select an option -- </option>
+        <option value="list_unspent_utxo">List Unspent UTXO</option>
+        <option value="get_address_balance">Get address balance</option>
+        <option value="get_transaction">Get transaction info</option>
+        <option value="list_receivedby_address">List receivedbyaddress</option>
+        <option value="calculate_withdrawal_fee">Calculate withdrawal fee</option>
+    </select>
+    <button type=submit class="btn btn--primary">Get</button>
 
-<!-- Get Address Balance -->
+    <!-- Get Address Balance -->
     <div class="crypto_func invisible" id="get_address_balance">
         <hr>
-        <table>
-            <tr>
-                <th colspan=3>Get Address Balance</th>
-            </tr>
-            <tr>
-                <th>Address:</th>
-                <td><input type=text name='address'/></td>
-                <td><button type=submit name='req_type' value='get_address_balance'>Get address balance</button></td>
-            </tr>
-        </table>
+        <h3>Get address balance</h3>
+        <label>Address:</label>
+        <input type=text name='address'/>
+        <button type=submit class="btn btn--primary" name='req_type' value='get_address_balance'>Get address balance</button>
     </div>
 
-<!--List Unspent UTXO-->
+    <!--List Unspent UTXO-->
     <div class="crypto_func invisible" id="list_unspent_utxo">
         <hr>
-        <table>
-            <tr>
-                <th colspan=3>List Unspent UTXO</th>
-            </tr>
-            <tr>
-                <th>Address:</th>
-                <td><input type=text name='lu_utxo_address'/></td>
-                <td rowspan=2><button type=submit name='req_type' value='list_unspent_utxo'>Get Unspent UTXO</button></td>
-            </tr>
-            <tr>
-                <th>Confirmations:</th>
-                <td><input type=text  name='confirmations'/></td>
-            </tr>
-        </table>
-        <p>*Leave blank to get <b>all</b> unspent utxo<p>
+        <h3>List unspent UTXO</h3>
+        <label>Address:</label>
+        <input type=text name='lu_utxo_address'/>
+        <label>Confirmations:</label>
+        <input type=text  name='confirmations'/>
+        <button type=submit class='btn btn--primary' name='req_type' value='list_unspent_utxo'>Get unspent UTXO</button>
+        <i>* Leave blank to get <b>all</b> unspent UTXO</i>
     </div>
 
-<!--Get Trasaction-->
+    <!--Get Trasaction-->
     <div class="crypto_func invisible" id = "get_transaction">
         <hr>
-        <table>
-            <tr>
-                <th colspan=3>Get transaction info</th>
-            </tr>
-            <tr>
-                <th>Transaction hash</th>
-                <td><input type=text name='txn_id'/></td>
-                <td><button type=submit name='req_type' value='get_transaction'/>Get transaction info</button></td>
-            </tr>
-        </table>
+        <h3>Get transaction info</h3>
+        <label>Transaction hash:</label>
+        <input type=text name='txn_id'/>
+        <button type=submit class="btn btn--primary" name='req_type' value='get_transaction'/>Get transaction info</button>
     </div>
 
-<!--list_receivedby_address-->
+    <!--list_receivedby_address-->
     <div class="crypto_func invisible" id = "list_receivedby_address">
         <hr>
-        <table>
-            <th colspan=3>List receivedbyaddress</th>
-            <tr>
-                <th>Address</th>
-                <td><input type=text name='address_filter'/></td>
-                <td rowspan=2><button type=submit name='req_type' value='list_receivedby_address'/>listreceivedbyaddress</button></td>
-            </tr>
-            <tr>
-                <th>Min confirmation</th>
-                <td><input type=number name='receivedby_minconf'/></td>
-            </tr>
-        </table>
+        <h3>List receivedby address</h3>
+        <label>Address:</label>
+        <input type=text name='address_filter'/>
+        <label>Min. confirmation:</label>
+        <input type=number name='receivedby_minconf'/>
+        <button type=submit class='btn btn--primary' name='req_type' value='list_receivedby_address'/>List receivedby address</button>
     </div>
     
     <!--calculate withdrawal fee-->
     <div class="crypto_func invisible" id = "calculate_withdrawal_fee">
         <hr>
-        <table>
-            <th colspan=3>Calculate withdrawal fee</th>
-            <tr>
-                <th>Withdraw_to address</th>
-                <td><input type=text name='withdraw_to_address'/></td>
-                <td rowspan=2><button type=submit name='req_type' value='calculate_withdrawal_fee'/>Calculate</button></td>
-            </tr>
-            <tr>
-                <th>Amount</th>
-                <td><input type=number step=any name='withdrawal_amount'/></td>
-            </tr>
-        </table>
-    </div>
+        <h3>Calculate withdrawal fee</h3>
+        <label>Withdraw_to address:</label>
+        <input type=text name='withdraw_to_address'/>
+        <label>Amount:</label>
+        <input type=number step=any name='withdrawal_amount'/>
+        <button type=submit class="btn btn--primary" name='req_type' value='calculate_withdrawal_fee'/>Calculate</button>
+</div>
 
 
 </form>

@@ -101,7 +101,7 @@ if (my $action = $input{action} and $p2p_write) {
 
     } catch {
         my $error = ref $@ eq 'ARRAY' ? join ', ', $@->@* : $@;
-        print '<p style="color:red; font-weight:bold;">' . $error . '</p>';
+        print '<p class="error">' . $error . '</p>';
     }
 }
 
@@ -128,7 +128,7 @@ if ($input{dispute} and $p2p_write) {
         $error = $@->{error_code}
             if ref $@ eq 'HASH' && defined $@->{error_code};
 
-        print '<p style="color:red; font-weight:bold;">' . $error . '</p>';
+        print '<p class="error">' . $error . '</p>';
     }
 }
 
@@ -194,7 +194,7 @@ if (my $id = $input{order_id}) {
                 });
         }
     } catch {
-        print '<p style="color:red; font-weight:bold;">' . $@ . '</p>';
+        print '<p class="error">' . $@ . '</p>';
     }
 }
 

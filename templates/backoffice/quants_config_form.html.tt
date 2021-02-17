@@ -27,7 +27,6 @@
     [% END %]
 </ul>
 
-<br/>
 <p>Existing market groups:</p>
 
 <ul>
@@ -36,9 +35,10 @@
     [% END %]
 </ul>
 
-<br/><br/>
+<div class="row scrollable">
 <fieldset  [% IF disabled %] disabled title='no write access' [% END %]>
-<table class="pretty">
+<table class="pretty small border nowrap">
+    <thead>
     <tr>
         <th>Market</th>
         <th>Underlying<br />Symbol</th>
@@ -49,12 +49,14 @@
         <th>Limit Type</th>
         <th>Limit<br />Amount (USD)</th>
         <th>Comment</th>
-        <th>Start time <span style="background-color: #3300CC; color: white; padding: 2px; border-radius: 50%; font-family: monospace; font-weight: bold" title=
+        <th><span tooltip=
 "Format is YYYY-MM-DD HH:MI e.g. 2018-01-02 09:00
 You can also enter 'today 9'
-Or just enter the time ('9') and the date defaults to today">?</span></th>
+Or just enter the time ('9') and the date defaults to today">Start time <span class="tooltip-blue">?</span></span></th>
         <th>End time</th>
     </tr>
+    </thead>
+    <tbody>
     <tr style="vertical-align: top;">
         <td><div id="market"></div></td>
         <td>
@@ -88,23 +90,23 @@ Or just enter the time ('9') and the date defaults to today">?</span></th>
             <br /><span class="hint">Format: yyyy-mm-dd (HH:mm:ss)</span>
          </td>
         <td>
-            <button onClick="saveLimit()" type="button">save</button>
+            <button onClick="saveLimit()" type="button" class="btn btn--red">Save</button>
             <br><span class="save_result"></span>
         </td>
     </tr>
+    </tbody>
 </table>
 </fieldset>
+</div>
 
-</br></br>
-<p><b>Landing company wide limits</b></p>
+<h3>Landing company wide limits</h3>
 
-<div id="per_landing_company"></div>
+<div id="per_landing_company" class="row"></div>
 
-</br></br>
-<p><b>Pending market group switch</b> </p>
+<h3>Pending market group switch</h3>
 <p>Market group update and clean-up of expired records is by a cron that runs every minute. So, if you select a start time of 20:11:15, it will be updated at 20:12:00</p>
 
-<div id="market_group_display"></div>
+<div id="market_group_display" class="row"></div>
 
 <script>
 
@@ -128,7 +130,7 @@ Or just enter the time ('9') and the date defaults to today">?</span></th>
             success: function(data) {
                 var config = \$.parseJSON(data);
                 if (config.error) {
-                    result.text(config.error).css('color', 'red');
+                    result.text(config.error).css('color', 'var(--color-red)');
                 } else {
                     createDisplayTable(config.limit.records, config.limit.header, 'per_landing_company');
                     createDisplayTable(config.market_group.records, config.market_group.header, 'market_group_display');
@@ -160,7 +162,7 @@ Or just enter the time ('9') and the date defaults to today">?</span></th>
             success: function(data) {
                 var config = \$.parseJSON(data);
                 if (config.error) {
-                    result.text(config.error).css('color', 'red');
+                    result.text(config.error).css('color', 'var(--color-red)');
                 } else {
                     createDisplayTable(config.data.records, config.data.header, 'per_landing_company');
                 }
@@ -169,20 +171,20 @@ Or just enter the time ('9') and the date defaults to today">?</span></th>
     }
 
     function createDisplayTable(data, header, id) {
-        var table = '<table class="pretty" border="2" id="'+id+'"><tr>';
+        var table = '<table class="small border" id="'+id+'"><thead><tr>';
 
         for (var i=0; i < header.length; i++) {
             if (header[i][1] == 'Time Status') {
                 continue;
             }
             if (header[i][1] == 'Start Time') {
-                table += '<th>'+header[i][1]+' <span style="background-color: #3300CC; color: white; padding: 2px; border-radius: 50%; font-family: monospace; font-weight: bold" title="Times in green are currently active. Red indicates the limit has expired.">?</span></th>';
+                table += '<th><span tooltip="Times in green are currently active. Red indicates the limit has expired.">'+header[i][1]+'<span class="tooltip-blue">?</span></span></th>';
                 continue;
             }
             table += '<th>'+header[i][1]+'</th>'
         }
-        table += '<td></td>';
-        table += '</tr>';
+        table += '<th></th>';
+        table += '</tr></thead>';
 
         for (var i=0; i < data.length; i++) {
             table += '<tr id='+i+'>';
@@ -197,7 +199,7 @@ Or just enter the time ('9') and the date defaults to today">?</span></th>
                 }
                 table += '<td class="'+key+'" data_key="'+value.data_key+'">';
                 if (key.substr(0,7) == 'global_' && \$.isNumeric(value.display_value)) {
-                    table += '<button onClick="deleteLimit(\''+id+'\',\''+key+'\','+i+')" type="button">delete</button>  ';
+                    table += '<button class="btn btn--red" onClick="deleteLimit(\''+id+'\',\''+key+'\','+i+')" type="button">Delete</button>  ';
                 }
                 // Special handling for start_time and end_time
                 if (key.substr(-4) == 'time') {
@@ -217,7 +219,7 @@ Or just enter the time ('9') and the date defaults to today">?</span></th>
             }
 
             if (id == 'market_group_display') {
-                table += '<td><button onClick="deleteMarketGroup(\''+id+'\','+i+')" type="button">delete</button></td><td class="result"></td>';
+                table += '<td><button class="btn btn--red" onClick="deleteMarketGroup(\''+id+'\','+i+')" type="button">Delete</button></td><td class="result"></td>';
             }
             table += '</tr>'
         }
@@ -262,7 +264,7 @@ Or just enter the time ('9') and the date defaults to today">?</span></th>
 
             //Both start_time and end_time should be empty or fill
             if((start_time === '' && end_time !== '') || (start_time !== '' && end_time === '')) {
-                result.css('color', 'red');
+                resultcss('color', 'var(--color-red)');
                 result.text('you should enter both `start time` and `end time`');
                 return;
             }
@@ -271,7 +273,7 @@ Or just enter the time ('9') and the date defaults to today">?</span></th>
 
             if(start_time !== '') {
                 if(new Date(start_time) >= new Date(end_time)) {
-                    result.css('color', 'red');
+                    resultcss('color', 'var(--color-red)');
                     result.text('`start_time` should be less than `end_time`.');
                     return;
                 }
@@ -299,9 +301,9 @@ Or just enter the time ('9') and the date defaults to today">?</span></th>
                 success: function(data) {
                     var config = \$.parseJSON(data);
                     if (config.error) {
-                        result.text(config.error).css('color', 'red');
+                        result.text(config.error).css('color', 'var(--color-red)');
                     } else {
-                        result.text('saved').css('color', 'green');
+                        result.text('saved').css('color', 'var(--color-green-2)');
                         createDisplayTable(config.limit.records, config.limit.header, 'per_landing_company');
                         createDisplayTable(config.market_group.records, config.market_group.header, 'market_group_display');
                     }
@@ -356,16 +358,8 @@ Or just enter the time ('9') and the date defaults to today">?</span></th>
     };
 </script>
 <style>
-    table {
-        border-collapse: collapse;
-    }
-    .pretty th {
-        font-weight: bold;
-        height: 30px;
-        padding: 0 5px 0 10px;
-    }
     .pretty td {
-        border: 1px solid #dddddd;
+        border: 1px solid var(--color-grey-3);
         text-align: left;
         white-space: nowrap;
     }
@@ -378,10 +372,8 @@ Or just enter the time ('9') and the date defaults to today">?</span></th>
         border-radius: 3px;
         display: inline-block;
         padding: 2px 6px;
-        background-color: #639862;
+        background-color: var(--color-green-2);
         border: none;
-        box-shadow: 1px 1px 3px #888;
-        text-shadow: 1px 1px 1px #175016;
-        margin: 2px;
+        margin: 4px;
     }
 </style>

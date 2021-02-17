@@ -1013,7 +1013,7 @@ body .ui-tooltip {
 
 
 .ui-datepicker {
-	width: 17em;
+    width: unset;
 	padding: .2em .2em 0;
 	display: none;
 }

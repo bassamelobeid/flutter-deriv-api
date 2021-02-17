@@ -1,14 +1,3 @@
-<style type="text/css">
-#currency_info, #currency_info tr, #currency_info td{
-    border: 1px solid black;
-    border-collapse: collapse;
-}
-
-#currency_info tr, #currency_info td{
-    padding: 6px;
-}
-
-</style>
 
 [% IF currency_info.size > 1 %]
 <label for="currency">Show currency_info:</label>
@@ -24,20 +13,20 @@
 
 [% FOREACH currency IN currency_info.keys %]
     <div id="[% currency %]" class="hideable" [% IF currency_info.size > 1 %] style="display:none"[% ELSE %]style="display:block"[% END %]>
-        <table id="currency_info">
+        <table id="currency_info" class="border">
             <tr>
                 <th colspan=2>[% currency %] Info</th>
             </tr>
             <tr>
-                <th>Main Address</th>
+                <th class="right">Main address</th>
                 <td>[% currency_info.$currency.main_address %]</td>
             </tr>
             <tr>
-                <th>Exchange Rate ([% currency %]/USD)</th>
+                <th>Exchange rate ([% currency %]/USD)</th>
                 <td>[% currency_info.$currency.exchange_rate %]</td>
             </tr>
             <tr>
-                <th>Min Sweep Limit</th>
+                <th class="right">Min sweep limit</th>
                 <td>
                     [% IF currency_info.$currency.sweep_limit_min %]
                         [% currency_info.$currency.sweep_limit_min %] [% currency %]
@@ -47,7 +36,7 @@
                 </td>
             </tr>
             <tr>
-                <th>Max Sweep Limit</th>
+                <th class="right">Max sweep limit</th>
                 <td>
                     [% IF currency_info.$currency.sweep_limit_max %]
                         [% currency_info.$currency.sweep_limit_max %] [% currency %]

@@ -1,28 +1,38 @@
+<h3>IP search</h3>
 <FORM ACTION="[% ip_search_url %]" METHOD=POST>
-<b>IP SEARCH</b> Enter IP Address :
+<div class="row"><label>IP address:</label>
 <INPUT type=text size=15 maxlength=15 name=ip value='[% ip %]' data-lpignore='true' />
-<br>Ignore clients who didn't log in during last <input type=text size=6 value=10 name=lastndays data-lpignore='true' /> days
-<input type=submit value='Search for Email'>
+<label>Ignore clients who didn't log in during last</label><input type=text size=6 value=10 name=lastndays data-lpignore='true' />days</div>
+<input type=submit class="btn btn--primary" value='Search for email'>
 <input type="hidden" name="search_type" value="ip">
 </form>
 <hr>
-<b>Get accounts logged in with the same IPs</b>
+<h3>Get accounts logged in with the same IPs</h3>
+<p>With the help of this tool you can find all other accounts, who were logging into the system from the same IPs, that the stated user had.<br>
+Can be useful in finding duplicates.</p>
 <form action="[% ip_search_url %]" method="post">
-<input type=text size=50 maxlength=50 name=loginid value='[% loginid %]' placeholder="CR12345 -or- user@binary.com" required data-lpignore='true' /><br>
-<input type="text" name="date_from" placeholder="2016-01-01" value='[% date_from %]' required pattern="\d{4}-\d{2}-\d{2}" class="datepick" data-lpignore='true' />
-<input type="text" name="date_to" placeholder="2017-01-01" value='[% date_to %]' required pattern="\d{4}-\d{2}-\d{2}" class="datepick" data-lpignore='true' />
-<input type="submit" value="Search for evidences">
+<div class="row">
+<label>Login ID or email:</label><input type=text size=50 maxlength=50 name=loginid value='[% loginid %]' placeholder="CR12345 -or- user@binary.com" required data-lpignore='true' />
+</div>
+<div class="row">
+<label>From date:</label><input type="text" name="date_from" placeholder="2016-01-01" value='[% date_from %]' required pattern="\d{4}-\d{2}-\d{2}" class="datepick" data-lpignore='true' />
+<label>To date:</label><input type="text" name="date_to" placeholder="2017-01-01" value='[% date_to %]' required pattern="\d{4}-\d{2}-\d{2}" class="datepick" data-lpignore='true' />
+</div>
+<input type="submit" class="btn btn--primary" value="Search for evidences">
 <input type="hidden" name="search_type" value="client">
 </form>
-With the help of this tool you can find all other accounts, who were logging into the system from the same IPs, that the stated user had.<br>
-Can be useful in finding duplicates.
-<br>
-<hr>
 
 [% IF logins.defined %]
 [% IF logins %]
-<b>Emails who have logged in over the last [% days %] days from [% ip %]</b><br>
-<table class="collapsed">
+<hr>
+<h3>Emails who have logged in over the last [% days %] days from [% ip %]</h3>
+<table class="hover alternate">
+    <thead>
+        <th>Date and time</th>
+        <th>Action</th>
+        <th>Email</th>
+    </thead>
+    <tbody>
     [% FOREACH l IN logins %]
         <tr>
             <td>[% l.history_date %]</td>
@@ -30,16 +40,23 @@ Can be useful in finding duplicates.
             <td>[% l.email %]</td>
         </tr>
     [% END %]
+    </tbody>
 </table>
 [% ELSE %]
-No logins found for IP address [% ip %] in the last [% days %] days
+<p>No logins found for IP address [% ip %] in the last [% days %] days</p>
 [% END %]
 [% END %]
 
 [% IF suspected_logins.defined %]
 [% IF suspected_logins %]
-<b>Users who have logged in from [% date_from %] to [% date_to %] from the same IPs as [% loginid %]
-<table class="collapsed">
+<hr>
+<h3>Users who have logged in from [% date_from %] to [% date_to %] from the same IPs as [% loginid %]</h3>
+<table class="hover alternate">
+<thead>
+    <th>Date and time</th>
+    <th>Login ID</th>
+</thead>
+<tbody>
 [% FOREACH l IN suspected_logins %]
     <tr>
         <td>[% l.history_date %]</td>
@@ -50,9 +67,10 @@ No logins found for IP address [% ip %] in the last [% days %] days
         </td>
     </tr>
 [% END %]
+</tbody>
 </table>
 [% ELSE %]
-No clients have logged in from [% date_from %] to [% date_to %] from the same IPs as [% loginid %]
+<p>No clients have logged in from [% date_from %] to [% date_to %] from the same IPs as [% loginid %]</p>
 [% END %]
 [% END %]
 

@@ -1,4 +1,4 @@
-<table style='max-width: 1000px; border-style: hidden;' class='BlackCandy collapsed hover'>
+<table class='collapsed hover'>
     <tr><td>Affiliate ID:</td><td>[% affiliate.ID %]</td></tr>
     <tr><td>Status:</td><td>[% affiliate.STATUS %]</td></tr>
     <tr>

@@ -1,6 +1,6 @@
 <form method="post" enctype="multipart/form-data">
 <table>
-<tr><td>Login:</td><td>[% loginID %]<input type="hidden" name="loginID" value="[% loginID %]"></td></tr>
+<tr><td>Login ID:</td><td>[% loginID %]<input type="hidden" name="loginID" value="[% loginID %]"></td></tr>
 <tr><td>Re:</td><td>[% reflist %]<input type="hidden" name="reflist" value="[% reflist %]"></td></tr>
 <tr><td>Reason:</td><td><select name="reason">
 [% FOREACH reason IN reasons %]
@@ -9,11 +9,11 @@
 </select>
 </td></tr>
 <tr><td>Inform triage:</td><td><input type="checkbox" name="inform_triage" value="1"></td></tr>
-<tr><td>Description:</td><td><textarea rows=10 cols=135 name="desc"></textarea></td></tr>
+<tr><td>Description:</td><td><textarea rows=10  cols=80 name="desc"></textarea></td></tr>
 <tr><td>Documentation:</td><td><input type="file" name="query_doc"></td></tr>
 <tr><td colspan=2 align="center">
 <input type="hidden" name="details" value='[% details %]'>
-<input type="submit" value="Send query">
+<input type="submit" class="btn btn--primary" value="Send query">
 </td></tr>
 </table>
 </form>

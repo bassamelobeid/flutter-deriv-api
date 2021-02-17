@@ -1,5 +1,5 @@
 <p>Update user specific limits: </p>
-[% IF update_error %]<p style="color: red;">[% update_error %]</p>[% END %]
+[% IF update_error %]<p class="error">[% update_error %]</p>[% END %]
 <form action="[% url | none %]" method="POST" onsubmit="return validate_date()">
     <fieldset  [% IF disabled %] disabled title='no write access' [% END %]>
     <table>
@@ -34,7 +34,7 @@
             <td> Expiry of the limit. Accepts epoch or '2018-11-25 10:10:20' format</td>
         </tr>
         <tr>
-            <td><input type="submit" name="new_user_limit" value="Add New Limit/Update"></td>
+            <td><input type="submit" name="new_user_limit" value="Add New Limit/Update" class="btn btn--primary"></td>
         </tr>
     </table>
     </fieldset>
@@ -64,7 +64,7 @@
 
 <p>Delete user specific limit: </p>
 
-[% IF delete_error %]<p style="color: red;">[% delete_error %]</p>[% END %]
+[% IF delete_error %]<p class="error">[% delete_error %]</p>[% END %]
 <form action="[% url | none %]" method="POST">
     <fieldset  [% IF disabled %] disabled title='no write access' [% END %]>
     <table>
@@ -84,7 +84,7 @@
             <td> (required) accepts 'old' or 'new'. If 'new' is selected, it will affect new client who places their first financial trade</td>
         </tr>
         <tr>
-            <td><input type="submit" name="delete_limit" value="Delete"></td>
+            <td><input class="btn btn--red" type="submit" name="delete_limit" value="Delete"></td>
         </tr>
     </table>
     </fieldset>

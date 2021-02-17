@@ -1,11 +1,11 @@
 <form method="post" action="[% action %]" id="fetch_aff_payment">
-    <label for="from">From Date (eg: 2014-12-01)</label>
+    <label for="from">From date (eg: 2014-12-01):</label>
     <input type="text" name="from" id="from" class="datepick" required pattern="\d{4}-\d{2}-\d{2}" data-lpignore="true" />
 
-    <label for="to">To Date (eg: 2014-12-31)</label>
+    <label for="to">To date (eg: 2014-12-31):</label>
     <input type="text" name="to" id="to" class="datepick" required pattern="\d{4}-\d{2}-\d{2}" data-lpignore="true" />
 
-    <input type="submit" value="fetch">
+    <input type="submit" class="btn btn--primary" value="Fetch Myaffiliate payment">
 </form>
 
 <script type="text/javascript" language="javascript">

@@ -1,18 +1,16 @@
 <form action="[% edit_url %]" method=post>
-Login ID : <input type="text" size="45" name="risk_loginids" value="[% loginids %]" data-lpignore="true" [% IF disabled %] readonly [% END %]><br />
-* You can specify multiple loginids separated by space; for exmple <b> CR10001 CR10002 MLT30000 <b/>
-<table>
-    <tr><td>
-    <tr>
-        <td class="label">AML Risk Classification : </td>
-        <td>
-            <select name="selected_aml_risk_level" [% IF disabled %] disabled [% END %]>
-                [% FOREACH risk_classification = aml_risk_levels %]
-                    <option value="[% risk_classification.value %]" [% IF risk_classification.value == aml_risk_level %] selected="selected" [% END %]>[% risk_classification.name %]</option>
-                [% END %]
-            </select>
-        </td>
-    </tr>
-    </table>
-<br /><input type="submit" value="Go" [% IF disabled %] disabled [% END %]>
+    <div class="row">
+        <label>Login ID:</label>
+        <input type="text" size="45" name="risk_loginids" value="[% loginids %]" data-lpignore="true" [% IF disabled %] readonly [% END %]>
+        <i>* You can specify multiple loginids separated by space; for exmple <b> CR10001 CR10002 MLT30000 </b></i>
+    </div>
+    <div class="row">
+        <label>AML Risk Classification:</label>
+        <select name="selected_aml_risk_level" [% IF disabled %] disabled [% END %]>
+            [% FOREACH risk_classification = aml_risk_levels %]
+                <option value="[% risk_classification.value %]" [% IF risk_classification.value == aml_risk_level %] selected="selected" [% END %]>[% risk_classification.name %]</option>
+            [% END %]
+        </select>
+    </div>
+    <input type="submit" value="Go" [% IF disabled %] disabled class="btn btn--disabled" [% ELSE %] class="btn btn--primary" [% END %]>
 </form>

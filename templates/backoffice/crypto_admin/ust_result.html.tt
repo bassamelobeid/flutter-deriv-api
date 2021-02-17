@@ -16,12 +16,12 @@ table td{
 
 [% IF response.error %]
 
-<p style="color:red"><b>[%response.error%]</b></p>
+<p class="error"><b>[%response.error%]</b></p>
 
 [% ELSE %]
 
 <div class="tab">
-      <button onclick="toggleResponse()" style="font-size:20px;">Show Alternate View</button>
+      <button onclick="toggleResponse()" class="btn btn--secondary">Show alternate view</button>
     </div>
     <br>
     <div id='fomatted_response'>

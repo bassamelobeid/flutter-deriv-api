@@ -1,16 +1,17 @@
-<table class="collapsed hover alternate" border="1" style="width:100%">
-    <tr>
-        <th>profile /<br/>max stake</th>
-        [% FOREACH header IN currencies %]
-            <th>[% header %]</th>
+<div class="scrollable">
+    <table class="small border hover alternate full-width">
+        <tr>
+            <th>profile /<br/>max stake</th>
+            [% FOREACH header IN currencies %]
+                <th>[% header %]</th>
+            [% END %]
+        </tr>
+        [% FOREACH row IN stake_rows %]
+        <tr>
+            [% FOREACH td IN row %]
+                <td>[% td %]</td>
+            [% END %]
+        </tr>
         [% END %]
-    </tr>
-    [% FOREACH row IN stake_rows %]
-    <tr>
-        [% FOREACH td IN row %]
-            <td>[% td %]</td>
-        [% END %]
-    </tr>
-    [% END %]
-</table>
-
+    </table>
+</div>

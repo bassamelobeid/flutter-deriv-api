@@ -1,6 +1,6 @@
-<p>See, also: <a href="[% dtr_link | none %]">this month's daily turnover report</a>.</p>
+<p>See, also: <a class="link link--primary" href="[% dtr_link | none %]">this month's daily turnover report</a>.</p>
 <p>Summary of period starting at [% start_date %] and ending [% end_date %].</p>
-<div id="rd-tabs">
+<div id="rd-tabs" class="scrollable">
   <ul>
     <li><a href="#rd-summary">Client Summary</a></li>
     <li><a href="#rd-pivot">Pivot</a></li>
@@ -58,9 +58,6 @@
 [% INCLUDE 'backoffice/risk_dashboard_exposure_monitoring.html.tt' data = exposures_report %]
 </div>
 <style type="text/css">
-    #rd-summary a:hover {
-        color:#060;
-    }
     #rd-summary div {
         padding:0 3px;
         border-width: 1px;
@@ -80,7 +77,10 @@
         text-align:right;
     }
     #rd-summary .highlight {
-        background-color:yellow;
+        background-color: var(--color-yellow);
+    }
+    #rd-tabs {
+        padding: 16px;
     }
 </style>
 

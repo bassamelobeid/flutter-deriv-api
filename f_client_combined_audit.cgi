@@ -26,6 +26,7 @@ use feature "state";
 
 BOM::Backoffice::Sysinit::init();
 PrintContentType();
+BrokerPresentation();
 
 my $loginid         = uc(request()->param('loginid'));
 my $startdate       = request()->param('startdate');

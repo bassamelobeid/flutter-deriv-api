@@ -135,7 +135,7 @@ function redraw_table(){
         let tr = dynamic_table.insertRow(-1);
         tr.id = 'row_'+pairs;
         tr.innerHTML = '<td>'+from+'</td><td>'+to+'</td><td>'+fee+
-            ' %</td><td><a href="#" onclick="delete_fee_by_crurrency(`'+from+'_'+to+'`)">Delete</a></td>';
+            ' %</td><td><a href="#" onclick="delete_fee_by_crurrency(`'+from+'_'+to+'`)" class="btn btn--red">Delete</a></td>';
     });
 }
 
@@ -212,7 +212,7 @@ window.onload = initialize_values;
 <form id="fees_form" name="fees_form" action="$action" onsubmit="return validate_input()" method="post">
 <fieldset  [% IF disabled %] disabled title='no write access' [% END %]>
 <input type="hidden" name='_form_submit' value='_form_submit'></input>
-<p style='color:black'><strong>DEFAULT VALUES</strong> <i>(The default transfer fees per currency type in percent)</i></p>
+<p><strong>DEFAULT VALUES</strong> <i>(The default transfer fees per currency type in percent)</i></p>
 <p  id='default_msg'>$defaults_msg</p>
 <table>
 	<tr><td>fiat-fiat: </td><td><input type="text" size="10" name="fiat_fiat" id="fiat_fiat" data-lpignore="true" /> % </td></tr>
@@ -221,39 +221,34 @@ window.onload = initialize_values;
 	<tr><td>crypto_fiat: </td><td><input type="text" size="10" name="crypto_fiat" id="crypto_fiat" data-lpignore="true" /> % </td></tr>
 	<tr><td>stable_fiat: </td><td><input type="text" size="10" name="stable_fiat" id="stable_fiat" data-lpignore="true" /> % </td></tr>
 </table>
-<br/>
 <hr>
-<p style='color:black'><strong>BY CURRENCY</strong> <i>(The non-default transfer fees per currency pair overriding the default values)</i></p>
-<p  id='currency_msg'>$currency_msg </p>
+<p><strong>BY CURRENCY</strong> <i>(The non-default transfer fees per currency pair overriding the default values)</i></p>
+<p id='currency_msg'>$currency_msg </p>
 <input id="fee_by_currency" name="fee_by_currency" type="hidden" />
-<style>
-    table.table_fee_by_currency, .table_fee_by_currency td { border: 1px solid; border-collapse: collapse; }
-</style>
 
-Saved non-default fees:
-<table class="table_fee_by_currency" id='table_fee_by_currency'>
+<span>Saved non-default fees:</span>
+<table class="table_fee_by_currency border" id='table_fee_by_currency'>
     <tr><th width="70">From</th><th width="70">To</th><th width="70">Fee</th><th width="70">Delete</th></tr>
 </table>
 <i> -You can delete rows with the checkboxes in the last column. </i><br/>
 <br/><br/>
 
-New/updated non-default fees:
-<table class="table_fee_by_currency" id='table_fee_by_currency_edit'>
+<span>New/updated non-default fees:</span>
+<table class="table_fee_by_currency border" id='table_fee_by_currency_edit'>
     <tr><th width="70">From</th><th width="70">To</th><th width="70">Fee</th><th width="70">&nbsp;</th></tr>
     <tr>
         <td><select id="first_currency"></select></td>
         <td><select id="second_currency"></select></td>
         <td><input type="text" size=6 id="currency_fee" data-lpignore="true" /> % </td>
-        <td><button type="button" onclick="add_fee_by_crurrency()">ADD</button></td>
+        <td><button type="button" class="btn btn--primary" onclick="add_fee_by_crurrency()">ADD</button></td>
     </tr>
 </table>
 <i> -New currency pairs will be inserted here by clicking the ADD button.</i>
-<br/>
 <hr/>
-<font color="darkred"><i class="notice"> * Changes you've made above will not be saved until you click <strong>Apply Changes</strong> button.</i></font>
+<i class="text-red"> * Changes you've made above will not be saved until you click <strong>Apply Changes</strong> button.</i>
 <br/>
 <br/>
-<input type="submit" name='submit' value='Apply Changes'></input>
+<input type="submit" class="btn btn--red" name='submit' value='Apply Changes'></input>
 <br/>
 </fieldset>
 </form>

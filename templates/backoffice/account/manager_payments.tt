@@ -12,8 +12,8 @@
     \$(document).ready(function() {
         \$('.datepick').datepicker({dateFormat: "yy-mm-dd"}).datepicker('setDate', new Date());
         \$('#ui-datepicker-div').hide();
-        \$('#mdc_credit').click(function(){\$('#payment_debit_credit').text('CONFIRM CREDIT')});
-        \$('#mdc_debit' ).click(function(){\$('#payment_debit_credit').text('CONFIRM DEBIT')});
+        \$('#mdc_credit').click(function(){\$('#payment_debit_credit').text('Confirm credit')});
+        \$('#mdc_debit' ).click(function(){\$('#payment_debit_credit').text('Confirm debit')});
         \$('.all_payment_types').hide();
         \$('.all_payment_types input[insist]').removeAttr('required');
         \$('#payment_type' ).change(function(){
@@ -29,12 +29,6 @@
     })
 </script>
 
-<style>
-    form.bo_form_with_files input[type="text"] {width:100px}
-    form.bo_form_with_files input#remark       {width:500px}
-    input[type="radio"]:checked+label {font-weight: bold}
-</style>
-
 <h3>Confirm a client DEBIT OR CREDIT</h3>
 
 <form action="[%request.url_for('backoffice/f_manager_confodeposit.cgi') | none %]" method="POST" class="bo_form_with_files" onsubmit="return validate_date()">
@@ -44,24 +38,23 @@
 <input type="radio" name="ttype" value="DEBIT"  id="mdc_debit" /><label for="mdc_debit" >DEBIT this Client</label>
 </p>
 
-<table>
-<tr>
-    <th>Login ID</th>
-    <th>Currency</th>
-    <th>Amount</th>
-    <th>Amount Range</th>
-    <th>Control Code</th>
-    <th>Transaction Date</th>
-</tr>
-<tr>
-    <td><input type="text" name="account" required placeholder="required" data-lpignore="true" /></td>
-    <td>
+<div class="row">
+    <div>
+        <label>Login ID:</label>
+        <input type="text" name="account" placeholder="required" data-lpignore="true" />
+    </div>
+    <div>
+        <label>Currency:</label>
         <select name="currency">
             [% currency_options | none %]
         </select>
-    </td>
-    <td><input type="text" name="amount" required placeholder="required" data-lpignore="true" /></td>
-    <td>
+    </div>
+    <div>
+        <label>Amount:</label>
+        <input type="text" name="amount" placeholder="required" data-lpignore="true" />
+    </div>
+    <div>
+        <label>Amount range:</label>
         <select name="range">
             <option value="0-10">0-10</option>
             <option value="10-100">10-100</option>
@@ -72,32 +65,20 @@
             <option value="5000-10000">5000-10000</option>
             <option value="10000-99999">10000-99999</option>
         </select>
-    </td>
-    <td><input type="text" name="DCcode" placeholder="required" data-lpignore="true" /></td>
-    <td><input type="text" name="date_received" id="date_received" required class="datepick" placeholder="required" pattern="\d{4}-\d{2}-\d{2}" data-lpignore="true" /></td>
-</tr>
-</table>
+    </div>
+    <div>
+        <label>Control code:</label>
+        <input type="text" name="DCcode" placeholder="required" data-lpignore="true" />
+    </div>
+    <div>
+        <label>Transaction date:</label>
+        <input type="text" name="date_received" id="date_received" required class="datepick" placeholder="required" pattern="\d{4}-\d{2}-\d{2}" data-lpignore="true" />
+    </div>
+</div>
 
-<table>
-<tr>
-    <th>Payment Type</th>
-    <th>
-        <label for="skip_validation1">Override Status Checks?</label>
-    </th>
-    <th class="all_payment_types external_cashier"       >Trace ID</th>
-    <th class="all_payment_types external_cashier credit">Payment Processor</th>
-    <th class="all_payment_types external_cashier credit">Payment Method</th>
-    <th class="all_payment_types external_cashier"       >Transaction ID</th>
-    <th class="all_payment_types bank_money_transfer"    >RMG Bank</th>
-    <th class="all_payment_types cash_transfer"          >MTCN</th>
-    <th class="all_payment_types bank_money_transfer cash_transfer">Payment reference id</th>
-    <th class="all_payment_types bank_money_transfer cash_transfer">
-        <label for="informclientbyemail">Notify Client by Email?</label>
-    </th>
-    <th class="all_payment_types bank_money_transfer cash_transfer">Language</th>
-</tr>
-<tr>
-    <td>
+<div class="row">
+    <div>
+        <label>Payment type:</label>
         <select id="payment_type" required name="payment_type">
             <option value=""                    >--Choose--</option>
             <option value="bank_money_transfer" >Bank Wire</option>
@@ -115,23 +96,32 @@
             <option value="voucher"             >Voucher</option>
             <option value="mt5_adjustment"      >MT5 Adjustment</option>
         </select>
-    </td>
-    <td style="text-align:center">
-        <input type="checkbox" name="skip_validation" value="on" id="skip_validation1" />
-    </td>
-    <td class="all_payment_types external_cashier">
+    </div>
+
+    <div>
+        <label><input type="checkbox" name="skip_validation" value="on" id="skip_validation1" />Override status checks?</label>
+    </div>
+</div>
+
+<div class="row">
+    <div class="all_payment_types external_cashier col-stack">
+        <label>Trace ID:</label>
         <input type="number" name="trace_id" />
-    </td>
-    <td class="all_payment_types external_cashier">
+    </div>
+    <div class="all_payment_types external_cashier credit col-stack">
+        <label>Payment processor:</label>
         <input type="text" name="payment_processor" data-lpignore="true" style="width:134" insist />
-    </td>
-    <td class="all_payment_types external_cashier">
+    </div>
+    <div class="all_payment_types external_cashier credit col-stack">
+        <label>Payment method:</label>
         <input type="text" name="payment_method" data-lpignore="true" style="width:134" />
-    </td>    
-    <td class="all_payment_types external_cashier">
+    </div>
+    <div class="all_payment_types external_cashier col-stack">
+        <label>Transaction ID:</label>
         <input type="text" name="transaction_id" data-lpignore="true" />
-    </td>
-    <td class="all_payment_types bank_money_transfer">
+    </div>
+    <div class="all_payment_types bank_money_transfer col-stack">
+        <label>RMG Bank:</label>
         <select name="bom_bank_info">
             <option value="FAB BSL USD 0017220100101">FAB BSL USD 0017220100101</option>
             <option value="NBV CGL USD 0143184001">NBV CGL USD 0143184001</option>
@@ -142,35 +132,32 @@
             <option value="Sparkasse MFUSD 10000030593040">Sparkasse MFUSD 10000030593040</option>
             <option value="Sparkasse MFGBP 10000030593080">Sparkasse MFGBP 10000030593080</option>
         </select>
-    </td>
-    <td class="all_payment_types cash_transfer"><input type="text" name="mtcn_number" data-lpignore="true" insist /></td>
-    <td class="all_payment_types bank_money_transfer cash_transfer" style="text-align:center">
-        <input type="text" name="reference_id" data-lpignore="true" />
-    </td>
-    <td class="all_payment_types bank_money_transfer cash_transfer" style="text-align:center">
-        <input type="checkbox" name="informclientbyemail" value="on" id="informclientbyemail" />
-    </td>
-    <td class="all_payment_types bank_money_transfer cash_transfer" style="text-align:center">
+    </div>
+    <div class="all_payment_types cash_transfer col-stack">
+        <label>MTCN:</label>
+        <input type="text" name="mtcn_number" data-lpignore="true" insist />
+    </div>
+    <div class="all_payment_types bank_money_transfer cash_transfer">
+        <label><input type="checkbox" name="informclientbyemail" value="on" id="informclientbyemail" />Payment reference ID?</label>
+    </div>
+    <div class="all_payment_types bank_money_transfer cash_transfer">
+        <label for="informclientbyemail"><input type="checkbox" name="informclientbyemail" value="on" id="informclientbyemail" />Notify Client by Email?</label>
         [% INCLUDE 'backoffice/container/language_select.html.tt' languages = languages %]
-    </td>
-</tr>
-<tr class="all_payment_types mt5_adjustment"><td>Note: this will not credit/debit the MT5 account!</td></tr>
-</table>
+    </div>
+    <div class="all_payment_types mt5_transfer">
+        <p class="error">Note: this will not credit/debit the MT5 account!</p>
+    </div>
+</div>
 
-<table>
-<tr>
-    <th>Remarks</th>
-</tr>
-<tr>
-    <td>
-        <input type="text" required id="remark" name="remark" data-lpignore="true" /><br/>
-        <em>Remarks will appear on client statement but are no longer used by the system</em>
-    </td>
-</tr>
-</table>
+<div class="row">
+    <div>
+        <label>Remarks:</label>
+        <input type="text" required id="remark" name="remark" data-lpignore="true" />
+    </div>
+    <em>* Remarks will appear on client statement but are no longer used by the system</em>
+</div>
 
-<br/>
-<button type="submit" id="payment_debit_credit" value="CONFIRM">CONFIRM CREDIT</button>
-<input type=reset name=Reset>
+<button type="submit" class="btn btn--red" id="payment_debit_credit" value="CONFIRM">Confirm credit</button>
+<input type=reset class="btn btn--secondary" name=Reset>
 
 </form>

@@ -26,7 +26,7 @@ my $loginid = request()->param('loginid') || '';
 
 my $client = eval { BOM::User::Client::get_instance({'loginid' => $loginid}) };
 if (not $client) {
-    code_exit_BO("Error: wrong loginid ($loginid) could not get client object.", $title);
+    code_exit_BO("Error: Wrong Login ID ($loginid) could not get client object.", $title);
 }
 
 # Not available for Virtual Accounts
@@ -58,7 +58,7 @@ if (   !$regulated_lc
         '<p>Maximum deposit begin date was successfully set to '
             . $last_update_date
             . " for $loginid </p>"
-            . "<p><a href = '$self_exclusion_link'>Back to self exclusion settings </a></p>",
+            . "<p><a class='link' href='$self_exclusion_link'>Go back to self-exclusion settings</a></p>",
         $title
     );
 }
@@ -80,10 +80,7 @@ my $client_details_link = request()->url_for(
 
 my $db = $client->db->dbic;
 
-my $page =
-      "<h2> The Client loginid: <a href='$client_details_link'>"
-    . encode_entities($loginid)
-    . ' </a> self-exclusion settings are as follows. You may change it by editing the corresponding value.</h2>';
+my $page = "<h3>Self-exclusion settings for <a class='link' href='$client_details_link'>" . encode_entities($loginid) . '</a></h3>';
 
 =head2 make_row
 
@@ -115,7 +112,7 @@ sub make_row {
 # to generate existing limits
 if (my $self_exclusion = $client->get_self_exclusion) {
     my $info;
-    $info .= '<tr><th>Limit name</th><th>Limit value</th><th>Expiration date</th></tr>';
+    $info .= '<thead><tr><th>Limit name</th><th>Limit value</th><th>Expiration date</th></tr></thead><tbody>';
     $info .= make_row(
         'Maximum account cash balance',
         $client->currency,
@@ -181,8 +178,10 @@ if (my $self_exclusion = $client->get_self_exclusion) {
         if defined $self_exclusion->timeout_until;
 
     if ($info) {
-        $page .= '<h3>Currently set values are:</h3><table cellspacing="0" cellpadding="5" border="1" class="GreyCandy">' . $info . '</table>';
+        $page .= '<p>Currently set values are:</p><table class="border alternate">' . $info . '</tbody></table><br>';
     }
+
+    $page .= '<p>You may change it by editing the corresponding value:</p>';
 }
 
 # first time (not submitted)
@@ -254,7 +253,7 @@ if (!$exclude_until_date || !$form_exclusion_until_date || $form_exclusion_until
             $client->set_exclusion->exclude_until(undef);
         }
     } else {
-        print "<p class=\"aligncenter\"><font color=red><b>WARNING: </b></font>Client's self-exclusion date cannot be changed</p>";
+        print "<p class=\"aligncenter error\">>WARNING: Client's self-exclusion date cannot be changed</p>";
     }
 }
 
@@ -271,7 +270,7 @@ if ($client->save) {
 }
 
 my $self_exclusion_link = request()->url_for('backoffice/f_setting_selfexclusion.cgi', {loginid => $loginid});
-print qq{<a href='$client_details_link'>&laquo; return to client details</a>};
-print qq{<br/><a href='$self_exclusion_link'>&laquo; back to self-exclusion settings</a>};
+print qq{<a class='link' href='$client_details_link'>&laquo; Return to client details</a>};
+print qq{<br/><a class='link' href='$self_exclusion_link'>&laquo; Go back to self-exclusion settings</a>};
 
 code_exit_BO;

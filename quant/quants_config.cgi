@@ -283,3 +283,5 @@ BOM::Backoffice::Request::template()->process(
         delete_error       => $delete_error,
         disabled           => $disabled_write,
     }) || die BOM::Backoffice::Request::template()->error;
+
+code_exit_BO();

@@ -60,7 +60,7 @@ table tr.selected {
     <input type="submit" name="submit_txn" value='Revert Transactions' />
 </form>
 [% ELSE %]
-    <p style="color: red"><b>There is no withdrawal record with "ERROR" status for [% currency %].</b></p>
+    <p class="error"><b>There is no withdrawal record with "ERROR" status for [% currency %].</b></p>
 [% END %]
 
 <script type="text/javascript">

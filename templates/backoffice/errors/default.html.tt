@@ -1,1 +1,1 @@
-<font color=red><b>[% error %]</b></font><p>
+<p class="error"><b>[% error %]</b></p>

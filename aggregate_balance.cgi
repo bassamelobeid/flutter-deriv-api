@@ -30,6 +30,7 @@ foreach my $entry (@$results) {
     $aggregate->{$entry->{currency_code}}->{total_across_broker_codes} += $entry->{balance};
 }
 
+Bar('Aggregate Balance Per Currency');
 BOM::Backoffice::Request::template()->process(
     'backoffice/aggregate_balance.html.tt',
     {

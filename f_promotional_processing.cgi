@@ -25,13 +25,12 @@ if ($input{bonus_approve} or $input{bonus_reject}) {
     my $loginid = $input{loginid};
 
     my $client = BOM::User::Client->new({loginid => $loginid})
-        || code_exit_BO(sprintf('<p style="color:red; font-weight:bold;">ERROR: %s</p>', $@));
+        || code_exit_BO(sprintf('<p class="error">ERROR: %s</p>', $@));
 
     my $promo_code = $input{bonus_approve} // $input{bonus_reject};
 
     if ($client->promo_code eq $promo_code and $client->promo_code_status =~ /^(CLAIM|REJECT)$/) {
-        code_exit_BO(
-            '<p style="color:red; font-weight:bold;">ERROR: Bonus for ' . $promo_code . ' Already ' . $client->promo_code_status . 'ED. </p>');
+        code_exit_BO('<p class="error">ERROR: Bonus for ' . $promo_code . ' Already ' . $client->promo_code_status . 'ED. </p>');
     }
     my $encoded_promo_code = encode_entities(uc $promo_code);
 
@@ -41,7 +40,7 @@ if ($input{bonus_approve} or $input{bonus_reject}) {
     try {
         $client->promo_code($encoded_promo_code);
     } catch {
-        code_exit_BO(sprintf('<p style="color:red; font-weight:bold;">ERROR: %s</p>', $@));
+        code_exit_BO(sprintf('<p class="error">ERROR: %s</p>', $@));
     };
     $client->promo_code_status('APPROVAL');
     if ($input{bonus_approve}) {
@@ -50,11 +49,11 @@ if ($input{bonus_approve} or $input{bonus_reject}) {
         $status = process_bonus_claim($client, 0, $input{amount}, $notify);
     }
 
-    print '<br/><b>' . $status . '<br/><br/>';
+    print '<p>' . $status . '</p>';
 
-    print qq[<p>Check Another Bonus</p>
+    print qq[<h3>Check Another Bonus</h3>
             <form action="$input{back_url}" method="get">
-            Login ID: <input type="text" name="loginID" size=15 data-lpignore="true" />
+                <label>Login ID:</label><input type="text" name="loginID" size=15 data-lpignore="true" />
             </form>]
 } else {    #bulk Approval.
 

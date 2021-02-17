@@ -288,7 +288,7 @@ $tt2->process(
 
 # Exchange rate should be populated according to supported cryptocurrencies.
 if ($exchange_rate eq 'N.A.') {
-    print "<p style='color:red'><strong>ERROR: No exchange rate found for currency " . $currency . ". Please contact IT. </strong></p>";
+    print "<p class='error'><strong>ERROR: No exchange rate found for currency " . $currency . ". Please contact IT. </strong></p>";
     code_exit_BO();
 }
 
@@ -296,36 +296,36 @@ try {
     $currency_wrapper->get_info();
 } catch {
     warn "Failed to load $currency currency info: $@";
-    print "<p style='color:red'><strong>ERROR: Failed to load $currency currency info. Please contact IT. </strong></p>";
+    print "<p class='error'><strong>ERROR: Failed to load $currency currency info. Please contact IT. </strong></p>";
     code_exit_BO();
 }
 
 if ($view_action eq 'withdrawals') {
     my $main_address_balance = $currency_wrapper->get_main_address_balance();
 
-    print "<b>Available Balance(s) for Payout:</b>";
+    print "<hr><h3>Available Balance(s) for Payout:</h3>";
     for my $currency_of_balance (sort keys %$main_address_balance) {
         my $balance        = Math::BigFloat->new($main_address_balance->{$currency_of_balance});
         my $remaining_text = '';
         if ($currency_of_balance eq $currency) {
             my $remaining = $balance->copy->bsub($pending_withdrawal_amount);
             $remaining_text = sprintf(
-                " (Remaining after <b>payout</b>: <b style='color: %s;'>%s</b>)",
-                $remaining->is_pos ? 'green' : 'red',
+                "(Remaining after <b>payout</b>: <b class='%s'>%s</b>)",
+                $remaining->is_pos ? 'success' : 'error',
                 formatnumber('amount', $currency_of_balance, $remaining->bstr),
             );
         } else {
             my $remaining = $balance->copy->bsub($pending_estimated_fee);
             $remaining_text = sprintf(
-                " (Remaining after <b>total estimated fees</b>: <b style='color: %s;'>%s</b>)",
-                $remaining->is_pos ? 'green' : 'red',
+                " (Remaining after <b>total estimated fees</b>: <b class='%s'>%s</b>)",
+                $remaining->is_pos ? 'success' : 'error',
                 formatnumber('amount', $currency_of_balance, $remaining->bstr),
             );
         }
         print sprintf("<p>%s : <b>%s</b>$remaining_text</p>", $currency_of_balance, formatnumber('amount', $currency_of_balance, $balance->bstr));
     }
-    print sprintf(
-        "<p><b>Note:</b> The above values calculated on <b>%s</b>, to get new values please click the <b>'Withdrawal Transactions'</b> button above.",
+    print
+        sprintf("<p>NOTE: The above values calculated on <b>%s</b>. To get new values, please click the <b>Withdrawal Transactions</b> button above.",
         Date::Utility->new()->datetime_yyyymmdd_hhmmss);
 
     Bar("LIST OF TRANSACTIONS - WITHDRAWAL");
@@ -494,7 +494,7 @@ if ($view_action eq 'withdrawals') {
     Bar($currency . ' Reconciliation');
 
     if (Date::Utility::days_between($end_date, $start_date) > 30) {
-        print "<p style='color:red'><strong>ERROR: Cannot accept dates more than 30 days apart. Please edit start and end dates. </strong></p>";
+        print "<p class='error'><strong>ERROR: Cannot accept dates more than 30 days apart. Please edit start and end dates. </strong></p>";
         code_exit_BO();
     }
 
@@ -513,12 +513,12 @@ if ($view_action eq 'withdrawals') {
 
     # TODO: move representation logic to template
     print <<"EOF";
-<div>
-<a download="${filename}.xls" href="#" onclick="return ExcellentExport.excel(this, 'recon_table', '$filename');">Export to Excel</a>
-<a download="${filename}.csv" href="#" onclick="return ExcellentExport.csv(this, 'recon_table');">Export to CSV</a>
+<div class="row">
+<a class="btn btn--primary" download="${filename}.xls" href="#" onclick="return ExcellentExport.excel(this, 'recon_table', '$filename');">Export to Excel</a>
+<a class="btn btn--primary" download="${filename}.csv" href="#" onclick="return ExcellentExport.csv(this, 'recon_table');">Export to CSV</a>
 </div>
 EOF
-    print '<table id="recon_table" style="width:100%;" border="1" class="sortable"><thead><tr>';
+    print '<div class="scrollable"><table id="recon_table" class="border nowrap sortable hover"><thead><tr>';
     print '<th scope="col">' . encode_entities($_) . '</th>' for @hdr;
     print '</thead><tbody>';
 
@@ -529,7 +529,7 @@ EOF
 
         my $address         = $db_tran->{to} || $db_tran->{from};
         my $encoded_address = encode_entities($address);
-        print '<td><a href="' . $address_uri . $encoded_address . '" target="_blank">' . $encoded_address . '</a></td>';
+        print '<td><a class="link" href="' . $address_uri . $encoded_address . '" target="_blank">' . $encoded_address . '</a></td>';
         my $amount     = $db_tran->{amount} // 0;
         my $currency   = $fee_recon ? $currency_wrapper->parent_currency : $currency;
         my $usd_amount = formatnumber('amount', 'USD', financialrounding('price', 'USD', in_usd($amount, $currency)));
@@ -541,26 +541,26 @@ EOF
         my $fee           = Math::BigFloat->new($db_tran->{fee})->bstr;
         my $protocol_cost = Math::BigFloat->new($db_tran->{protocol_cost})->bstr;
 
-        print '<td style="text-align:right;">' . encode_entities($_) . '</td>' for ($amount, '$' . $usd_amount, $fee, $protocol_cost);
+        print '<td class="right">' . encode_entities($_) . '</td>' for ($amount, '$' . $usd_amount, $fee, $protocol_cost);
         print '<td>' . encode_entities($_) . '</td>' for map { $_ // '' } @{$db_tran}{qw(status)};
         print '<td sorttable_customkey="' . (sprintf "%012d", $_ ? Date::Utility->new($_)->epoch : 0) . '">' . encode_entities($_) . '</td>'
             for map { $_ // '' } @{$db_tran}{qw(status_date blockchain_date)};
-        print '<td><span style="color: ' . ($_ + 0 >= 3 ? 'green' : 'gray') . '">' . encode_entities($_) . '</td>'
+        print '<td><span class="' . ($_ + 0 >= 3 ? 'success' : 'text-muted') . '">' . encode_entities($_) . '</td>'
             for map { $_ // 0 } @{$db_tran}{qw(confirmations)};
         print '<td>';
         if ($db_tran->{transaction_hash}) {
-            print '<a target="_blank" href="'
+            print '<a class="link" target="_blank" href="'
                 . ($transaction_uri . $db_tran->{transaction_hash}) . '">'
                 . encode_entities($db_tran->{transaction_hash})
                 . '</a><br>';
         }
 
         print '</td>';
-        print '<td style="color:red;">' . (join '<br><br>', map { encode_entities($_) } @{$db_tran->{comments} || []}) . '</td>';
+        print '<td class="error">' . (join '<br><br>', map { encode_entities($_) } @{$db_tran->{comments} || []}) . '</td>';
         print '</tr>';
     }
 
-    print '</tbody></table>';
+    print '</tbody></table></div>';
 } elsif ($view_action eq 'run') {
     my $cmd = request()->param('command');
 

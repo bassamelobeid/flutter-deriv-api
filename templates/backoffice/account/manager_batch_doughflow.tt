@@ -1,35 +1,34 @@
 
 <p>The CSV format should be as below (without headers):</p>
 
-<table class="csv">
-
-    <tr>
-        <th>Login ID</th>
-        <th>Transaction Type</th>
-        <th>Trace ID</th>
-        <th>Payment Processor</th>
-        <th>Currency</th>
-        <th>Amount</th>
-        <th>Comment</th>
-        <th>Transaction id</th>
-    </tr>
-    <tr><td colspan="8" align="center">Examples:</td></tr>
-    <tr>
-        <td>CR0001</td><td>credit</td><td>714859<td>DCash1</td><td>USD</td><td>10.00</td><td>"DoughFlow deposit"</td><td>143222</td>
-    </tr>
-    <tr><td colspan="8" align="center">Please note that for debit and withdrawal reversal, transaction id is not required</td></tr>
-    <tr>
-        <td>CR0001</td><td>debit</td><td>714859<td>NETeller</td><td>USD</td><td>10.00</td><td>"reversal of DoughFlow deposit"</td><td></td>
-    </tr>
+<table class="border small">
+    <thead>
+        <tr>
+            <th>Login ID</th>
+            <th>Transaction type</th>
+            <th>Trace ID</th>
+            <th>Payment processor</th>
+            <th>Currency</th>
+            <th>Amount</th>
+            <th>Comment</th>
+            <th>Transaction ID</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr><td colspan="8" align="center">Examples:</td></tr>
+        <tr>
+            <td>CR0001</td><td>credit</td><td>714859<td>DCash1</td><td>USD</td><td>10.00</td><td>"DoughFlow deposit"</td><td>143222</td>
+        </tr>
+        <tr><td colspan="8" align="center">Please note that for debit and withdrawal reversal, transaction id is not required</td></tr>
+        <tr>
+            <td>CR0001</td><td>debit</td><td>714859<td>NETeller</td><td>USD</td><td>10.00</td><td>"reversal of DoughFlow deposit"</td><td></td>
+        </tr>
+    </tbody>
 </table>
 
 <br/>
-<form method="POST" action="[%request.url_for('backoffice/batch_payments.cgi') | none %]" enctype="multipart/form-data">
-
-    Use this CSV <input type="file" value="" required name="payments_csv" />
-    <label for="skip_validation4" >Override Status Checks?</label>
-    <input type="checkbox" name="skip_validation" value="on" id="skip_validation4" />
-    <button type="submit" name="preview" value="doughflow">PREVIEW DOUGHFLOW PAYMENTS</button>
-
+<form method="POST" action="[%request.url_for('backoffice/batch_payments.cgi') | none %]" enctype="multipart/form-data" class="row">
+    <label>Use this CSV:</label><input type="file" value="" required name="payments_csv" />
+    <label for="skip_validation4" ><input type="checkbox" name="skip_validation" value="on" id="skip_validation4" />Override status checks?</label>
+    <button type="submit" class="btn btn--primary" name="preview" value="doughflow">Preview Doughflow payments</button>
 </form>
-<br/>

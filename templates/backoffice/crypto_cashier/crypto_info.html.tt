@@ -1,43 +1,30 @@
-<style type="text/css">
-
-#currency_info, #currency_info tr, #currency_info td{
-    border: 1px solid black;
-    border-collapse: collapse;
-}
-
-#currency_info tr, #currency_info td{
-    padding: 6px;
-}
-
-</style>
-
-<table id="currency_info">
+<table id="currency_info" class="border">
     <tr><th colspan=2>[% currency %] Info</th></tr>
     <tr>
-        <th>Main address</th>
-        <td><strong>[% main_address %]</strong></td>
+        <th class="right">Main address</th>
+        <td>[% main_address %]</td>
     </tr>
     <tr>
-        <th>Exchange Rate ([% currency %]/USD)</th>
-        <td><strong>[% exchange_rate %]</strong></td>
+        <th class="right">Exchange rate ([% currency %]/USD)</th>
+        <td>[% exchange_rate %]</td>
     </tr>
     <tr>
-        <th>Min Sweep Limit</th>
+        <th class="right">Min sweep limit</th>
         <td>
             [% IF sweep_limit_min %]
-                <strong>[% sweep_limit_min %] [% currency %]</strong>
+                [% sweep_limit_min %] [% currency %]
             [% ELSE %]
-                <strong>No limit specified</strong>
+                No limit specified
             [% END %]
         </td>
     </tr>
     <tr>
-        <th>Max Sweep Limit</th>
+        <th class="right">Max sweep limit</th>
         <td>
             [% IF sweep_limit_min %]
-                <strong>[% sweep_limit_max %] [% currency %]</strong>
+                [% sweep_limit_max %] [% currency %]
             [% ELSE %]
-                <strong>No limit specified</strong>
+                No limit specified
             [% END %]
         </td>
     </tr>

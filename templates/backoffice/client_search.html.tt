@@ -8,31 +8,34 @@
         <input type="text" size="20" name="phone" placeholder="phone" onfocus="this.select()" value="[% params.phone %]" data-lpignore="true" />
         <input type="text" size="20" name="date_of_birth" placeholder="DOB YYYY-MM-DD" onfocus="this.select()" value="[% params.date_of_birth %]" class="datepick" pattern="^\d{4}-\d{2}-\d{2}\$" data-lpignore="true" />
         <input type="text" size="20" name="broker" placeholder="Broker" onfocus="this.select()" value="[% broker %]" data-lpignore="true" />
-        <input type="submit" value="Search" />
+        <input type="submit" class="btn btn--primary" value="Search" />
 </form>
 <p>Note: For best results, enter either only the Client's first name or last name</p>
 
 
 [% IF results.size %]
-<table border="0" cellpadding="1" cellspacing="1" width="90%" style="text-align:left; padding:0.5em 0; margin: 0 auto;">
-    <tr style="background-color:#ffffce";>
-        <th align="left" >Login ID</th>
-        <th>Salutation</th>
-        <th>First Name</th>
-        <th>Last Name</th>
-        <th>Email</th>
-        <th>Currency</th>
-        <th>Account Status</th>
-        <th>Last Login</th>
-        <th>Phone</th>
-        <th>Address</th>
-        <th>Citizen</th>
-        <th>Date Joined</th>
-        <th>DOB</th>
-    </tr>
+<table class="center alternate hover" width="90%">
+    <thead>
+        <tr>
+            <th align="left" >Login ID</th>
+            <th>Salutation</th>
+            <th>First Name</th>
+            <th>Last Name</th>
+            <th>Email</th>
+            <th>Currency</th>
+            <th>Account Status</th>
+            <th>Last Login</th>
+            <th>Phone</th>
+            <th>Address</th>
+            <th>Citizen</th>
+            <th>Date Joined</th>
+            <th>DOB</th>
+        </tr>
+    </thead>
+    <tbody>
     [% FOR result = results %]
-        <tr style="background-color: #aaffaa;">
-            <td align="left" ><a href="[% request.url_for( 'backoffice/f_clientloginid_edit.cgi', {loginID => result.loginid}) %]">[% result.loginid %]</td>
+        <tr>
+            <td align="left" ><a class="link link--primary" href="[% request.url_for( 'backoffice/f_clientloginid_edit.cgi', {loginID => result.loginid}) %]">[% result.loginid %]</td>
             <td>[% result.salutation %]</td>
             <td>[% result.first_name %]</td>
             <td>[% result.last_name %]</td>
@@ -52,6 +55,7 @@
             <td>[% result.date_of_birth %]</td>
         </tr>
     [% END %]
+    </tbody>
 </table>
 [% ELSE %]
 <p>No match</p>

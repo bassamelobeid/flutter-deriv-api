@@ -1,10 +1,8 @@
-[% WRAPPER layout title='' %]
-   <a href="[% request.url_for('backoffice/f_clientloginid_edit.cgi', { loginID => input.loginid }) | url %]">return to client details</a>
-[% END %]
+<p><a class="link" href="[% request.url_for('backoffice/f_clientloginid_edit.cgi', { loginID => input.loginid }) | url %]">&laquo; Return to client details</a></p>
 
 [% IF error %]
     [% WRAPPER layout title='Error' %]
-       <b style="color:red; font-size: medium"> [% error %]</b>
+       <p class="error"> [% error %]</p>
     [% END %]
 [% END %]
 
@@ -17,16 +15,11 @@
         <input type="hidden" name="id" value="[% result.id %]" />
         <input type="hidden" name="checksum" value="[% result.checksum %]" />
         <label>Comment:</label>
-        <div>
+        <div class="row">
             <textarea rows="10" cols="100" name="comment" maxlength="1000" minlength="1" autofocus>[% input.comment || result.comment %]</textarea>
         </div>
-        <div style="margin-top: 10px">
-        </div>
-        <input type="submit" value="Save changes">
-    </form>
-    <form method="get">
-        <input type="hidden" name="loginid" value="[% input.loginid %]" />
-        <input type="submit" value="Cancel">
+        <input type="submit" class="btn btn--red" value="Save changes">
+        <a class="btn btn--secondary" href="[% request.url_for('backoffice/f_client_comments.cgi', { loginid => input.loginid }) | url %]">Cancel</a>
     </form>
     [% END %]
 [% ELSE %]
@@ -36,12 +29,10 @@
         <input type="hidden" name="action" value="add_comment" />
         <input type="hidden" name="csrf" value="[% csrf %]" />
         <label>Comment:</label>
-        <div>
+        <div class="row">
             <textarea rows="10" cols="100" name="comment" maxlength="1000" minlength="1" autofocus placeholder="Enter new comment here" >[% error ?  input.comment : '' %]</textarea>
         </div>
-        <div style="margin-top: 10px">
-            <input type="submit" value="Add new comment">
-        </div>
+        <input type="submit" class="btn btn--primary" value="Add new comment">
     </form>
     [% END %]
 [% END %]
@@ -52,16 +43,10 @@
 
 
 [% BLOCK layout %]
-    <table class="BlackCandy" rules="all" frame="void" border="1" cellpadding="1" cellspacing="2" width="100%">
-        <tbody>
-           <tr class="Blacklabel">
-                <td class="whitelabel" colspan="2">[% title %]</td>
-            </tr>
-            <tr>
-                <td align="left" style="padding: 10px;">
-                [% content | none %]
-                </td>
-            </tr>
-        </tbody>
-    </table>
+    <div class="card">
+        <div class="card__label">[% title %]</div>
+        <div class="card__content">
+            [% content | none %]
+        </div>
+    </div>
 [% END %]

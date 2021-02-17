@@ -6,9 +6,9 @@
     <table>
         <tr><INPUT type=hidden name="broker" value="[% broker %]"></tr>
         <tr><INPUT type=hidden name="whattodo" value="process_dividend"></tr>
-        <tr><td>Please select the file to upload</td><td><INPUT type="file" name="filetoupload" id="upload_dividend_excel_file_field" value="" size="45"></td></tr>
-        <tr><td>Please select the source of the file</td><td><INPUT type=radio name=update_discrete_dividend value="BB"> BB <INPUT type=radio name=update_discrete_dividend value="SD" checked="checked"> SD</td></tr>
-        <tr><td><INPUT type="submit" id="upload_dividend_excel_submit" value="Process Excel File"></td></tr>
+        <tr><td><label>Please select the file to upload</label></td><td><INPUT type="file" name="filetoupload" id="upload_dividend_excel_file_field" value="" size="45"></td></tr>
+        <tr><td><label>Please select the source of the file</label></td><td><INPUT type=radio name=update_discrete_dividend value="BB"> BB <INPUT type=radio name=update_discrete_dividend value="SD" checked="checked"> SD</td></tr>
+        <tr><td><INPUT type="submit" class="btn btn--primary" id="upload_dividend_excel_submit" value="Process Excel File"></td></tr>
     </table>
 </fieldset>
 </form>

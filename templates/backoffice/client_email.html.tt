@@ -1,7 +1,7 @@
 <div>
     <span>
         [% IF list == 1 %]
-            Client's Email: <b>[% email %]</b></br></br>
+            Client's email: <b>[% email %]</b></br></br>
             List of loginids (+ their balances) with this email are:
         [% ELSIF updated == 1 %]
             Client's email has been changed from <b>[% old_email %] to [% new_email %]</b><br/><br/>
@@ -10,7 +10,7 @@
     </span>
     <ul>
         [% FOREACH entry IN bom_logins %]
-            <li><a href="[% request.url_for('backoffice/f_clientloginid_edit.cgi', {loginID => entry.text }) %]" [% entry.style %]>[% entry.text %][% entry.currency %]</a><span style="margin-left:12px; color:#f44336"><strong>[% entry.balance %]</strong></span></li>
+            <li><a class="link link--primary" href="[% request.url_for('backoffice/f_clientloginid_edit.cgi', {loginID => entry.text }) %]" [% entry.style %]>[% entry.text %][% entry.currency %]</a><span style="margin-left:12px; color:#f44336"><strong>[% entry.balance %]</strong></span></li>
         [% END %]
         [% FOREACH mt5_loginid IN mt5_loginids %]
             <li>[% mt5_loginid %]</li>
@@ -18,18 +18,18 @@
     </ul>
 
     [% IF list == 1 %]
-        <hr>Change client's email for all loginids listed above:</br></br>
-        <form action="[% request.url_for('backoffice/client_email.cgi') | none %]" method="post">
-            <b>Dual Control Code: </b>
+        <hr>
+        <h3>Change client's email for all loginids listed above:</h3>
+        <form action="[% request.url_for('backoffice/client_email.cgi') | none %]" method="post" class="row">
+            <label>Dual Control Code:</label>
             <input type="text" name="DCcode" placeholder="required" data-lpignore="true" />
             <input type="hidden" value="UPDATECLIENTDETAILS" name="transtype"/>
-            <br><br>
-            <b>New Email: </b>
+            <label>New email: </label>
             <input type="text" name="new_email" placeholder="required" data-lpignore="true" />
             <input type="hidden" name="email" value="[% email %]">
             <input type="hidden" name="email_edit" value="1">
-            <input type="submit" value="Update Email">
-            <br><br><b>(Note: This will update email for all the listed loginids above)</b>
+            <input type="submit" class="btn btn--primary" value="Update email">
         </form>
+        <p><i>NOTE: This will update email for all the listed loginids above</i></p>
     [% END %]
 </div>

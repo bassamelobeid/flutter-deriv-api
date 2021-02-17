@@ -1,4 +1,4 @@
-<p style="[% IF error; style = 'color:red; font-weight:bold;'; ELSE; style = 'color:green; font-weight:bold;'; END; %]">[% message %]</p>
+<p [% IF error %] class="error" [% ELSE %] class="success" [% END %]>[% message %]</p>
 <p>
-    <a href="[% self_url | none %]">&laquo;Return to Client Details<a/>
+    <a class="link" href="[% self_url | none %]">&laquo; Return to client details<a/>
 </p>

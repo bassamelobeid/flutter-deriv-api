@@ -35,12 +35,12 @@ PrintContentType();
 BrokerPresentation($encoded_loginID . ' Contracts Analysis', '', '');
 
 if ($loginID !~ /^(\D+)(\d+)$/) {
-    code_exit_BO("Error: Wrong loginID ($encoded_loginID).");
+    code_exit_BO("Error: Wrong Login ID ($encoded_loginID).");
 }
 
 my $client = eval { BOM::User::Client::get_instance({'loginid' => $loginID, db_operation => 'backoffice_replica'}) };
 if (not $client) {
-    code_exit_BO("Error: Wrong loginID ($encoded_loginID) could not get client instance.");
+    code_exit_BO("Error: Wrong Login ID ($encoded_loginID) could not get client instance.");
 }
 
 ### Sold Contracts ###

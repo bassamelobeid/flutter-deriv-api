@@ -172,11 +172,11 @@ if ($filen =~ m!^vol/master([a-zA-Z0-9]{2,20}(?:-[a-zA-Z0-9]{2,20})?)\.interest$
         }
 
         if ($err_cond) {
-            print '<P><font color=red><B>ERROR with '
+            print '<p class="error">ERROR with '
                 . encode_entities($err_cond)
                 . ' on line  ['
                 . encode_entities($rateline)
-                . '].  File NOT saved.</B></font></P>';
+                . '].  File NOT saved.</p>';
             code_exit_BO();
         } else {
             $rates->{$tenor} = $rate;
@@ -234,9 +234,9 @@ if (    -e $overridefilename
     and not BOM::Config::on_qa
     and $overridefilename !~ /\/combined\//)
 {
-    print "<P><font color=red>Problem!! The file has been saved by someone else within the last $fage seconds.
+    print "<p class='error'>Problem!! The file has been saved by someone else within the last $fage seconds.
 	There is a risk that that person saved modifications that you are going to over-write!
-	Please click Back, then REFRESH THE PAGE to pull in the modifications, then make your changes again, then re-save.";
+	Please click Back, then REFRESH THE PAGE to pull in the modifications, then make your changes again, then re-save.</p>";
     code_exit_BO();
 }
 

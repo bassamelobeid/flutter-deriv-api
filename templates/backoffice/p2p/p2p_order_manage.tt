@@ -1,15 +1,14 @@
-<p><a href="[% request.url_for('backoffice/p2p_order_list.cgi') %]">Back to orders list</a></p>
+<p><a class="link" href="[% request.url_for('backoffice/p2p_order_list.cgi') %]">&laquo; Back to orders list</a></p>
 
 <form action="[% request.url_for('backoffice/p2p_order_manage.cgi', {broker => broker}) %]" method="get">
-Order ID: <input type="text" name="order_id" value="[% order.id %]" size=20 data-lpignore="true" />
-<button type="submit">Get order</button>
+<label>Order ID:</label><input type="text" name="order_id" value="[% order.id %]" size=20 data-lpignore="true" />
+<button class="btn btn--primary" type="submit">Get order</button>
 </form>
 
 [% IF order %]
-
+    <hr>
     <h3>Details for order [% order.id %]</h3>
-
-    <table border="1" class="collapsed">
+    <table class="border">
         <tr>
             <td>Status</td>
             <td><b>[% order.status %]</b></td>
@@ -19,12 +18,12 @@ Order ID: <input type="text" name="order_id" value="[% order.id %]" size=20 data
             <td><b>[% order.type %]</b> (advert type: [% order.advert_type %] Binary [% order.account_currency %] using local [% order.local_currency %])</td>
         </tr>
         <tr>
-            <td>Client&nbsp;&nbsp;<span style="color:blue; font-weight:bold;">[% order.client_role %]</span></td>
-            <td>[% order.client_loginid %]
-                &nbsp;&nbsp;<a href="[% request.url_for('backoffice/p2p_advertiser_manage.cgi', { loginID => order.client_loginid }) %]">Manage advertiser</a>
-                &nbsp;&nbsp;<a href="[% request.url_for('backoffice/f_clientloginid_edit.cgi', { loginID => order.client_loginid }) %]">Client profile</a>
-                &nbsp;&nbsp;<a href="[% request.url_for('backoffice/f_manager_history.cgi', { loginID => order.client_loginid }) %]">Client statement</a>
-                &nbsp;&nbsp;<a href="[% request.url_for('backoffice/p2p_order_list.cgi', { loginID => order.client_loginid }) %]">All orders</a>
+            <td>Client&nbsp;&nbsp;<span style="color:var(--color-blue);font-weight:bold;">[% order.client_role %]</span></td>
+            <td class="link-group">[% order.client_loginid %]
+                <a class="link" href="[% request.url_for('backoffice/p2p_advertiser_manage.cgi', { loginID => order.client_loginid }) %]">Manage advertiser</a>
+                <a class="link" href="[% request.url_for('backoffice/f_clientloginid_edit.cgi', { loginID => order.client_loginid }) %]">Client profile</a>
+                <a class="link" href="[% request.url_for('backoffice/f_manager_history.cgi', { loginID => order.client_loginid }) %]">Client statement</a>
+                <a class="link" href="[% request.url_for('backoffice/p2p_order_list.cgi', { loginID => order.client_loginid }) %]">All orders</a>
             </td>
         </tr>
         <tr>
@@ -32,7 +31,7 @@ Order ID: <input type="text" name="order_id" value="[% order.id %]" size=20 data
             <td><b>[% order.client_confirmed %]</b></td>
         </tr>
         <tr>
-            <td>Client P2P advertiser id</td>
+            <td>Client P2P advertiser ID</td>
             <td>[% order.client_id %]</td>
         </tr>
         <tr>
@@ -40,16 +39,16 @@ Order ID: <input type="text" name="order_id" value="[% order.id %]" size=20 data
             <td>[% order.client_name %]</td>
         </tr>
         <tr>
-            <td>Advertiser&nbsp;&nbsp;<span style="color:blue; font-weight:bold;">[% order.advertiser_role %]</span></td>
-                <td>[% order.advertiser_loginid %]
-                &nbsp;&nbsp;<a href="[% request.url_for('backoffice/p2p_advertiser_manage.cgi', { loginID => order.advertiser_loginid }) %]">Manage advertiser</a>
-                &nbsp;&nbsp;<a href="[% request.url_for('backoffice/f_clientloginid_edit.cgi', { loginID => order.advertiser_loginid }) %]">Client profile</a>
-                &nbsp;&nbsp;<a href="[% request.url_for('backoffice/f_manager_history.cgi', { loginID => order.advertiser_loginid }) %]">Client statement</a>
-                &nbsp;&nbsp;<a href="[% request.url_for('backoffice/p2p_order_list.cgi', { loginID => order.advertiser_loginid }) %]">All orders</a>
+            <td>Advertiser&nbsp;&nbsp;<span style="color:var(--color-blue);font-weight:bold;">[% order.advertiser_role %]</span></td>
+            <td class="link-group">[% order.advertiser_loginid %]
+                <a class="link" href="[% request.url_for('backoffice/p2p_advertiser_manage.cgi', { loginID => order.advertiser_loginid }) %]">Manage advertiser</a>
+                <a class="link" href="[% request.url_for('backoffice/f_clientloginid_edit.cgi', { loginID => order.advertiser_loginid }) %]">Client profile</a>
+                <a class="link" href="[% request.url_for('backoffice/f_manager_history.cgi', { loginID => order.advertiser_loginid }) %]">Client statement</a>
+                <a class="link" href="[% request.url_for('backoffice/p2p_order_list.cgi', { loginID => order.advertiser_loginid }) %]">All orders</a>
             </td>
         </tr>
         <tr>
-            <td>Advertiser id</td>
+            <td>Advertiser ID</td>
             <td>[% order.advertiser_id %]</td>
         </tr>
         <tr>
@@ -79,7 +78,7 @@ Order ID: <input type="text" name="order_id" value="[% order.id %]" size=20 data
         <tr>
             <td>Expiration time</td>
             <td>[% order.expire_time %]
-            [% IF order.is_expired %]&nbsp;&nbsp;<span style="color:red; font-weight:bold;">EXPIRED</span>[% END %]
+            [% IF order.is_expired %]&nbsp;&nbsp;<span class="error">EXPIRED</span>[% END %]
             </td>
         </tr>
         <tr>
@@ -100,8 +99,9 @@ Order ID: <input type="text" name="order_id" value="[% order.id %]" size=20 data
         </tr>        
     </table>
 
+    <hr>
     <h3>Order History</h3>
-    <table border="1" class="collapsed">
+    <table class="full-width border">
         <thead>
             <tr>
                 <th scope="col">Time</th>
@@ -109,7 +109,7 @@ Order ID: <input type="text" name="order_id" value="[% order.id %]" size=20 data
                 <th scope="col">TX Type</th>
                 <th scope="col"></th>
                 <th scope="col">TX ID</th>
-                <th scope="col">Loginid</th>
+                <th scope="col">Login ID</th>
                 <th scope="col">Amount</th>
                 <th scope="col">TX type</th>
                 <th scope="col">Payment ID</th>
@@ -152,61 +152,49 @@ Order ID: <input type="text" name="order_id" value="[% order.id %]" size=20 data
     </table>
 
     [% IF p2p_write && (order.status == 'Timed-out') %]
-        <h3>Manual Dispute Creation</h3>
+        <hr>
+        <h3>Manual dispute creation</h3>
 
         <form action="[% request.url_for('backoffice/p2p_order_manage.cgi', {broker => broker, order_id => order.id }) %]" method="post">
-        <table style="background:LightCoral;" cellpadding=5>
-        <tr><td colspan=2>
-        <b>Dispute raised by:</b>
-        </td><td colspan=2>
-        <b>Dispute reason:</b>
-        </td></tr><tr><td colspan=2>
-        <select required name="disputer" >
-            <option value="[% order.buyer %]">Buyer [% order.buyer %]</option>
-            <option value="[% order.seller %]">Seller [% order.seller %]</option>
-        </select>
-        </td><td colspan=2>
-        <select required name="reason">
-            [% FOREACH key IN dispute_reasons.keys.sort %]
-                <option value="[% key %]">[% dispute_reasons.$key %]</option>
-            [% END %]
-        </select>
-        </td></tr><tr><td colspan=2>
-        <button style="width:150px;" type="submit" name="dispute" value="1" onclick="return confirm('Are you sure? Order status will change to disputed.');">RAISE A DISPUTE</button>
-        </td></tr></tbody></table>
+            <label>Dispute raised by:</label>
+            <select required name="disputer" >
+                <option value="[% order.buyer %]">Buyer [% order.buyer %]</option>
+                <option value="[% order.seller %]">Seller [% order.seller %]</option>
+            </select>
+            <label>Dispute reason:</label>
+            <select required name="reason">
+                [% FOREACH key IN dispute_reasons.keys.sort %]
+                    <option value="[% key %]">[% dispute_reasons.$key %]</option>
+                [% END %]
+            </select>
+            <button class="btn btn--red" type="submit" name="dispute" value="1" onclick="return confirm('Are you sure? Order status will change to disputed.');">RAISE A DISPUTE</button>
         </form>
-    [% END %]
+        [% END %]
 
     [% IF p2p_write && (order.status == 'Disputed') %]
+        <hr>
         <h3>Order under dispute</h3>
         
-        <form action="[% request.url_for('backoffice/p2p_order_manage.cgi', {broker => broker, order_id => order.id, disputer_loginid => order.disputer_loginid }) %]" method="post">
-        <table style="background:LightCoral;" cellpadding=5>
-        <tr>
-            <td><b>Dispute raised by</b></td>
-            <td>[% order.disputer_loginid %] ([% order.disputer_role %])</td>
-        </tr>
-        <tr>
-            <td><b>Dispute reason</b></td>
-            <td>[% order.dispute_reason %]</td>
-        </tr>
-
-        <tr><td colspan=2>
-        <b>Resolve in favour of:</b>
-        </td></tr><tr><td colspan=2>
-        <button style="width:150px;" type="submit" name="action" value="refund" onclick="return confirm('Are you sure? [% order.account_currency %] [% order.amount %] will be refunded to [% order.seller %] and order status will change to \'dispute-refunded\'. This will be counted as buyer fraud. This is irreversible.');">SELLER</button>
-        This will transfer [% order.account_currency %] [% order.amount %] from escrow [% escrow %] to seller [% order.seller %]. A fraud incident will be recorded against [% order.buyer %].
-        </td></tr><tr><td colspan=2>
-        <button style="width:150px;" type="submit" name="action" value="complete" onclick="return confirm('Are you sure? [% order.account_currency %] [% order.amount %] will credited to [% order.buyer %] and order status will change to \'dispute-completed\'. This will be counted as seller fraud. This is irreversible.');">BUYER</button>
-        This will transfer [% order.account_currency %] [% order.amount %] from escrow [% escrow %] to buyer [% order.buyer %]. A fraud incident will be recorded against [% order.seller %].
-        </td></tr></tbody></table>
+        <form action="[% request.url_for('backoffice/p2p_order_manage.cgi', {broker => broker, order_id => order.id, disputer_loginid => order.disputer_loginid }) %]" method="post" class="card__content bg-lightgrey">
+            <p><label>Dispute raised by:</label>[% order.disputer_loginid %] ([% order.disputer_role %])</p>
+            <p><label>Dispute reason:</label>[% order.dispute_reason %]</p>
+            <p>Resolve in favour of:</p>
+            <div class="row">
+                <button class="btn btn--primary" type="submit" name="action" value="refund" onclick="return confirm('Are you sure? [% order.account_currency %] [% order.amount %] will be refunded to [% order.seller %] and order status will change to \'dispute-refunded\'. This will be counted as buyer fraud. This is irreversible.');">SELLER</button>
+                This will transfer [% order.account_currency %] [% order.amount %] from escrow [% escrow %] to seller [% order.seller %]. A fraud incident will be recorded against [% order.buyer %].
+            </div>
+            <div class="row">
+                <button class="btn btn--primary" type="submit" name="action" value="complete" onclick="return confirm('Are you sure? [% order.account_currency %] [% order.amount %] will credited to [% order.buyer %] and order status will change to \'dispute-completed\'. This will be counted as seller fraud. This is irreversible.');">BUYER</button>
+                This will transfer [% order.account_currency %] [% order.amount %] from escrow [% escrow %] to buyer [% order.buyer %]. A fraud incident will be recorded against [% order.seller %].
+            </div>
         </form>
     [% END %]
 
+    <hr>
     <h3>Chat Log</h3>
 
     [% IF chat_messages.size %]
-        <table border="1" class="collapsed">
+        <table class="collapsed">
             <thead>
                 <tr>
                     <th scope="col">Time</th>
@@ -300,7 +288,7 @@ Order ID: <input type="text" name="order_id" value="[% order.id %]" size=20 data
         [% IF chat_messages_prev %]
             <p>
                 No messages at this page,                                 
-                <a href="[% request.url_for('backoffice/p2p_order_manage.cgi', {p => chat_messages_prev, order_id => order.id }) %]">previous</a>
+                <a class="link" href="[% request.url_for('backoffice/p2p_order_manage.cgi', {p => chat_messages_prev, order_id => order.id }) %]">previous</a>
             </p>
         [% ELSE %]
             <p>No chat was started about this order</p>

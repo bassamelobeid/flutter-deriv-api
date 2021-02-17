@@ -67,7 +67,7 @@ if ($input{apply_bonus_code}) {
         $client->promo_code($encoded_promo_code);
         $client->save();
     } catch {
-        code_exit_BO(sprintf('<p style="color:red; font-weight:bold;">ERROR: %s</p>', $@));
+        code_exit_BO(sprintf('<p class="error">ERROR: %s</p>', $@));
     };
 
 }
@@ -120,12 +120,14 @@ foreach my $lid ($user_clients->@*) {
         });
 
     print "<li><a href='$link_href'"
-        . ($client->status->disabled ? ' style="color:red"' : '') . ">"
+        . ($client->status->disabled ? ' class="error"' : ' class="link link--primary"') . ">"
         . encode_entities($lid->loginid) . " ("
         . $currency
         . ") </a></li>";
 
 }
+
+print "</ul>";
 
 my $log_args = {
     broker   => $broker,
@@ -133,7 +135,7 @@ my $log_args = {
     loginid  => $loginid
 };
 my $new_log_href = request()->url_for('backoffice/show_audit_trail.cgi', $log_args);
-print qq{<p>Click for <a href="$new_log_href">history of changes</a> to $encoded_loginid</p>};
+print qq{<p><a class="btn btn--primary" href="$new_log_href">View history of changes to $encoded_loginid</a></p>};
 
 ##################################################
 # Main Section of page
@@ -161,7 +163,7 @@ if (!$affiliate_promo && $client->promo_code) {
     $affiliate_promo = get_promo_information($client->promo_code, $client->db->dbic);
 }
 
-code_exit_BO('<h3>Cient has no promo code assigned</h3>') unless $affiliate_promo;
+code_exit_BO('<p class="error">Client has no promo code assigned</p>') unless $affiliate_promo;
 
 my $amount = $affiliate_promo->{config}{amount};
 
@@ -222,7 +224,6 @@ BOM::Backoffice::Request::template()->process(
 #
 
 Bar($user->{email} . " Login history");
-print '<div><br/>';
 my $limit         = 200;
 my $login_history = $user->login_history(
     order                    => 'desc',

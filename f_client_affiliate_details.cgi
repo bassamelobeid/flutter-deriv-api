@@ -104,7 +104,7 @@ for my $affiliate (@affiliates) {
 
     my $client_details_link = request()->url_for('backoffice/f_clientloginid_edit.cgi', {loginID => $affiliate->{loginid}});
 
-    print qq{<a href='$client_details_link'>&laquo; return to client details</a><p>};
+    print qq{<a href='$client_details_link'>&laquo; Return to client details</a><p>};
 
     BOM::Backoffice::Request::template()->process(
         'backoffice/client_affiliate_details.html.tt',

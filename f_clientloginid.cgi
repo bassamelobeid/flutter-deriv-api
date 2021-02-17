@@ -37,37 +37,27 @@ my $last_year = Date::Utility->new($now->epoch - 365 * 24 * 60 * 60)->date_ddmmm
 # CLIENT DETAILS
 Bar('CLIENT ACCOUNT DETAILS');
 print qq~
-    <table cellpadding="0" cellspacing="5">
-        <tr>
-            <td><b>LoginID: </b></td>
-            <td>
-                <form action="~ . request()->url_for('backoffice/f_clientloginid_edit.cgi') . qq~" method="get">
-                    <input type="text" size="15" name="loginID" placeholder="loginid" value="" data-lpignore="true" />
-                    <input type="submit" value="EDIT CLIENT DETAILS" />
-                    <input type="hidden" name="broker" value="$encoded_broker" />
-                    <a href="~ . request()->url_for('backoffice/f_popupclientsearch.cgi') . qq~">[Search]</a>
-                    <a href="javascript:WinPopupSearchClients();">[OldSearch]</a>
-                </form>
-            </td>
-        </tr>
-        <tr>
-            <td><b>Email: </b></td>
-            <td>
-                <form action="~ . request()->url_for('backoffice/client_email.cgi') . qq~" method="get">
-                    <input type="text" size="30" name="email" placeholder="email\@domain.com" value="" data-lpignore="true" />
-                    <input type="submit" value="View / Edit" />
-                </form>
-            </td>
-        </tr>
-    </table>
+<form action="~ . request()->url_for('backoffice/f_clientloginid_edit.cgi') . qq~" method="get" class="row">
+    <label>Login ID:</label>
+    <input type="text" size="15" name="loginID" placeholder="loginid" value="" data-lpignore="true" />
+    <input type="submit" class="btn btn--primary" value="Edit client details" />
+    <input type="hidden" name="broker" value="$encoded_broker" />
+    <a href="~ . request()->url_for('backoffice/f_popupclientsearch.cgi') . qq~" class="btn btn--secondary">Search</a>
+    <a href="javascript:WinPopupSearchClients();" class="btn btn--secondary">Old search</a>
+</form>
+<form action="~ . request()->url_for('backoffice/client_email.cgi') . qq~" method="get" class="row">
+    <label>Email:</label>
+    <input type="text" size="30" name="email" placeholder="email\@domain.com" value="" data-lpignore="true" />
+    <input type="submit" class="btn btn--primary" value="View / Edit" />
+</form>
 ~;
 
 Bar("IMPERSONATE CLIENT");
-print '<form action="' . request()->url_for('backoffice/client_impersonate.cgi') . '" method="get">';
-print '<b>Enter client loginid: </b>';
+print '<form action="' . request()->url_for('backoffice/client_impersonate.cgi') . '" method="get" class="row">';
+print '<label>Login ID:</label>';
 print '<input type=text size=15 name="impersonate_loginid" data-lpignore="true" /> ';
 print "<input type='hidden' name='broker' value='$encoded_broker'>";
-print '<input type="submit" value="Impersonate"></b></form>';
+print '<input type="submit" class="btn btn--primary" value="Impersonate"></form>';
 
 Bar("SEND ACCOUNT RECOVERY EMAIL");
 BOM::Backoffice::Request::template()->process(
@@ -78,19 +68,25 @@ BOM::Backoffice::Request::template()->process(
 
 Bar("MAKE DUAL CONTROL CODE");
 print
-    "To update client details we require 2 staff members to authorise. One staff member needs to generate a 'Dual Control Code' that is then used by the other staff member when updating the details.<br><br>";
+    "<p>To update client details we require 2 staff members to authorise. One staff member needs to generate a 'Dual Control Code' that is then used by the other staff member when updating the details.</p>";
 print "<form id='clientdetailsDCC' action='"
     . request()->url_for('backoffice/f_makeclientdcc.cgi')
     . "' method='get' class='bo_ajax_form'>"
     . "<input type='hidden' name='broker' value='$encoded_broker'>"
     . "<input type='hidden' name='l' value='EN'>"
-    . " Type of transaction: <select name='transtype'>"
+    . "<div class='row'>"
+    . "<label>Type of transaction:</label><select name='transtype'>"
     . "<option value='UPDATECLIENTDETAILS'>Update client details</option>"
     . "</select>"
-    . " Loginid: <input type='text' name='clientloginid' size='15' placeholder='required' data-lpignore='true' />"
-    . "<br><br>Email of the client, enter new email if you want to change email address: <input type='text' name='clientemail' placeholder='required' data-lpignore='true' />"
-    . "<br><br>Input a comment/reminder about this DCC: <input type='text' size='50' name='reminder' data-lpignore='true' />"
-    . "<br><br><input type='submit' value='Make Dual Control Code (by "
+    . "<label>Login ID:</label><input type='text' name='clientloginid' size='15' placeholder='required' data-lpignore='true' />"
+    . "</div>"
+    . "<div class='row'>"
+    . "<label>Email of the client, enter new email if you want to change email address:</label><input type='text' name='clientemail' placeholder='required' data-lpignore='true' />"
+    . "</div>"
+    . "<div class='row'>"
+    . "<label>Input a comment/reminder about this DCC:</label><input type='text' size='50' name='reminder' data-lpignore='true' />"
+    . "</div>"
+    . "<input type='submit' class='btn btn--primary' value='Make Dual Control Code (by "
     . encode_entities($clerk) . ")'>"
     . "</form>";
 
@@ -127,53 +123,41 @@ BOM::Backoffice::Request::template()->process(
 # Monitor client lists
 Bar("Monitor client lists");
 
-print "Kindly select status to monitor clients on.";
+print "<p>Kindly select status to monitor clients on:</p>";
 
 my $untrusted_status = get_untrusted_types_hashref();
 
-print "<br /><br /><form action=\""
+print "<form action=\""
     . request()->url_for('backoffice/f_viewclientsubset.cgi')
     . "\" method=get>"
     . "<input type=hidden name=broker value=$encoded_broker>"
-    . "Select list : <select name=show>"
+    . "<div class='row'><label>Status:</label><select name=show>"
     . "<option value='age_verification'>Age Verified</option>"
     . "<option value='closed'>Closed Accounts</option>"
     . join('',
     map { "<option value='$_'> $untrusted_status->{$_}->{comments} </option>" }
         qw /disabled cashier_locked withdrawal_locked unwelcome no_trading no_withdrawal_or_trading/)
-    . "</select>"
-    . '<br /><input type=checkbox value="1" name="onlyfunded" id="chk_onlyfunded" /><label for="chk_onlyfunded">Only funded accounts</label> '
-    . '<br /><input type=checkbox value="1" name="onlynonzerobalance" id="chk_onlynonzerobalance" /><label for="chk_onlynonzerobalance">Only nonzero balance</label> '
-    . "<br /><input type=submit value='Monitor Clients on this list'>"
+    . "</select></div>"
+    . '<div class="row"><input type=checkbox value="1" name="onlyfunded" id="chk_onlyfunded" /><label for="chk_onlyfunded">Only funded accounts</label></div>'
+    . '<div class="row"><input type=checkbox value="1" name="onlynonzerobalance" id="chk_onlynonzerobalance" /><label for="chk_onlynonzerobalance">Only nonzero balance</label></div>'
+    . "<input type=submit class='btn btn--primary' value='Monitor clients on this list'>"
     . "</form>";
 
 Bar('Client complete audit log');
-print 'View client sequential combined activity<br/><br/>';
+print '<h3>View client sequential combined activity</h3>';
 
 print "<form action=\"" . request()->url_for('backoffice/f_client_combined_audit.cgi') . "\" method=get>";
 print qq~
-    <table>
-        <tr>
-            <td>
-            <b>Loginid</b>
-            </td>
-            <td>
-            <input type=text size=15 name="loginid" value="" data-lpignore="true" />
-            </td>
-        </tr>
-        <tr>
-            <td>
-            <b>From</b>
-            </td>
-            <td>
-~;
-print "<input name=startdate type=text data-lpignore='true' size=10 value='"
-    . Date::Utility->today()->minus_time_interval('30d')->date
-    . "'/></td></tr>";
-print "<tr><td><b>To</b></td><td>";
-print "<input name=enddate type=text data-lpignore='true' size=10 value='" . Date::Utility->today()->date . "'/></td></tr>";
-print "</table>";
-print "<input type=\"submit\" value=\"Submit\">";
+    <div class="row">
+        <label>Login ID:</label>
+        <input type=text size=15 name="loginid" value="" data-lpignore="true" />
+        <label>From:</label>
+        <input name=startdate type=text data-lpignore='true' size=10 value='~ . Date::Utility->today()->minus_time_interval('30d')->date . qq~'/>
+        <label>To:</label>
+        <input name=enddate type=text data-lpignore='true' size=10 value='~ . Date::Utility->today()->date . qq~'/>
+    </div>
+    ~;
+print '<input type="submit" class="btn btn--red" value="Submit">';
 print "</form>";
 
 code_exit_BO();

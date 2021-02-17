@@ -1,67 +1,60 @@
 
 <p>The CSV format should be as below (without headers):</p>
 
-<style>
-    table.csv    { border-collapse: collapse }
-    table.csv th,
-    table.csv td { border: 1px solid gray }
-</style>
-
-<table class="csv">
-
-    <tr>
-        <th>Login ID</th>
-        <th>Transaction Type</th>
-        <th>Payment Type</th>
-        <th>Currency</th>
-        <th>Amount</th>
-        <th>Comment</th>
-    </tr>
-    <tr>
-        <th></th>
-        <th>debit OR credit</th>
-        <th>bank_money_transfer OR affiliate_reward OR free_gift<br/>OR dormant_fee OR adjustment OR arbitrary_markup OR mt5_adjustment</th>
-        <th></th>
-        <th></th>
-        <th>(Will appear on statement)</th>
-    </tr>
-    <tr>
-        <td colspan="6">Examples:</td>
-    </tr>
-    <tr>
-        <td>CR0001</td>
-        <td>debit</td>
-        <td>dormant_fee</td>
-        <td>USD</td>
-        <td>10.00</td>
-        <td>"Dormant Fee Apr 2015"</td>
-    </tr>
-    <tr>
-        <td>CR0002</td>
-        <td>credit</td>
-        <td>free_gift</td>
-        <td>EUR</td>
-        <td>5.00</td>
-        <td>"Bonus on request"</td>
-    </tr>
-    <tr>
-        <td>CR0003</td>
-        <td>credit</td>
-        <td>arbitrary_markup</td>
-        <td>EUR</td>
-        <td>5.00</td>
-        <td>"Payment for arbitrary markup MMM YYYY"</td>
-    </tr>
+<table class="border small">
+    <thead>
+        <tr>
+            <th>Login ID</th>
+            <th>Transaction Type</th>
+            <th>Payment Type</th>
+            <th>Currency</th>
+            <th>Amount</th>
+            <th>Comment</th>
+        </tr>
+        <tr>
+            <th></th>
+            <th>debit OR credit</th>
+            <th>bank_money_transfer OR affiliate_reward OR free_gift<br/>OR dormant_fee OR adjustment OR arbitrary_markup OR mt5_adjustment</th>
+            <th></th>
+            <th></th>
+            <th>(Will appear on statement)</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td colspan="6">Examples:</td>
+        </tr>
+        <tr>
+            <td>CR0001</td>
+            <td>debit</td>
+            <td>dormant_fee</td>
+            <td>USD</td>
+            <td>10.00</td>
+            <td>"Dormant Fee Apr 2015"</td>
+        </tr>
+        <tr>
+            <td>CR0002</td>
+            <td>credit</td>
+            <td>free_gift</td>
+            <td>EUR</td>
+            <td>5.00</td>
+            <td>"Bonus on request"</td>
+        </tr>
+        <tr>
+            <td>CR0003</td>
+            <td>credit</td>
+            <td>arbitrary_markup</td>
+            <td>EUR</td>
+            <td>5.00</td>
+            <td>"Payment for arbitrary markup MMM YYYY"</td>
+        </tr>
+    </tbody>
 </table>
 
 <br/>
-<form method="POST" action="[%request.url_for('backoffice/batch_payments.cgi') | none %]" enctype="multipart/form-data">
-
-    Use this CSV <input type="file" value="" required name="payments_csv" />
-    <label for="skip_validation3" >Override Status Checks?</label>
-    <input type="checkbox" name="skip_validation" value="on" id="skip_validation3" />
-    <button type="submit" name="preview" value="generic">PREVIEW PAYMENTS</button>
-
+<form method="POST" action="[%request.url_for('backoffice/batch_payments.cgi') | none %]" enctype="multipart/form-data" class="row">
+    <label>Use this CSV:</label><input type="file" value="" required name="payments_csv" />
+    <label for="skip_validation3"><input type="checkbox" name="skip_validation" value="on" id="skip_validation3" />Override status checks?</label>
+    <button type="submit" class="btn btn--primary" name="preview" value="generic">Preview payments</button>
 </form>
-<br/>
 

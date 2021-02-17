@@ -25,7 +25,7 @@ my $loginid = uc(request()->param('loginid'));
 
 my $client = eval { BOM::User::Client::get_instance({'loginid' => $loginid}) };
 if (not $client) {
-    print "Error: wrong loginid ($loginid) could not get client object";
+    print "Error: Wrong Login ID ($loginid) could not get client object";
     code_exit_BO();
 }
 
@@ -59,10 +59,7 @@ my $client_details_link = request()->url_for(
         loginID => $loginid
     });
 
-my $page =
-      "<h2> The Client loginid: <a href='$client_details_link'>"
-    . encode_entities($loginid)
-    . ' </a> restricted self-exclusion settings are editeable here.</h2>';
+my $page = "<h3>Self-exclusion settings for <a class='link' href='$client_details_link'>" . encode_entities($loginid) . '</a></h3>';
 
 # to generate existing limits
 if ($self_exclusion) {
@@ -107,11 +104,13 @@ if ($self_exclusion) {
 
     if ($info) {
         $page .=
-              '<h3>Currently set values are:</h3><table cellspacing="0" cellpadding="5" border="1" class="GreyCandy">'
-            . '<tr><th>Limit name</th><th>Limit value</th><th>Expiration date</th></tr>'
+              '<p>Currently set values are:</p><table class="alternate border">'
+            . '<thead><tr><th>Limit name</th><th>Limit value</th><th>Expiration date</th></tr></thead><tbody>'
             . $info
-            . '</table>';
+            . '</tbody></table><br>';
     }
+
+    $page .= '<p>You may change it by editing the corresponding value:</p>';
 }
 
 # first time (not submitted)
@@ -156,7 +155,7 @@ if ($client->save) {
     warn("Error: cannot write to self_exclusion table $!");
 }
 
-print qq{<a href='$client_details_link'>&laquo; return to client details</a>};
-print qq{<br/><a href='$self_exclusion_link'>&laquo; back to restricted self-exclusion settings</a>};
+print qq{<a class='link' href='$client_details_link'>&laquo; Return to client details</a>};
+print qq{<br/><a class='link' href='$self_exclusion_link'>&laquo; Go back to restricted self-exclusion settings</a>};
 
 code_exit_BO();

@@ -1,28 +1,27 @@
-[% IF message %]<p style="color:green; font-weight:bold;">[% message %]</p>[% END %]
-[% IF error %]<p style="color:red; font-weight:bold;">[% error %]</p>[% END %]
+[% IF message %]<p class="success">[% message %]</p>[% END %]
+[% IF error %]<p class="error">[% error %]</p>[% END %]
 
 <h3>Search</h3>
 <form action="[% request.url_for('backoffice/p2p_advertiser_manage.cgi', {broker => broker}) %]" method="get">
-LoginID: <input type="text" name="loginID" value="[% request.params.loginID %]" size=20 data-lpignore="true" />
-&nbsp;&nbsp;Name: <input type="text" name="name" value="[% request.params.name %]" size=20 data-lpignore="true" />
-&nbsp;&nbsp;Advertiser ID: <input type="id" name="id" value="[% request.params.id %]" size=10 data-lpignore="true" />
-<button type="submit">Search</button>
+<label>Login ID:</label><input type="text" name="loginID" value="[% request.params.loginID %]" size=20 data-lpignore="true" />
+<label>Name:</label><input type="text" name="name" value="[% request.params.name %]" size=20 data-lpignore="true" />
+<label>Advertiser ID:</label><input type="number" name="id" value="[% request.params.id %]" size=10 data-lpignore="true" />
+<button type="submit" class="btn btn--primary">Search</button>
 </form>
 
 [% IF advertiser %]
-
-    <hr/>
+    <hr>
     <h3>Details for advertiser [% advertiser.id %]</h3>
     
     <form action="[% request.url_for('backoffice/p2p_advertiser_manage.cgi', { id => advertiser.id }) %]" method="post">
     
-    <table border="1" class="collapsed">
+    <table class="border">
         <tr>
-            <td>Loginid</td>
-            <td><b>[% advertiser.client_loginid %]</b> 
-                &nbsp;&nbsp;<a href="[% request.url_for('backoffice/p2p_order_list.cgi', { loginID => advertiser.client_loginid }) %]">All orders</a>
-                &nbsp;&nbsp;<a href="[% request.url_for('backoffice/f_clientloginid_edit.cgi', { loginID => advertiser.client_loginid }) %]">Client profile</a>
-                &nbsp;&nbsp;<a href="[% request.url_for('backoffice/f_manager_history.cgi', { loginID => advertiser.client_loginid }) %]">Client statement</a>
+            <td>Login ID</td>
+            <td class="link-group"><b>[% advertiser.client_loginid %]</b> 
+                <a class="link" href="[% request.url_for('backoffice/p2p_order_list.cgi', { loginID => advertiser.client_loginid }) %]">All orders</a>
+                <a class="link" href="[% request.url_for('backoffice/f_clientloginid_edit.cgi', { loginID => advertiser.client_loginid }) %]">Client profile</a>
+                <a class="link" href="[% request.url_for('backoffice/f_manager_history.cgi', { loginID => advertiser.client_loginid }) %]">Client statement</a>
             </td>            
         </tr>
         <tr>
@@ -35,13 +34,13 @@ LoginID: <input type="text" name="loginID" value="[% request.params.loginID %]" 
             </td>
         </tr> 
         <tr>
-            <td>Adverts Are Listed</td>
+            <td>Adverts are listed</td>
             <td>
                 <select name="is_listed">
                     <option value="1" [% advertiser.is_listed && 'selected' %]>YES</option>
                     <option value="0" [% !advertiser.is_listed && 'selected' %]>NO</option>
                 </select>
-                &nbsp;&nbsp;(Ads will be listed when both this setting and APPROVED are YES)
+                (Ads will be listed when both this setting and APPROVED are YES)
             </td>
         </tr>
         <tr>
@@ -53,7 +52,7 @@ LoginID: <input type="text" name="loginID" value="[% request.params.loginID %]" 
             <td>[% advertiser.first_name %] [% advertiser.last_name %]</td>
         </tr>        
         <tr>
-            <td>Show Real Name</td>
+            <td>Show real name</td>
             <td>
                 <select name="show_name">
                     <option value="1" [% advertiser.show_name && 'selected' %]>YES</option>
@@ -66,15 +65,15 @@ LoginID: <input type="text" name="loginID" value="[% request.params.loginID %]" 
             <td><input type="text" name="default_advert_description" value="[% advertiser.default_advert_description %]" size=80 data-lpignore="true" /></td>
         </tr>         
         <tr>
-            <td>Payment Info</td>
+            <td>Payment info</td>
             <td><input type="text" name="payment_info" value="[% advertiser.payment_info %]" size=80 data-lpignore="true" /></td>
         </tr>
         <tr>
-            <td>Contact Info</td>
+            <td>Contact info</td>
             <td><input type="text" name="contact_info" value="[% advertiser.contact_info %]" size=80 data-lpignore="true" /></td>
         </tr>
         <tr>
-            <td>Band Level</td>
+            <td>Band level</td>
             <td>[% IF p2p_write %]
                 <select name="trade_band">
                     [% FOREACH band = bands %]
@@ -105,7 +104,7 @@ LoginID: <input type="text" name="loginID" value="[% request.params.loginID %]" 
                     <option value="1" [% advertiser.cc_sell_authorized && 'selected' %]>YES</option>
                     <option value="0" [% !advertiser.cc_sell_authorized && 'selected' %]>NO</option>
                 </select>
-                &nbsp;&nbsp;(If YES, the advertiser is always allowed to sell funds derived from credit card deposits)
+                (If YES, the advertiser is always allowed to sell funds derived from credit card deposits)
                 <p>Currently blocked: [% sell_blocked %]
             </td>
         </tr>        
@@ -117,15 +116,16 @@ LoginID: <input type="text" name="loginID" value="[% request.params.loginID %]" 
     <br/>
     <input type="hidden" name="current_name" value="[% advertiser.name %]"/>
     <input type="hidden" name="update_id" value="[% advertiser.id %]"/>
-    <button style="width:150px;" type="submit" name="update" value="1">Update advertiser</button>
+    <button class="btn btn--primary" type="submit" name="update" value="1">Update advertiser</button>
     </form>
-
+    <hr>
     <h3>Adverts</h3>
     [% IF ads.size %]
     [% range %]
-    [% IF prev.defined %]&nbsp;&nbsp;<a href="[% request.url_for('backoffice/p2p_advertiser_manage.cgi', { id => advertiser.id, start => prev }) %]">Previous</a>[% END %]
-    [% IF next.defined %]&nbsp;&nbsp;<a href="[% request.url_for('backoffice/p2p_advertiser_manage.cgi', { id => advertiser.id, start => next }) %]">Next</a>[% END %]    
-    <table border="1" class="collapsed">
+    [% IF prev.defined %]<a class="link" href="[% request.url_for('backoffice/p2p_advertiser_manage.cgi', { id => advertiser.id, start => prev }) %]">Previous</a>[% END %]
+    [% IF next.defined %]<a class="link" href="[% request.url_for('backoffice/p2p_advertiser_manage.cgi', { id => advertiser.id, start => next }) %]">Next</a>[% END %]    
+    <div class="scrollable">
+    <table class="full-width border">
         <thead>
             <tr>
                 <th scope="col">ID</th>
@@ -170,18 +170,21 @@ LoginID: <input type="text" name="loginID" value="[% request.params.loginID %]" 
                 <td>[% ad.payment_method %]</td>
                 <td>[% ad.payment_info %]</td>
                 <td>[% ad.contact_info %]</td>
-                <td><a href="[% request.url_for('backoffice/p2p_order_list.cgi', { advert_id => ad.id }) %]">Orders</a></td>
+                <td><a class="link" href="[% request.url_for('backoffice/p2p_order_list.cgi', { advert_id => ad.id }) %]">Orders</a></td>
             </tr>
             [% END %]
         </tbody>
     </table>
+    </div>
     [% ELSE %]
     <p>No ads</p>
     [% END %]
 
+    <hr>
     <h3>History</h3>
     [% IF audit.size %]
-     <table border="1" class="collapsed">
+    <div class="scrollable">
+     <table class="full-width border">
         <thead>
             <tr>
                 <th scope="col">Time</th>
@@ -208,13 +211,13 @@ LoginID: <input type="text" name="loginID" value="[% request.params.loginID %]" 
                 <td>[% item.remote_addr %]</td>
                 [% next = loop.next %]
                 [% FOREACH fld = ['is_approved','is_listed','trade_band','cc_sell_authorized','name','show_name','default_advert_description','payment_info','contact_info'] %]
-                    <td [% IF item.$fld != next.$fld %]style="background:#ffaaaa;"[% END %]>[% item.$fld %]</td>
+                    <td [% IF item.$fld != next.$fld %]class="bg-highlight"[% END %]>[% item.$fld %]</td>
                 [% END %]                  
             </tr>
             [% END %]
         </tbody>
     </table>
-    
+    </div>
     [% ELSE %]
     <p>No history</p>
     [% END %]
@@ -226,7 +229,7 @@ LoginID: <input type="text" name="loginID" value="[% request.params.loginID %]" 
     <h3>Create advertiser for [% client.loginid %]</h3>
     <form action="[% request.url_for('backoffice/p2p_advertiser_manage.cgi', { loginID => client.loginid }) %]" method="post">
     <input type="hidden" name="new_loginid" value="[% client.loginid %]"/>
-    Name: <input type="text" name="new_name" size=50 data-lpignore="true" />
-    &nbsp;&nbsp;<button style="width:150px;" type="submit" name="create" value="1">Create advertiser</button>
+    <label>Name:</label><input type="text" name="new_name" size=50 data-lpignore="true" />
+    <button class="btn btn--red" type="submit" name="create" value="1">Create advertiser</button>
     </form>        
 [% END %]

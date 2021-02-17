@@ -1,17 +1,19 @@
 [% IF user %]
     [% IF history %]
         [% IF limit == '0'%]
-            <p color="red">Showing ALL records</p>
+            <p class="error">Showing ALL records</p>
         [% ELSIF limit AND history.size >= limit %]
-            <p color="red">Showing last [% limit %] records only,
+            <p class="error">Showing last [% limit %] records only,
             <form method="POST" action="[%request.url_for('backoffice/f_viewloginhistory.cgi') | none %]" style="display:inline">
             <input name="email" value="[%user.email%]" type="hidden">
             <input name="limit" value="0" type="hidden">
-            <input type="submit" value="view all">
+            <input type="submit" class="btn btn--primary" value="view all">
             </form>
             </p>
         [% END %]
-        <table class="BlackCandy collapsed hover" border="1">
+        <div class="scrollable">
+        <table class="alternate hover small nowrap">
+            <thead>
             <tr>
                 <th>Date and Time</th>
                 <th>Action</th>
@@ -22,6 +24,8 @@
                 <th>Environment Info</th>
                 <th>App ID</th>
             </tr>
+            </thead>
+            <tbody>
 [%       FOREACH l IN history.reverse;
             date = l.history_date;
             status = l.successful ? 'ok' : 'failed';
@@ -36,7 +40,7 @@
                 <td width='150'>[% date %] GMT</td>
                 <td>[% l.action %]</td>
                 <td>[% status %]</td>
-                <td><a href="./ip_search.cgi?ip=[% ip %]&search_type=ip&lastndays=100">[% ip %]</td>
+                <td><a class="link link--primary" href="./ip_search.cgi?ip=[% ip %]&search_type=ip&lastndays=100">[% ip %]</td>
                 <td>[% is_company_ip %]</td>
                 <td>[% cc %]</td>
                 <td>[% env %]</td>
@@ -44,7 +48,9 @@
             </tr>
 
         [% END %]
+        </tbody>
         </table>
+        </div>
     [% ELSE %]
         <p>No login history</p>
     [% END %]

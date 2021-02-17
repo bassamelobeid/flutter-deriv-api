@@ -5,7 +5,7 @@
     <li>new category: set contract type's group as 'new category'. This is used to limit new product.</li>
 </ul>
 
-<fieldset  [% IF disabled %] disabled title='no write access' [% END %]>
+<fieldset  [% IF disabled %] disabled title='no write access' [% END %] class="row">
 <table id="contract_group_form">
     <tr>
         <td>Contract type: </td>
@@ -22,7 +22,7 @@
         </td>
     </tr>
     <tr>
-        <td><button onClick="UpdateContractGroup()" type="button">Update</button></td><td class="result"></td>
+        <td><button onClick="UpdateContractGroup()" type="button" class="btn btn--primary">Update</button></td><td class="result"></td>
     </tr>
 </table>
 </fieldset>
@@ -36,7 +36,7 @@
 </ul>
 
 <table id="rebuild_aggregate_form">
-    <tr><td><button onClick="RebuildAggregate()" type="button">Rebuild Aggregate Tables</button></td><td class="result"></td></tr>
+    <tr><td><button onClick="RebuildAggregate()" type="button" class="btn btn--primary">Rebuild Aggregate Tables</button></td><td class="result"></td></tr>
 </table>
 
 <script>
@@ -51,7 +51,7 @@
             success: function(data) {
                 var config = \$.parseJSON(data);
                 if (config.error) {
-                    result.text(config.error).css('color', 'red');
+                    result.text(config.error).css('color', 'var(--color-red)');
                 }
             }
         });
@@ -71,9 +71,9 @@
             success: function(data) {
                 var config = \$.parseJSON(data);
                 if (config.error) {
-                    result.text(config.error).css('color', 'red');
+                    result.text(config.error).css('color', 'var(--color-red)');
                 } else {
-                    result.text('successfully updated').css('color', 'green');
+                    result.text('successfully updated').css('color', 'var(--color-green-2)');
                 }
             }
         });

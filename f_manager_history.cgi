@@ -67,13 +67,13 @@ if ($loginID =~ /^([A-Z]+)/) {
 
 BrokerPresentation($encoded_loginID . ' HISTORY', '', '');
 unless ($broker) {
-    code_exit_BO("Error: wrong loginID $encoded_loginID");
+    code_exit_BO("Error: Wrong Login ID $encoded_loginID");
 }
 
 my $client = eval { BOM::User::Client::get_instance({'loginid' => $loginID, db_operation => 'backoffice_replica'}) };
 
 if (not $client) {
-    code_exit_BO("Error: wrong loginID ($encoded_loginID) could not get client instance.", $loginID);
+    code_exit_BO("Error: Wrong Login ID ($encoded_loginID) could not get client instance.", $loginID);
 }
 
 my $clientdb = BOM::Database::ClientDB->new({broker_code => $broker});
@@ -83,7 +83,7 @@ $loginid_bar .= ' (DEPO & WITH ONLY)' if ($deposit_withdrawal_only);
 my $pa = $client->payment_agent;
 
 Bar($loginid_bar);
-print "<span style='color:red; font-weight:bold; font-size:14px'>PAYMENT AGENT</span>" if ($pa and $pa->is_authenticated);
+print "<span class='error'>PAYMENT AGENT</span>" if ($pa and $pa->is_authenticated);
 
 # We either choose the dropdown currency from transaction page or use the client currency for quick jump
 my $currency         = $client->currency;
@@ -111,15 +111,15 @@ if (defined $action && $action eq "gross_transactions") {
             $total_withdrawals = formatnumber('amount', $currency, $total_withdrawals);
         } catch {
             warn "Error caught : $@\n";
-            print "<div style='color:red' class='center-aligned'>Error: Unable to fetch total deposits/withdrawals </div>";
+            print "<div class='error center'>Error: Unable to fetch total deposits/withdrawals </div>";
         }
     } else {
-        print "<div style='color:red' class='center-aligned'>Error: Client $loginID does not have currency set. </div>";
+        print "<div class='error center'>Error: Client $loginID does not have currency set. </div>";
     }
 }
 
 # print other untrusted section warning in backoffice
-print build_client_warning_message(encode_entities($client->loginid)) . '<br />';
+print build_client_warning_message(encode_entities($client->loginid));
 
 my $tel          = $client->phone;
 my $citizen      = Locale::Country::code2country($client->citizen);

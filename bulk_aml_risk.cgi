@@ -35,13 +35,12 @@ foreach my $login_id (split(/\s+/, $loginids)) {
 
     my $client = eval { BOM::User::Client::get_instance({'loginid' => $login_id}) };
     if (not $client) {
-        $error_msg .= "<br /><font color=red><b>ERROR :</b></font>&nbsp;&nbsp; Loginid was not found <b>" . encode_entities($login_id) . "</b>. \n";
+        $error_msg .= "<span class='error'>ERROR:</span>&nbsp;&nbsp; Loginid was not found <b>" . encode_entities($login_id) . "</b>. \n";
         next;
     }
 
     if ($client->is_virtual) {
-        $error_msg .=
-            "<br /><font color=red><b>ERROR :</b></font>&nbsp;&nbsp; Virtual account was igonred <b>" . encode_entities($login_id) . "</b>. \n";
+        $error_msg .= "<span class='success'>ERROR:</span>&nbsp;&nbsp; Virtual account was igonred <b>" . encode_entities($login_id) . "</b>. \n";
         next;
     }
 
@@ -55,10 +54,10 @@ foreach my $login_id (split(/\s+/, $loginids)) {
             $sibling->aml_risk_classification($selected_aml_risk_level);
             $sibling->save();
 
-            print "<br /><font color=green><b>SUCCESS :</font></b>&nbsp;&nbsp; "
+            print "<span class='success'>SUCCESS:</span>&nbsp;&nbsp; "
                 . link_for_clientloginid_edit($sibling_loginid)
                 . " AML Risk Classification = $selected_aml_risk_level"
-                . ($sibling_loginid eq $login_id ? '' : ' (sibling to ' . $login_id . ')') . "\n";
+                . ($sibling_loginid eq $login_id ? '' : ' (sibling to ' . $login_id . ')') . "<br>";
         }
     }
 }

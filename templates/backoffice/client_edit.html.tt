@@ -1,50 +1,22 @@
 <style type="text/css">
-table#client_edit{
-    width:100%;
+table#client_edit {
+    width: 100%;
 }
-table#client_edit td{
-    padding-top:4px;
+table#client_edit td {
+    padding: 4px;
 }
-.label{
-    width:20%;
-    text-align:right;
-    text-transform:uppercase;
-    vertical-align:top;
+.label {
+    width: 25%;
+    text-align: right;
+    text-transform: uppercase;
 }
-.invalid{
-    color: #FF0000;
+.label.top {
+    vertical-align: top;
 }
-.small_header{
-    background:#ffffff;
-    text-transform:uppercase;
-    font-weight:bold;
-}
-.poa_header {
-    font-size:14px;
-    color:red;
-}
-.lspace {
-    width: 80px;
-    margin-left: 6px;
+.bg-lightgrey {
+    text-transform: uppercase;
+    padding: 8px 16px;
     font-weight: bold;
-    display: inline-block;
-}
-.llspace {
-    width: 160px;
-    margin-left: 6px;
-    font-weight: bold;
-    display: inline-block;
-}
-
-.rcorner {
-  background: #228B22;
-  border-radius: 25px;
-  margin: 8px;
-  padding: 4px;
-  align: center;
-  width: fit-content;
-  color: white;
-  border-bottom: 1px black;
 }
 </style>
 
@@ -76,7 +48,7 @@ function init_text_validations() {
         let pattern =  validation_info[field].pattern.replace("\\`", "`");
 
         if (!validation_info[field].is_valid){
-            element.classList.add('invalid');
+            element.classList.add('error');
         }
 
         let value = escape_regex(element.value);
@@ -94,11 +66,11 @@ window.addEventListener('DOMContentLoaded', init_text_validations, false);
 <table border="0" width="100%" id="client_edit" onload="init_text_validations()">
     <tr>
         <td class="label">Balance</td>
-        <td>: <b style="color:#ef5350">[% balance %] [% client.default_account.currency_code %]</b></td>
+        <td>: <b class="error">[% balance %] [% client.default_account.currency_code %]</b></td>
     </tr>
     <tr>
         <td class="label">Email</td>
-        <td>: <b class="copy-on-click">[% client.email %]</b> (To edit client's email, <a href="[% request.url_for('backoffice/client_email.cgi', { email => client.email }) | none %]">click here</a>) </td>
+        <td>: <b class="copy-on-click">[% client.email %]</b>&nbsp;<a class="btn btn--primary" href="[% request.url_for('backoffice/client_email.cgi', { email => client.email }) | none %]">Edit client's email</a></td>
     </tr>
     <tr>
         <td class="label">Social Signup</td>
@@ -133,15 +105,7 @@ window.addEventListener('DOMContentLoaded', init_text_validations, false);
         <td>: <b>[% professional_status %]</b> </td>
     </tr>
     <tr>
-        <td class="small_header" colspan="2">#AFFILIATE INFO</td>
-    </tr>
-     <tr>
-        <td class="label">&nbsp;</td>
-         <td><a href="[% request.url_for('backoffice/f_client_affiliate_details.cgi', {loginid => client.loginid , broker = client.broker }) %]">View Affiliate Details</a></td>
-    </tr>
-    <tr>
-        <td class="label">&nbsp;</td>
-         <td><a href="[% request.url_for('backoffice/f_change_affiliates_token.cgi', {loginid => client.loginid , affiliate_token = client.myaffiliates_token }) %]">Edit Affiliate Token</a></td>
+        <td class="bg-lightgrey" colspan="2">#AFFILIATE INFO</td>
     </tr>
     <tr>
         <td class="label">Affiliate Token</td>
@@ -149,17 +113,16 @@ window.addEventListener('DOMContentLoaded', init_text_validations, false);
         [% IF client.myaffiliates_token %]
             [% client.myaffiliates_token %] (This is the token <strong>currently registered</strong> with MyAffiliates.)
         [% ELSE %]
-            None
+            <strong>None</strong>
         [% END %]
+        <a class="btn btn--primary" href="[% request.url_for('backoffice/f_change_affiliates_token.cgi', {loginid => client.loginid , affiliate_token = client.myaffiliates_token }) %]">Edit affiliate token</a>
+        <a class="btn btn--primary" href="[% request.url_for('backoffice/f_client_affiliate_details.cgi', {loginid => client.loginid , broker = client.broker }) %]">View affiliate details</a>
+        <a class="btn btn--primary" href="[% request.url_for('backoffice/f_ib_affiliate.cgi', {loginid => client.loginid}) | url %]">IB Affiliate status</a>
         </td>
     </tr>
 
     <tr>
-        <td class="label">&nbsp;</td>
-        <td><a href="[% request.url_for('backoffice/f_ib_affiliate.cgi', {loginid => client.loginid}) | url %]">IB Affiliate Status</a></td>
-    </tr>
-    <tr>
-        <td class="small_header" colspan="2">#Identity</td>
+        <td class="bg-lightgrey" colspan="2">#Identity</td>
     </tr>
     <tr>
         <td class="label">MrMs</td>
@@ -212,12 +175,12 @@ window.addEventListener('DOMContentLoaded', init_text_validations, false);
         </td>
     </tr>
     <tr>
-        <td class="small_header" colspan="2">#Postal address</td>
+        <td class="bg-lightgrey" colspan="2">#Postal address</td>
     </tr>
     [% IF address_verification_status %]
         <tr>
-            <td class="label">Status : </td>
-            <td><span class="rcorner">Address Verified</span></td>
+            <td class="label">Status</td>
+            <td>: <span class="bg-highlight">Address Verified</span></td>
         </tr>
     [% END %]
     <tr>
@@ -282,10 +245,10 @@ window.addEventListener('DOMContentLoaded', init_text_validations, false);
     </tr>
     [% PROCESS backoffice/client_mifir.html.tt %]
     <tr>
-        <td class="small_header" colspan="2">#TAX INFORMATION</td>
+        <td class="bg-lightgrey" colspan="2">#TAX INFORMATION</td>
     </tr>
     <tr>
-        <td class="label">Tax Residence</td>
+        <td class="label top">Tax Residence</td>
         <td>:
             <select name="tax_residence" multiple>
                 <option value="">Not selected</option>
@@ -296,29 +259,22 @@ window.addEventListener('DOMContentLoaded', init_text_validations, false);
                 </option>
             [% END %]
             </select>
-            <br/>
-            <br/>
-            Currently selected: [% tax_residences_countries_name %]
         </td>
     </tr>
     <tr>
-        <td class="label" style="padding-top:13px;">Tax Identification Number</td>
-        <td>
-            <table style="float:left;">
-                <tbody>
-                    <tr>
-                        <td>: <input type="text" name="tax_identification_number" value="[% client.tax_identification_number %]" size="15" data-lpignore="true" /></td>
-                        <td>
-                            [% IF is_valid_tin %]
-                                <td style="color:green;">Tax format is correct</td>
-                            [% END %]
-                            [% IF tin_validation_required AND not is_valid_tin %]
-                                <td style="color: red;">Tax format is not provided or invalid</td>
-                            [% END %]
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
+        <td class="label">Currently selected</td>
+        <td>: <strong>[% tax_residences_countries_name %]</strong></td>
+    </tr>
+    <tr>
+        <td class="label">Tax Identification Number</td>
+        <td>:
+            <input type="text" name="tax_identification_number" value="[% client.tax_identification_number %]" size="15" data-lpignore="true" />
+            [% IF is_valid_tin %]
+                <span class="success">Tax format is correct</span>
+            [% END %]
+            [% IF tin_validation_required AND not is_valid_tin %]
+                <span class="error">Tax format is not provided or invalid</span>
+            [% END %]     
         </td>
     </tr>
     [% IF tin_validation_required %]
@@ -332,11 +288,11 @@ window.addEventListener('DOMContentLoaded', init_text_validations, false);
         </tr>
     [% END %]
     <tr>
-        <td class="small_header" colspan="2">#KYC/IDENTITY VERIFICATION</td>
+        <td class="bg-lightgrey" colspan="2">#KYC/IDENTITY VERIFICATION</td>
     </tr>
     <tr>
-        <td class="label">AML Risk Classification : </td>
-        <td>
+        <td class="label">AML Risk Classification</td>
+        <td>:
             <select name="client_aml_risk_classification" [% IF not is_staff_compliance %] disabled [% END %]>
                 [% FOREACH risk_classification = aml_risk_levels %]
                     <option value="[% risk_classification.value %]" [% IF risk_classification.value == client.aml_risk_classification %] selected="selected" [% END %]>[% risk_classification.name %]</option>
@@ -346,7 +302,7 @@ window.addEventListener('DOMContentLoaded', init_text_validations, false);
     </tr>
     [% IF show_social_responsibility_client %]
     <tr>
-        <td class="label"> Social Responsibility Status</td>
+        <td class="label">Social Responsibility Status</td>
         [%
             social_responsibility_options = [
                 { 'value' => 'low', details => 'Low risk'},
@@ -355,7 +311,7 @@ window.addEventListener('DOMContentLoaded', init_text_validations, false);
                 { 'value' => 'problem gambler', details => 'Problem Gambler'}
             ]
         %]
-        <td>
+        <td>:
             <select name="client_social_responsibility_check">
                 [% FOREACH social_responsibility = social_responsibility_options %]
                     <option value="[% social_responsibility.value %]" [% IF social_responsibility.value == social_responsibility_risk_status %] selected="selected" [% END %]> [% social_responsibility.details %]</option>
@@ -364,8 +320,8 @@ window.addEventListener('DOMContentLoaded', init_text_validations, false);
     </tr>
     [% END %]
     <tr>
-        <td class="label">Age Verified : </td>
-        <td>
+        <td class="label">Age Verified</td>
+        <td>:
             <select name="age_verification" id="age_verification">
                 [% client_age_verified = client.status.age_verification %]
                 <option value="yes" [% IF client_age_verified %]selected="selected"[% END %]>YES</option>
@@ -374,27 +330,27 @@ window.addEventListener('DOMContentLoaded', init_text_validations, false);
         </td>
     </tr>
     <tr>
-        <td class = 'label'>ONFIDO : </td>
-        <td>
+        <td class = 'label'>ONFIDO</td>
+        <td>:
             [% IF onfido_check_result %]
                 <a href="[% onfido_check_url %]" target="_blank">
                     [% onfido_check_result FILTER upper %]
                 </a>
             [% ELSE %]
-                Check not performed
+                <strong>Check not performed</strong>
             [% END %]
         </td>
     </tr>
     [% IF is_client_in_onfido_country %]
     <tr>
         <td class="label"></td>
-        <td><button name="run_onfido_check" type="submit" value="1">Run Onfido Check</button></td>
+        <td><button name="run_onfido_check" type="submit" class="btn btn--primary" value="1">Run Onfido Check</button></td>
     </tr>
 
     [% END %]
     <tr>
-        <td class="label" style="vertical-align:middle">Allow POI Resubmission : </td>
-        <td> <input type="checkbox" onclick="toggle_checkbox(this)" name="allow_onfido_resubmission" value="1" [% IF onfido_resubmission %] checked="checked" [% END %] />
+        <td class="label" style="vertical-align:middle">Allow POI Resubmission</td>
+        <td>:<input type="checkbox" onclick="toggle_checkbox(this)" name="allow_onfido_resubmission" value="1" [% IF onfido_resubmission %] checked="checked" [% END %] />
         <span id="allow_onfido_resubmission_toggle" [% IF onfido_resubmission %] style="display:inline" [% ELSE %]  style="display:none" [% END %] >
         <label for="poi_reasons">REASON:</label>
         <select name="poi_reason" onchange="kyc_reason_changed()">
@@ -408,12 +364,12 @@ window.addEventListener('DOMContentLoaded', init_text_validations, false);
         </td>
     </tr>
     <tr>
-        <td class="label">Resubmission Counter: </td>
-        <td> [% onfido_resubmission_counter %]</td>
+        <td class="label">Resubmission Counter</td>
+        <td>: [% onfido_resubmission_counter %]</td>
     </tr>
 
     <tr>
-        <td class="label">ID Authentication : </td>
+        <td class="label">ID Authentication</td>
         [%
             authentication_options = [
                 {'value' => '', 'short_name' => '', 'details' => 'Please select to update' }
@@ -425,25 +381,29 @@ window.addEventListener('DOMContentLoaded', init_text_validations, false);
            ];
            authentication_status = client.authentication_status;
         %]
-        <td id="verification">
+        <td id="verification">:
             <select name="client_authentication" onchange="update_age_verification(this.value)">
                 [% FOREACH authentication = authentication_options %]
                     <option value="[% authentication.value %]" [% IF authentication.short_name == authentication_status %]selected="selected"[% END %]>[% authentication.details %]</option>
                 [% END %]
             </select>
-
-            <br/><br/>
+        </td>
+    </tr>
+    <tr>
+        <td></td>
+        <td style="padding: 4px 8px;">
+            <p>
             [%
                 IF show_uploaded_documents;
                 THEN;
-                    'Expiry/issue date format: yyyy-mm-dd<br>' | none;
+                    '<span style="padding: 4px">Expiry/issue date format: <b>yyyy-mm-dd</b></span>' | none;
                     show_uploaded_documents | none;
                 ELSE;
                     "There are no uploaded documents for $client.loginid - $client.full_name";
                 END
             %]
+            </p>
             [%  IF client_for_prove && !client_for_prove.is_virtual %]
-            <br/>
             [%
                 raw_url  = 'backoffice/view_192_raw_response.cgi';
                 doc_url  = 'backoffice/download_document.cgi';
@@ -462,31 +422,32 @@ window.addEventListener('DOMContentLoaded', init_text_validations, false);
                         pdf_args.path = "pdf/${client_for_prove.loginid}.${option}.pdf";
                         href_pdf = proveID.pdf_url || request.url_for(doc_url, pdf_args);
                      %]
-                        An Experian <span class="lspace">[% option %]</span> request <span class="lspace">has</span> been done.
-                        <a class="lspace" target="_blank" href="[% href_rpt | none %]">[Report]</a>
-                        <a class="lspace" target="_blank" href="[% href_xml | none %]">[XML]</a>
-                        [% IF proveID.has_saved_pdf %]
-                        <a class="lspace" target="_blank" href="[% href_pdf | none %] ">[PDF]</a>
+                        <p>An Experian <strong>[% option %]</strong> request <strong>has</strong> been done.
+                        <span class="link-group">
+                            <a target="_blank" class="link link--primary" href="[% href_rpt | none %]">[Report]</a>
+                            <a target="_blank" class="link link--primary" href="[% href_xml | none %]">[XML]</a>
+                            [% IF proveID.has_saved_pdf %]
+                            <a target="_blank" class="link link--primary" href="[% href_pdf | none %] ">[PDF]</a>
+                        </span>
+                        </p>
                         [% # has_saved_pdf
                         END %]
                     [% # has_saved_xml
                     ELSE %]
-		                <b>ProveID requested, but resulting xml file doesn't exist or has been deleted. Please try again later or resend the ProveID request</b>
+		                <p><b>ProveID requested, but resulting xml file doesn't exist or has been deleted. Please try again later or resend the ProveID request.</b></p>
                     [% # has_saved_xml
                     END %]
                 [% # proveID.client.status.proveid_requested || proveID.has_saved_xml;
                 ELSE %]
-                    An Experian <span class="lspace">[% option %]</span> request <span class="lspace">has NOT</span> been done.
+                    <span>An Experian <strong>[% option %]</strong> request <strong>has NOT</strong> been done.</span>
                 [% # proveID.client.status.proveid_requested || proveID.has_saved_xml;
                 END %]
-                    <br/>
             [% # client_for_prove
             END %]
             [% IF client.residence == 'gb' && !client.is_virtual %]
-                    <input type="submit" name="do_id_check" value="Submit a new ProveID request"/>
+                    <input type="submit" class="btn btn--primary" name="do_id_check" value="Submit a new ProveID request"/>
                 [% IF proveID.has_saved_xml or proveID.has_saved_pdf %]
-                <br/>
-                    <input type="submit" name="delete_existing_192" value="Delete existing Experian results"/>
+                    <input type="submit" class="btn btn--red" name="delete_existing_192" value="Delete existing Experian results"/>
                 <br/>
                 [% # proveID.has_saved_xml or proveID.has_saved_pdf
                 END %]
@@ -495,8 +456,8 @@ window.addEventListener('DOMContentLoaded', init_text_validations, false);
         </td>
     </tr>
 <tr>
-        <td class="label" style="vertical-align:middle">Allow POA Resubmission : </td>
-        <td> <input type="checkbox" onclick="toggle_checkbox(this)" name="allow_poa_resubmission" value="1" [% IF poa_resubmission_allowed %] checked="checked" [% END %]>
+        <td class="label" style="vertical-align:middle">Allow POA Resubmission</td>
+        <td>:<input type="checkbox" onclick="toggle_checkbox(this)" name="allow_poa_resubmission" value="1" [% IF poa_resubmission_allowed %] checked="checked" [% END %]>
         <span id="allow_poa_resubmission_toggle" [% IF poa_resubmission_allowed %] style="display:inline" [% ELSE %]  style="display:none" [% END %] >
         <label for="poa_reasons">REASON:</label>
         <select name="poa_reason" onchange="kyc_reason_changed()" >
@@ -510,8 +471,8 @@ window.addEventListener('DOMContentLoaded', init_text_validations, false);
         </td>
     </tr>
     <tr title="if poi/poa resubmission is checked by checking this and after clicking the save button, an email will be sent to the client to resubmit documents">
-        <td class="label" style="vertical-align:middle"> KYC EMAIL : </td>
-        <td> <input type="checkbox"  style="vertical-align:middle" name="kyc_email_checkbox" value="1" /> </td>
+        <td class="label" style="vertical-align:middle">KYC EMAIL</td>
+        <td>:<input type="checkbox"  style="vertical-align:middle" name="kyc_email_checkbox" value="1" /> </td>
     </tr>
     <tr>
         <td class="label">Account Opening Reason</td>
@@ -528,14 +489,14 @@ window.addEventListener('DOMContentLoaded', init_text_validations, false);
         </td>
     </tr>
     <tr>
-        <td class="small_header" colspan="2">#Communication Addresses</td>
+        <td class="bg-lightgrey" colspan="2">#Communication Addresses</td>
     </tr>
     <tr>
         <td class="label">Tel</td>
         <td>: <input type="text" name="phone" value="[% client.phone %]" size="20" data-lpignore="true" /> Note: this number's intl. code can be: <b>[% client_phone_country %]</b></td>
     </tr>
     <tr>
-        <td class="small_header" colspan="2">#Secrets</td>
+        <td class="bg-lightgrey" colspan="2">#Secrets</td>
     </tr>
     <tr>
         <td class="label">Secret question</td>
@@ -547,7 +508,7 @@ window.addEventListener('DOMContentLoaded', init_text_validations, false);
         [% IF can_decode_secret_answer %]
             <td>: <input type="text" name="secret_answer" value="[% secret_answer %]" size="50" data-lpignore="true" /> [% secret_answer %]</td>
         [% ELSE %]
-            <td style="color:red"> Not able to decode secret answer. </td>
+            <td class="error"> Not able to decode secret answer. </td>
         [% END %]
     </tr>
     <tr>
@@ -555,7 +516,7 @@ window.addEventListener('DOMContentLoaded', init_text_validations, false);
         <td>: <input type="text" name="restricted_ip_address" value="[% client.restricted_ip_address %]" size="50" data-lpignore="true" /></td>
     </tr>
     <tr>
-        <td class="small_header" colspan="2">#Promotional Code</td>
+        <td class="bg-lightgrey" colspan="2">#Promotional Code</td>
     </tr>
     [% IF currency_type != 'crypto' %]
         <tr>
@@ -565,9 +526,9 @@ window.addEventListener('DOMContentLoaded', init_text_validations, false);
             <td class="label">Promotional code</td>
             <td>:
                 <input type="text" name="promo_code" [% maybe_disabled %] value="[% client.promo_code %]" size="20" data-lpignore="true" />
-                Description: [% client.client_promo_code.promotion.description %]
-                (<a href="[% request.url_for('backoffice/promocode_edit.cgi', {promocode=>client.promo_code}) %]">edit</a>)
-                [% IF maybe_auth_msg %]<font color="red"><b>[% maybe_auth_msg %]</b></font>[% END %]
+                <label class="label">Description:</label>[% client.client_promo_code.promotion.description %]
+                <a class="btn btn--primary" href="[% request.url_for('backoffice/promocode_edit.cgi', {promocode=>client.promo_code}) %]">Edit</a>
+                [% IF maybe_auth_msg %]<span class="error"><b>[% maybe_auth_msg %]</b></span>[% END %]
             </td>
         </tr>
         <tr>
@@ -599,26 +560,27 @@ window.addEventListener('DOMContentLoaded', init_text_validations, false);
                         [% END %]
                     [% END %]
                 </select>
-                [% IF maybe_auth_msg %]<font color="red"><b>[% maybe_auth_msg %]</b></font>[% END %]
+                [% IF maybe_auth_msg %]<span class="error"><b>[% maybe_auth_msg %]</b></span>[% END %]
             </td>
         </tr>
         <tr>
             <td class="label">Apply date</td>
             <td>: [% client.promo_code_apply_date %] [% maybe_auth_msg %]
-                [% IF maybe_auth_msg %]<font color="red"><b>[% maybe_auth_msg %]</b></font>[% END %]
+                [% IF maybe_auth_msg %]<span class="error"><b>[% maybe_auth_msg %]</b></span>[% END %]
             </td>
         </tr>
         <tr>
-            <td class="label">Check/Approve Bonus</td>
-            <td><a href="[% request.url_for('backoffice/f_client_bonus_check.cgi') %]?loginID=[% client.loginid %]"><b>check/approve bonus</b></a> </td>
+            <td class="label"></td>
+            <td><a class="btn btn--primary" href="[% request.url_for('backoffice/f_client_bonus_check.cgi') %]?loginID=[% client.loginid %]">Check/approve bonus</a></td>
         </tr>
     [% ELSE %]
         <tr>
-         <td colspan=2>Not applicable for crypto account</td>
+         <td></td>
+         <td style="padding: 4px 8px;">Not applicable for crypto account</td>
         </tr>
     [% END %]
     <tr>
-        <td class="small_header" colspan="2">#Marketing</td>
+        <td class="bg-lightgrey" colspan="2">#Marketing</td>
     </tr>
     <tr>
         <td class="label">Source</td>
@@ -626,7 +588,7 @@ window.addEventListener('DOMContentLoaded', init_text_validations, false);
     </tr>
 
     <tr>
-        <td class="small_header" colspan="2">#WITHDRAWAL VIA PAYMENT AGENT</td>
+        <td class="bg-lightgrey" colspan="2">#WITHDRAWAL VIA PAYMENT AGENT</td>
     </tr>
     <tr>
       <td class="label">
@@ -635,7 +597,7 @@ window.addEventListener('DOMContentLoaded', init_text_validations, false);
        <td><label for="chk_pa_withdrawal_explicitly_allowed">Check this to explicitly allow payment agent withdrawal for the client that deposited through external cashier like the premier cashier.</label></td>
     </tr>
     <tr>
-        <td class="small_header" colspan="2">#Misc</td>
+        <td class="bg-lightgrey" colspan="2">#Misc</td>
     </tr>
     <tr>
         <td class="label">Latest environment</td>
@@ -657,8 +619,8 @@ window.addEventListener('DOMContentLoaded', init_text_validations, false);
     [% END %]
     [% IF show_tnc_status %]
         <tr>
-            <td class="label">T&C acceptance</td>
-            <td><table border="1" class="collapsed">[% FOR brand IN tnc_versions.keys.sort %]
+            <td class="label top">T&C acceptance</td>
+            <td style='display:inline-flex;'>:&nbsp;<table class="collapsed border">[% FOR brand IN tnc_versions.keys.sort %]
                 [% version = tnc_versions.$brand %]
                 <tr><td>[% brand %] ([% version %])</td><td>[% IF tnc_status.$brand.$version %]<b>Yes</b> at [% tnc_status.$brand.$version %][% ELSE %]<b>No</b>[% END %]</td></tr>
             [% END %]
@@ -678,7 +640,7 @@ window.addEventListener('DOMContentLoaded', init_text_validations, false);
         </tr>
     [% END %]
     <tr>
-        <td class="small_header" colspan="2">#Client Categorization</td>
+        <td class="bg-lightgrey" colspan="2">#Client Categorization</td>
     </tr>
     [% IF show_allow_professional_client %]
         <tr>

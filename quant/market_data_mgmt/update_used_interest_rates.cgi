@@ -16,11 +16,11 @@ my $currencies = request()->param('currencies');
 
 my @currencies = split /\s+/, $currencies;
 
-BrokerPresentation("", "");
+BrokerPresentation("Update Interest Rates");
 
 foreach my $currency (@currencies) {
-
-    print "<TABLE BORDER = 2 bgcolor = #00AAAAA width=99% >";
+    Bar("$currency rates");
+    print "<TABLE class='border full-width'>";
 
     print "<TD>";
     print "<iframe frameborder=0 width=100% height=300 scrolling=yes ";
@@ -29,7 +29,7 @@ foreach my $currency (@currencies) {
     print "</iframe>";
     print "</TD>";
 
-    print "</TABLE>";
+    print "</TABLE><br>";
 
 }
 

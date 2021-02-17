@@ -6,20 +6,20 @@
 </script>
 
 <style>
-    div.brick { display: inline-block; width:150px }
+    div.brick-group { display: grid; grid-template-columns: repeat(4, 1fr); grid-gap: 8px; }
     div.brick input { margin: 0 }
 </style>
 
-    <h4>Clients Report</h4>
-    <form action="[% request.url_for('backoffice/monthly_client_report.cgi') | none %]" method="post">
+    <h3>Clients Report</h3>
+    <form action="[% request.url_for('backoffice/monthly_client_report.cgi') | none %]" method="post" class="row">
         <input type="hidden" name="broker" value="[%request.broker_code%]"/>
         <select name="crdr">
             <option value="debit">All Debits and Contract-Buys</option>
             <option value="credit">All Credits and Contract-Sells</option>
         </select>
-        Run Month: <input size="8" name="yyyymm" value="$yyyymm" required pattern="\d{4}-\d{2}" /> e.g. 2014-12
-        <input type="submit" value="Download CSV File"/>
-        All Currencies for Broker code [%request.broker_code%] will be included.
+        <label>Run month (e.g. 2014-12):</label><input size="8" type="text" name="yyyymm" value="$yyyymm" required pattern="\d{4}-\d{2}" />
+        <input type="submit" class="btn btn--primary" value="Download CSV file"/>
+        <i>* All currencies for broker code [%request.broker_code%] will be included</i>
     </form>
     <hr/>
     [%
@@ -44,28 +44,29 @@
         ];
     %]
 
-    <h4>Payments Report</h4>
-    Select any of these payment types..
-    <form action="[%request.url_for('backoffice/monthly_payments_report.cgi') | none %]" method="post">
+    <h3>Payments Report</h3>
+    <p>Select any of these payment types:</p>
+    <form action="[%request.url_for('backoffice/monthly_payments_report.cgi') | none %]" method="post" class="row">
         <input type="hidden" name="broker" value="[%request.broker_code%]"/>
-        [% FOR pt IN payment_types %]
+        <div class="row brick-group">
+            [% FOR pt IN payment_types %]
+                <div class="brick">
+                    <input type="checkbox" name="payment_type" value="[%pt.0%]" id="[%pt.0%]"/>
+                    <label for="[%pt.0%]" title="[%pt.0%]">[%pt.1%]</label>
+                </div>
+            [% END %]
             <div class="brick">
-                <input type="checkbox" name="payment_type" value="[%pt.0%]" id="[%pt.0%]"/>
-                <label for="[%pt.0%]" title="[%pt.0%]">[%pt.1%]</label>
+                <input type="checkbox" name="all_payment_types" id="all_payment_types"/>
+                <label for="all_payment_types" title="(including obsolete types)">ALL</label>
             </div>
-        [% END %]
-        <div class="brick">
-            <input type="checkbox" name="all_payment_types" id="all_payment_types"/>
-            <label for="all_payment_types" title="(including obsolete types)">ALL</label>
         </div>
-        <br/><br/>
-        Run Month: <input size="8" name="yyyymm" value="$yyyymm" required pattern="\d{4}-\d{2}"/> e.g. 2014-12
-, duration: <select name="months">
-[% FOR i IN [1..6]%]
-    <option value="[% i %]">[% i %]</option>
-[% END %]
-</select> months
-        &nbsp;&nbsp;&nbsp;
-        <input type="submit" value="Download CSV File"/>
-        All Currencies for Broker code [%request.broker_code%] will be included.
+        <label>Run month (e.g. 2014-12):</label><input size="8" type="text" name="yyyymm" value="$yyyymm" required pattern="\d{4}-\d{2}"/>
+        <label>Duration:</label>
+        <select name="months">
+        [% FOR i IN [1..6]%]
+            <option value="[% i %]">[% i %]</option>
+        [% END %]
+        </select> months&nbsp;&nbsp;
+        <input type="submit" class="btn btn--primary" value="Download CSV file"/>
+        <i>* All currencies for broker code [%request.broker_code%] will be included</i>
     </form>

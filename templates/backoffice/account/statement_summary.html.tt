@@ -1,33 +1,40 @@
-<table style="border: 1px solid black;" width=50%>
+<h3>Statement summary</h3>
+
+<div class="row">
+    <p>Profit & loss since [% client.date_joined %]:&nbsp;<strong>[% currency %]&nbsp;[% summary.income %]</strong></p>
+</div>
+
+<div class="row">
+    <form action="[% self_post %]" method="get" class="row">
+        <label>Overview search:</label>
+        <input name="overview_fm_date" type="text" value="[% client_summary_ranges.from %]" class="datepick" data-lpignore="true" />
+        <input name="overview_to_date" type="text" value="[% client_summary_ranges.to %]" class="datepick" data-lpignore="true" />
+        <input name="loginID" type="hidden" value="[% loginid %]">
+        <input name="broker" type="hidden" value="[% broker %]">
+        <input name="currency" type="hidden" value="[% currency %]">
+        <input type="submit" class="btn btn--primary" value="View">
+    </form>
+</div>
+<table>
+    <thead>
     <tr>
-        <td colspan="2">
-            <b>Profit & Loss since [% client.date_joined %]</b>:
-            [% currency %]&nbsp;[% summary.income %]
-            <br/><br/>
-            <b>Overview search</b>:
-            [% client_summary_ranges.from %]
-            [% client_summary_ranges.to %]
-            <form action="[% self_post %]" method="get">
-                <input name="overview_fm_date" type="text" value="[% client_summary_ranges.from %]" class="datepick" data-lpignore="true" />
-                <input name="overview_to_date" type="text" value="[% client_summary_ranges.to %]" class="datepick" data-lpignore="true" />
-                <input name="loginID" type="hidden" value="[% loginid %]">
-                <input name="broker" type="hidden" value="[% broker %]">
-                <input name="currency" type="hidden" value="[% currency %]">
-                <input type="submit" value="view">
-            </form>
-        </td>
+        <th colspan="2">
+            [% client_summary_ranges.from %] - [% client_summary_ranges.to %]  
+        </th>
     </tr>
+    </thead>
+    <tbody class="top">
     <tr>
         [% FOR t IN ['deposits', 'withdrawals'] %]
         <td>
-            <table class="sortable collapsed hover alternate" border="1">
+            <table class="sortable collapsed hover alternate border">
                 <tr>
-                    <th style="border-bottom: 1px solid #888888;">[% t %] [% currency %]</th>
-                    <th style="border-bottom: 1px solid #888888;"><b>TOTAL:</b> [% summary.$t.total %]</th>
+                    <th>[% t %] [% currency %]</th>
+                    <th>TOTAL: [% summary.$t.total %]</th>
                 </tr>
                 [% FOR sys_key IN summary.$t.systems.keys.sort %]
                 <tr>
-                    <td width="180" style="border-right: 1px solid #888888;">[% sys_key %]</td>
+                    <td width="180">[% sys_key %]</td>
                     <td width="30">[% summary.$t.systems.$sys_key %]</td>
                 </tr>
                 [% END %]
@@ -35,6 +42,7 @@
         </td>
         [% END %]
     </tr>
+    </tbody>
 </table>
 
 <script type="text/javascript" language="javascript">

@@ -1,6 +1,6 @@
 <p>Current alert threshold (e.g. 0.1 is equivalent to 10%):</p>
 
-<table id="user_limits_threshold_display">
+<table id="user_limits_threshold_display" class="border">
     [% FOREACH key IN data.current_limits.keys %]
         <tr><td>[% data.current_limits.$key.display_key %]:</td><td id="[% key %]">[% data.current_limits.$key.display_value %]</td>
     [% END %]
@@ -21,7 +21,7 @@
         <td><input type="text" name="user_threshold_amount" data-lpignore="true" /></td>
     </tr>
     <tr>
-        <td><button onClick="SaveUserThreshold()" type="button">save</button></td>
+        <td><button onClick="SaveUserThreshold()" type="button" class="btn btn--red">Save</button></td>
         <td class="user_threshold_result"></td>
     </tr>
 </table>
@@ -44,11 +44,11 @@
             success: function(data) {
                 var config = \$.parseJSON(data);
                 if (config.error) {
-                    result.text(config.error).css('color', 'red');
+                    result.text(config.error).css('color', 'var(--color-red)');
                 } else {
                     var el_display = \$('table#user_limits_threshold_display');
                     el_display.find('td#'+config.id).text(config.amount);
-                    result.text('saved').css('color', 'green');
+                    result.text('saved').css('color', 'var(--color-green-2)');
                 }
             }
         });

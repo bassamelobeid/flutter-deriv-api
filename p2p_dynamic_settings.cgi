@@ -21,7 +21,7 @@ my $cgi = CGI->new;
 
 PrintContentType();
 
-code_exit_BO('<p style="color:red;"><b>Both IT and Quants permissions are required to access this page</b></p>')
+code_exit_BO('<p class="error"><b>Both IT and Quants permissions are required to access this page</b></p>')
     unless BOM::Backoffice::Auth0::has_authorisation(['Quants']) && BOM::Backoffice::Auth0::has_authorisation(['IT']);
 
 BrokerPresentation('P2P DYNAMIC SETTINGS');
@@ -48,7 +48,7 @@ my @setting_keys = qw(
 
 if (request()->http_method eq 'POST' and request()->params->{save}) {
     if (not(grep { $_ eq 'binary_role_master_server' } @{BOM::Config::node()->{node}->{roles}})) {
-        code_exit_BO('<p style="color:red;"><b>' . master_live_server_error() . '</b></p>');
+        code_exit_BO('<p class="error"><b>' . master_live_server_error() . '</b></p>');
     } else {
         BOM::DynamicSettings::save_settings({
             'settings'          => request()->params,

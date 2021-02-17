@@ -436,7 +436,7 @@ sub print_comparison_between_volsurface {
 
     my @output;
 
-    push @output, "<TABLE width=100% BORDER=2 bgcolor=#00AAAA>";
+    push @output, "<TABLE class='bg-highlight full-width border'>";
     push @output, "<TR>";
     push @output, '<TH> Days </TH>';
     foreach my $Col_point (sort { $a <=> $b } @surface_vol_point) {

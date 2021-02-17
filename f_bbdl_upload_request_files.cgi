@@ -23,11 +23,13 @@ PrintContentType();
 my $cgi       = CGI->new;
 my $frequency = $cgi->param('frequency');
 my $type      = $cgi->param('type');
+
+BrokerPresentation("BBDL RequestFiles Upload");
 Bar("BBDL RequestFiles Upload");
 
 #don't allow from devserver, to avoid uploading wrong files
 if (not BOM::Config::on_production()) {
-    print "<font color=red>Sorry, you cannot upload files from a development server. Please use a live server.</font>";
+    print "<p class='error'>Sorry, you cannot upload files from a development server. Please use a live server.</p>";
     code_exit_BO();
 }
 
@@ -54,13 +56,13 @@ my $temp_dir = '/tmp';
 foreach my $file (@files) {
     my $encoded_file = encode_entities($file);
     if (length($file) >= 25) {
-        print "<font color=red>ERROR: $encoded_file exceeds 25 characters in length</font><br>";
+        print "<p class='error'>ERROR: $encoded_file exceeds 25 characters in length</p>";
     } elsif (not -s $temp_dir . '/' . $file) {
-        print "<font color=red>ERROR: $encoded_file does not exist</font><br>";
+        print "<p class='error'>ERROR: $encoded_file does not exist</p>";
     } elsif ($sftp->put($temp_dir . '/' . $file, $file)) {
-        print "UPLOAD $encoded_file SUCCESSFUL<br>";
+        print "<p class='success'>UPLOAD $encoded_file SUCCESSFUL</p>";
     } else {
-        print "<font color=red>UPLOAD $encoded_file FAILURE: " . encode_entities($sftp->error) . '</font><br>';
+        print "<p class='error'>UPLOAD $encoded_file FAILURE: " . encode_entities($sftp->error) . '</p>';
     }
 }
 

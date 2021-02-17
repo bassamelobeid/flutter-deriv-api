@@ -1,99 +1,64 @@
 <form action="[% controller_url %]" method="POST">
     <!--Wallet functions-->
-    <table>
-        <tr>
-            <th>Functions (w/o params)</th>
-            <td>
-                <select name="req_type">
-                  <option disabled selected value> -- select an option -- </option>
-                  <option value="get_gas_price">Get gas price</option>
-                  <option value="get_wallet_balance">Get wallet balance</option>
-                  <option value="get_main_address_balance">Get main address balance</option>
-                  <option value="get_accounts">Get all accounts</option>
-                  <option value="get_block_number">Get block number</option>
-                  <option value="get_syncing">Get syncing</option>
-                </select>
-            </td>
-            <td><button type=submit/>Get</button></td>
-        </tr>
-    </table>
-    <br>
-    <table>
-        <tr>
-            <th>Functions (with params)</th>
-            <td>
-                <select id="func_list_w_params"  onchange="showSelected(this.value)">
-                  <option disabled selected value> -- select an option -- </option>
-                  <option value="get_address_balance">Get address balance</option>
-                  <option value="get_transactionbyhash">Get transaction by hash</option>
-                  <option value="get_estimatedgas">Get estimated gas</option>
-                  <option value="get_transaction_receipt">Get transaction receipt</option>
-                </select>
-            </td>
-        </tr>
-    </table>
-    <br>
-    
+    <label>Functions (w/o params):</label>
+    <select name="req_type">
+        <option disabled selected value> -- select an option -- </option>
+        <option value="get_gas_price">Get gas price</option>
+        <option value="get_wallet_balance">Get wallet balance</option>
+        <option value="get_main_address_balance">Get main address balance</option>
+        <option value="get_accounts">Get all accounts</option>
+        <option value="get_block_number">Get block number</option>
+        <option value="get_syncing">Get syncing</option>
+    </select>
+
+    <label>Functions (with params):</label>
+    <select id="func_list_w_params"  onchange="showSelected(this.value)">
+        <option disabled selected value> -- select an option -- </option>
+        <option value="get_address_balance">Get address balance</option>
+        <option value="get_transactionbyhash">Get transaction by hash</option>
+        <option value="get_estimatedgas">Get estimated gas</option>
+        <option value="get_transaction_receipt">Get transaction receipt</option>
+    </select>
+    <button type=submit class="btn btn--primary"/>Get</button>
+        
     <INPUT type=hidden name='currency' value='ETH'/>
     
-<!--get address balance-->
+    <!--get address balance-->
     <div class="crypto_func invisible" id="get_address_balance">
         <hr>
-        <table>
-            <tr>
-                <th colspan=3>Get Address Balance</th>
-            </tr>
-            <tr>
-                <th>Address:</th>
-                <td><input type=text name='address'/></td>
-                <td><button type=submit name='req_type' value='get_address_balance'>Get address balance</button></td>
-            </tr>
-        </table>
+        <h3>Get Address Balance</h3>
+        <label>Address:</label>
+        <input type=text name='address'/>
+        <button type=submit class="btn btn--primary" name='req_type' value='get_address_balance'>Get address balance</button>
     </div>
 
-<!--Get Transaction by hash-->
+    <!--Get Transaction by hash-->
     <div class="crypto_func invisible" id="get_transactionbyhash">
         <hr>
-        <table>
-            <th colspan=3>Get transaction info</th>
-            <tr>
-                <th>Transaction hash</th>
-                <td><input type=text name='transaction_hash'/></td>
-                <td><button type=submit name='req_type' value='get_transactionbyhash'/>Get transaction info</button></td>
-            </tr>
-        </table>
+        <h3>Get transaction info</h3>
+        <label>Transaction hash:</label>
+        <input type=text name='transaction_hash'/>
+        <button type=submit class="btn btn--primary" name='req_type' value='get_transactionbyhash'/>Get transaction info</button>
     </div>
 
-<!--Get estimated gas-->
+    <!--Get estimated gas-->
     <div class="crypto_func invisible" id="get_estimatedgas">
         <hr>
-        <table>
-            <th colspan=3>Estimate gas</th>
-            <tr>
-                <th>To address: </th>
-                <td><input type=text name='to_address'/></td>
-                <td rowspan=2><button type=submit name='req_type' value='get_estimatedgas'/>Estimated Gas</button></td>
-            </tr>
-            <tr>
-                <th>Amount: </th>
-                <td><input type=text name='amount'/></td>
-            </tr>
-        </table>
+        <h3>Estimate gas</h3>
+        <label>To address:</label>
+        <input type=text name='to_address'/>
+        <label>Amount:</label>
+        <input type=text name='amount'/>
+        <button type=submit class="btn btn--primary" name='req_type' value='get_estimatedgas'/>Estimated Gas</button>
     </div>
 
-<!--Get transaction receipt-->
+    <!--Get transaction receipt-->
     <div class="crypto_func invisible" id="get_transaction_receipt">
         <hr>
-        <table>
-            <tr>
-                <th colspan=3>Get transaction receipt</th>
-            </tr>
-            <tr>
-                <th>Transaction hash:</th>
-                <td><input type=text name='gtr_transaction_hash'/></td>
-                <td><button type=submit name='req_type' value='get_transaction_receipt'>Get Transaction Receipt</button></td>
-            </tr>
-        </table>
+        <h3>Get transaction receipt</h3>
+        <label>Transaction hash:</label>
+        <input type=text name='gtr_transaction_hash'/></td>
+        <button type=submit class="btn btn--primary" name='req_type' value='get_transaction_receipt'>Get transaction receipt</button>
     </div>
     
 </form>

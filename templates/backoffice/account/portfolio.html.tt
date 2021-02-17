@@ -4,10 +4,8 @@
         <p>No open positions.</p>
     </div>
 [% ELSE %]
-    <div class="grd-grid-12">
-        Open positions:
-    </div>
-    <table id="portfolio-table" class="hover alternate collapsed" border="1" width="100%">
+    <h3>Open positions:</h3>
+    <table id="portfolio-table" class="hover alternate">
         <thead>
             <tr>
                 <th>Ref.</th>
@@ -23,8 +21,8 @@
                 total_value_now = total_value_now + (open_bet.sale_price || 0);
             %]
             <tr>
-                <td>
-                    <a href="[% request.url_for('backoffice/quant/pricing/bpot.cgi', { shortcode => open_bet.short_code, currency => currency, purchase_time => open_bet.purchase_time, loginid => loginid, limit_order => open_bet.limit_order, transaction_id => open_bet.buy_transaction_id}) | none %]">
+                <td class="center">
+                    <a class="link" href="[% request.url_for('backoffice/quant/pricing/bpot.cgi', { shortcode => open_bet.short_code, currency => currency, purchase_time => open_bet.purchase_time, loginid => loginid, limit_order => open_bet.limit_order, transaction_id => open_bet.buy_transaction_id}) | none %]">
                         [% open_bet.buy_transaction_id %]
                     </a>
                 </td>
@@ -42,8 +40,8 @@
     <br />
 [% END %]
 
-<table class="hover collapsed" border="1">
-    <tr><th>Balance</th><td>[% currency %] [% formatnumber('amount', currency, balance) | none %]</td></tr>
-    <tr><th>Cost of open positions</th><td>[% currency %] [% formatnumber('amount', currency, total_in) | none %]</td></tr>
-    <tr><th>Value of open positions</th><td>[% currency %] [% formatnumber('amount', currency, total_value_now) | none %]</td></tr>
+<table class="border">
+    <tr><th class="right">Balance</th><td>[% currency %] [% formatnumber('amount', currency, balance) | none %]</td></tr>
+    <tr><th class="right">Cost of open positions</th><td>[% currency %] [% formatnumber('amount', currency, total_in) | none %]</td></tr>
+    <tr><th class="right">Value of open positions</th><td>[% currency %] [% formatnumber('amount', currency, total_value_now) | none %]</td></tr>
 </table>

@@ -1,9 +1,9 @@
 [% IF user %]
     [% IF history %]
         [% IF limit == '0'%]
-            <p color="red">Showing ALL records</p>
+            <p class="error">Showing ALL records</p>
         [% ELSIF limit AND history.size >= limit %]
-            <p color="red">Showing last [% limit %] records only,
+            <p class="error">Showing last [% limit %] records only,
             <form method="POST" action="[%request.url_for('backoffice/f_viewloginhistory.cgi') | none %]" style="display:inline">
             <input name="email" value="[%user.email%]" type="hidden">
             <input name="limit" value="0" type="hidden">
@@ -11,7 +11,9 @@
             </form>
             </p>
         [% END %]
-        <table class="BlackCandy collapsed hover" border="1">
+        <div class="scrollable">
+        <table class="alternate hover small nowrap">
+            <thead>
             <tr>
                 <th>Date and Time</th>
                 <th>Action</th>
@@ -22,6 +24,8 @@
                 <th>Environment Info</th>
                 <th>App ID</th>
             </tr>
+            </thead>
+            <tbody>
 [%       FOREACH l IN history.reverse;
             date = l.history_date;
             status = l.successful ? 'ok' : 'failed';
@@ -32,7 +36,7 @@
             env = env.remove('.+User_AGENT=');
             is_company_ip = l.app_id == 4;
             is_company_ip_text  = is_company_ip ? 'Yes' : 'No';
-            is_company_ip_style = is_company_ip ? 'style="color: red;"' : '';
+            is_company_ip_style = is_company_ip ? 'class="error"' : '';
 %]
             <tr>
                 <td width='150'>[% date %] GMT</td>
@@ -44,9 +48,10 @@
                 <td>[% env %]</td>
                 <td>[% l.app_id || 'N/A' %]</td>
             </tr>
-
         [% END %]
+            </tbody>
         </table>
+        </div>
     [% ELSE %]
         <p>No login history</p>
     [% END %]

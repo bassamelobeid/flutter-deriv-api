@@ -1,12 +1,16 @@
 [% IF records.keys.size %]
-<table border="0" cellpadding="1" cellspacing="1" width="90%" style="text-align:left; padding:0.5em 0;">
-    <tr style="background-color:#ffffce";>
-        <th>Currency</th>
-        <th>Broker code and balances</th>
-        <th>Total</th>
-    </tr>
+<table class="border">
+    <thead>
+        <tr>
+            <th>Currency</th>
+            <th>Broker code and balances</th>
+            <th>Total</th>
+        </tr>
+    </thead>
+    <tbody>
     [% FOREACH entry IN records.keys.sort %]
-        <tr style="background-color: #aaffaa;">
+
+        <tr>
             <td>[% entry %]</td>
             <td>
                 <table>
@@ -21,6 +25,7 @@
             <td>[% aggregate_total.$entry.total_across_broker_codes %]</td>
         </tr>
     [% END %]
+    </tbody>
 </table>
 [% ELSE %]
     <p>No records</p>

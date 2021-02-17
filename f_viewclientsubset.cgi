@@ -38,10 +38,10 @@ my $clerk  = BOM::Backoffice::Auth0::get_staffname();
 
 my $home_link = request()->url_for('backoffice/f_viewclientsubset.cgi');
 my @header    = (
-    'LOGINID',      'NAME', 'COUNTRY', 'EMAIL', 'AGG. DEPOSITS - WITHDRAWALS',
-    'CASH BALANCE', 'CASHIER',
-    'TOTAL EQUITY & Expired contracts',
-    'Last access (in days)', 'reason'
+    'Login ID',     'Name', 'Country', 'Email', 'Agg. deposits - withdrawals',
+    'Cash balance', 'Cashier',
+    'Total equity & Expired contracts',
+    'Last access (in days)', 'Reason'
 );
 
 # This block of code shall come before PrintContentType, as PrintContentType will overwrite our
@@ -79,6 +79,7 @@ if (request()->param('action') eq 'DOWNLOAD CSV') {
     code_exit_BO();
 }
 
+Bar($show);
 # Show the "DOWNLOAD CSV" button.
 print '<form method="post" id="download_csv_form" action="'
     . request()->url_for('backoffice/f_viewclientsubset.cgi') . '">'
@@ -92,16 +93,14 @@ print '<form method="post" id="download_csv_form" action="'
     . encode_entities(request()->param('onlynonzerobalance')) . '" />'
     . '<input type="hidden" name="broker" value="'
     . $broker . '">'
-    . '<input type="submit" name="action" value="DOWNLOAD CSV" />'
+    . '<input type="submit" class="btn btn--primary" name="action" value="DOWNLOAD CSV" />'
     . '</form>';
-
-Bar($show);
 
 my $total_bal;
 
 my $table_header = '<tr>' . (join '', map { "<th>$_</th>" } @header) . '</tr>';
 
-print '<br /><table border=1 cellpadding=0 cellspacing=0 width=95%>' . $table_header;
+print '<br /><table class="border">' . $table_header;
 
 my $limit         = request()->param('limit') || 100;    # record to show per page
 my $page_selected = request()->param('page')  || 1;      # selected page number
@@ -168,7 +167,7 @@ if ($total) {
             onlyfunded         => request()->param('onlyfunded'),
             onlynonzerobalance => request()->param('onlynonzerobalance'),
         );
-        $prev_page = '<a id="prev_page" href="' . $link . '">Previous ' . encode_entities($limit) . '</a>';
+        $prev_page = '<a class="link" id="prev_page" href="' . $link . '">Previous ' . encode_entities($limit) . '</a>';
     } else {
         $prev_page = '';
     }
@@ -185,7 +184,7 @@ if ($total) {
             onlynonzerobalance => request()->param('onlynonzerobalance'),
         );
 
-        $next_page = '<a id="next_page" href="' . $link . '">Next ' . encode_entities($next_total) . '</a>';
+        $next_page = '<a class="link" id="next_page" href="' . $link . '">Next ' . encode_entities($next_total) . '</a>';
     } else {
         $next_page = '';
     }
@@ -219,10 +218,12 @@ if ($total) {
     }
 }
 
-print '<tr><td colspan="9" align="right">' . $paging . '</td></tr>';
+if ($paging) {
+    print '<tr><td colspan="9" align="right">' . $paging . '</td></tr>';
+}
 print '</table>';
 
-print '<p>Total a/c balances of clients in the list: USD ' . encode_entities($total_bal) . '</p><br />';
+print '<br><p>Total a/c balances of clients in the list: USD ' . encode_entities($total_bal) . '</p>';
 
 code_exit_BO();
 

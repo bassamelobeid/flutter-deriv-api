@@ -1,5 +1,5 @@
 <p>[% longcode %]</p>
-<form action="" method="post">
+<form action="" method="post" class="row">
     <table>
         <tr><td>Shortcode</td><td><input value="[% bet.shortcode %]" size="80" type="text" name="shortcode" id="shortcode" data-lpignore="true" /></td></tr>
         <tr><td>Currency</td><td><input value="[% bet.currency %]" size="4" type="text" name="currency" id="currency" style="none" data-lpignore="true" /></td></tr>
@@ -7,7 +7,7 @@
         <tr><td>Graph start </td><td><input value="[% start %]" size="20" type="text" name="start" id="start" data-lpignore="true" />[For a forward starting contract, it will start from purchase time]</td></tr>
         <tr><td>Graph end</td><td><input value="[% end %]" size="20" type="text" name="end" id="end" data-lpignore="true" /></td></tr>
         <tr><td><input value="[% limit_order || none %]" size="20" type="hidden" name="limit_order" id="limit_order"/></td></tr>
-        <tr><td colspan=2><input type="submit" id="draw_quant_graph" value="Graph it!"/></td></tr>
+        <tr><td colspan=2><input type="submit" class="btn btn--primary" id="draw_quant_graph" value="Graph it!"/></td></tr>
 </table>
 </form>
 [% debug_link | none %]

@@ -1,27 +1,53 @@
-[% IF copiers.size > 0 || traders.size > 0 %]
-    <form action="[% self_post %]" method="get">
+<form action="[% self_post %]" method="get">
+    <h3>COPIERS ([% copiers.size %])</h3>
     [% IF copiers.size > 0 %]
-        <h3>Copiers</h3>
-        <table>
-        <tr><th>Copier Id</th><th>token</th></tr>
-        [% FOREACH copier IN copiers %]
-            <tr><td>[% copier.0 %]</td><td>[% copier.3 %]</td><td><input type="checkbox" name="copier_ids" value="[% copier.0 %]::[% copier.2 %]"></tr>
-        [% END %]
+        <table class="hover alternate nowrap">
+            <thead>
+                <tr><th>Copier ID</th><th>Token</th></tr>
+            </thead>
+            <tbody>
+            [% FOREACH copier IN copiers %]
+                <tr>
+                    <td>[% copier.0 %]</td>
+                    <td>[% copier.3 %]</td>
+                    <td><input type="checkbox" name="copier_ids" value="[% copier.0 %]::[% copier.2 %]"></td>
+                </tr>
+            [% END %]
+            </tbody>
         </table>
+    [% ELSE %]
+        <p>No token</p>
     [% END %]
-    
+
+    <hr>
+
+    <h3>TRADERS ([% traders.size %])</h3>
     [% IF traders.size > 0 %]
-        <h3>Traders</h3>
-        <table>
-        <tr><th>trader Id</th><th>token</th></tr>
-        [% FOREACH trader IN traders %]
-            <tr><td>[% trader.0 %]</td><td>[% trader.3 %]</td><td><input type="checkbox" name="trader_ids" value="[% trader.0 %]::[% trader.2 %]"></tr>
-        [% END %]
+        <table class="hover alternate nowrap">
+            <thead>
+                <tr>
+                    <th>Trader ID</th>
+                    <th>Token</th>
+                </tr>
+            </thead>
+            [% FOREACH trader IN traders %]
+                <tr>
+                    <td>[% trader.0 %]</td>
+                    <td>[% trader.3 %]</td>
+                    <td><input type="checkbox" name="trader_ids" value="[% trader.0 %]::[% trader.2 %]"></td>
+                </tr>
+            [% END %]
         </table>
+    [% ELSE %]
+        <p>No token</p>
     [% END %]
+
+    [% IF copiers.size > 0 || traders.size > 0 %]
+    <br>
     <input type="hidden" name="loginID" value="[% loginid %]">
     <input type="hidden" name="whattodo" value="delete_copier_tokens">
-    <input type="submit" value="Delete Selected"/>
-    </form>
-<p>*NOTE: This only removes the existing link between the copier and trader, existing tokens remain valid. </a>
-[% END %]
+    <input type="submit" class="btn btn--red" value="Delete selected" />
+    <br>
+    <p>* NOTE: This only removes the existing link between the copier and trader, existing tokens remain valid.</p>
+    [% END %]
+</form>

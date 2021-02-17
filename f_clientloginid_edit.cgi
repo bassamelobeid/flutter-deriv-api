@@ -135,16 +135,16 @@ if (defined $input{run_onfido_check}) {
     my $applicant_data = BOM::User::Onfido::get_user_onfido_applicant($client->binary_user_id);
     my $applicant_id   = $applicant_data->{id};
     unless ($applicant_id) {
-        print "<p style=\"color:red; font-weight:bold;\">No corresponding onfido applicant id found for client $loginid.</p>";
-        code_exit_BO(qq[<p><a href="$self_href">&laquo;Return to Client Details<a/></p>]);
+        print "<p class=\"notify notify--warning\">No corresponding onfido applicant id found for client $loginid.</p>";
+        code_exit_BO(qq[<p><a href="$self_href" class="link">&laquo; Return to client details<a/></p>]);
     }
     BOM::Platform::Event::Emitter::emit(
         ready_for_authentication => {
             loginid      => $loginid,
             applicant_id => $applicant_id,
         });
-    print "<p style=\"color:#eeee00; font-weight:bold;\">Onfido trigger request sent.</p><br/>";
-    code_exit_BO(qq[<p><a href="$self_href">&laquo;Return to Client Details<a/></p>]);
+    print "<p class=\"notify\">Onfido trigger request sent.</p>";
+    code_exit_BO(qq[<p><a href="$self_href">&laquo; Return to client details<a/></p>]);
 }
 
 # Deleting checked statuses
@@ -176,21 +176,21 @@ if ($input{delete_checked_documents} and $input{del_document_list}) {
             my ($doc) = $client->find_client_authentication_document(query => [id => $doc_id]);    # Rose
             if ($doc) {
                 if ($doc->delete) {
-                    $full_msg .= "<p style=\"color:#eeee00; font-weight:bold;\">SUCCESS - $file_name is deleted!</p>";
+                    $full_msg .= "<p class=\"notify\">SUCCESS - $file_name is deleted!</p>";
                 } else {
-                    $full_msg .= "<p style=\"color:red; font-weight:bold;\">ERROR: did not remove $file_name record from db</p>";
+                    $full_msg .= "<p class=\"notify notify--warning\">ERROR: did not remove $file_name record from db</p>";
                 }
             } else {
-                $full_msg .= "<p style=\"color:red; font-weight:bold;\">ERROR: could not find $file_name record in db</p>";
+                $full_msg .= "<p class=\"notify notify--warning\">ERROR: could not find $file_name record in db</p>";
             }
 
         } else {
-            $full_msg .= "<p style=\"color:red; font-weight:bold;\">ERROR: with client login $loginid</p>";
+            $full_msg .= "<p class=\"notify notify--warning\">ERROR: with client login $loginid</p>";
         }
     }
 
     print $full_msg;
-    code_exit_BO(qq[<p><a href="$self_href">&laquo;Return to Client Details</a></p>]);
+    code_exit_BO(qq[<p><a class="link" href="$self_href">&laquo; Return to client details</a></p>]);
 }
 
 if ($broker eq 'MF') {
@@ -229,6 +229,7 @@ if ($broker eq 'MF') {
 if ($input{whattodo} eq 'sync_to_DF') {
     my $error = sync_to_doughflow($client, $clerk);
 
+    Bar('SYNC CLIENT AUTHENTICATION STATUS TO DOUGHFLOW');
     if ($error) {
         BOM::Backoffice::Request::template()->process(
             'backoffice/client_edit_msg.tt',
@@ -279,6 +280,7 @@ if ($input{whattodo} eq 'sync_to_MT5') {
     my $msg = Date::Utility->new->datetime . " sync client information to MT5 is requested by clerk=$clerk $ENV{REMOTE_ADDR}";
     BOM::User::AuditLog::log($msg, $loginid, $clerk);
 
+    Bar('SYNC CLIENT INFORMATION TO MT5');
     BOM::Backoffice::Request::template()->process(
         'backoffice/client_edit_msg.tt',
         {
@@ -321,18 +323,18 @@ if ($input{whattodo} eq 'uploadID') {
         if (   $expiration_date
             && $expiration_date ne (eval { Date::Utility->new($expiration_date)->date_yyyymmdd } // ''))
         {
-            print qq[<p style="color:red; font-weight:bold;">Expiration date "$expiration_date" is not a valid date.</p>];
-            code_exit_BO(qq[<p><a href="$self_href">&laquo;Return to Client Details<a/></p>]);
+            print qq[<p class="notify notify--warning">Expiration date "$expiration_date" is not a valid date.</p>];
+            code_exit_BO(qq[<p><a class="link" href="$self_href">&laquo; Return to client details<a/></p>]);
         } elsif ($issue_date
             && $issue_date ne (eval { Date::Utility->new($issue_date)->date_yyyymmdd; } // ''))
         {
-            print qq[<p style="color:red; font-weight:bold;">Issue date "$issue_date" is not a valid date.</p>];
-            code_exit_BO(qq[<p><a href="$self_href">&laquo;Return to Client Details<a/></p>]);
+            print qq[<p class="notify notify--warning">Issue date "$issue_date" is not a valid date.</p>];
+            code_exit_BO(qq[<p><a class="link"href="$self_href">&laquo; Return to client details<a/></p>]);
         }
 
         if ($is_poi and not $expiration_date and not $is_expiration_date_optional) {
-            print qq[<p style="color:red; font-weight:bold;">Expiration date is missing for the POI document $doctype.</p>];
-            code_exit_BO(qq[<p><a href="$self_href">&laquo;Return to Client Details<a/></p>]);
+            print qq[<p class="notify notify--warning">Expiration date is missing for the POI document $doctype.</p>];
+            code_exit_BO(qq[<p><a class="link" href="$self_href">&laquo; Return to client details<a/></p>]);
         }
 
         if ($docnationality and $docnationality =~ /^[a-z]{2}$/i) {
@@ -344,8 +346,8 @@ if ($input{whattodo} eq 'uploadID') {
         }
 
         if (not $client->save) {
-            print "<p style=\"color:red; font-weight:bold;\">Failed to save client citizenship.</p>";
-            code_exit_BO(qq[<p><a href="$self_href">&laquo;Return to Client Details</a></p>]);
+            print "<p class=\"notify notify--warning\">Failed to save client citizenship.</p>";
+            code_exit_BO(qq[<p><a class="link" href="$self_href">&laquo; Return to client details</a></p>]);
         }
 
         my $file_checksum         = Digest::MD5->new->addfile($filetoupload)->hexdigest;
@@ -370,7 +372,7 @@ if ($input{whattodo} eq 'uploadID') {
                 });
             die 'Document already exists.' unless $upload_info;
         } catch {
-            $result .= "<br /><p style=\"color:red; font-weight:bold;\">Error Uploading File $i: $@</p><br />";
+            $result .= "<p class=\"notify notify--warning\">Error Uploading File $i: $@</p>";
             next;
         }
 
@@ -409,14 +411,14 @@ if ($input{whattodo} eq 'uploadID') {
     for my $f (@futures) {
         my $file_name = $f->label;
         if ($f->is_done) {
-            $result .= "<br/><p style=\"color:#eeee00; font-weight:bold;\">Successfully uploaded $file_name</p><br/>";
+            $result .= "<p class=\"notify\">Successfully uploaded $file_name</p>";
         } elsif ($f->is_failed) {
             my $failure = $f->failure;
-            $result .= "<br/><p style=\"color:red; font-weight:bold;\">Error Uploading Document $file_name: $failure. </p><br/>";
+            $result .= "<p class=\"notify notify--warning\">Error Uploading Document $file_name: $failure. </p>";
         }
     }
     print $result;
-    code_exit_BO(qq[<p><a href="$self_href">&laquo;Return to Client Details</a></p>]);
+    code_exit_BO(qq[<p><a class="link" href="$self_href">&laquo; Return to client details</a></p>]);
 }
 
 if ($input{whattodo} eq 'save_reversible_limits') {
@@ -440,15 +442,15 @@ if ($input{whattodo} eq 'save_reversible_limits') {
                         $_->do('SELECT betonmarkets.delete_client_limit_by_cashier(?,?);', undef, $loginid, $cashier);
                     });
             }
-            $result .= "<br/><p style=\"color:#eeee00; font-weight:bold;\">Updated client limit for $cashier</p><br/>\n";
+            $result .= "<p class=\"notify\">Updated client limit for $cashier</p>\n";
         } catch ($e) {
-            $result .= "<br/><p style=\"color:red; font-weight:bold;\">Error saving reversible limit: $e.</p><br/>\n";
+            $result .= "<p class=\"notify notify--warning\">Error saving reversible limit: $e.</p>\n";
         }
     }
 
     if ($result) {
         print $result;
-        code_exit_BO(qq[<p><a href="$self_href">&laquo;Return to Client Details</a></p>]);
+        code_exit_BO(qq[<p><a class="link" href="$self_href">&laquo; Return to client details</a></p>]);
     }
 }
 
@@ -459,8 +461,8 @@ if ($input{whattodo} eq 'disable_2fa' and $user->is_totp_enabled) {
         secret_key      => ''
     );
 
-    print "<p style=\"color:#eeee00; font-weight:bold;\">2FA Disabled</p>";
-    code_exit_BO(qq[<p><a href="$self_href">&laquo;Return to Client Details</a></p>]);
+    print "<p class=\"notify\">2FA Disabled</p>";
+    code_exit_BO(qq[<p><a class="link" href="$self_href">&laquo; Return to client details</a></p>]);
 }
 
 # PERFORM ON-DEMAND ID CHECKS
@@ -470,12 +472,12 @@ if (my $check_str = $input{do_id_check} && !$client->is_virtual) {
     } catch {
         code_exit_BO(
             qq[<p><b>ProveID failed: $@</b></p>
-                 <p><a href="$self_href">&laquo;Return to Client Details</a></p>]
+                 <p><a class="link" href="$self_href">&laquo; Return to client details</a></p>]
         );
     }
     code_exit_BO(
         qq[<p><b>ProveID completed</b></p>
-                 <p><a href="$self_href">&laquo;Return to Client Details</a></p>]
+                 <p><a class="link" href="$self_href">&laquo; Return to client details</a></p>]
     );
 }
 
@@ -483,7 +485,7 @@ if (my $check_str = $input{do_id_check} && !$client->is_virtual) {
 if ($input{delete_existing_192}) {
     code_exit_BO(
         qq[<p><b>Existing Reports Deleted</b></p>
-        <p><a href="$self_href">&laquo;Return to Client Details</a></p>]
+        <p><a class="link" href="$self_href">&laquo; Return to client details</a></p>]
     ) if BOM::Platform::ProveID->new(client => $client)->delete_existing_reports();
 }
 
@@ -497,7 +499,7 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
     try {
         $secret_answer = BOM::User::Utility::decrypt_secret_answer($client->secret_answer) // '';
     } catch {
-        print qq{<p style="color:red">ERROR: Unable to extract secret answer. Client secret answer is outdated or invalid.</p>};
+        print qq{<p class=\"notify notify--warning\">ERROR: Unable to extract secret answer. Client secret answer is outdated or invalid.</p>};
     }
 
     my $text_validation_info = client_text_field_validation_info(
@@ -514,12 +516,12 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
 
             # if value is not changed, ignore validation result
             if ($old_value ne $input{$key} and not $info->{is_valid}) {
-                print qq{<p style="color:red">ERROR: <b>$info->{name}</b> validation failed: $info->{message}</p>};
+                print qq{<p class="notify notify--warning">ERROR: <b>$info->{name}</b> validation failed: $info->{message}</p>};
                 $error = 1;
             }
         }
     }
-    code_exit_BO(qq[<p><a href="$self_href">&laquo;Return to Client Details</a></p>]) if ($error);
+    code_exit_BO(qq[<p><a class="link" href="$self_href">&laquo; Return to client details</a></p>]) if ($error);
 
     _assemble_dob_input({
         client => $client,
@@ -614,7 +616,7 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
             }
         } catch {
             # Print clients that were not updated
-            print "<p>Failed to update professional status of client: $loginid</p>";
+            print "<p class=\"notify notify--warning\">Failed to update professional status of client: $loginid</p>";
         }
     }
 
@@ -650,7 +652,7 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
                 try {
                     $client->promo_code($promo_code);
                 } catch {
-                    code_exit_BO(sprintf('<p style="color:red; font-weight:bold;">ERROR: %s</p>', $_));
+                    code_exit_BO(sprintf('<p class="error">ERROR: %s</p>', $_));
                 };
                 $client->promo_code_status($input{promo_code_status} || 'NOT_CLAIM');
 
@@ -669,7 +671,7 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
     if (my $reason = $input{account_opening_reason}) {
         my $account_opening_reasons = ACCOUNT_OPENING_REASONS;
         if (none { $reason eq $_ } @{$account_opening_reasons}) {
-            code_exit_BO('<p style="color:red; font-weight:bold;">ERROR: Not a valid account opening reason.</p>');
+            code_exit_BO('<p class="error">ERROR: Not a valid account opening reason.</p>');
         }
     }
 
@@ -686,7 +688,8 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
 
     if ($error) {
         my $message = $error->{error};
-        code_exit_BO("<p style='color:red; font-weight:bold;'>ERROR: $message </p><p><a href='$self_href'>&laquo;Return to Client Details</a></p>");
+        print "<p class='notify notify--warning'>ERROR: $message </p>";
+        code_exit_BO("<p><a class='link' href='$self_href'>&laquo; Return to client details</a></p>");
     }
 
     # Do not check here for phone duplicate because CS will have to contact the client
@@ -729,8 +732,9 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
 
         unless ($valid_change) {
             my $self_href = request()->url_for('backoffice/f_clientloginid_edit.cgi', {loginID => $client->loginid});
-            print qq{<p style="color:red">Invalid residence change, due to different broker codes or different country restrictions.</p>};
-            code_exit_BO(qq[<p><a href="$self_href">&laquo;Return to Client Details</a></p>]);
+            print
+                qq{<p class="notify notify--warning">Invalid residence change, due to different broker codes or different country restrictions.</p>};
+            code_exit_BO(qq[<p><a class="link" href="$self_href">&laquo; Return to client details</a></p>]);
         }
 
         do {
@@ -755,7 +759,7 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
         foreach (qw/last_name first_name/) {
             next unless exists $input{$_};
             if ($input{$_} =~ /^\s*$/) {
-                code_exit_BO("<p style=\"color:red; font-weight:bold;\">ERROR ! $_ field appears incorrect or empty.</p></p>");
+                code_exit_BO("<p class=\"error\">ERROR ! $_ field appears incorrect or empty.</p></p>");
             }
         }
 
@@ -826,7 +830,7 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
                         $new_value = Date::Utility->new($val)->date_yyyymmdd if $val ne 'clear';
                     } catch {
                         my $err = (split "\n", $@)[0];                                      #handle Date::Utility's confess() call
-                        print qq{<p style="color:red">ERROR: Could not parse $document_field for doc $id with $val: $err</p>};
+                        print qq{<p class="notify notify--warning">ERROR: Could not parse $document_field for doc $id with $val: $err</p>};
                         next CLIENT_KEY;
                     }
                 } else {
@@ -835,7 +839,7 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
                         : ($document_field eq 'comments')    ? 255
                         :                                      0;
                     if (length($val) > $maxLength) {
-                        print qq{<p style="color:red">ERROR: $document_field is too long. </p>};
+                        print qq{<p class="notify notify--warning">ERROR: $document_field is too long. </p>};
                         next CLIENT_KEY;
                     }
                     $new_value = $val;
@@ -844,7 +848,7 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
                 try {
                     $doc->$document_field($new_value);
                 } catch {
-                    print qq{<p style="color:red">ERROR: Could not set $document_field for doc $id with $val: $@</p>};
+                    print qq{<p class="notify notify--warning">ERROR: Could not set $document_field for doc $id with $val: $@</p>};
                 }
                 next CLIENT_KEY;
             }
@@ -862,16 +866,15 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
                 and $cli->mifir_id eq ''
                 and $broker eq 'MF')
             {
-                code_exit_BO(
-                    "<p style=\"color:red; font-weight:bold;\">ERROR : Could not update client details for client $encoded_loginid: MIFIR_ID line too long</p>"
-                ) if (length($input{$key}) > 35);
+                code_exit_BO("<p class=\"error\">ERROR : Could not update client details for client $encoded_loginid: MIFIR_ID line too long</p>")
+                    if (length($input{$key}) > 35);
                 $cli->mifir_id($input{$key});
             } elsif ($key eq 'tax_residence') {
-                code_exit_BO("<p style=\"color:red; font-weight:bold;\">Tax residence cannot be set empty if value already exists</p>")
+                code_exit_BO("<p class=\"error\">Tax residence cannot be set empty if value already exists</p>")
                     if ($cli->tax_residence and not $tax_residence);
                 $cli->tax_residence($tax_residence);
             } elsif ($key eq 'tax_identification_number') {
-                code_exit_BO("<p style=\"color:red; font-weight:bold;\">Tax residence cannot be set empty if value already exists</p>")
+                code_exit_BO("<p class=\"error\">Tax residence cannot be set empty if value already exists</p>")
                     if ($cli->tax_identification_number
                     and not $input{tax_identification_number});
                 $cli->tax_identification_number($input{tax_identification_number});
@@ -891,7 +894,7 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
         my $sync_error;
 
         if (not $cli->save) {
-            code_exit_BO("<p style=\"color:red; font-weight:bold;\">ERROR : Could not update client details for client $encoded_loginid</p></p>");
+            code_exit_BO("<p class=\"error\">ERROR : Could not update client details for client $encoded_loginid</p>");
 
         } elsif (!$client->is_virtual
             && ($auth_method =~ /^(?:ID_NOTARIZED|ID_DOCUMENT$)/))
@@ -902,8 +905,8 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
             $sync_error = sync_to_doughflow($cli, $clerk);
         }
 
-        print "<p style=\"color:#eeee00; font-weight:bold;\">Client " . $cli->loginid . " saved</p>";
-        print "<p style=\"color:#eeee00;\">$sync_error</p>" if $sync_error;
+        print "<p class=\"notify\">Client " . $cli->loginid . " saved</p>";
+        print "<p class=\"notify notify--warning\">$sync_error</p>" if $sync_error;
 
         BOM::Platform::Event::Emitter::emit('sync_user_to_MT5', {loginid => $cli->loginid})
             if ($cli->loginid eq $loginid);
@@ -982,11 +985,11 @@ BOM::Backoffice::Request::template()->process(
     });
 
 print qq{
-<div  style="float: right">
+<div class="row">
 <form action="$impersonate_url" method="get">
 <input type='hidden' size=30 name="impersonate_loginid" value="$encoded_loginid">
 <input type='hidden' name='broker' value='$encoded_broker'>
-<input type="submit" value="Impersonate"></form>
+<input type="submit" class="btn btn--secondary" value="Impersonate"></form>
 </div>
 };
 
@@ -996,10 +999,7 @@ my @client_comments = grep { defined } $client->get_comments()->@[0 .. $comments
 if (@client_comments) {
     my $comments_url = request()->url_for('backoffice/f_client_comments.cgi', {loginid => $client->loginid});
     print qq~
-        <div class="grd-margin-top">
-            <b>Latest Comment(s)</b> (Displaying up to <b>$comments_count</b> most recent comments) -
-            <a href="$comments_url">Add a new comment / View full list</a>
-        </div>~;
+        <hr><h3>Latest Comment(s)</h3><p>Displaying up to <b>$comments_count</b> most recent comments:</p>~;
     BOM::Backoffice::Request::template()->process(
         'backoffice/client_comments_table.html.tt',
         {
@@ -1007,6 +1007,7 @@ if (@client_comments) {
             loginid  => $client->loginid,
             csrf     => BOM::Backoffice::Form::get_csrf_token(),
         });
+    print qq~<br><a class="link" href="$comments_url">Add a new comment / View full list</a>~;
 }
 
 Bar("$loginid STATUSES");
@@ -1028,24 +1029,23 @@ BOM::Backoffice::Request::template()->process(
 
 # Show Self-Exclusion link
 Bar("$loginid SELF-EXCLUSION SETTINGS");
-print "Configure <a id='self-exclusion' href=\""
+print "<p><a id='self-exclusion' class=\"btn btn--primary\" href=\""
     . request()->url_for(
     'backoffice/f_setting_selfexclusion.cgi',
     {
         broker  => $broker,
         loginid => $loginid
-    }) . "\">self-exclusion</a> settings for $encoded_loginid.";
+    }) . "\">Configure self-exclusion settings</a> <strong>for $encoded_loginid</strong></p>";
 
 # show restricted-access fields of regulated landing company clients (accessible for compliance staff only)
 if (BOM::Backoffice::Auth0::has_authorisation(['Compliance']) and $client->landing_company->is_eu) {
-    print('<br>');
-    print 'Configure <a id="self-exclusion_restricted" href="'
+    print '<a id="self-exclusion_restricted" class="btn btn--primary" href="'
         . request()->url_for(
         'backoffice/f_setting_selfexclusion_restricted.cgi',
         {
             broker  => $broker,
             loginid => $loginid
-        }) . '"> restricted self-exlcusion </a> settings';
+        }) . '">Configure restricted self-exlcusion settings</a>';
 }
 
 Bar("$loginid PAYMENT AGENT DETAILS");
@@ -1053,29 +1053,29 @@ Bar("$loginid PAYMENT AGENT DETAILS");
 # Show Payment-Agent details if this client is also a Payment Agent.
 my $payment_agent = $client->payment_agent;
 if ($payment_agent) {
-    print '<div class="grd-margin-bottom"><table class="collapsed">';
+    print '<div class="row"><table class="border small">';
 
     foreach my $column ($payment_agent->meta->columns) {
         my $value = $payment_agent->$column;
         #this line shall be removed in cleanup card when we will drop target_country column
         next if $column eq 'target_country';
-        print "<tr><td>$column</td><td>=</td><td>" . encode_entities($value) . "</td></tr>";
+        print "<tr><td>$column</td><td>" . encode_entities($value) . "</td></tr>";
     }
     my $pa_countries = $client->get_payment_agent->get_countries;
-    print "<tr><td>Target Countries</td><td>=</td><td>" . encode_entities(join(',', @$pa_countries)) . "</td></tr>";
+    print "<tr><td>Target countries</td><td>" . encode_entities(join(',', @$pa_countries)) . "</td></tr>";
 
     print '</table></div>';
 }
 
 if ($client->landing_company->allows_payment_agents) {
-    print '<div><a href="'
+    print '<div><a class="btn btn--primary" href="'
         . request()->url_for(
         'backoffice/f_setting_paymentagent.cgi',
         {
             broker   => $broker,
             loginid  => $loginid,
             whattodo => $payment_agent ? "show" : "create"
-        }) . "\">$encoded_loginid payment agent details</a></div>";
+        }) . "\">Payment agent details</a> <strong>for $encoded_loginid</strong></div>";
 } else {
     print '<div>Payment Agents are not available for this account.</div>';
 }
@@ -1139,12 +1139,10 @@ foreach my $lid ($user_clients->@*) {
         });
 
     print "<li><a href='$link_href'"
-        . ($client->status->disabled ? ' style="color:red"' : '') . ">"
+        . ($client->status->disabled ? ' class="link link--disabled"' : ' class="link link--primary"') . ">"
         . encode_entities($lid->loginid) . " ("
         . $currency
-        . ") </a><span style='margin-left:12px; color:#f44336'><strong>"
-        . $formatted_balance
-        . "</strong></span></li>";
+        . ") </a></li>";
 }
 
 # show MT5 a/c
@@ -1180,7 +1178,7 @@ print "</ul>";
 eval {
     my $mt5_log_size = BOM::Config::Redis::redis_mt5_user()->llen("MT5_USER_GROUP_PENDING");
 
-    print "<p style='color:red'>Note: MT5 groups might take time to appear, since there are "
+    print "<p class='error'>Note: MT5 groups might take time to appear, since there are "
         . encode_entities($mt5_log_size)
         . " item(s) being processed</p>"
         if $mt5_log_size > 500;
@@ -1194,16 +1192,16 @@ my $log_args = {
 };
 
 my $new_log_href = request()->url_for('backoffice/show_audit_trail.cgi', $log_args);
-print qq{<p>Click for <a href="$new_log_href">History of Changes (Audit Trail)</a> to $encoded_loginid</p>};
+print qq{<a href="$new_log_href" class="btn btn--primary">View history of changes to $encoded_loginid</a>};
 
 if ($payment_agent) {
     $log_args->{category} = 'payment_agent';
     $new_log_href = request()->url_for('backoffice/show_audit_trail.cgi', $log_args);
-    print qq{<p>Click for <a href="$new_log_href">Payment Agent History</a> for $encoded_loginid</p>};
+    print qq{<a href="$new_log_href" class="btn btn--primary">View payment agent history for $encoded_loginid</a>};
 }
 
-print qq[<form action="$self_post?loginID=$encoded_loginid" id="clientInfoForm" method="post">
-    <input type="submit" value="Save Client Details">
+print qq[<hr><form action="$self_post?loginID=$encoded_loginid" id="clientInfoForm" method="post">
+    <input type="submit" class="btn btn--red" value="Save client details">
     <input type="hidden" name="broker" value="$encoded_broker">
     <input type="hidden" name="p2p_approved" value="$p2p_approved">];
 
@@ -1214,7 +1212,8 @@ print_client_details($client);
 my $INPUT_SELECTOR = 'input:not([type="hidden"]):not([type="submit"]):not([type="reset"]):not([type="button"])';
 
 print qq[
-    <input type=submit value="Save Client Details"></form>
+    <hr>
+    <input type=submit class="btn btn--red" value="Save client details"></form>
     <style>
         .data-changed {
             background: pink;
@@ -1253,12 +1252,12 @@ sub force_fa {
 
     code_exit_BO(
         qq[<p><b>Client is already forced to complete their financial assessment.</b></p>
-        <p><a href="$self_href">&laquo;Return to Client Details</a></p>]
+        <p><a class="link" href="$self_href">&laquo; Return to client details</a></p>]
     ) if $is_forced;
 
     code_exit_BO(
         qq[<p><b>Client has already completed their financial assessment.</b></p>
-        <p><a href="$self_href">&laquo;Return to Client Details</a></p>]
+        <p><a class="link" href="$self_href">&laquo; Return to client details</a></p>]
     ) if !is_fa_needs_completion($client);
 
     $client->status->setnx('financial_assessment_required', $clerk,   'Financial Assessment completion is forced from Backoffice.');
@@ -1322,15 +1321,15 @@ for my $section_name (qw(trading_experience financial_information)) {
     Bar($title);
 
     print_fa_table($section_name, $self_href, $is_compliance, $built_fa->{$section_name}->%*);
-    print "<strong style='color: #060;'>$title updated.</strong>"
+    print "<p class='success'>$title updated</p>"
         if $fa_updated{$section_name};
 
     print_fa_force_btn($section_name, $self_href) if ($section_name eq 'financial_information' && $is_compliance);
-    print "<strong style='color: #060;'>Financial Assessment questionnaire triggered.</strong>"
+    print "<p class='error'>Financial Assessment questionnaire triggered.</p>"
         if ($section_name eq 'financial_information' && $fa_updated{force_financial_assessment});
 
-    print "<p>$title score: <strong>" . $fa_score->{$section_name} . '</strong></p>';
-    print '<p>CFD Score: <strong>' . $fa_score->{cfd_score} . '</strong></p>'
+    print "<hr><div class='row'><span class='right'>$title score:</span>&nbsp;<h3>" . $fa_score->{$section_name} . '</h3></div>';
+    print '<div class="row"><span class="right">CFD Score:</span>&nbsp;<h3>' . $fa_score->{cfd_score} . '</h3></div>'
         if ($section_name eq 'trading_experience');
 }
 
@@ -1342,7 +1341,7 @@ sub print_fa_table {
 
     print "<form method='post' action='$self_href#$section_name'><input type='hidden' name='whattodo' value='$section_name'>"
         if $is_editable;
-    print '<table border="1" class="sortable BlackCandy collapsed hover"><thead><tr>';
+    print '<table class="sortable alternate hover"><thead><tr>';
     print '<th scope="col">' . encode_entities($_) . '</th>' for @hdr;
     print '</thead><tbody>';
     for my $key (sort keys %section) {
@@ -1361,8 +1360,8 @@ sub print_fa_table {
             . $section{$key}->{score}
             . '</td></tr>';
     }
-    print '</tbody></table>';
-    print '<input type="submit" value="Update"></form>' if $is_editable;
+    print '</tbody></table><br>';
+    print '<input type="submit" class="btn btn--primary" value="Update"></form>' if $is_editable;
 
     return undef;
 }
@@ -1370,11 +1369,11 @@ sub print_fa_table {
 sub print_fa_force_btn {
     my ($section_name, $self_href) = @_;
 
-    print "<form method='post' action='$self_href#$section_name'>";
+    print "<br><form method='post' action='$self_href#$section_name'>";
 
     print '<input type="hidden" name="whattodo" value="force_financial_assessment">';
 
-    print '<input type="submit" value="Click to force financial assessment" style="border: solid 2px red;margin-top: 12px;">';
+    print '<input type="submit" class="btn btn--red" value="Click to force financial assessment">';
 
     print '</form>';
 }
@@ -1398,7 +1397,7 @@ if (not $client->is_virtual) {
             <input type="hidden" name="whattodo" value="sync_to_DF">
             <input type="hidden" name="broker" value="$encoded_broker">
             <input type="hidden" name="loginID" value="$encoded_loginid">
-            <input type="submit" value="Sync now !!">
+            <input type="submit" class="btn btn--red" value="Sync now !!">
         </form>
     };
     Bar("Sync Client Information to MT5");
@@ -1407,7 +1406,7 @@ if (not $client->is_virtual) {
         <form action="$self_post" method="get">
             <input type="hidden" name="whattodo" value="sync_to_MT5">
             <input type="hidden" name="loginID" value="$encoded_loginid">
-            <input type="submit" value="Sync to MT5">
+            <input type="submit" class="btn btn--red" value="Sync to MT5">
         </form>
     };
 }
@@ -1421,7 +1420,7 @@ print qq{
         <input type="hidden" name="broker" value="$encoded_broker">
         <input type="hidden" name="loginID" value="$encoded_loginid">
         <input type="submit" value = "Disable 2FA"/>
-        <span style="color:red;">This will disable the 2FA feature. Only user can enable then.</span>
+        <span class="error">This will disable the 2FA feature. Only user can enable then.</span>
     </form>
 } if $user->is_totp_enabled;
 
@@ -1482,9 +1481,7 @@ BOM::Backoffice::Request::template()->process(
 );
 
 Bar("Email Consent");
-print '<br/>';
-print 'Email consent for marketing: ' . ($user->{email_consent} ? 'Yes' : 'No');
-print '<br/><br/>';
+print 'Email consent for marketing: ' . ($user->{email_consent} ? '<b>Yes</b>' : '<b>No</b>');
 
 if (not $client->is_virtual) {
 
@@ -1504,7 +1501,7 @@ if (not $client->is_virtual) {
 
     Bar('P2P Advertiser');
 
-    print '<a href="'
+    print '<a class="btn btn--primary" href="'
         . request()->url_for(
         'backoffice/p2p_advertiser_manage.cgi',
         {
@@ -1513,7 +1510,7 @@ if (not $client->is_virtual) {
         })
         . '">'
         . $loginid
-        . ' P2P Advertiser details</a>';
+        . ' P2P advertiser details</a>';
 
     Bar('Reversible balance limits');
 
@@ -1540,7 +1537,6 @@ if (not $client->is_virtual) {
 }
 
 Bar($user->{email} . " Login history");
-print '<div><br/>';
 my $limit         = 200;
 my $login_history = $user->login_history(
     order                    => 'desc',
@@ -1715,8 +1711,8 @@ sub _assemble_dob_input {
 
     if (grep { !$_ } values %new_dob) {
         my $self_href = request()->url_for('backoffice/f_clientloginid_edit.cgi', {loginID => $client->loginid});
-        print qq{<p style="color:red">Error: Date of birth cannot be empty.</p>};
-        code_exit_BO(qq[<p><a href="$self_href">&laquo;Return to Client Details</a></p>]);
+        print qq{<p class="notify notify--warning">Error: Date of birth cannot be empty.</p>};
+        code_exit_BO(qq[<p><a href="$self_href">&laquo;Return to client details</a></p>]);
     }
 
     my $combined_new_dob = sprintf("%04d-%02d-%02d", $new_dob{'dob_year'}, $new_dob{'dob_month'}, $new_dob{'dob_day'});

@@ -117,7 +117,7 @@ sub get_limited_client_list {
     foreach my $client_loginid (keys %$custom_client_limits) {
         my $client = eval { BOM::User::Client::get_instance({'loginid' => $client_loginid, db_operation => 'backoffice_replica'}) };
         if (not $client) {
-            print "Error: wrong loginid ($client_loginid) could not get client instance";
+            print "Error: Wrong Login ID ($client_loginid) could not get client instance";
             code_exit_BO();
         }
         my $binary_user_id = $client->binary_user_id;

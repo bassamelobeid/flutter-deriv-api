@@ -1,6 +1,6 @@
 <form action="[% request.url_for('backoffice/p2p_band_management.cgi', {broker => broker}) %]" method="post">
 
-<table border="0">
+<table>
     <tr>
         <td class="label">Country</td>
         <td>
@@ -31,7 +31,7 @@
                 <b>[% item.trade_band %]</b>
                 <input type="hidden" name="trade_band" value="[% item.trade_band %]"/>
             [% ELSE %]
-            <input name="trade_band" value="[% item.action == 'copy' && item.trade_band %]">
+            <input type="text" name="trade_band" value="[% item.action == 'copy' && item.trade_band %]">
             [% END %]
         </td>
     </tr>
@@ -66,10 +66,10 @@
 </table>
 
 [% IF item.action %]
-<button type="submit" name="[% item.action %]" value="1">Save</button>
-<button type="submit" name="cancel" value="1">Cancel</button>
+<button type="submit" class="btn btn--red" name="[% item.action %]" value="1">Save</button>
+<button type="submit" class="btn btn--secondary" name="cancel" value="1">Cancel</button>
 [% ELSE %]
-<button type="submit" name="save" value="1">Submit</button>
+<button type="submit" class="btn btn--red" name="save" value="1">Submit</button>
 [% END %]
 
 </form>

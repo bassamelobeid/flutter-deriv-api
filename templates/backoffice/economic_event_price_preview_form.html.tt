@@ -32,13 +32,13 @@
     </tr>
 </table>
 
-
-<p></p>
+<hr>
 <div id='economic_event_info'></div>
 
+<hr>
 <p><b>Price Table:</b></p>
 <div id='economic_event_price_preview_original'></div>
-
+<br>
 <p><b>Comparison Table:</b></p>
 <div id='economic_event_price_preview_updated'></div>
 

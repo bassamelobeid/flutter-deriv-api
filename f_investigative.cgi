@@ -35,20 +35,19 @@ if (request()->param('whattodo') eq 'unsanctions') {
 
 Bar("ANTI FRAUD TOOLS");
 
-print "<P><LI><B>USER LOGIN HISTORY</B> - Login history per user (email) login";
+print "<h3>User login history</h3>";
 print "<FORM ACTION=\"" . request()->url_for('backoffice/f_viewloginhistory.cgi') . "\" METHOD=POST>";
-print "Email, or list of emails (space separated): <TEXTAREA name='email' rows=2 cols=40></TEXTAREA> ";
-print "<INPUT type=submit value='View User Login History'>";
+print
+    "<div class='row row-align-top'><label>Email, or list of emails (space separated):</label><textarea name='email' rows=2 cols=40></textarea></div>";
+print "<div class='row row-align-top'><INPUT type=submit class='btn btn--primary' value='View user login history'></div>";
 print "</FORM>";
-
-print "<P><LI><b>Query UN Sanctions list</b><FORM ACTION=\"" . request()->url_for('backoffice/f_investigative.cgi') . "\" METHOD=POST>";
+print "<hr>";
+print "<h3>Query UN Sanctions list</h3><FORM ACTION=\"" . request()->url_for('backoffice/f_investigative.cgi') . "\" METHOD=POST>";
 print "<INPUT type=hidden name=whattodo value=unsanctions>";
-print "First name: <INPUT type=text size=15 maxlength=35 name=fname value='Usama' data-lpignore='true' /> ";
-print "Last name: <INPUT type=text size=15 maxlength=35 name=lname value='bin Laden' data-lpignore='true' /> ";
-print "<input type=submit value='Query UN Sanctions Database'>";
+print "<label>First name:</label><INPUT type=text size=15 maxlength=35 name=fname value='Usama' data-lpignore='true' /> ";
+print "<label>Last name:</label><INPUT type=text size=15 maxlength=35 name=lname value='bin Laden' data-lpignore='true' /> ";
+print "<input type=submit class='btn btn--primary' value='Query UN Sanctions database'>";
 print "</form>";
-
-print "</OL>";
 
 Bar("IP related");
 

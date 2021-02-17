@@ -1,4 +1,4 @@
-<label for="l">Select language</label>
+<label for="l">Select language:</label>
 <select name="l">
     [% FOREACH language IN languages.keys.sort %]
         [% IF language == 'EN' %]

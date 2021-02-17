@@ -1,13 +1,17 @@
-<table>
+<div class="scrollable">
+<table class="hover alternate nowrap">
+    <thead>
     <tr>
-        <td><b>ID &nbsp;</b></td>
-        <td><b>Updated by &nbsp;</b></td>
-        <td><b>Updated on &nbsp;</b></td>
-        <td><b>Name &nbsp;</b></td>
-        <td><b>Limit Conditions &nbsp;</b></td>
-        <td><b>Payout Limit &nbsp;</b></td>
-        <td><b>Turnover Limit &nbsp;</b></td>
+        <th>ID</th>
+        <th>Updated by</th>
+        <th>Updated on</th>
+        <th>Name</th>
+        <th>Limit Conditions</th>
+        <th>Payout Limit</th>
+        <th>Turnover Limit</th>
     </tr>
+    </thead>
+    <tbody>
     [% FOREACH data IN output %]
         <tr>
             <td>[% data.id %]</td>
@@ -19,4 +23,6 @@
             <td>[% data.turnover_limit %]</td>
         </tr>
     [% END %]
+    </tbody>
 </table>
+</div>

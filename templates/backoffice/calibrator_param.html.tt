@@ -1,11 +1,11 @@
 <span>Save all calibration parameters</span>
 <form>
-    <input class="save_all" type="submit" value="Save All">
+    <input class="save_all" type="submit" class="btn btn--red" value="Save All">
 </form>
 
 [% FOREACH underlying = params.keys %]
 <div class="heading">
-    <p><a href="#" class="more">+</a> <b>[% underlying %]</b> calibrated(vega weighted) with absolute model error of <span id="[% underlying %]_calibration_error" style="font-weight:bold">[% params.$underlying.calibration_error %]</span> <span style="color:green" class='[% underlying %]_update_output'></span></p>
+    <p><a href="#" class="more">+</a> <b>[% underlying %]</b> calibrated(vega weighted) with absolute model error of <span id="[% underlying %]_calibration_error" style="font-weight:bold">[% params.$underlying.calibration_error %]</span> <span class='success [% underlying %]_update_output'></span></p>
 </div>
 
 <div class="content">

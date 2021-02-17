@@ -47,8 +47,8 @@ Bar('Batch Credit/Debit to Clients Accounts');
 
 if ($preview) {
     if ($cgi->param('payments_csv') !~ /csv$/) {
-        print "<br><br><br><h3>Provided file ", encode_entities($cgi->param('payments_csv')),
-            " is not a CSV file.<br>Please, save it as <u>CSV (comma-separated values) file</u> in Excel first</h3>";
+        print "<h3 class=\"error\">ERROR: The provided file \"", encode_entities($cgi->param('payments_csv')),
+            "\" is not a CSV file.</h3><p>Please save it as <b>CSV (comma-separated values) file</b> in Excel first.</p>";
         code_exit_BO();
     }
     my $payments_csv_fh = $cgi->upload('payments_csv');
@@ -86,9 +86,7 @@ my @hdgs = (
 );
 
 my $client_account_table =
-    '<table border="1" width="100%" bgcolor="#ffffff" style="border-collapse:collapse;margin-bottom:20px"><caption>Batch Credit/Debit details</caption>'
-    . '<tr>'
-    . join('', map { "<th>$_</th>" } @hdgs) . '</tr>';
+    '<h3>Batch Credit/Debit details</h3><table class="border full-width">' . '<tr>' . join('', map { "<th>$_</th>" } @hdgs) . '</tr>';
 
 my %summary_amount_by_currency;
 my @invalid_lines;
@@ -190,7 +188,7 @@ read_csv_row_and_callback(
 
         if ($error) {
             $client_account_table .= construct_row_line(%row, error => $error);
-            push @invalid_lines, qq[<a href="#ln$line_number">Invalid line $line_number</a> : ] . encode_entities($error);
+            push @invalid_lines, qq[<a class="link link--primary" href="#ln$line_number">Invalid line $line_number</a> : ] . encode_entities($error);
             return;
         }
 
@@ -247,16 +245,13 @@ $client_account_table .= '</table>';
 
 my $summary_table = '';
 if (scalar @invalid_lines > 0) {
-    $summary_table .=
-          '<table border="1" width="100%" bgcolor="#ffffff" style="border-collapse:collapse;margin-bottom:20px;color:red;">'
-        . '<caption>Error(s) found, please correct the line(s) below</caption>'
-        . '<tr><th>Error</th></tr>';
+    $summary_table .= '<h3>Error(s) found, please correct the line(s) below</h3>' . '<table>' . '<tr><th>Error</th></tr>';
 
     foreach my $invalid_line (@invalid_lines) {
         $summary_table .= '<tr><td>' . $invalid_line . '</td></tr>';
     }
     $summary_table .= '</table>';
-    $summary_table .= "<center><a href='javascript:history.go(-1);'>Back</a></center><br /><br />";
+    $summary_table .= "<br><a class='link' href='javascript:history.go(-1);'>&laquo; Back</a><hr>";
 }
 
 if (%summary_amount_by_currency and scalar @invalid_lines == 0) {
@@ -281,7 +276,7 @@ print $summary_table;
 print $client_account_table;
 
 if ($preview and @invalid_lines == 0) {
-    print "<div class=\"inner_bo_box\"><h2>Make Dual Control Code</h2><form action=\""
+    print "<hr><div class=\"inner_bo_box\"><h3>Make Dual Control Code</h3><form action=\""
         . request()->url_for("backoffice/f_makedcc.cgi")
         . "\" method=\"post\" class=\"bo_ajax_form\">"
         . "<input type=hidden name=\"dcctype\" value=\"file_content\">"
@@ -292,26 +287,25 @@ if ($preview and @invalid_lines == 0) {
         . "<input type=hidden name=\"file_location\" value=\""
         . encode_entities($payments_csv_file) . "\">"
         . "Make sure you check the above details before you make dual control code<br>"
-        . "<br>Input a comment/reminder about this DCC: <input type=text size=50 name=reminder data-lpignore='true' />"
-        . "Type of transaction: <select name='transtype'>"
+        . "<br><label>Input a comment/reminder about this DCC:</label><input type=text size=50 name=reminder data-lpignore='true' />"
+        . "<label>Type of transaction:</label><select name='transtype'>"
         . "<option value='BATCHACCOUNT'>Batch Account</option><option value='BATCHDOUGHFLOW'>Batch Doughflow</option>"
         . "</select>"
-        . "<br /><input type=\"submit\" value='Make Dual Control Code (by "
+        . "<br /><br /><input type=\"submit\" class='btn btn--primary' value='Make Dual Control Code (by "
         . encode_entities($clerk) . ")'>"
         . "</form></div>";
 
-    print qq[<div class="inner_bo_box"><h2>Confirm credit/debit clients</h2>
+    print qq[<hr><div class="inner_bo_box">
+        <h3>Confirm credit/debit clients</h3>
         <form onsubmit="confirm('Are you sure?')">
-         <input type="hidden" name="payments_csv_file" value="$payments_csv_file"/>
-         <input type="hidden" name="skip_validation" value="] . encode_entities($skip_validation) . qq["/>
-         <table border=0 cellpadding=1 cellspacing=1><tr><td bgcolor=FFFFEE><font color=blue>
-				<b>DUAL CONTROL CODE</b>
-				Control Code: <input type=text name=DCcode required size=16 data-lpignore='true' />
-				Type of transaction: <select name="transtype">
+            <input type="hidden" name="payments_csv_file" value="$payments_csv_file"/>
+            <input type="hidden" name="skip_validation" value="] . encode_entities($skip_validation) . qq["/>
+            <label>Control Code:</label><input type=text name=DCcode required size=16 data-lpignore='true' />
+            <label>Type of transaction:</label>
+            <select name="transtype">
 				<option value="BATCHACCOUNT">Batch Account</option><option value="BATCHDOUGHFLOW">Batch Doughflow</option>
-				</select>
-				</td></tr></table>
-         <button type="submit" name="confirm" value="$format">Confirm (Do it for real!)</button>
+            </select>
+            <button type="submit" class="btn btn--red" name="confirm" value="$format">Confirm (Do it for real!)</button>
          </form></div>];
 } elsif (not $preview and $confirm and scalar(keys %client_to_be_processed) > 0) {
     my @clients_has_been_processed = values %client_to_be_processed;
@@ -335,7 +329,7 @@ sub construct_row_line {
 
     $args{$_} = encode_entities($args{$_}) for keys %args;
     my $notes = $args{error} || $args{remark};
-    my $color = $args{error} ? 'red' : 'green';
+    my $class = $args{error} ? 'error' : 'success';
     $args{$_} ||= '&nbsp;' for keys %args;
     my $transaction_id = $args{transaction_id} // '';
 
@@ -351,7 +345,7 @@ sub construct_row_line {
         <td>$args{amount}</td>
         <td>$args{comment}</td>
         <td>$transaction_id</td>
-        <td style="color:$color">$notes</td>
+        <td class="$class">$notes</td>
     </tr>];
 }
 

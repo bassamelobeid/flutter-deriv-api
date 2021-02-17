@@ -13,14 +13,14 @@ use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Backoffice::Sysinit ();
 BOM::Backoffice::Sysinit::init();
 
-sub success { return '<b><font color="green">SUCCESS:</font>&nbsp;' . shift . '</b>' }
-sub error   { return '<b><font color="red">ERROR:</font>&nbsp;' . shift . '</b>' }
+sub success { return '<span class="success">SUCCESS:</span>&nbsp;' . shift . '</b>' }
+sub error   { return '<span class="error">ERROR:</span>&nbsp;' . shift . '</b>' }
 
 sub link_to_edit_client {
     my $loginid = shift->loginid;
 
     return
-          '<a href="'
+          '<a class="link link--primary" href="'
         . request()->url_for('backoffice/f_clientloginid_edit.cgi', {loginID => encode_entities($loginid)}) . '">'
         . encode_entities($loginid) . '</a>';
 }
@@ -83,7 +83,7 @@ sub notify_remove_status_failed {
     my $untrusted_type = get_untrusted_type_by_code($status_code);
     my $linktype       = $untrusted_type->{linktype};
 
-    return success("<b>$loginid_link</b> has NOT been removed from <b>$broker_code.$linktype</b><br/>");
+    return error("<b>$loginid_link</b> has NOT been removed from <b>$broker_code.$linktype</b><br/>");
 }
 
 sub handle_request {
@@ -104,7 +104,7 @@ sub handle_request {
             }
         } @{$client->siblings()};
 
-        return (@notifications, '<br/><br/>Go back to ' . link_to_edit_client($client) . '<br/>');
+        return (@notifications, '<br>Go back to ' . link_to_edit_client($client));
     } elsif ($action eq 'remove') {
         my $updated_client_loginids = $client->clear_status_and_sync_to_siblings($status_code);
 
@@ -129,7 +129,7 @@ sub handle_request {
             }
         }
 
-        return (@notifications, '<br/><br/>Go back to ' . link_to_edit_client($client) . '<br/>');
+        return (@notifications, '<br>Go back to ' . link_to_edit_client($client));
     }
 
     return code_exit_BO();

@@ -28,7 +28,7 @@ CLIENT:
 foreach my $loginID (split(/,/, $listaccounts)) {
     my $encoded_loginID = encode_entities($loginID);
     my $client          = eval { BOM::User::Client->new({loginid => $loginID}) } || do {
-        print "<br/>error: cannot find client '$encoded_loginID'";
+        print "<p class='notify notify--danger'>ERROR: Cannot find client '$encoded_loginID'</p>";
         next CLIENT;
     };
 
@@ -44,11 +44,13 @@ foreach my $loginID (split(/,/, $listaccounts)) {
     if (request()->param('whattodo') eq 'Do it for real !') {
 
         if (my $sold_bets = BOM::Transaction::sell_expired_contracts({client => $client})) {
-            print "<br>[FOR REAL] $encoded_loginID ($encoded_name $encoded_email) Expired bets closed out:";
-            printf "Account has been credited with <strong>$encoded_curr %s</strong>", encode_entities($sold_bets->{total_credited});
+            print "<p class='notify'>[FOR REAL] $encoded_loginID ($encoded_name $encoded_email) Expired bets closed out</p>";
+            printf "<p class='notify'>Account has been credited with <strong>$encoded_curr %s</strong></p>",
+                encode_entities($sold_bets->{total_credited});
 
             if ($sold_bets->{skip_contract} > 0) {
-                printf "<br>SKIP $encoded_loginID $encoded_curr as sell %s expired bets failed", encode_entities($sold_bets->{skip_contract});
+                printf "<p class='notify'>SKIP $encoded_loginID $encoded_curr as sell %s expired bets failed</p>",
+                    encode_entities($sold_bets->{skip_contract});
                 next CLIENT;
             }
             # recalc balance
@@ -56,7 +58,7 @@ foreach my $loginID (split(/,/, $listaccounts)) {
         }
 
         if ($balance > 0) {
-            print "<br>[FOR REAL] $encoded_loginID ($encoded_name $encoded_email) rescinding <b>$encoded_curr$balance</b>";
+            print "<p class='notify'>[FOR REAL] $encoded_loginID ($encoded_name $encoded_email) rescinding <b>$encoded_curr$balance</b></p>";
             $client->payment_legacy_payment(
                 currency     => $curr,
                 amount       => -$balance,
@@ -66,11 +68,12 @@ foreach my $loginID (split(/,/, $listaccounts)) {
             );
         }
     } else {
-        print "<br>[Simulate] $encoded_loginID ($encoded_name $encoded_email) <b>$encoded_curr$balance</b>";
+        print "<p class='notify'>[Simulate] $encoded_loginID ($encoded_name $encoded_email) <b>$encoded_curr$balance</b></p>";
     }
     $grandtotal += in_usd($balance, $curr);
 }
 
-print "<hr>Grand total recovered (converted to USD): USD $grandtotal<P>";
+Bar('RESCIND LIST OF ACCOUNTS');
+print "<p>Grand total recovered (converted to USD): USD $grandtotal</p>";
 
 code_exit_BO();

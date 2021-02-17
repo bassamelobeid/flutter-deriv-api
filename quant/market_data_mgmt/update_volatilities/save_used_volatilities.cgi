@@ -32,7 +32,7 @@ foreach my $symbol (@markets) {
     my $display              = BOM::MarketData::Display::VolatilitySurface->new(surface => $existing_vol_surface);
     local $/ = "";
 
-    print "<TABLE BORDER = 2 bgcolor = #00AAAAA width=99% >";
+    print "<TABLE class='border full-width'>";
     print "<TR>";
     print "<TD>";
     print '<form action="' . request()->url_for('backoffice/f_save.cgi') . '" method="post" onsubmit="return setSymbolValue(this);" name="editform">';
@@ -56,7 +56,7 @@ foreach my $symbol (@markets) {
     print '</form>';
     print "</TD>";
 
-    print "</TABLE>";
+    print "</TABLE><br>";
 
 }
 code_exit_BO();

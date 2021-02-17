@@ -1,29 +1,30 @@
-<p><b> Upload Excel file contains exchange or currencies holiday from Bloomberg </b></p>
+<h3>Upload Excel file contains exchange or currencies holiday from Bloomberg</h3>
 <form  name="upload_file" action="[% upload_url | none %]" method="POST" enctype="multipart/form-data">
 <fieldset  [% IF disabled %] disabled title='no write access' [% END %]>
     <table>
         <tr><input type="hidden" name="upload_excel" value="1"></input></tr>
         <tr>
-            <td>What to upload: </td>
-            <td><select name="calendar-type">
+            <td>What to upload</td>
+            <td> : <select name="calendar-type">
                 <option value='holidays'>Exchange Holiday</option>
                 <option value='country_holiday'>Country Holiday</option>
             </select></td>
         </tr>
-        <tr><td>Please select the file to upload</td><td><INPUT type="file" name="filetoupload" id="upload_exchnage_currencies_excel_file_field" value="" size="45"></td></tr>
-        <tr><td colspan=2><INPUT type="submit" name="upload_exchange_currencies_excel_file" value="Process Excel File"></td></tr>
+        <tr><td>Please select the file to upload</td><td> : <INPUT type="file" name="filetoupload" id="upload_exchnage_currencies_excel_file_field" value="" size="45"></td></tr>
+        <tr><td colspan=2><INPUT type="submit" class="btn btn--primary" name="upload_exchange_currencies_excel_file" value="Process Excel File"></td></tr>
     </table>
 </fieldset>
 </form>
-<p><b>Manual holiday calendar update tool: </b></p>
 
+<hr>
+<h3>Manual holiday calendar update tool</h3>
 <form name="manual_update" action="[% upload_url | none %]" METHOD="POST" ENCTYPE="multipart/form-data">
 <fieldset  [% IF disabled %] disabled title='no write access' [% END %]>
     <table>
         <tr><input type="hidden" name="manual_holiday_upload" value="1"></input></tr>
         <tr>
-            <td>What to upload: </td>
-            <td><select name="calendar-type">
+            <td>What to upload</td>
+            <td> : <select name="calendar-type">
                 <option value='holidays'>Exchange Holiday</option>
                 <option value='country_holiday'>Country Holiday</option>
             </select></td>
@@ -31,21 +32,20 @@
         <tr><td>Symbol</td><td> : <INPUT type="text" name="symbol" data-lpignore="true" /></td><td>(e.g. USD GBP EUR NYSE TSE)</td></tr>
         <tr><td>Holiday Date</td><td> : <INPUT type="text" name="holiday_date" pattern="\d{4}-\d{2}-\d{2}" class="datepick" data-lpignore="true" /></td><td>(e.g. 2014-12-12)</td></tr>
         <tr><td>Holiday Description</td><td> : <INPUT type="text" name="holiday_desc" data-lpignore="true" /></td><td>(e.g. New Year's Eve)</td></tr>
-        <tr><td></td><td><INPUT type="submit" name='save' value="save"></td></tr>
-        <tr><td></td><td><INPUT type="submit" name='delete' value="delete"></td></tr>
+        <tr><td></td><td><INPUT type="submit" class="btn btn--red" name='save' value="Save"><INPUT type="submit" class="btn btn--secondary"  name='delete' value="Delete"></td></tr>
     </table>
 </fieldset>
 </form>
 
-<p><b>Manual partial trading calendar update tool: </b></p>
-
+<hr>
+<h3>Manual partial trading calendar update tool</h3>
 <form name="manual_update" action="[% upload_url | none %]" METHOD="POST" ENCTYPE="multipart/form-data">
 <fieldset  [% IF disabled %] disabled title='no write access' [% END %]>
     <table>
         <tr><input type="hidden" name="manual_partial_trading_upload" value="1"></input></tr>
         <tr>
-            <td>What to upload: </td>
-            <td><select name="calendar-type">
+            <td>What to upload</td>
+            <td> : <select name="calendar-type">
                 <option value='early_closes'>Early Close</option>
                 <option value='late_opens'>Late Open</option>
             </select></td>
@@ -53,8 +53,7 @@
         <tr><td>Exchange symbol</td><td> : <INPUT type="text" name="symbol" data-lpignore="true" /></td><td>(e.g. NYSE TSE)</td></tr>
         <tr><td>Date</td><td> : <INPUT type="text" name="date" class="datepick" pattern="\d{4}-\d{2}-\d{2}" data-lpignore="true" /></td><td>(e.g. 2014-12-12)</td></tr>
         <tr><td>Time</td><td> : <INPUT type="text" name="time" data-lpignore="true" /></td><td>(e.g. XXhYYm format, example 12h30m)</td></tr>
-        <tr><td></td><td><INPUT type="submit" name='save' value="save"></td></tr>
-        <tr><td></td><td><INPUT type="submit" name='delete' value="delete"></td></tr>
+        <tr><td></td><td><INPUT type="submit" class="btn btn--red" name='save' value="Save"><INPUT type="submit" class="btn btn--secondary" name='delete' value="Delete"></td></tr>
     </table>
 </fieldset>
 </form>

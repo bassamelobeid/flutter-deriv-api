@@ -1,4 +1,4 @@
-<p>README:</p>
+<h2>README</h2>
 <ul>
     <li><b>bias</b> : could be introduced to currency symbol or/and underlying symbol. Accepts value of long or short. If we are <i>long</i> on <i>USD</i>, all USD currency pairs will be affected. For frxUSDXXX pairs, we will apply the commission structure on CALL/CALLE. For frxXXXUSD pairs, we will apply the commission structure to PUT/PUTE. If you are <i>long</i> on <i>frxAUDJPY</i>, the commission structure will be applied to CALL/CALLE on frxAUDJPY.</li>
     <li><b>OTM_max</b> : Barriers over spot + 15 pips for 7 barriers and spot + 10 pips for  5 barriers</li>
@@ -30,11 +30,12 @@
     <tr><td>ITM_2 </td><td> : <input type="text" name="ITM_2" data-lpignore="true" /></td></tr>
     <tr><td>ITM_3 </td><td> : <input type="text" name="ITM_3" data-lpignore="true" /></td></tr>
     <tr><td>ITM_max </td><td> : <input type="text" name="ITM_max" data-lpignore="true" /></td><td> The commission to be charged if barriers goes out of the tiered commission as spot moves.</td></tr>
-    <tr><td></td><button onclick="saveCustom()" style="margin-left: 20px;">Save</button></td><td class="result"></td></tr>
+    <tr><td></td><button onclick="saveCustom()" style="margin-left: 4px;" class="btn btn--red">Save</button></td><td class="result"></td></tr>
 </table>
 </fieldset>
 
-<div id='custom_commission_table'>
+<br>
+<div id='custom_commission_table' class="row scrollable">
 </div>
 
 <script>
@@ -46,7 +47,7 @@
         var end_time = \$('#custom_commission_end_time').val();
         var date_re = /^(\d{10}|\d{4}-\d{2}-\d{2}( \d{2}:\d{2}:\d{2})?)\$/;
         if(!date_re.test(start_time) || !date_re.test(end_time)){
-            result.text("Invaild DateTime entered").css('color', 'red');
+            result.text("Invalid DateTime entered").css('color', 'var(--color-red)');
             return true;
         }
 
@@ -73,7 +74,7 @@
                 success: function(data){
                     var config = \$.parseJSON(data);
                     if (config.error) {
-                        result.text('Failed: '+ config.error).css('color', 'red').show();
+                        result.text('Failed: '+ config.error).css('color', 'var(--color-red)').show();
                     } else {
                         appendTable('custom_commission_table',config);
                         result.hide();
@@ -84,16 +85,16 @@
     function appendTable(id, config) {
         var table = \$('table#'+id);
         table.find('tr.none').remove();
-        var to_append = '<tr id="'+config.name+'"><td>'+config.staff+'</td><td>'+config.name+'</td><td>'+config.underlying_symbol+'</td><td>'+config.currency_symbol+'</td><td>'+config.bias+'</td><td>'+config.start_time+'</td><td>'+config.end_time+'</td><td>'+JSON.stringify(config.config)+'</td><td><button onclick="deleteConfig(\''+config.name+'\')">Delete</button></td><td class="result"></td></tr>';
+        var to_append = '<tr id="'+config.name+'"><td>'+config.staff+'</td><td>'+config.name+'</td><td>'+config.underlying_symbol+'</td><td>'+config.currency_symbol+'</td><td>'+config.bias+'</td><td>'+config.start_time+'</td><td>'+config.end_time+'</td><td>'+JSON.stringify(config.config)+'</td><td><button class="btn btn--secondary" onclick="deleteConfig(\''+config.name+'\')">Delete</button></td><td class="result"></td></tr>';
         table.append(to_append);
     }
     function createTable(id, config) {
-        var table = '<table id="'+id+'">';
-        table += '<tr><td>Updated by</td><td>Name</td><td>Underlying Symbol</td><td>Currency Symbol</td><td>Bias</td><td>Start</td><td>End</td><td>Config</td></tr>';
+        var table = '<table id="'+id+'" class="border nowrap">';
+        table += '<thead><tr><th>Updated by</th><th>Name</th><th>Underlying Symbol</th><th>Currency Symbol</th><th>Bias</th><th>Start</th><th>End</th><th>Config</th></tr></thead>';
 
         if (config.length > 0) {
             for (var i=0; i < config.length; i++) {
-                table += '<tr id="'+config[i].name+'"><td>'+config[i].staff+'</td><td>'+config[i].name+'</td><td>'+config[i].underlying_symbol+'</td><td>'+config[i].currency_symbol+'</td><td>'+config[i].bias+'</td><td>'+config[i].start_time+'</td><td>'+config[i].end_time+'</td><td>'+JSON.stringify(config[i].config)+'</td><td><button onclick="deleteConfig(\''+config[i].name+'\')">Delete</button></td><td class="result"></td></tr>';
+                table += '<tr id="'+config[i].name+'"><td>'+config[i].staff+'</td><td>'+config[i].name+'</td><td>'+config[i].underlying_symbol+'</td><td>'+config[i].currency_symbol+'</td><td>'+config[i].bias+'</td><td>'+config[i].start_time+'</td><td>'+config[i].end_time+'</td><td>'+JSON.stringify(config[i].config)+'</td><td><button class="btn btn--secondary" onclick="deleteConfig(\''+config[i].name+'\')">Delete</button></td><td class="result"></td></tr>';
             }
         } else {
             table += '<tr class="none"><td>None</td></tr>';
@@ -122,15 +123,3 @@
     }
     createTable('custom_commission_table', [% config | none %])
 </script>
-
-<style>
-    table {
-        border-collapse: collapse;
-    }
-    #custom_commission_table td {
-        border: 1px solid #dddddd;
-        text-align: left;
-        padding: 4px;
-        vertical-align: top;
-    }
-</style>

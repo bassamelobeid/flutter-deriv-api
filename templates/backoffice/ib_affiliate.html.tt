@@ -2,9 +2,9 @@
     <p>
        <span style="margin-right: 10px"><b>Status</b>:</span>
         [% IF mt5_login %]
-           <span style="color: green"><b>IB</b></span>
+           <span class="success">IB</span>
         [% ELSE %]
-           <span style="color: red"><b>NO IB</b></span>
+           <span class="error">NO IB</span>
         [% END %]
     <p>
 [% END %]
@@ -12,25 +12,25 @@
 [% IF mt5_login %]
     [% WRAPPER layout title='SYNC AFFILIATE TO MT5' %]
         [% IF action == 'sync_to_mt5' && action_result == 'success' %]
-            <p style="color: green"><b>Sync proccess was started. Wait for email with result</b></p>
+            <p class="success">Sync proccess was started. Wait for email with result</p>
         [% ELSIF action == 'sync_to_mt5' && action == 'fail' %]
-            <p style="color: red"><b>Fail to start sync process. try again later</b></p>
+            <p class="error">Fail to start sync process. try again later</p>
         [% ELSE %]
             <p>
-                <span style="display:inline-block; width: 9em"><b>Client Login ID</b>:</span>
-                <span><b>[% loginid %]</b></span>
+                <span>Client Login ID:</span>
+                <span>[% loginid %]</span>
             </p>
             <p>
-                <span style="display:inline-block; width: 9em"><b>Affiliate ID</b>:</span>
-                <span><b>[% affiliate_id %]</b></span>
+                <span>Affiliate ID:</span>
+                <span>[% affiliate_id %]</span>
             </p>
             <p>
-                <span style="display:inline-block; width: 9em"><b>MT5 login ID</b>:</span>
-                <span><b>[% mt5_login %]</b></span>
+                <span>MT5 login ID:</span>
+                <span>[% mt5_login %]</span>
             </p>
-            <form action="[% request.url_for('backoffice/f_ib_affiliate.cgi') | url %]?loginid=[% loginid | url %]" method='post' style="margin:0">
+            <form action="[% request.url_for('backoffice/f_ib_affiliate.cgi') | url %]?loginid=[% loginid | url %]" method='post'>
                 <p>
-                    <span style="display:inline-block; width: 9em">Notify when done</span>
+                    <label>Notify when done:</label>
                     <input type='email' name='email' value='[% email %]'>
                 </p>
                 <input type='hidden' name='mt5_login' value='[% mt5_login %]'>
@@ -38,23 +38,17 @@
                 <input type='hidden' name='loginid' value='[% loginid %]'>
                 <input type='hidden' name='_csrf' value='[% csrf %]'>
                 <input type='hidden' name='action' value='sync_to_mt5'>
-                <input type='submit' value='Start sync process'>
+                <input type='submit' class="btn btn--red" value='Start sync process'>
             </form>
         [% END %]
     [% END %]
 [% END%]
 
 [% BLOCK layout %]
-    <table class="BlackCandy" rules="all" frame="void" border="1" cellpadding="1" cellspacing="2" width="100%">
-        <tbody>
-           <tr class="Blacklabel">
-                <td class="whitelabel" colspan="2">[% title %]</td>
-            </tr>
-            <tr>
-                <td align="left" style="padding: 10px;">
-                [% content | none %]
-                </td>
-            </tr>
-        </tbody>
-    </table>
+    <div class="card">
+        <div class="card__label">[% title %]</div>
+        <div class="card__content">
+            [% content | none %]
+        </div>
+    </div>
 [% END %]

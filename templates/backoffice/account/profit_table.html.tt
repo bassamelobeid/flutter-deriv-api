@@ -27,7 +27,7 @@
 <div class="grd-parent grd-grid-12 table-body table-body-lines grd-row-padding">
     <div class="grd-grid-1">[% contract.purchase_time %]</div>
     <div class="grd-grid-1">
-        <a href="[% request.url_for('backoffice/quant/pricing/bpot.cgi', { currency => currency, limit_order => contract.limit_order, shortcode => contract.short_code, purchase_time => contract.purchase_time, loginid => loginid, transaction_id => ident}) | none %]">[% ident %]</a>
+        <a class="link" href="[% request.url_for('backoffice/quant/pricing/bpot.cgi', { currency => currency, limit_order => contract.limit_order, shortcode => contract.short_code, purchase_time => contract.purchase_time, loginid => loginid, transaction_id => ident}) | none %]">[% ident %]</a>
         <div>
             <label class="investigate">
                 <input type="checkbox" name="investigate_list"
@@ -90,27 +90,26 @@
     <b>[% full_name %]</b>, [% email %] from [% residence %]
 </div>
 <hr>
-<div class="grd-parent grd-grid-12 table-header grd-row-padding">
-    <b>Sold Contracts</b>
-</div>
+<h3>Sold Contracts</h3>
 <form action="[% request.url_for('backoffice/f_profit_table.cgi') | none %]" method="POST">
-    <div class="errorfield">
+    <div class="error grd-margin-bottom">
         <b>Show All Transactions</b>, may fail for clients with huge number of transaction, so use this feature only
         when required.
     </div>
-    Sold Contracts Between <input type=text name="first_purchase_time" title="First Purchase Date" size="20"
-                                  value="[% first_purchase_time %]" data-lpignore="true" />
-    and <input type="text" name="last_purchase_time" title="Last Purchase Date" size="20"
-               value="[% last_purchase_time %]" data-lpignore="true" />
-    <input type="hidden" name="page" value="1">
-    <input type="hidden" name="loginID" value="[% loginid %]">
-    <input type="hidden" name="broker" value="[% request.broker_code %]">
-    <input type="hidden" name="l" value="EN">
-    <input type="checkbox" name="all_in_one_page" title="Show All Transactions in one page" [% IF all_in_one_page %]
-           checked="checked" [% END %] id="chk_all_in_one_page_profit_table"><label for="chk_all_in_one_page_profit_table">Show All Transactions</label>
-    <input type="submit" value="Update">
-    <input type="submit" name="calc_performance_probability" value="Calculate Performance Probability">
-    <p> Note: Performance probability calculation just taking into account CALL/PUT and Digit contracts.
+    <div class="row">
+        <label>Sold Contracts between:</label>
+        <input type=text name="first_purchase_time" title="First Purchase Date" size="20" value="[% first_purchase_time %]" data-lpignore="true" />
+        <label>and</label><input type="text" name="last_purchase_time" title="Last Purchase Date" size="20" value="[% last_purchase_time %]" data-lpignore="true" />
+        <input type="hidden" name="page" value="1">
+        <input type="hidden" name="loginID" value="[% loginid %]">
+        <input type="hidden" name="broker" value="[% request.broker_code %]">
+        <input type="hidden" name="l" value="EN">
+        <input type="checkbox" name="all_in_one_page" title="Show All Transactions in one page" [% IF all_in_one_page %]
+            checked="checked" [% END %] id="chk_all_in_one_page_profit_table"><label for="chk_all_in_one_page_profit_table">Show All Transactions</label>
+        <input type="submit" class="btn btn--primary" value="Update">
+        <input type="submit" class="btn btn--primary" name="calc_performance_probability" value="Calculate Performance Probability">
+    </div>
+    <p> NOTE: Performance probability calculation just taking into account CALL/PUT and Digit contracts.
     <p> It is a likelihood measure of a client reaching his/her current PL. Hence the lower the value of this probability indicates the less likelihood can achieve such success rate repeatedly.</form>
 
 [% IF performance_probability %]
@@ -121,7 +120,7 @@
 [% END %]
 
 [% IF error %]
-<div class="errorfield">[% error %]</div>
+<div class="error grd-margin-bottom">[% error %]</div>
 [% ELSIF sold_contracts.size == 0 %]
 <div class="center-aligned grd-with-padding">[% l('There is no sold contract during this period!') %]</div>
 [% ELSE %]
@@ -151,16 +150,14 @@
     [% END %]
     <input type="hidden" name="loginID" value="[% loginid %]"/>
     <input type=hidden name="broker" value="[% request.broker_code %]"/>
-    <input type="submit" name="QQ" value="Quant Query" class="investigate">
+    <div class="row"></div>
+    <input type="submit" name="QQ" value="Quant Query" class="btn btn--red">
 </form>
     [% pagination | none %]
 [% END %]
 
 <hr>
-
-<div class="grd-parent grd-grid-12 table-header grd-row-padding">
-    <b>Open Contracts</b>
-</div>
+<h3>Open Contracts</h3>
 [% IF open_contracts.size == 0 %]
 <div class="center-aligned grd-with-padding">[% l('There is no open contract for the client!') %]</div>
 [% ELSE %]
@@ -188,13 +185,7 @@
     [% END %]
     <input type="hidden" name="loginID" value="[% loginid %]"/>
     <input type=hidden name="broker" value="[% request.broker_code %]"/>
-    <input type="submit" name="QQ" value="Quant Query" class="investigate">
+    <div class="row"></div>
+    <input type="submit" name="QQ" value="Quant Query" class="btn btn--red">
 </form>
 [% END %]
-
-<style type="text/css">
-    .investigate {
-        background-color: #ffa;
-        font-weight: bold;
-    }
-</style>

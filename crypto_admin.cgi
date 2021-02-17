@@ -35,11 +35,12 @@ my $staff  = BOM::Backoffice::Auth0::get_staffname();
 BrokerPresentation('CRYPTO TOOL PAGE');
 
 if ((grep { $_ eq 'binary_role_master_server' } @{BOM::Config::node()->{node}->{roles}}) && !BOM::Config::on_qa()) {
-    print "<table border=0 width=97%><tr><td width=97% bgcolor=#FFFFEE>
-        <b><center><font size=+1>YOU ARE ON THE MASTER LIVE SERVER</font>
-        <br>This is the server on which to edit most system files (except those that are specifically to do with a specific broker code).
-        </b></font></td></tr></table>";
+    print "<div class='notify notify--warning center'>
+            <h3>YOU ARE ON THE MASTER LIVE SERVER</h3>
+            <span>This is the server on which to edit most system files (except those that are specifically to do with a specific broker code).</span>
+        </div>";
 }
+
 print "<center>";
 
 my @currency_options  = qw/ BTC LTC ETH UST ERC20/;
@@ -95,7 +96,7 @@ if (%input && $input{req_type}) {
     my $is_general_req = $req_type =~ /^gt_/ ? 1 : 0;
 
     Bar("Results: $req_type");
-    code_exit_BO('<p style="color:red"><b>ERROR: Please select ONLY ONE request at a time.</b></p>') if (ref $input{req_type});
+    code_exit_BO('<p class="error">ERROR: Please select ONLY ONE request at a time.</p>') if (ref $input{req_type});
 
     if ($is_general_req) {
         my $redis_write = BOM::Config::Redis::redis_replicated_write();
@@ -136,15 +137,15 @@ if (%input && $input{req_type}) {
                     try {
                         BOM::Cryptocurrency::Helper::revert_txn_status_to_processing($txn_id, $input{gt_currency}, $approver, $staff);
 
-                        $messages .= "<p style='color:green'>Transaction id: $txn_id successfully reverted. </p>";
+                        $messages .= "<p class='success'>Transaction ID: $txn_id successfully reverted. </p>";
                         $redis_write->del(REVERT_ERROR_TXN_RECORD . $txn_id);
                     } catch ($e) {
-                        $messages .= "<p style='color:red'><b>Transaction id: $txn_id revert failed. Error: $e</b></p>";
+                        $messages .= "<p class='error'>Transaction ID: $txn_id revert failed. Error: $e</p>";
                     }
                 } elsif ($approver) {
-                    $messages .= "<p style='color:red'><b>Transaction id: $txn_id is already previously approved by you.</b></p>";
+                    $messages .= "<p class='error'>Transaction ID: $txn_id is already previously approved by you.</p>";
                 } else {
-                    $messages .= "<p style='color:green'><b>Transaction id: $txn_id successfully approved. Needs one more approver.</b></p>";
+                    $messages .= "<p class='success'>Transaction ID: $txn_id successfully approved. Needs one more approver.</p>";
                     $redis_write->setex(REVERT_ERROR_TXN_RECORD . $txn_id, 3600, $staff);
                 }
             }
@@ -194,7 +195,7 @@ sub _get_function_map {
     my $listtransaction_limit = length $input->{limit}              ? int($input->{limit})              : undef;
     my $esf_confirmation      = length $input->{esf_confirmation}   ? int($input->{esf_confirmation})   : 3;
 
-    code_exit_BO("<p style='color:red'><b>Invalid address</b></p>") if ($address && !$currency_wrapper->is_valid_address($address));
+    code_exit_BO("<p class='error'>Invalid address</p>") if ($address && !$currency_wrapper->is_valid_address($address));
 
     return +{
         list_unspent_utxo  => sub { $currency_wrapper->get_unspent_transactions($lu_utxo_address ? [$lu_utxo_address] : [], $confirmations_req) },

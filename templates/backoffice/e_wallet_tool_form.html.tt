@@ -1,4 +1,4 @@
-<p><b> Process coinpayment HTML into CSV </b></p>
+<h3> Process coinpayment HTML into CSV </h3>
 
 <script type="text/javascript">
 
@@ -17,7 +17,7 @@
           var fee_amount_in_percent_sell = Number(el.find('tr#'+'5').find('input[name="fee_amount_in_percent_sell"]').val());
 
           if(isNaN(exchange_rate) || isNaN(amount_received) || isNaN(fee_in_percent) || isNaN(fee_amount_in_percent_buy) || isNaN(fee_amount_in_percent_buy)){
-                result.text('All inputs must be a number').css('color', 'red');
+                result.text('All inputs must be a number').css('color', 'var(--color-red)');
           }
 
           /* Information sent */
@@ -87,24 +87,26 @@
     <table>
         <tr><input type="hidden" name="upload_coinpayment_html" value="1"></input></tr>
         <tr><td>Please select the file to upload</td><td><input type="file" name="filetoupload" id="upload_coinpayment_html_file" value="" size="45"></td></tr>
-        <tr><td colspan=2><input type="submit" name="submit_coinpayment_html" value="Process HTML File"></td></tr>
+        <tr><td colspan=2><input type="submit" class="btn btn--red" name="submit_coinpayment_html" value="Process HTML file"></td></tr>
     </table>
 </fieldset>
 </form>
 
-<p><b> Process ewallet.exchange CSV </b></p>
+<br>
+<h3> Process ewallet.exchange CSV </h3>
 
 <form  name="upload_csv_file" action="[% upload_url | none %]" method="POST" enctype="multipart/form-data">
 <fieldset  [% IF disabled %] disabled title='no write access' [% END %]>
     <table>
         <tr><input type="hidden" name="upload_ewallet_exchange_csv" value="1"></input></tr>
         <tr><td>Please select the file to upload</td><td><input type="file" name="filetoupload" id="upload_ewallet_exchange_csv_file" value="" size="45"></td></tr>
-        <tr><td colspan=2><input type="submit" name="submit_ewallet_exchange_csv" value="Process CSV File"></td></tr>
+        <tr><td colspan=2><input type="submit" class="btn btn--red" name="submit_ewallet_exchange_csv" value="Process CSV file"></td></tr>
     </table>
 </fieldset>
 </form>
 
-<p><b>Exchange Amount Calculator </b></p>
+<br>
+<h3>Exchange Amount Calculator </h3>
 
 <form name="exchange_amount_calculator" action="[% upload_url | none %]" METHOD="POST" ENCTYPE="multipart/form-data">
 <fieldset  [% IF disabled %] disabled title='no write access' [% END %]>
@@ -117,7 +119,7 @@
         <tr id="4"><td>Fees (send) amount in % (This is our commision)</td><td> : <INPUT type="text" name="fee_amount_in_percent_buy" data-lpignore="true" /></td><td>(e.g. 0.1)</td></tr>   
         <tr id="5"><td>Fees (receive) amount in % (This is our commision)</td><td> : <INPUT type="text" name="fee_amount_in_percent_sell" data-lpignore="true" /></td><td>(e.g. 0.1)</td></tr>
 
-        <tr><td></td><td><button onclick="calculate()" type="button">Calculate</button></td></tr>
+        <tr><td></td><td><button class="btn btn--primary" onclick="calculate()" type="button">Calculate</button></td></tr>
 
         <tr><td></td><td><br><span class="save_result"></span></td></tr>
     </table>

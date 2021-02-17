@@ -10,12 +10,12 @@
             so if its not in mifir countries list it means its non EU
         -->
         [% IF !data.country and citizenship %]
-            <button type="submit" name="view_action" value="mifir_set_concat">CONCAT</button>
+            <button class="btn btn--primary" type="submit" name="view_action" value="mifir_set_concat">Concat</button>
         [% END %]
         [% FOREACH i IN data.keys %]
             [% NEXT IF i == 'country' %]
             [% IF i == 'CONCAT' %]
-                    <button type="submit" name="view_action" value="mifir_set_concat">CONCAT</button>
+                    <button class="btn btn--primary" type="submit" name="view_action" value="mifir_set_concat">Concat</button>
                     <br>
                     [% NEXT %]
             [% END %]
@@ -33,14 +33,14 @@
 
 [% IF client.landing_company.short == 'maltainvest' %]
     <tr>
-        <td class="small_header" colspan="2">#MIFIR ID Number</td>
+        <td class="bg-lightgrey" colspan="2">#MIFIR ID Number</td>
     </tr>
     <tr>
-        <td class="label">MIFIR ID</td>
-        <td><table><tr><td valign="top" style="padding-top: 0px; border-right: 1px solid #888888; padding-right: 10px">:
+        <td class="label top">MIFIR ID</td>
+        <td><table><tr><td valign="top" style="padding-top: 0px; border-right: 1px solid var(--color-grey-3); padding-right: 10px">:
         [% IF client.mifir_id %]
             <span>[% client.mifir_id %]</span>
-            <button type="submit" name="view_action" value="mifir_reset" value="DELETE">DELETE</button>
+            <button class="btn btn--red" type="submit" name="view_action" value="mifir_reset" value="DELETE">Delete</button>
         [% ELSE %]
             <input type="text" name="mifir_id" value="" data-lpignore="true" /><br>
             up to 35 alphanumerical characters

@@ -138,14 +138,14 @@ if (request()->param('whattodo') eq 'closeatzero') {
  <INPUT type=hidden name=\"broker\" value=\"$encoded_broker\">
  <INPUT type=hidden name=\"currency\" value=\"$encoded_currency\">
  <INPUT type=hidden name=\"l\" value=\"EN\">
- <INPUT type=\"submit\" value='View client statement'>
+ <INPUT type=\"submit\" class=\"btn btn--primary\" value='View client statement'>
  </FORM>
  <FORM target=$encoded_loginID ACTION=\"" . request()->url_for('backoffice/f_manager_statement.cgi') . "\" METHOD=\"POST\">
  <input name=loginID type=hidden value=$encoded_loginID>
  <INPUT type=hidden name=\"broker\" value=\"$encoded_broker\">
  <INPUT type=hidden name=\"currency\" value=\"$encoded_currency\">
  <INPUT type=hidden name=\"l\" value=\"EN\">
- <INPUT type=\"submit\" value='View client portfolio'>
+ <INPUT type=\"submit\" class=\"btn btn--primary\" value='View client portfolio'>
  </FORM>";
 
     $subject = "Manually close contract at zero price. ";
@@ -163,21 +163,19 @@ if (request()->param('whattodo') eq 'closeatzero') {
 
 Bar("CLOSE CONTRACT AT ZERO PRICE");
 print qq~
-<table width=100% border=0 bgcolor=ffffce><tr><td width=100% bgcolor=ffffce>
 <FORM name=maketrans onsubmit="return confirm('Are you sure ? Please double-check all inputs.');" method=POST action="~
     . request()->url_for('backoffice/quant/pricing/f_dealer.cgi') . qq~">
 <input type=hidden name=whattodo value=closeatzero>
 <input type=hidden name=broker value=$encoded_broker>
-<select name=buysell><option selected>SELL</select>
-<br>PRICE: <select name=curr><option>~ . get_currency_options() . qq~</select>
-<input type=hidden size=12 name=price value=0><a>0</a>
-<br>QUANTITY: <input type=text size=12 name=qty value=1 data-lpignore='true' />
-<br>BET REFERENCE (not TXNID) : <input type=text size=12 name=ref value='' data-lpignore='true' />
-<br>CLIENT LOGINID: <input type=text size=12 name=loginid value=$encoded_broker data-lpignore='true' />
-<br>COMMENT: <input type=text size=45 maxlength=90 name=comment data-lpignore='true' />
-<tr><td><input type=submit value='- Close Contract -'></td></tr>
+<div class='row'><select name=buysell><option selected>SELL</select></div>
+<div class='row'><label>Price:</label><select name=curr><option>~ . get_currency_options() . qq~</select>
+<input type=hidden size=12 name=price value=0><a>0</a></div>
+<div class='row'><label>Quantity:</label><input type=text size=12 name=qty value=1 data-lpignore='true' /></div>
+<div class='row'><label>Bet reference (not TXNID):</label><input type=text size=12 name=ref value='' data-lpignore='true' /></div>
+<div class='row'><label>Client Login ID:</label><input type=text size=12 name=loginid value=$encoded_broker data-lpignore='true' /></div>
+<div class='row'><label>Comment:</label><input type=text size=45 maxlength=90 name=comment data-lpignore='true' /></div>
+<div class='row'><input type=submit value='Close contract' class="btn btn--red"></div>
 </form>
-</td></tr></table>
 ~;
 
 code_exit_BO();

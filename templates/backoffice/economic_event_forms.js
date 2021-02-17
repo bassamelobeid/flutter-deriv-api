@@ -1,9 +1,9 @@
     function createEcoTable(events, id) {
 
-        var table = '<table id="' + id + '" class="economic_event_table">';
-        table += '<tr><th>Event Name</th><th>Release Date</th><th>Symbol</th><th>Binary\'s Category, vol_changes are in percent, duration in minutes</th><th width=20%>Change</th><th>functions</th></tr>';
-        table += '<tr class="empty"><td>Empty</td></tr>';
-        table += '</table>';
+        var table = '<table id="' + id + '" class="economic_event_table border">';
+        table += '<thead><tr><th>Event Name</th><th>Release Date</th><th>Symeconomic_event_tablebol</th><th>Binary\'s Category, vol_changes are in percent, duration in minutes</th><th width=20%>Change</th><th>functions</th></tr><thead>';
+        table += '<tbody><tr class="empty"><td>Empty</td></tr>';
+        table += '</tbody></table>';
         \$('#' + id).html(table);
 
         if (events.length > 0) {
@@ -53,9 +53,9 @@
                 success: function(data) {
                     var r = \$.parseJSON(data);
                     if (r.error) {
-                        result.text(r.error).css('color', 'red');
+                        result.text(r.error).css('color', 'var(--color-red)');
                     } else {
-                        result.text("ok").css('color', 'green');
+                        result.text("ok").css('color', 'var(--color-green-2)');
                         el.find('td#binary_info').html(formatInfo(r));
                     }
                 }
@@ -104,7 +104,7 @@
             text += formatInfoByUL(headers, event.info);
         }
         if (event.custom) {
-            var style = ' bgcolor="#00AAAA"';
+            var style = ' class="bg-highlight"';
             text += '<tr'+style+'><td colspan="' + headers.length + '" style="text-align: center;">custom</td></tr>';
             text += formatInfoByUL(headers, event.custom, style);
         }
@@ -113,7 +113,7 @@
             for (var key in headers) {
                 h += "<th>" + headers[key] + "</th>";
             }
-            text = '<table><tr>' + h + "</tr>" + text + "</table>";
+            text = '<table><thead><tr>' + h + "</tr></thead><tbody>" + text + "</tbody></table>";
 
         }
         return text;
@@ -129,7 +129,7 @@
             var impact = el.find('input[name="impact"]').val();
             var date_re = /^(\d{10}|\d{4}-\d{2}-\d{2}( \d{2}:\d{2}:\d{2})?)\$/;
             if(!date_re.test(release_date)){
-                result.text("Invaild DateTime entered").css('color', 'red');
+                result.text("Invaild DateTime entered").css('color', 'var(--color-red)');
                 return true;
             }
             var symbol = el.find('input[name="symbol"]').val();
@@ -147,9 +147,9 @@
                 success: function(data) {
                     var event = \$.parseJSON(data);
                     if (event.error) {
-                        result.text(event.error).css('color', 'red');
+                        result.text(event.error).css('color', 'var(--color-red)');
                     } else {
-                        result.text('Event Saved. ID: ' + event.id).css('color', 'green');
+                        result.text('Event Saved. ID: ' + event.id).css('color', 'var(--color-green-2)');
                         appendEvent(event, 'scheduled_event_list');
                     }
                 }
@@ -172,7 +172,7 @@
         to_append += formatInfo(event);
         to_append += '</td><td>';
 
-        to_append += '<table style="border: 0; padding: 0;">';
+        to_append += '<table>';
         to_append += '<tr><td>underlying</td><td><select id="ul_dropdown" name="ul_dropdown"></select></td/tr>';
         to_append += '<tr><td><div class="input_field">vol_change  </td><td><input size="10" type="text" name="vol_change" data-lpignore="true" /></div></td/tr>';
         to_append += '<tr><td><div class="input_field">duration    </td><td><input size="10" type="text" name="duration" data-lpignore="true" /></div></td/tr>';
@@ -185,9 +185,9 @@
         to_append += '</td>';
 
         if (table_id === 'deleted_event_list') {
-            to_append += '<td><button onclick="restoreEvent(\'' + event.id + '\')">Restore</button></td> <td style="display:none;" class="update_result"></td>';
+            to_append += '<td><button onclick="restoreEvent(\'' + event.id + '\')" class="btn btn--red">Restore</button></td> <td style="display:none;" class="update_result"></td>';
         } else {
-            to_append += '<td> <button onclick="comparePricePreview(\''+event.id+'\')">Preview</button> </br></br> <button onclick="update( \'' + event.id + '\' )">Update</button> </br></br> <button onclick="deleteEvent( \'' + event.id + '\' )">Delete</button> </td> <td style="display:none;" class="update_result"></td>';
+            to_append += '<td> <button onclick="comparePricePreview(\''+event.id+'\')" class="btn btn--primary">Preview</button> </br></br> <button onclick="update( \'' + event.id + '\' )" class="btn btn--primary">Update</button> </br></br> <button onclick="deleteEvent( \'' + event.id + '\' )" class="btn btn--secondary">Delete</button> </td> <td style="display:none;" class="update_result"></td>';
         }
         to_append += '</tr>';
         table.append(to_append);
@@ -198,7 +198,7 @@
         createDropDown(el.find("select[name='decay_factor_before']"), [['default', ''],['FAST', 10],['SLOW', 3],['FLAT', -1000]]);
 
         if (make_green) {
-            table.find('tr#' + event.id).css('color', 'green');
+            table.find('tr#' + event.id).css('color', 'var(--color-green-2)');
         }
     }
 
@@ -230,7 +230,7 @@
                 success: function(data) {
                     var event = \$.parseJSON(data);
                     if (event.error) {
-                        result.text('ERR: ' + event.error).css('color', 'red');
+                        result.text('ERR: ' + event.error).css('color', 'var(--color-red)');
                     } else {
                         \$('tr#' + event.id).remove();
                         appendEvent(event, 'deleted_event_list');
@@ -255,7 +255,7 @@
                 success: function(data) {
                     var event = \$.parseJSON(data);
                     if (event.error) {
-                        result.text('ERR: ' + event.error).css('color', 'red');
+                        result.text('ERR: ' + event.error).css('color', 'var(--color-red)');
                     } else {
                         appendEvent(event, 'scheduled_event_list');
                         el.remove();
@@ -284,9 +284,9 @@
             success: function(data) {
                 var event = \$.parseJSON(data);
                 if (event.error) {
-                    result.text(event.error).css('color', 'red');
+                    result.text(event.error).css('color', 'var(--color-red)');
                 } else {
-                    result.text('Price updated for '+symbol).css('color', 'green');
+                    result.text('Price updated for '+symbol).css('color', 'var(--color-green-2)');
                     createPriceTable(event.headers, event.prices, 'price_preview_original');
                 }
             }
@@ -296,11 +296,11 @@
     function createPriceTable(headers, prices, id) {
         var el = \$('div#'+id);
         // use back the same style for table
-        var table = '<table class="economic_event_table"><tr><th>Symbol</th>';
+        var table = '<table class="economic_event_table border hover"><thead><tr><th>Symbol</th>';
         for (var i=0; i<headers.length; i++) {
             table += '<th>'+headers[i]+'</th>';
         }
-        table += '</tr>';
+        table += '</tr></thead><tbody>';
 
         Object.keys(prices).forEach(function (key) {
             var data = prices[key];
@@ -311,7 +311,7 @@
             table += '</tr>';
         });
 
-        table += '</table>';
+        table += '</tbody></table>';
         el.html(table);
     }
 
@@ -341,9 +341,9 @@
                 success: function(data) {
                     var r = \$.parseJSON(data);
                     if (r.error) {
-                        result.text(r.error).css('color', 'red');
+                        result.text(r.error).css('color', 'var(--color-red)');
                     } else {
-                        result.text("ok").css('color', 'green');
+                        result.text("ok").css('color', 'var(--color-green-2)');
                         createPriceTable(r.headers, r.prices, 'price_preview_compare');
                     }
                 }
@@ -374,12 +374,12 @@
             success: function(data) {
                 var event = \$.parseJSON(data);
                 if (event.error) {
-                    result.text(event.error).css('color', 'red');
+                    result.text(event.error).css('color', 'var(--color-red)');
                 } else {
                     if(event.headers == undefined){
-                        result.text('Event not found').css('color', 'red');
+                        result.text('Event not found').css('color', 'var(--color-red)');
                     }else{
-                        result.text('Price updated').css('color', 'green');
+                        result.text('Price updated').css('color', 'var(--color-green-2)');
                         createEconomicEventPriceTable(event.headers, event.prices, 'economic_event_price_preview_original');
                         createEconomicEventInfo(event.news_info, 'economic_event_info');
 
@@ -392,7 +392,7 @@
     function createEconomicEventPriceTable(headers, prices, id) {
         var el = \$('div#'+id);
 
-        var table = '<table class="economic_event_table"><tr><th>Start Time / Expiry Time</th>';
+        var table = '<table class="economic_event_table border hover"><tr><th>Start Time / Expiry Time</th>';
         for (var i=0; i<headers.length; i++) {
             table += '<th>'+headers[i]+'</th>';
         }
@@ -415,14 +415,14 @@
 
         var el = \$('div#'+id);
         var news_info_header = [['Symbol','symbol'],['Event Name','event_name'],['Underlying Symbol', 'underlying_symbol'],['Current Spot','current_spot'],['Release Date','release_date'],['Duration','duration'],['Vol Change','vol_change'],['Decay Factor','decay_factor'],['Vol Change Before','vol_change_before'],['Decay Factor Before','decay_factor_before']];
-        var table = '<p><b>News Info:</b></p>';
-        table += '<table class="economic_event_table">';
-        table += '<tr>';
+        var table = '<p><b>News Info</b></p>';
+        table += '<table class="economic_event_table border hover">';
+        table += '<thead><tr>';
         for (var i=0; i<news_info_header.length; i++) {
             table += '<th> '+news_info_header[i][0]+' </th>';
         }
-        table += '</tr>';
-        table += '<tr>';
+        table += '</tr></thead>';
+        table += '<tbody><tr>';
         for (var i=0; i<news_info_header.length; i++) {
             if(news_info[news_info_header[i][1]] == undefined){
                 table += '<td> - </td>';
@@ -431,7 +431,7 @@
             }
         }
         table += '</tr>';
-        table += '</table>';
+        table += '</tbody></table>';
         el.html(table);
     }
 
@@ -439,14 +439,14 @@
     function createEconomicEventForm(weekly_news, id) {
 
        var el = \$('div#'+id);
-       var table = '<table id="' + id + '" class="economic_event_table">';
+       var table = '<table id="' + id + '" class="economic_event_table border hover">';
 
        table += '<tr><td>Date</td><td><select id="date" name="date"></select></td/tr>';
        table += '<tr><td>Underlying Symbol</td><td><select id="underlying_symbol" name="underlying_symbol"></select></td/tr>';
        table += '<tr><td>Event Timeframe</td><td><select id="event_timeframe" name="event_timeframe"></select></div></td/tr>';
        table += '<tr><td>Event Significance</td><td><select id="event_type" name="event_type"></select></div></td/tr>';
        table += '<tr><td>Event</td><td><select id="event_name" name="event_name"></select></div></td/tr>';
-       table += '<tr><td><button onclick="updateEconomicEventPricePreview()">View</button></td><td class="result"></td></tr>';
+       table += '<tr><td><button onclick="updateEconomicEventPricePreview()" class="btn btn--primary">View</button></td><td class="result"></td></tr>';
        table += '</table>';
 
        el.html(table);
@@ -498,13 +498,13 @@
     function createEconomicEventChange(id) {
 
        var el = \$('div#'+id);
-       var table = '<table id="' + id + '" class="economic_event_table">';
+       var table = '<table id="' + id + '" class="economic_event_table border">';
        var parameter = ['vol_change','decay_factor','duration','vol_change_before','decay_factor_before'];
 
        for (var i=0; i<parameter.length; i++) {
             table += '<tr><td><div class="input_field">'+parameter[i]+'  </td><td><input size="10" type="text" name='+parameter[i]+' data-lpignore="true" /></div></td/tr>';
        }
-       table += '<tr><td><button onclick="compareEconomicEventPricePreview()">Compare</button></td><td class="result"></td></tr>';
+       table += '<tr><td><button onclick="compareEconomicEventPricePreview()" class="btn btn--primary">Compare</button></td><td class="result"></td></tr>';
 
        table += '</table>';
        el.html(table);
@@ -547,12 +547,12 @@
             success: function(data) {
                 var event = \$.parseJSON(data);
                 if (event.error) {
-                    result.text(event.error).css('color', 'red');
+                    result.text(event.error).css('color', 'var(--color-red)');
                 } else {
                     if(event.headers == undefined){
-                        result.text('Event not found').css('color', 'red');
+                        result.text('Event not found').css('color', 'var(--color-red)');
                     }else{
-                        result.text('Comparison updated').css('color', 'green');
+                        result.text('Comparison updated').css('color', 'var(--color-green-2)');
                         updateEconomicEventPricePreview();
                         createEconomicEventPriceTable(event.headers, event.prices, 'economic_event_price_preview_updated');
                     }
