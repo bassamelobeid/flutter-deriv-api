@@ -2165,7 +2165,7 @@ async sub payment_deposit {
         );
 
         my $total_payment_accounts = $record->get_distinct_payment_accounts_for_time_period(period => 90);
-        my $payment_accounts_limit = $client->user->payment_accounts_limit();
+        my $payment_accounts_limit = $client->payment_accounts_limit();
 
         if ($total_payment_accounts >= $payment_accounts_limit && !$record->is_flagged('reported')) {
             on_user_payment_accounts_limit_reached(
