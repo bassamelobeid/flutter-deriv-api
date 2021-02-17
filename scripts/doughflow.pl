@@ -28,7 +28,7 @@ my $actions = {
 
 my $usage = "
 Usage: $0 
-    -a, --action               One of ".(join ', ',keys %$actions)."
+    -a, --action               One of " . (join ', ', keys %$actions) . "
     -e, --endpoint             Doughflow api url 
     -s, --secret_key           Secret key
     -c, --client_loginid       Client loginid 
@@ -45,19 +45,19 @@ Usage: $0
 
 require Log::Any::Adapter;
 GetOptions(
-    'a|action=s'             => \my $action,
-    'e|endpoint=s'           => \my $endpoint_url,
-    's|secret_key=s'         => \my $secret_key,
-    'c|client_loginid=s'     => \my $client_loginid,
-    'l|log=s'                => \my $log_level,
-    't|trace_id=i'           => \my $trace_id,
-    'amount=f'               => \my $amount,
-    'f|fee=f'                => \my $fee,
-    'pp|payment_processor=s' => \my $payment_processor,
-    'pm|payment_method=s'    => \my $payment_method,
-    'p|shared_loginid=s'     => \my $shared_loginid,  # Only needed for `shared_payment_method`
+    'a|action=s'              => \my $action,
+    'e|endpoint=s'            => \my $endpoint_url,
+    's|secret_key=s'          => \my $secret_key,
+    'c|client_loginid=s'      => \my $client_loginid,
+    'l|log=s'                 => \my $log_level,
+    't|trace_id=i'            => \my $trace_id,
+    'amount=f'                => \my $amount,
+    'f|fee=f'                 => \my $fee,
+    'pp|payment_processor=s'  => \my $payment_processor,
+    'pm|payment_method=s'     => \my $payment_method,
+    'p|shared_loginid=s'      => \my $shared_loginid,      # Only needed for `shared_payment_method`
     'pt|payment_type=s'       => \my $payment_type,
-    'id|account_identifier=s' => \my $account_identifier    
+    'id|account_identifier=s' => \my $account_identifier
 );
 die $usage unless ($action && $endpoint_url && $secret_key && $client_loginid);
 
@@ -73,23 +73,23 @@ die "ERROR: client loginid must be specified. $usage"                          u
 
 my $client = BOM::User::Client->new({loginid => $client_loginid}) or die "Invalid login ID: $client_loginid";
 
-$amount            ||= 1;
+$amount ||= 1;
 $payment_processor //= 'AirTM';
 $payment_method    //= 'AirTM';
-$trace_id          ||= do {
+$trace_id ||= do {
     my $rnd = int(rand(999999));
     $log->infof('Using random trace_id: %s', $rnd);
     $rnd;
 };
 
 my $params = {
-    client_loginid => $client_loginid,
-    amount         => $amount,
-    currency_code  => $client->account->currency_code,
-    trace_id       => $trace_id,
+    client_loginid     => $client_loginid,
+    amount             => $amount,
+    currency_code      => $client->account->currency_code,
+    trace_id           => $trace_id,
     payment_type       => $payment_type,
     account_identifier => $account_identifier,
-    defined $fee ? ( fee => $fee ) : (),
+    defined $fee ? (fee => $fee) : (),
 };
 
 # DF doesn't know both the payment processor and the payment method for all operations

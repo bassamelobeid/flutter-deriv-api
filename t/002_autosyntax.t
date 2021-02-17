@@ -6,6 +6,7 @@ use File::Find::Rule;
 use Test::Perl::Critic -profile => '/home/git/regentmarkets/cpan/rc/.perlcriticrc';
 use Test::Strict;
 use Cwd;
+use Test::PerlTidy;
 
 my $base_dir = Cwd::abs_path;
 my $lib_dir  = "$base_dir/lib";
@@ -37,5 +38,13 @@ sub read_head {
     read $fd, my $buf, 8192;
     return $buf;
 }
+
+subtest "check modules and test files being tidy" => sub {
+    run_tests(
+        perltidyrc => '/home/git/regentmarkets/cpan/rc/.perltidyrc',
+        exclude    => ['.git'],
+        mute       => 1,
+    );
+};
 
 done_testing;

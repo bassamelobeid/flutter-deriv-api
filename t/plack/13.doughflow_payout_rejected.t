@@ -27,7 +27,7 @@ my $r = deposit(
 );
 is($r->code,    201,       'correct status code');
 is($r->message, 'Created', 'Correct message');
-sleep 1;    # so the payment_time DESC for get_last_payment_of_account will be correct
+sleep 1;                       # so the payment_time DESC for get_last_payment_of_account will be correct
 my $starting_balance = balance($loginid);
 ok($starting_balance >= 2);    # since we deposit 2
 

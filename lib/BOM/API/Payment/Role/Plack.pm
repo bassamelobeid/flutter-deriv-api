@@ -109,7 +109,7 @@ sub validate {
     }
 
     foreach my $f ('amount', 'bonus', 'fee') {
-        next unless defined(my $v = $c->request_parameters->{$f});
+        next                              unless defined(my $v = $c->request_parameters->{$f});
         return "Invalid money amount: $v" unless looks_like_number($v);
         return "Invalid money amount: $v" if $v =~ /\.\d{3}/ or $v =~ /\.$/;
 
