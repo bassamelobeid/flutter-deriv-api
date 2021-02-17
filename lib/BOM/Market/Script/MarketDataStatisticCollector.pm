@@ -64,7 +64,7 @@ sub _collect_vol_ages {
     my @offer_underlyings = (@offered_forex, @offered_others, @smart_fx);
 
     my $trading_calendar = Quant::Framework->new->trading_calendar(BOM::Config::Chronicle::get_chronicle_reader());
-    my @symbols          = grep { !$skip_list{$_} } (@offer_underlyings, @quanto_currencies);
+    my @symbols = grep { !$skip_list{$_} } (@offer_underlyings, @quanto_currencies);
     foreach my $symbol (@symbols) {
         my $underlying = create_underlying($symbol);
         next if $underlying->flat_smile;

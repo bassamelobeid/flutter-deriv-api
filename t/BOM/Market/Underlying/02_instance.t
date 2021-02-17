@@ -151,7 +151,7 @@ subtest 'all attributes on a variety of underlyings' => sub {
         is($underlying->spot_spread, $underlying->spot_spread_size * $underlying->pip_size, 'Convenience method spot_spread is correct');
 
         if ($market eq 'forex' or $market eq 'commodities') {
-            is(uc $underlying->symbol, uc $symbol, 'Forex/commodities symbols match, but be different-cased');
+            is(uc $underlying->symbol,              uc $symbol, 'Forex/commodities symbols match, but be different-cased');
             is($underlying->asset_symbol,           substr($underlying->symbol, 3, 3), 'Asset is the base currency of our pair');
             is($underlying->quoted_currency_symbol, substr($underlying->symbol, 6, 3), 'Quoted currency is the numeraire currency of our pair');
         } else {
@@ -338,7 +338,7 @@ subtest vol_expiry_date => sub {
     }
 };
 subtest 'all methods on a selection of underlyings' => sub {
-    my $simulated_time = 1326957372; # 2012-01-19 07:16:12
+    my $simulated_time = 1326957372;                                                                  # 2012-01-19 07:16:12
     my $AS51           = create_underlying('AS51');
     my $FTSE           = create_underlying('FTSE');
     my $EURUSD         = create_underlying('frxEURUSD');
@@ -346,29 +346,35 @@ subtest 'all methods on a selection of underlyings' => sub {
     my $USDJPY         = create_underlying('frxUSDJPY');
     my $oldEU          = create_underlying('frxEURUSD', Date::Utility->new('2012-01-19 07:16:12'));
     my $nonsense       = create_underlying('nonsense');
-    my $date = Date::Utility->new('2012-01-19');
+    my $date           = Date::Utility->new('2012-01-19');
 
     lives_ok {
         BOM::Test::Data::Utility::FeedTestDatabase::create_ohlc_daily({
-                epoch      => ($date->epoch - 86400),
-                open       => 1.2746,
-                high       => 1.2868,
-                low        => 1.2735,
-                close      => 1.2864,
-                underlying => 'frxEURUSD'
-            });
-        BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks([1.2864, $date->epoch, 'frxEURUSD'], [1.2972, $date->epoch+1, 'frxEURUSD'], [1.2858, $simulated_time - 2, 'frxEURUSD'], [1.2859, $simulated_time - 1, 'frxEURUSD'], [1.2858, $simulated_time + 1, 'frxEURUSD'], [1.2840, $date->epoch + 86398, 'frxEURUSD'], [1.2961, $date->epoch + 86399, 'frxEURUSD']);
+            epoch      => ($date->epoch - 86400),
+            open       => 1.2746,
+            high       => 1.2868,
+            low        => 1.2735,
+            close      => 1.2864,
+            underlying => 'frxEURUSD'
+        });
+        BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks(
+            [1.2864, $date->epoch,         'frxEURUSD'],
+            [1.2972, $date->epoch + 1,     'frxEURUSD'],
+            [1.2858, $simulated_time - 2,  'frxEURUSD'],
+            [1.2859, $simulated_time - 1,  'frxEURUSD'],
+            [1.2858, $simulated_time + 1,  'frxEURUSD'],
+            [1.2840, $date->epoch + 86398, 'frxEURUSD'],
+            [1.2961, $date->epoch + 86399, 'frxEURUSD']);
         BOM::Test::Data::Utility::FeedTestDatabase::create_ohlc_daily({
-                epoch      => ($date->epoch + 86400),
-                open       => 1.2961,
-                high       => 1.2986,
-                low        => 1.2887,
-                close      => 1.2933,
-                underlying => 'frxEURUSD'
-            });
+            epoch      => ($date->epoch + 86400),
+            open       => 1.2961,
+            high       => 1.2986,
+            low        => 1.2887,
+            close      => 1.2933,
+            underlying => 'frxEURUSD'
+        });
     }
     'Preparing ticks and ohlc';
-
 
     is($EURUSD->system_symbol, $EURUSD->symbol, 'System symbol and symbol are same for non-inverted');
     isnt($USDEUR->system_symbol, $USDEUR->symbol, ' and different for inverted');
@@ -497,9 +503,9 @@ subtest 'risk type' => sub {
 };
 
 subtest 'feed failover' => sub {
-    is(create_underlying('frxUSDJPY')->feed_failover, '60',  "USDJPY's feed failover is 60s");
-    is(create_underlying('AEX')->feed_failover,       '60',  "AEX's feed failover is 60s");
-    is(create_underlying('frxXAUUSD')->feed_failover, '60',  "XAUUSD's feed failover is 60s");
+    is(create_underlying('frxUSDJPY')->feed_failover, '60',   "USDJPY's feed failover is 60s");
+    is(create_underlying('AEX')->feed_failover,       '60',   "AEX's feed failover is 60s");
+    is(create_underlying('frxXAUUSD')->feed_failover, '60',   "XAUUSD's feed failover is 60s");
     is(create_underlying('OTC_AEX')->feed_failover,   '1200', "OTC_AEX's feed failover is 1200s");
     is(create_underlying('OTC_N225')->feed_failover,  '1800', "OTC_N225's feed failover is 1800s");
 };

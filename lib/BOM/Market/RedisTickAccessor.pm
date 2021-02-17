@@ -122,7 +122,7 @@ sub ticks_in_between_end_limit {
     my ($self, $args) = @_;
 
     confess 'end_time is required' unless $args->{end_time};
-    confess 'limit is required' unless exists $args->{limit};
+    confess 'limit is required'    unless exists $args->{limit};
     my $ticks = $self->_tick_source->tick_cache_get_num_ticks({
         underlying => $self->underlying,
         end_epoch  => $args->{end_time},
@@ -146,7 +146,7 @@ sub ticks_in_between_start_limit {
     my ($self, $args) = @_;
 
     confess 'start_time is required' unless $args->{start_time};
-    confess 'limit is required' unless exists $args->{limit};
+    confess 'limit is required'      unless exists $args->{limit};
     my $ticks = $self->_tick_source->tick_cache_get_num_ticks({
         underlying  => $self->underlying,
         start_epoch => $args->{start_time},
