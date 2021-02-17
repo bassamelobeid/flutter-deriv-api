@@ -1,39 +1,68 @@
 CORETESTS=unit_test_product_contract \
-      unit_test_product_all \
+      unit_test_product_contract_settlement \
+      unit_test_product_base \
+      unit_test_product_model \
+      unit_test_volatility \
+      unit_test_offerings \
 
-ALLTESTS=test syntax 
+TESTS=test syntax
+
+PRODUCTALL=unit_test_validation \
+      unit_test_product_contract \
+      unit_test_product_contract_settlement \
+      unit_test_product_contract_extended \
+      unit_test_product_base \
+      unit_test_product_model \
+      unit_test_volatility \
+      unit_test_offerings \
+      unit_test_product_contract_finder \
 
 M=[ -t 1 ] && echo -e 'making \033[01;33m$@\033[00m' || echo 'making $@'
 D=$(CURDIR)
 P=/etc/rmg/bin/prove -v --timer -I$D/lib -I$D -I$D/t
 PROVE=p () { $M; echo '$P' "$$@"; $P "$$@"; }; p
 
-test_all: $(ALLTESTS)
+test_all: $(TESTS)
+
 test: $(CORETESTS)
 
 syntax:
 	@$(PROVE) t/*.t
 
-unit_test_initial:
-	@$(PROVE) t/01_check_file_hash.t
-
 unit_test_product_contract:
-	@$(PROVE) -r t/BOM/Product/Contract/
+	@$(PROVE) -r t/BOM/Product/Contract/*.t
+
+unit_test_product_contract_settlement:
+	@$(PROVE) -r t/BOM/Product/Contract/Settlement/
 
 unit_test_product_contract_extended:
 	@$(PROVE) -r t/BOM/Product/ContractFactory/ -r t/BOM/Product/ContractExtended/
 
-unit_test_product_all:
-	@$(PROVE) -r $$(ls -1d t/BOM/Persistence/* t/BOM/*.t t/BOM/Product/* | grep -v -e Product/Contract -e Product/ContractExtended -e Product/Validation -e Product/Pricing)
+unit_test_product_contract_finder:
+	@$(PROVE) -r t/BOM/Product/ContractFinder/
 
 unit_test_validation:
-	@$(PROVE) -r t/BOM/Product/Validation
+	@$(PROVE) -r t/BOM/Product/Validation/
+
+unit_test_volatility:
+	@$(PROVE) -r t/BOM/Product/Volatility/
+
+unit_test_product_model:
+	@$(PROVE) -r t/BOM/Product/Model/
 
 unit_test_pricing:
-	@$(PROVE) -r $$(ls -1d t/BOM/Product/Pricing*)
+	@$(PROVE) -r t/BOM/Product/Pricing/
 
 unit_test_intraday:
 	@$(PROVE) -r t/BOM/Product/Pricing/Engine/IntradayHistorical
+
+unit_test_offerings:
+	@$(PROVE) -r t/BOM/Product/Offerings/
+
+unit_test_product_base:
+	@$(PROVE) t/BOM/Product/*.t
+
+unit_test_product_all: $(PRODUCTALL)
 
 pod_test:
 	@$(PROVE) t/*pod*.t
