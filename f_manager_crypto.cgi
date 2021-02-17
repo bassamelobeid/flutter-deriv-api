@@ -500,7 +500,12 @@ if ($view_action eq 'withdrawals') {
         code_exit_BO();
     }
 
-    my @recon_list = $currency_wrapper->recon_report($start_date, $end_date, $fee_recon, $show_new_addresses);
+    my @recon_list;
+    if ($fee_recon) {
+        @recon_list = $currency_wrapper->recon_report_btc_fee($start_date, $end_date);
+    } else {
+        @recon_list = $currency_wrapper->recon_report($start_date, $end_date, $show_new_addresses);
+    }
 
     unless (scalar @recon_list) {
         code_exit_BO("Empty reconciliation report. There is no record to display.");
