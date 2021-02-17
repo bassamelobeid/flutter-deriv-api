@@ -40,7 +40,7 @@ sub script_run {
         )
     {
         my $subject_line = 'Forex Factory Alert';
-        my $body         = join "\n", map { $_->{event_name} . ' release at ' . Date::Utility->new($_->{release_date})->datetime } @alert;
+        my $body = join "\n", map { $_->{event_name} . ' release at ' . Date::Utility->new($_->{release_date})->datetime } @alert;
         Email::Stuffer->from('system@binary.com')->to('x-quants@binary.com')->subject($subject_line)->text_body($body)->send_or_die;
 
         my $val       = md5_hex($body);

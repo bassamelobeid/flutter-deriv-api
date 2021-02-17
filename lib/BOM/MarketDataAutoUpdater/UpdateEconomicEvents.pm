@@ -177,7 +177,7 @@ sub _format_data {
     my $unit = shift;
 
     $data = $data =~ s/^\s+|\s+|N\.A\.$//gr;
-    $data += 0 if looks_like_number($data);
+    $data += 0            if looks_like_number($data);
     $data = $data . $unit if looks_like_number($data);
     return $data;
 }

@@ -251,7 +251,7 @@ sub _recover_volsurface {
     my $offerings    = LandingCompany::Registry::get_default()->basic_offerings(BOM::Config::Runtime->instance->get_offerings_config);
     my $params       = Finance::Asset->all_parameters;
     my @quanto       = grep { $params->{$_}->{quanto_only} } keys %$params;
-    my %offered_list = map { $_ => 1 } ($offerings->values_for_key('underlying_symbol'), @quanto);
+    my %offered_list = map  { $_ => 1 } ($offerings->values_for_key('underlying_symbol'), @quanto);
     my $name         = 'volatility_surfaces';
     foreach my $symbol (@{$self->_symbols($name)}) {
         if ($self->_chronicle_reader->get($name, $symbol) or not $offered_list{$symbol}) {
