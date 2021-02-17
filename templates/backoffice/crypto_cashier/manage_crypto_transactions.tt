@@ -232,6 +232,9 @@
                             <input type="hidden" name="amount" value="[% trx.amount %]"/>
                             <input type="hidden" name="loginid" value="[% trx.client_loginid %]"/>
                             <input type="hidden" name="view_action" value="withdrawals"/>
+                            [% IF trx.source %]
+                                <input type="hidden" name="app_id" value="[% trx.source %]"/>
+                            [% END %]
                             <br/>
                             <label>
                                 Set Remark:<br/>

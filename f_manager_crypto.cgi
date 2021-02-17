@@ -36,6 +36,7 @@ use f_brokerincludeall;
 use BOM::Cryptocurrency::Helper qw(get_crypto_withdrawal_pending_total reprocess_address);
 use BOM::Platform::Email qw(send_email);
 use BOM::Platform::Context;
+use BOM::Platform::Context::Request;
 use Brands;
 use constant REJECTION_REASONS => {
     low_trade => {
@@ -69,12 +70,14 @@ PrintContentType();
 BrokerPresentation('CRYPTO CASHIER MANAGEMENT');
 
 sub notify_crypto_withdrawal_rejected {
-    my $loginid = shift;
-    my $reason  = shift // "unknown";
+    my ($loginid, $reason, $app_id) = @_;
+    $reason //= "unknown";
 
     my $client = BOM::User::Client->new({loginid => $loginid});
 
-    my $brand = request()->brand;
+    my $brand = defined $app_id ? Brands->new_from_app_id($app_id) : request->brand;
+    my $req   = BOM::Platform::Context::Request->new(brand_name => $brand->name);
+    BOM::Platform::Context::request($req);
 
     my $email_subject = localize('Your withdrawal request has been declined');
     my $email_data    = {
@@ -349,11 +352,10 @@ if ($view_action eq 'withdrawals') {
             } catch {
                 code_exit_BO('ERROR: Invalid JSON format for bulk action on withdrawal transactions received. Please contact BE.');
             }
-
             @params_list = map { +{$bulk_data->{$_}->%*, trx_id => $_} } sort keys $bulk_data->%*;
         } else {
             my %params = request()->params->%*;
-            @params_list = {%params{qw(trx_id amount remark rejection_reason loginid)}};
+            @params_list = {%params{qw(trx_id amount remark rejection_reason loginid app_id)}};
         }
 
         my %trx_actions_map = (
@@ -702,7 +704,7 @@ Returns error if there is any.
 sub withdrawal_reject {
     my %args = @_;
 
-    my ($trx_id, $remark, $rejection_reason, $loginid, $staff, $dbic) = @args{qw(trx_id remark rejection_reason loginid staff dbic)};
+    my ($trx_id, $remark, $rejection_reason, $loginid, $staff, $dbic, $app_id) = @args{qw(trx_id remark rejection_reason loginid staff dbic  app_id)};
 
     code_exit_BO('Please select a reason for rejection to notify client')
         unless $rejection_reason;
@@ -717,7 +719,7 @@ sub withdrawal_reject {
             $_->selectrow_array('SELECT payment.ctc_set_withdrawal_rejected(?, ?, ?)', undef, $trx_id, $remark, $staff);
         });
 
-    notify_crypto_withdrawal_rejected($loginid, $rejection_reason)
+    notify_crypto_withdrawal_rejected($loginid, $rejection_reason, $app_id)
         unless $error;
 
     return $error;
