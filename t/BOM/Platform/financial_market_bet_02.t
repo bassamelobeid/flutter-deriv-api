@@ -31,7 +31,7 @@ sub buy_one_bet {
     my $buy_price    = delete $args->{buy_price}    // 20;
     my $payout_price = delete $args->{payout_price} // $buy_price * 10;
     my $limits       = delete $args->{limits};
-    my $duration = delete $args->{duration} // '15s';
+    my $duration     = delete $args->{duration} // '15s';
 
     my $now      = Date::Utility->new;
     my $bet_data = +{
@@ -1383,7 +1383,7 @@ subtest 'batch_buy', sub {
         subtest 'testing result for ' . $loginid, sub {
             my $r = shift @$res;
             isnt $r, undef, 'got result hash';
-            is $r->{loginid}, $loginid, 'found loginid';
+            is $r->{loginid},       $loginid, 'found loginid';
             is $r->{e_code},        undef, 'e_code is undef';
             is $r->{e_description}, undef, 'e_description is undef';
             isnt $r->{fmb},         undef, 'got FMB';
@@ -1394,12 +1394,12 @@ subtest 'batch_buy', sub {
 
             my $txn = $r->{txn};
             $buy_trx_ids->{$txn->{id}} = 1;
-            is $txn->{account_id}, $acc->id, 'txn account id matches';
-            is $txn->{referrer_type}, 'financial_market_bet', 'txn referrer_type is financial_market_bet';
+            is $txn->{account_id},              $acc->id, 'txn account id matches';
+            is $txn->{referrer_type},           'financial_market_bet', 'txn referrer_type is financial_market_bet';
             is $txn->{financial_market_bet_id}, $fmb->{id}, 'txn fmb id matches';
-            is $txn->{amount},        '-20.00',  'txn amount';
-            is $txn->{balance_after}, '4980.00', 'txn balance_after';
-            is $txn->{staff_loginid}, '#CL001',  'txn staff_loginid';
+            is $txn->{amount},                  '-20.00',  'txn amount';
+            is $txn->{balance_after},           '4980.00', 'txn balance_after';
+            is $txn->{staff_loginid},           '#CL001',  'txn staff_loginid';
 
             my $note = $notifications{$txn->{id}};
             isnt $note, undef, 'found notification';
@@ -1417,7 +1417,7 @@ subtest 'batch_buy', sub {
         subtest 'testing result for ' . $loginid, sub {
             my $r = shift @$res;
             isnt $r, undef, 'got result hash';
-            is $r->{loginid}, $loginid, 'found loginid';
+            is $r->{loginid},         $loginid, 'found loginid';
             is $r->{e_code},          'BI003',                  'e_code is BI003';
             like $r->{e_description}, qr/insufficient balance/, 'e_description mentions insufficient balance';
             is $r->{fmb},             undef,                    'no FMB';
@@ -1429,7 +1429,7 @@ subtest 'batch_buy', sub {
         subtest 'testing result for ' . $loginid, sub {
             my $r = shift @$res;
             isnt $r, undef, 'got result hash';
-            is $r->{loginid}, $loginid, 'found loginid';
+            is $r->{loginid},       $loginid, 'found loginid';
             is $r->{e_code},        undef, 'e_code is undef';
             is $r->{e_description}, undef, 'e_description is undef';
             isnt $r->{fmb},         undef, 'got FMB';
@@ -1440,12 +1440,12 @@ subtest 'batch_buy', sub {
 
             my $txn = $r->{txn};
             $buy_trx_ids->{$txn->{id}} = 1;
-            is $txn->{account_id}, $acc->id, 'txn account id matches';
-            is $txn->{referrer_type}, 'financial_market_bet', 'txn referrer_type is financial_market_bet';
+            is $txn->{account_id},              $acc->id, 'txn account id matches';
+            is $txn->{referrer_type},           'financial_market_bet', 'txn referrer_type is financial_market_bet';
             is $txn->{financial_market_bet_id}, $fmb->{id}, 'txn fmb id matches';
-            is $txn->{amount},        '-20.00',  'txn amount';
-            is $txn->{balance_after}, '9980.00', 'txn balance_after';
-            is $txn->{staff_loginid}, '#CL001',  'txn staff_loginid';
+            is $txn->{amount},                  '-20.00',  'txn amount';
+            is $txn->{balance_after},           '9980.00', 'txn balance_after';
+            is $txn->{staff_loginid},           '#CL001',  'txn staff_loginid';
 
             my $note = $notifications{$txn->{id}};
             isnt $note, undef, 'found notification';
@@ -1477,7 +1477,7 @@ subtest 'batch_buy', sub {
         is ref $r, 'HASH';
         ok $r->{fmb},           'got FMB';
         ok $r->{txn},           'got TXN';
-        is $r->{e_code},        'BI050', 'got error code';
+        is $r->{e_code},        'BI050',              'got error code';
         is $r->{e_description}, 'Contract not found', 'got error description';
         ok $r->{loginid},       'got login id';
 

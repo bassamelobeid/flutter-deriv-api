@@ -156,8 +156,8 @@ subtest 'turnover limit parameters' => sub {
     my $rp = BOM::Platform::RiskProfile->new(%args, expiry_type => 'tick');
     is $rp->contract_info->{expiry_type}, 'tick', 'tick expiry';
     my $param = $rp->get_turnover_limit_parameters;
-    is $param->[0]->{name},  'test custom', 'correct name';
-    is $param->[0]->{limit}, 0,             'turnover limit correctly set to zero';
+    is $param->[0]->{name},        'test custom', 'correct name';
+    is $param->[0]->{limit},       0,             'turnover limit correctly set to zero';
     ok $param->[0]->{tick_expiry}, 'tick_expiry set to 1';
     my $symbols = [
         '1HZ100V', '1HZ10V', '1HZ25V', '1HZ50V', '1HZ75V', 'BOOM1000', 'BOOM500', 'CRASH1000', 'CRASH500', 'RDBEAR',
@@ -179,9 +179,9 @@ subtest 'turnover limit parameters' => sub {
     $rp = BOM::Platform::RiskProfile->new(%args, expiry_type => 'daily');
     is $rp->contract_info->{expiry_type}, 'daily', 'daily expiry';
     $param = $rp->get_turnover_limit_parameters;
-    is $param->[0]->{name},  'test custom', 'correct name';
-    is $param->[0]->{limit}, 0,             'turnover limit correctly set to zero';
-    ok $param->[0]->{daily}, 'daily set to 1';
+    is $param->[0]->{name},         'test custom', 'correct name';
+    is $param->[0]->{limit},        0,             'turnover limit correctly set to zero';
+    ok $param->[0]->{daily},        'daily set to 1';
     cmp_bag $param->[0]->{symbols}, $symbols, 'correct symbols selected';
     BOM::Config::Runtime->instance->app_config->quants->custom_product_profiles(
         '{"xxx": {"underlying_symbol": "R_100,R_10", "expiry_type": "daily", "risk_profile": "no_business", "name": "test custom"}}');

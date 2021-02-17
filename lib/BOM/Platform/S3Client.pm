@@ -79,7 +79,7 @@ sub upload {
         key          => $original_filename,
         value        => $gen_chunks,
         value_length => $file_size,
-        meta         => {checksum => $checksum},
+        meta         => {checksum       => $checksum},
         headers      => {'Content-Type' => Plack::MIME->mime_type($original_filename) // 'application/octet-stream'},
     )->then(
         sub {

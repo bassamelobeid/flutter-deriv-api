@@ -74,11 +74,11 @@ sub validates {
     my $company_hashcode = $config->{acquired}->{company_hashcode} // 'dummy';
     my $json             = $self->req->json;
     # We are talking about a cryptographic hash not a perlish hash
-    my $hash       = $json->{hash}       // die 'we expected a hash value in the body';
-    my $id         = $json->{id}         // die 'we expected an id value in the body';
-    my $timestamp  = $json->{timestamp}  // die 'we expected a timestamp value in the body';
-    my $company_id = $json->{company_id} // die 'we expected a company_id value in the body';
-    my $event      = $json->{event}      // die 'we expected a event value in the body';
+    my $hash         = $json->{hash}       // die 'we expected a hash value in the body';
+    my $id           = $json->{id}         // die 'we expected an id value in the body';
+    my $timestamp    = $json->{timestamp}  // die 'we expected a timestamp value in the body';
+    my $company_id   = $json->{company_id} // die 'we expected a company_id value in the body';
+    my $event        = $json->{event}      // die 'we expected a event value in the body';
     my $plain        = join '', ($id, $timestamp, $company_id, $event);
     my $temp         = sha256_hex($plain);
     my $expected     = join '', ($temp, $company_hashcode);

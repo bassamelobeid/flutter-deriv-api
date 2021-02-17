@@ -94,14 +94,14 @@ Returns 1 if email has been sent successfully, otherwise 0
 
 sub process_send_email {
     my $args_ref           = shift;
-    my $fromemail          = $args_ref->{'from'} // '';
-    my $email              = $args_ref->{'to'} // '';
-    my $subject            = $args_ref->{'subject'} // '';
+    my $fromemail          = $args_ref->{'from'}          // '';
+    my $email              = $args_ref->{'to'}            // '';
+    my $subject            = $args_ref->{'subject'}       // '';
     my $template_name      = $args_ref->{'template_name'} // '_default_content';
     my $template_args      = $args_ref->{'template_args'} // {};
     my @message            = @{$args_ref->{'message'} // []};
     my $use_email_template = $args_ref->{'use_email_template'};
-    my $layout             = $args_ref->{'layout'} // 'default';
+    my $layout             = $args_ref->{'layout'}     // 'default';
     my $attachment         = $args_ref->{'attachment'} // [];
     $attachment = ref($attachment) eq 'ARRAY' ? $attachment : [$attachment];
     my $skip_text2html   = $args_ref->{'skip_text2html'};

@@ -286,7 +286,7 @@ sub _withdrawal_validation {
 
     my ($lc, $is_authenticated) = ($client->landing_company->short, $client->fully_authenticated);
 
-    return _create_error(localize('Account needs age verification.')) if ($lc =~ /^(?:malta|iom)$/ and not $client->status->age_verification);
+    return _create_error(localize('Account needs age verification.'))   if ($lc =~ /^(?:malta|iom)$/ and not $client->status->age_verification);
     return _create_error(localize('Please authenticate your account.')) if ($lc eq 'iom'   and not $is_authenticated and $total >= 3000);
     return _create_error(localize('Please authenticate your account.')) if ($lc eq 'malta' and not $is_authenticated and $total >= 2000);
 

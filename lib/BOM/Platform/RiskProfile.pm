@@ -205,8 +205,8 @@ sub get_risk_profile {
     my $min = $base eq '' ? @{RISK_PROFILES()} : $risk_profile_rank{$base};
     for (@$ap) {
         my $tmp = $risk_profile_rank{$_->{risk_profile}};
-        return RISK_PROFILES->[0] if $tmp == 0;    # short cut: it cannot get less
-        $min = $tmp if $tmp < $min;
+        return RISK_PROFILES->[0] if $tmp == 0;     # short cut: it cannot get less
+        $min = $tmp               if $tmp < $min;
     }
     return RISK_PROFILES->[$min];
 }
@@ -465,7 +465,7 @@ sub get_current_profile_definitions {
             my @list = map { {
                     name           => $_->display_name,
                     turnover_limit => formatnumber('amount', $currency, $limit_ref->{$_->risk_profile}{turnover}{$currency} // 0),
-                    payout_limit   => formatnumber('amount', $currency, $limit_ref->{$_->risk_profile}{payout}{$currency} // 0),
+                    payout_limit   => formatnumber('amount', $currency, $limit_ref->{$_->risk_profile}{payout}{$currency}   // 0),
                     profile_name   => $_->risk_profile
                 }
             } @submarket_list;
@@ -475,7 +475,7 @@ sub get_current_profile_definitions {
                 +{
                 name           => $market->display_name,
                 turnover_limit => formatnumber('amount', $currency, $limit_ref->{$market->risk_profile}{turnover}{$currency} // 0),
-                payout_limit   => formatnumber('amount', $currency, $limit_ref->{$market->risk_profile}{payout}{$currency} // 0),
+                payout_limit   => formatnumber('amount', $currency, $limit_ref->{$market->risk_profile}{payout}{$currency}   // 0),
                 profile_name   => $market->risk_profile,
                 };
         }
@@ -512,7 +512,7 @@ sub _match_conditions {
     my $real_tests_performed;
 
     foreach my $key (keys %$custom) {
-        next if exists $_no_condition{$key};    # skip test
+        next if exists $_no_condition{$key};                                                        # skip test
         $real_tests_performed = 1;
         next if exists $ci->{$key} and first { $ci->{$key} eq $_ } (split ',', $custom->{$key});    # match: continue with next condition
         return;                                                                                     # no match

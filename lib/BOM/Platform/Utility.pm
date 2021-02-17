@@ -82,7 +82,7 @@ sub _hash_to_array_helper {
         for ($refs->@*) {
             push $temp_stack->@*, values $_->%* if ref $_ eq 'HASH';
             push $temp_stack->@*, $_->@*        if ref $_ eq 'ARRAY';
-            push $array->@*, $_ unless ref $_;
+            push $array->@*,      $_ unless ref $_;
         }
     }
     return _hash_to_array_helper($array, $temp_stack);

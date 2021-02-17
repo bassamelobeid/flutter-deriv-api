@@ -69,7 +69,7 @@ sub save_message_data {
             channel    => $json->{channel}->{channel_url},
             type       => $json->{type},
             message    => $json->{payload}->{message} // '',
-            url        => $json->{payload}->{url} // '',
+            url        => $json->{payload}->{url}     // '',
         });
     stats_inc('bom_platform.sendbird.webhook.messages_received');
     return 1;

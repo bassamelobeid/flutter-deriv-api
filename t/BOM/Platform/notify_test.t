@@ -143,7 +143,7 @@ sub buy_one_bet {
     my $buy_price    = delete $args->{buy_price}    // 20;
     my $payout_price = delete $args->{payout_price} // $buy_price * 10;
     my $limits       = delete $args->{limits};
-    my $duration = delete $args->{duration} // '15s';
+    my $duration     = delete $args->{duration} // '15s';
 
     my $now      = Date::Utility->new;
     my $bet_data = +{

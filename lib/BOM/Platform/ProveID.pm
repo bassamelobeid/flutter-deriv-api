@@ -377,7 +377,7 @@ $file: Path::Tiny object
 
 sub _upload_file {
     my ($self, $type, $file) = @_;
-    die "Type should be xml or pdf" unless $type && $type =~ /xml|pdf/;
+    die "Type should be xml or pdf"          unless $type && $type =~ /xml|pdf/;
     die "File has to be a Path::Tiny object" unless $file && $file->isa('Path::Tiny');
     my $file_name = $type eq 'xml' ? $self->_xml_file_name : $self->_pdf_file_name;
     my $old_file  = $type eq 'xml' ? $self->_old_xml_file  : $self->_old_pdf_file;

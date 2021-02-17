@@ -26,7 +26,7 @@ $mock_s3->mock(
     });
 $mock_s3->mock('download', sub { my ($self, $file) = @_; return exists $cache{$file} ? Future->done($cache{$file}) : Future->fail("no such file"); });
 $mock_s3->mock('head_object', sub { my ($self, $file) = @_; return exists $cache{$file} ? Future->done : Future->fail("no such file") });
-$mock_s3->mock('delete', sub { my ($self, $file) = @_; delete $cache{$file}; return Future->done(1) });
+$mock_s3->mock('delete',      sub { my ($self, $file) = @_; delete $cache{$file}; return Future->done(1) });
 
 subtest 'Constructor' => sub {
     subtest 'No Client' => sub {
@@ -58,7 +58,7 @@ subtest 'Request Tags' => sub {
         ),
         Authentication => '<Authentication><Username>dummy</Username><Password>dummy</Password></Authentication>',
         Person         => '<Person><Name><Forename>bRaD</Forename><Surname>pItT</Surname></Name><DateOfBirth>1978-06-23</DateOfBirth></Person>',
-        Address =>
+        Address        =>
             '<Addresses><Address Current="1"><Premise>Civic Center </Premise><Postcode>232323</Postcode><CountryCode>GBR</CountryCode></Address></Addresses>',
         CountryCode     => '<CountryCode>GBR</CountryCode>',
         Telephones      => '<Telephones><Telephone Type="U"><Number>+15417543010</Number></Telephone></Telephones>',

@@ -10,7 +10,7 @@ use Log::Any qw($log);
 
 GetOptions(
     'pid-file=s' => \(my $pid_file),
-    'l|log=s' => \(my $log_level = "info"),
+    'l|log=s'    => \(my $log_level = "info"),
 ) or die "Usage: $0 --pid-file=/tmp/$0.pid --log=<log_level>\n";
 
 require Log::Any::Adapter;

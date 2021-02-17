@@ -23,24 +23,23 @@ use Path::Tiny qw(path);
 my $yesterday_date = Date::Utility->today()->minus_time_interval('1d')->date;
 
 foreach my $broker ('MLT') {
-    
+
     # Any database with '03' corresponds to replica
-    my $svcdef  = lc($broker) . '03';
-    
-    my $filename = path($broker . '_deposit_withdrawal_stake_' . $yesterday_date . '.csv');;
-    my $content = qx{
+    my $svcdef = lc($broker) . '03';
+
+    my $filename = path($broker . '_deposit_withdrawal_stake_' . $yesterday_date . '.csv');
+    my $content  = qx{
         psql service=$svcdef -XH -v ON_ERROR_STOP=1 -P null=N/A <<EOF
         \\COPY (SELECT * FROM reporting.deposit_and_stake_notification()) TO '$filename' (format csv, header, null 'N/A');
 EOF
     };
 
     send_email({
-        from                  => 'compliance@regentmarkets.com',
-        to                    => 'compliance-alerts@binary.com, bill@binary.com',
-        subject               => "$broker Authentication (2K deposit, withdrawal or stake) - $yesterday_date",
-        email_content_is_html => 1,
-        attachment            => ["$filename"]
-    });
-    
+            from                  => 'compliance@regentmarkets.com',
+            to                    => 'compliance-alerts@binary.com, bill@binary.com',
+            subject               => "$broker Authentication (2K deposit, withdrawal or stake) - $yesterday_date",
+            email_content_is_html => 1,
+            attachment            => ["$filename"]});
+
     path($filename)->remove;
 }

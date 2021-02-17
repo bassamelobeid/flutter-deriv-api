@@ -24,10 +24,10 @@ usage: $0 OPTIONS
 =cut
 
 GetOptions(
-    'd|date:s'    => \my $date,
+    'd|date:s'     => \my $date,
     'b|brokers:s@' => \my $brokers,
     'r|report:s@'  => \my $report,
-    'h|help'      => \my $help,
+    'h|help'       => \my $help,
 );
 
 pod2usage(-verbose => 1) if $help;
