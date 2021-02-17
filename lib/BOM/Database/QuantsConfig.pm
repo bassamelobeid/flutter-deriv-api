@@ -535,7 +535,7 @@ sub delete_global_limit {
             my $val = $args->{$key};
             $val = undef                 if $val                   and $val eq 'default';
             $val = $val eq 'atm' ? 1 : 0 if $key eq 'barrier_type' and defined $val;
-            $val = undef if $key eq 'limit';    ## We delete by providing a null limit amount
+            $val = undef                 if $key eq 'limit';    ## We delete by providing a null limit amount
             push @execute_args, $val;
         }
         $self->_update_db($db, $statement, \@execute_args);

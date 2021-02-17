@@ -46,13 +46,13 @@ our $BET_CLASS_TO_TYPE_MAP = {
     'range_bet' => ['RANGE', 'UPORDOWN', 'EXPIRYRANGE', 'EXPIRYMISS', 'EXPIRYRANGEE', 'EXPIRYMISSE'],
 
     'touch_bet'       => ['ONETOUCH',    'NOTOUCH'],
-    'digit_bet'       => ['DIGITMATCH',  'DIGITDIFF', 'DIGITOVER', 'DIGITUNDER', 'DIGITODD', 'DIGITEVEN'],
+    'digit_bet'       => ['DIGITMATCH',  'DIGITDIFF',  'DIGITOVER',   'DIGITUNDER', 'DIGITODD', 'DIGITEVEN'],
     'lookback_option' => ['LBFIXEDCALL', 'LBFIXEDPUT', 'LBFLOATCALL', 'LBFLOATPUT', 'LBHIGHLOW'],
     'reset_bet'       => ['RESETCALL',   'RESETPUT'],
     'callput_spread'  => ['CALLSPREAD',  'PUTSPREAD'],
     'highlowticks'    => ['TICKHIGH',    'TICKLOW'],
     'multiplier'      => ['MULTUP',      'MULTDOWN'],
-    'INVALID' => ['INVALID'],
+    'INVALID'         => ['INVALID'],
 };
 
 our $BET_TYPE_TO_CLASS_MAP = {

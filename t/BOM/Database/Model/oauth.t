@@ -151,7 +151,7 @@ subtest 'revoke tokens by loginid and app_id' => sub {
     is_deeply($get_apps, [$app1, $app2, $app3], 'get_apps_by_user_id ok');
 
     my @app_ids  = ($app1->{app_id}, $app2->{app_id}, $app3->{app_id});
-    my @loginids = ('CR1234',        'VRTC1234');
+    my @loginids = ('CR1234', 'VRTC1234');
 
     foreach my $loginid (@loginids) {
         foreach my $app_id (@app_ids) {

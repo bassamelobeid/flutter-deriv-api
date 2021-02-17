@@ -60,10 +60,10 @@ END {
 }
 
 ## Globals we set early on:
-my ($service_name, $database_name, $temp_database_name, $time_limit);
-my ($basedir,      $datadir,       $socketdir,          $pgbindir);
-my ($psql_local,   $psql_remote,   $pg_dump_local,      $pg_dump_remote);
-my ($aws, $s3_profile_name, $s3_bucket_name);
+my ($service_name, $database_name,   $temp_database_name, $time_limit);
+my ($basedir,      $datadir,         $socketdir,          $pgbindir);
+my ($psql_local,   $psql_remote,     $pg_dump_local,      $pg_dump_remote);
+my ($aws,          $s3_profile_name, $s3_bucket_name);
 
 logit "Starting $0 version $VERSION\n";
 my $script_start_time = time();
@@ -165,10 +165,10 @@ sub get_database_info {
         die qq{Sorry, but '$db' does not seem to be a valid choice. Must be one of: $list\n};
     }
 
-    $service_name  = $info{server}{$db}{service_name}  or die qq{Could not determine service file name\n};
-    $database_name = $info{server}{$db}{database_name} or die qq{Could not determine database name\n};
+    $service_name       = $info{server}{$db}{service_name}  or die qq{Could not determine service file name\n};
+    $database_name      = $info{server}{$db}{database_name} or die qq{Could not determine database name\n};
     $temp_database_name = "bootstrap_{$db}_$database_name";
-    $time_limit = $info{server}{$db}{default_time_limit} or die qq{Could not find default time limit for "$db"\n};
+    $time_limit         = $info{server}{$db}{default_time_limit} or die qq{Could not find default time limit for "$db"\n};
 
     if (exists $opt{time_limit}) {
         $time_limit = $opt{time_limit};

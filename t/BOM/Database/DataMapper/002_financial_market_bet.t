@@ -91,7 +91,7 @@ lives_ok {
         'underlying_symbol' => 'frxUSDJPY',
         'payout_price'      => 2,
         'buy_price'         => 1.07,
-        'remark' =>
+        'remark'            =>
             'vega[-0.00002] atmf_fct[0.70411] div[0.00252] recalc[1.07000] int[0.00107] theta[0.00092] iv[0.10500] emp[1.06000] fwdst_fct[1.00000] win[2.00000] trade[1.07000] dscrt_fct[0.99299] spot[78.46000] gamma[0.03950] delta[-1.63768] theo[1.00000] base_spread[0.10000] ia_fct[1.00000] news_fct[1.00000]',
         'purchase_time'    => '2011-07-25 05:08:05',
         'start_time'       => '2011-07-25 05:08:05',
@@ -119,7 +119,7 @@ lives_ok {
         'underlying_symbol' => 'frxUSDJPY',
         'payout_price'      => 20,
         'buy_price'         => 4.04,
-        'remark' =>
+        'remark'            =>
             'vega[0.03177] atmf_fct[1.00000] div[0.00252] recalc[4.04000] int[0.00107] theta[-76.23706] iv[0.09900] emp[0.00000] fwdst_fct[1.00000] win[20.00000] trade[4.04000] dscrt_fct[0.88803] spot[78.41000] gamma[569.41770] delta[24.91933] theo[0.88000] base_spread[0.35552] ia_fct[1.00000] news_fct[1.00000]',
         'purchase_time'    => '2011-07-25 06:18:55',
         'start_time'       => '2011-07-25 06:18:55',
@@ -142,7 +142,7 @@ lives_ok {
         'underlying_symbol' => 'frxUSDJPY',
         'payout_price'      => 20,
         'buy_price'         => 4.04,
-        'remark' =>
+        'remark'            =>
             'vega[0.03177] atmf_fct[1.00000] div[0.00252] recalc[4.04000] int[0.00107] theta[-76.23706] iv[0.09900] emp[0.00000] fwdst_fct[1.00000] win[20.00000] trade[4.04000] dscrt_fct[0.88803] spot[78.41000] gamma[569.41770] delta[24.91933] theo[0.88000] base_spread[0.35552] ia_fct[1.00000] news_fct[1.00000]',
         'purchase_time'    => '2011-07-25 06:18:55',
         'start_time'       => '2011-07-25 06:18:55',
@@ -189,7 +189,7 @@ lives_ok {
         'underlying_symbol' => 'GDAXI',
         'payout_price'      => 2,
         'buy_price'         => 1.11,
-        'remark' =>
+        'remark'            =>
             ' vega[0.00849] atmf_fct[1.00000] div[0.00000] recalc[1.11000] int[0.00730] theta[-0.06083] iv[0.13400] emp[1.60000] fwdst_fct[1.00000] win[2.00000] trade[1.11000] dscrt_fct[1.00000] spot[7341.28000] gamma[0.24015] delta[0.67803] theo[0.99000] base_spread[0.12000] ia_fct[1.00000] news_fct[1.00000]',
         'purchase_time'    => '2011-07-25 14:05:00',
         'start_time'       => '2011-07-25 14:05:00',
@@ -225,7 +225,7 @@ lives_ok {
         'underlying_symbol' => 'R_50',
         'payout_price'      => 2,
         'buy_price'         => 1.15,
-        'remark' =>
+        'remark'            =>
             ' vega[0.00849] atmf_fct[1.00000] div[0.00000] recalc[1.11000] int[0.00730] theta[-0.06083] iv[0.13400] emp[1.60000] fwdst_fct[1.00000] win[2.00000] trade[1.11000] dscrt_fct[1.00000] spot[7341.28000] gamma[0.24015] delta[0.67803] theo[0.99000] base_spread[0.12000] ia_fct[1.00000] news_fct[1.00000]',
         'purchase_time'    => '2011-07-25 14:22:56',
         'start_time'       => '2011-07-25 14:22:56',
@@ -261,7 +261,7 @@ lives_ok {
         'underlying_symbol' => 'FTSE',
         'payout_price'      => 4,
         'buy_price'         => 2.5,
-        'remark' =>
+        'remark'            =>
             'vega[-0.03734] atmf_fct[1.00000] div[0.00070] recalc[2.50000] int[0.00555] theta[0.26518] iv[0.14000] emp[0.65000] fwdst_fct[1.00000] win[4.00000] trade[2.50000] dscrt_fct[1.00000] spot[5932.22000] gamma[-0.99341] delta[-0.01521] theo[1.98000] base_spread[0.26000] ia_fct[1.00000] news_fct[1.00000]',
         'purchase_time'           => '2011-07-25 14:29:16',
         'start_time'              => '2011-07-25 14:29:16',
@@ -298,7 +298,7 @@ lives_ok {
         'underlying_symbol' => 'R_25',
         'payout_price'      => 3,
         'buy_price'         => 1.55,
-        'remark' =>
+        'remark'            =>
             'vega[0.01290] atmf_fct[1.00000] div[0.00000] recalc[1.55000] int[0.00000] theta[-1.93557] iv[0.25000] emp[0.13000] fwdst_fct[1.00000] win[3.00000] trade[1.55000] dscrt_fct[1.00000] spot[1393.94800] gamma[2.26075] delta[-0.00340] theo[1.49000] base_spread[0.04000] ia_fct[1.00000] news_fct[1.00000]',
         'purchase_time'           => '2011-07-25 14:48:02',
         'start_time'              => '2011-07-25 14:48:02',
@@ -344,7 +344,7 @@ subtest 'digits' => sub {
                     'underlying_symbol' => 'R_25',
                     'payout_price'      => 3,
                     'buy_price'         => 1.55,
-                    'remark' =>
+                    'remark'            =>
                         'vega[0.01290] atmf_fct[1.00000] div[0.00000] recalc[1.55000] int[0.00000] theta[-1.93557] iv[0.25000] emp[0.13000] fwdst_fct[1.00000] win[3.00000] trade[1.55000] dscrt_fct[1.00000] spot[1393.94800] gamma[2.26075] delta[-0.00340] theo[1.49000] base_spread[0.04000] ia_fct[1.00000] news_fct[1.00000]',
                     'purchase_time' => '2011-07-25 14:48:02',
                     'start_time'    => '2011-07-25 14:48:02',

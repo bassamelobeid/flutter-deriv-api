@@ -87,11 +87,11 @@ sub create_client {
     my $currency        = delete($args{currency})        or die 'need currency';
     my $password        = $input_password                or die 'need password';
 
-    my $email = 'payments+escrow_' . $landing_company->short . '_' . lc($currency) . '@binary.com';
+    my $email                  = 'payments+escrow_' . $landing_company->short . '_' . lc($currency) . '@binary.com';
     my $landing_company_config = $config{$landing_company->short} or die "Config not defined for " . $landing_company->short;
 
-    my $residence        = $landing_company_config->{residence}        or die 'need residence';
-    my $country_idd_code = $landing_company_config->{country_idd_code} or die 'need country_idd_code';
+    my $residence                 = $landing_company_config->{residence}        or die 'need residence';
+    my $country_idd_code          = $landing_company_config->{country_idd_code} or die 'need country_idd_code';
     my $tax_identification_number = $landing_company_config->{tax_identification_number} // '';
 
     my $hashed_password = BOM::User::Password::hashpw($password);

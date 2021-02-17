@@ -295,8 +295,8 @@ sub update_app {
             my $sth = $_->prepare("select * from oauth.app_update(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
 
             $sth->execute(
-                $app_id,                  $app->{name},                  $app->{scopes},     $app->{homepage},
-                $app->{github},           $app->{appstore},              $app->{googleplay}, $app->{redirect_uri},
+                $app_id,                  $app->{name},     $app->{scopes},     $app->{homepage},
+                $app->{github},           $app->{appstore}, $app->{googleplay}, $app->{redirect_uri},
                 $app->{verification_uri}, $app->{app_markup_percentage}, $app->{active});
             my $result = $sth->fetchrow_hashref();
             return $result;

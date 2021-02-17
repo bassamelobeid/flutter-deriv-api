@@ -394,8 +394,8 @@ subtest 'delete global limit' => sub {
     is $res, undef, 'delete';
 };
 
-my $client  = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR'});
-my $client2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR'});
+my $client     = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR'});
+my $client2    = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR'});
 my %client_map = (
     $client->loginid  => $client,
     $client2->loginid => $client2,

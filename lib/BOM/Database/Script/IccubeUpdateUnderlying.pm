@@ -9,7 +9,7 @@ use File::ShareDir;
 
 sub run {
     my $u_file = Finance::Asset->instance->all_parameters;
-    my $u_subm = LoadFile(File::ShareDir::dist_file('Finance-Asset', 'submarkets.yml'));
+    my $u_subm = LoadFile(File::ShareDir::dist_file('Finance-Asset',      'submarkets.yml'));
     my $u_mt   = LoadFile(File::ShareDir::dist_file('Finance-Underlying', 'underlyings.yml'));
 
     my $dbic = BOM::Database::ClientDB->new({

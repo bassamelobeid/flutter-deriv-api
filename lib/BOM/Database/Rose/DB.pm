@@ -22,7 +22,7 @@ __PACKAGE__->register_db(
     domain   => 'dummy',
     type     => 'dummy',
     driver   => 'Pg',
-    database => $ENV{BOMDB_DBS} || 'dummy',
+    database => $ENV{BOMDB_DBS}  || 'dummy',
     host     => $ENV{BOMDB_HOST} || 'localhost',
     port     => $ENV{BOMDB_PORT} || 5432,
     username => $ENV{BOMDB_USER} || 'dummy',

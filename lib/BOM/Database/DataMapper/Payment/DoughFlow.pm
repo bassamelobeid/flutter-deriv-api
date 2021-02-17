@@ -48,7 +48,7 @@ sub get_doughflow_withdrawal_amount_by_trace_id {
         query           => [
             account_id => $self->account->id,
             remark     => {like => '%trace_id=' . $trace_id . '%'},
-            amount     => {le => 0}
+            amount     => {le   => 0}
         ],
         db => $self->db,
     );

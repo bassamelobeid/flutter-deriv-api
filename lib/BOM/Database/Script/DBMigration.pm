@@ -68,8 +68,8 @@ sub options {
             default       => 'postgres',
         },
         {
-            name    => 'dbset',
-            display => 'dbset=<dbset>',
+            name          => 'dbset',
+            display       => 'dbset=<dbset>',
             documentation =>
                 'one of <rmg|collector|report|feed|auth|users> - for rmg, feed or auth, the default directory/port/username will be set automatically',
             option_type => 'string',

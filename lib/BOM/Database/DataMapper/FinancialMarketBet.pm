@@ -252,10 +252,10 @@ Number of sold contracts to be skipped in the list. Default is 0.
 sub get_sold_contracts {
     my ($self, %args) = @_;
     my $order_type          = $args{order_type};
-    my $limit               = $args{limit} || 0;
-    my $offset              = $args{offset} || 0;
+    my $limit               = $args{limit}               || 0;
+    my $offset              = $args{offset}              || 0;
     my $first_purchase_time = $args{first_purchase_time} || '1970-01-01 00:00:00';
-    my $last_purchase_time  = $args{last_purchase_time} || 'tomorrow';
+    my $last_purchase_time  = $args{last_purchase_time}  || 'tomorrow';
     my $dbic                = $self->db->dbic;
 
     try {

@@ -34,7 +34,7 @@ Database service: %s (%sport=%s user=%s database=%s)",
         $commitinfo->{author}, $commitinfo->{title},
         $taginfo->{name},      $taginfo->{tagdate}, $taginfo->{shortcommit},
         $dbinfo->{service},    $dbinfo->{host} ? "host=$dbinfo->{host} " : '',
-        $dbinfo->{port}, $dbinfo->{user}, $dbinfo->{dbname};
+        $dbinfo->{port},       $dbinfo->{user}, $dbinfo->{dbname};
 
     $log->notice($message);
 
@@ -190,7 +190,7 @@ sub get_tag_info {
         $taginfo{tagdate} = $1;
     }
     if ($result =~ /^commit ([a-f0-9]+)/m) {
-        $taginfo{commit} = $1;
+        $taginfo{commit}      = $1;
         $taginfo{shortcommit} = substr($1, 0, 8);
     }
     if ($result =~ /^Author:\s+(.+)/m) {

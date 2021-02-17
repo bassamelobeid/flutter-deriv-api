@@ -8,16 +8,16 @@ use Getopt::Long;
 use File::Path qw/make_path/;
 use Time::HiRes ();
 
-$|=1;
-my $init = 'no';
+$| = 1;
+my $init   = 'no';
 my $outdir = '.';
-my $cutoff_time;                   # before the beginning of time
-my $cutoff_length;                 # infinity
+my $cutoff_time;      # before the beginning of time
+my $cutoff_length;    # infinity
 my $aws_profile;
 my @accounts;
 my $account_mode;
 
-my $usage=<<'USAGE';
+my $usage = <<'USAGE';
 Usage:
  PGDATABASE=... PGHOST=... \
  prune_transaction.pl [--init[=only]] [--aws-profile=...] [--directory=...] \
@@ -105,11 +105,14 @@ Usage:
      https://www.postgresql.org/docs/current/libpq-envars.html
 USAGE
 
-GetOptions ('init:s'=>\$init, 'directory=s'=>\$outdir,
-            'aws-profile=s'=>\$aws_profile,
-            'client=s'=>\@accounts,
-            'time=s'=>\$cutoff_time, 'length=s'=>\$cutoff_length)
-    or die $usage;
+GetOptions(
+    'init:s'        => \$init,
+    'directory=s'   => \$outdir,
+    'aws-profile=s' => \$aws_profile,
+    'client=s'      => \@accounts,
+    'time=s'        => \$cutoff_time,
+    'length=s'      => \$cutoff_length
+) or die $usage;
 
 my $init_always_sql = <<'SQL';
 SET SESSION CHARACTERISTICS AS TRANSACTION ISOLATION LEVEL REPEATABLE READ
@@ -157,8 +160,15 @@ CLOSE prune_csr
 SQL
 
 my ($db, $next_account, $move_account, $log_it);
+
 sub opendb {
-    $db = DBI->connect('dbi:Pg:', undef, undef, {RaiseError=>1, PrintError=>0});
+    $db = DBI->connect(
+        'dbi:Pg:',
+        undef, undef,
+        {
+            RaiseError => 1,
+            PrintError => 0
+        });
 
     for my $sql (split /\n\n/, $init_always_sql) {
         $db->do($sql);
@@ -200,23 +210,23 @@ exit 0 if $init eq 'only';
 my @transfer_cmd;
 if ($outdir =~ m!^s3://([^/]+)/(.+?)/*$!) {
     my $bucket = $1;
-    my $key = $2;
-    $outdir = "s3://$bucket/$key"; # just to make sure there is no trailing slash
+    my $key    = $2;
+    $outdir = "s3://$bucket/$key";    # just to make sure there is no trailing slash
     my @cmd = qw/aws s3api/;
     push @cmd, '--profile', $aws_profile if $aws_profile;
-    push @cmd, qw/put-object --bucket/, $bucket, '--key', $key.'/';
+    push @cmd, qw/put-object --bucket/, $bucket, '--key', $key . '/';
     open my $fh, '-|', @cmd
         or die "Cannot create pipe (@cmd): $!\n";
     1 while readline $fh;
     close $fh
-        or die ($!+0
-                ? "Error closing pipe (@cmd): $!\n"
-                : "@cmd failed: rc=$?\n");
+        or die(
+        $! + 0
+        ? "Error closing pipe (@cmd): $!\n"
+        : "@cmd failed: rc=$?\n"
+        );
     # need to use bash here /bin/sh might not have pipefail
-    @transfer_cmd = (qw!/bin/bash -o pipefail -c!,
-                     'gzip -9 | aws s3' . ($aws_profile ? " --profile '$aws_profile'" : '') .
-                     ' --quiet cp - "$1"',
-                     '--');
+    @transfer_cmd =
+        (qw!/bin/bash -o pipefail -c!, 'gzip -9 | aws s3' . ($aws_profile ? " --profile '$aws_profile'" : '') . ' --quiet cp - "$1"', '--');
 } else {
     -d $outdir or make_path $outdir;
     @transfer_cmd = (qw!/bin/sh -c!, 'exec gzip -9 > "$1" && sync "$1"', '--');
@@ -226,7 +236,7 @@ sub prune {
     my $accid = shift;
 
     my $start = [Time::HiRes::gettimeofday];
-    my $fn = "$outdir/acc_$accid-tm_$start->[0].json.gz";
+    my $fn    = "$outdir/acc_$accid-tm_$start->[0].json.gz";
     my $fh;
     my $n = 0;
 
@@ -236,7 +246,7 @@ sub prune {
         $sth->execute;
         last if 0 == $sth->rows;
         while (my $row = $sth->fetchrow_arrayref) {
-            unless ($n) {           # open the file only if needed
+            unless ($n) {    # open the file only if needed
                 open $fh, '|-', @transfer_cmd, $fn
                     or die "Cannot open pipe to gzip to write $fn: $!\n";
                 binmode $fh, 'encoding(utf-8)';
@@ -251,9 +261,11 @@ sub prune {
 
     if ($n) {
         close $fh
-            or die ($!+0
-                    ? "While closing pipe to gzip to write $outdir/$accid.gz: $!\n"
-                    : "Gzip $outdir/$accid.gz failed (rc=$?)\n");
+            or die(
+            $! + 0
+            ? "While closing pipe to gzip to write $outdir/$accid.gz: $!\n"
+            : "Gzip $outdir/$accid.gz failed (rc=$?)\n"
+            );
 
         print "$$: Pruned account $accid of $n transactions\n";
     } else {
@@ -261,7 +273,7 @@ sub prune {
     }
     $log_it->execute($accid, $n, Time::HiRes::tv_interval($start));
 
-    return 1;                   # success
+    return 1;    # success
 }
 
 sub txn {
@@ -279,7 +291,7 @@ sub txn {
     } else {
         $next_account->execute;
         $accid = $next_account->fetchall_arrayref;
-        unless (defined $accid and @$accid) {   # all done
+        unless (defined $accid and @$accid) {    # all done
             $db->rollback;
             return 0;
         }
@@ -289,27 +301,27 @@ sub txn {
     if (prune $accid) {
         $db->commit;
         shift @accounts if $account_mode;
-        return 1;               # did something
+        return 1;                                # did something
     }
 
     $db->rollback;
-    return '0 but true';       # tried something but it was rolled back
+    return '0 but true';                         # tried something but it was rolled back
 }
 
 sub once {
-    my $res = eval{txn};
+    my $res = eval { txn };
     return $res if defined $res;
-    warn $@ if $@;
-    eval {$db->rollback};
-    eval {$db->disconnect};
+    warn $@     if $@;
+    eval { $db->rollback };
+    eval { $db->disconnect };
     undef $db;
     sleep 1;
-    eval {opendb};
+    eval { opendb };
     return 1;
 }
 
 if (@accounts) {
-    @accounts = map {split /[,\s]+/} @accounts;
+    @accounts     = map { split /[,\s]+/ } @accounts;
     $account_mode = 1;
 }
 1 while once;

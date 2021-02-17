@@ -19,7 +19,7 @@ use warnings;
 use YAML qw/LoadFile/;
 use File::ShareDir ();
 
-my $l=LoadFile(File::ShareDir::dist_file('Finance-Underlying', 'underlyings.yml'));
+my $l = LoadFile(File::ShareDir::dist_file('Finance-Underlying', 'underlyings.yml'));
 my ($connection_param, $tablename) = @ARGV;
 open my $psql, '|-', 'psql', '-X1', '-v', 'ON_ERROR_STOP=on', $connection_param;
 
@@ -28,10 +28,9 @@ CREATE TEMP TABLE tt(LIKE $tablename) ON COMMIT DROP;
 COPY tt(symbol, market, submarket, market_type) FROM stdin;
 EOF
 
-print $psql "$_\t$l->{$_}->{market}\t$l->{$_}->{submarket}\t".(defined $l->{$_}->{market_type} ? $l->{$_}->{market_type} : 'financial')."\n"
+print $psql "$_\t$l->{$_}->{market}\t$l->{$_}->{submarket}\t" . (defined $l->{$_}->{market_type} ? $l->{$_}->{market_type} : 'financial') . "\n"
     for (sort keys %$l);
 print $psql "\\.\n";
-
 
 print $psql <<"EOF";
 INSERT INTO $tablename AS m(symbol, market, submarket, market_type)
