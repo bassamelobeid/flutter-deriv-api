@@ -8,6 +8,7 @@ use Test::FailWarnings;
 use Test::Warnings qw(warning);
 
 use MojoX::JSON::RPC::Client;
+use URI;
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
@@ -399,83 +400,61 @@ subtest 'all status are covered' => sub {
 };
 
 subtest 'crypto_cashier_forward_page' => sub {
-    my $prefix           = 'cryptocurrency';
-    my $language         = 'EN';
-    my $currency         = "BTC";
-    my $loginid          = 'CR90000000';
-    my $website_name     = '';
-    my $brand_name       = 'binary.com';
-    my $action           = 'deposit';
-    my $app_id           = 1098;
-    my $deriv_brand_name = 'deriv.app';
-    my $deriv_app_id     = 16303;
+    my $prefix = 'cryptocurrency';
 
-    my $invalid_deposit = BOM::RPC::v3::Cashier::_get_cashier_url(
-        $prefix,
-        {
-            loginid      => $loginid,
-            website_name => $website_name,
-            currency     => $currency,
-            action       => $action,
-            language     => $language,
-            brand_name   => $brand_name,
-            domain       => 'binary.la',
-        });
+    my $mock_cashier = Test::MockModule->new('BOM::RPC::v3::Cashier');
+    $mock_cashier->mock(_get_handoff_token_key => sub { return 'test_token' });
 
+    my $args = {
+        loginid      => 'CR90000000',
+        website_name => '',
+        currency     => 'BTC',
+        action       => 'deposit',
+        language     => 'EN',
+        brand_name   => 'binary',
+        domain       => 'binary.la',
+        app_id       => 1098
+    };
+
+    sub test_uri_params {
+        my ($address, $args) = @_;
+
+        my $url             = URI->new($address);
+        my %expected_params = (
+            $args->%{qw/loginid currency action brand app_id/},
+            l     => $args->{language},
+            brand => $args->{brand_name},
+            token => 'test_token'
+        );
+        is_deeply({$url->query_form}, \%expected_params, 'URL params are matching');
+    }
+
+    my $invalid_deposit = BOM::RPC::v3::Cashier::_get_cashier_url($prefix, $args);
     ok $invalid_deposit =~ /^https:\/\/crypto-cashier.binary.com/, 'valid domain to invalid domain';
-    my $valid_deposit = BOM::RPC::v3::Cashier::_get_cashier_url(
-        $prefix,
-        {
-            loginid      => $loginid,
-            website_name => $website_name,
-            currency     => $currency,
-            action       => $action,
-            language     => $language,
-            brand_name   => $brand_name,
-            domain       => 'binary.me',
-        });
+    test_uri_params($invalid_deposit, $args);
+
+    $args->{domain} = 'binary.me';
+    my $valid_deposit = BOM::RPC::v3::Cashier::_get_cashier_url($prefix, $args);
+    test_uri_params($valid_deposit, $args);
+
+    $args->{domain} = 'binary.la';
     ok $valid_deposit =~ /^https:\/\/crypto-cashier.binary.me/, 'valid domain to valid domain';
-    my $deriv_invalid_deposit = BOM::RPC::v3::Cashier::_get_cashier_url(
-        $prefix,
-        {
-            loginid      => $loginid,
-            website_name => $website_name,
-            currency     => $currency,
-            action       => $action,
-            language     => $language,
-            brand_name   => $deriv_brand_name,
-            domain       => 'deriv.la',
-        });
+    my $deriv_invalid_deposit = BOM::RPC::v3::Cashier::_get_cashier_url($prefix, $args);
+    test_uri_params($deriv_invalid_deposit, $args);
 
+    $args->{domain} = 'deriv.app';
     ok $deriv_invalid_deposit =~ /^https:\/\/crypto-cashier.binary.com/, 'valid deriv domain to invalid domain';
-    my $deriv_valid_deposit = BOM::RPC::v3::Cashier::_get_cashier_url(
-        $prefix,
-        {
-            loginid      => $loginid,
-            website_name => $website_name,
-            currency     => $currency,
-            action       => $action,
-            language     => $language,
-            brand_name   => $deriv_brand_name,
-            domain       => 'deriv.app',
-        });
-
+    my $deriv_valid_deposit = BOM::RPC::v3::Cashier::_get_cashier_url($prefix, $args);
     ok $deriv_valid_deposit =~ /^https:\/\/crypto-cashier.deriv.app/, 'valid deriv domain to valid deriv domain';
+    test_uri_params($deriv_valid_deposit, $args);
 
-    $website_name = 'binaryqa25.com';
-    my $valid_QA_deposit = BOM::RPC::v3::Cashier::_get_cashier_url(
-        $prefix,
-        {
-            loginid      => $loginid,
-            website_name => $website_name,
-            currency     => $currency,
-            action       => $action,
-            language     => $language,
-            brand_name   => $brand_name,
-            domain       => 'binary.me',
-        });
+    $args->{website_name} = 'binaryqa25.com';
+    $args->{domain}       = 'binary.me';
+    my $valid_QA_deposit = BOM::RPC::v3::Cashier::_get_cashier_url($prefix, $args);
     ok $valid_QA_deposit =~ /^https:\/\/www.binaryqa25.com/;
+    test_uri_params($valid_QA_deposit, $args);
 
+    $mock_cashier->unmock_all;
 };
 
 done_testing();

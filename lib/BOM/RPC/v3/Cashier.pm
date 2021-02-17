@@ -146,6 +146,7 @@ rpc "cashier", sub {
             language     => $params->{language},
             brand_name   => $brand->name,
             domain       => $params->{domain},
+            app_id       => $params->{app_id} // $params->{source},
         });
     }
 
@@ -353,8 +354,8 @@ sub _get_cryptocurrency_cashier_url {
 sub _get_cashier_url {
     my ($prefix, $args) = @_;
 
-    my ($loginid, $website_name, $currency, $action, $language, $brand_name, $domain) =
-        @{$args}{qw/loginid website_name currency action language brand_name domain/};
+    my ($loginid, $website_name, $currency, $action, $language, $brand_name, $domain, $app_id) =
+        @{$args}{qw/loginid website_name currency action language brand_name domain app_id/};
 
     $prefix = lc($currency) if $prefix eq 'cryptocurrency';
 
@@ -372,7 +373,9 @@ sub _get_cashier_url {
     }
 
     $url .=
-        "/handshake?token=" . _get_handoff_token_key($loginid) . "&loginid=$loginid&currency=$currency&action=$action&l=$language&brand=$brand_name";
+          "/handshake?token="
+        . _get_handoff_token_key($loginid)
+        . "&loginid=$loginid&currency=$currency&action=$action&l=$language&brand=$brand_name&app_id=$app_id";
 
     return $url;
 }
