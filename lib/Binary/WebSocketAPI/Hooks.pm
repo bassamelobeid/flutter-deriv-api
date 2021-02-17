@@ -767,4 +767,35 @@ sub check_app_id {
 
 }
 
+=head2 ignore_queue_separations
+
+Check for ignored queues and rewrite the proper category name before passing request forward
+
+=over 4
+
+=item * C<$c> - Connection context object
+
+=item * C<$req_storage> - Request data
+
+=back
+
+Returns void
+
+=cut
+
+sub ignore_queue_separations {
+    my (undef, $req_storage) = @_;
+
+    # Default queue
+    return undef unless $req_storage->{msg_group};
+
+    # Queue is activated.
+    return undef if $Binary::WebSocketAPI::RPC_ACTIVE_QUEUES{$req_storage->{msg_group}};
+
+    #Switch message to default queue.
+    $req_storage->{msg_group} = undef;
+
+    return undef;
+}
+
 1;

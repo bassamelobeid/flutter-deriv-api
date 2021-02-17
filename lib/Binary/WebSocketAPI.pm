@@ -71,9 +71,12 @@ our $WS_BACKENDS;
 
 my $node_config;
 
+# a hash of rpc queue configs per environment
+our %RPC_ACTIVE_QUEUES;
+
 =head2 _category_timeout_config
 
-Load configuration file for rpc redis timeouts
+Load configuration file for rpc queue timeouts
 
 =cut
 
@@ -226,7 +229,7 @@ sub startup {
     my $actions = Binary::WebSocketAPI::Actions::actions_config();
 
     my $category_timeout_config = _category_timeout_config();
-
+    %RPC_ACTIVE_QUEUES = map { $_ => 1 } @{$app->config->{rpc_active_queues} // []};
     my $backend_rpc_redis = redis_rpc();
     $WS_BACKENDS = {
         rpc_redis => {
@@ -234,7 +237,7 @@ sub startup {
             redis                    => $backend_rpc_redis,
             timeout                  => $app->config->{rpc_queue_response_timeout},
             category_timeout_config  => $category_timeout_config,
-            queue_separation_enabled => $app->config->{rpc_queue_separation_enabled}
+            queue_separation_enabled => $app->config->{rpc_queue_separation_enabled},
         },
     };
 
@@ -295,9 +298,10 @@ sub startup {
             binary_frame => \&Binary::WebSocketAPI::v3::Wrapper::DocumentUpload::document_upload,
             # action hooks
             before_forward => [
-                \&Binary::WebSocketAPI::Hooks::start_timing,      \&Binary::WebSocketAPI::Hooks::before_forward,
-                \&Binary::WebSocketAPI::Hooks::assign_rpc_url,    \&Binary::WebSocketAPI::Hooks::introspection_before_forward,
-                \&Binary::WebSocketAPI::Hooks::assign_ws_backend, \&Binary::WebSocketAPI::Hooks::check_app_id
+                \&Binary::WebSocketAPI::Hooks::start_timing,                 \&Binary::WebSocketAPI::Hooks::before_forward,
+                \&Binary::WebSocketAPI::Hooks::ignore_queue_separations,     \&Binary::WebSocketAPI::Hooks::assign_rpc_url,
+                \&Binary::WebSocketAPI::Hooks::introspection_before_forward, \&Binary::WebSocketAPI::Hooks::assign_ws_backend,
+                \&Binary::WebSocketAPI::Hooks::check_app_id
             ],
             before_call => [
                 \&Binary::WebSocketAPI::Hooks::log_call_timing_before_forward, \&Binary::WebSocketAPI::Hooks::add_app_id,
@@ -355,7 +359,8 @@ sub startup {
                             sprintf("rpc:%s",    $req_storage->{method}),
                             sprintf("source:%s", $c->stash('source')),
                             sprintf("error_type:%s", ($error->{type} // 'UnhandledErrorType')),
-                        ]});
+                            sprintf("stream:%s",
+                                ($req_storage->{msg_group} // Mojo::WebSocketProxy::Backend::ConsumerGroups::DEFAULT_CATEGORY_NAME()))]});
                 return undef;
             },
         });
