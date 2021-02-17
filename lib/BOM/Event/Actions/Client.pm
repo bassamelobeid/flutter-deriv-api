@@ -72,14 +72,14 @@ use constant UPLOAD_TIMEOUT => 60;
 
 # Redis key namespace to store onfido applicant id
 use constant ONFIDO_REQUEST_PER_USER_PREFIX  => 'ONFIDO::DAILY::REQUEST::PER::USER::';
-use constant ONFIDO_REQUEST_PER_USER_LIMIT   => $ENV{ONFIDO_REQUEST_PER_USER_LIMIT} // 3;
+use constant ONFIDO_REQUEST_PER_USER_LIMIT   => $ENV{ONFIDO_REQUEST_PER_USER_LIMIT}   // 3;
 use constant ONFIDO_REQUEST_PER_USER_TIMEOUT => $ENV{ONFIDO_REQUEST_PER_USER_TIMEOUT} // 24 * 60 * 60;
 use constant ONFIDO_PENDING_REQUEST_PREFIX   => 'ONFIDO::PENDING::REQUEST::';
 use constant ONFIDO_PENDING_REQUEST_TIMEOUT  => 20 * 60;
 
 # Redis key namespace to store onfido results and link
-use constant ONFIDO_REQUESTS_LIMIT => $ENV{ONFIDO_REQUESTS_LIMIT} // 1000;
-use constant ONFIDO_LIMIT_TIMEOUT  => $ENV{ONFIDO_LIMIT_TIMEOUT}  // 24 * 60 * 60;
+use constant ONFIDO_REQUESTS_LIMIT                  => $ENV{ONFIDO_REQUESTS_LIMIT} // 1000;
+use constant ONFIDO_LIMIT_TIMEOUT                   => $ENV{ONFIDO_LIMIT_TIMEOUT}  // 24 * 60 * 60;
 use constant ONFIDO_AUTHENTICATION_CHECK_MASTER_KEY => 'ONFIDO_AUTHENTICATION_REQUEST_CHECK';
 use constant ONFIDO_REQUEST_COUNT_KEY               => 'ONFIDO_REQUEST_COUNT';
 use constant ONFIDO_CHECK_EXCEEDED_KEY              => 'ONFIDO_CHECK_EXCEEDED';
@@ -89,24 +89,24 @@ use constant ONFIDO_DOCUMENT_ID_PREFIX              => 'ONFIDO::DOCUMENT::ID::';
 use constant ONFIDO_IS_A_RESUBMISSION_KEY_PREFIX    => 'ONFIDO::IS_A_RESUBMISSION::ID::';
 
 use constant ONFIDO_SUPPORTED_COUNTRIES_KEY                    => 'ONFIDO_SUPPORTED_COUNTRIES';
-use constant ONFIDO_SUPPORTED_COUNTRIES_TIMEOUT                => $ENV{ONFIDO_SUPPORTED_COUNTRIES_TIMEOUT} // 7 * 86400;                     # 1 week
+use constant ONFIDO_SUPPORTED_COUNTRIES_TIMEOUT                => $ENV{ONFIDO_SUPPORTED_COUNTRIES_TIMEOUT} // 7 * 86400;    # 1 week
 use constant ONFIDO_UNSUPPORTED_COUNTRY_EMAIL_PER_USER_PREFIX  => 'ONFIDO::UNSUPPORTED::COUNTRY::EMAIL::PER::USER::';
 use constant ONFIDO_UNSUPPORTED_COUNTRY_EMAIL_PER_USER_TIMEOUT => $ENV{ONFIDO_UNSUPPORTED_COUNTRY_EMAIL_PER_USER_TIMEOUT} // 24 * 60 * 60;
-use constant ONFIDO_AGE_EMAIL_PER_USER_TIMEOUT                 => $ENV{ONFIDO_AGE_EMAIL_PER_USER_TIMEOUT} // 24 * 60 * 60;
+use constant ONFIDO_AGE_EMAIL_PER_USER_TIMEOUT                 => $ENV{ONFIDO_AGE_EMAIL_PER_USER_TIMEOUT}                 // 24 * 60 * 60;
 use constant ONFIDO_AGE_BELOW_EIGHTEEN_EMAIL_PER_USER_PREFIX   => 'ONFIDO::AGE::BELOW::EIGHTEEN::EMAIL::PER::USER::';
 use constant ONFIDO_ADDRESS_REQUIRED_FIELDS                    => qw(address_postcode residence);
 use constant ONFIDO_UPLOAD_TIMEOUT_SECONDS                     => 30;
 use constant SR_CHECK_TIMEOUT                                  => 5;
 
 # Redis TTLs
-use constant TTL_ONFIDO_APPLICANT_CONTEXT_HOLDER => 240 * 60 * 60;    # 10 days in seconds
+use constant TTL_ONFIDO_APPLICANT_CONTEXT_HOLDER => 240 * 60 * 60;                                                          # 10 days in seconds
 
 # Redis keys to stop sending new emails in a specific time
 use constant ONFIDO_POI_EMAIL_NOTIFICATION_SENT_PREFIX => 'ONFIDO::POI::EMAIL::NOTIFICATION::SENT::';
 
 # Redis key for resubmission counter
 use constant ONFIDO_RESUBMISSION_COUNTER_KEY_PREFIX => 'ONFIDO::RESUBMISSION_COUNTER::ID::';
-use constant ONFIDO_RESUBMISSION_COUNTER_TTL        => 2592000;                                # 30 days (in seconds)
+use constant ONFIDO_RESUBMISSION_COUNTER_TTL        => 2592000;                                                             # 30 days (in seconds)
 
 # List of document types that we use as proof of address
 use constant POA_DOCUMENTS_TYPE => qw(
@@ -825,7 +825,7 @@ async sub onfido_doc_ready_for_upload {
     my $acquire_lock = BOM::Platform::Redis::acquire_lock($lock_key, ONFIDO_UPLOAD_TIMEOUT_SECONDS);
     # A test is expecting this log warning though.
     $log->warn("Document already exists") unless $acquire_lock;
-    return unless $acquire_lock;
+    return                                unless $acquire_lock;
 
     try {
         $upload_info = $client->db->dbic->run(
@@ -1021,7 +1021,7 @@ async sub _address_verification {
     my $addr = await $future_verify_ss;
 
     my $status = $addr->status;
-    $log->debugf('Smartystreets verification status: %s', $status);
+    $log->debugf('Smartystreets verification status: %s',      $status);
     $log->debugf('Address info back from SmartyStreets is %s', {%$addr});
 
     if (not $addr->accuracy_at_least('locality')) {
@@ -2062,8 +2062,8 @@ sub qualifying_payment_check {
 
         my $client_info_required = {
             statuses               => join(',', @{$status->all}),
-            age_verified           => $status->age_verification ? 'Yes' : 'No',
-            authentication_status  => $auth_status eq 'no' ? 'Not authenticated' : $auth_status,
+            age_verified           => $status->age_verification ? 'Yes'               : 'No',
+            authentication_status  => $auth_status eq 'no'      ? 'Not authenticated' : $auth_status,
             account_opening_reason => $client->account_opening_reason,
             currency               => $client_currency,
             balance                => $account->balance,
@@ -2122,10 +2122,10 @@ async sub payment_deposit {
 
     my $is_first_deposit   = $args->{is_first_deposit};
     my $payment_processor  = $args->{payment_processor} // '';
-    my $transaction_id     = $args->{transaction_id} // '';
+    my $transaction_id     = $args->{transaction_id}    // '';
     my $account_identifier = $args->{account_identifier};
     my $payment_method     = $args->{payment_method} // '';
-    my $payment_type       = $args->{payment_type} // '';
+    my $payment_type       = $args->{payment_type}   // '';
 
     if ($is_first_deposit) {
         try {
@@ -2616,7 +2616,7 @@ Returns, undef.
 =cut
 
 async sub shared_payment_method_found {
-    my ($args) = @_;
+    my ($args)         = @_;
     my $client_loginid = $args->{client_loginid} or die 'No client login ID specified';
     my $shared_loginid = $args->{shared_loginid} or die 'No shared client login ID specified';
 

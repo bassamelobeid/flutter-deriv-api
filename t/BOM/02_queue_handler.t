@@ -237,13 +237,11 @@ subtest 'clean_data_for_logging' => sub {
 
 subtest 'clean_data_for_logging_utf8' => sub {
     my $event_data_json = Encode::encode("UTF-8",
-        '{"details":{"loginid":"CR10000","properties":{"type":"real"},"email":"abc@def.com"},"utf_8":"À Á Â Ã Ä Å Æ Ç È É Ê Ë Ì Í Î Ï Ð Ñ Ò Ó "}'
-    );
+        '{"details":{"loginid":"CR10000","properties":{"type":"real"},"email":"abc@def.com"},"utf_8":"À Á Â Ã Ä Å Æ Ç È É Ê Ë Ì Í Î Ï Ð Ñ Ò Ó "}');
     my $expected_cleaned_data = '{"sanitised_details":{"loginid":"CR10000"},"utf_8":"À Á Â Ã Ä Å Æ Ç È É Ê Ë Ì Í Î Ï Ð Ñ Ò Ó "}';
 
     my $cleaned_data = BOM::Event::QueueHandler->clean_data_for_logging($event_data_json);
-    like $cleaned_data, qr/"utf_8":"À Á Â Ã Ä Å Æ Ç È É Ê Ë Ì Í Î Ï Ð Ñ Ò Ó "/,
-        'utf_8 characters OK when JSON string with UTF8 passed';
+    like $cleaned_data, qr/"utf_8":"À Á Â Ã Ä Å Æ Ç È É Ê Ë Ì Í Î Ï Ð Ñ Ò Ó "/, 'utf_8 characters OK when JSON string with UTF8 passed';
 
     my $event_data_hashref = decode_json_utf8($event_data_json);
     $cleaned_data = BOM::Event::QueueHandler->clean_data_for_logging($event_data_hashref);

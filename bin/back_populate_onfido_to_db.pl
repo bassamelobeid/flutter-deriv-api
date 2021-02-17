@@ -40,8 +40,13 @@ my $loop = IO::Async::Loop->new;
 $loop->add(my $services = BOM::Event::Services->new);
 
 {
+
     sub _onfido {
-        $services->add_child(my $service = WebService::Async::Onfido->new(token => BOM::Config::third_party()->{onfido}->{authorization_token}, requests_per_minute => $requests_per_minute));
+        $services->add_child(
+            my $service = WebService::Async::Onfido->new(
+                token               => BOM::Config::third_party()->{onfido}->{authorization_token},
+                requests_per_minute => $requests_per_minute
+            ));
         return $service;
     }
 }
@@ -103,10 +108,10 @@ my $handler = async sub {
 
         # Get loginid from check tags to create client object for binary_user_id and place_of_birth
         my ($loginid) = map { /^([A-Z]{1,4}\d+)$/ } $checks[0]->tags->@*;
-        die ("No loginid detected for $applicant_id with tags ".join(',',$checks[0]->tags->@*)) unless ($loginid);
+        die("No loginid detected for $applicant_id with tags " . join(',', $checks[0]->tags->@*)) unless ($loginid);
         $log->debugf('Extract loginid %s from tags ( %s )', $loginid, join(', ', $checks[0]->tags->@*));
         my $client = BOM::User::Client->new({loginid => $loginid})
-            or die ("Could not instantiate client for applicant_id: $applicant_id with login ID: $loginid\n");
+            or die("Could not instantiate client for applicant_id: $applicant_id with login ID: $loginid\n");
 
         $log->debugf('Insert applicant data for user %s and applicant id %s', $client->binary_user_id, $applicant_id);
         my $dbic = BOM::Database::UserDB::rose_db()->dbic;
@@ -114,7 +119,7 @@ my $handler = async sub {
             fixup => sub {
                 $_->do(
                     'select users.add_onfido_applicant(?::TEXT, ?::TIMESTAMP, ?::TEXT, ?::BIGINT)',
-                    undef, $applicant->id, Date::Utility->new($applicant->created_at)->datetime_yyyymmdd_hhmmss,
+                    undef,            $applicant->id, Date::Utility->new($applicant->created_at)->datetime_yyyymmdd_hhmmss,
                     $applicant->href, $client->binary_user_id
                 );
             });
@@ -148,27 +153,20 @@ my $handler = async sub {
                     );
                 });
         }
-        
+
         my @live_photos = await $onfido->photo_list(applicant_id => $applicant_id)->as_list;
-        
+
         foreach my $photo (@live_photos) {
             $log->debugf('Insert live photo data for user %s and document id %s', $client->binary_user_id, $photo->id);
             $dbic->run(
                 fixup => sub {
                     $_->do(
                         'select users.add_onfido_live_photo(?::TEXT, ?::TEXT, ?::TIMESTAMP, ?::TEXT, ?::TEXT, ?::TEXT, ?::TEXT, ?::INTEGER)',
-                        undef,
-                        $photo->id,
-                        $applicant->id,
-                        Date::Utility->new($photo->created_at)->datetime_yyyymmdd_hhmmss,
-                        $photo->href,
-                        $photo->download_href,
-                        $photo->file_name,
-                        $photo->file_type,
-                        $photo->file_size
+                        undef, $photo->id, $applicant->id, Date::Utility->new($photo->created_at)->datetime_yyyymmdd_hhmmss,
+                        $photo->href, $photo->download_href, $photo->file_name, $photo->file_type, $photo->file_size
                     );
                 });
-            
+
         }
 
         foreach my $check (@checks) {
@@ -212,8 +210,7 @@ my $handler = async sub {
                     });
             }
         }
-    }
-    catch {
+    } catch {
         my $e = $@;
         $log->errorf('Error: %s', $e);
         my $filename = './failed_backpopulate_list.txt';

@@ -128,14 +128,13 @@ async sub _store_applicant_documents {
                     onfido_result => $doc,
                     all_report    => $all_report
                 });
-            }
-            catch {
+            } catch {
                 $log->errorf("Error in downloading document %s for client %s and sync document file : $@", $client->loginid, $doc->id);
             }
         }
     }
 
-    my @live_photos = await $onfido->photo_list(applicant_id => $applicant_id)->as_list;
+    my @live_photos            = await $onfido->photo_list(applicant_id => $applicant_id)->as_list;
     my $existing_onfido_photos = BOM::User::Onfido::get_onfido_live_photo($client->binary_user_id);
 
     foreach my $photo (@live_photos) {
@@ -153,8 +152,7 @@ async sub _store_applicant_documents {
                     onfido_result => $photo,
                     all_report    => $all_report
                 });
-            }
-            catch {
+            } catch {
                 $log->errorf("Error in downloading photo file %s for client %s and sync photo file : $@", $client->loginid, $photo->id);
             }
 
@@ -211,11 +209,11 @@ async sub _sync_onfido_bo_document {
     } else {
         die "Unsupported document type";
     }
-    die "Invalid expiration date" if($expiration_date                                                 
-                && $expiration_date ne (eval { Date::Utility->new($expiration_date)->date_yyyymmdd } // ''));
+    die "Invalid expiration date" if ($expiration_date
+        && $expiration_date ne (eval { Date::Utility->new($expiration_date)->date_yyyymmdd } // ''));
     my $file_type = $onfido_res->file_type;
 
-    my $fh = File::Temp->new(DIR => '/var/lib/binary');
+    my $fh           = File::Temp->new(DIR => '/var/lib/binary');
     my $tmp_filename = $fh->filename;
     print $fh $image_blob;
     seek $fh, 0, 0;
@@ -249,8 +247,7 @@ async sub _sync_onfido_bo_document {
 
         $log->debugf("Starting to upload file_id: $file_id to S3 ");
         $s3_uploaded = await $s3_client->upload($new_file_name, $tmp_filename, $file_checksum);
-    }
-    catch {
+    } catch {
         my $error = $@;
         local $log->context->{loginid}         = $client->loginid;
         local $log->context->{doc_type}        = $doc_type;
@@ -280,8 +277,7 @@ async sub _sync_onfido_bo_document {
                 loginid    => $client->loginid,
                 properties => $document_info
             });
-        }
-        catch {
+        } catch {
             my $error = $@;
             $log->errorf("Error in updating db for %s : %s", $client->loginid, $error);
         };
@@ -289,7 +285,6 @@ async sub _sync_onfido_bo_document {
 
     return;
 }
-
 
 sub _get_document_details {
     my (%args) = @_;
@@ -324,8 +319,7 @@ AND status != 'uploading'
 AND id = ?
 SQL
                 });
-        }
-        catch {
+        } catch {
             die "An error occurred while getting document details ($file_id) from database for login ID $loginid.";
         };
         $doc;

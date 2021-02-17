@@ -1504,8 +1504,8 @@ subtest 'account_reactivated' => sub {
     ok $handler->($call_args), 'Event processed successfully';
     my $msg = mailbox_search(subject => qr/Welcome back! Your account is ready./);
     ok $msg, 'Email to client is found';
-    like $msg->{body},   qr/Check your personal details/, 'Email contains link to profile page';
-    unlike $msg->{body}, qr/Upload your documents/,       'No link to POI page';
+    like $msg->{body},    qr/Check your personal details/, 'Email contains link to profile page';
+    unlike $msg->{body},  qr/Upload your documents/,       'No link to POI page';
     is_deeply $msg->{to}, [$test_client->email], 'Client email address is correct';
 
     $needs_verification = 1;
@@ -1513,8 +1513,8 @@ subtest 'account_reactivated' => sub {
     ok $handler->($call_args), 'Event processed successfully';
     $msg = mailbox_search(subject => qr/Welcome back! Your account is ready./);
     ok $msg, 'Email to client is found';
-    unlike $msg->{body}, qr/Check your personal details/, 'Email contains link to profile page';
-    like $msg->{body},   qr/Upload your documents/,       'No link to POI page';
+    unlike $msg->{body},  qr/Check your personal details/, 'Email contains link to profile page';
+    like $msg->{body},    qr/Upload your documents/,       'No link to POI page';
     is_deeply $msg->{to}, [$test_client->email], 'Client email address is correct';
 
     ok $handler->($call_args), 'Event processed successfully';

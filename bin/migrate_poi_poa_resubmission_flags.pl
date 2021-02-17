@@ -9,9 +9,9 @@ use BOM::User;
 # This script is intended to migrate the poi/poa resubmissions flag
 # into theirs brand new client status codes.
 
-use constant ONE_WEEK => 86400 * 7; # In seconds
+use constant ONE_WEEK => 86400 * 7;    # In seconds
 
-my $redis = BOM::Config::Redis::redis_replicated_write();
+my $redis    = BOM::Config::Redis::redis_replicated_write();
 my $poi_keys = $redis->keys('ONFIDO::ALLOW_RESUBMISSION::ID::*');
 my $poa_keys = $redis->keys('POA::ALLOW_RESUBMISSION::ID::*');
 

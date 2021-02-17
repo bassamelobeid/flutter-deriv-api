@@ -634,15 +634,15 @@ sub test_segment_customer {
 $mock_brands->unmock_all;
 
 subtest 'brand/offical app id validation' => sub {
-    my $deriv  = Brands->new(name => 'deriv');
-    my $binary = Brands->new(name => 'binary');
+    my $deriv           = Brands->new(name => 'deriv');
+    my $binary          = Brands->new(name => 'binary');
     my ($deriv_app_id)  = $deriv->whitelist_apps->%*;
     my ($binary_app_id) = $binary->whitelist_apps->%*;
 
-    ok BOM::Event::Services::Track::_validate_params($test_client->loginid, 'dummy', $deriv, $deriv_app_id),   'Whitelisted app id and brand';
-    ok !BOM::Event::Services::Track::_validate_params($test_client->loginid, 'dummy', $deriv, $binary_app_id), 'Restricted app id or brand';
-    ok BOM::Event::Services::Track::_validate_params($test_client->loginid, 'dummy', $binary, $binary_app_id), 'Whitelisted app id and brand';
-    ok !BOM::Event::Services::Track::_validate_params($test_client->loginid, 'dummy', $binary, $deriv_app_id), 'Restricted app id or brand';
+    ok BOM::Event::Services::Track::_validate_params($test_client->loginid,  'dummy', $deriv,  $deriv_app_id),  'Whitelisted app id and brand';
+    ok !BOM::Event::Services::Track::_validate_params($test_client->loginid, 'dummy', $deriv,  $binary_app_id), 'Restricted app id or brand';
+    ok BOM::Event::Services::Track::_validate_params($test_client->loginid,  'dummy', $binary, $binary_app_id), 'Whitelisted app id and brand';
+    ok !BOM::Event::Services::Track::_validate_params($test_client->loginid, 'dummy', $binary, $deriv_app_id),  'Restricted app id or brand';
 
     subtest 'whitelist' => sub {
         # These events return 1 regardless of the brand / app_id

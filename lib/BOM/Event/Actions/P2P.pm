@@ -293,7 +293,7 @@ sub order_expired {
         my $status = $client->p2p_expire_order(
             id     => $order_id,
             source => $data->{source} // DEFAULT_SOURCE,
-            staff  => $data->{staff} // DEFAULT_STAFF,
+            staff  => $data->{staff}  // DEFAULT_STAFF,
         );
         return $status ? 1 : 0;
     } catch ($err) {

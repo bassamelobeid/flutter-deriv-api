@@ -403,7 +403,7 @@ sub transfer_between_accounts {
 
     $properties->{revenue}  = -($properties->{from_amount} // die('required from_account'));
     $properties->{currency} = $properties->{from_currency} // die('required from_currency');
-    $properties->{value}    = $properties->{from_amount} // die('required from_amount');
+    $properties->{value}    = $properties->{from_amount}   // die('required from_amount');
     $properties->{time}     = _time_to_iso_8601($properties->{time} // die('required time'));
 
     $properties->{fees} = formatnumber('amount', $properties->{from_currency}, $properties->{fees} // 0);
@@ -934,8 +934,8 @@ Arguments:
 
 sub _time_to_iso_8601 {
     my $time = shift;
-    my ($y_m_d, $h_m_s) = split(' ', $time);
-    my ($year, $month,  $day)    = split('-', $y_m_d);
+    my ($y_m_d, $h_m_s)          = split(' ', $time);
+    my ($year, $month, $day)     = split('-', $y_m_d);
     my ($hour, $minute, $second) = split(':', $h_m_s);
     return Time::Moment->from_epoch(
         Time::Moment->new(
@@ -1153,7 +1153,7 @@ sub _create_customer {
     # Will use this attributes as properties in some events like signup
     $customer->{currency}        = $client->account ? $client->account->currency_code : '';
     $customer->{landing_company} = $client->landing_company->short // '';
-    $customer->{date_joined}     = $client->date_joined // '';
+    $customer->{date_joined}     = $client->date_joined            // '';
     $customer->{client_loginid}  = $client->loginid;
 
     return $customer;

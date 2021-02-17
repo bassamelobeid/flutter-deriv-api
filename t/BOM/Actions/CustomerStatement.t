@@ -263,7 +263,7 @@ subtest 'client with payments, trades and P2P' => sub {
         overview     => [['^0\.00$', '^50100\.00$', '^\-2064.00', '^\-614\.00$', '^0\.00$', '47422\.00$', '^47896.00$']],
         close_trades => [[
                 $date_format, '\d+',
-                '^sell$', 'Win payout if Volatility 100 Index is strictly higher than entry spot at 4 hours after contract start time.',
+                '^sell$',    'Win payout if Volatility 100 Index is strictly higher than entry spot at 4 hours after contract start time.',
                 '^100\.00$', '^0\.00$', '^200\.00$', '^0\.00$'
             ],
             [
@@ -274,7 +274,7 @@ subtest 'client with payments, trades and P2P' => sub {
         ],
         open_trades => [[
                 $date_format, '\d+', 'Win payout if Volatility 50 Index is strictly higher than entry spot at 10 hours after contract start time.',
-                '^514.00$', '^1000.00$', '\d+\.\d+',
+                '^514.00$',   '^1000.00$', '\d+\.\d+',
                 '\d+\-\w+\-\d+\s\d{2}:\d{2}:\d{2}',
                 '\d+\-\w+\-\d+\s\d{2}:\d{2}:\d{2}',
                 '[10|9] Hours'

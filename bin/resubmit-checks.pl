@@ -30,23 +30,15 @@ GetOptions(
 $endpoint ||= 'https://www.binaryqa23.com/onfido/';
 $count //= 10;
 $log_level ||= 'info';
-Log::Any::Adapter->import(
-    qw(Stdout),
-    log_level => $log_level
-);
+Log::Any::Adapter->import(qw(Stdout), log_level => $log_level);
 
 my $loop = IO::Async::Loop->new;
-$loop->add(
-    my $onfido = WebService::Async::Onfido->new(
-        token => $token
-    )
-);
+$loop->add(my $onfido = WebService::Async::Onfido->new(token => $token));
 $loop->add(
     my $ua = Net::Async::HTTP->new(
         decode_content => 1,
-        fail_on_error => 1,
-    )
-);
+        fail_on_error  => 1,
+    ));
 
 # When submitting checks, Onfido expects an identity document,
 # so we prioritise the IDs that have a better chance of a good
@@ -77,45 +69,31 @@ my $handler = async sub {
                     status       => "complete"
                 },
                 resource_type => "check"
-            }
-        };
+            }};
         $log->infof('Submitting payload %s', $payload);
         my $content = encode_json_utf8($payload);
-        my $digest = Digest::HMAC->new(
-            ($ENV{ONFIDO_WEBHOOK_TOKEN} // die 'need ONFIDO_WEBHOOK_TOKEN env var'),
-            'Digest::SHA1'
-        );
+        my $digest  = Digest::HMAC->new(($ENV{ONFIDO_WEBHOOK_TOKEN} // die 'need ONFIDO_WEBHOOK_TOKEN env var'), 'Digest::SHA1');
         $digest->add($content);
         return await $ua->POST(
             $endpoint,
             $content,
             content_type => 'application/json',
-            headers => {
-                'X-Signature' => $digest->hexdigest
-            }
-        )
+            headers      => {'X-Signature' => $digest->hexdigest})
     } catch {
         $log->errorf('Failed to submit notification - %s', $@);
         die $@;
     }
 };
 
-if($applicant_id) {
+if ($applicant_id) {
     $bypass = 1;
     $onfido->applicant_get(
         applicant_id => $applicant_id,
-    )->then(sub {
-        shift->checks
-            ->map($handler)
-            ->resolve
-            ->as_list
-    })->get
+    )->then(
+        sub {
+            shift->checks->map($handler)->resolve->as_list;
+        })->get;
 } else {
-    $onfido->applicant_list
-        ->flat_map('checks')
-        ->take($count)
-        ->map($handler)
-        ->resolve
-        ->await;
+    $onfido->applicant_list->flat_map('checks')->take($count)->map($handler)->resolve->await;
 }
 
