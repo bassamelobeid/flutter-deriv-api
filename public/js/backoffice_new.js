@@ -14,19 +14,19 @@ function CheckLoginIDformat(forminput) {
     }
     if (!forminput.value.match(/^\D+\d+$/)) {
         alert('The loginID is not input correctly.');
-        return(false);
+        return (false);
     }
     var $name_broker = $("[name=broker]");
     var broker = $name_broker ? $name_broker.val() : 'CR';
-    if (!(new RegExp('^'+ broker,'i')).test(forminput.value)) {
-        alert('The loginID should start with '+ broker +'.');
-        return(false);
+    if (!(new RegExp('^' + broker, 'i')).test(forminput.value)) {
+        alert('The loginID should start with ' + broker + '.');
+        return (false);
     }
     return true;
 }
 
 function IPWin(url) {
-    newWindow = window.open(url,"IPresolver","toolbar=no,width=700,height=480,directories=no,status=no,scrollbars=yes,resize=no,menubar=no");
+    newWindow = window.open(url, "IPresolver", "toolbar=no,width=700,height=480,directories=no,status=no,scrollbars=yes,resize=no,menubar=no");
 }
 
 function setPointer(theRow, thePointerColor) {
@@ -41,7 +41,7 @@ function setPointer(theRow, thePointerColor) {
     } else {
         return false;
     }
-    var rowCellsCnt  = theCells.length;
+    var rowCellsCnt = theCells.length;
     for (var c = 0; c < rowCellsCnt; c++) {
         theCells[c].style.backgroundColor = thePointerColor;
     }
@@ -58,10 +58,10 @@ function SetTelCategoryVisibility(contact_type) {
 
     if (telCategory) {
         if (contact_type == 'Telephone') {
-            telCategory.style.visibility   = 'visible';
+            telCategory.style.visibility = 'visible';
             sendOutSurveyRow.style.display = '';
         } else {
-            telCategory.style.visibility   = 'hidden';
+            telCategory.style.visibility = 'hidden';
             sendOutSurveyRow.style.display = 'none';
         }
     }
@@ -83,8 +83,17 @@ function affiliate_modification_status(that) {
     }
 }
 
-$(document).ready(function () {
-    $('form.bo_ajax_form').unbind('submit').bind('submit', function (event) {
+function parse_html_response(modal, html) {
+    var div = document.createElement('div');
+    div.innerHTML = html;
+    var modal_title = div.querySelector('.card__label') ? div.querySelector('.card__label').innerHTML : null;
+    var modal_content = div.querySelectorAll('.card__content') ? Array.from(div.querySelectorAll('.card__content')).filter(node => node.innerHTML)[0].innerHTML : div.innerHTML;
+    modal.find('span.modal__title').html(modal_title);
+    modal.find('div.modal__content').html(modal_content);
+}
+
+$(document).ready(function() {
+    $('form.bo_ajax_form').unbind('submit').bind('submit', function(event) {
         var this_form = $(event.target);
         var enctype = this_form.attr('enctype');
 
@@ -98,28 +107,43 @@ $(document).ready(function () {
 
         event.preventDefault();
 
-        var bo_ajax_form_response_container = this_form.find('div.bo_ajax_form_response_container');
-        var bo_ajax_form_response_content_container = null;
+        var modal_overlay = $('body').find('div.modal_overlay');
+        var modal = null;
 
-        if (!bo_ajax_form_response_container.length) {
-            bo_ajax_form_response_container = $('<div class="bo_ajax_form_response_container"><div class="bo_ajax_form_response_content_container">Waiting for response from server. Please wait...1</div><p class="close_button"><button type="button" class="close_button">Close</button></p></div>').appendTo(this_form);
+        if (!modal_overlay.length) {
+            modal_overlay = $(`
+                <div class="modal_overlay" style="display:none">
+                    <div class="modal">
+                        <div class="modal__header">
+                            <span class="modal__title"></span>
+                            <button type="button" class="modal__close_btn">&times;</button>
+                        </div>
+                        <div class="modal__content">
+                            Waiting for response from server. Please wait...1
+                        </div>
+                    </div>
+                </div>`).appendTo($('body'));
 
-            $('button.close_button').bind('click', function () {
-                bo_ajax_form_response_container.hide();
+            $('button.modal__close_btn').bind('click', function() {
+                modal.css({ transform: 'translateY(30px)', opacity: 0 });
+                modal_overlay.detach().delay(250);
 
-                if (bo_ajax_form_response_content_container.find('.success_message').length > 0) {
+                if (modal.find('.success_message').length > 0) {
                     this_form.find('input[type=text]').val('');
                     this_form.find('input[type=file]').val('');
                 }
 
-                bo_ajax_form_response_content_container.html('');
+                modal_overlay.find('div.modal__content').html('');
             });
 
-            bo_ajax_form_response_content_container = bo_ajax_form_response_container.find('div.bo_ajax_form_response_content_container');
+            modal = modal_overlay.find('div.modal');
+            modal_overlay.fadeIn('fast');
+            modal.css({ transform: 'translateY(0px)', opacity: 1 }).delay(250);
         } else {
-            bo_ajax_form_response_content_container = bo_ajax_form_response_container.find('div.bo_ajax_form_response_content_container');
-            bo_ajax_form_response_content_container.html('Waiting for response from server. Please wait...2');
-            bo_ajax_form_response_container.show();
+            modal = modal_overlay.find('div.modal');
+            modal.find('div.modal__content').html('Waiting for response from server. Please wait...2');
+            modal_overlay.fadeIn('fast');
+            modal.css({ transform: 'translateY(0px)', opacity: 1 }).delay(250);
         }
 
         if (enctype === 'multipart/form-data') {
@@ -135,45 +159,42 @@ $(document).ready(function () {
                 processData: false,
                 contentType: false,
                 success: function(response) {
-                    bo_ajax_form_response_content_container.html(response);
+                    parse_html_response(modal, response);
                 },
                 error: function(xmlhttp) {
                     if (xmlhttp.status) {
                         var error_message = '';
                         if (typeof xmlhttp.status !== 'undefined' && xmlhttp.status !== 200) {
-                            error_message = ' (status: '+xmlhttp.status+')';
+                            error_message = ' (status: ' + xmlhttp.status + ')';
                         } else if (xmlhttp.responseText) {
-                            error_message = ' (response: '+xmlhttp.responseText+')';
+                            error_message = ' (response: ' + xmlhttp.responseText + ')';
                         }
-
-                        bo_ajax_form_response_content_container.html(error_message);
+                        modal.find('div.modal__content').html(error_message);
                     } else {
-                            bo_ajax_form_response_content_container.html('unknown error');
+                        modal.find('div.modal__content').html('Unknown error');
                     }
                 },
                 dataType: 'html'
             });
-        }
-        else{
+        } else {
             $.ajax({
                 type: 'POST',
                 url: this_form.attr('action'),
-                data: getFormParams(this)+'&ajax_only=1',
+                data: getFormParams(this) + '&ajax_only=1',
                 success: function(response) {
-                    bo_ajax_form_response_content_container.html(response);
+                    parse_html_response(modal, response);
                 },
                 error: function(xmlhttp) {
                     if (xmlhttp.status) {
                         var error_message = '';
                         if (typeof xmlhttp.status !== 'undefined' && xmlhttp.status !== 200) {
-                            error_message = ' (status: '+xmlhttp.status+')';
+                            error_message = ' (status: ' + xmlhttp.status + ')';
                         } else if (xmlhttp.responseText) {
-                            error_message = ' (response: '+xmlhttp.responseText+')';
+                            error_message = ' (response: ' + xmlhttp.responseText + ')';
                         }
-
-                        bo_ajax_form_response_content_container.html(error_message);
+                        modal.find('div.modal__content').html(error_message);
                     } else {
-                        bo_ajax_form_response_content_container.html('unknown error');
+                        modal.find('div.modal__content').html('unknown error');
                     }
                 },
                 dataType: 'html'
@@ -182,19 +203,19 @@ $(document).ready(function () {
     });
 
     var bo_form_with_files = $('form.bo_form_with_files');
-    var jquery_formresponse_container = bo_form_with_files.find('div.bo_ajax_form_response_container');
-    var jquery_formresponse_content_container = null;
+    var jquery_modal_overlay = $('body').find('div.modal_overlay');
+    var jquery_modal = null;
 
     var ajax_form_options = {
         resetForm: false,
-        beforeSubmit: function () {
+        beforeSubmit: function() {
             // confirmation box
             if (!confirm('Are you sure you want to continue?')) {
                 return false;
             }
 
             // append hidden field ajax_only to indicate submitted from ajax
-            var ajax_only  = bo_form_with_files.find('input#ajax_only');
+            var ajax_only = bo_form_with_files.find('input#ajax_only');
             if (!ajax_only.length) {
                 bo_form_with_files.append('<input type="hidden" name="ajax_only" value="1">');
             } else {
@@ -202,22 +223,37 @@ $(document).ready(function () {
             }
 
             // create response div on the fly
-            if (!jquery_formresponse_container.length) {
-                jquery_formresponse_container = $('<div class="bo_ajax_form_response_container"><div class="bo_ajax_form_response_content_container">Waiting for response from server. Please wait...3</div><p class="close_button"><button type="button" class="close_button">Close</button></p></div>').appendTo(bo_form_with_files);
+            if (!jquery_modal_overlay.length) {
+                jquery_modal_overlay = $(`
+                    <div class="modal_overlay" style="display:none">
+                    <div class="modal">
+                        <div class="modal__header">
+                            <span class="modal__title"></span>
+                            <button type="button" class="modal__close_btn">&times;</button>
+                        </div>
+                        <div class="modal__content">
+                            Waiting for response from server. Please wait...1
+                        </div>
+                    </div>
+                    </div>`).appendTo($('body'));
 
-                $('button.close_button').bind('click', function () {
-                    jquery_formresponse_container.hide();
+                $('button.modal__close_btn').bind('click', function() {
+                    jquery_modal.css({ transform: 'translateY(30px)', opacity: 0 });
+                    jquery_modal_overlay.fadeOut().delay(250);
                 });
 
-                jquery_formresponse_content_container = jquery_formresponse_container.find('div.bo_ajax_form_response_content_container');
+                jquery_modal = jquery_modal_overlay.find('div.modal');
+                jquery_modal_overlay.fadeIn('fast');
+                jquery_modal.css({ transform: 'translateY(0px)', opacity: 1 }).delay(250);
             } else {
-                jquery_formresponse_content_container = jquery_formresponse_container.find('div.bo_ajax_form_response_content_container');
-                jquery_formresponse_content_container.html('Waiting for response from server. Please wait...4');
-                jquery_formresponse_container.show();
+                jquery_modal = jquery_modal_overlay.find('div.modal');
+                jquery_modal.find('div.modal__content').html('Waiting for response from server. Please wait...4');
+                jquery_modal_overlay.fadeIn('fast');
+                jquery_modal.css({ transform: 'translateY(0px)', opacity: 1 }).delay(250);
             }
         },
-        success: function (response){
-            jquery_formresponse_content_container.html(response);
+        success: function(response) {
+            parse_html_response(jquery_modal, response);
         },
         error: function(jqXHR, textStatus) {
             alert('failed: ' + textStatus);
@@ -241,22 +277,22 @@ $(document).ready(function () {
         displayHistogramCharts($histogram_chart);
     }
 
-    $('#format_financial_assessment_score').on('click', function () {
+    $('#format_financial_assessment_score').on('click', function() {
         var $financial_assessment_score = $('#financial_assessment_score');
-        $financial_assessment_score.after('<textarea cols=150 rows=20>' + JSON.stringify(JSON.parse($financial_assessment_score.text()), null , 4) + '</textarea>')
+        $financial_assessment_score.after('<textarea cols=150 rows=20>' + JSON.stringify(JSON.parse($financial_assessment_score.text()), null, 4) + '</textarea>')
     });
 });
 
 function trigger_quant_graph() {
     var parts_start = $('#start').val().match(/(\d{4})\-(\d{2})\-(\d{2}) (\d{2}):(\d{2}):(\d{2})/);
-    var datestring_start = ((Date.UTC(+parts_start[1], parts_start[2]-1, +parts_start[3], +parts_start[4], +parts_start[5], +parts_start[6]))/1000).toFixed(0);
+    var datestring_start = ((Date.UTC(+parts_start[1], parts_start[2] - 1, +parts_start[3], +parts_start[4], +parts_start[5], +parts_start[6])) / 1000).toFixed(0);
     var parts_end = $('#end').val().match(/(\d{4})\-(\d{2})\-(\d{2}) (\d{2}):(\d{2}):(\d{2})/);
-    var datestring_end = ((Date.UTC(+parts_end[1], parts_end[2]-1, +parts_end[3], +parts_end[4], +parts_end[5], +parts_end[6]))/1000).toFixed(0);
+    var datestring_end = ((Date.UTC(+parts_end[1], parts_end[2] - 1, +parts_end[3], +parts_end[4], +parts_end[5], +parts_end[6])) / 1000).toFixed(0);
     $.ajax({
         type: 'POST',
         url: window.location.href.split('bpot')[0] + 'bpot_graph_json.cgi',
         data: 'shortcode=' + $('#shortcode').val() + '&currency=' + $('#currency').val() + "&seasonality_prefix=" + $("#seasonality_prefix").val() +
-                '&start=' + datestring_start + '&end=' + datestring_end + '&timestep=' + $('#timestep').val(),
+            '&start=' + datestring_start + '&end=' + datestring_end + '&timestep=' + $('#timestep').val(),
         success: function(response) {
             draw_quant_graph(response);
         }
@@ -276,8 +312,7 @@ $(function() {
                 form.append($('<p>').addClass('errorfield token').text('Token field must be 32 chars in length.'));
             }
             has_error = 1;
-        }
-        else {
+        } else {
             token_error.remove();
         }
 
@@ -286,8 +321,7 @@ $(function() {
                 form.append($('<p>').addClass('errorfield loginids').text('Some loginids must be given.'));
             }
             has_error = 1;
-        }
-        else {
+        } else {
             loginids_error.remove();
         }
 
@@ -306,7 +340,7 @@ $(function() {
     });
 });
 
-var setSymbolValue = function (e) {
+var setSymbolValue = function(e) {
     var underlying = $(e).find('input[name="underlying"]').val();
     var text = $(e).find('textarea[name="info_text"]').val();
     $(e).find('input[name=symbol]').val(underlying);
@@ -315,7 +349,7 @@ var setSymbolValue = function (e) {
 };
 
 $(function() {
-    $('.confirm_crypto_action').on('click', function () {
+    $('.confirm_crypto_action').on('click', function() {
         return confirm('Are you sure?');
     });
 });
@@ -328,19 +362,16 @@ $(function() {
 /////////////////////////////////////////////////////////////////
 function getFormParams(form_obj) {
     var params_arr = [];
-    if (! form_obj) return '';
+    if (!form_obj) return '';
     var elem = form_obj.elements;
 
-    var j=0;
-    for (var i = 0; i < elem.length; i++)
-    {
-        if(elem[i].name)
-        {
-            if(elem[i].nodeName == 'INPUT' && elem[i].type.match(/radio|checkbox/) && !elem[i].checked)
-            {
+    var j = 0;
+    for (var i = 0; i < elem.length; i++) {
+        if (elem[i].name) {
+            if (elem[i].nodeName == 'INPUT' && elem[i].type.match(/radio|checkbox/) && !elem[i].checked) {
                 continue; // skip if it is not checked
             }
-            params_arr[j] = elem[i].name+'='+encodeURIComponent(elem[i].value);
+            params_arr[j] = elem[i].name + '=' + encodeURIComponent(elem[i].value);
             j++;
         }
     }
@@ -349,8 +380,8 @@ function getFormParams(form_obj) {
 }
 
 /**
-  * Adds thousand separators for numbers.
-  *
+ * Adds thousand separators for numbers.
+ *
  * @param given_num: any number (int or float)
  * @return string
  */
@@ -399,7 +430,7 @@ function draw_quant_graph(data) {
             y: 200
         },
         tooltip: {
-          xDateFormat:'%A, %b %e, %H:%M:%S GMT'
+            xDateFormat: '%A, %b %e, %H:%M:%S GMT'
         },
         yAxis: [{ // Primary yAxis
             title: {
@@ -423,7 +454,7 @@ function draw_quant_graph(data) {
         xAxis: {
             type: 'datetime',
             categories: data.times,
-            labels: { overflow:"justify", format:"{value:%H:%M:%S}" }
+            labels: { overflow: "justify", format: "{value:%H:%M:%S}" }
         }
     });
     for (var key in data.data) {
@@ -485,7 +516,7 @@ function getHistogramData(data, step) {
     }
 
     // Finally, sort the array
-    arr.sort(function (a, b) {
+    arr.sort(function(a, b) {
         return a[0] - b[0];
     });
 
@@ -494,8 +525,8 @@ function getHistogramData(data, step) {
 
 function displayHistogramCharts($container) {
     $.ajax({
-        type   : 'GET',
-        url    : '/d/backoffice/f_dailyico_graph.cgi',
+        type: 'GET',
+        url: '/d/backoffice/f_dailyico_graph.cgi',
         success: function(response) {
             $container.empty();
             Object.keys(response).forEach(function(key) {
@@ -556,16 +587,16 @@ function drawHistogramChart(data, key) {
 
 function smoothScroll(target = 'body', duration = 500, offset = 0) {
     $([document.documentElement, document.body]).animate({
-        scrollTop: $(target).offset().top + offset,
+        scrollTop: $(target)[0].offsetTop + offset,
     }, duration);
 }
 
 function debounce(func, wait, immediate) {
     let timeout;
     const delay = wait || 500;
-    return function (...args) {
-        const context  = this;
-        const later    = () => {
+    return function(...args) {
+        const context = this;
+        const later = () => {
             timeout = null;
             if (!immediate) func.apply(context, args);
         };
@@ -577,16 +608,16 @@ function debounce(func, wait, immediate) {
 }
 
 function createSectionLinks() {
-    const highlight_class = 'highlight-title';
-    const el_top_bar      = document.getElementById('top_bar');
+    const highlight_class = 'highlight';
+    const el_top_bar = document.getElementById('top_bar');
 
     if (!el_top_bar) return;
 
-    const top_margin   = el_top_bar.clientHeight + document.getElementById('main_title').clientHeight + 10;
+    const top_margin = el_top_bar.clientHeight + document.getElementById('main_title').clientHeight + 32;
     const all_sections = [];
 
-    document.querySelectorAll('.container .whitelabel').forEach(el_title => {
-        const text        = el_title.textContent.toLowerCase();
+    document.querySelectorAll('.card__label').forEach(el_title => {
+        const text = el_title.textContent.toLowerCase();
         const anchor_name = text.replace(/[^a-z0-9]/ig, '_');
 
         const el_anchor = document.createElement('a');
@@ -595,10 +626,12 @@ function createSectionLinks() {
 
         const el_link = document.createElement('a');
         el_link.setAttribute('href', `#${anchor_name}`);
+        el_link.setAttribute('class', 'link');
         el_link.textContent = text;
         el_link.addEventListener('click', (e) => {
             e.preventDefault();
             smoothScroll(el_anchor, null, -top_margin);
+            setSection({ name: anchor_name, link: el_link, anchor: el_anchor });
             location.hash = anchor_name;
             el_title.classList.add(highlight_class);
             setTimeout(() => { el_title.classList.remove(highlight_class); }, 2000);
@@ -612,17 +645,17 @@ function createSectionLinks() {
     setSectionLinksScrolling();
 
     let last_section;
-    const setSection = () => { last_section = setCurrentSection(all_sections, top_margin, last_section); };
-    window.addEventListener('scroll', debounce(setSection, 100));
+    const setSection = (current_section = null) => { last_section = setCurrentSection(all_sections, top_margin, last_section, current_section); };
+    window.addEventListener('scroll', debounce(() => setSection(null), 100), true);
     setSection();
 }
 
 function setSectionLinksScrolling() {
     $('#top_bar').on('mousemove', function(e) {
         const container = $(this);
-        const mouse_x   = e.pageX;
-        const offset    = 50;      // specifies the areas from left/right sides that capture mouse movement for scrolling
-        const distance  = mouse_x < offset ? mouse_x : container.width() - mouse_x;
+        const mouse_x = e.pageX;
+        const offset = 50; // specifies the areas from left/right sides that capture mouse movement for scrolling
+        const distance = mouse_x < offset ? mouse_x : container.width() - mouse_x;
         if (distance < offset) {
             const direction = mouse_x - container.offset().left < container.width() / 2 ? '-' : '+';
             // distance multiplication makes the scroll faster as mouse pointer
@@ -634,16 +667,24 @@ function setSectionLinksScrolling() {
     });
 }
 
-function setCurrentSection(all_sections, top_margin, last_section) {
-    const current_position = window.scrollY;
-    const current_section  = all_sections.filter(section => section.anchor.offsetTop + top_margin < current_position).slice(-1)[0];
+function setCurrentSection(all_sections, top_margin, last_section, current_section) {
+    const current_position = document.body.scrollTop;
+
+    if (!current_section && current_position > 230) {
+        // ignore certain top scrollY position
+        current_section = all_sections.filter(section => section.anchor.offsetTop - top_margin - top_margin < current_position).slice(-1)[0];
+    }
+
+    if (!current_section) {
+        current_section = last_section; // inialize current_section
+    };
 
     if (current_section !== last_section) {
         if (last_section) {
-            last_section.link.classList.remove('current');
+            last_section.link.classList.remove('active');
         }
         if (current_section) {
-            current_section.link.classList.add('current');
+            current_section.link.classList.add('active');
         }
     }
 
@@ -663,4 +704,12 @@ function initCopyText() {
 $(function() {
     createSectionLinks();
     initCopyText();
+    $(`.sidebar a[href*="${window.location.pathname}"]`).parent().addClass('active');
+    $('div.card__label.toggle').click(function(e) {
+        e.preventDefault();
+        var element = $(this);
+        element.children('span').toggle();
+        var content_element = element.siblings('div.card__content');
+        content_element.toggle();
+    });
 });
