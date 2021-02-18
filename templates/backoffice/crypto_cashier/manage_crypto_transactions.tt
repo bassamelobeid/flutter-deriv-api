@@ -1,13 +1,13 @@
 [% MACRO address_link BLOCK %]
 [% IF addr %]
-    <a href="[% address_uri _ addr %]" target="_blank">[% addr %]</a>
+    <a class="link" href="[% address_uri _ addr %]" target="_blank">[% addr %]</a>
 [% ELSE %]
     &nbsp;
 [% END %]
 [% END %]
 [% MACRO transaction_link BLOCK %]
 [% IF tx %]
-    <a href="[% transaction_uri _ tx %]" target="_blank">[% tx.substr(0,6) %]...</a>
+    <a class="link" href="[% transaction_uri _ tx %]" target="_blank">[% tx.substr(0,6) %]...</a>
 [% ELSE %]
     &nbsp;
 [% END %]
@@ -16,15 +16,15 @@
 [% BLOCK bulk_verify_controls %]
 <table>
     <tr>
-        <td class="selection_display_text">None selected</td>
+        <td class="bg-lightgrey">None selected</td>
         <td>
             <form action="[% controller_url %]" onsubmit="return bulkConfirm();" method="POST" class="bulk_actions">
                 <input type="hidden" name="currency" value="[%currency%]" />
                 <input type="hidden" name="view_action" value="withdrawals" />
                 <input type="hidden" class="selected_transactions" name="selected_transactions" value="" />
-                <button class="btn btn--primary" name="action" value="bulkSave" disabled>Bulk <span class="action">Remark</span></button>
-                <button class="btn btn--primary" name="action" value="bulkReject" disabled>Bulk <span class="action reject">Reject</span></button>
-                <button class="btn btn--primary" name="action" value="bulkVerify" disabled>Bulk <span class="action verify">Verify</span></button>
+                <button class="btn btn--secondary" name="action" value="bulkSave" disabled>Bulk Remark</button>
+                <button class="btn btn--red" name="action" value="bulkReject" disabled>Bulk Reject</button>
+                <button class="btn btn--primary" name="action" value="bulkVerify" disabled>Bulk Verify</button>
             </form>
         </td>
     </tr>
@@ -34,29 +34,19 @@
 <style>
     table.internal th {
         padding: 0 5px;
+        text-align: right;
     }
     .warning_tag {
-        color:red;
+        color: var(--color-red);
         font-weight:bold;
         text-align: center;
         background-color: #FFFF00;
     }
     table tr.selected, table tr.selected:hover {
-        background: #D0E3C4 !important;
+        background-color: var(--color-yellow);
     }
     .selection_display_text {
-        background: #ddc;
-        padding: 3px 7px;
-    }
-    .action {
-        font-weight: bold;
-        font-size: inherit;
-    }
-    button:not([disabled]) .action.reject, input[value='Reject'] {
-        color: darkred;
-    }
-    button:not([disabled]) .action.verify, input[value='Verify']:not([disabled]) {
-        color: darkgreen;
+        background-color: var(--color-grey-1);;
     }
 </style>
 <table class="small border">
@@ -135,10 +125,10 @@
     <p>There are no such transactions.</p>
 [% ELSE %]
     [% IF view_type == 'pending' && view_action == 'withdrawals' %]
-        <br>
         [% PROCESS bulk_verify_controls %]
     [% END %]
-    <table class="hover alternate full-width">
+    <div class="scrollable">
+    <table class="full-width border">
         <thead>
             <tr>
                 [% IF view_action == 'search' %]
@@ -184,12 +174,12 @@
                         <tr><th>Amount:</th><td>[% trx.currency_code %] [% trx.amount %] (USD [% trx.usd_amount %])</td></tr>
                         <tr>
                             <th>Client:</th>
-                            <td style="line-height: 1.1rem;">
+                            <td>
                                 [% trx.client_loginid %]<br />
-                                <a href="[% trx.statement_link %]" target="_blank">Statement</a><br />
-                                <a href="[% trx.profit_link %]" target="_blank">Profit</a>
+                                <a class="link" href="[% trx.statement_link %]" target="_blank">Statement</a><br />
+                                <a class="link" href="[% trx.profit_link %]" target="_blank">Profit</a>
                             </td>
-                            <td><button onClick="viewFiatStatement(this, '[% trx.client_loginid %]', '[% broker %]', '[% fetch_url %]')"> FIAT Statement</button></td>
+                            <td><button class="btn btn--primary" onClick="viewFiatStatement(this, '[% trx.client_loginid %]', '[% broker %]', '[% fetch_url %]')"> FIAT Statement</button></td>
                             <td></td>
                         </tr>
                         <tr><th>Payment ID:</th><td>[% trx.payment_id %]</td></tr>
@@ -236,18 +226,17 @@
                                 <input type="hidden" name="app_id" value="[% trx.source %]"/>
                             [% END %]
                             <br/>
-                            <label>
-                                Set Remark:<br/>
-                                <textarea name="remark" placeholder="Replaces current remark" data-trxid="[% trx.id %]" oninput="bulkUpdateRemark(this)"></textarea>
-                            </label>
+                            <label>Set Remark:</label>
                             <br/>
-                            <input type="submit" name="action" value="Save"/>
+                            <textarea name="remark" placeholder="Replaces current remark" data-trxid="[% trx.id %]" oninput="bulkUpdateRemark(this)"></textarea>
+                            <br/>
+                            <input class="btn btn--red" type="submit" name="action" value="Save"/>
                             [% IF trx.is_withdrawal_locked %]
                                 <span class="warning_tag">The client withdrawal is locked</span>
                             [% ELSIF trx.authorisers.grep("^$staff\$").size > 0 %]
-                                <input type="submit" name="action" value="Verify" disabled="disabled"/>
+                                <input class="btn btn--disabled" type="submit" name="action" value="Verify" disabled="disabled"/>
                             [% ELSE %]
-                                <input type="submit" name="action" value="Verify"/>
+                                <input class="btn btn--primary" type="submit" name="action" value="Verify"/>
                             [% END %]
                             <br/>
                             <select name="rejection_reason" data-trxid="[% trx.id %]" onchange="bulkUpdateReason(this)">
@@ -256,7 +245,7 @@
                                     <option value="[% option.index %]">[% option.reason %]</option>
                                 [% END %]
                             </select>
-                            <input type="submit" name="action" value="Reject"/>
+                            <input class="btn btn--secondary" type="submit" name="action" value="Reject"/>
                         </form>
                         [% END %]
                     </td>
@@ -274,11 +263,10 @@
         [% END %]
         </tbody>
     </table>
-
+    </div>
     [% IF view_type == 'pending' && view_action == 'withdrawals' %]
         [% PROCESS bulk_verify_controls %]
     [% END %]
-    <br>
 [% END %]
 
 [% url_base = '?broker=' _ broker _ '&currency=' _ currency _ '&show_all_pendings=' _ show_all_pendings _ '&show_one_authorised=' _ show_one_authorised _ '&view_action=' _ view_action %]
