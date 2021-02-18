@@ -1,13 +1,13 @@
 <form id="user-limit-form">
 
-Limit type: 
+<label>Limit type:</label>
     <select name="limit_type_selection">
     [% FOREACH entry IN limit_types.sort %]
                    <option value="[% entry %]"  [% IF limit_type_selected == entry %] selected [% END %]> [% entry %] </option>
             [% END %]
     </select>
 
-Market type:
+<label>Market type:</label>
     <select name="market_type_selection">
     [% FOREACH entry IN market_types.sort %]
                    <option value="[% entry %]" [% IF market_type_selected == entry %] selected [% END %]> [% entry %] </option>
@@ -15,38 +15,42 @@ Market type:
     </select>
 
 
-Comment : <input id="filter_comment" name="comment" type="text" size="10" value="[% comment_selected %]" >
-<input type="submit" name="filterclientlimit" value="FILTER"/>
+<label>Comment:</label><input id="filter_comment" name="comment" type="text" size="10" value="[% comment_selected %]" >
+<input type="submit" class="btn btn--primary" name="filterclientlimit" value="FILTER"/>
 
 <p>
-<input type="submit" name="deleteclientlimit" [% IF disabled %] disabled=true [% END %] value="DELETE"/>
+<input type="submit" class="btn btn--secondary" name="deleteclientlimit" [% IF disabled %] disabled=true [% END %] value="DELETE"/>
 </p>
 
-<table>
+<div class="scrollable">
+<table class="hover alternate">
+    <thead>
     <tr>
-        <td><b>Binary user id &nbsp;</b></td>
-        <td><b>Client login id &nbsp;</b></td>
-        <td><b>Limit id (if applicable) &nbsp;</b></td>
-        <td><b>Limit type &nbsp;</b></td>
-        <td><b>Market type &nbsp;</b></td>
-        <td><b>Client type &nbsp;</b></td>
-        <td><b>Limit condition &nbsp;</b></td>
-        <td><b>Payout limit &nbsp;</b></td>
-        <td><b>Turnover limit &nbsp;</b></td>
-        <td><b>Potential loss limit &nbsp;</b></td>
-        <td><b>Realized loss limit &nbsp;</b></td>
-        <td><b>Expiry &nbsp;</b></td>
-        <td><b>Updated by &nbsp;</b></td>
-        <td><b>Updated on &nbsp;</b></td>
-        <td><b>Comment &nbsp;</b></td>
-        <td><b>Delete &nbsp;</b></td>
+        <th>Binary user ID</th>
+        <th>Client login ID</th>
+        <th>Limit ID (if applicable)</th>
+        <th>Limit type</th>
+        <th>Market type</th>
+        <th>Client type</th>
+        <th>Limit condition</th>
+        <th>Payout limit</th>
+        <th>Turnover limit</th>
+        <th>Potential loss limit</th>
+        <th>Realized loss limit</th>
+        <th>Expiry</th>
+        <th>Updated by</th>
+        <th>Updated on</th>
+        <th>Comment</th>
+        <th>Delete</th>
     </tr>
+    </thead>
+    <tbody>
     [% FOREACH data IN output %]
         <tr>
             <td>[% data.binary_user_id %]</td>
             <td>
                 [% FOREACH loginid IN data.client_id %]
-                    <a href="[% profit_table_url %][% loginid %]">[% loginid %]</a> &nbsp;
+                    <a class="link" href="[% profit_table_url %][% loginid %]">[% loginid %]</a> &nbsp;
                 [% END %]
             </td>
             <td>[% data.limit_id %]</td>
@@ -65,8 +69,9 @@ Comment : <input id="filter_comment" name="comment" type="text" size="10" value=
             <td><input type="checkbox" class="_user-limit-cb" name="deleteclientdata" [% IF disabled %] disabled=true [% END %] value="[% data.client_id.join() %]-[% data.market_type %]-[% data.client_type %]-[% data.limit_id %]"/></td>
         </tr>
     [% END %]
+    </tbody>
 </table>
-</fieldset>
+</div>
 </form>
 
 <script>

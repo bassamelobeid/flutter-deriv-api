@@ -757,7 +757,7 @@ sub build_client_warning_message {
     }
 
     # build the table
-    my $output;
+    my $output = '';
     if (@output) {
         $output =
             '<form method="POST" class="row">'
