@@ -285,25 +285,25 @@ my $args_runs = {
 };
 
 subtest 'runs audit details' => sub {
-    _create_ticks($now->epoch, [100]);    # [entry_tick]
+    _create_ticks($now->epoch, [100]);                             # [entry_tick]
     $args_runs->{date_pricing} = $now->epoch + 1;
     $args_runs->{duration}     = '1t';
     my $c = produce_contract($args_runs);
     ok $c->entry_tick, 'has entry tick';
     ok $c->entry_tick->quote == $c->barrier->as_absolute, 'barrier = entry spot';
     ok !$c->is_expired, 'not expired';
-    _create_ticks($now->epoch, [100, 100]);    # [entry_tick, first_tick]
+    _create_ticks($now->epoch, [100, 100]);                        # [entry_tick, first_tick]
     $c = produce_contract($args_runs);
     ok $c->is_expired, 'expired';
     is $c->value, 0, 'expired worthless if first tick is equals to barrier';
-    _create_ticks($now->epoch, [100, 101, 101]);    # [entry_tick, first_tick ...]
+    _create_ticks($now->epoch, [100, 101, 101]);                   # [entry_tick, first_tick ...]
     $args_runs->{duration} = '2t';
     $c = produce_contract($args_runs);
     ok $c->is_expired, 'expired';
     is $c->value, 0, 'expired worthless if first and second ticks are equal';
-    _create_ticks($now->epoch, [100, 101, 100]);    # [entry_tick, first_tick ...]
+    _create_ticks($now->epoch, [100, 101, 100]);                   # [entry_tick, first_tick ...]
     $args_runs->{duration} = '2t';
-    _create_ticks($now->epoch, [100, 101, 103, 102, 105]);    # [entry_tick, first_tick ...]
+    _create_ticks($now->epoch, [100, 101, 103, 102, 105]);         # [entry_tick, first_tick ...]
     $args_runs->{duration} = '5t';
     $c = produce_contract($args_runs);
     ok $c->is_expired, 'expired';
@@ -311,11 +311,11 @@ subtest 'runs audit details' => sub {
     $c = produce_contract($args_runs);
     ok $c->is_expired, 'expired';
     is $c->value, 0, 'expired worthless if second tick is lower than first tick';
-    _create_ticks($now->epoch, [100, 101, 102, 103]);         # [entry_tick, first_tick ...]
+    _create_ticks($now->epoch, [100, 101, 102, 103]);              # [entry_tick, first_tick ...]
     $args_runs->{duration} = '5t';
     $c = produce_contract($args_runs);
     ok !$c->is_expired, 'not expired if we only have 3 out of 5 ticks';
-    _create_ticks($now->epoch, [100, 101, 102, 102, 103]);    # [entry_tick, first_tick ...]
+    _create_ticks($now->epoch, [100, 101, 102, 102, 103]);         # [entry_tick, first_tick ...]
     $args_runs->{duration} = '5t';
     $c = produce_contract($args_runs);
     ok $c->is_expired, 'expired';

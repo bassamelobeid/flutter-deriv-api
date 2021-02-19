@@ -72,7 +72,7 @@ subtest 'amount_type - generic' => sub {
 
     lives_ok { produce_contract({%$args, stake       => 100}) } 'live with stake';
     lives_ok { produce_contract({%$args, payout      => 100}) } 'live with payout';
-    lives_ok { produce_contract({%$args, amount_type => 'stake', 'amount' => 100}) } 'live with amount_type=stake';
+    lives_ok { produce_contract({%$args, amount_type => 'stake',  'amount' => 100}) } 'live with amount_type=stake';
     lives_ok { produce_contract({%$args, amount_type => 'payout', 'amount' => 100}) } 'live with amount_type=payout';
 };
 

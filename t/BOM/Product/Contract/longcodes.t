@@ -166,7 +166,7 @@ subtest 'longcode with \'difference\' as barrier' => sub {
         [
             'Win payout if [_1] ends outside [_5] to [_4] at [_3].', ['Volatility 100 Index'],
             [],                                                      ['2016-10-19 10:20:00 GMT'],
-            ['entry spot plus [_1]', 0.32], ['entry spot minus [_1]', 0.42],
+            ['entry spot plus [_1]', 0.32],                          ['entry spot minus [_1]', 0.42],
         ]);
 };
 

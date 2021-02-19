@@ -79,8 +79,8 @@ subtest 'range' => sub {
         is $c->sentiment, 'low_vol';
         ok $c->is_path_dependent;
         is_deeply $c->supported_expiries, ['intraday', 'daily'];
-        isa_ok $c->pricing_engine, 'BOM::Product::Pricing::Engine::VannaVolga::Calibrated';
-        isa_ok $c->greek_engine,   'BOM::Product::Pricing::Greeks::BlackScholes';
+        isa_ok $c->pricing_engine,        'BOM::Product::Pricing::Engine::VannaVolga::Calibrated';
+        isa_ok $c->greek_engine,          'BOM::Product::Pricing::Greeks::BlackScholes';
     }
     'generic';
 
@@ -128,8 +128,8 @@ subtest 'up or down' => sub {
         is $c->sentiment,    'high_vol';
         ok $c->is_path_dependent;
         is_deeply $c->supported_expiries, ['intraday', 'daily'];
-        isa_ok $c->pricing_engine, 'BOM::Product::Pricing::Engine::VannaVolga::Calibrated';
-        isa_ok $c->greek_engine,   'BOM::Product::Pricing::Greeks::BlackScholes';
+        isa_ok $c->pricing_engine,        'BOM::Product::Pricing::Engine::VannaVolga::Calibrated';
+        isa_ok $c->greek_engine,          'BOM::Product::Pricing::Greeks::BlackScholes';
     }
     'generic';
 

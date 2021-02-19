@@ -123,7 +123,7 @@ subtest 'waiting for entry tick' => sub {
     $c = produce_contract($bet_params);
     ok $c->entry_tick,       'entry tick defined';
     ok $c->is_valid_to_sell, 'valid to sell';
-    $bet_params->{date_pricing} = $now->epoch + 302;    # 1 second too far
+    $bet_params->{date_pricing} = $now->epoch + 302;               # 1 second too far
     $c = produce_contract($bet_params);
     ok !$c->is_expired, 'not expired';
     my $is_valid;
@@ -573,8 +573,8 @@ subtest 'entry tick for different contract conditions' => sub {
     my $c = produce_contract($params);
     is $c->_basis_tick->epoch, $c->date_start->epoch, 'basis tick epoch is at start';
     is $c->_basis_tick->quote, 100, 'basis tick is at start';
-    is $c->entry_tick->epoch, $c->date_start->epoch + 1, 'entry tick epoch is start + 1';
-    is $c->entry_tick->quote, 101, 'entry tick is tick at start + 1';
+    is $c->entry_tick->epoch,  $c->date_start->epoch + 1, 'entry tick epoch is start + 1';
+    is $c->entry_tick->quote,  101, 'entry tick is tick at start + 1';
 
     $params->{duration} = '5m';
     $params->{barrier}  = '+0.123';
@@ -582,8 +582,8 @@ subtest 'entry tick for different contract conditions' => sub {
 
     is $c->_basis_tick->epoch, $c->date_start->epoch + 1, 'basis tick epoch is start time + 1';
     is $c->_basis_tick->quote, 101, 'basis tick is tick at start + 1';
-    is $c->entry_tick->epoch, $c->date_start->epoch + 1, 'entry tick epoch is start time + 1';
-    is $c->entry_tick->quote, 101, 'entry tick is tick at start + 1';
+    is $c->entry_tick->epoch,  $c->date_start->epoch + 1, 'entry tick epoch is start time + 1';
+    is $c->entry_tick->quote,  101, 'entry tick is tick at start + 1';
 
     $params->{duration} = '5t';
     $params->{barrier}  = 8;
@@ -591,8 +591,8 @@ subtest 'entry tick for different contract conditions' => sub {
 
     is $c->_basis_tick->epoch, $c->date_start->epoch + 1, 'basis tick epoch is start time + 1';
     is $c->_basis_tick->quote, 101, 'basis tick is tick at start + 1';
-    is $c->entry_tick->epoch, $c->date_start->epoch + 1, 'entry tick epoch is start time + 1';
-    is $c->entry_tick->quote, 101, 'entry tick is tick at start + 1';
+    is $c->entry_tick->epoch,  $c->date_start->epoch + 1, 'entry tick epoch is start time + 1';
+    is $c->entry_tick->quote,  101, 'entry tick is tick at start + 1';
 };
 
 subtest 'first tick as settlement tick' => sub {
@@ -621,7 +621,7 @@ subtest 'first tick as settlement tick' => sub {
         is $c->value, $c->payout, 'contract won';
         is $c->entry_tick->quote,    102,      'entry tick is 102';
         is $c->barrier->as_absolute, '101.00', 'barrier is 101';
-        is $c->hit_tick->quote, $c->entry_tick->quote, 'entry tick hits the barrier';
+        is $c->hit_tick->quote,      $c->entry_tick->quote, 'entry tick hits the barrier';
     }
 
     note("testing settlement for 5t $params->{bet_type}");

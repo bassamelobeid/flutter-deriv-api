@@ -21,9 +21,9 @@ subtest 'callput' => sub {
     is $cat->display_order, 1;
     is $cat->display_name,  'Up/Down';
     ok !$cat->is_path_dependent;
-    ok $cat->barrier_at_start, 'barrier determined at start';
+    ok $cat->barrier_at_start,          'barrier determined at start';
     is_deeply $cat->supported_expiries, ['intraday', 'daily', 'tick'];
-    cmp_bag $cat->available_types, ['CALL', 'PUT'];
+    cmp_bag $cat->available_types,      ['CALL',     'PUT'];
 };
 
 subtest 'callputequal' => sub {
@@ -32,9 +32,9 @@ subtest 'callputequal' => sub {
     is $cat->display_order, 2;
     is $cat->display_name,  'Rise/Fall Equal';
     ok !$cat->is_path_dependent;
-    ok $cat->barrier_at_start, 'barrier determined at start';
+    ok $cat->barrier_at_start,          'barrier determined at start';
     is_deeply $cat->supported_expiries, ['intraday', 'daily', 'tick'];
-    cmp_bag $cat->available_types, ['CALLE', 'PUTE'];
+    cmp_bag $cat->available_types,      ['CALLE',    'PUTE'];
 };
 
 subtest 'asian' => sub {
@@ -54,7 +54,7 @@ subtest 'digits' => sub {
     is $cat->display_order, 6;
     is $cat->display_name,  'Digits';
     ok !$cat->is_path_dependent;
-    ok $cat->barrier_at_start, 'barrier determined at start';
+    ok $cat->barrier_at_start,          'barrier determined at start';
     is_deeply $cat->supported_expiries, ['tick'];
     cmp_bag $cat->available_types,      ['DIGITMATCH', 'DIGITDIFF', 'DIGITODD', 'DIGITEVEN', 'DIGITOVER', 'DIGITUNDER'];
 };
@@ -65,9 +65,9 @@ subtest 'touchnotouch' => sub {
     is $cat->display_order, 3;
     is $cat->display_name,  'Touch/No Touch';
     ok $cat->is_path_dependent;
-    ok $cat->barrier_at_start, 'barrier determined at start';
+    ok $cat->barrier_at_start,          'barrier determined at start';
     is_deeply $cat->supported_expiries, ['intraday', 'daily', 'tick'];
-    cmp_bag $cat->available_types, ['ONETOUCH', 'NOTOUCH'];
+    cmp_bag $cat->available_types,      ['ONETOUCH', 'NOTOUCH'];
 };
 
 subtest 'endsinout' => sub {
@@ -76,9 +76,9 @@ subtest 'endsinout' => sub {
     is $cat->display_order, 4;
     is $cat->display_name,  'Ends Between/Ends Outside';
     ok !$cat->is_path_dependent;
-    ok $cat->barrier_at_start, 'barrier determined at start';
-    is_deeply $cat->supported_expiries, ['intraday', 'daily'];
-    cmp_bag $cat->available_types, ['EXPIRYRANGE', 'EXPIRYMISS', 'EXPIRYMISSE', 'EXPIRYRANGEE'];
+    ok $cat->barrier_at_start,          'barrier determined at start';
+    is_deeply $cat->supported_expiries, ['intraday',    'daily'];
+    cmp_bag $cat->available_types,      ['EXPIRYRANGE', 'EXPIRYMISS', 'EXPIRYMISSE', 'EXPIRYRANGEE'];
 };
 
 subtest 'staysinout' => sub {
@@ -87,7 +87,7 @@ subtest 'staysinout' => sub {
     is $cat->display_order, 5;
     is $cat->display_name,  'Stays Between/Goes Outside';
     ok $cat->is_path_dependent;
-    ok $cat->barrier_at_start, 'barrier determined at start';
+    ok $cat->barrier_at_start,          'barrier determined at start';
     is_deeply $cat->supported_expiries, ['intraday', 'daily'];
     cmp_bag $cat->available_types,      ['RANGE',    'UPORDOWN'];
 };

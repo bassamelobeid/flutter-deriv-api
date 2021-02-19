@@ -449,7 +449,7 @@ test_with_feed([
             underlying  => 'frxUSDJPY',
             payout      => 1000,
             barrier     => 108.22,
-            currency => 'JPY',    # Price in domestic currency 'JPY', with 'USD' as underlying
+            currency    => 'JPY',    # Price in domestic currency 'JPY', with 'USD' as underlying
         };
 
         my $bet = produce_contract($bet_params);
@@ -829,7 +829,7 @@ test_with_feed(
             payout       => 1000,
             high_barrier => 106.50,                                                             # in range
             low_barrier  => 104.70,                                                             # in range
-            currency => 'JPY',    # Price in domestic currency 'JPY', with 'USD' as underlying
+            currency     => 'JPY',    # Price in domestic currency 'JPY', with 'USD' as underlying
         };
 
         my $bet = produce_contract($bet_params);

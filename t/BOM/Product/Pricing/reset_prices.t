@@ -122,9 +122,9 @@ subtest 'reset spot tests' => sub {
     };
 
     my @test_data = (
-        [[(map { [$now->epoch + $_, 100] } (2, 4)), [$now->epoch + 6, 102]], '5t', 'reset on second tick'],
-        [[(map { [$now->epoch + $_, 100] } (2, 4, 6)), [$now->epoch + 8, 102]], '6t', 'reset on third tick'],
-        [[(map { [$now->epoch + $_, 100] } (2, 4, 6)), [$now->epoch + 8, 102]], '7t', 'reset on third tick'],
+        [[(map { [$now->epoch + $_, 100] } (2, 4)),           [$now->epoch + 6, 102]],  '5t',  'reset on second tick'],
+        [[(map { [$now->epoch + $_, 100] } (2, 4, 6)),        [$now->epoch + 8, 102]],  '6t',  'reset on third tick'],
+        [[(map { [$now->epoch + $_, 100] } (2, 4, 6)),        [$now->epoch + 8, 102]],  '7t',  'reset on third tick'],
         [[(map { [$now->epoch + $_, 100] } (2, 4, 6, 8, 10)), [$now->epoch + 12, 102]], '10t', 'reset on fifth tick'],
     );
     foreach my $d (@test_data) {

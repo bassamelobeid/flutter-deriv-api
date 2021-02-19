@@ -194,7 +194,7 @@ sub generate_trading_durations {
                     foreach my $offering (@offerings_for_symbol) {
                         my $key                = join '-', ($offering->{contract_category}, $offering->{barrier_category}, $offering->{start_type});
                         my $trade_display_name = $cc_display_name{$key}->{display_name} // $offering->{contract_category_display};
-                        my $trade_name         = $cc_display_name{$key}->{name} // $offering->{contract_category};
+                        my $trade_name         = $cc_display_name{$key}->{name}         // $offering->{contract_category};
 
                         my $dup_key = $key . "-$offering->{expiry_type}";
                         # skip the opposite contract

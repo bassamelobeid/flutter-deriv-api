@@ -37,11 +37,11 @@ subtest 'config' => sub {
     is $c->longcode->[3]->{value}, 18000;
     ok !$c->is_binary, 'non-binary';
     ok $c->two_barriers,       'two barriers';
-    is $c->pricing_code,       'PUTSPREAD', 'pricing code is PUTSPREAD';
-    is $c->display_name,       'Put Spread', 'display name is Put Spread';
+    is $c->pricing_code,       'PUTSPREAD',     'pricing code is PUTSPREAD';
+    is $c->display_name,       'Put Spread',    'display name is Put Spread';
     is $c->category_code,      'callputspread', 'category code is callputspread';
-    is $c->payout_type,        'non-binary', 'payout type is non-binary';
-    is $c->payouttime,         'end', 'payout time is end';
+    is $c->payout_type,        'non-binary',    'payout type is non-binary';
+    is $c->payouttime,         'end',           'payout time is end';
     isa_ok $c->pricing_engine, 'Pricing::Engine::Callputspread';
     isa_ok $c->high_barrier,   'BOM::Product::Contract::Strike';
     isa_ok $c->low_barrier,    'BOM::Product::Contract::Strike';

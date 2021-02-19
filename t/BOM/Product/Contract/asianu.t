@@ -43,10 +43,10 @@ subtest 'ASIANU' => sub {
         is $c->category_code,   'asian',  'category asian';
         is $c->other_side_code, 'ASIAND', 'other side code ASIAND';
         ok !$c->is_path_dependent, 'not path dependent';
-        is $c->tick_count,      5, 'tick count is 5';
-        is $c->ticks_to_expiry, 5, 'ticks to expiry is 5';
+        is $c->tick_count,         5, 'tick count is 5';
+        is $c->ticks_to_expiry,    5, 'ticks to expiry is 5';
         isa_ok $c->pricing_engine, 'Pricing::Engine::BlackScholes';
-        is $c->shortcode, 'ASIANU_R_100_10_' . $now->epoch . '_5T', 'shortcode is correct';
+        is $c->shortcode,          'ASIANU_R_100_10_' . $now->epoch . '_5T', 'shortcode is correct';
     };
 
     $args->{date_pricing} = $now->plus_time_interval('10s');

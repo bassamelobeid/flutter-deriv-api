@@ -95,8 +95,8 @@ sub _build_risk_markup {
         base_amount => 0,
     });
     if ($self->bet->market->markups->apply_traded_markets_markup) {
-        $risk_markup->include_adjustment('add', $self->vol_spread_markup)  if not $self->bet->is_atm_bet;
-        $risk_markup->include_adjustment('add', $self->spot_spread_markup) if (not $self->bet->is_intraday);
+        $risk_markup->include_adjustment('add',      $self->vol_spread_markup)  if not $self->bet->is_atm_bet;
+        $risk_markup->include_adjustment('add',      $self->spot_spread_markup) if (not $self->bet->is_intraday);
         $risk_markup->include_adjustment('subtract', $self->forward_starting_markup);
 
         if (not $self->bet->is_atm_bet and $self->bet->market->name eq 'indices' and $self->bet->timeindays->amount < 7) {

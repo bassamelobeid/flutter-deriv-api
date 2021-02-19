@@ -44,8 +44,8 @@ subtest 'asian' => sub {
         is $c->sentiment, 'up';
         ok $c->tick_expiry;
         is_deeply $c->supported_expiries, ['tick'];
-        is $c->pricing_engine_name, 'Pricing::Engine::BlackScholes';
-        isa_ok $c->greek_engine,    'BOM::Product::Pricing::Greeks::BlackScholes';
+        is $c->pricing_engine_name,       'Pricing::Engine::BlackScholes';
+        isa_ok $c->greek_engine,          'BOM::Product::Pricing::Greeks::BlackScholes';
     }
     'generic';
 

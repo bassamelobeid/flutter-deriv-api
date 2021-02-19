@@ -190,7 +190,7 @@ sub _build_pricing_vol_for_two_barriers {
     return if not $self->two_barriers;
     my $pen = $self->pricing_engine_name;
     return if $pen ne 'Pricing::Engine::EuropeanDigitalSlope' and $pen ne 'Pricing::Engine::Callputspread';
-    my ($high_barrier, $low_barrier) = ($self->barriers_for_pricing->{barrier1}, $self->barriers_for_pricing->{barrier2});
+    my ($high_barrier,     $low_barrier) = ($self->barriers_for_pricing->{barrier1}, $self->barriers_for_pricing->{barrier2});
     my ($high_barrier_vol, $low_barrier_vol);
     if ($pen eq 'Pricing::Engine::EuropeanDigitalSlope') {
         my $vol_args = {

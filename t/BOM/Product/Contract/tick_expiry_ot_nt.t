@@ -192,10 +192,10 @@ subtest 'tick expiry touchnotouch settlement conditions' => sub {
     };
 
     my @test_data = (
-        [[[$now->epoch + 2, 100], [$now->epoch + 4, 102]], 1, 'expired on first tick'],
-        [[(map { [$now->epoch + $_, 100] } (2, 4)), [$now->epoch + 6, 102]], 1, 'expired on second tick'],
+        [[[$now->epoch + 2, 100],                      [$now->epoch + 4, 102]], 1, 'expired on first tick'],
+        [[(map { [$now->epoch + $_, 100] } (2, 4)),    [$now->epoch + 6, 102]], 1, 'expired on second tick'],
         [[(map { [$now->epoch + $_, 100] } (2, 4, 6)), [$now->epoch + 8, 102]], 1, 'expired on fourth tick'],
-        [[(map { [$now->epoch + $_, 100] } (2, 4, 6,   8,                10))], 0, 'expired worthless'],
+        [[(map { [$now->epoch + $_, 100] } (2, 4, 6, 8, 10))], 0, 'expired worthless'],
     );
     foreach my $d (@test_data) {
         BOM::Test::Data::Utility::FeedTestDatabase->instance->truncate_tables;

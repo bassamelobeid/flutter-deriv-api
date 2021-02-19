@@ -328,7 +328,7 @@ subtest 'Index settlement check on ' => sub {
     ok !$bet->is_after_settlement, 'is not pass settlement time';
     is($bet->primary_validation_error->message, 'waiting for settlement', 'Not valid to sell as it is waiting for settlement');
     is($bet->exit_tick->quote,                  '1003',                   'exit tick is 1003');
-    is($bet->exit_tick->epoch, Date::Utility->new('2008-02-19 20:30:00')->epoch, 'the exit tick is the one at 20:30');
+    is($bet->exit_tick->epoch,                  Date::Utility->new('2008-02-19 20:30:00')->epoch, 'the exit tick is the one at 20:30');
     # there's no concept of official OHLC anymore and writing OHLC in bet.ohlc_daily with a wrong number doesn't
     # make sense for the test
     cmp_ok($bet->bid_price, '==', 0, 'Indicative outcome with full payout as the exit tick is 1008');

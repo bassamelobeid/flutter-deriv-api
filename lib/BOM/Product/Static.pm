@@ -86,7 +86,7 @@ my $config = {
         PastExpiryTime                 => 'Expiry time cannot be in the past.',
         PastStartTime                  => 'Start time is in the past.',
         PredefinedNeedAbsoluteBarrier  => 'Contracts with predefined barrier would need an absolute barrier.',
-        RefundBuyForMissingData =>
+        RefundBuyForMissingData        =>
             'There was a market data disruption during the contract period. For real-money accounts we will attempt to correct this and settle the contract properly, otherwise the contract will be cancelled and refunded. Virtual-money contracts will be cancelled and refunded.',
         ResaleNotOffered              => 'Resale of this contract is not offered.',
         ResaleNotOfferedHolidays      => 'Resale of this contract is not offered due to market holidays during contract period.',
@@ -129,14 +129,14 @@ my $config = {
         MissingTradingPeriodStart     => '[_1] must be supplied for multi barrier contracts.',
         SameStartSellTime             => 'Contract cannot be sold at this time. Please try again.',
         MissingBasisSpot              => 'Basis spot is not defined.',
-        DealCancellationNotBought =>
+        DealCancellationNotBought     =>
             'This contract does not include deal cancellation. Your contract can only be cancelled when you select deal cancellation in your purchase.',
         DealCancellationExpired    => 'Deal cancellation period has expired. Your contract can only be cancelled while deal cancellation is active.',
         CannotCancelContract       => 'Deal cancellation is not available for this contract.',
         LimitOrderIncorrectDecimal => 'Only [_1] decimal places allowed.',
         EitherStopLossOrCancel     => 'You may use either stop loss or deal cancellation, but not both. Please select either one.',
         EitherTakeProfitOrCancel   => 'You may use either take profit or deal cancellation, but not both. Please select either one.',
-        CancelIsBetter =>
+        CancelIsBetter             =>
             'The spot price has moved. We have not closed this contract because your profit is negative and deal cancellation is active. Cancel your contract to get your full stake back.',
         InvalidDealCancellation           => 'Deal cancellation is not offered at this duration.',
         DealCancellationBlackout          => 'Deal cancellation is not available from [_1] to [_2].',

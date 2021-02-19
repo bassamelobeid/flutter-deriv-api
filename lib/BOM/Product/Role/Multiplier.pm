@@ -637,9 +637,9 @@ sub _extract_details {
     my $order_amount = $order_object->order_amount ? $order_object->order_amount + 0 : undef;
     # this details needs to in the following order (sort qw(order_type order_amount basis_spot order_date)). Do not change the order!
     return [
-        'basis_spot', $order_object->basis_spot + 0, 'order_amount',
-        financialrounding('price', $self->currency, $order_amount), 'order_date', int($order_object->order_date->epoch),
-        'order_type', $order_object->order_type, 'commission',
+        'basis_spot',                                               $order_object->basis_spot + 0, 'order_amount',
+        financialrounding('price', $self->currency, $order_amount), 'order_date',                  int($order_object->order_date->epoch),
+        'order_type',                                               $order_object->order_type,     'commission',
         $order_object->commission,
     ];
 }
@@ -1111,7 +1111,7 @@ sub _get_valid_custom_commission_adjustment {
 
         my $min_multiplier = $custom->{min_multiplier} // 0;
         my $max_multiplier = $custom->{max_multiplier} // 0;
-        my $valid_range = ($self->multiplier >= $min_multiplier and $self->multiplier <= $max_multiplier) ? 1 : 0;
+        my $valid_range    = ($self->multiplier >= $min_multiplier and $self->multiplier <= $max_multiplier) ? 1 : 0;
 
         if ($valid_timeframe and $valid_range) {
             $commission_adj = $custom->{commission_adjustment};

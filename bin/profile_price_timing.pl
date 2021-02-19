@@ -46,7 +46,7 @@ sub sorted {
     foreach my $item (@$worklist) {
         my $start = [Time::HiRes::gettimeofday];
         $p = one $item for (1 .. 10);
-        push @$item, defined($p) ? 100 * Time::HiRes::tv_interval($start) : -1;
+        push @$item,  defined($p) ? 100 * Time::HiRes::tv_interval($start) : -1;
         push @unable, [@{$item}[0, 1, 2], $@] unless $p;
     }
 
@@ -76,9 +76,9 @@ sub profile {
         last unless $item;
         my $fn = "nytprof-$i.out";
         my $dn = join '--', @{$item}[0, 1, 2];
-        system 'rm', '-rf', $dn;
-        system 'nytprofhtml', '-f', $fn, '-o', $dn;
-        system 'sed', '-i',
+        system 'rm',          '-rf', $dn;
+        system 'nytprofhtml', '-f',  $fn, '-o', $dn;
+        system 'sed',         '-i',
             's/>Performance Profile Index</>Profile for shortcode: ' . " $item->[0] currency: $item->[1] ($item->[2])</",
             $dn . '/index.html';
         print $html qq{<li><a href="$dn/index.html">@{$item}</a></li>\n};

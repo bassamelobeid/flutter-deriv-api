@@ -327,9 +327,9 @@ subtest 'lookback expiry conditions' => sub {
         ok $c->is_expired, 'contract is expired';
         is $c->exit_tick->quote, 104, 'exit tick present';
         ok $c->is_valid_exit_tick, 'exit tick is valid';
-        is $c->value,              $test_case->[1], 'value is ' . $test_case->[1];
-        cmp_ok $c->bid_price,      '==', $test_case->[1], 'bid price ' . $test_case->[1];
-        ok $c->is_valid_to_sell,   'valid to sell';
+        is $c->value,            $test_case->[1], 'value is ' . $test_case->[1];
+        cmp_ok $c->bid_price,    '==', $test_case->[1], 'bid price ' . $test_case->[1];
+        ok $c->is_valid_to_sell, 'valid to sell';
     }
 };
 

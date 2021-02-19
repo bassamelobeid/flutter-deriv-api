@@ -54,8 +54,8 @@ subtest 'expiry miss' => sub {
         is $c->sentiment,    'high_vol';
         ok !$c->is_path_dependent;
         is_deeply $c->supported_expiries, ['intraday', 'daily'];
-        isa_ok $c->pricing_engine_name, 'Pricing::Engine::EuropeanDigitalSlope';
-        isa_ok $c->greek_engine,        'BOM::Product::Pricing::Greeks::BlackScholes';
+        isa_ok $c->pricing_engine_name,   'Pricing::Engine::EuropeanDigitalSlope';
+        isa_ok $c->greek_engine,          'BOM::Product::Pricing::Greeks::BlackScholes';
     }
     'generic';
 
@@ -102,12 +102,12 @@ subtest 'expiry range' => sub {
         $args->{bet_type}     = 'EXPIRYRANGEE';
         my $c = produce_contract($args);
         isa_ok $c, 'BOM::Product::Contract::Expiryrangee';
-        is $c->code,         'EXPIRYRANGEE';
-        is $c->pricing_code, 'EXPIRYRANGE';
-        ok $c->sentiment,    'low_vol';
+        is $c->code,                      'EXPIRYRANGEE';
+        is $c->pricing_code,              'EXPIRYRANGE';
+        ok $c->sentiment,                 'low_vol';
         is_deeply $c->supported_expiries, ['intraday', 'daily'];
-        isa_ok $c->pricing_engine_name, 'Pricing::Engine::EuropeanDigitalSlope';
-        isa_ok $c->greek_engine,        'BOM::Product::Pricing::Greeks::BlackScholes';
+        isa_ok $c->pricing_engine_name,   'Pricing::Engine::EuropeanDigitalSlope';
+        isa_ok $c->greek_engine,          'BOM::Product::Pricing::Greeks::BlackScholes';
     }
     'generic';
 
