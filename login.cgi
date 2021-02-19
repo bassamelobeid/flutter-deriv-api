@@ -13,13 +13,13 @@ use CGI;
 use Auth::DuoWeb;
 use BOM::Config::Runtime;
 use BOM::Backoffice::Auth0;
-use BOM::Backoffice::PlackHelpers qw( http_redirect PrintContentType );
+use BOM::Backoffice::PlackHelpers qw( http_redirect PrintContentType check_browser_version );
 use BOM::Backoffice::Request qw(request);
 use BOM::Config;
 use BOM::Backoffice::Sysinit ();
 BOM::Backoffice::Sysinit::init();
 
-if (not $ENV{'HTTP_USER_AGENT'} =~ /Chrome\/(\d+\.\d+\.\d+)\./ or $1 lt '55.0.2883') {
+if (!check_browser_version(BOM::Config::Runtime->instance->app_config->system->browser->minimum_supported_chrome_version)) {
     print "Only newest Chrome browser is supported in backoffice.";
     code_exit_BO();
 }

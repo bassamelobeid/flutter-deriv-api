@@ -27,6 +27,7 @@ our @EXPORT_OK = qw(
     PrintContentType_excel
     PrintContentType_image
     PrintContentType_JSON
+    check_browser_version
 );
 
 sub http_redirect {
@@ -155,6 +156,28 @@ sub PrintContentType_JSON {
     }
     $http_handler->status(200);
     return;
+}
+
+=head2 check_browser_version
+    A simple browser check function and returns the valid flag.
+    Please note bom-config/share/app_config_definitions.yml should be updated
+    with the current workable Chrome version.
+    Version check is only applicable for Chome. Other browsers will be a direct pass.
+=cut
+
+sub check_browser_version {
+    my ($minimum_supported_chrome_version, $user_agent) = @_;
+
+    return 1 if !$minimum_supported_chrome_version;
+
+    $user_agent ||= $ENV{'HTTP_USER_AGENT'};
+
+    return (
+        !(
+                $user_agent =~ /Chrome\/(\d+\.\d+\.\d+)\./
+            and $1
+            and version->declare($1)->numify < version->declare($minimum_supported_chrome_version)->numify
+        ));
 }
 
 1;
