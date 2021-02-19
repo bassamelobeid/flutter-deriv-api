@@ -82,6 +82,8 @@ sub get_transaction_history {
         my $txn_time = _get_txn_time($txn);
         $txn->{transaction_time} = Date::Utility->new($txn_time)->epoch();
 
+        $txn->{details} = $json->decode($txn->{details}) if $txn->{details};
+
         # Get localized user-friendly payment remark
         $txn->{payment_remark} = _get_txn_remark($txn, $client) // $txn->{payment_remark};
     }
@@ -125,8 +127,7 @@ Returns the remark as string.
 sub _get_txn_remark {
     my ($txn, $client) = @_;
 
-    return unless $txn->{details};
-    my $details = $json->decode($txn->{details});
+    my $details = $txn->{details}              // return;
     my $gateway = $txn->{payment_gateway_code} // '';
 
     # MT5

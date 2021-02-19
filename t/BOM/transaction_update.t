@@ -640,19 +640,19 @@ subtest 'too frequent updates' => sub {
     is $updater->validation_error->{message_to_client},
         'Only one update per second is allowed.',
         'message_to_client - Only one update per second is allowed.';
-    
-    $mocked_limit_order->unmock_all();  
+
+    $mocked_limit_order->unmock_all();
 
     my $mocked_time_hires = Test::MockModule->new('Time::HiRes');
-    $mocked_time_hires->mock('time', time+2);
+    $mocked_time_hires->mock('time', time + 2);
 
     $updater = BOM::Transaction::ContractUpdate->new(
         client        => $cl,
         contract_id   => $fmb->{id},
         update_params => {take_profit => 10},
-    ); 
-    ok $updater->is_valid_to_update, 'two successive contracts are valid to update in more than one second';  
-    $mocked_time_hires->unmock_all();  
+    );
+    ok $updater->is_valid_to_update, 'two successive contracts are valid to update in more than one second';
+    $mocked_time_hires->unmock_all();
 
 };
 
