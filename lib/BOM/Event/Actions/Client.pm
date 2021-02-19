@@ -2151,7 +2151,7 @@ async sub payment_deposit {
         $client->save;
     }
 
-    if (defined $payment_processor) {
+    if ($payment_type eq 'CreditCard') {
         my $record = BOM::User::PaymentRecord->new(user_id => $client->binary_user_id);
 
         $record->add_payment(
