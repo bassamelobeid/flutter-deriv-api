@@ -5166,8 +5166,6 @@ sub get_poi_status {
 
     return 'pending' if any { $_ eq $report_document_status } qw/in_progress awaiting_applicant/;
 
-    return 'pending' if $is_poi_pending;
-
     if (!$self->ignore_age_verification && ($self->fully_authenticated || $self->status->age_verification)) {
         return 'expired' if $is_poi_already_expired && $is_document_expiry_check_required;
         return 'verified';
@@ -5176,6 +5174,8 @@ sub get_poi_status {
     return 'suspected' if $report_document_sub_result eq 'suspected';
 
     return 'rejected' if any { $_ eq $report_document_sub_result } qw/rejected caution/;
+
+    return 'pending' if $is_poi_pending;
 
     return 'expired' if $is_poi_already_expired && $is_document_expiry_check_required;
 
@@ -5493,7 +5493,7 @@ sub payment_accounts_limit {
     my $self = shift;
     my $custom_limit =
         $json->decode(BOM::Config::Runtime->instance->app_config->payments->custom_payment_accounts_limit_per_user)->{$self->user->{id}};
-    my $limits_per_broker = BOM::Config::client_limits()->{max_client_payment_accounts_per_broker_code} // {};
+    my $limits_per_broker         = BOM::Config::client_limits()->{max_client_payment_accounts_per_broker_code} // {};
     my $account_broker_code_limit = $limits_per_broker->{$self->{broker_code}};
     my $default_limit             = BOM::Config::client_limits()->{max_payment_accounts_per_user};
 

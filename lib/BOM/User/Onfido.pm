@@ -14,8 +14,11 @@ use Syntax::Keyword::Try;
 use Date::Utility;
 use JSON::MaybeUTF8 qw(decode_json_utf8 encode_json_utf8);
 use Locale::Codes::Country qw(country_code2code);
-use List::Util qw(first uniq);
 use DataDog::DogStatsd::Helper qw(stats_inc);
+use List::Util qw(first uniq);
+use BOM::Config::Redis;
+
+use constant ONFIDO_REQUEST_PER_USER_PREFIX => 'ONFIDO::REQUEST::PER::USER::';
 
 =head2 store_onfido_applicant
 
@@ -570,6 +573,87 @@ sub _extract_breakdown_reasons {
     }
 
     return _extract_breakdown_reasons($payload, $reasons, $next_stack);
+}
+
+=head2 submissions_left
+
+Returns the submissions left for the client.
+
+It takes the following arguments:
+
+=over 4
+
+=item * L<BOM::User::Client> the client itself
+
+=back
+
+Returns,
+    an integer representing the submissions left for the user involved.
+
+=cut
+
+sub submissions_left {
+    my $client           = shift;
+    my $redis            = BOM::Config::Redis::redis_events();
+    my $request_per_user = $redis->get(ONFIDO_REQUEST_PER_USER_PREFIX . $client->binary_user_id) // 0;
+    my $submissions_left = limit_per_user() - $request_per_user;
+    return $submissions_left;
+}
+
+=head2 submissions_reset_at
+
+Returns a timestamp for when the onfido submission counter is expired
+or undef if the redis key is not set
+
+It takes the following arguments:
+
+=over 4
+
+=item * L<BOM::User::Client> the client itself
+
+=back
+
+Returns,
+    a L<Date::Utility> that indicates when the user will have more onfido submissions available
+    or undef if the redis key is not set
+
+=cut
+
+sub submissions_reset_at {
+    my $client = shift;
+    my $redis  = BOM::Config::Redis::redis_events();
+    my $ttl    = $redis->ttl(ONFIDO_REQUEST_PER_USER_PREFIX . $client->binary_user_id);
+    return undef if $ttl < 0;
+
+    my $date = Date::Utility->new(time + $ttl);
+    return $date;
+}
+
+=head2 limit_per_user
+
+Provides a central point for onfido resubmissions limit per user in the specified
+timeframe.
+
+Returns,
+    an integer representing the onfido submission requests allowed per user
+
+=cut
+
+sub limit_per_user {
+    return $ENV{ONFIDO_REQUEST_PER_USER_LIMIT} // 3;
+}
+
+=head2 timeout_per_user
+
+Provides a central point for onfido resubmissions counter timeout in seconds.
+
+Returns,
+    an integer representing the seconds needed to expire the onfido counter per user.
+
+=cut
+
+sub timeout_per_user {
+    return $ENV{ONFIDO_REQUEST_PER_USER_TIMEOUT} // 15 * 24 * 60 * 60;    # 15 days
 }
 
 1;

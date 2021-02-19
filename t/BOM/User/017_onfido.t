@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 8;
+use Test::More tests => 11;
 use Test::Exception;
 use Test::NoWarnings;
 use Test::Warn;
@@ -171,6 +171,51 @@ subtest 'store & fetch report' => sub {
     lives_ok { $result = BOM::User::Onfido::get_all_onfido_reports($test_client->binary_user_id, $check->id) } "get report ok";
 
     is_deeply([sort keys %$result], [sort map { $_->id } @all_report], 'getting all reports ok');
+};
+
+subtest 'limits per user' => sub {
+    is BOM::User::Onfido::limit_per_user,   3,       'The allowed submissions counter is 3';
+    is BOM::User::Onfido::timeout_per_user, 1296000, '15 days to reset the counter';
+};
+
+subtest 'submissions left per user' => sub {
+    my $limit = BOM::User::Onfido::limit_per_user();
+    is BOM::User::Onfido::submissions_left($test_client), $limit, 'The client has all the submissions left';
+
+    my $submissions_used = 0;
+    my $redis_mock       = Test::MockModule->new('RedisDB');
+    $redis_mock->mock(
+        'get',
+        sub {
+            return $submissions_used;
+        });
+
+    foreach my $i (1 .. 3) {
+        $submissions_used++;
+        is BOM::User::Onfido::submissions_left($test_client), $limit - $submissions_used, 'Submissions left are looking good';
+
+    }
+
+    $redis_mock->unmock_all;
+};
+
+subtest 'submissions reset at user' => sub {
+    my $limit = BOM::User::Onfido::limit_per_user();
+    is BOM::User::Onfido::submissions_left($test_client), $limit, 'The client has all the submissions left';
+
+    my $submissions_used = 0;
+    my $redis_mock       = Test::MockModule->new('RedisDB');
+    my $time             = time;
+    $redis_mock->mock(
+        'ttl',
+        sub {
+            $time += 100;
+            return 100;    # seconds
+        });
+
+    is BOM::User::Onfido::submissions_reset_at($test_client), Date::Utility->new($time), 'Reset at time is looking good';
+
+    $redis_mock->unmock_all;
 };
 
 subtest 'get consider reasons' => sub {
