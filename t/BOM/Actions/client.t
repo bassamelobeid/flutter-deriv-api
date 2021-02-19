@@ -1130,7 +1130,7 @@ subtest 'onfido resubmission' => sub {
     # Redis key for resubmission counter
     use constant ONFIDO_RESUBMISSION_COUNTER_KEY_PREFIX => 'ONFIDO::RESUBMISSION_COUNTER::ID::';
     # Redis key for daily onfido submission per user
-    use constant ONFIDO_REQUEST_PER_USER_PREFIX => 'ONFIDO::DAILY::REQUEST::PER::USER::';
+    use constant ONFIDO_REQUEST_PER_USER_PREFIX => 'ONFIDO::REQUEST::PER::USER::';
 
     # These keys blocks email sending on client verification failure
     use constant ONFIDO_AGE_BELOW_EIGHTEEN_EMAIL_PER_USER_PREFIX => 'ONFIDO::AGE::BELOW::EIGHTEEN::EMAIL::PER::USER::';
@@ -1168,6 +1168,23 @@ subtest 'onfido resubmission' => sub {
             return;
         });
 
+    # Check TTL here
+    my $mock_redis = Test::MockModule->new(ref($redis_events));
+    $mock_redis->mock(
+        'expire',
+        sub {
+            my (undef, $key, $expire) = @_;
+
+            is($expire, BOM::User::Onfido::timeout_per_user, 'Timeout correctly set for request counter per user')
+                if $key =~ /ONFIDO::REQUEST::PER::USER::/;
+
+            return $mock_redis->original('expire')->(@_);
+        });
+
+    my $action_handler = BOM::Event::Process::get_action_mappings()->{ready_for_authentication};
+
+    # For this test, we expect counter to be 0 due to empty checks
+    $redis_write->set(ONFIDO_RESUBMISSION_COUNTER_KEY_PREFIX . $test_client->binary_user_id, 0)->get;
     my $counter   = $redis_write->get(ONFIDO_RESUBMISSION_COUNTER_KEY_PREFIX . $test_client->binary_user_id)->get // 0;
     my $call_args = {
         loginid      => $test_client->loginid,
@@ -1175,7 +1192,6 @@ subtest 'onfido resubmission' => sub {
     };
 
     # For this test, we expect counter to be 0 due to empty checks
-    my $action_handler = BOM::Event::Process::get_action_mappings()->{ready_for_authentication};
     $action_handler->($call_args)->get;
 
     my $counter_after = $redis_write->get(ONFIDO_RESUBMISSION_COUNTER_KEY_PREFIX . $test_client->binary_user_id)->get // 0;
@@ -1291,6 +1307,7 @@ subtest 'onfido resubmission' => sub {
 
     $mock_client->unmock_all;
     $mock_onfido->unmock_all;
+    $mock_redis->unmock_all;
 };
 
 subtest 'client becomes transfers_blocked when deposits from QIWI' => sub {
