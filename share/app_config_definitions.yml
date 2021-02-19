@@ -717,6 +717,14 @@ system:
           isa: Str
           default: "/feed"
           global: 1
+    browser:
+        desciption: "Configuration checks for the client web browser"
+        isa: section
+        contains:
+            minimum_supported_chrome_version:
+                description: "Latest and workable Chome version for the Backoffice. Login will not allowed for the versions lower than this."
+                isa: Str
+                default: "87.0.4280"
     mt5:
       description: "Configuration for MT5"
       isa: section
