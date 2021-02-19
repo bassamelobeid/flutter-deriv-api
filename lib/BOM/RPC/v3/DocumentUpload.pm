@@ -2,6 +2,7 @@ package BOM::RPC::v3::DocumentUpload;
 
 use strict;
 use warnings;
+use Log::Any qw( $log );
 use BOM::Database::ClientDB;
 use BOM::Platform::Context qw (localize);
 use Date::Utility;
@@ -14,7 +15,7 @@ use base qw(Exporter);
 
 use BOM::RPC::Registry '-dsl';
 
-use List::MoreUtils qw(none);
+use List::MoreUtils qw(none any);
 
 use BOM::User::Client;
 
@@ -29,6 +30,7 @@ rpc document_upload => sub {
     my $args   = $params->{args};
     my $status = $args->{status};
     my $error  = validate_input($params);
+
     return create_upload_error($error) if $error;
 
     return start_document_upload($params) if $args->{document_type} and $args->{document_format};
@@ -55,20 +57,19 @@ sub start_document_upload {
 
     my $upload_info;
     try {
-        $upload_info = $client->db->dbic->run(
-            ping => sub {
-                $_->selectrow_hashref(
-                    'SELECT * FROM betonmarkets.start_document_upload(?, ?, ?, ?, ?, ?, ?, ?)', undef,
-                    $client->loginid,                                                           $document_type,
-                    $args->{document_format}, $args->{expiration_date} || undef,
-                    $args->{document_id} || '', $args->{expected_checksum},
-                    '', $args->{page_type} || '',
-                );
-            });
+        $upload_info = $client->start_document_upload({
+            document_type   => $document_type,
+            document_format => $args->{document_format},
+            document_id     => $args->{document_id} || '',
+            expiration_date => $args->{expiration_date} || undef,
+            checksum        => $args->{expected_checksum} || '',
+            page_type       => $args->{page_type} || '',
+        });
+
         return create_upload_error('duplicate_document') unless ($upload_info);
-    } catch {
+    } catch ($error) {
         log_exception();
-        warn 'Document upload db query failed.' . $_;
+        $log->warnf('Document upload db query failed for %s:%s', $client->loginid, $error);
         return create_upload_error();
     }
 
@@ -88,24 +89,36 @@ sub successful_upload {
     }
 
     try {
-        my $finish_upload_result = $client->db->dbic->run(
-            ping => sub {
-                $_->selectrow_array('SELECT * FROM betonmarkets.finish_document_upload(?)', undef, $args->{file_id});
-            });
+        my $finish_upload_result = $client->finish_document_upload($args->{file_id});
+
         return create_upload_error() unless $finish_upload_result and ($args->{file_id} == $finish_upload_result);
-    } catch {
+    } catch ($error) {
         log_exception();
-        warn 'Document upload db query failed.';
+        $log->warnf('Document upload db query failed for %s:%s', $client->loginid, $error);
         return create_upload_error();
     }
 
     my $client_id = $client->loginid;
 
-    # set client status as under_review if it is not already authenticated or under_review
-    my $client_status = $client->authentication_status // '';
-    unless ($client->fully_authenticated || $client_status eq 'under_review') {
-        $client->set_authentication('ID_DOCUMENT', {status => 'under_review'});
-        $client->save();
+    try {
+        # set client status as under_review if it is not already authenticated or under_review
+        my $client_status = $client->authentication_status // '';
+
+        if (!$client->fully_authenticated && $client_status ne 'under_review') {
+            # Onfido unsupported countries can upload POI here as well, so narrow down it a bit
+            my %doc_type_categories = BOM::User::Client::DOCUMENT_TYPE_CATEGORIES();
+            my @poa_doctypes        = @{$doc_type_categories{POA}{doc_types}};
+            my ($doc)               = $client->find_client_authentication_document(query => [id => $params->{args}->{file_id}]);
+            my $document_type       = $doc->document_type;
+
+            if (any { $_ eq $document_type } @poa_doctypes) {
+                $client->set_authentication('ID_DOCUMENT', {status => 'under_review'});
+            }
+        }
+    } catch ($error) {
+        log_exception();
+        $log->warnf('Unable to change client status in the db for %s:%s', $client->loginid, $error);
+        return create_upload_error();
     }
 
     BOM::Platform::Event::Emitter::emit(
