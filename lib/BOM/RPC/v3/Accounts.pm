@@ -66,6 +66,16 @@ use DataDog::DogStatsd::Helper qw(stats_gauge);
 use constant DEFAULT_STATEMENT_LIMIT         => 100;
 use constant DOCUMENT_EXPIRING_SOON_INTERVAL => '1mo';
 
+# Expected withdrawal processing times in days [min, max].
+use constant WITHDRAWAL_PROCESSING_TIMES => {
+    bank_wire => [5, 10],
+    doughflow => {
+        VISA       => [5, 15],
+        MasterCard => [5, 15],
+        ZingPay    => [1, 2],
+    },
+};
+
 # Set this to zero to *disable* any attempt to read the MT5 account
 # balances. This only affects the balance API call: it does not block other
 # other RPC calls which retrieve lists of accounts.
@@ -462,6 +472,32 @@ sub __build_landing_company {
     };
 }
 
+=head2 _withdrawal_details
+
+Takes transaction hash ($txn) and returns additional withdrawal details if applicable
+
+=cut
+
+sub _withdrawal_details {
+    my $txn = shift;
+
+    my $gateway   = $txn->{payment_gateway_code} // return;
+    my $df_method = $txn->{details} ? $txn->{details}{payment_method} : '';
+
+    my $durations;
+    $durations = WITHDRAWAL_PROCESSING_TIMES->{$gateway}             if $gateway eq 'bank_wire';
+    $durations = WITHDRAWAL_PROCESSING_TIMES->{$gateway}{$df_method} if $gateway eq 'doughflow';
+    return unless $durations;
+
+    # estimated processing times are business days. We double the max to allow for holidays and unusual circumstances.
+    my $days     = $durations->[1] * 2;
+    my $end_date = Date::Utility->new($txn->{transaction_time})->plus_time_interval($days . 'd');
+
+    if (Date::Utility->new->is_before($end_date)) {
+        return localize('Typical processing time is [_1] to [_2] business days.', @$durations);
+    }
+}
+
 rpc "statement",
     category => 'account',
     sub {
@@ -540,6 +576,9 @@ rpc "statement",
                 $struct->{longcode} = $txn->{payment_remark};
             }
             $struct->{shortcode} = $txn->{short_code};
+
+            my $withdrawal_details = _withdrawal_details($txn);
+            $struct->{withdrawal_details} = $withdrawal_details if $withdrawal_details;
         }
 
         $struct->{app_id} = BOM::RPC::v3::Utility::mask_app_id($txn->{source}, $txn->{transaction_time});

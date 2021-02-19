@@ -372,7 +372,7 @@ subtest 'validation' => sub {
     );
 
     $result = $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->has_no_error->result;
-    
+
     cmp_deeply(
         _get_transaction_details($client_cr, $result->{transaction_id}),
         {
@@ -1708,17 +1708,12 @@ subtest 'fiat to crypto limits' => sub {
 
 done_testing();
 
-
 sub _get_transaction_details {
     my ($client, $transaction_id) = @_;
 
     my ($result) = $client->db->dbic->run(
         fixup => sub {
-            $_->selectrow_array(
-                'select details from transaction.transaction_details where transaction_id = ?',
-                undef,
-                $transaction_id,
-            );
+            $_->selectrow_array('select details from transaction.transaction_details where transaction_id = ?', undef, $transaction_id,);
         });
     return JSON::MaybeUTF8::decode_json_utf8($result);
 }

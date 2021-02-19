@@ -112,11 +112,7 @@ sub _get_transaction_details {
 
     my ($result) = $dbic->run(
         fixup => sub {
-            $_->selectrow_array(
-                'select details from transaction.transaction_details where transaction_id = ?',
-                undef,
-                $transaction_id,
-            );
+            $_->selectrow_array('select details from transaction.transaction_details where transaction_id = ?', undef, $transaction_id,);
         });
     return JSON::MaybeUTF8::decode_json_utf8($result);
 }
@@ -244,11 +240,11 @@ subtest 'multi currency transfers' => sub {
         cmp_deeply(
             _get_transaction_details($test_client->db->dbic, $c->result->{binary_transaction_id}),
             {
-                mt5_account => $ACCOUNTS{'real\p01_ts03\synthetic\svg_std_usd\01'},
-                fees => num(2),
-                fees_currency => 'EUR',
-                fees_percent => num(2),
-                min_fee => num(0.01),
+                mt5_account               => $ACCOUNTS{'real\p01_ts03\synthetic\svg_std_usd\01'},
+                fees                      => num(2),
+                fees_currency             => 'EUR',
+                fees_percent              => num(2),
+                min_fee                   => num(0.01),
                 fee_calculated_by_percent => num(2),
             },
             'metadata saved correctly in transaction_details table',
@@ -275,16 +271,16 @@ subtest 'multi currency transfers' => sub {
         cmp_deeply(
             _get_transaction_details($test_client->db->dbic, $c->result->{binary_transaction_id}),
             {
-                mt5_account => $ACCOUNTS{'real\p01_ts03\synthetic\svg_std_usd\01'},
-                fees => num(2),
-                fees_currency => 'USD',
-                fees_percent => num(2),
-                min_fee => num(0.01),
+                mt5_account               => $ACCOUNTS{'real\p01_ts03\synthetic\svg_std_usd\01'},
+                fees                      => num(2),
+                fees_currency             => 'USD',
+                fees_percent              => num(2),
+                min_fee                   => num(0.01),
                 fee_calculated_by_percent => num(2),                
             },
             'metadata saved correctly in transaction_details table',
         );
-        
+
         $redis->hmset(
             'exchange_rates::EUR_USD',
             quote => $EUR_USD,
@@ -617,6 +613,10 @@ subtest 'Simple withdraw' => sub {
     $client->set_default_account('USD');
     $user->add_client($client);
     my $token = $m->create_token($client->loginid, 'test token');
+
+    my $demo_account_mock = Test::MockModule->new('BOM::RPC::v3::MT5::Account');
+    $demo_account_mock->mock('_fetch_mt5_lc', sub { return LandingCompany::Registry::get('svg'); });
+    
     $client->status->set('mt5_withdrawal_locked', 'system', 'testing');
 
     my $params = {
@@ -630,16 +630,16 @@ subtest 'Simple withdraw' => sub {
     };
 
     $c->call_ok('mt5_withdrawal', $params)->has_no_error('can withdraw even when mt5_withdrawal_locked');
-    
+
     cmp_deeply(
         _get_transaction_details($test_client->db->dbic, $c->result->{binary_transaction_id}),
         {
-            mt5_account => $ACCOUNTS{'real\p01_ts03\synthetic\svg_std_usd\01'},
-            fees => num(0),
-            fees_currency => 'USD',
-            fees_percent => num(0),
-            min_fee => undef,
-            fee_calculated_by_percent => num(0),            
+            mt5_account               => $ACCOUNTS{'real\p01_ts03\synthetic\svg_std_usd\01'},
+            fees                      => num(0),
+            fees_currency             => 'USD',
+            fees_percent              => num(0),
+            min_fee                   => undef,
+            fee_calculated_by_percent => num(0),
         },
         'metadata saved correctly in transaction_details table',
     );
@@ -651,6 +651,9 @@ subtest 'offer_to_clients' => sub {
     $client_cr->set_default_account('BTC');
     top_up $client_cr, BTC => 10;
     $user->add_client($client_cr);
+    
+    my $demo_account_mock = Test::MockModule->new('BOM::RPC::v3::MT5::Account');
+    $demo_account_mock->mock('_fetch_mt5_lc', sub { return LandingCompany::Registry::get('svg'); });    
 
     my $token = $m->create_token($client_cr->loginid, 'test token');
 

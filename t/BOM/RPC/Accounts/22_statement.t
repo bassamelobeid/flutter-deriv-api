@@ -1,9 +1,11 @@
 use strict;
 use warnings;
 use utf8;
+use List::Util qw(first);
 use Test::More;
 use Test::Deep;
 use Test::Mojo;
+use Test::MockTime qw(:all);
 use Test::BOM::RPC::QueueClient;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
@@ -15,6 +17,7 @@ use BOM::MarketData qw(create_underlying_db);
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
 use BOM::Test::Helper::Token;
+use BOM::Test::Helper::Client;
 
 BOM::Test::Helper::Token::cleanup_redis_tokens();
 
@@ -352,6 +355,98 @@ subtest 'statement' => sub {
             is($result->{transactions}->@*, $expected->[1], 'correct number of ' . $expected->[0] . ' results');
         }
     };
+};
+
+subtest 'Processing times' => sub {
+
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR'});
+
+    BOM::User->create(
+        email    => $client->email,
+        password => 'test'
+    )->add_client($client);
+
+    BOM::Test::Helper::Client::top_up($client, $client->currency, 1000);
+    my $token = $m->create_token($client->loginid, 'test token');
+
+    my %params = (
+        currency => $client->currency,
+        amount   => -10,
+        remark   => 'test withdrawal',
+    );
+
+    my %txns = (
+        other_ewallet => $client->payment_doughflow(%params, payment_method => 'AirTM')->{id},
+        zingpay       => $client->payment_doughflow(%params, payment_method => 'ZingPay')->{id},
+        cc            => $client->payment_doughflow(%params, payment_method => 'VISA')->{id},
+        bankwire      => $client->payment_bank_wire(%params)->{id},
+        other         => $client->payment_free_gift(%params)->{id},
+    );
+
+    my %txns_by_type;
+    my $get_transactions = sub {
+        my @res = $c->tcall(
+            $method,
+            {
+                token => $token,
+                args  => {description => 1}})->{transactions}->@*;
+
+        %txns_by_type = map {
+            my $type = $_;
+            $type => first { $_->{transaction_id} == $txns{$type} } @res
+        } keys %txns;
+    };
+
+    my $dt = Date::Utility->new;
+
+    $get_transactions->();
+    ok !exists $txns_by_type{other_ewallet}->{withdrawal_details}, 'no withdrawal_details for other ewallet';
+    ok !exists $txns_by_type{other}->{withdrawal_details},         'no withdrawal_details for other cashier';
+    is $txns_by_type{zingpay}->{withdrawal_details},  'Typical processing time is 1 to 2 business days.',  'withdrawal_details for zingpay';
+    is $txns_by_type{bankwire}->{withdrawal_details}, 'Typical processing time is 5 to 10 business days.', 'withdrawal_details for bank wire';
+    is $txns_by_type{cc}->{withdrawal_details},       'Typical processing time is 5 to 15 business days.', 'withdrawal_details for credit card';
+
+    set_absolute_time($dt->plus_time_interval('5d')->epoch);
+    $get_transactions->();
+    ok !exists $txns_by_type{zingpay}->{withdrawal_details}, 'withdrawal_details for zingpay not shown after 5 days';
+    ok exists $txns_by_type{bankwire}->{withdrawal_details}, 'withdrawal_details for bank wire still shown afer 5 days';
+    ok exists $txns_by_type{cc}->{withdrawal_details},       'withdrawal_details for credit card still shown after 5 days';
+
+    set_absolute_time($dt->plus_time_interval('21d')->epoch);
+    $get_transactions->();
+    ok !exists $txns_by_type{zingpay}->{withdrawal_details},  'withdrawal_details for zingpay not shown after 21 days';
+    ok !exists $txns_by_type{bankwire}->{withdrawal_details}, 'withdrawal_details for bank wire not shown afer 21 days';
+    ok exists $txns_by_type{cc}->{withdrawal_details},        'withdrawal_details for credit card still shown after 21 days';
+
+    set_absolute_time($dt->plus_time_interval('31d')->epoch);
+    $get_transactions->();
+    ok !exists $txns_by_type{zingpay}->{withdrawal_details},  'withdrawal_details for zingpay not shown after 31 days';
+    ok !exists $txns_by_type{bankwire}->{withdrawal_details}, 'withdrawal_details for bank wire not shown afer 31 days';
+    ok !exists $txns_by_type{cc}->{withdrawal_details},       'withdrawal_details for credit card not shown after 31 days';
+
+    restore_time();
+};
+
+subtest 'legacy payments' => sub {
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR', email => 'legacy@binary.com'});
+
+    BOM::User->create(
+        email    => $client->email,
+        password => 'test'
+    )->add_client($client);
+    
+    $client->account('USD');
+    
+    $client->db->dbic->dbh->do("SELECT payment.add_payment_transaction(".$client->account->id.", 10, 'doughflow', 'external_cashier', 'staff', NULL, NULL, 'OK', 'legacy remark', NULL, 1, NULL, NULL)");
+    my $token = $m->create_token($client->loginid, 'test token');
+    my $res = $c->tcall(
+        $method,
+        {
+            token => $token,
+            args  => {description => 1}
+        }
+    );
+    is $res->{transactions}[0]{longcode}, 'legacy remark', 'old remark used if transaction details not present';
 };
 
 # request report
