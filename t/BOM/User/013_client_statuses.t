@@ -452,6 +452,59 @@ subtest 'Is Experian Validated' => sub {
     ok !$client_mx->status->is_experian_validated, 'The Reason is not the one we are looking for';
 };
 
+subtest 'Experian validated account ID AUTH propagation' => sub {
+    my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'MX',
+    });
+
+    # Give sibling
+
+    my $user = BOM::User->create(
+        email          => 'superuser+1235153253@binary.com',
+        password       => BOM::User::Password::hashpw('ASDF2222'),
+        email_verified => 1,
+    );
+
+    my $sibling = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'MF',
+    });
+
+    $user->add_client($test_client);
+    $user->add_client($sibling);
+
+    # Make it experian validated
+    $test_client->status->set('age_verification',  'test', 'Experian results are sufficient to mark client as age verified');
+    $test_client->status->set('proveid_requested', 'test', 'test');
+    ok $test_client->status->is_experian_validated, 'Client is experian validated';
+
+    $test_client->set_authentication('ID_DOCUMENT', {status => 'under_review'});
+    is $test_client->get_authentication('ID_DOCUMENT')->status, 'under_review', 'Authentication is under review for the client';
+    ok !$sibling->get_authentication('ID_DOCUMENT'), 'Authentication was not propagated to siblings';
+
+    $sibling->set_authentication('ID_ONLINE', {status => 'needs_action'});
+    is $sibling->get_authentication('ID_ONLINE')->status, 'needs_action', 'Authentication is needs_action for the sibling';
+    # reload client
+    $test_client = BOM::User::Client->new({loginid => $test_client->loginid});
+    is $test_client->get_authentication('ID_DOCUMENT')->status, 'under_review', 'Authentication remains under review for the client';
+
+    # Make the MX account an Onfido validated account
+    $test_client->status->upsert('age_verification', 'test', 'Onfido validated');
+    ok !$test_client->status->is_experian_validated, 'Client is not experian validated';
+
+    $test_client->set_authentication('ID_NOTARIZED', {status => 'needs_action'});
+    is $test_client->get_authentication('ID_NOTARIZED')->status, 'needs_action', 'Authentication is needs_action for the client';
+    # reload sibling
+    $sibling = BOM::User::Client->new({loginid => $sibling->loginid});
+    is $sibling->get_authentication('ID_NOTARIZED')->status, 'needs_action', 'Authentication propagated to sibling';
+
+    # from MF to MX
+    $sibling->set_authentication('ID_DOCUMENT', {status => 'under_review'});
+    is $sibling->get_authentication('ID_DOCUMENT')->status, 'under_review', 'Authentication is under review for the sibling';
+    # reload client
+    $test_client = BOM::User::Client->new({loginid => $test_client->loginid});
+    is $test_client->get_authentication('ID_DOCUMENT')->status, 'under_review', 'Authentication propagated';
+};
+
 done_testing();
 
 sub reset_client_statuses {

@@ -398,8 +398,9 @@ sub set_authentication {
     my @allowed_lc_to_sync = @{$self->landing_company->allowed_landing_companies_for_authentication_sync};
     my @clients_to_update;
     # Get all siblings for a client except virtual one and itself
-    if ($self->user and not $self->is_virtual) {
-        @clients_to_update = grep { not $_->is_virtual and $_->loginid ne $self->loginid } $self->user->clients;
+    if ($self->user and not $self->is_virtual and not $self->status->is_experian_validated) {
+        @clients_to_update =
+            grep { not $_->is_virtual and $_->loginid ne $self->loginid and not $_->status->is_experian_validated } $self->user->clients;
     }
     # Push the client to the list.
     push(@clients_to_update, $self);
@@ -5481,6 +5482,98 @@ sub ignore_address_verification {
     }
 
     return 0;
+}
+
+=head2 start_document_upload
+
+Starts a document upload. This sub is a wrapper for `betonmarkets.start_document_upload` 
+database function.
+
+Allocates a row into the table with status `uploading`.
+
+It takes a hashref containing the following parameters:
+
+=over 4
+
+=item * C<document_type> Required. The type of the document, this is our internal classification of documents such as `passport`, `bank_statement` and many others (Required otherwise constraint violation).
+
+=item * C<document_format> Required. The type of the file (should've been named file_format) such as `png`, `jpg` and others.
+
+=item * C<expiration_date> The expiration date of the given document if applies.
+
+=item * C<document_id> Required. The arbitrary id of the document, nothing to do with primary keys.
+
+=item * C<checksum> Required. Checksum of the file being uploaded
+
+=item * C<comments> Comments attached to the file
+
+=item * C<page_type> Required. The page type of the document such as `front` or `back`.
+
+=item * C<issue_date> The issuance date of the given document if applies.
+
+=back
+
+Returns a hashref containing:
+
+=over 4
+
+=item * C<file_id> the ID of the new document (unlike the parameter mentioned before, this is a primary key).
+
+=item * C<file_name> the computed name of the document.
+
+=back
+
+=cut
+
+sub start_document_upload {
+    my ($self, $params) = @_;
+    my ($document_type, $document_format, $expiration_date, $document_id, $checksum, $comments, $page_type, $issue_date) =
+        @$params{qw/document_type document_format expiration_date document_id checksum comments page_type issue_date/};
+
+    return $self->db->dbic->run(
+        ping => sub {
+            $_->selectrow_hashref(
+                'SELECT * FROM betonmarkets.start_document_upload(?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                undef,
+                $self->loginid,
+                $document_type,
+                $document_format,
+                $expiration_date,
+                $document_id,
+                $checksum,
+                $comments // '',    # This field has non null constraint however feels like it should be optional anyway
+                $page_type,
+                $issue_date,
+            );
+        });
+}
+
+=head2 finish_document_upload
+
+Finishes a document upload. This sub is a wrapper for `betonmarkets.finish_document_upload` 
+database function.
+
+Updates the document status to `uploaded`.
+
+It takes the following parameters:
+
+=over 4
+
+=item C<file_id> the id of the document being finished (yeah, tricky name indeed).
+
+=back
+
+Returns the same C<file_id> given when no exception is seen.
+
+=cut
+
+sub finish_document_upload {
+    my ($self, $file_id) = @_;
+
+    return $self->db->dbic->run(
+        ping => sub {
+            $_->selectrow_array('SELECT * FROM betonmarkets.finish_document_upload(?)', undef, $file_id);
+        });
 }
 
 =head2 payment_accounts_limit
