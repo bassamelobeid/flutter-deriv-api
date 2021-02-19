@@ -64,7 +64,7 @@ my $currency_pairs = BOM::Config::currency_pairs_backoffice()->{currency_pairs};
 
 foreach my $pair (@$currency_pairs) {
 
-    my $pair_name       = join '/', @$pair;
+    my $pair_name = join '/', @$pair;
     my $underlying_spot = convert_currency(1.00, @$pair);
 
     try {

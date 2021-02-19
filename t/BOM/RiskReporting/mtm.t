@@ -118,7 +118,7 @@ subtest 'realtime report generation' => sub {
         );
 
         my @shortcode_param = (
-            $bet_hash{bet_type}, $bet_hash{underlying_symbol},
+            $bet_hash{bet_type},     $bet_hash{underlying_symbol},
             $bet_hash{payout_price}, $start_time->epoch, $expiry_time->epoch, $bet_hash{relative_barrier}, 0
         );
         my $short_code = uc join('_', @shortcode_param);

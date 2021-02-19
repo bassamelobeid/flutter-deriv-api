@@ -245,7 +245,7 @@ sub _open_bets_report {
         my $currency      = $bet_details->{currency_code};
         my $how_long      = $bet->date_expiry->days_between($self->end);
         my $expiry_period = ($how_long < 1) ? 'Today' : 'Longer';
-        my $buy_usd       = $self->amount_in_usd($bet_details->{buy_price}, $currency);
+        my $buy_usd       = $self->amount_in_usd($bet_details->{buy_price},    $currency);
         my $payout_usd    = $self->amount_in_usd($bet_details->{payout_price}, $currency);
         my $mtm_profit    = $buy_usd - $normalized_mtm;
         my $underlying    = $bet->underlying;
@@ -421,8 +421,8 @@ sub open_contract_exposures {
 
         my $purchase_price = financialrounding('price', 'USD', in_usd($open_contract->{buy_price},    $open_contract->{currency_code}));
         my $payout_price   = financialrounding('price', 'USD', in_usd($open_contract->{payout_price}, $open_contract->{currency_code}));
-        my $expiry_type = $contract->is_intraday  ? 'intraday' : 'daily';
-        my $category    = ($contract->is_atm_bet) ? 'atm'      : 'non_atm';
+        my $expiry_type    = $contract->is_intraday  ? 'intraday' : 'daily';
+        my $category       = ($contract->is_atm_bet) ? 'atm'      : 'non_atm';
 
         foreach my $br ($broker, "ALL") {
             $final->{$br}->{$contract->underlying->market->name}->{$expiry_type}->{$category}->{total_turnover} += $purchase_price;
@@ -456,7 +456,7 @@ sub closed_contract_exposures {
         my $underlying  = $closed->[$i][1];
         my $market      = create_underlying($underlying)->market->name;
         my $expiry_type = $closed->[$i][2] == 1 ? 'daily' : 'intraday';
-        my $atm_type    = $closed->[$i][3] == 1 ? 'atm' : 'non_atm';
+        my $atm_type    = $closed->[$i][3] == 1 ? 'atm'   : 'non_atm';
         my $closed_pl   = financialrounding('price', 'USD', $closed->[$i][4]);
         foreach my $br ($broker, "ALL") {
             $summary->{$br}->{$market}->{total_closed_pl}                                             += $closed_pl;

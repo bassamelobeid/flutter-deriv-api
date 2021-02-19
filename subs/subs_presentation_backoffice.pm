@@ -108,7 +108,7 @@ sub Bar {
     $title = uc($title // '');
     my $container_class = $options->{container_class} // 'card';
     my $title_class     = $options->{title_class}     // 'card__label';
-    my $content_align = $options->{is_content_centered} ? 'center' : '';
+    my $content_align   = $options->{is_content_centered} ? 'center' : '';
 
     BarEnd();    #see sub below
 
@@ -309,8 +309,8 @@ sub code_exit_BO {
         Bar(
             $title,
             {
-                container_class => $is_success ? 'card'        : 'card',
-                title_class     => $is_success ? 'card__label' : 'card__label',
+                container_class     => $is_success ? 'card'        : 'card',
+                title_class         => $is_success ? 'card__label' : 'card__label',
                 is_content_centered => 1,
             });
         print $message;

@@ -155,13 +155,13 @@ sub buy_one_bet {
           $args->{start_time}
         ? $args->{start_time}->truncate_to_day->minus_time_interval('1s')
         : Date::Utility->new->truncate_to_day->minus_time_interval('1s');
-    my $buy_price        = delete $args->{buy_price}        // 20;
-    my $payout_price     = delete $args->{payout_price}     // $buy_price * 10;
+    my $buy_price        = delete $args->{buy_price}    // 20;
+    my $payout_price     = delete $args->{payout_price} // $buy_price * 10;
     my $limits           = delete $args->{limits};
     my $duration         = delete $args->{duration}         // '30d';
     my $relative_barrier = delete $args->{relative_barrier} // 'S0P';
     my $bet_class        = delete $args->{bet_class};
-    my $shortcode = delete $args->{shortcode} // $args->{bet_type}
+    my $shortcode        = delete $args->{shortcode} // $args->{bet_type}
         . '_R_100_'
         . $payout_price . '_'
         . $now->epoch . '_'

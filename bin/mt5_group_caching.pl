@@ -64,7 +64,7 @@ my $connection_lost = 1;
                     $log->info('There was not any requst pending request');
                     return Future->done;
                 }
-                my ($queue,   $job)    = @{$_[0]};
+                my ($queue, $job) = @{$_[0]};
                 my ($loginid, $queued) = split /:/, $job;
 
                 $log->debugf('Processing pending ID [%s]', $loginid);

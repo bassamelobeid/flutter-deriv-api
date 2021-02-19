@@ -763,7 +763,7 @@ sub build_client_warning_message {
     my $output = '';
     if (@output) {
         $output =
-            '<form method="POST" class="row">'
+              '<form method="POST" class="row">'
             . '<div class="row"><table class="collapsed hover alternate"><thead><tr>'
             . '<th>&nbsp;</th>'
             . '<th>Status</th>'
@@ -893,8 +893,7 @@ sub status_op_processor {
             if ($status_op eq 'remove') {
                 my $client_status_clearer_method_name = 'clear_' . $status;
                 $client->status->$client_status_clearer_method_name;
-                $summary .=
-                    "<div class='notify'><b>SUCCESS :</b>&nbsp;&nbsp;<b>$status</b>&nbsp;&nbsp;has been removed from <b>$loginid</b></div>";
+                $summary .= "<div class='notify'><b>SUCCESS :</b>&nbsp;&nbsp;<b>$status</b>&nbsp;&nbsp;has been removed from <b>$loginid</b></div>";
             } elsif ($status_op eq 'remove_siblings') {
                 $summary .= status_op_processor(
                     $client,
@@ -904,7 +903,7 @@ sub status_op_processor {
                     });
 
                 my $updated_client_loginids = $client->clear_status_and_sync_to_siblings($status, BOM::Backoffice::Auth0::get_staffname());
-                my $siblings                = join ', ', $updated_client_loginids->@*;
+                my $siblings = join ', ', $updated_client_loginids->@*;
 
                 if (scalar $updated_client_loginids->@*) {
                     $summary .=
@@ -912,7 +911,7 @@ sub status_op_processor {
                 }
             } elsif ($status_op eq 'sync') {
                 my $updated_client_loginids = $client->copy_status_to_siblings($status, BOM::Backoffice::Auth0::get_staffname());
-                my $siblings                = join ', ', $updated_client_loginids->@*;
+                my $siblings = join ', ', $updated_client_loginids->@*;
 
                 if (scalar $updated_client_loginids->@*) {
                     $summary .=
@@ -925,7 +924,8 @@ sub status_op_processor {
             $fail_op = 'remove from siblings' if $status_op eq 'remove_siblings';
             $fail_op = 'copy to siblings'     if $status_op eq 'sync';
 
-            $summary .= "<div class='notify notify--danger'><b>ERROR :</b>&nbsp;&nbsp;Failed to $fail_op, status <b>$status</b>. Please try again.</div>";
+            $summary .=
+                "<div class='notify notify--danger'><b>ERROR :</b>&nbsp;&nbsp;Failed to $fail_op, status <b>$status</b>. Please try again.</div>";
         }
     }
 
@@ -997,7 +997,7 @@ sub date_html {
 
     $required = $required ? 'required' : '';
     my $required_mark = $required ? '*' : ' ';
-    my $date          = $value || '';
+    my $date = $value || '';
     if ($date) {
         eval {
             my $formatted = Date::Utility->new($date)->date_yyyymmdd;

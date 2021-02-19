@@ -94,7 +94,7 @@ my $statuses = join '/', map { uc } @{$client->status->all};
 if (my $statuses = build_client_warning_message($loginid)) {
     print $statuses;
 }
-my $name        = $client->full_name;
+my $name = $client->full_name;
 my $client_info = sprintf "%s %s%s", $client->loginid, ($name || '?'), ($statuses ? " [$statuses]" : '');
 Bar("CLIENT " . $client_info);
 

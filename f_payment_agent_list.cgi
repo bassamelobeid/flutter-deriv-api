@@ -12,8 +12,8 @@ PrintContentType();
 
 my $broker            = request()->broker_code;
 my $result            = {};
-my $action            = request()->param('submit') // '';
-my $selected_country  = request()->param("country") // '';
+my $action            = request()->param('submit')   // '';
+my $selected_country  = request()->param("country")  // '';
 my $selected_currency = request()->param("currency") // 'USD';
 if ($action and $action eq 'submit') {
     $result = BOM::User::Client::PaymentAgent->get_payment_agents(

@@ -16,7 +16,7 @@ use DataDog::DogStatsd::Helper qw(stats_inc stats_event);
 
 use constant HOURS_TO_QUERY => 4;    # This cron runs every hour, but we will pick up clients with `proveid_pending` status set 4 hours in the past.
 
-my $accounts_dir = BOM::Config::Runtime->instance->app_config->system->directory->db . "/f_accounts";
+my $accounts_dir  = BOM::Config::Runtime->instance->app_config->system->directory->db . "/f_accounts";
 my $search_option = 'ProveID_KYC';    # At the time of writing this script, this is the only search option we have
 
 for my $broker (qw(MX)) {

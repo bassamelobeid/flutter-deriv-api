@@ -73,8 +73,8 @@ if (BOM::Config::Runtime->instance->app_config->system->suspend->payments) {
 
 # Why all the delete-params?  Because any remaining form params just get passed directly
 # to the new-style database payment-handlers.  There's no need to mention those in this module.
-my $loginID   = uc((delete $params{account}    || ''));
-my $toLoginID = uc((delete $params{to_account} || ''));
+my $loginID          = uc((delete $params{account}    || ''));
+my $toLoginID        = uc((delete $params{to_account} || ''));
 my $informclient     = delete $params{informclientbyemail};
 my $ttype            = delete $params{ttype};
 my $DCcode           = delete $params{DCcode};

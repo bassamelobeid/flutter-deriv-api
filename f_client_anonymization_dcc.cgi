@@ -22,7 +22,7 @@ my $loginid = trim uc($input->{clientloginid} // '');
 
 # Error checks
 code_exit_BO("Please provide a transaction type.") unless $input->{transtype};
-code_exit_BO("Invalid transaction type") unless ($input->{transtype} =~ /^Anonymize client|Delete customerio record/);
+code_exit_BO("Invalid transaction type")           unless ($input->{transtype} =~ /^Anonymize client|Delete customerio record/);
 code_exit_BO(_get_display_error_message("ERROR: Please provide client loginid or batch file")) if (not $loginid and not $batch_file);
 code_exit_BO(_get_display_error_message("ERROR: You cannot request for client and bulk anonymization at the same time. Please provide one of them."))
     if $loginid and $batch_file;

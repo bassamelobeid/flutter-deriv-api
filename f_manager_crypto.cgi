@@ -252,7 +252,7 @@ my $display_transactions = sub {
             controller_url      => request()->url_for('backoffice/f_manager_crypto.cgi'),
             testnet             => BOM::Config::on_qa() ? 1 : 0,
             staff               => $staff,
-            show_all_pendings   => $show_all_pendings // '',
+            show_all_pendings   => $show_all_pendings   // '',
             show_one_authorised => $show_one_authorised // '',
             fetch_url           => request()->url_for('backoffice/fetch_client_details.cgi'),
             rejection_reasons   => \@rejection_reasons_tpl,
@@ -551,7 +551,7 @@ EOF
         my $protocol_cost = Math::BigFloat->new($db_tran->{protocol_cost})->bstr;
 
         print '<td class="right">' . encode_entities($_) . '</td>' for ($amount, '$' . $usd_amount, $fee, $protocol_cost);
-        print '<td>' . encode_entities($_) . '</td>' for map { $_ // '' } @{$db_tran}{qw(status)};
+        print '<td>' . encode_entities($_) . '</td>'               for map { $_ // '' } @{$db_tran}{qw(status)};
         print '<td sorttable_customkey="' . (sprintf "%012d", $_ ? Date::Utility->new($_)->epoch : 0) . '">' . encode_entities($_) . '</td>'
             for map { $_ // '' } @{$db_tran}{qw(status_date blockchain_date)};
         print '<td><span class="' . ($_ + 0 >= 3 ? 'success' : 'text-muted') . '">' . encode_entities($_) . '</td>'

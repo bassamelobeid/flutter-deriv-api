@@ -72,7 +72,7 @@ if (@$pcs) {
     my %pcs_by_currency;
     for my $pc (@$pcs) {
         $pc->{_json} ||= eval { JSON::MaybeXS->new->decode($pc->promo_code_config) } || {};
-        my $currency = $pc->{_json}->{currency} || next;
+        my $currency = $pc->{_json}->{currency}                                      || next;
         $pcs_by_currency{$currency}++;
     }
     print '<ul>';
@@ -294,8 +294,8 @@ foreach my $client (@clients) {
            $client->status->disabled
         || $client->status->cashier_locked
         || $client->status->unwelcome;
-    my $class    = $dodgy ? 'error'               : '';
-    my $disabled = $dodgy ? 'disabled="disabled"' : '';
+    my $class                = $dodgy ? 'error'               : '';
+    my $disabled             = $dodgy ? 'disabled="disabled"' : '';
     my $client_name          = $client->salutation . ' ' . $client->first_name . ' ' . $client->last_name;
     my $client_residence     = Locale::Country::code2country($client->residence);
     my $client_authenticated = ($client->fully_authenticated) ? 'yes' : 'no';

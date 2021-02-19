@@ -147,7 +147,7 @@ sub get_limited_client_list {
                 updated_by           => $updated_by,
                 updated_on           => $updated_on,
                 limit_condition      => $limit_condition,
-                payout_limit         => $profile ? $limit_profile->{$profile}{payout}{USD} : 'N.A.',
+                payout_limit         => $profile ? $limit_profile->{$profile}{payout}{USD}   : 'N.A.',
                 turnover_limit       => $profile ? $limit_profile->{$profile}{turnover}{USD} : 'N.A.',
                 client_type          => 'old',
                 potential_loss_limit => 'N.A.',
@@ -195,7 +195,7 @@ sub get_limited_client_list {
             turnover_limit       => 'N.A.',
             client_type          => $user->{client_type},
             potential_loss_limit => $user->{potential_loss} ? $user->{potential_loss} : 'N.A.',
-            realized_loss_limit  => $user->{realized_loss} ? $user->{realized_loss} : 'N.A.',
+            realized_loss_limit  => $user->{realized_loss}  ? $user->{realized_loss}  : 'N.A.',
             expiry               => $expiry,
 
         };

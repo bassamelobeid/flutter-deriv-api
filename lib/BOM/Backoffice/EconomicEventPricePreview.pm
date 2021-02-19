@@ -88,11 +88,11 @@ sub generate_economic_event_form {
         'backoffice/economic_event_price_preview_form.html.tt',
         +{
             upload_url        => $url,
-            headers           => encode_json_utf8($input->{headers} // {}),
-            prices            => encode_json_utf8($input->{prices} // {}),
-            news_info         => encode_json_utf8($input->{news_info} // {}),
+            headers           => encode_json_utf8($input->{headers}       // {}),
+            prices            => encode_json_utf8($input->{prices}        // {}),
+            news_info         => encode_json_utf8($input->{news_info}     // {}),
             underlying_symbol => encode_json_utf8($underlying_symbol_list // {}),
-            weekly_news       => encode_json_utf8($weekly_news // {}),
+            weekly_news       => encode_json_utf8($weekly_news            // {}),
 
         },
     ) || die BOM::Backoffice::Request::template()->error;

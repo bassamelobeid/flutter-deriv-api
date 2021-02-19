@@ -43,9 +43,9 @@ sub rmg_table_format {
 
     my $volsurface   = $self->surface;
     my $dates        = (defined $args->{historical_dates}) ? $args->{historical_dates} : [];
-    my $tab_id       = (defined $args->{tab_id}) ? $args->{tab_id} : undef;
-    my $greeks       = (defined $args->{greeks}) ? $args->{greeks} : undef;
-    my $content_only = (defined $args->{content_only}) ? $args->{content_only} : undef;
+    my $tab_id       = (defined $args->{tab_id})           ? $args->{tab_id}           : undef;
+    my $greeks       = (defined $args->{greeks})           ? $args->{greeks}           : undef;
+    my $content_only = (defined $args->{content_only})     ? $args->{content_only}     : undef;
 
     my $dates_tt;
     foreach my $date (@{$dates}) {
@@ -578,7 +578,7 @@ sub calculate_moneyness_vol_for_display {
         my $smile       = $volsurface->surface->{$term}->{smile};
         my @rounded_vol =
             map { 100 * roundcommon(0.0001, $smile->{$_}) } @$moneynesses;
-        push @row, @rounded_vol;
+        push @row,     @rounded_vol;
         push @surface, [@row];
     }
 

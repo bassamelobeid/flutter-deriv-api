@@ -312,10 +312,10 @@ if ($input{whattodo} eq 'uploadID') {
 
         my $filetoupload                = $cgi->upload('FILE_' . $i);
         my $page_type                   = $cgi->param('page_type_' . $i);
-        my $issue_date                  = $is_expirable || $no_date_doc ? undef : $cgi->param('issue_date_' . $i);
+        my $issue_date                  = $is_expirable  || $no_date_doc ? undef : $cgi->param('issue_date_' . $i);
         my $expiration_date             = !$is_expirable || $no_date_doc ? undef : $cgi->param('expiration_date_' . $i);
         my $document_id                 = $input{'document_id_' . $i} // '';
-        my $comments                    = $input{'comments_' . $i} // '';
+        my $comments                    = $input{'comments_' . $i}    // '';
         my $is_expiration_date_optional = $cgi->param('is_expiration_date_optional_' . $i) eq "on";
 
         next unless $filetoupload;

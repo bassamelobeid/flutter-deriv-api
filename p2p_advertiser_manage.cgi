@@ -123,8 +123,8 @@ if ($output{advertiser}) {
     # pagination
     my $page_size = 30;
     my $start     = $input{start} // 0;
-    $output{prev} = max(($start - $page_size), 0) if $start;
-    $output{next} = $start + $page_size           if @$ads > $start + $page_size;
+    $output{prev}  = max(($start - $page_size), 0) if $start;
+    $output{next}  = $start + $page_size           if @$ads > $start + $page_size;
     $output{range} = ($start + 1) . '-' . min(($start + $page_size), scalar @$ads) . ' of ' . (scalar @$ads);
     $output{ads}   = [splice(@$ads, $start, $page_size)];
 

@@ -86,7 +86,7 @@ lives_ok {
         'underlying_symbol' => 'frxUSDJPY',
         'payout_price'      => 2,
         'buy_price'         => 1.07,
-        'remark' =>
+        'remark'            =>
             'vega[-0.00002] atmf_fct[0.70411] div[0.00252] recalc[1.07000] int[0.00107] theta[0.00092] iv[0.10500] emp[1.06000] fwdst_fct[1.00000] win[2.00000] trade[1.07000] dscrt_fct[0.99299] spot[78.46000] gamma[0.03950] delta[-1.63768] theo[1.00000] base_spread[0.10000] ia_fct[1.00000] news_fct[1.00000]',
         'purchase_time'    => '2011-07-25 05:08:05',
         'start_time'       => '2011-07-25 05:08:05',

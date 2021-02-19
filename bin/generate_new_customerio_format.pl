@@ -95,8 +95,8 @@ sub generate_data {
     $data{first_name}      = $client->first_name;
     $data{last_name}       = $client->last_name;
     $data{affiliate_token} = $client->myaffiliates_token // '';
-    $data{unsubscribed}    = $user->email_consent ? "false" : "true";
-    $data{account_type}    = $client->is_virtual ? "virtual" : "real";
+    $data{unsubscribed}    = $user->email_consent ? "false"   : "true";
+    $data{account_type}    = $client->is_virtual  ? "virtual" : "real";
     $data{country_code}    = $client->residence // '';
     $data{country} =
         $client->residence

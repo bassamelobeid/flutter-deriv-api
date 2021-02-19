@@ -11,6 +11,7 @@ use File::Find::Rule;
 use Test::Perl::Critic -profile => '/home/git/regentmarkets/cpan/rc/.perlcriticrc';
 use Test::Strict;
 use Cwd;
+use Test::PerlTidy;
 
 my $pattern = $ARGV[0];        # confines test to just files matching this pattern.
 my $PATH    = Cwd::abs_path;
@@ -53,5 +54,13 @@ sub is_module_tested {
     my $m = shift;
     grep { $m =~ /$_/ } @tested_modules;
 }
+
+subtest "check modules and test files being tidy" => sub {
+    run_tests(
+        perltidyrc => '/home/git/regentmarkets/cpan/rc/.perltidyrc',
+        exclude    => ['.git'],
+        mute       => 1,
+    );
+};
 
 done_testing;

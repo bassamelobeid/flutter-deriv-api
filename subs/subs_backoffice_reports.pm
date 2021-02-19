@@ -111,8 +111,8 @@ sub DailyTurnOverReport {
             $tday{sells}->{$curr} = int $sells;
         }
 
-        $USDbuys  = roundcommon(0.01, $USDbuys);
-        $USDsells = roundcommon(0.01, $USDsells);
+        $USDbuys         = roundcommon(0.01, $USDbuys);
+        $USDsells        = roundcommon(0.01, $USDsells);
         $tday{USD_buys}  = int $USDbuys;
         $tday{USD_sells} = int $USDsells;
 

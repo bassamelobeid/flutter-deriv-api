@@ -131,7 +131,9 @@ sub save_settings {
             }
         } else {
             $message .=
-                "<div class='notify notify--warning center'>Invalid 'submitted' value <span class='value'>" . encode_entities($submitted) . "</span></div>";
+                  "<div class='notify notify--warning center'>Invalid 'submitted' value <span class='value'>"
+                . encode_entities($submitted)
+                . "</span></div>";
         }
 
         print $message;
@@ -437,7 +439,7 @@ Validates the amount to be a positive valid number.
 
 sub _validate_positive_number {
     my $input_data = shift;
-    die "Invalid numerical value $input_data" unless Scalar::Util::looks_like_number($input_data);
+    die "Invalid numerical value $input_data"    unless Scalar::Util::looks_like_number($input_data);
     die "$input_data is less than or equal to 0" unless $input_data > 0;
     return;
 }
@@ -585,7 +587,7 @@ sub send_email_notification {
     push @message, "$disable_type: " . join(",", @different);
     push @message, "By $staff on " . Date::Utility->new->datetime;
 
-    my $brand      = request()->brand;
+    my $brand = request()->brand;
     my $email_list = join ", ", map { $brand->emails($_) } qw(quants compliance cs marketing_x);
 
     send_email({

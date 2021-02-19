@@ -251,7 +251,7 @@ sub get_client_by_status {
                 # sample record entry
                 # loginid,account_balance,total_open_bets_value,total_open_bets_profit,
                 # total_equity,aggregate_deposit_withdrawals,portfolio
-                next if $row->[0] !~ /^([A-Z]+)\d+$/;
+                next                                                                                    if $row->[0] !~ /^([A-Z]+)\d+$/;
                 $SUMMARYFILE{$row->[0] . "-TOTALEQUITY"} += roundcommon(0.01, in_usd($row->[4], $curr)) if $row->[4];
             }
             $csv->eof or $csv->error_diag();

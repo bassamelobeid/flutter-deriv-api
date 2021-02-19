@@ -39,8 +39,8 @@ my $clerk             = BOM::Backoffice::Auth0::get_staffname();
 my $confirm           = $cgi->param('confirm');
 my $preview           = $cgi->param('preview');
 my $payments_csv_file = $cgi->param('payments_csv_file') || sprintf '/tmp/batch_payments_%d.csv', rand(1_000_000);
-my $skip_validation   = $cgi->param('skip_validation') || 0;
-my $format            = $confirm || $preview || die "either preview or confirm";
+my $skip_validation   = $cgi->param('skip_validation')   || 0;
+my $format            = $confirm                         || $preview || die "either preview or confirm";
 my $now               = Date::Utility->new;
 
 Bar('Batch Credit/Debit to Clients Accounts');
@@ -266,7 +266,7 @@ if (%summary_amount_by_currency and scalar @invalid_lines == 0) {
     foreach my $currency (sort keys %summary_amount_by_currency) {
         my $c  = encode_entities($currency);
         my $cr = encode_entities(formatnumber('amount', $currency, $summary_amount_by_currency{$currency}{credit} // 0));
-        my $db = encode_entities(formatnumber('amount', $currency, $summary_amount_by_currency{$currency}{debit} // 0));
+        my $db = encode_entities(formatnumber('amount', $currency, $summary_amount_by_currency{$currency}{debit}  // 0));
         $summary_table .= "<tr><th>$c</th><td>$cr</td><td>$db</td></tr>";
     }
     $summary_table .= '</table>';

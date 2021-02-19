@@ -28,7 +28,7 @@ my $db = BOM::Database::ClientDB->new({
     })->db->dbic;
 
 my %countries_list = request()->brand->countries_instance->countries_list->%*;
-my @countries      = map { {code => $_, name => $countries_list{$_}{name}} }
+my @countries = map { {code => $_, name => $countries_list{$_}{name}} }
     sort { $countries_list{$a}{name} cmp $countries_list{$b}{name} } keys %countries_list;
 
 my @currencies = sort @{request()->available_currencies};

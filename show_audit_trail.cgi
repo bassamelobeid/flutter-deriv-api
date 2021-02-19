@@ -25,11 +25,11 @@ my $db = BOM::Database::ClientDB->new({
         broker_code => $broker,
     })->db;
 
-my $category = encode_entities(request()->param('category') // "");
-my $loginid  = encode_entities(request()->param('loginid')  // "");
-my $page     = request()->param('page')     || 0;
-my $pagesize = request()->param('pagesize') || 40;
-my $offset   = $page * $pagesize;
+my $category    = encode_entities(request()->param('category') // "");
+my $loginid     = encode_entities(request()->param('loginid')  // "");
+my $page        = request()->param('page')     || 0;
+my $pagesize    = request()->param('pagesize') || 40;
+my $offset      = $page * $pagesize;
 my @system_cols = qw/stamp staff_name operation remote_addr/;
 my @noshow_cols = qw/client_port id client_addr client_loginid document_format/;
 
@@ -210,10 +210,10 @@ my $stash = {
     rowcount      => $rowcount,
     pages         => $pages,
     next          => $page < $pages ? $page + 1 : $page,
-    prev          => $page > 0 ? $page - 1 : $page,
+    prev          => $page > 0      ? $page - 1 : $page,
     pagesize      => $pagesize,
     url_to_myself => request()->url_for("backoffice/show_audit_trail.cgi", $myself_args),
-    url_to_client => request()->url_for("backoffice/$return_cgi", $return_args)};
+    url_to_client => request()->url_for("backoffice/$return_cgi",          $return_args)};
 
 # These hidden fields are not needed in audit trail
 unless ($myself_args->{category} eq 'payment_agent') {

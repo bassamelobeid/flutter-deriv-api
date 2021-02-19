@@ -58,13 +58,13 @@ if ($whattodo eq 'show') {
         pa_email           => $pa->email,
         pa_tel             => $pa->phone,
         pa_url             => $pa->url,
-        pa_comm_depo       => $pa->commission_deposit || '0.00',
+        pa_comm_depo       => $pa->commission_deposit    || '0.00',
         pa_comm_with       => $pa->commission_withdrawal || '0.00',
         pa_max_withdrawal  => $pa->max_withdrawal,
         pa_min_withdrawal  => $pa->min_withdrawal,
         pa_info            => $pa->information,
         pa_auth            => ($pa->is_authenticated ? 'yes' : 'no'),
-        pa_listed          => ($pa->is_listed ? 'yes' : 'no'),
+        pa_listed          => ($pa->is_listed        ? 'yes' : 'no'),
         pa_supported_banks => $pa->supported_banks,
         pa_countries       => join(',', @$pa_countries),
     };
@@ -77,7 +77,7 @@ if ($whattodo eq 'show') {
     code_exit_BO();
 } elsif ($whattodo eq 'apply') {
     my $client = BOM::User::Client->new({loginid => $loginid});
-    code_exit_BO("Error : wrong loginid ($loginid) could not get client instance") unless $client;
+    code_exit_BO("Error : wrong loginid ($loginid) could not get client instance")               unless $client;
     code_exit_BO("Client has not set account currency. Currency is mandatory for payment agent") unless $client->default_account;
     code_exit_BO("Payment agents are suspended in client's residence country.") if is_payment_agents_suspended_in_country($client->residence);
     code_exit_BO("Error : must provide at least one country.") unless request()->param('pa_countries');

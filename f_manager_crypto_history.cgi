@@ -106,7 +106,7 @@ my $render_crypto_transactions = sub {
 
     my $offset_param = "crypto_${txn_type}_offset";
     my $offset       = max(request()->param($offset_param) // 0, 0);
-    my $limit        = max(request()->param('limit') // 0, 0) || CRYPTO_DEFAULT_TRANSACTION_COUNT;
+    my $limit        = max(request()->param('limit')       // 0, 0) || CRYPTO_DEFAULT_TRANSACTION_COUNT;
     my $search_param = "${txn_type}_address_search";
 
     my ($search_address, $search_message);

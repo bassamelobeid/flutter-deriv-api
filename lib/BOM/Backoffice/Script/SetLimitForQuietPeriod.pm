@@ -83,14 +83,14 @@ sub send_notification_email {
 
     my $subject           = "Trading limit setting. ";
     my $contract_category = $limit->{contract_category} // "Not specified";
-    my $market            = $limit->{market} // "Not specified";
-    my $submarket         = $limit->{submarket} // "Not specified";
+    my $market            = $limit->{market}            // "Not specified";
+    my $submarket         = $limit->{submarket}         // "Not specified";
     my $underlying        = $limit->{underlying_symbol} // "Not specified";
-    my $expiry_type       = $limit->{expiry_type} // "Not specified";
-    my $landing_company   = $limit->{landing_company} // "Not specified";
-    my $barrier_category  = $limit->{barrier_category} // "Not specified";
-    my $start_type        = $limit->{start_type} // "Not specified";
-    my $profile           = $limit->{risk_profile} // "Not specified";
+    my $expiry_type       = $limit->{expiry_type}       // "Not specified";
+    my $landing_company   = $limit->{landing_company}   // "Not specified";
+    my $barrier_category  = $limit->{barrier_category}  // "Not specified";
+    my $start_type        = $limit->{start_type}        // "Not specified";
+    my $profile           = $limit->{risk_profile}      // "Not specified";
     my @message           = "$for \n";
     push @message,
         (
@@ -106,7 +106,7 @@ sub send_notification_email {
         "Reason: " . $limit->{name},
         );
     push @message, ("By " . $limit->{updated_by} . " on " . $limit->{updated_on});
-    my $brand      = BOM::Config->brand();
+    my $brand = BOM::Config->brand();
     my $email_list = join ", ", map { $brand->emails($_) } qw(quants compliance cs marketing_x);
 
     send_email({

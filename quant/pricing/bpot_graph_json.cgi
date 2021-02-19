@@ -49,7 +49,7 @@ unless ($bet) {
 
 my $timestep = Time::Duration::Concise::Localize->new(interval => request()->param('timestep') || '24s');
 my $start    = Date::Utility->new(request()->param('start') || time());
-my $end      = Date::Utility->new(request()->param('end') || time());
+my $end      = Date::Utility->new(request()->param('end')   || time());
 
 my $data;
 if ($bet->category_code eq 'multiplier') {
@@ -151,7 +151,7 @@ sub get_graph_data_for_others {
             $graph_more = 0;
         } else {
             if ($bet->is_expired) {
-                $expired = 1;    # One we know we've expired once, we can presume it stays expired.
+                $expired    = 1;    # One we know we've expired once, we can presume it stays expired.
                 $value      = $bet->is_binary ? $bet->value / $bet->payout : $bet->value;    # Should go to 0 or 1 probability
                 $graph_more = 0 if ($bet->tick_expiry);                                      # Don't know when it ends, so when it expires, stop.
             }

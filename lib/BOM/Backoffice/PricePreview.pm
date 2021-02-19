@@ -30,7 +30,7 @@ sub generate_form {
         +{
             upload_url => $url,
             headers    => $json->encode($input->{headers} // {}),
-            prices     => $json->encode($input->{prices} // {}),
+            prices     => $json->encode($input->{prices}  // {}),
         },
     ) || die BOM::Backoffice::Request::template()->error;
 }

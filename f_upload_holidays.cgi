@@ -53,7 +53,8 @@ if ($input{upload_excel}) {
     my $holiday_date = $input{holiday_date};
     my $holiday_desc = $input{holiday_desc};
     # sanity check
-    code_exit_BO("<p class='error'>Incomplete entry</p>", 'Manual holiday calendar update tool') unless ($symbol_str and $holiday_date and $holiday_desc);
+    code_exit_BO("<p class='error'>Incomplete entry</p>", 'Manual holiday calendar update tool')
+        unless ($symbol_str and $holiday_date and $holiday_desc);
     my $existing = {};
     $existing = BOM::Config::Chronicle::get_chronicle_reader()->get('holidays', 'manual_holidays') unless $input{delete};
     my $date_key = Date::Utility->new($holiday_date)->truncate_to_day->epoch;

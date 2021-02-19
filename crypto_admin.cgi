@@ -83,7 +83,7 @@ $tt->process(
     {
         controller_url => request()->url_for('backoffice/crypto_admin.cgi'),
         currency       => $currency_selected,
-        previous_req   => $input{req_type} // '',
+        previous_req   => $input{req_type}            // '',
         cmd            => request()->param('command') // '',
         broker         => $broker,
         staff          => $staff,
@@ -224,7 +224,7 @@ sub _get_function_map {
         get_wallet_balance       => sub { $currency_wrapper->get_wallet_balance() },
         get_main_address_balance => sub { $currency_wrapper->get_main_address_balance() },
         get_address_balance      => sub { $address ? $currency_wrapper->get_address_balance($address) : die "Please enter address"; },
-        list_transactions => sub {
+        list_transactions        => sub {
             die "Invalid address" if (length $input->{transaction_address} && !$currency_wrapper->is_valid_address($input->{transaction_address}));
             $listtransaction_limit
                 ? $currency_wrapper->list_transactions($input->{transaction_address}, $listtransaction_limit)
@@ -232,7 +232,7 @@ sub _get_function_map {
         },
         get_transaction => sub {
             die "Transaction hash must be specified" unless length $input->{txn_code};
-            die "Transaction hash wrong format" unless length $input->{txn_code} == 64;
+            die "Transaction hash wrong format"      unless length $input->{txn_code} == 64;
             my @res = $currency_wrapper->get_transaction_details($input->{txn_code});
             return \@res;
         },

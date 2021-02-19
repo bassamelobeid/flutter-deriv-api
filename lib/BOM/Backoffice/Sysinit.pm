@@ -95,7 +95,7 @@ my $permissions = {
     'f_client_combined_audit.cgi' => ['CS',       'Compliance'],
     'f_dailyturnoverreport.cgi'   => ['Accounts', 'Quants', 'IT', 'Marketing'],
     'f_quant_query.cgi'           => ['Quants',   'CS'],
-    'f_dynamic_settings.cgi'      => ['Quants',   'IT'],                           # it has extra internal logic inside
+    'f_dynamic_settings.cgi'      => ['Quants',   'IT'],    # it has extra internal logic inside
 
     'f_save.cgi'                                                              => ['QuantsWrite'],
     'f_upload_holidays.cgi'                                                   => ['QuantsWrite'],

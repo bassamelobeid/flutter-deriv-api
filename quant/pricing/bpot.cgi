@@ -119,8 +119,8 @@ BOM::Backoffice::Request::template()->process(
     {
         longcode => $bet ? localize($bet->longcode) : '',
         bet      => $bet,
-        start    => $start ? $start->datetime : '',
-        end      => $end ? $end->datetime : '',
+        start    => $start    ? $start->datetime             : '',
+        end      => $end      ? $end->datetime               : '',
         timestep => $timestep ? $timestep->as_concise_string : '',
         defined $limit_order ? (limit_order => $limit_order) : (),
         debug_link => $debug_link,

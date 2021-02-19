@@ -15,7 +15,7 @@ sub Rescind_FreeGifts {
     my ($broker, $inactivedays, $whattodo, $message, $clerk) = @_;
     my $lockname     = "/var/lock/rescind-free-gifts.lock";
     my $lock         = File::Flock::Tiny->trylock("/var/lock/rescind-free-gifts.lock");
-    my $ino_lock     = (stat $lock)[1] // -1;
+    my $ino_lock     = (stat $lock)[1]     // -1;
     my $ino_lockname = (stat $lockname)[1] // -1;
 
     unless ($lock and $ino_lock == $ino_lockname) {
