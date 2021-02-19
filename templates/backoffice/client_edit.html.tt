@@ -344,6 +344,15 @@ window.addEventListener('DOMContentLoaded', init_text_validations, false);
     [% IF is_client_in_onfido_country %]
     <tr>
         <td class="label"></td>
+        <td>
+            Submissions left: [% onfido_submissions_left %]
+            [% IF onfido_submissions_reset %]
+                (will reset at [% onfido_submissions_reset.datetime_ddmmmyy_hhmmss_TZ %])
+            [% END %]
+        </td>
+    </tr>
+    <tr>
+        <td class="label"></td>
         <td><button name="run_onfido_check" type="submit" class="btn btn--primary" value="1">Run Onfido Check</button></td>
     </tr>
 

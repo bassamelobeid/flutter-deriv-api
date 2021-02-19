@@ -35,6 +35,7 @@ use BOM::Database::Model::HandoffToken;
 use BOM::Config::Redis;
 use BOM::User::Client;
 use BOM::Backoffice::Request qw(request);
+use BOM::User::Onfido;
 use 5.010;
 
 =head1 subs_backoffice_clientdetails
@@ -568,6 +569,8 @@ sub print_client_details {
         account_opening_reasons            => ACCOUNT_OPENING_REASONS,
         poi_reasons                        => \@poi_reasons_tpl,
         poa_reasons                        => \@poa_reasons_tpl,
+        onfido_submissions_left            => BOM::User::Onfido::submissions_left($client),
+        onfido_submissions_reset           => BOM::User::Onfido::submissions_reset_at($client),
     };
 
     return BOM::Backoffice::Request::template()->process('backoffice/client_edit.html.tt', $template_param, undef, {binmode => ':utf8'})
