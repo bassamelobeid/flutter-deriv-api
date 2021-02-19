@@ -33,6 +33,15 @@ LTC:
         max_transfer: 600
         max_percentage_fee: 1
         address: MN42N4FdC6scDQzAW1W3kUJeawcjECDRvB
+    thirdparty_api:
+        bitgo:
+            url: https://bitgo.com/api/v2/ltc
+            methods:
+                fee: /tx/fee
+        blockcypher:
+            url: https://api.blockcypher.com/v1/ltc/main
+            methods:
+                fee: /
 ETH:
     withdrawal:
         timeout: "5d"
