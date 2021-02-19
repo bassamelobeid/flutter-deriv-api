@@ -1869,8 +1869,8 @@ sub format_input_details {
     try {
         $args->{$_} = $format{$_}->($args->{$_}) for grep { $args->{$_} && exists $format{$_} } keys %$args;
         return undef;
-    } catch {
-        chomp(my $err = $@);
+    } catch ($err) {
+        chomp($err);
         return {error => $err || 'UnknownError'};
     }
 }
@@ -2553,11 +2553,11 @@ sub p2p_order_create {
         $self->validate_payment(
             amount   => $amount_client,
             currency => $advert_info->{account_currency});
-    } catch {
-        chomp($@);
+    } catch ($e) {
+        chomp($e);
         die +{
             error_code     => 'OrderCreateFailClient',
-            message_params => [$@],
+            message_params => [$e],
         };
     }
 

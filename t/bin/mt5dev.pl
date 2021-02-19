@@ -157,8 +157,8 @@ sub create_client {
             my $group_details = await BOM::MT5::User::Async::get_group('real\\svg');
             $log->infof('Group details for %s is %s', 'real\\svg', $group_details);
 
-        } catch {
-            $log->errorf('Failed - %s', $@);
+        } catch ($e) {
+            $log->errorf('Failed - %s', $e);
         }
     })->()->get;
 

@@ -84,8 +84,8 @@ sub add {
 
     try {
         $class->publish(\%args);
-    } catch {
-        warn "Failed to publish - $@";
+    } catch ($e) {
+        warn "Failed to publish - $e";
     }
 
     # Rescale by 100x to ensure we send integers (all amounts in USD)

@@ -276,8 +276,8 @@ sub _invoke_mt5 {
         $prefix   = _get_prefix($param);
         $srv_type = _get_server_type_by_prefix($prefix);
         $srv_key  = get_trading_server_key($param, $srv_type);
-    } catch {
-        $log->infof('Error in proccessing mt5 request: %s', $@);
+    } catch ($e) {
+        $log->infof('Error in proccessing mt5 request: %s', $e);
         return Future->fail(_future_error({code => 'General'}));
     }
 
@@ -390,8 +390,7 @@ sub _invoke {
                     }
                     $f->done($out);
                 }
-            } catch {
-                my $e = $@;
+            } catch ($e) {
                 chomp $e;
                 $f->fail($e, mt5 => $cmd);
             }

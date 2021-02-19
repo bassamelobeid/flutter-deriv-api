@@ -33,7 +33,6 @@ deposit($advertiser, 10, 'nuts');
 deposit($client,     10, 'nuts');
 
 lives_ok { BOM::Test::Helper::P2P::create_advert(client => $advertiser, type => 'sell') } 'create sell ad ok';
-note explain $@;
 my ($advertiser2, $buy_ad) = BOM::Test::Helper::P2P::create_advert(type => 'buy');
 
 my $order;

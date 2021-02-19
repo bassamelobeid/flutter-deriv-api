@@ -46,7 +46,6 @@ my $new_order = $client->p2p_order_create(
 );
 push @created_orders, $new_order;
 
-note explain $@;
 my $second_client = BOM::Test::Helper::P2P::create_advertiser(
     client_details => {
         first_name => 'mary2',

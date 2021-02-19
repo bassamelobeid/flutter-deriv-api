@@ -4,6 +4,7 @@ use strict;
 use warnings;
 
 use Getopt::Long;
+use Syntax::Keyword::Try;
 
 use BOM::User::Client;
 
@@ -50,11 +51,10 @@ for my $client_loginid (@client_loginids) {
         my $lifetime = $now - Date::Utility->new($order->{created_time})->epoch;
         next ORDER unless $lifetime > $order_ttl;
 
-        eval {
+        try {
             $client->p2p_order_cancel(id => $order->{id});
-            1;
-        } or do {
-            warn "Fail to cancel order $order->{id}: $@\n";
+        } catch ($e) {
+            warn "Fail to cancel order $order->{id}: $e\n";
         };
 
         warn "Order $order->{id} is successfully cancelled from buyer account $client_loginid\n";
