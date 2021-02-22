@@ -87,7 +87,8 @@ function parse_html_response(modal, html) {
     var div = document.createElement('div');
     div.innerHTML = html;
     var modal_title = div.querySelector('.card__label') ? div.querySelector('.card__label').innerHTML : null;
-    var modal_content = div.querySelectorAll('.card__content') ? Array.from(div.querySelectorAll('.card__content')).filter(node => node.innerHTML)[0].innerHTML : div.innerHTML;
+    var modal_content_list = Array.from(div.querySelectorAll('.card__content'));
+    var modal_content = modal_content_list.length ? modal_content_list.filter(node => node.innerHTML)[0].innerHTML : div.innerHTML;
     modal.find('span.modal__title').html(modal_title);
     modal.find('div.modal__content').html(modal_content);
 }

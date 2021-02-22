@@ -58,8 +58,6 @@ sub _incr_misc_checks {
     return undef;
 }
 
-print qq[<style>p {margin: 12px}</style>];
-
 my %params = %{request()->params};
 
 for (qw/account amount currency ttype range/) {
