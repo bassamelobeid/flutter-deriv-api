@@ -47,97 +47,37 @@ rpc "new_account_virtual",
     my $params = shift;
     my $args   = $params->{args};
 
-    # non-PEP declaration is not made for virtual accounts.
-    delete $args->{non_pep_declaration};
+    try {
+        my ($client, $account);
 
-    my $email = BOM::Platform::Token->new({token => $args->{verification_code}})->email;
+        $args->{ip}          = $params->{client_ip} // '';
+        $args->{country}     = uc($params->{country_code} // '');
+        $args->{environment} = request()->login_env($params);
+        $args->{source}      = $params->{source};
 
-    my $err = BOM::RPC::v3::Utility::is_verification_token_valid($args->{verification_code}, $email, 'account_opening')->{error};
-    return BOM::RPC::v3::Utility::create_error({
-            code              => $err->{code},
-            message_to_client => $err->{message_to_client}}) if $err;
+        $client  = create_virtual_account($args);
+        $account = $client->default_account;
 
-    $err = BOM::RPC::v3::Utility::check_password({
-            email        => $email,
-            new_password => $args->{client_password}});
-    return $err if $err;
+        return {
+            client_id   => $client->loginid,
+            email       => $client->email,
+            currency    => $account->currency_code(),
+            balance     => formatnumber('amount', $account->currency_code(), $account->balance),
+            oauth_token => _create_oauth_token($params->{source}, $client->loginid),
+        };
+    } catch ($e) {
+        my $error_map = BOM::RPC::v3::Utility::error_map();
+        my $error->{code} = $e;
+        $error = $e->{error} // $e if (ref $e eq 'HASH');
+        $error->{message_to_client} = $error->{message_to_client} // $error_map->{$error->{code}};
 
-    my $acc_args = {
-        ip      => $params->{client_ip} // '',
-        country => uc($params->{country_code} // ''),
-        details => {
-            email           => $email,
-            email_consent   => $args->{email_consent},
-            client_password => $args->{client_password},
-            residence       => $args->{residence},
-            source          => $params->{source},
-            $args->{affiliate_token} ? (myaffiliates_token => $args->{affiliate_token}) : (),
-            (map { $args->{$_} ? ($_ => $args->{$_}) : () } qw( utm_source utm_medium utm_campaign gclid_url date_first_contact signup_device )),
-        },
-        utm_data => {(
-                map { $args->{$_} ? ($_ => $args->{$_}) : () }
-                    qw( utm_content utm_term utm_campaign_id utm_adgroup_id utm_ad_id utm_gl_client_id utm_msclk_id utm_fbcl_id utm_adrollclk_id )
-            ),
-        },
-    };
+        return BOM::RPC::v3::Utility::client_error() unless ($error->{message_to_client});
 
-    my $acc = BOM::Platform::Account::Virtual::create_account($acc_args);
-
-    return BOM::RPC::v3::Utility::create_error({
-            code              => $acc->{error},
-            message_to_client => BOM::RPC::v3::Utility::error_map()->{$acc->{error}}}) if $acc->{error};
-
-    if (!BOM::Config::Runtime->instance->app_config->system->suspend->universal_password) {
-        my $error = BOM::RPC::v3::Utility::set_migrated_universal_password_status($acc->{client});
-        return $error if $error;
+        return BOM::RPC::v3::Utility::create_error({
+                code              => $error->{code},
+                message_to_client => $error->{message_to_client},
+                details           => $error->{details}});
     }
-
-    # Check if it is from UK, instantly mark it as unwelcome
-    my $config = request()->brand->countries_instance->countries_list->{$acc->{client}->residence};
-    if ($config->{virtual_age_verification}) {
-        $acc->{client}->status->set('unwelcome', 'SYSTEM', 'Pending proof of age');
-    }
-
-    my $client  = $acc->{client};
-    my $account = $client->default_account;
-    my $user    = $acc->{user};
-
-    $user->add_login_history(
-        action      => 'login',
-        environment => request()->login_env($params),
-        successful  => 't',
-        app_id      => $params->{source});
-
-    BOM::User::AuditLog::log("successful login", "$email");
-    BOM::User::Client::PaymentNotificationQueue->add(
-        source        => 'virtual',
-        currency      => $client->currency,
-        loginid       => $client->loginid,
-        type          => 'newaccount',
-        amount        => 0,
-        payment_agent => 0,
-    );
-    my $utm_tags = {};
-
-    foreach my $tag (qw( utm_source utm_medium utm_campaign gclid_url date_first_contact signup_device utm_content utm_term)) {
-        $utm_tags->{$tag} = $args->{$tag} if $args->{$tag};
-    }
-    BOM::Platform::Event::Emitter::emit(
-        'signup',
-        {
-            loginid    => $client->loginid,
-            properties => {
-                type     => 'virtual',
-                utm_tags => $utm_tags
-            }});
-
-    return {
-        client_id   => $client->loginid,
-        email       => $email,
-        currency    => $account->currency_code(),
-        balance     => formatnumber('amount', $account->currency_code(), $account->balance),
-        oauth_token => _create_oauth_token($params->{source}, $client->loginid),
-    };
     };
 
 sub request_email {
@@ -642,4 +582,186 @@ rpc new_account_maltainvest => sub {
     };
 };
 
+rpc 'new_account',
+    auth => [],
+    sub {
+    my $params = shift;
+    my $args   = $params->{args};
+
+    $args->{type} = $args->{type} // 'trading';    # default to 'trading'
+
+    my $subtype = $args->{subtype};
+    return BOM::RPC::v3::Utility::create_error({
+            code              => 'MissingSubtype',
+            message_to_client => localize('Please specify the account subtype: "real" or "virtual"'),
+        }) unless ($subtype);
+
+    try {
+        my ($client, $account);
+
+        $args->{ip}            = $params->{client_ip} // '';
+        $args->{country}       = uc($params->{country_code} // '');
+        $args->{environment}   = request()->login_env($params);
+        $args->{source}        = $params->{source};
+        $args->{token_details} = $params->{token_details};
+
+        # create virtual account
+        if ($subtype eq 'virtual') {
+            $client  = create_virtual_account($args);
+            $account = $client->default_account;
+
+            return {
+                client_loginid => $client->loginid,
+                email          => $client->email,
+                currency       => $account->currency_code(),
+                balance        => formatnumber('amount', $account->currency_code(), $account->balance),
+                oauth_token    => _create_oauth_token($params->{source}, $client->loginid),
+            };
+        }
+
+        # create real account
+        if ($subtype eq 'real') {
+            # TODO: handle real account, look into auth scope for this
+            die 'Create of real account is not supported yet through `new_account`';
+        }
+
+        die 'Unsupported account subtype';
+    } catch ($e) {
+        my $error_map = BOM::RPC::v3::Utility::error_map();
+        my $error->{code} = $e;
+        $error = $e->{error} // $e if (ref $e eq 'HASH');
+        $error->{message_to_client} = $error->{message_to_client} // $error_map->{$error->{code}};
+
+        return BOM::RPC::v3::Utility::client_error() unless ($error->{message_to_client});
+
+        return BOM::RPC::v3::Utility::create_error({
+                code              => $error->{code},
+                message_to_client => $error->{message_to_client},
+                details           => $error->{details}});
+    }
+    };
+
+=head2 create_virtual_account
+
+Create a new virtual wallet or trading account
+
+=over 4
+
+=item * C<args> new account details
+
+=back
+
+Returns a C<BOM::User::Client> or C<BOM::User::Wallet> instance
+
+=cut
+
+sub create_virtual_account {
+    my ($args) = @_;
+
+    # Non-PEP declaration is not made for virtual accounts
+    delete $args->{non_pep_declaration};
+
+    my ($error);
+
+    if ($args->{token_details}) {
+        # authenticated (existing user) - check for auth token
+        my $user = BOM::User->new(loginid => $args->{token_details}->{loginid});
+        $args->{email} = $user->{email};
+    } else {
+        # unauthenticated (new user) - check for verification_code
+
+        # These required fields are excluded from JSON schema, we need to handle it here
+        for my $field (qw( client_password residence verification_code )) {
+            die {
+                code    => 'InputValidationFailed',
+                details => {field => $field}} unless ($args->{$field});
+        }
+
+        my $verification_code = $args->{verification_code};
+        $args->{email} = BOM::Platform::Token->new({token => $verification_code})->email;
+
+        $error = BOM::RPC::v3::Utility::is_verification_token_valid($verification_code, $args->{email}, 'account_opening')->{error};
+        die $error if $error;
+
+        $error = BOM::RPC::v3::Utility::check_password({
+                email        => $args->{email},
+                new_password => $args->{client_password}});
+        die $error if $error;
+    }
+
+    # Create account
+    my $account_args = {
+        ip      => $args->{id},
+        country => $args->{country},
+        details => {
+            email           => $args->{email},
+            email_consent   => $args->{email_consent},
+            client_password => $args->{client_password},
+            residence       => $args->{residence},
+            source          => $args->{source},
+        },
+        utm_data => {},
+        type     => $args->{type},
+    };
+
+    $account_args->{myaffiliates_token} = $args->{affiliate_token} if $args->{affiliate_token};
+
+    foreach my $k (qw( date_first_contact gclid_url signup_device utm_campaign utm_medium utm_source )) {
+        $account_args->{details}->{$k} = $args->{$k} if $args->{$k};
+    }
+
+    foreach my $k (qw( utm_ad_id utm_adgroup_id utm_adrollclk_id utm_campaign_id utm_content utm_fbcl_id utm_gl_client_id utm_msclk_id utm_term )) {
+        $account_args->{utm_data}->{$k} = $args->{$k} if $args->{$k};
+    }
+
+    my $account = BOM::Platform::Account::Virtual::create_account($account_args);
+    die $account->{error} if $account->{error};
+
+    if (!BOM::Config::Runtime->instance->app_config->system->suspend->universal_password) {
+        $error = BOM::RPC::v3::Utility::set_migrated_universal_password_status($account->{client});
+        die $error if $error;
+    }
+
+    # Check if it is from UK, instantly mark it as unwelcome
+    my $config = request()->brand->countries_instance->countries_list->{$account->{client}->residence};
+    if ($config->{virtual_age_verification}) {
+        $account->{client}->status->set('unwelcome', 'SYSTEM', 'Pending proof of age');
+    }
+
+    my $user = $account->{user};
+    $user->add_login_history(
+        action      => 'login',
+        environment => $args->{environment},
+        successful  => 't',
+        app_id      => $args->{source});
+
+    BOM::User::AuditLog::log("successful login", "$args->{email}");
+
+    my $client = $account->{client};
+    BOM::User::Client::PaymentNotificationQueue->add(
+        source        => 'virtual',
+        currency      => $client->currency,
+        loginid       => $client->loginid,
+        type          => 'newaccount',
+        amount        => 0,
+        payment_agent => 0,
+    );
+
+    my $utm_tags = {};
+    foreach my $tag (qw( date_first_contact gclid_url signup_device utm_campaign utm_content utm_medium utm_source utm_term )) {
+        $utm_tags->{$tag} = $args->{$tag} if $args->{$tag};
+    }
+
+    BOM::Platform::Event::Emitter::emit(
+        'signup',
+        {
+            loginid    => $client->loginid,
+            properties => {
+                type     => $args->{type},
+                subtype  => 'virtual',
+                utm_tags => $utm_tags
+            }});
+
+    return $client;
+}
 1;

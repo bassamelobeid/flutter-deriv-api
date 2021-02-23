@@ -432,6 +432,7 @@ sub error_map {
         'duplicate email'     => localize(
             'Your provided email address is already in use by another Login ID. According to our terms and conditions, you may only register once through our site.'
         ),
+        'DuplicateVirtualWallet' => localize('Sorry, a virtual wallet account already exists. Only one virtual wallet account is allowed.'),
         'duplicate name DOB' =>
             localize('Sorry, it looks like you already have a real money account with us. Only one real money account is allowed for each client.'),
         'too young'            => localize('Sorry, you are too young to open an account.'),
