@@ -45,7 +45,7 @@ lives_ok {
     });
 }
 'create VR acc';
-is($vr_acc->{error}, 'invalid residence', 'create VR acc failed: restricted country');
+is($vr_acc->{error}->{code}, 'invalid residence', 'create VR acc failed: restricted country');
 
 $on_production = 0;
 
@@ -198,6 +198,20 @@ subtest 'create account' => sub {
     }
     'create VR acc';
 
+    # create virtual wallet client
+    my ($vr_wallet_client, $user_wallet, $vr_wallet_acc);
+    lives_ok {
+        $vr_wallet_acc = BOM::Platform::Account::Virtual::create_account({
+                details => {
+                    email => 'foo+noresidence@binary.com',
+                },
+                type => 'wallet'
+            });
+        ($vr_wallet_client, $user_wallet) = @{$vr_wallet_acc}{'client', 'user'};
+
+    }
+    'create VR wallet account';
+
     my %t_details = (
         %real_client_details,
         residence       => $t_vr_details{residence},
@@ -218,16 +232,29 @@ subtest 'create account' => sub {
 
     subtest virtual_company_for_brand => sub {
         my %expected = (
-            binary      => 'virtual',
-            deriv       => 'virtual',
-            derivcrypto => 'samoa-virtual',
-            champion    => 'champion-virtual',
+            binary   => 'virtual',
+            deriv    => 'virtual',
+            champion => 'champion-virtual',
         );
 
         for my $brand_name (sort keys %expected) {
-            is(BOM::Platform::Account::Virtual::_virtual_company_for_brand($brand_name)->short,
+            is(BOM::Platform::Account::Virtual::_virtual_company_for_brand($brand_name, 'trading')->short,
                 $expected{$brand_name}, "Got correct virtual company for $brand_name brand");
         }
+
+        my %expected_wallet_company = (
+            binary => 'samoa-virtual',
+            deriv  => 'samoa-virtual',
+        );
+
+        for my $brand_name (sort keys %expected_wallet_company) {
+            is(
+                BOM::Platform::Account::Virtual::_virtual_company_for_brand($brand_name, 'wallet')->short,
+                $expected_wallet_company{$brand_name},
+                "Got correct virtual wallet company for $brand_name brand"
+            );
+        }
+
         ok !BOM::Platform::Account::Virtual::_virtual_company_for_brand('INVALID_BRAND'), 'Invalid brand';
     };
 

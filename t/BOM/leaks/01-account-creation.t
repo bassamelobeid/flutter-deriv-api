@@ -25,7 +25,7 @@ test_noleaks(
                     residence       => 'US',
                 }});
         BAIL_OUT("expectations does not met")
-            unless $account->{error} eq 'invalid residence';
+            unless $account->{error}->{code} eq 'invalid residence';
     },
     track_memory  => 1,
     track_fds     => 1,
