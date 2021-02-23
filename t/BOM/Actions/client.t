@@ -506,7 +506,8 @@ subtest 'signup event' => sub {
     my $vr_args = {
         loginid    => $virtual_client2->loginid,
         properties => {
-            type     => 'virtual',
+            type     => 'trading',
+            subtype  => 'virtual',
             utm_tags => {
                 utm_source         => 'direct',
                 signup_device      => 'desktop',
@@ -540,7 +541,8 @@ subtest 'signup event' => sub {
         event      => 'signup',
         properties => {
             loginid         => $virtual_client2->loginid,
-            type            => 'virtual',
+            type            => 'trading',
+            subtype         => 'virtual',
             currency        => $virtual_client2->currency,
             landing_company => $virtual_client2->landing_company->short,
             country         => Locale::Country::code2country($virtual_client2->residence),
@@ -638,6 +640,100 @@ subtest 'signup event' => sub {
 
     ($customer, %args) = @track_args;
     test_segment_customer($customer, $test_client2, 'EUR', $virtual_client2->date_joined, 'svg', 'labuan,svg');
+};
+
+subtest 'wallet signup event' => sub {
+    my $virtual_wallet_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code      => 'VRDW',
+        email            => 'virtual_wallet@binary.com',
+        first_name       => '',
+        last_name        => '',
+        date_of_birth    => undef,
+        phone            => '',
+        address_line_1   => '',
+        address_line_2   => '',
+        address_city     => '',
+        address_state    => '',
+        address_postcode => '',
+    });
+    my $email = $virtual_wallet_client->email;
+
+    my $user = BOM::User->create(
+        email          => $virtual_wallet_client->email,
+        password       => "hello",
+        email_verified => 1,
+        email_consent  => 1,
+    );
+
+    $user->add_client($virtual_wallet_client);
+
+    my $req = BOM::Platform::Context::Request->new(
+        brand_name => 'deriv',
+        language   => 'ID',
+        app_id     => $app_id,
+    );
+    request($req);
+    undef @identify_args;
+    undef @track_args;
+    my $vr_args = {
+        loginid    => $virtual_wallet_client->loginid,
+        properties => {
+            type     => 'wallet',
+            subtype  => 'virtual',
+            utm_tags => {
+                utm_source         => 'direct',
+                signup_device      => 'desktop',
+                utm_content        => 'synthetic-ebook',
+                utm_term           => 'term',
+                date_first_contact => '2019-11-28'
+            }}};
+    $virtual_wallet_client->set_default_account('USD');
+    my $handler = BOM::Event::Process::get_action_mappings()->{signup};
+    my $result  = $handler->($vr_args)->get;
+    ok $result, 'Success result';
+
+    my ($customer, %args) = @identify_args;
+    is_deeply \%args,
+        {
+        'context' => {
+            'active' => 1,
+            'app'    => {'name' => 'deriv'},
+            'locale' => 'ID'
+        }
+        },
+        'context is properly set for signup';
+
+    ($customer, %args) = @track_args;
+    is_deeply \%args,
+        {
+        context => {
+            active => 1,
+            app    => {name => 'deriv'},
+            locale => 'ID'
+        },
+        event      => 'signup',
+        properties => {
+            loginid         => $virtual_wallet_client->loginid,
+            type            => 'wallet',
+            subtype         => 'virtual',
+            currency        => $virtual_wallet_client->currency,
+            landing_company => $virtual_wallet_client->landing_company->short,
+            country         => Locale::Country::code2country($virtual_wallet_client->residence),
+            date_joined     => $virtual_wallet_client->date_joined,
+            provider        => 'email',
+            address         => {
+                street      => ' ',
+                town        => '',
+                state       => '',
+                postal_code => '',
+                country     => Locale::Country::code2country($virtual_wallet_client->residence),
+            },
+            brand         => 'deriv',
+            email_consent => 1,
+        }
+        },
+        'properties is properly set for wallet virtual account signup';
+    test_segment_customer($customer, $virtual_wallet_client, '', $virtual_wallet_client->date_joined, 'virtual', 'labuan,svg');
 };
 
 subtest 'account closure' => sub {

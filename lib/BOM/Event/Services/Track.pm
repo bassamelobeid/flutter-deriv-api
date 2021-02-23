@@ -36,7 +36,8 @@ my %EVENT_PROPERTIES = (
         qw (address age available_landing_companies avatar birthday company created_at description email first_name gender id landing_companies last_name name phone provider title username website currencies country unsubscribed)
     ],
     login  => [qw (loginid browser device ip new_signin_activity location app_name brand)],
-    signup => [qw (loginid type currency landing_company date_joined first_name last_name phone address age country provider brand email_consent)],
+    signup =>
+        [qw (loginid type subtype currency landing_company date_joined first_name last_name phone address age country provider brand email_consent)],
     transfer_between_accounts => [
         qw(revenue currency value from_account to_account from_currency to_currency from_amount to_amount source fees is_from_account_pa
             is_to_account_pa gateway_code remark time id brand)
@@ -1194,7 +1195,7 @@ sub _validate_params {
     return undef unless _validate_brand($event, $brand, $app_id);
     die "$event tracking triggered without a loginid. Please inform backend team if it continues to occur." unless $loginid;
 
-    my $client = BOM::User::Client->new({loginid => $loginid})
+    my $client = BOM::User::Client->get_client_instance($loginid)
         or die "$event tracking triggered with an invalid loginid $loginid. Please inform backend team if it continues to occur.";
 
     return $client;
