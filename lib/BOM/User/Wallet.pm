@@ -41,7 +41,12 @@ Returns the landing company config.
 sub landing_company {
     my $self = shift;
 
-    return LandingCompany::Registry::get($self->config->{landing_company});
+    # config may be empty when we register a new wallet client
+    my $config = $self->{config} // LandingCompany::Wallet::get_wallet_for_broker($self->broker_code);
+
+    die 'Broker code ' . $self->broker_code . ' is not a wallet' unless $config;
+
+    return LandingCompany::Registry::get($config->{landing_company});
 }
 
 =head2 is_wallet

@@ -20,6 +20,7 @@ use BOM::User::AuditLog;
 use BOM::User::Static;
 use BOM::User::Utility;
 use BOM::User::Client;
+use BOM::User::Wallet;
 use BOM::User::Onfido;
 use BOM::Config::Runtime;
 use ExchangeRates::CurrencyConverter qw(in_usd);
@@ -58,10 +59,11 @@ for my $k (@fields) {
 }
 
 use constant {
-    MT5_REGEX      => qr/^MT[DR]?(?=\d+$)/,
-    MT5_REAL_REGEX => qr/^MT[R]?(?=\d+$)/,
-    MT5_DEMO_REGEX => qr/^MTD(?=\d+$)/,
-    VIRTUAL_REGEX  => qr/^VR/,
+    MT5_REGEX            => qr/^MT[DR]?(?=\d+$)/,
+    MT5_REAL_REGEX       => qr/^MT[R]?(?=\d+$)/,
+    MT5_DEMO_REGEX       => qr/^MTD(?=\d+$)/,
+    VIRTUAL_REGEX        => qr/^VR[TC|CH]/,
+    VIRTUAL_WALLET_REGEX => qr/^VRDW\d+/,
 };
 
 sub create {
@@ -151,6 +153,26 @@ sub create_client {
     my $client = BOM::User::Client->register_and_return_new_client(\%args);
     $self->add_client($client);
     return $client;
+}
+
+=head2 create_wallet
+
+Takes one or more named parameters:
+
+=over 4
+
+=item * C<landing_company> - e.g. `svg`
+
+=back
+
+=cut
+
+sub create_wallet {
+    my ($self, %args) = @_;
+    $args{binary_user_id} = $self->{id};
+    my $wallet = BOM::User::Wallet->register_and_return_new_client(\%args);
+    $self->add_client($wallet);
+    return $wallet;
 }
 
 =head2 login
@@ -357,6 +379,17 @@ get non-mt5 virtual login id
 sub bom_virtual_loginid {
     my $self = shift;
     return first { $_ =~ VIRTUAL_REGEX } $self->loginids;
+}
+
+=head2 bom_virtual_wallet_loginid
+
+get virtual wallet login ids
+
+=cut
+
+sub bom_virtual_wallet_loginid {
+    my $self = shift;
+    return grep { $_ =~ VIRTUAL_WALLET_REGEX } $self->loginids;
 }
 
 =head2 mt5_logins
@@ -1021,6 +1054,24 @@ sub current_tnc_version {
     my $tnc_config   = decode_json($tnc_versions);
     my $brand_name   = request()->brand->name;
     return $tnc_config->{$brand_name};
+}
+
+=head2 has_virtual_client
+
+Returns error code if a virtual client or a virtual wallet client already exists, otherwise returns undef
+
+=cut
+
+sub has_virtual_client {
+    my ($self, $is_wallet) = @_;
+    my $vr_clients = first { $_->is_virtual } $self->clients;    # can be vrtc or vrdw
+    my $loginid    = $vr_clients->{loginid};
+    if ($loginid) {
+        my $client = BOM::User::Client->get_client_instance($loginid);
+        return 'duplicate email'        if !$is_wallet && !$client->is_wallet;    # a virtual client already exists
+        return 'DuplicateVirtualWallet' if $is_wallet  && $client->is_wallet;     # a virtual wallet client already exists
+    }
+    return undef;
 }
 
 =head2 update_mt5_passwords

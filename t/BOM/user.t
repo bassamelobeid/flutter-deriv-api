@@ -835,4 +835,16 @@ subtest 'test get_financial_assessment' => sub {
 
 };
 
+subtest 'create_client' => sub {
+    my $wallet_client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'VRDW',
+    });
+    is $wallet_client_vr->is_wallet, 1, 'is wallet client instance';
+
+    my $trading_client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'VRTC',
+    });
+    is $trading_client_vr->is_wallet, 0, 'is trading client instance';
+};
+
 done_testing;

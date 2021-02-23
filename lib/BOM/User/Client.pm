@@ -29,6 +29,7 @@ use DataDog::DogStatsd::Helper qw(stats_inc);
 use Rose::DB::Object::Util qw(:all);
 use Rose::Object::MakeMethods::Generic scalar => ['self_exclusion_cache'];
 
+use LandingCompany::Wallet;
 use LandingCompany::Registry;
 use LandingCompany::Wallet;
 
@@ -216,7 +217,8 @@ sub register_and_return_new_client {
     my $args  = shift;
 
     my $broker = $args->{broker_code} || die "can't register a new client without a broker_code";
-    my $self   = $class->rnew(broker => $broker);
+
+    my $self = $class->rnew(broker => $broker);
 
     store_details($self, $args);
 
@@ -5407,9 +5409,11 @@ sub get_client_instance {
 
     my ($broker_code) = $loginid =~ /(^[a-zA-Z]+)/;
 
-    my $class = LandingCompany::Wallet::get_wallet_for_broker($broker_code) ? 'BOM::User::Wallet' : 'BOM::User::Client';
+    if (LandingCompany::Wallet::get_wallet_for_broker($broker_code)) {
+        return BOM::User::Wallet->new({loginid => $loginid});
+    }
 
-    return $class->new({loginid => $loginid});
+    return BOM::User::Client->new({loginid => $loginid});
 }
 
 =head2 ignore_age_verification
