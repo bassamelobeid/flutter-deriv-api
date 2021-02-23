@@ -125,7 +125,7 @@ sub callback {
 
         if ($account->{error}) {
             my $error_msg =
-                ($account->{error} eq 'invalid residence')
+                ($account->{error}->{code} eq 'invalid residence')
                 ? localize(get_message_mapping()->{INVALID_RESIDENCE}, code2country($residence))
                 : localize(get_message_mapping()->{$account->{error}});
             $c->session(social_error => $error_msg);

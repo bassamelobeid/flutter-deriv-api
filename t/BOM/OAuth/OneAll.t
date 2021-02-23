@@ -44,10 +44,10 @@ get '/callback' => sub {
     my $account = $one_all->__create_virtual_account($user_details, $utm_data);
 
     if ($account->{error}) {
-        if ($account->{error} eq 'invalid residence') {
+        if ($account->{error}->{code} eq 'invalid residence') {
             $c->render(json => {'error' => localize(get_message_mapping()->{INVALID_RESIDENCE}, code2country($residence))});
         } else {
-            $c->render(json => {'error' => localize(get_message_mapping()->{$account->{error}})});
+            $c->render(json => {'error' => localize(get_message_mapping()->{$account->{error}->{code}})});
         }
     } else {
         my @clients = $account->{user}->clients();
