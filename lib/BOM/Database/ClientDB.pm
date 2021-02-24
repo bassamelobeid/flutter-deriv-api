@@ -87,7 +87,7 @@ sub _is_redirect_testcases_to_svg {
     my $test_db_on_qa = (BOM::Config::on_qa() and $db_postfix eq '_test');
     my $test_on_ci    = BOM::Config::on_ci();
 
-    return (($test_db_on_qa or $test_on_ci) and $self->{operation} ne 'collector');
+    return (($test_db_on_qa or $test_on_ci) and $self->operation ne 'collector');
 }
 
 sub _build_db {
@@ -142,7 +142,7 @@ sub _cached_db {
     }
 
     if ((BOM::Config->on_qa() or BOM::Config->on_ci())
-        and $self->{operation} =~ /^(replica|backoffice_replica)$/)
+        and $self->operation =~ /^(replica|backoffice_replica)$/)
     {
         # Currently in QA/CI environments, the database is setup such that user is able
         # to write to replicas. Until we can more accurately mimic production setup,
