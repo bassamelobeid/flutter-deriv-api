@@ -1,4 +1,4 @@
-TESTS=test syntax 
+TESTS=test unit syntax 
 
 M=[ -t 1 ] && echo -e 'making \033[01;33m$@\033[00m' || echo 'making $@'
 P=/etc/rmg/bin/prove -vrl --timer 
@@ -19,5 +19,8 @@ tidy:
 
 cover:
 	cover -delete
-	PERL5OPT=-MBOM::Test HARNESS_PERL_SWITCHES=-MDevel::Cover DEVEL_COVER_OPTIONS=-'ignore,^t/' /etc/rmg/bin/prove --timer -rl --norc   t/BOM/
+	PERL5OPT=-MBOM::Test HARNESS_PERL_SWITCHES=-MDevel::Cover DEVEL_COVER_OPTIONS=-'ignore,^t/' /etc/rmg/bin/prove --timer -rl --norc   t/BOM/ t/unit/
 	cover -report coveralls
+	
+unit:
+	@$(PROVE) t/unit

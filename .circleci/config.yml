@@ -83,19 +83,30 @@ jobs:
           name: code coverage tests
           command: |
             make cover
+  unit:
+    <<: *default
+    steps:
+      - *ssh_keys
+      - *git
+      - run:
+          <<: *tests
+          name: Unit test
+          command: |
+            echo '--formatter TAP::Formatter::JUnit' >> .proverc
+            make unit
+      - store_test_results:
+          path: /var/tmp/test-output
 workflows:
   build-workflow:
-    jobs:
+    jobs: &all-jobs
     - syntax:
         context: perl  
     - core:
+        context: perl
+    - unit:
         context: perl
   daily:
-    jobs:
-    - syntax:
-        context: perl  
-    - core:
-        context: perl
+    jobs: *all-jobs
     triggers:
     - schedule:
         cron: 47 20 * * *
