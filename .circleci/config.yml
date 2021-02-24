@@ -236,10 +236,23 @@ jobs:
         name: upload coverage report
         command: cover -report coveralls
         when: on_fail
+  unit:
+    <<: *6
+    steps:
+    - *1
+    - *2
+    - run:
+        <<: *5
+        command: |
+          echo '--formatter TAP::Formatter::JUnit' >> .proverc
+          make unit
+        name: Run Unit tests
+    - store_test_results:
+        path: /var/tmp/test-output
 version: 2
 workflows:
   build-workflow:
-    jobs:
+    jobs: &all-jobs
     - structure:
         context: perl
     - accounts:
@@ -257,6 +270,8 @@ workflows:
     - subscriptions:
         context: perl
     - backends:
+        context: perl
+    - unit:
         context: perl
     - update_docs:
         context: perl
@@ -265,27 +280,7 @@ workflows:
             only:
             - master
   daily:
-    jobs:
-    - structure:
-        context: perl
-    - accounts:
-        context: perl
-    - security:
-        context: perl
-    - pricing:
-        context: perl
-    - misc:
-        context: perl
-    - p2p:
-        context: perl
-    - schema:
-        context: perl
-    - subscriptions:
-        context: perl
-    - backends:
-        context: perl
-    - update_docs:
-        context: perl
+    jobs: *all-jobs
     triggers:
     - schedule:
         cron: 36 20 * * *

@@ -54,6 +54,9 @@ doc: $(msc_graphs) $(dot_graphs)
 
 %.dot.png: %.dot
 	dot -Tpng < $< > $@
+	
+unit:
+	@$(PROVE) --norc t/unit
 
 cover:
 	sed -i '/--exec/d'  .proverc
@@ -65,4 +68,5 @@ cover:
 	$C /home/git/regentmarkets/bom-websocket-tests/v3/p2p/
 	$C /home/git/regentmarkets/bom-websocket-tests/v3/pricing/
 	$C --norc /home/git/regentmarkets/bom-websocket-tests/v3/backends/
+	$C --norc -r t/unit/
 	cover -report coveralls
