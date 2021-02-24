@@ -155,6 +155,26 @@ window.addEventListener('DOMContentLoaded', init_text_validations, false);
         </td>
     </tr>
     <tr>
+        <td class="label">Birth Place</td>
+        <td>:
+            <select name="place_of_birth">
+                [% IF client.place_of_birth == "" %]
+                    <option value="" selected="selected">Select place of birth</option>
+                [% ELSE %]
+                    <option value="">Select place of birth</option>
+                [% END %]
+
+            [% FOREACH country = countries %]
+                [% IF country_codes.$country == client.place_of_birth %]
+                    <option value="[% country_codes.$country %]" selected="selected">[% country %]</option>
+                [% ELSE %]
+                    <option value="[% country_codes.$country %]">[% country %]</option>
+                [% END %]
+            [% END %]
+            </select>
+        </td>
+    </tr>
+    <tr>
         <td class="label">Citizen</td>
         <td>:
             <select name="citizen">
@@ -216,26 +236,6 @@ window.addEventListener('DOMContentLoaded', init_text_validations, false);
             [% FOREACH country = countries %]
                 [% IF country_codes.$country == client.residence %]
                    <option value="[% country_codes.$country %]" selected="selected" id="original_residence">[% country %]</option>
-                [% ELSE %]
-                   <option value="[% country_codes.$country %]">[% country %]</option>
-                [% END %]
-            [% END %]
-            </select>
-        </td>
-    </tr>
-    <tr>
-        <td class="label">Birth Place</td>
-        <td>:
-            <select name="place_of_birth">
-                [% IF client.place_of_birth == "" %]
-                    <option value="" selected="selected">Select place of birth</option>
-                [% ELSE %]
-                    <option value="">Select place of birth</option>
-                [% END %]
-
-            [% FOREACH country = countries %]
-                [% IF country_codes.$country == client.place_of_birth %]
-                   <option value="[% country_codes.$country %]" selected="selected">[% country %]</option>
                 [% ELSE %]
                    <option value="[% country_codes.$country %]">[% country %]</option>
                 [% END %]
