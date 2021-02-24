@@ -38,7 +38,7 @@ sub BrokerPresentation {
     print '<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;700&display=swap" rel="stylesheet">';
 
     print '<link rel="stylesheet" type="text/css" href="' . request()->url_for('css/' . $_) . '"/>'
-        for ('style_new.css', 'sell_popup.css', 'external/grid.css', 'external/jquery-ui.custom.css');
+        for ('style_new.css?v=2021-02-18', 'sell_popup.css', 'external/grid.css', 'external/jquery-ui.custom.css');
 
     foreach my $js_file (BOM::JavascriptConfig->instance->bo_js_files_for($0)) {
         print '<script type="text/javascript" src="' . $js_file . '"></script>';

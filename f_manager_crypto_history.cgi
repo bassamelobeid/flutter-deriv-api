@@ -239,9 +239,8 @@ print qq~
 </div>
 ~;
 
-$render_crypto_transactions->($_) for qw(deposit withdrawal);
-
 BarEnd();
 
-code_exit_BO();
+$render_crypto_transactions->($_) for qw(deposit withdrawal);
 
+code_exit_BO();

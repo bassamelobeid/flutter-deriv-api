@@ -45,8 +45,6 @@
 
 <div class="card">
     <div class="card__label toggle">
-        <span class="close" style="display:none;">&#x229E;</span>
-        <span>&#x229F;</span>
         CRYPTOCURRENCY ACTIVITY: [% txn_type.upper %]
     </div>
     <div class="card__content">

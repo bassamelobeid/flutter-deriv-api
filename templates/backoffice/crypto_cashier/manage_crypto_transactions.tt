@@ -16,7 +16,7 @@
 [% BLOCK bulk_verify_controls %]
 <table>
     <tr>
-        <td class="bg-lightgrey">None selected</td>
+        <td class="bg-lightgrey selection_display_text">None selected</td>
         <td>
             <form action="[% controller_url %]" onsubmit="return bulkConfirm();" method="POST" class="bulk_actions">
                 <input type="hidden" name="currency" value="[%currency%]" />
@@ -31,10 +31,43 @@
 </table>
 [% END %]
 
+[% BLOCK status_links %]
+    [%
+        status_list = {
+            deposits    => [ 'new', 'pending', 'confirmed', 'error' ],
+            withdrawals => [ 'pending', 'verified', 'rejected', 'cancelled', 'processing', 'performing_blockchain_txn', 'sent', 'error' ],
+        };
+        status_names = {
+            performing_blockchain_txn => 'Performed blockchain',
+            error                     => 'Errored',
+        };
+    %]
+
+    [% IF status_list.$view_action %]
+        [% url_base = '?broker=' _ broker _ '&currency=' _ currency _ '&show_all_pendings=' _ show_all_pendings _ '&show_one_authorised=' _ show_one_authorised _ '&view_action=' _ view_action %]
+        <div class="link-group status-group">
+            <span>View by Transaction Status:</span>
+            [% FOREACH status IN status_list.$view_action %]
+                <a class="link [% view_type == status && 'selected' %]" href="[% url_base %]&view_type=[% status %]">[% status_names.$status || status.ucfirst %]</a>
+            [% END %]
+        </div>
+    [% END %]
+[% END %]
+
 <style>
-    table.internal th {
-        padding: 0 5px;
-        text-align: right;
+    .status-group {
+        margin: 5px 0 10px;
+        border: 1px solid var(--color-grey-3);
+        line-height: 30px;
+    }
+    .status-group span {
+        background: var(--color-grey-1);
+        display: inline-block;
+        line-height: 30px;
+        padding: 2px 10px;
+    }
+    .status-group a.selected {
+        color: var(--color-red);
     }
     .warning_tag {
         color: var(--color-red);
@@ -46,9 +79,15 @@
         background-color: var(--color-yellow);
     }
     .selection_display_text {
-        background-color: var(--color-grey-1);;
+        padding: 0 10px;
     }
 </style>
+
+<div class="card">
+    <div class="card__label toggle collapsed">
+        Status descriptions
+    </div>
+    <div class="card__content">
 <table class="small border">
     <thead>
         <tr>
@@ -117,10 +156,15 @@
         [% END %]
     </tbody>
 </table>
-<hr>
+    </div>
+</div>
+
 [% IF view_action == 'withdrawals' and transactions.size > 0 %]
     <p>The estimation fee is done before we send the transaction so it can have a small difference from the final fee.</p>
 [% END %]
+
+[% INCLUDE status_links %]
+
 [% IF transactions.size == 0 %]
     <p>There are no such transactions.</p>
 [% ELSE %]
@@ -161,7 +205,7 @@
                     </td>
                 [% END %]
                 <td valign="top">
-                    <table class="internal"><tbody>
+                    <table class="small"><tbody>
                         [% IF trx.is_internal_transfer == 1 %]
                         <tr><td>&nbsp;</td><td><span class="warning_tag">INTERNAL TRANSFER</span></td></tr>
                         [% END %]
@@ -170,7 +214,7 @@
                     </tbody></table>
                 </td>
                 <td valign="top">
-                    <table class="internal"><tbody>
+                    <table class="small"><tbody>
                         <tr><th>Amount:</th><td>[% trx.currency_code %] [% trx.amount %] (USD [% trx.usd_amount %])</td></tr>
                         <tr>
                             <th>Client:</th>
@@ -190,7 +234,7 @@
                     </tbody></table>
                 </td>
                 <td valign="top">
-                    <table class="internal"><tbody>
+                    <table class="small"><tbody>
                         <tr><th>ID:</th><td>[% trx.id %]</td></tr>
                         <tr><th>Creation:</th><td>[% trx.creation_date %]</td></tr>
                     [% IF trx.transaction_type == 'deposit' %]
@@ -208,7 +252,7 @@
                 </td>
                 [% IF trx.transaction_type == 'withdrawal' %]
                     <td valign="top">
-                        <table class="internal"><tbody>
+                        <table class="small"><tbody>
                             <tr><th>Authorisers:</th><td>[% trx.authorisers.join(', ') %]</td></tr>
                             <tr><th>Client Status:</th><td>[% trx.client_status %]</td></tr>
                         </tbody></table>
@@ -254,7 +298,7 @@
                     <td></td>
                 [% END %]
                 <td valign="top">
-                    <table class="internal"><tbody>
+                    <table class="small"><tbody>
                         <tr><th>Remark:</th><td>[% trx.remark %]</td></tr>
                         <tr><th>Error:</th><td>[% trx.error_text %]</td></tr>
                     </tbody></table>
@@ -267,29 +311,6 @@
     [% IF view_type == 'pending' && view_action == 'withdrawals' %]
         [% PROCESS bulk_verify_controls %]
     [% END %]
-[% END %]
-
-[% url_base = '?broker=' _ broker _ '&currency=' _ currency _ '&show_all_pendings=' _ show_all_pendings _ '&show_one_authorised=' _ show_one_authorised _ '&view_action=' _ view_action %]
-[% IF view_action == 'deposits' %]
-    <hr>
-    <div class="link-group">
-        <a class='link' [% IF view_type == 'new' %]class='selected' [% END %]href="[% url_base %]&view_type=new">View new addresses</a>
-        <a class='link' [% IF view_type == 'pending' %]class='selected' [% END %]href="?[% url_base %]&view_type=pending">View pending transactions</a>
-        <a class='link' [% IF view_type == 'confirmed' %]class='selected' [% END %]href="[% url_base %]&view_type=confirmed">View confirmed transactions</a>
-        <a class='link' [% IF view_type == 'error' %]class='selected' [% END %]href="[% url_base %]&view_type=error">View errored transactions</a>
-    </div>
-[% ELSIF view_action == 'withdrawals' %]
-    <hr>
-    <div class="link-group">
-        <a class='link' [% IF view_type == 'pending' %]class='selected' [% END %]href="[% url_base %]&view_type=pending">View pending transactions</a>
-        <a class='link' [% IF view_type == 'verified' %]class='selected' [% END %]href="[% url_base %]&view_type=verified">View verified transactions</a>
-        <a class='link' [% IF view_type == 'rejected' %]class='selected' [% END %]href="[% url_base %]&view_type=rejected">View rejected transaction</a>
-        <a class='link' [% IF view_type == 'cancelled' %]class='selected' [% END %]href="[% url_base %]&view_type=cancelled">View cancelled transaction</a>
-        <a class='link' [% IF view_type == 'processing' %]class='selected' [% END %]href="[% url_base %]&view_type=processing">View transactions under processing</a>
-        <a class='link' [% IF view_type == 'performing_blockchain_txn' %]class='selected' [% END %]href="[% url_base %]&view_type=performing_blockchain_txn">View transactions listed as performed blockchain</a>
-        <a class='link' [% IF view_type == 'sent' %]class='selected' [% END %]href="[% url_base %]&view_type=sent">View sent Transactions</a>
-        <a class='link' [% IF view_type == 'error' %]class='selected' [% END %]href="[% url_base %]&view_type=error">View errored out transactions</a>
-    </div>
 [% END %]
 
 <script>
@@ -323,7 +344,7 @@ function viewFiatStatement(elem, loginID, brokerCode, fetchURL) {
     });
 }
 
-// ----- Bulk Verify -----
+// ----- Bulk Actions -----
 const selected_transactions = {};
 
 function bulkToggleSelected(el_chk) {

@@ -597,6 +597,18 @@ hr {
     cursor: pointer;
 }
 
+.card__label.toggle.collapsed ~ div.card__content {
+    display: none;
+}
+
+.card__label.toggle:before {
+    content: '\229F';
+}
+
+.card__label.toggle.collapsed:before {
+    content: '\229E';
+}
+
 .card__content {
     padding: 16px;
     box-sizing: border-box;
@@ -676,17 +688,12 @@ button {
     background: var(--color-grey-1);
 }
 
-.btn--disabled {
+.btn--disabled, .btn[disabled], button[disabled] {
     border: 1px solid var(--color-grey-3);
     color: var(--color-white);
     background: var(--color-grey-3);
-}
-
-.btn--disabled:hover {
-    background: var(--color-grey-3);
     cursor: not-allowed;
 }
-
 
 /* Link */
 

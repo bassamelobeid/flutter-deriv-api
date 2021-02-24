@@ -14,7 +14,7 @@ sub bo_js_files_for {
 
     my @js_files = (
         'external/jquery-3.1.1.min.js',   'external/jquery-ui.min.js', 'external/sortable.js', 'external/jquery.form.js',
-        'external/jquery.jsonify-0.1.js', 'backoffice_new.js'
+        'external/jquery.jsonify-0.1.js', 'backoffice_new.js?v=2021-02-18'
     );
     for ($page) {
         push @js_files, 'bbdl.js' if /f_bet_iv/;

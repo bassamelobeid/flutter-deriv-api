@@ -315,7 +315,7 @@ if ($view_action eq 'withdrawals') {
         if ($currency_of_balance eq $currency) {
             my $remaining = $balance->copy->bsub($pending_withdrawal_amount);
             $remaining_text = sprintf(
-                "(Remaining after <b>payout</b>: <b class='%s'>%s</b>)",
+                " (Remaining after <b>payout</b>: <b class='%s'>%s</b>)",
                 $remaining->is_pos ? 'success' : 'error',
                 formatnumber('amount', $currency_of_balance, $remaining->bstr),
             );

@@ -702,15 +702,17 @@ function initCopyText() {
     });
 }
 
+function initCardToggle() {
+    document.querySelectorAll('div.card__label.toggle').forEach(el_label => {
+        el_label.addEventListener('click', e => {
+            e.target.classList[e.target.classList.contains('collapsed') ? 'remove' : 'add']('collapsed');
+        });
+    });
+}
+
 $(function() {
     createSectionLinks();
     initCopyText();
+    initCardToggle();
     $(`.sidebar a[href*="${window.location.pathname}"]`).parent().addClass('active');
-    $('div.card__label.toggle').click(function(e) {
-        e.preventDefault();
-        var element = $(this);
-        element.children('span').toggle();
-        var content_element = element.siblings('div.card__content');
-        content_element.toggle();
-    });
 });
