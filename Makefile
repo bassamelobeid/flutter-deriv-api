@@ -24,3 +24,6 @@ doc:
 	pod2markdown lib/BOM/Test.pm > README.md
 
 .PHONY: test $(SUBDIRS) test_all doc tidy
+
+unit:
+	@$(PROVE) t/unit

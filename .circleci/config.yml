@@ -67,6 +67,19 @@ jobs:
         name: Core tests
     - store_test_results:
         path: /var/tmp/test-output
+  unit:
+    <<: *6
+    steps:
+    - *1
+    - *2
+    - run:
+        <<: *5
+        command: |
+          echo '--formatter TAP::Formatter::JUnit' >> .proverc
+          make unit
+        name: Unit tests
+    - store_test_results:
+        path: /var/tmp/test-output
 version: 2
 workflows:
   build-workflow:
@@ -74,6 +87,8 @@ workflows:
     - syntax:
         context: perl
     - core:
+        context: perl
+    - unit:
         context: perl
   daily:
     jobs: *7
