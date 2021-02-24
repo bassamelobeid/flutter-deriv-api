@@ -4,4 +4,5 @@
 - regentmarkets/bom-postgres
 - regentmarkets/bom-market
 - regentmarkets/bom-user
+- regentmarkets/perl-WebService-Async-DevExperts
 - binary-com/translations-websockets-api
