@@ -71,6 +71,19 @@ jobs:
             make test
       - store_test_results:
           path: /var/tmp/test-output
+  unit:
+    <<: *default
+    steps:
+      - *ssh_keys
+      - *git
+      - run:
+          <<: *tests
+          name: unit tests
+          command: |
+            echo '--formatter TAP::Formatter::JUnit' >> .proverc
+            make unit
+      - store_test_results:
+          path: /var/tmp/test-output
   code_coverage:
     <<: *default
     steps:
@@ -88,6 +101,8 @@ workflows:
     - syntax:
         context: perl
     - core:
+        context: perl
+    - unit:
         context: perl
   daily:
     jobs: *1
