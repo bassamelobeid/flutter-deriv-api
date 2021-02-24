@@ -1,6 +1,6 @@
 CURRENT_BRANCH_SAFE=$(shell git rev-parse --abbrev-ref HEAD | sed 's|/|_|g')
 
-TESTS=test syntax localize
+TESTS=test unit syntax localize
 
 M=[ -t 1 ] && echo -e 'making \033[01;33m$@\033[00m' || echo 'making $@'
 P=/etc/rmg/bin/prove -lrv --timer 
@@ -24,6 +24,9 @@ localize:
 
 pod_test:
 	@$(PROVE) --norc t/*pod*.t
+	
+unit:
+	@$(PROVE) -I./t t/unit
 
 i18n:
 	xgettext.pl \

@@ -89,6 +89,18 @@ jobs:
         <<: *5
         command: bin/translation-build.sh
         name: Automated translations
+  unit:
+    <<: *6
+    steps:
+    - *1
+    - *2
+    - run:
+        <<: *5
+        command: |
+            make unit
+        name: unit tests
+    - store_test_results:
+        path: /var/tmp/test-output
 version: 2
 workflows:
   build-workflow:
@@ -98,6 +110,8 @@ workflows:
     - core:
         context: perl
     - localize:
+        context: perl
+    - unit:
         context: perl
   daily:
     jobs:
@@ -109,6 +123,8 @@ workflows:
         context: perl
     - translations:
         context: translation
+    - unit:
+        context: perl
     triggers:
     - schedule:
         cron: 4 20 * * *
