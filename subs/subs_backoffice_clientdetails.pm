@@ -750,7 +750,7 @@ sub build_client_warning_message {
                 {
                     clerk            => $disabled->{staff_name},
                     reason           => $disabled->{reason},
-                    warning          => 'red',
+                    warning          => 'var(--color-red)',
                     code             => $code,
                     section          => $type->{comments},
                     editlink         => $edit_client_with_status->($type->{linktype}),
@@ -783,9 +783,9 @@ sub build_client_warning_message {
                 . '<td align="center">'
                 . '<input type="checkbox" name="status_checked" value="'
                 . $output_rows->{'code'} . '" />' . '</td>'
-                . '<td align="left" style="color:'
-                . $output_rows->{'warning'}
-                . '"><strong>'
+                . '<td align="left">'
+                . '<strong style="color:'
+                . $output_rows->{'warning'}. '">'
                 . (uc $output_rows->{'section'})
                 . '</strong></td>'
                 . '<td><b>'
