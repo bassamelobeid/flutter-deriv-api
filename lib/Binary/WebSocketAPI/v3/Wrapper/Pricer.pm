@@ -65,11 +65,14 @@ sub proposal {
             success => sub {
                 my ($c, $rpc_response, $req_storage) = @_;
                 my $cache = {
-                    longcode            => $rpc_response->{longcode},
-                    contract_parameters => delete $rpc_response->{contract_parameters},
-                    payout              => $rpc_response->{payout},
-                    skip_basis_override => delete $rpc_response->{skip_basis_override} // 0,
-                    skip_streaming      => delete $rpc_response->{skip_streaming} // 0,
+                    longcode             => $rpc_response->{longcode},
+                    contract_parameters  => delete $rpc_response->{contract_parameters},
+                    payout               => $rpc_response->{payout},
+                    skip_basis_override  => delete $rpc_response->{skip_basis_override} // 0,
+                    skip_streaming       => delete $rpc_response->{skip_streaming} // 0,
+                    subscription_channel => delete $rpc_response->{subscription_channel},
+                    subchannel           => delete $rpc_response->{subchannel},
+                    channel              => delete $rpc_response->{channel},
                 };
                 $cache->{contract_parameters}->{app_markup_percentage} = $c->stash('app_markup_percentage') // 0;
                 $req_storage->{uuid} = _pricing_channel_for_proposal($c, $req_storage->{args}, $cache, 'Proposal')->{uuid};
