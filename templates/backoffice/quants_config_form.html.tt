@@ -264,7 +264,7 @@ Or just enter the time ('9') and the date defaults to today">Start time <span cl
 
             //Both start_time and end_time should be empty or fill
             if((start_time === '' && end_time !== '') || (start_time !== '' && end_time === '')) {
-                resultcss('color', 'var(--color-red)');
+                result.css('color', 'var(--color-red)');
                 result.text('you should enter both `start time` and `end time`');
                 return;
             }
@@ -273,7 +273,7 @@ Or just enter the time ('9') and the date defaults to today">Start time <span cl
 
             if(start_time !== '') {
                 if(new Date(start_time) >= new Date(end_time)) {
-                    resultcss('color', 'var(--color-red)');
+                    result.css('color', 'var(--color-red)');
                     result.text('`start_time` should be less than `end_time`.');
                     return;
                 }
