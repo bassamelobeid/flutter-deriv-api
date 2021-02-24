@@ -25,5 +25,8 @@ tidy:
 
 cover:
 	cover -delete
-	PERL5OPT='-MBOM::Test' HARNESS_PERL_SWITCHES=-MDevel::Cover DEVEL_COVER_OPTIONS=-'ignore,^t/' /etc/rmg/bin/prove --timer -rl --norc -It/lib t/BOM/RPC/
+	PERL5OPT='-MBOM::Test' HARNESS_PERL_SWITCHES=-MDevel::Cover DEVEL_COVER_OPTIONS=-'ignore,^t/' /etc/rmg/bin/prove --timer -rl --norc -It/lib t/BOM/RPC/ t/unit/
 	cover -report coveralls
+	
+unit:
+	@$(PROVE) t/unit/
