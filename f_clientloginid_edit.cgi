@@ -1142,7 +1142,7 @@ foreach my $lid ($user_clients->@*) {
         . ($client->status->disabled ? ' class="link link--disabled"' : ' class="link link--primary"') . ">"
         . encode_entities($lid->loginid) . " ("
         . $currency
-        . ") </a></li>";
+        . ") </a><span class='error'> " . $formatted_balance . "</span></li>";
 }
 
 # show MT5 a/c
