@@ -1642,4 +1642,73 @@ subtest 'account_reactivated' => sub {
     is_deeply $msg->{to}, [request->brand->emails('social_responsibility')], 'SR email address is correct';
 };
 
+subtest 'withdrawal_limit_reached' => sub {
+    my $client_mock = Test::MockModule->new('BOM::User::Client');
+    my $is_poa_pending;
+    my $fully_authenticated;
+
+    $client_mock->mock(
+        'documents_uploaded',
+        sub {
+            return {proof_of_address => {is_pending => $is_poa_pending}};
+        });
+
+    $client_mock->mock(
+        'fully_authenticated',
+        sub {
+            return $fully_authenticated;
+        });
+
+    my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+    });
+
+    my $handler   = BOM::Event::Process::get_action_mappings()->{withdrawal_limit_reached};
+    my $call_args = {
+        loginid => $test_client->loginid,
+    };
+
+    throws_ok(
+        sub {
+            $handler->();
+        },
+        qr/\bClient login ID was not given\b/,
+        'Expected exception thrown, clientid was not given'
+    );
+
+    throws_ok(
+        sub {
+            $handler->({loginid => 'CR0'});
+        },
+        qr/\bCould not instantiate client for login ID CR0\b/,
+        'Expected exception thrown, clientid was not found'
+    );
+
+    $fully_authenticated = 1;
+    $is_poa_pending      = 1;
+    $handler->($call_args);
+    $test_client = BOM::User::Client->new({loginid => $test_client->loginid});
+    ok !$test_client->status->allow_document_upload, 'Allow document upload not set';
+
+    $fully_authenticated = 1;
+    $is_poa_pending      = 0;
+    $handler->($call_args);
+    $test_client = BOM::User::Client->new({loginid => $test_client->loginid});
+    ok !$test_client->status->allow_document_upload, 'Allow document upload not set';
+
+    $fully_authenticated = 0;
+    $is_poa_pending      = 1;
+    $handler->($call_args);
+    $test_client = BOM::User::Client->new({loginid => $test_client->loginid});
+    ok !$test_client->status->allow_document_upload, 'Allow document upload not set';
+
+    $fully_authenticated = 0;
+    $is_poa_pending      = 0;
+    $handler->($call_args);
+    $test_client = BOM::User::Client->new({loginid => $test_client->loginid});
+    is $test_client->status->reason('allow_document_upload'), 'WITHDRAWAL_LIMIT_REACHED', 'Allow Document upload with custom reason set';
+
+    $client_mock->unmock_all;
+};
+
 done_testing();

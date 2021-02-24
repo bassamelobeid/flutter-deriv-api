@@ -2229,10 +2229,11 @@ Sets 'needs_action' to a client
 
 sub withdrawal_limit_reached {
     my ($args) = @_;
+    my $loginid = $args->{loginid} or die 'Client login ID was not given';
 
     my $client = BOM::User::Client->new({
-            loginid => $args->{loginid},
-        }) or die 'Could not instantiate client for login ID ' . $args->{loginid};
+            loginid => $loginid,
+        }) or die 'Could not instantiate client for login ID ' . $loginid;
 
     return if $client->fully_authenticated();
 
@@ -2246,8 +2247,8 @@ sub withdrawal_limit_reached {
         $client->save();
     }
 
-    # allow client to upload documents
-    $client->status->setnx('allow_document_upload', 'system', 'WITHDRAWAL_LIMIT_REACHED');
+    # allow client to upload documents and enforce special BO reason: WITHDRAWAL_LIMIT_REACHED
+    $client->status->upsert('allow_document_upload', 'system', 'WITHDRAWAL_LIMIT_REACHED');
 
     return;
 }
