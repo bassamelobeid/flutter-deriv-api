@@ -27,11 +27,47 @@ sub script_run {
     #As of Jan 17th, we have 104 Ukranian clients hitting our profit
     #using 1 minute contract.
 
-    foreach my $duration (qw(tick ultra_short)) {
+    foreach my $duration (qw(intraday tick ultra_short)) {
 
         my ($todo, $risk_profile, $to_remove, $between);
         my $now          = Date::Utility->new;
         my $cut_off_hour = $now->is_dst_in_zone('Europe/London') ? '06' : '07';
+
+        # Since we are setting start and end time, we just need to do this once a day at 00
+        if ($duration eq 'intraday') {
+            if ($now->hour == 00) {
+                $todo         = 'set extreme_risk_fx_' . $duration . '_trade_asian_hour';
+                $risk_profile = 'extreme_risk';
+                my $uniq_key = substr(md5_hex('new' . $todo), 0, 16);
+
+                my $start_time = $now->truncate_to_day;
+                my $end_time   = $start_time->plus_time_interval('7h');
+
+                my %new_limit = (
+                    risk_profile => $risk_profile,
+                    market       => 'forex',
+                    expiry_type  => $duration,
+                    name         => $todo,
+                    updated_by   => 'cron job',
+                    start_time   => $start_time->datetime_yyyymmdd_hhmmss,
+                    end_time     => $end_time->datetime_yyyymmdd_hhmmss,
+                    updated_on   => Date::Utility->new->datetime,
+                );
+
+                #removing old limit for intraday set previous day at 00 hour
+                my @removing_keys =
+                    grep { $current_product_profiles->{$_}->{updated_by} eq 'cron job' and $current_product_profiles->{$_}->{name} eq $todo }
+                    keys %$current_product_profiles;
+                delete @{$current_product_profiles}{@removing_keys};
+
+                $current_product_profiles->{$uniq_key} = \%new_limit;
+                $quants_config->set({'quants.custom_product_profiles' => $json->encode($current_product_profiles)});
+
+                $between = $start_time->hour . ' to ' . $end_time->hour . ' GMT';
+                send_notification_email(\%new_limit, $todo . ' for forex intraday between ' . $between);
+            }
+            next;
+        }
 
         if ($now->hour == 00) {
             $todo         = 'set extreme_risk_fx_' . $duration . '_trade';
