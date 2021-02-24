@@ -312,6 +312,19 @@ jobs:
           when: always
       - store_test_results:
           path: /var/tmp/test-output
+  unit:
+    <<: *default
+    steps:
+      - *ssh_keys
+      - *git
+      - run:
+          <<: *tests
+          name: Run Unit Tests
+          command: |
+            echo '--formatter TAP::Formatter::JUnit' >> .proverc
+            make unit
+      - store_test_results:
+          path: /var/tmp/test-output
   code_coverage:
     <<: *default
     steps:
@@ -353,6 +366,8 @@ workflows:
       - benchmark_SDFC_SDEQ:
           context: perl
       - perl-Pricing-Engine-Tests:
+          context: perl
+      - unit:
           context: perl
   daily:
     jobs: *workflow_jobs

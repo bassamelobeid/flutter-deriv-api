@@ -77,6 +77,9 @@ doc:
 
 cover:
 	cover -delete
+	PERL5OPT=-MBOM::Test HARNESS_PERL_SWITCHES=-MDevel::Cover DEVEL_COVER_OPTIONS=-'ignore,^t/' /etc/rmg/bin/prove --timer --norc -It/lib -rl $$(find t/unit -name "*.t" | grep -vE 'memtest|benchmark|ContractFinder')
 	PERL5OPT=-MBOM::Test HARNESS_PERL_SWITCHES=-MDevel::Cover DEVEL_COVER_OPTIONS=-'ignore,^t/' /etc/rmg/bin/prove --timer --norc -It/lib -rl $$(find t/BOM -name "*.t" | grep -vE 'memtest|benchmark|ContractFinder')
 	cover -report coveralls
-
+	
+unit:
+	/etc/rmg/bin/prove -rlv --timer t/unit/
