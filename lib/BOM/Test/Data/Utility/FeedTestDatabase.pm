@@ -296,7 +296,7 @@ sub _create_table_for_date {
         )
         INHERITS (feed.tick)}, undef, $date_str, $date_str
         );
-        $dbh->do("GRANT SELECT ON feed.$table_name  TO read");
+        $dbh->do("GRANT SELECT ON feed.$table_name  TO readonly");
 
         $dbh->do("GRANT SELECT, INSERT, UPDATE, DELETE, TRIGGER ON feed.$table_name TO write");
     }
