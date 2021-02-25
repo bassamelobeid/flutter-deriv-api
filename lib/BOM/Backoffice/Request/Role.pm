@@ -94,7 +94,7 @@ sub _domain_for {
 
     if ($server_name =~ /^qa.+$/) {
         my $config       = BOM::Config::qa_config();
-        my $server       = join ", " => grep { /$server_name/ } keys %{$config->{nodes}};
+        my $server       = join ", " => grep { /$server_name\./ } keys %{$config->{nodes}};
         my $redirect_uri = $config->{nodes}->{$server}{website};
 
         return $redirect_uri if $host_name[1] eq 'regentmarkets';
