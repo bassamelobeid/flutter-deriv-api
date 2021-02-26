@@ -215,6 +215,7 @@ sub actions_config {
             }
         ],
         ['paymentagent_list', {stash_params => [qw/ token /]}],
+        ['payment_methods',   {stash_params => [qw/ token /]}],
         [
             'paymentagent_withdraw',
             {

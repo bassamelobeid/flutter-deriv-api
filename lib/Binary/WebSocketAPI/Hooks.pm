@@ -4,18 +4,17 @@ use strict;
 use warnings;
 
 use Binary::WebSocketAPI::v3::Wrapper::Streamer;
-use DataDog::DogStatsd::Helper qw(stats_timing stats_inc);
+
+use Clone;
+use Data::Dumper;
+use DataDog::DogStatsd::Helper qw(stats_inc stats_timing stats_inc);
 use Future;
 use JSON::MaybeXS;
-use Mojo::IOLoop;
-use Path::Tiny;
-use Data::Dumper;
 use JSON::Validator;
-use Clone;
 use Log::Any qw($log);
-use DataDog::DogStatsd::Helper qw(stats_inc);
-use Path::Tiny;
+use Mojo::IOLoop;
 use Net::Address::IP::Local;
+use Path::Tiny;
 #  module is loaded on server start and shared across connections
 #  %schema_cache is added onto as each unique request type is received.
 #  by the _load_schema sub in this module
