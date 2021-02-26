@@ -26,12 +26,14 @@ my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
 });
 
 $test_client->email($email);
+$test_client->set_default_account('USD');
 $test_client->save;
 
 my $test_client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'VRTC',
 });
 $test_client_vr->email($email);
+$test_client_vr->set_default_account('USD');
 $test_client_vr->save;
 
 my $test_loginid = $test_client->loginid;
@@ -64,6 +66,7 @@ my $test_client_mf = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     residence   => 'at',
 });
 $test_client_mf->email($email_mlt_mf);
+$test_client_mf->set_default_account('USD');
 $test_client_mf->save;
 
 my $user_mlt_mf = BOM::User->create(
@@ -76,6 +79,7 @@ $user_mlt_mf->add_client($test_client_mf);
 
 my $test_client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR'});
 $test_client_cr->email('cr3@binary.com');
+$test_client_cr->set_default_account('USD');
 $test_client_cr->save;
 my $user_cr = BOM::User->create(
     email    => 'sample3@binary.com',
@@ -84,10 +88,10 @@ my $user_cr = BOM::User->create(
 $user_cr->add_client($test_client_cr);
 
 my $m              = BOM::Platform::Token::API->new;
-my $token          = $m->create_token($test_loginid, 'test token');
+my $token          = $m->create_token($test_loginid,                  'test token');
 my $token_disabled = $m->create_token($test_client_disabled->loginid, 'test token');
-my $token_vr       = $m->create_token($test_client_vr->loginid, 'test token');
-my $token_mlt      = $m->create_token($test_client_mlt->loginid, 'test token');
+my $token_vr       = $m->create_token($test_client_vr->loginid,       'test token');
+my $token_mlt      = $m->create_token($test_client_mlt->loginid,      'test token');
 
 my $token_cr = $m->create_token($test_client_cr->loginid, 'test token');
 
@@ -322,6 +326,7 @@ subtest 'get and set self_exclusion' => sub {
             'code'              => 'SetSelfExclusionError'
         });
 
+    # client has account balance
     mailbox_clear();
     my $exclude_until = Date::Utility->new->plus_time_interval('7mo')->date_yyyymmdd;
     my $timeout_until = Date::Utility->new->plus_time_interval('1d');
@@ -335,6 +340,14 @@ subtest 'get and set self_exclusion' => sub {
         timeout_until          => $timeout_until->epoch,
     };
 
+    $test_client->set_default_account('USD');
+    $test_client->save;
+    $test_client->payment_free_gift(
+        currency => 'USD',
+        amount   => 1000,
+        remark   => 'free gift',
+    );
+
     is($c->tcall($method, $params)->{status}, 1, 'update self_exclusion ok');
     my $msg = mailbox_search(
         email   => 'compliance@deriv.com',
@@ -343,6 +356,7 @@ subtest 'get and set self_exclusion' => sub {
     ok($msg, "msg sent to marketing and compliance email");
     is_deeply($msg->{to}, ['compliance@deriv.com'], "msg sent to marketing and compliance email");
     like($msg->{body}, qr/.*Exclude from website until/s, 'email content is ok');
+    unlike($msg->{body}, qr/.*Client's account balance is:.*\d+/s, 'email content is ok, no balance in body');
     ok($emitted->{self_exclude}, 'self_exclude event emitted');
 
     like(
@@ -356,10 +370,43 @@ subtest 'get and set self_exclusion' => sub {
 
     $test_client->load();
     my $self_excl = $test_client->get_self_exclusion;
-    is $self_excl->max_balance, 9998, 'set correct in db';
-    is $self_excl->exclude_until, $exclude_until . 'T00:00:00', 'exclude_until in db is right';
-    is $self_excl->timeout_until, $timeout_until->epoch, 'timeout_until is right';
+    is $self_excl->max_balance,            9998, 'set correct in db';
+    is $self_excl->exclude_until,          $exclude_until . 'T00:00:00', 'exclude_until in db is right';
+    is $self_excl->timeout_until,          $timeout_until->epoch, 'timeout_until is right';
     is $self_excl->session_duration_limit, 1440, 'all good';
+
+    # Client has no balance
+    mailbox_clear();
+    $test_client->set_exclusion->exclude_until(undef);
+    $test_client->set_exclusion->timeout_until(undef);
+    $exclude_until  = Date::Utility->new->plus_time_interval('7mo')->date_yyyymmdd;
+    $timeout_until  = Date::Utility->new->plus_time_interval('1d');
+    $params->{args} = {
+        set_self_exclusion     => 1,
+        max_balance            => 9998,
+        max_turnover           => 1000,
+        max_open_bets          => 50,
+        session_duration_limit => 1440,
+        exclude_until          => $exclude_until,
+        timeout_until          => $timeout_until->epoch,
+    };
+
+    $test_client->set_default_account('USD');
+    $test_client->save;
+    $test_client->payment_free_gift(
+        currency => 'USD',
+        amount   => -1000,
+        remark   => 'free gift',
+    );
+
+    is($c->tcall($method, $params)->{status}, 1, 'update self_exclusion ok');
+    $msg = mailbox_search(
+        email   => 'compliance@deriv.com',
+        subject => qr/Client $test_loginid set self-exclusion limits/,    # debug => 1,
+    );
+    ok($msg, "msg sent to compliance email");
+    is_deeply($msg->{to}, ['compliance@deriv.com'], "msg wasn't send to accounting email");
+    unlike($msg->{body}, qr/.*Client's account balance is:.*\d+/s, 'email content is ok, no balance in body');
 
     $mock_lc->unmock_all;
 
@@ -433,7 +480,7 @@ subtest 'get and set self_exclusion' => sub {
         subject => qr/Client $test_client_mlt_loginid set self-exclusion limits/
     );
     ok($msg, 'Email for MLT client limits with MT5 accounts');
-    is_deeply($msg->{to}, ['compliance@deriv.com', 'x-acc@deriv.com'], 'email to address ok');
+    is_deeply($msg->{to}, ['compliance@deriv.com'], 'email to address ok');
     like($msg->{body}, qr/$mt5_loginid/, 'email content is ok');
 
     ## Set some limits again, and another email should be sent to compliance listing
@@ -445,8 +492,73 @@ subtest 'get and set self_exclusion' => sub {
         subject => qr/Client $test_client_mlt_loginid set self-exclusion limits/
     );
     ok($msg, 'Email for MLT client limits with MT5 accounts');
-    is_deeply($msg->{to}, ['compliance@deriv.com', 'x-acc@deriv.com'], 'email to address ok');
+    is_deeply($msg->{to}, ['compliance@deriv.com'], 'email to address ok');
     like($msg->{body}, qr/$mt5_loginid/, 'email content is ok');
+
+    #client has balance in account
+    $test_client_mlt->set_default_account('USD');
+    $test_client_mlt->save;
+    $test_client_mlt->payment_free_gift(
+        currency => 'USD',
+        amount   => 1000,
+        remark   => 'free gift',
+    );
+
+    $exclude_until  = Date::Utility->new->plus_time_interval('7mo')->date_yyyymmdd;
+    $timeout_until  = Date::Utility->new->plus_time_interval('1d');
+    $params->{args} = {
+        set_self_exclusion     => 1,
+        max_balance            => 9998,
+        max_turnover           => 1000,
+        max_open_bets          => 50,
+        session_duration_limit => 1440,
+        exclude_until          => $exclude_until
+    };
+
+    mailbox_clear();
+    is($c->tcall($method, $params)->{status}, 1, 'update self_exclusion ok');
+    $msg = mailbox_search(
+        email   => 'compliance@deriv.com',
+        subject => qr/Client $test_client_mlt_loginid set self-exclusion limits/
+    );
+    ok($msg, 'Email for MLT client limits with MT5 accounts');
+    is_deeply($msg->{to}, ['compliance@deriv.com', 'x-acc@deriv.com'], 'email to address ok');
+    like($msg->{body}, qr/$mt5_loginid/,                         'email content is ok');
+    like($msg->{body}, qr/.*Client's account balance is:.*\d+/s, 'email content is ok, balance in body');
+
+    # client has no balance
+    mailbox_clear();
+    $test_client_mlt->set_exclusion->exclude_until(undef);
+    $test_client_mlt->set_exclusion->timeout_until(undef);
+    $exclude_until  = Date::Utility->new->plus_time_interval('7mo')->date_yyyymmdd;
+    $timeout_until  = Date::Utility->new->plus_time_interval('1d');
+    $params->{args} = {
+        set_self_exclusion     => 1,
+        max_balance            => 9998,
+        max_turnover           => 1000,
+        max_open_bets          => 50,
+        session_duration_limit => 1440,
+        exclude_until          => $exclude_until,
+    };
+
+    $test_client_mlt->set_default_account('USD');
+    $test_client_mlt->save;
+    $test_client_mlt->payment_free_gift(
+        currency => 'USD',
+        amount   => -1000,
+        remark   => 'free gift',
+    );
+
+    is($c->tcall($method, $params)->{status}, 1, 'update self_exclusion ok');
+    $msg = mailbox_search(
+        email   => 'compliance@deriv.com',
+        subject => qr/Client $test_client_mlt_loginid set self-exclusion limits/
+    );
+    ok($msg, 'Email for MLT client limits with MT5 accounts');
+    is_deeply($msg->{to}, ['compliance@deriv.com'], 'email to address ok, sent only to compliance');
+    like($msg->{body}, qr/$mt5_loginid/, 'email content is ok');
+    unlike($msg->{body}, qr/.*Client's account balance is:.*\d+/s, 'email content is ok, balance in body');
+
     delete $params->{args};
     delete $emitted->{self_exclude};
     $params->{token} = $token_cr;

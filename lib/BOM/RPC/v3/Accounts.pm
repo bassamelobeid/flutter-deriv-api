@@ -513,12 +513,12 @@ rpc "statement",
         $duration_in_seconds = -1 if ($args->{date_to} && !$args->{date_from});
 
         my $action_type      = $args->{action_type} // 'all';
-        my $first_page       = $args->{offset} ? 0 : 1;
+        my $first_page       = $args->{offset}      ? 0 : 1;
         my $with_description = $args->{description} ? 1 : 0;
 
         my $tags = ["action_type:$action_type", "with_description:$with_description", "first_page:$first_page"];
-        stats_gauge("bom_rpc.v_3.statement.analysis.duration", $duration_in_seconds, {tags => $tags});
-        stats_gauge("bom_rpc.v_3.statement.analysis.limit", $args->{limit} // DEFAULT_STATEMENT_LIMIT, {tags => $tags});
+        stats_gauge("bom_rpc.v_3.statement.analysis.duration", $duration_in_seconds,                      {tags => $tags});
+        stats_gauge("bom_rpc.v_3.statement.analysis.limit",    $args->{limit} // DEFAULT_STATEMENT_LIMIT, {tags => $tags});
     }
 
     my $app_config = BOM::Config::Runtime->instance->app_config;
@@ -842,12 +842,12 @@ rpc balance => sub {
         $demo_total += $converted if $sibling->is_virtual;
 
         $response->{accounts}{$sibling->loginid} = {
-            currency         => $sibling->account->currency_code,
-            balance          => formatnumber('amount', $sibling->account->currency_code, $sibling->account->balance),
-            converted_amount => formatnumber('amount', $total_currency, $converted),
-            account_id       => $sibling->account->id,
-            demo_account     => $sibling->is_virtual ? 1 : 0,
-            type             => 'deriv',
+            currency                        => $sibling->account->currency_code,
+            balance                         => formatnumber('amount', $sibling->account->currency_code, $sibling->account->balance),
+            converted_amount                => formatnumber('amount', $total_currency,                  $converted),
+            account_id                      => $sibling->account->id,
+            demo_account                    => $sibling->is_virtual ? 1 : 0,
+            type                            => 'deriv',
             currency_rate_in_total_currency =>
                 convert_currency(1, $sibling->account->currency_code, $total_currency),    # This rate is used for the future stream
             status => 1,
@@ -878,11 +878,11 @@ rpc balance => sub {
                 $is_demo ? $mt5_demo_total : $mt5_real_total += $converted;
 
                 $response->{accounts}{$mt5_account->{login}} = {
-                    currency         => $mt5_account->{currency},
-                    balance          => formatnumber('amount', $mt5_account->{currency}, $mt5_account->{balance}),
-                    converted_amount => formatnumber('amount', $total_currency, $converted),
-                    demo_account     => $is_demo,
-                    type             => 'mt5',
+                    currency                        => $mt5_account->{currency},
+                    balance                         => formatnumber('amount', $mt5_account->{currency}, $mt5_account->{balance}),
+                    converted_amount                => formatnumber('amount', $total_currency,          $converted),
+                    demo_account                    => $is_demo,
+                    type                            => 'mt5',
                     currency_rate_in_total_currency =>
                         convert_currency(1, $mt5_account->{currency}, $total_currency),    # This rate is used for the future stream
                     status => 1,
@@ -1406,11 +1406,11 @@ rpc get_settings => sub {
             tax_identification_number      => $real_client->tax_identification_number,
             account_opening_reason         => $real_client->account_opening_reason,
             date_of_birth                  => $real_client->date_of_birth ? Date::Utility->new($real_client->date_of_birth)->epoch : undef,
-            citizen                        => $real_client->citizen // '',
+            citizen                        => $real_client->citizen  // '',
             allow_copiers                  => $client->allow_copiers // 0,
             non_pep_declaration            => $client->non_pep_declaration_time ? 1 : 0,
             client_tnc_status              => $client->accepted_tnc_version,
-            request_professional_status    => $client->status->professional_requested ? 1 : 0,
+            request_professional_status    => $client->status->professional_requested                               ? 1 : 0,
             is_authenticated_payment_agent => ($client->payment_agent and $client->payment_agent->is_authenticated) ? 1 : 0,
         };
     }
@@ -1529,7 +1529,7 @@ rpc set_settings => sub {
     }
 
     return BOM::RPC::v3::Utility::create_error({
-            code => 'TINDetailsMandatory',
+            code              => 'TINDetailsMandatory',
             message_to_client =>
                 localize('Tax-related information is mandatory for legal and regulatory requirements. Please provide your latest tax information.')}
     ) if ($current_client->landing_company->short eq 'maltainvest' and (not $tax_residence or not $tax_identification_number));
@@ -1538,18 +1538,18 @@ rpc set_settings => sub {
     # In case of having more than a tax residence, client residence will replaced.
     my $selected_tax_residence = $tax_residence =~ /\,/g ? $current_client->residence : $tax_residence;
     my $now                    = Date::Utility->new;
-    my $address1               = $args->{'address_line_1'} // $current_client->address_1;
+    my $address1               = $args->{'address_line_1'}                                 // $current_client->address_1;
     my $address2               = ($args->{'address_line_2'} // $current_client->address_2) // '';
-    my $addressTown            = $args->{'address_city'} // $current_client->city;
-    my $addressState           = ($args->{'address_state'} // $current_client->state) // '';
-    my $addressPostcode        = $args->{'address_postcode'} // $current_client->postcode;
-    my $phone                  = ($args->{'phone'} // $current_client->phone) // '';
-    my $birth_place            = $args->{place_of_birth} // $current_client->place_of_birth;
-    my $date_of_birth          = $args->{date_of_birth} // $current_client->date_of_birth;
-    my $citizen                = ($args->{'citizen'} // $current_client->citizen) // '';
-    my $salutation             = $args->{'salutation'} // $current_client->salutation;
+    my $addressTown            = $args->{'address_city'}                                   // $current_client->city;
+    my $addressState           = ($args->{'address_state'} // $current_client->state)      // '';
+    my $addressPostcode        = $args->{'address_postcode'}                               // $current_client->postcode;
+    my $phone                  = ($args->{'phone'} // $current_client->phone)              // '';
+    my $birth_place            = $args->{place_of_birth}                                   // $current_client->place_of_birth;
+    my $date_of_birth          = $args->{date_of_birth}                                    // $current_client->date_of_birth;
+    my $citizen                = ($args->{'citizen'} // $current_client->citizen)          // '';
+    my $salutation             = $args->{'salutation'}                                     // $current_client->salutation;
     my $first_name             = trim($args->{'first_name'} // $current_client->first_name);
-    my $last_name              = trim($args->{'last_name'} // $current_client->last_name);
+    my $last_name              = trim($args->{'last_name'}  // $current_client->last_name);
     my $account_opening_reason = $args->{'account_opening_reason'} // $current_client->account_opening_reason;
     my $secret_answer          = $args->{secret_answer} ? BOM::User::Utility::encrypt_secret_answer($args->{secret_answer}) : '';
     my $secret_question        = $args->{secret_question} // '';
@@ -1740,12 +1740,12 @@ sub _send_update_account_settings_email {
         [localize('Citizen'),   $citizen_country,       _contains_any($updated_fields, 'citizen')]);
 
     my $tr_tax_residence = join ', ', map { Locale::Country::code2country($_) } split /,/, ($current_client->tax_residence || '');
-    my $pob_country      = $current_client->place_of_birth ? Locale::Country::code2country($current_client->place_of_birth) : '';
+    my $pob_country = $current_client->place_of_birth ? Locale::Country::code2country($current_client->place_of_birth) : '';
 
     push @email_updated_fields,
         (
         [localize('Place of birth'), $pob_country // '', _contains_any($updated_fields, 'place_of_birth')],
-        [localize("Tax residence"), $tr_tax_residence, _contains_any($updated_fields, 'tax_residence')],
+        [localize("Tax residence"),  $tr_tax_residence,  _contains_any($updated_fields, 'tax_residence')],
         [
             localize('Tax identification number'),
             ($current_client->tax_identification_number || ''),
@@ -2058,23 +2058,102 @@ rpc set_self_exclusion => sub {
     }
 
 # Need to send email in 2 circumstances:
-#   - Any client sets a self exclusion period
+#   - Any client sets a self exclusion period && balance > 0
 #   - Client under Deriv (Europe) Limited with MT5 account(s) sets any of these settings
+
+    my $balance;
+    if ($client->default_account) {
+        $balance = $client->default_account->balance;
+    } else {
+        $balance = '0.00';
+    }
+
     my @mt5_logins = $client->user->mt5_logins('real');
     if ($client->landing_company->short eq 'malta' && @mt5_logins) {
         warn 'Compliance email regarding Deriv (Europe) Limited user with MT5 account(s) failed to send.'
-            unless send_self_exclusion_notification($client, 'malta_with_mt5', \%args);
+            unless send_self_exclusion_notification($client, 'malta_with_mt5', \%args, $balance);
     } elsif ($args{exclude_until}) {
         warn 'Compliance email regarding self exclusion from the website failed to send.'
-            unless send_self_exclusion_notification($client, 'self_exclusion', \%args);
+            unless send_self_exclusion_notification($client, 'self_exclusion', \%args, $balance);
     }
 
     return {status => 1};
 };
 
-sub send_self_exclusion_notification {
-    my ($client, $type, $args) = @_;
+=head2 send_self_exclusion_notification
 
+Sends email to compliance and/or payments to
+inform about client's self exclusion
+
+Takes the following parameters:
+
+=over 4
+
+=item * C<$client> a L<BOM::User::Client> object
+
+=item * C<$type>, which can be one of the following:
+
+=over 4
+
+=item * malta_with_mt5
+
+=item * self_exclusion
+
+=back
+
+=back
+
+=over 4
+
+=item * C<$args> a hash, which contains the client's self exclusion choices:
+
+=over 4
+
+=item * set_self_exclusion
+
+=item * exclude_until
+
+=item * max_30day_deposit
+
+=item * max_30day_losses
+
+=item * max_30day_turnover
+
+=item * max_7day_deposit
+
+=item * max_7day_losses
+
+=item * max_7day_turnover
+
+=item * max_balance
+
+=item * max_deposit
+
+=item * max_losses
+
+=item * max_open_bets
+
+=item * max_turnover
+
+=item * session_duration_limit
+
+=item * timeout_until
+
+=back
+
+=item * C<balance>, client's acccount balance
+
+=back
+
+In success sends email to compliance and/or payments
+else returns 0
+
+=cut
+
+sub send_self_exclusion_notification {
+    my ($client, $type, $args, $balance) = @_;
+
+    $balance = $balance // 0;
     my @fields_to_email;
     my $message;
     if ($type eq 'malta_with_mt5') {
@@ -2110,7 +2189,15 @@ sub send_self_exclusion_notification {
 
         # Include accounts team if client's brokercode is MLT/MX
         # As per UKGC LCCP Audit Regulations
-        $to_email .= ',' . $brand->emails('accounting') if ($client->landing_company->short =~ /iom|malta$/);
+        if (   $client->landing_company->self_exclusion_notify
+            && $args->{exclude_until}
+            && $balance > 0)
+        {
+
+            $message  .= "\n\nClient's account balance is: $balance\n\n";
+            $to_email .= ',' . $brand->emails('accounting');
+
+        }
 
         return send_email({
             from    => $brand->emails('compliance'),
