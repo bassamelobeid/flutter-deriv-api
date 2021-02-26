@@ -114,6 +114,11 @@ subtest 'multiplier - send_ask' => sub {
         'multiplier'        => 10,
         skip_basis_override => 1,
         skip_streaming      => 0,
+        subchannel          => 'v1,USD,100,stake,0,0.025,0.012,0.02,,,,10',
+        channel             =>
+            'PRICER_ARGS::["amount","100","basis","stake","contract_type","MULTUP","country_code",null,"currency","USD","landing_company",null,"multiplier","10","price_daemon_cmd","price","proposal","1","skips_price_validation","1","symbol","R_100"]',
+        subscription_channel =>
+            'PRICER_ARGS::["amount","100","basis","stake","contract_type","MULTUP","country_code",null,"currency","USD","landing_company",null,"multiplier","10","price_daemon_cmd","price","proposal","1","skips_price_validation","1","symbol","R_100"]::v1,USD,100,stake,0,0.025,0.012,0.02,,,,10'
     };
     my $res = $c->call_ok('send_ask', $params)->has_no_error->result;
     cmp_deeply($res, $expected, 'send_ask output as expected');
@@ -166,6 +171,11 @@ subtest 'multiplier - send_ask' => sub {
         'multiplier'        => 10,
         skip_basis_override => 1,
         skip_streaming      => 0,
+        subchannel          => 'v1,USD,100,stake,0,0.025,0.012,0.02,,,,10',
+        channel             =>
+            'PRICER_ARGS::["amount","100","basis","stake","contract_type","MULTUP","country_code",null,"currency","USD","landing_company",null,"limit_order",{"take_profit":10},"multiplier","10","price_daemon_cmd","price","proposal","1","skips_price_validation","1","symbol","R_100"]',
+        subscription_channel =>
+            'PRICER_ARGS::["amount","100","basis","stake","contract_type","MULTUP","country_code",null,"currency","USD","landing_company",null,"limit_order",{"take_profit":10},"multiplier","10","price_daemon_cmd","price","proposal","1","skips_price_validation","1","symbol","R_100"]::v1,USD,100,stake,0,0.025,0.012,0.02,,,,10',
     };
     $args->{limit_order}->{take_profit} = 10;
     $res = $c->call_ok('send_ask', $params)->has_no_error->result;
@@ -224,6 +234,11 @@ subtest 'multiplier - send_ask' => sub {
         },
         skip_basis_override => 1,
         skip_streaming      => 0,
+        subchannel          => 'v1,USD,100,stake,0,0.025,0.012,0.02,,,,10',
+        channel             =>
+            'PRICER_ARGS::["amount","100","basis","stake","contract_type","MULTUP","country_code",null,"currency","USD","landing_company",null,"multiplier","10","price_daemon_cmd","price","proposal","1","skips_price_validation","1","symb    ol","R_100"]',
+        subscription_channel =>
+            'PRICER_ARGS::["amount","100","basis","stake","contract_type","MULTUP","country_code",null,"currency","USD","landing_company",null,"multiplier","10","price_daemon_cmd","price","proposal","1","skips_price_validation","1","symb    ol","R_100"]',
     };
     $args->{cancellation} = '1h';
     $res = $c->call_ok('send_ask', $params)->has_error('ContractBuyValidationError')
