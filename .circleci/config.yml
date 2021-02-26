@@ -219,6 +219,7 @@ jobs:
         name: Update developer.binary.com schema documentation
   code_coverage:
     <<: *6
+    <<: *5
     steps:
     - *1
     - *2
@@ -227,15 +228,40 @@ jobs:
     - *4
     - *price_daemon
     - run:
-        <<: *5
         command: make cover
         name: code cover tests
-    - store_test_results:
-        path: /var/tmp/test-output
+    - run:
+        command: make cover_websocket_tests sub_test=schema_suite
+        name: schema_suite tests
+        when: always
+    - run:
+        command: make cover_websocket_tests sub_test=security
+        name: security tests
+        when: always
+    - run:
+        command: make cover_websocket_tests sub_test=accounts
+        name: accounts tests
+        when: always
+    - run:
+        command: make cover_websocket_tests sub_test=misc
+        name: misc tests
+        when: always
+    - run:
+        command: make cover_websocket_tests sub_test=p2p
+        name: p2p tests
+        when: always
+    - run:
+        command: make cover_websocket_tests sub_test=pricing
+        name: pricing tests
+        when: always
+    - run:
+        command: make cover_websocket_tests sub_test=backends
+        name: backends tests
+        when: always
     - run:
         name: upload coverage report
         command: cover -report coveralls
-        when: on_fail
+        when: always
   unit:
     <<: *6
     steps:

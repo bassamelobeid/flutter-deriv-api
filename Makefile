@@ -54,19 +54,13 @@ doc: $(msc_graphs) $(dot_graphs)
 
 %.dot.png: %.dot
 	dot -Tpng < $< > $@
-	
+
 unit:
 	@$(PROVE) --norc t/unit
 
 cover:
-	sed -i '/--exec/d'  .proverc
-	$C --norc $$(find t/ -type f | grep -v 00)
-	$C /home/git/regentmarkets/bom-websocket-tests/v3/schema_suite/
-	$C /home/git/regentmarkets/bom-websocket-tests/v3/security/
-	$C /home/git/regentmarkets/bom-websocket-tests/v3/accounts/
-	$C /home/git/regentmarkets/bom-websocket-tests/v3/misc/
-	$C /home/git/regentmarkets/bom-websocket-tests/v3/p2p/
-	$C /home/git/regentmarkets/bom-websocket-tests/v3/pricing/
-	$C --norc /home/git/regentmarkets/bom-websocket-tests/v3/backends/
-	$C --norc -r t/unit/
-	cover -report coveralls
+	sed -i '/--exec/d' .proverc
+	$C --norc $$(find t/ -type f | grep -v 00) t/unit/
+
+cover_websocket_tests:
+	$C /home/git/regentmarkets/bom-websocket-tests/v3/$(sub_test)
