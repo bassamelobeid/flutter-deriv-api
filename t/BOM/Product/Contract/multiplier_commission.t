@@ -47,6 +47,10 @@ subtest 'commission for underlying' => sub {
         BOOM1000    => [100, 0.00025],
         BOOM500     => [100, 0.00025],
         stpRNG      => [500, 0.00001],
+        WLDEUR      => [50,  0.00015],
+        WLDUSD      => [50,  0.00015],
+        WLDGBP      => [30,  0.00020],
+        WLDAUD      => [20,  0.00025],
     );
     # fixed time because commission for forex is a function of spread seasonality and economic events
     my $now  = Date::Utility->new('2020-06-10');

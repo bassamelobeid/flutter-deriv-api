@@ -22,7 +22,7 @@ use Quant::Framework::EconomicEventCalendar;
 use constant {
     BARRIER_ADJUSTMENT_FACTOR => 0.5826,
     MIN_COMMISSION_MULTIPLIER => 0.75,
-    MAX_COMMISSION_MULTIPLIER => 3,
+    MAX_COMMISSION_MULTIPLIER => 4,
 };
 
 my $ERROR_MAPPING   = BOM::Product::Static::get_error_mapping();
@@ -1244,12 +1244,28 @@ sub commission_multiplier {
         )};
 
     my $ee_multiplier = 0;
-    my ($asset_symbol, $quoted_currency) = ($self->underlying->asset_symbol, $self->underlying->quoted_currency_symbol);
+    if (@high_impact_events) {
+        my $currencies = {
+            USD                                       => 1,
+            $self->underlying->asset_symbol           => 1,
+            $self->underlying->quoted_currency_symbol => 1
+        };
+        # use all major currencies if it is smart_fx
+        if ($self->underlying->submarket->name eq 'smart_fx') {
+            $currencies = {
+                USD => 1,
+                GBP => 1,
+                EUR => 1,
+                CAD => 1,
+                JPY => 1
+            };
+        }
 
-    if (@high_impact_events
-        and grep { $_->{symbol} =~ /(?:$asset_symbol|$quoted_currency|USD)/ } @high_impact_events)
-    {
-        $ee_multiplier = 3;
+        for my $event (@high_impact_events) {
+            if (exists $currencies->{$event->{symbol}}) {
+                $ee_multiplier = 3;
+            }
+        }
     }
 
     # Currently the multiplier for economic event is hard-coded to 3. In the future, this value might be configurable from the
