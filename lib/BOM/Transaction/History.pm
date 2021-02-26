@@ -69,7 +69,12 @@ sub get_transaction_history {
 
     $args->{limit} = HISTORY_LIMIT unless defined $args->{limit} and $args->{limit} < HISTORY_LIMIT;
 
-    my $results = $client->db->dbic->run(
+    my $clientdb = BOM::Database::ClientDB->new({
+        broker_code => $client->broker_code,
+        operation   => 'replica',
+    });
+
+    my $results = $clientdb->db->dbic->run(
         fixup => sub {
             $_->selectall_arrayref(
                 'SELECT * FROM transaction.get_transaction_history_details(?, ?, ?, ?, ?, ?)',
