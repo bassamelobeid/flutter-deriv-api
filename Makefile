@@ -30,7 +30,7 @@ syntax:
 	@$(PROVE) t/*.t
 
 unit_test_product_contract:
-	@$(PROVE) -r t/BOM/Product/Contract/*.t
+	@$(PROVE) -r t/BOM/Product/Contract/ -r t/BOM/Product/ContractFinder/
 
 unit_test_product_contract_settlement:
 	@$(PROVE) -r t/BOM/Product/Contract/Settlement/
