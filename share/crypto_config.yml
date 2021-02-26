@@ -128,7 +128,7 @@ UST:
         address: 1GMin1HSJPFBYjYTikqLVN9dKs8h4myVfB
         min_transfer: 1000
         max_transfer: 10000
-        max_percentage_fee: 1
+        max_percentage_fee: 5
 eUSDT:
     withdrawal:
         timeout: "3d"
