@@ -84,8 +84,8 @@ sub startup {
         after_dispatch => sub {
             try {
                 BOM::Database::Rose::DB->db_cache->finish_request_cycle;
-            } catch {
-                warn "->finish_request_cycle: $@\n";
+            } catch ($e) {
+                warn "->finish_request_cycle: $e\n";
             }
         });
 
