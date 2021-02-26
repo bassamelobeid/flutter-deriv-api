@@ -14,7 +14,7 @@ use BOM::Config::CurrencyConfig;
 use BOM::CTC::Database;
 use Syntax::Keyword::Try;
 
-our @EXPORT_OK = qw( wait_miner deploy_test_contract set_pending );
+our @EXPORT_OK = qw( wait_miner deploy_erc20_test_contract set_pending );
 
 my $mock_cashier_validation = Test::MockModule->new('BOM::Config::CurrencyConfig');
 $mock_cashier_validation->mock(
@@ -79,26 +79,24 @@ sub set_pending {
     }
 }
 
-=head2 deploy_all_test_contracts
+=head2 deploy_all_erc20_test_contracts
 
-Generates test contract addresses for ERC20 currencies. It is supposed to be invoked
-on QA box rebuild as a preparatory step for crypto cashier manual tests
-(no problem if invoked manually afterwards).
+Generates test contract addresses for ERC20 currencies.
 It returns a hash ref containing the addresses just created for ERC20 currencies.
 
 =cut
 
-sub deploy_all_test_contracts {
+sub deploy_all_erc20_test_contracts {
     my $result = {};
     for (LandingCompany::Registry->new()->all_crypto_currencies()) {
-        my $contract_address = deploy_test_contract($_);
+        my $contract_address = deploy_erc20_test_contract($_);
         $result->{$_} = $contract_address if $contract_address;
     }
 
     return $result;
 }
 
-sub deploy_test_contract {
+sub deploy_erc20_test_contract {
     my ($currency_code) = @_;
 
     my $currency = BOM::CTC::Currency->new(currency_code => $currency_code);
