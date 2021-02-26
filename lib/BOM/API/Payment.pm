@@ -138,12 +138,14 @@ sub to_app {    ## no critic (RequireArgUnpacking,Subroutines::RequireFinalRetur
                 }
 
                 # run the app, but trap breakages here so we can trace.
-                my $ref = eval { $app->($env) } || do {
-                    my $error = $@;
+                my $ref;
+                try {
+                    $ref = $app->($env);
+                } catch ($error) {
                     # database errors are arrays
                     $error = join ', ', @$error if ref $error eq 'ARRAY';
                     $log->error($error);
-                    [500, [], ['Server Error']];
+                    $ref = [500, [], ['Server Error']];
                 };
 
                 # post-processing: log this response

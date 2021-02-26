@@ -162,10 +162,8 @@ sub validate_as_payment {
             amount      => $signed_amount,
             action_type => $action,
         );
-    } catch {
-        my $err = $@;
-
-        return $c->throw(403, $err) if $err;
+    } catch ($err) {
+        return $c->throw(403, $err);
     }
 
     $log->debug("$action validation passed");
