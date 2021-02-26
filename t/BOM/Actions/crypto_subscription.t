@@ -108,7 +108,7 @@ subtest "change_address_status" => sub {
 
     $response = BOM::Event::Actions::CryptoSubscription::set_pending_transaction($transaction);
     is $response->{error},
-        sprintf("Invalid currency, expecting: %s, received: %s, for transaction: %s", $transaction->{currency}, $currency_code, $transaction->{hash}),
+        sprintf("Invalid currency, expecting: %s, received: %s, for transaction: %s", $currency_code, $transaction->{currency}, $transaction->{hash}),
         "Invalid currency";
 
     ($transaction->{currency}, $transaction->{fee_currency}) = ($currency_code, $currency_code);
@@ -576,6 +576,14 @@ subtest "new_crypto_address" => sub {
 
     $transaction->{amount} = 0.1;
     $transaction->{hash}   = "aaa";
+    $transaction->{from}   = $currency->account_config->{account}->{address};
+
+    $response = BOM::Event::Actions::CryptoSubscription::set_pending_transaction($transaction);
+    is $response->{status}, 0, "the from address is equals to the main address";
+    is $response->{error}, sprintf("`from` address is main address for transaction: %s", $transaction->{hash}),
+        "correct error message for froma => main address";
+
+    $transaction->{from} = undef;
 
     $response = BOM::Event::Actions::CryptoSubscription::set_pending_transaction($transaction);
     is $response->{status}, 1, "Update the transaction status to pending";

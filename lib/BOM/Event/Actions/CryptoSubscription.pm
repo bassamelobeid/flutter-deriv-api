@@ -108,12 +108,25 @@ sub set_pending_transaction {
     my $from_address = $transaction->{from};
 
     try {
-        return undef unless $transaction->{type} && $transaction->{type} ne 'send';
+        return {
+            status => 0,
+            error  => sprintf("withdrawal transaction: %s", $transaction->{hash})}
+            unless $transaction->{type} && $transaction->{type} ne 'send';
+        # if the from address is our main wallet and the transaction type is not send this is
+        # an internal sweep transaction
+        return {
+            status => 0,
+            error  => sprintf("`from` address is main address for transaction: %s", $transaction->{hash})}
+            if $from_address && lc $from_address eq lc $currency->account_config->{account}->{address};
 
-        return undef
-            if ($from_address
-            && (lc $from_address eq lc $currency->account_config->{account}->{address})
-            && ($transaction->{type} eq TRANSACTION_TYPE_INTERNAL));
+
+        # TODO this needs to be enabled once we have the rinkeby network in our QA enviroment
+        # we will not reach this point on production, but in QA this is actually very easy since we
+        # are sending transactions from our local node, so we need this block here.
+        # return {
+        #     status => 0,
+        #     error  => sprintf("internal transactions not allowed, `from`: %s `to`: %s", $from_address // "", $to_address)}
+        #     if $transaction->{type} eq TRANSACTION_TYPE_INTERNAL;
 
         # get all the payments related to the `to` address from the transaction
         # since this is only for deposits we don't care about the `from` address
@@ -137,17 +150,12 @@ sub set_pending_transaction {
 
             unless (any { $currency->compare_addresses($to_address, $_) || $currency->compare_addresses($from_address, $_) } $reserved_addresses->@*)
             {
-                $error = sprintf(
-                    "%s Transaction not found for address: %s and transaction: %s",
-                    $transaction->{currency},
-                    $to_address, $transaction->{hash});
+                $error = sprintf("%s Transaction not found for address: %s and transaction: %s", $currency_code, $to_address, $transaction->{hash});
                 $log->warn($error);
-                stats_inc(DD_METRIC_PREFIX . 'subscription.set_pending', {tags => ['currency:' . $transaction->{currency}, 'status:failed']});
+                stats_inc(DD_METRIC_PREFIX . 'subscription.set_pending', {tags => ['currency:' . $currency_code, 'status:failed']});
             } else {
-                $error = sprintf(
-                    "%s Transaction not found but it is a sweep for address: %s and transaction: %s",
-                    $transaction->{currency},
-                    $to_address, $transaction->{hash});
+                $error = sprintf("%s Transaction not found but it is a sweep for address: %s and transaction: %s",
+                    $currency_code, $to_address, $transaction->{hash});
                 $log->debug($error);
             }
             # we want to ignore the transaction anyway
@@ -161,16 +169,14 @@ sub set_pending_transaction {
 
         my @payment = $payment_rows->@*;
 
-        # for now we just ignore this transaction, but we will need to do the rate
-        # conversion in the future
-        if (my $wrong_transaction = first { $_->{currency_code} ne $currency_code } @payment) {
+        if (my $correct_currency = first { $_->{currency_code} ne $currency_code } @payment) {
             $error = sprintf(
                 "Invalid currency, expecting: %s, received: %s, for transaction: %s",
-                $currency_code, $wrong_transaction->{currency_code},
-                $transaction->{hash});
+                $correct_currency->{currency_code},
+                $currency_code, $transaction->{hash});
             $log->warn($error);
             stats_inc(DD_METRIC_PREFIX . 'subscription.wrong_currency_deposit',
-                {tags => ['currency:' . $currency, 'wrong_currency:' . $transaction->{currency}]});
+                {tags => ['currency:' . $currency_code, 'wrong_currency:' . $currency_code]});
             return {
                 status => 0,
                 error  => $error
@@ -202,7 +208,7 @@ sub set_pending_transaction {
         unless ($currency->transaction_amount_not_zero($transaction)) {
             $error = sprintf("Amount is zero for transaction: %s", $transaction->{hash});
             $log->warnf($error);
-            stats_inc(DD_METRIC_PREFIX . 'subscription.set_pending', {tags => ['currency:' . $transaction->{currency}, 'status:failed']});
+            stats_inc(DD_METRIC_PREFIX . 'subscription.set_pending', {tags => ['currency:' . $currency_code, 'status:failed']});
             return {
                 status => 0,
                 error  => $error
@@ -246,7 +252,6 @@ sub set_pending_transaction {
                 my $client_loginid = $payment[0]->{client_loginid};
 
                 $emit = emit_new_address_call($client_loginid, $retain_address, $to_address);
-
             } catch {
                 $error = $@;
             }
@@ -257,7 +262,7 @@ sub set_pending_transaction {
             ) unless $emit;
         } else {
             $log->debugf("Can't set the status to pending for tx: %s", $transaction->{hash});
-            stats_inc(DD_METRIC_PREFIX . 'subscription.set_pending', {tags => ['currency:' . $transaction->{currency}, 'status:failed']});
+            stats_inc(DD_METRIC_PREFIX . 'subscription.set_pending', {tags => ['currency:' . $currency_code, 'status:failed']});
 
             # if we don't receive the response from the database we need to retry sending it
             # creating a new event with the same transaction so it will try to set it as pending
@@ -282,13 +287,13 @@ sub set_pending_transaction {
         }
 
         $log->debugf("Transaction status changed to pending: %s", $transaction->{hash});
-        stats_inc(DD_METRIC_PREFIX . 'subscription.set_pending', {tags => ['currency:' . $transaction->{currency}, 'status:success']});
+        stats_inc(DD_METRIC_PREFIX . 'subscription.set_pending', {tags => ['currency:' . $currency_code, 'status:success']});
 
     } catch ($e) {
         $error = sprintf("Subscription error: %s", $e);
         $log->errorf($error);
         exception_logged();
-        stats_inc(DD_METRIC_PREFIX . 'subscription.set_pending', {tags => ['currency:' . $transaction->{currency}, 'status:failed']});
+        stats_inc(DD_METRIC_PREFIX . 'subscription.set_pending', {tags => ['currency:' . $currency_code, 'status:failed']});
         return {
             status => 0,
             error  => $error
@@ -358,7 +363,7 @@ sub insert_new_deposit {
             stats_inc(DD_METRIC_PREFIX . 'subscription.insert_new', {tags => ['currency:' . $currency_code, 'status:failed']});
             return 0;
         } else {
-            stats_inc(DD_METRIC_PREFIX . 'subscription.insert_new', {tags => ['currency:' . $transaction->{currency}, 'status:success']});
+            stats_inc(DD_METRIC_PREFIX . 'subscription.insert_new', {tags => ['currency:' . $currency_code, 'status:success']});
         }
     }
 
