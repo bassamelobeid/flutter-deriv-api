@@ -704,7 +704,7 @@ sub create_virtual_account {
         type     => $args->{type},
     };
 
-    $account_args->{myaffiliates_token} = $args->{affiliate_token} if $args->{affiliate_token};
+    $account_args->{details}->{myaffiliates_token} = $args->{affiliate_token} if $args->{affiliate_token};
 
     foreach my $k (qw( date_first_contact gclid_url signup_device utm_campaign utm_medium utm_source )) {
         $account_args->{details}->{$k} = $args->{$k} if $args->{$k};
