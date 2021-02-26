@@ -11,7 +11,6 @@ use Test::Pod::CoverageChange;
 my $allowed_naked_packages = {
     'BOM::Platform::RiskProfile'                 => 18,
     'BOM::Platform::Locale'                      => 1,
-    'BOM::Platform::Doughflow'                   => 2,
     'BOM::Platform::Token'                       => 2,
     'BOM::Platform::ProveID'                     => 4,
     'BOM::Platform::Copier'                      => 4,

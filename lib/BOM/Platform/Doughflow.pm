@@ -14,45 +14,98 @@ our Doughflow integration.
 use strict;
 use warnings;
 
-use BOM::Config::Runtime;
+use JSON::MaybeXS;
+use List::MoreUtils qw(uniq);
+
 use BOM::Config;
+use BOM::Config::Runtime;
+use Brands;
 use LandingCompany::Registry;
 
 use base qw( Exporter );
 our @EXPORT_OK = qw(
-    get_sportsbook
     get_doughflow_language_code_for
+    get_payment_methods
+    get_sportsbook
 );
 
-sub get_sportsbook {
-    my ($broker, $currency) = @_;
-    my $sportsbook;
+=head2 get_sportsbook_by_short_code
+
+Given a Landing Company short code and a currency code, returns the sportsbook name (or frontend name in Doughflow/PremierCashier jargon)
+
+=over 4
+
+=item * C<short_code> -  A string with the landing company short code.
+
+=item * C<currency> - Currency code in ISO 4217 (three letter code).
+
+=back
+
+Returns a string with the Sportsbook name.
+
+=cut
+
+sub get_sportsbook_by_short_code {
+    my ($short_code, $currency) = @_;
 
     if (not BOM::Config::on_production()) {
         return 'test';
     }
 
-    my $landing_company = LandingCompany::Registry->get_by_broker($broker);
+    return get_sportsbook_mapping_by_landing_company($short_code) . ' ' . $currency if is_deriv_sportsbooks_enabled();
 
-    if (is_deriv_sportsbooks_enabled()) {
-        $sportsbook = get_sportsbook_mapping_by_landing_company($landing_company->short) . ' ' . $currency;
-    } else {
-        # TODO: remove this check once Doughflow's side is live
-        # for backward compatibility, we keep sportsbook prefixes as 'Binary'
-        my %mapping = (
-            svg         => 'Binary (CR) SA',
-            malta       => 'Binary (Europe) Ltd',
-            iom         => 'Binary (IOM) Ltd',
-            maltainvest => 'Binary Investments Ltd',
-        );
+    # TODO: remove this check once Doughflow's side is live
+    # for backward compatibility, we keep sportsbook prefixes as 'Binary'
+    my %mapping = (
+        svg         => 'Binary (CR) SA',
+        malta       => 'Binary (Europe) Ltd',
+        iom         => 'Binary (IOM) Ltd',
+        maltainvest => 'Binary Investments Ltd',
+    );
 
-        $sportsbook = $mapping{$landing_company->short} . ' ' . $currency;
-    }
-
-    return $sportsbook;
+    return $mapping{$short_code} . ' ' . $currency;
 }
 
-# defaults to English (en)
+=head2 get_sportsbook
+
+Given a broker code and a currency code, returns the sportsbook name (or frontend name in Doughflow/PremierCashier jargon)
+
+=over 4
+
+=item * C<broker> -  A string with the broker code.
+
+=item * C<currency> - Currency code in ISO 4217 (three letter code).
+
+=back
+
+Returns  a string with the Sportsbook name.
+
+=cut
+
+sub get_sportsbook {
+    my ($broker, $currency) = @_;
+
+    my $landing_company = LandingCompany::Registry->get_by_broker($broker);
+
+    return get_sportsbook_by_short_code($landing_company->{short}, $currency);
+}
+
+=head2 get_doughflow_language_code_for
+
+Maps a given language code to Doughflow/Premier Cashier specific language code.
+
+B<Note> if no mapping is found it defaults to English (en) 
+
+=over 4
+
+=item * C<lang> -  A string with the two characters language code.
+
+=back
+
+Returns language code as required by Doughflow/Premier Cashier.
+
+=cut
+
 sub get_doughflow_language_code_for {
     my $lang = shift;
 
@@ -76,9 +129,7 @@ sub get_doughflow_language_code_for {
 }
 
 =head2 is_deriv_sportsbooks_enabled
-
-Returns true if doughflow Deriv sportsbooks is enabled, false otherwise
-
+Returns true if doughflow Deriv sportsbooks are enabled, false otherwise
 =cut
 
 # TODO: remove this check once Doughflow's side is live
@@ -116,6 +167,217 @@ sub get_sportsbook_mapping_by_landing_company {
     );
 
     return $mapping{$landing_company_shortcode} // '';
+}
+
+=head2 get_payment_methods
+
+Returns payment methods available in Doughflow, optionally filtered by
+the country received as parameter.
+
+Parameters supported:
+
+=over 4
+
+=item * C<country> - A string with the country as two letter code (ISO 3166-Alpha2).
+
+=item * C<brand> - A string describing the brand. Defaults to 'deriv'
+
+=back
+
+Returns a list of payment methods, as an array ref.
+
+The elements in the array have the following fields
+
+=over 4
+
+
+=item * C<deposit_limts> - A hash ref with the deposit limits for this payment method.
+
+=item * C<deposit_time> - A string describing how much time takes a deposit to be processed en visible in clients account.
+
+=item * C<description> - A string describing this payment method.
+
+=item * C<display_name> - A string with an user friendly representation of this payment method name.
+
+=item * C<id> - A string to identify the payment method.
+
+=item * C<payment_processor> - A string with the payment processor name if there is one. This could be an empty string.
+
+=item * C<predefined_amount> - An array ref with the predefined amounts to deposit/withdraw.
+
+=item * C<signup_link> - A string with the link for signup with this payment method.
+
+=item * C<supported_currencies> - An array ref with currencies supported as 3-letter representation.
+
+=item * C<type_display_name> - A string with an user friendly representation of the type of payment method.
+
+=item * C<type> - A string describing the type of payment method. Can be one of B<Ewallet>, B<CreditCard>.  
+
+=item * C<withdrawal_limits> - A hash ref with the deposit limits for this payment method.
+
+=item * C<withdrawal_time> - A string with a description of how much time takes a withdrawal request to be processed.
+
+=back
+
+Every C<deposit_limits> or C<withdraw_limits> hashref have the following structure. A string key with the 3-letter currency code, e.g. B<USD>, B<EUR>. The attributes for this hash ref are:
+
+=over 4
+
+=item * C<min> - Minimum amount of money required to deposit/whitdraw.
+
+=item * C<max> - Maximum amount of money required to deposit/whitdraw.
+
+=back
+
+=cut
+
+sub get_payment_methods {
+    my $country = shift;
+    my $brand   = shift;
+
+    my $redis_payment = BOM::Config::Redis::redis_payment();
+
+    my @short_codes;
+    if ($country) {
+        my $country_details = Brands->new(name => $brand)->countries_instance->countries_list->{$country};
+        die "Unknown country code" unless $country_details;
+        @short_codes = @{$country_details}{qw/financial_company gaming_company/};
+    } else {
+        my %all_countries = Brands->new(name => $brand)->countries_instance->countries_list->%*;
+        push @short_codes, @{$all_countries{$_}}{qw/financial_company gamming_company/} for keys %all_countries;
+        @short_codes = @short_codes;
+    }
+    @short_codes = uniq grep { $_ && ($_ ne 'none') } @short_codes;
+    return [] unless scalar @short_codes;
+
+    my @landing_companies =
+        map { LandingCompany::Registry::get $_ } @short_codes;
+
+    my @sportsbook_names = ();
+    for my $lc (@landing_companies) {
+        my $currencies = $lc->legal_allowed_currencies;
+        for my $currency (keys %$currencies) {
+            if ($currencies->{$currency}->{type} eq 'fiat') {
+                push @sportsbook_names, get_sportsbook_by_short_code($lc->{short}, $currency);
+            }
+        }
+    }
+    @sportsbook_names = uniq @sportsbook_names;
+
+    my @redis_keys = _get_all_payment_keys($redis_payment, $country);
+
+    my $payment_methods = {};
+    for my $key (@redis_keys) {
+        my $payment_method = decode_json($redis_payment->get($key));
+        $payment_methods->{$payment_method->{frontend_name}} = $payment_method
+            if grep { uc $_ eq uc $payment_method->{frontend_name} } @sportsbook_names;
+    }
+
+    my $response = {};
+    for my $frontend_name (keys %$payment_methods) {
+        my ($deposit_options, $payout_options, $base_currency) =
+            @{$payment_methods->{$frontend_name}}{"deposit_options", "payout_options", "base_currency"};
+        next unless (scalar @$deposit_options) + (scalar @$payout_options);
+
+        for my $deposit (@$deposit_options) {
+            my $payment_method = ($response->{$deposit->{payment_method}} //= {});
+            my $limits         = ($payment_method->{deposit_limits}       //= {});
+            $payment_method->{id}                = $deposit->{payment_method};
+            $payment_method->{display_name}      = $deposit->{payment_method};
+            $payment_method->{description}       = $deposit->{payment_method};
+            $payment_method->{payment_processor} = $deposit->{payment_processor};
+            $payment_method->{type_display_name} = $deposit->{payment_type};        # For now we don't have a friendly name for this
+
+            $limits->{$base_currency} = {
+                min => $deposit->{minimum_amount},
+                max => $deposit->{maximum_amount}};
+
+            $payment_method->{deposit_time} = 'instant';
+
+        }
+
+        for my $payout (@$payout_options) {
+            my $payment_method = ($response->{$payout->{payment_method}} //= {});
+            my $limits         = ($payment_method->{withdraw_limits}     //= {});
+
+            $payment_method->{id}                = $payout->{payment_method};
+            $payment_method->{type}              = $payout->{payment_type};
+            $payment_method->{display_name}      = $payout->{friendly_name};
+            $payment_method->{description}       = $payout->{friendly_name};
+            $payment_method->{payment_processor} = $payout->{payment_processor};
+            $limits->{$base_currency}            = {
+                min => $payout->{minimum_amount},
+                max => $payout->{maximum_amount}};
+
+            $payment_method->{type_display_name}  = $payout->{payment_type};    # For now we don't have a friendly name for this
+            $payment_method->{withdrawal_time}    = $payout->{time_frame};
+            $payment_method->{description}        = '';
+            $payment_method->{predefined_amounts} = [5, 10, 100, 300, 500];
+            $payment_method->{signup_link}        = '';
+            $payment_method->{supported_currencies} //= [];
+            push $payment_method->{supported_currencies}->@*, $base_currency;
+            $payment_method->{supported_currencies} = [uniq $payment_method->{supported_currencies}->@*];
+        }
+    }
+
+    for my $id (keys %$response) {
+        my $payment_method = $response->{$id};
+        $payment_method->{deposit_limits} //= {};
+        $payment_method->{deposit_time} = 'instant';
+        $payment_method->{description}       //= '';
+        $payment_method->{display_name}      //= '';
+        $payment_method->{payment_processor} //= '';
+        $payment_method->{predefined_amounts} = [5, 10, 100, 300, 500];
+        $payment_method->{signup_link}          //= '';
+        $payment_method->{supported_currencies} //= [];
+        $payment_method->{type_display_name}    //= '';
+        $payment_method->{type}                 //= '';
+        $payment_method->{withdraw_limits}      //= {};
+        $payment_method->{withdrawal_time}      //= '';
+
+    }
+
+    my $ret = [];
+
+    push @$ret, $response->{$_} for sort keys %$response;
+
+    return $ret;
+}
+
+=head2 _get_all_payment_keys
+
+Get all the payment method keys in redis payments for a given country.
+
+Arguments:
+
+=over 4
+
+=item * C<redis> - A ref for the redis payment client. 
+
+=item * C<country> - A string with the country code. (optional)
+
+=back
+
+It returns an ARRAY of strings with all the payment method keys found for the 
+given country.
+
+If no country is passed all the payment method keys are returned.
+
+=cut 
+
+sub _get_all_payment_keys {
+    my $redis   = shift;
+    my $country = shift;
+    my $regex   = "DERIV::CASHIER::PAYMENT_METHODS::.*::" . ($country ? uc $country : '[A-Z]{2}');
+    my @res;
+
+    my $cursor = 0;
+    do {
+        ($cursor, my $keys) = $redis->scan($cursor)->@*;
+        push @res, grep { /$regex/ } $keys->@*;
+    } while ($cursor);
+
+    return @res;
 }
 
 1;
