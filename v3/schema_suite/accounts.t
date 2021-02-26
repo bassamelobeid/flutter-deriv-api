@@ -243,4 +243,8 @@ test_sendrecv_params 'reset_password/test_send_vrt.json', 'reset_password/test_r
 # TWO Factor Authentication (Admin Scope)
 test_sendrecv_params 'account_security/test_send_status.json', 'account_security/test_receive_status.json';
 
+# Payment Methods
+test_sendrecv 'payment_methods/test_send_payment_methods.json',              'payment_methods/test_receive_empty.json';
+test_sendrecv 'payment_methods/test_send_payment_methods_with_country.json', 'payment_methods/test_receive_empty.json';
+
 finish;

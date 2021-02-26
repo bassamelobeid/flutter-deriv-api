@@ -1,0 +1,25 @@
+{
+   "$schema": "http://json-schema.org/draft-04/schema#",
+   "required": [
+     "echo_req",
+     "payment_methods",
+     "msg_type"
+   ],
+   "additionalProperties": null,
+   "title": null,
+   "description": null,
+   "type": "object",
+   "properties": {
+     "payment_methods": {
+       "type": "array",
+       "items": {
+         "type": "string"
+       }
+     },
+     "msg_type": {
+       "type": "string",
+       "pattern": "^payment_methods$"
+     },
+     "echo_req": {}
+   }
+}
