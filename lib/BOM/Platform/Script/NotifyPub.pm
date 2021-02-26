@@ -58,8 +58,8 @@ sub run {
                             _publish($redis, _msg($payload));
                         }
                     }
-                } catch {
-                    warn "$0 ($$): saw exception: $@";
+                } catch ($e) {
+                    warn "$0 ($$): saw exception: $e";
                     sleep 1;
                 }
             }

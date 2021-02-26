@@ -62,8 +62,8 @@ sub run_validation {
 
         try {
             $self->$mapped_action();
-        } catch {
-            $error_info{$action} = $@;
+        } catch ($e) {
+            $error_info{$action} = $e;
         }
     }
 
@@ -123,8 +123,8 @@ sub proveid {
     for my $tag (@tags_to_match) {
         try {
             $matches->{$tag} = $credit_reference_summary->findnodes($tag . "Match")->[0]->textContent() || 0;
-        } catch {
-            warn $@;
+        } catch ($e) {
+            warn $e;
             $matches->{$tag} = 0;
         }
     }
@@ -217,8 +217,8 @@ sub _fetch_proveid {
         $client->status->setnx('proveid_requested', 'system', 'ProveID request has been made for this account.');
 
         $result = BOM::Platform::ProveID->new(client => $self->client)->get_result;
-    } catch {
-        my $error = $@;
+    } catch ($e) {
+        my $error = $e;
 
         # ErrorCode 500 and 501 are Search Errors according to Appendix B of https://github.com/regentmarkets/third_party_API_docs/blob/master/AML/20160520%20Experian%20ID%20Search%20XML%20API%20v1.22.pdf
         if ($error =~ /50[01]/) {

@@ -296,8 +296,8 @@ sub get_result {
     $self->_save_xml_result;
     try {
         $self->get_pdf_result;
-    } catch {
-        warn $@;
+    } catch ($e) {
+        warn $e;
     }
 
     return $self->xml_result;

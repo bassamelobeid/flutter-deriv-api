@@ -5,6 +5,7 @@ use warnings;
 
 use Test::More;
 use Test::Exception;
+use Test::Fatal;
 use Test::Warnings 0.005 qw(:all);
 
 use BOM::User::Client;
@@ -53,30 +54,34 @@ subtest 'get_today_client_payment_agent_transfer_total_amount' => sub {
 };
 
 subtest 'is_agent_to_client params in transfer/withdrawal' => sub {
-    dies_ok {
-        $pa_client->payment_account_transfer(
-            toClient     => $client,
-            currency     => 'USD',
-            amount       => 10,
-            fees         => 0,
-            gateway_code => 'payment_agent_transfer',
-        );
-    };
+    is_deeply(
+        exception {
+            $pa_client->payment_account_transfer(
+                toClient     => $client,
+                currency     => 'USD',
+                amount       => 10,
+                fees         => 0,
+                gateway_code => 'payment_agent_transfer',
+            );
+        },
+        ['BI201', 'ERROR:  Invalid payment agent loginid.'],
+        'Correct error code with no value (defaults to 0)'
+    );
 
-    is_deeply $@, ['BI201', 'ERROR:  Invalid payment agent loginid.'], 'Correct error code with no value (defaults to 0)';
-
-    dies_ok {
-        $pa_client->payment_account_transfer(
-            toClient           => $client,
-            currency           => 'USD',
-            amount             => 10,
-            fees               => 0,
-            gateway_code       => 'payment_agent_transfer',
-            is_agent_to_client => 0
-        );
-    }
-
-    is_deeply $@, ['BI201', 'ERROR:  Invalid payment agent loginid.'], 'Correct error code when value is wrong (for payment agent to client)';
+    is_deeply(
+        exception {
+            $pa_client->payment_account_transfer(
+                toClient           => $client,
+                currency           => 'USD',
+                amount             => 10,
+                fees               => 0,
+                gateway_code       => 'payment_agent_transfer',
+                is_agent_to_client => 0
+            );
+        },
+        ['BI201', 'ERROR:  Invalid payment agent loginid.'],
+        'Correct error code when value is wrong (for payment agent to client)'
+    );
 };
 
 subtest 'PA withdrawal with long further instructions by client' => sub {

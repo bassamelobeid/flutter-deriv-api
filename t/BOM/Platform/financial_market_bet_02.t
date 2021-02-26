@@ -3,9 +3,10 @@
 use strict;
 use warnings;
 
-use Test::More tests => 28;
+use Test::More tests => 23;
 use Test::Warnings;
 use Test::Exception;
+use Test::Fatal;
 
 use BOM::User::Client;
 
@@ -174,36 +175,36 @@ lives_ok {
 }
 'bought 2nd USD bet';
 
-dies_ok {
-    my ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd,
-        +{
-        limits => {
-            max_open_bets => 2,
-        },
-        };
-}
-'exception thrown';
-is_deeply $@,
+is_deeply(
+    exception {
+        buy_one_bet $acc_usd,
+            +{
+            limits => {
+                max_open_bets => 2,
+            },
+            };
+    },
     [
-    BI002 => 'ERROR:  maximum self-exclusion number of open contracts exceeded',
+        BI002 => 'ERROR:  maximum self-exclusion number of open contracts exceeded',
     ],
-    'max_open_bets reached';
+    'max_open_bets reached'
+);
 
 # bought 2 bets before, sum turnover = 20 + 20, which exceeds max_turnover
-dies_ok {
-    my ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd,
-        +{
-        limits => {
-            max_turnover => 39,
-        },
-        };
-}
-'exception thrown';
-is_deeply $@,
+is_deeply(
+    exception {
+        buy_one_bet $acc_usd,
+            +{
+            limits => {
+                max_turnover => 39,
+            },
+            };
+    },
     [
-    BI001 => 'ERROR:  maximum self-exclusion turnover limit exceeded',
+        BI001 => 'ERROR:  maximum self-exclusion turnover limit exceeded',
     ],
-    'max_turnover reached';
+    'max_turnover reached'
+);
 
 lives_ok {
     my ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd,
@@ -233,22 +234,22 @@ lives_ok {
 #
 # which is: 40 (open) + 20 (realized) + 10000 (current) = 10060
 
-dies_ok {
-    my ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd,
-        +{
-        buy_price => 10000,
-        limits    => {
-            max_losses    => 10059,
-            max_open_bets => 3,
-        },
-        };
-}
-'exception thrown';
-is_deeply $@,
+is_deeply(
+    exception {
+        my ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd,
+            +{
+            buy_price => 10000,
+            limits    => {
+                max_losses    => 10059,
+                max_open_bets => 3,
+            },
+            };
+    },
     [
-    BI012 => 'ERROR:  maximum self-exclusion limit on daily losses reached',
+        BI012 => 'ERROR:  maximum self-exclusion limit on daily losses reached',
     ],
-    'max_losses reached';
+    'max_losses reached'
+);
 
 my $buy_price;
 lives_ok {
@@ -266,33 +267,33 @@ lives_ok {
 }
 'bought one more USD bet with slightly increased max_losses' or diag Dumper($@);
 
-dies_ok {
-    my ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd,
-        +{
-        limits => {
-            max_open_bets => 3,
-        },
-        };
-}
-'exception thrown';
-is_deeply $@,
+is_deeply(
+    exception {
+        buy_one_bet $acc_usd,
+            +{
+            limits => {
+                max_open_bets => 3,
+            },
+            };
+    },
     [
-    BI002 => 'ERROR:  maximum self-exclusion number of open contracts exceeded',
+        BI002 => 'ERROR:  maximum self-exclusion number of open contracts exceeded',
     ],
-    'to be sure the previous bet was the last possible';
+    'to be sure the previous bet was the last possible'
+);
 
-dies_ok {
-    my ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd,
-        +{
-        buy_price => $bal + 0.01,
-        };
-}
-'exception thrown';
-is_deeply $@,
+is_deeply(
+    exception {
+        buy_one_bet $acc_usd,
+            +{
+            buy_price => $bal + 0.01,
+            };
+    },
     [
-    BI003 => 'ERROR:  insufficient balance, need: 0.01, #open_bets: 0, pot_payout: 0',
+        BI003 => 'ERROR:  insufficient balance, need: 0.01, #open_bets: 0, pot_payout: 0',
     ],
-    'insufficient balance';
+    'insufficient balance'
+);
 
 my $sell_price;
 
@@ -308,20 +309,20 @@ subtest 'more validation', sub {
     }
     'setup new client';
 
-    dies_ok {
-        my ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd,
-            +{
-            limits => {
-                max_balance => 10000 - 0.01,
-            },
-            };
-    }
-    'cannot buy due to max_balance';
-    is_deeply $@,
+    is_deeply(
+        exception {
+            buy_one_bet $acc_usd,
+                +{
+                limits => {
+                    max_balance => 10000 - 0.01,
+                },
+                };
+        },
         [
-        BI008 => 'ERROR:  client balance upper limit exceeded',
+            BI008 => 'ERROR:  client balance upper limit exceeded',
         ],
-        'client balance upper limit exceeded';
+        'client balance upper limit exceeded'
+    );
 
     lives_ok {
         my ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd,
@@ -353,20 +354,20 @@ subtest 'more validation', sub {
     }
     'buy & sell a bet';
 
-    dies_ok {
-        my ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd,
-            +{
-            limits => {
-                max_payout_open_bets => 400 - 0.01,
-            },
-            };
-    }
-    'cannot buy due to max_payout_open_bets';
-    is_deeply $@,
+    is_deeply(
+        exception {
+            buy_one_bet $acc_usd,
+                +{
+                limits => {
+                    max_payout_open_bets => 400 - 0.01,
+                },
+                };
+        },
         [
-        BI009 => 'ERROR:  maximum net payout for open positions reached',
+            BI009 => 'ERROR:  maximum net payout for open positions reached',
         ],
-        'maximum net payout for open positions reached';
+        'maximum net payout for open positions reached'
+    );
 
     lives_ok {
         my ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd,
@@ -381,20 +382,20 @@ subtest 'more validation', sub {
     }
     'can buy when summary open payout is exactly at max_payout_open_bets';
 
-    dies_ok {
-        my ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd,
-            +{
-            limits => {
-                max_payout_open_bets => 400 - 0.01,
-            },
-            };
-    }
-    'cannot buy due to max_payout_open_bets -- just to be sure';
-    is_deeply $@,
+    is_deeply(
+        exception {
+            buy_one_bet $acc_usd,
+                +{
+                limits => {
+                    max_payout_open_bets => 400 - 0.01,
+                },
+                };
+        },
         [
-        BI009 => 'ERROR:  maximum net payout for open positions reached',
+            BI009 => 'ERROR:  maximum net payout for open positions reached',
         ],
-        'maximum net payout for open positions reached';
+        'maximum net payout for open positions reached'
+    );
 
     # the USD account has 3 bets here, 2 of which are unsold. Let's sell them all.
     my $total_bets  = 3;
@@ -495,247 +496,247 @@ SKIP: {
         # And since all those bets are losses we have a net loss of USD 80.
         # Also, there are no open bets. So, the loss limit is
         #       80 + 20 (current contract)
-        dies_ok {
-            my ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd, +{
-                limits => {
-                    max_turnover             => 100 - 0.01,
-                    max_losses               => 100 - 0.01,
-                    specific_turnover_limits => [{    # fails
-                            bet_type => [qw/CALL PUT DUMMY CLUB/],
-                            symbols  => [qw/frxUSDJPY frxUSDGBP R_50/],
-                            limit    => 100 - 0.01,
-                            name     => 'test1',
-                        },
-                        {    # passes
-                            bet_type => [qw/CALL PUT DUMMY CLUB/],
-                            symbols  => [qw/frxUSDJPY frxUSDGBP R_50/],
-                            limit    => 100,
-                            name     => 'test2',
-                        },
-                        {    # fails (leave out the CLUB bet above)
-                            bet_type => [qw/CALL PUT DUMMY/],
-                            limit    => 80 - 0.01,
-                            name     => 'test3',
-                        },
-                        {    # passes (leave out the CLUB bet above)
-                            bet_type => [qw/CALL PUT DUMMY/],
-                            limit    => 80,
-                            name     => 'test4',
-                        },
-                        {    # fails (count only the one bet w/ tick_count, USD 20 + USD 20 for the bet to be bought => limit=40)
-                            tick_expiry => 1,
-                            limit       => 40 - 0.01,
-                            name        => 'test5',
-                        },
-                        {    # passes  (count only the one bet w/ tick_count, USD 20 + USD 20 for the bet to be bought => limit=40)
-                            tick_expiry => 1,
-                            limit       => 40,
-                            name        => 'test6',
-                        },
-                        {    # fails (count only the one bet w/ sym=R_50, USD 20 + USD 20 for the bet to be bought => limit=40)
-                            symbols => [qw/hugo R_50/],
-                            limit   => 40 - 0.01,
-                            name    => 'test7',
-                        },
-                        {    # passes  (count only the one bet w/ sym=R_50, USD 20 + USD 20 for the bet to be bought => limit=40)
-                            symbols => [qw/hugo R_50/],
-                            limit   => 40,
-                            name    => 'test8',
-                        },
-                    ],
-                },
-            };
-        }
-        'max_turnover validation failed';
-        is_deeply $@,
+        is_deeply(
+            exception {
+                buy_one_bet $acc_usd, +{
+                    limits => {
+                        max_turnover             => 100 - 0.01,
+                        max_losses               => 100 - 0.01,
+                        specific_turnover_limits => [{    # fails
+                                bet_type => [qw/CALL PUT DUMMY CLUB/],
+                                symbols  => [qw/frxUSDJPY frxUSDGBP R_50/],
+                                limit    => 100 - 0.01,
+                                name     => 'test1',
+                            },
+                            {    # passes
+                                bet_type => [qw/CALL PUT DUMMY CLUB/],
+                                symbols  => [qw/frxUSDJPY frxUSDGBP R_50/],
+                                limit    => 100,
+                                name     => 'test2',
+                            },
+                            {    # fails (leave out the CLUB bet above)
+                                bet_type => [qw/CALL PUT DUMMY/],
+                                limit    => 80 - 0.01,
+                                name     => 'test3',
+                            },
+                            {    # passes (leave out the CLUB bet above)
+                                bet_type => [qw/CALL PUT DUMMY/],
+                                limit    => 80,
+                                name     => 'test4',
+                            },
+                            {    # fails (count only the one bet w/ tick_count, USD 20 + USD 20 for the bet to be bought => limit=40)
+                                tick_expiry => 1,
+                                limit       => 40 - 0.01,
+                                name        => 'test5',
+                            },
+                            {    # passes  (count only the one bet w/ tick_count, USD 20 + USD 20 for the bet to be bought => limit=40)
+                                tick_expiry => 1,
+                                limit       => 40,
+                                name        => 'test6',
+                            },
+                            {    # fails (count only the one bet w/ sym=R_50, USD 20 + USD 20 for the bet to be bought => limit=40)
+                                symbols => [qw/hugo R_50/],
+                                limit   => 40 - 0.01,
+                                name    => 'test7',
+                            },
+                            {    # passes  (count only the one bet w/ sym=R_50, USD 20 + USD 20 for the bet to be bought => limit=40)
+                                symbols => [qw/hugo R_50/],
+                                limit   => 40,
+                                name    => 'test8',
+                            },
+                        ],
+                    },
+                };
+            },
             [
-            BI001 => 'ERROR:  maximum self-exclusion turnover limit exceeded',
+                BI001 => 'ERROR:  maximum self-exclusion turnover limit exceeded',
             ],
-            'max_turnover exception';
+            'max_turnover exception'
+        );
 
-        dies_ok {
-            my ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd, +{
-                limits => {
-                    max_turnover             => 100,
-                    max_losses               => 100 - 0.01,
-                    specific_turnover_limits => [{    # fails
-                            bet_type => [qw/CALL PUT DUMMY CLUB/],
-                            symbols  => [qw/frxUSDJPY frxUSDGBP R_50/],
-                            limit    => 100 - 0.01,
-                            name     => 'test1',
-                        },
-                        {    # passes
-                            bet_type => [qw/CALL PUT DUMMY CLUB/],
-                            symbols  => [qw/frxUSDJPY frxUSDGBP R_50/],
-                            limit    => 100,
-                            name     => 'test2',
-                        },
-                        {    # fails (leave out the CLUB bet above)
-                            bet_type => [qw/CALL PUT DUMMY/],
-                            limit    => 80 - 0.01,
-                            name     => 'test3',
-                        },
-                        {    # passes (leave out the CLUB bet above)
-                            bet_type => [qw/CALL PUT DUMMY/],
-                            limit    => 80,
-                            name     => 'test4',
-                        },
-                        {    # fails (count only the one bet w/ tick_count, USD 20 + USD 20 for the bet to be bought => limit=40)
-                            tick_expiry => 1,
-                            limit       => 40 - 0.01,
-                            name        => 'test5',
-                        },
-                        {    # passes  (count only the one bet w/ tick_count, USD 20 + USD 20 for the bet to be bought => limit=40)
-                            tick_expiry => 1,
-                            limit       => 40,
-                            name        => 'test6',
-                        },
-                        {    # fails (count only the one bet w/ sym=R_50, USD 20 + USD 20 for the bet to be bought => limit=40)
-                            symbols => [qw/hugo R_50/],
-                            limit   => 40 - 0.01,
-                            name    => 'test7',
-                        },
-                        {    # passes  (count only the one bet w/ sym=R_50, USD 20 + USD 20 for the bet to be bought => limit=40)
-                            symbols => [qw/hugo R_50/],
-                            limit   => 40,
-                            name    => 'test8',
-                        },
-                    ],
-                },
-            };
-        }
-        'max_losses validation failed';
-        is_deeply $@,
+        is_deeply(
+            exception {
+                buy_one_bet $acc_usd, +{
+                    limits => {
+                        max_turnover             => 100,
+                        max_losses               => 100 - 0.01,
+                        specific_turnover_limits => [{    # fails
+                                bet_type => [qw/CALL PUT DUMMY CLUB/],
+                                symbols  => [qw/frxUSDJPY frxUSDGBP R_50/],
+                                limit    => 100 - 0.01,
+                                name     => 'test1',
+                            },
+                            {    # passes
+                                bet_type => [qw/CALL PUT DUMMY CLUB/],
+                                symbols  => [qw/frxUSDJPY frxUSDGBP R_50/],
+                                limit    => 100,
+                                name     => 'test2',
+                            },
+                            {    # fails (leave out the CLUB bet above)
+                                bet_type => [qw/CALL PUT DUMMY/],
+                                limit    => 80 - 0.01,
+                                name     => 'test3',
+                            },
+                            {    # passes (leave out the CLUB bet above)
+                                bet_type => [qw/CALL PUT DUMMY/],
+                                limit    => 80,
+                                name     => 'test4',
+                            },
+                            {    # fails (count only the one bet w/ tick_count, USD 20 + USD 20 for the bet to be bought => limit=40)
+                                tick_expiry => 1,
+                                limit       => 40 - 0.01,
+                                name        => 'test5',
+                            },
+                            {    # passes  (count only the one bet w/ tick_count, USD 20 + USD 20 for the bet to be bought => limit=40)
+                                tick_expiry => 1,
+                                limit       => 40,
+                                name        => 'test6',
+                            },
+                            {    # fails (count only the one bet w/ sym=R_50, USD 20 + USD 20 for the bet to be bought => limit=40)
+                                symbols => [qw/hugo R_50/],
+                                limit   => 40 - 0.01,
+                                name    => 'test7',
+                            },
+                            {    # passes  (count only the one bet w/ sym=R_50, USD 20 + USD 20 for the bet to be bought => limit=40)
+                                symbols => [qw/hugo R_50/],
+                                limit   => 40,
+                                name    => 'test8',
+                            },
+                        ],
+                    },
+                };
+            },
             [
-            BI012 => 'ERROR:  maximum self-exclusion limit on daily losses reached',
+                BI012 => 'ERROR:  maximum self-exclusion limit on daily losses reached',
             ],
-            'max_losses exception';
+            'max_losses exception'
+        );
 
-        dies_ok {
-            my ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd, +{
-                limits => {
-                    max_turnover             => 100,
-                    max_losses               => 100,
-                    specific_turnover_limits => [{    # fails
-                            bet_type => [qw/CALL PUT DUMMY CLUB/],
-                            symbols  => [qw/frxUSDJPY frxUSDGBP R_50/],
-                            limit    => 100 - 0.01,
-                            name     => 'test1',
-                        },
-                        {    # passes
-                            bet_type => [qw/CALL PUT DUMMY CLUB/],
-                            symbols  => [qw/frxUSDJPY frxUSDGBP R_50/],
-                            limit    => 100,
-                            name     => 'test2',
-                        },
-                        {    # fails (leave out the CLUB bet above)
-                            bet_type => [qw/CALL PUT DUMMY/],
-                            limit    => 80 - 0.01,
-                            name     => 'test3',
-                        },
-                        {    # passes (leave out the CLUB bet above)
-                            bet_type => [qw/CALL PUT DUMMY/],
-                            limit    => 80,
-                            name     => 'test4',
-                        },
-                        {    # fails (count only the one bet w/ tick_count, USD 20 + USD 20 for the bet to be bought => limit=40)
-                            tick_expiry => 1,
-                            limit       => 40 - 0.01,
-                            name        => 'test5',
-                        },
-                        {    # passes  (count only the one bet w/ tick_count, USD 20 + USD 20 for the bet to be bought => limit=40)
-                            tick_expiry => 1,
-                            limit       => 40,
-                            name        => 'test6',
-                        },
-                        {    # fails (count only the one bet w/ sym=R_50, USD 20 + USD 20 for the bet to be bought => limit=40)
-                            symbols => [qw/hugo R_50/],
-                            limit   => 40 - 0.01,
-                            name    => 'test7',
-                        },
-                        {    # passes  (count only the one bet w/ sym=R_50, USD 20 + USD 20 for the bet to be bought => limit=40)
-                            symbols => [qw/hugo R_50/],
-                            limit   => 40,
-                            name    => 'test8',
-                        },
-                    ],
-                },
-            };
-        }
-        'specific turnover validation failed';
-        is_deeply $@,
+        is_deeply(
+            exception {
+                buy_one_bet $acc_usd, +{
+                    limits => {
+                        max_turnover             => 100,
+                        max_losses               => 100,
+                        specific_turnover_limits => [{    # fails
+                                bet_type => [qw/CALL PUT DUMMY CLUB/],
+                                symbols  => [qw/frxUSDJPY frxUSDGBP R_50/],
+                                limit    => 100 - 0.01,
+                                name     => 'test1',
+                            },
+                            {    # passes
+                                bet_type => [qw/CALL PUT DUMMY CLUB/],
+                                symbols  => [qw/frxUSDJPY frxUSDGBP R_50/],
+                                limit    => 100,
+                                name     => 'test2',
+                            },
+                            {    # fails (leave out the CLUB bet above)
+                                bet_type => [qw/CALL PUT DUMMY/],
+                                limit    => 80 - 0.01,
+                                name     => 'test3',
+                            },
+                            {    # passes (leave out the CLUB bet above)
+                                bet_type => [qw/CALL PUT DUMMY/],
+                                limit    => 80,
+                                name     => 'test4',
+                            },
+                            {    # fails (count only the one bet w/ tick_count, USD 20 + USD 20 for the bet to be bought => limit=40)
+                                tick_expiry => 1,
+                                limit       => 40 - 0.01,
+                                name        => 'test5',
+                            },
+                            {    # passes  (count only the one bet w/ tick_count, USD 20 + USD 20 for the bet to be bought => limit=40)
+                                tick_expiry => 1,
+                                limit       => 40,
+                                name        => 'test6',
+                            },
+                            {    # fails (count only the one bet w/ sym=R_50, USD 20 + USD 20 for the bet to be bought => limit=40)
+                                symbols => [qw/hugo R_50/],
+                                limit   => 40 - 0.01,
+                                name    => 'test7',
+                            },
+                            {    # passes  (count only the one bet w/ sym=R_50, USD 20 + USD 20 for the bet to be bought => limit=40)
+                                symbols => [qw/hugo R_50/],
+                                limit   => 40,
+                                name    => 'test8',
+                            },
+                        ],
+                    },
+                };
+            },
             [
-            BI011 => 'ERROR:  specific turnover limit reached: test1, test3, test5, test7',
+                BI011 => 'ERROR:  specific turnover limit reached: test1, test3, test5, test7',
             ],
-            'specific turnover limit reached: test1, test3, test5, test7';
+            'specific turnover limit reached: test1, test3, test5, test7'
+        );
 
-        dies_ok {
-            my ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd, +{
-                expiry_daily => 1,
-                limits       => {
-                    max_turnover             => 100,
-                    max_losses               => 100,
-                    specific_turnover_limits => [{    # fails
-                            bet_type => [qw/CALL PUT DUMMY CLUB/],
-                            symbols  => [qw/frxUSDJPY frxUSDGBP R_50/],
-                            limit    => 20 - 0.01,
-                            daily    => 1,
-                            name     => 'test1',
-                        },
-                        {    # passes
-                            bet_type => [qw/CALL PUT DUMMY CLUB/],
-                            symbols  => [qw/frxUSDJPY frxUSDGBP R_50/],
-                            limit    => 20,
-                            daily    => 1,
-                            name     => 'test2',
-                        },
-                    ],
-                },
-            };
-        }
-        'specific turnover validation failed';
-        is_deeply $@,
+        is_deeply(
+            exception {
+                buy_one_bet $acc_usd, +{
+                    expiry_daily => 1,
+                    limits       => {
+                        max_turnover             => 100,
+                        max_losses               => 100,
+                        specific_turnover_limits => [{    # fails
+                                bet_type => [qw/CALL PUT DUMMY CLUB/],
+                                symbols  => [qw/frxUSDJPY frxUSDGBP R_50/],
+                                limit    => 20 - 0.01,
+                                daily    => 1,
+                                name     => 'test1',
+                            },
+                            {    # passes
+                                bet_type => [qw/CALL PUT DUMMY CLUB/],
+                                symbols  => [qw/frxUSDJPY frxUSDGBP R_50/],
+                                limit    => 20,
+                                daily    => 1,
+                                name     => 'test2',
+                            },
+                        ],
+                    },
+                };
+            },
             [
-            BI011 => 'ERROR:  specific turnover limit reached: test1',
+                BI011 => 'ERROR:  specific turnover limit reached: test1',
             ],
-            'specific turnover limit reached: test1';
+            'specific turnover limit reached: test1'
+        );
 
-        dies_ok {
-            my ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd, +{
-                limits => {
-                    max_turnover             => 100,
-                    max_losses               => 100,
-                    specific_turnover_limits => [{    # passes
-                            bet_type => [qw/CALL PUT DUMMY CLUB/],
-                            symbols  => [qw/frxUSDJPY frxUSDGBP R_50/],
-                            limit    => 100 - 0.01,
-                            daily    => 1,
-                            name     => 'test1',
-                        },
-                        {    # fails
-                            bet_type => [qw/CALL PUT DUMMY CLUB/],
-                            symbols  => [qw/frxUSDJPY frxUSDGBP R_50/],
-                            limit    => 100 - 0.01,
-                            daily    => 0,
-                            name     => 'test2',
-                        },
-                        {    # passes
-                            bet_type => [qw/CALL PUT DUMMY CLUB/],
-                            symbols  => [qw/frxUSDJPY frxUSDGBP R_50/],
-                            limit    => 100,
-                            daily    => 0,
-                            name     => 'test1',
-                        },
-                    ],
-                },
-            };
-        }
-        'specific turnover validation failed';
-        is_deeply $@,
+        is_deeply(
+            exception {
+                buy_one_bet $acc_usd, +{
+                    limits => {
+                        max_turnover             => 100,
+                        max_losses               => 100,
+                        specific_turnover_limits => [{    # passes
+                                bet_type => [qw/CALL PUT DUMMY CLUB/],
+                                symbols  => [qw/frxUSDJPY frxUSDGBP R_50/],
+                                limit    => 100 - 0.01,
+                                daily    => 1,
+                                name     => 'test1',
+                            },
+                            {    # fails
+                                bet_type => [qw/CALL PUT DUMMY CLUB/],
+                                symbols  => [qw/frxUSDJPY frxUSDGBP R_50/],
+                                limit    => 100 - 0.01,
+                                daily    => 0,
+                                name     => 'test2',
+                            },
+                            {    # passes
+                                bet_type => [qw/CALL PUT DUMMY CLUB/],
+                                symbols  => [qw/frxUSDJPY frxUSDGBP R_50/],
+                                limit    => 100,
+                                daily    => 0,
+                                name     => 'test1',
+                            },
+                        ],
+                    },
+                };
+            },
             [
-            BI011 => 'ERROR:  specific turnover limit reached: test2',
+                BI011 => 'ERROR:  specific turnover limit reached: test2',
             ],
-            'specific turnover limit reached: test2';
+            'specific turnover limit reached: test2'
+        );
 
         lives_ok {
             my ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd, +{
@@ -860,37 +861,37 @@ SKIP: {
         #
         #     80 (realized loss) + 20 (current contract)
 
-        dies_ok {
-            my ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd,
-                +{
-                limits => {
-                    max_7day_turnover => 100 - 0.01,
-                    max_7day_losses   => 100 - 0.01,
-                },
-                };
-        }
-        '7day turnover validation failed';
-        is_deeply $@,
+        is_deeply(
+            exception {
+                buy_one_bet $acc_usd,
+                    +{
+                    limits => {
+                        max_7day_turnover => 100 - 0.01,
+                        max_7day_losses   => 100 - 0.01,
+                    },
+                    };
+            },
             [
-            BI013 => 'ERROR:  maximum self-exclusion 7 day turnover limit exceeded',
+                BI013 => 'ERROR:  maximum self-exclusion 7 day turnover limit exceeded',
             ],
-            'maximum self-exclusion 7 day turnover limit exceeded';
+            'maximum self-exclusion 7 day turnover limit exceeded'
+        );
 
-        dies_ok {
-            my ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd,
-                +{
-                limits => {
-                    max_7day_turnover => 100,
-                    max_7day_losses   => 100 - 0.01,
-                },
-                };
-        }
-        '7day turnover validation failed';
-        is_deeply $@,
+        is_deeply(
+            exception {
+                buy_one_bet $acc_usd,
+                    +{
+                    limits => {
+                        max_7day_turnover => 100,
+                        max_7day_losses   => 100 - 0.01,
+                    },
+                    };
+            },
             [
-            BI014 => 'ERROR:  maximum self-exclusion 7 day limit on losses exceeded',
+                BI014 => 'ERROR:  maximum self-exclusion 7 day limit on losses exceeded',
             ],
-            'maximum self-exclusion 7 day limit on losses exceeded';
+            'maximum self-exclusion 7 day limit on losses exceeded'
+        );
 
         lives_ok {
             my ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd,
@@ -908,37 +909,37 @@ SKIP: {
         # now we have one open bet for USD 20. So, we should raise the limits
         # accordingly to buy the next
 
-        dies_ok {
-            my ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd,
-                +{
-                limits => {
-                    max_7day_turnover => 120 - 0.01,
-                    max_7day_losses   => 120 - 0.01,
-                },
-                };
-        }
-        '7day turnover validation failed (with open bet)';
-        is_deeply $@,
+        is_deeply(
+            exception {
+                buy_one_bet $acc_usd,
+                    +{
+                    limits => {
+                        max_7day_turnover => 120 - 0.01,
+                        max_7day_losses   => 120 - 0.01,
+                    },
+                    };
+            },
             [
-            BI013 => 'ERROR:  maximum self-exclusion 7 day turnover limit exceeded',
+                BI013 => 'ERROR:  maximum self-exclusion 7 day turnover limit exceeded',
             ],
-            'maximum self-exclusion 7 day turnover limit exceeded (with open bet)';
+            'maximum self-exclusion 7 day turnover limit exceeded (with open bet)'
+        );
 
-        dies_ok {
-            my ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd,
-                +{
-                limits => {
-                    max_7day_turnover => 120,
-                    max_7day_losses   => 120 - 0.01,
-                },
-                };
-        }
-        '7day turnover validation failed (with open bet)';
-        is_deeply $@,
+        is_deeply(
+            exception {
+                buy_one_bet $acc_usd,
+                    +{
+                    limits => {
+                        max_7day_turnover => 120,
+                        max_7day_losses   => 120 - 0.01,
+                    },
+                    };
+            },
             [
-            BI014 => 'ERROR:  maximum self-exclusion 7 day limit on losses exceeded',
+                BI014 => 'ERROR:  maximum self-exclusion 7 day limit on losses exceeded',
             ],
-            'maximum self-exclusion 7 day limit on losses exceeded (with open bet)';
+            'maximum self-exclusion 7 day limit on losses exceeded (with open bet)'
+        );
 
         lives_ok {
             my ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd,
@@ -1042,37 +1043,37 @@ SKIP: {
         #
         #     80 (realized loss) + 20 (current contract)
 
-        dies_ok {
-            my ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd,
-                +{
-                limits => {
-                    max_30day_turnover => 100 - 0.01,
-                    max_30day_losses   => 100 - 0.01,
-                },
-                };
-        }
-        '30day turnover validation failed';
-        is_deeply $@,
+        is_deeply(
+            exception {
+                buy_one_bet $acc_usd,
+                    +{
+                    limits => {
+                        max_30day_turnover => 100 - 0.01,
+                        max_30day_losses   => 100 - 0.01,
+                    },
+                    };
+            },
             [
-            BI016 => 'ERROR:  maximum self-exclusion 30 day turnover limit exceeded',
+                BI016 => 'ERROR:  maximum self-exclusion 30 day turnover limit exceeded',
             ],
-            'maximum self-exclusion 30 day turnover limit exceeded';
+            'maximum self-exclusion 30 day turnover limit exceeded'
+        );
 
-        dies_ok {
-            my ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd,
-                +{
-                limits => {
-                    max_30day_turnover => 100,
-                    max_30day_losses   => 100 - 0.01,
-                },
-                };
-        }
-        '30day turnover validation failed';
-        is_deeply $@,
+        is_deeply(
+            exception {
+                buy_one_bet $acc_usd,
+                    +{
+                    limits => {
+                        max_30day_turnover => 100,
+                        max_30day_losses   => 100 - 0.01,
+                    },
+                    };
+            },
             [
-            BI017 => 'ERROR:  maximum self-exclusion 30 day limit on losses exceeded',
+                BI017 => 'ERROR:  maximum self-exclusion 30 day limit on losses exceeded',
             ],
-            'maximum self-exclusion 30 day limit on losses exceeded';
+            'maximum self-exclusion 30 day limit on losses exceeded'
+        );
 
         lives_ok {
             my ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd,
@@ -1090,37 +1091,37 @@ SKIP: {
         # now we have one open bet for USD 20. So, we should raise the limits
         # accordingly to buy the next
 
-        dies_ok {
-            my ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd,
-                +{
-                limits => {
-                    max_30day_turnover => 120 - 0.01,
-                    max_30day_losses   => 120 - 0.01,
-                },
-                };
-        }
-        '30day turnover validation failed (with open bet)';
-        is_deeply $@,
+        is_deeply(
+            exception {
+                buy_one_bet $acc_usd,
+                    +{
+                    limits => {
+                        max_30day_turnover => 120 - 0.01,
+                        max_30day_losses   => 120 - 0.01,
+                    },
+                    };
+            },
             [
-            BI016 => 'ERROR:  maximum self-exclusion 30 day turnover limit exceeded',
+                BI016 => 'ERROR:  maximum self-exclusion 30 day turnover limit exceeded',
             ],
-            'maximum self-exclusion 30 day turnover limit exceeded (with open bet)';
+            'maximum self-exclusion 30 day turnover limit exceeded (with open bet)'
+        );
 
-        dies_ok {
-            my ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd,
-                +{
-                limits => {
-                    max_30day_turnover => 120,
-                    max_30day_losses   => 120 - 0.01,
-                },
-                };
-        }
-        '30day turnover validation failed (with open bet)';
-        is_deeply $@,
+        is_deeply(
+            exception {
+                buy_one_bet $acc_usd,
+                    +{
+                    limits => {
+                        max_30day_turnover => 120,
+                        max_30day_losses   => 120 - 0.01,
+                    },
+                    };
+            },
             [
-            BI017 => 'ERROR:  maximum self-exclusion 30 day limit on losses exceeded',
+                BI017 => 'ERROR:  maximum self-exclusion 30 day limit on losses exceeded',
             ],
-            'maximum self-exclusion 30 day limit on losses exceeded (with open bet)';
+            'maximum self-exclusion 30 day limit on losses exceeded (with open bet)'
+        );
 
         lives_ok {
             my ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd,
@@ -1202,21 +1203,21 @@ SKIP: {
         # limit = realized_profit + potential_profit
         #       = 60 + 40 = 100
 
-        dies_ok {
-            my ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd,
-                +{
-                payout_price => 60,
-                limits       => {
-                    max_daily_profit => 100 - 0.01,
-                },
-                };
-        }
-        'max_profit';
-        is_deeply $@,
+        is_deeply(
+            exception {
+                buy_one_bet $acc_usd,
+                    +{
+                    payout_price => 60,
+                    limits       => {
+                        max_daily_profit => 100 - 0.01,
+                    },
+                    };
+            },
             [
-            BI018 => 'ERROR:  maximum daily profit limit exceeded',
+                BI018 => 'ERROR:  maximum daily profit limit exceeded',
             ],
-            'maximum daily profit limit exceeded';
+            'maximum daily profit limit exceeded'
+        );
 
         lives_ok {
             my ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd,
@@ -1245,22 +1246,22 @@ SKIP: {
         # limit = realized_profit + potential_profit
         #       = 60 + 40 + 30 = 130
 
-        dies_ok {
-            my ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd,
-                +{
-                buy_price    => 30,
-                payout_price => 60,
-                limits       => {
-                    max_daily_profit => 130 - 0.01,
-                },
-                };
-        }
-        'max_profit';
-        is_deeply $@,
+        is_deeply(
+            exception {
+                buy_one_bet $acc_usd,
+                    +{
+                    buy_price    => 30,
+                    payout_price => 60,
+                    limits       => {
+                        max_daily_profit => 130 - 0.01,
+                    },
+                    };
+            },
             [
-            BI018 => 'ERROR:  maximum daily profit limit exceeded',
+                BI018 => 'ERROR:  maximum daily profit limit exceeded',
             ],
-            'maximum daily profit limit exceeded (with open bet)';
+            'maximum daily profit limit exceeded (with open bet)'
+        );
 
         lives_ok {
             my ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd,
@@ -1288,22 +1289,22 @@ SKIP: {
         # limit = realized_profit + potential_profit
         #       = 60 + 70 + 30 = 160
 
-        dies_ok {
-            my ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd,
-                +{
-                buy_price    => 30,
-                payout_price => 60,
-                limits       => {
-                    max_daily_profit => 160 - 0.01,
-                },
-                };
-        }
-        'max_profit';
-        is_deeply $@,
+        is_deeply(
+            exception {
+                buy_one_bet $acc_usd,
+                    +{
+                    buy_price    => 30,
+                    payout_price => 60,
+                    limits       => {
+                        max_daily_profit => 160 - 0.01,
+                    },
+                    };
+            },
             [
-            BI018 => 'ERROR:  maximum daily profit limit exceeded',
+                BI018 => 'ERROR:  maximum daily profit limit exceeded',
             ],
-            'maximum daily profit limit exceeded (with 2 open bets)';
+            'maximum daily profit limit exceeded (with 2 open bets)'
+        );
 
         lives_ok {
             my ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd,
@@ -1493,12 +1494,10 @@ subtest 'batch_buy', sub {
     }
     'sell_by_shortcode';
 
-    dies_ok {
+    throws_ok {
         my $res = buy_multiple_bets [$acc1, $acc4, $acc3];
     }
-    'buy_multiple_bets with differing currencies dies';
-    # note "exception is $@";
-    like $@, qr/^invalid currency/i, 'invalid currency';
+    qr/^invalid currency/i, 'buy_multiple_bets with differing currencies dies';
 };
 
 done_testing;

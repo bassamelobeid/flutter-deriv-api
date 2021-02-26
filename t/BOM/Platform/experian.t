@@ -1,6 +1,7 @@
 use strict;
 use warnings;
 
+use BOM::Test;
 use Test::MockTime qw(set_fixed_time restore_time);
 set_fixed_time("939988800");
 use Test::Most 'no_plan';
@@ -109,8 +110,7 @@ subtest 'Response' => sub {
         client    => $client,
         api_proxy => 'http://localhost:1'
     );
-    eval { $proveid->get_result; };
-    ok($@ !~ /ProveID/, $test);
+    throws_ok { $proveid->get_result; } qr/^Connection error$/, $test;
 
     for my $entry (@$entries) {
         subtest $entry => sub {

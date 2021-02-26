@@ -24,10 +24,11 @@ sub create_account {
     my $args = shift;
     my ($user, $details) = @{$args}{'user', 'details'};
 
-    my $client = eval { $user->create_client(%$details) };
-
-    unless ($client) {
-        warn "Real: create_client exception [$@]";
+    my $client;
+    try {
+        $client = $user->create_client(%$details);
+    } catch ($e) {
+        warn "Real: create_client exception [$e]";
         return {error => 'invalid'};
     }
 

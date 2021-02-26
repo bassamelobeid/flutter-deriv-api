@@ -280,8 +280,7 @@ sub get_turnover_limit_parameters {
                     $params->{symbols} = [
                         $svg_lc->basic_offerings($offerings_config)->query({market => [split ',', $_->{market} =~ s/\s//gr]}, ['underlying_symbol'])];
                 }
-            } catch {
-                my $err = $@;
+            } catch ($err) {
                 die if $err !~ m/^LANDING_COMPANY_DOES_NOT_HAVE_OFFERINGS/;
 
                 $params->{symbols} = [];
@@ -292,8 +291,7 @@ sub get_turnover_limit_parameters {
                     $params->{bet_type} =
                         [$svg_lc->basic_offerings($offerings_config)->query({contract_category => $_->{contract_category}}, ['contract_type'])];
                 }
-            } catch {
-                my $err = $@;
+            } catch ($err) {
                 die if $err !~ m/^LANDING_COMPANY_DOES_NOT_HAVE_OFFERINGS/;
 
                 $params->{bet_type} = [];
@@ -447,8 +445,7 @@ sub get_current_profile_definitions {
 
         @markets =
             map { Finance::Asset::Market::Registry->get($_) } $offerings_obj->values_for_key('market');
-    } catch {
-        my $err = $@;
+    } catch ($err) {
         die if $err !~ m/^LANDING_COMPANY_DOES_NOT_HAVE_OFFERINGS/;
 
         return {};

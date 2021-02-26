@@ -124,8 +124,8 @@ sub create_account {
 
         $client = $type eq 'wallet' ? $user->create_wallet(%args) : $user->create_client(%args);
 
-    } catch {
-        warn("Virtual: create_client err [$@]");
+    } catch ($e) {
+        warn("Virtual: create_client err [$e]");
         return {error => {code => 'invalid'}};
     }
     $client->deposit_virtual_funds($source, localize('Virtual money credit to account'));
