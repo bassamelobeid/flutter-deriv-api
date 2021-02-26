@@ -785,7 +785,7 @@ sub build_client_warning_message {
                 . $output_rows->{'code'} . '" />' . '</td>'
                 . '<td align="left">'
                 . '<strong style="color:'
-                . $output_rows->{'warning'}. '">'
+                . $output_rows->{'warning'} . '">'
                 . (uc $output_rows->{'section'})
                 . '</strong></td>'
                 . '<td><b>'
