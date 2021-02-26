@@ -79,8 +79,8 @@ sub get_clients_with_only_one_freegift_transaction_and_inactive {
                 return @inner_no_used_gift_clients;
             });
         return \@no_used_gift_clients;
-    } catch {
-        Carp::croak("BOM::Database::DataMapper::Payment::FreeGift -  [$@]");
+    } catch ($e) {
+        Carp::croak("BOM::Database::DataMapper::Payment::FreeGift -  [$e]");
     }
 
 }

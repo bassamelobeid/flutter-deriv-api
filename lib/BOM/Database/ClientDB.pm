@@ -169,8 +169,8 @@ sub getall_arrayref {
     my @result;
     try {
         @result = map { $decoder->decode($_->[0]) } @$result;
-    } catch {
-        die "Result must be always rows of JSON : $@";
+    } catch ($e) {
+        die "Result must be always rows of JSON : $e";
     }
 
     return \@result;

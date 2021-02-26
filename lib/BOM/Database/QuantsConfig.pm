@@ -267,9 +267,9 @@ sub set_global_limit {
                                             $market,               $contract_group, $expiry_type,        $barrier_type,
                                             $args->{limit_amount}, $comment,        $args->{start_time}, $args->{end_time}]);
                                 }
-                            } catch {
+                            } catch ($e) {
                                 #The $error should always has value, but just for safe use 'UNKNOW_ERROR' as default
-                                my $error = $@ || 'UNKNOW_ERROR';
+                                my $error = $e || 'UNKNOW_ERROR';
                                 ## Catch known date/time errors
                                 if ($error =~ /field value out of range|invalid input syntax/) {
                                     die "Sorry, that is not a valid time.\n";

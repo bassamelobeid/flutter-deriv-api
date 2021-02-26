@@ -7,6 +7,7 @@ use DBI;
 use Getopt::Long;
 use File::Path qw/make_path/;
 use Time::HiRes ();
+use Syntax::Keyword::Try;
 
 $| = 1;
 my $init   = 'no';
@@ -309,9 +310,12 @@ sub txn {
 }
 
 sub once {
-    my $res = eval { txn };
-    return $res if defined $res;
-    warn $@     if $@;
+    try {
+        my $res = eval { txn };
+        return $res if defined $res;
+    } catch ($e) {
+        warn $e;
+    }
     eval { $db->rollback };
     eval { $db->disconnect };
     undef $db;

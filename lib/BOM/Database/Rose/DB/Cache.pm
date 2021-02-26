@@ -24,8 +24,8 @@ sub finish_request_cycle {
             $db->dbh(undef);
             try {
                 $dbh->disconnect;
-            } catch {
-                warn __PACKAGE__ . ": while disconnecting from database: $@";
+            } catch ($e) {
+                warn __PACKAGE__ . ": while disconnecting from database: $e";
             }
         }
     }
