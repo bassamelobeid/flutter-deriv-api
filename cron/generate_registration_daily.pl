@@ -38,10 +38,10 @@ sub run {
 
     my $output_filepath = _get_output_file_path($reporter);
 
-    # we generate data only once
-    # it's the same data for both the brands
-    # myaffiliates to reflect data properly on their side expects
-    # all the registration - irrespective of brands
+# we generate data only once
+# it's the same data for both the brands
+# myaffiliates to reflect data properly on their side expects
+# all the registration - irrespective of brands
     my @csv = $reporter->activity();
 
     $output_filepath->spew_utf8(@csv);
@@ -100,7 +100,7 @@ sub _get_output_file_path {
     die "Unable to create $output_dir" unless $output_dir->exists;
 
     my $output_filepath = $reporter->output_file_path();
-    # check if file exist and is not of size 0
+# check if file exist and is not of size 0
     if ($output_filepath->exists and $output_filepath->stat->size > 0) {
         die "There is already a file $output_filepath with size "
             . $output_filepath->stat->size
@@ -138,8 +138,7 @@ sub _get_download_url {
             warn 'Failed to generate MyAffiliates registration report: ', "MyAffiliates registration report failed to generate zip archive";
             exit 1;
         }
-    } catch {
-        my $error = $@;
+    } catch ($error) {
         $statsd->event('Failed to generate MyAffiliates registration report',
             "MyAffiliates registration report failed to generate zip archive with $error");
         warn 'Failed to generate MyAffiliates registration report: ', "MyAffiliates registration report failed to generate zip archive with $error";

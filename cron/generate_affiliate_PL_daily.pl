@@ -91,8 +91,7 @@ while ($to_date->days_between($processing_date) >= 0) {
         $output_filepath->spew_utf8(@csv);
         $log->debugf('Data file name %s created.', $output_filepath);
         $zip->addFile($output_filepath->stringify, $output_filepath->basename);
-    } catch {
-        my $error = $@;
+    } catch ($error) {
         $statsd->event('Failed to generate MyAffiliates PL report', "MyAffiliates PL report failed to generate csv files due: $error");
         push @warn_msgs, "failed to generate report $output_filepath due: $error";
     }
@@ -119,8 +118,7 @@ try {
         warn 'Failed to generate MyAffiliates PL report: ', "MyAffiliates PL report failed to generate zip archive";
         exit 1;
     }
-} catch {
-    my $error = $@;
+} catch ($error) {
     $statsd->event('Failed to generate MyAffiliates PL report', "MyAffiliates PL report failed to generate zip archive with $error");
     warn 'Failed to generate MyAffiliates PL report: ', "MyAffiliates PL report failed to generate zip archive with $error";
     exit 1;
@@ -142,8 +140,7 @@ try {
             . $to_date->date_yyyymmdd,
         message => ["Find links to download CSV that was generated:\n" . $download_url],
     );
-} catch {
-    my $error = $@;
+} catch ($error) {
     $statsd->event('Failed to generate MyAffiliates PL report', "MyAffiliates PL report failed to upload to S3 due: $error");
     warn 'Failed to generate MyAffiliates PL report: ', "MyAffiliates PL report failed to upload to S3 due: $error";
     exit 1;

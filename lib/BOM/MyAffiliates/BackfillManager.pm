@@ -58,8 +58,8 @@ sub backfill_promo_codes {
         foreach my $client (@clients) {
             try {
                 push @report, $self->_process_client_with_promo_code($client);
-            } catch {
-                push @report, $client->loginid . ': Died when processing with error [' . $@ . ']';
+            } catch ($e) {
+                push @report, $client->loginid . ': Died when processing with error [' . $e . ']';
             }
         }
     }

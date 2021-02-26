@@ -140,8 +140,8 @@ sub _write_csv_files {
             foreach my $transaction (@{$transaction_set}) {
                 try {
                     print $fh _get_csv_line_from_txn($transaction);
-                } catch {
-                    push @parse_errors, $@;
+                } catch ($e) {
+                    push @parse_errors, $e;
                 }
             }
             close $fh;

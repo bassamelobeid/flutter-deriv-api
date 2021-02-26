@@ -83,8 +83,7 @@ try {
             warn 'Failed to generate MyAffiliates turnover report: ', "MyAffiliates turnover report failed to generate zip archive";
             exit 1;
         }
-    } catch {
-        my $error = $@;
+    } catch ($error) {
         $statsd->event('Failed to generate MyAffiliates turnover report', "MyAffiliates turnover report failed to generate zip archive with $error");
         warn 'Failed to generate MyAffiliates turnover report: ', "MyAffiliates turnover report failed to generate zip archive with $error";
         exit 1;
@@ -100,8 +99,7 @@ try {
         subject => 'CRON generate_affiliate_turnover_daily (' . $brand_object->name . ') for date ' . $processing_date->date_yyyymmdd,
         message => ["Find links to download CSV that was generated:\n" . $download_url],
     );
-} catch {
-    my $error = $@;
+} catch ($error) {
     DataDog::DogStatsd->new->event('Affiliate Turnover Report Failed', "TurnoverReporter failed to generate csv files due: $error");
     warn "TurnoverReporter failed to generate csv files due to: $error";
     exit 1;
