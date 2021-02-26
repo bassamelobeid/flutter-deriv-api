@@ -4,42 +4,42 @@ use strict;
 use warnings;
 no indirect;
 
-use Syntax::Keyword::Try;
-use Scalar::Util q(blessed);
 use List::Util qw(any);
-use Time::HiRes qw();
-use Brands;
-
 use Log::Any::Adapter qw(Stderr), log_level => 'info';
+use Scalar::Util q(blessed);
+use Syntax::Keyword::Try;
+use Time::HiRes qw();
 
+use BOM::Config::Runtime;
+use BOM::Database::Rose::DB;
 use BOM::Platform::Context qw(localize);
 use BOM::Platform::Context::Request;
 use BOM::RPC::Registry;
-use BOM::User::Client;
-use BOM::Database::Rose::DB;
-use BOM::Config::Runtime;
-use BOM::RPC::v3::Utility qw(log_exception);
 use BOM::RPC::v3::Accounts;
-use BOM::RPC::v3::Static;
-use BOM::RPC::v3::TickStreamer;
-use BOM::RPC::v3::Transaction;
-use BOM::RPC::v3::MarketDiscovery;
+use BOM::RPC::v3::App;
 use BOM::RPC::v3::Authorize;
 use BOM::RPC::v3::Cashier;
-use BOM::RPC::v3::NewAccount;
 use BOM::RPC::v3::Contract;
-use BOM::RPC::v3::PortfolioManagement;
-use BOM::RPC::v3::App;
-use BOM::RPC::v3::MT5::Account;
-use BOM::RPC::v3::CopyTrading::Statistics;
 use BOM::RPC::v3::CopyTrading;
-use BOM::Transaction::Validation;
+use BOM::RPC::v3::CopyTrading::Statistics;
 use BOM::RPC::v3::DocumentUpload;
-use BOM::RPC::v3::Pricing;
 use BOM::RPC::v3::MarketData;
+use BOM::RPC::v3::MarketDiscovery;
+use BOM::RPC::v3::MT5::Account;
+use BOM::RPC::v3::NewAccount;
 use BOM::RPC::v3::Notification;
 use BOM::RPC::v3::P2P;
+use BOM::RPC::v3::PaymentMethods;
+use BOM::RPC::v3::PortfolioManagement;
+use BOM::RPC::v3::Pricing;
+use BOM::RPC::v3::Static;
+use BOM::RPC::v3::TickStreamer;
 use BOM::RPC::v3::Trading;
+use BOM::RPC::v3::Transaction;
+use BOM::RPC::v3::Utility qw(log_exception);
+use BOM::Transaction::Validation;
+use BOM::User::Client;
+use Brands;
 
 # TODO(leonerd): Maybe guard this by a flag of some kind so it isn't loaded by
 # default?
@@ -60,7 +60,7 @@ sub set_current_context {
     my $args = {};
     $args->{country_code} = $params->{country}  if exists $params->{country};
     $args->{language}     = $params->{language} if $params->{language};
-    $args->{source} = $params->{valid_source} // $params->{source};
+    $args->{source}       = $params->{valid_source} // $params->{source};
 
     $args->{brand_name} = Brands->new(
         name   => $params->{brand},

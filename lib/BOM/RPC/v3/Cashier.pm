@@ -34,7 +34,6 @@ use BOM::Platform::Doughflow qw( get_sportsbook get_doughflow_language_code_for 
 use BOM::Config;
 use BOM::Config::Runtime;
 use BOM::Config::PaymentAgent;
-use BOM::Platform::Event::Emitter;
 use BOM::Platform::Context qw (localize request);
 use BOM::Platform::Email qw(send_email);
 use BOM::User::AuditLog;
