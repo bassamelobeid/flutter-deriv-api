@@ -194,6 +194,54 @@ payments:
               description: 'Maximum number of active orders an advertiser may have for each type and currency pair combination.'
               default: 3
               global: 1
+        cancellation_grace_period:
+          isa: Num
+          description: 'A buyer may cancel an order within this number of minutes without negative consequences'
+          default: 10
+          global: 1         
+        cancellation_barring:
+          description: 'P2P cancellation barring parameters'
+          isa: section
+          contains:
+            count:
+              isa: Num
+              description: 'Advertiser will be temporarily barred after marking this number of cancellations within the period'
+              default: 3
+              global: 1
+            period:
+              isa: Num
+              description: 'Number of hours within which to count cancellations'
+              default: 24
+              global: 1
+            bar_time:
+              isa: Num
+              description: 'Number of hours to bar advertiser'
+              default: 72
+              global: 1
+        fraud_blocking:
+          description: 'P2P fraud blocking parameters'
+          isa: section
+          contains:
+            buy_count:
+              isa: Num
+              description: 'Advertiser will be disabled after this number of buyer fraud incidents within the period'
+              default: 3
+              global: 1
+            buy_period:
+              isa: Num
+              description: 'Number of days within which to count buyer fraud incidents. 0 is lifetime.'
+              default: 0
+              global: 1
+            sell_count:
+              isa: Num
+              description: 'Advertiser will be disabled after this number of seller fraud incidents within the period'
+              default: 3
+              global: 1
+            sell_period:
+              isa: Num
+              description: 'Number of days within which to count seller fraud incidents. 0 is lifetime.'
+              default: 0
+              global: 1
         credit_card_turnover_requirement:
           description: 'Non-PA client needs turnover at least this percentage of credit card deposits to be allowed to create sell orders and ads.'
           isa: Num
