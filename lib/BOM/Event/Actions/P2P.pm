@@ -73,6 +73,7 @@ sub advertiser_updated {
     my $client = BOM::User::Client->new({loginid => $data->{client_loginid}});
 
     my $details = $client->p2p_advertiser_info or return 0;
+    return 0 if $client->p2p_is_advertiser_blocked;
 
     # will be removed in websocket
     $details->{client_loginid} = $client->loginid;
