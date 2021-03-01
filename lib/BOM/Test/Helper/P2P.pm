@@ -9,6 +9,7 @@ use BOM::Config;
 use Carp;
 use Test::More;
 use Test::MockModule;
+use Date::Utility;
 
 my $advertiser_num;
 my $client_num;
@@ -112,6 +113,11 @@ sub create_order {
         contact_info => $param{contact_info},
     );
 
+    # NOW() in db will not be affected when we mock time in tests, so we need to adjust order creation time
+    if (time != CORE::time) {
+        $client->db->dbic->dbh->do('UPDATE p2p.p2p_order SET created_time = ? WHERE id =?', undef, Date::Utility->new->datetime, $order->{id});
+    }
+
     return $client, $order;
 }
 
@@ -126,8 +132,12 @@ sub ready_to_refund {
     my ($client, $order_id, $days_needed) = @_;
     $days_needed //= BOM::Config::Runtime->instance->app_config->payments->p2p->refund_timeout;
 
-    return $client->db->dbic->dbh->do("UPDATE p2p.p2p_order SET status='timed-out', expire_time = NOW() - INTERVAL ? WHERE id = ?",
-        undef, sprintf('%d days', $days_needed), $order_id);
+    return $client->db->dbic->dbh->do(
+        "UPDATE p2p.p2p_order SET status='timed-out', expire_time = ?::TIMESTAMP - INTERVAL ? WHERE id = ?",
+        undef,
+        Date::Utility->new->datetime,
+        sprintf('%d days', $days_needed), $order_id
+    );
 }
 
 sub set_order_status {
@@ -200,6 +210,22 @@ sub set_order_disputable {
     $client->db->dbic->run(
         fixup => sub {
             $_->selectrow_hashref('SELECT * FROM p2p.order_update(?, ?)', undef, $order_id, 'timed-out');
+        });
+}
+
+=head2 adjust_completion_rates
+
+Moves advertiser daily aggregrations $seconds seconds into the past.
+After calling this, you need to or cancel an order to update the advertiser's completion rate.
+
+=cut
+
+sub adjust_completion_rates {
+    my ($secs, $broker) = @_;
+    my $db = BOM::Database::ClientDB->new({broker_code => uc($broker // 'CR')})->db->dbic;
+    $db->run(
+        fixup => sub {
+            $_->do("UPDATE p2p.p2p_advertiser_totals_daily SET day = day - '1 second'::INTERVAL * ?", undef, $secs);
         });
 }
 
