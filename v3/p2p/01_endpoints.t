@@ -160,12 +160,8 @@ subtest 'create advertiser' => sub {
 
     $resp = $t->await::p2p_advertiser_info({p2p_advertiser_info => 1});
     test_schema('p2p_advertiser_info', $resp);
-    delete $resp->{p2p_advertiser_info}->@{
-        qw( daily_buy daily_sell daily_buy_limit daily_sell_limit
-            buy_trades_completed_30d buy_trades_refunded_30d release_time_avg_30d sell_trades_completed_30d total_orders )
-    };
 
-    cmp_deeply($resp->{p2p_advertiser_info}, $advertiser, 'advertiser info is correct');
+    cmp_deeply($resp->{p2p_advertiser_info}, superhashof($advertiser), 'advertiser info is correct');
 
     $resp = $t->await::p2p_advertiser_create({
             p2p_advertiser_create => 1,
@@ -178,25 +174,6 @@ subtest 'create advertiser' => sub {
             %advert_params
         })->{error};
     is $resp->{code}, 'AdvertiserNotApproved', 'Unapproved advertiser cannot create ad';
-
-    subtest 'p2p_advertiser_stats' => sub {
-
-        $resp = $t->await::p2p_advertiser_stats({
-            p2p_advertiser_stats => 1,
-        });
-        test_schema('p2p_advertiser_stats', $resp);
-
-        cmp_deeply(
-            $resp->{p2p_advertiser_stats},
-            $t->await::p2p_advertiser_stats({
-                    p2p_advertiser_stats => 1,
-                    id                   => $client_advertiser->p2p_advertiser_info->{id},
-                    days                 => 30,
-                }
-            )->{p2p_advertiser_stats},
-            'call params'
-        );
-    };
 };
 
 subtest 'update advertiser' => sub {
@@ -261,6 +238,23 @@ subtest 'update advertiser' => sub {
                 id                  => $advertiser->{id}});
         test_schema('p2p_advertiser_info', $resp);
     };
+};
+
+subtest 'blocked_until' => sub {
+    my $block_time = Date::Utility->new->plus_time_interval('1d');
+    $client_advertiser->db->dbic->dbh->do('UPDATE p2p.p2p_advertiser SET blocked_until = ? WHERE id = ?', undef, $block_time->datetime, $advertiser->{id});
+    
+    $t->await::authorize({authorize => $token_advertiser});
+    $resp = $t->await::p2p_advertiser_info({p2p_advertiser_info => 1});
+    is $resp->{p2p_advertiser_info}{blocked_until}, $block_time->epoch, 'blocked_until returned in advertiser_info';
+    
+    $t->await::authorize({authorize => $token_client});
+    $resp = $t->await::p2p_advertiser_info({
+            p2p_advertiser_info => 1,
+            id                  => $advertiser->{id}});
+    is $resp->{p2p_advertiser_info}{blocked_until}, undef, 'blocked_until is hidden from others';
+    
+    $client_advertiser->db->dbic->dbh->do('UPDATE p2p.p2p_advertiser SET blocked_until = NULL WHERE id = ?', undef, $advertiser->{id});
 };
 
 subtest 'chat token' => sub {
