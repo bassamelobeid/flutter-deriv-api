@@ -153,6 +153,8 @@ our %ERROR_MAP = do {
         InvalidReasonForSeller           => localize("This reason doesn't apply to your case. Please choose another reason."),
         OrderUnderDispute                => localize('This order is under dispute.'),
         InvalidFinalStateForDispute      => localize('This order is complete and can no longer be disputed.'),
+        TemporaryBar =>
+            localize("You've been temporarily barred from using our services due to multiple cancellation attempts. Try again after [_1]."),
         SellProhibited => localize("You can't sell on DP2P because you haven't been active enough and have used a card to fund your account."),
     );
 };
@@ -387,19 +389,6 @@ p2p_rpc p2p_advertiser_adverts => sub {
 
     my $client = $args{client};
     return {list => $client->p2p_advertiser_adverts($args{params}{args}->%*)};
-};
-
-=head2 p2p_advertiser_stats
-
-Returns historical statistics of an advertiser.
-
-=cut
-
-p2p_rpc p2p_advertiser_stats => sub {
-    my (%args) = @_;
-
-    my $client = $args{client};
-    return $client->p2p_advertiser_stats($args{params}{args}->%*);
 };
 
 =head2 p2p_method_list
@@ -819,6 +808,8 @@ sub _check_client_access {
     die "NoCountry\n" unless $client->residence;
 
     die +{error_code => 'PermissionDenied'} if $client->status->has_any(@{RESTRICTED_CLIENT_STATUSES()});
+
+    die +{error_code => 'PermissionDenied'} if $client->p2p_is_advertiser_blocked;
 }
 
 1;

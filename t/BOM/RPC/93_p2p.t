@@ -34,6 +34,8 @@ $app_config->payments->p2p->enabled(1);
 $app_config->payments->p2p->available(1);
 $app_config->payments->p2p->available_for_countries([]);
 $app_config->payments->p2p->available_for_currencies($P2P_AVAILABLE_CURRENCIES);
+$app_config->payments->p2p->cancellation_barring->count(2);
+$app_config->payments->p2p->cancellation_barring->period(2);
 $app_config->payments->p2p->credit_card_turnover_requirement(0);
 
 my $email_advertiser = 'p2p_advertiser@test.com';
@@ -187,6 +189,13 @@ subtest 'P2P is available for only one client' => sub {
     $c->call_ok($dummy_method, $params)->has_no_system_error->has_no_error("P2P is available for whitelisted client");
 };
 $app_config->payments->p2p->available(1);
+
+subtest 'Client blocked' => sub {
+    my $mock_client = Test::MockModule->new('BOM::User::Client');
+    $mock_client->mock('p2p_is_advertiser_blocked' => sub { 1 });    
+    $c->call_ok($dummy_method, $params)->has_no_system_error->has_error->error_code_is('PermissionDenied', 'error code is PermissionDenied');
+};
+
 
 subtest 'Adverts' => sub {
     my $advert_params = {
@@ -773,39 +782,6 @@ subtest 'Advertiser stats' => sub {
     BOM::Test::Helper::P2P::reset_escrow();
 };
 
-subtest 'Advertiser stats' => sub {
-    BOM::Test::Helper::P2P::create_escrow();
-
-    my ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert(type => 'sell');
-    my ($client,     $order)  = BOM::Test::Helper::P2P::create_order(
-        advert_id => $advert->{id},
-    );
-    $client->p2p_order_confirm(id => $order->{id});
-    $advertiser->p2p_order_confirm(id => $order->{id});
-
-    my $client_token     = BOM::Platform::Token::API->new->create_token($client->loginid,     'test token');
-    my $advertiser_token = BOM::Platform::Token::API->new->create_token($advertiser->loginid, 'test token');
-
-    my $params = {
-        token => $advertiser_token,
-    };
-
-    my $res_adv = $c->call_ok(p2p_advertiser_stats => $params)->has_no_system_error->has_no_error->result;
-
-    is $res_adv->{sell_orders_count},  1, 'sell_orders_created';
-    is $res_adv->{total_orders_count}, 1, 'total_orders_created';
-
-    $params = {
-        token => $client_token,
-        args  => {id => $advertiser->p2p_advertiser_info->{id}},
-    };
-    my $res_cli = $c->call_ok(p2p_advertiser_stats => $params)->has_no_system_error->has_no_error->result;
-
-    cmp_deeply($res_adv, $res_cli, 'stats match when requested in different ways');
-
-    BOM::Test::Helper::P2P::reset_escrow();
-};
-
 subtest 'P2P Order Info' => sub {
     BOM::Test::Helper::P2P::create_escrow();
     my $amount = 100;
@@ -832,9 +808,9 @@ subtest 'P2P Order Info' => sub {
         local_currency   => 'myr',
         amount           => '100.00',
         client_details   => {
-            name    => 'test advertiser 39',
-            id      => re('\d+'),
-            loginid => 'CR10055'
+            loginid    => $client->loginid,
+            id         => re('\d+'),
+            name       => $client->p2p_advertiser_info->{name},
         },
         price_display  => 100,
         expiry_time    => re('\d+'),
@@ -849,9 +825,9 @@ subtest 'P2P Order Info' => sub {
         created_time       => re('\d+'),
         is_incoming        => 0,
         advertiser_details => {
-            loginid => 'CR10054',
-            id      => re('\d+'),
-            name    => 'test advertiser 38'
+            loginid    => $advertiser->loginid,
+            id         => re('\d+'),
+            name       => $advertiser->p2p_advertiser_info->{name},
         },
         contact_info     => 'Tel: 123456',
         type             => 'sell',
@@ -897,6 +873,24 @@ subtest 'RestrictedCountry error before PermissionDenied' => sub {
     $client->save;
     my $res = $c->call_ok(p2p_advertiser_info => $params)->has_no_system_error->result;
     is $res->{error}->{code}, 'RestrictedCountry', 'The expected error code is RestrictedCountry';
+};
+
+subtest 'cancellation barring' => sub {
+    $app_config->payments->p2p->cancellation_grace_period(0);
+    my ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert();
+    my ($client, $order) = BOM::Test::Helper::P2P::create_order(advert_id => $advert->{id}, amount => 1);
+    $client->p2p_order_cancel(id => $order->{id});
+    ($client, $order) = BOM::Test::Helper::P2P::create_order(advert_id => $advert->{id}, amount => 1, client => $client);
+    $client->p2p_order_cancel(id => $order->{id});
+    
+    my $client_token = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token');
+    $params = {
+        token => $client_token,
+        args => { advert_id => $advert->{id}, amount => 1 },
+    };
+    my $res = $c->call_ok(p2p_order_create => $params)->has_no_system_error->result;
+    is $res->{error}->{code}, 'TemporaryBar', 'The expected error code is TemporaryBar';
+    $app_config->payments->p2p->cancellation_grace_period(10);
 };
 
 # restore app config
