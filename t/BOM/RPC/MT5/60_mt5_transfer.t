@@ -276,7 +276,7 @@ subtest 'multi currency transfers' => sub {
                 fees_currency             => 'USD',
                 fees_percent              => num(2),
                 min_fee                   => num(0.01),
-                fee_calculated_by_percent => num(2),                
+                fee_calculated_by_percent => num(2),
             },
             'metadata saved correctly in transaction_details table',
         );
@@ -616,7 +616,7 @@ subtest 'Simple withdraw' => sub {
 
     my $demo_account_mock = Test::MockModule->new('BOM::RPC::v3::MT5::Account');
     $demo_account_mock->mock('_fetch_mt5_lc', sub { return LandingCompany::Registry::get('svg'); });
-    
+
     $client->status->set('mt5_withdrawal_locked', 'system', 'testing');
 
     my $params = {
@@ -651,9 +651,9 @@ subtest 'offer_to_clients' => sub {
     $client_cr->set_default_account('BTC');
     top_up $client_cr, BTC => 10;
     $user->add_client($client_cr);
-    
+
     my $demo_account_mock = Test::MockModule->new('BOM::RPC::v3::MT5::Account');
-    $demo_account_mock->mock('_fetch_mt5_lc', sub { return LandingCompany::Registry::get('svg'); });    
+    $demo_account_mock->mock('_fetch_mt5_lc', sub { return LandingCompany::Registry::get('svg'); });
 
     my $token = $m->create_token($client_cr->loginid, 'test token');
 

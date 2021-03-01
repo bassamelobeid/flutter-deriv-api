@@ -129,13 +129,13 @@ our %RejectedOnfidoReasons = do {
     no warnings 'redefine';
     local *localize = sub { die 'you probably wanted an arrayref for this localize() call' if @_ > 1; shift };
     (
-        'data_comparison.first_name'       => localize("The name on your document doesn't match your profile."),
-        'data_comparison.last_name'        => localize("The name on your document doesn't match your profile."),
-        'data_comparison.date_of_birth'    => localize("The date of birth on your document doesn't match your profile."),
-        'data_comparison.date_of_expiry'   => localize("Your document has expired."),
-        'data_comparison.issuing_country'  => localize("Your document appears to be invalid."),
-        'data_comparison.document_type'    => localize("Your document appears to be invalid."),
-        'data_comparison.document_numbers' => localize("Your document appears to be invalid."),
+        'data_comparison.first_name'                    => localize("The name on your document doesn't match your profile."),
+        'data_comparison.last_name'                     => localize("The name on your document doesn't match your profile."),
+        'data_comparison.date_of_birth'                 => localize("The date of birth on your document doesn't match your profile."),
+        'data_comparison.date_of_expiry'                => localize("Your document has expired."),
+        'data_comparison.issuing_country'               => localize("Your document appears to be invalid."),
+        'data_comparison.document_type'                 => localize("Your document appears to be invalid."),
+        'data_comparison.document_numbers'              => localize("Your document appears to be invalid."),
         'visual_authenticity.original_document_present' =>
             localize("Your document appears to be a scanned copy that contains markings or text that shouldn't be on your document."),
         'visual_authenticity.original_document_present.scan' => localize(
@@ -159,9 +159,9 @@ our %RejectedOnfidoReasons = do {
         'image_integrity.conclusive_document_quality' => localize("Your document appears to be invalid."),
         'image_integrity.conclusive_document_quality.missing_back' =>
             localize("The back of your document appears to be missing. Please include both sides of your identity document."),
-        'image_integrity.conclusive_document_quality.digital_document'   => localize("Your document appears to be a digital document."),
-        'image_integrity.conclusive_document_quality.punctured_document' => localize("Your document appears to be damaged or cropped."),
-        'image_integrity.conclusive_document_quality.corner_removed'     => localize("Your document appears to be damaged or cropped."),
+        'image_integrity.conclusive_document_quality.digital_document'                => localize("Your document appears to be a digital document."),
+        'image_integrity.conclusive_document_quality.punctured_document'              => localize("Your document appears to be damaged or cropped."),
+        'image_integrity.conclusive_document_quality.corner_removed'                  => localize("Your document appears to be damaged or cropped."),
         'image_integrity.conclusive_document_quality.watermarks_digital_text_overlay' =>
             localize("Your document contains markings or text that should not be on your document."),
         'image_integrity.conclusive_document_quality.abnormal_document_features' =>
@@ -1774,6 +1774,11 @@ sub _send_update_account_settings_email {
         ) ? localize("Yes") : localize("No"),
         _contains_any($updated_fields, 'request_professional_status')];
 
+    my $params;
+    my $contact_url = $brand->contact_url({
+            source   => $params->{source},
+            language => $params->{language}});
+
     send_email({
             to      => $current_client->email,
             subject => $brand->name eq 'deriv'
@@ -1792,6 +1797,7 @@ sub _send_update_account_settings_email {
                 name           => $current_client->first_name,
                 title          => localize('Your personal details have been updated'),
                 website_name   => $website_name,
+                contact_url    => $contact_url,
             },
         });
 }

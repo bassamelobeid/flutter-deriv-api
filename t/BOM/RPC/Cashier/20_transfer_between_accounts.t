@@ -1339,7 +1339,7 @@ subtest 'MT5' => sub {
         account_from => 'MTR' . $ACCOUNTS{'real\p01_ts01\financial\svg_std_usd'},
         account_to   => 'MTR' . $ACCOUNTS{'real\p01_ts01\financial\labuan_stp_usd'},
         currency     => "USD",
-        amount       => 180                                                     # this is the only deposit amount allowed by mock MT5
+        amount       => 180                                                            # this is the only deposit amount allowed by mock MT5
     };
     $rpc_ct->call_ok('transfer_between_accounts', $params)
         ->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'MT5->MT5 transfer error code')
@@ -1417,7 +1417,7 @@ subtest 'MT5' => sub {
 
     $params->{args}{account_from} = 'MTR' . $ACCOUNTS{'real\p01_ts01\financial\svg_std_usd'};
     $params->{args}{account_to}   = $test_client->loginid;
-    $params->{args}{amount}       = 150;                                                 # this is the only withdrawal amount allowed by mock MT5
+    $params->{args}{amount}       = 150;                                                      # this is the only withdrawal amount allowed by mock MT5
 
     _test_events_prepare();
 

@@ -34,7 +34,7 @@ subtest 'p2p order create and confirm' => sub {
     );
     my $client = BOM::Test::Helper::P2P::create_advertiser(balance => 100);
 
-    @emitted = ();
+    @emitted   = ();
     $call_args = {
         client => $client,
         args   => {
@@ -46,8 +46,7 @@ subtest 'p2p order create and confirm' => sub {
 
     cmp_deeply(
         \@emitted,
-        bag(
-            [
+        bag([
                 'p2p_order_created',
                 {
                     client_loginid => $client->loginid,
@@ -64,12 +63,11 @@ subtest 'p2p order create and confirm' => sub {
                 'p2p_advertiser_updated',
                 {
                     client_loginid => $advertiser->loginid,
-                }
-            ]             
+                }]
         ),
         'expected events for order create'
     );
-        
+
     @emitted = ();
     $call_args->{args} = {
         id => $order->{id},
@@ -83,11 +81,10 @@ subtest 'p2p order create and confirm' => sub {
         },
         'order is successfully confirmed'
     );
-        
+
     cmp_deeply(
         \@emitted,
-        [
-            [
+        [[
                 'p2p_order_updated',
                 {
                     client_loginid => $client->loginid,
@@ -96,18 +93,17 @@ subtest 'p2p order create and confirm' => sub {
                 },
             ],
 
-            
         ],
         'expected event for order confirmation'
     );
-        
-    @emitted = ();
+
+    @emitted             = ();
     $call_args->{client} = $advertiser;
     $call_args->{args}   = {
         id => $order->{id},
     };
     $result = BOM::RPC::v3::P2P::p2p_order_confirm($call_args);
-    cmp_deeply( 
+    cmp_deeply(
         $result,
         {
             id     => $order->{id},
@@ -118,8 +114,7 @@ subtest 'p2p order create and confirm' => sub {
 
     cmp_deeply(
         \@emitted,
-        bag(
-            [
+        bag([
                 'p2p_order_updated',
                 {
                     client_loginid => $advertiser->loginid,
@@ -137,8 +132,7 @@ subtest 'p2p order create and confirm' => sub {
                 'p2p_advertiser_updated',
                 {
                     client_loginid => $advertiser->loginid,
-                }
-            ]            
+                }]
         ),
         'expected event for order completion'
     );
@@ -151,7 +145,7 @@ subtest 'p2p order create and cancel' => sub {
     );
     my $client = BOM::Test::Helper::P2P::create_advertiser(balance => 100);
 
-    @emitted = ();
+    @emitted   = ();
     $call_args = {
         client => $client,
         args   => {
@@ -163,8 +157,7 @@ subtest 'p2p order create and cancel' => sub {
 
     cmp_deeply(
         \@emitted,
-        bag(
-            [
+        bag([
                 'p2p_order_created',
                 {
                     client_loginid => $client->loginid,
@@ -181,8 +174,7 @@ subtest 'p2p order create and cancel' => sub {
                 'p2p_advertiser_updated',
                 {
                     client_loginid => $advertiser->loginid,
-                }
-            ]            
+                }]
         ),
         'expected events for order create'
     );
@@ -201,17 +193,16 @@ subtest 'p2p order create and cancel' => sub {
         'order is successfully cancelled'
     );
 
-    cmp_deeply( 
+    cmp_deeply(
         \@emitted,
-        bag(
-            [
+        bag([
                 'p2p_order_updated',
                 {
                     client_loginid => $client->loginid,
                     order_id       => $order->{id},
                     order_event    => 'cancelled',
                 },
-                
+
             ],
             [
                 'p2p_advertiser_updated',
@@ -223,12 +214,11 @@ subtest 'p2p order create and cancel' => sub {
                 'p2p_advertiser_updated',
                 {
                     client_loginid => $advertiser->loginid,
-                }
-            ]              
+                }]
         ),
         'expected events emitted for cancellation'
     );
- 
+
 };
 
 subtest 'Order dispute (type buy)' => sub {
@@ -251,8 +241,7 @@ subtest 'Order dispute (type buy)' => sub {
 
     cmp_deeply(
         \@emitted,
-        [
-            [
+        [[
                 'p2p_order_updated',
                 {
                     client_loginid => $client->loginid,
@@ -262,7 +251,7 @@ subtest 'Order dispute (type buy)' => sub {
             ],
         ],
         'expected event for dispute'
-    );    
+    );
 };
 
 done_testing()
