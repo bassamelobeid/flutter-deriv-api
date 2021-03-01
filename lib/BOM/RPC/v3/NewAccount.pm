@@ -145,13 +145,14 @@ rpc "verify_email",
         return {status => 1};
     }
 
+    my $client;
     # If user is logged in, email for verification must belong to the logged in account
     if ($loginid) {
-        return {status => 1}
-            unless BOM::User::Client->new({
-                loginid      => $loginid,
-                db_operation => 'replica'
-            })->email eq $email;
+        $client = BOM::User::Client->new({
+            loginid      => $loginid,
+            db_operation => 'replica'
+        });
+        return {status => 1} unless $client->email eq $email;
     }
 
     if ($existing_user and $type eq 'reset_password') {
@@ -162,16 +163,16 @@ rpc "verify_email",
         } else {
             request_email($email, $verification->{account_opening_existing}->());
         }
-    } elsif ($existing_user and ($type eq 'paymentagent_withdraw' or $type eq 'payment_withdraw')) {
+    } elsif ($client and ($type eq 'paymentagent_withdraw' or $type eq 'payment_withdraw')) {
+        my $validation_error = BOM::RPC::v3::Utility::cashier_validation($client, $type);
+        return $validation_error if $validation_error;
 
         if (_is_impersonating_client($params->{token})) {
             return BOM::RPC::v3::Utility::create_error({
                     code              => 'Permission Denied',
                     message_to_client => localize('You can not perform a withdrawal while impersonating an account')});
-        } else {
-            request_email($email, $verification->{payment_withdraw}->());
         }
-
+        request_email($email, $verification->{payment_withdraw}->());
     } elsif ($existing_user and $type eq 'mt5_password_reset') {
         request_email($email, $verification->{mt5_password_reset}->());
     }

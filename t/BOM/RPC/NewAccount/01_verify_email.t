@@ -62,6 +62,7 @@ subtest 'Initialization' => sub {
             broker_code => 'CR',
         });
 
+        $client->account('USD');
         $user->add_client($client);
     }
     'Initial user and client';
@@ -147,13 +148,13 @@ subtest 'Reset password for not exists user' => sub {
 subtest 'Payment agent withdraw' => sub {
     mailbox_clear();
 
-    $params[1]->{args}->{verify_email} = $email;
+    $params[1]->{args}->{verify_email} = $client->email;
     $params[1]->{args}->{type}         = 'paymentagent_withdraw';
     $params[1]->{server_name}          = 'binary.com';
     $params[1]->{link}                 = 'binary.com/some_url';
 
     my $token = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token');
-    $params[1]->{params}->{token_details} = BOM::RPC::v3::Utility::get_token_details($token);
+    $params[1]->{token} = $token;
 
     $rpc_ct->call_ok(@params)
         ->has_no_system_error->has_no_error->result_is_deeply($expected_result, "It always should return 1, so not to leak client's email");
@@ -178,13 +179,13 @@ subtest 'Payment agent withdraw' => sub {
 
 subtest 'Payment withdraw' => sub {
     mailbox_clear();
-    $params[1]->{args}->{verify_email} = $email;
+    $params[1]->{args}->{verify_email} = $client->email;
     $params[1]->{args}->{type}         = 'payment_withdraw';
     $params[1]->{server_name}          = 'binary.com';
     $params[1]->{link}                 = 'binary.com/some_url';
 
     my $token = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token 1');
-    $params[1]->{params}->{token_details} = BOM::RPC::v3::Utility::get_token_details($token);
+    $params[1]->{token} = $token;
 
     $rpc_ct->call_ok(@params)
         ->has_no_system_error->has_no_error->result_is_deeply($expected_result, "It always should return 1, so not to leak client's email");
@@ -205,11 +206,13 @@ subtest 'Payment withdraw' => sub {
         subject => qr/Verify your withdrawal request/
     );
     ok !$msg, 'no email as token email different from passed email';
+    delete $params[1]->{token};
 };
 
 subtest 'Closed account' => sub {
 
     $client->status->set('disabled', 1, 'test disabled');
+
     mailbox_clear();
     $params[1]->{args}->{verify_email} = $email;
     $params[1]->{args}->{type}         = 'account_opening';
@@ -263,6 +266,30 @@ subtest 'Closed account' => sub {
         subject => qr/We couldn't verify your email address/
     );
     ok $msg, 'Correct email received for payment withdraw attempt on closed account';
+};
+
+subtest 'withdrawal validation' => sub {
+
+    $params[1]->{args}->{verify_email} = $client->email;
+    $params[1]->{server_name}          = 'binary.com';
+    $params[1]->{link}                 = 'binary.com/some_url';
+
+    my $token = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token 2');
+    $params[1]->{token} = $token;
+
+    my $mock_utility = Test::MockModule->new('BOM::RPC::v3::Utility');
+    $mock_utility->mock(cashier_validation => sub { 'dummy' });
+
+    for my $type (qw(payment_withdraw paymentagent_withdraw)) {
+        $params[1]->{args}->{type} = $type;
+        is $rpc_ct->call_ok(@params)->has_no_system_error->result, 'dummy', $type . ' has withdrawal validation';
+    }
+
+    for my $type (qw(account_opening reset_password mt5_password_reset)) {
+        $params[1]->{args}->{type} = $type;
+        $rpc_ct->call_ok(@params)
+            ->has_no_system_error->has_no_error->result_is_deeply($expected_result, $type . ' does not have withdrawal validation');
+    }
 };
 
 done_testing();

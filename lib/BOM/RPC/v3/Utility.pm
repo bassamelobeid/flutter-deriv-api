@@ -46,7 +46,9 @@ use BOM::Platform::Token;
 use BOM::Platform::Email qw(send_email);
 use BOM::MarketData qw(create_underlying);
 use BOM::Platform::Event::Emitter;
+use BOM::Platform::Client::CashierValidation;
 use BOM::User;
+use BOM::Transaction::Validation;
 
 use Exporter qw(import export_to_level);
 our @EXPORT_OK = qw(longcode log_exception);
@@ -1226,6 +1228,71 @@ sub client_crypto_deposit_address {
         });
 
     return $address // '';
+}
+
+=head2 cashier_validation
+
+Common validations for cashier and paymentagent_withdraw.
+These validations do not require amount or other details, because
+they are also run in verify_email for withdraw requests.
+Takes the following arguments as named parameters
+
+=over 4
+
+=item * C<client>: C<BOM::User::Client> object
+
+=item * C<type>: cashier action (deposit or withdraw) or verify_email type (payment_withdraw or paymentagent_withdraw)
+
+=item * C<source_bypass_verification>: boolean, whether to skip the doughflow deposits check for payment agent withdraw
+
+=back
+
+Returns an RPC error structure, or undef if no error.
+
+=cut
+
+sub cashier_validation {
+    my ($client, $type, $source_bypass_verification) = @_;
+
+    my $error_code = $type eq 'paymentagent_withdraw' ? 'PaymentAgentWithdrawError' : 'CashierForwardError';
+
+    my $error_sub = sub {
+        my ($message_to_client, $override_code) = @_;
+        return create_error({
+            code              => $override_code // $error_code,
+            message_to_client => $message_to_client,
+        });
+    };
+
+    return $error_sub->(localize('Terms and conditions approval is required.'), 'ASK_TNC_APPROVAL')
+        if $client->is_tnc_approval_required and $type eq 'deposit';
+
+    if ($type =~ /^(deposit|withdraw|payment_withdraw)$/) {
+        my $validation_error = BOM::RPC::v3::Utility::validation_checks($client, ['compliance_checks']);
+        return $validation_error if $validation_error;
+
+        return $error_sub->(localize('Sorry, cashier is temporarily unavailable due to system maintenance.'))
+            if BOM::Config::CurrencyConfig::is_cashier_suspended;
+    }
+
+    if ($type eq 'paymentagent_withdraw') {
+        my $app_config = BOM::Config::Runtime->instance->app_config;
+        if (BOM::Config::CurrencyConfig::is_cashier_suspended or $app_config->system->suspend->payment_agents) {
+            return $error_sub->(localize('Sorry, this facility is temporarily disabled due to system maintenance.'));
+        }
+
+        return $error_sub->(localize('Payment agent facilities are not available for this account.'))
+            unless $client->landing_company->allows_payment_agents;
+
+        return $error_sub->(localize('You are not authorized for withdrawals via payment agents.'))
+            unless ($source_bypass_verification or BOM::Transaction::Validation->new({clients => [$client]})->allow_paymentagent_withdrawal($client));
+    }
+
+    my $validation_type = $type =~ /^(payment_withdraw|paymentagent_withdraw)$/ ? 'withdraw' : $type;
+    my $validation      = BOM::Platform::Client::CashierValidation::validate($client->loginid, $validation_type, $error_code);
+    return create_error($validation->{error}) if exists $validation->{error};
+
+    return;
 }
 
 1;

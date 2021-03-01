@@ -16,6 +16,7 @@ subtest 'Do not send verification when Impersonating' => sub {
         password => 'asdasd'
     );
     $user->add_client($cr_client);
+    $cr_client->account('USD');
 
     my $oauth_model = BOM::Database::Model::OAuth->new;
 

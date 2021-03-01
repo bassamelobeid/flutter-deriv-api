@@ -941,7 +941,7 @@ for my $withdraw_currency (shuffle @crypto_currencies, @fiat_currencies) {
         $test               = 'Withdraw fails if client has a virtual broker';
         $testargs->{client} = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'VRTC'});
         $res                = BOM::RPC::v3::Cashier::paymentagent_withdraw($testargs);
-        is($res->{error}{code}, 'PermissionDenied', $test);
+        is($res->{error}{code}, 'PaymentAgentWithdrawError', $test);
         reset_withdraw_testargs();
 
         $test = 'Withdraw fails if given an invalid amount';
@@ -1007,9 +1007,11 @@ for my $withdraw_currency (shuffle @crypto_currencies, @fiat_currencies) {
         $test = 'Withdraw fails if client has no residence';
         my $old_residence = $Alice->residence;
         $Alice->residence('');
+        $Alice->save;
         $res = BOM::RPC::v3::Cashier::paymentagent_withdraw($testargs);
-        like($res->{error}{message_to_client}, qr/You cannot perform this action, please set your residence./, $test);
+        like($res->{error}{message_to_client}, qr/Please set your country of residence./, $test);
         $Alice->residence($old_residence);
+        $Alice->save;
 
         $test          = q{Withdraw fails if payment agent facility not allowed in client's country};
         $old_residence = $Alice->residence;

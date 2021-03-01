@@ -98,14 +98,10 @@ rpc "cashier", sub {
                 message_to_client => localize('Verify your withdraw request.'),
             });
         }
-    } else {
-        $validation_error = BOM::RPC::v3::Utility::validation_checks($params->{client}, ['validate_tnc']);
-        return $validation_error if $validation_error;
     }
 
-    my $client_loginid = $client->loginid;
-    my $validation     = BOM::Platform::Client::CashierValidation::validate($client_loginid, $action);
-    return BOM::RPC::v3::Utility::create_error($validation->{error}) if exists $validation->{error};
+    my $cashier_validation_error = BOM::RPC::v3::Utility::cashier_validation($client, $action);
+    return $cashier_validation_error if $cashier_validation_error;
 
     my ($brand, $currency) = (request()->brand, $client->default_account->currency_code());
 
@@ -152,7 +148,7 @@ rpc "cashier", sub {
     return $error_sub->(localize('Sorry, cashier is temporarily unavailable due to system maintenance.'))
         if BOM::Config::CurrencyConfig::is_cashier_suspended();
 
-    my $df_client = BOM::Platform::Client::DoughFlowClient->new({'loginid' => $client_loginid});
+    my $df_client = BOM::Platform::Client::DoughFlowClient->new({'loginid' => $client->loginid});
     # hit DF's CreateCustomer API
     my $ua = LWP::UserAgent->new(timeout => 20);
     $ua->ssl_opts(
@@ -193,7 +189,8 @@ rpc "cashier", sub {
             $client->add_note('DOUGHFLOW_ADDRESS_MISMATCH',
                       "The Doughflow server rejected the client's name.\n"
                     . "If everything is correct with the client's name, notify the development team.\n"
-                    . "Loginid: $client_loginid\n"
+                    . "Loginid: "
+                    . $client->loginid . "\n"
                     . "Doughflow response: [$errortext]");
 
             return $error_sub->(
@@ -571,8 +568,10 @@ rpc paymentagent_transfer => sub {
     my $amount_validation_error = validate_amount($amount, $currency);
     return $error_sub->($amount_validation_error) if $amount_validation_error;
 
-    my $rpc_error = _check_facility_availability(error_sub => $error_sub);
-    return $rpc_error if $rpc_error;
+    my $app_config = BOM::Config::Runtime->instance->app_config;
+    if ($app_config->system->suspend->payments or $app_config->system->suspend->payment_agents) {
+        return $error_sub->(localize('Sorry, this facility is temporarily disabled due to system maintenance.'));
+    }
 
     # This uses the broker_code field to access landing_companies.yml
     return $error_sub->(localize('The payment agent facility is not available for this account.'))
@@ -593,7 +592,7 @@ rpc paymentagent_transfer => sub {
         return $error_sub->(localize('You are not authorized for transfers via payment agents.'));
     }
 
-    $rpc_error = _validate_paymentagent_limits(
+    my $rpc_error = _validate_paymentagent_limits(
         error_sub     => $error_sub,
         payment_agent => $payment_agent,
         pa_loginid    => $client_fm->loginid,
@@ -898,8 +897,6 @@ rpc paymentagent_withdraw => sub {
     my $source_bypass_verification = $params->{source_bypass_verification} // 0;
     my $client                     = $params->{client};
 
-    return BOM::RPC::v3::Utility::permission_error() if $client->is_virtual;
-
     my ($website_name, $args) = @{$params}{qw/website_name args/};
 
     # validate token
@@ -932,28 +929,13 @@ rpc paymentagent_withdraw => sub {
         });
     };
 
-    # 2018/05/04: Currently this check is irrelevent, because only CR clients can use payment agents, and they
-    #   aren't required to accept T&Cs. It's here in case either of these situations change.
-    return $error_sub->(localize('Terms and conditions approval is required.')) if $client->is_tnc_approval_required;
+    my $withdrawal_validation_error = BOM::RPC::v3::Utility::cashier_validation($client, 'paymentagent_withdraw', $source_bypass_verification);
+    return $withdrawal_validation_error if $withdrawal_validation_error;
 
     my $amount_validation_error = validate_amount($amount, $currency);
     return $error_sub->($amount_validation_error) if $amount_validation_error;
 
-    my $rpc_error = _check_facility_availability(error_sub => $error_sub);
-    return $rpc_error if $rpc_error;
-
-    return $error_sub->(localize('Payment agent facilities are not available for this account.'))
-        unless $client->landing_company->allows_payment_agents;
-
-    return $error_sub->(localize('You are not authorized for withdrawals via payment agents.'))
-        unless ($source_bypass_verification or BOM::Transaction::Validation->new({clients => [$client]})->allow_paymentagent_withdrawal($client));
-
-    my $validation = BOM::Platform::Client::CashierValidation::validate($client_loginid, 'withdraw');
-    return BOM::RPC::v3::Utility::create_error($validation->{error}) if exists $validation->{error};
-
     return $error_sub->(localize('You cannot withdraw funds to the same account.')) if $client_loginid eq $paymentagent_loginid;
-
-    return $error_sub->(localize('You cannot perform this action, please set your residence.')) unless $client->residence;
 
     my ($paymentagent, $paymentagent_error);
     try {
@@ -985,7 +967,7 @@ rpc paymentagent_withdraw => sub {
         localize("You cannot perform this action, as [_1] is not default currency for payment agent account [_2].", $currency, $pa_client->loginid))
         if ($pa_client->currency ne $currency or not $pa_client->default_account);
 
-    $rpc_error = _validate_paymentagent_limits(
+    my $rpc_error = _validate_paymentagent_limits(
         error_sub     => $error_sub,
         payment_agent => $paymentagent,
         pa_loginid    => $pa_client->loginid,
@@ -997,13 +979,6 @@ rpc paymentagent_withdraw => sub {
     # check that the additional information does not exceeded the allowed limits
     return $error_sub->(localize('Further instructions must not exceed [_1] characters.', MAX_DESCRIPTION_LENGTH))
         if (length($further_instruction) > MAX_DESCRIPTION_LENGTH);
-
-    # check that both the client payment agent cashier is not locked
-    return $error_sub->(localize('Your account cashier is locked. Please contact us for more information.')) if $client->status->cashier_locked;
-
-    if (my @missing_requirements = $client->missing_requirements('withdrawal')) {
-        return BOM::RPC::v3::Utility::missing_details_error(details => \@missing_requirements);
-    }
 
     return $error_sub->(
         localize("You cannot perform the withdrawal to account [_1], as the payment agent's account is disabled.", $pa_client->loginid))
