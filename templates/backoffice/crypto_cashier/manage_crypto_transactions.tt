@@ -81,6 +81,10 @@
     .selection_display_text {
         padding: 0 10px;
     }
+    /* remove nested table row colors */
+    table tr td table tr, table tr td table tr input {
+        background: none !important;
+    }
 </style>
 
 <div class="card">
@@ -172,7 +176,7 @@
         [% PROCESS bulk_verify_controls %]
     [% END %]
     <div class="scrollable">
-    <table class="full-width border">
+    <table class="full-width border alternate">
         <thead>
             <tr>
                 [% IF view_action == 'search' %]
