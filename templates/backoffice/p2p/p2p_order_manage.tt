@@ -175,18 +175,38 @@
         <hr>
         <h3>Order under dispute</h3>
         
-        <form action="[% request.url_for('backoffice/p2p_order_manage.cgi', {broker => broker, order_id => order.id, disputer_loginid => order.disputer_loginid }) %]" method="post" class="card__content bg-lightgrey">
-            <p><label>Dispute raised by:</label>[% order.disputer_loginid %] ([% order.disputer_role %])</p>
-            <p><label>Dispute reason:</label>[% order.dispute_reason %]</p>
-            <p>Resolve in favour of:</p>
-            <div class="row">
-                <button class="btn btn--primary" type="submit" name="action" value="refund" onclick="return confirm('Are you sure? [% order.account_currency %] [% order.amount %] will be refunded to [% order.seller %] and order status will change to \'dispute-refunded\'. This will be counted as buyer fraud. This is irreversible.');">SELLER</button>
-                This will transfer [% order.account_currency %] [% order.amount %] from escrow [% escrow %] to seller [% order.seller %]. A fraud incident will be recorded against [% order.buyer %].
-            </div>
-            <div class="row">
-                <button class="btn btn--primary" type="submit" name="action" value="complete" onclick="return confirm('Are you sure? [% order.account_currency %] [% order.amount %] will credited to [% order.buyer %] and order status will change to \'dispute-completed\'. This will be counted as seller fraud. This is irreversible.');">BUYER</button>
-                This will transfer [% order.account_currency %] [% order.amount %] from escrow [% escrow %] to buyer [% order.buyer %]. A fraud incident will be recorded against [% order.seller %].
-            </div>
+        <form action="[% request.url_for('backoffice/p2p_order_manage.cgi', {broker => broker, order_id => order.id, disputer_loginid => order.disputer_loginid }) %]" method="post">
+        <input type="hidden" name="disputer" value="[% order.disputer_loginid %]">
+            
+        <table style="background:LightCoral;" cellpadding=5>
+        <tr>
+            <td><b>Dispute raised by</b></td>
+            <td>[% order.disputer_loginid %] ([% order.disputer_role %])</td>
+        </tr>
+        <tr>
+            <td><b>Dispute reason</b></td>
+            <td>[% order.dispute_reason %]</td>
+        </tr>
+        <tr>
+            <td><b>Fraud case</b></td>
+            <td>        
+                <select name="fraud" style="width: 70px;">
+                    <option value="1" selected>Yes</option>
+                    <option value="0">No</option>
+                </select>
+            </td>
+        </tr>
+        </table>
+        
+        <p>Resolve in favour of:</p>
+        <div class="row">
+            <button class="btn btn--primary" type="submit" name="action" value="refund" onclick="return confirm('Are you sure? [% order.account_currency %] [% order.amount %] will be refunded to [% order.seller %] and order status will change to \'dispute-refunded\'. This will be counted as buyer fraud. This is irreversible.');">SELLER</button>
+            This will transfer [% order.account_currency %] [% order.amount %] from escrow [% escrow %] to seller [% order.seller %]. A fraud incident will be recorded against [% order.buyer %] if 'Fraud Case' is 'yes'.
+        </div>
+        <div class="row">
+            <button class="btn btn--primary" type="submit" name="action" value="complete" onclick="return confirm('Are you sure? [% order.account_currency %] [% order.amount %] will credited to [% order.buyer %] and order status will change to \'dispute-completed\'. This will be counted as seller fraud. This is irreversible.');">BUYER</button>
+            This will transfer [% order.account_currency %] [% order.amount %] from escrow [% escrow %] to buyer [% order.buyer %]. A fraud incident will be recorded against [% order.seller %] if 'Fraud Case' is 'yes'.
+        </div>
         </form>
     [% END %]
 

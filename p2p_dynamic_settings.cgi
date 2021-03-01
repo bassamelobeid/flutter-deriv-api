@@ -40,6 +40,14 @@ my @setting_keys = qw(
     payments.p2p.available_for_countries
     payments.p2p.restricted_countries
     payments.p2p.available_for_currencies
+    payments.p2p.cancellation_grace_period
+    payments.p2p.cancellation_barring.count
+    payments.p2p.cancellation_barring.period
+    payments.p2p.cancellation_barring.bar_time
+    payments.p2p.fraud_blocking.buy_count
+    payments.p2p.fraud_blocking.buy_period
+    payments.p2p.fraud_blocking.sell_count
+    payments.p2p.fraud_blocking.sell_period
     payments.p2p.refund_timeout
     payments.p2p.disputed_timeout
     payments.p2p.credit_card_turnover_requirement

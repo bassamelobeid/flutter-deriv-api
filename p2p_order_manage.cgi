@@ -53,52 +53,15 @@ $chat_page = 1
 
 Bar('P2P Order details/management');
 
-if (my $action = $input{action} and $p2p_write) {
+if ($input{action} and $p2p_write) {
     try {
-        my $check = $db->run(
-            fixup => sub {
-                $_->selectrow_hashref('SELECT * FROM p2p.order_list(?,NULL,NULL,NULL)', undef, $input{order_id});
-            });
-
-        die "Order is in " . $check->{status} . " status and cannot be resolved now.\n"
-            unless $check->{status} eq 'disputed';
-        $escrow = get_escrow($broker, $check->{account_currency});
-        die "No escrow account is defined for " . $check->{account_currency} . ".\n" unless $escrow;
-
-        my $txn_time = Date::Utility->new->datetime;
-        my $staff    = BOM::Backoffice::Auth0::get_staffname();
-
-        # Both refund and complete are currently hardcoded with p_buyer_fault=TRUE and p_fraud=TRUE, which negatively affect completion rate.
-        # In https://trello.com/c/L71K579J/274-8-p2p-advertiserbarblock-30 this will be changed and CS will have the option to set no fraud.
-        if ($action eq 'refund') {
-            $db->run(
-                fixup => sub {
-                    $_->do('SELECT p2p.order_refund(?, ?, ?, ?, ?, ?, ?, ?)', undef, $input{order_id}, $escrow, 4, $staff, 't', $txn_time, 1, 1);
-                });
-        }
-
-        if ($action eq 'complete') {
-            $db->run(
-                fixup => sub {
-                    $_->do('SELECT p2p.order_complete(?, ?, ?, ?, ?, ?, ?)', undef, $input{order_id}, $escrow, 4, $staff, $txn_time, 1, 1);
-                });
-        }
-
-        BOM::Platform::Event::Emitter::emit(
-            p2p_order_updated => {
-                client_loginid => $input{disputer_loginid},
-                order_id       => $input{order_id},
-                order_event    => "dispute_$action",
-            });
-
-        for my $order_loginid ($check->{client_loginid}, $check->{advertiser_loginid}) {
-            BOM::Platform::Event::Emitter::emit(
-                p2p_advertiser_updated => {
-                    client_loginid => $order_loginid,
-                },
-            );
-        }
-
+        my $client = BOM::User::Client->new({loginid => $input{disputer}});
+        $client->p2p_resolve_order_dispute(
+            id     => $input{order_id},
+            action => $input{action},
+            fraud  => $input{fraud},
+            staff  => BOM::Backoffice::Auth0::get_staffname(),
+        );
     } catch {
         my $error = ref $@ eq 'ARRAY' ? join ', ', $@->@* : $@;
         print '<p class="error">' . $error . '</p>';
@@ -107,15 +70,8 @@ if (my $action = $input{action} and $p2p_write) {
 
 if ($input{dispute} and $p2p_write) {
     try {
-        my ($status) = $db->run(
-            fixup => sub {
-                $_->selectrow_array('SELECT status FROM p2p.order_list(?,NULL,NULL,NULL)', undef, $input{order_id});
-            });
+        die "Invalid dispute reason.\n" unless exists $dispute_reasons{$input{reason}};
 
-        die "Order is in $status status and cannot be disputed now.\n"
-            unless $status eq 'timed-out';
-        die "Invalid dispute reason.\n"
-            unless exists $dispute_reasons{$input{reason}};
         my $client = BOM::User::Client->new({loginid => $input{disputer}});
         $client->p2p_create_order_dispute(
             skip_livechat  => 1,
@@ -127,7 +83,6 @@ if ($input{dispute} and $p2p_write) {
         $error = join ', ', $@->@* if ref $@ eq 'ARRAY';
         $error = $@->{error_code}
             if ref $@ eq 'HASH' && defined $@->{error_code};
-
         print '<p class="error">' . $error . '</p>';
     }
 }

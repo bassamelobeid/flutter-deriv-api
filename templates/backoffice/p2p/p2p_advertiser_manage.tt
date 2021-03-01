@@ -24,6 +24,17 @@
                 <a class="link" href="[% request.url_for('backoffice/f_manager_history.cgi', { loginID => advertiser.client_loginid }) %]">Client statement</a>
             </td>            
         </tr>
+        <tr [% IF !advertiser.is_enabled %]style="background:#ffaaaa;"[% END %]>
+            <td>Enabled</td>
+            <td>
+                <select name="is_enabled">
+                    <option value="1" [% advertiser.is_enabled && 'selected' %]>YES</option>
+                    <option value="0" [% !advertiser.is_enabled && 'selected' %]>NO</option>
+                </select>
+                &nbsp;&nbsp;If NO, advertiser is completely banned from P2P Cashier.
+                <br/>Automatic ban after [% config.fraud_blocking.buy_count %] buy fraud cases in [% config.fraud_blocking.buy_period %] days or [% config.fraud_blocking.sell_count %] sell fraud cases in [% config.fraud_blocking.sell_period %] days.
+            </td>
+        </tr>        
         <tr>
             <td>Approved</td>
             <td>
@@ -31,6 +42,7 @@
                     <option value="1" [% advertiser.is_approved && 'selected' %]>YES</option>
                     <option value="0" [% !advertiser.is_approved && 'selected' %]>NO</option>
                 </select>
+                &nbsp;&nbsp;If YES, advertiser can create adverts and orders and their ads are not hidden
             </td>
         </tr> 
         <tr>
@@ -40,7 +52,14 @@
                     <option value="1" [% advertiser.is_listed && 'selected' %]>YES</option>
                     <option value="0" [% !advertiser.is_listed && 'selected' %]>NO</option>
                 </select>
-                (Ads will be listed when both this setting and APPROVED are YES)
+                &nbsp;&nbsp;Ads will be listed when this setting, ENABLED and APPROVED are all YES, and the advertiser blocked until time is passed.
+            </td>
+        </tr>
+        <tr [% IF advertiser.barred %]style="background:#ffaaaa;"[% END %]>
+            <td>Blocked until</td>
+            <td><input type="text" name="blocked_until" value="[% advertiser.blocked_until %]" size=24 data-lpignore="true" />
+            &nbsp;&nbsp;YYYY-MM-DD or YYYY-MM-DD HH:MM:SS, blank to clear
+            <br/>Advertiser will be barred for [% config.cancellation_barring.bar_time %] hours after [% config.cancellation_barring.count %] cancelled orders in [% config.cancellation_barring.period %] hours.
             </td>
         </tr>
         <tr>
@@ -110,15 +129,77 @@
         </tr>        
         <tr>
             <td>Sendbird ID</td>
-            <td> [% advertiser.chat_user_id %]</td>
+            <td>[% advertiser.chat_user_id %]</td>
         </tr>        
     </table>
     <br/>
-    <input type="hidden" name="current_name" value="[% advertiser.name %]"/>
     <input type="hidden" name="update_id" value="[% advertiser.id %]"/>
-    <button class="btn btn--primary" type="submit" name="update" value="1">Update advertiser</button>
+    <input type="hidden" name="current_name" value="[% advertiser.name %]"/>
+    <button style="width:150px;" type="submit" name="update" value="1">Update advertiser</button>
     </form>
+    
     <hr>
+    <h3>Statisics</h3>
+    
+    <table class="border" style="width:500px">
+        <tr>
+            <td style="width:50%">Total completed (lifetime)</td>
+            <td>[% stats.total_orders_count %]</td>
+        </tr>
+        <tr>
+            <td>30 day completion rate (buy + sell)</td>
+            <td>[% IF advertiser.total_completion_rate.defined %][% advertiser.total_completion_rate %]%[% ELSE %]no data[% END %]</td>
+        </tr>  
+    </table>
+    <br/>
+    
+    <form action="[% request.url_for('backoffice/p2p_advertiser_manage.cgi') %]" method="get">
+    <input type="hidden" name="id" value="[% advertiser.id %]"/>        
+    Generate stats for days: <input type="text" name="days" value="[% days %]" size=6 data-lpignore="true" /> (0 is lifetime)&nbsp;&nbsp;
+    <button type="submit" class="btn btn--primary">Get</button>
+    </form>
+    
+    <table class="border" style="width:500px">
+        <tr>
+            <td style="width:50%">Buy orders completed</td>
+            <td>[% stats.buy_completed_count %] ([% advertiser.account_currency %] [% stats.buy_completed_amount %])</td>
+        </tr>
+        <tr>
+            <td>Sell orders completed</td>
+            <td>[% stats.sell_completed_count %] ([% advertiser.account_currency %] [% stats.sell_completed_amount %])</td>
+        </tr>
+        <tr>
+            <td>Buy completion rate</td>
+            <td>[% IF stats.buy_completion_rate.defined %][% stats.buy_completion_rate %]%[% ELSE %]no data[% END %]</td>
+        </tr>
+        <tr>
+            <td>Sell completion rate</td>
+            <td>[% IF stats.sell_completion_rate.defined %][% stats.sell_completion_rate %]%[% ELSE %]no data[% END %]</td>
+        </tr>
+        <tr>
+            <td>Cancel time average</td>
+            <td>[% IF stats.cancel_time_avg.defined %][% stats.cancel_time_avg %][% ELSE %]no data[% END %]</td>
+        </tr>
+        <tr>
+            <td>Release time average</td>
+            <td>[% IF stats.release_time_avg.defined %][% stats.release_time_avg %][% ELSE %]no data[% END %]</td>
+        </tr>
+        <tr>
+            <td>Orders cancelled</td>
+            <td>[% stats.cancel_count %] ([% advertiser.account_currency %] [% stats.cancel_amount %])</td>
+        </tr>
+        <tr>
+            <td>Buy Fraud</td>
+            <td>[% stats.buy_fraud_count %] ([% advertiser.account_currency %] [% stats.buy_fraud_amount %])</td>
+        </tr>
+        <tr>
+            <td>Sell Fraud</td>
+            <td>[% stats.sell_fraud_count %] ([% advertiser.account_currency %] [% stats.sell_fraud_amount %])</td>
+        </tr>         
+    </table>
+    
+    <hr>
+
     <h3>Adverts</h3>
     [% IF ads.size %]
     [% range %]
@@ -191,8 +272,10 @@
                 <th scope="col">Operation</th>
                 <th scope="col">Change user</th>
                 <th scope="col">IP</th>
+                <th scope="col">Enabled</th>
                 <th scope="col">Approved</th>
                 <th scope="col">Listed</th>
+                <th scope="col">Blocked until</th>
                 <th scope="col">Band Level</th>
                 <th scope="col">CC Sell Auth</th>
                 <th scope="col">Name</th>
@@ -210,8 +293,8 @@
                 <td>[% item.pg_userid %]</td>
                 <td>[% item.remote_addr %]</td>
                 [% next = loop.next %]
-                [% FOREACH fld = ['is_approved','is_listed','trade_band','cc_sell_authorized','name','show_name','default_advert_description','payment_info','contact_info'] %]
-                    <td [% IF item.$fld != next.$fld %]class="bg-highlight"[% END %]>[% item.$fld %]</td>
+                [% FOREACH fld = ['is_enabled','is_approved','is_listed','blocked_until','trade_band','cc_sell_authorized','name','show_name','default_advert_description','payment_info','contact_info'] %]
+                    <td [% IF item.$fld != next.$fld %]style="bg-highlight;"[% END %]>[% item.$fld %]</td>
                 [% END %]                  
             </tr>
             [% END %]
