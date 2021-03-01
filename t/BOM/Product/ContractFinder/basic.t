@@ -35,8 +35,9 @@ subtest 'contract finder basic' => sub {
     );
 
     foreach my $data (@{$contracts->{available}}) {
-        if (all { $data->{$_} eq $expected_forward_starting_params{$_} } qw(contract_category expiry_type start_type) or
-            all { $data->{$_} eq $expected_forward_starting_params_callputequal{$_} } qw(contract_category expiry_type start_type)) {
+        if (   all { $data->{$_} eq $expected_forward_starting_params{$_} } qw(contract_category expiry_type start_type)
+            or all { $data->{$_} eq $expected_forward_starting_params_callputequal{$_} } qw(contract_category expiry_type start_type))
+        {
             ok exists $data->{forward_starting_options}, "forward starting options available for $data->{expiry_type} and $data->{contract_category}";
         } else {
 
