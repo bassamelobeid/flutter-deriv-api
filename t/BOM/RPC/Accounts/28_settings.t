@@ -170,16 +170,16 @@ $test_client_vr_3->set_default_account('USD');
 $test_client_vr_3->save;
 
 my $m              = BOM::Platform::Token::API->new;
-my $token          = $m->create_token($test_client->loginid, 'test token');
-my $token_cr       = $m->create_token($test_client_cr->loginid, 'test token');
-my $token_cr_2     = $m->create_token($test_client_cr_2->loginid, 'test token');
-my $token_cr_3     = $m->create_token($test_client_cr_3->loginid, 'test token');
+my $token          = $m->create_token($test_client->loginid,          'test token');
+my $token_cr       = $m->create_token($test_client_cr->loginid,       'test token');
+my $token_cr_2     = $m->create_token($test_client_cr_2->loginid,     'test token');
+my $token_cr_3     = $m->create_token($test_client_cr_3->loginid,     'test token');
 my $token_disabled = $m->create_token($test_client_disabled->loginid, 'test token');
-my $token_vr       = $m->create_token($test_client_vr->loginid, 'test token');
-my $token_mx       = $m->create_token($test_client_mx->loginid, 'test token');
-my $token_mlt      = $m->create_token($test_client_mlt->loginid, 'test token');
-my $token_mf       = $m->create_token($test_client_mf->loginid, 'test token');
-my $token_vr_3     = $m->create_token($test_client_vr_3->loginid, 'test token');
+my $token_vr       = $m->create_token($test_client_vr->loginid,       'test token');
+my $token_mx       = $m->create_token($test_client_mx->loginid,       'test token');
+my $token_mlt      = $m->create_token($test_client_mlt->loginid,      'test token');
+my $token_mf       = $m->create_token($test_client_mf->loginid,       'test token');
+my $token_vr_3     = $m->create_token($test_client_vr_3->loginid,     'test token');
 
 my $c = Test::BOM::RPC::QueueClient->new();
 
@@ -660,7 +660,7 @@ subtest 'set settings' => sub {
                 $params->{args} = {%full_args, citizen => $restricted_country};
                 $test_client->citizen('');
                 $test_client->save();
-                is($c->tcall($method, $params)->{status},                   1,                   'update successfully');
+                is($c->tcall($method,        $params)->{status},            1,                   'update successfully');
                 is($c->tcall('get_settings', {token => $token})->{citizen}, $restricted_country, "Restricted country value for citizenship");
 
             }
@@ -842,6 +842,30 @@ subtest 'set_settings on virtual account should not change real account settings
 
     my $expected_result = {$get_settings_cr->%*, email_consent => $params->{args}{email_consent}};
     is_deeply($result, $expected_result, 'CR account settings remain unchanged');
+};
+
+subtest 'set_setting with empty phone' => sub {
+    my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+        phone       => '',
+    });
+
+    my $user = BOM::User->create(
+        email    => 'testematil@example.com',
+        password => $hash_pwd,
+    );
+    $user->add_client($test_client);
+
+    my $m      = BOM::Platform::Token::API->new;
+    my $token  = $m->create_token($test_client->loginid, 'test token');
+    my $params = {
+        language   => 'EN',
+        token      => $token,
+        client_ip  => '127.0.0.1',
+        user_agent => 'agent',
+        args       => {email_consent => '0'}};
+
+    is($c->tcall('set_settings', $params)->{status}, 1, 'Set settings with empty phone changed successfully');
 };
 
 done_testing();

@@ -1616,7 +1616,7 @@ rpc set_settings => sub {
         $client->city($addressTown);
         $client->state($addressState)       if defined $addressState;                 # FIXME validate
         $client->postcode($addressPostcode) if defined $args->{'address_postcode'};
-        $client->phone($phone);
+        $client->phone($phone) if length $phone;
         $client->citizen($citizen);
         $client->place_of_birth($birth_place);
         $client->account_opening_reason($account_opening_reason);
