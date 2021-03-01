@@ -307,7 +307,7 @@ A list of self-closed clients associated with the currently processed credential
 
 =item C<$app>
 
-The requested application. 
+The requested application.
 
 =item C<$state>
 
@@ -679,6 +679,14 @@ sub _notify_login {
                 }});
     }
 
+    my $params = {
+        language     => lc($request->language),
+        source       => $app->{id},
+        website_name => lc($brand->website_name),
+    };
+
+    my $password_reset_url = $brand->password_reset_url($params);
+
     if ($unknown_location && $brand->send_signin_email_enabled()) {
         my $email_data = {
             name        => $client->first_name,
@@ -693,6 +701,7 @@ sub _notify_login {
             ip                        => $ip,
             language                  => lc($request->language),
             start_url                 => 'https://' . lc($brand->website_name),
+            password_reset_url        => $password_reset_url,
             is_reset_password_allowed => _is_reset_password_allowed($app->{id}),
         };
 
