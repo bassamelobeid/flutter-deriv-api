@@ -5,9 +5,12 @@ use Test::More;
 use Test::Deep;
 use BOM::Test::Helper::P2P;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use BOM::Config::Runtime;
 
 BOM::Test::Helper::P2P::bypass_sendbird();
 BOM::Test::Helper::P2P::create_escrow();
+
+BOM::Config::Runtime->instance->app_config->payments->p2p->cancellation_grace_period(0);
 
 my $adv1 = BOM::Test::Helper::P2P::create_advertiser(balance => 100);
 my $adv2 = BOM::Test::Helper::P2P::create_advertiser(balance => 100);

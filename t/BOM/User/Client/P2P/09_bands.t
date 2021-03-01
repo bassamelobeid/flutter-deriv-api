@@ -162,6 +162,9 @@ subtest 'Check client band limits' => sub {
         contact_info     => 'test'
     );
 
+    # reset cache otherwise limits will be stale
+    delete $test_client->{_p2p_advertiser};
+
     # test client cannot create order for a different ad (ad2) because of exceding daily buy limit
     my $err = exception {
         $test_client->p2p_order_create(

@@ -37,76 +37,77 @@ for my $broker (@$brokers) {
     say "processing $broker";
     my $db = BOM::Database::ClientDB->new({broker_code => uc $broker})->db->dbic;
 
-    my $orders = $db->run(
+    my $data = $db->run(
         fixup => sub {
             $_->selectall_arrayref(
-                "SELECT ROUND(EXTRACT(EPOCH FROM o.created_time)) created_time, 
+                "SELECT ROUND(EXTRACT(EPOCH FROM o.created_time)) created_at, 
                 o.id, o.amount, o.status, o.client_loginid cli_loginid, adv.client_loginid adv_loginid, 
                 ad.type advert_type, p2p.order_type(ad.type) order_type, 
-                EXTRACT(EPOCH FROM buyconfirm.stamp)::BIGINT buy_confirm_time, 
-                EXTRACT(EPOCH FROM cancel.stamp - o.created_time)::BIGINT cancel_time, 
+                EXTRACT(EPOCH FROM buyconfirm.stamp)::BIGINT buy_confirm_at,
+                EXTRACT(EPOCH FROM complete.stamp)::BIGINT complete_at,
+                EXTRACT(EPOCH FROM refund.stamp)::BIGINT refund_at, 
                 EXTRACT(EPOCH FROM complete.stamp - buyconfirm.stamp)::BIGINT release_time,
+                EXTRACT(EPOCH FROM refund.stamp - o.created_time)::BIGINT cancel_time,
                 p2p.is_status_final(o.status) is_complete
                 FROM p2p.p2p_order o 
                     JOIN p2p.p2p_advert ad ON ad.id = o.advert_id 
                     JOIN p2p.p2p_advertiser adv on adv.id = ad.advertiser_id 
-                    LEFT JOIN (SELECT id, stamp FROM audit.p2p_order where status = 'buyer-confirmed' ORDER BY stamp LIMIT 1) AS buyconfirm ON buyconfirm.id = o.id
-                    LEFT JOIN (SELECT id, stamp FROM audit.p2p_order where status = 'cancelled' ORDER BY stamp LIMIT 1) AS cancel ON cancel.id = o.id
-                    LEFT JOIN (SELECT id, stamp FROM audit.p2p_order where status = 'completed' ORDER BY stamp LIMIT 1) AS complete ON complete.id = o.id",
+                    LEFT JOIN audit.p2p_order AS buyconfirm ON buyconfirm.status = 'buyer-confirmed' AND buyconfirm.id = o.id
+                    LEFT JOIN audit.p2p_order AS refund ON refund.status IN ('cancelled','refunded','dispute-refunded') and refund.id = o.id
+                    LEFT JOIN audit.p2p_order AS complete ON complete.status IN ('completed','dispute-completed') AND complete.id = o.id",
                 {Slice => {}});
 
         });
 
-    for my $order (@$orders) {
-        my $item       = $order->{id} . '|' . $order->{amount};
-        my $adv_prefix = $key_prefix . '::' . $order->{adv_loginid};
-        my $cli_prefix = $key_prefix . '::' . $order->{cli_loginid};
+    # there should not be duplicate audit rows for a status, but just in case
+    my %orders = map { $_->{id} => $_ } @$data;
 
-        $redis->hset($key_prefix . '::ORDER_CREATION_TIMES', $order->{id}, $order->{created_time}) unless $order->{is_complete};
+    for my $order (values %orders) {
+        my ($id, $amount) = $order->@{qw/id amount/};
+        my ($buyer, $seller) =
+            $order->{order_type} eq 'buy' ? ($order->{cli_loginid}, $order->{adv_loginid}) : ($order->{adv_loginid}, $order->{cli_loginid});
+        my $buyer_prefix  = $key_prefix . '::' . $buyer;
+        my $seller_prefix = $key_prefix . '::' . $seller;
 
-        if ($order->{status} eq 'buyer-confirmed' && $order->{buy_confirm_time}) {
-            $redis->hset($key_prefix . '::BUY_CONFIRM_TIMES', $order->{id}, $order->{buy_confirm_time});
+        if ($order->{status} eq 'buyer-confirmed' && $order->{buy_confirm_at}) {
+            $redis->hset($key_prefix . '::BUY_CONFIRM_TIMES', $id, $order->{buy_confirm_at});
         }
 
-        if ($order->{status} eq 'completed') {
+        if ($order->{status} =~ /^(completed|dispute-completed)$/) {
+            $redis->hincrby($key_prefix . '::TOTAL_COMPLETED', $buyer,  1);
+            $redis->hincrby($key_prefix . '::TOTAL_COMPLETED', $seller, 1);
 
-            $redis->hincrby($key_prefix . '::ORDER_COMPLETED_TOTAL', $order->{adv_loginid}, 1);
-            $redis->hincrby($key_prefix . '::ORDER_COMPLETED_TOTAL', $order->{cli_loginid}, 1);
+            add_stat($buyer_prefix . '::BUY_COMPLETED',   $order->{complete_at}, $id, $amount);
+            add_stat($seller_prefix . '::SELL_COMPLETED', $order->{complete_at}, $id, $amount);
 
-            my $adv_key = $adv_prefix . '::ORDER_COMPLETED::' . uc $order->{advert_type};
-            $redis->zadd($adv_key, $order->{created_time}, $item);
-            $redis->expire($adv_key, $expiry);
+            if ($order->{status} eq 'completed') {
+                add_stat($buyer_prefix . '::BUY_COMPLETION',   $order->{complete_at}, $id, 1);
+                add_stat($seller_prefix . '::SELL_COMPLETION', $order->{complete_at}, $id, 1);
 
-            my $cli_key = $cli_prefix . '::ORDER_COMPLETED::' . uc $order->{order_type};
-            $redis->zadd($cli_key, $order->{created_time}, $item);
-            $redis->expire($cli_key, $expiry);
-
-            if (defined $order->{release_time}) {
-                my $prefix       = $order->{order_type} eq 'sell' ? $cli_prefix : $adv_prefix;
-                my $release_key  = $prefix . '::RELEASE_TIMES';
-                my $release_item = $order->{id} . '|' . $order->{release_time};
-                $redis->zadd($release_key, $order->{created_time}, $release_item);
-                $redis->expire($release_key, $expiry);
+                if (defined $order->{release_time}) {
+                    add_stat($seller_prefix . '::RELEASE_TIMES', $order->{complete_at}, $id, $order->{release_time});
+                }
+            } else {
+                # for dispute-completed, there is no fraud flag yet, so seller completion rate is always downgraded
+                add_stat($buyer_prefix . '::BUY_COMPLETION',   $order->{complete_at}, $id, 1);
+                add_stat($seller_prefix . '::SELL_COMPLETION', $order->{complete_at}, $id, 0);
             }
+
         }
 
-        if ($order->{status} =~ /^(cancelled|refunded)$/) {
-            my $adv_key = $adv_prefix . '::ORDER_REFUNDED::' . uc $order->{advert_type};
-            $redis->zadd($adv_key, $order->{created_time}, $item);
-            $redis->expire($adv_key, $expiry);
-
-            my $cli_key = $cli_prefix . '::ORDER_REFUNDED::' . uc $order->{order_type};
-            $redis->zadd($cli_key, $order->{created_time}, $item);
-            $redis->expire($cli_key, $expiry);
+        if ($order->{status} =~ /^(cancelled|refunded|dispute-refunded)$/) {
+            add_stat($buyer_prefix . '::BUY_COMPLETION', $order->{refund_at}, $id, 0);
         }
 
         if ($order->{status} eq 'cancelled' && defined $order->{cancel_time}) {
-            my $prefix       = $order->{order_type} eq 'buy' ? $cli_prefix : $adv_prefix;
-            my $release_key  = $prefix . '::CANCEL_TIMES';
-            my $release_item = $order->{id} . '|' . $order->{cancel_time};
-            $redis->zadd($release_key, $order->{created_time}, $release_item);
-            $redis->expire($release_key, $expiry);
+            add_stat($buyer_prefix . '::CANCEL_TIMES',    $order->{refund_at}, $id, $order->{cancel_time});
+            add_stat($buyer_prefix . '::ORDER_CANCELLED', $order->{refund_at}, $id, $amount);
         }
-
     }
+}
+
+sub add_stat {
+    my ($key, $time, @items) = @_;
+    $redis->zadd($key, $time, join('|', @items));
+    $redis->expire($key, $expiry);
 }

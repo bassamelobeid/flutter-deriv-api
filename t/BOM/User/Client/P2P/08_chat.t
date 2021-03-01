@@ -69,7 +69,7 @@ subtest 'chat_token' => sub {
     is $advertiser->{chat_token}, 'dummy', 'token issued when advertiser created';
 
     $mock_sb_user->mock('issue_session_token', sub { die });
-    my $resp = eval { $client->p2p_chat_token() };
+    my $resp = $client->p2p_chat_token();
     is $resp->{token}, 'dummy', 'token not reissued';
     is $resp->{expiry_time}, $expiry, 'correct expiry time';
 

@@ -426,6 +426,7 @@ subtest 'Duplicate ads' => sub {
     $params{max_order_amount} = 9.99;
 
     my $advertiser = BOM::Test::Helper::P2P::create_advertiser(balance => 1000);
+
     BOM::Test::Helper::P2P::create_escrow;
 
     my $ad;

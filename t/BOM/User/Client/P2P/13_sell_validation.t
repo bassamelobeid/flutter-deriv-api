@@ -153,7 +153,6 @@ subtest 'buy activity' => sub {
 
     lives_ok { $order = (BOM::Test::Helper::P2P::create_order(client => $advertiser, advert_id => $other_buy_ad->{id}, amount => 1))[0] }
     'can create sell order now';
-    #$buy_advertiser->p2p_order_cancel(id => $order->{id});
 
     deposit($advertiser, 10, 'oranges');
     ($buy_advertiser, $other_buy_ad) = BOM::Test::Helper::P2P::create_advert(type => 'buy');
@@ -198,6 +197,7 @@ subtest 'override' => sub {
     );
 
     $client->db->dbic->dbh->do('UPDATE p2p.p2p_advertiser SET cc_sell_authorized = TRUE WHERE id = ' . $client->p2p_advertiser_info->{id});
+    delete $client->{_p2p_advertiser};
 
     lives_ok { BOM::Test::Helper::P2P::create_advert(client => $client, type => 'sell') } 'can create sell ad after override';
 };

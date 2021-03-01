@@ -445,6 +445,7 @@ for my $test_case (@test_cases) {
                         client_loginid => $advertiser->loginid,
                     }];
             }
+
             cmp_deeply(\@emitted_events, bag(@expected_events), 'expected events emitted');
         }
 
