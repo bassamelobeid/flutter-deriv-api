@@ -1410,6 +1410,11 @@ sub _send_email_underage_disable_account {
 
     my $website_name  = ucfirst BOM::Config::domain()->{default_domain};
     my $email_subject = localize("Your account has been closed");
+    my $brand         = request->brand;
+
+    my $params = {
+        language => request->language,
+    };
 
     send_email({
             to            => $client->email,
@@ -1417,6 +1422,7 @@ sub _send_email_underage_disable_account {
             template_name => 'close_account_underage',
             template_args => {
                 website_name => $website_name,
+                tnc_approval => $brand->tnc_approval($params),
                 name         => $client->first_name,
                 title        => localize("We've closed your account"),
             },
@@ -2716,18 +2722,24 @@ sub _send_shared_payment_method_email {
     my $brand = Brands->new_from_app_id($client->source);
     request(BOM::Platform::Context::Request->new(brand_name => $brand->name));
 
+    my $params = {
+        language => request->language,
+    };
+
     send_email({
             from          => $brand->emails('authentications'),
             to            => $email,
             subject       => localize('Shared Payment Method account [_1]', $client->loginid),
             template_name => 'shared_payment_method',
             template_args => {
-                client_first_name => $client_first_name,
-                client_last_name  => $client_last_name,
-                name              => $client_first_name,
-                title             => localize('Shared payment method'),
-                lang              => $lang,
-                ask_poi           => !$client->status->age_verification,
+                client_first_name   => $client_first_name,
+                client_last_name    => $client_last_name,
+                lang                => $lang,
+                ask_poi             => !$client->status->age_verification,
+                authentication_url  => $brand->authentication_url($params),
+                name                => $client_first_name,
+                title               => localize('Shared payment method'),
+                payment_methods_url => $brand->payment_methods_url($params),
             },
             use_email_template => 1,
         });

@@ -316,6 +316,10 @@ sub send_mt5_account_opening_email {
     my $lang              = lc(request()->language // 'en');
     my $website_name      = $brand->website_name;
 
+    my $url_params = {
+        language => request->language,
+    };
+
     send_email({
             from          => $brand->emails('no-reply'),
             to            => $email,
@@ -328,7 +332,8 @@ sub send_mt5_account_opening_email {
                 mt5_region        => $params->{mt5_region},
                 client_first_name => $client_first_name,
                 lang              => $lang,
-                website_name      => $website_name
+                website_name      => $website_name,
+                contact_url       => $brand->contact_url($url_params),
             },
             use_email_template => 1,
         });

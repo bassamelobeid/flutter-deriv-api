@@ -374,7 +374,10 @@ subtest 'mt5 account opening mail' => sub {
                                         mt5_region        => 'Africa',
                                         client_first_name => $mt5_client->first_name,
                                         lang              => $lang,
-                                        website_name      => $brand_ref->website_name
+                                        website_name      => $brand_ref->website_name,
+                                        contact_url       => $brand_ref->contact_url({language => $lang}),
+                                        tnc_approval_url  => $brand_ref->tnc_approval_url({language => $lang}),
+                                        help_centre_url   => $brand_ref->help_centre_url({language => $lang}),
                                     },
                                     use_email_template => 1,
                                 };
