@@ -119,7 +119,6 @@ sub set_pending_transaction {
             error  => sprintf("`from` address is main address for transaction: %s", $transaction->{hash})}
             if $from_address && lc $from_address eq lc $currency->account_config->{account}->{address};
 
-
         # TODO this needs to be enabled once we have the rinkeby network in our QA enviroment
         # we will not reach this point on production, but in QA this is actually very easy since we
         # are sending transactions from our local node, so we need this block here.
