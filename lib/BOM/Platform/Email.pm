@@ -135,7 +135,9 @@ sub process_send_email {
     my $mail_message = $message;
     if ($use_email_template) {
         $template_name .= '.html.tt' if $template_name !~ /\.html\.tt$/;
-        $mail_message = '';
+        $mail_message                        = '';
+        $template_args->{'help_centre_url'}  = $brand->help_centre_url({language => $request->language});
+        $template_args->{'tnc_approval_url'} = $brand->tnc_approval_url({language => $request->language});
         my $vars = {
             # Allows inline HTML, default is off - be very, very careful when setting this #
             email_content_is_html => $args_ref->{'email_content_is_html'},
