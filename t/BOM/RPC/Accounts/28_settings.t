@@ -575,7 +575,7 @@ subtest 'set settings' => sub {
     }
 
     delete $params->{args}->{account_opening_reason};
-    $params->{args}->{phone} = '+11111111';
+    $params->{args}->{phone} = '+11111111a';
     is(
         $c->tcall($method, $params)->{error}{message_to_client},
         'Please enter a valid phone number, including the country code (e.g. +15417541234).',

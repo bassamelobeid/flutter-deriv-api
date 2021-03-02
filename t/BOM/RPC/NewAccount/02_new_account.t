@@ -179,11 +179,11 @@ subtest $method => sub {
         email => $email,
     );
 
-    is $user->{utm_source}, 'google.com',                 'utm registered as expected';
-    is $user->{gclid_url},  'FQdb3wodOkkGBgCMrlnPq42q8C', 'gclid value returned as expected';
+    is $user->{utm_source},         'google.com',                 'utm registered as expected';
+    is $user->{gclid_url},          'FQdb3wodOkkGBgCMrlnPq42q8C', 'gclid value returned as expected';
     is $user->{date_first_contact}, $date_first_contact, 'date first contact value returned as expected';
-    is $user->{signup_device}, 'mobile', 'signup_device value returned as expected';
-    is $user->{email_consent}, 1,        'email consent for new account is 1 for residence under svg';
+    is $user->{signup_device},      'mobile', 'signup_device value returned as expected';
+    is $user->{email_consent},      1,        'email consent for new account is 1 for residence under svg';
     is_deeply decode_json_utf8($user->{utm_data}), $expected_utm_data, 'utm data registered as expected';
 
     my ($resp_loginid, $t, $uaf) =
@@ -502,12 +502,15 @@ subtest $method => sub {
 
         $user->update_email_fields(email_verified => 1);
 
-        $params->{args}->{phone} = '1234567890';
+        $params->{args}->{phone} = 'a1234567890';
         $rpc_ct->call_ok($method, $params)
-            ->has_no_system_error->has_error->error_code_is('InvalidPhone', 'It should return error if phone cannot be formatted to E.123')
-            ->error_message_is('Please enter a valid phone number, including the country code (e.g. +15417541234).',
-            'It should return expected error message');
-        delete $params->{args}->{phone};
+            ->has_no_system_error->has_error->error_code_is('InvalidPhone', 'Phone number could not contain alphabetic characters')
+            ->error_message_is(
+            'Please enter a valid phone number, including the country code (e.g. +15417541234).',
+            'Phone number is invalid only if it contains alphabetic characters'
+            );
+
+        $params->{args}->{phone} = '1234256789';
 
         $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error->result_value_is(
             sub { shift->{landing_company} },
@@ -873,11 +876,13 @@ subtest $method => sub {
         #if citizenship is from restricted country but residence is valid,it shouldn't throw any error
         $params->{args}->{citizen} = 'ir';
 
-        $params->{args}->{phone} = '1234567890';
+        $params->{args}->{phone} = 'a1234567890';
         $rpc_ct->call_ok($method, $params)
-            ->has_no_system_error->has_error->error_code_is('InvalidPhone', 'It should return error if phone cannot be formatted to E.123')
-            ->error_message_is('Please enter a valid phone number, including the country code (e.g. +15417541234).',
-            'It should return expected error message');
+            ->has_no_system_error->has_error->error_code_is('InvalidPhone', 'Phone number could not contain alphabetic characters')
+            ->error_message_is(
+            'Please enter a valid phone number, including the country code (e.g. +15417541234).',
+            'Phone number is invalid only if it contains alphabetic characters'
+            );
         delete $params->{args}->{phone};
 
         $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error->result_value_is(
@@ -1340,6 +1345,91 @@ subtest 'Duplicate accounts are not created in race condition' => sub {
 
     ok $new_loginid =~ /^CR\d+$/, 'first account created successfully in race condition';
     is $error_code, 'RateLimitExceeded', 'second account creation face error RateLimitExceeded in race condition';
+};
+
+subtest 'Empty phone number' => sub {
+    my $email = 'empty+phone1241241@asdf.com';
+    $params->{country}                   = 'br';
+    $params->{args}->{residence}         = 'br';
+    $params->{args}->{client_password}   = '123Abas!';
+    $params->{args}->{subtype}           = 'virtual';
+    $params->{args}->{phone}             = '';
+    $params->{args}->{first_name}        = 'i dont have';
+    $params->{args}->{last_name}         = 'a phone number';
+    $params->{args}->{date_of_birth}     = '1999-01-01';
+    $params->{args}->{email}             = $email;
+    $params->{args}->{verification_code} = BOM::Platform::Token->new(
+        email       => $email,
+        created_for => 'account_opening'
+    )->token;
+
+    delete $params->{token};
+
+    $rpc_ct->call_ok('new_account', $params)->has_no_system_error->has_no_error('vr account created successfully');
+    my $vr_loginid = $rpc_ct->result->{client_loginid};
+
+    $params->{token} = BOM::Platform::Token::API->new->create_token($vr_loginid, 'test token');
+    $rpc_ct->call_ok('new_account_real', $params)->has_no_system_error->has_no_error('real account created successfully');
+
+    my $real_loginid = $rpc_ct->result->{client_id};
+    my $client       = BOM::User::Client->new({loginid => $real_loginid});
+    is $client->phone, '', 'No phone set';
+};
+
+subtest 'Missing phone number' => sub {
+    my $email = 'missing+phone1241241@asdf.com';
+    $params->{country}                 = 'br';
+    $params->{args}->{residence}       = 'br';
+    $params->{args}->{client_password} = '123Abas!';
+    $params->{args}->{subtype}         = 'virtual';
+    $params->{args}->{first_name}      = 'i miss';
+    $params->{args}->{last_name}       = 'my phone number';
+    $params->{args}->{date_of_birth}   = '1999-01-02';
+    $params->{args}->{email}           = $email;
+    delete $params->{args}->{phone};
+    $params->{args}->{verification_code} = BOM::Platform::Token->new(
+        email       => $email,
+        created_for => 'account_opening'
+    )->token;
+
+    delete $params->{token};
+
+    $rpc_ct->call_ok('new_account', $params)->has_no_system_error->has_no_error('vr account created successfully');
+    my $vr_loginid = $rpc_ct->result->{client_loginid};
+
+    $params->{token} = BOM::Platform::Token::API->new->create_token($vr_loginid, 'test token');
+    $rpc_ct->call_ok('new_account_real', $params)->has_no_system_error->has_no_error('real account created successfully');
+
+    my $real_loginid = $rpc_ct->result->{client_id};
+    my $client       = BOM::User::Client->new({loginid => $real_loginid});
+    is $client->phone, '', 'No phone set';
+};
+
+subtest 'Repeating phone number' => sub {
+    my $email = 'repeating+phone@asdf.com';
+    $params->{country}                   = 'br';
+    $params->{args}->{residence}         = 'br';
+    $params->{args}->{client_password}   = '123Abas!';
+    $params->{args}->{subtype}           = 'virtual';
+    $params->{args}->{first_name}        = 'i repeat';
+    $params->{args}->{last_name}         = 'my phone number';
+    $params->{args}->{date_of_birth}     = '1999-01-02';
+    $params->{args}->{email}             = $email;
+    $params->{args}->{phone}             = '111111111';
+    $params->{args}->{verification_code} = BOM::Platform::Token->new(
+        email       => $email,
+        created_for => 'account_opening'
+    )->token;
+
+    delete $params->{token};
+
+    $rpc_ct->call_ok('new_account', $params)->has_no_system_error->has_no_error('vr account created successfully');
+    my $vr_loginid = $rpc_ct->result->{client_loginid};
+
+    $params->{token} = BOM::Platform::Token::API->new->create_token($vr_loginid, 'test token');
+    $rpc_ct->call_ok('new_account_real', $params)->has_no_system_error->has_error->error_code_is('InvalidPhone', 'Repeating digits are not valid')
+        ->error_message_is('Please enter a valid phone number, including the country code (e.g. +15417541234).',
+        "Invalid phone number provided (repeated digits)");
 };
 
 done_testing();
