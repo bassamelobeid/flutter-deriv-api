@@ -42,7 +42,6 @@ use BOM::Platform::Utility;
 use BOM::User::Client::PaymentAgent;
 use BOM::User::Client::Status;
 use BOM::User::Client::Account;
-use BOM::User::Phone;
 use BOM::User::FinancialAssessment;
 use BOM::User::Utility;
 use BOM::User::Wallet;
@@ -1860,9 +1859,18 @@ sub format_input_details {
     my ($self, $args) = @_;
 
     my %format = (
-        first_name    => sub { trim(shift) },
-        last_name     => sub { trim(shift) },
-        phone         => sub { BOM::User::Phone::format_phone(shift) || die "InvalidPhone\n" },
+        first_name => sub { trim(shift) },
+        last_name  => sub { trim(shift) },
+        phone      => sub {
+            my $phone = trim(shift) or return '';
+
+            if ($phone =~ qr/^[-.,\s+()]{0,3}(?:\d[-.,\s+()]{0,3}){9,35}$/) {
+                # avoid repeated numbers like `111111111111`
+                return $phone if $phone !~ qr/^(.)\1*$/;
+            }
+
+            die "InvalidPhone\n";
+        },
         date_of_birth => sub {
             eval { Date::Utility->new(shift)->date } // die "InvalidDateOfBirth\n";
         },

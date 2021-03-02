@@ -186,14 +186,53 @@ subtest "format and validate" => sub {
     $client->format_input_details($args);
     is $args->{first_name}, 'newname', 'trim firstname';
 
+    $args = {phone => ''};
+    is $client->format_input_details($args), undef, 'Empty phone number returns undef';
+
+    $args = {phone => undef};
+    is $client->format_input_details($args), undef, 'Undef phone number returns undef';
+
+    delete $args->{phone};
+    is $client->format_input_details($args), undef, 'Undef phone number returns undef';
+
+    $args = {phone => 123456789};
+    is $client->format_input_details($args), undef, 'we are not strict on phone number anymore';
+
     $args = {phone => '+442087712924'};
     is $client->format_input_details($args), undef, 'Valid UK phone number returns undef';
 
-    $args = {phone => 123456};
-    is $client->format_input_details($args)->{error}, 'InvalidPhone', 'Bad phone format returns InvalidPhone error';
+    $args = {phone => '123456a'};
+    is $client->format_input_details($args)->{error}, 'InvalidPhone', 'Phone number should not contain alphabet characters';
+
+    $args = {phone => '12345678'};
+    is $client->format_input_details($args)->{error}, 'InvalidPhone', 'Phone number minimum lenght is 9';
+
+    $args = {phone => '111111111'};
+    is $client->format_input_details($args)->{error}, 'InvalidPhone', 'Repeated digits are disallowed';
+
+    $args = {phone => '111131111'};
+    is $client->format_input_details($args), undef, 'Not repeated digits are ok';
+
+    $args = {phone => '111131113'};
+    is $client->format_input_details($args), undef, 'Not repeated digits are ok';
+
+    $args = {phone => '3111111111111'};
+    is $client->format_input_details($args), undef, 'Not repeated digits are ok';
 
     $args = {phone => '+26777951234'};
     is $client->format_input_details($args), undef, 'Valid Botswana phone number returns undef';
+
+    $args = {phone => '+(267)-77-951234'};
+    is $client->format_input_details($args), undef, 'Valid Botswana phone number with special characters allowed';
+
+    $args = {phone => '+(267) 77 951234'};
+    is $client->format_input_details($args), undef, 'Valid Botswana phone number with special characters allowed';
+
+    $args = {phone => '-26777951234'};
+    is $client->format_input_details($args), undef, 'Valid Botswana phone number, can start with hyphen';
+
+    $args = {phone => '+-26777951234'};
+    is $client->format_input_details($args), undef, 'Valid Botswana phone number, hyphen can follow plus';
 
     $args = {date_of_birth => '2010-15-15'};
     is $client->format_input_details($args)->{error}, 'InvalidDateOfBirth', 'InvalidDateOfBirth';
