@@ -62,7 +62,7 @@ $agent_usd->payment_agent({
     currency_code         => 'USD',
     url                   => 'http://www.example.com/',
     email                 => $email,
-    phone                 => '+12345678',
+    phone                 => '+123456789',
     information           => 'Test Info',
     summary               => 'Test Summary',
     commission_deposit    => 0,

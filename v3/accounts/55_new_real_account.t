@@ -287,6 +287,92 @@ subtest 'new_real_account with currency provided' => sub {
     is($res->{error}->{code}, 'CurrencyTypeNotAllowed', 'Try to create account with incorrect currency');
 };
 
+subtest 'validate phone field' => sub {
+    my %details = %client_details;
+    $details{date_of_birth} = '1999-01-01';
+
+    subtest 'phone can be empty' => sub {
+        my ($vr_client, $user) = create_vr_account({
+            email           => 'emptyness+111@binary.com',
+            client_password => 'abC123',
+            residence       => 'br',
+        });
+
+        my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $vr_client->loginid);
+        $t->await::authorize({authorize => $token});
+
+        $details{currency}  = 'USD';
+        $details{residence}     = 'br';
+        $details{first_name}    = 'i dont have';
+        $details{last_name}     = 'a phone number';
+        delete $details{phone};
+
+        my $res = $t->await::new_account_real(\%details);
+        ok($res->{msg_type}, 'new_account_real');
+        ok($res->{new_account_real}, 'new account created with empty phone');
+    };
+
+    subtest 'user can enter invalid or dummy phone number' => sub {
+        my ($vr_client, $user) = create_vr_account({
+            email           => 'dummy-phone-number@binary.com',
+            client_password => 'abC123',
+            residence       => 'br',
+        });
+
+        my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $vr_client->loginid);
+        $t->await::authorize({authorize => $token});
+
+        $details{currency}  = 'USD';
+        $details{residence}     = 'br';
+        $details{first_name}    = 'dummy-phone';
+        $details{last_name}     = 'ownerian';
+        $details{phone} = '+1234-864116586523';
+
+        my $res = $t->await::new_account_real(\%details);
+        ok($res->{msg_type}, 'new_account_real');
+        is($res->{error}, undef, 'account created successfully with a dummy phone number');
+    };
+
+    subtest 'no alphabetic characters are allowed in the phone number' => sub {
+        my ($vr_client, $user) = create_vr_account({
+            email           => 'alpha-phone-number@binary.com',
+            client_password => 'abC123',
+            residence       => 'br',
+        });
+
+        my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $vr_client->loginid);
+        $t->await::authorize({authorize => $token});
+
+        $details{currency}  = 'USD';
+        $details{residence}     = 'br';
+        $details{first_name}    = 'alphabetic';
+        $details{last_name}     = 'phone-number';
+        $details{phone} = '+1234-86x4116586523'; # contains `x` in the middle
+
+        my $res = $t->await::new_account_real(\%details);
+        is($res->{error}->{code}, 'InvalidPhone', 'phone number can not contain alphabetic characters.');
+    };
+    subtest 'more than one special characters are not allowed in a row' => sub {
+        my ($vr_client, $user) = create_vr_account({
+            email           => 'multiple-special-characters@binary.com',
+            client_password => 'abC123',
+            residence       => 'br',
+        });
+
+        my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $vr_client->loginid);
+        $t->await::authorize({authorize => $token});
+
+        $details{currency}    = 'USD';
+        $details{residence}   = 'br';
+        $details{first_name}  = 'alphabetic';
+        $details{last_name}   = 'phone-number';
+        $details{phone}       = '+1234-8641165++++86523'; # contains more than 3 special characters in a row
+
+        my $res = $t->await::new_account_real(\%details);
+        is($res->{error}->{code}, 'InvalidPhone', 'phone can not contain more than 3 special characters in a row.');
+    };
+};
+
 sub create_vr_account {
     my $args = shift;
     my $acc  = BOM::Platform::Account::Virtual::create_account({
