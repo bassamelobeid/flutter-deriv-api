@@ -309,9 +309,30 @@ subtest 'create account' => sub {
     is $details->{error}, undef, 'no error for empty place of birth';
 
     # Invalid phone
-    $t_details{phone} = '+623234234234777';
+    $t_details{phone} = '+623234234234777a';
     $details = BOM::Platform::Account::Real::default::validate_account_details(\%t_details, $vr_client, $broker, 1);
     is $details->{error}, 'InvalidPhone', 'Invalid phone';
+
+    $details = BOM::Platform::Account::Real::default::validate_account_details({%t_details, phone => ''}, $vr_client, $broker, 1);
+    is $details->{error}, undef, 'no error for empty phone';
+
+    $details = BOM::Platform::Account::Real::default::validate_account_details({
+            %t_details,
+            phone => undef,
+        },
+        $vr_client,
+        $broker, 1
+    );
+    is $details->{error}, undef, 'no error for undef phone';
+
+    $details = BOM::Platform::Account::Real::default::validate_account_details({
+            %t_details,
+            phone => '123456789',
+        },
+        $vr_client,
+        $broker, 1
+    );
+    is $details->{error}, undef, 'no error for 123456789 phone';
 
     $t_details{phone} = sprintf("+15417555%03d", rand(999));
 
@@ -400,6 +421,67 @@ subtest 'create account' => sub {
         is(defined $user,   1,            "Social login user with residence $user->residence has been created");
         is($client->broker, $broker_code, "Successfully created real account $client->loginid");
     }
+
+    subtest 'Empty phone number' => sub {
+        foreach my $broker_code (keys %$vr_details) {
+            my %empty_phone_number_details = (
+                %{$vr_details->{$broker_code}},
+                email         => 'empty_phone+' . $broker_code . '@binary.com',
+                phone         => '',
+                social_signup => 1,
+            );
+            my ($vr_client, $real_client, $empty_phone_login_user, $real_acc);
+            lives_ok {
+                my $vr_acc = create_vr_acc(\%empty_phone_number_details);
+                ($vr_client, $empty_phone_login_user) = @{$vr_acc}{qw/client user/};
+            }
+            'create VR account';
+
+            my %details = (
+                %real_client_details,
+                residence       => $empty_phone_number_details{residence},
+                broker_code     => $broker_code,
+                first_name      => 'emptyness+' . $broker_code,
+                client_password => $vr_client->password,
+                email           => $empty_phone_number_details{email},
+            );
+
+            lives_ok {
+                $real_acc = BOM::Platform::Account::Real::default::create_account({
+                    from_client => $vr_client,
+                    user        => $empty_phone_login_user,
+                    details     => \%details,
+                    country     => $vr_client->residence,
+                });
+            }
+            "create $broker_code account OK";
+
+            my $mf_acc;
+            if ($broker_code eq 'MX' || $broker_code eq 'MLT') {
+                lives_ok {
+                    my $params = \%financial_data;
+                    $details{broker_code}  = 'MF';
+                    $params->{accept_risk} = 1;
+                    $mf_acc                = BOM::Platform::Account::Real::maltainvest::create_account({
+                        from_client => $vr_client,
+                        user        => $empty_phone_login_user,
+                        details     => \%details,
+                        country     => $vr_client->residence,
+                        params      => $params,
+                    });
+                }
+                "create MF account OK";
+            }
+
+            my ($client) = @{$real_acc}{qw/client/};
+            is($client->broker, $broker_code, "Successfully created real account $client->loginid");
+
+            if ($mf_acc) {
+                my ($mf_client) = @{$mf_acc}{qw/client/};
+                is($mf_client->broker, 'MF', "Successfully created real account $mf_client->loginid");
+            }
+        }
+    };
 
     subtest 'sync wihtdrawal_locked status to new clients upon creation' => sub {
         my $real_acc = BOM::Platform::Account::Real::default::create_account({
