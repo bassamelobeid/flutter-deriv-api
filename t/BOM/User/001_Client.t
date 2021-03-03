@@ -305,12 +305,12 @@ subtest "format and validate" => sub {
             my $client = BOM::User::Client->rnew(%$client_details);
             $client_details->{address_line_1} = 'p o box 1234';
             my $result = $client->validate_common_account_details($client_details);
-            is $result->{error}, 'invalid PO Box', 'Invalid PO BOX at address line 1';
+            is $result->{error}, 'PoBoxInAddress', 'Invalid PO BOX at address line 1';
 
             $client_details->{address_line_1} = 'somewhere';
             $client_details->{address_line_2} = 'P.O. box 2357111317';
             $result                           = $client->validate_common_account_details($client_details);
-            is $result->{error}, 'invalid PO Box', 'Invalid PO BOX at address line 2';
+            is $result->{error}, 'PoBoxInAddress', 'Invalid PO BOX at address line 2';
         };
 
         subtest 'Unregulated accounts' => sub {

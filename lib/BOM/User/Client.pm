@@ -1452,11 +1452,31 @@ sub is_available {
     return 1;
 }
 
+=head2 real_account_siblings_information
+
+Returns information about real siblings of current client, including loginid, landing company name, currency and balance, taking following named args:
+    
+=over 4
+
+=item * C<include_disabled> - wether or not include disabled sibling accounts
+
+=item * C<include_self> - if true, the current client will be included in the result; otherwise it will be excluded (the default bahavior).
+
+=item * C<exclude_disabled_no_currency> - if true, disabled siblings with no currency will be excluded; otherwise (default) they will be included.
+
+=item * C<landing_company> - if it's not empty, only siblings of the given landing companh will be returned; 
+    otherwise (default) there won't be any filter applied on landing companiesd.
+
+=back
+
+=cut
+
 sub real_account_siblings_information {
     my ($self, %args) = @_;
     my $include_disabled             = $args{include_disabled}             // 1;
     my $include_self                 = $args{include_self}                 // 1;
     my $exclude_disabled_no_currency = $args{exclude_disabled_no_currency} // 0;
+    my $landing_company              = $args{landing_company};
 
     my $user = $self->user;
     # return empty if we are not able to find user, this should not
@@ -1467,6 +1487,9 @@ sub real_account_siblings_information {
 
     # filter out virtual clients
     @clients = grep { not $_->is_virtual } @clients;
+    if ($landing_company) {
+        @clients = grep { $_->landing_company->short eq $landing_company } @clients;
+    }
 
     if ($exclude_disabled_no_currency) {
         # filter out disabled & no currency clients
@@ -1893,9 +1916,11 @@ common client details validation for new_account and set_settings and backoffice
 
 =over 4
 
-=item * $args
+=item * C<args> - Hashref of the input fields
 
-Hashref of the input fields
+=item * C<rule_engine> (optional) - a rule engine object. If rule engine is empty, the whole checks should be done here;
+   otherwise, only C<args> will be validated and business rules will be delegated to the rule engine
+   (TODO: will be deprecated as soon as rule engine is integrated into all account opening RPC calls).
 
 =back
 
@@ -1907,7 +1932,7 @@ Return {
 =cut
 
 sub validate_common_account_details {
-    my ($self, $args) = @_;
+    my ($self, $args, $rule_engine) = @_;
 
     my $residence       = $self->residence;
     my @required_fields = $self->required_fields;
@@ -1925,7 +1950,7 @@ sub validate_common_account_details {
         }
 
         if ($args->{date_of_birth}) {
-            $self->_validate_dob($args->{date_of_birth}, $residence);
+            $self->_validate_dob($args->{date_of_birth}, $residence, $rule_engine);
         }
 
         ## The secret question can start out as an empty string, but cannot be changed to empty
@@ -1950,23 +1975,26 @@ sub validate_common_account_details {
         die "InvalidCitizenship\n"
             if ($args->{'citizen'} && !defined $brand->countries_instance->countries->country_from_code($args->{'citizen'}));
 
-        ## If this is non-virtual United Kingdom account, it must have a postcode
-        die "invalid UK postcode\n"
-            if (request()->brand->countries_instance->countries_list->{$self->residence}->{require_address_postcode}
-            and not $self->is_virtual
-            and not($args->{address_postcode} // $self->address_postcode));
+        # The follwing block contains business logic that should have been covered by rule engine (if there's any)
+        unless ($rule_engine) {
+            ## If this is non-virtual United Kingdom account, it must have a postcode
+            die "PostcodeRequired\n"
+                if (request()->brand->countries_instance->countries_list->{$self->residence}->{require_address_postcode}
+                and not $self->is_virtual
+                and not($args->{address_postcode} // $self->address_postcode));
 
-        # If not broker code is passed rely on current client landing company.
-        # This is remarkably useful for new account calls.
-        my $lc =
-            (defined $args->{broker_code})
-            ? LandingCompany::Registry->get_by_broker($args->{broker_code})
-            : $self->landing_company;
+            # If not broker code is passed rely on current client landing company.
+            # This is remarkably useful for new account calls.
+            my $lc =
+                (defined $args->{broker_code})
+                ? LandingCompany::Registry->get_by_broker($args->{broker_code})
+                : $self->landing_company;
 
-        if ($lc->short =~ /^(?:iom|malta|maltainvest)$/) {
-            die "invalid PO Box\n"
-                if (($args->{address_line_1} || '') =~ /p[\.\s]+o[\.\s]+box/i
-                or ($args->{address_line_2} || '') =~ /p[\.\s]+o[\.\s]+box/i);
+            if ($lc->short =~ /^(?:iom|malta|maltainvest)$/) {
+                die "PoBoxInAddress\n"
+                    if (($args->{address_line_1} || '') =~ /p[\.\s]+o[\.\s]+box/i
+                    or ($args->{address_line_2} || '') =~ /p[\.\s]+o[\.\s]+box/i);
+            }
         }
 
         die "No promotion code was provided\n" if (trim($args->{promo_code_status}) and not(trim($args->{promo_code}) // $self->promo_code));
@@ -1982,11 +2010,32 @@ sub validate_common_account_details {
     }
 }
 
+=pod
+
+=head2 _validate_dob
+
+Validates date of birth and possibly checks the minumum age, taking following arguments:
+
+=over 4
+
+=item * C<dob> - date of birth as a string or epoch
+
+=item * C<residence> - country of residence
+
+=item * C<rule_engine> (optional) - a rule engine object. If rule engine is empty, the whole checks should be done here;
+   otherwise, minimum age won't be checked (TODO: will be deprecated as soon as rule engine is integrated into all account opening RPC calls).
+   
+=back
+
+=cut
+
 sub _validate_dob {
-    my ($self, $dob, $residence) = @_;
+    my ($self, $dob, $residence, $rule_engine) = @_;
 
     my $dob_date = eval { Date::Utility->new($dob) };
     die "InvalidDateOfBirth\n" unless $dob_date;
+
+    return undef if $rule_engine;
 
     my $countries_instance = request()->brand->countries_instance;
 
