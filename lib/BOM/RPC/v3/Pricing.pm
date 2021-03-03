@@ -31,8 +31,7 @@ rpc send_ask => sub {
         $args->{args}->{basis}  = 'payout';
     }
 
-    # TODO : include this line after keys generated here are being used by websocket
-    #delete $response->{skip_basis_override};
+    delete $response->{skip_basis_override};
 
     delete $args->{args}->{passthrough};
 
