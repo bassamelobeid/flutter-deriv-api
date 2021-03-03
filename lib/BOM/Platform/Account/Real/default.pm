@@ -116,8 +116,35 @@ sub after_register_client {
     };
 }
 
+=head2 validate_account_details
+
+Validates and initilizes account details on real account opening, taking following arguments:
+
+=over 4
+
+=item * C<args> - RPC call arguments
+
+=item * C<client> - The client who is requesting for account opening
+
+=item * C<broker> - broker code of the new account
+
+=item * C<source> - the source app id
+
+=item * C<rule_engine> (optional) - a rule engine object. If rule engine is empty, the whole checks should be done here;
+   otherwise, only C<args> will be validated with business delegated to the rule engine
+   (TODO: will be deprecated as soon as rule engine is integrated into all account opening RPC calls).
+
+=back
+
+Returns {
+    error   => C<error_code>
+    details => C<detail info>
+}
+
+=cut
+
 sub validate_account_details {
-    my ($args, $client, $broker, $source) = @_;
+    my ($args, $client, $broker, $source, $rule_engine) = @_;
 
     # If it's a virtual client, replace client with the newest real account if any
     if ($client->is_virtual) {
@@ -151,11 +178,15 @@ sub validate_account_details {
         }
     }
 
-    if (my @missing = grep { !$args->{$_} } required_fields($lc)) {
-        return {
-            error   => 'InsufficientAccountDetails',
-            details => {missing => [@missing]}};
-    }
+    my @missing = grep { !$args->{$_} } required_fields($lc);
+
+    return {
+        error   => 'InsufficientAccountDetails',
+        details => {missing => [@missing]},
+    } if @missing;
+
+    return {error => 'P2PRestrictedCountry'}
+        if ($args->{account_opening_reason} // '') eq 'Peer-to-peer exchange' && !$lc->p2p_available;
 
     unless ($client->is_virtual) {
         my @changed;
@@ -179,7 +210,8 @@ sub validate_account_details {
         }
     }
 
-    my $error = $client->format_input_details($args) || $client->validate_common_account_details($args) || $client->check_duplicate_account($args);
+    my $error = $client->format_input_details($args) || $client->validate_common_account_details($args, $rule_engine);
+    $error ||= $client->check_duplicate_account($args) unless $rule_engine;
     if ($error) {
         #keep original message for create new account
         $error->{error} = 'too young' if $error->{error} eq 'BelowMinimumAge';
@@ -188,9 +220,6 @@ sub validate_account_details {
 
         return $error;
     }
-
-    return {error => 'P2PRestrictedCountry'}
-        if ($args->{account_opening_reason} // '') eq 'Peer-to-peer exchange' & !$lc->p2p_available;
 
     $args->{secret_answer} = BOM::User::Utility::encrypt_secret_answer($args->{secret_answer}) if $args->{secret_answer};
 

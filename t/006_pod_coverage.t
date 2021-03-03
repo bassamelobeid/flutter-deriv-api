@@ -28,7 +28,7 @@ my $allowed_naked_packages = {
     'BOM::Platform::Script::TradeWarnings'       => 6,
     'BOM::Platform::Script::NotifyPub'           => 6,
     'BOM::Platform::Event::Emitter'              => 3,
-    'BOM::Platform::Account::Real::default'      => 4,
+    'BOM::Platform::Account::Real::default'      => 3,
     'BOM::Platform::Account::Real::maltainvest'  => 1,
     'BOM::Platform::Context::Request::Builders'  => 1,
 };
