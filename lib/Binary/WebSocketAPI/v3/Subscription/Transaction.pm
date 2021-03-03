@@ -250,9 +250,9 @@ sub _update_transaction {
                     $details->{transaction}->{symbol}       = $rpc_response->{symbol};
                     $details->{transaction}->{display_name} = $rpc_response->{display_name};
                     $details->{transaction}->{date_expiry}  = $rpc_response->{date_expiry};
-                    $details->{transaction}->{barrier}      = $rpc_response->{barrier} if exists $rpc_response->{barrier};
+                    $details->{transaction}->{barrier}      = $rpc_response->{barrier}      if exists $rpc_response->{barrier};
                     $details->{transaction}->{high_barrier} = $rpc_response->{high_barrier} if $rpc_response->{high_barrier};
-                    $details->{transaction}->{low_barrier}  = $rpc_response->{low_barrier} if $rpc_response->{low_barrier};
+                    $details->{transaction}->{low_barrier}  = $rpc_response->{low_barrier}  if $rpc_response->{low_barrier};
 
                     return $details;
                 }

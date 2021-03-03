@@ -223,9 +223,9 @@ sub create_call_params {
 
     return {
         msg_type    => 'document_upload',
-        req_id      => $params->{req_id} || 0,
+        req_id      => $params->{req_id}      || 0,
         passthrough => $params->{passthrough} || {},
-        echo_req    => $params->{echo_req} || $params,
+        echo_req    => $params->{echo_req}    || $params,
     };
 }
 

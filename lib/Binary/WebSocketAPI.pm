@@ -324,7 +324,7 @@ sub startup {
             max_response_size => 600000,                                                # change and test this if we ever increase ticks history count
             opened_connection => \&Binary::WebSocketAPI::Hooks::on_client_connect,
             finish_connection => \&Binary::WebSocketAPI::Hooks::on_client_disconnect,
-            before_shutdown => \&Binary::WebSocketAPI::v3::Wrapper::Streamer::send_deploy_notification,
+            before_shutdown   => \&Binary::WebSocketAPI::v3::Wrapper::Streamer::send_deploy_notification,
 
             # helper config
             url             => \&Binary::WebSocketAPI::Hooks::assign_rpc_url,           # make url for manually called actions
@@ -356,8 +356,8 @@ sub startup {
                     "bom_websocket_api.v_3.rpc.error.count",
                     {
                         tags => [
-                            sprintf("rpc:%s",    $req_storage->{method}),
-                            sprintf("source:%s", $c->stash('source')),
+                            sprintf("rpc:%s",        $req_storage->{method}),
+                            sprintf("source:%s",     $c->stash('source')),
                             sprintf("error_type:%s", ($error->{type} // 'UnhandledErrorType')),
                             sprintf("stream:%s",
                                 ($req_storage->{msg_group} // Mojo::WebSocketProxy::Backend::ConsumerGroups::DEFAULT_CATEGORY_NAME()))]});

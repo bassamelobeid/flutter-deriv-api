@@ -214,7 +214,7 @@ sub subscribe {
     my ($self, $callback) = @_;
 
     $self->status($self->subscription_manager->subscribe($self)) unless $self->status;
-    return $self->status unless $callback;
+    return $self->status                                         unless $callback;
 
     my $wrapped_cb = sub {
         my $self = shift;

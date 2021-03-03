@@ -200,7 +200,7 @@ sub handle_message {
 
 sub _parse_ohlc_data_for_type {
     my ($data, $type) = @_;
-    my $item   = first { m/^$type:/ } split m/;/, $data                       or die "Couldn't find OHLC data for $type";
+    my $item   = first { m/^$type:/ } split m/;/, $data or die "Couldn't find OHLC data for $type";
     my @fields = $item =~ m/:([.0-9+-]+),([.0-9+-]+),([.0-9+-]+),([.0-9+-]+)/ or die "regexp didn't match";
     return @fields;
 }

@@ -281,7 +281,7 @@ sub _set_defaults {
     my $properties = $validator->{schema_send}->{properties};
 
     foreach my $k (keys %$properties) {
-        next if exists $args->{$k};
+        next                                       if exists $args->{$k};
         $args->{$k} = $properties->{$k}->{default} if $properties->{$k}->{default};
     }
     return;
@@ -379,8 +379,8 @@ sub _rpc_suffix {
 
     my $group_suffix = $Binary::WebSocketAPI::DIVERT_MSG_GROUP{$req_storage->{msg_group} // ''} // '';
     my $app_id       = $c->app_id                                                               // '';
-    my $app_suffix = $Binary::WebSocketAPI::DIVERT_APP_IDS{$app_id};
-    my $processor  = join q{_} => (grep { $_ } ($group_suffix, $app_suffix));
+    my $app_suffix   = $Binary::WebSocketAPI::DIVERT_APP_IDS{$app_id};
+    my $processor    = join q{_} => (grep { $_ } ($group_suffix, $app_suffix));
 
     my $suffix = $processor ? '_' . $processor : '';
     unless (exists $c->app->config->{"rpc_url" . $suffix}) {
