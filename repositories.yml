@@ -9,6 +9,7 @@
 - regentmarkets/bom-postgres
 - regentmarkets/bom-pricing
 - regentmarkets/bom-rpc
+- regentmarkets/bom-rules
 - regentmarkets/bom-test
 - regentmarkets/bom-transaction
 - regentmarkets/bom-user
