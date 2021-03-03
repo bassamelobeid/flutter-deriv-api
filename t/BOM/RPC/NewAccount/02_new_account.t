@@ -912,8 +912,8 @@ subtest $method => sub {
         ok $emitted{"signup_$new_loginid"}, "signup event emitted";
 
         # check disabled case
-        my $new_client = BOM::User::Client->new({loginid => $new_loginid});
-        $new_client->status->set('disabled', 'system', 'reason');
+        my $disabled_client = BOM::User::Client->new({loginid => $new_loginid});
+        $disabled_client->status->set('disabled', 'system', 'reason');
         $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error->result_value_is(
             sub { shift->{landing_company} },
             'Deriv Investments (Europe) Limited',
@@ -922,10 +922,17 @@ subtest $method => sub {
             'maltainvest', 'It should return new account data if one of the account is marked as disabled & account currency is not selected.');
         $new_loginid = $rpc_ct->result->{client_id};
         ok $new_loginid =~ /^MF\d+$/, 'new MF loginid';
+        $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('FinancialAccountExists', 'correct error code.')
+            ->error_message_is('You already have a financial money account. Please switch accounts to trade financial products.',
+            'It should return expected error message');
+
         # check disabled but account currency selected case
-        $new_client->set_default_account("USD");
+        $disabled_client->set_default_account("USD");
+        my $mock_user = Test::MockModule->new('BOM::User');
+        $mock_user->redefine(bom_loginids => {return ($disabled_client->loginid)});
         $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('PermissionDenied', 'correct error code.')
             ->error_message_is('Permission denied.', 'It should return expected error message');
+        $mock_user->unmock_all;
     };
 
     my $client_mlt;

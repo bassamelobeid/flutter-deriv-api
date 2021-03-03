@@ -4,7 +4,7 @@ use warnings;
 use Test::Warnings;
 
 if (my $r =
-    `git grep -E '^(use|require) BOM::' | grep -v -e BOM::Test -e BOM::Platform -e BOM::Config -e BOM::Config -e BOM::Config -e BOM::User -e BOM::Feed -e BOM::Market -e BOM::Database -e BOM::RPC -e BOM::Populator -e BOM::MT5 -e BOM::Transaction -e BOM::Product::ContractFactory -e BOM::Pricing`
+    `git grep -E '^(use|require) BOM::' | grep -v -e BOM::Test -e BOM::Platform -e BOM::Config -e BOM::Config -e BOM::Config -e BOM::User -e BOM::Feed -e BOM::Market -e BOM::Database -e BOM::RPC -e BOM::Populator -e BOM::MT5 -e BOM::Transaction -e BOM::Product::ContractFactory -e BOM::Pricing -e BOM::Rules`
     )
 {
     print $r;

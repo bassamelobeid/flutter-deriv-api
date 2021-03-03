@@ -32,6 +32,7 @@ use BOM::User::Client::PaymentNotificationQueue;
 use BOM::User::Client;
 use BOM::User::FinancialAssessment qw(update_financial_assessment decode_fa);
 use BOM::User;
+use BOM::Rules::Engine;
 
 requires_auth('trading', 'wallet');
 
@@ -293,6 +294,7 @@ sub _get_non_pep_declaration_time {
 
     # declaration time can be safely extracted from older siblings in the same landing company.
     my @same_lc_siblings = $client->user->clients_for_landing_company($company);
+
     for (@same_lc_siblings) {
         return $_->non_pep_declaration_time if $_->non_pep_declaration_time;
     }
@@ -451,6 +453,11 @@ rpc new_account_maltainvest => sub {
 
     $args->{client_type} //= 'retail';
 
+    my $rule_engine = BOM::Rules::Engine->new(
+        client          => $client,
+        landing_company => 'maltainvest'
+    );
+
     # send error if anyone other than maltainvest, virtual,
     # malta, iom tried to make this call
     return BOM::RPC::v3::Utility::permission_error()
@@ -459,18 +466,18 @@ rpc new_account_maltainvest => sub {
     my $non_pep_declaration = delete $args->{non_pep_declaration};
     $args->{non_pep_declaration_time} = _get_non_pep_declaration_time($client, 'maltainvest', $non_pep_declaration, $params->{source});
 
-    my $error = BOM::RPC::v3::Utility::validate_make_new_account($client, 'financial', $args);
+    my $error = BOM::RPC::v3::Utility::validate_make_new_account($client, 'financial', $args, $rule_engine);
     return $error if $error;
-
     my $error_map = BOM::RPC::v3::Utility::error_map();
 
-    my $details_ref = BOM::Platform::Account::Real::default::validate_account_details($args, $client, 'MF', $params->{source});
+    my $details_ref = BOM::Platform::Account::Real::default::validate_account_details($args, $client, 'MF', $params->{source}, $rule_engine);
     if (my $err = $details_ref->{error}) {
         return BOM::RPC::v3::Utility::create_error({
                 code              => $details_ref->{error},
                 message_to_client => $error_map->{$details_ref->{error}},
                 details           => $details_ref->{details}});
     }
+
     # When a Deriv (Europe) Limited/Deriv (MX) Ltd account is created,
     # the 'place of birth' field is not present.
     # After creating Deriv (Europe) Limited/Deriv (MX) Ltd account, client can select
@@ -496,6 +503,12 @@ rpc new_account_maltainvest => sub {
     if (!BOM::Config::Runtime->instance->app_config->system->suspend->universal_password && $sibling_has_migrated_universal_password_status) {
         $val = _update_migrated_universal_password_existing_clients($clients);
         return $val if $val;
+    }
+
+    try {
+        $rule_engine->verify_action('new_account', {%$args, account_type => 'financial'});
+    } catch ($error) {
+        return BOM::RPC::v3::Utility::rule_engine_error($error);
     }
 
     my $acc = BOM::Platform::Account::Real::maltainvest::create_account({

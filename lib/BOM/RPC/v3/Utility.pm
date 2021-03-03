@@ -423,15 +423,20 @@ sub mask_app_id {
 }
 
 sub error_map {
+    ## no critic(TestingAndDebugging::ProhibitNoWarnings)
+    no warnings 'redefine';
+
+    local *localize = sub { die 'you probably wanted an arrayref for this localize() call' if @_ > 1; shift };
+
     return {
-        'email unverified'    => localize('Your email address is unverified.'),
-        'no residence'        => localize('Your account has no country of residence.'),
-        'invalid'             => localize('Sorry, account opening is unavailable.'),
-        'InvalidAccount'      => localize('Sorry, account opening is unavailable.'),
-        'invalid residence'   => localize('Sorry, our service is not available for your country of residence.'),
-        'invalid UK postcode' => localize('Postcode is required for UK residents.'),
-        'invalid PO Box'      => localize('P.O. Box is not accepted in address.'),
-        'duplicate email'     => localize(
+        'email unverified'  => localize('Your email address is unverified.'),
+        'no residence'      => localize('Your account has no country of residence.'),
+        'invalid'           => localize('Sorry, account opening is unavailable.'),
+        'InvalidAccount'    => localize('Sorry, account opening is unavailable.'),
+        'invalid residence' => localize('Sorry, our service is not available for your country of residence.'),
+        'PostcodeRequired'  => localize('Postcode is required for UK residents.'),
+        'PoBoxInAddress'    => localize('P.O. Box is not accepted in address.'),
+        'duplicate email'   => localize(
             'Your provided email address is already in use by another Login ID. According to our terms and conditions, you may only register once through our site.'
         ),
         'DuplicateVirtualWallet' => localize('Sorry, a virtual wallet account already exists. Only one virtual wallet account is allowed.'),
@@ -461,6 +466,8 @@ sub error_map {
         'SetExistingAccountCurrency' => localize('Please set the currency for your existing account [_1], in order to create more accounts.'),
         'P2PRestrictedCountry'       => localize("P2P cashier is unavailable in your country. Please provide a different account opening reason."),
         'InputValidationFailed'      => localize("This field is required."),
+        'DuplicateCurrency'          => localize("Please note that you are limited to only one [_1] account."),
+        'CurrencyTypeNotAllowed'     => localize('Please note that you are limited to one fiat currency account.'),
     };
 }
 
@@ -523,7 +530,7 @@ sub get_available_currencies {
 =cut
 
 sub validate_make_new_account {
-    my ($client, $account_type, $request_data) = @_;
+    my ($client, $account_type, $request_data, $rule_engine) = @_;
 
     return permission_error() if (not $account_type and $account_type !~ /^(?:real|financial)$/);
 
@@ -539,31 +546,55 @@ sub validate_make_new_account {
     return create_error_by_code('NoResidence') unless $residence;
     return create_error_by_code('InvalidResidence') if ($request_data->{residence} and $residence ne $request_data->{residence});
 
+    unless ($client->is_virtual) {
+        # we have real account, and going to create another one
+        # So, lets populate all sensitive data from current client, ignoring provided input
+        # this logic should gone after we separate new_account with new_currency for account
+        foreach (qw/first_name last_name residence address_city phone date_of_birth address_line_1/) {
+            $request_data->{$_} = $client->$_;
+        }
+    }
+
+    # get all real account siblings
+    my $siblings = $client->real_account_siblings_information(exclude_disabled_no_currency => 1);
+
+    if ($rule_engine) {
+        my $is_currency_allowed =
+            $request_data->{currency} ? _is_currency_allowed($client, $siblings, $request_data->{currency}, $rule_engine) : {allowed => 1};
+        return _currency_type_error($is_currency_allowed->{message}) unless $is_currency_allowed->{allowed};
+
+        # This single rule is applied, because we cannot wait until the end of validations when action is verified.
+        try {
+            $rule_engine->apply_rules([qw/residence.account_type_is_allowed/], {%$request_data, account_type => $account_type});
+        } catch ($error) {
+            return rule_engine_error($error);
+        }
+    }
+
+    # the rest of the rules covered by rule engine
+    return undef if $rule_engine;
+
     my $countries_instance = request()->brand->countries_instance;
     my $gaming_company     = $countries_instance->gaming_company_for_country($residence);
     my $financial_company  = $countries_instance->financial_company_for_country($residence);
 
     return create_error_by_code('InvalidAccount') unless $countries_instance->is_signup_allowed($residence);
-
     return create_error_by_code('InvalidAccount') unless ($gaming_company or $financial_company);
-
     return create_error_by_code('InvalidResidence') if ($countries_instance->restricted_country($residence));
-
-    # get all real account siblings
-    my $siblings = $client->real_account_siblings_information(exclude_disabled_no_currency => 1);
 
     # if no real sibling is present then its virtual
     if (scalar(keys %$siblings) == 0) {
         if ($account_type eq 'real') {
             return undef if $gaming_company;
-            # send error as account opening for maltainvest has separate call
+            # some countries (like Australia and singapore) don't have any gaming account;
+            # for their residents the financial landing company will be used; but it's not supposed to be maltainvest.
+            # maltainvest accounts are created by an exclusive API call, with account_type=financial.
             return create_error_by_code('InvalidAccount') if ($financial_company and $financial_company eq 'maltainvest');
-        } elsif ($account_type eq 'financial' and ($financial_company and $financial_company ne 'maltainvest')) {
+        } elsif ($account_type eq 'financial' and not($financial_company and $financial_company eq 'maltainvest')) {
             return create_error_by_code('InvalidAccount');
         }
 
-        # some countries don't have gaming company like Singapore
-        # but we do allow them to open only financial account
+        # No further checks are needed for the first real account
         return undef;
     }
 
@@ -610,15 +641,7 @@ sub validate_make_new_account {
         } else {
             @landing_company_clients = $client->user->clients_for_landing_company($financial_company);
         }
-
         return permission_error() if (any { not $_->status->duplicate_account } @landing_company_clients);
-    } else {
-        # we have real account, and going to create another one
-        # So, lets populate all sensitive data from current client, ignoring provided input
-        # this logic should gone after we separate new_account with new_currency for account
-        foreach (qw/first_name last_name residence address_city phone date_of_birth address_line_1/) {
-            $request_data->{$_} = $client->$_;
-        }
     }
 
     # filter siblings by landing company as we don't want to check cross
@@ -671,10 +694,30 @@ sub _currency_type_error {
             message_to_client => localize($message)});
 }
 
+=pod
+
+=head2 _is_currency_allowed
+
+Checks if the client is allowed to take the requested currency (for itself or for a new account)
+
+=over 4
+
+=item * C<client> - the client object
+
+=item * C<siblings> - client's sibling accounts (including disabled accounts with currencies)
+
+=item * C<currency> - the requested currency
+
+=item * C<rule_engine> (optional) - a rule engine object. If rule engine is empty, the whole checks should be done here;
+   otherwise, sibling account verifications will be skipped (to be covered by the rule engine).
+   (TODO: will be deprecated as soon as rule engine is integrated into all account opening RPC calls).
+
+=back
+
+=cut
+
 sub _is_currency_allowed {
-    my $client   = shift;
-    my $siblings = shift;
-    my $currency = shift;
+    my ($client, $siblings, $currency, $rule_engine) = @_;
 
     my $type = LandingCompany::Registry::get_currency_type($currency);
 
@@ -683,7 +726,7 @@ sub _is_currency_allowed {
         message => localize("The provided currency [_1] is not applicable for this account.", $currency),
     };
 
-    return $result unless $client->landing_company->is_currency_legal($currency);
+    return $result if (!$rule_engine && !$client->landing_company->is_currency_legal($currency));
 
     my $error;
     try {
@@ -702,8 +745,8 @@ sub _is_currency_allowed {
     $result->{message} = localize('This currency is temporarily suspended. Please select another currency to proceed.');
     return $result if verify_experimental_email_whitelisted($client, $currency);
 
-    #that's enough for virtual accounts or empty siblings
-    return {allowed => 1} if ($client->is_virtual or scalar(keys %$siblings) == 0);
+    #that's enough for virtual accounts or empty siblings or when there's a rule engine
+    return {allowed => 1} if ($rule_engine or $client->is_virtual or scalar(keys %$siblings) == 0);
 
     # if fiat then check if client has already any fiat, if yes then don't allow
     $result->{message} = localize('Please note that you are limited to one fiat currency account.');
@@ -958,6 +1001,29 @@ sub missing_details_error {
             code              => 'ASK_FIX_DETAILS',
             message_to_client => localize('Your profile appears to be incomplete. Please update your personal details to continue.'),
             details           => {fields => $args{details}}});
+}
+
+=head2 rule_engine_error
+
+Calls C<create_error> parasing a rule engine exception which can be either a simple string message or a hash reference. Args:
+
+=over 4
+
+=item * C<error> - an error caught from rule engine.
+
+=back
+
+Returns an error structured by C<create_error>
+
+=cut
+
+sub rule_engine_error {
+    my $error = shift;
+
+    # For scalar errors (without error code, etc) let it be caught and logged by default RPC error handling.
+    die $error unless (ref $error and $error->{code});
+
+    return create_error_by_code($error->{code}, %$error);
 }
 
 =head2 create_error_by_code

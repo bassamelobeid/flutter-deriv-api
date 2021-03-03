@@ -7,6 +7,7 @@
 - regentmarkets/bom-populator
 - regentmarkets/bom-postgres
 - regentmarkets/bom-pricing
+- regentmarkets/bom-rules
 - regentmarkets/bom-test
 - regentmarkets/bom-transaction
 - regentmarkets/bom-user
