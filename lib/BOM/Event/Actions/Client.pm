@@ -2135,7 +2135,7 @@ async sub payment_deposit {
             await _address_verification(client => $client);
         } catch {
             my $e = $@;
-            $log->errorf('Failed to verify applicants address: %s', $e);
+            $log->errorf('Failed to verify applicants address for %s : %s', $loginid, $e);
             exception_logged();
         }
 
