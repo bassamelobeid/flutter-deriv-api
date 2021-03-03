@@ -161,24 +161,42 @@ sub actions_config {
             }
         ],
         ['contract_update_history'],
-        ['sell'],
+
+        [
+            'sell',
+            {
+                msg_group => 'trading',
+            }
+        ],
+
         ['cancel'],
+
         [
             'buy',
             {
+                msg_group      => 'trading',
                 before_forward => \&Binary::WebSocketAPI::v3::Wrapper::Transaction::buy_get_contract_params,
                 success        => \&Binary::WebSocketAPI::v3::Wrapper::Transaction::buy_get_single_contract,
                 response       => \&Binary::WebSocketAPI::v3::Wrapper::Transaction::buy_set_poc_subscription_id,
             }
         ],
+
         [
             'buy_contract_for_multiple_accounts',
             {
+                msg_group      => 'trading',
                 before_forward => \&Binary::WebSocketAPI::v3::Wrapper::Transaction::buy_get_contract_params,
                 success        => \&Binary::WebSocketAPI::v3::Wrapper::Transaction::buy_store_last_contract_id,
             }
         ],
-        ['sell_contract_for_multiple_accounts'],
+
+        [
+            'sell_contract_for_multiple_accounts',
+            {
+                msg_group => 'trading',
+            }
+        ],
+
         [
             'transaction',
             {
@@ -192,7 +210,13 @@ sub actions_config {
                 rpc_response_cb => \&Binary::WebSocketAPI::v3::Wrapper::Pricer::proposal_open_contract,
             }
         ],
-        ['sell_expired'],
+
+        [
+            'sell_expired',
+            {
+                msg_group => 'trading',
+            }
+        ],
 
         ['app_register'],
         ['app_list'],
