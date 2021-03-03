@@ -91,7 +91,7 @@ subtest 'new MX real account' => sub {
     subtest 'UK client - invalid p.o. box' => sub {
         my $res = $t->await::new_account_real({%details, address_line_1 => 'p.o. box 25325'}, {timeout => 10});
 
-        is($res->{error}->{code},    'invalid PO Box', 'Invalid p.o. box');
+        is($res->{error}->{code},    'PoBoxInAddress', 'Invalid p.o. box');
         is($res->{new_account_real}, undef,            'NO account created');
     };
 
