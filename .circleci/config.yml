@@ -1,0 +1,109 @@
+alias:
+- &1
+  add_ssh_keys:
+    fingerprints:
+    - 26:72:b1:08:0f:c1:3b:2b:2d:ea:61:7d:d6:11:63:fb
+- &2
+  run:
+    command: /opt/circle/prepare-test.sh
+    name: Update git repositories
+- &3
+  run:
+    background: true
+    command: |
+      start_services
+      touch /tmp/services.ready
+    name: Start services
+- &4
+  run:
+    command: |
+      count=0
+      while [ ! -f /tmp/services.ready ]; do
+          echo 'Still waiting for services...'
+          (( count++ )) && (( count >= 20 )) && break
+          sleep 1
+      done
+    name: Wait for services to start up
+- &5
+  environment:
+    PERL_TEST_HARNESS_DUMP_TAP: /var/tmp/test-output
+default: &6
+  docker:
+  - auth:
+      password: $DOCKERHUB_PASSWORD
+      username: circle4regentmarkets
+    image: regentmarkets/debian-ci:stable
+    user: nobody
+  shell: /bin/bash -leo pipefail
+  working_directory: /home/git/regentmarkets/bom-rules
+jobs:
+  syntax:
+    <<: *6
+    steps:
+    - *1
+    - *2
+    - *3
+    - *4
+    - run:
+        <<: *5
+        command: |
+          echo '--formatter TAP::Formatter::JUnit' >> .proverc
+          make syntax
+        name: Verify syntax and compilation
+    - store_test_results:
+        path: /var/tmp/test-output
+  unit:
+    <<: *6
+    steps:
+    - *1
+    - *2
+    - *3
+    - *4
+    - run:
+        <<: *5
+        command: |
+          echo '--formatter TAP::Formatter::JUnit' >> .proverc
+          make test
+        name: Run tests
+    - store_test_results:
+        path: /var/tmp/test-output
+  code_coverage:
+    <<: *6
+    steps:
+    - *1
+    - *2
+    - *3
+    - *4
+    - run:
+        <<: *5
+        command: make cover
+        name: code coverage tests
+version: 2
+workflows:
+  build-workflow:
+    jobs: &7
+    - syntax:
+        context: perl
+    - unit:
+        context: perl
+  daily:
+    jobs: *7
+    triggers:
+    - schedule:
+        cron: 4 20 * * *
+        filters:
+          branches:
+            only:
+            - master
+  weekly-code-coverage:
+    jobs:
+    - code_coverage:
+        context: perl
+    triggers:
+    - schedule:
+        cron: "50 3 * * 6"
+        filters:
+          branches:
+            only:
+            - master
+  version: 2

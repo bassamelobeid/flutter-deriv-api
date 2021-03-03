@@ -1,0 +1,31 @@
+new_account:
+  description: Contains rules to be applied on real account opening
+  general:
+    - residence.is_signup_allowed
+    - residence.account_type_is_allowed
+    - residence.not_restricted
+    - landing_company.accounts_limit_not_reached
+    - user.has_no_real_clients_without_currency
+    - landing_company.required_fields_are_non_empty
+    - landing_company.p2p_account_opening_reason
+  context:
+    landing_company:
+      malta: &from_eu
+        - client.no_pobox_in_address
+      maltainvest: *from_eu
+      iom: *from_eu
+      default:
+        - pass
+    residence:
+      uk:
+        - client.address_postcode_mandatory
+      default:
+        - pass
+  args:
+    account_type:
+      real: &real_accounts
+        - landing_company.currency_is_allowed
+        - user.currency_is_available
+        - residence.date_of_birth_complies_minimum_age
+        - client.check_duplicate_account
+      financial: *real_accounts
