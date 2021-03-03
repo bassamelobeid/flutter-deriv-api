@@ -53,11 +53,12 @@ print qq~
 ~;
 
 Bar("IMPERSONATE CLIENT");
-print '<form action="' . request()->url_for('backoffice/client_impersonate.cgi') . '" method="get" class="row">';
-print '<label>Login ID:</label>';
-print '<input type=text size=15 name="impersonate_loginid" data-lpignore="true" /> ';
-print "<input type='hidden' name='broker' value='$encoded_broker'>";
-print '<input type="submit" class="btn btn--primary" value="Impersonate"></form>';
+BOM::Backoffice::Request::template()->process(
+    'backoffice/client_impersonate_form.html.tt',
+    {
+        impersonate_url => request()->url_for('backoffice/client_impersonate.cgi'),
+        encoded_broker  => $encoded_broker,
+    });
 
 Bar("SEND ACCOUNT RECOVERY EMAIL");
 BOM::Backoffice::Request::template()->process(

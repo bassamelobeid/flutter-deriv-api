@@ -984,14 +984,13 @@ BOM::Backoffice::Request::template()->process(
         checked         => '',
     });
 
-print qq{
-<div class="row">
-<form action="$impersonate_url" method="get">
-<input type='hidden' size=30 name="impersonate_loginid" value="$encoded_loginid">
-<input type='hidden' name='broker' value='$encoded_broker'>
-<input type="submit" class="btn btn--secondary" value="Impersonate"></form>
-</div>
-};
+BOM::Backoffice::Request::template()->process(
+    'backoffice/client_impersonate_form.html.tt',
+    {
+        impersonate_url => $impersonate_url,
+        encoded_loginid => $encoded_loginid,
+        encoded_broker  => $encoded_broker,
+    });
 
 # Display only the latest 2 comments here for faster review by CS
 my $comments_count  = 2;

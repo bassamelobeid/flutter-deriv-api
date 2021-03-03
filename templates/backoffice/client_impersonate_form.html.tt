@@ -1,0 +1,12 @@
+<div class="row">
+    <form action="[% impersonate_url %]" method="get">
+        [% IF encoded_loginid %]
+            <input type="hidden" name="impersonate_loginid" value="[% encoded_loginid %]" />
+        [% ELSE %]
+            <label for="txt_impersonate_loginid">Login ID:</label>
+            <input type="text" size="15" name="impersonate_loginid" id="txt_impersonate_loginid" data-lpignore="true" />
+        [% END %]
+        <input type="hidden" name="broker" value="[% encoded_broker %]" />
+        <input type="submit" class="btn [% IF encoded_loginid %]btn--secondary[% ELSE %]btn--primary[% END %]" value="Impersonate" />
+    </form>
+</div>
