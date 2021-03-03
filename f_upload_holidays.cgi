@@ -42,8 +42,7 @@ if ($input{upload_excel}) {
     $calendar_hash = Bloomberg::BloombergCalendar::parse_calendar($filename, $type_to_parser);
     # since partial_trading is handled separately in the function below, calendar_name is set to holidays
     $calendar_name = 'holidays';
-    code_exit_BO("<p class='error'>Invalid CSV</p>", $title) unless (defined $calendar_hash->{early_closes_data});
-    _save_early_closes_calendar($calendar_hash->{early_closes_data}, $staff);
+    _save_early_closes_calendar($calendar_hash->{early_closes_data}, $staff) if defined $calendar_hash->{early_closes_data};
 
 } elsif ($input{manual_holiday_upload}) {
     $calendar_name = 'holidays';
