@@ -2,8 +2,7 @@
 
 use strict;
 use warnings;
-use Test::Warnings;
-use Test::More tests => 16;
+use Test::More;
 use Test::Exception;
 use Test::FailWarnings -allow_from => [qw/BOM::Database::Rose::DB/];
 use BOM::Database::Model::Account;
@@ -13,6 +12,7 @@ use BOM::Database::Model::FinancialMarketBet::Factory;
 use BOM::Database::Model::Constants;
 use BOM::Database::Helper::FinancialMarketBet;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use BOM::Database::DataMapper::FinancialMarketBet;
 use Date::Utility;
 
 my $connection_builder;
@@ -315,4 +315,33 @@ lives_ok {
 }
 'expect to buy 2 identical bets & sell 2 bets';
 
+my $fmb_dm = BOM::Database::DataMapper::FinancialMarketBet->new({
+    client_loginid => $account->client_loginid,
+    currency_code  => $account->currency_code,
+    bet            => $financial_market_bet,
+    db             => $connection_builder->db,
+});
+
+subtest 'get_sold_bets_of_account' => sub {
+    my $data = $fmb_dm->get_sold_bets_of_account();
+    is $data->[0]{underlying_symbol}, 'frxUSDJPY', 'underlying_symbol';
+    is $data->[0]{account_id},        $account->id, 'account_id';
+    is $data->[0]{remark},            'Test Remark', 'Test Remark';
+};
+
+subtest 'get_fmb_by_id' => sub {
+    my $fmb = BOM::Test::Data::Utility::UnitTestDatabase::create_fmb({
+        type => 'fmb_higher_lower_buy',
+    });
+
+    my $result = $fmb_dm->get_fmb_by_id([$fmb->id]);
+    isa_ok($result->[0], 'BOM::Database::Model::FinancialMarketBet::HigherLowerBet');
+
+};
+subtest 'get_sold' => sub {
+    my $data = $fmb_dm->get_sold();
+    is $data->[0]{underlying_symbol}, 'frxUSDJPY', 'underlying_symbol';
+    is $data->[0]{account_id},        $account->id, 'account_id';
+    is $data->[0]{remark},            'Test Remark', 'Test Remark';
+};
 done_testing;
