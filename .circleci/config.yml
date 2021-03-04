@@ -103,7 +103,7 @@ version: 2
 workflows:
   build-workflow:
     jobs: &7
-    - syntax:
+    - code_coverage:
         context: perl
     - core:
         context: perl

@@ -35,7 +35,7 @@ syntax:
 
 cover:
 	cover -delete
-	PERL5OPT=-MBOM::Test HARNESS_PERL_SWITCHES=-MDevel::Cover DEVEL_COVER_OPTIONS=-'ignore,^t/' /etc/rmg/bin/prove --timer -rl --norc  -MBOM::Test::Script::ExperianMock t/BOM/ t/unit/
+	PERL5OPT=-MBOM::Test HARNESS_PERL_SWITCHES=-MDevel::Cover DEVEL_COVER_OPTIONS=-'ignore,^t/' /etc/rmg/bin/prove --timer -rl --norc -I/home/git/regentmarkets/perl-WebService-Async-DevExperts/lib -I/home/git/regentmarkets/perl-WebService-Async-DevExperts/local/lib/perl5 -MBOM::Test::Script::ExperianMock t/BOM/ t/unit/
 	cover -report coveralls
 
 unit:
