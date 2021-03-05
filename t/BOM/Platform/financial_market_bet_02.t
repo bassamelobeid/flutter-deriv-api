@@ -1332,6 +1332,8 @@ subtest 'batch_buy', sub {
     my $pw     = $config->{password};
     my $port   = $ENV{DB_TEST_PORT} // 5432;
 
+    $pw = $config->{svg}->{write}->{write_password} //= $config->{password};
+
     my $listener = DBI->connect(
         "dbi:Pg:dbname=$db;host=$ip;port=$port;application_name=notify_pub",
         'write', $pw,

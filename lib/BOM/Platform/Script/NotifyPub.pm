@@ -117,13 +117,13 @@ sub _master_db_connections {
                 $data->{dbname} = 'cr';
             }
 
-            $data->{dbname}   //= 'regentmarkets';
-            $data->{password} //= $config->{password};
+            $data->{dbname}         //= 'regentmarkets';
+            $data->{write_password} //= $config->{password};
             # conn contains a hash ref which contains conection details needed per database
             $conn->{$data->{ip} . '/' . $data->{dbname}} = {
                 ip       => $data->{ip},
                 dbname   => $data->{dbname},
-                password => $data->{password},
+                password => $data->{write_password},
                 port     => $port // 5432,
             };
         }
