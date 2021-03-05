@@ -455,6 +455,16 @@ sub update_user {
     my $param = {};
     $param->{$_} = $args->{$_} for (@fields);
 
+    # Due to the implementation of this module and the php-mt5-webapi repo
+    #   you could only update the following properties. Failing to provide
+    #   these data may lead to the reset of the missing prop on MT5.
+    #   Look at the following codes for more information:
+    #   https://github.com/regentmarkets/php-mt5-webapi/blob/master/lib/binary_mt5.php#L299-L328
+    #   https://github.com/regentmarkets/php-mt5-webapi/blob/master/lib/mt5_api/mt5_user.php#L612-L636
+    #
+    #   address, agent, city, company, country, email, leverage,
+    #   name, phone, phonePassword, rights, state, zipCode;
+
     return _invoke_mt5('UserUpdate', $param)->then(
         sub {
             my ($response) = @_;
