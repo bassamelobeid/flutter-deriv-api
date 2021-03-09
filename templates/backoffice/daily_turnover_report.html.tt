@@ -7,6 +7,22 @@
 </div>
 <hr/>
 
+[% IF dtr.summarize_turnover %]
+<br>
+    <table id="summary" class='bg-highlight'>
+        <thead>
+            <tr><th/><th>Current</th><th>Projected</th></tr>
+        </thead>
+        <tbody>
+            <tr><th>Turnover</th><td>[% commas(dtr.all_USD_buys) %]</td><td>[% commas(dtr.projected_turnover) %]</td></tr>
+            <tr><th>Profit</th><td>[% commas(dtr.estimated_pl) %]</td><td>[% commas(dtr.projected_pl) %]</td></tr>
+            <tr><th>Hold</th><td colspan="2" class="shared">[% dtr.pct_hold %]%</td></tr>
+        </tbody>
+        <caption>Amounts in USD. Projections based on a <strong>[% dtr.pct_month_completed %]%</strong> complete marked-to-model month.</caption>
+    </table>
+[% END %]
+<br>
+
 [% IF dtr.risk_report %]
 <p>See, also: <a class="link link--primary" href="[% dtr.risk_report | none %]">the latest Risk Dashboard</a></p>
 [% END %]
@@ -21,10 +37,6 @@
         <thead>
         <tr>
             <th>DATE</th>
-            [% FOREACH currency IN dtr.currencies.sort %]
-                <th>[% dtr.buy_label %] ([% currency %])</th>
-                <th>[% dtr.sell_label %] ([% currency %])</th>
-            [% END %]
             <th>[% dtr.buy_label %] (USD AGG.)</th>
             <th>[% dtr.sell_label %] (USD AGG.)</th>
             <th>USD <br>[% dtr.buy_label %]-[% dtr.sell_label %]</th>
@@ -32,16 +44,16 @@
             <th>P/L O.BETS (USD)</th>
             <th>PL ON DAY</th>
             <th>Active Clients</th>
+            [% FOREACH currency IN dtr.currencies.sort %]
+                <th>[% dtr.buy_label %] ([% currency %])</th>
+                <th>[% dtr.sell_label %] ([% currency %])</th>
+            [% END %]
         </tr>
         </thead>
         <tbody>
-            [% FOREACH day IN dtr.days %]
+            [% FOREACH day IN dtr.days.reverse %]
                 <tr[% IF day.is_weekend %] class="weekend"[% END %]>
                     <td>[% day.date %]</td>
-                    [% FOREACH currency IN dtr.currencies.sort%]
-                        <td>[% IF day.buys.$currency %][% currency %]<br>[% commas(day.buys.$currency) %][% ELSE %]&nbsp;[% END %]</td>
-                        <td>[% IF day.sells.$currency %][% currency %]<br>[% commas(day.sells.$currency) %][% ELSE %]&nbsp;[% END %]</td>
-                    [% END %]
                     <td><strong>USD<br>[% commas(day.USD_buys) %]</strong></td>
                     <td><strong>USD<br>[% commas(day.USD_sells) %]</strong></td>
                     <td class="[% IF day.pl < 0 %]down[% ELSE %]up[% END %]"><strong>USD<br>[% commas(day.pl) %]</td>
@@ -51,6 +63,10 @@
                         <strong>USD<br>[% commas(day.pl_on_day) %]</strong>
                     </td>
                     <td>[% day.active_clients %]</td>
+                    [% FOREACH currency IN dtr.currencies.sort%]
+                        <td>[% IF day.buys.$currency %][% currency %]<br>[% commas(day.buys.$currency) %][% ELSE %]&nbsp;[% END %]</td>
+                        <td>[% IF day.sells.$currency %][% currency %]<br>[% commas(day.sells.$currency) %][% ELSE %]&nbsp;[% END %]</td>
+                    [% END %]
                 </tr>
             [% END %]
         <tr>
@@ -70,20 +86,6 @@
         </tbody>
     </table>
 </div>
-[% IF dtr.summarize_turnover %]
-<br>
-    <table id="summary" class='bg-highlight'>
-        <thead>
-            <tr><th/><th>Current</th><th>Projected</th></tr>
-        </thead>
-        <tbody>
-            <tr><th>Turnover</th><td>[% commas(dtr.all_USD_buys) %]</td><td>[% commas(dtr.projected_turnover) %]</td></tr>
-            <tr><th>Profit</th><td>[% commas(dtr.estimated_pl) %]</td><td>[% commas(dtr.projected_pl) %]</td></tr>
-            <tr><th>Hold</th><td colspan="2" class="shared">[% dtr.pct_hold %]%</td></tr>
-        </tbody>
-        <caption>Amounts in USD. Projections based on a <strong>[% dtr.pct_month_completed %]%</strong> complete marked-to-model month.</caption>
-    </table>
-[% END %]
 
 <style type="text/css">
     #dtr span.warning, span.warning * { color:var(--color-red); }
