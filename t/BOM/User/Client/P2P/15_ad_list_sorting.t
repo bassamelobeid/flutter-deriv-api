@@ -36,8 +36,8 @@ my (undef, $sell_ad2) = BOM::Test::Helper::P2P::create_advert(
     rate   => 101
 );
 
-is $adv1->p2p_advert_list(id => $buy_ad1->{id})->[0]{advertiser_details}{completion_rate}, undef, 'no completion rate yet or advertiser 1';
-is $adv1->p2p_advert_list(id => $buy_ad2->{id})->[0]{advertiser_details}{completion_rate}, undef, 'no completion rate yet or advertiser 2';
+is $adv1->p2p_advert_list(id => $buy_ad1->{id})->[0]{advertiser_details}{total_completion_rate}, undef, 'no completion rate yet or advertiser 1';
+is $adv1->p2p_advert_list(id => $buy_ad2->{id})->[0]{advertiser_details}{total_completion_rate}, undef, 'no completion rate yet or advertiser 2';
 
 my $order = $adv1->p2p_order_create(
     advert_id => $sell_ad2->{id},
@@ -93,8 +93,8 @@ cmp_deeply(\@ids, [$sell_ad1->{id}, $sell_ad2->{id}], 'lowest rate first for buy
 )->@*;
 cmp_deeply(\@ids, [$sell_ad2->{id}, $sell_ad1->{id}], 'sort sell ads by completion');
 
-is $adv1->p2p_advert_list(id => $buy_ad1->{id})->[0]{advertiser_details}{completion_rate}, '50.0',  'completion rate for advertiser 1';
-is $adv1->p2p_advert_list(id => $buy_ad2->{id})->[0]{advertiser_details}{completion_rate}, '100.0', 'completion rate for advertiser 2';
+is $adv1->p2p_advert_list(id => $buy_ad1->{id})->[0]{advertiser_details}{total_completion_rate}, '50.0',  'completion rate for advertiser 1';
+is $adv1->p2p_advert_list(id => $buy_ad2->{id})->[0]{advertiser_details}{total_completion_rate}, '100.0', 'completion rate for advertiser 2';
 
 BOM::Test::Helper::P2P::reset_escrow();
 

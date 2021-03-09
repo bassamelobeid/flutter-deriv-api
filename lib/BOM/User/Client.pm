@@ -3733,9 +3733,9 @@ sub _advert_details {
                 : ()
             ),
             advertiser_details => {
-                id              => $advert->{advertiser_id},
-                name            => $advert->{advertiser_name},
-                completion_rate => defined $advert->{advertiser_completion} ? sprintf("%.1f", $advert->{advertiser_completion} * 100) : undef,
+                id                    => $advert->{advertiser_id},
+                name                  => $advert->{advertiser_name},
+                total_completion_rate => defined $advert->{advertiser_completion} ? sprintf("%.1f", $advert->{advertiser_completion} * 100) : undef,
                 $advert->{advertiser_show_name}
                 ? (
                     first_name => $advert->{advertiser_first_name},

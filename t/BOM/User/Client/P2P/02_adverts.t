@@ -345,15 +345,15 @@ subtest 'Creating advert' => sub {
         type                     => $params{type},
         counterparty_type        => $params{counterparty_type},
         advertiser_details       => {
-            id              => $advertiser->p2p_advertiser_info->{id},
-            name            => $name,
-            completion_rate => undef,
+            id                    => $advertiser->p2p_advertiser_info->{id},
+            name                  => $name,
+            total_completion_rate => undef,
         },
     };
 
     cmp_deeply($advert, $expected_advert, "advert_create returns expected fields");
 
-    $expected_advert->{advertiser_details}{completion_rate} = undef;
+    $expected_advert->{advertiser_details}{total_completion_rate} = undef;
     cmp_deeply($advertiser->p2p_advertiser_adverts, [$expected_advert], "p2p_advertiser_adverts returns expected fields");
 
     # these are not returned by previous calls because there was no counterparty to check balance for buy orders
