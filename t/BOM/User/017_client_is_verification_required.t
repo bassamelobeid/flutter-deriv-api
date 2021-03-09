@@ -1,7 +1,6 @@
 use strict;
 use warnings;
 
-use Test::MockTime;
 use Test::More qw(no_plan);
 use Test::Fatal qw(lives_ok);
 use Test::MockModule;

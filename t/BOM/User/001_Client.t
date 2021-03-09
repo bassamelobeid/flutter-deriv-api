@@ -4,7 +4,6 @@ binmode STDOUT, ':utf8';
 use strict;
 use warnings;
 
-use Test::MockTime;
 use Test::More qw( no_plan );
 use Test::Deep;
 use Test::Exception;

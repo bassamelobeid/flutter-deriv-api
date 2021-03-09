@@ -1,7 +1,6 @@
 use strict;
 use warnings;
 
-use Test::MockTime;
 use Test::More qw(no_plan);
 use Test::Exception;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
@@ -62,6 +61,7 @@ subtest 'Almost all accessor/modifiers' => sub {
 
     is($client->self_exclusion->exclude_until, '2009-09-06T00:00:00', "the client limit exclude until number is 2009-09-06.");
 
+    # TODO here we need to mock the time
     my $timeout_until = time() + 86400;
     $client->set_exclusion->timeout_until($timeout_until);
 

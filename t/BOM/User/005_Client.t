@@ -7,7 +7,6 @@ use utf8;
 use Format::Util::Strings qw( defang );
 use BOM::User::Client;
 
-use Test::MockTime;
 use Test::More qw(no_plan);
 use Test::Exception;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);

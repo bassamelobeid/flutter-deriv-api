@@ -6,7 +6,6 @@ binmode STDOUT, ':utf8';
 use strict;
 use warnings;
 
-use Test::MockTime;
 use Test::More;
 use Test::Exception;
 use Test::Deep qw(cmp_deeply);
