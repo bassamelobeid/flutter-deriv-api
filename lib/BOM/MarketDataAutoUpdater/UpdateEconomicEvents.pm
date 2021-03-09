@@ -31,7 +31,8 @@ use constant {
 sub run {
     my $self = shift;
 
-    my $ff                 = get_events_from_forex_factory();
+    # forex-factory is disabled because it was unrelabile. we are only using bloomberg economic events.
+    my $ff                 = undef;
     my $bb                 = get_events_from_bloomberg_data_license();
     my $consolidate_events = consolidate_events($ff, $bb);
 
