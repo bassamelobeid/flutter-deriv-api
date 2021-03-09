@@ -32,7 +32,7 @@ sub run {
     my $self = shift;
 
     # forex-factory is disabled because it was unrelabile. we are only using bloomberg economic events.
-    my $ff                 = undef;
+    my $ff                 = [];
     my $bb                 = get_events_from_bloomberg_data_license();
     my $consolidate_events = consolidate_events($ff, $bb);
 
