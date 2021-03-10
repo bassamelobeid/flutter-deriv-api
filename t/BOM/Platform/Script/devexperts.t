@@ -6,6 +6,7 @@ use Test::MockModule;
 use Test::Deep;
 use IO::Async::Loop;
 use BOM::Platform::Script::DevExpertsAPIService;
+use WebService::Async::DevExperts::Model::Error;
 use IO::Async::Loop;
 use JSON::MaybeUTF8 qw(:v1);
 use Log::Any::Adapter qw(TAP);
@@ -54,6 +55,21 @@ subtest 'API response types' => sub {
     $resp = $http->POST($url, '{ "method": "client_password_change" }', content_type => 'application/json')->get;
     is $resp->content, '', 'client_password_change (empty result)';
 
+    $mock_api->mock(
+        'http_send',
+        sub {
+            die WebService::Async::DevExperts::Model::Error->new(
+                error_code    => '123',
+                error_message => 'it failed',
+                http_code     => 469
+            );
+        });
+
+    $resp = $http->POST($url, '{ "method": "client_create" }', content_type => 'application/json')->get;
+    my $msg = decode_json_utf8($resp->content);
+    is $msg->{error_code},    123,         'error code';
+    is $msg->{error_message}, 'it failed', 'error message';
+    is $resp->code, 469, 'http code';
 };
 
 done_testing;

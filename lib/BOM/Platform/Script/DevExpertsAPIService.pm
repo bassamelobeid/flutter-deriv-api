@@ -13,7 +13,7 @@ use WebService::Async::DevExperts::Model::Common;
 use HTTP::Response;
 use JSON::MaybeUTF8 qw(:v1);
 use Unicode::UTF8;
-use Scalar::Util qw(refaddr);
+use Scalar::Util qw(refaddr blessed);
 
 use Log::Any qw($log);
 
@@ -140,14 +140,23 @@ async sub handle_http_request {
         $response->content_type("application/javascript");
         $req->respond($response);
     } catch ($e) {
-        chomp($e);
         $log->debugf('Failed processing request: %s', $e);
         try {
-            my $response = HTTP::Response->new(500);
-            $response->content_type("text/plain");
-            $response->add_content(ref $e ? encode_json_utf8($e) : Unicode::UTF8::encode_utf8("$e"));
-            $response->content_length(length $response->content);
-            $req->respond($response);
+            if (blessed($e) and $e->isa('WebService::Async::DevExperts::Model::Error')) {
+                my $response      = HTTP::Response->new($e->http_code);
+                my $response_data = WebService::Async::DevExperts::Model::Common::convert_case($e->as_hashref);
+                $response->add_content(encode_json_utf8($response_data));
+                $response->content_length(length $response->content);
+                $response->content_type("application/javascript");
+                $req->respond($response);
+            } else {
+                chomp($e);
+                my $response = HTTP::Response->new(500);
+                $response->content_type("text/plain");
+                $response->add_content(ref $e ? encode_json_utf8($e) : Unicode::UTF8::encode_utf8("$e"));
+                $response->content_length(length $response->content);
+                $req->respond($response);
+            }
         } catch ($e2) {
             $log->errorf('Failed when trying to send failure response - %s', $e2);
         }
@@ -170,7 +179,8 @@ async sub start {
             socktype => 'stream',
             port     => $self->{listen_port}});
     my $port = $listner->read_handle->sockport;
-    $log->tracef('Server is listening on port %s', $port);
+
+    $log->tracef('DevExperts API service is listening on port %s', $port);
     return $port;
 }
 

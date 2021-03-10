@@ -6,6 +6,7 @@ use IO::Async::Loop;
 use WebService::Async::DevExperts::Server;
 use YAML::XS;
 use Log::Any::Adapter;
+use Path::Tiny qw(path);
 
 binmode STDOUT, ':encoding(UTF-8)';
 binmode STDERR, ':encoding(UTF-8)';
@@ -21,7 +22,10 @@ GetOptions(
     'p|port=s'       => \my $port,
     'k|api_key=s'    => \my $api_key,
     's|api_secret=s' => \my $api_secret,
+    'pid-file=s'     => \my $pid_file,     # for tests
 );
+
+path($pid_file)->spew("$$") if $pid_file;
 
 my $config = YAML::XS::LoadFile('/etc/rmg/devexperts.yml');
 

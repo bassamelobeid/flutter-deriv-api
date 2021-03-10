@@ -6,6 +6,7 @@ use IO::Async::Loop;
 use BOM::Platform::Script::DevExpertsAPIService;
 use YAML::XS;
 use Log::Any::Adapter;
+use Path::Tiny qw(path);
 
 binmode STDOUT, ':encoding(UTF-8)';
 binmode STDERR, ':encoding(UTF-8)';
@@ -27,7 +28,10 @@ GetOptions(
     's|api_secret=s' => \my $api_secret,
     'u|api_user=s'   => \my $api_user,
     'w|api_pass=s'   => \my $api_pass,
+    'pid-file=s'     => \my $pid_file,      # for tests
 );
+
+path($pid_file)->spew("$$") if $pid_file;
 
 my $config = YAML::XS::LoadFile('/etc/rmg/devexperts.yml');
 
