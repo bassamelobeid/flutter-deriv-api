@@ -82,9 +82,11 @@ check the current environment is ci environment
         # This port is only valid in QA. In CI, we use the same ports as QA manual testing
         $ENV{DB_TEST_PORT} = 5451;
     }
-    $ENV{TEST_DATABASE}     = 1;                 ## no critic (RequireLocalizedPunctuationVars)
-    $ENV{SEGMENT_BASE_URL}  = 'http://dummy/';
-    $ENV{SEGMENT_WRITE_KEY} = 'test';
+    $ENV{TEST_DATABASE}               = 1;                 ## no critic (RequireLocalizedPunctuationVars)
+    $ENV{SEGMENT_BASE_URL}            = 'http://dummy/';
+    $ENV{SEGMENT_WRITE_KEY}           = 'test';
+    $ENV{DEVEXPERTS_API_SERVICE_PORT} = 8083;
+    $ENV{DEVEXPERTS_SERVER_PORT}      = 8084;
 
     # remove PERL5OPT which could cause confusion when forking to perls
     # different from our own (e.g. from binary-com/perl to /usr/bin/perl)

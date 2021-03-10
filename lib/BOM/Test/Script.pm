@@ -10,7 +10,7 @@ use Mojo::Base -base;
 use Path::Tiny;
 use File::Basename;
 
-has [qw(script args)];
+has [qw(script args perlinc)];
 
 has name => sub {
     return basename(shift->script);
@@ -54,13 +54,16 @@ sub start_script {
     my $pid_file = $self->pid_file;
     $pid_file->remove;
 
-    my $args = $self->args // [];
-    my $pid  = fork();
+    my $args     = $self->args    // [];
+    my $perlinc  = $self->perlinc // [];
+    my @perlopts = ('-MBOM::Test', map { '-I' . $_ } @$perlinc);
+
+    my $pid = fork();
     die "Cannot fork to run script $script" unless defined($pid);
 
     unless ($pid) {
         local $ENV{NO_PURGE_REDIS} = 1;
-        exec($^X, qw(-MBOM::Test), $script, '--pid-file', $pid_file, @$args) or die "Couldn't execute $script: $!";
+        exec($^X, @perlopts, $script, '--pid-file', $pid_file, @$args) or die "Couldn't execute $script: $!";
     }
 
     for (1 .. 10) {
