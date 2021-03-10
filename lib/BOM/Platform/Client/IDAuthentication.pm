@@ -272,49 +272,25 @@ sub _request_id_authentication {
     my $support_email = $brand->emails('support');
     my $subject       = localize('Documents are required to verify your identity');
 
-    # Since this is an HTML email, plain text content will be mangled badly. Instead, we use
-    # Markdown syntax, since there are various converters and the plain text to HTML options
-    # in Perl are somewhat limited and/or opinionated.
-    my $body = localize(<<'EOM', $client_name, $brand->website_name, $brand->authentication_url);
-Dear [_1],
-
-Thank you for creating your [_2] account!
-
-To enable trading, deposits, and withdrawals on your account, we'll need to authenticate your identity and address.
-
-Please get ready:
-
-- Your valid passport, driving licence, or national ID card; and
-- Your bank statement or utility bill showing your name and address (not more than 6 months' old)
-
-You can <a href="[_3]">authenticate your account</a> now if you have those documents ready.
-
-Thank you for choosing [_2]!
-
-Sincerely,
-Team [_2]
-
-EOM
+    my $template_args = {
+        name                 => $client_name,
+        website_name         => $brand->website_name,
+        title_padding        => 30,
+        title_bottom_padding => 0,
+        authentication_url   => $brand->authentication_url,
+    };
 
     return send_email({
-            from    => $support_email,
-            to      => $client->email,
-            subject => $subject,
-            message => [
-                Text::Markdown::markdown(
-                    $body,
-                    {
-                        # Defaults to the obsolete XHTML format
-                        empty_element_suffix => '>',
-                        tab_width            => 4,
-                    })
-            ],
-            use_email_template    => 1,
-            email_content_is_html => 1,
-            skip_text2html        => 1,
-            template_loginid      => $client->loginid,
-        },
-    );
+        from                  => $support_email,
+        to                    => $client->email,
+        subject               => $subject,
+        template_name         => 'id_authentication_new',
+        template_args         => $template_args,
+        use_email_template    => 1,
+        email_content_is_html => 1,
+        use_event             => 1,
+        template_loginid      => $client->loginid,
+    });
 }
 
 =head2 _notify_cs
