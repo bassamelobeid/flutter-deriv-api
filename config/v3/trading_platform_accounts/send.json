@@ -24,9 +24,8 @@
         "platform": {
             "description": "Trading platform name",
             "type": "string",
-            "default": "dxtrader",
             "enum": [
-                "dxtrader"
+                "dxtrade"
             ]
         },
         "passthrough": {

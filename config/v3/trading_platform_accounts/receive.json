@@ -32,10 +32,6 @@
                         "description": "Balance of the Trading account.",
                         "type": "number"
                     },
-                    "country": {
-                        "description": "Residence of the Trading account.",
-                        "type": "string"
-                    },
                     "currency": {
                         "description": "Currency of the Trading account.",
                         "type": "string"
@@ -69,16 +65,11 @@
                             "gaming"
                         ]
                     },
-                    "name": {
-                        "description": "Name of the owner of the Trading account.",
-                        "type": "string"
-                    },
                     "platform": {
                         "description": "Name of trading platform.",
                         "type": "string",
-                        "default": "dxtrader",
                         "enum": [
-                            "dxtrader"
+                            "dxtrade"
                         ]
                     },
                     "sub_account_type": {

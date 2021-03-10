@@ -2,6 +2,6 @@
     "trading_platform_withdrawal": 1,
     "amount": 1000,
     "from_account": "DX1000",
-    "platform": "dxtrader",
+    "platform": "dxtrade",
     "to_account": "CR100001"
 }

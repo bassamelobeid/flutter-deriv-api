@@ -29,10 +29,6 @@
                     "description": "Balance of the Trading account.",
                     "type": "number"
                 },
-                "country": {
-                    "description": "Residence of the Trading account.",
-                    "type": "string"
-                },
                 "currency": {
                     "description": "Currency of the Trading account.",
                     "type": "string"
@@ -55,31 +51,26 @@
                     ]
                 },
                 "login": {
-                    "description": "Login name used to log in into Trading platform",
+                    "description": "Login name used to log in into Trading platform.",
                     "type": "string"
                 },
                 "market_type": {
-                    "description": "Market type",
+                    "description": "Market type.",
                     "type": "string",
                     "enum": [
                         "financial",
                         "gaming"
                     ]
                 },
-                "name": {
-                    "description": "Name of the owner of the Trading account.",
-                    "type": "string"
-                },
                 "platform": {
-                    "description": "Pass the trading platform name",
+                    "description": "Name of trading platform.",
                     "type": "string",
-                    "default": "dxtrader",
                     "enum": [
-                        "dxtrader"
+                        "dxtrade"
                     ]
                 },
                 "sub_account_type": {
-                    "description": "Sub account type",
+                    "description": "Sub account type.",
                     "type": "string",
                     "enum": [
                         "financial",
