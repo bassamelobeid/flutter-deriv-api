@@ -10,8 +10,9 @@ BOM::TradingPlatform::MT5 - The MetaTrader5 trading platform implementation.
 
 =head1 SYNOPSIS 
 
-    my $mt5 = BOM::TradingPlatform::MT5->new();
-    $mt5->deposit(...);
+    my $mt5 = BOM::TradingPlatform::MT5->new(client => $client);
+    my $account = $mt5->new_account(...)
+    $mt5->deposit(account => $account, ...);
 
 =head1 DESCRIPTION 
 

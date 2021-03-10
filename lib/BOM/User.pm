@@ -64,6 +64,7 @@ use constant {
     MT5_DEMO_REGEX       => qr/^MTD(?=\d+$)/,
     VIRTUAL_REGEX        => qr/^VR[TC|CH]/,
     VIRTUAL_WALLET_REGEX => qr/^VRDW\d+/,
+    DXTRADE_REGEX        => qr/^DX[DR]\d{4,}/,
 };
 
 sub create {
@@ -115,24 +116,59 @@ sub add_client {
 }
 
 sub add_loginid {
-    my ($self, $loginid) = @_;
+    my ($self, $loginid, $platform, $account_type, $currency, $attributes) = @_;
     croak('need a loginid') unless $loginid;
+    $attributes = encode_json($attributes) if $attributes;
     my ($result) = $self->dbic->run(
         fixup => sub {
-            return $_->selectrow_array('select users.add_loginid(?,?)', undef, $self->{id}, $loginid);
+            return $_->selectrow_array('select users.add_loginid(?, ?, ?, ?, ?, ?)',
+                undef, $self->{id}, $loginid, $platform, $account_type, $currency, $attributes);
         });
-    push @{$self->{loginids}}, $result if ($self->{loginids} && $result);
+    delete $self->{loginid_details} if $result;
     return $self;
 }
 
+=head2 loginid_details
+
+Get all loginids linked to the user with all fields.
+
+Returns hashref.
+
+=cut
+
+sub loginid_details {
+    my $self = shift;
+    return $self->{loginid_details} if $self->{loginid_details};
+    my $loginids = $self->dbic->run(
+        fixup => sub {
+            return $_->selectall_arrayref(
+                'select loginid, platform, account_type, currency, attributes from users.get_loginids(?)',
+                {Slice => {}},
+                $self->{id});
+        });
+    $self->{loginid_details} = {};
+    for my $login (@$loginids) {
+        $login->{attributes} = decode_json($login->{attributes}) if $login->{attributes};
+        $self->{loginid_details}{delete $login->{loginid}} = $login;
+    }
+    return $self->{loginid_details};
+}
+
+=head2 loginids
+
+Gets loginids linked to the user, sorted.
+
+Returns array.
+
+=cut
+
 sub loginids {
     my $self = shift;
-    return @{$self->{loginids}} if $self->{loginids};
-    $self->{loginids} = $self->dbic->run(
-        fixup => sub {
-            return $_->selectcol_arrayref('select loginid from users.get_loginids(?)', undef, $self->{id});
-        });
-    return @{$self->{loginids}};
+    return (sort keys $self->loginid_details->%*);
+}
+
+sub login_attributes {
+
 }
 
 =head2 create_client
@@ -356,7 +392,7 @@ get client non-mt5 login ids
 
 sub bom_loginids {
     my $self = shift;
-    return grep { $_ !~ MT5_REGEX } $self->loginids;
+    return grep { $_ !~ MT5_REGEX && $_ !~ DXTRADE_REGEX } $self->loginids;
 }
 
 =head2 bom_real_loginids
@@ -367,7 +403,7 @@ get non-mt5 real login ids
 
 sub bom_real_loginids {
     my $self = shift;
-    return grep { $_ !~ MT5_REGEX && $_ !~ VIRTUAL_REGEX } $self->loginids;
+    return grep { $_ !~ MT5_REGEX && $_ !~ DXTRADE_REGEX && $_ !~ VIRTUAL_REGEX } $self->loginids;
 }
 
 =head2 bom_virtual_loginid

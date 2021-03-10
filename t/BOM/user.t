@@ -90,7 +90,7 @@ subtest 'default loginid' => sub {
         push @loginids, $cr_1;
         cmp_deeply([sort @loginids], [sort $user->loginids], 'loginids array match');
         $user->add_client($client_cr);
-        cmp_deeply([sort @loginids], [sort @{$user->{loginids}}], 'loginids still match even we tried to add same loginid twice');
+        cmp_deeply([sort @loginids], [sort $user->loginids], 'loginids still match even we tried to add same loginid twice');
 
         my $def_client = ($user->clients)[0];
         is $def_client->loginid, $cr_1, 'real acc as default';

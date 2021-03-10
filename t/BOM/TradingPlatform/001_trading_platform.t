@@ -13,7 +13,7 @@ subtest 'Instantiate trading platform' => sub {
             class    => 'BOM::TradingPlatform::MT5',
         },
         {
-            platform => 'dxtrader',
+            platform => 'dxtrade',
             lives    => 1,
             class    => 'BOM::TradingPlatform::DXTrader',
         },
@@ -27,7 +27,7 @@ subtest 'Instantiate trading platform' => sub {
         my $trading_platform;
 
         my $error = exception {
-            $trading_platform = BOM::TradingPlatform->new($platform);
+            $trading_platform = BOM::TradingPlatform->new(platform => $platform);
         };
 
         ok !$error, "$platform should make it" if $lives;
@@ -52,7 +52,7 @@ subtest 'Implementation completeness' => sub {
             get_accounts       => 0,
             get_open_positions => 0,
         },
-        dxtrader => {
+        dxtrade => {
             new_account        => 1,
             change_password    => 1,
             deposit            => 1,
@@ -64,7 +64,7 @@ subtest 'Implementation completeness' => sub {
     };
 
     for my $platform (keys $tests->%*) {
-        my $trading_platform = BOM::TradingPlatform->new($platform);
+        my $trading_platform = BOM::TradingPlatform->new(platform => $platform);
 
         for my $method ($abstract_methods->@*) {
             ok defined $tests->{$platform}->{$method}, "$platform has a test for $method";

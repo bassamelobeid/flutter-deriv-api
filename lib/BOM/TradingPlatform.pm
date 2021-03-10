@@ -10,11 +10,11 @@ BOM::TradingPlatform - Trading platform interface.
 
 =head1 SYNOPSIS 
 
-    my $dxtrader = BOM::TradingPlatform->new('dxtrader');
+    my $dxtrader = BOM::TradingPlatform->new(platform => 'DXtrade', client => $client);
     $dxtrader->deposit(...);
 
-    my $mt5 = BOM::TradingPlatform->new('mt5');
-    $mt5->deposit(...);
+    my $mt5 = BOM::TradingPlatform->new(platform =>'mt5', client => $client);
+    $dxtrader->deposit(...);
 
 =head1 DESCRIPTION 
 
@@ -29,8 +29,8 @@ use BOM::TradingPlatform::DXTrader;
 use BOM::TradingPlatform::MT5;
 
 use constant CLASS_DICT => {
-    mt5      => 'BOM::TradingPlatform::MT5',
-    dxtrader => 'BOM::TradingPlatform::DXTrader',
+    mt5     => 'BOM::TradingPlatform::MT5',
+    dxtrade => 'BOM::TradingPlatform::DXTrader',
 };
 use constant INTERFACE => qw(
     new_account
@@ -77,12 +77,20 @@ Returns a valid implementation of L<BOM::TradingPlatform>
 =cut
 
 sub new {
-    (undef, my $platform) = @_;
+    my (undef, %args) = @_;
 
-    my $class = CLASS_DICT->{$platform}
-        or die "Unknown trading platform: $platform";
+    my $class = CLASS_DICT->{$args{platform}}
+        or die "Unknown trading platform: $args{platform}";
 
-    return bless {}, $class;
+    return bless {client => $args{client}}, $class;
 }
+
+=head2 client
+
+Returns client instance provided to new().
+
+=cut
+
+sub client { return shift->{client} }
 
 1;
