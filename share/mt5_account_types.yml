@@ -3,7 +3,7 @@ demo_labuan_financial_financial_stp: &demo_labuan_financial_financial_stp
   landing_company_short: labuan
   market_type: financial
   sub_account_type: financial_stp
-  server: demo01
+  server: p01_ts01
 demo\labuan_financial_stp: *demo_labuan_financial_financial_stp
 demo01\financial\labuan_stp_usd: *demo_labuan_financial_financial_stp
 demo\p01_ts01\financial\labuan_stp_usd: *demo_labuan_financial_financial_stp
@@ -13,7 +13,7 @@ demo_bvi_financial_financial_stp: &demo_bvi_financial_financial_stp
   landing_company_short: bvi
   market_type: financial
   sub_account_type: financial_stp
-  server: demo01
+  server: p01_ts01
 demo\bvi_financial_stp: *demo_bvi_financial_financial_stp
 demo01\financial\bvi_stp_usd: *demo_bvi_financial_financial_stp
 demo\p01_ts01\financial\bvi_stp_usd: *demo_bvi_financial_financial_stp
@@ -23,7 +23,7 @@ demo_maltainvest_financial_swap_free: &demo_maltainvest_financial_swap_free
   landing_company_short: maltainvest
   market_type: financial
   sub_account_type: swap_free
-  server: demo01
+  server: p01_ts01
 demo01\financial\maltainvest_sf_eur: *demo_maltainvest_financial_swap_free
 demo01\financial\maltainvest_sf_gbp: *demo_maltainvest_financial_swap_free
 demo\p01_ts01\financial\maltainvest_sf_eur: *demo_maltainvest_financial_swap_free
@@ -35,7 +35,7 @@ demo_maltainvest_financial_financial: &demo_maltainvest_financial_financial
   landing_company_short: maltainvest
   market_type: financial
   sub_account_type: financial
-  server: demo01
+  server: p01_ts01
 demo\maltainvest_financial: *demo_maltainvest_financial_financial
 demo\maltainvest_financial_gbp: *demo_maltainvest_financial_financial
 demo01\financial\maltainvest_std_gbp: *demo_maltainvest_financial_financial
@@ -49,7 +49,7 @@ demo_samoa_financial_financial: &demo_samoa_financial_financial
   landing_company_short: samoa
   market_type: financial
   sub_account_type: financial
-  server: demo01
+  server: p01_ts01
 demo01\financial\samoa_std_btc: *demo_samoa_financial_financial
 demo01\financial\samoa_std_ust: *demo_samoa_financial_financial
 demo\p01_ts01\financial\samoa_std_btc: *demo_samoa_financial_financial
@@ -61,7 +61,7 @@ demo_svg_financial_swap_free: &demo_svg_financial_swap_free
   landing_company_short: svg
   market_type: financial
   sub_account_type: swap_free
-  server: demo01
+  server: p01_ts01
 demo01\financial\svg_sf_usd: *demo_svg_financial_swap_free
 demo\p01_ts01\financial\svg_sf_usd: *demo_svg_financial_swap_free
 
@@ -71,7 +71,7 @@ demo_svg_financial_financial: &demo_svg_financial_financial
   landing_company_short: svg
   market_type: financial
   sub_account_type: financial
-  server: demo01
+  server: p01_ts01
 demo\svg_financial: *demo_svg_financial_financial
 demo01\financial\svg_std_usd: *demo_svg_financial_financial
 demo\p01_ts01\financial\svg_std_usd: *demo_svg_financial_financial
@@ -82,7 +82,7 @@ demo_vanuatu_financial_financial: &demo_vanuatu_financial_financial
   landing_company_short: vanuatu
   market_type: financial
   sub_account_type: financial
-  server: demo01
+  server: p01_ts01
 demo\vanuatu_financial: *demo_vanuatu_financial_financial
 demo01\financial\vanuatu_std_usd: *demo_vanuatu_financial_financial
 demo\p01_ts01\financial\vanuatu_std_usd: *demo_vanuatu_financial_financial
@@ -93,7 +93,7 @@ demo_malta_gaming_swap_free: &demo_malta_gaming_swap_free
   landing_company_short: malta
   market_type: gaming
   sub_account_type: swap_free
-  server: demo01
+  server: p01_ts01
 demo01\synthetic\malta_sf_eur: *demo_malta_gaming_swap_free
 demo\p01_ts01\synthetic\malta_sf_eur: *demo_malta_gaming_swap_free
 
@@ -103,7 +103,7 @@ demo_malta_gaming_financial: &demo_malta_gaming_financial
   landing_company_short: malta
   market_type: gaming
   sub_account_type: financial
-  server: demo01
+  server: p01_ts01
 demo\malta: *demo_malta_gaming_financial
 demo01\synthetic\malta_std_eur: *demo_malta_gaming_financial
 demo\p01_ts01\synthetic\malta_std_eur: *demo_malta_gaming_financial
@@ -114,7 +114,7 @@ demo_samoa_gaming_financial: &demo_samoa_gaming_financial
   landing_company_short: samoa
   market_type: gaming
   sub_account_type: financial
-  server: demo01
+  server: p01_ts01
 demo01\synthetic\samoa_std_btc: *demo_samoa_gaming_financial
 demo01\synthetic\samoa_std_ust: *demo_samoa_gaming_financial
 demo\p01_ts01\synthetic\samoa_std_btc: *demo_samoa_gaming_financial
@@ -126,7 +126,7 @@ demo_svg_gaming_swap_free: &demo_svg_gaming_swap_free
   landing_company_short: svg
   market_type: gaming
   sub_account_type: swap_free
-  server: demo01
+  server: p01_ts01
 demo01\synthetic\svg_sf_usd: *demo_svg_gaming_swap_free
 demo\p01_ts01\synthetic\svg_sf_usd: *demo_svg_gaming_swap_free
 
@@ -136,7 +136,7 @@ demo_svg_gaming_financial: &demo_svg_gaming_financial
   landing_company_short: svg
   market_type: gaming
   sub_account_type: financial
-  server: demo01
+  server: p01_ts01
 demo\svg: *demo_svg_gaming_financial
 demo01\synthetic\svg_std_usd: *demo_svg_gaming_financial
 demo\p01_ts01\synthetic\svg_std_usd: *demo_svg_gaming_financial
@@ -146,7 +146,7 @@ demo_bvi_financial_financial_stp: &demo_bvi_financial_financial_stp
   landing_company_short: bvi
   market_type: financial
   sub_account_type: financial_stp
-  server: demo01
+  server: p01_ts01
 demo\bvi_financial_stp: *demo_bvi_financial_financial_stp
 demo01\financial\bvi_stp_usd: *demo_bvi_financial_financial_stp
 
@@ -155,32 +155,38 @@ real_bvi_financial_financial_stp: &real_bvi_financial_financial_stp
   landing_company_short: bvi
   market_type: financial
   sub_account_type: financial_stp
-  server: real01
+  server: p01_ts01
 real01\financial\bvi_stp_usd: *real_bvi_financial_financial_stp
 real\p01_ts01\financial\bvi_stp_usd: *real_bvi_financial_financial_stp
 # there's no financial account for real02, real03 and real04. But, just in case
 # we change our minds in the future.
-real02\financial\bvi_stp_usd: &real02_bvi_financial_financial_stp
+real02\financial\bvi_stp_usd: &real_p01ts02_bvi_financial_financial_stp
   account_type: real
   landing_company_short: bvi
   market_type: financial
   sub_account_type: financial_stp
-  server: real02
-real\p01_ts02\financial\bvi_stp_usd: *real02_bvi_financial_financial_stp
-real03\financial\bvi_stp_usd: &real03_bvi_financial_financial_stp
+  server: p01_ts02
+real\p01_ts02\financial\bvi_stp_usd: *real_p01ts02_bvi_financial_financial_stp
+real03\financial\bvi_stp_usd: &real_p01ts03_bvi_financial_financial_stp
   account_type: real
   landing_company_short: bvi
   market_type: financial
   sub_account_type: financial_stp
-  server: real03
-real\p01_ts03\financial\bvi_stp_usd: *real03_bvi_financial_financial_stp
-real04\financial\bvi_stp_usd: &real04_bvi_financial_financial_stp
+  server: p01_ts03
+real\p01_ts03\financial\bvi_stp_usd: *real_p01ts03_bvi_financial_financial_stp
+real04\financial\bvi_stp_usd: &real_p01ts04_bvi_financial_financial_stp
   account_type: real
   landing_company_short: bvi
   market_type: financial
   sub_account_type: financial_stp
-  server: real04
-real\p01_ts04\financial\bvi_stp_usd: *real04_bvi_financial_financial_stp
+  server: p01_ts04
+real\p01_ts04\financial\bvi_stp_usd: *real_p01ts04_bvi_financial_financial_stp
+real\p02_ts02\financial\bvi_stp_usd: &real_p02ts02_bvi_financial_financial_stp
+  account_type: real
+  landing_company_short: bvi
+  market_type: financial
+  sub_account_type: financial_stp
+  server: p02_ts02
 
 
 real_labuan_financial_financial_stp: &real_labuan_financial_financial_stp
@@ -188,33 +194,39 @@ real_labuan_financial_financial_stp: &real_labuan_financial_financial_stp
   landing_company_short: labuan
   market_type: financial
   sub_account_type: financial_stp
-  server: real01
+  server: p01_ts01
 real\labuan_financial_stp: *real_labuan_financial_financial_stp
 real01\financial\labuan_stp_usd: *real_labuan_financial_financial_stp
 real\p01_ts01\financial\labuan_stp_usd: *real_labuan_financial_financial_stp
 # there's no financial account for real02, real03 and real04. But, just in case
 # we change our minds in the future.
-real02\financial\labuan_stp_usd: &real02_labuan_financial_financial_stp
+real02\financial\labuan_stp_usd: &real_p01ts02_labuan_financial_financial_stp
   account_type: real
   landing_company_short: labuan
   market_type: financial
   sub_account_type: financial_stp
-  server: real02
-real\p01_ts02\financial\labuan_stp_usd: *real02_labuan_financial_financial_stp
-real03\financial\labuan_stp_usd: &real03_labuan_financial_financial_stp
+  server: p01_ts02
+real\p01_ts02\financial\labuan_stp_usd: *real_p01ts02_labuan_financial_financial_stp
+real03\financial\labuan_stp_usd: &real_p01ts03_labuan_financial_financial_stp
   account_type: real
   landing_company_short: labuan
   market_type: financial
   sub_account_type: financial_stp
-  server: real03
-real\p01_ts03\financial\labuan_stp_usd: *real03_labuan_financial_financial_stp
-real04\financial\labuan_stp_usd: &real04_labuan_financial_financial_stp
+  server: p01_ts03
+real\p01_ts03\financial\labuan_stp_usd: *real_p01ts03_labuan_financial_financial_stp
+real04\financial\labuan_stp_usd: &real_p01ts04_labuan_financial_financial_stp
   account_type: real
   landing_company_short: labuan
   market_type: financial
   sub_account_type: financial_stp
-  server: real04
-real\p01_ts04\financial\labuan_stp_usd: *real04_labuan_financial_financial_stp
+  server: p01_ts04
+real\p01_ts04\financial\labuan_stp_usd: *real_p01ts04_labuan_financial_financial_stp
+real\p02_ts02\financial\labuan_stp_usd: &real_p02ts02_labuan_financial_financial_stp
+  account_type: real
+  landing_company_short: labuan
+  market_type: financial
+  sub_account_type: financial_stp
+  server: p02_ts02
 
 
 real_maltainvest_financial_swap_free: &real_maltainvest_financial_swap_free
@@ -222,40 +234,47 @@ real_maltainvest_financial_swap_free: &real_maltainvest_financial_swap_free
   landing_company_short: maltainvest
   market_type: financial
   sub_account_type: swap_free
-  server: real01
+  server: p01_ts01
 real01\financial\maltainvest_sf-hr_eur: *real_maltainvest_financial_swap_free
 real01\financial\maltainvest_sf-hr_gbp: *real_maltainvest_financial_swap_free
 real\p01_ts01\financial\maltainvest_sf-hr_eur: *real_maltainvest_financial_swap_free
 real\p01_ts01\financial\maltainvest_sf-hr_gbp: *real_maltainvest_financial_swap_free
 # there's no financial account for real02, real03 and real04. But, just in case
 # we change our minds in the future.
-real02\financial\maltainvest_sf-hr_eur: &real02_maltainvest_financial_swap_free
+real02\financial\maltainvest_sf-hr_eur: &real_p01ts02_maltainvest_financial_swap_free
   account_type: real
   landing_company_short: maltainvest
   market_type: financial
   sub_account_type: swap_free
-  server: real02
-real02\financial\maltainvest_sf-hr_gbp: *real02_maltainvest_financial_swap_free
-real\p01_ts02\financial\maltainvest_sf-hr_eur: *real02_maltainvest_financial_swap_free
-real\p01_ts02\financial\maltainvest_sf-hr_gbp: *real02_maltainvest_financial_swap_free
-real03\financial\maltainvest_sf-hr_eur: &real03_maltainvest_financial_swap_free
+  server: p01_ts02
+real02\financial\maltainvest_sf-hr_gbp: *real_p01ts02_maltainvest_financial_swap_free
+real\p01_ts02\financial\maltainvest_sf-hr_eur: *real_p01ts02_maltainvest_financial_swap_free
+real\p01_ts02\financial\maltainvest_sf-hr_gbp: *real_p01ts02_maltainvest_financial_swap_free
+real03\financial\maltainvest_sf-hr_eur: &real_p01ts03_maltainvest_financial_swap_free
   account_type: real
   landing_company_short: maltainvest
   market_type: financial
   sub_account_type: swap_free
-  server: real03
-real03\financial\maltainvest_sf-hr_gbp: *real03_maltainvest_financial_swap_free
-real\p01_ts03\financial\maltainvest_sf-hr_eur: *real03_maltainvest_financial_swap_free
-real\p01_ts03\financial\maltainvest_sf-hr_gbp: *real03_maltainvest_financial_swap_free
-real04\financial\maltainvest_sf-hr_eur: &real04_maltainvest_financial_swap_free
+  server: p01_ts03
+real03\financial\maltainvest_sf-hr_gbp: *real_p01ts03_maltainvest_financial_swap_free
+real\p01_ts03\financial\maltainvest_sf-hr_eur: *real_p01ts03_maltainvest_financial_swap_free
+real\p01_ts03\financial\maltainvest_sf-hr_gbp: *real_p01ts03_maltainvest_financial_swap_free
+real04\financial\maltainvest_sf-hr_eur: &real_p01ts04_maltainvest_financial_swap_free
   account_type: real
   landing_company_short: maltainvest
   market_type: financial
   sub_account_type: swap_free
-  server: real04
-real04\financial\maltainvest_sf-hr_gbp: *real04_maltainvest_financial_swap_free
-real\p01_ts04\financial\maltainvest_sf-hr_eur: *real04_maltainvest_financial_swap_free
-real\p01_ts04\financial\maltainvest_sf-hr_gbp: *real04_maltainvest_financial_swap_free
+  server: p01_ts04
+real04\financial\maltainvest_sf-hr_gbp: *real_p01ts04_maltainvest_financial_swap_free
+real\p01_ts04\financial\maltainvest_sf-hr_eur: *real_p01ts04_maltainvest_financial_swap_free
+real\p01_ts04\financial\maltainvest_sf-hr_gbp: *real_p01ts04_maltainvest_financial_swap_free
+real\p02_ts02\financial\maltainvest_sf-hr_eur: &real_p02ts02_maltainvest_financial_swap_free
+  account_type: real
+  landing_company_short: maltainvest
+  market_type: financial
+  sub_account_type: swap_free
+  server: p02_ts02
+real\p02_ts02\financial\maltainvest_sf-hr_gbp: *real_p02ts02_maltainvest_financial_swap_free
 
 
 real_maltainvest_financial_financial: &real_maltainvest_financial_financial
@@ -263,7 +282,7 @@ real_maltainvest_financial_financial: &real_maltainvest_financial_financial
   landing_company_short: maltainvest
   market_type: financial
   sub_account_type: financial
-  server: real01
+  server: p01_ts01
 real\maltainvest_financial_gbp: *real_maltainvest_financial_financial
 real\maltainvest_financial: *real_maltainvest_financial_financial
 real01\financial\maltainvest_std-hr_eur: *real_maltainvest_financial_financial
@@ -272,33 +291,40 @@ real\p01_ts01\financial\maltainvest_std-hr_eur: *real_maltainvest_financial_fina
 real\p01_ts01\financial\maltainvest_std-hr_gbp: *real_maltainvest_financial_financial
 # there's no financial account for real02, real03 and real04. But, just in case
 # we change our minds in the future.
-real02\financial\maltainvest_std-hr_eur: &real02_maltainvest_financial_financial
+real02\financial\maltainvest_std-hr_eur: &real_p01ts02_maltainvest_financial_financial
   account_type: real
   landing_company_short: maltainvest
   market_type: financial
   sub_account_type: financial
-  server: real02
-real02\financial\maltainvest_std-hr_gbp: *real02_maltainvest_financial_financial
-real\p01_ts02\financial\maltainvest_std-hr_gbp: *real02_maltainvest_financial_financial
-real\p01_ts02\financial\maltainvest_std-hr_eur: *real02_maltainvest_financial_financial
-real03\financial\maltainvest_std-hr_eur: &real03_maltainvest_financial_financial
+  server: p01_ts02
+real02\financial\maltainvest_std-hr_gbp: *real_p01ts02_maltainvest_financial_financial
+real\p01_ts02\financial\maltainvest_std-hr_gbp: *real_p01ts02_maltainvest_financial_financial
+real\p01_ts02\financial\maltainvest_std-hr_eur: *real_p01ts02_maltainvest_financial_financial
+real03\financial\maltainvest_std-hr_eur: &real_p01ts03_maltainvest_financial_financial
   account_type: real
   landing_company_short: maltainvest
   market_type: financial
   sub_account_type: financial
-  server: real03
-real03\financial\maltainvest_std-hr_gbp: *real03_maltainvest_financial_financial
-real\p01_ts03\financial\maltainvest_std-hr_gbp: *real03_maltainvest_financial_financial
-real\p01_ts03\financial\maltainvest_std-hr_eur: *real03_maltainvest_financial_financial
-real04\financial\maltainvest_std-hr_eur: &real04_maltainvest_financial_financial
+  server: p01_ts03
+real03\financial\maltainvest_std-hr_gbp: *real_p01ts03_maltainvest_financial_financial
+real\p01_ts03\financial\maltainvest_std-hr_gbp: *real_p01ts03_maltainvest_financial_financial
+real\p01_ts03\financial\maltainvest_std-hr_eur: *real_p01ts03_maltainvest_financial_financial
+real04\financial\maltainvest_std-hr_eur: &real_p01ts04_maltainvest_financial_financial
   account_type: real
   landing_company_short: maltainvest
   market_type: financial
   sub_account_type: financial
-  server: real04
-real04\financial\maltainvest_std-hr_gbp: *real04_maltainvest_financial_financial
-real\p01_ts04\financial\maltainvest_std-hr_gbp: *real04_maltainvest_financial_financial
-real\p01_ts04\financial\maltainvest_std-hr_eur: *real04_maltainvest_financial_financial
+  server: p01_ts04
+real04\financial\maltainvest_std-hr_gbp: *real_p01ts04_maltainvest_financial_financial
+real\p01_ts04\financial\maltainvest_std-hr_gbp: *real_p01ts04_maltainvest_financial_financial
+real\p01_ts04\financial\maltainvest_std-hr_eur: *real_p01ts04_maltainvest_financial_financial
+real\p02_ts02\financial\maltainvest_std-hr_gbp: &real_p02ts02_maltainvest_financial_financial
+  account_type: real
+  landing_company_short: maltainvest
+  market_type: financial
+  sub_account_type: financial
+  server: p02_ts02
+real\p02_ts02\financial\maltainvest_std-hr_eur: *real_p02ts02_maltainvest_financial_financial
 
 
 real_samoa_financial_swap_free: &real_samoa_financial_swap_free
@@ -306,7 +332,7 @@ real_samoa_financial_swap_free: &real_samoa_financial_swap_free
   landing_company_short: samoa
   market_type: financial
   sub_account_type: swap_free
-  server: real01
+  server: p01_ts01
 real01\financial\samoa_sf-hr_btc: *real_samoa_financial_swap_free
 real01\financial\samoa_sf-hr_ust: *real_samoa_financial_swap_free
 real01\financial\samoa_sf_btc: *real_samoa_financial_swap_free
@@ -317,45 +343,54 @@ real\p01_ts01\financial\samoa_sf_btc: *real_samoa_financial_swap_free
 real\p01_ts01\financial\samoa_sf_ust: *real_samoa_financial_swap_free
 # there's no financial account for real02, real03 and real04. But, just in case
 # we change our minds in the future.
-real02\financial\samoa_sf-hr_btc: &real02_samoa_financial_swap_free
+real02\financial\samoa_sf-hr_btc: &real_p01ts02_samoa_financial_swap_free
   account_type: real
   landing_company_short: samoa
   market_type: financial
   sub_account_type: swap_free
-  server: real02
-real02\financial\samoa_sf-hr_ust: *real02_samoa_financial_swap_free
-real02\financial\samoa_sf_btc: *real02_samoa_financial_swap_free
-real02\financial\samoa_sf_ust: *real02_samoa_financial_swap_free
-real\p01_ts02\financial\samoa_sf-hr_btc: *real02_samoa_financial_swap_free
-real\p01_ts02\financial\samoa_sf-hr_ust: *real02_samoa_financial_swap_free
-real\p01_ts02\financial\samoa_sf_btc: *real02_samoa_financial_swap_free
-real\p01_ts02\financial\samoa_sf_ust: *real02_samoa_financial_swap_free
-real03\financial\samoa_sf-hr_btc: &real03_samoa_financial_swap_free
+  server: p01_ts02
+real02\financial\samoa_sf-hr_ust: *real_p01ts02_samoa_financial_swap_free
+real02\financial\samoa_sf_btc: *real_p01ts02_samoa_financial_swap_free
+real02\financial\samoa_sf_ust: *real_p01ts02_samoa_financial_swap_free
+real\p01_ts02\financial\samoa_sf-hr_btc: *real_p01ts02_samoa_financial_swap_free
+real\p01_ts02\financial\samoa_sf-hr_ust: *real_p01ts02_samoa_financial_swap_free
+real\p01_ts02\financial\samoa_sf_btc: *real_p01ts02_samoa_financial_swap_free
+real\p01_ts02\financial\samoa_sf_ust: *real_p01ts02_samoa_financial_swap_free
+real03\financial\samoa_sf-hr_btc: &real_p01ts03_samoa_financial_swap_free
   account_type: real
   landing_company_short: samoa
   market_type: financial
   sub_account_type: swap_free
-  server: real03
-real03\financial\samoa_sf-hr_ust: *real03_samoa_financial_swap_free
-real03\financial\samoa_sf_btc: *real03_samoa_financial_swap_free
-real03\financial\samoa_sf_ust: *real03_samoa_financial_swap_free
-real\p01_ts03\financial\samoa_sf-hr_btc: *real03_samoa_financial_swap_free
-real\p01_ts03\financial\samoa_sf-hr_ust: *real03_samoa_financial_swap_free
-real\p01_ts03\financial\samoa_sf_btc: *real03_samoa_financial_swap_free
-real\p01_ts03\financial\samoa_sf_ust: *real03_samoa_financial_swap_free
-real04\financial\samoa_sf-hr_btc: &real04_samoa_financial_swap_free
+  server: p01_ts03
+real03\financial\samoa_sf-hr_ust: *real_p01ts03_samoa_financial_swap_free
+real03\financial\samoa_sf_btc: *real_p01ts03_samoa_financial_swap_free
+real03\financial\samoa_sf_ust: *real_p01ts03_samoa_financial_swap_free
+real\p01_ts03\financial\samoa_sf-hr_btc: *real_p01ts03_samoa_financial_swap_free
+real\p01_ts03\financial\samoa_sf-hr_ust: *real_p01ts03_samoa_financial_swap_free
+real\p01_ts03\financial\samoa_sf_btc: *real_p01ts03_samoa_financial_swap_free
+real\p01_ts03\financial\samoa_sf_ust: *real_p01ts03_samoa_financial_swap_free
+real04\financial\samoa_sf-hr_btc: &real_p01ts04_samoa_financial_swap_free
   account_type: real
   landing_company_short: samoa
   market_type: financial
   sub_account_type: swap_free
-  server: real04
-real04\financial\samoa_sf-hr_ust: *real04_samoa_financial_swap_free
-real04\financial\samoa_sf_btc: *real04_samoa_financial_swap_free
-real04\financial\samoa_sf_ust: *real04_samoa_financial_swap_free
-real\p01_ts04\financial\samoa_sf-hr_btc: *real04_samoa_financial_swap_free
-real\p01_ts04\financial\samoa_sf-hr_ust: *real04_samoa_financial_swap_free
-real\p01_ts04\financial\samoa_sf_btc: *real04_samoa_financial_swap_free
-real\p01_ts04\financial\samoa_sf_ust: *real04_samoa_financial_swap_free
+  server: p01_ts04
+real04\financial\samoa_sf-hr_ust: *real_p01ts04_samoa_financial_swap_free
+real04\financial\samoa_sf_btc: *real_p01ts04_samoa_financial_swap_free
+real04\financial\samoa_sf_ust: *real_p01ts04_samoa_financial_swap_free
+real\p01_ts04\financial\samoa_sf-hr_btc: *real_p01ts04_samoa_financial_swap_free
+real\p01_ts04\financial\samoa_sf-hr_ust: *real_p01ts04_samoa_financial_swap_free
+real\p01_ts04\financial\samoa_sf_btc: *real_p01ts04_samoa_financial_swap_free
+real\p01_ts04\financial\samoa_sf_ust: *real_p01ts04_samoa_financial_swap_free
+real\p02_ts02\financial\samoa_sf-hr_btc: &real_p02ts02_samoa_financial_swap_free
+  account_type: real
+  landing_company_short: samoa
+  market_type: financial
+  sub_account_type: swap_free
+  server: p02_ts02
+real\p02_ts02\financial\samoa_sf-hr_ust: *real_p02ts02_samoa_financial_swap_free
+real\p02_ts02\financial\samoa_sf_btc: *real_p02ts02_samoa_financial_swap_free
+real\p02_ts02\financial\samoa_sf_ust: *real_p02ts02_samoa_financial_swap_free
 
 
 real_samoa_financial_financial: &real_samoa_financial_financial
@@ -363,7 +398,7 @@ real_samoa_financial_financial: &real_samoa_financial_financial
   landing_company_short: samoa
   market_type: financial
   sub_account_type: financial
-  server: real01
+  server: p01_ts01
 real01\financial\samoa_std-hr_btc: *real_samoa_financial_financial
 real01\financial\samoa_std-hr_ust: *real_samoa_financial_financial
 real01\financial\samoa_std_btc: *real_samoa_financial_financial
@@ -374,45 +409,54 @@ real\p01_ts01\financial\samoa_std_btc: *real_samoa_financial_financial
 real\p01_ts01\financial\samoa_std_ust: *real_samoa_financial_financial
 # there's no financial account for real02, real03 and real04. But, just in case
 # we change our minds in the future.
-real02\financial\samoa_std-hr_btc: &real02_samoa_financial_financial
+real02\financial\samoa_std-hr_btc: &real_p01ts02_samoa_financial_financial
   account_type: real
   landing_company_short: samoa
   market_type: financial
   sub_account_type: financial
-  server: real02
-real02\financial\samoa_std-hr_ust: *real02_samoa_financial_financial
-real02\financial\samoa_std_btc: *real02_samoa_financial_financial
-real02\financial\samoa_std_ust: *real02_samoa_financial_financial
-real\p01_ts02\financial\samoa_std-hr_btc: *real02_samoa_financial_financial
-real\p01_ts02\financial\samoa_std-hr_ust: *real02_samoa_financial_financial
-real\p01_ts02\financial\samoa_std_btc: *real02_samoa_financial_financial
-real\p01_ts02\financial\samoa_std_ust: *real02_samoa_financial_financial
-real03\financial\samoa_std-hr_btc: &real03_samoa_financial_financial
+  server: p01_ts02
+real02\financial\samoa_std-hr_ust: *real_p01ts02_samoa_financial_financial
+real02\financial\samoa_std_btc: *real_p01ts02_samoa_financial_financial
+real02\financial\samoa_std_ust: *real_p01ts02_samoa_financial_financial
+real\p01_ts02\financial\samoa_std-hr_btc: *real_p01ts02_samoa_financial_financial
+real\p01_ts02\financial\samoa_std-hr_ust: *real_p01ts02_samoa_financial_financial
+real\p01_ts02\financial\samoa_std_btc: *real_p01ts02_samoa_financial_financial
+real\p01_ts02\financial\samoa_std_ust: *real_p01ts02_samoa_financial_financial
+real03\financial\samoa_std-hr_btc: &real_p01ts03_samoa_financial_financial
   account_type: real
   landing_company_short: samoa
   market_type: financial
   sub_account_type: financial
-  server: real03
-real03\financial\samoa_std-hr_ust: *real03_samoa_financial_financial
-real03\financial\samoa_std_btc: *real03_samoa_financial_financial
-real03\financial\samoa_std_ust: *real03_samoa_financial_financial
-real\p01_ts03financial\samoa_std-hr_btc: *real03_samoa_financial_financial
-real\p01_ts03financial\samoa_std-hr_ust: *real03_samoa_financial_financial
-real\p01_ts03financial\samoa_std_btc: *real03_samoa_financial_financial
-real\p01_ts03financial\samoa_std_ust: *real03_samoa_financial_financial
-real04\financial\samoa_std-hr_btc: &real04_samoa_financial_financial
+  server: p01_ts03
+real03\financial\samoa_std-hr_ust: *real_p01ts03_samoa_financial_financial
+real03\financial\samoa_std_btc: *real_p01ts03_samoa_financial_financial
+real03\financial\samoa_std_ust: *real_p01ts03_samoa_financial_financial
+real\p01_ts03financial\samoa_std-hr_btc: *real_p01ts03_samoa_financial_financial
+real\p01_ts03financial\samoa_std-hr_ust: *real_p01ts03_samoa_financial_financial
+real\p01_ts03financial\samoa_std_btc: *real_p01ts03_samoa_financial_financial
+real\p01_ts03financial\samoa_std_ust: *real_p01ts03_samoa_financial_financial
+real04\financial\samoa_std-hr_btc: &real_p01ts04_samoa_financial_financial
   account_type: real
   landing_company_short: samoa
   market_type: financial
   sub_account_type: financial
-  server: real04
-real04\financial\samoa_std-hr_ust: *real04_samoa_financial_financial
-real04\financial\samoa_std_btc: *real04_samoa_financial_financial
-real04\financial\samoa_std_ust: *real04_samoa_financial_financial
-real\p01_ts04\financial\samoa_std-hr_btc: *real04_samoa_financial_financial
-real\p01_ts04\financial\samoa_std-hr_ust: *real04_samoa_financial_financial
-real\p01_ts04\financial\samoa_std_btc: *real04_samoa_financial_financial
-real\p01_ts04\financial\samoa_std_ust: *real04_samoa_financial_financial
+  server: p01_ts04
+real04\financial\samoa_std-hr_ust: *real_p01ts04_samoa_financial_financial
+real04\financial\samoa_std_btc: *real_p01ts04_samoa_financial_financial
+real04\financial\samoa_std_ust: *real_p01ts04_samoa_financial_financial
+real\p01_ts04\financial\samoa_std-hr_btc: *real_p01ts04_samoa_financial_financial
+real\p01_ts04\financial\samoa_std-hr_ust: *real_p01ts04_samoa_financial_financial
+real\p01_ts04\financial\samoa_std_btc: *real_p01ts04_samoa_financial_financial
+real\p01_ts04\financial\samoa_std_ust: *real_p01ts04_samoa_financial_financial
+real\p02_ts02\financial\samoa_std-hr_btc: &real_p02ts02_samoa_financial_financial
+  account_type: real
+  landing_company_short: samoa
+  market_type: financial
+  sub_account_type: financial
+  server: p02_ts02
+real\p02_ts02\financial\samoa_std-hr_ust: *real_p02ts02_samoa_financial_financial
+real\p02_ts02\financial\samoa_std_btc: *real_p02ts02_samoa_financial_financial
+real\p02_ts02\financial\samoa_std_ust: *real_p02ts02_samoa_financial_financial
 
 
 real_svg_financial_swap_free: &real_svg_financial_swap_free
@@ -420,40 +464,47 @@ real_svg_financial_swap_free: &real_svg_financial_swap_free
   landing_company_short: svg
   market_type: financial
   sub_account_type: swap_free
-  server: real01
+  server: p01_ts01
 real01\financial\svg_sf-hr_usd: *real_svg_financial_swap_free
 real01\financial\svg_sf_usd: *real_svg_financial_swap_free
 real\p01_ts01\financial\svg_sf-hr_usd: *real_svg_financial_swap_free
 real\p01_ts01\financial\svg_sf_usd: *real_svg_financial_swap_free
 # there's no financial account for real02, real03 and real04. But, just in case
 # we change our minds in the future.
-real02\financial\svg_sf-hr_usd: &real02_svg_financial_swap_free
+real02\financial\svg_sf-hr_usd: &real_p01ts02_svg_financial_swap_free
   account_type: real
   landing_company_short: svg
   market_type: financial
   sub_account_type: swap_free
-  server: real02
-real02\financial\svg_sf_usd: *real02_svg_financial_swap_free
-real\p01_ts02\financial\svg_sf_usd: *real02_svg_financial_swap_free
-real\p01_ts02\financial\svg_sf-hr_usd: *real02_svg_financial_swap_free
-real03\financial\svg_sf-hr_usd: &real03_svg_financial_swap_free
+  server: p01_ts02
+real02\financial\svg_sf_usd: *real_p01ts02_svg_financial_swap_free
+real\p01_ts02\financial\svg_sf_usd: *real_p01ts02_svg_financial_swap_free
+real\p01_ts02\financial\svg_sf-hr_usd: *real_p01ts02_svg_financial_swap_free
+real03\financial\svg_sf-hr_usd: &real_p01ts03_svg_financial_swap_free
   account_type: real
   landing_company_short: svg
   market_type: financial
   sub_account_type: swap_free
-  server: real03
-real03\financial\svg_sf_usd: *real03_svg_financial_swap_free
-real\p01_ts03\financial\svg_sf-hr_usd: *real03_svg_financial_swap_free
-real\p01_ts03\financial\svg_sf_usd: *real03_svg_financial_swap_free
-real04\financial\svg_sf-hr_usd: &real04_svg_financial_swap_free
+  server: p01_ts03
+real03\financial\svg_sf_usd: *real_p01ts03_svg_financial_swap_free
+real\p01_ts03\financial\svg_sf-hr_usd: *real_p01ts03_svg_financial_swap_free
+real\p01_ts03\financial\svg_sf_usd: *real_p01ts03_svg_financial_swap_free
+real04\financial\svg_sf-hr_usd: &real_p01ts04_svg_financial_swap_free
   account_type: real
   landing_company_short: svg
   market_type: financial
   sub_account_type: swap_free
-  server: real04
-real04\financial\svg_sf_usd: *real04_svg_financial_swap_free
-real\p01_ts04\financial\svg_sf-hr_usd: *real04_svg_financial_swap_free
-real\p01_ts04\financial\svg_sf_usd: *real04_svg_financial_swap_free
+  server: p01_ts04
+real04\financial\svg_sf_usd: *real_p01ts04_svg_financial_swap_free
+real\p01_ts04\financial\svg_sf-hr_usd: *real_p01ts04_svg_financial_swap_free
+real\p01_ts04\financial\svg_sf_usd: *real_p01ts04_svg_financial_swap_free
+real\p02_ts02\financial\svg_sf-hr_usd: &real_p02ts02_svg_financial_swap_free
+  account_type: real
+  landing_company_short: svg
+  market_type: financial
+  sub_account_type: swap_free
+  server: p02_ts02
+real\p02_ts02\financial\svg_sf_usd: *real_p02ts02_svg_financial_swap_free
 
 
 real_svg_financial_financial: &real_svg_financial_financial
@@ -461,7 +512,7 @@ real_svg_financial_financial: &real_svg_financial_financial
   landing_company_short: svg
   market_type: financial
   sub_account_type: financial
-  server: real01
+  server: p01_ts01
 real\svg_financial: *real_svg_financial_financial
 real\svg_financial_bbook: *real_svg_financial_financial
 real01\financial\svg_std-hr_usd: *real_svg_financial_financial
@@ -470,33 +521,40 @@ real\p01_ts01\financial\svg_std-hr_usd: *real_svg_financial_financial
 real\p01_ts01\financial\svg_std_usd: *real_svg_financial_financial
 # there's no financial account for real02, real03 and real04. But, just in case
 # we change our minds in the future.
-real02\financial\svg_std-hr_usd: &real02_svg_financial_financial
+real02\financial\svg_std-hr_usd: &real_p01ts02_svg_financial_financial
   account_type: real
   landing_company_short: svg
   market_type: financial
   sub_account_type: financial
-  server: real02
-real02\financial\svg_std_usd: *real02_svg_financial_financial
-real\p01_ts02\financial\svg_std-hr_usd: *real02_svg_financial_financial
-real\p01_ts02\financial\svg_std_usd: *real02_svg_financial_financial
-real03\financial\svg_std-hr_usd: &real03_svg_financial_financial
+  server: p01_ts02
+real02\financial\svg_std_usd: *real_p01ts02_svg_financial_financial
+real\p01_ts02\financial\svg_std-hr_usd: *real_p01ts02_svg_financial_financial
+real\p01_ts02\financial\svg_std_usd: *real_p01ts02_svg_financial_financial
+real03\financial\svg_std-hr_usd: &real_p01ts03_svg_financial_financial
   account_type: real
   landing_company_short: svg
   market_type: financial
   sub_account_type: financial
-  server: real03
-real03\financial\svg_std_usd: *real03_svg_financial_financial
-real\p01_ts03\financial\svg_std-hr_usd: *real03_svg_financial_financial
-real\p01_ts03\financial\svg_std_usd: *real03_svg_financial_financial
-real04\financial\svg_std-hr_usd: &real04_svg_financial_financial
+  server: p01_ts03
+real03\financial\svg_std_usd: *real_p01ts03_svg_financial_financial
+real\p01_ts03\financial\svg_std-hr_usd: *real_p01ts03_svg_financial_financial
+real\p01_ts03\financial\svg_std_usd: *real_p01ts03_svg_financial_financial
+real04\financial\svg_std-hr_usd: &real_p01ts04_svg_financial_financial
   account_type: real
   landing_company_short: svg
   market_type: financial
   sub_account_type: financial
-  server: real04
-real04\financial\svg_std_usd: *real_svg_financial_financial
-real\p01_ts04\financial\svg_std-hr_usd: *real_svg_financial_financial
-real\p01_ts04\financial\svg_std_usd: *real_svg_financial_financial
+  server: p01_ts04
+real04\financial\svg_std_usd: *real_p01ts04_svg_financial_financial
+real\p01_ts04\financial\svg_std-hr_usd: *real_p01ts04_svg_financial_financial
+real\p01_ts04\financial\svg_std_usd: *real_p01ts04_svg_financial_financial
+real\p02_ts02\financial\svg_std-hr_usd: &real_p02ts02_svg_financial_financial
+  account_type: real
+  landing_company_short: svg
+  market_type: financial
+  sub_account_type: financial
+  server: p02_ts02
+real\p02_ts02\financial\svg_std_usd: *real_p02ts02_svg_financial_financial
 
 
 real_vanuatu_financial_financial: &real_vanuatu_financial_financial
@@ -504,33 +562,39 @@ real_vanuatu_financial_financial: &real_vanuatu_financial_financial
   landing_company_short: vanuatu
   market_type: financial
   sub_account_type: financial
-  server: real01
+  server: p01_ts01
 real\vanuatu_financial: *real_vanuatu_financial_financial
 real01\financial\vanuatu_std-hr_usd: *real_vanuatu_financial_financial
 real\p01_ts01\financial\vanuatu_std-hr_usd: *real_vanuatu_financial_financial
 # there's no financial account for real02, real03 and real04. But, just in case
 # we change our minds in the future.
-real02\financial\vanuatu_std-hr_usd: &real02_vanuatu_financial_financial
+real02\financial\vanuatu_std-hr_usd: &real_p01ts02_vanuatu_financial_financial
   account_type: real
   landing_company_short: vanuatu
   market_type: financial
   sub_account_type: financial
-  server: real02
-real\p01_ts02\financial\vanuatu_std-hr_usd: *real02_vanuatu_financial_financial
-real03\financial\vanuatu_std-hr_usd: &real03_vanuatu_financial_financial
+  server: p01_ts02
+real\p01_ts02\financial\vanuatu_std-hr_usd: *real_p01ts02_vanuatu_financial_financial
+real03\financial\vanuatu_std-hr_usd: &real_p01ts03_vanuatu_financial_financial
   account_type: real
   landing_company_short: vanuatu
   market_type: financial
   sub_account_type: financial
-  server: real03
-real\p01_ts03\financial\vanuatu_std-hr_usd: *real03_vanuatu_financial_financial
-real04\financial\vanuatu_std-hr_usd: &real04_vanuatu_financial_financial
+  server: p01_ts03
+real\p01_ts03\financial\vanuatu_std-hr_usd: *real_p01ts03_vanuatu_financial_financial
+real04\financial\vanuatu_std-hr_usd: &real_p01ts04_vanuatu_financial_financial
   account_type: real
   landing_company_short: vanuatu
   market_type: financial
   sub_account_type: financial
-  server: real04
-real\p01_ts04\financial\vanuatu_std-hr_usd: *real04_vanuatu_financial_financial
+  server: p01_ts04
+real\p01_ts04\financial\vanuatu_std-hr_usd: *real_p01ts04_vanuatu_financial_financial
+real\p02_ts02\financial\vanuatu_std-hr_usd: &real_p02ts02_vanuatu_financial_financial
+  account_type: real
+  landing_company_short: vanuatu
+  market_type: financial
+  sub_account_type: financial
+  server: p02_ts02
 
 
 real_malta_gaming_swap_free: &real_malta_gaming_swap_free
@@ -538,30 +602,36 @@ real_malta_gaming_swap_free: &real_malta_gaming_swap_free
   landing_company_short: malta
   market_type: gaming
   sub_account_type: swap_free
-  server: real01
+  server: p01_ts01
 real01\synthetic\malta_sf_eur: *real_malta_gaming_swap_free
 real\p01_ts01\synthetic\malta_sf_eur: *real_malta_gaming_swap_free
-real02\synthetic\malta_sf_eur: &real02_malta_gaming_swap_free
+real02\synthetic\malta_sf_eur: &real_p01ts02_malta_gaming_swap_free
   account_type: real
   landing_company_short: malta
   market_type: gaming
   sub_account_type: swap_free
-  server: real02
-real\p01_ts02\synthetic\malta_sf_eur: *real02_malta_gaming_swap_free
-real03\synthetic\malta_sf_eur: &real03_malta_gaming_swap_free
+  server: p01_ts02
+real\p01_ts02\synthetic\malta_sf_eur: *real_p01ts02_malta_gaming_swap_free
+real03\synthetic\malta_sf_eur: &real_p01ts03_malta_gaming_swap_free
   account_type: real
   landing_company_short: malta
   market_type: gaming
   sub_account_type: swap_free
-  server: real03
-real\p01_ts03\synthetic\malta_sf_eur: *real03_malta_gaming_swap_free
-real04\synthetic\malta_sf_eur: &real04_malta_gaming_swap_free
+  server: p01_ts03
+real\p01_ts03\synthetic\malta_sf_eur: *real_p01ts03_malta_gaming_swap_free
+real04\synthetic\malta_sf_eur: &real_p01ts04_malta_gaming_swap_free
   account_type: real
   landing_company_short: malta
   market_type: gaming
   sub_account_type: swap_free
-  server: real04
-real\p01_ts04\synthetic\malta_sf_eur: *real04_malta_gaming_swap_free
+  server: p01_ts04
+real\p01_ts04\synthetic\malta_sf_eur: *real_p01ts04_malta_gaming_swap_free
+real\p02_ts02\synthetic\malta_sf_eur: &real_p02ts02_malta_gaming_swap_free
+  account_type: real
+  landing_company_short: malta
+  market_type: gaming
+  sub_account_type: swap_free
+  server: p02_ts02
 
 
 real_malta_gaming_financial: &real_malta_gaming_financial
@@ -569,31 +639,37 @@ real_malta_gaming_financial: &real_malta_gaming_financial
   landing_company_short: malta
   market_type: gaming
   sub_account_type: financial
-  server: real01
+  server: p01_ts01
 real\malta: *real_malta_gaming_financial
 real01\synthetic\malta_std_eur: *real_malta_gaming_financial
 real\p01_ts01\synthetic\malta_std_eur: *real_malta_gaming_financial
-real02\synthetic\malta_std_eur: &real02_malta_gaming_financial
+real02\synthetic\malta_std_eur: &real_p01ts02_malta_gaming_financial
   account_type: real
   landing_company_short: malta
   market_type: gaming
   sub_account_type: financial
-  server: real02
-real\p01_ts02\synthetic\malta_std_eur: *real02_malta_gaming_financial
-real03\synthetic\malta_std_eur: &real03_malta_gaming_financial
+  server: p01_ts02
+real\p01_ts02\synthetic\malta_std_eur: *real_p01ts02_malta_gaming_financial
+real03\synthetic\malta_std_eur: &real_p01ts03_malta_gaming_financial
   account_type: real
   landing_company_short: malta
   market_type: gaming
   sub_account_type: financial
-  server: real03
-real\p01_ts03\synthetic\malta_std_eur: *real03_malta_gaming_financial
-real04\synthetic\malta_std_eur: &real04_malta_gaming_financial
+  server: p01_ts03
+real\p01_ts03\synthetic\malta_std_eur: *real_p01ts03_malta_gaming_financial
+real04\synthetic\malta_std_eur: &real_p01ts04_malta_gaming_financial
   account_type: real
   landing_company_short: malta
   market_type: gaming
   sub_account_type: financial
-  server: real04
-real\p01_ts04\synthetic\malta_std_eur: *real04_malta_gaming_financial
+  server: p01_ts04
+real\p01_ts04\synthetic\malta_std_eur: *real_p01ts04_malta_gaming_financial
+real\p02_ts02\synthetic\malta_std_eur: &real_p02ts02_malta_gaming_financial
+  account_type: real
+  landing_company_short: malta
+  market_type: gaming
+  sub_account_type: financial
+  server: p02_ts02
 
 
 real_samoa_gaming_financial: &real_samoa_gaming_financial
@@ -601,38 +677,45 @@ real_samoa_gaming_financial: &real_samoa_gaming_financial
   landing_company_short: samoa
   market_type: gaming
   sub_account_type: financial
-  server: real01
+  server: p01_ts01
 real01\synthetic\samoa_std_btc: *real_samoa_gaming_financial
 real01\synthetic\samoa_std_ust: *real_samoa_gaming_financial
 real\p01_ts01\synthetic\samoa_std_btc: *real_samoa_gaming_financial
 real\p01_ts01\synthetic\samoa_std_ust: *real_samoa_gaming_financial
-real02\synthetic\samoa_std_btc: &real02_samoa_gaming_financial
+real02\synthetic\samoa_std_btc: &real_p01ts02_samoa_gaming_financial
   account_type: real
   landing_company_short: samoa
   market_type: gaming
   sub_account_type: financial
-  server: real02
-real02\synthetic\samoa_std_ust: *real02_samoa_gaming_financial
-real\p01_ts02\synthetic\samoa_std_btc: *real02_samoa_gaming_financial
-real\p01_ts02\synthetic\samoa_std_ust: *real02_samoa_gaming_financial
-real03\synthetic\samoa_std_btc: &real03_samoa_gaming_financial
+  server: p01_ts02
+real02\synthetic\samoa_std_ust: *real_p01ts02_samoa_gaming_financial
+real\p01_ts02\synthetic\samoa_std_btc: *real_p01ts02_samoa_gaming_financial
+real\p01_ts02\synthetic\samoa_std_ust: *real_p01ts02_samoa_gaming_financial
+real03\synthetic\samoa_std_btc: &real_p01ts03_samoa_gaming_financial
   account_type: real
   landing_company_short: samoa
   market_type: gaming
   sub_account_type: financial
-  server: real03
-real03\synthetic\samoa_std_ust: *real03_samoa_gaming_financial
-real\p01_ts03\synthetic\samoa_std_btc: *real03_samoa_gaming_financial
-real\p01_ts03\synthetic\samoa_std_ust: *real03_samoa_gaming_financial
-real04\synthetic\samoa_std_btc: &real04_samoa_gaming_financial
+  server: p01_ts03
+real03\synthetic\samoa_std_ust: *real_p01ts03_samoa_gaming_financial
+real\p01_ts03\synthetic\samoa_std_btc: *real_p01ts03_samoa_gaming_financial
+real\p01_ts03\synthetic\samoa_std_ust: *real_p01ts03_samoa_gaming_financial
+real04\synthetic\samoa_std_btc: &real_p01ts04_samoa_gaming_financial
   account_type: real
   landing_company_short: samoa
   market_type: gaming
   sub_account_type: financial
-  server: real04
-real04\synthetic\samoa_std_ust: *real04_samoa_gaming_financial
-real\p01_ts04\synthetic\samoa_std_btc: *real04_samoa_gaming_financial
-real\p01_ts04\synthetic\samoa_std_ust: *real04_samoa_gaming_financial
+  server: p01_ts04
+real04\synthetic\samoa_std_ust: *real_p01ts04_samoa_gaming_financial
+real\p01_ts04\synthetic\samoa_std_btc: *real_p01ts04_samoa_gaming_financial
+real\p01_ts04\synthetic\samoa_std_ust: *real_p01ts04_samoa_gaming_financial
+real\p02_ts02\synthetic\samoa_std_btc: &real_p02ts02_samoa_gaming_financial
+  account_type: real
+  landing_company_short: samoa
+  market_type: gaming
+  sub_account_type: financial
+  server: p02_ts02
+real\p02_ts02\synthetic\samoa_std_ust: *real_p02ts02_samoa_gaming_financial
 
 
 real_svg_gaming_swap_free: &real_svg_gaming_swap_free
@@ -640,38 +723,45 @@ real_svg_gaming_swap_free: &real_svg_gaming_swap_free
   landing_company_short: svg
   market_type: gaming
   sub_account_type: swap_free
-  server: real01
+  server: p01_ts01
 real01\synthetic\svg_sf-hr_usd: *real_svg_gaming_swap_free
 real01\synthetic\svg_sf_usd: *real_svg_gaming_swap_free
 real\p01_ts01\synthetic\svg_sf-hr_usd: *real_svg_gaming_swap_free
 real\p01_ts01\synthetic\svg_sf_usd: *real_svg_gaming_swap_free
-real02\synthetic\svg_sf-hr_usd: &real02_svg_gaming_swap_free
+real02\synthetic\svg_sf-hr_usd: &real_p01ts02_svg_gaming_swap_free
   account_type: real
   landing_company_short: svg
   market_type: gaming
   sub_account_type: swap_free
-  server: real02
-real02\synthetic\svg_sf_usd: *real02_svg_gaming_swap_free
-real\p01_ts02\synthetic\svg_sf-hr_usd: *real02_svg_gaming_swap_free
-real\p01_ts02\synthetic\svg_sf_usd: *real02_svg_gaming_swap_free
-real03\synthetic\svg_sf-hr_usd: &real03_svg_gaming_swap_free
+  server: p01_ts02
+real02\synthetic\svg_sf_usd: *real_p01ts02_svg_gaming_swap_free
+real\p01_ts02\synthetic\svg_sf-hr_usd: *real_p01ts02_svg_gaming_swap_free
+real\p01_ts02\synthetic\svg_sf_usd: *real_p01ts02_svg_gaming_swap_free
+real03\synthetic\svg_sf-hr_usd: &real_p01ts03_svg_gaming_swap_free
   account_type: real
   landing_company_short: svg
   market_type: gaming
   sub_account_type: swap_free
-  server: real03
-real03\synthetic\svg_sf_usd: *real03_svg_gaming_swap_free
-real\p01_ts03\synthetic\svg_sf-hr_usd: *real03_svg_gaming_swap_free
-real\p01_ts03\synthetic\svg_sf_usd: *real03_svg_gaming_swap_free
-real04\synthetic\svg_sf-hr_usd: &real04_svg_gaming_swap_free
+  server: p01_ts03
+real03\synthetic\svg_sf_usd: *real_p01ts03_svg_gaming_swap_free
+real\p01_ts03\synthetic\svg_sf-hr_usd: *real_p01ts03_svg_gaming_swap_free
+real\p01_ts03\synthetic\svg_sf_usd: *real_p01ts03_svg_gaming_swap_free
+real04\synthetic\svg_sf-hr_usd: &real_p01ts04_svg_gaming_swap_free
   account_type: real
   landing_company_short: svg
   market_type: gaming
   sub_account_type: swap_free
-  server: real04
-real04\synthetic\svg_sf_usd: *real04_svg_gaming_swap_free
-real\p01_ts04\synthetic\svg_sf-hr_usd: *real04_svg_gaming_swap_free
-real\p01_ts04\synthetic\svg_sf_usd: *real04_svg_gaming_swap_free
+  server: p01_ts04
+real04\synthetic\svg_sf_usd: *real_p01ts04_svg_gaming_swap_free
+real\p01_ts04\synthetic\svg_sf-hr_usd: *real_p01ts04_svg_gaming_swap_free
+real\p01_ts04\synthetic\svg_sf_usd: *real_p01ts04_svg_gaming_swap_free
+real\p02_ts02\synthetic\svg_sf-hr_usd: &real_p02ts02_svg_gaming_swap_free
+  account_type: real
+  landing_company_short: svg
+  market_type: gaming
+  sub_account_type: swap_free
+  server: p02_ts02
+real\p02_ts02\synthetic\svg_sf_usd: *real_p02ts02_svg_gaming_swap_free
 
 
 real_svg_gaming_financial: &real_svg_gaming_financial
@@ -679,7 +769,7 @@ real_svg_gaming_financial: &real_svg_gaming_financial
   landing_company_short: svg
   market_type: gaming
   sub_account_type: financial
-  server: real01
+  server: p01_ts01
 real\svg: *real_svg_gaming_financial
 real\svg_highrisk: *real_svg_gaming_financial
 real01\synthetic\svg_std-hr_usd: *real_svg_gaming_financial
@@ -694,39 +784,49 @@ real\p01_ts01\synthetic\svg_std_usd\02: *real_svg_gaming_financial
 real\p01_ts01\synthetic\svg_std_usd\03: *real_svg_gaming_financial
 real\p01_ts01\synthetic\svg_std_usd\04: *real_svg_gaming_financial
 
-real02\synthetic\svg_std-hr_usd: &real02_svg_gaming_financial
+real02\synthetic\svg_std-hr_usd: &real_p01ts02_svg_gaming_financial
   account_type: real
   landing_company_short: svg
   market_type: gaming
   sub_account_type: financial
-  server: real02
-real02\synthetic\svg_std_usd: *real02_svg_gaming_financial
-real\p01_ts02\synthetic\svg_std-hr_usd: *real02_svg_gaming_financial
-real\p01_ts02\synthetic\svg_std_usd\01: *real02_svg_gaming_financial
-real\p01_ts02\synthetic\svg_std_usd\02: *real02_svg_gaming_financial
-real\p01_ts02\synthetic\svg_std_usd\03: *real02_svg_gaming_financial
-real\p01_ts02\synthetic\svg_std_usd\04: *real02_svg_gaming_financial
-real03\synthetic\svg_std_usd: &real03_svg_gaming_financial
+  server: p01_ts02
+real02\synthetic\svg_std_usd: *real_p01ts02_svg_gaming_financial
+real\p01_ts02\synthetic\svg_std-hr_usd: *real_p01ts02_svg_gaming_financial
+real\p01_ts02\synthetic\svg_std_usd\01: *real_p01ts02_svg_gaming_financial
+real\p01_ts02\synthetic\svg_std_usd\02: *real_p01ts02_svg_gaming_financial
+real\p01_ts02\synthetic\svg_std_usd\03: *real_p01ts02_svg_gaming_financial
+real\p01_ts02\synthetic\svg_std_usd\04: *real_p01ts02_svg_gaming_financial
+real03\synthetic\svg_std_usd: &real_p01ts03_svg_gaming_financial
   account_type: real
   landing_company_short: svg
   market_type: gaming
   sub_account_type: financial
-  server: real03
-real03\synthetic\svg_std-hr_usd: *real03_svg_gaming_financial
-real\p01_ts03\synthetic\svg_std-hr_usd: *real03_svg_gaming_financial
-real\p01_ts03\synthetic\svg_std_usd\01: *real03_svg_gaming_financial
-real\p01_ts03\synthetic\svg_std_usd\02: *real03_svg_gaming_financial
-real\p01_ts03\synthetic\svg_std_usd\03: *real03_svg_gaming_financial
-real\p01_ts03\synthetic\svg_std_usd\04: *real03_svg_gaming_financial
-real04\synthetic\svg_std-hr_usd: &real04_svg_gaming_financial
+  server: p01_ts03
+real03\synthetic\svg_std-hr_usd: *real_p01ts03_svg_gaming_financial
+real\p01_ts03\synthetic\svg_std-hr_usd: *real_p01ts03_svg_gaming_financial
+real\p01_ts03\synthetic\svg_std_usd\01: *real_p01ts03_svg_gaming_financial
+real\p01_ts03\synthetic\svg_std_usd\02: *real_p01ts03_svg_gaming_financial
+real\p01_ts03\synthetic\svg_std_usd\03: *real_p01ts03_svg_gaming_financial
+real\p01_ts03\synthetic\svg_std_usd\04: *real_p01ts03_svg_gaming_financial
+real04\synthetic\svg_std-hr_usd: &real_p01ts04_svg_gaming_financial
   account_type: real
   landing_company_short: svg
   market_type: gaming
   sub_account_type: financial
-  server: real04
-real04\synthetic\svg_std_usd: *real04_svg_gaming_financial
-real\p01_ts04\synthetic\svg_std-hr_usd: *real04_svg_gaming_financial
-real\p01_ts04\synthetic\svg_std_usd\01: *real04_svg_gaming_financial
-real\p01_ts04\synthetic\svg_std_usd\02: *real04_svg_gaming_financial
-real\p01_ts04\synthetic\svg_std_usd\03: *real04_svg_gaming_financial
-real\p01_ts04\synthetic\svg_std_usd\04: *real04_svg_gaming_financial
+  server: p01_ts04
+real04\synthetic\svg_std_usd: *real_p01ts04_svg_gaming_financial
+real\p01_ts04\synthetic\svg_std-hr_usd: *real_p01ts04_svg_gaming_financial
+real\p01_ts04\synthetic\svg_std_usd\01: *real_p01ts04_svg_gaming_financial
+real\p01_ts04\synthetic\svg_std_usd\02: *real_p01ts04_svg_gaming_financial
+real\p01_ts04\synthetic\svg_std_usd\03: *real_p01ts04_svg_gaming_financial
+real\p01_ts04\synthetic\svg_std_usd\04: *real_p01ts04_svg_gaming_financial
+real\p02_ts02\synthetic\svg_std-hr_usd: &real_p02ts02_svg_gaming_financial
+  account_type: real
+  landing_company_short: svg
+  market_type: gaming
+  sub_account_type: financial
+  server: p02_ts02
+real\p02_ts02\synthetic\svg_std_usd\01: *real_p02ts02_svg_gaming_financial
+real\p02_ts02\synthetic\svg_std_usd\02: *real_p02ts02_svg_gaming_financial
+real\p02_ts02\synthetic\svg_std_usd\03: *real_p02ts02_svg_gaming_financial
+real\p02_ts02\synthetic\svg_std_usd\04: *real_p02ts02_svg_gaming_financial

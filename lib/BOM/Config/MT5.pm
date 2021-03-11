@@ -16,19 +16,40 @@ use strict;
 use warnings;
 
 use Syntax::Keyword::Try;
+use List::Util qw(any);
 
+use BOM::Config::Runtime;
 use BOM::Config;
 
 =head2 new
 
 Create a new object of MT5 config
 
-    BOM::Config::MT5->new(server_id => 'real01', type => real)
+    # by group
+    BOM::Config::MT5->new(group => 'real\p01_ts01\synthetic\svg_std_usd')
+    BOM::Config::MT5->new(group => 'real01\synthetic\svg_std_usd')
+    BOM::Config::MT5->new(group => 'real\svg')
+
+    # by server type and group tpe
+    BOM::Config::MT5->new(group_type 'real', server_type=> 'p01_ts01')
 
 =cut
 
 sub new {
     my ($class, %args) = @_;
+
+    if ($args{group}) {
+        my $group_info = $class->groups_config()->{$args{group}};
+
+        if (not defined $group_info) {
+            ($args{group_type}, $args{server_type}) = $args{group} =~ /^(real|demo)\\(p\d{2}_ts\d{2})\\/;
+        } else {
+            $args{group_type}  = $group_info->{account_type};
+            $args{server_type} = $group_info->{server};
+        }
+
+        die 'Invalid group [' . $args{group} . ']' unless $args{group_type} and $args{server_type};
+    }
 
     return bless \%args, $class;
 }
@@ -57,8 +78,24 @@ sub server_geolocation {
     my $self = shift;
 
     my $server = $self->server_by_id();
+    return $server->{$self->{server_type}}{geolocation};
+}
 
-    return $server->{$self->{server_id}}{geolocation};
+=head2 server_environment
+
+    $obj->server_environment();
+
+Get the environment for the mt5 server. i.e. Deriv-Server
+
+Returns a string 
+
+=cut
+
+sub server_environment {
+    my $self = shift;
+
+    my $server = $self->server_by_id();
+    return $server->{$self->{server_type}}{environment};
 }
 
 =head2 server_by_id
@@ -72,18 +109,85 @@ Get the server details of the mt5 server for the corresponding mt5
 sub server_by_id {
     my $self = shift;
 
-    die "Invalid server id. Please provide a valid server id." unless $self->{server_id};
+    my $config = $self->webapi_config();
 
-    my $config = $self->config();
+    my $server = $config->{$self->{group_type}}{$self->{server_type}};
 
-    my $details = $self->server_details();
-
-    die 'Provided server id does not exist in our config.' unless exists $config->{$details->{type}}{$details->{number}};
+    unless ($server) {
+        die 'Cannot extract server information from group[' . $self->{group} . ']' if $self->{group};
+        die 'Cannot extract server information from  server type[' . $self->{server_type} . '] and group type[' . $self->{group_type} . ']';
+    }
 
     return create_server_structure(
-        server_type => $details->{type},
-        server      => $config->{$details->{type}}{$details->{number}},
+        server_type => $self->{server_type},
+        server      => $server,
     );
+}
+
+=head2 server_by_country
+
+# To get all trade servers for Indonesia
+->server_by_country('id');
+
+# To get all real trade servers for Indonesia
+->server_by_country('id', {group_type => 'real'});
+
+Returns a hash reference.
+
+=cut
+
+sub server_by_country {
+    my ($self, $country_code, $args) = @_;
+
+    die "country code is requird" unless $country_code;
+
+    my $routing_config = $self->routing_config;
+    my ($group_type, $market_type) = @{$args}{'group_type', 'market_type'};
+    my $servers;
+
+    foreach my $group (keys %$routing_config) {
+        next if defined $group_type and $group_type ne $group;
+        foreach my $market (keys %{$routing_config->{$group}{$country_code}}) {
+            next if defined $market_type and $market_type ne $market;
+            $servers->{$group}{$market} = $self->_generate_server_info($group, $routing_config->{$group}{$country_code}{$market}{servers});
+        }
+    }
+
+    return $servers;
+}
+
+=head2 _generate_server_info
+
+Sorted (by recommended first) server information
+
+=cut
+
+sub _generate_server_info {
+    my ($self, $group_type, $servers) = @_;
+
+    my $webapi_config     = $self->webapi_config;
+    my @exclusive_servers = ('p01_ts01');
+    my $app_config        = BOM::Config::Runtime->instance->app_config->system->mt5;
+    my @response;
+
+    foreach my $server (@$servers) {
+        push @response, {
+            disabled           => ($app_config->suspend->all || $app_config->suspend->$group_type->$server->all) ? 1 : 0,
+            environment        => $webapi_config->{$group_type}{$server}{environment},
+            geolocation        => $webapi_config->{$group_type}{$server}{geolocation},
+            id                 => $server,
+            recommended        => $servers->[0] eq $server                   ? 1 : 0,    # server list is sorted by priority
+            supported_accounts => (any { $_ eq $server } @exclusive_servers) ? ['gaming', 'financial', 'financial_stp'] : ['gaming'],
+        };
+    }
+
+    return [
+        sort {
+                   $b->{recommended} cmp $a->{recommended}
+                or $a->{geolocation}{region} cmp $b->{geolocation}{region}
+                or $a->{geolocation}{sequence} cmp $b->{geolocation}{sequence}
+        } @response
+    ];
 }
 
 =head2 servers
@@ -97,19 +201,20 @@ Get the list of servers supported, filtered to type if provided
 sub servers {
     my $self = shift;
 
-    my $mt5_config = $self->config();
+    my $mt5_config = $self->webapi_config();
     return undef unless $mt5_config;
 
     my @servers = ();
 
-    foreach my $server_type (sort keys %$mt5_config) {
-        next if $self->{type} and $self->{type} ne $server_type;
+    foreach my $group_type (sort keys %$mt5_config) {
+        next if $self->{group_type} and $self->{group_type} ne $group_type;
+        next if $group_type eq 'request_timeout';
 
-        foreach my $server (sort keys %{$mt5_config->{$server_type}}) {
+        foreach my $server_type (sort keys %{$mt5_config->{$group_type}}) {
             push @servers,
                 create_server_structure(
                 server_type => $server_type,
-                server      => $mt5_config->{$server_type}{$server},
+                server      => $mt5_config->{$group_type}{$server_type},
                 );
         }
     }
@@ -119,7 +224,7 @@ sub servers {
 
 =head2 create_server_structure
 
-    create_server_structure(server_type => real, server => $server_hash)
+    create_server_structure(server_type => 'p01_ts01', server => $server_hash)
 
 Create a hash object of required keys to return
 
@@ -144,14 +249,10 @@ Takes a single C<$params> hashref containing the following keys:
 sub create_server_structure {
     my (%args) = @_;
 
-    return undef unless $args{server_type};
-
-    return undef unless $args{server};
-
-    my $server_id = $args{server_type} . $args{server}->{group_suffix};
+    return undef unless $args{server_type} and $args{server};
 
     return {
-        $server_id => {
+        $args{server_type} => {
             geolocation => {
                 location => $args{server}->{geolocation}{location},
                 region   => $args{server}->{geolocation}{region},
@@ -162,41 +263,75 @@ sub create_server_structure {
     };
 }
 
-=head2 server_details
+=head2 routing_config
 
-    $obj->server_details()
-
-Get the server details; currently, type and number
+Returns the whole routing config by country
 
 =cut
 
-sub server_details {
-    my $self = shift;
+sub routing_config {
+    my $routing_config = BOM::Config::mt5_server_routing();
 
-    die "Invalid server id. Please provide a valid server id." unless $self->{server_id};
+    die "Cannot load mt5 routing config." unless $routing_config;
 
-    my ($server_type, $server_number) = $self->{server_id} =~ /^([a-z]+)(\d+)$/;
-
-    die 'Cannot extract server type and number from the server id provided.' unless $server_type and $server_number;
-
-    return {
-        type   => $server_type,
-        number => $server_number,
-    };
+    return $routing_config;
 }
 
-=head2 config
+=head2 webapi_config
 
-Returns the whole server config
+Returns the whole server webapi_config
 
 =cut
 
-sub config {
-    my $mt5_config = BOM::Config::mt5_webapi_config();
+sub webapi_config {
+    my $mt5_webapi_config = BOM::Config::mt5_webapi_config();
 
-    die "Cannot load mt5 webapi config." unless $mt5_config;
+    die "Cannot load mt5 webapi config." unless $mt5_webapi_config;
 
-    return $mt5_config;
+    return $mt5_webapi_config;
+}
+
+=head2 groups_config
+
+Return the whole groups config
+
+=cut
+
+sub groups_config {
+    my $groups_config = BOM::Config::mt5_account_types();
+
+    die "Cannot load mt5 webapi config." unless $groups_config;
+
+    return $groups_config;
+}
+
+=head2 symmetrical_servers
+
+    $obj->symmetrical_servers()
+
+Return all the servers within the same region of the instance, including the instance.
+
+Europe region is exception. There would be no symmetrical server for p01_ts01 (Irland) for load-balance purposes
+
+=cut 
+
+sub symmetrical_servers {
+    my $self = shift;
+
+    my %servers   = ();
+    my $config    = $self->webapi_config->{$self->{group_type}};
+    my $exception = 'p01_ts01';
+
+    return {$exception => $config->{$exception}} if $self->{server_type} eq $exception;
+
+    foreach my $srv (keys %$config) {
+        $servers{$srv} = $config->{$srv}
+            if defined $srv
+            and $srv ne $exception
+            and $config->{$srv}{geolocation}{region} eq $config->{$self->{server_type}}{geolocation}{region};
+    }
+
+    return \%servers;
 }
 
 1;
