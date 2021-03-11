@@ -20,6 +20,7 @@ use LandingCompany::Registry;
 use ExchangeRates::CurrencyConverter qw/convert_currency offer_to_clients/;
 use Log::Any qw($log);
 use Locale::Country qw(country2code);
+use Brands::Countries;
 
 use BOM::RPC::Registry '-dsl';
 use BOM::RPC::v3::MT5::Errors;
@@ -39,8 +40,9 @@ use BOM::Platform::Email;
 use BOM::Platform::Event::Emitter;
 use BOM::Transaction;
 use BOM::User::FinancialAssessment qw(is_section_complete decode_fa);
+use BOM::Config::MT5;
 
-requires_auth('wallet');
+requires_auth('wallet', 'trading');
 
 use constant MT5_ACCOUNT_THROTTLE_KEY_PREFIX => 'MT5ACCOUNT::THROTTLE::';
 
@@ -52,8 +54,11 @@ use constant MT5_SVG_FINANCIAL_REAL_LEVERAGE => 1000;
 
 use constant MT5_VIRTUAL_MONEY_DEPOSIT_COMMENT => 'MT5 Virtual Money deposit';
 
-my $MT5_PLATFORM_STR = 'p01';
-use constant MT5_FINANCIAL_DEFAULT_SERVER => 'real01';
+# This is the default trading server key for
+# - demo account
+# - real financial and financial stp accounts
+# - countries that is not defined in BOM::Config::mt5_server_routing()
+my $DEFAULT_TRADING_SERVER_KEY = 'p01_ts01';
 
 my $error_registry = BOM::RPC::v3::MT5::Errors->new();
 my $error_handler  = sub {
@@ -133,6 +138,116 @@ async_rpc "mt5_login_list",
         });
     };
 
+=head2 trading_servers
+
+    $trading_servers = trading_servers()
+
+Takes a single C<$params> hashref containing the following keys:
+
+=over 4
+
+=item * client (deriv client object)
+
+=over 4
+
+=item * args which contains the following keys:
+
+=item * platform (currently mt5)
+
+=back
+
+=back
+
+Returns an array of hashes for trade server config, sorted by
+recommended flag and sorted by region
+
+=cut
+
+async_rpc "trading_servers",
+    category => 'mt5',
+    sub {
+    my $params = shift;
+
+    my $client   = $params->{client};
+    my $platform = $params->{args}{platform};
+
+    return get_mt5_server_list(
+        client       => $client,
+        residence    => $client->residence,
+        account_type => $params->{args}{account_type},
+        market_type  => $params->{args}{market_type},
+    );
+    };
+
+=head2 get_mt5_server_list
+
+    generate_server_config(residence => $client->residence, environment => )
+
+Return the array of hash of trade servers configuration
+as per schema defined
+
+=cut
+
+sub get_mt5_server_list {
+    my (%args) = @_;
+
+    return Future->done([]) unless $args{residence};
+
+    my $brand = Brands::Countries->new;
+
+    return Future->done([]) if $brand->restricted_country($args{residence});
+
+    my $mt5_config = BOM::Config::MT5->new();
+
+    my $server_list = $mt5_config->server_by_country(
+        $args{residence},
+        {
+            group_type  => $args{account_type},
+            market_type => $args{market_type}});
+
+    my $mt5_account_count = $brand->mt_account_count_for_country(country => $args{residence});
+    $mt5_account_count->{synthetic} = delete $mt5_account_count->{gaming};
+
+    return get_mt5_logins($args{client}, $args{account_type})->then(
+        sub {
+            my @mt5_logins = @_;
+
+            my @valid_servers;
+            foreach my $group_type (keys %$server_list) {
+                foreach my $market_type (keys %{$server_list->{$group_type}}) {
+                    my $servers = $server_list->{$group_type}{$market_type};
+                    foreach my $server (@$servers) {
+
+                        # if trade server API call is disabled, we add message_to_client
+                        if ($server->{disabled}) {
+                            $server->{message_to_client} = localize('Temporarily unavailable');
+                        }
+
+                        my ($trade_server_id) = $server->{id} =~ /^p\d+_ts(\d+)$/;
+                        # TODO (JB): clean up once old mt5 group is removed
+                        my $created_mt5_accounts = scalar(
+                            grep {
+                                defined $_->{group}
+                                    and ($_->{group} =~ /^$group_type\\$server->{id}\\$market_type\\/
+                                    or $_->{group} =~ /^${group_type}${trade_server_id}\\$market_type\\/)
+                            } @mt5_logins
+                        );
+
+                        if ($created_mt5_accounts >= $mt5_account_count->{$market_type}) {
+                            $server->{disabled}          = 1;
+                            $server->{message_to_client} = localize('Region added');
+                        }
+
+                        $server->{market_type} = $market_type;
+                        push @valid_servers, $server;
+                    }
+                }
+            }
+            return Future->done(\@valid_servers);
+        });
+
+}
+
 =head2 get_mt5_logins
 
 $mt5_logins = get_mt5_logins($client)
@@ -199,7 +314,7 @@ sub mt5_accounts_lookup {
                 my ($setting) = @_;
 
                 $setting = _filter_settings($setting,
-                    qw/account_type balance country currency display_balance email group landing_company_short leverage login name market_type sub_account_type server/
+                    qw/account_type balance country currency display_balance email group landing_company_short leverage login name market_type sub_account_type server server_info/
                 ) if !$setting->{error};
                 return Future->done($setting);
             }
@@ -293,7 +408,7 @@ sub _mt5_group {
     if ($account_type eq 'demo') {
         $group_type = $account_type;
         # $server_type is defaulted to 01 for demo since we do not have demo trade server cluster
-        $server_type      = '01';
+        $server_type      = $DEFAULT_TRADING_SERVER_KEY;
         $sub_account_type = _get_sub_account_type($mt5_account_type, $account_category);
     } else {
         # real group mapping
@@ -314,9 +429,12 @@ sub _mt5_group {
     }
 
     # TODO (JB): Refactor this.
-    # - user is only allowed to create account on real02, real03 and real04 if he/she is not from Ireland trade server country list ($server_type = '01')
+    # - user is only allowed to create account on real02, real03 and real04 if he/she is not from Ireland trade server country list ($server_type = $DEFAULT_TRADING_SERVER_KEY)
     # - user from Ireland trade server country list will be allowed to create account on real01, real02, real03 and real04
-    return '' if (defined $user_input_trade_server and $server_type ne '01' and $user_input_trade_server eq MT5_FINANCIAL_DEFAULT_SERVER);
+    return ''
+        if (defined $user_input_trade_server
+        and $server_type ne $DEFAULT_TRADING_SERVER_KEY
+        and $user_input_trade_server eq $DEFAULT_TRADING_SERVER_KEY);
 
     # We only have a sub-group for a specific group (real\synthetic\svg_std_usd). We believed MT5 can't handle too many
     # accounts in the real group despite having the similar account numbers in demo server. So, just do it.
@@ -333,13 +451,12 @@ sub _mt5_group {
     }
 
     if ($user_input_trade_server) {
-        ($server_type) = $user_input_trade_server =~ /^(?:real|demo)(\d+)$/;
+        $server_type = $user_input_trade_server;
     }
 
     my @group_bits =
-        ($group_type, "${MT5_PLATFORM_STR}_ts${server_type}", $market_type, join('_', ($landing_company_short, $sub_account_type, $currency)));
+        ($group_type, $server_type, $market_type, join('_', ($landing_company_short, $sub_account_type, $currency)));
     push @group_bits, $sub_group if defined $sub_group;
-
     # just making sure everything is lower case!
     return lc(join('\\', @group_bits));
 }
@@ -366,12 +483,9 @@ Takes the following parameters:
 
 =back 
 
-Returns the trading server key 
+Returns a randomly selected trading server key in client's region 
 
 =cut
-
-# Register new users in this server by default
-my $DEFAULT_TRADING_SERVER_KEY = '01';
 
 sub _get_server_type {
     my ($account_type, $country, $market_type) = @_;
@@ -384,26 +498,92 @@ sub _get_server_type {
     }
 
     # if it is not defined, set $server_type to $DEFAULT_TRADING_SERVER_KEY
-    my $server_type = $server_routing_config->{$account_type}->{$country}->{$market_type} // $DEFAULT_TRADING_SERVER_KEY;
+    # servers is an array reference arranged according to recommended priority
+    my $server_type = $server_routing_config->{$account_type}->{$country}->{$market_type}->{servers}->[0];
+    if (not defined $server_type) {
+        $log->warnf("Routing config is missing for %s %s-%s", uc($country), $account_type, $market_type) if $account_type ne 'demo';
+        $server_type = $DEFAULT_TRADING_SERVER_KEY;
+    }
+
+    my $servers = BOM::Config::MT5->new(
+        group_type  => $account_type,
+        server_type => $server_type
+    )->symmetrical_servers();
+
+    return _select_server($servers, $country, $account_type, $market_type);
+}
+
+=head2 _select_server
+
+Based on the runtime config file, select one server from servers hashref
+
+=over 4
+
+=item * C<$servers> - A hashref contains servers as keys such as p01_ts01
+
+=item * C<$country>
+
+=item * C<$account_type>
+
+=item * C<$market_type>
+
+=back
+
+Returns string containing the selected server key
+
+=cut
+
+sub _select_server {
+    my ($servers, $country, $account_type, $market_type) = @_;
 
     # Flexible rollback plan for future new trade server
-    my $mt5_app_config    = BOM::Config::Runtime->instance->app_config->system->mt5;
-    my $new_server_config = decode_json_utf8($mt5_app_config->new_trade_server);
-    my $method            = $account_type . $server_type;
+    my $mt5_app_config            = BOM::Config::Runtime->instance->app_config->system->mt5;
+    my $new_server_config         = decode_json_utf8($mt5_app_config->new_trade_server);
+    my %selected_servers          = ();
+    my $new_server_config_matched = 0;
 
-    if (my $new = $new_server_config->{$method}) {
-        if ($mt5_app_config->suspend->$method->all) {
-            $server_type = $DEFAULT_TRADING_SERVER_KEY;
-        } elsif ($new->{all}) {    # according to $server_routing_config
-            $server_type = $new->{all};
-        } elsif ($new->{$country} and $new->{$country}{$market_type}) {    # just this country & market tyep
-            $server_type = $new->{$country}{$market_type};
+    foreach my $srv (keys %$servers) {
+        if (my $new = $new_server_config->{$account_type}{$srv}) {
+
+            my $srv_type;
+
+            if ($new->{all}) {    # according to $server_routing_config
+                $srv_type = $new->{all};
+            } elsif ($new->{$country} and $new->{$country}{$market_type}) {    # just this country & market tyep
+                $srv_type = $new->{$country}{$market_type};
+            }
+
+            $new_server_config_matched = 1;
+            $selected_servers{$srv_type} = 1 if $srv_type;
         } else {
-            $server_type = $DEFAULT_TRADING_SERVER_KEY;
+            $selected_servers{$srv} = 1;
         }
     }
 
-    return $server_type;
+    # Remove all suspended servers
+    foreach my $ss (keys %selected_servers) {
+        # Allow one items to remain in the list - we should select at least one server
+        last if scalar keys %selected_servers == 1;
+
+        delete $selected_servers{$ss} if $mt5_app_config->suspend->$account_type->$ss->all;
+    }
+
+    my $lucky_number      = 0;
+    my @available_servers = keys %selected_servers;
+
+    # We have to return at least one server key in this sub.
+    # If we have only one server left in our pool here, and client has face new server runtime configuration
+    #       we want to redirect them to the default server if the only selected server for them is in suspend mode (business logic)
+    if (scalar @available_servers == 1 and $new_server_config_matched) {
+        my $first_server = $available_servers[0];
+        @available_servers = ($DEFAULT_TRADING_SERVER_KEY) if $mt5_app_config->suspend->$account_type->$first_server->all;
+    }
+
+    if ($#available_servers > 0) {
+        $lucky_number = int rand($#available_servers);
+    }
+
+    return $available_servers[$lucky_number];
 }
 
 =head2 _get_sub_account_type
@@ -447,7 +627,7 @@ async_rpc "mt5_new_account",
 
     # extract request parameters
     my $account_type            = delete $args->{account_type};
-    my $mt5_account_type        = delete $args->{mt5_account_type} // '';
+    my $mt5_account_type        = delete $args->{mt5_account_type}     // '';
     my $mt5_account_category    = delete $args->{mt5_account_category} // 'conventional';
     my $user_input_trade_server = delete $args->{server};
 
@@ -484,7 +664,7 @@ async_rpc "mt5_new_account",
     } else {
         my $passwd_validation_err = BOM::RPC::v3::Utility::validate_mt5_password({
             email           => $client->email,
-            main_password   => $args->{mainPassword} // '',
+            main_password   => $args->{mainPassword}   // '',
             invest_password => $args->{investPassword} // '',
         });
         return create_error_future($passwd_validation_err) if $passwd_validation_err;
@@ -590,10 +770,6 @@ async_rpc "mt5_new_account",
 
     return create_error_future('permission') if $mt5_account_currency ne $selected_currency;
 
-    my $server_domain_type = $account_type eq 'demo' ? 'demo' : 'real';
-    $user_input_trade_server //=
-        $server_domain_type . _get_server_type($server_domain_type, $residence, _get_market_type($account_type, $mt5_account_type));
-
     my $group = _mt5_group({
         country               => $residence,
         landing_company_short => $company_name,
@@ -604,8 +780,9 @@ async_rpc "mt5_new_account",
         server                => $user_input_trade_server,
     });
 
+    my $group_config = get_mt5_account_type_config($group);
     # something is wrong if we're not able to get group config
-    return create_error_future('permission') if $group eq '' || !get_mt5_account_type_config($group);
+    return create_error_future('permission') unless $group_config;
 
     my $config = request()->brand->countries_instance->countries_list->{$client->residence};
     if ($config->{mt5_age_verification}
@@ -647,9 +824,9 @@ async_rpc "mt5_new_account",
             $client->tax_residence
         and $account_type ne 'demo'
         and (  $group eq 'real\labuan_financial_stp'
-            or $group =~ /real(?:\\${MT5_PLATFORM_STR}_ts)?\d{2}\\financial\\labuan_stp_usd/
+            or $group =~ /real(?:\\p\d{2}_ts)?\d{2}\\financial\\labuan_stp_usd/
             or $group eq 'real\bvi_financial_stp'
-            or $group =~ /real(?:\\${MT5_PLATFORM_STR}_ts)?\d{2}\\financial\\bvi_stp_usd/))
+            or $group =~ /real(?:\\p\d{2}_ts)?\d{2}\\financial\\bvi_stp_usd/))
     {
         # In case of having more than a tax residence, client residence will be replaced.
         my $selected_tax_residence = $client->tax_residence =~ /\,/g ? $client->residence : $client->tax_residence;
@@ -759,9 +936,7 @@ async_rpc "mt5_new_account",
                             my $agent_login = _get_mt5_agent_account_id({
                                 affiliate_id => $ib_affiliate_id,
                                 user         => $user,
-                                server       => $user_input_trade_server,
-                                country      => $residence,
-                                market       => $group =~ /financial/ ? 'financial' : 'synthetic',
+                                server       => $group_config->{server},
                             });
                             $args->{agent} = $agent_login if $agent_login;
                             $log->warnf("Unable to link %s MT5 account with myaffiliates id %s", $client->loginid, $ib_affiliate_id)
@@ -792,7 +967,6 @@ async_rpc "mt5_new_account",
                             mt5_login_id     => $mt5_login,
                             cs_email         => $brand->emails('support'),
                             language         => $params->{language},
-                            mt5_server       => $user_input_trade_server,
                         });
 
                     # Compliance team must be notified if a client under Deriv (Europe) Limited
@@ -996,15 +1170,24 @@ async_rpc "mt5_get_settings",
     return create_error_future('permission') unless _check_logins($client, [$login]);
 
     if (BOM::MT5::User::Async::is_suspended('', {login => $login})) {
-        my $account_type = BOM::MT5::User::Async::get_account_type($login);
-        my $server_id    = BOM::MT5::User::Async::get_trading_server_key({login => $login}, $account_type);
-        my $resp         = {
+        my $account_type  = BOM::MT5::User::Async::get_account_type($login);
+        my $server        = BOM::MT5::User::Async::get_trading_server_key({login => $login}, $account_type);
+        my $server_config = BOM::Config::MT5->new(
+            group_type  => $account_type,
+            server_type => $server
+        )->server_by_id();
+        my $resp = {
             error => {
                 code    => 'MT5AccountInaccessible',
                 details => {
                     login        => $login,
                     account_type => $account_type,
-                    server       => ${account_type} . ${server_id},
+                    server       => $server,
+                    server_info  => {
+                        id          => $server,
+                        geolocation => $server_config->{$server}{geolocation},
+                        environment => $server_config->{$server}{environment},
+                    }
                 },
                 message_to_client => localize('MT5 is currently unavailable. Please try again later.'),
             }};
@@ -1018,7 +1201,7 @@ async_rpc "mt5_get_settings",
             return create_error_future('MT5AccountInactive') if !$settings->{active};
 
             $settings = _filter_settings($settings,
-                qw/account_type address balance city company country currency display_balance email group landing_company_short leverage login market_type name phone phonePassword state sub_account_type zipCode server/
+                qw/account_type address balance city company country currency display_balance email group landing_company_short leverage login market_type name phone phonePassword state sub_account_type zipCode server server_info/
             );
 
             return Future->done($settings);
@@ -1052,6 +1235,14 @@ sub set_mt5_account_settings {
     $settings->{account_type}          = $config->{account_type};
     $settings->{sub_account_type}      = $config->{sub_account_type};
 
+    if ($config->{server}) {
+        my $server_config = BOM::Config::MT5->new(group => $group_name)->server_by_id();
+        $settings->{server_info} = {
+            id          => $config->{server},
+            geolocation => $server_config->{$config->{server}}{geolocation},
+            environment => $server_config->{$config->{server}}{environment},
+        };
+    }
 }
 
 sub _get_user_with_group {
@@ -1611,7 +1802,7 @@ async_rpc "mt5_deposit",
                     amount_in_USD => convert_currency($amount, $fm_client->currency, 'USD'),
                 })
                 if ($response->{mt5_data}->{group} eq 'real\vanuatu_financial'
-                or $response->{mt5_data}->{group} =~ /real(?:\\${MT5_PLATFORM_STR}_ts)?\d{2}\\financial\\vanuatu_std-hr_usd/);
+                or $response->{mt5_data}->{group} =~ /real(?:\\p\d{2}_ts)?\d{2}\\financial\\vanuatu_std-hr_usd/);
 
             my $txn_id = $txn->transaction_id;
             # 31 character limit for MT5 comments
@@ -1748,7 +1939,7 @@ async_rpc "mt5_withdrawal",
                                 amount_in_USD => $amount,
                             })
                             if ($mt5_group eq 'real\vanuatu_financial'
-                            or $mt5_group =~ /real(?:\\${MT5_PLATFORM_STR}_ts)?\d{2}\\financial\\vanuatu_std-hr_usd/);
+                            or $mt5_group =~ /real(?:\\p\d{2}_ts)?\d{2}\\financial\\vanuatu_std-hr_usd/);
 
                         return Future->done({
                             status                => 1,
@@ -1873,21 +2064,12 @@ Return C<$agent_id> an integer representing agent's MT5 account ID if it could f
 sub _get_mt5_agent_account_id {
     my $args = shift;
 
-    my ($user, $affiliate_id, $server, $country, $market) =
-        @{$args}{qw(user affiliate_id server country market)};
-
-    # $server may not be always available. Use default routing rule if $server is not provided
-    my $server_id;
-    if ($server) {
-        $server_id = $server =~ s/[a-z]*//r;
-    } else {
-        # only real account will call this method
-        $server_id = _get_server_type('real', $country, $market);
-    }
+    my ($user, $affiliate_id, $server) =
+        @{$args}{qw(user affiliate_id server)};
 
     my ($agent_id) = $user->dbic->run(
         fixup => sub {
-            $_->selectrow_array(q{SELECT * FROM mt5.get_agent_id(?, ?)}, undef, $affiliate_id, $server_id);
+            $_->selectrow_array(q{SELECT * FROM mt5.get_agent_id(?, ?)}, undef, $affiliate_id, $server);
         });
 
     if (not $agent_id) {
@@ -2382,7 +2564,7 @@ sub _is_similar_group {
 
     my $first = first {
         $_ =~ /^real\\${similar_company}_financial(?:_Bbook)?$/
-            || $_ =~ /^real(?:\\${MT5_PLATFORM_STR}_ts)?\d{2}\\financial\\${similar_company}_std(?:-hr)?_usd$/
+            || $_ =~ /^real(?:\\p\d{2}_ts)?\d{2}\\financial\\${similar_company}_std(?:-hr)?_usd$/
 
     }
     keys %$existing_group;

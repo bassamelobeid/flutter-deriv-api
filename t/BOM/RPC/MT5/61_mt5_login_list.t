@@ -25,7 +25,7 @@ my $c = BOM::Test::RPC::QueueClient->new();
 my %ACCOUNTS = %Test::BOM::RPC::Accounts::MT5_ACCOUNTS;
 my %DETAILS  = %Test::BOM::RPC::Accounts::ACCOUNT_DETAILS;
 
-subtest 'country=za; creates financial account with existing gaming account while real02 disabled' => sub {
+subtest 'country=za; creates financial account with existing gaming account while real->p01_ts02 disabled' => sub {
     my $new_email  = 'abcdef' . $DETAILS{email};
     my $new_client = create_client('CR', undef, {residence => 'za'});
     my $m          = BOM::Platform::Token::API->new;
@@ -51,7 +51,7 @@ subtest 'country=za; creates financial account with existing gaming account whil
             leverage     => 100,
         },
     };
-    BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real02->all(0);
+    BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real->p01_ts02->all(0);
     my $result = $c->call_ok($method, $params)->has_no_error('gaming account successfully created')->result;
     is $result->{account_type}, 'gaming', 'account_type=gaming';
     is $result->{login}, 'MTR' . $ACCOUNTS{'real\p01_ts02\synthetic\svg_std_usd\01'}, 'created in group real\p01_ts02\synthetic\svg_std_usd\01';
@@ -71,17 +71,22 @@ subtest 'country=za; creates financial account with existing gaming account whil
         args     => {},
     };
 
-    note("disable real02 API calls.");
-    BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real02->all(1);
+    note("disable real->p01_ts02 API calls.");
+    BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real->p01_ts02->all(1);
     my $login_list = $c->call_ok($method, $params)->has_no_error('has no error for mt5_login_list')->result;
     ok scalar(@$login_list) == 2, 'two accounts';
     is $login_list->[0]->{account_type}, 'real';
     is $login_list->[0]->{group},        'real\p01_ts01\financial\svg_std_usd';
     is $login_list->[0]->{login},        'MTR' . $ACCOUNTS{'real\p01_ts01\financial\svg_std_usd'};
+    is $login_list->[0]->{server_info}{geolocation}{location}, 'Ireland', 'location Ireland';
+    is $login_list->[0]->{server_info}{geolocation}{region}, 'Europe', 'region Europe';
+
     # second account inaccessible because API call is disabled
     ok $login_list->[1]->{error}, 'inaccessible account shows error';
     is $login_list->[1]->{error}{details}{login}, 'MTR' . $ACCOUNTS{'real\p01_ts02\synthetic\svg_std_usd\01'};
     is $login_list->[1]->{error}{message_to_client}, 'MT5 is currently unavailable. Please try again later.';
+    is $login_list->[1]->{error}{details}{server_info}{geolocation}{location}, 'South Africa', 'location South Africa';
+    is $login_list->[1]->{error}{details}{server_info}{geolocation}{region}, 'Africa', 'region Africa';
 };
 
 done_testing();

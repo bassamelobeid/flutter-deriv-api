@@ -25,7 +25,7 @@ my %ACCOUNTS       = %Test::BOM::RPC::Accounts::MT5_ACCOUNTS;
 my %DETAILS        = %Test::BOM::RPC::Accounts::ACCOUNT_DETAILS;
 my %financial_data = %Test::BOM::RPC::Accounts::FINANCIAL_DATA;
 
-BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real03->all(0);
+BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real->p01_ts03->all(0);
 subtest 'create mt5 client with different currency' => sub {
     subtest 'svg' => sub {
         my $new_email  = $DETAILS{email};
@@ -389,13 +389,13 @@ subtest 'real & demo split on account creation' => sub {
             leverage     => 100,
         },
     };
-    BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real02->all(0);
+    BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real->p01_ts02->all(0);
     my $result = $c->call_ok($method, $params)->has_no_error('gaming account successfully created')->result;
     is $result->{account_type}, 'gaming';
     is $result->{login},        'MTR' . $ACCOUNTS{'real\p01_ts02\synthetic\svg_std_usd\01'};
 
     note("disable real02 trade server's API");
-    BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real02->all(1);
+    BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real->p01_ts02->all(1);
 
     BOM::RPC::v3::MT5::Account::reset_throttler($new_client->loginid);
     $params->{args}->{account_type} = 'demo';

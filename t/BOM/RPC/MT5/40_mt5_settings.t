@@ -81,7 +81,7 @@ my $params = {
         leverage     => 100,
     },
 };
-BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real03->all(0);
+BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real->p01_ts03->all(0);
 my $r = $c->call_ok('mt5_new_account', $params)->has_no_error('no error for mt5_new_account')->result;
 
 subtest 'get settings' => sub {
@@ -679,7 +679,7 @@ my $mocker_inactive_account = Test::MockModule->new('BOM::MT5::User::Async');
 $mocker_inactive_account->mock(
     'create_user',
     sub {
-        return Future->done({login => 'MTR' . $ACCOUNTS{'real\inactive_accounts_financial'}});
+        return Future->done({login => 'MTR' . $ACCOUNTS{'real\p01_ts01\inactive_accounts_financial'}});
     });
 
 $c->call_ok('mt5_new_account', $params)->has_no_error('no error for mt5_new_account');
@@ -691,7 +691,7 @@ subtest 'get settings' => sub {
         language => 'EN',
         token    => $token,
         args     => {
-            login => 'MTR' . $ACCOUNTS{'real\inactive_accounts_financial'},
+            login => 'MTR' . $ACCOUNTS{'real\p01_ts01\inactive_accounts_financial'},
         },
     };
 
@@ -707,7 +707,7 @@ subtest 'login list for inactive account' => sub {
         args     => {},
     };
 
-    BOM::RPC::v3::MT5::Account::reset_throttler($ACCOUNTS{'real\inactive_accounts_financial'});
+    BOM::RPC::v3::MT5::Account::reset_throttler($ACCOUNTS{'real\p01_ts01\inactive_accounts_financial'});
 
     $c->call_ok($method, $params)->has_no_error('no error for mt5_login_list');
 

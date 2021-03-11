@@ -29,10 +29,10 @@ my %financial_data = %Test::BOM::RPC::Accounts::FINANCIAL_DATA;
 subtest 'create mt5 client with different currency' => sub {
     subtest 'define new trade server' => sub {
         my $app_config = BOM::Config::Runtime->instance->app_config;
-        note("set app_config->system->mt5->new_trade_server('{\"real02\":{\"all\": \"02\"}}')");
-        $app_config->system->mt5->new_trade_server('{"real02":{"all":"02"}}');
-        note("set app_config->system->mt5->real02->all(0)");
-        $app_config->system->mt5->suspend->real02->all(0);
+        note("set app_config->system->mt5->new_trade_server('{\"real\": {\"p01_ts02\":{\"all\": \"p01_ts02\"}}}')");
+        $app_config->system->mt5->new_trade_server('{"real": {"p01_ts02":{"all":"p01_ts02"}}}');
+        note("set app_config->system->mt5->real->p01_ts02->all(0)");
+        $app_config->system->mt5->suspend->real->p01_ts02->all(0);
 
         my $new_email  = $DETAILS{email};
         my $new_client = create_client('CR', undef, {residence => 'za'});
@@ -66,8 +66,8 @@ subtest 'create mt5 client with different currency' => sub {
 
         # If you have account on any of the disable server, no new account creation is allowed
         # This will be improved when we have more information on which account is disabled.
-        note("set app_config->system->mt5->real02->all(1)");
-        $app_config->system->mt5->suspend->real02->all(1);
+        note("set app_config->system->mt5->real->p01_ts02->all(1)");
+        $app_config->system->mt5->suspend->real->p01_ts02->all(1);
         $result = $c->call_ok($method, $params)->has_error->error_code_is('MT5CreateUserError')
             ->error_message_is('MT5 is currently unavailable. Please try again later.');
 
@@ -94,10 +94,10 @@ subtest 'create mt5 client with different currency' => sub {
 
     subtest 'define new trade server for south africa synthetic' => sub {
         my $app_config = BOM::Config::Runtime->instance->app_config;
-        note("set app_config->system->mt5->new_trade_server('{\"real02\":{\"za\":{\"synthetic\": \"02\"}}}')");
-        $app_config->system->mt5->new_trade_server('{"real02":{"za":{"synthetic":"02"}}}');
-        note("set app_config->system->mt5->real02->all(0)");
-        $app_config->system->mt5->suspend->real02->all(0);
+        note("set app_config->system->mt5->new_trade_server('{\"real\":{\"p01_ts02\":{\"za\":{\"synthetic\": \"p01_ts02\"}}}}')");
+        $app_config->system->mt5->new_trade_server('{"real":{"p01_ts02":{"za":{"synthetic":"p01_ts02"}}}}');
+        note("set app_config->system->mt5->real->p01_ts02->all(0)");
+        $app_config->system->mt5->suspend->real->p01_ts02->all(0);
 
         my $new_email  = 'bds' . $DETAILS{email};
         my $new_client = create_client('CR', undef, {residence => 'za'});

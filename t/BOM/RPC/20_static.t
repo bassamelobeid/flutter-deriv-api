@@ -130,10 +130,12 @@ subtest 'trading_servers' => sub {
     });
 
     subtest 'check for restricted and undefined' => sub {
-        my $response = BOM::RPC::v3::Static::generate_server_config(
-            residence   => $test_client->residence,
-            environment => 'env_01'
-        );
+        my $response = BOM::RPC::v3::MT5::Account::get_mt5_server_list(
+            client       => $test_client,
+            account_type => 'real',
+            residence    => $test_client->residence,
+            environment  => 'env_01'
+        )->get;
 
         is scalar(@$response), 0, 'empty response if residence is not defined';
 
@@ -159,13 +161,15 @@ subtest 'trading_servers' => sub {
     $user->add_client($test_client);
 
     subtest 'Ireland' => sub {
-        my $response = BOM::RPC::v3::Static::generate_server_config(
-            residence   => $test_client->residence,
-            environment => 'env_01'
-        );
+        my $response = BOM::RPC::v3::MT5::Account::get_mt5_server_list(
+            client       => $test_client,
+            account_type => 'real',
+            residence    => $test_client->residence,
+            environment  => 'env_01'
+        )->get;
 
         is scalar(@$response), 1, 'Only one server for country for Ireland server';
-        is $response->[0]->{id}, 'real01', 'correct id for the server';
+        is $response->[0]->{id}, 'p01_ts01', 'correct id for the server';
         is $response->[0]->{geolocation}{region},   'Europe',  'correct region for the server';
         is $response->[0]->{geolocation}{location}, 'Ireland', 'correct location for the server';
         is $response->[0]->{geolocation}{sequence}, '2',       'correct sequence for the server';
@@ -187,14 +191,15 @@ subtest 'trading_servers' => sub {
     $user->add_client($test_client);
 
     subtest 'Asia' => sub {
-        my $response = BOM::RPC::v3::Static::generate_server_config(
-            residence   => $test_client->residence,
-            environment => 'env_01'
-        );
-
-        is scalar(@$response), 3, 'Correct number of servers for country';
-        is $response->[0]->{id},          'real03', 'correct id for the server';
-        is $response->[0]->{recommended}, 1,        'correct recommended';
+        my $response = BOM::RPC::v3::MT5::Account::get_mt5_server_list(
+            client       => $test_client,
+            account_type => 'real',
+            residence    => $test_client->residence,
+            environment  => 'env_01'
+        )->get;
+        is scalar(@$response), 5, 'Correct number of servers for country';
+        is $response->[0]->{id},          'p01_ts03', 'correct id for the server';
+        is $response->[0]->{recommended}, 1,          'correct recommended';
         is $response->[0]->{geolocation}{region},   'Asia',      'correct region for the server';
         is $response->[0]->{geolocation}{location}, 'Singapore', 'correct location for the server';
         is $response->[0]->{geolocation}{sequence}, '1',         'correct sequence for the server';
@@ -217,19 +222,24 @@ subtest 'trading_servers' => sub {
     $user->add_client($test_client);
 
     subtest 'Africa' => sub {
-        my $response = BOM::RPC::v3::Static::generate_server_config(
-            residence   => $test_client->residence,
-            environment => 'env_01'
-        );
-
-        is scalar(@$response), 3, 'Correct number of servers for country';
-        is $response->[0]->{id},          'real02', 'correct id for the server';
-        is $response->[0]->{recommended}, 1,        'correct recommended';
+        my $response = BOM::RPC::v3::MT5::Account::get_mt5_server_list(
+            client       => $test_client,
+            account_type => 'real',
+            market_type  => 'synthetic',
+            residence    => $test_client->residence,
+            environment  => 'env_01'
+        )->get;
+        is scalar(@$response), 4, 'Correct number of servers for country';
+        is $response->[0]->{id},          'p01_ts02', 'correct id for the server';
+        is $response->[0]->{recommended}, 1,          'correct recommended';
         is $response->[0]->{geolocation}{region},   'Africa',       'correct region for the server';
         is $response->[0]->{geolocation}{location}, 'South Africa', 'correct location for the server';
         is $response->[0]->{geolocation}{sequence}, '1',            'correct sequence for the server';
-        is $response->[1]->{recommended}, 0, 'Correctly set as not recommended';
-        is $response->[1]->{geolocation}{region}, 'Asia', 'Correctly sorted';
+        is $response->[1]->{id},          'p02_ts02', 'correct id for the server';
+        is $response->[1]->{recommended}, 0,          'Correctly set as not recommended';
+        is $response->[1]->{geolocation}{region}, 'Africa', 'Correctly sorted';
+        is $response->[2]->{recommended}, 0, 'Correctly set as not recommended';
+        is $response->[2]->{geolocation}{region}, 'Asia', 'Correctly sorted';
     };
 
     $email       = 'sample+4@binary.com';
@@ -247,14 +257,17 @@ subtest 'trading_servers' => sub {
     $user->add_client($test_client);
 
     subtest 'Frankfurt' => sub {
-        my $response = BOM::RPC::v3::Static::generate_server_config(
-            residence   => $test_client->residence,
-            environment => 'env_01'
-        );
+        my $response = BOM::RPC::v3::MT5::Account::get_mt5_server_list(
+            client       => $test_client,
+            account_type => 'real',
+            market_type  => 'synthetic',
+            residence    => $test_client->residence,
+            environment  => 'env_01'
+        )->get;
 
-        is scalar(@$response), 3, 'Correct number of servers for country';
-        is $response->[0]->{id},          'real04', 'correct id for the server';
-        is $response->[0]->{recommended}, 1,        'correct recommended';
+        is scalar(@$response), 4, 'Correct number of servers for country';
+        is $response->[0]->{id},          'p01_ts04', 'correct id for the server';
+        is $response->[0]->{recommended}, 1,          'correct recommended';
         is $response->[0]->{geolocation}{region},   'Europe',    'correct region for the server';
         is $response->[0]->{geolocation}{location}, 'Frankfurt', 'correct location for the server';
         is $response->[0]->{geolocation}{sequence}, '1',         'correct sequence for the server';

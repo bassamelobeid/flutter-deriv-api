@@ -53,7 +53,7 @@ our %MT5_ACCOUNTS = (
     'real\p01_ts01\financial\labuan_stp_usd'         => '1001015',
     'real\p01_ts01\financial\svg_std_usd'            => '1001016',
     'real\p01_ts01\synthetic\malta_std_eur'          => '1001000',
-    'real\inactive_accounts_financial'               => '1002001',
+    'real\p01_ts01\inactive_accounts_financial'               => '1002001',
     'real\p01_ts01\financial\svg_sf_usd'             => '21000002',
     'real\p01_ts02\synthetic\svg_std_usd\01'         => '21000001',
     'real\p01_ts02\synthetic\svg_std_usd\02'         => '21000001',
@@ -75,13 +75,13 @@ our %MT5_ACCOUNTS = (
 our $ADD_INACTIVE_ACCOUNT = 0;
 
 our %MT5_GROUP_MAPPING = (
-    'real01\financial\svg_std_usd' => {
+    'real\p01_ts01\financial\svg_std_usd' => {
         'account_type'          => 'real',
         'landing_company_short' => 'svg',
         'market_type'           => 'financial',
         'sub_account_type'      => 'financial'
     },
-    'real01\financial\svg_std-hr_usd' => {
+    'real\p01_ts01\financial\svg_std-hr_usd' => {
         'account_type'          => 'real',
         'landing_company_short' => 'svg',
         'market_type'           => 'financial',
@@ -95,7 +95,7 @@ our %ACCOUNT_DETAILS = (
     },
     email           => 'test.account@binary.com',
     name            => 'Meta traderman',
-    group           => 'real01\synthetic\svg_std_usd',
+    group           => 'real\p01_ts01\synthetic\svg_std_usd',
     country         => 'Malta',
     balance         => '1234',
     display_balance => '1234.00',

@@ -360,13 +360,13 @@ subtest 'account_closure with mt5 API disabled' => sub {
             leverage     => 100,
         },
     };
-    BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real03->all(0);
+    BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real->p01_ts03->all(0);
     my $mt5_acc = $c->tcall('mt5_new_account', $mt5_params);
 
     ok $mt5_acc->{login}, 'mt5 account is created';
 
     note('suspend real03 mt5 API');
-    BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real03->all(1);
+    BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real->p01_ts03->all(1);
     my $res = $c->tcall(
         $method,
         {
@@ -379,8 +379,8 @@ subtest 'account_closure with mt5 API disabled' => sub {
     is $res->{error}->{message_to_client}, 'The following MT5 account(s) are temporarily inaccessible: MTR41000001. Please try again later.';
 
     note('enable real03 mt5 API');
-    BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real03->all(0);
-    BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real03->deposits(1);
+    BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real->p01_ts03->all(0);
+    BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real->p01_ts03->deposits(1);
     $res = $c->tcall(
         $method,
         {
@@ -391,8 +391,8 @@ subtest 'account_closure with mt5 API disabled' => sub {
     note('since this is mocked mt5 account data, I won\'t want to change it.');
     is $res->{error}->{code}, 'AccountHasBalanceOrOpenPositions', 'account has balance error instead of server disabled.';
 
-    BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real03->deposits(0);
-    BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real03->withdrawals(1);
+    BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real->p01_ts03->deposits(0);
+    BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real->p01_ts03->withdrawals(1);
 
     $res = $c->tcall(
         $method,

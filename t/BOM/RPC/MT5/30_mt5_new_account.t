@@ -159,7 +159,7 @@ subtest 'new account' => sub {
             leverage     => 100,
         },
     };
-    BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real03->all(0);
+    BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real->p01_ts03->all(0);
     $c->call_ok($method, $params)->has_no_error('no error for mt5_new_account without investPassword');
     is($c->result->{login},           'MTR' . $accounts{'real\p01_ts03\synthetic\svg_std_usd\01'}, 'result->{login}');
     is($c->result->{balance},         0,                                                           'Balance is 0 upon creation');
@@ -684,7 +684,7 @@ subtest 'new account on addtional trade server' => sub {
 
     BOM::RPC::v3::MT5::Account::reset_throttler($new_client->loginid);
     note('suspend mt5 real\p01_ts02. Tries to create financial account with new config.');
-    BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real02->all(1);
+    BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real->p01_ts02->all(1);
     $mocked->unmock_all;
     $params->{args}{account_type}     = 'financial';
     $params->{args}{mt5_account_type} = 'financial';
@@ -693,7 +693,7 @@ subtest 'new account on addtional trade server' => sub {
 #    is($c->result->{display_balance}, '0.00',        'Display balance is "0.00"');
 #    is($c->result->{currency},        'USD',         'Currency is "USD"');
 #    is($c->result->{login},           'MTR000\p01_ts01\p01_ts016', 'login is MTR000\p01_ts01\p01_ts016');
-    BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real02->all(0);
+    BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real->p01_ts02->all(0);
 
     note('unsuspend mt5 real\p01_ts02. Tries to create financial account with new config.');
     BOM::RPC::v3::MT5::Account::reset_throttler($new_client->loginid);
@@ -772,8 +772,8 @@ subtest 'country=za; creates financial account with existing gaming account whil
     is $result->{login}, 'MTR' . $accounts{'real\p01_ts02\synthetic\svg_std_usd\01'}, 'created in group real\p01_ts02\synthetic\svg_std_usd\01';
 
     BOM::RPC::v3::MT5::Account::reset_throttler($new_client->loginid);
-    note("disable real02 API calls.");
-    BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real02->all(1);
+    note("disable real->p01_ts02 API calls.");
+    BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real->p01_ts02->all(1);
 
     $params->{args}{account_type}     = 'financial';
     $params->{args}{mt5_account_type} = 'financial';

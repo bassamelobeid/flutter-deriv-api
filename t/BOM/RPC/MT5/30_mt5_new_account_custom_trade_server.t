@@ -65,7 +65,7 @@ subtest 'custom new account' => sub {
         name         => $DETAILS{name},
         mainPassword => $DETAILS{password}{main},
         leverage     => 100,
-        server       => 'real03'
+        server       => 'p01_ts03'
     };
     my $params = {
         language => 'EN',
@@ -74,7 +74,7 @@ subtest 'custom new account' => sub {
     };
 
     note('demo account cannot select trade server');
-    BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real02->all(0);
+    BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real->p01_ts02->all(0);
     $c->call_ok($method, $params)->has_error->error_code_is('InvalidServerInput')
         ->error_message_is('Input parameter \'server\' is not supported for the account type.');
 
@@ -88,14 +88,14 @@ subtest 'custom new account' => sub {
     delete $args->{mt5_account_type};
     $args->{account_type} = 'gaming';
 
-    BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real03->all(0);
-    $c->call_ok($method, $params)->has_no_error('client from south africa can select real03');
+    BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real->p01_ts03->all(0);
+    $c->call_ok($method, $params)->has_no_error('client from south africa can select real->p01_ts03');
     is($c->result->{login},           'MTR' . $ACCOUNTS{'real\p01_ts03\synthetic\svg_std_usd\01'}, 'result->{login}');
     is($c->result->{balance},         0,                                                           'Balance is 0 upon creation');
     is($c->result->{display_balance}, '0.00',                                                      'Display balance is "0.00" upon creation');
 
     BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
-    $args->{server} = 'real02';
+    $args->{server} = 'p01_ts02';
     $c->call_ok($method, $params)->has_no_error('client from south africa can have multiple synthetic account');
     is($c->result->{login},           'MTR' . $ACCOUNTS{'real\p01_ts02\synthetic\svg_std_usd\01'}, 'result->{login}');
     is($c->result->{balance},         0,                                                           'Balance is 0 upon creation');
@@ -115,7 +115,7 @@ subtest 'non-Ireland client new account check' => sub {
         name         => $DETAILS{name},
         mainPassword => $DETAILS{password}{main},
         leverage     => 100,
-        server       => 'real01'
+        server       => 'p01_ts01'
     };
     my $params = {
         language => 'EN',
@@ -125,7 +125,7 @@ subtest 'non-Ireland client new account check' => sub {
 
     BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
     note('demo account cannot select trade server');
-    BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real02->all(0);
+    BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real->p01_ts02->all(0);
     $c->call_ok($method, $params)->has_error->error_code_is('PermissionDenied')->error_message_is('Permission denied.');
 };
 
@@ -141,7 +141,7 @@ subtest 'use default routing rule if server is not provided' => sub {
     _add_affiliate_account(
         $test_client,
         {
-            server         => '02',
+            server         => 'p01_ts02',
             mt5_account_id => $expected_agent_id,
             binary_user_id => $test_client->user->id,
             affiliate_id   => 12345,
@@ -167,7 +167,7 @@ subtest 'use default routing rule if server is not provided' => sub {
     BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
     note('no server as user input');
     my $res = $c->call_ok($method, $params)->has_no_error->result;
-    is $res->{login}, 'MTR' . $ACCOUNTS{'real\p01_ts02\synthetic\svg_sf_usd'}, 'defaulted to account on real02';
+    is $res->{login}, 'MTR' . $ACCOUNTS{'real\p01_ts02\synthetic\svg_sf_usd'}, 'defaulted to account on real->p01_ts02';
     is $res->{account_type}, 'gaming', 'gaming';
     is $res->{agent}, $expected_agent_id, 'agent linked ' . $expected_agent_id;
 };

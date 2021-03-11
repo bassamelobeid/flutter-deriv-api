@@ -89,7 +89,7 @@ my $params = {
         leverage     => 100,
     },
 };
-BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real03->all(0);
+BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real->p01_ts03->all(0);
 $c->call_ok('mt5_new_account', $params)->has_no_error('no error for mt5_new_account');
 
 sub _get_mt5transfer_from_transaction {

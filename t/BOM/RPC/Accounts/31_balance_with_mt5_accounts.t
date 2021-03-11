@@ -70,7 +70,7 @@ subtest 'balance with mt5 disabled' => sub {
             leverage     => 100,
         },
     };
-    BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real03->all(0);
+    BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real->p01_ts03->all(0);
     my $mt5_acc = $c->tcall('mt5_new_account', $mt5_params);
     my $result  = $c->tcall(
         $method,
@@ -98,7 +98,7 @@ subtest 'balance with mt5 disabled' => sub {
     is $result->{total}{deriv}{amount},      '1000.00', 'deriv amount 1000.00';
 
     note("disable real03 API call");
-    BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real03->all(1);
+    BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real->p01_ts03->all(1);
     $result = $c->tcall(
         $method,
         {
@@ -125,14 +125,14 @@ subtest 'balance with mt5 disabled' => sub {
     is $result->{total}{deriv}{amount},      '1000.00', 'deriv amount 1000.00';
 
     # create mt5 financial account
-    BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real03->all(0);
+    BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real->p01_ts03->all(0);
     BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
     $mt5_params->{args}{account_type}     = 'financial';
     $mt5_params->{args}{mt5_account_type} = 'financial';
     $mt5_params->{args}{email}            = '123' . $mt5_params->{args}{email};
     my $mt5_financial_acc = $c->tcall('mt5_new_account', $mt5_params);
 
-    BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real03->all(1);
+    BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real->p01_ts03->all(1);
     $result = $c->tcall(
         $method,
         {
@@ -164,7 +164,7 @@ subtest 'balance with mt5 disabled' => sub {
     is $result->{total}{deriv}{amount},      '1000.00', 'deriv amount 1000.00';
 
     note("enable real03 API call");
-    BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real03->all(0);
+    BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real->p01_ts03->all(0);
 };
 
 done_testing();

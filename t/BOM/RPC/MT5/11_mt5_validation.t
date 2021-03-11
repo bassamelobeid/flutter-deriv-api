@@ -1242,7 +1242,6 @@ sub create_mt5_account {
                 mt5_login_id     => $c->result->{login},
                 account_type     => $params->{args}->{account_type} // '',
                 sub_account_type => $params->{args}->{mt5_account_type} // '',
-                mt5_server       => $emit_args[1]->{mt5_server},
             },
             ];
         return $c->result->{login};

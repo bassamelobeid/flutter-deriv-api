@@ -228,7 +228,7 @@ subtest 'change_password - universal password' => sub {
     $test_client->set_authentication('ID_DOCUMENT', {status => 'pass'});
     $user->add_client($test_client);
 
-    BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real03->all(0);
+    BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real->p01_ts03->all(0);
 
     my $token = BOM::Platform::Token::API->new->create_token($test_client->loginid, 'token');
 
