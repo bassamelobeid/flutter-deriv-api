@@ -220,19 +220,22 @@ sub get_settings_by_group {
                 system.mt5.suspend.deposits
                 system.mt5.suspend.withdrawals
                 system.mt5.suspend.auto_Bbook_svg_financial
-                system.mt5.suspend.demo01
-                system.mt5.suspend.real01.all
-                system.mt5.suspend.real01.deposits
-                system.mt5.suspend.real01.withdrawals
-                system.mt5.suspend.real02.all
-                system.mt5.suspend.real02.deposits
-                system.mt5.suspend.real02.withdrawals
-                system.mt5.suspend.real03.all
-                system.mt5.suspend.real03.deposits
-                system.mt5.suspend.real03.withdrawals
-                system.mt5.suspend.real04.all
-                system.mt5.suspend.real04.deposits
-                system.mt5.suspend.real04.withdrawals
+                system.mt5.suspend.demo.p01_ts01.all
+                system.mt5.suspend.real.p01_ts01.all
+                system.mt5.suspend.real.p01_ts01.deposits
+                system.mt5.suspend.real.p01_ts01.withdrawals
+                system.mt5.suspend.real.p01_ts02.all
+                system.mt5.suspend.real.p01_ts02.deposits
+                system.mt5.suspend.real.p01_ts02.withdrawals
+                system.mt5.suspend.real.p01_ts03.all
+                system.mt5.suspend.real.p01_ts03.deposits
+                system.mt5.suspend.real.p01_ts03.withdrawals
+                system.mt5.suspend.real.p01_ts04.all
+                system.mt5.suspend.real.p01_ts04.deposits
+                system.mt5.suspend.real.p01_ts04.withdrawals
+                system.mt5.suspend.real.p02_ts02.all
+                system.mt5.suspend.real.p02_ts02.deposits
+                system.mt5.suspend.real.p02_ts02.withdrawals
                 system.suspend.payout_freezing_funds
                 system.suspend.doughflow_deriv_sportsbooks
                 system.suspend.universal_password
