@@ -63,7 +63,7 @@ my $error_category_mapping = {
     10019                      => 'NoMoney'
 };
 
-my $MAIN_TRADING_SERVER_KEY = '01';
+my $MAIN_TRADING_SERVER_KEY = 'p01_ts01';
 
 # Mapping from trade server name to BOM::MT5::Utility::CircuitBreaker instances
 my $circuit_breaker_cache = {};
@@ -150,8 +150,7 @@ sub get_trading_server_key {
 
     if ($param->{group}) {
         for my $server_key (keys $config->{$srv_type}->%*) {
-            my $suffix = $config->{$srv_type}->{$server_key}->{group_suffix};
-            return $server_key if ($suffix and $param->{group} =~ /^(real|demo)(\\p01_ts)?$suffix\\.*$/);
+            return $server_key if ($param->{group} =~ /^$srv_type\\$server_key\\.*$/);
         }
     }
 
@@ -225,22 +224,24 @@ sub is_suspended {
     my $suspend = BOM::Config::Runtime->instance->app_config->system->mt5->suspend;
     return 'MT5APISuspendedError' if $suspend->all;
 
-    my $srv_type     = _get_server_type_by_prefix(_get_prefix($param));
-    my $server_key   = get_trading_server_key($param, $srv_type);
-    my $which_server = $srv_type . $server_key;
+    my $srv_type   = _get_server_type_by_prefix(_get_prefix($param));
+    my $server_key = get_trading_server_key($param, $srv_type);
 
-    return 'MT5DEMOAPISuspendedError' if $srv_type eq 'demo' and $suspend->can($which_server) and $suspend->$which_server;
-    return 'MT5REALAPISuspendedError' if $srv_type eq 'real' and $suspend->can($which_server) and $suspend->$which_server->all;
-    return undef                      if $cmd ne 'UserDepositChange';
+    if ($suspend->$srv_type->$server_key->all) {
+        return $srv_type eq 'demo' ? 'MT5DEMOAPISuspendedError' : 'MT5REALAPISuspendedError';
+    }
+
+    return undef if $cmd ne 'UserDepositChange';
+    return undef if $srv_type eq 'demo';
 
     if ($param->{new_deposit} > 0) {
         return 'MT5REALDepositSuspended'
             if $suspend->deposits
-            or ($suspend->$which_server->can('deposits') and $suspend->$which_server->deposits);
+            or ($suspend->$srv_type->$server_key->can('deposits') and $suspend->$srv_type->$server_key->deposits);
     } else {
         return 'MT5REALWithdrawalSuspended'
             if $suspend->withdrawals
-            or ($suspend->$which_server->can('withdrawals') and $suspend->$which_server->withdrawals);
+            or ($suspend->$srv_type->$server_key->can('withdrawals') and $suspend->$srv_type->$server_key->withdrawals);
     }
 
     return undef;

@@ -206,7 +206,7 @@ Returns
 sub parse_mt5_group {
     my $group = shift;
 
-    my ($account_type, $server_type, $market_type, $landing_company_short, $sub_account_type, $currency);
+    my ($account_type, $platform_type, $server_type, $market_type, $landing_company_short, $sub_account_type, $currency);
 
     # TODO (JB): remove old mt5 groups support when we have move all accounts over to the new groups
     # old mt5 groups support
@@ -218,18 +218,22 @@ sub parse_mt5_group {
         $server_type      = '01';              # default to 01 for old group
         $market_type      = (not $subtype)                            ? 'synthetic' : 'financial';
         $sub_account_type = (defined $subtype and $subtype =~ /stp$/) ? 'stp'       : 'std';
-    } elsif ($group =~ /^(real|demo)(?:\\p01_ts)?(\d{2})\\(synthetic|financial)\\([a-z]+)_(.*)_(\w+)(?:\\\d{2})?$/) {
+    } elsif ($group =~ /^(real|demo)(?:\\p(\d{2})_ts)?(\d{2})\\(synthetic|financial)\\([a-z]+)_(.*)_(\w+)(?:\\\d{2})?$/) {
         $account_type          = $1;
-        $server_type           = $2;
-        $market_type           = $3;
-        $landing_company_short = $4;
-        $sub_account_type      = $5;
-        $currency              = $6;
+        $platform_type         = $2;
+        $server_type           = $3;
+        $market_type           = $4;
+        $landing_company_short = $5;
+        $sub_account_type      = $6;
+        $currency              = $7;
     }
+
+    $platform_type //= '01';
+    my $final_server_type = $server_type ? "p${platform_type}_ts${server_type}" : undef;
 
     return {
         account_type          => $account_type,
-        server_type           => $server_type,
+        server_type           => $final_server_type,
         market_type           => $market_type,
         landing_company_short => $landing_company_short,
         sub_account_type      => $sub_account_type,

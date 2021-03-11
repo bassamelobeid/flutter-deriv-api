@@ -20,7 +20,7 @@ use BOM::MT5::Utility::CircuitBreaker;
 
 subtest 'MT5 Circuit Breaker' => sub {
     my $mock_server_key = Test::MockModule->new('BOM::MT5::User::Async');
-    $mock_server_key->mock('get_trading_server_key', sub { 'main' });
+    $mock_server_key->mock('get_trading_server_key', sub { 'p01_ts01' });
 
     my $timeout_return = {
         error => 'ConnectionTimeout',
@@ -37,7 +37,7 @@ subtest 'MT5 Circuit Breaker' => sub {
 
     my $circuit_breaker = BOM::MT5::Utility::CircuitBreaker->new(
         server_type => 'real',
-        server_code => 'main'
+        server_code => 'p01_ts01'
     );
 
     # reset the circuit status before start testing
@@ -76,7 +76,7 @@ subtest 'MT5 Circuit Breaker' => sub {
     # After that the circuit status will be half-open
     # We will update the last failure time to speed it.
     my $redis                 = BOM::Config::Redis::redis_mt5_user_write();
-    my $last_failuer_time_key = 'system.mt5.real_main.last_failure_time';
+    my $last_failuer_time_key = 'system.mt5.real_p01_ts01.last_failure_time';
     $redis->set($last_failuer_time_key, time - 60);
     ok $circuit_breaker->_is_circuit_half_open(), "Circuit is half-open";
 
@@ -114,7 +114,7 @@ subtest 'parse mt5 group' => sub {
             landing_company_short => 'svg',
             account_type          => 'real',
             sub_account_type      => 'std',
-            server_type           => '01',
+            server_type           => 'p01_ts01',
             market_type           => 'synthetic',
             currency              => 'usd',
         },
@@ -122,7 +122,7 @@ subtest 'parse mt5 group' => sub {
             landing_company_short => 'labuan',
             account_type          => 'real',
             sub_account_type      => 'std',
-            server_type           => '01',
+            server_type           => 'p01_ts01',
             market_type           => 'financial',
             currency              => 'usd',
         },
@@ -130,7 +130,7 @@ subtest 'parse mt5 group' => sub {
             landing_company_short => 'vanuatu',
             account_type          => 'real',
             sub_account_type      => 'std',
-            server_type           => '01',
+            server_type           => 'p01_ts01',
             market_type           => 'financial',
             currency              => 'usd',
         },
@@ -138,7 +138,7 @@ subtest 'parse mt5 group' => sub {
             landing_company_short => 'maltainvest',
             account_type          => 'real',
             sub_account_type      => 'std',
-            server_type           => '01',
+            server_type           => 'p01_ts01',
             market_type           => 'financial',
             currency              => 'usd',
         },
@@ -146,7 +146,7 @@ subtest 'parse mt5 group' => sub {
             landing_company_short => 'labuan',
             account_type          => 'real',
             sub_account_type      => 'stp',
-            server_type           => '01',
+            server_type           => 'p01_ts01',
             market_type           => 'financial',
             currency              => 'usd',
         },
@@ -154,7 +154,7 @@ subtest 'parse mt5 group' => sub {
             landing_company_short => 'maltainvest',
             account_type          => 'demo',
             sub_account_type      => 'stp',
-            server_type           => '01',
+            server_type           => 'p01_ts01',
             market_type           => 'financial',
             currency              => 'gbp',
         },
@@ -162,7 +162,7 @@ subtest 'parse mt5 group' => sub {
             landing_company_short => 'maltainvest',
             account_type          => 'real',
             sub_account_type      => 'std',
-            server_type           => '01',
+            server_type           => 'p01_ts01',
             market_type           => 'financial',
             currency              => 'gbp',
         },
@@ -170,7 +170,7 @@ subtest 'parse mt5 group' => sub {
             landing_company_short => 'maltainvest',
             account_type          => 'real',
             sub_account_type      => 'stp',
-            server_type           => '01',
+            server_type           => 'p01_ts01',
             market_type           => 'financial',
             currency              => 'gbp',
         },
@@ -278,76 +278,76 @@ subtest 'MT5 suspended' => sub {
     BOM::Config::Runtime->instance->app_config->system->mt5->suspend->withdrawals(0);
 
     subtest 'suspend real' => sub {
-        BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real01->all(1);
+        BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real->p01_ts01->all(1);
         for my $cmd (@cmds) {
             my $fail_result = BOM::MT5::User::Async::is_suspended($cmd, {login => 'MTR1023'}) // {};
             is($fail_result, 'MT5REALAPISuspendedError', "mt5 $cmd suspeneded for MTR1023 when set real as true");
             my $pass_result = BOM::MT5::User::Async::is_suspended($cmd, {login => 'MTD1023'});
             ok !$pass_result, "mt5 $cmd not suspended for MTD1023 when set real as true";
         }
-        BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real01->all(0);
+        BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real->p01_ts01->all(0);
 
-        BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real02->all(1);
+        BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real->p01_ts02->all(1);
         for my $cmd (@cmds) {
             my $fail_result = BOM::MT5::User::Async::is_suspended($cmd, {login => 'MTR20000000'}) // {};
             is($fail_result, 'MT5REALAPISuspendedError', "mt5 $cmd suspeneded for MTR20000000 when set real as true");
             my $pass_result = BOM::MT5::User::Async::is_suspended($cmd, {login => 'MTD1023'});
             ok !$pass_result, "mt5 $cmd not suspended for MTD1023 when set real as true";
         }
-        BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real02->all(0);
+        BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real->p01_ts02->all(0);
     };
 
     subtest 'suspend deposit/withdrawal' => sub {
-        BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real01->deposits(1);
+        BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real->p01_ts01->deposits(1);
         my $fail_result = BOM::MT5::User::Async::is_suspended(
             $deposit_cmd,
             {
                 login       => 'MTR1023',
                 new_deposit => 1
             }) // {};
-        is($fail_result, 'MT5REALDepositSuspended', "mt5 $deposit_cmd suspeneded for MTR1023 when set real01->deposits as true");
+        is($fail_result, 'MT5REALDepositSuspended', "mt5 $deposit_cmd suspeneded for MTR1023 when set real->p01_ts01->deposits as true");
         my $pass_result = BOM::MT5::User::Async::is_suspended(
             $deposit_cmd,
             {
                 login       => 'MTR20000000',
                 new_deposit => 1
             });
-        ok !$pass_result, "mt5 $deposit_cmd not suspended for MTR20000000 when set real01->deposits as true";
-        BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real01->deposits(0);
+        ok !$pass_result, "mt5 $deposit_cmd not suspended for MTR20000000 when set real->p01_ts01->deposits as true";
+        BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real->p01_ts01->deposits(0);
 
-        BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real01->withdrawals(1);
+        BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real->p01_ts01->withdrawals(1);
         $fail_result = BOM::MT5::User::Async::is_suspended(
             $deposit_cmd,
             {
                 login       => 'MTR1023',
                 new_deposit => -1
             }) // {};
-        is($fail_result, 'MT5REALWithdrawalSuspended', "mt5 $deposit_cmd suspeneded for MTR1023 when set real01->withdrawals as true");
+        is($fail_result, 'MT5REALWithdrawalSuspended', "mt5 $deposit_cmd suspeneded for MTR1023 when set real->p01_ts01->withdrawals as true");
         $pass_result = BOM::MT5::User::Async::is_suspended(
             $deposit_cmd,
             {
                 login       => 'MTR20000000',
                 new_deposit => -1
             });
-        ok !$pass_result, "mt5 $deposit_cmd not suspended for MTR20000000 when set real01->withdrawals as true";
-        BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real01->deposits(0);
+        ok !$pass_result, "mt5 $deposit_cmd not suspended for MTR20000000 when set real->p01_ts01->withdrawals as true";
+        BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real->p01_ts01->deposits(0);
     };
 
     subtest 'suspend demo' => sub {
-        BOM::Config::Runtime->instance->app_config->system->mt5->suspend->demo01(1);
+        BOM::Config::Runtime->instance->app_config->system->mt5->suspend->demo->p01_ts01->all(1);
         for my $cmd (@cmds) {
             my $fail_result = BOM::MT5::User::Async::is_suspended($cmd, {login => 'MTD1023'}) // {};
             is($fail_result, 'MT5DEMOAPISuspendedError', "mt5 $cmd suspeneded for MTD1023 when set demo as true");
             my $pass_result = BOM::MT5::User::Async::is_suspended($cmd, {login => 'MTR1023'});
             ok !$pass_result, "mt5 $cmd not suspended for MTR1023 when set demo as true";
         }
-        BOM::Config::Runtime->instance->app_config->system->mt5->suspend->demo01(0);
+        BOM::Config::Runtime->instance->app_config->system->mt5->suspend->demo->p01_ts01->all(0);
     };
 };
 
 subtest 'MT5 ConnectionTimeout Error' => sub {
     my $mock_server_key = Test::MockModule->new('BOM::MT5::User::Async');
-    $mock_server_key->mock('get_trading_server_key', sub { 'main' });
+    $mock_server_key->mock('get_trading_server_key', sub { 'p01_ts01' });
 
     my $timeout_return = {
         error => undef,
@@ -365,7 +365,7 @@ subtest 'MT5 ConnectionTimeout Error' => sub {
 
     my $circuit_breaker = BOM::MT5::Utility::CircuitBreaker->new(
         server_type => 'real',
-        server_code => 'main'
+        server_code => 'p01_ts01'
     );
 
     # reset the circuit status before start testing
