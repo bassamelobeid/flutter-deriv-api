@@ -117,8 +117,8 @@ subtest 'mt5 track event' => sub {
             loginid            => $test_client->loginid,
             'account_type'     => 'gaming',
             'language'         => 'EN',
-            'mt5_group'        => 'real\\svg',
-            'mt5_server'       => 'real02',
+            'mt5_group'        => 'real\\p02_ts02\\synthetic\\svg_std_usd',
+            'mt5_server'       => 'p02_ts02',
             'mt5_login_id'     => 'MTR90000',
             'language'         => 'EN',
             'cs_email'         => 'test_cs@bin.com',
@@ -148,7 +148,7 @@ subtest 'mt5 track event' => sub {
                 loginid             => $test_client->loginid,
                 'account_type'      => 'gaming',
                 'language'          => 'EN',
-                'mt5_group'         => 'real\\svg',
+                'mt5_group'         => 'real\\p02_ts02\\synthetic\\svg_std_usd',
                 'mt5_loginid'       => 'MTR90000',
                 'sub_account_type'  => 'financial',
                 'client_first_name' => $test_client->first_name,
@@ -157,7 +157,7 @@ subtest 'mt5 track event' => sub {
                 brand               => 'deriv',
                 mt5_server_location => 'South Africa',
                 mt5_server_region   => 'Africa',
-                mt5_server          => 'real02',
+                mt5_server          => 'p02_ts02',
             }
             },
             'properties are set properly for new mt5 account event';
@@ -270,7 +270,7 @@ subtest 'mt5 account opening mail' => sub {
     # We'll permutate brands, mt5 account types and real/demo accounts
     my $setup = {
         brands   => ['deriv',     'binary'],
-        types    => ['financial', 'financial_stp', ''],
+        types    => ['financial', 'synthetic'],
         category => ['real',      'demo'],
         langs    => ['en',        'es']};
 
@@ -305,11 +305,12 @@ subtest 'mt5 account opening mail' => sub {
                             ($brand eq 'deriv' ? (app_id => $app_id) : ()));
                         request($branded_localized_request);
 
-                        my $underscored_type = $type eq '' ? '' : sprintf('_%s', $type);
-                        my $args             = {
+                        my $server = $category eq 'demo' ? 'p01_ts01' : 'p02_ts02';
+
+                        my $args = {
                             loginid            => $mt5_client->loginid,
                             'account_type'     => 'gaming',
-                            'mt5_group'        => sprintf('%s\\svg%s', $category, $underscored_type),
+                            'mt5_group'        => sprintf('%s\\%s\\%s\\svg_std_usd', $category, $server, $type),
                             'mt5_login_id'     => $generated_loginid,
                             'language'         => uc $lang,
                             'cs_email'         => 'test_cs@bin.com',
@@ -330,26 +331,9 @@ subtest 'mt5 account opening mail' => sub {
                             email   => $mt5_client->email,
                             subject => qr/\Q$subject\E/
                         );
-                        ok(!$email, 'Email not sent for deriv customer')                                 if $brand eq 'deriv';
-                        ok(!$email, 'Email not sent for binary customer as mt5_server was not provided') if $brand eq 'binary';
 
-                        $args->{mt5_server} = 'real02';
-
-                        $action_handler = BOM::Event::Process::get_action_mappings()->{new_mt5_signup};
-                        $result         = $action_handler->($args)->get;
-
-                        # Note for binary requests we expect undef
-                        $expected_mt5_result = $brand eq 'deriv' ? 1 : undef;
-                        is $result, $expected_mt5_result, "Successfull MT5 account opening for $brand customer ($lang), $type $category account";
-
-                        # Note subject is localized
-                        $subject = localize('MT5 [_1] Account Created.', ucfirst $category);
-                        $email   = mailbox_search(
-                            email   => $mt5_client->email,
-                            subject => qr/\Q$subject\E/
-                        );
-                        ok(!$email, 'Email not sent for deriv customer')                         if $brand eq 'deriv';
-                        ok($email,  'Email sent for binary customer as mt5_server was provided') if $brand eq 'binary';
+                        ok(!$email, 'Email not sent for deriv customer') if $brand eq 'deriv';
+                        ok($email,  'Email sent for binary customer')    if $brand eq 'binary';
 
                         # The next line caused warnings :-/
                         #next unless $email;
@@ -371,7 +355,7 @@ subtest 'mt5 account opening mail' => sub {
                                         mt5_loginid       => $expected_mt5_loginid,
                                         mt5_category      => $category,
                                         mt5_type_label    => ucfirst $type_label =~ s/stp$/STP/r,
-                                        mt5_region        => 'Africa',
+                                        mt5_region        => $category eq 'demo' ? 'Europe' : 'Africa',
                                         client_first_name => $mt5_client->first_name,
                                         lang              => $lang,
                                         website_name      => $brand_ref->website_name,
