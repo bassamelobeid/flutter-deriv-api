@@ -44,6 +44,11 @@
                     [% END %]
                 </select>
                 <span>Editing status reason is not allowed, you need to delete the existing and create new one.</span>
+            </td>
+        </tr>
+        <tr>
+            <td></td>
+            <td>
                 <input type="text" size="92" name="additional_info" placeholder="Please specify here (optional)" data-lpignore="true" />
             </td>
         </tr>

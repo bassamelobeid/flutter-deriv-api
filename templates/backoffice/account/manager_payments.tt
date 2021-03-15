@@ -152,7 +152,7 @@
 <div class="row">
     <div>
         <label>Remarks:</label>
-        <input type="text" required id="remark" name="remark" data-lpignore="true" />
+        <input type="text" size="150" required id="remark" name="remark" data-lpignore="true" />
     </div>
     <em>* Remarks will appear on client statement but are no longer used by the system</em>
 </div>

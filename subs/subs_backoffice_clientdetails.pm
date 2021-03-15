@@ -815,11 +815,11 @@ sub build_client_warning_message {
                 . '<td colspan="4">&nbsp;</td>' . '</tr>';
         }
         $output .= '</tbody></table></div>';
-        $output .= '<p>';
+        $output .= '<div class="row btn-group">';
         $output .= '<button class="btn btn--primary" name="status_op" value="remove">Remove selected</button> ';
         $output .= '<button class="btn btn--primary" name="status_op" value="remove_siblings">Remove selected including siblings</button> ';
         $output .= '<button class="btn btn--primary" name="status_op" value="sync">Copy selected to siblings</button>';
-        $output .= '</p>';
+        $output .= '</div>';
         $output .= '</form>';
 
         $output .= qq~

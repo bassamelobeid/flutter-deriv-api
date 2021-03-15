@@ -1,6 +1,6 @@
 [% USE date %]
 
-<div class="row">
+<div class="row btn-group">
     <input type="button" class="btn btn--primary"  value="View [% loginid %] details" onclick='location.href="[% clientedit_url %]"' />
     <input type="button" class="btn btn--primary"  value="View [% loginid %] profit" onclick='location.href="[% profit_url %]"' />
     <input type="button" class="btn btn--primary"  value="View [% loginid %] Crypto statement" onclick='location.href="[% crypto_statement_url %]"' />

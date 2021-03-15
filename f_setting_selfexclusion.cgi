@@ -63,6 +63,16 @@ if (   !$regulated_lc
     );
 }
 
+my $client_details_link = request()->url_for(
+    "backoffice/f_clientloginid_edit.cgi",
+    {
+        broker  => $broker,
+        loginID => $loginid
+    });
+
+print qq~
+    <p><a class="link" href="$client_details_link">&laquo; Return to client details</a></p>~;
+
 Bar($title);
 
 my $self_exclusion_form = BOM::Backoffice::Form::get_self_exclusion_form({
@@ -70,13 +80,6 @@ my $self_exclusion_form = BOM::Backoffice::Form::get_self_exclusion_form({
     lang            => request()->language,
     restricted_only => 0
 });
-
-my $client_details_link = request()->url_for(
-    "backoffice/f_clientloginid_edit.cgi",
-    {
-        broker  => $broker,
-        loginID => $loginid
-    });
 
 my $db = $client->db->dbic;
 
