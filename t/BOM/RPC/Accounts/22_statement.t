@@ -51,9 +51,9 @@ my $test_client_mf = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
 $test_client_disabled->status->set('disabled', 1, 'test disabled');
 
 my $m              = BOM::Platform::Token::API->new;
-my $token          = $m->create_token($test_loginid, 'test token');
+my $token          = $m->create_token($test_loginid,                  'test token');
 my $token_disabled = $m->create_token($test_client_disabled->loginid, 'test token');
-my $token_with_txn = $m->create_token($test_client_mf->loginid, 'test token');
+my $token_with_txn = $m->create_token($test_client_mf->loginid,       'test token');
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
@@ -379,8 +379,10 @@ subtest 'Processing times' => sub {
         other_ewallet => $client->payment_doughflow(%params, payment_method => 'AirTM')->{id},
         zingpay       => $client->payment_doughflow(%params, payment_method => 'ZingPay')->{id},
         cc            => $client->payment_doughflow(%params, payment_method => 'VISA')->{id},
+        no_method     => $client->payment_doughflow(%params)->{id},
         bankwire      => $client->payment_bank_wire(%params)->{id},
         other         => $client->payment_free_gift(%params)->{id},
+
     );
 
     my %txns_by_type;
@@ -428,24 +430,27 @@ subtest 'Processing times' => sub {
 };
 
 subtest 'legacy payments' => sub {
-    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR', email => 'legacy@binary.com'});
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+        email       => 'legacy@binary.com'
+    });
 
     BOM::User->create(
         email    => $client->email,
         password => 'test'
     )->add_client($client);
-    
+
     $client->account('USD');
-    
-    $client->db->dbic->dbh->do("SELECT payment.add_payment_transaction(".$client->account->id.", 10, 'doughflow', 'external_cashier', 'staff', NULL, NULL, 'OK', 'legacy remark', NULL, 1, NULL, NULL)");
+
+    $client->db->dbic->dbh->do("SELECT payment.add_payment_transaction("
+            . $client->account->id
+            . ", 10, 'doughflow', 'external_cashier', 'staff', NULL, NULL, 'OK', 'legacy remark', NULL, 1, NULL, NULL)");
     my $token = $m->create_token($client->loginid, 'test token');
-    my $res = $c->tcall(
+    my $res   = $c->tcall(
         $method,
         {
             token => $token,
-            args  => {description => 1}
-        }
-    );
+            args  => {description => 1}});
     is $res->{transactions}[0]{longcode}, 'legacy remark', 'old remark used if transaction details not present';
 };
 
