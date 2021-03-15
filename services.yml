@@ -8,3 +8,4 @@
 - pricing-queue
 - pricing-daemon
 - inotify-daemon
+- expiryd

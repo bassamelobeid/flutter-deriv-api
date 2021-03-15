@@ -30,22 +30,11 @@ alias:
     PERL_TEST_HARNESS_DUMP_TAP: /var/tmp/test-output
     RPC_CONFIG: /home/git/regentmarkets/bom-rpc/rpc.conf.travis
     WEBSOCKET_CONFIG: /home/git/regentmarkets/binary-websocket-api/websocket.conf.example
-- &inotify_daemon
+- &check_services
   run:
-    background: true
-    command: >
-      perl /home/git/regentmarkets/bom-platform/bin/notify_pub.pl 2>&1
-      | grep -Ev '(connection has been closed unexpectedly)|(terminating connection
-      due to administrator)'
-    name: inotify daemon
-- &price_daemon
-  run:
-    background: true
-    name: price_daemon
     command: |
-      perl -MBOM::Test /home/git/regentmarkets/bom-pricing/bin/price_queue.pl &
-      perl -MBOM::Test /home/git/regentmarkets/bom-pricing/bin/price_daemon.pl --no-warmup=1 --workers=1 &
-      perl -MBOM::Test /home/git/regentmarkets/bom-transaction/bin/expiryd.pl -t 1
+      /opt/circle/check_services
+    name: Check services are running
 - &redis6
   image: redis:6
   name: "redis-v6"
@@ -72,6 +61,7 @@ jobs:
     - *2
     - *3
     - *4
+    - *check_services
     - run:
         <<: *5
         command: |
@@ -87,6 +77,7 @@ jobs:
     - *2
     - *3
     - *4
+    - *check_services
     - run:
         <<: *5
         command: |
@@ -101,8 +92,8 @@ jobs:
     - *1
     - *2
     - *3
-    - *inotify_daemon
     - *4
+    - *check_services
     - run:
         <<: *5
         command: |
@@ -117,17 +108,13 @@ jobs:
     - *1
     - *2
     - *3
-    - *inotify_daemon
     - *4
+    - *check_services
     - run:
         <<: *5
         command: |
           echo '--formatter TAP::Formatter::JUnit' >> .proverc
-          perl -MBOM::Test /home/git/regentmarkets/bom-pricing/bin/price_queue.pl &
-          perl -MBOM::Test /home/git/regentmarkets/bom-pricing/bin/price_daemon.pl --no-warmup=1 --workers=1 &
-          perl -MBOM::Test /home/git/regentmarkets/bom-transaction/bin/expiryd.pl -t 1 &
           make pricing
-          kill $(jobs -p)
         name: Pricing
     - store_test_results:
         path: /var/tmp/test-output
@@ -137,8 +124,8 @@ jobs:
     - *1
     - *2
     - *3
-    - *inotify_daemon
     - *4
+    - *check_services
     - run:
         <<: *5
         command: |
@@ -154,6 +141,7 @@ jobs:
     - *2
     - *3
     - *4
+    - *check_services
     - run:
         <<: *5
         command: |
@@ -169,6 +157,7 @@ jobs:
     - *2
     - *3
     - *4
+    - *check_services
     - run:
         <<: *5
         command: |
@@ -184,6 +173,7 @@ jobs:
     - *2
     - *3
     - *4
+    - *check_services
     - run:
         <<: *5
         command: |
@@ -199,6 +189,7 @@ jobs:
     - *2
     - *3
     - *4
+    - *check_services
     - run:
         <<: *5
         command: |
@@ -224,9 +215,8 @@ jobs:
     - *1
     - *2
     - *3
-    - *inotify_daemon
     - *4
-    - *price_daemon
+    - *check_services
     - run:
         command: make cover
         name: code cover tests
