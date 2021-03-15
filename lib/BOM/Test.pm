@@ -100,7 +100,7 @@ END {
 
 }
 # Redis test database index, used by Redis 'SELECT' command to change the database in the test env.
-my $REDIS_DB_INDEX = 10;
+my $REDIS_DB_INDEX = on_qa() ? 10 : 0;
 # To avoid running too many Redis instances on QA machines at the same time, the test script will share Redis instances with the services
 # with different database index.
 # The following piece of code will change the Redis database's index while creating instances.

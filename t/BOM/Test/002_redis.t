@@ -11,6 +11,8 @@ use Syntax::Keyword::Try;
 use List::Util qw(first);
 use BOM::Config::Redis;
 
+my $expected_redis_index = BOM::Test::on_qa() ? 10 : 0;
+
 # This test uses specific redis_config method and manually creates the RedisDB objects
 # Keep in mind redis rpc should be version 6 and for testing the split is logical, we use database 5
 
@@ -33,8 +35,8 @@ TODO: {
         isa_ok $redis_wr, 'RedisDB';
 
         subtest 'Redis Database' => sub {
-            is $redis_re->selected_database, 10, 'Correct DB index for RE';
-            is $redis_wr->selected_database, 10, 'Correct DB index for WR';
+            is $redis_re->selected_database, $expected_redis_index, 'Correct DB index for RE';
+            is $redis_wr->selected_database, $expected_redis_index, 'Correct DB index for WR';
         };
 
         subtest 'Redis Version' => sub {
@@ -49,7 +51,7 @@ TODO: {
         isa_ok $redis_rpc_wr, 'RedisDB';
 
         subtest 'Redis Database' => sub {
-            is $redis_rpc_wr->selected_database, 10, 'Correct DB index for WR';
+            is $redis_rpc_wr->selected_database, $expected_redis_index, 'Correct DB index for WR';
         };
 
         subtest 'Redis Version' => sub {
@@ -64,7 +66,7 @@ subtest 'RedisDB database' => sub {
     isa_ok $redis, 'RedisDB';
 
     subtest 'Redis Database' => sub {
-        is $redis->selected_database, 10, 'Correct DB index for WR';
+        is $redis->selected_database, $expected_redis_index, 'Correct DB index for WR';
     };
 };
 
@@ -84,7 +86,7 @@ subtest 'Net::Async::Redis database' => sub {
         sub {
             my $list = shift;
             $list =~ /name=$name .* db=(\d+) /;
-            is($1, 10, "correct db index");
+            is($1, $expected_redis_index, "correct db index");
 
             Future->done;
         })->get;
@@ -96,7 +98,7 @@ subtest 'Mojo::Redis2' => sub {
     $redis->client->name($name);
     my $list = $redis->client->list;
     my $info = first { $_->{name} eq $name } values %$list;
-    is($info->{db}, 10, 'correct db index');
+    is($info->{db}, $expected_redis_index, 'correct db index');
 };
 
 done_testing();
