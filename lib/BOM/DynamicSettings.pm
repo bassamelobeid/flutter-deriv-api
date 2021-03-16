@@ -299,6 +299,7 @@ sub get_settings_by_group {
                 payments.crypto.fee_limit_usd
                 payments.crypto.minimum_safe_amount
                 payments.crypto.new_address_threshold
+                payments.crypto.internal_sweeps_config
                 payments.crypto.restricted_countries
                 payments.crypto.sweep_reserve_balance
                 payments.crypto_withdrawal_approvals_required
