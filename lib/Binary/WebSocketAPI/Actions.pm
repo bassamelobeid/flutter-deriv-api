@@ -384,6 +384,8 @@ sub actions_config {
         ['p2p_advertiser_adverts'],
         ['p2p_chat_create'],
         ['p2p_order_dispute'],
+        ['p2p_payment_methods'],
+        ['p2p_advertiser_payment_methods'],
 
         ['trading_platform_accounts'],
         ['trading_platform_deposit'],
