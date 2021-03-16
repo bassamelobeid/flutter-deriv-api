@@ -113,12 +113,35 @@ subtest 'client IP address' => sub {
     }
     done_testing;
 };
+
+subtest 'json payload' => sub {
+    my $payload = {
+        app_id    => 1,
+        challenge => 'mydogmouthsmellslikefish',
+        expire    => 1900901010,
+        from_json => 9000,
+    };
+
+    my $params = {
+        from_json => 1,
+    };
+
+    my $request =
+        BOM::Platform::Context::Request::from_mojo({mojo_request => mock_request_for("https://www.binary.com/", $params, 'POST', $payload)});
+
+    for my $key (keys $payload->%*) {
+        # Note params should have priority over json payload
+        is $request->param($key), $params->{$key} // $payload->{$key}, "Expected value for $key";
+    }
+};
+
 done_testing;
 
 sub mock_request_for {
     my $for_url = shift;
     my $param   = shift || {};
     my $method  = shift || 'GET';
+    my $json    = shift || {};
 
     my $url_mock = Mojo::URL->new($for_url);
     $url_mock->query(%$param) if keys %$param;
@@ -137,6 +160,7 @@ sub mock_request_for {
     $request_mock->set_always('method',  $method);
     $request_mock->mock('param', sub { shift; return $params_mock->param(@_); });
     $request_mock->mock('env',   sub { {} });
+    $request_mock->mock('json',  sub { $json });
 
     return $request_mock;
 }

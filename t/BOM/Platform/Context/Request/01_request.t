@@ -174,6 +174,7 @@ sub mock_request_for {
     $request_mock->set_always('method',  $method);
     $request_mock->mock('param', sub { shift; return $params_mock->param(@_); });
     $request_mock->mock('env',   sub { {REMOTE_ADDR => '1.1.1.1'} });
+    $request_mock->mock('json',  sub { });
 
     return $request_mock;
 }

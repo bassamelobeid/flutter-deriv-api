@@ -158,7 +158,8 @@ sub _build_params {
 
     my $params = {};
     if (my $request = $self->mojo_request) {
-        $params = $request->params->to_hash;
+        my $json = $request->json || {};
+        $params = {$json->%*, $request->params->to_hash->%*};
     }
 
     #decode all input params to utf-8
