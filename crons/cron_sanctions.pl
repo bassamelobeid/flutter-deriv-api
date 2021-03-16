@@ -134,10 +134,16 @@ sub get_matched_clients_info_by_broker {
 
     my $update_sanctions = sub {
         my ($loginid, $matched) = @_;
+        my $result = $dbic->run(
+            fixup => sub {
+                $_->selectrow_arrayref(q{select betonmarkets.update_client_sanctions_check(?, ?)}, undef, $matched, $loginid);
+            });
+        return if $result->[0];
+
         $dbic->run(
             fixup => sub {
-                my $sth = $_->prepare(q{select betonmarkets.update_client_sanctions_check(?, ?)});
-                $sth->execute($matched, $loginid);
+                my $sth = $_->prepare(q{insert into betonmarkets.sanctions_check (client_loginid, type, result) VALUES (?, ?, ?)});
+                $sth->execute($loginid, 'C', $matched);
             });
     };
 
@@ -149,19 +155,20 @@ sub get_matched_clients_info_by_broker {
 
     while (my @clients = $get_clients_from_pagination->($limit, $last_loginid)->@*) {
         for my $client (@clients) {
-            $sinfo = $sanctions->get_sanctioned_info($client->{first_name}, $client->{last_name}, $client->{date_of_birth});
+            my %args = map { $_ => $client->{$_} } (qw/first_name last_name date_of_birth place_of_birth citizen residence/);
+            $sinfo = $sanctions->get_sanctioned_info(\%args);
             $update_sanctions->($client->{loginid}, $sinfo->{matched} ? $sinfo->{list} : '');
             next unless $sinfo->{matched};
 
             push
                 @csv_rows,
                 [
-                $sinfo->{name},
+                $sinfo->{matched_args}->{name},
                 $sinfo->{list},
                 $listdate{$sinfo->{list}} //= Date::Utility->new($sanctions->last_updated($sinfo->{list}))->date,
-                $sinfo->{matched_dob},
+                (join ' ', keys $sinfo->{matched_args}->%*),
                 (map { $client->{$_} // '' } qw(date_of_birth broker_code loginid first_name last_name gender date_joined residence citizen)),
-                $sinfo->{reason}];
+                $sinfo->{comment}];
 
         }
 
