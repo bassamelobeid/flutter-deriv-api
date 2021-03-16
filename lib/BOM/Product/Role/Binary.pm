@@ -70,9 +70,9 @@ sub _build_payout {
         $self->price_calculator->commission_from_stake($self->commission_from_stake);
         #return $self->price_calculator->payout;
         $payout = $self->price_calculator->payout;
-    } catch {
+    } catch ($e) {
         if (
-            $@ =~ /Illegal division by zero/
+            $e =~ /Illegal division by zero/
             and (
                 (defined $self->supplied_barrier and looks_like_number($self->supplied_barrier) and $self->supplied_barrier == 0)
                 or (    defined $self->supplied_high_barrier

@@ -7,6 +7,7 @@ use BOM::Product::ContractFactory qw/produce_contract/;
 use Date::Utility;
 use BOM::Config::Redis;
 use JSON::MaybeXS qw/decode_json/;
+use Syntax::Keyword::Try;
 
 sub get_keys {
     my $r = BOM::Config::Redis::redis_pricer;
@@ -18,9 +19,11 @@ sub to_short_code {
 
     $x =~ s/^PRICER_ARGS:://;
     return unless $x =~ /^\[/;
-    my $d = eval { decode_json $x };
-    unless ($d) {
-        warn "cannot convert: $x ($@)\n";
+    my $d;
+    try {
+        $d = decode_json $x;
+    } catch ($e) {
+        warn "cannot convert: $x ($e)\n";
         return;
     }
 
@@ -29,8 +32,9 @@ sub to_short_code {
         return [@h{qw/short_code currency/}, 'bid'];
     } else {
         return unless defined $h{duration};
-        my $sc = eval {
-            produce_contract({
+        my $sc;
+        try {
+            $sc = produce_contract({
                     underlying  => $h{symbol},
                     amount      => $h{amount},
                     amount_type => $h{basis},
@@ -47,9 +51,7 @@ sub to_short_code {
                         : (
                             barrier => $h{barrier} // 'S0P',
                         ))})->shortcode;
-        };
-        unless ($sc) {
-            my $e = $@;
+        } catch ($e) {
             if (ref $e) {
                 $e = "@{[%$e]}";
             }

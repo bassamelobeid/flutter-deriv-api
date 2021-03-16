@@ -1528,8 +1528,8 @@ sub _publish {
         my $csv = join ',',
             ($self->shortcode, $self->currency, $self->date_pricing->epoch, ($price_ref->{ask_price} // 0), ($price_ref->{bid_price} // 0));
         $self->_socket->send($csv);
-    } catch {
-        warn "Failed to publish price for " . $self->shortcode . ': ' . $@;
+    } catch ($e) {
+        warn "Failed to publish price for " . $self->shortcode . ': ' . $e;
     }
 
     return;
