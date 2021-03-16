@@ -37,7 +37,7 @@ sub subscribe_orders {
         defined $args->{req_id} ? (req_id => $args->{req_id}) : (),
     };
 
-    return $result unless $args->{subscribe};
+    return $result unless $args->{subscribe} and $c->stash('loginid');
 
     my $order_id =
           $msg_type eq 'p2p_order_info'   ? $args->{id}
@@ -84,7 +84,7 @@ sub subscribe_advertisers {
         defined $args->{req_id} ? (req_id => $args->{req_id}) : (),
     };
 
-    return $result unless $args->{subscribe};
+    return $result unless $args->{subscribe} and $c->stash('loginid');
 
     my $advertiser_id = $rpc_response->{id};
 
