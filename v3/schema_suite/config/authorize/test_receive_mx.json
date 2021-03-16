@@ -84,6 +84,10 @@
             "email" : {
                "pattern" : "^[_2]$",
                "type" : "string"
+            },
+            "preferred_language" : {
+               "type" : "string",
+               "pattern" : "^[A-Z]{0,2}$|^[A-Z]{2}_[A-Z]{2}$"
             }
          },
          "type" : "object",
@@ -97,7 +101,8 @@
             "balance",
             "is_virtual",
             "landing_company_name",
-            "email"
+            "email",
+            "preferred_language"
          ]
       },
       "echo_req" : {},
