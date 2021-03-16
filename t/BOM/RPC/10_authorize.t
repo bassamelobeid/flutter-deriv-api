@@ -69,8 +69,7 @@ is $test_client->default_account, undef, 'new client has no default account';
 
 my $c = BOM::Test::RPC::QueueClient->new();
 
-my $email_mx = 'dummy_mx@binary.com';
-
+my $email_mx       = 'dummy_mx@binary.com';
 my $test_client_mx = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'MX',
 });
@@ -83,6 +82,20 @@ my $user_mx = BOM::User->create(
 $user_mx->add_client($test_client_mx);
 $test_client_mx->load;
 my ($token_mx) = $oauth->store_access_token_only(1, $test_client_mx->loginid);
+
+my $email_mx_2       = 'dummy_mx_2@binary.com';
+my $test_client_mx_2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    broker_code => 'MX',
+});
+$test_client_mx_2->email($email_mx_2);
+$test_client_mx_2->save;
+my $user_mx_2 = BOM::User->create(
+    email    => $email_mx_2,
+    password => '1234',
+);
+$user_mx_2->add_client($test_client_mx_2);
+$test_client_mx_2->load;
+my ($token_mx_2) = $oauth->store_access_token_only(1, $test_client_mx_2->loginid);
 
 my $method = 'authorize';
 subtest $method => sub {
@@ -123,6 +136,7 @@ subtest $method => sub {
         'is_virtual'                    => '0',
         'country'                       => 'id',
         'landing_company_fullname'      => 'Deriv (SVG) LLC',
+        "preferred_language"            => 'EN',
         'upgradeable_landing_companies' => [$landing_company],
         'account_list'                  => [{
                 'currency'             => '',
@@ -220,6 +234,27 @@ subtest $method => sub {
 
     delete $params->{args};
 
+};
+
+subtest 'update preferred language' => sub {
+    my $language = 'ZH_CN';
+    my $result   = $c->call_ok(
+        $method,
+        {
+            language => $language,
+            token    => $token_mx
+        })->has_no_error->result;
+
+    is $result->{preferred_language}, $language, 'Language set correctly.';
+
+    $language = 'wrong';
+    $result   = $c->call_ok(
+        $method,
+        {
+            language => $language,
+            token    => $token_mx_2
+        })->has_no_error->result;
+    ok !$result->{preferred_language}, "Language didn't change correctly.";
 };
 
 subtest 'upgradeable_landing_companies' => sub {

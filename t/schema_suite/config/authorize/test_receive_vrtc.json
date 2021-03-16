@@ -15,7 +15,8 @@
       "account_list",
       "upgradeable_landing_companies",
       "user_id",
-      "local_currencies"
+      "local_currencies",
+      "preferred_language"
    ],
    "additionalProperties" : false,
    "title" : null,
@@ -139,6 +140,10 @@
       "country" : {
          "type" : "string",
          "pattern" : "^[_2]$"
+      },
+      "preferred_language" : {
+         "type" : "string",
+         "pattern": "^[A-Z]{0,2}$|^[A-Z]{2}_[A-Z]{2}$"
       }
    }
 }
