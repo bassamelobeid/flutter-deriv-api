@@ -13,9 +13,15 @@ use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Backoffice::Sysinit ();
 BOM::Backoffice::Sysinit::init();
 
-use constant IMPERSONATE_APPS => (
-    1,        # Binary.com
-    16929,    # Deriv.com (DTrader)
+# hard-coding the app names because CS team needs them to be as below
+use constant IMPERSONATE_APPS => ({
+        id   => 1,
+        name => 'Binary',
+    },
+    {
+        id   => 16929,
+        name => 'Deriv',
+    },
 );
 
 PrintContentType();
@@ -24,8 +30,8 @@ my $title = 'Client Impersonate';
 
 BrokerPresentation($title);
 
-my $loginid       = request()->param('impersonate_loginid');
-my $broker        = request()->param('broker') // request()->broker_code;
+my $loginid       = request()->param('impersonate_loginid') // '';
+my $broker        = request()->param('broker')              // request()->broker_code;
 my $encoded_login = encode_entities($loginid);
 
 if ($loginid !~ /^$broker\d+$/) {
@@ -55,10 +61,14 @@ Bar($title);
 print "<p><b>$encoded_login</b> impersonated, please click on the buttons below to view client's account:</p>";
 
 print '<p>';
-for my $app_id (IMPERSONATE_APPS) {
-    my $app = $oauth_model->get_app(1, $app_id);
-    print sprintf("<a class='btn btn--primary' href='%s?acct1=%s&token1=%s' target='_blank'>Impersonate %s</a>",
-        $app->{redirect_uri}, $loginid, $access_token, $app->{name});
+for my $app_info (IMPERSONATE_APPS) {
+    my $app = $oauth_model->get_app(1, $app_info->{id});
+    if ($app) {
+        print sprintf("<a class='btn btn--primary' href='%s?acct1=%s&token1=%s' target='_blank'>Impersonate %s</a>",
+            $app->{redirect_uri}, $loginid, $access_token, $app_info->{name});
+    } else {
+        print sprintf("<span class='error'>Error retrieving information of %s (%s) app.</span>", $app_info->{name}, $app_info->{id});
+    }
 }
 print '</p>';
 
