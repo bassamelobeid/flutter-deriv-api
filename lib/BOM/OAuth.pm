@@ -97,6 +97,9 @@ sub startup {
 
     $r->any('session/:service/sso')->to('SingleSignOn#authorize');
     $r->any('session/:service/authorize')->to('SingleSignOn#create');
+
+    $r->post('/api/v1/authorize')->to('RestAPI#authorize');
+    $r->post('/api/v1/verify')->to('RestAPI#verify');
 }
 
 1;
