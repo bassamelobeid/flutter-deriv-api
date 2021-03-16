@@ -19,7 +19,7 @@
             [% IF settings.$setting.value.size %]
                 [% FOREACH v IN settings.$setting.value %]
                    <br/>[% loop.count %]. [% v %]
-                    [% IF setting == 'payments.p2p.escrow' %] ([% escrow_currencies.$v %])[% ELSIF setting.match('(available_for_countries|restricted_countries)$') %] ([% country_names.$v %])[% END %]
+                    [% IF setting == 'payments.p2p.escrow' %] ([% escrow_currencies.$v %])[% ELSIF setting.match('countries$') %] ([% countries_list.$v.name %])[% END %]
                 [% END %]
             [% ELSE %]
                 none
@@ -30,6 +30,25 @@
         &nbsp;&nbsp;current: [% IF settings.$setting.value.length %][% settings.$setting.value %][% ELSE %]none[% END %]
         [% END %]
     [% END %]
+    <hr/>
+    <h3>Payment methods countries</h3>
+    <table border="0">
+        <tr><td><b>Method</b></td><td><b>Show in countries</b></td><td><b>Defined countries, comma delimited 2 digit country codes</b></td></tr>
+    [% FOR pm IN payment_methods.keys.sort %]
+        <tr>
+            <td>[% payment_methods.$pm.display_name %]<br/>([% pm %])</td>
+            <td valign="top">
+                <select name="pm-mode_[% pm %]">
+                    <option value="include" [% payment_method_countries.$pm.mode == 'include' && 'selected' %]>Only in defined countries</option>
+                    <option value="exclude" [% payment_method_countries.$pm.mode == 'exclude' && 'selected' %]>All except defined countries</option>
+                </select>
+            </td>
+            <td>
+                <textarea name="pm-countries_[% pm %]" cols="80" rows="2">[% payment_method_countries.$pm.countries.join(',') %]</textarea>
+            </td>            
+        </tr>
+    [% END %]
+    </table>
     <hr/>
     <input type="hidden" name="revision" value="[% revision %]"/>
     <button type="submit" class="btn btn--red" name="save" value="1">Save Dynamic Settings</button></td>

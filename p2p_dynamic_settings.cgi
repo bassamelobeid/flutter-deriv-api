@@ -12,10 +12,13 @@ BOM::Backoffice::Sysinit::init();
 use BOM::Backoffice::Utility qw(master_live_server_error);
 use BOM::DynamicSettings;
 use BOM::Config::Runtime;
+use BOM::Config;
 use BOM::User::Client;
 use LandingCompany::Registry;
 use List::Util qw(min);
 use Syntax::Keyword::Try;
+use JSON::MaybeXS;
+use Text::Trim;
 
 my $cgi = CGI->new;
 
@@ -54,15 +57,39 @@ my @setting_keys = qw(
     payments.p2p.credit_card_check_period
 );
 
+my $countries_list           = request()->brand->countries_instance->countries_list;
+my $payment_methods          = BOM::Config::p2p_payment_methods;
+my $payment_method_countries = {};
+
 if (request()->http_method eq 'POST' and request()->params->{save}) {
     if (not(grep { $_ eq 'binary_role_master_server' } @{BOM::Config::node()->{node}->{roles}})) {
         code_exit_BO('<p class="error"><b>' . master_live_server_error() . '</b></p>');
     } else {
-        BOM::DynamicSettings::save_settings({
-            'settings'          => request()->params,
-            'settings_in_group' => \@setting_keys,
-            'save'              => 'global',
-        });
+        my $message;
+        for my $param (keys request()->params->%*) {
+            if ($param =~ /^pm-mode_(.*)$/) {
+                my $pm = $1;
+                $payment_method_countries->{$pm}{mode} = request()->params->{$param};
+                my @countries = sort map { lc trim($_) } split(',', request()->params->{'pm-countries_' . $pm});
+                for my $country (@countries) {
+                    $message .= '<div class="notify notify--warning">Invalid country for payment method ' . $pm . ': "' . $country . '"</div>'
+                        unless exists $countries_list->{$country};
+                }
+                $payment_method_countries->{$pm}{countries} = \@countries;
+            }
+        }
+
+        if ($message) {
+            print $message;
+        } else {
+            my $settings = request()->params;
+            $settings->{'payments.p2p.payment_method_countries'} = JSON::MaybeXS->new->encode($payment_method_countries);
+            BOM::DynamicSettings::save_settings({
+                'settings'          => $settings,
+                'settings_in_group' => [@setting_keys, 'payments.p2p.payment_method_countries'],
+                'save'              => 'global',
+            });
+        }
     }
 }
 
@@ -90,11 +117,7 @@ for my $escrow ($settings->{'payments.p2p.escrow'}{value}->@*) {
     }
 }
 
-my $country_names;
-my %countries_list = request()->brand->countries_instance->countries_list->%*;
-for my $country ($settings->{'payments.p2p.available_for_countries'}{value}->@*) {
-    $country_names->{$country} = exists $countries_list{$country} ? $countries_list{$country}{name} : 'invalid!';
-}
+$payment_method_countries = JSON::MaybeXS->new->decode($app_config->get('payments.p2p.payment_method_countries'));
 
 Bar('P2P Dynamic Settings');
 
@@ -103,11 +126,13 @@ my @enabled_lc = map { $_->{short} } grep { $_->{p2p_available} } values Landing
 BOM::Backoffice::Request::template()->process(
     'backoffice/p2p/p2p_dynamic_settings.tt',
     {
-        settings          => $settings,
-        escrow_currencies => $escrow_currencies,
-        country_names     => $country_names,
-        revision          => $revision,
-        enabled_lc        => \@enabled_lc,
+        settings                 => $settings,
+        escrow_currencies        => $escrow_currencies,
+        countries_list           => $countries_list,
+        revision                 => $revision,
+        enabled_lc               => \@enabled_lc,
+        payment_methods          => $payment_methods,
+        payment_method_countries => $payment_method_countries,
     });
 
 code_exit_BO();

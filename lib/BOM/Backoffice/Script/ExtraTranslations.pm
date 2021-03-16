@@ -21,6 +21,7 @@ use BOM::User::Static;
 use BOM::OAuth::Static;
 use Finance::Contract::Longcode;
 use BOM::Config::Runtime;
+use BOM::Config;
 
 has file_container => (
     is         => 'ro',
@@ -74,6 +75,7 @@ sub script_run {
     $self->add_contract_types;
     $self->add_longcodes;
     $self->add_messages;
+    $self->add_p2p_payment_methods;
 
     return 0;
 }
@@ -244,6 +246,46 @@ sub add_messages {
             }
         }
     }
+    return;
+}
+
+=head2 add_p2p_payment_methods
+
+Adds localizable strings from bom-config/share/p2p_payment_methods.yml
+
+=cut
+
+sub add_p2p_payment_methods {
+    my $self = shift;
+
+    my $fh     = $self->pot_append_fh;
+    my $config = BOM::Config::p2p_payment_methods();
+
+    my $methods = {
+        map {
+            $_->{display_name} => [map { $_->{display_name} } values $_->{fields}->%*]
+        } values %$config
+    };
+
+    foreach my $method (sort keys %$methods) {
+        my $msgid = $self->msg_id($method);
+        if ($self->is_id_unique($msgid)) {
+            print $fh "\n";
+            print $fh "msgctxt \"payment method name\"\n";
+            print $fh $msgid . "\n";
+            print $fh "msgstr \"\"\n";
+        }
+        for my $field (sort $methods->{$method}->@*) {
+            my $msgid = $self->msg_id($field);
+            if ($self->is_id_unique($msgid)) {
+                print $fh "\n";
+                print $fh "msgctxt \"field for payment method $method\"\n";
+                print $fh $msgid . "\n";
+                print $fh "msgstr \"\"\n";
+            }
+        }
+    }
+
     return;
 }
 
