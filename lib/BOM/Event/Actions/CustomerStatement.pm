@@ -155,8 +155,7 @@ sub _retrieve_transaction_history {
             client => $client,
             source => $params->{source},
         });
-    } catch {
-        my $e = $@;
+    } catch ($e) {
         $log->warn("error in selling expired contracts\ncaught error: $e");
         exception_logged();
     }

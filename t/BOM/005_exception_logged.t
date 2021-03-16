@@ -37,7 +37,6 @@ subtest 'exception_logged tests' => sub {
         try {
             die "something is wrong!!";
         } catch {
-            my $e = $@;
             exception_logged();
         }
         return 1;

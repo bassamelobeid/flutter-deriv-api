@@ -128,8 +128,8 @@ async sub _store_applicant_documents {
                     onfido_result => $doc,
                     all_report    => $all_report
                 });
-            } catch {
-                $log->errorf("Error in downloading document %s for client %s and sync document file : $@", $client->loginid, $doc->id);
+            } catch ($e) {
+                $log->errorf("Error in downloading document %s for client %s and sync document file : $e", $client->loginid, $doc->id);
             }
         }
     }
@@ -152,8 +152,8 @@ async sub _store_applicant_documents {
                     onfido_result => $photo,
                     all_report    => $all_report
                 });
-            } catch {
-                $log->errorf("Error in downloading photo file %s for client %s and sync photo file : $@", $client->loginid, $photo->id);
+            } catch ($e) {
+                $log->errorf("Error in downloading photo file %s for client %s and sync photo file : $e", $client->loginid, $photo->id);
             }
 
         }
@@ -247,8 +247,7 @@ async sub _sync_onfido_bo_document {
 
         $log->debugf("Starting to upload file_id: $file_id to S3 ");
         $s3_uploaded = await $s3_client->upload($new_file_name, $tmp_filename, $file_checksum);
-    } catch {
-        my $error = $@;
+    } catch ($error) {
         local $log->context->{loginid}         = $client->loginid;
         local $log->context->{doc_type}        = $doc_type;
         local $log->context->{file_type}       = $file_type;
@@ -277,8 +276,7 @@ async sub _sync_onfido_bo_document {
                 loginid    => $client->loginid,
                 properties => $document_info
             });
-        } catch {
-            my $error = $@;
+        } catch ($error) {
             $log->errorf("Error in updating db for %s : %s", $client->loginid, $error);
         };
     }

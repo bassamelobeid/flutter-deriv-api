@@ -78,9 +78,9 @@ sub run {    ## no critic (RequireFinalReturn)
     # from the shutdown signal)
     try {
         $handler->process_loop->get;
-    } catch {
-        $log->errorf('Event listener bailing out early for %s - %s', $self->queue, $@) unless $@ =~ /normal_shutdown/;
-        exception_logged()                                                             unless $@ =~ /normal_shutdown/;
+    } catch ($e) {
+        $log->errorf('Event listener bailing out early for %s - %s', $self->queue, $e) unless $e =~ /normal_shutdown/;
+        exception_logged()                                                             unless $e =~ /normal_shutdown/;
     } finally {
         alarm(0);
     }

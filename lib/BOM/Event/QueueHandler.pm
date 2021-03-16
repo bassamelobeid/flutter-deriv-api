@@ -216,8 +216,7 @@ sub process_loop {
                             my $decoded_data = decode_json_utf8($event_data);
                             stats_inc(lc "$queue_name.read");
                             return Future->done($queue_name => $decoded_data);
-                        } catch {
-                            my $err = $@;
+                        } catch ($err) {
                             stats_inc(lc "$queue_name.invalid_data");
                             # Invalid data indicates serious problems, we halt
                             # entirely and record the details
@@ -305,8 +304,8 @@ sub process_job {
                 }
                 stats_inc(lc "$queue_name.processed.failure");
             })->else_done();
-    } catch {
-        $log->errorf('Failed to process %s (data %s) - %s', $queue_name, $self->clean_data_for_logging($event_data), $@);
+    } catch ($e) {
+        $log->errorf('Failed to process %s (data %s) - %s', $queue_name, $self->clean_data_for_logging($event_data), $e);
         exception_logged();
         # This one's less clear cut than other failure cases:
         # we *do* expect occasional failures from processing,

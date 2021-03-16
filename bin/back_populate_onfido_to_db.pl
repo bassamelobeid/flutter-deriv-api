@@ -210,8 +210,7 @@ my $handler = async sub {
                     });
             }
         }
-    } catch {
-        my $e = $@;
+    } catch ($e) {
         $log->errorf('Error: %s', $e);
         my $filename = './failed_backpopulate_list.txt';
         open(my $fh, '>>', $filename) or die "Could not open file '$filename' $!";

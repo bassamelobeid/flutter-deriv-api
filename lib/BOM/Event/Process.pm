@@ -153,8 +153,7 @@ sub process {
     try {
         $response = get_action_mappings()->{$event_type}->($event_to_be_processed->{details});
         $response->retain if blessed($response) and $response->isa('Future');
-    } catch {
-        my $e = $@;
+    } catch ($e) {
         $log->errorf("An error occurred processing %s: %s", $event_type, $e);
         exception_logged();
     }

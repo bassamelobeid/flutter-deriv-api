@@ -79,9 +79,9 @@ my $handler = async sub {
             $content,
             content_type => 'application/json',
             headers      => {'X-Signature' => $digest->hexdigest})
-    } catch {
-        $log->errorf('Failed to submit notification - %s', $@);
-        die $@;
+    } catch ($e) {
+        $log->errorf('Failed to submit notification - %s', $e);
+        die $e;
     }
 };
 

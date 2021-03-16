@@ -35,8 +35,8 @@ async sub affiliate_sync_initiated {
         try {
             @{$result}{qw(mt5_logins error)} =
                 await _populate_mt5_affiliate_to_client($login_id, $affiliate_id);
-        } catch {
-            $result->{error} = $@;
+        } catch ($e) {
+            $result->{error} = $e;
             exception_logged();
         }
     }
@@ -74,9 +74,9 @@ async sub _populate_mt5_affiliate_to_client {
                 my $is_success = await _set_affiliate_for_mt5($user, $mt5_login, $affiliate_id);
                 return {login => $mt5_login} if $is_success;
                 return {};
-            } catch {
+            } catch ($e) {
                 exception_logged();
-                return {err => $@};
+                return {err => $e};
             }
         },
         foreach    => \@mt5_logins,

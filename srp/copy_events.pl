@@ -17,12 +17,10 @@ for my $transaction ($range_list->@*) {
     my $decoded_data = decode_json_utf8($transaction);
     next unless ($decoded_data->{type} eq 'set_pending_transaction');
 
-    my ($emit, $error);
     try {
-        $emit = BOM::Platform::Event::Emitter::emit('crypto_subscription', $transaction);
+        BOM::Platform::Event::Emitter::emit('crypto_subscription', $transaction);
     }
-    catch {
-        $error = $@;
+    catch ($e) {
+        warn $e;
     }
-    warn $error unless $emit;
 }

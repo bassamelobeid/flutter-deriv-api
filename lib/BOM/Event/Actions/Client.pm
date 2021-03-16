@@ -327,8 +327,7 @@ async sub document_upload {
             )
 
         );
-    } catch {
-        my $e = $@;
+    } catch ($e) {
         $log->errorf('Failed to process Onfido application for %s : %s', $args->{loginid}, $e);
         exception_logged();
         DataDog::DogStatsd::Helper::stats_inc("event.document_upload.failure",);
@@ -447,8 +446,7 @@ async sub ready_for_authentication {
             $loop->timeout_future(after => VERIFICATION_TIMEOUT)->on_fail(sub { $log->errorf('Time out waiting for Onfido verfication.') }),
 
             _check_applicant($args, $onfido, $applicant_id, $broker, $loginid, $residence, $redis_events_write, $client));
-    } catch {
-        my $e = $@;
+    } catch ($e) {
         $log->errorf('Failed to process Onfido verification for %s: %s', $args->{loginid}, $e);
         exception_logged();
     }
@@ -554,8 +552,7 @@ async sub client_verification {
                                 $current_client->date_of_birth($first_dob);
                                 $current_client->save;
                             }
-                        } catch {
-                            my $e = $@;
+                        } catch ($e) {
                             $log->debugf('Error updating client date of birth: %s', $e);
                             exception_logged();
                         }
@@ -632,18 +629,15 @@ async sub client_verification {
                     }
                 }
                 return;
-            } catch {
-                my $e = $@;
+            } catch ($e) {
                 $log->errorf('An error occurred while retrieving reports for client %s check %s: %s', $loginid, $check->id, $e);
                 die $e;
             }
-        } catch {
-            my $e = $@;
+        } catch ($e) {
             $log->errorf('Failed to do verification callback - %s', $e);
             die $e;
         }
-    } catch {
-        my $e = $@;
+    } catch ($e) {
         $log->errorf('Exception while handling client verification result: %s', $e);
         exception_logged();
     }
@@ -915,8 +909,7 @@ async sub sync_onfido_details {
 
         return $response;
 
-    } catch {
-        my $e = $@;
+    } catch ($e) {
         $log->errorf('Failed to update details in Onfido for %s : %s', $data->{loginid}, $e);
         exception_logged();
     }
@@ -954,8 +947,7 @@ async sub verify_address {
         try {
             DataDog::DogStatsd::Helper::stats_inc('event.address_verification.triggered', {tags => \@dd_tags});
             return await _address_verification(client => $client);
-        } catch {
-            my $e = $@;
+        } catch ($e) {
             DataDog::DogStatsd::Helper::stats_inc('event.address_verification.exception', {tags => \@dd_tags});
             $log->errorf('Failed to verify applicants address for %s : %s', $loginid, $e);
             exception_logged();
@@ -1076,8 +1068,7 @@ async sub _get_onfido_applicant {
             : DataDog::DogStatsd::Helper::stats_timing("event.document_upload.onfido.applicant_create.failed.elapsed", $elapsed);
 
         return $applicant;
-    } catch {
-        my $e = $@;
+    } catch ($e) {
         $log->warn($e);
         exception_logged();
     }
@@ -1339,8 +1330,8 @@ sub _email_client_age_verified {
                 email_content_is_html => 1,
                 skip_text2html        => 1,
             });
-    } catch {
-        $log->warn($@);
+    } catch ($e) {
+        $log->warn($e);
         exception_logged();
     }
     return undef;
@@ -1398,8 +1389,8 @@ sub email_client_account_verification {
                 email_content_is_html => 1,
                 skip_text2html        => 1,
             });
-    } catch {
-        $log->warn($@);
+    } catch ($e) {
+        $log->warn($e);
         exception_logged();
     }
     return undef;
@@ -1706,8 +1697,8 @@ sub social_responsibility_check {
                     unless Email::Stuffer->from($system_email)->to($sr_email)->subject($email_subject)->html_body($html)->send();
                 BOM::Platform::Redis::release_lock($lock_key);
                 return undef;
-            } catch {
-                $log->warn($@);
+            } catch ($e) {
+                $log->warn($e);
                 exception_logged();
                 BOM::Platform::Redis::release_lock($lock_key);
                 return undef;
@@ -1864,8 +1855,7 @@ async sub _upload_documents {
 
         return 1;
 
-    } catch {
-        my $e = $@;
+    } catch ($e) {
         $log->errorf('An error occurred while uploading document to Onfido for %s : %s', $client->loginid, $e);
         exception_logged();
     }
@@ -1938,8 +1928,7 @@ async sub _check_applicant {
                 encode_json_utf8($args));
         }
 
-    } catch {
-        my $e = $@;
+    } catch ($e) {
         $log->errorf('An error occurred while processing Onfido verification for %s : %s', $client->loginid, $e);
         exception_logged();
     }
@@ -1957,8 +1946,7 @@ async sub _update_onfido_check_count {
         try {
             my $redis_response = await $redis_events_write->expire(ONFIDO_AUTHENTICATION_CHECK_MASTER_KEY, ONFIDO_LIMIT_TIMEOUT);
             return $redis_response;
-        } catch {
-            my $e = $@;
+        } catch ($e) {
             $log->debugf("Failed in adding expire to ONFIDO_AUTHENTICATION_CHECK_MASTER_KEY: %s", $e);
             exception_logged();
         }
@@ -1978,8 +1966,7 @@ async sub _update_onfido_user_check_count {
             my $redis_response =
                 await $redis_events_write->expire(ONFIDO_REQUEST_PER_USER_PREFIX . $client->binary_user_id, ONFIDO_REQUEST_PER_USER_TIMEOUT);
             return $redis_response;
-        } catch {
-            my $e = $@;
+        } catch ($e) {
             $log->debugf("Failed in adding expire to ONFIDO_REQUEST_PER_USER_PREFIX: %s", $e);
             exception_logged();
         }
@@ -2097,8 +2084,8 @@ sub qualifying_payment_check {
                 unless Email::Stuffer->from($system_email)->to($compliance_email)->subject($email_subject)->html_body($html)->send();
 
             return undef;
-        } catch {
-            $log->warn($@);
+        } catch ($e) {
+            $log->warn($e);
             exception_logged();
             return undef;
         }
@@ -2133,8 +2120,7 @@ async sub payment_deposit {
     if ($is_first_deposit) {
         try {
             await _address_verification(client => $client);
-        } catch {
-            my $e = $@;
+        } catch ($e) {
             $log->errorf('Failed to verify applicants address for %s : %s', $loginid, $e);
             exception_logged();
         }
@@ -2316,8 +2302,8 @@ sub client_promo_codes_upload {
             $client->promo_code($code);
             $client->save;
             $success++;
-        } catch {
-            push @errors, 'Error on line: ' . (join ', ', @$row) . ' - error: ' . $@;
+        } catch ($e) {
+            push @errors, 'Error on line: ' . (join ', ', @$row) . ' - error: ' . $e;
         }
     }
 
@@ -2358,8 +2344,8 @@ sub signup {
             {
                 loginid => $data->{loginid},
             });
-    } catch {
-        $error = $@;
+    } catch ($e) {
+        $error = $e;
     }
 
     $log->warnf('Failed to emit event - new_crypto_address - for loginid: %s, after creating a new account with error: %s', $data->{loginid}, $error)
@@ -2445,8 +2431,7 @@ sub _set_all_sibling_status {
 
         try {
             $c->status->setnx($status, 'system', $args->{message});
-        } catch {
-            my $e = $@;
+        } catch ($e) {
             $log->errorf('Failed to set %s as %s : %s', $each_loginid, $status, $e);
             exception_logged();
         }
@@ -2507,8 +2492,8 @@ sub aml_client_status_update {
         }
 
         return undef;
-    } catch {
-        $log->errorf("Failed to send AML Risk withdrawal_locked email to compliance %s on %s", $template_args, $@);
+    } catch ($e) {
+        $log->errorf("Failed to send AML Risk withdrawal_locked email to compliance %s on %s", $template_args, $e);
         exception_logged();
         return undef;
     }
@@ -2568,8 +2553,7 @@ async sub _restore_request {
             my %req_args = map { $_ => $context->{$_} } grep { $context->{$_} } qw(brand_name language app_id);
             my $new_req  = BOM::Platform::Context::Request->new(%req_args, $brand ? (brand_name => $brand) : ());
             request($new_req);
-        } catch {
-            my $e = $@;
+        } catch ($e) {
             $log->debugf("Failed in restoring cached context ONFIDO_APPLICANT_CONTEXT_HOLDER_KEY::%s: %s", $applicant_id, $e);
             exception_logged();
         }

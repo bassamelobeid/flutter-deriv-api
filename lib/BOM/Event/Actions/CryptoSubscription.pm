@@ -251,8 +251,8 @@ sub set_pending_transaction {
                 my $client_loginid = $payment[0]->{client_loginid};
 
                 $emit = emit_new_address_call($client_loginid, $retain_address, $to_address);
-            } catch {
-                $error = $@;
+            } catch ($e) {
+                $error = $e;
             }
 
             $log->warnf(
@@ -270,8 +270,8 @@ sub set_pending_transaction {
             my $error = "No error returned";
             try {
                 $emit = BOM::Platform::Event::Emitter::emit('crypto_subscription', $transaction);
-            } catch {
-                $error = $@;
+            } catch ($e) {
+                $error = $e;
                 exception_logged();
             }
 
