@@ -13,7 +13,7 @@ use Syntax::Keyword::Try;
 use Email::Address::UseXS;
 use Email::Stuffer;
 use Date::Utility;
-use List::Util qw(all first any min max);
+use List::Util qw(all first any min max none);
 use Array::Utils qw(array_minus intersect);
 use Locale::Country::Extra;
 use Text::Trim qw(trim);
@@ -4297,6 +4297,89 @@ sub p2p_order_status_history {
         fixup => sub {
             $_->selectall_arrayref('SELECT * FROM p2p.order_status_history(?)', {Slice => {}}, $order_id);
         }) // [];
+}
+
+=head2 p2p_payment_methods
+
+Returns P2P payment methods available in the client's residence.
+
+The payment_method_countries config (json) is set in backoffice. Each method has 2 keys in the config:
+    - countries: list of 2 digit country codes
+    - mode: include or exclude - controls if method is included or excluded in the country list
+
+Returns hashref compatible with websocket schema.
+
+=cut
+
+sub p2p_payment_methods {
+    my $self = shift;
+
+    my $methods        = BOM::Config::p2p_payment_methods();
+    my $country_config = $json->decode(BOM::Config::Runtime->instance->app_config->payments->p2p->payment_method_countries);
+    my $residence      = $self->residence;
+    my $result         = {};
+
+    for my $method (keys %$methods) {
+        my $config    = $country_config->{$method} // {};
+        my $mode      = $config->{mode}            // 'include';
+        my $countries = $config->{countries}       // [];
+
+        next if $mode eq 'include' and none { $_ eq $residence } @$countries;
+        next if $mode eq 'exclude' and any { $_ eq $residence } @$countries;
+
+        my $method_def = $methods->{$method};
+        my %fields     = map {
+            $_ => {
+                display_name => localize($method_def->{fields}{$_}{display_name}),
+                type         => $method_def->{fields}{$_}{type}     // 'text',
+                required     => $method_def->{fields}{$_}{required} // 1,
+            }
+        } keys $method_def->{fields}->%*;
+
+        $result->{$method} = {
+            display_name => localize($method_def->{display_name}),
+            fields       => \%fields,
+        };
+    }
+
+    return $result;
+}
+
+=head2 p2p_advertiser_payment_methods
+
+Get the list of status changes of the specified order.
+
+Takes the following named parameters, all optional:
+
+=over 4
+
+=item * create: arrayref of items to create
+
+=item * update: hashref of items to update
+
+=item * delete: arrayref of items to delete
+
+=back
+
+Returns hashref compatible with websocket schema.
+
+=cut
+
+sub p2p_advertiser_payment_methods {
+    my ($self) = @_;
+
+    my $advertiser_info = $self->_p2p_advertisers(loginid => $self->loginid)->[0];
+    die +{error_code => 'AdvertiserNotRegistered'} unless $advertiser_info;
+
+    # return dummy data for now
+    return {
+        1 => {
+            method     => 'bank_transfer',
+            is_enabled => 1,
+            fields     => {
+                bank_name => 'placeholder',
+                account   => 'placeholder',
+            }}};
 }
 
 =head1 METHODS - Payments
