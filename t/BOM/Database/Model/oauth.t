@@ -5,6 +5,7 @@ use warnings;
 
 use Test::More;
 use Test::Exception;
+use Test::Deep;
 
 use BOM::Database::Model::OAuth;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
@@ -325,4 +326,40 @@ subtest 'Is app internal' => sub {
     is($m->is_internal($app2->{app_id}), 0, 'Is internal app false');
 
 };
+
+subtest 'application tokens' => sub {
+    my $tests = [{
+            app    => 'animales en español',
+            tokens => [qw/perro gato caballo/]
+        },
+        {
+            app    => 'animals in english',
+            tokens => [qw/dog cat horse/]
+        },
+        {
+            app    => 'animaux en français',
+            tokens => [qw/chien chat cheval/]
+        },
+        {
+            app    => 'animais em portugues',
+            tokens => [qw/cachorro gato cavalo/]}];
+
+    for my $test ($tests->@*) {
+        my $app = $m->create_app({
+            name         => $test->{app},
+            scopes       => ['read', 'admin'],
+            user_id      => $test_user_id,
+            redirect_uri => 'https://www.example.com',
+            active       => 1
+        });
+
+        for my $token ($test->{tokens}->@*) {
+            ok $m->create_app_token($app->{app_id}, $token), 'Token created';
+        }
+
+        my $app_tokens = $m->get_app_tokens($app->{app_id});
+        cmp_deeply $app_tokens, bag($test->{tokens}->@*), 'We got the expected tokens';
+    }
+};
+
 done_testing();

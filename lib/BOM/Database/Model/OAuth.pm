@@ -474,6 +474,61 @@ sub unblock_app {
     return $self->update_app($app_id, $app);
 }
 
+=head2 create_app_token
+
+Wrapper for the `oauth.create_app_token` function.
+
+Creates a new entry for the application and token given in the `oauth.app_token` table.
+
+It takes the following arguments:
+
+=over 4
+
+=item C<$app_id> the given application id
+
+=item C<$token> the new token
+
+=back
+
+Returns 1.
+
+=cut
+
+sub create_app_token {
+    my ($self, $app_id, $token) = @_;
+
+    $self->dbic->run(
+        ping => sub {
+            $_->do("SELECT * FROM oauth.create_app_token(?::BIGINT, ?::TEXT)", undef, $app_id, $token);
+        });
+
+    return 1;
+}
+
+=head2 get_app_tokens
+
+Wrapper for the `oauth.get_app_tokens` function.
+
+Grabs from the `oauth.app_token` table all the tokens linked to the given application id.
+
+It takes the following arguments:
+
+=over 4
+
+=item * C<$app_id> the given application id
+
+=back
+
+Returns an arrayref of tokens.
+
+=cut
+
+sub get_app_tokens {
+    my ($self, $app_id) = @_;
+
+    return $self->dbic->run(fixup => sub { $_->selectcol_arrayref("SELECT token FROM oauth.get_app_tokens(?)", undef, $app_id) });
+}
+
 no Moose;
 __PACKAGE__->meta->make_immutable;
 
