@@ -109,8 +109,8 @@ sub create {
 
                             $log->warnf('Redis connection %s(%s) is recovered', $name, $redis_url);
                             exit;
-                        } catch {
-                            $log->errorf('Unable to connect to redis %s(%s)', $name, $redis_url);
+                        } catch ($e) {
+                            $log->errorf('Unable to connect to redis %s(%s):%s', $name, $redis_url, $e);
                             $ping_redis->();
                         }
                     });
@@ -142,8 +142,7 @@ sub check_connections {
                 $server      = __PACKAGE__->$server_name();
                 $server->ping() if $server;
                 $run_checklist{$server_name} = 1;
-            } catch {
-                my $e = $@;
+            } catch ($e) {
                 if ($server) {
                     # Clear current_config from server if server ping fails
                     delete $servers->{$server_name}->{current_config};

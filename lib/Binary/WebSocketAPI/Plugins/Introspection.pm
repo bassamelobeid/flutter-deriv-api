@@ -113,8 +113,7 @@ sub handle_command {
     my $rslt = undef;
     try {
         $rslt = $self->$command($app, @args);
-    } catch {
-        my $e = $@;
+    } catch ($e) {
         $rslt = Future->fail(
             $e,
             introspection => $command,
@@ -162,10 +161,10 @@ sub register {
                 try {
                     $self->start_server($app);
                     undef $code;
-                } catch {
+                } catch ($e) {
                     return unless $code;
                     return $code->() if $retries--;
-                    $log->errorf('Unable to start introspection server after 100 retries - ', $_);
+                    $log->errorf('Unable to start introspection server after 100 retries - ', $e);
                     undef $code;
                 }
             });

@@ -80,8 +80,7 @@ sub document_upload {
             return;
         }
         upload_chunk($c, $upload_info);
-    } catch {
-        my $e = $@;
+    } catch ($e) {
         warn "UploadError (app_id: " . $c->app_id . "): $e";
         send_upload_failure($c, $upload_info, 'unknown');
     }

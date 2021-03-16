@@ -439,8 +439,7 @@ sub startup {
                         }
                     }
                     $backend_setup_finished = 1;
-                } catch {
-                    my $e = $@;
+                } catch ($e) {
                     $log->error("Error applying backends from master: $e");
                 }
             } else {    # there is nothing saved in redis yet.

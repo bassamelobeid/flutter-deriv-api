@@ -47,7 +47,7 @@ no indirect;
 use Getopt::Long qw(GetOptions :config no_auto_abbrev no_ignore_case);
 use Pod::Usage;
 use JSON::MaybeUTF8 'encode_json_utf8';
-use Try::Tiny;
+use Syntax::Keyword::Try;
 
 use Binary::WebSocketAPI::v3::Instance::Redis 'ws_redis_master';
 
@@ -79,7 +79,7 @@ try {
     print "Status: $status; notifications $sent to $count subscribers\n";
     exit;
 }
-catch {
-    warn "Failed setting status and/or notification: $_\n";
+catch ($e) {
+    warn "Failed setting status and/or notification: $e\n";
     exit 255;
 };

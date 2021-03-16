@@ -109,8 +109,7 @@ sub process {
         $data = $self->handle_error($data->{error}, $message, $data) if exists $data->{error};
         return undef unless $data;
         return $self->handle_message($data);
-    } catch {
-        my $e = $@;
+    } catch ($e) {
         $log->errorf("Failure processing Redis subscription message: %s from original message %s, module %s, channel %s",
             $e, $message, $self->class, $self->channel);
     }
@@ -220,8 +219,7 @@ sub subscribe {
         my $self = shift;
         try {
             $callback->($self);
-        } catch {
-            my $e = $@;
+        } catch ($e) {
 
             $log->warnf("callback invocation error during redis subscription to class %s, channel %s: %s", $self->class, $self->channel, $e);
         }
