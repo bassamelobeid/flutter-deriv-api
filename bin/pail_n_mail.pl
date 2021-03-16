@@ -201,6 +201,10 @@ sub store_remote_stats {
     $remotedb->do(q{SET TIMEZONE = 'UTC'});
     my $remote_time = $remotedb->selectall_arrayref('SELECT now()')->[0][0];
 
+    ## Grab the remote server_version
+    my $remote_server_version =
+        $remotedb->selectall_arrayref(q{SELECT substring(setting from '^(?:\d\.\d\d?|\d+)') FROM pg_settings WHERE name='server_version'})->[0][0];
+
     ## Quick database mapping, as pg_stat_statements only spits out database OIDs
     my %dbmap;
     my $SQL = 'SELECT oid, datname FROM pg_database';
@@ -210,10 +214,39 @@ sub store_remote_stats {
 
     ## Grab everything from the table (excluding query strings)
     ## Note: null queryids indicates a database with query info we cannot view
-    ## TODO:
-    ## This will require rewrite because few more columns were added to pg_stat_statements in PG13 such as plan_time and also some fields were changed
-    ## for example total_exec_time, min_exec_time, max_exec_time etc.
-    $SQL = q{ 
+
+    if ($remote_server_version == '13') {
+        $SQL = q{ 
+SELECT queryid
+     , calls
+     , total_exec_time
+     , min_exec_time
+     , max_exec_time
+     , mean_exec_time
+     , stddev_exec_time
+     , rows
+     , shared_blks_hit
+     , shared_blks_read
+     , shared_blks_dirtied
+     , shared_blks_written
+     , local_blks_hit
+     , local_blks_read
+     , local_blks_dirtied
+     , local_blks_written
+     , temp_blks_read
+     , temp_blks_written
+  FROM pg_stat_statements(false) 
+ WHERE queryid IS NOT NULL 
+};
+        ## Need to reset @pss_fields here if server_version = 13
+        @pss_fields = qw/ queryid
+            calls total_exec_time min_exec_time max_exec_time mean_exec_time stddev_exec_time rows
+            shared_blks_hit shared_blks_read shared_blks_dirtied shared_blks_written
+            local_blks_hit local_blks_read local_blks_dirtied local_blks_written
+            temp_blks_read temp_blks_written
+            /;
+    } else {
+        $SQL = q{ 
 SELECT queryid
      , calls
      , total_time
@@ -235,6 +268,14 @@ SELECT queryid
   FROM pg_stat_statements(false) 
  WHERE queryid IS NOT NULL 
 };
+        ## Need to reset @pss_fields here if server_version < 13
+        @pss_fields = qw/ queryid
+            calls total_time min_time max_time mean_time stddev_time rows
+            shared_blks_hit shared_blks_read shared_blks_dirtied shared_blks_written
+            local_blks_hit local_blks_read local_blks_dirtied local_blks_written
+            temp_blks_read temp_blks_written
+            /;
+    }
 
     my $remote_get_stats = $remotedb->prepare($SQL);
 
