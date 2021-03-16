@@ -36,7 +36,7 @@ my $expected_data = [
     {%{$client->p2p_order_info(id => $order->{id})},     client_loginid     => $client->loginid},
 ];
 
-delete $advertiser->{_p2p_advertiser};    # delete cache
+delete $advertiser->{_p2p_advertiser_cached};    # delete cache
 
 my @data_for_notification_tests = ({
         event => 'p2p_order_created',
