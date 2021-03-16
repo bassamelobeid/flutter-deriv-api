@@ -391,54 +391,35 @@ p2p_rpc p2p_advertiser_adverts => sub {
     return {list => $client->p2p_advertiser_adverts($args{params}{args}->%*)};
 };
 
-=head2 p2p_method_list
+=head2 p2p_payment_methods
 
-Returns a list of all available payment methods.
+Payment Methods.
+
+Returns available payment methods for current client's country.
 
 =cut
 
-p2p_rpc p2p_method_list => sub {
-    return [{
-            method       => 'bank',
-            name         => 'hsbc',
-            display_name => 'HSBC'
-        },
-        {
-            method => 'bank',
-            name   => 'maybank',
-            name   => 'Maybank'
-        },
-        {
-            method => 'bank',
-            name   => 'cimb',
-            name   => 'CIMB'
-        },
-        {
-            method => 'online',
-            name   => 'alipay',
-            name   => 'AliPay'
-        },
-        {
-            method    => 'online',
-            name      => 'fps',
-            full_name => 'FPS'
-        },
-        {
-            method    => 'mobile',
-            name      => 'grabpay',
-            full_name => 'GrabPay'
-        },
-        {
-            method    => 'mobile',
-            name      => 'jompay',
-            full_name => 'JOMPay'
-        },
-        {
-            method => 'other',
-            name   => 'other',
-            name   => 'Other'
-        },
-    ];
+p2p_rpc p2p_payment_methods => sub {
+    my (%args) = @_;
+
+    my $client = $args{client};
+    return $client->p2p_payment_methods();
+};
+
+
+=head2 p2p_advertiser_payment_methods
+
+Advertiser Payment Methods.
+
+Manages advertiser payment methods:
+
+=cut
+
+p2p_rpc p2p_advertiser_payment_methods => sub {
+    my (%args) = @_;
+
+    my $client = $args{client};
+    return $client->p2p_advertiser_payment_methods($args{params}{args}->%*);
 };
 
 =head2 p2p_advert_create
