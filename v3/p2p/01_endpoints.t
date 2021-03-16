@@ -187,6 +187,7 @@ subtest 'update advertiser' => sub {
     is $resp->{code}, 'AdvertiserNotApproved', 'Not approved advertiser cannot update the information';
 
     $client_advertiser->p2p_advertiser_update(is_approved => 1);
+    delete $client_advertiser->{_p2p_advertiser_cached};
 
     $resp = $t->await::p2p_advertiser_update({
         p2p_advertiser_update      => 1,
@@ -279,6 +280,8 @@ subtest 'create advert (sell)' => sub {
     $t->await::authorize({authorize => $token_advertiser});
 
     $client_advertiser->p2p_advertiser_update(is_approved => 1);
+    delete $client_advertiser->{_p2p_advertiser_cached};
+    
     $resp = $t->await::p2p_advert_create({
         p2p_advert_create => 1,
         %advert_params
@@ -348,6 +351,8 @@ subtest 'create order (buy)' => sub {
         name                  => 'Testclient',
     });
     $client_client->p2p_advertiser_update(is_approved => 1);
+    delete $client_client->{_p2p_advertiser_cached};
+    
     my $client_adv_info = $resp->{p2p_advertiser_create};
 
     $resp = $t->await::p2p_order_create({
@@ -602,8 +607,9 @@ subtest 'show real names' => sub {
 
 subtest 'ad list name search' => sub {
     $t->await::authorize({authorize => $token_advertiser});
-
+    
     $client_advertiser->p2p_advertiser_update(name => 'aaa');
+    delete $client_advertiser->{_p2p_advertiser_cached};
 
     $resp = $t->await::p2p_advert_list({
         p2p_advert_list => 1,

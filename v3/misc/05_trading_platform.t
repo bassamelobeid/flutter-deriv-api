@@ -4,6 +4,8 @@ use warnings;
 use Test::More;
 use Test::Deep;
 use BOM::Test::Helper qw/build_wsapi_test test_schema/;
+use BOM::Test::Helper::Client;
+
 use await;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Script::DevExperts;
@@ -41,6 +43,24 @@ my $list = $t->await::trading_platform_accounts({
 test_schema('trading_platform_accounts', $list);
 
 cmp_deeply($list->{trading_platform_accounts}, [$acc->{trading_platform_new_account}], 'responses match');
+
+BOM::Test::Helper::Client::top_up($client, 'USD', 10);
+
+my $dep = $t->await::trading_platform_deposit({
+    trading_platform_deposit => 1,
+    platform                 => 'dxtrade',
+    from_account             => $client->loginid,
+    to_account               => $acc->{account_id},
+});
+test_schema('trading_platform_deposit', $dep);
+
+my $wd = $t->await::trading_platform_withdrawal({
+    trading_platform_withdrawal => 1,
+    platform                 => 'dxtrade',
+    from_account             => $acc->{account_id},
+    to_account               => $client->loginid,
+});
+test_schema('trading_platform_withdrawal', $wd);
 
 $t->finish_ok;
 
