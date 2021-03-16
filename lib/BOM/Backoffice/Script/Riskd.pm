@@ -57,16 +57,16 @@ sub run {
             $log->trace('Running Riskd::generate', scalar localtime);
             BOM::RiskReporting::MarkedToModel->new->generate;
             $self->send_log('MTM');
-        } catch {
-            warn "Failure in BOM::RiskReporting::MarkedToModel: $@\n";
+        } catch ($e) {
+            warn "Failure in BOM::RiskReporting::MarkedToModel: $e\n";
         }
         $self->rest;
 
         try {
             BOM::RiskReporting::Dashboard->new->generate;
             $self->send_log('Dashboard');
-        } catch {
-            warn "Failure in BOM::RiskReporting::Dashboard: $@\n";
+        } catch ($e) {
+            warn "Failure in BOM::RiskReporting::Dashboard: $e\n";
         }
 
         $self->rest;

@@ -126,8 +126,8 @@ sub run {
                             my $value     = $contract_expired->value;
                             $fh->print(join(",", (map { $tick->{$_} } qw(epoch quote)), $ask_price, $value, $contract->theo_price) . "\n");
                         }
-                    } catch {
-                        warn "Failed to price with parameters " . Dumper($args) . " - $@\n";
+                    } catch ($e) {
+                        warn "Failed to price with parameters " . Dumper($args) . " - $e\n";
                     }
                     if ($step_unit eq 't') {
                         $idx += $step_amount;
@@ -143,8 +143,8 @@ sub run {
             $pm->finish;
         }
         $pm->wait_all_children;
-    } catch {
-        warn "Failed to run - $@";
+    } catch ($e) {
+        warn "Failed to run - $e";
     }
     alarm(0);
     {

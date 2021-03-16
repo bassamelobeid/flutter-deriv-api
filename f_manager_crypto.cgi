@@ -187,7 +187,8 @@ try {
     } else {
         $end_date = Date::Utility->today();
     }
-} catch {
+} catch ($e) {
+    warn $e unless $e =~ /Invalid datetime format/;
     code_exit_BO('Invalid dates, please check the dates and try again');
 }
 
@@ -299,8 +300,8 @@ if ($exchange_rate eq 'N.A.') {
 
 try {
     $currency_wrapper->get_info();
-} catch {
-    warn "Failed to load $currency currency info: $@";
+} catch ($e) {
+    warn "Failed to load $currency currency info: $e";
     print "<p class='error'><strong>ERROR: Failed to load $currency currency info. Please contact IT. </strong></p>";
     code_exit_BO();
 }

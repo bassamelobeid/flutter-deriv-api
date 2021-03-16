@@ -233,8 +233,8 @@ if (my $bulk_upload = $input{bulk_promo_upload}) {
                 data  => $lines
             }) or die "Failed to emit assign_promo_codes event - please check with Backend team.\n";
         print '<p class="success">' . " $bulk_upload is being processed. An email will be sent to $email when the job completes.</p>";
-    } catch {
-        print '<p class="error">ERROR: ' . $@ . '</p>';
+    } catch ($e) {
+        print '<p class="error">ERROR: ' . $e . '</p>';
     }
 }
 

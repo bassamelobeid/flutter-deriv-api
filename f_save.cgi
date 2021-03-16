@@ -9,6 +9,7 @@ use Text::Trim;
 use Text::Diff;
 use Path::Tiny;
 use HTML::Entities;
+use Syntax::Keyword::Try;
 
 use f_brokerincludeall;
 use Date::Utility;
@@ -139,9 +140,12 @@ if ($filen eq 'editvol') {
             print "<P>" . encode_entities($error_message) . "</P>";
         } else {
             print "<P>Surface for " . encode_entities($vol_update_symbol) . " being saved</P>";
-            my $error;
-            eval { $surface->save } or $error = $@;
-            BOM::Backoffice::QuantsAuditLog::log($clerk, "editvol_$vol_update_symbol", $text) if not $error;
+            try {
+                $surface->save;
+                BOM::Backoffice::QuantsAuditLog::log($clerk, "editvol_$vol_update_symbol", $text);
+            } catch ($e) {
+                print "<P>" . encode_entities($e) . "</P>";
+            }
         }
     }
 
@@ -195,7 +199,9 @@ if ($filen =~ m!^vol/master([a-zA-Z0-9]{2,20}(?:-[a-zA-Z0-9]{2,20})?)\.interest$
     );
 
     my $error;
-    eval { $rates_obj->save } or $error = $@;
+    try { $rates_obj->save } catch ($e) {
+        $error = $e
+    };
     BOM::Backoffice::QuantsAuditLog::log($clerk, "editinterestrate_$symbol", $text) if not $error;
 
 }

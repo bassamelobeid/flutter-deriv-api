@@ -105,8 +105,8 @@ sub update_economic_event_price_preview {
 
     try {
         ($prices, $news_info) = calculate_economic_event_prices($args)
-    } catch {
-        $prices = {error => 'Exception thrown while calculating prices: ' . $@};
+    } catch ($e) {
+        $prices = {error => 'Exception thrown while calculating prices: ' . $e};
         warn $prices->{error};
     }
 

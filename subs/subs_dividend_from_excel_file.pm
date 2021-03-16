@@ -69,8 +69,8 @@ sub save_dividends {
             }
 
             $dividends->save;
-        } catch {
-            print "<p class='error'>We are having error for $symbol: $@</p>";
+        } catch ($e) {
+            print "<p class='error'>We are having error for $symbol: $e</p>";
         }
     }
     return;
@@ -127,8 +127,8 @@ sub read_discrete_forecasted_dividend_from_excel_files {
             $underlying = create_underlying($symbol);
             try {
                 $spot = $underlying->spot // create_underlying('OTC_' . $symbol)->spot;
-            } catch {
-                print "<p class='error'>$@</p>";
+            } catch ($e) {
+                print "<p class='error'>$e</p>";
             }
 
         }

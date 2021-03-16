@@ -66,8 +66,8 @@ if ($input{apply_bonus_code}) {
     try {
         $client->promo_code($encoded_promo_code);
         $client->save();
-    } catch {
-        code_exit_BO(sprintf('<p class="error">ERROR: %s</p>', $@));
+    } catch ($e) {
+        code_exit_BO(sprintf('<p class="error">ERROR: %s</p>', $e));
     };
 
 }

@@ -109,8 +109,8 @@ if (defined $action && $action eq "gross_transactions") {
                 });
             $total_deposits    = formatnumber('amount', $currency, $total_deposits);
             $total_withdrawals = formatnumber('amount', $currency, $total_withdrawals);
-        } catch {
-            warn "Error caught : $@\n";
+        } catch ($e) {
+            warn "Error caught : $e\n";
             print "<div class='error center'>Error: Unable to fetch total deposits/withdrawals </div>";
         }
     } else {

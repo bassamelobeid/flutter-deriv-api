@@ -107,8 +107,8 @@ for my $broker (@brokers) {
 
             $log->infof("Job has been pushed to the statement queue for client: %s and sending email for: %s", $loginid, $client->email)
                 if $show_clients;
-        } catch {
-            $log->errorf('Failed to process quarterly statement for client [%s] - %s', $loginid, $@);
+        } catch ($e) {
+            $log->errorf('Failed to process quarterly statement for client [%s] - %s', $loginid, $e);
         }
     }
 

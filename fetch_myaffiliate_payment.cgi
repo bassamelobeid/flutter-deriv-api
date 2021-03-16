@@ -59,8 +59,8 @@ try {
     my $s3_client = BOM::Platform::S3Client->new(BOM::Config::third_party()->{myaffiliates});
     try {
         $s3_client->upload($zip->basename, $zip, $csum)->get;
-    } catch {
-        die "Upload failed for @{[ $zip->basename ]}: $!";
+    } catch ($e) {
+        die "Upload failed for @{[ $zip->basename ]}: $e";
     }
 
     my @message =
@@ -85,9 +85,7 @@ try {
     truncate $lock, 0;
 
     print "Fetch Myaffiliates payment triggered, info will be emailed soon to " . $brand->emails('affiliates');
-} catch {
-    my $error = $@;
-
+} catch ($error) {
     warn "Error: $error";
     $error =~ s/at .*$//;
     print "An error has occurred -- $error\n";

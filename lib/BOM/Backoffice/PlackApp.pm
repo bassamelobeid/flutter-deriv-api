@@ -90,12 +90,11 @@ sub mkapp {
     my $sub = sub {
         try {
             $real->();
-        } catch {
-            my $error = $@;
+        } catch ($e) {
             # CGI::Compile will wrap the function 'exit' into a `die "EXIT\n" $errcode`
             # we should make it pass-through
             # please refer to perldoc of CGI::Compile and Try::Tiny::Except
-            die $error if ref($error) eq 'ARRAY' and @$error == 2 and $error->[0] eq "EXIT\n";
+            die $e if ref($e) eq 'ARRAY' and @$e == 2 and $e->[0] eq "EXIT\n";
             # log the error unless it is a reference. This avoids stuff
             # like ARRAY(0x17fb998) in the logs and also provides a way
             # for the sender of the exception to log the issue where it
@@ -104,7 +103,7 @@ sub mkapp {
             # overloads '""', like Mojo::Exception. In that case the
             # exception could also be handled in an intermediate stack
             # frame as if it were a normal string.
-            warn($@) unless ref($@);
+            warn($e) unless ref($e);
 
             # in many cases the HTTP status seen by the client cannot
             # be changed anymore. But we still can set it for our own

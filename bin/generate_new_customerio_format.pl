@@ -55,8 +55,7 @@ for my $broker (@real_brokers) {
             try {
                 $csv->print_hr($fho, generate_data($loginid));
                 $ok_count++;
-            } catch {
-                my $error = $@;
+            } catch ($error) {
                 $failed_ids{$loginid} = $error;
                 $fail_count++;
                 if ($fail_count > MAX_FAIL_COUNT) {

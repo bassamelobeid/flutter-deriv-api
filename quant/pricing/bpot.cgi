@@ -109,8 +109,8 @@ if ($bet) {
                 client_loginid => $loginid
             })->debug_link();
 
-    } catch {
-        code_exit_BO("<pre>$@</pre>");
+    } catch ($e) {
+        code_exit_BO("<pre>$e</pre>");
     }
 }
 

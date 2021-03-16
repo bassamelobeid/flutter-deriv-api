@@ -91,8 +91,7 @@ sub generate {
             $bet        = produce_contract($bet_params);
             $underlying = $bet->underlying;
             $bid_price  = $bet->bid_price;
-        } catch {
-            my $err = $@;
+        } catch ($err) {
             $err = $err->{error_code} if ref($err) eq 'HASH' and exists $err->{error_code};
 
             $ignored++;

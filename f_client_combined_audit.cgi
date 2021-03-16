@@ -42,8 +42,8 @@ if (not $client) {
 try {
     $startdate = Date::Utility->new($startdate)->date;
     $enddate   = Date::Utility->new($enddate)->date;
-} catch {
-    code_exit_BO("Cannot parse dates: $startdate or $enddate: $@");
+} catch ($e) {
+    code_exit_BO("Cannot parse dates: $startdate or $enddate: $e");
 }
 
 my $currency = $client->currency;

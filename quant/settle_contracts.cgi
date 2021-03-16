@@ -86,8 +86,8 @@ if (request()->param('perform_actions')) {
                 );
             }
         }
-    } catch {
-        print '<h1>ERROR! Could not complete ' . encode_entities($@) . '</h1>';
+    } catch ($e) {
+        print '<h1>ERROR! Could not complete ' . encode_entities($e) . '</h1>';
     }
 }
 

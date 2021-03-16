@@ -63,7 +63,7 @@ if ($input{save}) {
     @messages = _validation_errors(%input);
 
     if (@messages == 0) {
-        eval {    ## no critic (RequireCheckingReturnValueOfEval)
+        try {    ## no critic (RequireCheckingReturnValueOfEval)
             $pc->start_date($input{start_date})   if $input{start_date};
             $pc->expiry_date($input{expiry_date}) if $input{expiry_date};
             $pc->status($input{status});
@@ -93,8 +93,10 @@ if ($input{save}) {
 
             $pc->promo_code_config(JSON::MaybeXS->new->encode($pc->{_json}));
             $pc->save;
-        };
-        push @messages, ($@ || 'Save completed');
+            push @messages, 'Save completed';
+        } catch ($e) {
+            push @messages, $e;
+        }
 
         ## We want the new code to show up right away to the 'local' broker (almost always CR)
         ## The cronjob will be just fine, even if we do a local insert right away

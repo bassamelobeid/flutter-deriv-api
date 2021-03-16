@@ -308,8 +308,8 @@ sub active_promocodes {
         try {
             $config = $json->decode($code->{promo_code_config});
             $config->{country} = [split ',', $config->{country}];
-        } catch {
-            warn 'Invalid config for promocode ' . $code->{code} . ': ' . $@;
+        } catch ($e) {
+            warn 'Invalid config for promocode ' . $code->{code} . ': ' . $e;
             next;
         }
         $result{$code->{code}} = $code;
@@ -406,8 +406,8 @@ sub add_codes_to_clients {
                         loginid   => $client->loginid,
                         code      => $code->{code}};
                 }
-            } catch {
-                warn $@;
+            } catch ($e) {
+                warn $e;
             }
         }
     }

@@ -47,8 +47,8 @@ if ($input{edit}) {
                     undef, @input{qw/max_daily_buy max_daily_sell country trade_band currency/});
             });
         print '<p class="success">Band configuration updated</p>';
-    } catch {
-        print '<p class="error">Failed to save band:' . $@ . '</p>';
+    } catch ($e) {
+        print '<p class="error">Failed to save band:' . $e . '</p>';
     }
 }
 
@@ -61,7 +61,7 @@ if ($action eq 'delete') {
                     undef, @input{qw/country trade_band currency/});
             });
         print '<p class="success">Band deleted</p>';
-    } catch {
+    } catch ($e) {
         print '<p class="error">Failed to delete band:' . $@ . '</p>';
     }
     delete @input{qw/country trade_band currency max_daily_buy max_daily_sell action/};
@@ -100,8 +100,8 @@ if ($input{save} or $input{copy}) {
                     undef, @input{@fields});
             });
         print '<p class="success">New band configuration saved</p>';
-    } catch {
-        print '<p class="error">Failed to save band: ' . $@ . '</p>';
+    } catch ($e) {
+        print '<p class="error">Failed to save band: ' . $e . '</p>';
     }
     $action = 'new';
 }

@@ -371,8 +371,8 @@ if ($input{whattodo} eq 'uploadID') {
                     );
                 });
             die 'Document already exists.' unless $upload_info;
-        } catch {
-            $result .= "<p class=\"notify notify--warning\">Error Uploading File $i: $@</p>";
+        } catch ($e) {
+            $result .= "<p class=\"notify notify--warning\">Error Uploading File $i: $e</p>";
             next;
         }
 
@@ -389,9 +389,9 @@ if ($input{whattodo} eq 'uploadID') {
                         });
                     $err = 'Db returned unexpected file id on finish'
                         unless $finish_upload_result == $file_id;
-                } catch {
+                } catch ($e) {
                     $err = 'Document upload failed on finish';
-                    warn $err . $@;
+                    warn $err . $e;
                 }
                 return Future->fail("Database Falure: " . $err) if $err;
                 BOM::Platform::Event::Emitter::emit(
@@ -469,9 +469,9 @@ if ($input{whattodo} eq 'disable_2fa' and $user->is_totp_enabled) {
 if (my $check_str = $input{do_id_check} && !$client->is_virtual) {
     try {
         BOM::Platform::Client::IDAuthentication->new(client => $client)->proveid;
-    } catch {
+    } catch ($e) {
         code_exit_BO(
-            qq[<p><b>ProveID failed: $@</b></p>
+            qq[<p><b>ProveID failed: $e</b></p>
                  <p><a class="link" href="$self_href">&laquo; Return to client details</a></p>]
         );
     }
@@ -498,7 +498,7 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
     my $secret_answer = '';
     try {
         $secret_answer = BOM::User::Utility::decrypt_secret_answer($client->secret_answer) // '';
-    } catch {
+    } catch ($e) {
         print qq{<p class=\"notify notify--warning\">ERROR: Unable to extract secret answer. Client secret answer is outdated or invalid.</p>};
     }
 
@@ -614,7 +614,7 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
                     reason     => 'Revoke professional status',
                 });
             }
-        } catch {
+        } catch ($e) {
             # Print clients that were not updated
             print "<p class=\"notify notify--warning\">Failed to update professional status of client: $loginid</p>";
         }
@@ -651,7 +651,7 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
                 # add or update client promo code
                 try {
                     $client->promo_code($promo_code);
-                } catch {
+                } catch ($e) {
                     code_exit_BO(sprintf('<p class="error">ERROR: %s</p>', $_));
                 };
                 $client->promo_code_status($input{promo_code_status} || 'NOT_CLAIM');
@@ -828,8 +828,8 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
                 if ($document_field =~ /^(expiration_date|issue_date)$/) {
                     try {
                         $new_value = Date::Utility->new($val)->date_yyyymmdd if $val ne 'clear';
-                    } catch {
-                        my $err = (split "\n", $@)[0];                                      #handle Date::Utility's confess() call
+                    } catch ($e) {
+                        my $err = (split "\n", $e)[0];                                      #handle Date::Utility's confess() call
                         print qq{<p class="notify notify--warning">ERROR: Could not parse $document_field for doc $id with $val: $err</p>};
                         next CLIENT_KEY;
                     }
@@ -847,8 +847,8 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
                 next CLIENT_KEY if $new_value && $new_value eq $doc->$document_field();
                 try {
                     $doc->$document_field($new_value);
-                } catch {
-                    print qq{<p class="notify notify--warning">ERROR: Could not set $document_field for doc $id with $val: $@</p>};
+                } catch ($e) {
+                    print qq{<p class="notify notify--warning">ERROR: Could not set $document_field for doc $id with $val: $e</p>};
                 }
                 next CLIENT_KEY;
             }
@@ -1176,7 +1176,7 @@ foreach my $mt_ac (keys %$aff_mt_accounts) {
 
 print "</ul>";
 
-eval {
+try {
     my $mt5_log_size = BOM::Config::Redis::redis_mt5_user()->llen("MT5_USER_GROUP_PENDING");
 
     print "<p class='error'>Note: MT5 groups might take time to appear, since there are "
@@ -1184,7 +1184,9 @@ eval {
         . " item(s) being processed</p>"
         if $mt5_log_size > 500;
 
-} or print encode_entities($@);
+} catch ($e) {
+    print encode_entities($e);
+};
 
 my $log_args = {
     broker   => $broker,

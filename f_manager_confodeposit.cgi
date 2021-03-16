@@ -193,7 +193,7 @@ unless ($params{skip_validation}) {
     print qq[<p><em>You can override this with "Override Status Checks"</em></p>];
 
     my $cli = $client;
-    eval {
+    try {
         if ($ttype eq 'TRANSFER') {
             $cli->validate_payment(%params, amount => -$amount);
             $cli = $toClient;
@@ -202,8 +202,7 @@ unless ($params{skip_validation}) {
             $cli->validate_payment(%params, amount => $signed_amount);
         }
         1;
-    } || do {
-        my $err = $@;
+    } catch ($err) {
         print qq[<p class="error">$encoded_loginID Failed. $err</p>];
         code_exit_BO();
     };
@@ -281,8 +280,7 @@ try {
         );
         $client_pa_exp = $toClient;
     }
-} catch {
-    my $error = $@;
+} catch ($error) {
     # CGI::Compile will wrap the function 'exit' into a `die "EXIT\n" $errcode`
     # we should make it pass-through
     # please refer to perldoc of CGI::Compile and Try::Tiny::Except
@@ -297,8 +295,8 @@ if ($ttype eq 'CREDIT' and $is_internal_payment) {
     # unset pa_withdrawal_explicitly_allowed for bank_wire and doughflow mannual deposit
     try {
         $client->status->clear_pa_withdrawal_explicitly_allowed;
-    } catch {
-        warn "Not able to unset payment agent explicity allowed flag for " . $client_pa_exp->loginid;
+    } catch ($e) {
+        warn "Not able to unset payment agent explicity allowed flag for " . $client_pa_exp->loginid . ": $e";
     }
 }
 my $now = Date::Utility->new;
@@ -378,8 +376,8 @@ if ($informclient) {
             template_loginid      => $loginID,
             email_content_is_html => 1,
         });
-    } catch {
-        code_exit_BO("Transaction was performed, please check client statement but an error occured while sending email. Error details $@");
+    } catch ($e) {
+        code_exit_BO("Transaction was performed, please check client statement but an error occured while sending email. Error details $e");
     }
 }
 

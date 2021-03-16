@@ -74,8 +74,8 @@ sub save_commission {
 
     try {
         return _get_info(_qc()->save_config('commission', $args));
-    } catch {
-        return _err($@);
+    } catch ($e) {
+        return _err($e);
     }
 }
 
@@ -84,8 +84,8 @@ sub delete_commission {
 
     try {
         return _qc()->delete_config('commission', $name);
-    } catch {
-        return _err($@);
+    } catch ($e) {
+        return _err($e);
     }
 
 }

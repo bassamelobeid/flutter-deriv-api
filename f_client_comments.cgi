@@ -58,8 +58,7 @@ if ($action && request()->http_method eq 'POST') {
             clerk  => BOM::Backoffice::Auth0::get_staffname(),
             input  => $input,
         );
-    } catch {
-        my $err = $@;
+    } catch ($err) {
         chomp($err) unless ref $err;
 
         if ($input->{action} eq 'update_comment') {
@@ -116,8 +115,7 @@ sub add_comment {
             author  => $args{clerk},
             section => 'mlro',                  # by default we'll put mark all comment as MLRO.
         );
-    } catch {
-        my $err = $@;
+    } catch ($err) {
         die "DublicateComment\n" if $err =~ /Cannot add duplicate comment for table/;
 
         die $err;

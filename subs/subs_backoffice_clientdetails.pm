@@ -427,9 +427,9 @@ sub print_client_details {
     try {
         $secret_answer            = BOM::User::Utility::decrypt_secret_answer($client->secret_answer);
         $can_decode_secret_answer = 1;
-    } catch {
+    } catch ($e) {
         $can_decode_secret_answer = 0;
-        warn "ERROR: Login ID: " . $client->loginid . " - $@";
+        warn "ERROR: Login ID: " . $client->loginid . " - $e";
     }
 
     # MARKETING SECTION

@@ -131,7 +131,15 @@ read_csv_row_and_callback(
             $action !~ /^(debit|credit)$/          and $error = "Invalid transaction type [$action]", last;
             $amount !~ $curr_regex || $amount == 0 and $error = "Invalid amount [$amount]",           last;
             !$statement_comment and $error = 'Statement comment can not be empty', last;
-            $client = eval { BOM::User::Client->new({loginid => $login_id}) } or $error = ($@ || 'No such client'), last;
+            try {
+                $client = BOM::User::Client->new({loginid => $login_id});
+            } catch ($e) {
+                $error = $e;
+            }
+            unless ($client) {
+                $error ||= 'No such client';
+                last;
+            }
             my $signed_amount = $action eq 'debit' ? $amount * -1 : $amount;
 
             if ($is_transaction_id_required) {
@@ -147,8 +155,8 @@ read_csv_row_and_callback(
                         currency => $currency,
                         amount   => $signed_amount
                     );
-                } catch {
-                    $error = $@;
+                } catch ($e) {
+                    $error = $e;
                 }
                 last if $error;
             }
@@ -219,8 +227,8 @@ read_csv_row_and_callback(
                         ($skip_validation ? (skip_validation => 1) : ()),
                     );
                 }
-            } catch {
-                $client_account_table .= construct_row_line(%row, error => "Transaction Error: $@");
+            } catch ($e) {
+                $client_account_table .= construct_row_line(%row, error => "Transaction Error: $e");
                 return;
             }
 

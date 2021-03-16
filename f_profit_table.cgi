@@ -97,8 +97,8 @@ my $sold_contracts = [];
 );
 try {
     $sold_contracts = $financial_market_data_mapper->get_sold_contracts(%params)
-} catch {
-    $error = $@;
+} catch ($e) {
+    $error = $e;
 }
 
 ##Handle pagination

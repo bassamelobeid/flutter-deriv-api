@@ -73,8 +73,8 @@ sub save_limit {
             market_group => $pending_group,
         };
 
-    } catch {
-        my $error = ref $@ eq 'Mojo::Exception' ? $@->message : $@;
+    } catch ($e) {
+        my $error = ref $e eq 'Mojo::Exception' ? $e->message : $e;
         ## Postgres error messages are too verbose to show the whole thing:
         $error =~ s/(DETAIL|CONTEXT|HINT):.*//s;
         return {error => $error};
@@ -103,8 +103,8 @@ sub delete_limit {
             data    => $decorated_data,
             deleted => $deleted
         };
-    } catch {
-        $limits = {error => $@};
+    } catch ($e) {
+        $limits = {error => $e};
     }
 
     my $args_content = join(q{, }, map { qq{$_ => $args->{$_}} } keys %$args);
@@ -137,8 +137,8 @@ sub update_contract_group {
             }
         }
         return {success => 1};
-    } catch {
-        warn 'Exception thrown while updating contract group: ' . $@;
+    } catch ($e) {
+        warn 'Exception thrown while updating contract group: ' . $e;
         return {error => 'Error while updating contract group'};
     }
 }
@@ -160,8 +160,8 @@ sub rebuild_aggregate_tables {
             }
         }
         return {successful => 1};
-    } catch {
-        warn 'Exception thrown while rebuilding aggregate tables: ' . $@;
+    } catch ($e) {
+        warn 'Exception thrown while rebuilding aggregate tables: ' . $e;
         return {error => 'Error while rebuilding aggregate tables.'};
     }
 }
@@ -289,7 +289,12 @@ sub update_ultra_short {
         return {error => 'Ultra short duration is not specified'};
     }
 
-    $duration = Time::Duration::Concise->new(interval => $duration);
+    try {
+        $duration = Time::Duration::Concise->new(interval => $duration);
+    } catch {
+        return {error => 'Invalid duration'};
+    }
+
     try {
         return {error => 'Ultra short span should not be greater than 30 minutes.'} if ($duration->minutes() > 30)
     } catch {
@@ -302,8 +307,8 @@ sub update_ultra_short {
         $app_config->set({$key_name => $duration->seconds()});
         rebuild_aggregate_tables($duration->seconds());
         $output = {result => $duration->as_string()};
-    } catch {
-        warn $@;
+    } catch ($e) {
+        warn $e;
         $output = {error => 'Failed to set the duration. Please check log.'}
     }
 
@@ -341,8 +346,8 @@ sub save_threshold {
             amount => $amount,
         }
 
-    } catch {
-        warn $@;
+    } catch ($e) {
+        warn $e;
         $output = {error => 'Failed setting threshold. Please check log.'}
     }
 
@@ -368,8 +373,8 @@ sub update_config_switch {
     try {
         $app_config->set({$key_name => $switch});
         $output = {status => $switch};
-    } catch {
-        warn $@;
+    } catch ($e) {
+        warn $e;
         $output = {error => 'Failed to update config status. Please check log.'}
     }
 
@@ -453,8 +458,8 @@ sub update_market_group {
     try {
         BOM::Database::QuantsConfig->new->update_market_group($args);
         return {success => 1};
-    } catch {
-        warn 'Exception thrown while updating market group: ' . $@;
+    } catch ($e) {
+        warn 'Exception thrown while updating market group: ' . $e;
         return {error => 'Error while updating market group'};
     }
 }
@@ -471,8 +476,8 @@ sub delete_market_group {
             limit        => $limit,
             market_group => $market_group
         };
-    } catch {
-        return {error => $@};
+    } catch ($e) {
+        return {error => $e};
     }
 }
 

@@ -24,8 +24,11 @@ my %input = %{request->params};
 if ($input{bonus_approve} or $input{bonus_reject}) {
     my $loginid = $input{loginid};
 
-    my $client = BOM::User::Client->new({loginid => $loginid})
-        || code_exit_BO(sprintf('<p class="error">ERROR: %s</p>', $@));
+    my $client;
+    try { $client = BOM::User::Client->new({loginid => $loginid}) }
+    catch ($e) {
+        code_exit_BO(sprintf('<p class="error">ERROR: %s</p>', $e));
+    }
 
     my $promo_code = $input{bonus_approve} // $input{bonus_reject};
 
@@ -39,8 +42,8 @@ if ($input{bonus_approve} or $input{bonus_reject}) {
 
     try {
         $client->promo_code($encoded_promo_code);
-    } catch {
-        code_exit_BO(sprintf('<p class="error">ERROR: %s</p>', $@));
+    } catch ($e) {
+        code_exit_BO(sprintf('<p class="error">ERROR: %s</p>', $e));
     };
     $client->promo_code_status('APPROVAL');
     if ($input{bonus_approve}) {

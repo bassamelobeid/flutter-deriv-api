@@ -54,8 +54,8 @@ if ($r->param('save_multiplier_config')) {
 
         BOM::Backoffice::QuantsAuditLog::log($staff, "ChangeMultiplierConfig", $multiplier_config);
         $output = {success => 1};
-    } catch {
-        $output = {error => "$@"};
+    } catch ($e) {
+        $output = {error => "$e"};
     }
 
     print encode_json_utf8($output);
@@ -88,8 +88,8 @@ if ($r->param('save_multiplier_affiliate_commission')) {
         );
 
         $output = {success => 1};
-    } catch {
-        $output = {error => "$@"};
+    } catch ($e) {
+        $output = {error => "$e"};
     }
 
     print encode_json_utf8($output);
@@ -143,8 +143,8 @@ if ($r->param('save_multiplier_user_limit')) {
 
         BOM::Backoffice::QuantsAuditLog::log($staff, "ChangeCustomVolumeLimits", $custom_volume_limits);
         $output = {success => 1};
-    } catch {
-        $output = {error => "$@"};
+    } catch ($e) {
+        $output = {error => "$e"};
     }
 
     print encode_json_utf8($output);
@@ -173,8 +173,8 @@ if ($r->param('delete_multiplier_user_limit')) {
 
         BOM::Backoffice::QuantsAuditLog::log($staff, "ChangeCustomVolumeLimits", $custom_volume_limits);
         $output = {success => 1};
-    } catch {
-        $output = {error => "$@"};
+    } catch ($e) {
+        $output = {error => "$e"};
     }
 
     print encode_json_utf8($output);
@@ -225,8 +225,8 @@ if ($r->param('save_multiplier_market_or_underlying_limit')) {
 
         BOM::Backoffice::QuantsAuditLog::log($staff, "ChangeCustomVolumeLimits", $custom_volume_limits);
         $output = {success => 1};
-    } catch {
-        $output = {error => "$@"};
+    } catch ($e) {
+        $output = {error => "$e"};
     }
 
     print encode_json_utf8($output);
@@ -255,8 +255,8 @@ if ($r->param('delete_multiplier_market_or_underlying_limit')) {
 
         BOM::Backoffice::QuantsAuditLog::log($staff, "ChangeCustomVolumeLimits", $custom_volume_limits);
         $output = {success => 1};
-    } catch {
-        $output = {error => "$@"};
+    } catch ($e) {
+        $output = {error => "$e"};
     }
 
     print encode_json_utf8($output);
@@ -342,8 +342,8 @@ sub _save_multiplier_custom_commission {
         $args->{start_time} = Date::Utility->new($args->{start_time})->datetime;
         $args->{end_time}   = Date::Utility->new($args->{end_time})->datetime;
         return $args;
-    } catch {
-        return {error => 'ERR: ' . $@};
+    } catch ($e) {
+        return {error => 'ERR: ' . $e};
     }
 }
 
@@ -359,7 +359,7 @@ if ($r->param('delete_multiplier_custom_commission')) {
     try {
         $qc->delete_config('custom_multiplier_commission', $name);
         print encode_json_utf8({success => $name});
-    } catch {
-        print encode_json_utf8({error => 'ERR: ' . $@});
+    } catch ($e) {
+        print encode_json_utf8({error => 'ERR: ' . $e});
     }
 }

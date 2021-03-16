@@ -141,8 +141,8 @@ sub _build_all_client_dbs {
                 || die "Client db creation returned undefined on $broker";
             $brokers_on_this_db =
                 $clientdb->dbic->run(fixup => sub { $_->selectall_hashref('SELECT * FROM betonmarkets.broker_code', 'broker_code') });
-        } catch {
-            $log->errorf('Clientdb connection failed. Skipping %s: %s', $broker, $@);
+        } catch ($e) {
+            $log->errorf('Clientdb connection failed. Skipping %s: %s', $broker, $e);
             delete $visited_brokers{$broker};
             next;
         }

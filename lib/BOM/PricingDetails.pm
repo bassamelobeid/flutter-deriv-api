@@ -157,8 +157,8 @@ sub _debug_content {
             ($self->bet->underlying->volatility_surface_type eq 'moneyness')
             ? $self->_get_moneyness_surface()
             : $self->_get_volsurface();
-    } catch {
-        $volsurface = 'Surface display error:' . $@;
+    } catch ($e) {
+        $volsurface = 'Surface display error:' . $e;
     }
     push @{$tabs_content},
         {
@@ -254,8 +254,8 @@ sub _get_moneyness_surface {
             back_to => 20,
             symbol  => $bet->underlying->symbol
         });
-    } catch {
-        warn("caught error in _get_moneyness_surface: $@");
+    } catch ($e) {
+        warn("caught error in _get_moneyness_surface: $e");
     }
 
     my @unique_dates   = uniq(@$dates);
@@ -305,8 +305,8 @@ sub _get_volsurface {
             back_to => 20,
             symbol  => $bet->underlying->symbol
         });
-    } catch {
-        warn "Failed to fetch historical surface data (usually just a timeout): $@";
+    } catch ($e) {
+        warn "Failed to fetch historical surface data (usually just a timeout): $e";
     }
 
     # master vol surface

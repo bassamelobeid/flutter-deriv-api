@@ -62,8 +62,8 @@ if ($input{action} and $p2p_write) {
             fraud  => $input{fraud},
             staff  => BOM::Backoffice::Auth0::get_staffname(),
         );
-    } catch {
-        my $error = ref $@ eq 'ARRAY' ? join ', ', $@->@* : $@;
+    } catch ($e) {
+        my $error = ref $e eq 'ARRAY' ? join ', ', $e->@* : $e;
         print '<p class="error">' . $error . '</p>';
     }
 }
@@ -78,11 +78,11 @@ if ($input{dispute} and $p2p_write) {
             id             => $input{order_id},
             dispute_reason => $input{reason});
 
-    } catch {
-        my $error = $@;
-        $error = join ', ', $@->@* if ref $@ eq 'ARRAY';
-        $error = $@->{error_code}
-            if ref $@ eq 'HASH' && defined $@->{error_code};
+    } catch ($e) {
+        my $error = $e;
+        $error = join ', ', $e->@* if ref $e eq 'ARRAY';
+        $error = $e->{error_code}
+            if ref $e eq 'HASH' && defined $e->{error_code};
         print '<p class="error">' . $error . '</p>';
     }
 }
@@ -148,8 +148,8 @@ if (my $id = $input{order_id}) {
                         $chat_messages_limit, $chat_messages_limit * ($chat_page - 1));
                 });
         }
-    } catch {
-        print '<p class="error">' . $@ . '</p>';
+    } catch ($e) {
+        print '<p class="error">' . $e . '</p>';
     }
 }
 

@@ -41,8 +41,8 @@ sub update_price_preview {
     my $prices;
     try {
         $prices = calculate_prices($args)
-    } catch {
-        $prices = {error => 'Exception thrown while calculating prices: ' . $@};
+    } catch ($e) {
+        $prices = {error => 'Exception thrown while calculating prices: ' . $e};
     }
 
     return $prices if $prices->{error};

@@ -101,8 +101,8 @@ sub _generate_report {
                             $contract_parameters->{limit_order} = BOM::Transaction::Utility::extract_limit_orders($bet);
                             my $contract = produce_contract($contract_parameters);
                             $bid = $contract->bid_price;
-                        } catch {
-                            warn("bid price error[$@], bet_id[" . $bet_id . "], account_id[$account_id], end_of_day_balance_id[" . $eod_id[0] . "]");
+                        } catch ($e) {
+                            warn("bid price error[$e], bet_id[" . $bet_id . "], account_id[$account_id], end_of_day_balance_id[" . $eod_id[0] . "]");
                             next;
                         }
 

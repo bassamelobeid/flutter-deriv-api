@@ -49,6 +49,7 @@ use warnings;
 
 use List::MoreUtils qw( uniq );
 use HTML::Entities;
+use Syntax::Keyword::Try;
 
 use lib qw(/home/git/regentmarkets/bom-backoffice);
 use f_brokerincludeall;
@@ -103,13 +104,17 @@ foreach my $market (@markets) {
     my $args = {
         underlying => $underlying,
     };
-    my $volsurface       = $dm->fetch_surface($args);
-    my $existing_surface = eval { $volsurface->surface };
+    my $volsurface = $dm->fetch_surface($args);
+    my ($existing_surface, $err);
+    try {
+        $existing_surface = $volsurface->surface;
+    } catch ($e) {
+        $err = $e;
+    }
     $volsurface = undef unless $existing_surface;
-
     $volatility_surfaces{$market} = {
         used      => $volsurface,
-        errorused => $@
+        errorused => $err
     };
 }
 

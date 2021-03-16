@@ -146,9 +146,9 @@ sub check_open_bets {
                                 undef, $open_fmb_id, $value, @greeks
                             );
                         }
-                    } catch {
+                    } catch ($e) {
                         $error_count++;
-                        push @mail_content, "Unable to process bet [ $last_fmb_id, " . $open_fmb->{short_code} . ", $@ ]";
+                        push @mail_content, "Unable to process bet [ $last_fmb_id, " . $open_fmb->{short_code} . ", $e ]";
                     }
                 }
 
@@ -168,8 +168,8 @@ sub check_open_bets {
                 }
 
             });
-    } catch {
-        my $errmsg = ref $@ ? $@->trace : $@;
+    } catch ($e) {
+        my $errmsg = ref $e ? $e->trace : $e;
         warn('Updating realtime book transaction aborted while processing bet [' . $last_fmb_id . '] because ' . $errmsg);
     }
 
@@ -251,12 +251,12 @@ sub sell_expired_contracts {
                     $bet_info->{reason} = $failure->{reason};
                     push @error_lines, $bet_info;
                 }
-            } catch {
+            } catch ($e) {
                 warn "Failed to sell expired contracts for "
                     . $client->loginid
                     . " - IDs were "
                     . join(',', @fmb_ids_to_be_sold)
-                    . " and error was $@\n";
+                    . " and error was $e\n";
             }
         }
     }

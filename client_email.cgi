@@ -150,8 +150,8 @@ if ($email ne $new_email) {
             $client_obj->email($new_email);
             $client_obj->save;
         }
-    } catch {
-        print "Update email for user $encoded_email failed, reason: [" . encode_entities($@) . "]";
+    } catch ($e) {
+        print "Update email for user $encoded_email failed, reason: [" . encode_entities($e) . "]";
         code_exit_BO();
     }
 

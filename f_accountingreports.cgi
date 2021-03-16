@@ -69,8 +69,8 @@ foreach my $pair (@$currency_pairs) {
 
     try {
         print "<li>" . $pair_name . " : " . $underlying_spot . "</li>";
-    } catch {
-        warn "Failed to get exchange rate for $pair_name - $@\n";
+    } catch ($e) {
+        warn "Failed to get exchange rate for $pair_name - $e\n";
         print '<li>' . $pair_name . ': <span class="error">ERROR</span></li>';
     }
 
@@ -105,8 +105,8 @@ foreach my $currency_symbol (qw(AUD GBP EUR USD HKD)) {
             . '%</td><td>'
             . $currency->rate_for(30 / 365) * 100
             . '%</td></tr>';
-    } catch {
-        warn "Failed to get currency interest rates for $currency_symbol - $@\n";
+    } catch ($e) {
+        warn "Failed to get currency interest rates for $currency_symbol - $e\n";
         print '<tr><td>' . $currency_symbol . '</td><td colspan="2" class="error">ERROR</td></tr>';
     }
 }

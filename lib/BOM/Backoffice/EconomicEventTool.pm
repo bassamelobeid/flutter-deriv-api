@@ -151,8 +151,8 @@ sub save_new_event {
     }
     try {
         $args->{release_date} = Date::Utility->new($args->{release_date})->epoch if $args->{release_date};
-    } catch {
-        return _err(split "\n", $@);    #handle Date::Utility's confess() call
+    } catch ($e) {
+        return _err(split "\n", $e);    #handle Date::Utility's confess() call
     }
 
     my $eec   = _eec();

@@ -97,12 +97,12 @@ sub save_settings {
                             encode_entities($display_value),
                             '</td><td>-</td></tr>');
                     }
-                } catch {
+                } catch ($e) {
                     $message .= join('',
                         '<tr class="error"><td class="status">&#10005;</td><td class="key-name">',
                         encode_entities($s), '</td><td class="value">',
                         $settings->{$s},     '</td><td>Invalid value, could not set because <b>',
-                        encode_entities($@), '</b></td></tr>');
+                        encode_entities($e), '</b></td></tr>');
                     $has_errors = 1;
                 }
             }
@@ -125,8 +125,8 @@ sub save_settings {
                     BOM::Backoffice::QuantsAuditLog::log($staff, "updatedynamicsettingpage", $log_content);
                     $app_config->set($values_to_set);
                     $message .= '<p class="notify center">Saved global settings to environment.</p>';
-                } catch {
-                    $message .= "<p class='notify notify--warning center'>Could not save global settings to environment: $@</p>";
+                } catch ($e) {
+                    $message .= "<p class='notify notify--warning center'>Could not save global settings to environment: $e</p>";
                 }
             }
         } else {
@@ -413,8 +413,8 @@ sub parse_and_refine_setting {
                     canonical => 1,
                 )->encode($decoded);
             }
-        } catch {
-            die 'JSON string is not well-formatted.';
+        } catch ($e) {
+            die 'JSON string is not well-formatted: $e';
         }
     } elsif ($type eq 'Num') {
         die "Value '$input_value' is not a valid number." unless Scalar::Util::looks_like_number($input_value);
