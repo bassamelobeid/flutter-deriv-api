@@ -66,8 +66,8 @@ sub check {
 
     return if $client->is_virtual;
 
-    my $sanctioned_info = $sanctions->get_sanctioned_info($client->first_name, $client->last_name, $client->date_of_birth);
-
+    my %query           = map { $_ => $client->$_ } (qw/first_name last_name date_of_birth place_of_birth citizen residence/);
+    my $sanctioned_info = $sanctions->get_sanctioned_info(\%query);
     $client->sanctions_check({
         type   => $self->type,
         result => $sanctioned_info->{matched} ? $sanctioned_info->{list} : '',
@@ -79,12 +79,14 @@ sub check {
 
     my $client_loginid = $client->loginid;
     my $client_name    = join(' ', $client->salutation, $client->first_name, $client->last_name);
+    my $matched_fields = join(',', keys $sanctioned_info->{matched_args}->%*);
 
     my $message =
-          "UN Sanctions: $client_loginid suspected (Client's name is $client_name) - similar to $sanctioned_info->{name}\n"
+          "UN Sanctions: $client_loginid suspected (Client's name is $client_name) - similar to $sanctioned_info->{matched_args}->{name}\n"
         . "Check possible match in UN sanctions list found in [$sanctioned_info->{list}, "
         . Date::Utility->new($sanctions->last_updated($sanctioned_info->{list}))->date . "].\n"
-        . "Reason: $sanctioned_info->{reason} \n";
+        . "Matched fields: $matched_fields \n"
+        . ($sanctioned_info->{comment} ? "Comments: $sanctioned_info->{comment} \n" : '');
 
     my $subject = $client->loginid . ' possible match in sanctions list';
     $subject .= " - $args{triggered_by}" if $args{triggered_by};

@@ -14,11 +14,12 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Helper::Client qw( create_client );
 
 my $sanction_result = {
-    matched => 1,
-    list    => 'test list',
-    name    => 'test name',
-    reason  => 'test  reason',
-};
+    matched      => 1,
+    list         => 'test list',
+    comment      => 'test  comment',
+    matched_args => {
+        name => 'test name',
+    }};
 my $mock_sanctions = Test::MockModule->new('Data::Validate::Sanctions');
 $mock_sanctions->redefine(get_sanctioned_info => sub { return $sanction_result });
 
