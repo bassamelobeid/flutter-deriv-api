@@ -62,6 +62,7 @@ sub create_advertiser {
 
     $client->p2p_advertiser_create(name => $param{name});
     $client->p2p_advertiser_update(is_approved => $param{is_approved});
+    delete $client->{_p2p_advertiser_cached};
 
     return $client;
 }
@@ -85,6 +86,7 @@ sub create_advert {
         balance        => $param{type} eq 'sell' ? $param{amount} : 0,
         client_details => $param{advertiser},
     );
+    delete $advertiser->{_p2p_advertiser_cached};
 
     my $advert = $advertiser->p2p_advert_create(%param);
 
@@ -99,6 +101,7 @@ sub create_order {
     my $expiry    = $param{expiry}  // 7200;
     my $balance   = $param{balance} // $param{amount};
     my $client    = $param{client}  // create_advertiser(balance => $balance);
+    delete $client->{_p2p_advertiser_cached};
 
     my $advert = $client->p2p_advert_info(id => $param{advert_id});
 
