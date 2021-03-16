@@ -650,4 +650,27 @@ sub get_crypto_new_address_threshold {
 
 }
 
+=head2 get_currency_internal_sweep_config
+
+Gets the sweep config for each cryptocurrency
+
+=over 4
+
+=item * C<currency> - Currency code
+
+=back
+
+Returns hashref containing sweep configs for the currency
+
+=cut
+
+sub get_currency_internal_sweep_config {
+    my $currency = shift;
+
+    my $currency_sweeps_config = JSON::MaybeUTF8::decode_json_utf8(app_config()->get('payments.crypto.internal_sweeps_config'));
+
+    return $currency_sweeps_config->{$currency};
+
+}
+
 1;

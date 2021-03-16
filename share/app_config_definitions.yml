@@ -301,6 +301,11 @@ payments:
           isa: json_string
           default: '{"default":50,"BTC":0.003,"LTC":1,"ETH":0.1,"IDK":700}'
           global: 1
+        internal_sweeps_config:
+          description: "Configurations for internal sweep batches (utxos)"
+          isa: json_string
+          default: '{"BTC": [{"amount": 0.1, "weight": 1}], "LTC": [{"amount": 0.1, "weight": 1}]}'
+          global: 1
     transfer_between_accounts:
       description: 'Transfer between accounts config'
       isa: section
