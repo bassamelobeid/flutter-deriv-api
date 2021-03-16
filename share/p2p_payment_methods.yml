@@ -1,0 +1,26 @@
+# Configuration of P2P payment methods
+#
+# Main key and field keys must match ^[a-z0-9_]{1,30}$
+# 'fields' is required for main key, must contain at least one field.
+# 'display_name' is required for main key and field keys.
+# 'required' will default to 1 if missing.
+# 'type' will default to "text" if missing.
+# Supported types: text, memo.
+# Do not use 'is_enabled' is a field name.
+
+bank_transfer:
+  display_name: "Bank Transfer"
+  fields:
+    bank_name:
+       display_name: "Bank Name"
+    branch:
+      display_name: "Branch"
+      required: 0
+    account:
+      display_name: "Account Number"
+other:
+  display_name: "Other"
+  fields:
+    instructions:
+      display_name: "Instructions"
+      type: "memo"

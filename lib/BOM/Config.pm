@@ -102,6 +102,17 @@ sub social_responsibility_thresholds {
     return $config;
 }
 
+=head2 p2p_payment_methods
+
+Payment method list for P2P.
+
+=cut
+
+sub p2p_payment_methods {
+    state $config = YAML::XS::LoadFile('/home/git/regentmarkets/bom-config/share/p2p_payment_methods.yml');
+    return $config;
+}
+
 {
     my $env = do {
         local @ARGV = ('/etc/rmg/environment');
