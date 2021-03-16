@@ -43,8 +43,8 @@ sub _redis {
     if ($access_type eq 'write' && $connections->{$key}) {
         try {
             $connections->{$key}->ping();
-        } catch {
-            warn "Redis::_redis $key died: $@, reconnecting";
+        } catch ($e) {
+            warn "Redis::_redis $key died: $e, reconnecting";
             $connections->{$key} = undef;
         }
     }

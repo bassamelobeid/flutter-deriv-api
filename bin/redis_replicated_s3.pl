@@ -73,8 +73,8 @@ sub upload_redis {
             key   => $file_name,
             value => $content
         )->get;
-    } catch {
-        die "Failed to upload redis dump data to S3. Error is $@.";
+    } catch ($e) {
+        die "Failed to upload redis dump data to S3. Error is $e.";
     }
 }
 
