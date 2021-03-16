@@ -27,9 +27,23 @@ use Log::Any::Adapter;
 GetOptions(
     'v|verbose' => \(my $verbose = 0),
     'f|force'   => \(my $force   = 0),
+    'u|update'  => \(my $update  = 0),
 ) or die "Invalid argument\n";
 
 Log::Any::Adapter->import(qw(Stdout), log_level => $verbose ? 'info' : 'warning');
+
+my $sanctions = Data::Validate::Sanctions->new(
+    sanction_file => BOM::Config::sanction_file(),
+    eu_token      => BOM::Config::third_party()->{eu_sanctions}->{token},
+);
+
+if ($update) {
+    $sanctions->update_data;
+
+    print "The source $_ updated. \n" for (keys $sanctions->{_data}->%*);
+    exit 0;
+}
+
 my $reports_path = shift or die "Provide path for storing files as an argument";
 
 # The broker codes are ordered for two reasons:
@@ -37,11 +51,6 @@ my $reports_path = shift or die "Provide path for storing files as an argument";
 # 2. The regulated broker codes have a smaller number of clients, in comparison to CR
 # Thus, it would be better to send the emails one at a time, with regulated ones first
 my @brokers = qw(MF MX MLT CR);
-
-my $sanctions = Data::Validate::Sanctions->new(
-    sanction_file => BOM::Config::sanction_file(),
-    eu_token      => BOM::Config::third_party()->{eu_sanctions}->{token},
-);
 
 my $file_flag = path('/tmp/last_cron_sanctions_check_run');
 my $last_run  = $file_flag->exists ? $file_flag->stat->mtime : 0;
