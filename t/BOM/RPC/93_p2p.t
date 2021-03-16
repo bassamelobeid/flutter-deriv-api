@@ -227,6 +227,8 @@ subtest 'Adverts' => sub {
         'Cannot update the advertiser information when advertiser is not approved');
 
     $client_advertiser->p2p_advertiser_update(is_approved => 1);
+    delete $client_advertiser->{_p2p_advertiser_cached};
+    
     $res = $c->call_ok('p2p_advertiser_update', $params)->has_no_system_error->has_no_error->result;
     is $res->{name}, $params->{args}{name}, 'update advertiser name';
 
@@ -235,6 +237,8 @@ subtest 'Adverts' => sub {
         ->has_no_system_error->has_error->error_code_is('AdvertiserNameRequired', 'Cannot update the advertiser name to blank');
 
     $client_advertiser->p2p_advertiser_update(is_approved => 0);
+    delete $client_advertiser->{_p2p_advertiser_cached};
+    
     $params->{args} = $advert_params;
     $c->call_ok('p2p_advert_create', $params)
         ->has_no_system_error->has_error->error_code_is('AdvertiserNotApproved',
@@ -244,6 +248,7 @@ subtest 'Adverts' => sub {
         is_approved => 1,
         is_listed   => 0,
     );
+    delete $client_advertiser->{_p2p_advertiser_cached};
 
     my @offer_ids = ();    # store all agent's offer's ids to check p2p_agent_offers later
     $params->{args} = $advert_params;
@@ -251,6 +256,7 @@ subtest 'Adverts' => sub {
     push @offer_ids, $res->{offer_id};
 
     $client_advertiser->p2p_advertiser_update(is_listed => 1);
+    delete $client_advertiser->{_p2p_advertiser_cached};
 
     $params->{args} = {advertiser => $client_advertiser->p2p_advertiser_info->{id}};
     $res = $c->call_ok('p2p_advertiser_info', $params)->has_no_system_error->has_no_error->result;
