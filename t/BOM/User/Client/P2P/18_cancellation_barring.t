@@ -77,9 +77,9 @@ subtest general => sub {
         error_code     => 'TemporaryBar',
         message_params => [$block_until->datetime]};
 
+    delete $client->{_p2p_advertiser_cached};
     cmp_deeply(exception { $client->p2p_order_create(advert_id => $ad1->{id}, amount => 1) }, $expected_error, 'barred for create order',);
-
-    cmp_deeply(exception { $client->p2p_advert_create(%ad_params) }, $expected_error, 'barred for create ad',);
+    cmp_deeply(exception { $client->p2p_advert_create(%ad_params) },                          $expected_error, 'barred for create ad',);
 
     is $client->p2p_advertiser_info->{blocked_until}, $block_until->epoch, 'p2p_advertiser_info returns blocked_until';
     is $advertiser->p2p_advertiser_info(id => $client->p2p_advertiser_info->{id})->{blocked_until}, undef, 'other advertiser cannot see it';
@@ -148,6 +148,7 @@ subtest 'timeouts and disputes' => sub {
     tt_hours(2);
     BOM::Test::Helper::P2P::expire_order($client, $ord4->{id});
     $client->p2p_expire_order(id => $ord4->{id});
+    delete $client->{_p2p_advertiser_cached};
     cmp_deeply(
         exception { $client->p2p_order_create(advert_id => $ad1->{id}, amount => 10) },
         {

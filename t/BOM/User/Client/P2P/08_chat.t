@@ -72,6 +72,7 @@ subtest 'chat_token' => sub {
     my $resp = $client->p2p_chat_token();
     is $resp->{token}, 'dummy', 'token not reissued';
     is $resp->{expiry_time}, $expiry, 'correct expiry time';
+    delete $client->{_p2p_advertiser_cached};
 
     set_fixed_time(1);
     is exception { $client->p2p_chat_token() }->{error_code} => 'ChatTokenError',
@@ -90,6 +91,7 @@ subtest 'chat_token' => sub {
     $resp = $client->p2p_chat_token();
     is $resp->{token}, $token, 'token not reissued';
     is $resp->{expiry_time}, $expiry + 1, 'correct expiry time';
+    delete $client->{_p2p_advertiser_cached};
 
     is $last_event{type}, 'p2p_advertiser_updated', 'event emitted';
     is $last_event{data}->{client_loginid}, $client->loginid, 'event client loginid';
@@ -100,6 +102,7 @@ subtest 'chat_token' => sub {
 
     $mock_sb_user->mock('issue_session_token', sub { die });
     is $client->p2p_chat_token()->{token}, $token, 'stored token is returned';
+    delete $client->{_p2p_advertiser_cached};
 
     is $client->p2p_advertiser_info()->{chat_token}, $token, 'stored token returned from p2p_advertiser_info';
     is $client->p2p_advertiser_update(is_approved => 1)->{chat_token}, $token, 'stored token returned from p2p_advertiser_update';

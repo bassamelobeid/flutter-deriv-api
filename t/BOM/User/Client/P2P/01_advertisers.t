@@ -139,6 +139,8 @@ subtest 'Updating advertiser fields' => sub {
     ok !($advertiser->p2p_advertiser_update(is_listed => 0)->{is_listed}), 'Switch flag is_listed to false';
 
     ok !($advertiser->p2p_advertiser_update(is_approved => 0)->{is_approved}), 'Disable approval';
+    delete $advertiser->{_p2p_advertiser_cached};
+
     cmp_deeply(
         exception {
             $advertiser->p2p_advertiser_update(is_listed => 1);
@@ -147,9 +149,14 @@ subtest 'Updating advertiser fields' => sub {
         'Error when advertiser is not approved'
     );
 
-    ok $advertiser->p2p_advertiser_update(is_approved  => 1)->{is_approved}, 'Enabling approval';
-    ok $advertiser->p2p_advertiser_update(is_listed    => 1)->{is_listed},   'Switch flag is_listed to true';
-    ok !$advertiser->p2p_advertiser_update(is_approved => 0)->{is_listed},   'Unapproving switches is_listed to false';
+    ok $advertiser->p2p_advertiser_update(is_approved => 1)->{is_approved}, 'Enabling approval';
+    delete $advertiser->{_p2p_advertiser_cached};
+
+    ok $advertiser->p2p_advertiser_update(is_listed => 1)->{is_listed}, 'Switch flag is_listed to true';
+    delete $advertiser->{_p2p_advertiser_cached};
+
+    ok !$advertiser->p2p_advertiser_update(is_approved => 0)->{is_listed}, 'Unapproving switches is_listed to false';
+    delete $advertiser->{_p2p_advertiser_cached};
 
     cmp_deeply(
         exception {
@@ -177,7 +184,9 @@ subtest 'show real name' => sub {
     is $details->{last_name},  undef, 'no last name yet';
 
     cmp_deeply($advertiser->p2p_advertiser_update(show_name => 1), superhashof({%$names, show_name => 1}), 'names returned from advertiser update');
-    cmp_deeply($advertiser->p2p_advertiser_info,                   superhashof({%$names, show_name => 1}), 'names returned from advertiser info');
+    delete $advertiser->{_p2p_advertiser_cached};
+
+    cmp_deeply($advertiser->p2p_advertiser_info, superhashof({%$names, show_name => 1}), 'names returned from advertiser info');
 
     my $advertiser2 = BOM::Test::Helper::P2P::create_advertiser(
         client_details => {
@@ -188,6 +197,8 @@ subtest 'show real name' => sub {
     cmp_deeply($res, superhashof($names), 'other client sees names');
 
     $advertiser->p2p_advertiser_update(show_name => 0);
+    delete $advertiser->{_p2p_advertiser_cached};
+
     $res = $advertiser2->p2p_advertiser_info(id => $details->{id});
     is $res->{first_name}, undef, 'first name hidden from other client';
     is $res->{last_name},  undef, 'last name hidden from other client';

@@ -2198,7 +2198,7 @@ Returns the advertiser info or dies with error code.
 sub p2p_advertiser_create {
     my ($self, %param) = @_;
 
-    die +{error_code => 'AlreadyRegistered'} if $self->_p2p_advertisers(loginid => $self->loginid)->[0];
+    die +{error_code => 'AlreadyRegistered'} if $self->_p2p_advertiser_cached;
 
     my $name = trim($param{name});
     die +{error_code => 'AdvertiserNameRequired'} unless $name;
@@ -2263,7 +2263,7 @@ sub p2p_advertiser_info {
     if (exists $param{id}) {
         $advertiser = $self->_p2p_advertisers(id => $param{id})->[0];
     } else {
-        $advertiser = $self->_p2p_advertisers(loginid => $self->loginid)->[0];
+        $advertiser = $self->_p2p_advertiser_cached;
     }
 
     return unless $advertiser;
@@ -2278,7 +2278,7 @@ Returns true if the advertiser is blocked.
 
 sub p2p_is_advertiser_blocked {
     my $self       = shift;
-    my $advertiser = $self->_p2p_advertisers(loginid => $self->loginid)->[0];
+    my $advertiser = $self->_p2p_advertiser_cached;
     return $advertiser && !$advertiser->{is_enabled};
 }
 
@@ -2338,7 +2338,7 @@ Returns a list of adverts belonging to current client
 sub p2p_advertiser_adverts {
     my ($self, %param) = @_;
 
-    my $advertiser_info = $self->_p2p_advertisers(loginid => $self->loginid)->[0];
+    my $advertiser_info = $self->_p2p_advertiser_cached;
     die +{error_code => 'AdvertiserNotRegistered'} unless $advertiser_info;
 
     my $list = $self->_p2p_adverts(%param, advertiser_id => $advertiser_info->{id});
@@ -2355,11 +2355,11 @@ Returns new advert or dies with error code.
 sub p2p_advert_create {
     my ($self, %param) = @_;
 
-    my $advertiser_info = $self->_p2p_advertisers(loginid => $self->loginid)->[0];
+    my $advertiser_info = $self->_p2p_advertiser_cached;
     die +{error_code => 'AdvertiserNotRegistered'} unless $advertiser_info;
     die +{error_code => 'AdvertiserNotApproved'}   unless $advertiser_info->{is_approved};
 
-    my $bar_error = $self->_p2p_get_advertiser_bar_error;
+    my $bar_error = $self->_p2p_get_advertiser_bar_error($advertiser_info);
     die $bar_error if $bar_error;
 
     $param{country}          = $self->residence;
@@ -2522,11 +2522,11 @@ sub p2p_order_create {
 
     my ($advert_id, $amount, $expiry, $payment_info, $contact_info, $source) = @param{qw/advert_id amount expiry payment_info contact_info source/};
 
-    my $client_info = $self->_p2p_advertisers(loginid => $self->loginid)->[0];
+    my $client_info = $self->_p2p_advertiser_cached;
     die +{error_code => 'AdvertiserNotFoundForOrder'}    unless $client_info;
     die +{error_code => 'AdvertiserNotApprovedForOrder'} unless $client_info->{is_approved};
 
-    my $bar_error = $self->_p2p_get_advertiser_bar_error;
+    my $bar_error = $self->_p2p_get_advertiser_bar_error($client_info);
     die $bar_error if $bar_error;
 
     my $p2p_config = BOM::Config::Runtime->instance->app_config->payments->p2p;
@@ -2847,7 +2847,7 @@ sub p2p_chat_create {
     }
 
     die +{error_code => 'OrderChatAlreadyCreated'} if $order->{chat_channel_url};
-    my $advertiser_info = $self->_p2p_advertisers(loginid => $self->loginid)->[0] // die +{error_code => 'AdvertiserNotFoundForChat'};
+    my $advertiser_info = $self->_p2p_advertiser_cached // die +{error_code => 'AdvertiserNotFoundForChat'};
 
     my $counterparty_advertiser = $self->_p2p_advertisers(loginid => $counterparty_loginid)->[0]
         // die +{error_code => 'CounterpartyNotAdvertiserForChat'};
@@ -2894,7 +2894,7 @@ Creates one if it doesn't exist or has expired.
 sub p2p_chat_token {
     my ($self) = @_;
 
-    my $advertiser_info = $self->_p2p_advertisers(loginid => $self->loginid)->[0] // die +{error_code => 'AdvertiserNotFoundForChatToken'};
+    my $advertiser_info = $self->_p2p_advertiser_cached // die +{error_code => 'AdvertiserNotFoundForChatToken'};
     my $sendbird_api    = BOM::User::Utility::sendbird_api();
 
     my ($token, $expiry) = $advertiser_info->@{qw(chat_token chat_token_expiry)};
@@ -3265,6 +3265,19 @@ sub _p2p_advertisers {
         $item->{daily_sell_limit} = convert_currency($item->{daily_sell_limit}, $item->{limit_currency}, $item->{account_currency});
     }
     return $advertisers;
+}
+
+=head2 _p2p_advertiser_cached
+
+Cache of p2p_advertiser record for the current client.
+We often need to get it more than once for a single RPC call.
+In tests you will need to delete this every time you update an advertiser and call anohter RPC method.
+
+=cut
+
+sub _p2p_advertiser_cached {
+    my $self = shift;
+    return $self->{_p2p_advertiser_cached} //= $self->_p2p_advertisers(loginid => $self->loginid)->[0];
 }
 
 =head2 _p2p_adverts
@@ -4165,9 +4178,8 @@ Returns error message for temporary block, or nothing if not blocked.
 =cut
 
 sub _p2p_get_advertiser_bar_error {
-    my ($self, $advertiser) = shift;
+    my ($self, $advertiser) = @_;
 
-    $advertiser //= $self->_p2p_advertisers(loginid => $self->loginid)->[0] // return;
     my $blocked_until = $advertiser->{blocked_until} // return;
 
     return +{

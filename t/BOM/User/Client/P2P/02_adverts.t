@@ -135,6 +135,7 @@ subtest 'Duplicate advertiser Registration' => sub {
 subtest 'Creating advert from not approved advertiser' => sub {
     my $advertiser = BOM::Test::Helper::P2P::create_advertiser();
     $advertiser->p2p_advertiser_update(is_approved => 0);
+    delete $advertiser->{_p2p_advertiser_cached};
 
     cmp_deeply(
         exception {
@@ -177,6 +178,7 @@ subtest 'Updating advertiser fields' => sub {
     );
 
     is $advertiser->p2p_advertiser_update(name => 'test')->{name}, 'test', 'Changing name';
+    delete $advertiser->{_p2p_advertiser_cached};
 
     is $advertiser->p2p_advertiser_update(name => 'test')->{name}, 'test', 'Do it again to ensure no duplicate error';
 
@@ -189,6 +191,8 @@ subtest 'Updating advertiser fields' => sub {
         'Once more and switch flag is_listed to false';
 
     ok !($advertiser->p2p_advertiser_update(is_approved => 0)->{is_approved}), 'Disable approval';
+    delete $advertiser->{_p2p_advertiser_cached};
+
     cmp_deeply(
         exception {
             $advertiser->p2p_advertiser_update(is_listed => 1);
@@ -198,10 +202,14 @@ subtest 'Updating advertiser fields' => sub {
     );
 
     ok $advertiser->p2p_advertiser_update(is_approved => 1)->{is_approved}, 'Enabling approval';
-    ok $advertiser->p2p_advertiser_update(is_listed   => 1)->{is_listed},   'Switch flag is_listed to true';
+    delete $advertiser->{_p2p_advertiser_cached};
+
+    ok $advertiser->p2p_advertiser_update(is_listed => 1)->{is_listed}, 'Switch flag is_listed to true';
+    delete $advertiser->{_p2p_advertiser_cached};
 
     for my $pair (pairs('default_advert_description', 'new desc', 'contact_info', 'new contact info', 'payment_info', 'new pay info')) {
         is $advertiser->p2p_advertiser_update($pair->[0] => $pair->[1])->{$pair->[0]}, $pair->[1], 'update ' . $pair->[0];
+        delete $advertiser->{_p2p_advertiser_cached};
     }
 };
 
@@ -390,7 +398,6 @@ subtest 'Creating advert' => sub {
 subtest 'Rate Validation' => sub {
     my %params     = %advert_params;
     my $advertiser = BOM::Test::Helper::P2P::create_advertiser();
-    $advertiser->p2p_advertiser_update(name => 'testing');
 
     my $advert;
 
@@ -661,6 +668,7 @@ subtest 'Creating advert from non active advertiser' => sub {
     my %params     = %advert_params;
     my $advertiser = BOM::Test::Helper::P2P::create_advertiser();
     ok !$advertiser->p2p_advertiser_update(is_listed => 0)->{is_listed}, "set advertiser's adverts inactive";
+    delete $advertiser->{_p2p_advertiser_cached};
 
     cmp_deeply(
         exception {

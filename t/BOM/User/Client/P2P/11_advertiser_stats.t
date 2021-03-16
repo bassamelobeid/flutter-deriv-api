@@ -69,8 +69,11 @@ $client_mock->mock(
     });
 
 subtest 'verification' => sub {
-    ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert(type => 'sell');
-    check_stats($advertiser, $stats_adv, 'stats for new advertiser');
+    eval {
+        ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert(type => 'sell');
+        check_stats($advertiser, $stats_adv, 'stats for new advertiser');
+    };
+    note explain $@;
 
     $advertiser->status->set('age_verification', 'system', 'testing');
     $stats_adv->{basic_verification} = 1;
@@ -533,5 +536,6 @@ done_testing();
 
 sub check_stats {
     my ($client, $expected, $desc) = @_;
+    delete $client->{_p2p_advertiser_cached};
     cmp_deeply($client->p2p_advertiser_info, superhashof($expected), $desc);
 }

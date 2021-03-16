@@ -443,6 +443,8 @@ subtest 'Buyer tries to place an order for an advert with a different currency' 
 
     my $test = $client->p2p_advertiser_create(name => 'test nickname');
     $client->p2p_advertiser_update(is_approved => 1);
+    delete $client->{_p2p_advertiser_cached};
+
     isnt $client->account->currency_code, $advertiser->account->currency_code, 'Advertiser and buyer has different currencies';
 
     my $err = exception {
@@ -474,6 +476,7 @@ subtest 'Buyer tries to place an order for an advert of another country' => sub 
     $client->residence('MY');
     $client->p2p_advertiser_create(name => 'test nickname1');
     $client->p2p_advertiser_update(is_approved => 1);
+    delete $client->{_p2p_advertiser_cached};
 
     my $err = exception {
         $client->p2p_order_create(
@@ -550,6 +553,7 @@ subtest 'Buyer tries to place an order for an advert of a non-approved advertise
     );
 
     $advertiser->p2p_advertiser_update(is_approved => 0);
+    delete $advertiser->{_p2p_advertiser_cached};
 
     ok !($advertiser->p2p_advertiser_info->{is_approved}), 'The advertiser is not approved';
 
@@ -579,6 +583,7 @@ subtest 'Buyer tries to place an order for an advert of a non-listed advertiser'
     );
 
     $advertiser->p2p_advertiser_update(is_listed => 0);
+    delete $advertiser->{_p2p_advertiser_cached};
 
     ok !($advertiser->p2p_advertiser_info->{is_listed}), 'The advertiser is not listed';
 
@@ -720,6 +725,7 @@ subtest 'Buyer tries to place an order for an advert of an unapproved advertiser
     my ($advertiser, $advert_info) = BOM::Test::Helper::P2P::create_advert(type => 'sell');
 
     $advertiser->p2p_advertiser_update(is_approved => 0);
+    delete $advertiser->{_p2p_advertiser_cached};
 
     ok !($advertiser->p2p_advertiser_info->{is_approved}), 'The advertiser is not approved';
 

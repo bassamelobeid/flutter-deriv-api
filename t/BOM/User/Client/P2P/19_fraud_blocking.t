@@ -134,7 +134,7 @@ sub testit {
         );
         my $expected_event = join('_', 'dispute', 'fraud', $test{resolution});
 
-        delete $_->{_p2p_advertiser} for ($client, $advertiser);    # reset cache
+        delete $_->{_p2p_advertiser_cached} for ($client, $advertiser);    # reset cache
         is $client->p2p_is_advertiser_blocked     ? 1 : 0, $test{client_block},     'client block state';
         is $advertiser->p2p_is_advertiser_blocked ? 1 : 0, $test{advertiser_block}, 'advertiser block state';
         is $emit_args->{p2p_order_updated}->{order_event}, $expected_event, 'order event is correct';
