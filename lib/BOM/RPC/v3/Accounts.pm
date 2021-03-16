@@ -312,7 +312,7 @@ rpc "landing_company",
 
     foreach my $type ('gaming_company', 'financial_company') {
         if (($landing_company{$type} // '') ne 'none') {
-            $landing_company{$type} = __build_landing_company($registry->get($landing_company{$type}));
+            $landing_company{$type} = __build_landing_company($registry->get($landing_company{$type}), $country);
         } else {
             delete $landing_company{$type};
         }
@@ -350,7 +350,7 @@ rpc "landing_company",
                 and $mt5_landing_company_details->{$mt5_type}{$mt5_sub_type} ne 'none';
 
             $landing_company{"mt_${mt5_type}_company"}{$mt5_sub_type} =
-                __build_landing_company($registry->get($mt5_landing_company_details->{$mt5_type}{$mt5_sub_type}));
+                __build_landing_company($registry->get($mt5_landing_company_details->{$mt5_type}{$mt5_sub_type}), $country);
         }
     }
 
@@ -451,7 +451,10 @@ Returns a hashref of landing_company parameters
 =cut
 
 sub __build_landing_company {
-    my $lc = shift;
+    my $lc      = shift;
+    # If no country is given, it will return the legal allowed markets of the landing company
+    # else it will return the legal allowed markets for the given country
+    my $country = shift // "default";
 
     # Get suspended currencies and remove them from list of legal currencies
     my $payout_currencies = BOM::RPC::v3::Utility::filter_out_suspended_cryptocurrencies($lc->short);
@@ -463,7 +466,7 @@ sub __build_landing_company {
         country                           => $lc->country,
         legal_default_currency            => $lc->legal_default_currency,
         legal_allowed_currencies          => $payout_currencies,
-        legal_allowed_markets             => $lc->legal_allowed_markets,
+        legal_allowed_markets             => $lc->legal_allowed_markets(BOM::Config::Runtime->instance->get_offerings_config, $country),
         legal_allowed_contract_categories => $lc->legal_allowed_contract_categories,
         has_reality_check                 => $lc->has_reality_check ? 1 : 0,
         currency_config                   => market_pricing_limits($payout_currencies, $lc->short, $lc->legal_allowed_markets),
