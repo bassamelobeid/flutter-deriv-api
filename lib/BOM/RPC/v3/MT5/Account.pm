@@ -181,7 +181,7 @@ async_rpc "trading_servers",
 
 =head2 get_mt5_server_list
 
-    generate_server_config(residence => $client->residence, environment => )
+    get_mt5_server_list(residence => $client->residence, account_type => 'real', market_type => 'synthetic');
 
 Return the array of hash of trade servers configuration
 as per schema defined

@@ -134,7 +134,6 @@ subtest 'trading_servers' => sub {
             client       => $test_client,
             account_type => 'real',
             residence    => $test_client->residence,
-            environment  => 'env_01'
         )->get;
 
         is scalar(@$response), 0, 'empty response if residence is not defined';
@@ -165,7 +164,6 @@ subtest 'trading_servers' => sub {
             client       => $test_client,
             account_type => 'real',
             residence    => $test_client->residence,
-            environment  => 'env_01'
         )->get;
 
         is scalar(@$response), 1, 'Only one server for country for Ireland server';
@@ -195,9 +193,9 @@ subtest 'trading_servers' => sub {
             client       => $test_client,
             account_type => 'real',
             residence    => $test_client->residence,
-            environment  => 'env_01'
+            market_type  => 'synthetic',
         )->get;
-        is scalar(@$response), 5, 'Correct number of servers for country';
+        is scalar(@$response), 4, 'Correct number of servers for country';
         is $response->[0]->{id},          'p01_ts03', 'correct id for the server';
         is $response->[0]->{recommended}, 1,          'correct recommended';
         is $response->[0]->{geolocation}{region},   'Asia',      'correct region for the server';
@@ -227,7 +225,6 @@ subtest 'trading_servers' => sub {
             account_type => 'real',
             market_type  => 'synthetic',
             residence    => $test_client->residence,
-            environment  => 'env_01'
         )->get;
         is scalar(@$response), 4, 'Correct number of servers for country';
         is $response->[0]->{id},          'p01_ts02', 'correct id for the server';
@@ -262,7 +259,6 @@ subtest 'trading_servers' => sub {
             account_type => 'real',
             market_type  => 'synthetic',
             residence    => $test_client->residence,
-            environment  => 'env_01'
         )->get;
 
         is scalar(@$response), 4, 'Correct number of servers for country';
