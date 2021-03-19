@@ -578,30 +578,11 @@ subtest 'MirrorBinaryUserId' => sub {
     use BOM::User::Script::MirrorBinaryUserId;
     use BOM::User::Client;
 
-    my $cfg            = LoadFile '/etc/rmg/userdb.yml';
-    my $pgservice_conf = "/tmp/pgservice.conf.$$";
-    my $pgpass_conf    = "/tmp/pgpass.conf.$$";
+    # setup pgservice and pass for userdb01
+    BOM::Test::setup_pgservice_pass_for_userdb01();
+
     my $dbh;
-    # In our unit test container (debian-ci), there is no unit test cluster;
-    # so we need to route depending on environment. Ideally both db setups
-    # should be consistent in the not too distant future
-    my $port = $ENV{DB_TEST_PORT} // 5436;
     lives_ok {
-        path($pgservice_conf)->append(<<"CONF");
-[user01]
-host=$cfg->{ip}
-port=$port
-user=write
-dbname=users
-CONF
-
-        path($pgpass_conf)->append(<<"CONF");
-$cfg->{ip}:$port:users:write:$cfg->{password}
-CONF
-        chmod 0400, $pgpass_conf;
-
-        @ENV{qw/PGSERVICEFILE PGPASSFILE/} = ($pgservice_conf, $pgpass_conf);
-
         $dbh = BOM::User::Script::MirrorBinaryUserId::userdb;
     }
     'setup';
