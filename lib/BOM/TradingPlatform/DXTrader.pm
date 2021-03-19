@@ -38,6 +38,7 @@ use parent qw(BOM::TradingPlatform);
 use constant {
     DX_CLEARING_CODE => 'default',
     DX_DOMAIN        => 'default',
+    HTTP_TIMEOUT     => 30,
 };
 
 =head2 new
@@ -192,16 +193,43 @@ sub get_accounts {
 
 =head2 change_password
 
-The DXTrader implementation of changing password.
+Changes the password of the client in DevExperts.
+
+Takes the following arguments as named parameters:
+
+=over 4
+
+=item * C<password> (required). the new password.
+
+=back
+
+Returnds undef on success, dies on error.
 
 =cut
 
 sub change_password {
-    my ($self, $args) = @_;
+    my ($self, %args) = @_;
 
-    # TODO: should call BOM::DevExperts::User related method
+    my $password = $args{password};
+    if (BOM::Config::Runtime->instance->app_config->system->suspend->universal_password) {
+        die +{error_code => 'PasswordRequired'} unless $password;
+    } else {
+        $password = $self->client->user->password;
+    }
 
-    return $args;
+    my $dxclient = $self->dxclient_get;
+    die +{error_code => 'ClientNotFound'} unless $dxclient;
+
+    my $resp = $self->call_api(
+        'client_update',
+        login    => $dxclient->{login},
+        domain   => $dxclient->{domain},
+        password => $password,
+    );
+
+    return undef if $resp->{success};
+
+    die +{error_code => 'CouldNotChangePassword'};
 }
 
 =head2 check_password
@@ -329,12 +357,22 @@ sub call_api {
         %args
     });
     try {
-        my $resp = HTTP::Tiny->new->post($self->config->{service_url}, {content => $payload});
-        $resp->{content} = decode_json_utf8($resp->{content});
+        my $resp = $self->http->post($self->config->{service_url}, {content => $payload});
+        $resp->{content} = decode_json_utf8($resp->{content} || '{}');
         return $resp;
     } catch ($e) {
         return {};
     }
+}
+
+=head2 http
+
+Returns the current L<HTTP::Tiny> instance or creates a new one if neeeded.
+
+=cut
+
+sub http {
+    return shift->{http} // HTTP::Tiny->new(timeout => HTTP_TIMEOUT);
 }
 
 =head2 dxclient_get
