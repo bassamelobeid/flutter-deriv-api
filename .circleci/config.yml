@@ -28,6 +28,12 @@ alias:
   environment:
     PERL_TEST_HARNESS_DUMP_TAP: /var/tmp/test-output
     RPC_CONFIG: /home/git/regentmarkets/bom-rpc/rpc.conf.travis
+- &check_services
+  run:
+    background: true
+    command:
+      /opt/circle/check_services
+    name: Check services are running
 default: &6
   docker:
   - auth:
@@ -45,6 +51,7 @@ jobs:
     - *2
     - *3
     - *4
+    - *check_services
     - run:
         <<: *5
         command: |
@@ -60,6 +67,7 @@ jobs:
     - *2
     - *3
     - *4
+    - *check_services
     - run:
         <<: *5
         command: |
@@ -75,6 +83,7 @@ jobs:
     - *2
     - *3
     - *4
+    - *check_services
     - run:
         <<: *5
         command: |
@@ -105,6 +114,7 @@ jobs:
     - *2
     - *3
     - *4
+    - *check_services
     - run:
         <<: *5
         command: make cover
