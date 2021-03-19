@@ -219,6 +219,42 @@ sub get_and_add_redis_key_counter {
     return $redis_key_counter;
 }
 
+=head2 setup_pgservice_pass_for_userdb01
+
+setup pgservice.conf and pgpass.conf for userdb01
+
+=cut
+
+sub setup_pgservice_pass_for_userdb01 {
+    my $cfg            = YAML::XS::LoadFile('/etc/rmg/userdb.yml');
+    my $pgservice_conf = "/tmp/pgservice.conf.$$";
+    my $pgpass_conf    = "/tmp/pgpass.conf.$$";
+
+    # In our unit test container (debian-ci), there is no unit test cluster;
+    # so we need to route depending on environment. Ideally both db setups
+    # should be consistent in the not too distant future
+    my $port = $ENV{DB_TEST_PORT} // 5436;
+
+    # debian-ci /etc/rmg/userdb.yml has readonly_password and write_password tags.
+    # pick the right tag when run tests in debian-ci
+    my $password = on_ci() ? $cfg->{write_password} : $cfg->{password};
+
+    path($pgservice_conf)->append(<<"CONF");
+[user01]
+host=$cfg->{ip}
+port=$port
+user=write
+dbname=users
+CONF
+
+    path($pgpass_conf)->append(<<"CONF");
+$cfg->{ip}:$port:users:write:$password
+CONF
+    chmod 0400, $pgpass_conf;
+
+    @ENV{qw/PGSERVICEFILE PGPASSFILE/} = ($pgservice_conf, $pgpass_conf);    ## no critic (RequireLocalizedPunctuationVars)
+}
+
 1;
 
 =head1 TEST
