@@ -431,10 +431,10 @@ real03\financial\samoa_std-hr_btc: &real_p01ts03_samoa_financial_financial
 real03\financial\samoa_std-hr_ust: *real_p01ts03_samoa_financial_financial
 real03\financial\samoa_std_btc: *real_p01ts03_samoa_financial_financial
 real03\financial\samoa_std_ust: *real_p01ts03_samoa_financial_financial
-real\p01_ts03financial\samoa_std-hr_btc: *real_p01ts03_samoa_financial_financial
-real\p01_ts03financial\samoa_std-hr_ust: *real_p01ts03_samoa_financial_financial
-real\p01_ts03financial\samoa_std_btc: *real_p01ts03_samoa_financial_financial
-real\p01_ts03financial\samoa_std_ust: *real_p01ts03_samoa_financial_financial
+real\p01_ts03\financial\samoa_std-hr_btc: *real_p01ts03_samoa_financial_financial
+real\p01_ts03\financial\samoa_std-hr_ust: *real_p01ts03_samoa_financial_financial
+real\p01_ts03\financial\samoa_std_btc: *real_p01ts03_samoa_financial_financial
+real\p01_ts03\financial\samoa_std_ust: *real_p01ts03_samoa_financial_financial
 real04\financial\samoa_std-hr_btc: &real_p01ts04_samoa_financial_financial
   account_type: real
   landing_company_short: samoa
