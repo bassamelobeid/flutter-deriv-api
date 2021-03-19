@@ -5,6 +5,7 @@ use warnings;
 no indirect;
 
 use Future;
+use Log::Any qw($log);
 use Syntax::Keyword::Try;
 use BOM::TradingPlatform;
 use BOM::Platform::Context qw (localize);
@@ -21,6 +22,7 @@ my %ERROR_MAP = do {
     (
         DXtradeNoCurrency      => localize('Please provide a currency for the DXtrade account.'),
         ExistingDXtradeAccount => localize('You already have DXtrade account of this type (account ID [_1]).'),
+        PasswordRequired       => localize('A new password is required'),
     );
 };
 
@@ -79,6 +81,54 @@ async_rpc trading_platform_withdrawal => sub {
     return Future->done({binary_transaction_id => 123});
 };
 
+=head2 trading_platform_password_change
+
+Changes the Trading Platform password of the account.
+
+Must provide old password for verification.
+
+Returns a L<Future> which resolves to C<1> on success.
+
+=cut
+
+async_rpc trading_platform_password_change => sub {
+    my $params = shift;
+
+    try {
+        my $password = delete $params->{args}{new_password};
+        #die +{error_code => 'PasswordRequired'} unless $password;
+
+        # TODO: old password check
+
+        # TODO: remianing trading platforms implementation
+
+        # DevExperts Implementation 
+        $params->{args}{platform} = 'dxtrade';
+        my $dxtrade = get_platform($params);
+        $dxtrade->change_password(password => $password) if $dxtrade->dxclient_get;
+
+        return Future->done(1);
+    } catch ($e) {
+        return Future->fail(handle_error($e));
+    }
+};
+
+=head2 trading_platform_password_reset
+
+Changes the password of the specified Trading Platform account.
+
+Must provide verification code to validate the request.
+
+Returns a L<Future> which resolves to C<1> on success.
+
+=cut
+
+async_rpc trading_platform_password_reset => sub {
+    my $params = shift;
+    # TODO implement it
+    return Future->done(1);
+};
+
 =head2 get_platform
 
 Creates the platform object from $params.
@@ -108,12 +158,12 @@ sub handle_error {
             message_to_client => localize($ERROR_MAP{$e->{error_code}}, ($e->{message_params} // [])->@*),
         });
     } else {
+        $log->errorf('Trading platform unexpected error: %s', $e);
         return BOM::RPC::v3::Utility::create_error({
             code              => 'TradingPlatformError',
             message_to_client => localize('Sorry, an error occurred. Please try again later.'),
         });
     }
-
 }
 
 1;
