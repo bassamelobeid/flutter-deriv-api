@@ -24,12 +24,11 @@ alias:
           sleep 1
       done
     name: Wait for services to start up
-- &5
+- &check_services
   run:
     background: true
-    command: /home/git/regentmarkets/cpan/local/bin/morbo /home/git/regentmarkets/bom-platform/bin/experian_mock.pl
-      -l http://localhost:4040
-    name: Experian mock service again
+    command: /opt/circle/check_services
+    name: Check services are running
 - &environment
   environment:
     PERL_TEST_HARNESS_DUMP_TAP: /var/tmp/test-output
@@ -50,7 +49,7 @@ jobs:
     - *2
     - *3
     - *4
-    - *5
+    - *check_services
     - run:
         <<: *environment
         command: |
@@ -66,7 +65,7 @@ jobs:
     - *2
     - *3
     - *4
-    - *5
+    - *check_services
     - run:
         <<: *environment
         command: |
@@ -95,7 +94,7 @@ jobs:
     - *2
     - *3
     - *4
-    - *5
+    - *check_services
     - run:
         command: make cover
         name: code coverage tests
