@@ -391,6 +391,8 @@ sub actions_config {
         ['trading_platform_deposit'],
         ['trading_platform_new_account'],
         ['trading_platform_withdrawal'],
+        ['trading_platform_password_change'],
+        ['trading_platform_password_reset'],
 
         ['new_account', {stash_params => [qw/ token server_name client_ip user_agent /]}],
     ];
