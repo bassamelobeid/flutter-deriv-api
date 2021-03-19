@@ -10,6 +10,7 @@ use await;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Script::DevExperts;
 use BOM::Platform::Token::API;
+use BOM::Platform::Token;
 
 my $t = build_wsapi_test();
 
@@ -44,6 +45,27 @@ test_schema('trading_platform_accounts', $list);
 
 cmp_deeply($list->{trading_platform_accounts}, [$acc->{trading_platform_new_account}], 'responses match');
 
+my $res = $t->await::trading_platform_password_change({
+    trading_platform_password_change => 1,
+    old_password                     => 'pr0tect!',
+    new_password                     => 'destr0y!',
+});
+
+test_schema('trading_platform_password_change', $res);
+
+my $code = BOM::Platform::Token->new({
+        email       => $client->email,
+        expires_in  => 3600,
+        created_for => 'trading_platform_password_reset',
+    })->token;
+
+$res = $t->await::trading_platform_password_reset({
+    trading_platform_password_reset => 1,
+    new_password                    => 'Rebui1ld!',
+    verification_code               => $code,
+});
+
+test_schema('trading_platform_password_reset', $res);
 BOM::Test::Helper::Client::top_up($client, 'USD', 10);
 
 my $dep = $t->await::trading_platform_deposit({
