@@ -411,11 +411,19 @@ subtest 'user profile change event' => sub {
 
             $validate_mock->unmock_all;
             $validate_mock->mock(
-                'get_sanctioned_info',
-                sub {
-                    # I hope this 'private' mathod can be used in tests, this kindof simulate a sanction match
-                    return Data::Validate::Sanctions::_possible_match(('some list', 'my forbidden name', 'some reason', '1990-10-10'));
-                });
+                'get_sanctioned_info' => sub {
+                    return {
+                        matched      => 1,
+                        matched_args => {
+                            name      => 'my forbidden name',
+                            dob_epoch => 655516800
+                        },
+                        list    => 'EU-Sanctions',
+                        comment => 'some reason',
+                    };
+                },
+                last_updated => sub { return DateTime->now },
+            );
 
             mailbox_clear();
             $args = {
