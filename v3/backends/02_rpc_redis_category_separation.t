@@ -23,6 +23,8 @@ my $redis;
 my $api;
 
 BEGIN {
+    $ENV{TEST_REDIRECT_RPC_QUEUES} = 0;
+
     $redis = BOM::Config::Redis::redis_rpc_write();
     $api   = build_wsapi_test();
 }
@@ -41,7 +43,7 @@ $mock_cg_backend->mock(
         return $mock_cg_backend->original('call_rpc')->(@_);
     });
 
-$mock_cg_backend->mock('timeout', BOOT_TIMEOUT);
+$mock_cg_backend->mock('_rpc_category_timeout', BOOT_TIMEOUT);
 
 my $mock_http_backend = Test::MockModule->new('Mojo::WebSocketProxy::Backend::JSONRPC');
 $mock_http_backend->mock(
@@ -108,7 +110,7 @@ subtest 'Dynamic category timeouts' => sub {
     BOM::RPC::v3::MT5::Account::reset_throttler($cr_1);
 
     # mt5 rpc calls work with mt5 specific consumer
-    $rpc_redis->start_script;
+    $rpc_redis = BOM::Test::Script::RpcRedis->new('mt5');
 
     ok $response = send_request($params, 'mt5_new_account');
     ok !$response->{error}, 'There is no error in response';

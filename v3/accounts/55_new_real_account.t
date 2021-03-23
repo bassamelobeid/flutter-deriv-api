@@ -301,14 +301,14 @@ subtest 'validate phone field' => sub {
         my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $vr_client->loginid);
         $t->await::authorize({authorize => $token});
 
-        $details{currency}  = 'USD';
-        $details{residence}     = 'br';
-        $details{first_name}    = 'i dont have';
-        $details{last_name}     = 'a phone number';
+        $details{currency}   = 'USD';
+        $details{residence}  = 'br';
+        $details{first_name} = 'i dont have';
+        $details{last_name}  = 'a phone number';
         delete $details{phone};
 
         my $res = $t->await::new_account_real(\%details);
-        ok($res->{msg_type}, 'new_account_real');
+        ok($res->{msg_type},         'new_account_real');
         ok($res->{new_account_real}, 'new account created with empty phone');
     };
 
@@ -322,11 +322,11 @@ subtest 'validate phone field' => sub {
         my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $vr_client->loginid);
         $t->await::authorize({authorize => $token});
 
-        $details{currency}  = 'USD';
-        $details{residence}     = 'br';
-        $details{first_name}    = 'dummy-phone';
-        $details{last_name}     = 'ownerian';
-        $details{phone} = '+1234-864116586523';
+        $details{currency}   = 'USD';
+        $details{residence}  = 'br';
+        $details{first_name} = 'dummy-phone';
+        $details{last_name}  = 'ownerian';
+        $details{phone}      = '+1234-864116586523';
 
         my $res = $t->await::new_account_real(\%details);
         ok($res->{msg_type}, 'new_account_real');
@@ -343,11 +343,11 @@ subtest 'validate phone field' => sub {
         my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $vr_client->loginid);
         $t->await::authorize({authorize => $token});
 
-        $details{currency}  = 'USD';
-        $details{residence}     = 'br';
-        $details{first_name}    = 'alphabetic';
-        $details{last_name}     = 'phone-number';
-        $details{phone} = '+1234-86x4116586523'; # contains `x` in the middle
+        $details{currency}   = 'USD';
+        $details{residence}  = 'br';
+        $details{first_name} = 'alphabetic';
+        $details{last_name}  = 'phone-number';
+        $details{phone}      = '+1234-86x4116586523';    # contains `x` in the middle
 
         my $res = $t->await::new_account_real(\%details);
         is($res->{error}->{code}, 'InvalidPhone', 'phone number can not contain alphabetic characters.');
@@ -362,11 +362,11 @@ subtest 'validate phone field' => sub {
         my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $vr_client->loginid);
         $t->await::authorize({authorize => $token});
 
-        $details{currency}    = 'USD';
-        $details{residence}   = 'br';
-        $details{first_name}  = 'alphabetic';
-        $details{last_name}   = 'phone-number';
-        $details{phone}       = '+1234-8641165++++86523'; # contains more than 3 special characters in a row
+        $details{currency}   = 'USD';
+        $details{residence}  = 'br';
+        $details{first_name} = 'alphabetic';
+        $details{last_name}  = 'phone-number';
+        $details{phone}      = '+1234-8641165++++86523';    # contains more than 3 special characters in a row
 
         my $res = $t->await::new_account_real(\%details);
         is($res->{error}->{code}, 'InvalidPhone', 'phone can not contain more than 3 special characters in a row.');

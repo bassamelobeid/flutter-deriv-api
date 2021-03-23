@@ -83,7 +83,7 @@ for (my $i = 0; $i < 2; $i++) {
     ok $res->{ohlc}->{open}      =~ /\d+\.\d{4,}/
         && $res->{ohlc}->{high}  =~ /\d+\.\d{4,}/
         && $res->{ohlc}->{close} =~ /\d+\.\d{4,}/
-        && $res->{ohlc}->{low} =~ /\d+\.\d{4,}/, 'OHLC should be pipsized';
+        && $res->{ohlc}->{low}   =~ /\d+\.\d{4,}/, 'OHLC should be pipsized';
 }
 
 $t->finish_ok;

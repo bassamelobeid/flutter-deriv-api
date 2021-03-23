@@ -123,7 +123,7 @@ $placeholder = $suite->get_stashed('new_account_real/new_account_real/oauth_toke
 
 # virtual not allowed to make multiple new accounts
 fail_test_sendrecv_params 'new_account_real/test_send.json', 'new_account_real/test_receive_mlt.json', 'Howdee', 'dk', '+61298765433';
-test_sendrecv_params 'authorize/test_send.json', 'authorize/test_receive_mlt.json', $placeholder, 'test-multiple-mlt@binary.com', 'Howdee';
+test_sendrecv_params 'authorize/test_send.json',         'authorize/test_receive_mlt.json', $placeholder, 'test-multiple-mlt@binary.com', 'Howdee';
 test_sendrecv_params 'payout_currencies/test_send.json', 'payout_currencies/test_receive_vrt.json', '(USD|EUR|GBP)', 3;
 
 # not allowed as previous account has no currency set

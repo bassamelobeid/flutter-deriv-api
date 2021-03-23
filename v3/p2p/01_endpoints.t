@@ -155,7 +155,7 @@ subtest 'create advertiser' => sub {
     ok $advertiser->{id} > 0, 'advertiser id';
     ok !$advertiser->{is_approved}, 'advertiser not approved';
     ok $advertiser->{is_listed},    "advertiser's adverts are listed";
-    is $advertiser->{chat_user_id}, 'dummy', 'chat user id';             # from mocked sendbird
+    is $advertiser->{chat_user_id}, 'dummy', 'chat user id';    # from mocked sendbird
     is $advertiser->{chat_token},   'dummy', 'chat token';
 
     $resp = $t->await::p2p_advertiser_info({p2p_advertiser_info => 1});
@@ -214,7 +214,7 @@ subtest 'update advertiser' => sub {
         })->{p2p_advertiser_update};
     ok $advertiser->{is_listed},                  "is_listed updated";
     is $advertiser->{payment_info},               $payment, 'advertiser payment_info updated';
-    is $advertiser->{default_advert_description}, $desc, 'advertiser default_advert_description updated';
+    is $advertiser->{default_advert_description}, $desc,    'advertiser default_advert_description updated';
     is $advertiser->{contact_info},               $contact, 'advertiser contact_info updated';
 
     $resp = $t->await::p2p_advertiser_update({
@@ -243,18 +243,19 @@ subtest 'update advertiser' => sub {
 
 subtest 'blocked_until' => sub {
     my $block_time = Date::Utility->new->plus_time_interval('1d');
-    $client_advertiser->db->dbic->dbh->do('UPDATE p2p.p2p_advertiser SET blocked_until = ? WHERE id = ?', undef, $block_time->datetime, $advertiser->{id});
-    
+    $client_advertiser->db->dbic->dbh->do('UPDATE p2p.p2p_advertiser SET blocked_until = ? WHERE id = ?',
+        undef, $block_time->datetime, $advertiser->{id});
+
     $t->await::authorize({authorize => $token_advertiser});
     $resp = $t->await::p2p_advertiser_info({p2p_advertiser_info => 1});
     is $resp->{p2p_advertiser_info}{blocked_until}, $block_time->epoch, 'blocked_until returned in advertiser_info';
-    
+
     $t->await::authorize({authorize => $token_client});
     $resp = $t->await::p2p_advertiser_info({
             p2p_advertiser_info => 1,
             id                  => $advertiser->{id}});
     is $resp->{p2p_advertiser_info}{blocked_until}, undef, 'blocked_until is hidden from others';
-    
+
     $client_advertiser->db->dbic->dbh->do('UPDATE p2p.p2p_advertiser SET blocked_until = NULL WHERE id = ?', undef, $advertiser->{id});
 };
 
@@ -267,7 +268,7 @@ subtest 'chat token' => sub {
             service       => 'sendbird',
         })->{service_token};
 
-    is $serivce_token->{sendbird}{token}, 'dummy', 'got token';    # from mocked sendbird
+    is $serivce_token->{sendbird}{token},       'dummy', 'got token';    # from mocked sendbird
     ok $serivce_token->{sendbird}{expiry_time}, 'got expiry time';
     ok $serivce_token->{sendbird}{app_id},      'got app id';
 
@@ -373,7 +374,7 @@ subtest 'create order (buy)' => sub {
     ok $order->{rate} == $advert->{rate} && $order->{rate_display} == $advert->{rate_display}, 'rate';
     is $order->{status}, 'pending', 'status';
     is $order->{advert_details}{type}, $advert->{type}, 'type';
-    is $order->{type}, 'buy', 'type';
+    is $order->{type},         'buy', 'type';
     is $order->{payment_info}, $advert->{payment_info}, 'payment_info copied from ad';
     is $order->{contact_info}, $advert->{contact_info}, 'contact_info copied from ad';
     is $order->{client_details}{id}, $client_adv_info->{id}, 'client id';

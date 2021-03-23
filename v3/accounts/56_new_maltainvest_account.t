@@ -766,7 +766,7 @@ subtest 'validate phone field' => sub {
     my %details = %client_details;
     $details{date_of_birth} = '1999-01-01';
     $details{residence}     = 'gb';
-    $details{currency}  = 'USD';
+    $details{currency}      = 'USD';
 
     subtest 'phone can be empty' => sub {
         my ($vr_client, $user) = create_vr_account({
@@ -798,9 +798,9 @@ subtest 'validate phone field' => sub {
         my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $vr_client->loginid);
         $t->await::authorize({authorize => $token});
 
-        $details{first_name}    = 'dummy-phone';
-        $details{last_name}     = 'ownerian';
-        $details{phone} = '+++1234-864116586523';
+        $details{first_name} = 'dummy-phone';
+        $details{last_name}  = 'ownerian';
+        $details{phone}      = '+++1234-864116586523';
 
         my $res = $t->await::new_account_real(\%details);
         ok($res->{msg_type}, 'new_account_real');
@@ -817,9 +817,9 @@ subtest 'validate phone field' => sub {
         my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $vr_client->loginid);
         $t->await::authorize({authorize => $token});
 
-        $details{first_name}    = 'alphabetic';
-        $details{last_name}     = 'phone-number';
-        $details{phone} = '+++1234-86s4116586523'; # contains `s` in the middle
+        $details{first_name} = 'alphabetic';
+        $details{last_name}  = 'phone-number';
+        $details{phone}      = '+++1234-86s4116586523';    # contains `s` in the middle
 
         my $res = $t->await::new_account_real(\%details);
         is($res->{error}->{code}, 'InvalidPhone', 'phone number can not contain alphabetic characters.');

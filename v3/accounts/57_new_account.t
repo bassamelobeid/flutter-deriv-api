@@ -30,7 +30,7 @@ subtest 'verify_email' => sub {
         verify_email => $email,
         type         => 'some_garbage_value'
     });
-    is($res->{msg_type}, 'verify_email');
+    is($res->{msg_type},      'verify_email');
     is($res->{error}->{code}, 'InputValidationFailed', 'verify_email failed');
     is($res->{msg_type},      'verify_email',          'Message type is correct in case of error');
     test_schema('verify_email', $res);
@@ -130,7 +130,7 @@ subtest 'create Virtual account' => sub {
 subtest 'Invalid email verification code' => sub {
     my $res = $t->await::new_account($create_vr);
 
-    is($res->{msg_type}, 'new_account');
+    is($res->{msg_type},      'new_account');
     is($res->{error}->{code}, 'InvalidToken', 'wrong verification code');
     is($res->{new_account},   undef,          'NO account created');
 };

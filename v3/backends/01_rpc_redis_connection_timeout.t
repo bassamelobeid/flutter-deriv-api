@@ -17,6 +17,8 @@ my $redis;
 my $api;
 
 BEGIN {
+    $ENV{TEST_REDIRECT_RPC_QUEUES} = 0;
+
     $api   = build_wsapi_test();
     $redis = BOM::Config::Redis::redis_rpc_write();
 }
@@ -35,7 +37,7 @@ $mock_cg_backend->mock(
         return $mock_cg_backend->original('call_rpc')->(@_);
     });
 
-$mock_cg_backend->mock('timeout', BOOT_TIMEOUT);
+$mock_cg_backend->mock('_rpc_category_timeout', BOOT_TIMEOUT);
 
 my $mock_http_backend = Test::MockModule->new('Mojo::WebSocketProxy::Backend::JSONRPC');
 $mock_http_backend->mock(

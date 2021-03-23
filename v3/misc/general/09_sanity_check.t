@@ -48,9 +48,9 @@ $res = request({
 ok $res->{error}->{code} ne 'SanityCheckFailed', 'Do not check value of password key';
 
 $res = request({
-    change_password    => 1,
+    change_password  => 1,
     '௰_old_password' => '௰',
-    new_password       => '௰'
+    new_password     => '௰'
 });
 is $res->{error}->{code}, 'SanityCheckFailed', 'Should be failed if password key consist of non sanity symbols';
 

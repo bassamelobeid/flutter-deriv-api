@@ -346,8 +346,8 @@ subtest 'Attempt to restart a timed out upload' => sub {
 };
 
 sub gen_frames {
-    my ($data,      %upload_info) = @_;
-    my ($call_type, $upload_id)   = @upload_info{qw/call_type upload_id/};
+    my ($data, %upload_info)    = @_;
+    my ($call_type, $upload_id) = @upload_info{qw/call_type upload_id/};
     my $format = 'N3a*';
     my @frames = map { pack $format, $call_type, $upload_id, length $_, $_ } (unpack "(a$chunk_size)*", $data);
     push @frames, pack $format, $call_type, $upload_id, 0;
@@ -400,7 +400,7 @@ sub request_upload {
         #   to spoof the size so the upload isn't disallowed at the start.
     };
     my $res = $ws->await::document_upload($req);
-    is $res->{error}, undef, 'No error in response' or diag explain $res->{error};
+    is $res->{error},              undef, 'No error in response' or diag explain $res->{error};
     is $res->{req_id},             $req->{req_id},      'req_id is unchanged';
     is_deeply $res->{passthrough}, $req->{passthrough}, 'passthrough is unchanged';
     ok $res->{document_upload},    'Returns document_upload (for none-duplicate files)';
@@ -454,8 +454,8 @@ sub document_upload_ok {
 
     my $success = $upload_info{res}->{document_upload};
 
-    is $success->{status}, 'success', 'File is successfully uploaded';
-    is $success->{size}, length $data, 'file size is correct';
+    is $success->{status},   'success', 'File is successfully uploaded';
+    is $success->{size},     length $data, 'file size is correct';
     is $success->{checksum}, md5_hex($data), 'checksum is correct';
 
     return %upload_info;
