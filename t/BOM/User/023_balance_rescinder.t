@@ -8,6 +8,7 @@ use BOM::User::Script::BalanceRescinder;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Helper::Client qw(top_up);
 use BOM::Test::Email;
+use LandingCompany::Registry;
 
 my $fake_rates = {
     BTC  => 0.0000001,
@@ -63,7 +64,11 @@ $mock->mock(
         return $amount * ($fake_rates->{$currency} // BOM::User::Script::BalanceRescinder::FIAT_BALANCE_LIMIT);
     });
 
-for my $broker_code (qw/CR MX MLT MF DW/) {
+my $registry = LandingCompany::Registry->new;
+# DC throws an exception
+my @broker_codes = grep { $_ ne 'DC' } $registry->all_real_broker_codes();
+
+for my $broker_code (@broker_codes) {
     subtest "Testing $broker_code" => sub {
         my $rescinder = BOM::User::Script::BalanceRescinder->new(broker_code => $broker_code);
         isa_ok($rescinder, 'BOM::User::Script::BalanceRescinder');

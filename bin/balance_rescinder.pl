@@ -6,6 +6,7 @@ use warnings;
 
 use Getopt::Long;
 use BOM::User::Script::BalanceRescinder;
+use LandingCompany::Registry;
 
 binmode STDOUT, ':encoding(UTF-8)';
 binmode STDERR, ':encoding(UTF-8)';
@@ -26,4 +27,9 @@ For more details look at L<BOM::User::Script::BalanceRescinder>.
 
 =cut
 
-BOM::User::Script::BalanceRescinder->new(broker_code => $_)->run for (qw/CR MX MLT MF DW/);
+my $registry = LandingCompany::Registry->new;
+
+# DC throws an exception
+my @broker_codes = grep { $_ ne 'DC' } $registry->all_real_broker_codes();
+
+BOM::User::Script::BalanceRescinder->new(broker_code => $_)->run for (@broker_codes);
