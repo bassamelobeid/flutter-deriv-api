@@ -188,7 +188,6 @@ if ($output{advertiser}) {
         });
     $output{bands}                 = [map { $_->[0] } @$bands];
     $output{p2p_balance}           = financialrounding('amount', $output{advertiser}->{account_currency}, $client->balance_for_cashier('p2p'));
-    $output{sell_blocked}          = $client->_p2p_validate_sell($client, $output{advertiser}) ? 'no' : 'yes';
     $output{age_verification}      = $client->status->age_verification;
     $output{not_approved_statuses} = [qw/cashier_locked disabled unwelcome duplicate_account withdrawal_locked no_withdrawal_or_trading/];
     $output{not_approved_by} =

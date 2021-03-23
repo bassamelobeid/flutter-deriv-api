@@ -128,28 +128,14 @@
                 <p>Effective daily turnover limits:
                 [% advertiser.limit_currency %] [% advertiser.daily_buy_limit %] for buy ads,
                 [% advertiser.limit_currency %] [% advertiser.daily_sell_limit %] for sell ads
+                </br>Today turnover: Buy: [% advertiser.account_currency %] [% advertiser.daily_buy %], sell: [% advertiser.account_currency %] [% advertiser.daily_sell %]
                 </p>
             </td>
-        </tr>
-        <tr>
-            <td>Today turnover</td>
-            <td>Buy: [% advertiser.account_currency %] [% advertiser.daily_buy %], sell: [% advertiser.account_currency %] [% advertiser.daily_sell %]</td>
         </tr>
          <tr>
             <td>P2P available balance</td>
             <td>[% advertiser.account_currency %] [% p2p_balance %]</td>
-        </tr>        
-        <tr>
-            <td>Credit Card Sell Authorized</td>
-            <td>
-                <select name="cc_sell_authorized">
-                    <option value="1" [% advertiser.cc_sell_authorized && 'selected' %]>YES</option>
-                    <option value="0" [% !advertiser.cc_sell_authorized && 'selected' %]>NO</option>
-                </select>
-                (If YES, the advertiser is always allowed to sell funds derived from credit card deposits)
-                <p>Currently blocked: [% sell_blocked %]
-            </td>
-        </tr>        
+        </tr>
         <tr>
             <td>Sendbird ID</td>
             <td>[% advertiser.chat_user_id %]</td>
