@@ -13,16 +13,6 @@ use BOM::Config::Runtime;
 BOM::Test::Helper::P2P::bypass_sendbird();
 BOM::Test::Helper::P2P::create_escrow();
 
-my $original_limit = BOM::Config::Runtime->instance->app_config->payments->reversible_balance_limits->p2p;
-my $original_tover = BOM::Config::Runtime->instance->app_config->payments->p2p->credit_card_turnover_requirement;
-
-scope_guard {
-    BOM::Config::Runtime->instance->app_config->payments->reversible_balance_limits->p2p($original_limit);
-    BOM::Config::Runtime->instance->app_config->payments->p2p->credit_card_turnover_requirement($original_tover);
-};
-
-BOM::Config::Runtime->instance->app_config->payments->p2p->credit_card_turnover_requirement(0);
-
 my ($advertiser, $client, $advert, $order, $processor);
 
 subtest 'sell ads' => sub {
@@ -56,10 +46,6 @@ subtest 'sell ads' => sub {
     BOM::Config::Runtime->instance->app_config->payments->reversible_balance_limits->p2p(50);
     cmp_ok($advertiser->p2p_advertiser_info->{balance_available}, '==', 50, 'new global limit');
     is($client->p2p_advert_list(type => 'sell')->@*, 1, 'ad is shown');
-
-    BOM::Config::Runtime->instance->app_config->payments->p2p->credit_card_turnover_requirement(1);
-    cmp_ok($advertiser->p2p_advertiser_info->{balance_available}, '==', 0, 'zero balance when sell blocked');
-    BOM::Config::Runtime->instance->app_config->payments->p2p->credit_card_turnover_requirement(0);
 
     $client->db->dbic->dbh->do('SELECT betonmarkets.manage_client_limit_by_cashier(?,?,?)', undef, $advertiser->loginid, 'p2p', 0.1);
     cmp_ok($advertiser->p2p_advertiser_info->{balance_available}, '==', 10, 'client specific limit');

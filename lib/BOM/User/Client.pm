@@ -2366,10 +2366,6 @@ sub p2p_advert_create {
     $param{account_currency} = $self->currency;
     ($param{local_currency} //= $self->local_currency) or die +{error_code => 'NoLocalCurrency'};
 
-    if ($param{type} eq 'sell') {
-        die +{error_code => 'SellProhibited'} unless $self->_p2p_validate_sell($self, $advertiser_info);
-    }
-
     $self->_validate_advert_amounts(%param);
     $self->_validate_advert_limits(%param, advertiser_id => $advertiser_info->{id});
 
@@ -2571,7 +2567,6 @@ sub p2p_order_create {
 
     if ($advert_type eq 'buy') {
         $order_type = 'sell';
-        die +{error_code => 'SellProhibited'} unless $self->_p2p_validate_sell($self, $client_info);
         die +{error_code => 'OrderCreateFailClientBalance'} if $amount > $self->balance_for_cashier('p2p');
         die +{error_code => 'OrderPaymentInfoRequired'}     if !trim($param{payment_info});
         die +{error_code => 'OrderContactInfoRequired'}     if !trim($param{contact_info});
@@ -2579,7 +2574,6 @@ sub p2p_order_create {
         $amount_client     = -$amount;
     } elsif ($advert_type eq 'sell') {
         $order_type = 'buy';
-        die +{error_code => 'OrderCreateFailAdvertiser'} unless $self->_p2p_validate_sell($advertiser, $advertiser_info);
         die +{error_code => 'OrderCreateFailAdvertiser'}         if $amount > $advertiser->balance_for_cashier('p2p');
         die +{error_code => 'OrderPaymentContactInfoNotAllowed'} if $payment_info or $contact_info;
         ($payment_info, $contact_info) = $advert_info->@{qw/payment_info contact_info/};
@@ -3547,75 +3541,6 @@ sub _p2p_validate_seller_confirm {
     return;
 }
 
-=head2 _p2p_validate_sell
-
-Validates sell advert creation, sell order creation, and orders against sell ads.
-
-=cut
-
-sub _p2p_validate_sell {
-    my ($self, $client, $advertiser) = @_;
-
-    return 1 if $advertiser->{cc_sell_authorized};
-    return 1 if $client->get_payment_agent();
-
-    my $turnover_required = BOM::Config::Runtime->instance->app_config->payments->p2p->credit_card_turnover_requirement;
-    return 1 if $turnover_required <= 0;
-
-    my $card_processors = BOM::Config::Runtime->instance->app_config->payments->credit_card_processors;
-    my $check_period    = BOM::Config::Runtime->instance->app_config->payments->p2p->credit_card_check_period;
-
-    my ($cc_deposits) = $self->db->dbic->run(
-        fixup => sub {
-            $_->selectrow_array(
-                "SELECT SUM(p.amount) FROM payment.payment p
-                JOIN payment.doughflow d ON d.payment_id = p.id
-                WHERE p.account_id = ?
-                AND d.payment_processor = ANY(?)
-                AND p.payment_time > NOW() - ? * INTERVAL '1 month'",
-                undef,
-                $client->account->id, $card_processors, $check_period
-            );
-        });
-    return 1 unless $cc_deposits;
-
-    my ($turnover) = $self->db->dbic->run(
-        fixup => sub {
-            $_->selectrow_array(
-                "SELECT COALESCE(SUM(buy_price),0) FROM bet.financial_market_bet
-                WHERE bet_class <> 'multiplier' AND account_id = ? AND purchase_time > NOW() - ? * INTERVAL '1 month'",
-                undef,
-                $client->account->id, $check_period
-            );
-        });
-
-    my ($mt5_net) = $self->db->dbic->run(
-        fixup => sub {
-            $_->selectrow_array(
-                "SELECT COALESCE(SUM(amount)*-1,0) FROM payment.payment
-                WHERE account_id = ? AND payment_type_code = 'mt5_transfer' AND payment_time > NOW() - ? * INTERVAL '1 month'",
-                undef,
-                $client->account->id, $check_period
-            );
-        });
-
-    my ($buy) = $self->db->dbic->run(
-        fixup => sub {
-            $_->selectrow_array(
-                "SELECT COALESCE(SUM(o.amount),0) FROM p2p.p2p_transaction t
-               JOIN p2p.p2p_order o ON o.id = t.order_id
-               JOIN p2p.p2p_advert a ON a.id = o.advert_id
-               WHERE t.type = 'order_complete_payment'
-               AND t.transaction_time > NOW() - ? * INTERVAL '1 month'
-               AND ((a.type = 'buy' AND a.advertiser_id = ?) OR (a.type = 'sell' AND o.client_loginid = ?))",
-                undef,
-                $check_period, $advertiser->{id}, $client->loginid
-            );
-        });
-
-    return ($turnover + $mt5_net + $buy) >= ($cc_deposits * ($turnover_required / 100));
-}
-
 =head2 _advertiser_details
 
 Prepares advertiser fields for client display.
@@ -3660,14 +3585,12 @@ sub _advertiser_details {
     # If you're adding any new field here please add it to websocket subscription clean up as well
     if ($self->loginid eq $loginid) {
 
-        my $balance = $self->_p2p_validate_sell($self, $advertiser) ? $self->balance_for_cashier('p2p') : 0;
-
         $details->{payment_info}       = $advertiser->{payment_info} // '';
         $details->{contact_info}       = $advertiser->{contact_info} // '';
         $details->{chat_user_id}       = $advertiser->{chat_user_id};
         $details->{chat_token}         = $advertiser->{chat_token} // '';
         $details->{show_name}          = $advertiser->{show_name};
-        $details->{balance_available}  = financialrounding('amount', $advertiser->{account_currency}, $balance);
+        $details->{balance_available}  = financialrounding('amount', $advertiser->{account_currency}, $self->balance_for_cashier('p2p'));
         $details->{basic_verification} = $self->status->age_verification ? 1 : 0;
         $details->{full_verification}  = $self->fully_authenticated      ? 1 : 0;
 
