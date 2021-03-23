@@ -36,7 +36,6 @@ $app_config->payments->p2p->available_for_countries([]);
 $app_config->payments->p2p->available_for_currencies($P2P_AVAILABLE_CURRENCIES);
 $app_config->payments->p2p->cancellation_barring->count(2);
 $app_config->payments->p2p->cancellation_barring->period(2);
-$app_config->payments->p2p->credit_card_turnover_requirement(0);
 
 my $email_advertiser = 'p2p_advertiser@test.com';
 my $email_client     = 'p2p_client@test.com';
@@ -192,10 +191,9 @@ $app_config->payments->p2p->available(1);
 
 subtest 'Client blocked' => sub {
     my $mock_client = Test::MockModule->new('BOM::User::Client');
-    $mock_client->mock('p2p_is_advertiser_blocked' => sub { 1 });    
+    $mock_client->mock('p2p_is_advertiser_blocked' => sub { 1 });
     $c->call_ok($dummy_method, $params)->has_no_system_error->has_error->error_code_is('PermissionDenied', 'error code is PermissionDenied');
 };
-
 
 subtest 'Adverts' => sub {
     my $advert_params = {
@@ -228,7 +226,7 @@ subtest 'Adverts' => sub {
 
     $client_advertiser->p2p_advertiser_update(is_approved => 1);
     delete $client_advertiser->{_p2p_advertiser_cached};
-    
+
     $res = $c->call_ok('p2p_advertiser_update', $params)->has_no_system_error->has_no_error->result;
     is $res->{name}, $params->{args}{name}, 'update advertiser name';
 
@@ -238,7 +236,7 @@ subtest 'Adverts' => sub {
 
     $client_advertiser->p2p_advertiser_update(is_approved => 0);
     delete $client_advertiser->{_p2p_advertiser_cached};
-    
+
     $params->{args} = $advert_params;
     $c->call_ok('p2p_advert_create', $params)
         ->has_no_system_error->has_error->error_code_is('AdvertiserNotApproved',
@@ -814,9 +812,9 @@ subtest 'P2P Order Info' => sub {
         local_currency   => 'myr',
         amount           => '100.00',
         client_details   => {
-            loginid    => $client->loginid,
-            id         => re('\d+'),
-            name       => $client->p2p_advertiser_info->{name},
+            loginid => $client->loginid,
+            id      => re('\d+'),
+            name    => $client->p2p_advertiser_info->{name},
         },
         price_display  => 100,
         expiry_time    => re('\d+'),
@@ -831,9 +829,9 @@ subtest 'P2P Order Info' => sub {
         created_time       => re('\d+'),
         is_incoming        => 0,
         advertiser_details => {
-            loginid    => $advertiser->loginid,
-            id         => re('\d+'),
-            name       => $advertiser->p2p_advertiser_info->{name},
+            loginid => $advertiser->loginid,
+            id      => re('\d+'),
+            name    => $advertiser->p2p_advertiser_info->{name},
         },
         contact_info     => 'Tel: 123456',
         type             => 'sell',
@@ -884,15 +882,25 @@ subtest 'RestrictedCountry error before PermissionDenied' => sub {
 subtest 'cancellation barring' => sub {
     $app_config->payments->p2p->cancellation_grace_period(0);
     my ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert();
-    my ($client, $order) = BOM::Test::Helper::P2P::create_order(advert_id => $advert->{id}, amount => 1);
+    my ($client,     $order)  = BOM::Test::Helper::P2P::create_order(
+        advert_id => $advert->{id},
+        amount    => 1
+    );
     $client->p2p_order_cancel(id => $order->{id});
-    ($client, $order) = BOM::Test::Helper::P2P::create_order(advert_id => $advert->{id}, amount => 1, client => $client);
+    ($client, $order) = BOM::Test::Helper::P2P::create_order(
+        advert_id => $advert->{id},
+        amount    => 1,
+        client    => $client
+    );
     $client->p2p_order_cancel(id => $order->{id});
-    
+
     my $client_token = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token');
     $params = {
         token => $client_token,
-        args => { advert_id => $advert->{id}, amount => 1 },
+        args  => {
+            advert_id => $advert->{id},
+            amount    => 1
+        },
     };
     my $res = $c->call_ok(p2p_order_create => $params)->has_no_system_error->result;
     is $res->{error}->{code}, 'TemporaryBar', 'The expected error code is TemporaryBar';

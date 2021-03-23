@@ -65,8 +65,8 @@ our %ERROR_MAP = do {
         UnavailableOnVirtual => localize("P2P cashier is unavailable on demo accounts. Please switch to your real account."),
 
         # Client status
-        NoLocalCurrency => localize("We cannot recognise your local currency. Please contact our Customer Support team."),    # TODO maybe this?
-        NotLoggedIn     => localize("Please log in to continue."),
+        NoLocalCurrency  => localize("We cannot recognise your local currency. Please contact our Customer Support team."),    # TODO maybe this?
+        NotLoggedIn      => localize("Please log in to continue."),
         PermissionDenied => localize("You cannot perform this action because of your account status. Please contact our Customer Support team."),
 
         # Invalid data
@@ -96,7 +96,7 @@ our %ERROR_MAP = do {
         OrderCreateFailBalance       => localize("An order cannot be created for this amount at this time. Please try adjusting the amount."),
         AdvertiserNameRequired       => localize("Please provide your name."),
         AdvertiserNameTaken          => localize("This name is already in use. Please provide a different name."),
-        AdvertiserNotApproved =>
+        AdvertiserNotApproved        =>
             localize("Before you can post an ad, we need to verify your identity. Please complete your identity verification at Deriv.com."),
         AdvertiserNotFound      => localize("We can't find the advertiser. Please review the details and try again."),
         AdvertiserNotListed     => localize("This advertiser is currently inactive. Please check again later or choose another advertiser."),
@@ -113,7 +113,7 @@ our %ERROR_MAP = do {
         AdvertOwnerNotApproved        => localize("This advertiser has not been approved yet. Please choose another advertiser."),
         AlreadyRegistered             => localize("You are already an advertiser."),
         ClientDailyOrderLimitExceeded => localize("You may only place [_1] orders every 24 hours. Please try again later."),
-        EscrowNotFound =>
+        EscrowNotFound                =>
             localize("Advertising for this currency is currently unavailable. Please contact our Customer Support team or try again later."),
         InvalidAdvertOwn              => localize("You cannot place an order for your own ad."),
         InvalidOrderCurrency          => localize("Please select an ad that matches your currency."),
@@ -153,9 +153,8 @@ our %ERROR_MAP = do {
         InvalidReasonForSeller           => localize("This reason doesn't apply to your case. Please choose another reason."),
         OrderUnderDispute                => localize('This order is under dispute.'),
         InvalidFinalStateForDispute      => localize('This order is complete and can no longer be disputed.'),
-        TemporaryBar =>
+        TemporaryBar                     =>
             localize("You've been temporarily barred from using our services due to multiple cancellation attempts. Try again after [_1]."),
-        SellProhibited => localize("You can't sell on DP2P because you haven't been active enough and have used a card to fund your account."),
     );
 };
 
@@ -405,7 +404,6 @@ p2p_rpc p2p_payment_methods => sub {
     my $client = $args{client};
     return $client->p2p_payment_methods();
 };
-
 
 =head2 p2p_advertiser_payment_methods
 
