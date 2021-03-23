@@ -79,11 +79,11 @@ if ($input{update}) {
         $output{advertiser} = $db->run(
             fixup => sub {
                 $_->selectrow_hashref(
-                    "UPDATE p2p.p2p_advertiser SET name = ?, is_enabled = ?, is_approved = ?, is_listed = ?, blocked_until = NULLIF(?,'')::TIMESTAMP, default_advert_description = ?, 
+                    "UPDATE p2p.p2p_advertiser SET name = ?, is_enabled = ?, is_listed = ?, blocked_until = NULLIF(?,'')::TIMESTAMP, default_advert_description = ?, 
                         payment_info = ?, contact_info = ?, trade_band = COALESCE(?,trade_band), cc_sell_authorized = ?, show_name = ? WHERE id = ? RETURNING *",
                     undef,
                     @input{
-                        qw/update_name is_enabled is_approved is_listed blocked_until default_advert_description payment_info contact_info trade_band cc_sell_authorized show_name update_id/
+                        qw/update_name is_enabled is_listed blocked_until default_advert_description payment_info contact_info trade_band cc_sell_authorized show_name update_id/
                     });
             });
         die "Invalid advertiser ID\n" unless $output{advertiser};
@@ -186,10 +186,13 @@ if ($output{advertiser}) {
                 undef,
                 $output{advertiser}->{client_loginid});
         });
-    $output{bands}        = [map { $_->[0] } @$bands];
-    $output{p2p_balance}  = financialrounding('amount', $output{advertiser}->{account_currency}, $client->balance_for_cashier('p2p'));
-    $output{sell_blocked} = $client->_p2p_validate_sell($client, $output{advertiser}) ? 'no' : 'yes';
-
+    $output{bands}                 = [map { $_->[0] } @$bands];
+    $output{p2p_balance}           = financialrounding('amount', $output{advertiser}->{account_currency}, $client->balance_for_cashier('p2p'));
+    $output{sell_blocked}          = $client->_p2p_validate_sell($client, $output{advertiser}) ? 'no' : 'yes';
+    $output{age_verification}      = $client->status->age_verification;
+    $output{not_approved_statuses} = [qw/cashier_locked disabled unwelcome duplicate_account withdrawal_locked no_withdrawal_or_trading/];
+    $output{not_approved_by} =
+        [grep { $client->status->$_(); } $output{not_approved_statuses}->@*];
 } elsif ($input{loginID}) {
     try {
         local $SIG{__WARN__} = sub { };

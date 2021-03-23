@@ -38,11 +38,34 @@
         <tr>
             <td>Approved</td>
             <td>
-                <select name="is_approved">
+                <select disabled name="is_approved">
                     <option value="1" [% advertiser.is_approved && 'selected' %]>YES</option>
                     <option value="0" [% !advertiser.is_approved && 'selected' %]>NO</option>
                 </select>
                 &nbsp;&nbsp;If YES, advertiser can create adverts and orders and their ads are not hidden
+
+                [% IF advertiser.is_approved AND age_verification %]
+                    <br />
+                    <br />
+                    <p> Approved due to <b>age_verification</b> and not having any of the below mentioned statuses: </p>
+
+                    <ul>
+                    [% FOR status IN not_approved_statuses %]
+                        <li>[%= status %]</li>
+                    [% END %]
+                    </ul>
+                [% ELSE %]
+                    [% UNLESS not_approved_by.empty %]
+                        <br />
+                        <br />
+                        <p> Not approved due to the following statuses:</p>
+                        <ul>
+                        [% FOR status IN not_approved_by %]
+                            <li>[%= status %]</li>
+                        [% END %]
+                        </ul>
+                    [% END %]
+                [% END %]
             </td>
         </tr> 
         <tr>
