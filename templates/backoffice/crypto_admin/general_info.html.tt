@@ -1,71 +1,52 @@
+<div class="row">
+    <form action="[% controller_url %]" method="POST">
+        <label for="categories">Show tools for:</label>
+        <select id="categories" name="currency" onchange="this.form.submit()">
+            [% FOREACH category IN category_options %]
+                <option value="[% category %]"[% IF  category == category_selected %] selected="selected"[% END %]>[% category %]</option>
+            [% END %]
+        </select>
+    </form>
+</div>
 
 [% IF currency_info.size > 1 %]
-<label for="currency">Show currency_info:</label>
-<select name="currency_selected" id="crypto_currencies_list" onchange="show_selected_currency(this)">
-    [% USE String %]
-    [% FOR crypto IN currency_info.keys %]
-        [% space = String.new('&nbsp;').repeat(6 - crypto.length) %]
-        <option value="[% crypto %]"[% IF currency == crypto %] selected="selected"[% END %]>[% crypto %]</option>
-    [% END %]
-</select>
-<br><br>
+<div class="row">
+    <label for="erc20_currencies">Show currency info:</label>
+    <select id="erc20_currencies" onchange="showCurrencyInfo(this.value)">
+        [% FOR currency IN currency_info.keys.sort %]
+            <option value="[% currency %]"[% IF currency == currency_selected %] selected="selected"[% END %]>[% currency %]</option>
+        [% END %]
+    </select>
+</div>
 [% END %]
 
+<div id="currency_info_container" class="row">
 [% FOREACH currency IN currency_info.keys %]
-    <div id="[% currency %]" class="hideable" [% IF currency_info.size > 1 %] style="display:none"[% ELSE %]style="display:block"[% END %]>
-        <table id="currency_info" class="border">
-            <tr>
-                <th colspan=2>[% currency %] Info</th>
-            </tr>
-            <tr>
-                <th class="right">Main address</th>
-                <td>[% currency_info.$currency.main_address %]</td>
-            </tr>
-            <tr>
-                <th>Exchange rate ([% currency %]/USD)</th>
-                <td>[% currency_info.$currency.exchange_rate %]</td>
-            </tr>
-            <tr>
-                <th class="right">Min sweep limit</th>
-                <td>
-                    [% IF currency_info.$currency.sweep_limit_min %]
-                        [% currency_info.$currency.sweep_limit_min %] [% currency %]
-                    [% ELSE %]
-                        Not Specified
-                    [% END %]
-                </td>
-            </tr>
-            <tr>
-                <th class="right">Max sweep limit</th>
-                <td>
-                    [% IF currency_info.$currency.sweep_limit_max %]
-                        [% currency_info.$currency.sweep_limit_max %] [% currency %]
-                    [% ELSE %]
-                        Not Specified
-                    [% END %]
-                </td>
-            </tr>
-        </table>
+    <div id="[% currency %]" class="currency-info invisible">
+        [% INCLUDE 'backoffice/crypto_cashier/crypto_info.html.tt'
+            main_address          = currency_info.$currency.main_address
+            exchange_rate         = currency_info.$currency.exchange_rate,
+            sweep_limit_min       = currency_info.$currency.sweep_limit_min,
+            sweep_limit_max       = currency_info.$currency.sweep_limit_max,
+            sweep_reserve_balance = currency_info.$currency.sweep_reserve_balance,
+        %]
     </div>
 [% END %]
-<br>
+</div>
+
 <script>
+    function showCurrencyInfo(selected_currency) {
+        selected_currency = selected_currency
+            || (document.getElementById('erc20_currencies') || {}).value
+            || document.getElementById('categories').value;
 
-window.onload = function() {
-    var default_currency = document.getElementById("crypto_currencies_list");
-    var default_currency_div = document.getElementById(default_currency.value);
-    default_currency_div.style.display = "block";
-};
+        document.querySelectorAll('#currency_info_container .currency-info').forEach(el_info => {
+            el_info.classList[el_info.id === selected_currency ? 'remove' : 'add']('invisible');
+        });
 
-function show_selected_currency(currency_selected) {
-    var all_currency_div = document.getElementsByClassName('hideable');
-
-    for (var i = 0; i < all_currency_div.length; i ++) {
-        all_currency_div[i].style.display = 'none';
+        // set the same currency on general tools
+        document.getElementById('gt_crypto_currencies_list').value = selected_currency;
     }
-    
-    var selected_currency = document.getElementById(currency_selected.value);
 
-    selected_currency.style.display = "block";
-} 
+    showCurrencyInfo();
 </script>

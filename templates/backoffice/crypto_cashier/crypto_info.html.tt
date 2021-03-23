@@ -9,7 +9,7 @@
 
 <table class="border">
     <tr>
-        <th colspan="2">[% currency %] Info</th>
+        <th colspan="2" style="text-transform: none;">[% currency %] Info</th>
     </tr>
     [% INCLUDE info_row name = 'Main address',                         value = main_address %]
     [% INCLUDE info_row name = 'Exchange Rate (' _ currency _ '/USD)', value = exchange_rate %]

@@ -41,12 +41,12 @@ if ((grep { $_ eq 'binary_role_master_server' } @{BOM::Config::node()->{node}->{
         </div>";
 }
 
-print "<center>";
-
-my @currency_options  = qw/ BTC LTC ETH UST ERC20/;
-my $currency_selected = $input{currency} // 'BTC';
-my @all_cryptos       = LandingCompany::Registry::all_crypto_currencies();
-my $currency_mapper   = {
+my @all_cryptos              = LandingCompany::Registry::all_crypto_currencies();
+my @category_options         = ((sort grep { !_is_erc20($_) } @all_cryptos), 'ERC20');
+my $currency_selected        = $input{currency} // $input{gt_currency} // 'BTC';
+my $category_selected        = _is_erc20($currency_selected) ? 'ERC20' : $currency_selected;
+my $controller_url           = request()->url_for('backoffice/crypto_admin.cgi') . '#results';
+my $template_currency_mapper = {
     LTC => 'BTC',
 };
 
@@ -56,46 +56,47 @@ Bar("GENERAL TOOLS");
 $tt->process(
     'backoffice/crypto_admin/general_crypto_tools.html.tt',
     {
-        controller_url    => request()->url_for('backoffice/crypto_admin.cgi'),
+        controller_url    => $controller_url,
         currency_options  => \@all_cryptos,
-        currency_selected => $currency_selected
+        currency_selected => $currency_selected,
     },
     undef,
     {binmode => ':utf8'});
 
 Bar($currency_selected . " TOOLS");
 $tt->process(
-    'backoffice/crypto_admin/currency_selection.html.tt',
+    'backoffice/crypto_admin/general_info.html.tt',
     {
-        controller_url    => request()->url_for('backoffice/crypto_admin.cgi'),
-        currency_options  => \@currency_options,
-        currency_selected => $currency_selected
+        controller_url    => $controller_url,
+        category_options  => \@category_options,
+        category_selected => $category_selected,
+        currency_info     => _get_currency_info($currency_selected, @all_cryptos),
+        currency_selected => $currency_selected,
     },
     undef,
     {binmode => ':utf8'});
 
-my $currency_info = _get_currency_info($currency_selected);
-
-$tt->process('backoffice/crypto_admin/general_info.html.tt', {currency_info => $currency_info}, undef, {binmode => ':utf8'});
-
 $tt->process(
-    'backoffice/crypto_admin/' . lc($currency_mapper->{$currency_selected} // $currency_selected) . '_form.html.tt',
+    'backoffice/crypto_admin/function_forms.html.tt',
     {
-        controller_url => request()->url_for('backoffice/crypto_admin.cgi'),
-        currency       => $currency_selected,
-        previous_req   => $input{req_type}            // '',
-        cmd            => request()->param('command') // '',
-        broker         => $broker,
-        staff          => $staff,
+        controller_url  => $controller_url,
+        currency        => $currency_selected,
+        form_type       => $template_currency_mapper->{$category_selected} // $category_selected,
+        previous_values => \%input,
+        previous_req    => $input{req_type} // '',
+        cmd             => $input{command}  // '',
+        broker          => $broker,
+        staff           => $staff,
     }) || die $tt->error();
 
 if (%input && $input{req_type}) {
-
-    my $req_type = $input{req_type};
+    my $req_type  = $input{req_type};
+    my $req_title = $input{req_title} || $req_type;
 
     my $is_general_req = $req_type =~ /^gt_/ ? 1 : 0;
 
-    Bar("Results: $req_type");
+    print '<a name="results"></a>';
+    Bar("$currency_selected Results: $req_title");
     code_exit_BO('<p class="error">ERROR: Please select ONLY ONE request at a time.</p>') if (ref $input{req_type});
 
     if ($is_general_req) {
@@ -103,11 +104,9 @@ if (%input && $input{req_type}) {
         my $redis_read  = BOM::Config::Redis::redis_replicated_read();
 
         if ($req_type eq 'gt_get_error_txn') {
-
-            my $error_withdrawals = BOM::Cryptocurrency::Helper::get_withdrawal_error_txn($input{gt_etf_currency});
+            my $error_withdrawals = BOM::Cryptocurrency::Helper::get_withdrawal_error_txn($input{gt_currency});
 
             foreach my $txn_record (keys %$error_withdrawals) {
-
                 my $approver = $redis_read->get(REVERT_ERROR_TXN_RECORD . $txn_record);
                 $error_withdrawals->{$txn_record}->{approved_by} = $approver;
             }
@@ -115,20 +114,19 @@ if (%input && $input{req_type}) {
             $tt->process(
                 'backoffice/crypto_admin/error_withdrawals.html.tt',
                 {
-                    controller_url    => request()->url_for('backoffice/crypto_admin.cgi'),
-                    currency          => $input{gt_etf_currency},
+                    controller_url    => $controller_url,
+                    currency          => $input{gt_currency},
                     error_withdrawals => $error_withdrawals,
                 }) || die $tt->error();
-
         }
 
         if ($req_type eq 'gt_revert_processing_txn') {
             code_exit_BO("No transaction selected") unless $input{txn_checkbox};
 
             my @txn_to_process = ref($input{txn_checkbox}) eq 'ARRAY' ? $input{txn_checkbox}->@* : ($input{txn_checkbox});
-            my $messages;
+            my %messages;
 
-            foreach my $txn_id (@txn_to_process) {
+            foreach my $txn_id (sort { $a <=> $b } @txn_to_process) {
                 my $approver = $redis_read->get(REVERT_ERROR_TXN_RECORD . $txn_id);
 
                 code_exit_BO("ERROR: Missing variable staff name. Please check!") unless $staff;
@@ -137,32 +135,33 @@ if (%input && $input{req_type}) {
                     try {
                         BOM::Cryptocurrency::Helper::revert_txn_status_to_processing($txn_id, $input{gt_currency}, $approver, $staff);
 
-                        $messages .= "<p class='success'>Transaction ID: $txn_id successfully reverted. </p>";
+                        push @{$messages{"<p class='success'>Following transaction(s) has been successfully reverted.<br />%s</p>"}}, $txn_id;
                         $redis_write->del(REVERT_ERROR_TXN_RECORD . $txn_id);
                     } catch ($e) {
-                        $messages .= "<p class='error'>Transaction ID: $txn_id revert failed. Error: $e</p>";
+                        push @{$messages{"<p class='error'>The revert of following transaction(s) failed. Error: $e<br />%s</p>"}}, $txn_id;
                     }
                 } elsif ($approver) {
-                    $messages .= "<p class='error'>Transaction ID: $txn_id is already previously approved by you.</p>";
+                    push @{$messages{"<p class='error'>The following transaction(s) previously approved by you.<br />%s</p>"}}, $txn_id;
                 } else {
-                    $messages .= "<p class='success'>Transaction ID: $txn_id successfully approved. Needs one more approver.</p>";
+                    push @{$messages{
+                            "<p class='success'>Following transaction(s) has been successfully approved. Needs one more approver.<br />%s</p>"}},
+                        $txn_id;
                     $redis_write->setex(REVERT_ERROR_TXN_RECORD . $txn_id, 3600, $staff);
                 }
             }
 
-            print($messages);
+            print sprintf($_, join ', ', $messages{$_}->@*) for sort { $b =~ /success/ } keys %messages;
         }
-
     } else {
         my $currency_wrapper = _get_currency($currency_selected);
-
-        # these are used for currency_specific calls
-        my $func_map = _get_function_map($currency_selected, $currency_wrapper, \%input);
 
         my $template_details;
         $template_details->{req_type} = $req_type;
         $template_details->{currency} = $currency_selected;
         try {
+            # these are used for currency_specific calls
+            my $func_map = _get_function_map($currency_selected, $currency_wrapper, \%input);
+
             my $response = $func_map->{$req_type}();
             $template_details->{response} = $response;
             try {
@@ -175,120 +174,112 @@ if (%input && $input{req_type}) {
         };
 
         BOM::Backoffice::Request::template()
-            ->process('backoffice/crypto_admin/' . lc($currency_mapper->{$currency_selected} // $currency_selected) . '_result.html.tt',
+            ->process('backoffice/crypto_admin/result_' . lc($template_currency_mapper->{$currency_selected} // $currency_selected) . '.html.tt',
             $template_details, undef, {binmode => ':utf8'});
     }
 }
 
 sub _get_currency {
-    my $currency_selected = shift;
-    return BOM::CTC::Currency->new(currency_code => $currency_selected);
+    my $currency = shift;
+    return BOM::CTC::Currency->new(currency_code => $currency);
 }
 
 sub _get_function_map {
-    my ($currency_selected, $currency_wrapper, $input) = @_;
+    my ($currency, $currency_wrapper, $input) = @_;
 
-    my $address               = length $input->{address}            ? $input->{address}                 : undef;
-    my $lu_utxo_address       = length $input->{lu_utxo_address}    ? $input->{lu_utxo_address}         : undef;
-    my $confirmations_req     = length $input->{confirmations}      ? int($input->{confirmations})      : undef;
-    my $receivedby_minconf    = length $input->{receivedby_minconf} ? int($input->{receivedby_minconf}) : undef;
-    my $listtransaction_limit = length $input->{limit}              ? int($input->{limit})              : undef;
-    my $esf_confirmation      = length $input->{esf_confirmation}   ? int($input->{esf_confirmation})   : 3;
+    my $address       = length $input->{address}       ? $input->{address}            : undef;
+    my $txn_hash      = length $input->{txn_hash}      ? $input->{txn_hash}           : undef;
+    my $amount        = length $input->{amount}        ? $input->{amount}             : undef;
+    my $confirmations = length $input->{confirmations} ? int($input->{confirmations}) : undef;
+    my $limit         = length $input->{limit}         ? int($input->{limit})         : undef;
 
-    code_exit_BO("<p class='error'>Invalid address</p>") if ($address && !$currency_wrapper->is_valid_address($address));
+    die "Invalid address" if ($address && !$currency_wrapper->is_valid_address($address));
 
     return +{
-        list_unspent_utxo  => sub { $currency_wrapper->get_unspent_transactions($lu_utxo_address ? [$lu_utxo_address] : [], $confirmations_req) },
-        get_transaction    => sub { $currency_wrapper->get_transaction_details($input->{txn_id}) },
-        get_wallet_balance => sub { $currency_wrapper->get_wallet_balance()->{$currency_selected} },
-        get_main_address_balance => sub { $currency_wrapper->get_main_address_balance()->{$currency_selected} },
+        list_unspent_utxo        => sub { $currency_wrapper->get_unspent_transactions($address ? [$address] : [], $confirmations) },
+        get_transaction          => sub { $currency_wrapper->get_transaction_details($txn_hash) },
+        get_wallet_balance       => sub { $currency_wrapper->get_wallet_balance()->{$currency} },
+        get_main_address_balance => sub { $currency_wrapper->get_main_address_balance()->{$currency} },
         get_address_balance      => sub { $address ? $currency_wrapper->get_address_balance($address) : die "Please enter address"; },
         get_estimate_smartfee    => sub { $currency_wrapper->get_estimated_fee() },
-        list_receivedby_address  => sub { $currency_wrapper->list_receivedby_address($receivedby_minconf, $input->{address_filter}) },
-        get_blockcount           => sub { $currency_wrapper->last_block() },
+        list_receivedby_address  => sub { $currency_wrapper->list_receivedby_address($confirmations, $address) },
+        get_block_count          => sub { $currency_wrapper->last_block() },
         get_blockchain_info      => sub { $currency_wrapper->get_info() },
         calculate_withdrawal_fee => sub {
-            die "Invalid or missing parameters entered for calculate withdrawal fee"
-                unless $input->{withdraw_to_address} && $input->{withdrawal_amount};
-            $currency_wrapper->get_withdrawal_daemon()->calculate_transaction_fee($input->{withdraw_to_address}, $input->{withdrawal_amount});
+            die "Missing parameters entered for calculate withdrawal fee"
+                unless $address && $amount;
+            $currency_wrapper->get_withdrawal_daemon()->calculate_transaction_fee($address, $amount);
         },
-        }
-        if ($currency_selected eq 'BTC' || $currency_selected eq 'LTC');
+    } if ($currency =~ /^(BTC|LTC)$/);
 
     return +{
-        list_unspent_utxo     => sub { $currency_wrapper->get_unspent_transactions($lu_utxo_address ? [$lu_utxo_address] : [], $confirmations_req) },
-        get_estimate_smartfee => sub { $currency_wrapper->get_estimated_fee() },
-        list_receivedby_address  => sub { $currency_wrapper->list_receivedby_address($receivedby_minconf, $input->{address_filter}) },
-        get_blockcount           => sub { $currency_wrapper->last_block() },
+        list_unspent_utxo        => sub { $currency_wrapper->get_unspent_transactions($address ? [$address] : [], $confirmations) },
+        get_estimate_smartfee    => sub { $currency_wrapper->get_estimated_fee() },
+        list_receivedby_address  => sub { $currency_wrapper->list_receivedby_address($confirmations, $address) },
+        get_block_count          => sub { $currency_wrapper->last_block() },
         get_blockchain_info      => sub { $currency_wrapper->get_info() },
         get_wallet_balance       => sub { $currency_wrapper->get_wallet_balance() },
         get_main_address_balance => sub { $currency_wrapper->get_main_address_balance() },
         get_address_balance      => sub { $address ? $currency_wrapper->get_address_balance($address) : die "Please enter address"; },
         list_transactions        => sub {
-            die "Invalid address" if (length $input->{transaction_address} && !$currency_wrapper->is_valid_address($input->{transaction_address}));
-            $listtransaction_limit
-                ? $currency_wrapper->list_transactions($input->{transaction_address}, $listtransaction_limit)
-                : die "Limit must be specified";
+            die "Missing parameters entered for list transactions"
+                unless $address && $limit;
+            $currency_wrapper->list_transactions($address, $limit);
         },
         get_transaction => sub {
-            die "Transaction hash must be specified" unless length $input->{txn_code};
-            die "Transaction hash wrong format"      unless length $input->{txn_code} == 64;
-            my @res = $currency_wrapper->get_transaction_details($input->{txn_code});
+            die "Transaction hash must be specified" unless length $txn_hash;
+            die "Transaction hash wrong format"      unless length $txn_hash == 64;
+            my @res = $currency_wrapper->get_transaction_details($txn_hash);
             return \@res;
         },
-    } if $currency_selected eq 'UST';
+    } if $currency eq 'UST';
 
     return +{
-        get_wallet_balance       => sub { $currency_wrapper->get_wallet_balance()->{$currency_selected} },
-        get_main_address_balance => sub { $currency_wrapper->get_main_address_balance()->{$currency_selected} },
+        get_wallet_balance       => sub { $currency_wrapper->get_wallet_balance()->{$currency} },
+        get_main_address_balance => sub { $currency_wrapper->get_main_address_balance()->{$currency} },
         get_address_balance      => sub { $address ? $currency_wrapper->get_address_balance($address) : die "Please enter address"; },
         get_accounts             => sub { $currency_wrapper->list_addresses() },
         get_gas_price            => sub { $currency_wrapper->get_info()->{gas_price} },
-        get_block_number         => sub { $currency_wrapper->get_info()->{last_block} },
+        get_block_count          => sub { $currency_wrapper->get_info()->{last_block} },
         get_syncing              => sub { $currency_wrapper->get_info()->{is_syncing} },
         get_estimatedgas         => sub {
-
             die "Invalid or missing parameters entered for Estimate Gas"
-                unless $input->{to_address} && $input->{amount} && $currency_wrapper->is_valid_address($input->{to_address});
+                unless $address && $amount;
 
             my $params = {
                 from  => $currency_wrapper->account_config->{account}->{address},
-                to    => $input->{to_address},
-                value => $currency_wrapper->get_blockchain_amount($input->{amount})->as_hex(),
+                to    => $address,
+                value => $currency_wrapper->get_blockchain_amount($amount)->as_hex(),
             };
 
             $currency_wrapper->get_estimatedgas($params);
         },
-        get_transactionbyhash => sub {
-            die "Please provide transaction_hash" unless length $input->{transaction_hash};
-            $currency_wrapper->get_transactionbyhash($input->{transaction_hash});
+        get_transaction => sub {
+            die "Please provide transaction_hash" unless length $txn_hash;
+            $currency_wrapper->get_transactionbyhash($txn_hash);
         },
         get_transaction_receipt => sub {
-            die "Transaction hash must be specified" unless length $input->{gtr_transaction_hash};
-            $currency_wrapper->get_transaction_receipt($input->{gtr_transaction_hash});
+            die "Transaction hash must be specified" unless length $txn_hash;
+            $currency_wrapper->get_transaction_receipt($txn_hash);
         },
-    } if $currency_selected eq 'ETH';
-
+    } if $currency eq 'ETH';
 }
 
 sub _get_currency_info {
+    my ($currency_code, @all_crypto) = @_;
 
-    my $currency_code = shift;
+    my @currency_to_get = _is_erc20($currency_code) ? grep { _is_erc20($_) } @all_crypto : $currency_code;
+
     my $currency_info;
-
-    my @all_cryptos = LandingCompany::Registry::all_crypto_currencies();
-
-    my @currency_to_get = $currency_code eq 'ERC20' ? grep { _is_erc20($_) } @all_cryptos : $currency_code;
-
     foreach my $cur (@currency_to_get) {
-
         my $currency = _get_currency($cur);
 
         $currency_info->{$cur} = {
-            main_address    => $currency->account_config->{account}->{address},
-            exchange_rate   => eval { in_usd(1.0, $cur) } // 'Not Specified',
-            sweep_limit_max => $currency->config->{sweep}{max_transfer},
-            sweep_limit_min => $currency->config->{sweep}{min_transfer},
+            main_address          => $currency->account_config->{account}->{address},
+            exchange_rate         => eval { in_usd(1.0, $cur) } // 'Not Specified',
+            sweep_limit_max       => $currency->config->{sweep}{max_transfer},
+            sweep_limit_min       => $currency->config->{sweep}{min_transfer},
+            sweep_reserve_balance => $currency->sweep_reserve_balance(),
         };
     }
 
@@ -296,7 +287,6 @@ sub _get_currency_info {
 }
 
 sub _is_erc20 {
-
     my $currency_code = shift;
 
     my $currency = _get_currency($currency_code);

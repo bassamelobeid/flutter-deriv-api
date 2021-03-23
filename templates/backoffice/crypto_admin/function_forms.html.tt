@@ -1,0 +1,155 @@
+[%
+    all_no_param_functions = {
+        get_accounts             => 'All accounts',
+        get_block_count          => 'Block count',
+        get_blockchain_info      => 'Blockchain info',
+        get_estimate_smartfee    => 'Estimate smart fee',
+        get_gas_price            => 'Gas price',
+        get_main_address_balance => 'Main address balance',
+        get_syncing              => 'Syncing',
+        get_wallet_balance       => 'Wallet balance',
+    };
+    currency_no_param_functions = {
+        BTC => ['get_block_count', 'get_main_address_balance', 'get_wallet_balance', 'get_blockchain_info', 'get_estimate_smartfee'],
+        UST => ['get_block_count', 'get_main_address_balance', 'get_wallet_balance', 'get_blockchain_info', 'get_estimate_smartfee'],
+        ETH => ['get_block_count', 'get_main_address_balance', 'get_wallet_balance', 'get_accounts',        'get_gas_price',         'get_syncing'],
+    };
+    all_forms = {
+        calculate_withdrawal_fee => {
+            title    => 'Calculate withdrawal fee',
+            elements => [
+                { label => 'Withdraw_to address', name => 'address', required => 1, size => 50 },
+                { label => 'Amount',              name => 'amount',  required => 1, type => 'number' },
+            ],
+        },
+        get_address_balance => {
+            title    => 'Get address balance',
+            elements => [
+                { label => 'Address', name => 'address', required => 1, size => 50 },
+            ],
+        },
+        get_estimatedgas => {
+            title    => 'Get estimated gas',
+            elements => [
+                { label => 'Address', name => 'address', size => 50 },
+                { label => 'Amount',  name => 'amount' },
+            ],
+        },
+        get_transaction => {
+            title    => 'Get transaction info',
+            elements => [
+                { label => 'Transaction hash', name => 'txn_hash', required => 1, size => 50 },
+            ],
+        },
+        get_transaction_receipt => {
+            title    => 'Get transaction receipt',
+            elements => [
+                { label => 'Transaction hash', name => 'txn_hash', required => 1, size => 50 },
+            ],
+        },
+        list_receivedby_address => {
+            title    => 'List received by address',
+            elements => [
+                { label => 'Address',           name => 'address',       size => 50 },
+                { label => 'Min. confirmation', name => 'confirmations', type => 'number' },
+            ],
+        },
+        list_transactions => {
+            title    => 'List transactions',
+            elements => [
+                { label => 'Address', name => 'address', required => 1, size => 50 },
+                { label => 'Limit',   name => 'limit',   required => 1 },
+            ],
+        },
+        list_unspent_utxo => {
+            title    => 'List unspent UTXO', note => '<i>* Leave blank to get <b>all</b> unspent UTXO</i>',
+            elements => [
+                { label => 'Address',       name => 'address',       size => 50 },
+                { label => 'Confirmations', name => 'confirmations', type => 'number' },
+            ],
+        },
+    };
+    currency_forms = {
+        BTC => ['get_address_balance', 'get_transaction', 'list_unspent_utxo', 'list_receivedby_address', 'calculate_withdrawal_fee'],
+        UST => ['get_address_balance', 'get_transaction', 'list_unspent_utxo', 'list_receivedby_address', 'list_transactions'],
+        ETH => ['get_address_balance', 'get_transaction', 'get_estimatedgas',  'get_transaction_receipt'],
+    };
+%]
+
+[% BLOCK form %]
+    [% import(props) %]
+    <div id="form_[% id %]" class="invisible">
+        <hr>
+        <h3>[% title %]</h3>
+        <form action="[% controller_url %]" method="post">
+            [% FOREACH elm IN elements %]
+                [% INCLUDE input props=elm value=previous_values %]
+            [% END %]
+            <input type="hidden" name="currency" value="[% currency %]" />
+            <input type="hidden" name="req_title" value="[% title %]" />
+            <button type="submit" class="btn btn--primary" name="req_type" value="[% id %]">[% title %]</button>
+            [% note | none %]
+        </form>
+    </div>
+[% END %]
+
+[% BLOCK input %]
+    [% import(props) %]
+    <div class="row">
+        <label>[% label %]: <input type="[% type || 'text' %]" name="[% name %]" value="[% value.$name %]" size="[% size %]" [% required && 'required' %] /></label>
+    </div>
+[% END %]
+
+[% IF currency_no_param_functions.$form_type %]
+    <form action="[% controller_url %]" method="post" class="row">
+        <input type="hidden" name="currency" value="[% currency %]" />
+
+        <label for="ddl_no_params">Wallet functions (w/o params):</label>
+        <select id="ddl_no_params" name="req_type" onchange="showForm(this.value)">
+            <option disabled selected value>--- select an option ---</option>
+            [% FOREACH func_name IN currency_no_param_functions.$form_type.sort %]
+                <option value="[% func_name %]"[% IF previous_req == func_name %] selected="selected"[% END %]>[% all_no_param_functions.$func_name %]</option>
+            [% END %]
+        </select>
+        <button type="submit" class="btn btn--primary" name="req_title" onclick="setTitle(this)">Get</button>
+    </form>
+[% END %]
+
+[% IF currency_forms.$form_type %]
+    <div>
+        <label for="ddl_with_params">Wallet functions (with params):</label>
+        <select id="ddl_with_params" onchange="showForm(this.value)">
+            <option disabled selected value>--- select an option ---</option>
+            [% FOREACH form_name IN currency_forms.$form_type.sort %]
+                <option value="[% form_name %]"[% IF previous_req == form_name %] selected="selected"[% END %]>[% all_forms.$form_name.title %]</option>
+            [% END %]
+        </select>
+    </div>
+
+    <div id="form_container">
+        [% FOREACH form_name IN currency_forms.$form_type.sort %]
+            [% INCLUDE form id=form_name props=all_forms.$form_name %]
+        [% END %]
+    </div>
+[% END %]
+
+<script type="text/javascript">
+    function setTitle(el) {
+        el.value = document.getElementById('ddl_no_params').selectedOptions[0].text;
+    }
+
+    function showForm(form_id) {
+        document.querySelectorAll('#form_container > div').forEach(el_form => {
+            el_form.classList[el_form.id === `form_\${form_id}` ? 'remove' : 'add']('invisible');
+        });
+
+        document.querySelectorAll('#ddl_no_params, #ddl_with_params').forEach(el_ddl => {
+            el_ddl.value = el_ddl.querySelector(`option[value='\${form_id}']`) ? form_id : '';
+        });
+    }
+</script>
+
+[% IF !currency_no_param_functions.$form_type && !currency_forms.$form_type %]
+    <hr />
+    <p><b>No tools implemented for [% currency %] yet.</b></p>
+[% END %]

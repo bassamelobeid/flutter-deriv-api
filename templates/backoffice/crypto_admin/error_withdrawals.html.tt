@@ -1,88 +1,115 @@
 <style type="text/css">
-#error_txn_list, #error_txn_list tr{
-    border: 1px solid black;
-}
-
-#error_txn_list tr, #error_txn_list td{
-    padding: 6px;
-}
-
-table tr.selected {
-    background: #D0E3C4 !important;
-}
-    
-.txn_error_row:hover {
-    background-color: #f1faee !important;
-}
-
+    #error_txn_list td {
+        padding: 5px;
+    }
+    .txn_error_row:hover {
+        background-color: #f1faee !important;
+    }
+    table tr.txn_error_row.selected {
+        background: #D0E3C4 !important;
+    }
+    .nowrap {
+        white-space: nowrap;
+    }
+    pre {
+        font-family: monospace;
+        font-size: 1.5rem;
+    }
 </style>
 
 [% IF error_withdrawals.size > 0 %]
-<form name = "revert_processing_form" onsubmit="return checkEmpty()">
-    <table id="error_txn_list">
+<form name="revert_processing_form" method="post" onsubmit="return checkEmpty()">
+    <table id="error_txn_list" class="border">
         <tr>
             <td></td>
-            <th>id</th>
-            <th>client_loginid</th>
-            <th>address</th>
-            <th>currency_code</th>
-            <th>amount</th>
-            <th>txn_fee</th>
-            <th>status</th>
-            <th>creation_date</th>
-            <th>error_date</th>
-            <th>error_text</th>
-            <th>remark</th>
-            <th>approved_by</th>
+            <th>ID</th>
+            <th>Login ID</th>
+            <th>Address</th>
+            <th>Currency</th>
+            <th>Amount</th>
+            <th>Txn Fee</th>
+            <th>Status</th>
+            <th>Creation Date</th>
+            <th>Error Date</th>
+            <th>Error</th>
+            <th>Remark</th>
+            <th>Approver</th>
         </tr>
-        [% FOREACH txn IN error_withdrawals.keys %]
-            <tr class = 'txn_error_row'>
-                <td><input type="checkbox" name="txn_checkbox" id="txn_ . [% error_withdrawals.$txn.id %]" value="[% error_withdrawals.$txn.id %]" onclick="toggleSelected(this)"></td>
-                <td>[% error_withdrawals.$txn.id %]</td>
-                <td>[% error_withdrawals.$txn.client_loginid %]</td>
-                <td>[% error_withdrawals.$txn.address %]</td>
+        [% FOREACH txn IN error_withdrawals.keys.nsort.reverse %]
+            <tr class='txn_error_row'>
+                <td><input type="checkbox" name="txn_checkbox" value="[% error_withdrawals.$txn.id %]" onchange="toggleSelected(this)" /></td>
+                <td class="copy-on-click">[% error_withdrawals.$txn.id %]</td>
+                <td class="copy-on-click">[% error_withdrawals.$txn.client_loginid %]</td>
+                <td class="copy-on-click address">[% error_withdrawals.$txn.address %]</td>
                 <td>[% error_withdrawals.$txn.currency_code %]</td>
                 <td>[% error_withdrawals.$txn.amount %]</td>
                 <td>[% error_withdrawals.$txn.txn_fee %]</td>
                 <td>[% error_withdrawals.$txn.status %]</td>
-                <td>[% error_withdrawals.$txn.creation_date %]</td>
-                <td>[% error_withdrawals.$txn.error_date %]</td>
+                <td class="nowrap">[% error_withdrawals.$txn.creation_date.replace(' ', '<br />') | none %]</td>
+                <td class="nowrap">[% error_withdrawals.$txn.error_date.replace(' ', '<br />') | none %]</td>
                 <td>[% error_withdrawals.$txn.error_text %]</td>
                 <td>[% error_withdrawals.$txn.remark %]</td>
                 <td>[% error_withdrawals.$txn.approved_by %]</td>
             </tr>
         [% END %]
     </table>
-    <br>
-    <input type="hidden" name="gt_currency" value = "[% currency %]"/>
-    <input id="txn_to_process" type="hidden" name="txn_to_process"/>
-    <input type="hidden" name="req_type" value = "gt_revert_processing_txn"/>
-    <input type="submit" name="submit_txn" value='Revert Transactions' />
+    <div class="grd-margin-top">
+        <a href="javascript:;" class="btn btn--secondary" onclick="selectMultiple()">Select multiple transactions</a>
+        <a href="javascript:;" class="btn btn--secondary" onclick="selectTransactions()">Deselect all</a>
+        <div id="select_result"></div>
+    </div>
+    <input type="hidden" name="gt_currency" value="[% currency %]" />
+    <input type="hidden" name="txn_to_process" />
+    <input type="hidden" name="req_title" value="Revert processing transactions" />
+    <input type="hidden" name="req_type" value="gt_revert_processing_txn" />
+    <hr />
+    <div id="selected_items"></div>
+    <button type="submit" class="btn btn--primary">Revert Selected Transactions</button>
 </form>
 [% ELSE %]
     <p class="error"><b>There is no withdrawal record with "ERROR" status for [% currency %].</b></p>
 [% END %]
 
 <script type="text/javascript">
+    const all_checkboxes = document.querySelectorAll('#error_txn_list [name="txn_checkbox"]');
+    function getAllChecked() {
+        return [...all_checkboxes].filter(el_chk => el_chk.checked);
+    }
 
     function toggleSelected(el_chk) {
         const is_selected = el_chk.checked;
         const el_row      = el_chk.closest('tr');
         el_row.classList[is_selected ? 'add' : 'remove']('selected');
-
-    };
-    
-     function checkEmpty() {
-         const checkboxes = document.querySelectorAll('form[name="revert_processing_form"] [name="txn_checkbox"]');
-         if ([...checkboxes].some(input => input.checked))
-         {
-             return true;
-         }
-         else
-         {
-             alert("There is no transaction selected !");
-             return false;
-         }
+        showSelectedSummary();
     }
-        
+
+    function showSelectedSummary() {
+        const selected_ids = getAllChecked().map(el_chk => el_chk.value).sort((a, b) => a - b).join(', ');
+        (document.getElementById('selected_items') || {}).innerHTML = `<b>Selected transactions:</b> \${selected_ids || 'None'}`;
+    }
+
+    function selectMultiple() {
+        const txn_input = window.prompt('Please paste the list of Transaction IDs below:\n(comma-separated integers)');
+        const txn_list  = (txn_input || '').split(/(,|\s+)/).map(id => id.trim()).filter(id => parseInt(id) === +id);
+        document.getElementById('select_result').innerHTML = `<pre>Input IDs : \${txn_input}<br>Parsed IDs: \${txn_list.length ? txn_list.join(', ') : 'No transaction ID entered.'}</pre>`;
+        selectTransactions(txn_list);
+    }
+
+    function selectTransactions(txn_list = []) {
+        all_checkboxes.forEach(el_chk => {
+            el_chk.checked = txn_list.includes(el_chk.value);
+            el_chk.dispatchEvent(new Event('change'));
+        });
+    }
+
+    function checkEmpty() {
+        const checked_count = getAllChecked().length;
+        if (!checked_count) {
+            alert('Error: No transaction selected.');
+            return false;
+        }
+        return true;
+    }
+
+    showSelectedSummary();
 </script>

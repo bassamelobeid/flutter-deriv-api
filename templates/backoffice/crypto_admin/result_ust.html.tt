@@ -24,7 +24,7 @@ table td{
       <button onclick="toggleResponse()" class="btn btn--secondary">Show alternate view</button>
     </div>
     <br>
-    <div id='fomatted_response'>
+    <div class="toggle-response">
 [% SWITCH req_type %]
     [% CASE 'list_unspent_utxo' %]
         <p>Total number of response: [% response.size %]</p>
@@ -171,7 +171,7 @@ table td{
                 </tr>
             </table>
         [% END %]
-    
+
     [% CASE 'get_wallet_balance' %]
         <p>Total number of response: [% response.keys.size %]</p>
         <table>
@@ -182,7 +182,7 @@ table td{
                 </tr>
             [% END %]
         </table>
-    
+
     [% CASE 'get_address_balance' %]
         <p>[% currency %] Address Balance: <b>[% response %]</b></p>
 
@@ -199,13 +199,13 @@ table td{
 
     [% CASE 'get_newaddress' %]
         <p>[% currency %] New Address: <b>[% response %]</b></p>
-        
+
     [% CASE 'get_estimate_smartfee' %]
         <p>[% currency %] Estimated Smart Fee: <b>[% response %]</b></p>
-        
-    [% CASE 'get_blockcount' %]
+
+    [% CASE 'get_block_count' %]
         <p>[% currency %] Last Block: <b>[% response %]</b></p>
-        
+
     [% CASE 'list_receivedby_address' %]
         <div id='list_receivedby_address'>
             <p>Total number of response: [% response.size %]</p>
@@ -239,7 +239,7 @@ table td{
             <hr>
             [% END %]
         </div>
-            
+
     [% CASE 'get_blockchain_info' %]
         <table>
             <tr>
@@ -303,9 +303,11 @@ table td{
                 <td>
                     <table>
                     [% FOREACH softfork IN response.softforks.keys %]
-                        <th rowspan=3>[% softfork %]</th>
-                        <th>height</th>
+                        <tr>
+                            <th rowspan=3>[% softfork %]</th>
+                            <th>height</th>
                             <td>[% response.softforks.$softfork.height %]</td>
+                        </tr>
                         <tr>
                             <th>active</th>
                             <td>[% response.softforks.$softfork.active %]</td>
@@ -314,33 +316,23 @@ table td{
                             <th>type</th>
                             <td>[% response.softforks.$softfork.type %]</td>
                         </tr>
-                        </td>
                     [% END %]
                     </table>
                 </td>
             </tr>
-            
         </table>
-    
 [% END %]
 </div>
-    
-    <div id='raw_response' style="display:none; width:1200px; word-wrap: break-word;"><p>[% response_json %]</p></div>
-    
-[% END %]
+
+    <div class="toggle-response invisible" style="width:1200px; word-wrap: break-word;">
+        <p>[% response_json %]</p>
+    </div>
 
 <script>
     function toggleResponse() {
-      var formatted_content, raw_content;
-      raw_content = document.getElementById("raw_response");
-      formatted_content = document.getElementById("fomatted_response");
-      
-      if (typeof(raw_content) != 'undefined' && raw_content.style.display === "none"){
-          raw_content.style.display = "block";
-          formatted_content.style.display = "none";
-      } else {
-          raw_content.style.display = "none";
-          formatted_content.style.display = "block";
-      }
+        document.querySelectorAll('.toggle-response').forEach(el_response => {
+            el_response.classList[el_response.classList.contains('invisible') ? 'remove' : 'add']('invisible');
+        });
     }
 </script>
+[% END %]

@@ -23,26 +23,26 @@ table td{
       <button onclick="toggleResponse()" class="btn btn--secondary">Show alternate view</button>
     </div>
     <br>
-    <div id='fomatted_response'>
+    <div class="toggle-response">
         [% SWITCH req_type %]
             [% CASE 'get_address_balance' %]
                 <p>[% currency %] Address Balance: <b>[% response %]</b></p>
-            
+
             [% CASE 'get_main_address_balance' %]
                 <p>[% currency %] Main Address Balance: <b>[% response %]</b></p>
-            
+
             [% CASE 'get_wallet_balance' %]
                 <p>[% currency %] Wallet Balance: <b>[% response %]</b></p>
 
             [% CASE 'get_gas_price' %]
                 <p>[% currency %] Gas Price: <b>[% response %]</b></p>
-                
+
             [% CASE 'get_estimate_smartfee' %]
                 <p>[% currency %] Estimated Smart Fee: <b>[% response %]</b></p>
-                
-            [% CASE 'get_block_number' %]
+
+            [% CASE 'get_block_count' %]
                 <p>[% currency %] Last Block: <b>[% response %]</b></p>
-            
+
             [% CASE 'get_accounts' %]
                 <p><b>[% currency %] addresses:</b></p>
                 <div id="list_address">
@@ -51,13 +51,13 @@ table td{
                         <p>[% each_address %]</p>
                     [% END %]
                 </div>
-            
+
             [% CASE 'get_syncing' %]
                 <p>Result: [% response %]</p>
-                
+
             [% CASE 'get_estimatedgas' %]
                 <p>Estimated gas: [% response %]</p>
-                
+
             [% CASE 'get_transaction_receipt' %]
                 <table>
                     <tr>
@@ -150,8 +150,8 @@ table td{
                         <td>[% response.blockHash%]</td>
                     </tr>
                 </table>
-            
-            [% CASE 'get_transactionbyhash' %]
+
+            [% CASE 'get_transaction' %]
                 <table>
                     <tr>
                         <th>input</th>
@@ -210,24 +210,17 @@ table td{
                         <td>[% response.blockHash %]</td>
                     </tr>
                 </table>
-                
         [% END %]
     </div>
-    <div id='raw_response' style="display:none; width:1200px; word-wrap: break-word;"><p>[% response_json %]</p></div>
-[% END %]
+    <div class="toggle-response invisible" style="width:1200px; word-wrap: break-word;">
+        <p>[% response_json %]</p>
+    </div>
 
-<script>
-    function toggleResponse() {
-      var formatted_content, raw_content;
-      raw_content = document.getElementById("raw_response");
-      formatted_content = document.getElementById("fomatted_response");
-      
-      if (typeof(raw_content) != 'undefined' && raw_content.style.display === "none"){
-          raw_content.style.display = "block";
-          formatted_content.style.display = "none";
-      } else {
-          raw_content.style.display = "none";
-          formatted_content.style.display = "block";
-      }
-    }
-</script>
+    <script>
+        function toggleResponse() {
+            document.querySelectorAll('.toggle-response').forEach(el_response => {
+                el_response.classList[el_response.classList.contains('invisible') ? 'remove' : 'add']('invisible');
+            });
+        }
+    </script>
+[% END %]
