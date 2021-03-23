@@ -75,6 +75,9 @@ check the current environment is ci environment
     $ENV{RPC_URL}                 = 'http://127.0.0.1:15005/';
     $ENV{PRICING_RPC_URL}         = 'http://127.0.0.1:15006/';
 
+    # Redirect all rpc request to the default stream `general`
+    $ENV{TEST_REDIRECT_RPC_QUEUES} = 1;
+
     if (on_qa()) {
         $ENV{DB_POSTFIX}    = '_test';
         $ENV{PGSERVICEFILE} = '/home/nobody/.pg_service_test.conf';
