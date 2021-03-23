@@ -32,6 +32,7 @@ use BOM::User::Password;
 use BOM::Platform::Client::IDAuthentication;
 use BOM::User::Utility;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
+use BOM::Backoffice::Utility;
 use BOM::Backoffice::Sysinit ();
 use BOM::Platform::Client::DoughFlowClient;
 use BOM::Platform::Doughflow qw( get_sportsbook );
@@ -1054,11 +1055,15 @@ my $payment_agent = $client->payment_agent;
 if ($payment_agent) {
     print '<div class="row"><table class="border small">';
 
-    foreach my $column ($payment_agent->meta->columns) {
-        my $value = $payment_agent->$column;
-        #this line shall be removed in cleanup card when we will drop target_country column
-        next if $column eq 'target_country';
-        print "<tr><td>$column</td><td>" . encode_entities($value) . "</td></tr>";
+    foreach my $column (
+        qw/payment_agent_name url email phone information commission_deposit commission_withdrawal
+        currency_code supported_banks min_withdrawal max_withdrawal code_of_conduct_approval affiliate_id is_authenticated is_listed/
+        )
+    {
+
+        my $value = $payment_agent->$column // '';
+        my $label = BOM::Backoffice::Utility::payment_agent_column_labels()->{$column};
+        print "<tr><td>$label</td><td>" . encode_entities($value) . "</td></tr>";
     }
     my $pa_countries = $client->get_payment_agent->get_countries;
     print "<tr><td>Target countries</td><td>" . encode_entities(join(',', @$pa_countries)) . "</td></tr>";

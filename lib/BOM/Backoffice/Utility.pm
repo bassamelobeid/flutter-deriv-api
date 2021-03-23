@@ -28,6 +28,33 @@ sub get_languages {
     };
 }
 
+=head2 payment_agent_column_labels
+
+Return a hashref, mapping payment agent table columns to their display labels
+
+=cut
+
+sub payment_agent_column_labels {
+    return +{
+        payment_agent_name       => 'Payment agent name',
+        url                      => 'Website URL',
+        email                    => 'Email address',
+        phone                    => 'Phone number',
+        information              => 'Information',
+        commission_deposit       => 'Deposit commission',
+        commission_withdrawal    => 'Withdrawal commission',
+        is_authenticated         => 'Is authorized',
+        currency_code            => 'Currency',
+        supported_banks          => 'Supported payment methods',
+        min_withdrawal           => 'Minimum withdrawal limit',
+        max_withdrawal           => 'Maximum withdrawal limit',
+        is_listed                => 'Listed payment agent',
+        code_of_conduct_approval => 'Code of conduct approval',
+        target_country           => 'Target Countries',
+        affiliate_id             => 'Affiliate id',
+    };
+}
+
 sub master_live_server_error {
     my $brand        = request()->brand;
     my $website_name = lc($brand->website_name);

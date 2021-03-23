@@ -689,23 +689,17 @@ sub get_payment_agent_registration_form {
             },
         ]};
 
-    # input field for pa_summary
-    my $input_field_pa_summary = {
+    my $input_field_pa_coc_approval = {
         'label' => {
-            'text' => 'Short summary of your Payment Agent service',
-            'for'  => 'pa_summary'
+            'text' => 'Code of conduct approval',
+            'for'  => 'pa_coc_approval'
         },
-        'input' => {
-            'id'        => 'pa_summary',
-            'name'      => 'pa_summary',
-            'type'      => 'text',
-            'maxlength' => 60,
-        },
-        'error' => {
-            'id'    => 'errorpa_summary',
-            'class' => 'error'
-        },
-    };
+        'input' => HTML::FormBuilder::Select->new(
+            'id'      => 'pa_coc_approval',
+            'name'    => 'pa_coc_approval',
+            'values'  => ['0'],
+            'options' => _select_yes_no(),
+        )};
 
     # Input field for pa_email
     my $input_field_pa_email = {
@@ -724,11 +718,6 @@ sub get_payment_agent_registration_form {
             'class' => 'error'
         },
         'validation' => [{
-                'type'    => 'regexp',
-                'regexp'  => '\w+',
-                'err_msg' => 'Please enter your email address.',
-            },
-            {
                 'type'    => 'regexp',
                 'regexp'  => _email_check_regexp(),
                 'err_msg' => 'Sorry, you have entered an incorrect email address.',
@@ -790,7 +779,7 @@ sub get_payment_agent_registration_form {
         },
         'validation' => [{
                 'type'    => 'regexp',
-                'regexp'  => '^(https?:\/\/[^\s]+)?$',
+                'regexp'  => '^https?:\/\/[^\s]+$',
                 'err_msg' => 'This URL is invalid.',
             },
         ],
@@ -928,30 +917,30 @@ sub get_payment_agent_registration_form {
         ],
     };
 
-    # Input field for pa_supported_banks
-    my $input_field_pa_supported_banks = {
+    # Input field for pa_supported_payment_methods
+    my $input_field_pa_supported_payment_methods = {
         'label' => {
-            'text' => 'Supported banks',
-            'for'  => 'pa_supported_banks'
+            'text' => 'Supported Payment Methods',
+            'for'  => 'pa_supported_payment_methods'
         },
         'input' => {
-            'id'        => 'pa_supported_banks',
-            'name'      => 'pa_supported_banks',
+            'id'        => 'pa_supported_payment_methods',
+            'name'      => 'pa_supported_payment_methods',
             'type'      => 'text',
             'maxlength' => 500,
         },
         'error' => {
-            'id'    => 'errorpa_suported_banks',
+            'id'    => 'errorpa_suported_payment_methods',
             'class' => 'error'
         },
         'validation' => [{
                 'type'    => 'regexp',
                 'regexp'  => '^[0-9a-zA-Z,]*$',
-                'err_msg' => 'Supported banks list is invalid',
+                'err_msg' => 'Supported payment methods list is invalid',
             },
         ],
         comment => {
-            'text' => '** Comma-separated list (no spaces) of: ' . (join ' ', _get_payment_agent_banks()),
+            'text' => '** Comma-separated list (no spaces) of: ' . (join ' ', _get_payment_methods()),
         }};
 
     # Input field for pa_auth
@@ -1005,6 +994,24 @@ sub get_payment_agent_registration_form {
         comment => {
             'text' => '** Comma-separated list of 2 character country code (no spaces) e. g id,vn',
         }};
+
+    # input field for pa_affiliate_id
+    my $input_field_pa_affiliate_id = {
+        'label' => {
+            'text' => 'Affiliate id (if exists)',
+            'for'  => 'pa_affiliate_id'
+        },
+        'input' => {
+            'id'        => 'pa_affiliate_id',
+            'name'      => 'pa_affiliate_id',
+            'type'      => 'text',
+            'maxlength' => 60,
+        },
+        'error' => {
+            'id'    => 'errorpa_affiliate_id',
+            'class' => 'errorfield'
+        },
+    };
 
     my $input_hidden_field_whattodo = {
         'id'    => 'whattodo',
@@ -1062,7 +1069,8 @@ sub get_payment_agent_registration_form {
     my $fieldset = $form_object->add_fieldset({});
 
     $fieldset->add_field($input_field_pa_name);
-    $fieldset->add_field($input_field_pa_summary);
+    $fieldset->add_field($input_field_pa_coc_approval);
+    $fieldset->add_field($textarea_pa_info);
     $fieldset->add_field($input_field_pa_email);
     $fieldset->add_field($input_field_pa_tel);
     $fieldset->add_field($input_field_pa_url);
@@ -1070,10 +1078,10 @@ sub get_payment_agent_registration_form {
     $fieldset->add_field($input_field_pa_comm_with);
     $fieldset->add_field($input_field_pa_max_withdrawal);
     $fieldset->add_field($input_field_pa_min_withdrawal);
-    $fieldset->add_field($textarea_pa_info);
+    $fieldset->add_field($input_field_pa_affiliate_id);
 
-    if ($input_field_pa_supported_banks) {
-        $fieldset->add_field($input_field_pa_supported_banks);
+    if ($input_field_pa_supported_payment_methods) {
+        $fieldset->add_field($input_field_pa_supported_payment_methods);
     }
     if ($input_field_pa_auth) {
         $fieldset->add_field($input_field_pa_auth);
@@ -1113,11 +1121,11 @@ sub _select_yes_no {
 }
 
 sub _email_check_regexp {
-    return '^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$';
+    return '^([a-zA-Z0-9_.+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4})?$';
 }
 
 # better to maintain the sort order else use sort before returning
-sub _get_payment_agent_banks {
+sub _get_payment_methods {
     return
         qw(AlertPay Alipay BNI BankBRI CIMBNIAGA DiamondBank EGold FirstBank GTBank GrupBCA ICBC LibertyReserve Mandiri MandiriSyariah MasterCard MoneyGram PayPal PerfectMoney PermataBank SolidTrustPay VISA Verve WeChatPay ZenithBank);
 }

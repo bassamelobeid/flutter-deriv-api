@@ -5,15 +5,35 @@ use warnings;
 
 use HTML::Entities;
 use Scalar::Util qw(looks_like_number);
+use Syntax::Keyword::Try;
 
 use BOM::User::Client::PaymentAgent;
 use BOM::User qw( is_payment_agents_suspended_in_country );
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Backoffice::Form;
 use BOM::Config::PaymentAgent;
+use BOM::Backoffice::Utility;
 use f_brokerincludeall;
 use BOM::Backoffice::Sysinit ();
 BOM::Backoffice::Sysinit::init();
+
+my %MAP_FIELDS = (
+    pa_name                      => 'payment_agent_name',
+    pa_coc_approval              => 'code_of_conduct_approval',
+    pa_email                     => 'email',
+    pa_tel                       => 'phone',
+    pa_url                       => 'url',
+    pa_comm_depo                 => 'commission_deposit',
+    pa_comm_with                 => 'commission_withdrawal',
+    pa_max_withdrawal            => 'max_withdrawal',
+    pa_min_withdrawal            => 'min_withdrawal',
+    pa_info                      => 'information',
+    pa_auth                      => 'is_authenticated',
+    pa_listed                    => 'is_listed',
+    pa_supported_payment_methods => 'supported_banks',
+    pa_countries                 => 'target_country',
+    pa_affiliate_id              => 'affiliate_id',
+);
 
 PrintContentType();
 BrokerPresentation('Payment Agent Setting');
@@ -39,6 +59,9 @@ if ($whattodo eq 'create') {
 
     my $payment_agent_registration_form = BOM::Backoffice::Form::get_payment_agent_registration_form($loginid, $broker);
     $payment_agent_registration_form->set_input_fields({
+        'pa_name'      => $client->full_name,
+        'pa_email'     => $client->email,
+        'pa_tel'       => $client->phone,
         'pa_comm_depo' => '0.00',
         'pa_comm_with' => '0.00',
     });
@@ -47,29 +70,18 @@ if ($whattodo eq 'create') {
     code_exit_BO();
 }
 
+my $pa = BOM::User::Client::PaymentAgent->new({loginid => $loginid});
+
 if ($whattodo eq 'show') {
-    my $pa                              = BOM::User::Client::PaymentAgent->new({loginid => $loginid});
     my $payment_agent_registration_form = BOM::Backoffice::Form::get_payment_agent_registration_form($loginid, $broker);
     my $pa_countries                    = $pa->get_countries;
 
-    my $input_fields = {
-        pa_name            => $pa->payment_agent_name,
-        pa_summary         => $pa->summary,
-        pa_email           => $pa->email,
-        pa_tel             => $pa->phone,
-        pa_url             => $pa->url,
-        pa_comm_depo       => $pa->commission_deposit    || '0.00',
-        pa_comm_with       => $pa->commission_withdrawal || '0.00',
-        pa_max_withdrawal  => $pa->max_withdrawal,
-        pa_min_withdrawal  => $pa->min_withdrawal,
-        pa_info            => $pa->information,
-        pa_auth            => ($pa->is_authenticated ? 'yes' : 'no'),
-        pa_listed          => ($pa->is_listed        ? 'yes' : 'no'),
-        pa_supported_banks => $pa->supported_banks,
-        pa_countries       => join(',', @$pa_countries),
-    };
+    my %input_fields = map { my $sub_name = $MAP_FIELDS{$_}; $_ => $pa->$sub_name } keys %MAP_FIELDS;
+    $input_fields{$_} = $input_fields{$_} ? 'yes' : 'no' for (qw/pa_coc_approval pa_auth pa_listed/);
+    $input_fields{$_} ||= '0.00' for (qw/pa_comm_depo pa_comm_with/);
+    $input_fields{pa_countries} = join(',', @$pa_countries);
 
-    $payment_agent_registration_form->set_input_fields($input_fields);
+    $payment_agent_registration_form->set_input_fields(\%input_fields);
 
     my $page_content = '<p>' . $payment_agent_registration_form->build();
     print $page_content;
@@ -83,10 +95,11 @@ if ($whattodo eq 'show') {
     code_exit_BO("Error : must provide at least one country.") unless request()->param('pa_countries');
 
     my @countries = split(',', request()->param('pa_countries'));
-    my $pa        = BOM::User::Client::PaymentAgent->new({loginid => $loginid});
+    my $editing   = 1;
     unless ($pa) {
         # if its new so we need to set it
-        $pa = $client->set_payment_agent;
+        $pa      = $client->set_payment_agent;
+        $editing = 0;
     }
 
     my $currency = $pa->currency_code // $client->default_account->currency_code;
@@ -94,11 +107,11 @@ if ($whattodo eq 'show') {
     my $max_withdrawal = request()->param('pa_max_withdrawal');
     my $min_withdrawal = request()->param('pa_min_withdrawal');
 
-    code_exit_BO("Invalid amount: requested minimum amount must be greater than zero.")
+    code_exit_BO("Invalid amount: requested minimum withdrawal amount must be greater than zero.")
         if (looks_like_number($min_withdrawal) and $min_withdrawal <= 0);
-    code_exit_BO("Invalid amount: requested maximum amount must be greater than zero.")
+    code_exit_BO("Invalid amount: requested maximum withdrawal amount must be greater than zero.")
         if (looks_like_number($max_withdrawal) and $max_withdrawal <= 0);
-    code_exit_BO("Invalid amount: requested maximum amount must be greater than minimum amount.")
+    code_exit_BO("Invalid amount: requested maximum withdrawal amount must be greater than minimum amount.")
         if (looks_like_number($max_withdrawal) and looks_like_number($min_withdrawal) and $max_withdrawal < $min_withdrawal);
 
     my $min_max = BOM::Config::PaymentAgent::get_transfer_min_max($currency);
@@ -110,21 +123,33 @@ if ($whattodo eq 'show') {
     code_exit_BO("Invalid deposint commission amount: it should be between 0 and 9")   unless $pa_comm_depo >= 0 and $pa_comm_depo <= 9;
     code_exit_BO("Invalid withdrawal commission amount: it should be between 0 and 9") unless $pa_comm_with >= 0 and $pa_comm_with <= 9;
 
-    # update payment agent file
-    $pa->payment_agent_name(request()->param('pa_name'));
-    $pa->summary(request()->param('pa_summary'));
-    $pa->email(request()->param('pa_email'));
-    $pa->phone(request->param('pa_tel'));
-    $pa->url(request()->param('pa_url'));
-    $pa->commission_deposit(request()->param('pa_comm_depo') + 0);
-    $pa->commission_withdrawal(request()->param('pa_comm_with') + 0);
-    $pa->max_withdrawal($max_withdrawal);
-    $pa->min_withdrawal($min_withdrawal);
-    $pa->information(request()->param('pa_info'));
-    $pa->supported_banks(request()->param('pa_supported_banks'));
-    $pa->is_authenticated(request()->param('pa_auth') eq 'yes');
-    $pa->is_listed(request()->param('pa_listed') eq 'yes');
-    $pa->currency_code($currency);
+    my %args = map { $MAP_FIELDS{$_} => request()->param($_) } keys %MAP_FIELDS;
+    $args{$_} = ($args{$_} eq 'yes') for (qw/is_authenticated is_listed code_of_conduct_approval/);
+    $args{currency_code} = $currency;
+    # let's skip COC apprival if a PA is being edited.
+    $args{code_of_conduct_approval} = 1 if $editing;
+    try {
+        %args = $pa->validate_payment_agent_details(%args)->%*;
+    } catch ($error) {
+        my $message;
+        if (ref $error) {
+            my $lables = BOM::Backoffice::Utility::payment_agent_column_labels();
+            $message = "$error->{code}";
+            $message =~ s/([A-Z])/ $1/g;
+            $message .= " ($error->{message})"        if $error->{message};
+            $message = 'Required fields are missing ' if ($message eq 'InputValidationFailed');
+            $message .= ': ' . join(',', (map { $lables->{$_} // $_ } $error->{details}->{fields}->@*))
+                if $error->{code} ne 'DuplicateName' and $error->{details}->{fields};
+
+        } else {
+            chomp $error;
+            $message = $error;
+        }
+        code_exit_BO(encode_entities("Error - $message"));
+    }
+    # update payment agent fields
+    $args{code_of_conduct_approval} = request()->param('pa_coc_approval') eq 'yes' ? 1 : 0;
+    $pa->$_($args{$_}) for keys %args;
 
     $pa->save || die "failed to save payment_agent!";
     code_exit_BO("Invalid Countries: could not add countries.")
