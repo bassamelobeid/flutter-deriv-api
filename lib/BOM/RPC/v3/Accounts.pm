@@ -2743,4 +2743,85 @@ sub _mt5_balance_call_enabled {
     return MT5_BALANCE_CALL_ENABLED;
 }
 
+rpc paymentagent_create => sub {
+    my $params = shift;
+
+    my $client = $params->{client};
+    my $args   = $params->{args};
+
+    delete $args->{paymentagent_create};
+
+    # some attributes are editable exclusively from backoffice
+    delete $args->{is_listed};
+    delete $args->{is_authenticated};
+
+    return BOM::RPC::v3::Utility::create_error({
+            code              => 'PaymentAgentNotAvailable',
+            message_to_client => localize('The payment agent facility is not available for this account.')}
+    ) unless $client->landing_company->allows_payment_agents;
+
+    return BOM::RPC::v3::Utility::create_error({
+            code              => 'PaymentAgentAlreadyExists',
+            message_to_client => localize("You've already submitted a payment agent application request.")}) if $client->get_payment_agent();
+
+    # convert the array supported_payment_methods (api field) into the string supported_banks (db field)
+    my $payment_methods = (delete $args->{supported_payment_methods}) // [];
+    $args->{supported_banks} = join ',', @$payment_methods;
+
+    my $pa = $client->set_payment_agent;
+    try {
+        $args = $pa->validate_payment_agent_details(%$args);
+    } catch ($error) {
+        unless (ref $error) {
+            chomp $error;
+            my $msg_params = {
+                InvalidDepositCommission    => [$pa->max_pa_commission()],
+                InvalidWithdrawalCommission => [$pa->max_pa_commission()],
+            };
+
+            return BOM::RPC::v3::Utility::create_error_by_code($error, ($msg_params->{$error} // [])->@*);
+        }
+
+        return BOM::RPC::v3::Utility::create_error_by_code($error->{code}, %$error, override_code => 'InputValidationFailed');
+    }
+
+    $pa->$_($args->{$_}) for keys %$args;
+    $pa->save();
+
+    # create a livechat ticket
+    my $loginid = $client->loginid;
+    my $brand   = request->brand;
+    my $message = "Client $loginid has submitted the payment agent application form with following content:\n\n";
+    $message .= join("\n", map { "$_: $args->{$_}" } sort keys %$args);
+    send_email({
+        from    => $brand->emails('system'),
+        to      => $brand->emails('pa_livechat'),
+        subject => "Payment agent application submitted by $loginid",
+        message => [$message],
+    });
+
+    return {status => 1};
+};
+
+rpc paymentagent_details => sub {
+    my $params = shift;
+    my $client = $params->{client};
+
+    return BOM::RPC::v3::Utility::permission_error if $client->is_virtual;
+
+    my $payment_agent = $client->get_payment_agent;
+    return BOM::RPC::v3::Utility::create_error({
+            code              => 'NoPaymentAgent',
+            message_to_client => localize('You have not applied for being payment agent yet.')}) unless $payment_agent;
+
+    my %result = map { $_ => $payment_agent->$_ }
+        qw(payment_agent_name url email phone  information currency_code target_country max_withdrawal min_withdrawal commission_deposit commission_withdrawal is_authenticated is_listed code_of_conduct_approval affiliate_id);
+    $result{supported_payment_methods} = $payment_agent->{supported_banks} ? [split(',', $payment_agent->{supported_banks})] : [];
+    # COC and affiliate ID are null for old payment agents.
+    $result{code_of_conduct_approval} //= 0;
+    $result{affiliate_id}             //= '';
+
+    return \%result;
+};
+
 1;

@@ -330,7 +330,7 @@ sub check_password {
     }
 
     return BOM::RPC::v3::Utility::create_error({
-            code => 'PasswordError',
+            code              => 'PasswordError',
             message_to_client =>
                 localize('Your password must be 8 to 25 characters long. It must include lowercase and uppercase letters, and numbers.')}
     ) if $new_password !~ REGEX_PASSWORD_VALIDATION;
@@ -440,7 +440,7 @@ sub error_map {
             'Your provided email address is already in use by another Login ID. According to our terms and conditions, you may only register once through our site.'
         ),
         'DuplicateVirtualWallet' => localize('Sorry, a virtual wallet account already exists. Only one virtual wallet account is allowed.'),
-        'duplicate name DOB' =>
+        'duplicate name DOB'     =>
             localize('Sorry, it looks like you already have a real money account with us. Only one real money account is allowed for each client.'),
         'too young'            => localize('Sorry, you are too young to open an account.'),
         'show risk disclaimer' => localize('Please agree to the risk disclaimer before proceeding.'),
@@ -466,8 +466,19 @@ sub error_map {
         'SetExistingAccountCurrency' => localize('Please set the currency for your existing account [_1], in order to create more accounts.'),
         'P2PRestrictedCountry'       => localize("P2P cashier is unavailable in your country. Please provide a different account opening reason."),
         'InputValidationFailed'      => localize("This field is required."),
-        'DuplicateCurrency'          => localize("Please note that you are limited to only one [_1] account."),
-        'CurrencyTypeNotAllowed'     => localize('Please note that you are limited to one fiat currency account.'),
+
+        # validate_paymentagent_details
+        'NoAccountCurrency'           => localize('Please set the currency for your existing account.'),
+        'PaymentAgentsSupended'       => localize('Payment agents are suspended in your residence country.'),
+        'DuplicateName'               => localize('You cannot use this name, because it is taken by someone else.'),
+        'MinWithdrawalIsNegative'     => localize('The requested minimum amount must be greater than zero.'),
+        'MaxWithdrawalIsLessThanMin'  => localize('The requested maximum amount must be greater than minimum amount.'),
+        'InvalidDepositCommission'    => localize('Invalid deposit commission amount: it should be between 0 and [_1].'),
+        'InvalidWithdrawalCommission' => localize('Invalid withdrawal commission amount: it should be between 0 and [_1].'),
+        'CodeOfConductNotApproved'    => localize('Code of conduct should be accepted.'),
+
+        'DuplicateCurrency'      => localize("Please note that you are limited to only one [_1] account."),
+        'CurrencyTypeNotAllowed' => localize('Please note that you are limited to one fiat currency account.'),
     };
 }
 
@@ -807,7 +818,7 @@ sub set_professional_status {
 
     # Set checks in variables
     my $cr_mf_valid      = $client->landing_company->support_professional_client;
-    my $set_prof_status  = $professional && !$client->status->professional && $cr_mf_valid;
+    my $set_prof_status  = $professional           && !$client->status->professional           && $cr_mf_valid;
     my $set_prof_request = $professional_requested && !$client->status->professional_requested && $cr_mf_valid;
 
     try {
@@ -1088,7 +1099,7 @@ sub verify_cashier_suspended {
 
     if ($is_cryptocurrency) {
         return 1 if BOM::Config::CurrencyConfig::is_crypto_cashier_suspended();
-        return 1 if ($action eq 'deposit' && BOM::Config::CurrencyConfig::is_crypto_currency_deposit_suspended($currency));
+        return 1 if ($action eq 'deposit'    && BOM::Config::CurrencyConfig::is_crypto_currency_deposit_suspended($currency));
         return 1 if ($action eq 'withdrawal' && BOM::Config::CurrencyConfig::is_crypto_currency_withdrawal_suspended($currency));
     } else {
         return 1 if BOM::Config::CurrencyConfig::is_cashier_suspended();
