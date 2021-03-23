@@ -104,6 +104,9 @@
                        }
                    }
                }
+            },
+            "social_identity_provider": {
+               "enum": ["google", "facebook"]
             }
          },
          "type" : "object"
