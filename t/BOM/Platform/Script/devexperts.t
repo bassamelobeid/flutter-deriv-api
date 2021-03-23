@@ -52,8 +52,9 @@ subtest 'API response types' => sub {
     $resp = $http->POST($url, '{ "method": "client_list" }', content_type => 'application/json')->get;
     is decode_json_utf8($resp->content)->[0]{login}, $login, 'client_list (array result)';
 
-    $resp = $http->POST($url, '{ "method": "client_password_change" }', content_type => 'application/json')->get;
-    is $resp->content, '', 'client_password_change (empty result)';
+    $mock_api->mock('account_category_set', sub { Future->done() });
+    $resp = $http->POST($url, '{ "method": "account_category_set" }', content_type => 'application/json')->get;
+    is $resp->content, '', 'account_category_set (empty result)';
 
     $mock_api->mock(
         'http_send',
