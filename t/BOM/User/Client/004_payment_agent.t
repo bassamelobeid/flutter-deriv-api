@@ -2,6 +2,8 @@ use strict;
 use warnings;
 
 use Test::Most;
+use Test::Fatal;
+use Test::MockModule;
 use Test::FailWarnings;
 use Test::Exception;
 use BOM::User::Client::PaymentAgent;
@@ -11,6 +13,7 @@ use BOM::Test::Helper::Client qw( top_up );
 use BOM::Database::Model::OAuth;
 use BOM::User::Password;
 use BOM::Config::Runtime;
+use BOM::Config::PaymentAgent;
 
 my $email       = 'JoeSmith@binary.com';
 my $password    = 'jskjd8292922';
@@ -102,7 +105,7 @@ $pa_client_2->set_default_account('USD');
 
 # make him a payment agent
 my $object_pa2 = $pa_client_2->payment_agent({
-    payment_agent_name    => 'Joe',
+    payment_agent_name    => 'Joe 2',
     url                   => 'http://www.example.com/',
     email                 => 'joe@example.com',
     phone                 => '+12345678',
@@ -160,7 +163,7 @@ my $pa_client_3 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
 $pa_client_3->set_default_account('USD');
 # make him a payment agent
 $pa_client_3->payment_agent({
-    payment_agent_name    => 'Joe',
+    payment_agent_name    => 'Joe 3',
     url                   => 'http://www.example.com/',
     email                 => 'joe@example.com',
     phone                 => '+12345678',
@@ -178,5 +181,176 @@ is($pa_client_3->get_payment_agent->set_countries(['id', 'us']), undef, 'Suspend
 BOM::Config::Runtime->instance->app_config->system->suspend->payment_agents_in_countries([]);
 is($pa_client_3->get_payment_agent->set_countries(['id', 'any_country']), undef, 'Invalid country could not be added');
 is($pa_client_3->get_payment_agent->set_countries(['id', 'at']),          undef, 'Countries from same landing company as payment agent is allowed');
+
+subtest 'get payment agents by name' => sub {
+    my $pa     = $test_client->set_payment_agent();
+    my $result = $pa->get_payment_agents_by_name('ADFASDF');
+    is $result->@*, 0, 'No result for non-existing name';
+
+    $result = $pa->get_payment_agents_by_name('Joe');
+    is $result->@*, 1, 'One row is found';
+    is $result->[0]->{client_loginid}, $pa_client->loginid, 'Client loginid is correct';
+
+    $result = $pa->get_payment_agents_by_name('Joe 2');
+    is $result->@*, 1, 'One row is found';
+    is $result->[0]->{client_loginid}, $pa_client_2->loginid, 'Client loginid is correct';
+
+    $result = $pa->get_payment_agents_by_name('jOE 2');
+    is $result->@*, 1, 'The search is case insensitive';
+    is $result->[0]->{client_loginid}, $pa_client_2->loginid, 'Client loginid is correct';
+};
+
+subtest 'validate payment agent details' => sub {
+    my $pa = $test_client->set_payment_agent();
+
+    my $mock_client = Test::MockModule->new("BOM::User::Client");
+    $mock_client->redefine(is_virtual => sub { return 1 });
+    like exception { $pa->validate_payment_agent_details() }, qr/PermissionDenied/, 'Virtual clients do not have permission for setting';
+    $mock_client->unmock_all;
+
+    like exception { $pa->validate_payment_agent_details() }, qr/NoAccountCurrency/, 'Client currency cannot be empty';
+    $test_client->set_default_account('USD');
+
+    my $mock_user = Test::MockModule->new('BOM::User');
+    $mock_user->redefine(is_payment_agents_suspended_in_country => sub { return 1 });
+    like exception { $pa->validate_payment_agent_details() }, qr/PaymentAgentsSupended/, 'Payment agents should not be empty';
+    $mock_user->unmock_all;
+
+    cmp_deeply exception { $pa->validate_payment_agent_details() },
+        {
+        'code'    => 'InputValidationFailed',
+        'details' => {
+            fields => bag(
+                'payment_agent_name', 'url', 'information', 'supported_banks',
+                'commission_deposit', 'commission_withdrawal', 'code_of_conduct_approval'
+            )}
+        },
+        'Payment required fileds are returned';
+
+    my %args = (
+        'payment_agent_name'       => 'Nobody',
+        'information'              => 'Request for pa application',
+        'url'                      => 'http://abcd.com',
+        'commission_withdrawal'    => 4,
+        'commission_deposit'       => 5,
+        'supported_banks'          => 'Visa, bank_transfer',
+        'code_of_conduct_approval' => 0,
+    );
+
+    is_deeply exception { $pa->validate_payment_agent_details(%args) },
+        {
+        'code'    => 'CodeOfConductNotApproved',
+        'details' => {
+            fields => ['code_of_conduct_approval'],
+        }
+        },
+        'Code if conduct applroval is required';
+
+    $args{code_of_conduct_approval} = 1;
+    my $min_max = BOM::Config::PaymentAgent::get_transfer_min_max('USD');
+    my $result  = $pa->validate_payment_agent_details(%args);
+    is_deeply $result,
+        {
+        'payment_agent_name'       => 'Nobody',
+        'email'                    => $test_client->email,
+        'phone'                    => $test_client->phone,
+        'summary'                  => '',
+        'information'              => 'Request for pa application',
+        'currency_code'            => 'USD',
+        'target_country'           => $test_client->residence,
+        'url'                      => 'http://abcd.com',
+        'max_withdrawal'           => $min_max->{maximum},
+        'min_withdrawal'           => $min_max->{minimum},
+        'commission_deposit'       => 5,
+        'commission_withdrawal'    => 4,
+        'is_authenticated'         => 0,
+        'is_listed'                => 0,
+        'supported_banks'          => 'Visa, bank_transfer',
+        'code_of_conduct_approval' => 1,
+        'affiliate_id'             => '',
+        },
+        'Expected default values are returned';
+
+    $args{payment_agent_name} = 'Joe';
+    is_deeply exception { $pa->validate_payment_agent_details(%args) },
+        {
+        'code'    => 'DuplicateName',
+        'message' => "The name <Joe> is already taken by " . $pa_client->loginid,
+        'details' => {
+            fields => ['payment_agent_name'],
+        }
+        },
+        'Duplicate names are not allowed';
+
+    %args = (
+        'payment_agent_name'       => 'Nobody',
+        'email'                    => 'abcd@binary.com',
+        'phone'                    => '1234',
+        'summary'                  => 'I am a test pa',
+        'information'              => 'Request for pa application',
+        'currency_code'            => 'EUR',
+        'target_country'           => 'de',
+        'url'                      => 'http://abcd.com',
+        'commission_withdrawal'    => 4,
+        'commission_deposit'       => 5,
+        'max_withdrawal'           => 100,
+        'commission_deposit'       => 1,
+        'commission_withdrawal'    => 3,
+        'min_withdrawal'           => 10,
+        'is_authenticated'         => 1,
+        'is_listed'                => 1,
+        'supported_banks'          => 'Visa, bank_transfer',
+        'code_of_conduct_approval' => 1,
+        'affiliate_id'             => '123abcd',
+    );
+
+    $result = $pa->validate_payment_agent_details(%args);
+    is_deeply($result, \%args, 'Non-empty args are not changed');
+
+    @args{qw(payment_agent_name min_withdrawal max_withdrawal)} = ('test name', -1, -1);
+    is_deeply exception { $pa->validate_payment_agent_details(%args) },
+        {
+        'code'    => 'MinWithdrawalIsNegative',
+        'details' => {
+            fields => ['min_withdrawal'],
+        }
+        },
+        'Minimum cant be zero';
+    $args{min_withdrawal} = 1;
+    cmp_deeply exception { $pa->validate_payment_agent_details(%args) },
+        {
+        'code'    => 'MinWithdrawalIsNegative',
+        'details' => {
+            fields => bag('min_withdrawal', 'max_withdrawal'),
+        }
+        },
+        'Max must be larger than min';
+    $args{max_withdrawal} = 2;
+
+    for my $value (-1, 10) {
+        $args{commission_deposit} = $value;
+        is_deeply exception { $pa->validate_payment_agent_details(%args) },
+            {
+            'code'    => 'InvalidDepositCommission',
+            'details' => {
+                fields => ['commission_deposit'],
+            }
+            },
+            "Invalid deposit commission $value";
+    }
+    $args{commission_deposit} = 0;
+    for my $value (-1, 10) {
+        $args{commission_withdrawal} = $value;
+        is_deeply exception { $pa->validate_payment_agent_details(%args) },
+            {
+            'code'    => 'InvalidWithdrawalCommission',
+            'details' => {
+                fields => ['commission_withdrawal'],
+            }
+            },
+            "Invalid withdrawal commission $value";
+    }
+    $args{commission_withdrawal} = 0;
+};
 
 done_testing();

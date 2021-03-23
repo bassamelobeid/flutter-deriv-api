@@ -5675,6 +5675,8 @@ sub needs_poi_verification {
     unless ($self->status->age_verification or $self->fully_authenticated) {
         # If shared payment method, the POI is required
         return 1 if $self->status->shared_payment_method;
+        # POI is required for payment agents
+        return 1 if $self->get_payment_agent;
 
         $is_required_auth //= $self->is_verification_required(check_authentication_status => 1);
         return 1 if $is_required_auth and $status eq 'none';

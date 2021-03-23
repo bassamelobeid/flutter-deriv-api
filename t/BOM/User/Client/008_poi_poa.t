@@ -5,7 +5,7 @@ use Test::MockModule;
 use BOM::User::Client;
 use BOM::User;
 
-use BOM::Test::Data::Utility::UnitTestDatabase;
+use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 
 subtest 'get_poa_status' => sub {
     subtest 'Unregulated account' => sub {
@@ -1131,6 +1131,33 @@ subtest 'shared payment method' => sub {
     $mocked_client->unmock_all;
     $mocked_status->unmock_all;
     $mocked_onfido->unmock_all;
+};
+
+subtest 'payment agent' => sub {
+    my $test_client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+    });
+    BOM::User->create(
+        email    => 'pa_poa_poi@binary.com',
+        password => 'asdf1234',
+    )->add_client($test_client_cr);
+
+    my $mocked_onfido = Test::MockModule->new('BOM::User::Onfido');
+    $mocked_onfido->mock(
+        'get_latest_check',
+        sub {
+            return {};
+        });
+
+    my $mocked_client = Test::MockModule->new(ref($test_client_cr));
+    $mocked_client->redefine('get_payment_agent', sub { return undef });
+
+    ok !$test_client_cr->needs_poi_verification, 'POI is not required without PA';
+
+    $mocked_client->redefine('get_payment_agent', sub { return 1 });
+    ok $test_client_cr->needs_poi_verification, 'POI is required with PA';
+
+    $mocked_client->unmock_all;
 };
 
 subtest 'First Deposit' => sub {
