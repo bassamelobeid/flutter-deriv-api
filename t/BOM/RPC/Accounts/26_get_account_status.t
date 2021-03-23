@@ -2591,4 +2591,94 @@ subtest 'Rejected reasons' => sub {
     $client_mock->unmock_all;
 };
 
+subtest 'Social identity provider' => sub {
+    my $t = Test::Mojo->new('BOM::OAuth');
+
+    my $app_id = 7;
+    my $email  = 'social' . rand(999) . '@binary.com';
+
+    # mock OneAll data
+    my $mocked_oneall = Test::MockModule->new('WWW::OneAll');
+    $mocked_oneall->mock(
+        new        => sub { bless +{}, 'WWW::OneAll' },
+        connection => sub {
+            return +{
+                response => {
+                    request => {
+                        status => {
+                            code => 200,
+                        },
+                    },
+                    result => {
+                        status => {
+                            code => 200,
+                            flag => '',
+                        },
+                        data => {
+                            user => {
+                                identity => {
+                                    emails                => [{value => $email}],
+                                    provider              => 'google',
+                                    provider_identity_uid => 'test_uid',
+                                }
+                            },
+                        },
+                    },
+                },
+            };
+        });
+
+    my $residence = 'id';
+    $t->ua->on(
+        start => sub {
+            my ($ua, $tx) = @_;
+            $tx->req->headers->header('X-Client-Country' => $residence);
+        });
+
+    $t->get_ok("/oneall/callback?app_id=$app_id&connection_token=1")->status_is(302);
+
+    my $user = BOM::User->new(email => $email);
+    ok $user, 'User was created';
+
+    my $client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR'});
+    $user->add_client($client_cr);
+
+    my $token_cr = $m->create_token($client_cr->loginid, 'test token');
+
+    my $result = $c->tcall($method, {token => $token_cr});
+    cmp_deeply(
+        $result,
+        {
+            social_identity_provider => 'google',
+            status                   => ['social_signup', 'financial_information_not_complete', 'trading_experience_not_complete'],
+            currency_config          => {
+                'USD' => {
+                    is_deposit_suspended    => 0,
+                    is_withdrawal_suspended => 0
+                }
+            },
+            prompt_client_to_authenticate => 0,
+            risk_classification           => 'low',
+            authentication                => {
+                identity => {
+                    services => {
+                        onfido => {
+                            submissions_left     => 3,
+                            is_country_supported => 1,
+                            last_rejected        => [],
+                            documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport'],
+                            country_code         => 'IDN'
+                        }
+                    },
+                    status => 'none'
+                },
+                needs_verification => [],
+                document           => {'status' => 'none'}}
+        },
+        'has social_identity_provider as google'
+    );
+
+    $mocked_oneall->unmock_all;
+};
+
 done_testing();

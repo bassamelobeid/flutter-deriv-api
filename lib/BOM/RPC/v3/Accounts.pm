@@ -945,8 +945,12 @@ rpc get_account_status => sub {
 
     my $user = $client->user;
 
-    # differentiate between social and password based accounts
-    push @$status, 'social_signup' if $user->{has_social_signup};
+    my $provider;
+    if ($user->{has_social_signup}) {
+        push @$status, 'social_signup'; # differentiate between social and password based accounts
+        my $user_connect = BOM::Database::Model::UserConnect->new;
+        $provider = $user_connect->get_connects_by_user_id($client->user->{id})->[0];
+    }
 
     # check whether the user need to perform financial assessment
     my $client_fa = decode_fa($client->financial_assessment());
@@ -995,6 +999,7 @@ rpc get_account_status => sub {
         prompt_client_to_authenticate => $is_verification_required,
         authentication                => $authentication,
         currency_config               => \%currency_config,
+        $provider ? (social_identity_provider => $provider) : (),
     };
 };
 
