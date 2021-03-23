@@ -785,13 +785,15 @@ Returns void
 sub ignore_queue_separations {
     my (undef, $req_storage) = @_;
 
+    $req_storage->{msg_group} = undef if $ENV{TEST_REDIRECT_RPC_QUEUES};
+
     # Default queue
     return undef unless $req_storage->{msg_group};
 
     # Queue is activated.
     return undef if $Binary::WebSocketAPI::RPC_ACTIVE_QUEUES{$req_storage->{msg_group}};
 
-    #Switch message to default queue.
+    # Switch message to default queue.
     $req_storage->{msg_group} = undef;
 
     return undef;
