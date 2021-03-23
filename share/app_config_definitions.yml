@@ -242,21 +242,11 @@ payments:
               description: 'Number of days within which to count seller fraud incidents. 0 is lifetime.'
               default: 0
               global: 1
-        credit_card_turnover_requirement:
-          description: 'Non-PA client needs turnover at least this percentage of credit card deposits to be allowed to create sell orders and ads.'
-          isa: Num
-          global: 1
-          default: 25
-        credit_card_check_period:
-          description: 'Number of months in the past to check credit card deposits and turnover.'
-          isa: Num
-          global: 1
-          default: 6
         payment_method_countries:
           description: 'Payment method visibilty per country.'
           isa: json_string
           default: '{"bank_transfer": { "mode" : "exclude" }, "other": { "mode" : "exclude" }}'
-          global: 1          
+          global: 1
     crypto:
       description: 'Cryptocurrencies related config'
       isa: section
