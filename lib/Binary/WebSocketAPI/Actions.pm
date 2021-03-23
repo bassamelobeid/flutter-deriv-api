@@ -265,6 +265,8 @@ sub actions_config {
                 msg_group    => 'mt5_hybrid',
             }
         ],
+        ['paymentagent_details'],
+        ['paymentagent_create'],
         [
             'cashier',
             {
