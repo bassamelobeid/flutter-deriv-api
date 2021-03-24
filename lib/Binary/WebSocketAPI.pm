@@ -40,7 +40,9 @@ use Syntax::Keyword::Try;
 # to block apps from certain operations_domains (red, green etc ) enter the color/name of the domain to the list
 # with the associated list of app_id's
 # Currently 3rd Party Uses red only.
-use constant APPS_BLOCKED_FROM_OPERATION_DOMAINS => {red => [1]};
+use constant APPS_BLOCKED_FROM_OPERATION_DOMAINS => {
+    red  => [1],
+    blue => [24269, 23650, 19499]};
 
 # Set up the event loop singleton so that any code we pull in uses the Mojo
 # version, rather than trying to set its own.
