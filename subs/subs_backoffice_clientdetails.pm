@@ -1021,7 +1021,7 @@ sub show_client_id_docs {
 
     return unless $loginid;
 
-    return '' if $loginid =~ /^MT[DR]?/;
+    return '' if $loginid =~ /^(MT|DX)[DR]?/;
 
     my %doc_types_categories = get_document_type_category_mapping();
 
