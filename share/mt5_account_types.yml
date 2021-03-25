@@ -64,6 +64,7 @@ demo_svg_financial_swap_free: &demo_svg_financial_swap_free
   server: p01_ts01
 demo01\financial\svg_sf_usd: *demo_svg_financial_swap_free
 demo\p01_ts01\financial\svg_sf_usd: *demo_svg_financial_swap_free
+demo\p01_ts01\financial\svg_sf-lim_usd: *demo_svg_financial_swap_free
 
 
 demo_svg_financial_financial: &demo_svg_financial_financial
@@ -75,6 +76,7 @@ demo_svg_financial_financial: &demo_svg_financial_financial
 demo\svg_financial: *demo_svg_financial_financial
 demo01\financial\svg_std_usd: *demo_svg_financial_financial
 demo\p01_ts01\financial\svg_std_usd: *demo_svg_financial_financial
+demo\p01_ts01\financial\svg_std-lim_usd: *demo_svg_financial_financial
 
 
 demo_vanuatu_financial_financial: &demo_vanuatu_financial_financial
@@ -469,6 +471,8 @@ real01\financial\svg_sf-hr_usd: *real_svg_financial_swap_free
 real01\financial\svg_sf_usd: *real_svg_financial_swap_free
 real\p01_ts01\financial\svg_sf-hr_usd: *real_svg_financial_swap_free
 real\p01_ts01\financial\svg_sf_usd: *real_svg_financial_swap_free
+real\p01_ts01\financial\svg_sf-lim_usd: *real_svg_financial_swap_free
+
 # there's no financial account for real02, real03 and real04. But, just in case
 # we change our minds in the future.
 real02\financial\svg_sf-hr_usd: &real_p01ts02_svg_financial_swap_free
@@ -519,6 +523,8 @@ real01\financial\svg_std-hr_usd: *real_svg_financial_financial
 real01\financial\svg_std_usd: *real_svg_financial_financial
 real\p01_ts01\financial\svg_std-hr_usd: *real_svg_financial_financial
 real\p01_ts01\financial\svg_std_usd: *real_svg_financial_financial
+real\p01_ts01\financial\svg_std-lim_usd: *real_svg_financial_financial
+
 # there's no financial account for real02, real03 and real04. But, just in case
 # we change our minds in the future.
 real02\financial\svg_std-hr_usd: &real_p01ts02_svg_financial_financial
