@@ -482,7 +482,6 @@ subtest 'get account status' => sub {
                                             'Driving Licence',
                                             'Home Office Letter',
                                             'Immigration Status Document',
-                                            'National Identity Card',
                                             'Passport',
                                             'Residence Permit',
                                             'Visa'
@@ -1310,7 +1309,6 @@ subtest 'get account status' => sub {
                                         'Driving Licence',
                                         'Home Office Letter',
                                         'Immigration Status Document',
-                                        'National Identity Card',
                                         'Passport',
                                         'Residence Permit',
                                         'Visa'
@@ -1364,7 +1362,6 @@ subtest 'get account status' => sub {
                                         'Driving Licence',
                                         'Home Office Letter',
                                         'Immigration Status Document',
-                                        'National Identity Card',
                                         'Passport',
                                         'Residence Permit',
                                         'Visa'
@@ -1411,7 +1408,6 @@ subtest 'get account status' => sub {
                                         'Driving Licence',
                                         'Home Office Letter',
                                         'Immigration Status Document',
-                                        'National Identity Card',
                                         'Passport',
                                         'Residence Permit',
                                         'Visa'
@@ -1494,7 +1490,6 @@ subtest 'get account status' => sub {
                                             'Driving Licence',
                                             'Home Office Letter',
                                             'Immigration Status Document',
-                                            'National Identity Card',
                                             'Passport',
                                             'Residence Permit',
                                             'Visa'
@@ -2124,7 +2119,6 @@ subtest 'Experian validated account' => sub {
                                     'Driving Licence',
                                     'Home Office Letter',
                                     'Immigration Status Document',
-                                    'National Identity Card',
                                     'Passport',
                                     'Residence Permit',
                                     'Visa'
@@ -2176,7 +2170,6 @@ subtest 'Experian validated account' => sub {
                                     'Driving Licence',
                                     'Home Office Letter',
                                     'Immigration Status Document',
-                                    'National Identity Card',
                                     'Passport',
                                     'Residence Permit',
                                     'Visa'
@@ -2233,7 +2226,6 @@ subtest 'Experian validated account' => sub {
                                         'Driving Licence',
                                         'Home Office Letter',
                                         'Immigration Status Document',
-                                        'National Identity Card',
                                         'Passport',
                                         'Residence Permit',
                                         'Visa'
@@ -2294,7 +2286,6 @@ subtest 'Experian validated account' => sub {
                                             'Driving Licence',
                                             'Home Office Letter',
                                             'Immigration Status Document',
-                                            'National Identity Card',
                                             'Passport',
                                             'Residence Permit',
                                             'Visa'
@@ -2358,7 +2349,6 @@ subtest 'Experian validated account' => sub {
                                         'Driving Licence',
                                         'Home Office Letter',
                                         'Immigration Status Document',
-                                        'National Identity Card',
                                         'Passport',
                                         'Residence Permit',
                                         'Visa'
@@ -2410,7 +2400,6 @@ subtest 'Experian validated account' => sub {
                                             'Driving Licence',
                                             'Home Office Letter',
                                             'Immigration Status Document',
-                                            'National Identity Card',
                                             'Passport',
                                             'Residence Permit',
                                             'Visa'
@@ -2483,7 +2472,6 @@ subtest 'Experian validated account' => sub {
                                             'Driving Licence',
                                             'Home Office Letter',
                                             'Immigration Status Document',
-                                            'National Identity Card',
                                             'Passport',
                                             'Residence Permit',
                                             'Visa'
@@ -2592,53 +2580,42 @@ subtest 'Rejected reasons' => sub {
 };
 
 subtest 'Social identity provider' => sub {
-    my $t = Test::Mojo->new('BOM::OAuth');
 
-    my $app_id = 7;
-    my $email  = 'social' . rand(999) . '@binary.com';
+    my $email = 'social' . rand(999) . '@binary.com';
 
-    # mock OneAll data
-    my $mocked_oneall = Test::MockModule->new('WWW::OneAll');
-    $mocked_oneall->mock(
-        new        => sub { bless +{}, 'WWW::OneAll' },
-        connection => sub {
-            return +{
-                response => {
-                    request => {
-                        status => {
-                            code => 200,
-                        },
-                    },
-                    result => {
-                        status => {
-                            code => 200,
-                            flag => '',
-                        },
-                        data => {
-                            user => {
-                                identity => {
-                                    emails                => [{value => $email}],
-                                    provider              => 'google',
-                                    provider_identity_uid => 'test_uid',
-                                }
-                            },
-                        },
-                    },
-                },
-            };
-        });
+    BOM::Platform::Account::Virtual::create_account({
+            details => {
+                'client_password'   => '418508.727020996',
+                'source'            => '7',
+                'email'             => $email,
+                'residence'         => 'id',
+                'has_social_signup' => 1,
+                'brand_name'        => 'deriv'
+            },
+            utm_data => {
+                'utm_content'      => undef,
+                'utm_gl_client_id' => undef,
+                'utm_campaign_id'  => undef,
+                'utm_ad_id'        => undef,
+                'utm_term'         => undef,
+                'utm_msclk_id'     => undef,
+                'utm_adrollclk_id' => undef,
+                'utm_fbcl_id'      => undef,
+                'utm_adgroup_id'   => undef
+            }});
 
     my $residence = 'id';
-    $t->ua->on(
-        start => sub {
-            my ($ua, $tx) = @_;
-            $tx->req->headers->header('X-Client-Country' => $residence);
-        });
 
-    $t->get_ok("/oneall/callback?app_id=$app_id&connection_token=1")->status_is(302);
-
-    my $user = BOM::User->new(email => $email);
-    ok $user, 'User was created';
+    my $user         = BOM::User->new(email => $email);
+    my $user_connect = BOM::Database::Model::UserConnect->new;
+    $user_connect->insert_connect(
+        $user->{id},
+        {
+            user => {
+                identity => {
+                    provider              => 'google',
+                    provider_identity_uid => 123
+                }}});
 
     my $client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR'});
     $user->add_client($client_cr);
@@ -2678,7 +2655,6 @@ subtest 'Social identity provider' => sub {
         'has social_identity_provider as google'
     );
 
-    $mocked_oneall->unmock_all;
 };
 
 done_testing();
