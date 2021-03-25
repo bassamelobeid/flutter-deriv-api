@@ -119,7 +119,7 @@ subtest 'buy' => sub {
     my $new_balance = formatnumber('amount', 'USD', $client->default_account->balance);
     is($new_balance, $result->{balance_after}, 'balance is changed');
     ok($old_balance - $new_balance - $result->{buy_price} < 0.0001, 'balance reduced');
-    like($result->{shortcode}, qr/RESETCALL_R_50_100_\d{10}_\d{10}_S0P_0/, 'shortcode is correct');
+    like($result->{shortcode}, qr/RESETCALL_R_50_100.00_\d{10}_\d{10}_S0P_0/, 'shortcode is correct');
     is(
         $result->{longcode},
         'Win payout if Volatility 50 Index after 2 minutes is strictly higher than it was at either entry or 1 minute.',

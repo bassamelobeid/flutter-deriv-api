@@ -122,7 +122,7 @@ subtest 'buy' => sub {
     my $new_balance = formatnumber('amount', 'USD', $client->default_account->balance);
     is($new_balance, $result->{balance_after}, 'balance is changed');
     ok($old_balance - $new_balance - $result->{buy_price} < 0.0001, 'balance reduced');
-    like($result->{shortcode}, qr/ONETOUCH_R_50_100_\d{10}_/, 'shortcode is correct');
+    like($result->{shortcode}, qr/ONETOUCH_R_50_100.00_\d{10}_/, 'shortcode is correct');
     is(
         $result->{longcode},
         'Win payout if Volatility 50 Index touches entry spot plus 0.5000 through 5 ticks after first tick.',
