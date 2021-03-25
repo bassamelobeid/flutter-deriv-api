@@ -36,6 +36,7 @@ our %MT5_ACCOUNTS = (
     # TO HERE
 
     'demo\p01_ts01\financial\svg_std_usd'            => '1001001',
+    'demo\p01_ts01\financial\svg_std-lim_usd'        => '1002001',
     'demo\p01_ts01\financial\svg_stp_usd'            => '1001002',
     'demo\p01_ts01\financial\labuan_std_usd'         => '1001003',
     'demo\p01_ts01\financial\labuan_stp_usd'         => '1001004',
@@ -52,6 +53,7 @@ our %MT5_ACCOUNTS = (
     'real\p01_ts01\financial\svg_std-hr_usd'         => '1001014',
     'real\p01_ts01\financial\labuan_stp_usd'         => '1001015',
     'real\p01_ts01\financial\svg_std_usd'            => '1001016',
+    'real\p01_ts01\financial\svg_std-lim_usd'        => '1002016',
     'real\p01_ts01\synthetic\malta_std_eur'          => '1001000',
     'real\p01_ts01\inactive_accounts_financial'               => '1002001',
     'real\p01_ts01\financial\svg_sf_usd'             => '21000002',

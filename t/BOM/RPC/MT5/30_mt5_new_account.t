@@ -60,7 +60,7 @@ $test_client->financial_assessment({data => JSON::MaybeUTF8::encode_json_utf8(\%
 $test_client->save;
 
 my $m        = BOM::Platform::Token::API->new;
-my $token    = $m->create_token($test_client->loginid, 'test token');
+my $token    = $m->create_token($test_client->loginid,    'test token');
 my $token_vr = $m->create_token($test_client_vr->loginid, 'test token');
 
 # Throttle function limits requests to 1 per minute which may cause
@@ -810,13 +810,19 @@ subtest 'country=au, financial account' => sub {
     };
     my $result = $c->call_ok($method, $params)->has_no_error('gaming account successfully created')->result;
     is $result->{account_type}, 'financial', 'account_type=financial';
-    is $result->{login}, 'MTR' . $accounts{'real\p01_ts01\financial\svg_std_usd'}, 'created in group real\p01_ts01\financial\svg_std_usd';
+    is $result->{login}, 'MTR' . $accounts{'real\p01_ts01\financial\svg_std-lim_usd'}, 'created in group real\p01_ts01\financial\svg_std-lim_usd';
 
     BOM::RPC::v3::MT5::Account::reset_throttler($new_client->loginid);
     $params->{args}->{account_type} = 'demo';
     $result = $c->call_ok($method, $params)->has_no_error('gaming account successfully created')->result;
     is $result->{account_type}, 'demo', 'account_type=demo';
-    is $result->{login}, 'MTD' . $accounts{'demo\p01_ts01\financial\svg_std_usd'}, 'created in group demo\p01_ts01\financial\svg_std_usd';
+    is $result->{login}, 'MTD' . $accounts{'demo\p01_ts01\financial\svg_std-lim_usd'}, 'created in group demo\p01_ts01\financial\svg_std-lim_usd';
+
+    BOM::RPC::v3::MT5::Account::reset_throttler($new_client->loginid);
+    $params->{args}->{account_type}     = 'financial';
+    $params->{args}->{mt5_account_type} = 'financial_stp';
+    $result                             = $c->call_ok($method, $params)->has_error->error_code_is('MT5NotAllowed')
+        ->error_message_is('MT5 financial account is not available in your country yet.');
 };
 
 done_testing();

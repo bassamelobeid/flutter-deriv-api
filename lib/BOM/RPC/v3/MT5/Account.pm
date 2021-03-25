@@ -396,8 +396,8 @@ mt5_account_category: conventional|swap_free|empty for financial_stp
 sub _mt5_group {
     my $args = shift;
 
-    my ($landing_company_short, $account_type, $mt5_account_type, $currency, $account_category, $country, $user_input_trade_server) =
-        @{$args}{qw(landing_company_short account_type mt5_account_type currency sub_account_type country server)};
+    my ($landing_company_short, $account_type, $mt5_account_type, $currency, $account_category, $country, $user_input_trade_server, $restricted_group)
+        = @{$args}{qw(landing_company_short account_type mt5_account_type currency sub_account_type country server restricted_group)};
 
     # account creation for samoa if not allowed until the launch of deriv-crypto
     return '' if $landing_company_short eq 'samoa';
@@ -427,6 +427,9 @@ sub _mt5_group {
         );
         $sub_account_type .= '-hr' if $market_type eq 'financial' and $sub_account_type ne 'stp' and not $apply_auto_b_book;
     }
+
+    # restricted trading group
+    $sub_account_type .= '-lim' if $restricted_group;
 
     # TODO (JB): Refactor this.
     # - user is only allowed to create account on real02, real03 and real04 if he/she is not from Ireland trade server country list ($server_type = $DEFAULT_TRADING_SERVER_KEY)
@@ -778,6 +781,7 @@ async_rpc "mt5_new_account",
         currency              => $mt5_account_currency,
         sub_account_type      => $mt5_account_category,
         server                => $user_input_trade_server,
+        restricted_group      => $countries_instance->is_mt5_restricted_group($residence),
     });
 
     my $group_config = get_mt5_account_type_config($group);
