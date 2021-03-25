@@ -12,13 +12,13 @@ default_stake:
   EUR: 10
   AUD: 10
   GBP: 10
-  BTC: 0.001
-  ETH: 0.04
-  LTC: 0.22
+  BTC: 0.0002 
+  ETH: 0.006
+  LTC: 0.06
   BUSD: 10
   DAI: 10
   EURS: 10
-  IDK: 150
+  IDK: 140
   PAX: 10
   TUSD: 10
   USB: 10
@@ -35,13 +35,13 @@ bet_limits:
     EUR: 200
     AUD: 200
     GBP: 200
-    BTC: 0.02
-    ETH: 0.8
-    LTC: 4.5
+    BTC: 0.004
+    ETH: 0.1
+    LTC: 1
     BUSD: 200
     DAI: 200
     EURS: 200
-    IDK: 3000
+    IDK: 2780
     PAX: 200
     TUSD: 200
     USB: 200
@@ -65,10 +65,10 @@ bet_limits:
           EUR: 0.01
           AUD: 0.01
           GBP: 0.01
-          BTC: 0.000001
-          ETH: 0.00004
-          LTC: 0.00022
-          IDK: 0.15
+          BTC: 0.0000002
+          ETH: 0.000006
+          LTC: 0.00006
+          IDK: 0.1
           PAX: 0.01
           BUSD: 0.01
           DAI: 0.01
@@ -84,9 +84,9 @@ bet_limits:
           EUR: 1
           AUD: 1
           GBP: 1
-          BTC: 0.0001
-          ETH: 0.004
-          LTC: 0.022
+          BTC: 0.00002
+          ETH: 0.0006
+          LTC: 0.006
           UST: 1
           USB: 1
           IDK: 15
@@ -106,13 +106,13 @@ bet_limits:
           EUR: 50000
           AUD: 50000
           GBP: 50000
-          BTC: 5
-          ETH: 200
-          LTC: 1000
+          BTC: 1
+          ETH: 30
+          LTC: 250
           BUSD: 5000
           DAI: 5000
           EURS: 5000
-          IDK: 75000
+          IDK: 69475
           PAX: 5000
           TUSD: 5000
           USB: 5000
@@ -125,13 +125,13 @@ bet_limits:
           EUR: 10000
           AUD: 10000
           GBP: 10000
-          BTC: 1
-          ETH: 40
-          LTC: 220
+          BTC: 0.2
+          ETH: 6
+          LTC: 55
           BUSD: 1000
           DAI: 1000
           EURS: 1000
-          IDK: 15000
+          IDK: 13895
           PAX: 1000
           TUSD: 1000
           USB: 1000
@@ -144,13 +144,13 @@ bet_limits:
           EUR: 30000
           AUD: 30000
           GBP: 30000
-          BTC: 3
-          ETH: 120
-          LTC: 660
+          BTC: 0.7
+          ETH: 17
+          LTC: 165
           BUSD: 5000
           DAI: 5000
           EURS: 5000
-          IDK: 45000
+          IDK: 41685
           PAX: 5000
           TUSD: 5000
           USB: 5000
@@ -166,9 +166,9 @@ bet_limits:
           EUR: 0.5
           AUD: 0.5
           GBP: 0.5
-          BTC: 0.0002 # TODO: JB, This should be updated to 0.00005 after fixing scientific number in shortcode
-          ETH: 0.002
-          LTC: 0.01
+          BTC: 0.00004
+          ETH: 0.0003
+          LTC: 0.003
           BUSD: 0.5
           DAI: 0.5
           EURS: 0.5
@@ -185,9 +185,9 @@ bet_limits:
           EUR: 1
           AUD: 1
           GBP: 1
-          BTC: 0.0001
-          ETH: 0.004
-          LTC: 0.025
+          BTC: 0.00002
+          ETH: 0.0006
+          LTC: 0.006
           BUSD: 1
           DAI: 1
           EURS: 1
@@ -205,9 +205,9 @@ bet_limits:
           EUR: 0.35
           AUD: 0.35
           GBP: 0.35
-          BTC: 0.0002 # TODO: JB, This should be updated to 0.00005 after fixing scientific number in shortcode
-          ETH: 0.002
-          LTC: 0.01
+          BTC: 0.00004
+          ETH: 0.0003
+          LTC: 0.003
           BUSD: 0.35
           DAI: 0.35
           EURS: 0.35
@@ -224,9 +224,9 @@ bet_limits:
           EUR: 1
           AUD: 1
           GBP: 1
-          BTC: 0.0001
-          ETH: 0.004
-          LTC: 0.025
+          BTC: 0.00002
+          ETH: 0.0006
+          LTC: 0.006
           BUSD: 1
           DAI: 1
           EURS: 1
@@ -245,13 +245,13 @@ bet_limits:
           EUR: 5
           AUD: 5
           GBP: 5
-          BTC: 0.0005
-          ETH: 0.02
-          LTC: 0.1
+          BTC: 0.0001
+          ETH: 0.003
+          LTC: 0.03
           BUSD: 5
           DAI: 5
           EURS: 5
-          IDK: 75
+          IDK: 70
           PAX: 5
           TUSD: 5
           USB: 5
@@ -267,13 +267,13 @@ bet_limits:
           EUR: 2000
           AUD: 2000
           GBP: 2000
-          BTC: 0.2
-          ETH: 8
-          LTC: 45
+          BTC: 0.04
+          ETH: 1
+          LTC: 11
           BUSD: 2000
           DAI: 2000
           EURS: 2000
-          IDK: 30000
+          IDK: 27790
           PAX: 2000
           TUSD: 2000
           USB: 2000
@@ -287,9 +287,9 @@ bet_limits:
       EUR: 0.02
       AUD: 0.02
       GBP: 0.02
-      BTC: 0.000005
-      ETH: 0.00008
-      LTC: 0.00045
+      BTC: 0.000001
+      ETH: 0.00001
+      LTC: 0.0001
       IDK: 0.3
       PAX: 0.02
       BUSD: 0.02
@@ -306,12 +306,12 @@ bet_limits:
       EUR: 0.05
       AUD: 0.05
       GBP: 0.05
-      BTC: 0.000005
-      ETH: 0.0002
-      LTC: 0.0012
+      BTC: 0.000001
+      ETH: 0.00003
+      LTC: 0.0003
       UST: 0.05
       USB: 0.05
-      IDK: 0.75
+      IDK: 0.7
       PAX: 0.05
       BUSD: 0.05
       DAI: 0.05
@@ -325,15 +325,15 @@ bet_limits:
     EUR: 0.1
     AUD: 0.1
     GBP: 0.1
-    BTC: 0.00001
-    ETH: 0.0004
-    LTC: 0.0025
+    BTC: 0.000002
+    ETH: 0.00006
+    LTC: 0.0006
     BUSD: 0.1
     DAI: 0.1
     EURS: 0.1
     UST: 0.1
     USB: 0.1
-    IDK: 1.5
+    IDK: 1
     PAX: 0.1
     TUSD: 0.1
     USDC: 0.1
@@ -403,13 +403,13 @@ lookback_limits:
     EUR: 300
     AUD: 300
     GBP: 300
-    BTC: 0.03
-    ETH: 1.2
-    LTC: 6.5
+    BTC: 0.007
+    ETH: 0.2
+    LTC: 2
     BUSD: 300
     DAI: 300
     EURS: 300
-    IDK: 4500
+    IDK: 4170
     PAX: 300
     TUSD: 300
     USB: 300
@@ -483,13 +483,13 @@ risk_profile:
           EUR: 1000
           AUD: 1000
           GBP: 1000
-          BTC: 0.1
-          ETH: 4
-          LTC: 22
+          BTC: 0.02
+          ETH: 0.6
+          LTC: 6
           BUSD: 1000
           DAI: 1000
           EURS: 1000
-          IDK: 15000
+          IDK: 13895
           PAX: 1000
           TUSD: 1000
           USB: 1000
@@ -502,13 +502,13 @@ risk_profile:
           EUR: 100
           AUD: 100
           GBP: 100
-          BTC: 0.01
-          ETH: 0.4
-          LTC: 2.5
+          BTC: 0.002
+          ETH: 0.06
+          LTC: 0.6
           BUSD: 100
           DAI: 100
           EURS: 100
-          IDK: 1500
+          IDK: 1390
           PAX: 100
           TUSD: 100
           USB: 100
@@ -521,13 +521,13 @@ risk_profile:
           EUR: 50
           AUD: 50
           GBP: 50
-          BTC: 0.005
-          ETH: 0.2
-          LTC: 1.25
+          BTC: 0.001
+          ETH: 0.03
+          LTC: 0.3
           BUSD: 50
           DAI: 50
           EURS: 50
-          IDK: 750
+          IDK: 695
           PAX: 50
           TUSD: 50
           USB: 50
@@ -541,13 +541,13 @@ risk_profile:
           EUR: 5000
           AUD: 5000
           GBP: 5000
-          BTC: 0.5
-          ETH: 20
-          LTC: 110
+          BTC: 0.1
+          ETH: 3
+          LTC: 30
           BUSD: 5000
           DAI: 5000
           EURS: 5000
-          IDK: 75000
+          IDK: 69475
           PAX: 5000
           TUSD: 5000
           USB: 5000
@@ -560,13 +560,13 @@ risk_profile:
           EUR: 1000
           AUD: 1000
           GBP: 1000
-          BTC: 0.1
-          ETH: 4
-          LTC: 25
+          BTC: 0.02
+          ETH: 0.6
+          LTC: 6
           BUSD: 1000
           DAI: 1000
           EURS: 1000
-          IDK: 15000
+          IDK: 13895
           PAX: 1000
           TUSD: 1000
           USB: 1000
@@ -579,13 +579,13 @@ risk_profile:
           EUR: 200
           AUD: 200
           GBP: 200
-          BTC: 0.02
-          ETH: 0.8
-          LTC: 5
+          BTC: 0.004
+          ETH: 0.1
+          LTC: 1
           BUSD: 200
           DAI: 200
           EURS: 200
-          IDK: 3000
+          IDK: 2780
           PAX: 200
           TUSD: 200
           USB: 200
@@ -599,13 +599,13 @@ risk_profile:
           EUR: 50000
           AUD: 50000
           GBP: 50000
-          BTC: 5
-          ETH: 200
-          LTC: 1250
+          BTC: 1.0
+          ETH: 30
+          LTC: 280
           BUSD: 50000
           DAI: 50000
           EURS: 50000
-          IDK: 750000
+          IDK: 694740
           PAX: 50000
           TUSD: 50000
           USB: 50000
@@ -618,13 +618,13 @@ risk_profile:
           EUR: 5000
           AUD: 5000
           GBP: 5000
-          BTC: 0.5
-          ETH: 20
-          LTC: 125
+          BTC: 0.1
+          ETH: 3
+          LTC: 30
           BUSD: 5000
           DAI: 5000
           EURS: 5000
-          IDK: 75000
+          IDK: 69475
           PAX: 5000
           TUSD: 5000
           USB: 5000
@@ -637,13 +637,13 @@ risk_profile:
           EUR: 500
           AUD: 500
           GBP: 500
-          BTC: 0.05
-          ETH: 2
-          LTC: 12.5
+          BTC: 0.01
+          ETH: 0.3
+          LTC: 3
           BUSD: 500
           DAI: 500
           EURS: 500
-          IDK: 7500
+          IDK: 6950
           PAX: 500
           TUSD: 500
           USB: 500
@@ -657,13 +657,13 @@ risk_profile:
           EUR: 100000
           AUD: 100000
           GBP: 100000
-          BTC: 10
-          ETH: 400
-          LTC: 2250
+          BTC: 2
+          ETH: 60
+          LTC: 555
           BUSD: 100000
           DAI: 100000
           EURS: 100000
-          IDK: 1500000
+          IDK: 1389475
           PAX: 100000
           TUSD: 100000
           USB: 100000
@@ -676,13 +676,13 @@ risk_profile:
           EUR: 20000
           AUD: 20000
           GBP: 20000
-          BTC: 2
-          ETH: 80
-          LTC: 450
+          BTC: 0.5
+          ETH: 12
+          LTC: 110
           BUSD: 20000
           DAI: 20000
           EURS: 20000
-          IDK: 300000
+          IDK: 277895
           PAX: 20000
           TUSD: 20000
           USB: 20000
@@ -695,13 +695,13 @@ risk_profile:
           EUR: 1000
           AUD: 1000
           GBP: 1000
-          BTC: 0.1
-          ETH: 4
-          LTC: 22.5
+          BTC: 0.02
+          ETH: 0.6
+          LTC: 6
           BUSD: 1000
           DAI: 1000
           EURS: 1000
-          IDK: 15000
+          IDK: 13900
           PAX: 1000
           TUSD: 1000
           USB: 1000
@@ -715,13 +715,13 @@ risk_profile:
           EUR: 500000
           AUD: 500000
           GBP: 500000
-          BTC: 50
-          ETH: 2000
-          LTC: 11000
+          BTC: 10
+          ETH: 290
+          LTC: 2780
           BUSD: 500000
           DAI: 500000
           EURS: 500000
-          IDK: 7500000
+          IDK: 6947370
           PAX: 500000
           TUSD: 500000
           USB: 500000
@@ -734,13 +734,13 @@ risk_profile:
           EUR: 50000
           AUD: 50000
           GBP: 50000
-          BTC: 5
-          ETH: 200
-          LTC: 1250
+          BTC: 1
+          ETH: 30
+          LTC: 280
           BUSD: 50000
           DAI: 50000
           EURS: 50000
-          IDK: 750000
+          IDK: 694740
           PAX: 50000
           TUSD: 50000
           USB: 50000
@@ -753,13 +753,13 @@ risk_profile:
           EUR: 2000
           AUD: 2000
           GBP: 2000
-          BTC: 0.2
-          ETH: 8
-          LTC: 45
+          BTC: 0.04
+          ETH: 1
+          LTC: 11
           BUSD: 2000
           DAI: 2000
           EURS: 2000
-          IDK: 30000
+          IDK: 27790
           PAX: 2000
           TUSD: 2000
           USB: 2000
