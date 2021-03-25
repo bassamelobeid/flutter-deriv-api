@@ -47,7 +47,7 @@ my $token = BOM::Platform::Token->new({
 
 my $brand = request()->brand;
 my $lang  = request()->language;
-my $link  = $brand->default_url() . "/" . lc($lang) . "/redirect.html?action=reset_password&lang=$lang&code=$token";
+my $link  = $brand->default_url() . "/redirect?action=reset_password&lang=$lang&code=$token";
 
 print '<p class="success_message">Emailing change password link to ' . encode_entities($client_name) . ' at ' . encode_entities($email) . ' ...</p>';
 

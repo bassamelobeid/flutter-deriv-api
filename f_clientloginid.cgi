@@ -61,11 +61,7 @@ BOM::Backoffice::Request::template()->process(
     });
 
 Bar("SEND ACCOUNT RECOVERY EMAIL");
-BOM::Backoffice::Request::template()->process(
-    'backoffice/newpassword_email.html.tt',
-    {
-        languages => BOM::Backoffice::Utility::get_languages(),
-    }) || die BOM::Backoffice::Request::template()->error();
+BOM::Backoffice::Request::template()->process('backoffice/newpassword_email.html.tt') || die BOM::Backoffice::Request::template()->error();
 
 Bar("MAKE DUAL CONTROL CODE");
 print
