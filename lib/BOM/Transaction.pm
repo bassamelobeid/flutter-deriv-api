@@ -310,8 +310,8 @@ sub _build_amount_type {
 
     # lookbacks does not require amount_type and amount as it's input, but internally we would
     # still want to compare the ask price
-    $amount_type = 'payout' unless $self->contract->category->require_basis;
-    die 'amount_type is required' unless defined $amount_type;
+    $amount_type = 'payout'                       unless $self->contract->category->require_basis;
+    die 'amount_type is required'                 unless defined $amount_type;
     die 'amount_type can only be stake or payout' unless ($amount_type eq 'stake' or $amount_type eq 'payout');
 
     return $amount_type;
@@ -1748,9 +1748,9 @@ In case of an unexpected error, the exception is re-thrown unmodified.
         my $msg    = shift;
 
         Error::Base->cuss(
-            -quiet => 1,
-            -type  => 'CompanyWideLimitExceeded',
-            -mesg  => 'company-wide risk limit reached',
+            -quiet             => 1,
+            -type              => 'CompanyWideLimitExceeded',
+            -mesg              => 'company-wide risk limit reached',
             -message_to_client =>
                 BOM::Platform::Context::localize('No further trading is allowed on this contract type for the current trading session.'),
         );
@@ -1982,19 +1982,7 @@ sub sell_expired_contracts {
 
                 if ($contract->category_code eq 'multiplier') {
                     $bet->{verify_child} = _get_info_to_verify_child($bet->{id}, $contract);
-
-                    my $profit = formatnumber('price', $currency, $bet->{sell_price} - $bet->{buy_price});
-
-                    BOM::Platform::Event::Emitter::emit(
-                        'multiplier_hit_type',
-                        {
-                            loginid     => $client->loginid,
-                            contract_id => $bet->{id},
-                            hit_type    => $contract->hit_type,
-                            profit      => $profit,
-                            sell_price  => $bet->{sell_price},
-                            currency    => $currency,
-                        });
+                    $bet->{hit_type}     = $contract->hit_type;
                 }
 
                 $bet->{quantity} = 1;
@@ -2118,6 +2106,19 @@ sub sell_expired_contracts {
             }
 
             BOM::Transaction::Utility::set_contract_parameters($contract_parameters, time);
+
+            if ($bet->{bet_class} eq 'multiplier') {
+
+                my $multiplier_hit_type = {
+                    loginid     => $client->loginid,
+                    contract_id => $bet->{id},
+                    hit_type    => $bet->{hit_type},
+                    sell_price  => $bet->{sell_price},
+                    currency    => $currency,
+                    profit      => formatnumber('price', $currency, $bet->{sell_price} - $bet->{buy_price})};
+
+                BOM::Platform::Event::Emitter::emit('multiplier_hit_type', $multiplier_hit_type);
+            }
         }
         my @not_sold = grep {
             my $id = $_;
