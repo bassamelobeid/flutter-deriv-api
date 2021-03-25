@@ -366,7 +366,7 @@ subtest 'buy a bet', sub {
             is $fmb->{sell_price}, undef,                   'sell_price';
             is $fmb->{sell_time},  undef,                   'sell_time';
             cmp_ok +Date::Utility->new($fmb->{settlement_time})->epoch, '>', time, 'settlement_time';
-            like $fmb->{short_code}, qr/ONETOUCH_R_50_100_/, 'short_code';
+            like $fmb->{short_code}, qr/ONETOUCH_R_50_100.00_/, 'short_code';
             cmp_ok +Date::Utility->new($fmb->{start_time})->epoch, '<=', time, 'start_time';
             is $fmb->{tick_count},        5,      'tick_count';
             is $fmb->{underlying_symbol}, 'R_50', 'underlying_symbol';
