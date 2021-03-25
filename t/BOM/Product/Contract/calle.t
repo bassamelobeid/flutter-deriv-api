@@ -194,7 +194,7 @@ subtest 'shortcodes' => sub {
             current_tick => $ct,
         });
         isa_ok $c, 'BOM::Product::Contract::Calle';
-        my $expected_shortcode = 'CALLE_FRXUSDJPY_10_' . $now->epoch . 'F_' . $now->plus_time_interval('20m')->epoch . '_S0P_0';
+        my $expected_shortcode = 'CALLE_FRXUSDJPY_10.00_' . $now->epoch . 'F_' . $now->plus_time_interval('20m')->epoch . '_S0P_0';
         is $c->shortcode, $expected_shortcode, 'shortcode matches';
     }
     'builds shortcode from params for forward starting calle';
@@ -211,7 +211,7 @@ subtest 'shortcodes' => sub {
             current_tick => $ct,
         });
         isa_ok $c, 'BOM::Product::Contract::Calle';
-        my $expected_shortcode = 'CALLE_FRXUSDJPY_10_' . $now->epoch . '_' . $now->plus_time_interval('20m')->epoch . '_S0P_0';
+        my $expected_shortcode = 'CALLE_FRXUSDJPY_10.00_' . $now->epoch . '_' . $now->plus_time_interval('20m')->epoch . '_S0P_0';
         is $c->shortcode, $expected_shortcode, 'shortcode matches';
     }
     'builds shortcode from params for spot calle';

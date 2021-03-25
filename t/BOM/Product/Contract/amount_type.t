@@ -159,7 +159,7 @@ subtest 'cryto amount' => sub {
     my $error = exception { produce_contract({%$args, payout => 0}) };
     isa_ok $error, 'BOM::Product::Exception';
     is $error->message_to_client->[0], 'Please enter a payout amount that\'s at least [_1].', 'zero payout not valid';
-    is $error->message_to_client->[1], '0.00000100';
+    is $error->message_to_client->[1], '0.00000020';
 
     my $c = produce_contract({%$args, payout => 0.000002});
     isa_ok $c, 'BOM::Product::Contract::Call';

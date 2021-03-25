@@ -57,8 +57,8 @@ subtest 'shortcodes' => sub {
                 %$sb_args,
                 duration => '5t',
             },
-            'CALL_FRXUSDJPY_100_1531180800_5T_S0P_0',
-            'CALL_FRXUSDJPY_USD100_1531180800_5T_S0P_0',
+            'CALL_FRXUSDJPY_100.00_1531180800_5T_S0P_0',
+            'CALL_FRXUSDJPY_USD100.00_1531180800_5T_S0P_0',
             'CALL_FRXUSDJPY_0_5T_S0P_0',
         ],    # 5 ticks ATM CALL
         [{
@@ -66,16 +66,16 @@ subtest 'shortcodes' => sub {
                 duration => '5d',
                 barrier  => 100.01
             },
-            'CALL_FRXUSDJPY_100_1531180800_1531699199_100010000_0',
-            'CALL_FRXUSDJPY_USD100_1531180800_1531699199_100010000_0',
+            'CALL_FRXUSDJPY_100.00_1531180800_1531699199_100010000_0',
+            'CALL_FRXUSDJPY_USD100.00_1531180800_1531699199_100010000_0',
             'CALL_FRXUSDJPY_0_518399_S-0990P_0',
         ],    # 5 days non ATM CALL
         [{
                 %$sb_args,
                 duration => '5m',
             },
-            'CALL_FRXUSDJPY_100_1531180800_1531181100_S0P_0',
-            'CALL_FRXUSDJPY_USD100_1531180800_1531181100_S0P_0',
+            'CALL_FRXUSDJPY_100.00_1531180800_1531181100_S0P_0',
+            'CALL_FRXUSDJPY_USD100.00_1531180800_1531181100_S0P_0',
             'CALL_FRXUSDJPY_0_300_S0P_0',
         ],    # 5 minutes ATM CALL
         [{
@@ -83,8 +83,8 @@ subtest 'shortcodes' => sub {
                 duration     => '5m',
                 date_pricing => $now - 300
             },
-            'CALL_FRXUSDJPY_100_1531180800F_1531181100_S0P_0',
-            'CALL_FRXUSDJPY_USD100_1531180800F_1531181100_S0P_0',
+            'CALL_FRXUSDJPY_100.00_1531180800F_1531181100_S0P_0',
+            'CALL_FRXUSDJPY_USD100.00_1531180800F_1531181100_S0P_0',
             'CALL_FRXUSDJPY_0F_300_S0P_0',
         ],    # 5 minutes ATM forward starting CALL
         [{
@@ -93,8 +93,8 @@ subtest 'shortcodes' => sub {
                 date_pricing => $now - 300,
                 fixed_expiry => 1
             },
-            'CALL_FRXUSDJPY_100_1531180800F_1531181100F_S0P_0',
-            'CALL_FRXUSDJPY_USD100_1531180800F_1531181100F_S0P_0',
+            'CALL_FRXUSDJPY_100.00_1531180800F_1531181100F_S0P_0',
+            'CALL_FRXUSDJPY_USD100.00_1531180800F_1531181100F_S0P_0',
             'CALL_FRXUSDJPY_0F_300F_S0P_0',
         ],    # 5 minutes ATM forward starting CALL
         [{
@@ -102,16 +102,16 @@ subtest 'shortcodes' => sub {
                 fixed_expiry => 1,
                 date_expiry  => '2018-07-11 23:59:59'
             },
-            'CALL_FRXUSDJPY_100_1531180800_1531353599F_S0P_0',
-            'CALL_FRXUSDJPY_USD100_1531180800_1531353599F_S0P_0',
+            'CALL_FRXUSDJPY_100.00_1531180800_1531353599F_S0P_0',
+            'CALL_FRXUSDJPY_USD100.00_1531180800_1531353599F_S0P_0',
             'CALL_FRXUSDJPY_0_172799F_S0P_0',
         ],    # 1 day fixed expiry ATM CALL
         [{
                 %$db_args,
                 duration => '5t',
             },
-            'EXPIRYMISS_R_100_100_1531180800_5T_S105P_S-210P',
-            'EXPIRYMISS_R_100_USD100_1531180800_5T_S105P_S-210P',
+            'EXPIRYMISS_R_100_100.00_1531180800_5T_S105P_S-210P',
+            'EXPIRYMISS_R_100_USD100.00_1531180800_5T_S105P_S-210P',
             'EXPIRYMISS_R_100_0_5T_S105P_S-210P',
         ],    # 5 ticks ATM EXPIRYMISS
         [{
@@ -120,16 +120,16 @@ subtest 'shortcodes' => sub {
                 high_barrier => 101.01,
                 low_barrier  => 98.02
             },
-            'EXPIRYMISS_R_100_100_1531180800_1531699199_101010000_98020000',
-            'EXPIRYMISS_R_100_USD100_1531180800_1531699199_101010000_98020000',
+            'EXPIRYMISS_R_100_100.00_1531180800_1531699199_101010000_98020000',
+            'EXPIRYMISS_R_100_USD100.00_1531180800_1531699199_101010000_98020000',
             'EXPIRYMISS_R_100_0_518399_S001P_S-298P',
         ],    # 5 days non ATM EXPIRYMISS
         [{
                 %$db_args,
                 duration => '5m',
             },
-            'EXPIRYMISS_R_100_100_1531180800_1531181100_S105P_S-210P',
-            'EXPIRYMISS_R_100_USD100_1531180800_1531181100_S105P_S-210P',
+            'EXPIRYMISS_R_100_100.00_1531180800_1531181100_S105P_S-210P',
+            'EXPIRYMISS_R_100_USD100.00_1531180800_1531181100_S105P_S-210P',
             'EXPIRYMISS_R_100_0_300_S105P_S-210P',
         ],    # 5 minutes ATM EXPIRYMISS
         [{
@@ -137,8 +137,8 @@ subtest 'shortcodes' => sub {
                 duration     => '5m',
                 date_pricing => $now - 300
             },
-            'EXPIRYMISS_R_100_100_1531180800_1531181100_S105P_S-210P',
-            'EXPIRYMISS_R_100_USD100_1531180800_1531181100_S105P_S-210P',
+            'EXPIRYMISS_R_100_100.00_1531180800_1531181100_S105P_S-210P',
+            'EXPIRYMISS_R_100_USD100.00_1531180800_1531181100_S105P_S-210P',
             'EXPIRYMISS_R_100_0_300_S105P_S-210P',
         ],    # 5 minutes ATM forward starting EXPIRYMISS
         [{
@@ -147,8 +147,8 @@ subtest 'shortcodes' => sub {
                 date_pricing => $now - 300,
                 fixed_expiry => 1
             },
-            'EXPIRYMISS_R_100_100_1531180800_1531181100F_S105P_S-210P',
-            'EXPIRYMISS_R_100_USD100_1531180800_1531181100F_S105P_S-210P',
+            'EXPIRYMISS_R_100_100.00_1531180800_1531181100F_S105P_S-210P',
+            'EXPIRYMISS_R_100_USD100.00_1531180800_1531181100F_S105P_S-210P',
             'EXPIRYMISS_R_100_0_300F_S105P_S-210P',
         ],    # 5 minutes ATM forward starting EXPIRYMISS
         [{
@@ -156,8 +156,8 @@ subtest 'shortcodes' => sub {
                 fixed_expiry => 1,
                 date_expiry  => '2018-07-11 23:59:59'
             },
-            'EXPIRYMISS_R_100_100_1531180800_1531353599F_S105P_S-210P',
-            'EXPIRYMISS_R_100_USD100_1531180800_1531353599F_S105P_S-210P',
+            'EXPIRYMISS_R_100_100.00_1531180800_1531353599F_S105P_S-210P',
+            'EXPIRYMISS_R_100_USD100.00_1531180800_1531353599F_S105P_S-210P',
             'EXPIRYMISS_R_100_0_172799F_S105P_S-210P',
         ],    # 1 day fixed expiry ATM EXPIRYMISS
     );

@@ -107,7 +107,7 @@ subtest 'runhigh - expiration check' => sub {
 subtest 'runhigh - shortcode & longcode' => sub {
     note("argument to contract shortcode");
     my $c = produce_contract($args);
-    is $c->shortcode, 'RUNHIGH_R_100_100_' . $now->epoch . '_5T_S0P_0', 'shortcode is correct';
+    is $c->shortcode, 'RUNHIGH_R_100_100.00_' . $now->epoch . '_5T_S0P_0', 'shortcode is correct';
     is_deeply(
         $c->longcode,
         [

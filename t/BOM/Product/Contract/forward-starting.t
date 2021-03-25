@@ -141,7 +141,7 @@ subtest 'basis_tick for forward starting contract' => sub {
         });
     }
 
-    my $expected_shortcode = 'CALL_FRXUSDJPY_10_1471220100F_1471221000_S0P_0';
+    my $expected_shortcode = 'CALL_FRXUSDJPY_10.00_1471220100F_1471221000_S0P_0';
     my $args               = {
         bet_type     => 'CALL',
         underlying   => 'frxUSDJPY',

@@ -197,12 +197,12 @@ subtest 'build the correct shortcode' => sub {
     );
     lives_ok {
         my $contract = produce_contract(\%params);
-        is($contract->shortcode, 'CALL_FRXUSDJPY_100_1395360000_1396040400F_S0P_0', 'correct shortcode for fixed expiry contracts');
+        is($contract->shortcode, 'CALL_FRXUSDJPY_100.00_1395360000_1396040400F_S0P_0', 'correct shortcode for fixed expiry contracts');
         $contract = produce_contract('CALL_FRXUSDJPY_100_1395360000_1396040400F_S0P_0', $currency);
         ok($contract->fixed_expiry, 'correctly convert shortcode to fixed expiry contract');
         delete $params{fixed_expiry};
         $contract = produce_contract(\%params);
-        is($contract->shortcode, 'CALL_FRXUSDJPY_100_1395360000_1396040400_S0P_0', 'correct shortcode for non-fixed expiry contracts');
+        is($contract->shortcode, 'CALL_FRXUSDJPY_100.00_1395360000_1396040400_S0P_0', 'correct shortcode for non-fixed expiry contracts');
         $contract = produce_contract('CALL_FRXUSDJPY_100_1395360000_1396040400_S0P_0', $currency);
         ok(!$contract->fixed_expiry, 'non-fixed expiry if no _F');
     }

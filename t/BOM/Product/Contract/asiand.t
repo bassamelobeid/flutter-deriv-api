@@ -46,7 +46,7 @@ subtest 'ASIAND' => sub {
         is $c->tick_count,         5, 'tick count is 5';
         is $c->ticks_to_expiry,    5, 'ticks to expiry is 5';
         isa_ok $c->pricing_engine, 'Pricing::Engine::BlackScholes';
-        is $c->shortcode,          'ASIAND_R_100_10_' . $now->epoch . '_5T', 'shortcode is correct';
+        is $c->shortcode,          'ASIAND_R_100_10.00_' . $now->epoch . '_5T', 'shortcode is correct';
     };
 
     $args->{date_pricing} = $now->plus_time_interval('10s');
