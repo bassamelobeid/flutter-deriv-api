@@ -499,7 +499,8 @@ override 'shortcode' => sub {
         (
         uc $self->code,
         uc $self->underlying->symbol,
-        $self->_user_input_stake, $self->multiplier,
+        financialrounding('price', $self->currency, $self->_user_input_stake),
+        $self->multiplier,
         $self->date_start->epoch,
         $self->date_expiry->epoch,
         $self->cancellation, financialrounding('price', $self->currency, $self->cancellation_tp),
