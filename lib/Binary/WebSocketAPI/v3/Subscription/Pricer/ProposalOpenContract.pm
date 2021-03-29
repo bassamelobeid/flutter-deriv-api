@@ -28,7 +28,10 @@ sub do_handle_message {
     unless ($results = $self->_is_response_or_self_invalid($type, $message)) {
         $message->{id} = $self->uuid;
 
-        $self->unregister if $message->{is_sold};
+        # forget if the contract is sold and we are not subscribed to all open contracts (CONTRACT_PRICE::<landing_company>::<account_id>::*).
+        if ($message->{is_sold} && !($self->channel =~ m/\*/)) {
+            $self->unregister;
+        }
 
         $results = {
             msg_type     => $type,
@@ -54,6 +57,25 @@ sub do_handle_message {
 
     return;
 }
+
+=head2 subscribe
+
+subscribe the channel and store channel to Redis so that pricer_queue script can handle them
+
+=cut
+
+after subscribe => sub {
+    my $self = shift;
+
+    my $keys = $self->pricer_args;
+    $keys = ref $keys eq 'ARRAY' ? $keys : [$keys];
+
+    return unless scalar @$keys;
+
+    my $redis_pricer_manager = Binary::WebSocketAPI::v3::SubscriptionManager->redis_pricer_manager();
+
+    return $redis_pricer_manager->redis->mset(map { ($_, 1) } @$keys);
+};
 
 # DEMOLISH in subclass will prevent super ROLE's DEMOLISH in Subscription.pm. So here `before` is used.
 before DEMOLISH => sub {

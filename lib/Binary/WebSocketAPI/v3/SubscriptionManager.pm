@@ -108,6 +108,7 @@ sub redis {
 =head2 subscribe
 
 Returns a L<Future> instance that represents the status of subscription.
+Supports both normal channals and redis patterns.
 
 =cut
 
@@ -116,28 +117,34 @@ sub subscribe {
     my $channel    = $subscription->channel;
     my $stats_name = $subscription->stats_name;
     my $class      = $subscription->class;
+
     stats_inc("$stats_name.clients");
     $log->tracef('Subscribing %s channel %s in pid %i', $class, $channel, $$);
     my $f = (
         $self->channels->{$channel} //= do {
-            my $f = Future::Mojo->new->set_label('RedisSubscription[' . $channel . ']');
-            $self->redis->subscribe(
-                [$channel],
-                sub {
-                    my (undef, $err) = @_;
-                    return if ${^GLOBAL_PHASE} eq 'DESTRUCT';
-                    # We can do nothing useful if we are already shutting down
-                    $log->tracef('Subscribed to redis server for %s channel %s in pid %i', $class, $channel, $$);
-                    if ($err) {
-                        $log->errorf("Failed Redis subscription for %s channel %s - %s", $class, $channel, $err);
-                        stats_inc("$stats_name.instances.error");
-                        $f->fail($err, redis => $channel);
-                        return;
-                    }
-                    stats_inc("$stats_name.instances.success");
-                    $f->done($channel);
+            my $f        = Future::Mojo->new->set_label('RedisSubscription[' . $channel . ']');
+            my $callback = sub {
+                my (undef, $err) = @_;
+                return if ${^GLOBAL_PHASE} eq 'DESTRUCT';
+                # We can do nothing useful if we are already shutting down
+                $log->tracef('Subscribed to redis server for %s channel %s in pid %i', $class, $channel, $$);
+                if ($err) {
+                    $log->errorf("Failed Redis subscription for %s channel %s - %s", $class, $channel, $err);
+                    stats_inc("$stats_name.instances.error");
+                    $f->fail($err, redis => $channel);
                     return;
-                });
+                }
+                stats_inc("$stats_name.instances.success");
+                $f->done($channel);
+                return;
+            };
+            # If the channel contains a literal *, it's a redis pattern.
+            # Therefore we use psubscribe.
+            if ($channel =~ m/\*/) {
+                $self->redis->psubscribe([$channel], $callback);
+            } else {
+                $self->redis->subscribe([$channel], $callback);
+            }
             $f;
         }
     );
@@ -186,25 +193,28 @@ sub unsubscribe {
     my $channel_unsubscribing = $self->channel_unsubscribing;
     $channel_unsubscribing->{$channel} = 1;
     delete $self->channel_subscriptions->{$channel};
-    $self->redis->unsubscribe(
-        [$channel],
-        sub {
-            my (undef, $err) = @_;
-            # We can do nothing useful if we are already shutting down
-            return if ${^GLOBAL_PHASE} eq 'DESTRUCT';
-            $log->tracef('Unsubscribed from redis server for %s channel %s in pid %i', $class, $channel, $$);
-            delete $channel_unsubscribing->{$channel};
-            # May have had a sub/unsub sequence before Redis could finish the
-            # initial subscription
-            $f->cancel unless $f->is_ready;
-            if ($err) {
-                $log->warnf("Failed to stop %s subscription for channel %s due to error: $err", $class, $channel);
-                stats_inc("$stats_name.unsubscribe.error");
-                return;
-            }
-            stats_inc("$stats_name.unsubscribe.success");
+    my $callback = sub {
+        my (undef, $err) = @_;
+        # We can do nothing useful if we are already shutting down
+        return if ${^GLOBAL_PHASE} eq 'DESTRUCT';
+        $log->tracef('Unsubscribed from redis server for %s channel %s in pid %i', $class, $channel, $$);
+        delete $channel_unsubscribing->{$channel};
+        # May have had a sub/unsub sequence before Redis could finish the
+        # initial subscription
+        $f->cancel unless $f->is_ready;
+        if ($err) {
+            $log->warnf("Failed to stop %s subscription for channel %s due to error: $err", $class, $channel);
+            stats_inc("$stats_name.unsubscribe.error");
             return;
-        });
+        }
+        stats_inc("$stats_name.unsubscribe.success");
+        return;
+    };
+    if ($channel =~ m/\*/) {
+        $self->redis->punsubscribe([$channel], $callback);
+    } else {
+        $self->redis->unsubscribe([$channel], $callback);
+    }
     return $self;
 }
 
@@ -216,8 +226,20 @@ Do some preparation.
 
 sub BUILD {
     my ($self) = @_;
-    $self->redis->on(message => $self->curry::weak::on_message);
+    $self->redis->on(message  => $self->curry::weak::on_message);
+    $self->redis->on(pmessage => $self->curry::weak::on_pmessage);
     return;
+}
+
+=head2 on_message
+
+The function that will attach onto redis server. This function will call on_pmessage functions of all subscriptions
+
+=cut
+
+sub on_pmessage {
+    my ($self, $redis, $message, $channel, $pattern) = @_;
+    $self->on_message($redis, $message, $pattern);
 }
 
 =head2 on_message

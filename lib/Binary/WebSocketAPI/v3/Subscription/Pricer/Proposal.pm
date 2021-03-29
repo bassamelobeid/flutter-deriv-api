@@ -58,4 +58,15 @@ sub do_handle_message {
 
 }
 
+=head2 subscribe
+
+subscribe the channel and store channel to Redis so that pricer_queue script can handle them
+
+=cut
+
+before subscribe => sub {
+    my $self = shift;
+    return Binary::WebSocketAPI::v3::SubscriptionManager->redis_pricer_manager()->redis->sadd($self->pricer_args, $self->subchannel);
+};
+
 1;

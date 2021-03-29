@@ -97,18 +97,6 @@ sub start_timing {
     return;
 }
 
-sub cleanup_stored_contract_ids {
-    my $c              = shift;
-    my $last_contracts = $c->stash('last_contracts') // {};
-    my $now            = time;
-    # see Binary::WebSocketAPI::v3::Wrapper::Transaction::buy_store_last_contract_id
-    # keep contract bought in last 60 sec, update stash only if contract list changed
-    # Here the `$last_contracts` is a hashref which refer to the same object in stash when $c->stash('last_contracts') is true, altering it will alter data in stash too.
-    # If $c->stash('last_contract') is false, then the `delete` action in the next line will do nothing.
-    delete @{$last_contracts}{grep { ($now - $last_contracts->{$_}) > 60 } keys %$last_contracts};
-    return;
-}
-
 sub log_call_timing_before_forward {
     my ($c, $req_storage) = @_;
 

@@ -31,6 +31,7 @@ sub forget_after_logout {
     _forget_transaction_subscription($c, 'sell');          # TODO add 'buy' type here ?
     _forget_all_pricing_subscriptions($c, 'proposal_open_contract');
     # TODO I suspect this line is not correct. Is there a feed subscription with the type 'proposal_open_contract' ?
+    # TODO I also don't think we have any feed subscritions with 'proposal_open_contract' as the type - remove this ?
     _forget_feed_subscription($c, 'proposal_open_contract');
     _forget_p2p_order_subscription($c);
     return;
@@ -68,14 +69,6 @@ sub forget_all {
                 @removed_ids{@{_forget_transaction_subscription($c, $type)}} = ();
             } elsif ($type eq 'proposal_open_contract') {
                 @removed_ids{@{_forget_all_pricing_subscriptions($c, $type)}} = ();
-                # proposal_open_contract sunbscription in fact creates two subscriptions:
-                #   - for pricer - getting bids
-                #   - and for transactions - waiting contract sell event
-                # so pricer subscription will be removed by '_forget_all_pricing_subscriptions' call (and list of uuids to return will be generated)
-                # and here we just removing appropriate transaction subscriptions - whose type is sell (means, tracking sell event)
-                # we don't want uuid of transaction subscriptions if the type is 'proposal_open_contract'
-                # TODO I guess we need add 'buy' type also
-                _forget_transaction_subscription($c, 'sell');
             } elsif ($type eq 'proposal') {
                 @removed_ids{@{_forget_all_pricing_subscriptions($c, $type)}} = ();
             } elsif ($type eq 'p2p_order') {
@@ -84,6 +77,7 @@ sub forget_all {
                 @removed_ids{@{_forget_p2p_advertiser_subscription($c)}} = ();
             }
             #TODO why we check 'proposal_open_contract' here ?
+            #TODO be brave and remove it. This is most likely legacy code left around (?)
             if ($type ne 'proposal_open_contract') {
                 @removed_ids{@{_forget_feed_subscription($c, $type)}} = ();
             }
@@ -162,13 +156,7 @@ sub _forget_transaction_subscription {
         @$removed_ids = map { $_->unregister; $_->uuid; } @subscriptions;
     }
     my @subscriptions = Binary::WebSocketAPI::v3::Subscription::Transaction->get_by_class($c);
-    for my $subscription (@subscriptions) {
-        # $subscription->type never could be 'proposal_open_contract', so we will not return any uuids related to proposal_open_contract subscriptions
-        push @$removed_ids, $subscription->uuid if $type eq $subscription->type;
-        $subscription->unregister
-            if $type eq $subscription->type
-            # $type could be 'proposal_open_contract' only in case when forget_all is called with 'proposal_open_contract' as an argument
-    }
+    push @$removed_ids, map { $_->unregister; $_->uuid; } grep { $type eq $_->type } @subscriptions;
     return $removed_ids;
 }
 
@@ -178,7 +166,6 @@ sub _forget_all_pricing_subscriptions {
     if ($type eq 'proposal_open_contract') {
         Binary::WebSocketAPI::v3::Wrapper::Transaction::transaction_channel($c, 'unsubscribe', $c->stash('account_id'), 'buy')
             if $c->stash('account_id');
-        $c->stash('proposal_open_contracts_subscribed' => 0);
     }
 
     my $class       = 'Binary::WebSocketAPI::v3::Subscription::Pricer::' . camelize($type);

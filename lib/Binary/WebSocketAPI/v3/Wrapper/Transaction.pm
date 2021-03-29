@@ -9,17 +9,35 @@ use Binary::WebSocketAPI::v3::Subscription::Transaction;
 use Binary::WebSocketAPI::v3::Wrapper::Pricer;
 
 sub buy_get_single_contract {
-    my ($c, $api_response, $req_storage, $store_last_contract_id) = @_;
+    my ($c, $api_response, $req_storage) = @_;
 
-    $store_last_contract_id //= 1;
-    my $contract_details = delete $api_response->{contract_details};
+    my $channel          = delete $api_response->{channel};
+    my $pricer_args_keys = delete $api_response->{pricer_args_keys};
+    my $contract_id      = $api_response->{contract_id};
 
-    $req_storage->{uuid} = _subscribe_to_contract($c, $contract_details, $req_storage->{call_params}->{args})
-        if $req_storage->{call_params}->{args}->{subscribe};
+    if ($channel) {
+        my $req_id = $req_storage->{call_params}->{args}->{req_id};
+        my $args   = {
+            proposal_open_contract => 1,
+            subscribe              => 1,
+            contract_id            => $contract_id,
+            $req_id ? (req_id => $req_id) : ()};
+        my $subscription = Binary::WebSocketAPI::v3::Subscription::Pricer::ProposalOpenContract->new(
+            c           => $c,
+            channel     => $channel,
+            subchannel  => 1,
+            pricer_args => $pricer_args_keys,
+            args        => $args,
+            cache       => {});
 
-    buy_store_last_contract_id($c, $api_response) if $store_last_contract_id;
+        if (!$subscription->already_registered) {
+            $subscription->register();
+            $req_storage->{uuid} = $subscription->uuid();
+            $subscription->subscribe();
+        }
+    }
 
-    $c->stash(%{$api_response->{stash}}) if $api_response->{stash};
+    $c->stash($api_response->{stash}->%*) if $api_response->{stash};
 
     return undef;
 }
@@ -71,53 +89,6 @@ sub buy_set_poc_subscription_id {
         msg_type => 'buy',
         ($uuid ? (subscription => {id => $uuid}) : ()),
     };
-}
-
-sub _get_poc_params {
-    my $details = shift;
-
-    my %params = map { $_ => $details->{$_} }
-        qw(account_id shortcode contract_id currency buy_price sell_price sell_time purchase_time is_sold transaction_ids longcode);
-    $params{limit_order} = $details->{limit_order} if $details->{limit_order};
-
-    return \%params;
-}
-
-sub _subscribe_to_contract {
-    my ($c, $contract_details, $req_args) = @_;
-
-    my $contract = _get_poc_params($contract_details);
-
-    my $contract_id = $contract->{contract_id};
-    my $args        = {
-        subscribe              => 1,
-        contract_id            => $contract_id,
-        proposal_open_contract => 1
-    };
-    $args->{req_id} = $req_args->{req_id} if exists $req_args->{req_id};
-
-    my $uuid = Binary::WebSocketAPI::v3::Wrapper::Pricer::pricing_channel_for_proposal_open_contract($c, $args, $contract)->{uuid};
-
-    return $uuid;
-}
-
-sub buy_store_last_contract_id {
-    my ($c, $api_response) = @_;
-
-    my $last_contracts = $c->stash('last_contracts') // {};
-    # see cleanup at Binary::WebSocketAPI::Hooks::cleanup_stored_contract_ids
-    ### For usual buy
-    my @contracts_ids = ($api_response->{contract_id});
-    ### For buy_contract_for_multiple_accounts
-    @contracts_ids = grep { $_ } map { $_->{contract_id} } @{$api_response->{result}}
-        if $api_response->{result} && ref $api_response->{result} eq 'ARRAY';
-
-    my $now = time;
-    @{$last_contracts}{@contracts_ids} = ($now) x @contracts_ids;
-
-    $c->stash(last_contracts => $last_contracts);
-
-    return undef;
 }
 
 sub buy_get_contract_params {

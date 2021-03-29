@@ -167,12 +167,6 @@ sub handle_message {
     Future->call(
         sub {
             my $type = $self->type;
-            ### new proposal_open_contract stream after buy
-            ### we have to do it here. we have not longcode in payout.
-            ### we'll start new bid stream if we have proposal_open_contract subscription and have bought a new contract
-
-            return $self->_create_poc_stream($message)
-                if ($type eq 'buy' && $message->{action_type} eq 'buy');
 
             $self->_update_balance($message)
                 if $type eq 'balance';
@@ -225,6 +219,7 @@ sub _update_transaction {
 
     $details->{transaction}->{transaction_time} = Date::Utility->new($payload->{sell_time} || $payload->{purchase_time})->epoch;
 
+    # TODO remove the RPC call if you can
     $c->call_rpc({
             args        => $args,
             msg_type    => 'transaction',
@@ -285,62 +280,6 @@ sub _update_balance {
 
     $c->send({json => $details}) if $c->tx;
     return;
-}
-
-=head2 _create_poc_stream
-
-create proposal_open_contract stream if the message shows that a new contract bought.
-
-=cut
-
-# POC means proposal_open_contract
-sub _create_poc_stream {
-    my $self    = shift;
-    my $payload = shift;
-
-    my $c        = $self->c;
-    my $poc_args = $c->stash('proposal_open_contracts_subscribed');
-
-    return Future->done unless $poc_args && $payload->{financial_market_bet_id};
-
-    return $c->longcode($payload->{short_code}, $payload->{currency_code})->then(
-        sub {
-            my ($longcode) = @_;
-            $payload->{longcode} = $longcode
-                or $log->warnf(
-                'Had no longcode for %s currency %s language %s',
-                $payload->{short_code},
-                $payload->{currency_code},
-                $c->stash('language'));
-            return Future->done;
-        },
-        sub {
-            my ($error, $category, @details) = @_;
-            $log->warn("Longcode failure, falling back to placeholder text - $error ($category: @details)");
-            $payload->{longcode} = $c->l('Could not retrieve contract details');
-            return Future->done;
-        }
-    )->then(
-        sub {
-            Binary::WebSocketAPI::v3::Wrapper::Pricer::pricing_channel_for_proposal_open_contract(
-                $c,
-                $poc_args,
-                {
-                    shortcode       => $payload->{short_code},
-                    currency        => $payload->{currency_code},
-                    is_sold         => $payload->{sell_time} ? 1 : 0,
-                    contract_id     => $payload->{financial_market_bet_id},
-                    buy_price       => $payload->{purchase_price},
-                    account_id      => $payload->{account_id},
-                    longcode        => $payload->{longcode} || $payload->{payment_remark},
-                    transaction_ids => {buy => $payload->{id}},
-                    purchase_time   => Date::Utility->new($payload->{purchase_time})->epoch,
-                    sell_price      => undef,
-                    sell_time       => undef,
-                });
-
-            return Future->done;
-        });
 }
 
 1;
