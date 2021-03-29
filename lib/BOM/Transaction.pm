@@ -817,9 +817,9 @@ sub buy {
 
         # TODO: CLEAN THIS UP IN THE FOLLWUP TO THIS CARD: https://trello.com/c/WXwNcAg4
         ############# <BEGIN DELETE>
-        # To avoid race condition between transaction stream and contract parameters setting,
+        # To avoid race condition between transaction stream and setting poc parameters,
         # we will set contract parameters before buy.
-        my $contract_parameters = {
+        my $poc_parameters = {
             short_code      => $self->contract->shortcode,
             contract_id     => $fmbid,
             currency        => $client->currency,
@@ -833,24 +833,29 @@ sub buy {
         };
         # country code is required for china because we have special offerings conditions.
         if ($client->residence eq 'cn') {
-            $contract_parameters->{country_code} = $client->residence;
+            $poc_parameters->{country_code} = $client->residence;
         }
         if ($self->contract->can('available_orders')) {
-            $contract_parameters->{limit_order} = $self->contract->available_orders;
+            $poc_parameters->{limit_order} = $self->contract->available_orders;
         }
         # set contract parameter before buy to avoid race condition between
         # pg-notify and other services that depend on contract parameters
-        BOM::Transaction::Utility::set_contract_parameters($contract_parameters, $expiry_epoch);
+        BOM::Transaction::Utility::set_poc_parameters($poc_parameters, $expiry_epoch);
         ############# <END DELETE>
 
         ($fmb, $txn) = $fmb_helper->buy_bet;
 
         # set contract parameters for the new contract
-        $contract_parameters = BOM::Transaction::Utility::build_contract_parameters($client, {%$fmb, buy_transaction_id => $txn->{id}});
+        $poc_parameters = BOM::Transaction::Utility::build_poc_parameters($client, {%$fmb, buy_transaction_id => $txn->{id}});
         if ($self->contract->can('available_orders')) {
-            $contract_parameters->{limit_order} = $self->contract->available_orders;
+            $poc_parameters->{limit_order} = $self->contract->available_orders;
         }
-        BOM::Transaction::Utility::set_contract_parameters($contract_parameters, $expiry_epoch);
+        BOM::Transaction::Utility::set_poc_parameters($poc_parameters, $expiry_epoch);
+
+        # start streaming newly bought contracts right away,
+        # pricing-daemon will delete the key on next second, when no one is subscribed.
+        my $pricer_args = BOM::Transaction::Utility::build_poc_pricer_args($poc_parameters);
+        BOM::Config::Redis::redis_pricer()->set($pricer_args, 1);
 
         $self->contract_details($fmb);
         $self->transaction_details($txn);
@@ -859,7 +864,7 @@ sub buy {
         # if $error_status is defined, return it
         # otherwise the function re-throws the exception
         my $e = $@;
-        BOM::Transaction::Utility::update_conract_parameters_ttl($fmbid, $client) if $fmbid;
+        BOM::Transaction::Utility::update_poc_parameters_ttl($fmbid, $client) if $fmbid;
         $company_limits->reverse_buys($client);
         $error_status = $self->_recover($e);
     }
@@ -962,7 +967,7 @@ sub batch_buy {
     my $expiry_epoch = $self->contract->date_expiry->epoch;
     # TODO: CLEAN IT UP IN THE FOLLWUP TO THIS CARD: https://trello.com/c/WXwNcAg4
     ############# <BEGIN DELETE>
-    my $contract_parameters = {
+    my $poc_parameters = {
         short_code    => $self->contract->shortcode,
         currency      => $self->contract->currency,
         is_sold       => 0,
@@ -973,7 +978,7 @@ sub batch_buy {
         sell_time     => undef,
     };
     if ($self->contract->can('available_orders')) {
-        $contract_parameters->{limit_order} = $self->contract->available_orders;
+        $poc_parameters->{limit_order} = $self->contract->available_orders;
     }
     ############# <END DELETE>
 
@@ -995,13 +1000,13 @@ sub batch_buy {
                 ############# <BEGIN DELETE>
                 my $client = $_->{client};
                 my $fmb_id = $clientdb->get_next_fmbid();
-                $contract_parameters->{contract_id}     = $fmb_id;
-                $contract_parameters->{landing_company} = $client->landing_company->short;
-                $contract_parameters->{account_id}      = $client->account->id;
+                $poc_parameters->{contract_id}     = $fmb_id;
+                $poc_parameters->{landing_company} = $client->landing_company->short;
+                $poc_parameters->{account_id}      = $client->account->id;
                 if ($client->residence eq 'cn') {
-                    $contract_parameters->{country_code} = $client->residence;
+                    $poc_parameters->{country_code} = $client->residence;
                 }
-                BOM::Transaction::Utility::set_contract_parameters($contract_parameters, $expiry_epoch);
+                BOM::Transaction::Utility::set_poc_parameters($poc_parameters, $expiry_epoch);
                 ############# <END DELETE>
 
                 $fmb_id;
@@ -1048,12 +1053,12 @@ sub batch_buy {
                     $el->{fmb} = $res->{fmb};
                     $el->{txn} = $res->{txn};
 
-                    my $contract_parameters =
-                        BOM::Transaction::Utility::build_contract_parameters($el->{client}, {$el->{fmb}->%*, buy_transaction_id => $el->{txn}{id}});
+                    my $poc_parameters =
+                        BOM::Transaction::Utility::build_poc_parameters($el->{client}, {$el->{fmb}->%*, buy_transaction_id => $el->{txn}{id}});
                     if ($self->contract->can('available_orders')) {
-                        $contract_parameters->{limit_order} = $self->contract->available_orders;
+                        $poc_parameters->{limit_order} = $self->contract->available_orders;
                     }
-                    BOM::Transaction::Utility::set_contract_parameters($contract_parameters, $expiry_epoch);
+                    BOM::Transaction::Utility::set_poc_parameters($poc_parameters, $expiry_epoch);
                     $success++;
                 }
             }
@@ -1206,16 +1211,16 @@ sub sell {
     try {
         ($fmb, $txn, $buy_txn_id) = $fmb_helper->sell_bet;
         if ($fmb->{id}) {
-            my $contract_parameters = BOM::Transaction::Utility::build_contract_parameters(
+            my $poc_parameters = BOM::Transaction::Utility::build_poc_parameters(
                 $client,
                 {
                     %$fmb,
                     buy_transaction_id  => $buy_txn_id,
                     sell_transaction_id => $txn->{id}});
             if ($self->contract->can('available_orders')) {
-                $contract_parameters->{limit_order} = $self->contract->available_orders;
+                $poc_parameters->{limit_order} = $self->contract->available_orders;
             }
-            BOM::Transaction::Utility::set_contract_parameters($contract_parameters, time);
+            BOM::Transaction::Utility::set_poc_parameters($poc_parameters, time);
         }
         $error = 0;
     } catch {
@@ -1411,17 +1416,17 @@ sub cancel {
     try {
         ($fmb, $txn, $buy_txn_id) = $fmb_helper->sell_bet;
 
-        my $contract_parameters = BOM::Transaction::Utility::build_contract_parameters(
+        my $poc_parameters = BOM::Transaction::Utility::build_poc_parameters(
             $client,
             {
                 $fmb->%*,
                 buy_transaction_id  => $buy_txn_id,
                 sell_transaction_id => $txn->{id}});
         if ($self->contract->can('available_orders')) {
-            $contract_parameters->{limit_order} = $self->contract->available_orders;
+            $poc_parameters->{limit_order} = $self->contract->available_orders;
         }
 
-        BOM::Transaction::Utility::set_contract_parameters($contract_parameters, time);
+        BOM::Transaction::Utility::set_poc_parameters($poc_parameters, time);
         $error = 0;
     } catch {
         # if $error_status is defined, return it
@@ -2093,19 +2098,19 @@ sub sell_expired_contracts {
     try {
         $sold = $fmb_helper->batch_sell_bet;
         for (@$sold) {
-            my $item                = $_;
-            my $bet                 = first { $_->{id} eq $item->{fmb}{id} } @bets_to_sell;
-            my $contract_parameters = BOM::Transaction::Utility::build_contract_parameters(
+            my $item           = $_;
+            my $bet            = first { $_->{id} eq $item->{fmb}{id} } @bets_to_sell;
+            my $poc_parameters = BOM::Transaction::Utility::build_poc_parameters(
                 $client,
                 {
                     $item->{fmb}->%*,
                     buy_transaction_id  => $item->{buy_txn_id},
                     sell_transaction_id => $item->{txn}{id}});
             if ($bet->{bet_class} eq 'multiplier') {
-                $contract_parameters->{limit_order} = BOM::Transaction::Utility::extract_limit_orders($bet);
+                $poc_parameters->{limit_order} = BOM::Transaction::Utility::extract_limit_orders($bet);
             }
 
-            BOM::Transaction::Utility::set_contract_parameters($contract_parameters, time);
+            BOM::Transaction::Utility::set_poc_parameters($poc_parameters, time);
 
             if ($bet->{bet_class} eq 'multiplier') {
 
@@ -2124,7 +2129,7 @@ sub sell_expired_contracts {
             my $id = $_;
             !grep { $id eq $_->{fmb}{id} } @$sold
         } map { $_->{id} } @bets_to_sell;
-        BOM::Transaction::Utility::update_conract_parameters_ttl($_, $client) for (@not_sold);
+        BOM::Transaction::Utility::update_poc_parameters_ttl($_, $client) for (@not_sold);
     } catch {
         my $e         = $@;
         my $bet_count = scalar @$bets;

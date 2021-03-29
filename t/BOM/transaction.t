@@ -257,18 +257,18 @@ subtest 'buy a bet', sub {
 
         subtest 'transaction row', sub {
             plan tests => 13;
-            cmp_ok $trx->{id}, '>', 0, 'id';
-            is $trx->{account_id}, $acc_usd->id, 'account_id';
+            cmp_ok $trx->{id},      '>', 0, 'id';
+            is $trx->{account_id},  $acc_usd->id, 'account_id';
             is $trx->{action_type}, 'buy', 'action_type';
             is $trx->{amount} + 0, -511.47, 'amount';
             is $trx->{balance_after} + 0, 5000 - 511.47, 'balance_after';
             is $trx->{financial_market_bet_id}, $fmb->{id}, 'financial_market_bet_id';
-            is $trx->{payment_id},    undef,                  'payment_id';
-            is $trx->{quantity},      1,                      'quantity';
-            is $trx->{referrer_type}, 'financial_market_bet', 'referrer_type';
-            is $trx->{remark},        undef,                  'remark';
-            is $trx->{staff_loginid}, $cl->loginid, 'staff_loginid';
-            is $trx->{source}, 19, 'source';
+            is $trx->{payment_id},              undef,                  'payment_id';
+            is $trx->{quantity},                1,                      'quantity';
+            is $trx->{referrer_type},           'financial_market_bet', 'referrer_type';
+            is $trx->{remark},                  undef,                  'remark';
+            is $trx->{staff_loginid},           $cl->loginid, 'staff_loginid';
+            is $trx->{source},                  19, 'source';
             cmp_ok +Date::Utility->new($trx->{transaction_time})->epoch, '<=', time, 'transaction_time';
         };
 
@@ -276,10 +276,10 @@ subtest 'buy a bet', sub {
 
         subtest 'fmb row', sub {
             plan tests => 20;
-            cmp_ok $fmb->{id}, '>', 0, 'id';
+            cmp_ok $fmb->{id},     '>', 0, 'id';
             is $fmb->{account_id}, $acc_usd->id, 'account_id';
-            is $fmb->{bet_class}, 'higher_lower_bet', 'bet_class';
-            is $fmb->{bet_type},  'CALL',             'bet_type';
+            is $fmb->{bet_class},  'higher_lower_bet', 'bet_class';
+            is $fmb->{bet_type},   'CALL',             'bet_type';
             is $fmb->{buy_price} + 0, 511.47, 'buy_price';
             is !$fmb->{expiry_daily}, !$contract->expiry_daily, 'expiry_daily';
             cmp_ok +Date::Utility->new($fmb->{expiry_time})->epoch, '>', time, 'expiry_time';
@@ -302,10 +302,10 @@ subtest 'buy a bet', sub {
 
         subtest 'chld row', sub {
             plan tests => 4;
-            is $chld->{absolute_barrier}, undef, 'absolute_barrier';
+            is $chld->{absolute_barrier},        undef, 'absolute_barrier';
             is $chld->{financial_market_bet_id}, $fmb->{id}, 'financial_market_bet_id';
-            is $chld->{prediction},       undef, 'prediction';
-            is $chld->{relative_barrier}, 'S0P', 'relative_barrier';
+            is $chld->{prediction},              undef, 'prediction';
+            is $chld->{relative_barrier},        'S0P', 'relative_barrier';
         };
 
         # note explain $qv1;
@@ -317,9 +317,9 @@ subtest 'buy a bet', sub {
             is $qv1->{trade} + 0, 511.47, 'trade';
         };
 
-        is $txn->contract_id,    $fmb->{id},            'txn->contract_id';
-        is $txn->transaction_id, $trx->{id},            'txn->transaction_id';
-        is $txn->balance_after,  $trx->{balance_after}, 'txn->balance_after';
+        is $txn->contract_id,             $fmb->{id},            'txn->contract_id';
+        is $txn->transaction_id,          $trx->{id},            'txn->transaction_id';
+        is $txn->balance_after,           $trx->{balance_after}, 'txn->balance_after';
         is $txn->execute_at_better_price, 0, 'txn->execute_at_better_price';
     }
     'survived';
@@ -367,18 +367,18 @@ subtest 'sell a bet', sub {
 
         subtest 'transaction row', sub {
             plan tests => 13;
-            cmp_ok $trx->{id}, '>', 0, 'id';
-            is $trx->{account_id}, $acc_usd->id, 'account_id';
+            cmp_ok $trx->{id},      '>', 0, 'id';
+            is $trx->{account_id},  $acc_usd->id, 'account_id';
             is $trx->{action_type}, 'sell', 'action_type';
             is $trx->{amount} + 0, $contract->bid_price, 'amount';
             is $trx->{balance_after} + 0, 5000 - 511.47 + $contract->bid_price, 'balance_after';
             is $trx->{financial_market_bet_id}, $fmb->{id}, 'financial_market_bet_id';
-            is $trx->{payment_id},    undef,                  'payment_id';
-            is $trx->{quantity},      1,                      'quantity';
-            is $trx->{referrer_type}, 'financial_market_bet', 'referrer_type';
-            is $trx->{remark},        undef,                  'remark';
-            is $trx->{staff_loginid}, $cl->loginid, 'staff_loginid';
-            is $trx->{source}, 23, 'source';
+            is $trx->{payment_id},              undef,                  'payment_id';
+            is $trx->{quantity},                1,                      'quantity';
+            is $trx->{referrer_type},           'financial_market_bet', 'referrer_type';
+            is $trx->{remark},                  undef,                  'remark';
+            is $trx->{staff_loginid},           $cl->loginid, 'staff_loginid';
+            is $trx->{source},                  23, 'source';
             cmp_ok +Date::Utility->new($trx->{transaction_time})->epoch, '<=', time, 'transaction_time';
         };
 
@@ -386,10 +386,10 @@ subtest 'sell a bet', sub {
 
         subtest 'fmb row', sub {
             plan tests => 20;
-            cmp_ok $fmb->{id}, '>', 0, 'id';
+            cmp_ok $fmb->{id},     '>', 0, 'id';
             is $fmb->{account_id}, $acc_usd->id, 'account_id';
-            is $fmb->{bet_class}, 'higher_lower_bet', 'bet_class';
-            is $fmb->{bet_type},  'CALL',             'bet_type';
+            is $fmb->{bet_class},  'higher_lower_bet', 'bet_class';
+            is $fmb->{bet_type},   'CALL',             'bet_type';
             is $fmb->{buy_price} + 0, 511.47, 'buy_price';
             is !$fmb->{expiry_daily}, !$contract->expiry_daily, 'expiry_daily';
             cmp_ok +Date::Utility->new($fmb->{expiry_time})->epoch, '>', time, 'expiry_time';
@@ -412,10 +412,10 @@ subtest 'sell a bet', sub {
 
         subtest 'chld row', sub {
             plan tests => 4;
-            is $chld->{absolute_barrier}, undef, 'absolute_barrier';
+            is $chld->{absolute_barrier},        undef, 'absolute_barrier';
             is $chld->{financial_market_bet_id}, $fmb->{id}, 'financial_market_bet_id';
-            is $chld->{prediction},       undef, 'prediction';
-            is $chld->{relative_barrier}, 'S0P', 'relative_barrier';
+            is $chld->{prediction},              undef, 'prediction';
+            is $chld->{relative_barrier},        'S0P', 'relative_barrier';
         };
 
         # note explain $qv1;
@@ -571,11 +571,11 @@ subtest 'exactly sufficient balance: buy bet for 100 with balance of 100', sub {
 
         ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db higher_lower_bet => $txn->transaction_id;
 
-        is $txn->contract_id, $fmb->{id}, 'txn->contract_id';
-        cmp_ok $txn->contract_id, '>', 0, 'txn->contract_id > 0';
-        is $txn->transaction_id, $trx->{id}, 'txn->transaction_id';
+        is $txn->contract_id,        $fmb->{id}, 'txn->contract_id';
+        cmp_ok $txn->contract_id,    '>', 0, 'txn->contract_id > 0';
+        is $txn->transaction_id,     $trx->{id}, 'txn->transaction_id';
         cmp_ok $txn->transaction_id, '>', 0, 'txn->transaction_id > 0';
-        is $txn->balance_after, $trx->{balance_after}, 'txn->balance_after';
+        is $txn->balance_after,      $trx->{balance_after}, 'txn->balance_after';
         is $txn->balance_after + 0, 0, 'txn->balance_after == 0';
     }
     'survived';
@@ -670,11 +670,11 @@ subtest 'max_balance validation: try to buy a bet with a balance of 100 and max_
 
         ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db higher_lower_bet => $txn->transaction_id;
 
-        is $txn->contract_id, $fmb->{id}, 'txn->contract_id';
-        cmp_ok $txn->contract_id, '>', 0, 'txn->contract_id > 0';
-        is $txn->transaction_id, $trx->{id}, 'txn->transaction_id';
+        is $txn->contract_id,        $fmb->{id}, 'txn->contract_id';
+        cmp_ok $txn->contract_id,    '>', 0, 'txn->contract_id > 0';
+        is $txn->transaction_id,     $trx->{id}, 'txn->transaction_id';
         cmp_ok $txn->transaction_id, '>', 0, 'txn->transaction_id > 0';
-        is $txn->balance_after, $trx->{balance_after}, 'txn->balance_after';
+        is $txn->balance_after,      $trx->{balance_after}, 'txn->balance_after';
         is $txn->balance_after + 0, 0, 'txn->balance_after == 0';
     }
     'survived';
@@ -1770,7 +1770,7 @@ subtest 'sell_expired_contracts', sub {
             number_of_sold_bets => 3,
             skip_contract       => 5,     # this means the contract was looked at but skipped due to invalid to sell
             total_credited      => 300,
-            failures => [map { {reason => 'not expired', fmb_id => $_} } @unexpired_fmbids],
+            failures            => [map { {reason => 'not expired', fmb_id => $_} } @unexpired_fmbids],
             },
             'sold 3 out of 8 remaining bets';
 
@@ -1882,9 +1882,9 @@ subtest 'transaction slippage' => sub {
         ok !$transaction->buy, 'buy without error.';
         my ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db higher_lower_bet => $transaction->transaction_id;
 
-        is $fmb->{buy_price}, $price, 'buy at requested price';
-        is $qv1->{price_slippage}, -0.25, 'slippage stored';
-        is $qv1->{requested_price}, $price, 'correct requested price stored';
+        is $fmb->{buy_price},            $price, 'buy at requested price';
+        is $qv1->{price_slippage},       -0.25, 'slippage stored';
+        is $qv1->{requested_price},      $price, 'correct requested price stored';
         cmp_ok $qv1->{recomputed_price}, '==', $contract->ask_price, 'correct recomputed price stored';
         $fmb_id = $fmb->{id};
     };
@@ -1941,9 +1941,9 @@ subtest 'transaction slippage' => sub {
 
         ok !$transaction->sell, 'no error when sell';
         my ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db higher_lower_bet => $transaction->transaction_id;
-        cmp_ok $fmb->{sell_price}, '==', sprintf('%.2f', $price), 'sell at requested price';
-        is $qv1->{price_slippage}, '-0.40', 'slippage stored';
-        is $qv1->{requested_price}, $price, 'correct requested price stored';
+        cmp_ok $fmb->{sell_price},   '==',    sprintf('%.2f', $price), 'sell at requested price';
+        is $qv1->{price_slippage},   '-0.40', 'slippage stored';
+        is $qv1->{requested_price},  $price, 'correct requested price stored';
         is $qv1->{recomputed_price}, $contract->bid_price, 'correct recomputed price stored';
     };
 };
@@ -2139,8 +2139,8 @@ subtest 'suspend_buy & suspend_trades' => sub {
 
                 $txn->buy;
             };
-            is $error->{'-type'},   'InvalidOfferings',                                    'type is InvalidOfferings';
-            like $error->{'-mesg'}, qr/Disabled (contract_type|market|underlying_symbol)/, 'message is Disabled ' . $type;
+            is $error->{'-type'},              'InvalidOfferings',                                    'type is InvalidOfferings';
+            like $error->{'-mesg'},            qr/Disabled (contract_type|market|underlying_symbol)/, 'message is Disabled ' . $type;
             is $error->{'-message_to_client'}, 'This trade is temporarily unavailable.', 'message to clien is This trade is temporarily unavailable.';
 
             $contract = produce_contract({
@@ -2230,8 +2230,8 @@ subtest 'suspend_buy & suspend_trades' => sub {
 
                 $txn->buy;
             };
-            is $error->{'-type'},   'InvalidOfferings',                                    'type is InvalidOfferings';
-            like $error->{'-mesg'}, qr/Disabled (underlying_symbol|market|contract_type)/, 'message is Disabled ' . $type;
+            is $error->{'-type'},              'InvalidOfferings',                                    'type is InvalidOfferings';
+            like $error->{'-mesg'},            qr/Disabled (underlying_symbol|market|contract_type)/, 'message is Disabled ' . $type;
             is $error->{'-message_to_client'}, 'This trade is temporarily unavailable.', 'message to clien is This trade is temporarily unavailable.';
 
             $contract = produce_contract({
@@ -2262,8 +2262,8 @@ subtest 'suspend_buy & suspend_trades' => sub {
                 $txn->sell;
             };
 
-            is $error->{'-type'},   'InvalidOfferings',                                    'type is InvalidOfferings';
-            like $error->{'-mesg'}, qr/Disabled (underlying_symbol|market|contract_type)/, 'message is Disabled ' . $type;
+            is $error->{'-type'},              'InvalidOfferings',                                    'type is InvalidOfferings';
+            like $error->{'-mesg'},            qr/Disabled (underlying_symbol|market|contract_type)/, 'message is Disabled ' . $type;
             is $error->{'-message_to_client'}, 'Resale of this contract is not offered.',
                 'message to clien is Resale of this contract is not offered.';
 

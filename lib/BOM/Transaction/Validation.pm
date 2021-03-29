@@ -539,9 +539,9 @@ sub _validate_iom_withdrawal_limit {
 
     if ($remaining_withdrawal_eur <= 0) {
         return Error::Base->cuss(
-            -quiet => 1,
-            -type  => 'iomWithdrawalLimit',
-            -mesg  => $client->loginid . ' caught in IOM withdrawal limit check',
+            -quiet             => 1,
+            -type              => 'iomWithdrawalLimit',
+            -mesg              => $client->loginid . ' caught in IOM withdrawal limit check',
             -message_to_client =>
                 localize("Due to regulatory requirements, you are required to authenticate your account in order to continue trading."),
         );
@@ -665,9 +665,9 @@ sub _validate_jurisdictional_restrictions {
 
     if (not $residence and not $client->is_virtual) {
         return Error::Base->cuss(
-            -quiet => 1,
-            -type  => 'NoResidenceCountry',
-            -mesg  => 'Client cannot place contract as we do not know their residence.',
+            -quiet             => 1,
+            -type              => 'NoResidenceCountry',
+            -mesg              => 'Client cannot place contract as we do not know their residence.',
             -message_to_client =>
                 localize('In order for you to place contracts, we need to know your Residence (Country). Please update your settings.'),
         );
@@ -804,9 +804,9 @@ sub check_tax_information {
     my ($self, $client) = (shift, shift);
 
     return Error::Base->cuss(
-        -quiet => 1,
-        -type  => 'TINDetailsMandatory',
-        -mesg  => 'Tax-related information is mandatory for legal and regulatory requirements',
+        -quiet             => 1,
+        -type              => 'TINDetailsMandatory',
+        -mesg              => 'Tax-related information is mandatory for legal and regulatory requirements',
         -message_to_client =>
             localize('Tax-related information is mandatory for legal and regulatory requirements. Please provide your latest tax information.')
     ) unless $client->status->crs_tin_information;

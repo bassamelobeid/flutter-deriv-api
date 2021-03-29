@@ -162,10 +162,10 @@ sub check_one_result {
             return $err;
         }
         $err++ unless is $m->{error}, undef, "no error should be provided";
-        $err++ unless is $m->{txn}->{account_id}, $acc->id, 'txn account_id';
-        $err++ unless is $m->{fmb}->{account_id}, $acc->id, 'fmb account_id';
+        $err++ unless is $m->{txn}->{account_id},              $acc->id, 'txn account_id';
+        $err++ unless is $m->{fmb}->{account_id},              $acc->id, 'fmb account_id';
         $err++ unless is $m->{txn}->{financial_market_bet_id}, $m->{fmb}->{id}, 'txn financial_market_bet_id';
-        $err++ unless is $m->{txn}->{balance_after}, sprintf('%.2f', $balance_after), 'balance_after';
+        $err++ unless is $m->{txn}->{balance_after},           sprintf('%.2f', $balance_after), 'balance_after';
         $err++ unless is $m->{loginid}, $cl->loginid, 'loginid';
     };
 

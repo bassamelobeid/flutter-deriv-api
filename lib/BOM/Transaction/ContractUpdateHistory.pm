@@ -116,7 +116,7 @@ sub _build_contract {
     $contract_params->{limit_order} = $limit_order if %$limit_order;
 
     $contract_params->{is_sold}    = $fmb->{is_sold};
-    $contract_params->{sell_time}  = $fmb->{sell_time} if $fmb->{sell_time};
+    $contract_params->{sell_time}  = $fmb->{sell_time}  if $fmb->{sell_time};
     $contract_params->{sell_price} = $fmb->{sell_price} if $fmb->{sell_price};
 
     return produce_contract($contract_params);

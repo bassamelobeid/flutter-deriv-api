@@ -333,17 +333,17 @@ subtest 'buy a bet', sub {
 
         subtest 'transaction row', sub {
             plan tests => 12;
-            cmp_ok $trx->{id}, '>', 0, 'id';
-            is $trx->{account_id}, $acc_usd->id, 'account_id';
+            cmp_ok $trx->{id},      '>', 0, 'id';
+            is $trx->{account_id},  $acc_usd->id, 'account_id';
             is $trx->{action_type}, 'buy', 'action_type';
             is $trx->{amount} + 0, -3.2, 'amount';
             is $trx->{balance_after} + 0, 5000 - 3.2, 'balance_after';
             is $trx->{financial_market_bet_id}, $fmb->{id}, 'financial_market_bet_id';
-            is $trx->{payment_id},    undef,                  'payment_id';
-            is $trx->{referrer_type}, 'financial_market_bet', 'referrer_type';
-            is $trx->{remark},        undef,                  'remark';
-            is $trx->{staff_loginid}, $cl->loginid, 'staff_loginid';
-            is $trx->{source}, 19, 'source';
+            is $trx->{payment_id},              undef,                  'payment_id';
+            is $trx->{referrer_type},           'financial_market_bet', 'referrer_type';
+            is $trx->{remark},                  undef,                  'remark';
+            is $trx->{staff_loginid},           $cl->loginid, 'staff_loginid';
+            is $trx->{source},                  19, 'source';
             cmp_ok +Date::Utility->new($trx->{transaction_time})->epoch, '<=', time, 'transaction_time';
         };
 
@@ -351,10 +351,10 @@ subtest 'buy a bet', sub {
 
         subtest 'fmb row', sub {
             plan tests => 19;
-            cmp_ok $fmb->{id}, '>', 0, 'id';
+            cmp_ok $fmb->{id},     '>', 0, 'id';
             is $fmb->{account_id}, $acc_usd->id, 'account_id';
-            is $fmb->{bet_class}, 'touch_bet', 'bet_class';
-            is $fmb->{bet_type},  'ONETOUCH',  'bet_type';
+            is $fmb->{bet_class},  'touch_bet', 'bet_class';
+            is $fmb->{bet_type},   'ONETOUCH',  'bet_type';
             is $fmb->{buy_price} + 0, 3.2, 'buy_price';
             is !$fmb->{expiry_daily}, !$contract->expiry_daily, 'expiry_daily';
             cmp_ok +Date::Utility->new($fmb->{expiry_time})->epoch, '>', time, 'expiry_time';
@@ -376,9 +376,9 @@ subtest 'buy a bet', sub {
 
         subtest 'chld row', sub {
             plan tests => 3;
-            is $chld->{absolute_barrier}, undef, 'absolute_barrier';
+            is $chld->{absolute_barrier},        undef, 'absolute_barrier';
             is $chld->{financial_market_bet_id}, $fmb->{id}, 'financial_market_bet_id';
-            is $chld->{prediction}, undef, 'prediction';
+            is $chld->{prediction},              undef, 'prediction';
         };
 
         # note explain $qv1;
@@ -390,9 +390,9 @@ subtest 'buy a bet', sub {
             is $qv1->{trade} + 0, 3.2, 'trade';
         };
 
-        is $txn->contract_id,    $fmb->{id},            'txn->contract_id';
-        is $txn->transaction_id, $trx->{id},            'txn->transaction_id';
-        is $txn->balance_after,  $trx->{balance_after}, 'txn->balance_after';
+        is $txn->contract_id,             $fmb->{id},            'txn->contract_id';
+        is $txn->transaction_id,          $trx->{id},            'txn->transaction_id';
+        is $txn->balance_after,           $trx->{balance_after}, 'txn->balance_after';
         is $txn->execute_at_better_price, 0, 'txn->execute_at_better_price';
     }
     'survived';

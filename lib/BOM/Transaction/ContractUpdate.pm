@@ -92,7 +92,7 @@ sub _build_contract {
     $contract_params->{limit_order} = $limit_order if %$limit_order;
 
     $contract_params->{is_sold}    = $fmb->{is_sold};
-    $contract_params->{sell_time}  = $fmb->{sell_time} if $fmb->{sell_time};
+    $contract_params->{sell_time}  = $fmb->{sell_time}  if $fmb->{sell_time};
     $contract_params->{sell_price} = $fmb->{sell_price} if $fmb->{sell_price};
 
     return produce_contract($contract_params);
@@ -136,7 +136,7 @@ sub _validate_update_parameter {
     # If no update is allowed for this contract, don't proceed
     unless (keys %{$self->allowed_update}) {
         return {
-            code => 'UpdateNotAllowed',
+            code              => 'UpdateNotAllowed',
             message_to_client =>
                 localize('This contract cannot be updated once you\'ve made your purchase. This feature is not available for this contract type.'),
         };
@@ -163,7 +163,7 @@ sub _validate_update_parameter {
         }
         unless ($self->allowed_update->{$order_name}) {
             $error = {
-                code => 'UpdateNotAllowed',
+                code              => 'UpdateNotAllowed',
                 message_to_client =>
                     localize('Only updates to these parameters are allowed [_1].', join(',', @{$contract->category->allowed_update})),
             };

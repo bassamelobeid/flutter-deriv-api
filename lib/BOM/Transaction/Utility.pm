@@ -11,6 +11,7 @@ use Date::Utility;
 use List::Util qw(min max);
 use Encode;
 use JSON::MaybeXS;
+use JSON::MaybeUTF8 qw(:v1);
 
 use BOM::Platform::Event::Emitter;
 use BOM::Config::Redis;
@@ -20,32 +21,33 @@ use BOM::Config;
 # the mejority of contracts are sold by expiryd, within 30s.
 # the 5m ttl is for the few that end up at riskd.
 use constant KEY_RETENTION_SECOND => 300;
+use constant POC_PARAMETERS       => 'POC_PARAMETERS';
 
 my $json = JSON::MaybeXS->new;
 
-=head2 update_conract_parameters_ttl
+=head2 update_poc_parameters_ttl
 
 Utility method to set expiry of redis key to KEY_RETENTION_SECOND seconds.
 
-Note that $redis->del is not used because CONTRACT_PARAMS might still be
+Note that $redis->del is not used because POC_PARAMETERS might still be
 used by other processes to send final contract details to client.
 
 =cut
 
-sub update_conract_parameters_ttl {
+sub update_poc_parameters_ttl {
     my ($contract_id, $client) = @_;
 
-    my $redis_pricer = BOM::Config::Redis::redis_pricer_shared_write;
-    my $redis_key    = join '::', ('CONTRACT_PARAMS', $contract_id, $client->landing_company->short);
+    my $redis_pricer_shared = BOM::Config::Redis::redis_pricer_shared_write;
+    my $redis_key           = join '::', (POC_PARAMETERS, $contract_id, $client->landing_company->short);
 
     # we don't delete this right away because some service like pricing queue or transaction stream might still rely
     # on the contract parameters. We will give additional KEY_RETENTION_SECOND seconds for this to be done.
-    $redis_pricer->expire($redis_key, KEY_RETENTION_SECOND);
+    $redis_pricer_shared->expire($redis_key, KEY_RETENTION_SECOND);
 
     return;
 }
 
-sub build_contract_parameters {
+sub build_poc_parameters {
     my ($client, $fmb) = @_;
 
     my $sell_time;
@@ -83,17 +85,17 @@ sub build_contract_parameters {
     return $contract_parameters;
 }
 
-=head2 set_contract_parameters
+=head2 set_poc_parameters
 
-Utility method to set contract parameters when a contract is purchased
+Utility method to set proposal open contract (POC) parameters when a contract is purchased, updated or sold.
 
 =cut
 
-sub set_contract_parameters {
-    my ($contract_parameters, $expiry_epoch) = @_;
+sub set_poc_parameters {
+    my ($poc_parameters, $expiry_epoch) = @_;
 
-    my $redis_pricer = BOM::Config::Redis::redis_pricer_shared_write;
-    my $redis_key    = join '::', ('CONTRACT_PARAMS', $contract_parameters->{contract_id}, $contract_parameters->{landing_company});
+    my $redis_pricer_shared = BOM::Config::Redis::redis_pricer_shared_write;
+    my $redis_key           = join '::', (POC_PARAMETERS, $poc_parameters->{contract_id}, $poc_parameters->{landing_company});
 
     my $default_expiry = 86400;
     if (defined $expiry_epoch) {
@@ -110,11 +112,22 @@ sub set_contract_parameters {
 
     my %hash = (
         price_daemon_cmd => 'bid',
-        %$contract_parameters,
+        %$poc_parameters,
     );
 
-    return $redis_pricer->set($redis_key, _serialized_args(\%hash), 'EX', $default_expiry) if $default_expiry > 0;
+    $redis_pricer_shared->set($redis_key, _serialized_args(\%hash), 'EX', $default_expiry) if $default_expiry > 0;
     return;
+}
+
+sub build_poc_pricer_args {
+    my $poc_parameters = shift;
+    return 'PRICER_ARGS::'
+        . encode_json_utf8([
+            price_daemon_cmd => 'bid',
+            landing_company  => $poc_parameters->{landing_company},
+            contract_id      => $poc_parameters->{contract_id},
+            account_id       => $poc_parameters->{account_id},
+        ]);
 }
 
 =head2 extract_limit_orders
