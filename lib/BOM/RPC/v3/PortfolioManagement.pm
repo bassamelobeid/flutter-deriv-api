@@ -6,6 +6,7 @@ use warnings;
 use Date::Utility;
 use Syntax::Keyword::Try;
 use Format::Util::Numbers qw/formatnumber roundcommon/;
+use JSON::MaybeUTF8 qw(encode_json_utf8);
 use List::Util qw/none/;
 
 use BOM::RPC::Registry '-dsl';
@@ -17,8 +18,8 @@ use BOM::Database::ClientDB;
 use BOM::Platform::Context qw (request localize);
 use BOM::Config::Runtime;
 use BOM::Transaction;
-use BOM::Transaction::Utility;
 use BOM::Pricing::v3::Contract;
+use BOM::Pricing::v3::Utility;
 
 requires_auth('trading');
 
@@ -131,48 +132,63 @@ rpc proposal_open_contract => sub {
     my $params = shift;
 
     my $client = $params->{client};
+    if (not $client->default_account) {
+        return {};    # empty response
+    }
 
-    my @fmbs        = ();
-    my $contract_id = $params->{contract_id} || $params->{args}->{contract_id};
-    if ($contract_id) {
-        @fmbs = @{get_contract_details_by_id($client, $contract_id)};
-        if (not $client->default_account or scalar @fmbs and $fmbs[0]->{account_id} ne $client->default_account->id) {
-            @fmbs = ();
+    my $landing_company    = $client->landing_company->short;
+    my $account_id         = $client->default_account->id;
+    my $contract_id        = $params->{contract_id} || $params->{args}->{contract_id};
+    my $poc_parameters_all = {};
+    if (defined $contract_id) {
+        my $fmb = get_contract_details_by_id($client, $contract_id)->[0];
+
+        # In special case that 'proposal_open_contract' with contract_id is called immediately after 'buy',
+        # we could get an undefined $fmb result, because of DB replication delay.
+        if (defined $fmb and $fmb->{account_id} eq $account_id) {
+            $poc_parameters_all->{$fmb->{id}} = BOM::Transaction::Utility::build_poc_parameters($client, $fmb);
+        }
+        # In case of db replication delay, we get poc_parameters from pricer_shared_redis.
+        elsif (not defined $fmb) {
+            my $poc_parameters = BOM::Pricing::v3::Utility::get_poc_parameters($contract_id, $landing_company);
+            $poc_parameters_all->{$contract_id} = $poc_parameters if (%$poc_parameters);
         }
     } else {
-        @fmbs = @{__get_open_contracts($client)};
-    }
-    return populate_proposal_open_contract_response($client, $params, \@fmbs);
-};
-
-=head2 populate_proposal_open_contract_response
-
-Will populate a new `proposal_open_contract` response for
-each of the contracts (contract_id or all the open contracts for this account id)
-and return an object with the contract_id as key and the details of the contract as
-response.
-
-=cut
-
-sub populate_proposal_open_contract_response {
-    my ($client, $params, $fmbs) = @_;
-
-    my $response = {};
-    foreach my $fmb (@{$fmbs}) {
-        my $id                  = $fmb->{id};
-        my $contract_parameters = BOM::Transaction::Utility::build_contract_parameters($client, $fmb);
-
-        my $contract = BOM::Pricing::v3::Contract::get_bid($contract_parameters);
-        $response->{$id} = $contract;
-
-        # set CONTRACT_PARAMS if we are subscribing to POC and the contract is not sold yet.
-        if (not $contract->{error} and $params->{args}->{subscribe} and not $contract->{is_sold}) {
-            BOM::Transaction::Utility::set_contract_parameters($contract_parameters);
+        for my $fmb (@{__get_open_contracts($client)}) {
+            $poc_parameters_all->{$fmb->{id}} = BOM::Transaction::Utility::build_poc_parameters($client, $fmb);
         }
     }
 
+    my $response = {};
+
+    if ($params->{args}->{subscribe} && (!defined $contract_id || defined $poc_parameters_all->{$contract_id})) {
+        # subscription channel for either all open contracts ('*'), or a specific open contract.
+        $response->{channel} = join '::', 'CONTRACT_PRICE', $landing_company, $account_id, ($contract_id // '*');
+    }
+
+    for my $poc_parameters (values %$poc_parameters_all) {
+        my $res = BOM::Pricing::v3::Contract::get_bid($poc_parameters);
+        $response->{$poc_parameters->{contract_id}} = $res;
+
+        if (defined $contract_id && defined $res->{error}) {
+            return $res;
+        }
+
+        if (not $res->{error} and $response->{channel} and not $res->{is_sold}) {
+            BOM::Transaction::Utility::set_poc_parameters($poc_parameters);
+            my $pricer_args = BOM::Transaction::Utility::build_poc_pricer_args($poc_parameters);
+
+            # pass the pricer_args key to be set by websocket
+            push @{$response->{pricer_args_keys}}, $pricer_args;
+        }
+    }
+
+    # if we are subscribing to a specific contract_id, but it was already sold, do not send back a channel name.
+    if (defined $contract_id && $response->{channel} && !defined $response->{pricer_args_keys}) {
+        delete $response->{channel};
+    }
     return $response;
-}
+};
 
 =head2 get_contract_details_by_id
 

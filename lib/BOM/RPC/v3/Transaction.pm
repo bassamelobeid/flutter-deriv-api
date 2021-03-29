@@ -141,8 +141,9 @@ rpc "buy",
 
     my $purchase_date = time;    # Purchase is considered to have happened at the point of request.
 
+    my $landing_company = $client->landing_company->short;
     $contract_parameters = BOM::Pricing::v3::Contract::prepare_ask($contract_parameters);
-    $contract_parameters->{landing_company} = $client->landing_company->short;
+    $contract_parameters->{landing_company} = $landing_company;
 
     my $error = BOM::RPC::v3::Contract::validate_barrier($contract_parameters);
     return $error if $error->{error};
@@ -225,42 +226,38 @@ rpc "buy",
     # proposal_open_contract call, so we are giving this information as part of the response here
     # but this will be removed at the websocket api logic before we show the response to the client.
     my $transaction_details = $trx->transaction_details;
-    my $contract_details    = $trx->contract_details;
 
     # this will be passed to proposal_open_contract at websocket level
     # if subscription flag is turned on
-    my $contract_proposal_details = {
-        account_id      => $transaction_details->{account_id},
-        shortcode       => $contract_details->{short_code},
-        contract_id     => $contract_details->{id},
-        currency        => $currency,
-        buy_price       => $contract_details->{buy_price},
-        sell_price      => $contract_details->{sell_price},
-        sell_time       => $contract_details->{sell_time},
-        purchase_time   => $trx->purchase_date->epoch,
-        is_sold         => $contract_details->{is_sold},
-        transaction_ids => {buy => $transaction_details->{id}},
-        longcode        => localize(shortcode_to_longcode($contract_details->{short_code}, $currency)),
-        expiry_time     => 0 + Date::Utility->new($contract_details->{expiry_time})->epoch,
-    };
+    my $channel          = join '::', ('CONTRACT_PRICE', $landing_company, $transaction_details->{account_id}, $trx->contract_id);
+    my $pricer_args_keys = [
+        BOM::Transaction::Utility::build_poc_pricer_args({
+                landing_company => $landing_company,
+                contract_id     => $trx->contract_id,
+                account_id      => $transaction_details->{account_id}})];
 
     my $tv_interval = 1000 * Time::HiRes::tv_interval($tv);
 
     BOM::Pricing::v3::Utility::update_price_metrics($contract->get_relative_shortcode, $tv_interval) if $ENV{RECORD_PRICE_METRICS};
 
     return {
-        transaction_id   => $trx->transaction_id,
-        contract_id      => $trx->contract_id,
-        contract_details => $contract_proposal_details,
-        balance_after    => formatnumber('amount', $currency, $trx->balance_after),
-        purchase_time    => $trx->purchase_date->epoch,
-        buy_price        => formatnumber('amount', $currency, $trx->price),
-        start_time       => $contract->date_start->epoch,
-        longcode         => localize($contract->longcode),
-        shortcode        => $contract->shortcode,
-        payout           => $trx->payout,
-        stash            => {market => $contract->market->name},
-        rpc_time         => $tv_interval,
+        transaction_id => $trx->transaction_id,
+        contract_id    => $trx->contract_id,
+        balance_after  => formatnumber('amount', $currency, $trx->balance_after),
+        purchase_time  => $trx->purchase_date->epoch,
+        buy_price      => formatnumber('amount', $currency, $trx->price),
+        start_time     => $contract->date_start->epoch,
+        longcode       => localize($contract->longcode),
+        shortcode      => $contract->shortcode,
+        payout         => $trx->payout,
+        stash          => {market => $contract->market->name},
+        rpc_time       => $tv_interval,
+        $args->{subscribe}
+        ? (
+            channel          => $channel,
+            pricer_args_keys => $pricer_args_keys,
+            )
+        : (),
     };
     };
 
@@ -621,9 +618,10 @@ rpc contract_update => sub {
                     message_to_client => localize($response->{error}),
                 });
             } else {
-                # CLEANUP: set contract parameters only if a corresponding POC subscription exists.
-                my $contract_parameters = BOM::Transaction::Utility::build_contract_parameters($client, $updater->fmb);
-                BOM::Transaction::Utility::set_contract_parameters($contract_parameters);
+                # always set poc parameters, even if there is no corresponding POC subscription.
+                # used by rpc to work around database replication delay, when a subsequent poc subscribe:1 request comes.
+                my $poc_parameters = BOM::Transaction::Utility::build_poc_parameters($client, $updater->fmb);
+                BOM::Transaction::Utility::set_poc_parameters($poc_parameters);
             }
         } else {
             my $error = $updater->validation_error;

@@ -106,7 +106,6 @@ subtest 'buy' => sub {
     my @expected_keys = (qw(
             transaction_id
             contract_id
-            contract_details
             balance_after
             purchase_time
             buy_price
@@ -187,7 +186,6 @@ subtest 'app_markup' => sub {
     my @expected_keys = (qw(
             transaction_id
             contract_id
-            contract_details
             balance_after
             purchase_time
             buy_price
