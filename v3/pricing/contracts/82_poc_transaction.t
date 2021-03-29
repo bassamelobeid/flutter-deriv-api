@@ -142,7 +142,9 @@ subtest 'buy another contract and test' => sub {
     });
     push @$contract_ids, $res->{buy}{contract_id};
 
-    test_subscriptions($c, 2);
+    test_subscriptions($c, 1);
+    my @transaction_subscriptions = Binary::WebSocketAPI::v3::Subscription::Transaction->get_by_class($c);
+    is(scalar(@transaction_subscriptions), 0, 'there are no transaction streams');
 };
 subtest 'sell a contract and test' => sub {
     sleep 1;    # contract "start time" could not be equal to "sell time"
@@ -169,13 +171,11 @@ subtest 'sell a contract and test' => sub {
     is $poc->{is_sold}, 1, 'got the sell poc response';
     is $poc->{contract_id}, $contract_ids->[0], 'contract id is correct';
 
-    test_subscriptions($c, 1);
+    test_subscriptions($c, 0);
 };
 subtest 'forget all and test' => sub {
     my $data = $t->await::forget_all({forget_all => 'proposal_open_contract'});
-    is(scalar($data->{forget_all}->@*), 1, 'There is only one poc stream forgotten in the result, that means no transaction stream forgotten');
-    my @transaction_subscriptions = Binary::WebSocketAPI::v3::Subscription::Transaction->get_by_class($c);
-    is(scalar(@transaction_subscriptions), 0, 'but in fact all transaction streams also forgotten');
+    is(scalar($data->{forget_all}->@*), 0, 'There is no forgotten poc stream in the result.');
 };
 
 $t->finish_ok;
@@ -196,9 +196,8 @@ sub parse_result {
 sub test_subscriptions {
     my ($c, $num_of_poc_uuid) = @_;
     my ($types, $poc_type, $poc_uuids) = parse_result($c);
-    is(scalar(@$types),    1,     'There is only 1 transaction stream');
-    is($types->[0],        'buy', 'And that transaction stream is of type = buy');
-    is(scalar(@$poc_type), 1,     'there is one poc transaction stream');
+    is(scalar(@$types),    0, 'There is no transaction stream');
+    is(scalar(@$poc_type), 0, 'there is no poc transaction stream');
     # check the poc_uuids is in poc stream
-    is(scalar(@$poc_uuids), $num_of_poc_uuid, "there are $num_of_poc_uuid subscriptions");
+    is(scalar(@$poc_uuids), $num_of_poc_uuid, "there are $num_of_poc_uuid poc subscriptions");
 }

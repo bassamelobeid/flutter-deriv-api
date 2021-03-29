@@ -66,6 +66,7 @@ subtest 'Authorization' => sub {
 };
 
 my $contract_id;
+my $subscription_id;
 
 subtest 'buy n check' => sub {
     create_tick();
@@ -109,6 +110,7 @@ subtest 'buy n check' => sub {
     ok $data->{proposal_open_contract}->{id},          'There is an id';
     is $data->{subscription}->{id},                    $data->{proposal_open_contract}->{id}, 'The same subscription id';
     is $data->{proposal_open_contract}->{contract_id}, $contract_id, 'got correct contract from proposal open contracts';
+    $subscription_id = $data->{subscription}{id};
     test_schema('proposal_open_contract', $data);
 
 };
@@ -141,10 +143,9 @@ subtest 'expiryd should sell the contract' => sub {
     is $poc->{is_sold}, 1, 'got the sell poc response';
     is $poc->{contract_id}, $contract_id, 'contract id is correct';
 };
-
 subtest 'forget' => sub {
     my $data = $t->await::forget_all({forget_all => 'proposal_open_contract'});
-    is(scalar @{$data->{forget_all}}, 0, 'Forget all returns empty as contracts are already sold');
+    is_deeply($data->{forget_all}, [$subscription_id], 'Forget all returns the poc-all subscription even tho the only open contract is sold');
 
     my $proposal = {
         "amount"        => "2",
@@ -184,6 +185,7 @@ subtest 'forget' => sub {
     ok !$data->{error}, 'No error';
     ok $data->{buy}->{contract_id}, 'got contract id';
     ok my $uuid2 = $data->{subscription}->{id}, 'Subscription id 2';
+    $subscription_id = $data->{subscription}{id};
 
     $data = $t->await::forget({forget => $uuid1});
     ok !$data->{error}, 'No error';
@@ -225,28 +227,8 @@ subtest 'check two contracts subscription' => sub {
     $data = $t->await::portfolio({portfolio => 1});
     is @{$data->{portfolio}->{contracts}}, $init_open_contracts_count + 1, 'The contract is added to portfolio';
 
-    my $msg = {
-        %$buy_res,
-        action_type             => 'buy',
-        account_id              => $account_id,
-        financial_market_bet_id => $buy_res->{buy}{contract_id},
-        amount                  => $buy_res->{buy}{buy_price},
-        short_code              => $buy_res->{buy}{shortcode},
-        currency_code           => 'USD',
-
-    };
-
-    BOM::Config::Redis::redis_transaction_write()->publish('TXNUPDATE::transaction_' . $msg->{account_id}, Encode::encode_utf8($json->encode($msg)));
-
-    $data = $t->await::portfolio({portfolio => 1});
-    is @{$data->{portfolio}->{contracts}}, $init_open_contracts_count + 1, 'Duplicate transaction feed does not change the portfolio';
-
     $data = $t->await::forget_all({forget_all => 'proposal_open_contract'});
-    is(
-        scalar @{$data->{forget_all}},
-        $init_open_contracts_count + 2,
-        'But new proposal_open_contract subscription is created by the redundant transaction feed'
-    );
+    is(scalar @{$data->{forget_all}}, 1, 'only one poc-all subscription regardless of how many open contracts');
 };
 
 subtest 'rpc error' => sub {
