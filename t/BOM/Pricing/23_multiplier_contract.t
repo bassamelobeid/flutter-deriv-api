@@ -289,15 +289,13 @@ subtest 'multiplier - get_bid' => sub {
         'date_expiry'       => ignore(),
         'entry_spot'        => 100,
         'currency'          => 'USD',
-        'limit_order'       =>
-            ['stop_out', ['basis_spot', 100, 'order_amount', '-100.00', 'order_date', ignore(), 'order_type', 'stop_out', 'commission', ignore()]],
-        'limit_order_as_hashref' => {
-            'stop_out' => {
-                'order_amount' => '-100.00',
-                'order_date'   => ignore(),
-                'display_name' => 'Stop out',
-                'value'        => '90.05'
-            }
+        'limit_order'       => {
+            stop_out => {
+                display_name => "Stop out",
+                order_amount => "-100.00",
+                order_date   => ignore(),
+                value        => "90.05",
+            },
         },
         'display_name'             => 'Volatility 100 Index',
         'is_settleable'            => 0,
@@ -370,17 +368,13 @@ subtest 'multiplier - get_bid' => sub {
         'date_expiry'       => ignore(),
         'entry_spot'        => 100,
         'currency'          => 'USD',
-        'limit_order'       => [
-            'stop_out',     ['basis_spot', 100, 'order_amount', '-100.00', 'order_date', ignore(), 'order_type', 'stop_out', 'commission', ignore()],
-            'cancellation', ['price', ignore()]
-        ],
-        'limit_order_as_hashref' => {
-            'stop_out' => {
-                'order_amount' => '-100.00',
-                'order_date'   => ignore(),
-                'display_name' => 'Stop out',
-                'value'        => '90.05'
-            }
+        'limit_order'       => {
+            stop_out => {
+                display_name => "Stop out",
+                order_amount => "-100.00",
+                order_date   => ignore(),
+                value        => "90.05",
+            },
         },
         'display_name'             => 'Volatility 100 Index',
         'is_settleable'            => 0,

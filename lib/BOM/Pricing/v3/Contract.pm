@@ -341,8 +341,6 @@ sub get_bid {
                 message_to_client => $valid_to_sell->{validation_error},
             });
         } else {
-            my $format_limit_order = ($params->{streaming_params} and $params->{streaming_params}->{format_limit_order}) ? 1 : 0;
-
             $response = _build_bid_response({
                 contract           => $contract,
                 contract_id        => $contract_id,
@@ -353,7 +351,6 @@ sub get_bid {
                 sell_price         => $sell_price,
                 sell_time          => $sell_time,
                 validation_error   => $valid_to_sell->{validation_error},
-                from_pricer        => $format_limit_order,
             });
 
             # (M)oved from bom-rpc populate_proposal_open_contract_response
@@ -491,8 +488,8 @@ sub get_contract_details {
         $bet_params =
             shortcode_to_parameters($params->{short_code}, $params->{currency});
         if ($bet_params->{bet_type} =~ /^(?:MULTUP|MULTDOWN)$/) {
-            my $contract_params = BOM::Pricing::v3::Utility::get_contract_params($params->{contract_id}, $params->{landing_company});
-            $bet_params->{limit_order} = $contract_params->{limit_order};
+            my $poc_parameters = BOM::Pricing::v3::Utility::get_poc_parameters($params->{contract_id}, $params->{landing_company});
+            $bet_params->{limit_order} = $poc_parameters->{limit_order};
         }
     } catch {
         warn __PACKAGE__ . " get_contract_details shortcode_to_parameters failed: $params->{short_code}, currency: $params->{currency}";
@@ -605,6 +602,7 @@ sub _log_exception {
 # but best not to let a typo ruin datadog's day
     $component =~ s/[^a-z_]+/_/g
         and warn "invalid component passed to _log_error: $_[0]";
+
     warn "Unhandled exception in $component: $err\n";
     stats_inc('contract.exception.' . $component);
     return;
@@ -852,12 +850,7 @@ sub _build_bid_response {
         # 2. available order for display in the websocket api response ($contract->available_orders_for_display)
         my $display = $contract->available_orders_for_display;
         $display->{$_}->{display_name} = localize($display->{$_}->{display_name}) for keys %$display;
-        if ($params->{from_pricer}) {
-            $response->{limit_order} = $display;
-        } else {
-            $response->{limit_order}            = $contract->available_orders;
-            $response->{limit_order_as_hashref} = $display;
-        }
+        $response->{limit_order} = $display;
         # commission in payout currency amount
         $response->{commission} = $contract->commission_amount;
         # deal cancellation

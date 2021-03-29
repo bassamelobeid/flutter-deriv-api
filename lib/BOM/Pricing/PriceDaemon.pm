@@ -190,7 +190,7 @@ sub run {
 
         # for proposal open_contract, we will fetch contract data with contract id and landing company.
         if ($params->{contract_id} and $params->{landing_company}) {
-            $params = BOM::Pricing::v3::Utility::get_contract_params($params->{contract_id}, $params->{landing_company});
+            $params = BOM::Pricing::v3::Utility::get_poc_parameters($params->{contract_id}, $params->{landing_company});
         }
 
         my $contract_type = $params->{contract_type};
@@ -228,12 +228,12 @@ sub run {
 
         # proposal-open-contract
         if ($params->{contract_id}) {
-            # On websocket the client is subscribing to proposal open contract with "CONTRACT_PRICE::123122__virtual" as the key
-            my $redis_channel     = 'CONTRACT_PRICE::' . $params->{contract_id} . '_' . $params->{landing_company};
+            # On websocket the client is subscribing to proposal open contract with "CONTRACT_PRICE::<landing_company>::<account_id>::<contract_id>" as the key
+            my $redis_channel     = join '::', ('CONTRACT_PRICE', $params->{landing_company}, $params->{account_id}, $params->{contract_id});
             my $subscribers_count = $redis_pricer_subscription->publish($redis_channel, encode_json_utf8($response));
 
-            # delete the job if no-one is subscribed
-            if ($subscribers_count == 0) {
+            # delete the job if no-one is subscribed, or the contract is sold
+            if ($subscribers_count == 0 || $response->{is_sold} == 1) {
                 $redis_pricer->del($key->[1], $next);
             }
         }
@@ -355,7 +355,6 @@ sub _process_price {
 sub _process_bid {
     my ($self, $params) = @_;
     $params->{validation_params}->{skip_barrier_validation} = 1;
-    $params->{streaming_params}->{format_limit_order}       = 1;
     return BOM::Pricing::v3::Contract::send_bid($params);
 }
 

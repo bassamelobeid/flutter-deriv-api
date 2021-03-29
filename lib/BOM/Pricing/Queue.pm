@@ -375,7 +375,7 @@ async sub parameters_for_contract_id {
     my ($self, $contract_id, $landing_company) = @_;
 
     my $redis      = $self->contract_redis;
-    my $params_key = join '::', ('CONTRACT_PARAMS', $contract_id, $landing_company);
+    my $params_key = join '::', ('POC_PARAMETERS', $contract_id, $landing_company);
     my $params     = await $redis->get($params_key)
         or die 'Contract parameters not found';
 
@@ -437,8 +437,8 @@ async sub send_stats {
 
                     # Retrieve extra information for open contracts
                     if ($params{contract_id} and $params{landing_company}) {
-                        my $contract_params = await $self->parameters_for_contract_id(@params{qw(contract_id landing_company)});
-                        @params{keys %$contract_params} = values %$contract_params;
+                        my $poc_parameters = await $self->parameters_for_contract_id(@params{qw(contract_id landing_company)});
+                        @params{keys %$poc_parameters} = values %$poc_parameters;
                     }
 
                     my $relative_shortcode = BOM::Pricing::v3::Utility::create_relative_shortcode(\%params);
