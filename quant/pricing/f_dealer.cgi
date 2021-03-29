@@ -103,15 +103,14 @@ if (request()->param('whattodo') eq 'closeatzero') {
                 db => BOM::Database::ClientDB->new({broker_code => $broker})->db,
             })->batch_sell_bet;
 
-        for (@$sold) {
-            my $item                = $_;
-            my $contract_parameters = BOM::Transaction::Utility::build_contract_parameters(
+        for my $item (@$sold) {
+            my $poc_parameters = BOM::Transaction::Utility::build_poc_parameters(
                 $client,
                 {
                     $item->{fmb}->%*,
                     buy_transaction_id  => $item->{buy_txn_id},
                     sell_transaction_id => $item->{txn}{id}});
-            BOM::Transaction::Utility::set_contract_parameters($contract_parameters, time);
+            BOM::Transaction::Utility::set_poc_parameters($poc_parameters, time);
         }
     }
 
