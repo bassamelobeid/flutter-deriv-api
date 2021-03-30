@@ -79,6 +79,12 @@
                 margin-bottom: 4rem;
                 background-color: var(--color-black);
             }
+            @media (max-width: 480px) {
+                header {
+                    margin-bottom: unset;
+                }
+            }
+            
             header #logo {
                 display: flex;
                 align-items: center;
@@ -157,6 +163,11 @@
                 background-color: var(--color-white);
                 border-radius: 6px;
                 box-shadow: 0 16px 20px 0 rgba(0, 0, 0, 0.05), 0 0 20px 0 rgba(0, 0, 0, 0.05);
+            }
+            @media (max-width: 480px) {
+                #container {
+                    padding:40px 16px;
+                }
             }
             form {
                 display: flex;
@@ -384,6 +395,11 @@
             #oa_social_login_container iframe {
                 height: 40px !important;
             }
+            @media (max-width: 480px) {
+                #oa_social_login_container iframe {
+                    height: 140px !important;
+                }
+            }
             #oa_social_login_container iframe #social_login {
                 background: black !important;
             }
@@ -465,6 +481,22 @@
                 width: 100%;
                 text-align: center;
                 margin-top: 1.6rem;
+            }
+            @media (max-width: 480px) {
+                .account-text {
+                    margin-top:unset;
+                    margin:1.6rem auto 0;
+                }
+            }
+            @media (max-width: 435px) {
+                .account-text {
+                    width: 58%
+                }
+            }
+            @media (max-width: 360px) {
+                .account-text {
+                    width: 63%
+                }
             }
             .hide {
                 display: none;
