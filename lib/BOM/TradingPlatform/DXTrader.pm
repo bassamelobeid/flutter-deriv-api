@@ -295,11 +295,15 @@ The DXTrader implementation of getting an account info.
 =cut
 
 sub get_account_info {
-    my ($self, $args) = @_;
+    my ($self, $loginid) = @_;
 
-    # TODO: should call BOM::DevExperts::User related method
+    my @accounts = @{$self->get_accounts};
 
-    return $args;
+    my $account = first { $_->{account_id} eq $loginid } @accounts;
+
+    die "DXInvalidAccount\n" unless ($account);
+
+    return $account;
 }
 
 =head2 get_open_positions

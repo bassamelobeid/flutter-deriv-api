@@ -5735,15 +5735,21 @@ Returns a client or wallet instance from a loginid.
 =cut
 
 sub get_client_instance {
-    my ($self, $loginid) = @_;
+    my ($self, $loginid, $db_operation) = @_;
 
     my ($broker_code) = $loginid =~ /(^[a-zA-Z]+)/;
 
     if (LandingCompany::Wallet::get_wallet_for_broker($broker_code)) {
-        return BOM::User::Wallet->new({loginid => $loginid});
+        return BOM::User::Wallet->new({
+            loginid      => $loginid,
+            db_operation => $db_operation // 'replica'
+        });
     }
 
-    return BOM::User::Client->new({loginid => $loginid});
+    return BOM::User::Client->new({
+        loginid      => $loginid,
+        db_operation => $db_operation // 'replica'
+    });
 }
 
 =head2 ignore_age_verification

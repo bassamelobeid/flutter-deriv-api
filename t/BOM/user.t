@@ -20,6 +20,9 @@ use BOM::User;
 use BOM::User::Password;
 use BOM::MT5::User::Async;
 use BOM::Test::Helper::FinancialAssessment;
+use BOM::Test::Helper::Client qw(create_client);
+use BOM::Test::Script::DevExperts;
+use BOM::TradingPlatform;
 
 my $email    = 'abc@binary.com';
 my $password = 'jskjd8292922';
@@ -865,4 +868,90 @@ subtest 'create_client' => sub {
     is $trading_client_vr->is_wallet, 0, 'is trading client instance';
 };
 
-done_testing;
+my $wallet;
+subtest 'get_wallet_by_loginid' => sub {
+    $wallet = create_client('VRDW');
+    $user->add_client($wallet);
+
+    ok $user->get_wallet_by_loginid($wallet->{loginid}), 'can find wallet account';
+
+    throws_ok { $user->get_wallet_by_loginid('DW1002') } qr/InvalidWalletAccount/, 'invalid wallet account';
+};
+
+my ($dxtrade_account, $dxtrader);
+subtest 'get_account_by_loginid' => sub {
+    # try trading account (binary/deriv)
+    ok $user->get_account_by_loginid($client_vr->{loginid}), 'can find trading account';
+
+    # try wallet account
+    throws_ok { $user->get_account_by_loginid('DW1002') } qr/InvalidTradingAccount/, 'invalid account';
+
+    # try mt5 account
+    ok $user->get_account_by_loginid('MTD2000'), 'can find mt5 demo account';
+
+    throws_ok { $user->get_account_by_loginid('MTD2001') } qr/InvalidMT5Account/, 'invalid mt5 account';
+
+    # try dxtrade account
+    throws_ok { $user->get_account_by_loginid('DXD2000') } qr/DXInvalidAccount/, 'invalid dxtrade account';
+
+    $dxtrader = BOM::TradingPlatform->new(
+        platform => 'dxtrade',
+        client   => $client_cr_new
+    );
+    isa_ok($dxtrader, 'BOM::TradingPlatform::DXTrader');
+
+    $dxtrade_account = $dxtrader->new_account(
+        account_type => 'demo',
+        password     => 'test'
+    );
+
+    my $dxtrade_loginid = $dxtrade_account->{account_id};
+    is $user->get_account_by_loginid($dxtrade_loginid)->{account_id}, $dxtrade_loginid, 'can find dxtrade demo account';
+};
+
+subtest 'link_wallet' => sub {
+    my $args = {
+        wallet_id => $wallet->loginid,
+        client_id => $client_vr->loginid
+    };
+    # try virtual client <-> virtual wallet
+    ok $user->link_wallet_to_trading_account($args), 'can bind virtual wallet to a virtual trading account';
+
+    # try demo mt5 <-> virtual wallet
+    $args->{wallet_id} = $wallet->loginid;
+    $args->{client_id} = 'MTD2000';
+    ok $user->link_wallet_to_trading_account($args), 'can bind virtual wallet to a demo mt5 account';
+
+    # try demo dxtrade <-> virtual wallet
+    $args->{wallet_id} = $wallet->loginid;
+    $args->{client_id} = $dxtrade_account->{account_id};
+    ok $user->link_wallet_to_trading_account($args), 'can bind virtual wallet to a demo dxtrade account';
+
+    my $wallet_2 = create_client('VRDW');
+    $user->add_client($wallet_2);
+
+    $args->{wallet_id} = $wallet_2->loginid;
+    $args->{client_id} = $client_vr->loginid;
+    throws_ok { $user->link_wallet_to_trading_account($args); } qr/CannotChangeWallet/, 'cannot change to another wallet';
+
+    my $client_cr = create_client('CR');
+    $user->add_client($client_cr);
+
+    $args->{wallet_id} = $wallet->loginid;
+    $args->{client_id} = $client_cr->loginid;
+    throws_ok { $user->link_wallet_to_trading_account($args); } qr/CannotLinkVirtualAndReal/, 'cannot bind virtual wallet to a real trading account';
+
+    $args->{wallet_id} = $wallet->loginid;
+    $args->{client_id} = 'MTR1000';
+    throws_ok { $user->link_wallet_to_trading_account($args); } qr/CannotLinkVirtualAndReal/, 'cannot bind virtual wallet to a real mt5 account';
+
+    my $dxtrade_real_account = $dxtrader->new_account(
+        account_type => 'real',
+        password     => 'test',
+    );
+    $args->{wallet_id} = $wallet->loginid;
+    $args->{client_id} = $dxtrade_real_account->{account_id};
+    throws_ok { $user->link_wallet_to_trading_account($args); } qr/CannotLinkVirtualAndReal/, 'cannot bind virtual wallet to a real dxtrade account';
+};
+
+done_testing();

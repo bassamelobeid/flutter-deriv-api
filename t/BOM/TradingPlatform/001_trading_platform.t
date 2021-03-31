@@ -48,7 +48,7 @@ subtest 'Implementation completeness' => sub {
             change_password    => 0,
             deposit            => 0,
             withdraw           => 0,
-            get_account_info   => 0,
+            get_account_info   => 1,
             get_accounts       => 0,
             get_open_positions => 0,
         },

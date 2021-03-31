@@ -22,6 +22,7 @@ use BOM::User::Utility;
 use BOM::User::Client;
 use BOM::User::Wallet;
 use BOM::User::Onfido;
+use BOM::TradingPlatform;
 use BOM::Config::Runtime;
 use ExchangeRates::CurrencyConverter qw(in_usd);
 use LandingCompany::Registry;
@@ -931,18 +932,16 @@ sub get_client_using_replica {
     my ($self, $login_id) = @_;
     my $cl;
     my $error;
+
     try {
-        $cl = BOM::User::Client->new({
-            loginid      => $login_id,
-            db_operation => 'replica'
-        });
+        $cl = BOM::User::Client->get_client_instance($login_id, 'replica');
     } catch ($e) {
         $log->warnf("Error getting replica connection: %s", $e);
         $error = $e;
     }
 
     # try master if replica is down
-    $cl = BOM::User::Client->new({loginid => $login_id}) if not $cl or $error;
+    $cl = BOM::User::Client->get_client_instance($login_id) if not $cl or $error;
 
     return $cl;
 }
@@ -1216,6 +1215,114 @@ sub update_all_passwords {
     BOM::User::AuditLog::log($log, $self->email);
 
     return 1;
+}
+
+=head2 link_wallet_to_trading_account
+
+Binds a wallet account to a trading account.
+
+=over 4
+
+=item * $args->{wallet_id} - a wallet loginid
+
+=item * $args->{client_id} - a L<BOM::User::Client> or MT5 or DXtrade loginid
+
+=back
+
+Returns 1 on success, throws exception on error
+
+=cut
+
+sub link_wallet_to_trading_account {
+    my ($self, $args) = @_;
+
+    my $loginid        = delete $args->{client_id};
+    my $wallet_loginid = delete $args->{wallet_id};
+
+    my $wallet  = $self->get_wallet_by_loginid($wallet_loginid);
+    my $account = $self->get_account_by_loginid($loginid);
+
+    die "CannotLinkVirtualAndReal\n"
+        unless (($loginid =~ '^(VR|MTD|DXD)' && $wallet->is_virtual)
+        || ($loginid !~ '^(VR|MTD|DXD)' && !$wallet->is_virtual));
+
+    die "CurrencyMismatch\n" unless ($account->{currency} eq $wallet->currency);
+
+    my ($result);
+    try {
+        $result = $self->dbic->run(
+            fixup => sub {
+                $_->selectrow_array('select users.add_linked_wallet(?,?,?)', undef, $self->{id}, $account->{account_id}, $wallet->loginid);
+            });
+    } catch ($e) {
+        $log->errorf('Fail to bind trading account %s to wallet account %s: %s', $account->{account_id}, $wallet->loginid, $e);
+        die 'UnableToLinkWallet\n';
+    }
+
+    die "CannotChangeWallet\n" unless $result;
+
+    return 1;
+}
+
+=head2 get_wallet_by_loginid
+
+Gets a wallet instance by loginid.
+
+=over 4
+
+=item * C<$loginid> - a L<BOM::User::Wallet> loginid
+
+=back
+
+Returns a L<BOM::User::Wallet> instance on success, throws exception on error
+
+=cut
+
+sub get_wallet_by_loginid {
+    my ($self, $loginid) = @_;
+
+    return (first { $_->is_wallet && $_->loginid eq $loginid } $self->clients or die "InvalidWalletAccount\n");
+}
+
+=head2 get_account_by_loginid
+
+Gets a trading account by loginid.
+
+=over 4
+
+=item * C<$loginid> - a L<BOM::User::Client> or MT5 or DXtrade loginid
+
+=back
+
+Returns a hashref of trading account info on success, throws exception on error
+
+=cut
+
+sub get_account_by_loginid {
+    my ($self, $loginid) = @_;
+
+    return BOM::TradingPlatform->new(
+        platform => 'mt5',
+        client   => $self->get_default_client
+        )->get_account_info($loginid)->get
+        if $loginid =~ MT5_REGEX;
+
+    return BOM::TradingPlatform->new(
+        platform => 'dxtrade',
+        client   => $self->get_default_client
+    )->get_account_info($loginid)
+        if $loginid =~ DXTRADE_REGEX;
+
+    my $account = first { $_->loginid eq $loginid && !$_->is_wallet } $self->clients;
+
+    die "InvalidTradingAccount\n" unless ($account);
+
+    return {
+        account_id   => $account->loginid,
+        account_type => $account->is_virtual ? 'demo' : 'real',
+        currency     => $account->currency,
+        platform     => 'trading',
+    };
 }
 
 1;
