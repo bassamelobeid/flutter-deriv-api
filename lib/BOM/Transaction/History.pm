@@ -239,6 +239,21 @@ sub _get_txn_remark {
         return localize('Balance operation');
     }
 
+    # DXtrader
+    if (my $dxtrade_account = $details->{dxtrade_account_id}) {
+        if ($txn->{action_type} eq 'withdrawal') {
+            if ($details->{fees} > 0) {
+                return localize('Transfer to Deriv X account [_1]. [_2].', $dxtrade_account, _get_fee_remark($details));
+            }
+            return localize('Transfer to Deriv X account [_1]', $dxtrade_account);
+        } elsif ($txn->{action_type} eq 'deposit') {
+            if ($details->{fees} > 0) {
+                return localize('Transfer from Deriv X account [_1]. [_2].', $dxtrade_account, _get_fee_remark($details));
+            }
+            return localize('Transfer from Deriv X account [_1]', $dxtrade_account);
+        }
+    }
+
     return undef;
 }
 

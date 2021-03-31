@@ -8,6 +8,8 @@ use BOM::User;
 use BOM::Test::Helper::Token;
 use BOM::Test::Helper::P2P;
 use BOM::Transaction::History qw(get_transaction_history);
+use BOM::TradingPlatform;
+use BOM::Config::Runtime;
 
 subtest 'doughflow' => sub {
     my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
@@ -442,6 +444,81 @@ subtest 'legacy transactions' => sub {
 
     my @res = get_remarks($client);
     is $res[0], 'legacy remark', 'legacy remark used when no transacation details';
+};
+
+subtest 'dxtrader' => sub {
+    BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend->all(0);
+
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+        email       => 'dxtrade@binary.com'
+    });
+    $client->account('USD');
+
+    my $dxtrader = BOM::TradingPlatform->new(
+        platform => 'dxtrade',
+        client   => $client
+    );
+
+    $dxtrader->client_payment(
+        payment_type => 'dxtrade_transfer',
+        amount       => 10,
+        remark       => 'legacy remark',
+        txn_details  => {
+            dxtrade_account_id => 'DXD001',
+            fees               => 0,
+        },
+    );
+
+    my @res = get_remarks($client);
+    is $res[0], 'Transfer from Deriv X account DXD001', 'withdrawal no fee';
+
+    $dxtrader->client_payment(
+        payment_type => 'dxtrade_transfer',
+        amount       => 10,
+        remark       => 'legacy remark',
+        txn_details  => {
+            dxtrade_account_id        => 'DXD002',
+            fees                      => 1.23,
+            fees_percent              => 10,
+            fees_currency             => 'SGD',
+            min_fee                   => 0.1,
+            fee_calculated_by_percent => 1.23,
+        },
+    );
+
+    @res = get_remarks($client);
+    is $res[0], 'Transfer from Deriv X account DXD002. Includes transfer fee of 1.23 SGD (10%).', 'withdrawal with fee';
+
+    $dxtrader->client_payment(
+        payment_type => 'dxtrade_transfer',
+        amount       => -5,
+        remark       => 'legacy remark',
+        txn_details  => {
+            dxtrade_account_id => 'DXD003',
+            fees               => 0,
+        },
+    );
+
+    @res = get_remarks($client);
+    is $res[0], 'Transfer to Deriv X account DXD003', 'deposit no fee';
+
+    $dxtrader->client_payment(
+        payment_type => 'dxtrade_transfer',
+        amount       => -5,
+        remark       => 'legacy remark',
+        txn_details  => {
+            dxtrade_account_id        => 'DXD004',
+            fees                      => 0.9,
+            fees_percent              => 1.5,
+            fees_currency             => 'USD',
+            min_fee                   => 0.1,
+            fee_calculated_by_percent => 0.9,
+        },
+    );
+
+    @res = get_remarks($client);
+    is $res[0], 'Transfer to Deriv X account DXD004. Includes transfer fee of 0.90 USD (1.5%).', 'deposit with fee';
 };
 
 sub get_remarks {
