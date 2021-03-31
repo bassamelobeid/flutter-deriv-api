@@ -167,9 +167,8 @@ sub run {
                 }
             }
 
-        } catch {
+        } catch ($e) {
             # if it dies, catch it here.
-            my $e = $@;
             $self->report->{$symbol} = {
                 success => 0,
                 reason  => $e,

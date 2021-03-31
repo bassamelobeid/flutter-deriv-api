@@ -66,8 +66,7 @@ sub run {
         });
 
         print "generated economic events impact curves for " . scalar(@underlying_symbols) . " underlying symbols.\n";
-    } catch {
-        my $e = $@;
+    } catch ($e) {
         print 'Error occured while saving events: ' . $e . "\n";
     }
 
