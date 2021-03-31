@@ -6,6 +6,7 @@ BTC:
         rpc_timeout: 100
     protocol_cost: 0
     decimal_places: 8
+    dust_relay_tx_fee: 0.00003 # in BTC/kB
     sweep:
         min_transfer: 1
         max_transfer: 100
@@ -28,6 +29,7 @@ LTC:
         rpc_timeout: 100
     protocol_cost: 0
     decimal_places: 8
+    dust_relay_tx_fee: 0.0003 # in LTC/kB
     sweep:
         min_transfer: 1
         max_transfer: 600
