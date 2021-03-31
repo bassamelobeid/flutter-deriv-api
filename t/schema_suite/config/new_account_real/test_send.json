@@ -2,7 +2,7 @@
     "token": "[_1]",
     "args": {
         "new_account_real": "1",
-        "salutation": "Mrs",
+        "salutation": "Ms",
         "first_name": "[_2]",
         "last_name": "Example Last Name",
         "date_of_birth": "1975-12-01",

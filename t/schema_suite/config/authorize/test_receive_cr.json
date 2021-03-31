@@ -24,7 +24,7 @@
    ],
    "properties" : {
       "fullname" : {
-         "pattern" : "^Mrs Example First Name Example Last Name$",
+         "pattern" : "^Ms Example First Name Example Last Name$",
          "type" : "string"
       },
       "email" : {

@@ -28,7 +28,7 @@
          "type" : "string"
       },
       "fullname" : {
-         "pattern" : "^Mrs Example First Name MX Example Last Name$",
+         "pattern" : "^Ms Example First Name MX Example Last Name$",
          "type" : "string"
       },
       "landing_company_fullname" : {
