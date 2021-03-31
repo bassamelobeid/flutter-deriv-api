@@ -17,7 +17,7 @@ new_account:
       default:
         - pass
     residence:
-      uk:
+      gb:
         - client.address_postcode_mandatory
       default:
         - pass
