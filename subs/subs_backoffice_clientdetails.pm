@@ -761,7 +761,8 @@ sub build_client_warning_message {
 
     # build the table
     my $output = '';
-    if (@output) {
+
+    if (@output || scalar keys %client_status) {
         $output =
               '<form method="POST" class="row">'
             . '<div class="row"><table class="collapsed hover alternate"><thead><tr>'
