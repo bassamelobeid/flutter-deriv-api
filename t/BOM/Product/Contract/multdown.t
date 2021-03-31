@@ -127,7 +127,7 @@ subtest 'shortcode' => sub {
         currency     => 'USD',
     };
     my $c = produce_contract($args);
-    is $c->shortcode, 'MULTDOWN_R_100_100_10_' . $now->epoch . '_' . $c->date_expiry->epoch . '_0_0.00', 'shortcode populated correctly';
+    is $c->shortcode, 'MULTDOWN_R_100_100.00_10_' . $now->epoch . '_' . $c->date_expiry->epoch . '_0_0.00', 'shortcode populated correctly';
 };
 
 subtest 'deal cancellation' => sub {
