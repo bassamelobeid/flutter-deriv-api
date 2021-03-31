@@ -1,0 +1,42 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "Link Wallet (request)",
+    "description": "Link a wallet to a trading app.",
+    "hidden": 1,
+    "type": "object",
+    "auth_required": 1,
+    "auth_scopes": [
+        "admin"
+    ],
+    "additionalProperties": false,
+    "required": [
+        "link_wallet",
+        "client_id",
+        "wallet_id"
+    ],
+    "properties": {
+        "link_wallet": {
+            "description": "Must be `1`",
+            "type": "number",
+            "enum": [
+                1
+            ]
+        },
+        "client_id": {
+            "description": "The unique identifier for this trading account.",
+            "type": "string"
+        },
+        "wallet_id": {
+            "description": "The unique identifier for this wallet.",
+            "type": "string"
+        },
+        "passthrough": {
+            "description": "[Optional] Used to pass data through the websocket, which may be retrieved via the `echo_req` output field.",
+            "type": "object"
+        },
+        "req_id": {
+            "description": "[Optional] Used to map request to response.",
+            "type": "integer"
+        }
+    }
+}
