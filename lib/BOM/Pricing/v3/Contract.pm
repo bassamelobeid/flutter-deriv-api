@@ -108,8 +108,7 @@ sub _get_ask {
 
     try {
         $contract = produce_contract($args_copy);
-    } catch {
-        my $e                 = $@;
+    } catch ($e) {
         my $message_to_client = _get_error_message($e, $args_copy);
         my $details           = _get_error_details($e);
         return BOM::Pricing::v3::Utility::create_error({
@@ -232,8 +231,7 @@ sub _get_ask {
         my $pen = $contract->pricing_engine_name;
         $pen =~ s/::/_/g;
         stats_timing('compute_price.buy.timing', 1000 * Time::HiRes::tv_interval($tv), {tags => ["pricing_engine:$pen"]});
-    } catch {
-        my $e                 = $@;
+    } catch ($e) {
         my $message_to_client = _get_error_message($e, $args_copy, 1);
 
         return BOM::Pricing::v3::Utility::create_error({
@@ -383,8 +381,7 @@ sub get_bid {
             $pen =~ s/::/_/g;
             stats_timing('compute_price.sell.timing', 1000 * Time::HiRes::tv_interval($tv), {tags => ["pricing_engine:$pen"]});
         }
-    } catch {
-        my $e = $@;
+    } catch ($e) {
         _log_exception(get_bid => $e);
 
         return BOM::Pricing::v3::Utility::create_error({
@@ -414,12 +411,11 @@ sub send_bid {
 
     try {
         $response = get_bid($params);
-    } catch {
+    } catch ($e) {
         # This should be impossible: get_bid() has an exception wrapper around
         # all the useful code, so unless the error creation or localize steps
         # fail, there's not much else that can go wrong. We therefore log and
         # report anyway.
-        my $e = $@;
 
         _log_exception(send_bid => "$e (and it should be impossible for this to happen)");
 
@@ -461,8 +457,7 @@ sub send_ask {
     my $response;
     try {
         $response = _get_ask(prepare_ask($params->{args}), $params->{app_markup_percentage});
-    } catch {
-        my $e = $@;
+    } catch ($e) {
         _log_exception(send_ask => $e);
         $response = BOM::Pricing::v3::Utility::create_error({
                 code              => 'pricing error',
@@ -662,8 +657,7 @@ sub _validate_offerings {
                 $details ? (details => $details) : (),
             });
         }
-    } catch {
-        my $e                 = $@;
+    } catch ($e) {
         my $message_to_client = _get_error_message($e, $args_copy);
         my $details           = _get_error_details($e);
 

@@ -81,8 +81,7 @@ sub redis_instance {
                 ),
             ));
         return $redis;
-    } catch {
-        my $e = $@;
+    } catch ($e) {
         # delay a bit so that process managers like supervisord can
         # restart this processor gracefully in case of connection issues
         sleep(3);
@@ -443,8 +442,8 @@ async sub send_stats {
 
                     my $relative_shortcode = BOM::Pricing::v3::Utility::create_relative_shortcode(\%params);
                     $queued{$relative_shortcode}++;
-                } catch {
-                    $log->warnf('Failed to extract metrics for contract %s - %s', $key, $@);
+                } catch ($e) {
+                    $log->warnf('Failed to extract metrics for contract %s - %s', $key, $e);
                     stats_inc('pricing.queue.invalid_contract');
                 }
             },

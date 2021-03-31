@@ -150,13 +150,12 @@ sub run {
         my $key;
         try {
             $key = $redis_pricer->brpop(@{$args{queues}}, 0)
-        } catch {
-            my $err = $@;
-            if (blessed($err) && $err->isa('RedisDB::Error::EAGAIN')) {
+        } catch ($e) {
+            if (blessed($e) && $e->isa('RedisDB::Error::EAGAIN')) {
                 stats_inc("pricer_daemon.resource_unavailable_error");
                 next LOOP;
             } else {
-                die $err;
+                die $e;
             }
         };
         last LOOP unless $key;
@@ -210,9 +209,8 @@ sub run {
         try {
             # Possible transient failure/dupe spot time
             $response = $self->process_job($redis_pricer, $next, $params) // next LOOP;
-        } catch {
-            my $err = $@;
-            $log->warnf('process_job_exception: param_str[%s], exception[%s], params[%s]', $next, $err, $params);
+        } catch ($e) {
+            $log->warnf('process_job_exception: param_str[%s], exception[%s], params[%s]', $next, $e, $params);
             $redis_pricer->del($key->[1], $next);
             next LOOP;
         }
