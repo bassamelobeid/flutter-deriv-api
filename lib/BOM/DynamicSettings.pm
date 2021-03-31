@@ -239,6 +239,7 @@ sub get_settings_by_group {
                 system.suspend.payout_freezing_funds
                 system.suspend.doughflow_deriv_sportsbooks
                 system.suspend.universal_password
+                system.dxtrade.suspend.all
                 )
         ],
         quant => [qw(
