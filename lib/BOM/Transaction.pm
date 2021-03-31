@@ -860,10 +860,9 @@ sub buy {
         $self->contract_details($fmb);
         $self->transaction_details($txn);
         $error = 0;
-    } catch {
+    } catch ($e) {
         # if $error_status is defined, return it
         # otherwise the function re-throws the exception
-        my $e = $@;
         BOM::Transaction::Utility::update_poc_parameters_ttl($fmbid, $client) if $fmbid;
         $company_limits->reverse_buys($client);
         $error_status = $self->_recover($e);
@@ -1068,8 +1067,8 @@ sub batch_buy {
             $stat{$broker}->{success} = $success;
             $stat{$broker}->{failure} = $failure;
             $self->expiryq->enqueue_multiple_new_transactions(_get_params_for_expiryqueue($self), _get_list_for_expiryqueue($list));
-        } catch {
-            warn __PACKAGE__ . ':(' . __LINE__ . '): ' . $@;    # log it
+        } catch ($e) {
+            warn __PACKAGE__ . ':(' . __LINE__ . '): ' . $e;    # log it
 
             for my $el (@$list) {
                 @{$el}{qw/code error/} = @general_error unless $el->{code} or $el->{fmb};
@@ -1223,10 +1222,10 @@ sub sell {
             BOM::Transaction::Utility::set_poc_parameters($poc_parameters, time);
         }
         $error = 0;
-    } catch {
+    } catch ($e) {
         # if $error_status is defined, return it
         # otherwise the function re-throws the exception
-        $error_status = $self->_recover($@);
+        $error_status = $self->_recover($e);
     }
     return $self->stats_stop($stats_data, $error_status) if $error_status;
 
@@ -1357,8 +1356,8 @@ sub sell_by_shortcode {
                 }
             }
             $stat{$broker}->{success} = $success;
-        } catch {
-            warn __PACKAGE__ . ':(' . __LINE__ . '): ' . $@;    # log it
+        } catch ($e) {
+            warn __PACKAGE__ . ':(' . __LINE__ . '): ' . $e;    # log it
             for my $el (@$list) {
                 @{$el}{qw/code error/} = ('UnexpectedError', BOM::Platform::Context::localize('An unexpected error occurred'))
                     unless $el->{code} or $el->{fmb};
@@ -2051,8 +2050,7 @@ sub sell_expired_contracts {
                 }
                 push @{$result->{failures}}, $failure;
             }
-        } catch {
-            my $err = $@;
+        } catch ($err) {
             if ($err =~ /^Requesting for historical period data without a valid DB connection/) {
                 # seems an issue in /Quant/Framework/EconomicEventCalendar.pm get_latest_events_for_period:
                 # live pricing condition was not ok and get_for_period was called for
@@ -2130,8 +2128,7 @@ sub sell_expired_contracts {
             !grep { $id eq $_->{fmb}{id} } @$sold
         } map { $_->{id} } @bets_to_sell;
         BOM::Transaction::Utility::update_poc_parameters_ttl($_, $client) for (@not_sold);
-    } catch {
-        my $e         = $@;
+    } catch ($e) {
         my $bet_count = scalar @$bets;
         my $message   = ref $e eq 'ARRAY' ? "@$e" : "$e";
         warn($message . " (bet_count = $bet_count)");
