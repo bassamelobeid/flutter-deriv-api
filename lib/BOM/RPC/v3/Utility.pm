@@ -147,7 +147,7 @@ sub get_token_details {
 
 =head2 create_error
 
-Description: Creates an error data structure that allows front-end to display the correct information 
+Description: Creates an error data structure that allows front-end to display the correct information
 
 example
 
@@ -161,27 +161,27 @@ Takes the following arguments as named parameters
 
 =over 4
 
-=item - code:  A short string acting as a key for this error.  
+=item - code:  A short string acting as a key for this error.
 
-=item - message_to_client: A string that will be shown to the end user.  
-This will nearly always need to be translated using the C<localize()> method.  
+=item - message_to_client: A string that will be shown to the end user.
+This will nearly always need to be translated using the C<localize()> method.
 
-=item - message: (optional)  Message to be written to the logs. Only log messages that can be 
-acted on. 
+=item - message: (optional)  Message to be written to the logs. Only log messages that can be
+acted on.
 
 =item - details: (optional) An arrayref with meta data for the error.  Has the following
 optional attribute(s)
 
-=over 4 
+=over 4
 
-=item - fields:  an arrayref of fields affected by this error. This allows frontend 
-to display appropriate warnings. 
-
-=back
+=item - fields:  an arrayref of fields affected by this error. This allows frontend
+to display appropriate warnings.
 
 =back
 
-Returns a hashref 
+=back
+
+Returns a hashref
 
         {
         error => {
@@ -383,7 +383,7 @@ Check new password against user password.
 
 =back
 
-Returns undef on success, returns error code otherwise. 
+Returns undef on success, returns error code otherwise.
 
 =cut
 
@@ -901,8 +901,8 @@ sub _timed(&@) {    ## no critic (ProhibitSubroutinePrototypes)
     try {
         $rslt = $code->();
         $k .= '.success';
-    } catch {
-        $exception = $@;
+    } catch ($e) {
+        $exception = $e;
         $k .= '.error';
     }
     my $elapsed = 1000.0 * (Time::HiRes::time() - $start);
@@ -941,10 +941,10 @@ sub longcode {    ## no critic(Subroutines::RequireArgUnpacking)
     foreach my $shortcode (@short_codes) {
         try {
             $longcodes{$shortcode} = localize(shortcode_to_longcode($shortcode, $params->{currency}));
-        } catch {
+        } catch ($e) {
             # we do not want to warn for known error like legacy underlying
-            if ($@ !~ /unknown underlying/) {
-                warn "exception is thrown when executing shortcode_to_longcode, parameters: " . $shortcode . ' error: ' . $@;
+            if ($e !~ /unknown underlying/) {
+                warn "exception is thrown when executing shortcode_to_longcode, parameters: " . $shortcode . ' error: ' . $e;
             }
             $longcodes{$shortcode} = localize('No information is available for this contract.');
         }

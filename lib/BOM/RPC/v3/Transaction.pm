@@ -161,7 +161,7 @@ rpc "buy",
 
     #Temporary fix to skip amount validation for lookback.
     $error = _validate_amount($amount, $currency) if ($contract_parameters->{bet_type} and $contract_parameters->{bet_type} !~ /$nonbinary_list/);
-    return $error if $error;
+    return $error                                 if $error;
 
     if (defined $price and defined $amount and defined $amount_type and $amount_type eq 'stake') {
         $error = _validate_stake($price, $amount, $currency);
@@ -185,8 +185,7 @@ rpc "buy",
                 message_to_client => $err->{-message_to_client},
             });
         }
-    } catch {
-        my $exception = $@;
+    } catch ($exception) {
         my $message_to_client;
         log_exception();
         if (blessed($exception) && $exception->isa('BOM::Product::Exception')) {
@@ -216,8 +215,8 @@ rpc "buy",
                 purchase_date       => $purchase_date,
                 source              => $source
             });
-        } catch {
-            warn "Copiers trade buy error: " . $@;
+        } catch ($e) {
+            warn "Copiers trade buy error: " . $e;
             log_exception();
         }
     }
@@ -308,7 +307,7 @@ rpc buy_contract_for_multiple_accounts => sub {
     my ($amount, $amount_type) = @{$contract_parameters}{qw/amount amount_type/};
 
     $error = _validate_amount($amount, $currency) if ($contract_parameters->{bet_type} !~ /$nonbinary_list/);
-    return $error if $error;
+    return $error                                 if $error;
 
     if (defined $price and defined $amount and defined $amount_type and $amount_type eq 'stake') {
         $error = _validate_stake($price, $amount, $currency);
@@ -335,8 +334,7 @@ rpc buy_contract_for_multiple_accounts => sub {
                 message_to_client => $err->{-message_to_client},
             });
         }
-    } catch {
-        my $exception = $@;
+    } catch ($exception) {
         my $message_to_client;
         if (blessed($exception) && $exception->isa('BOM::Product::Exception')) {
             $message_to_client = $exception->message_to_client;
@@ -344,7 +342,7 @@ rpc buy_contract_for_multiple_accounts => sub {
             $message_to_client = ['Cannot create contract'];
             warn __PACKAGE__
                 . " buy_contract_for_multiple_accounts failed with error [$exception], parameters: "
-                . (eval { $json->encode($contract_parameters) } // 'could not encode, ' . $@);
+                . (eval { $json->encode($contract_parameters) } // 'could not encode, ' . $exception);
         }
         log_exception();
         $error = BOM::RPC::v3::Utility::create_error({
@@ -489,7 +487,7 @@ rpc sell_contract_for_multiple_accounts => sub {
                 transaction_id => $row->{tnx}{id},
                 reference_id   => $row->{buy_tr_id},
                 balance_after  => formatnumber('amount', $client->currency, $row->{tnx}{balance_after}),
-                sell_price     => formatnumber('price', $client->currency, $row->{fmb}{sell_price}),
+                sell_price     => formatnumber('price',  $client->currency, $row->{fmb}{sell_price}),
                 contract_id    => $row->{tnx}{financial_market_bet_id},
                 sell_time      => $row->{fmb}{sell_time},
             };
@@ -565,8 +563,8 @@ rpc "sell",
                 source              => $source,
                 purchase_date       => $purchase_date,
             }) if $client->allow_copiers;
-    } catch {
-        warn "Copiers trade sell error: " . $@;
+    } catch ($e) {
+        warn "Copiers trade sell error: " . $e;
         log_exception();
     }
 
@@ -574,10 +572,10 @@ rpc "sell",
 
     return {
         transaction_id => $trx->transaction_id,
-        reference_id   => $trx->reference_id,                                                   ### buy transaction ID
+        reference_id   => $trx->reference_id,     ### buy transaction ID
         contract_id    => $id,
         balance_after  => formatnumber('amount', $client->currency, $trx_rec->balance_after),
-        sold_for       => formatnumber('price', $client->currency, $trx_rec->amount),
+        sold_for       => formatnumber('price',  $client->currency, $trx_rec->amount),
     };
     };
 
@@ -630,8 +628,7 @@ rpc contract_update => sub {
                 message_to_client => $error->{message_to_client},
             });
         }
-    } catch {
-        my $exception = $@;
+    } catch ($exception) {
         my $message_to_client;
         if (blessed($exception) && $exception->isa('BOM::Product::Exception')) {
             $message_to_client = $exception->message_to_client;
@@ -778,10 +775,10 @@ rpc cancel => sub {
 
     return {
         transaction_id => $trx->transaction_id,
-        reference_id   => $trx->reference_id,                                                   ### buy transaction ID
+        reference_id   => $trx->reference_id,     ### buy transaction ID
         contract_id    => $contract_id,
         balance_after  => formatnumber('amount', $client->currency, $trx_rec->balance_after),
-        sold_for       => formatnumber('price', $client->currency, $trx_rec->amount),
+        sold_for       => formatnumber('price',  $client->currency, $trx_rec->amount),
     };
 };
 

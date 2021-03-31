@@ -26,7 +26,7 @@ use BOM::Database::UserDB;
 
 =head2 notification_event
 
-notification_events enables the system to have the information of event happening in 
+notification_events enables the system to have the information of event happening in
 
 frontend and carry out processes in accordance to the event.
 
@@ -62,8 +62,7 @@ rpc notification_event => sub {
     for my $action (@$actions) {
         try {
             $action->($client, $args);
-        } catch {
-            my $e = $@;
+        } catch ($e) {
             $all_success_flag = 0;
             warn "Error caught in $action : " . $e;
             log_exception();

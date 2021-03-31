@@ -451,7 +451,7 @@ Returns a hashref of landing_company parameters
 =cut
 
 sub __build_landing_company {
-    my $lc      = shift;
+    my $lc = shift;
     # If no country is given, it will return the legal allowed markets of the landing company
     # else it will return the legal allowed markets for the given country
     my $country = shift // "default";
@@ -655,8 +655,8 @@ rpc account_statistics => sub {
                 $sth->execute($account->id);
                 return @{$sth->fetchrow_arrayref};
             });
-    } catch {
-        warn "Error caught : $@\n";
+    } catch ($e) {
+        warn "Error caught : $e\n";
         log_exception();
         return BOM::RPC::v3::Utility::client_error();
     }
@@ -947,7 +947,7 @@ rpc get_account_status => sub {
 
     my $provider;
     if ($user->{has_social_signup}) {
-        push @$status, 'social_signup'; # differentiate between social and password based accounts
+        push @$status, 'social_signup';    # differentiate between social and password based accounts
         my $user_connect = BOM::Database::Model::UserConnect->new;
         $provider = $user_connect->get_connects_by_user_id($client->user->{id})->[0];
     }
@@ -2315,9 +2315,8 @@ async_rpc service_token => sub {
                         service => $service,
                         $client->p2p_chat_token->%*
                     });
-            } catch {
-                my $err      = $@;
-                my $err_code = $err->{error_code} // '';
+            } catch ($e) {
+                my $err_code = $e->{error_code} // '';
 
                 if (my $message = $BOM::RPC::v3::P2P::ERROR_MAP{$err_code}) {
                     push @service_futures,
@@ -2327,7 +2326,7 @@ async_rpc service_token => sub {
                                 message_to_client => localize($message),
                             }));
                 }
-                push @service_futures, Future->fail($@);
+                push @service_futures, Future->fail($e);
             }
         }
 
@@ -2596,9 +2595,9 @@ rpc set_account_currency => sub {
             {
                 loginid => $client->loginid,
             });
-    } catch {
+    } catch ($e) {
         log_exception();
-        warn "Error caught in set_account_currency: $@\n";
+        warn "Error caught in set_account_currency: $e\n";
     }
     return {status => $status};
 };

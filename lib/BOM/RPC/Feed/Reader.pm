@@ -66,9 +66,9 @@ async sub on_stream {
                 stream => $stream,
             );
         }
-    } catch {
-        $log->errorf('Exception while handling stream requests from %s: %s', $client_info, $@);
-        stats_event('Exception while handling stream requests', "from $client_info | $@", {alert_type => 'error'});
+    } catch ($e) {
+        $log->errorf('Exception while handling stream requests from %s: %s', $client_info, $e);
+        stats_event('Exception while handling stream requests', "from $client_info | $e", {alert_type => 'error'});
         stats_inc('local_feed.reader.request_exception');
         log_exception();
     }
@@ -84,9 +84,9 @@ async sub on_stream {
         # not to allow anything further to reach the outgoing stream,
         # since the receiver may try it as valid tick data...
         $stream->close_now;
-    } catch {
-        $log->errorf('Failed to close stream from %s: %s', $client_info, $@);
-        stats_event('Failed to close stream', "from $client_info | $@", {alert_type => 'error'});
+    } catch ($e) {
+        $log->errorf('Failed to close stream from %s: %s', $client_info, $e);
+        stats_event('Failed to close stream', "from $client_info | $e", {alert_type => 'error'});
         log_exception();
     }
     return;

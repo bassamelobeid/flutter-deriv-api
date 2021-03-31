@@ -237,8 +237,7 @@ sub p2p_rpc {
                 app_config => $app_config,
                 params     => $params
             );
-        } catch {
-            my $exception = $@;
+        } catch ($exception) {
             my ($err_code, $err_code_db, $err_params, $err_details);
 
             #log datadog metric

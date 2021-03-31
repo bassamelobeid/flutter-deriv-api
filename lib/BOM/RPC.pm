@@ -171,8 +171,7 @@ sub wrap_rpc_sub {
             } else {
                 $result = $code->(@args);
             }
-        } catch {
-            my $error = $@;
+        } catch ($error) {
             #Future->fail()  will raise exception here, in this case error is already formatted
             #otherwise die again, let outer catch handle it.
 

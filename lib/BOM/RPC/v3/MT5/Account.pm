@@ -482,11 +482,11 @@ Takes the following parameters:
 
 =item * C<$account_type> - string representing type of the MT5 sevrer (demo/real)
 
-=item * C<$country> - Alpha-2 code of the country 
+=item * C<$country> - Alpha-2 code of the country
 
-=back 
+=back
 
-Returns a randomly selected trading server key in client's region 
+Returns a randomly selected trading server key in client's region
 
 =cut
 
@@ -1726,15 +1726,14 @@ async_rpc "mt5_deposit",
                     amount            => -1 * $amount,
                     internal_transfer => 1,
                 );
-            } catch {
-                my $withdraw_error = $@;
+            } catch ($e) {
                 return create_error_future(
                     $error_code,
                     {
                         message => BOM::RPC::v3::Cashier::__client_withdrawal_notes({
                                 client => $fm_client,
                                 amount => $amount,
-                                error  => $withdraw_error
+                                error  => $e
                             })});
             }
 
@@ -1792,8 +1791,8 @@ async_rpc "mt5_deposit",
                             gateway_code       => 'mt5_transfer',
                             id                 => $txn->{id},
                             time               => $txn->{transaction_time}}});
-            } catch {
-                my $error = BOM::Transaction->format_error(err => $@);
+            } catch ($e) {
+                my $error = BOM::Transaction->format_error(err => $e);
                 return create_error_future($error_code, {message => $error->{-message_to_client}});
             }
 
@@ -1949,8 +1948,8 @@ async_rpc "mt5_withdrawal",
                             status                => 1,
                             binary_transaction_id => $txn->transaction_id
                         });
-                    } catch {
-                        my $error = BOM::Transaction->format_error(err => $@);
+                    } catch ($e) {
+                        my $error = BOM::Transaction->format_error(err => $e);
                         log_exception('mt5_withdrawal');
                         _send_email(
                             loginid      => $to_loginid,
@@ -2020,8 +2019,8 @@ sub _get_ib_affiliate_id_from_token {
         my @mt5_custom_var =
             map { $_->{VALUE} =~ s/\s//rg; } grep { $_->{NAME} =~ s/\s//rg eq 'mt5_account' } $affiliate_user->{USER_VARIABLES}{VARIABLE}->@*;
         $ib_affiliate_id = $myaffiliate_id if $mt5_custom_var[0];
-    } catch {
-        $log->warnf("Unable to process affiliate %s custom variables (%s)", $myaffiliate_id, $@);
+    } catch ($e) {
+        $log->warnf("Unable to process affiliate %s custom variables (%s)", $myaffiliate_id, $e);
     }
 
     return $ib_affiliate_id;
@@ -2035,27 +2034,27 @@ Retrieve agent's MT5 account ID on the target server
 
 =over 4
 
-=item * C<$params> 
+=item * C<$params>
 
 hashref with the following keys
 
-=item * C<$user> 
+=item * C<$user>
 
-with the value of L<BOM::User> instance 
+with the value of L<BOM::User> instance
 
-=item * C<$account_type> 
+=item * C<$account_type>
 
 with the value of demo/real
 
-=item * C<$country> 
+=item * C<$country>
 
 with value of country 2 characters code, e.g. ID
 
-=item * C<$affiliate_id> 
+=item * C<$affiliate_id>
 
 an integer representing MyAffiliate id as the output of _get_ib_affiliate_id_from_token
 
-=item * C<$market> 
+=item * C<$market>
 
 market type such financial/synthetic
 
@@ -2281,10 +2280,10 @@ sub _mt5_validate_and_get_amount {
 
                         $mt5_amount = financialrounding('amount', $mt5_currency, $mt5_amount);
 
-                    } catch {
+                    } catch ($e) {
                         log_exception();
                         # usually we get here when convert_currency() fails to find a rate within $rate_expiry, $mt5_amount is too low, or no transfer fee are defined (invalid currency pair).
-                        $err        = $@;
+                        $err        = $e;
                         $mt5_amount = undef;
                     }
 
@@ -2302,10 +2301,10 @@ sub _mt5_validate_and_get_amount {
                         # if last rate is expiered calculate_to_amount_with_fees would fail.
                         $fees_in_client_currency =
                             financialrounding('amount', $client_currency, convert_currency($fees, $mt5_currency, $client_currency));
-                    } catch {
+                    } catch ($e) {
                         log_exception();
                         # same as previous catch
-                        $err = $@;
+                        $err = $e;
                     }
                 }
             }

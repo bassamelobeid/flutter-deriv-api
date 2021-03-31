@@ -12,7 +12,7 @@ The consumer part of RPC handler over synchronized queue
 =head1 DESCRIPTION
 
 Initialize worker to start reading Redis stream depending on the
-specified category, start the process of reading requests 
+specified category, start the process of reading requests
 which coming as messages over the stream, dispatch RPC
 requests, collect some statistics and return the
 result to the channel specified by Producer.
@@ -76,7 +76,7 @@ Creates object instance of the class
 
 =item * C<worker_index> - The worker index is always between 0 to number of workers -1
 
-=item * C<pid> - Optional, The child process id, default is current process's id 
+=item * C<pid> - Optional, The child process id, default is current process's id
 
 =item * C<category> - Optional, the category of requests which it should consume over the Redis stream, default is 'general'
 
@@ -92,7 +92,7 @@ sub new {
     my ($class, %args) = @_;
 
     croak 'Neither redis nor redis_uri is defined' unless $args{redis_uri} || $args{redis};
-    croak 'worker_index is required' unless defined $args{worker_index};
+    croak 'worker_index is required'               unless defined $args{worker_index};
 
     $args{request_counter} = 0;
     $args{pid} ||= $$;
@@ -144,7 +144,7 @@ sub stream_name {
 
 =head2 host_name
 
-Returns host name if defined otherwise returns machine's name 
+Returns host name if defined otherwise returns machine's name
 by default using L<Net::Domain>'s B<hostname> sub
 
 =cut
@@ -196,7 +196,7 @@ sub run {
     my $self = shift;
 
     $self->{is_running} = 1;
-    $0 = sprintf(    ## no critic (RequireLocalizedPunctuationVars)
+    $0 = sprintf(                     ## no critic (RequireLocalizedPunctuationVars)
         "bom-rpc-redis-%s: (new)",
         $self->stream_name
     );
@@ -262,8 +262,7 @@ sub initialize_connection {
                 CREATE => $self->stream_name,
                 CONSUMER_GROUP, '$', 'MKSTREAM'
             ));
-    } catch {
-        my $err = $@;
+    } catch ($err) {
 
         if ($self->_is_redis_exception($err)) {
             if ($err->{redis}->{message} =~ qr/Consumer Group name already exists/) {
@@ -285,8 +284,8 @@ sub initialize_connection {
 
 =head2 _setup_stream_reader
 
-Setup a stream reader and waiting for a random time and 
-then re-setup again (until B<is_running> is true), to 
+Setup a stream reader and waiting for a random time and
+then re-setup again (until B<is_running> is true), to
 getting new messages which streamed from Producer.
 
 Here, we use L<Algorithm::Backoff> to keep trying reconnect
@@ -317,8 +316,7 @@ sub _setup_stream_reader {
 
             $self->_process_message($message);
             $self->backoff->reset_value;
-        } catch {
-            my $err = $@;
+        } catch ($err) {
 
             if ($self->_is_redis_exception($err) && $err->{redis}->{message} =~ /^NOGROUP/) {
                 # There is no consumer group for reading, suppress error and recreate one.
@@ -348,7 +346,7 @@ Acknowledge all pending message unconditionally.
 every time new worker started, we try to mark all pending
 messages which have same consumer name as acknowledged.
 
-- In future phases we will support retrying mechanism for all 
+- In future phases we will support retrying mechanism for all
 one-way request which expect no response from server-side.
 
 Returns undef
@@ -364,8 +362,7 @@ sub _resolve_pending_messages {
         for ($result->@*) {
             $self->_ack_message($_->[0]);
         }
-    } catch {
-        my $err = $@;
+    } catch ($err) {
 
         $log->errorf('Failed while resolving pending messages in (%s) stream: %s',
             $self->stream_name, $self->_is_redis_exception($err) ? $err->{redis}->{message} : $err);
@@ -376,7 +373,7 @@ sub _resolve_pending_messages {
 
 =head2 _process_message
 
-Handle received message over stream, check processing 
+Handle received message over stream, check processing
 feasibility, parse message and dispatch request.
 
 =over 4
@@ -413,8 +410,7 @@ sub _process_message {
         }
 
         $result = $self->_dispatch_request($params);
-    } catch {
-        my $err = $@;
+    } catch ($err) {
         chomp($err);
 
         my $err_code = ERROR_MESSAGE_MAPPING->{$err} ? $err : DEFAULT_ERROR_CODE;
@@ -468,8 +464,8 @@ sub _dispatch_request {
     # DISPATCH
     try {
         $result = $services{$params->{rpc}}{rpc_sub}->($params->{args});
-    } catch {
-        $log->errorf("An error occurred while RPC requesting for '%s', ERROR: %s", $params->{rpc}, $@);
+    } catch ($err) {
+        $log->errorf("An error occurred while RPC requesting for '%s', ERROR: %s", $params->{rpc}, $err);
         DataDog::DogStatsd::Helper::stats_inc('bom_rpc.v_3.call_failure.count', {tags => [sprintf("rpc:%s", $params->{rpc})]});
 
         die "InternalServerError\n";
@@ -514,7 +510,7 @@ sub _dispatch_request {
 
 =head2 _parse_message
 
-Validates the original message and parses it to the expected 
+Validates the original message and parses it to the expected
 items also converts arguments to hash for fixed accessing.
 
 The example of original message:
@@ -619,8 +615,7 @@ sub _ack_message {
 
     try {
         $self->_exec_redis_command(XACK => ($self->stream_name, CONSUMER_GROUP, $id));
-    } catch {
-        my $err = $@;
+    } catch ($err) {
 
         $log->errorf('Failed while marking message (%s) as acknowledged: %s', $id,
             $self->_is_redis_exception($err) ? $err->{redis}->{message} : $err);
@@ -650,8 +645,7 @@ sub _publish_response {
 
     try {
         $self->_exec_redis_command(PUBLISH => ($channel, $message))
-    } catch {
-        my $err = $@;
+    } catch ($err) {
 
         $log->errorf('Failed while publishing a message to channel (%s): %s',
             $channel, $self->_is_redis_exception($err) ? $err->{redis}->{message} : $err);
@@ -664,7 +658,7 @@ sub _publish_response {
 
 Execute the Redis command with exception handling
 
-Note: always call this subroutine within B<Try/Catch> block and check 
+Note: always call this subroutine within B<Try/Catch> block and check
 (B<$@> is a hash and key {redis} exists within) for any exception
 
 =over 4

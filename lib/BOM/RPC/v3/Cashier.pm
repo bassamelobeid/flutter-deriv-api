@@ -414,7 +414,7 @@ rpc get_limits => sub {
     }
 
     $limit->{num_of_days}       = $numdays;
-    $limit->{num_of_days_limit} = formatnumber('price', $currency, convert_currency($numdayslimit, $withdrawal_limit_curr, $currency));
+    $limit->{num_of_days_limit} = formatnumber('price', $currency, convert_currency($numdayslimit,  $withdrawal_limit_curr, $currency));
     $limit->{lifetime_limit}    = formatnumber('price', $currency, convert_currency($lifetimelimit, $withdrawal_limit_curr, $currency));
 
     # Withdrawal since $numdays
@@ -509,9 +509,9 @@ rpc "paymentagent_list",
         my $min_max;
         try {
             $min_max = BOM::Config::PaymentAgent::get_transfer_min_max($currency);
-        } catch {
+        } catch ($e) {
             log_exception();
-            $log->warnf('%s dropped from PA list. Failed to retrieve limits: %s', $loginid, $@);
+            $log->warnf('%s dropped from PA list. Failed to retrieve limits: %s', $loginid, $e);
             next;
         }
 
@@ -584,9 +584,9 @@ rpc paymentagent_transfer => sub {
             'loginid'    => $loginid_fm,
             db_operation => 'replica'
         });
-    } catch {
+    } catch ($e) {
         log_exception();
-        $paymentagent_error = $@;
+        $paymentagent_error = $e;
     }
     if ($paymentagent_error or not $payment_agent) {
         return $error_sub->(localize('You are not authorized for transfers via payment agents.'));
@@ -727,9 +727,9 @@ rpc paymentagent_transfer => sub {
             lc_for_days        => $lc_for_days,
             lc_limit_for_days  => $lc_limit_for_days,
         );
-    } catch {
+    } catch ($e) {
         log_exception();
-        $error = $@;
+        $error = $e;
     }
 
     if ($error) {
@@ -943,9 +943,9 @@ rpc paymentagent_withdraw => sub {
             'loginid'    => $paymentagent_loginid,
             db_operation => 'replica'
         });
-    } catch {
+    } catch ($e) {
         log_exception();
-        $paymentagent_error = $@;
+        $paymentagent_error = $e;
     }
     if ($paymentagent_error or not $paymentagent) {
         return $error_sub->(localize('Please enter a valid payment agent ID.'));
@@ -1028,9 +1028,9 @@ rpc paymentagent_withdraw => sub {
             currency => $currency,
             amount   => -$amount,    #withdraw action use negative amount
         );
-    } catch {
+    } catch ($e) {
         log_exception();
-        $withdraw_error = $@;
+        $withdraw_error = $e;
     }
 
     if ($withdraw_error) {
@@ -1091,9 +1091,9 @@ rpc paymentagent_withdraw => sub {
             is_agent_to_client => 0,
             gateway_code       => 'payment_agent_transfer',
         );
-    } catch {
+    } catch ($e) {
         log_exception();
-        $error = $@;
+        $error = $e;
     }
 
     if ($error) {
@@ -1346,9 +1346,9 @@ rpc transfer_between_accounts => sub {
             return _transfer_between_accounts_error(localize('Currency provided is different from account currency.'))
                 if ($siblings->{$loginid_from}->{currency} ne $currency);
 
-            $method = \&BOM::RPC::v3::MT5::Account::mt5_deposit;
-            $params->{args}{from_binary} = $binary_login = $loginid_from;
-            $params->{args}{to_mt5}      = $mt5_login    = $loginid_to;
+            $method                             = \&BOM::RPC::v3::MT5::Account::mt5_deposit;
+            $params->{args}{from_binary}        = $binary_login = $loginid_from;
+            $params->{args}{to_mt5}             = $mt5_login    = $loginid_to;
             $params->{args}{return_mt5_details} = 1;    # to get MT5 account holder name
         }
 
@@ -1358,9 +1358,9 @@ rpc transfer_between_accounts => sub {
                 unless ($client->loginid eq $loginid_to)
                 or $token_type eq 'oauth_token';
 
-            $method = \&BOM::RPC::v3::MT5::Account::mt5_withdrawal;
-            $params->{args}{to_binary} = $binary_login = $loginid_to;
-            $params->{args}{from_mt5}  = $mt5_login    = $loginid_from;
+            $method                         = \&BOM::RPC::v3::MT5::Account::mt5_withdrawal;
+            $params->{args}{to_binary}      = $binary_login = $loginid_to;
+            $params->{args}{from_mt5}       = $mt5_login    = $loginid_from;
             $params->{args}{currency_check} = $currency;    # this makes mt5_withdrawal() check that MT5 account currency matches $currency
         }
 
@@ -1466,8 +1466,7 @@ rpc transfer_between_accounts => sub {
     try {
         ($to_amount, $fees, $fees_percent, $min_fee, $fee_calculated_by_percent) =
             BOM::Platform::Client::CashierValidation::calculate_to_amount_with_fees($amount, $from_currency, $to_currency, $client_from, $client_to);
-    } catch {
-        my $err = $@;
+    } catch ($err) {
         log_exception();
 
         return $error_audit_sub->($err, localize('Sorry, transfers are currently unavailable. Please try again later.'))
@@ -1497,8 +1496,7 @@ rpc transfer_between_accounts => sub {
             amount            => -1 * $amount,
             internal_transfer => 1,
         ) || die "validate_payment [$loginid_from]";
-    } catch {
-        my $err = $@;
+    } catch ($err) {
         log_exception();
 
         my $limit;
@@ -1529,8 +1527,7 @@ rpc transfer_between_accounts => sub {
             amount            => $to_amount,
             internal_transfer => 1,
         ) || die "validate_payment [$loginid_to]";
-    } catch {
-        my $err = $@;
+    } catch ($err) {
         log_exception();
 
         my $msg = localize("Transfer validation failed on [_1].", $loginid_to);
@@ -1572,8 +1569,8 @@ rpc transfer_between_accounts => sub {
             gateway_code      => 'account_transfer',
             txn_details       => \%txn_details,
         );
-    } catch {
-        my $err_str = (ref $@ eq 'ARRAY') ? "@$@" : $@;
+    } catch ($e) {
+        my $err_str = (ref $e eq 'ARRAY') ? "@$e" : $e;
         my $err     = "$err_msg Account Transfer failed [$err_str]";
         log_exception();
         return $error_audit_sub->($err);
