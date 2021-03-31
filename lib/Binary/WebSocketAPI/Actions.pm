@@ -389,9 +389,9 @@ sub actions_config {
         ['p2p_advertiser_payment_methods'],
 
         ['trading_platform_accounts'],
-        ['trading_platform_deposit'],
         ['trading_platform_new_account'],
-        ['trading_platform_withdrawal'],
+        ['trading_platform_deposit',    {stash_params => [qw/ token_type /]}],
+        ['trading_platform_withdrawal', {stash_params => [qw/ token_type /]}],
         ['trading_platform_password_change'],
         ['trading_platform_password_reset'],
 

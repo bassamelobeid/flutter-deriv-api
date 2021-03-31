@@ -6,7 +6,7 @@
     "type": "object",
     "auth_required": 1,
     "auth_scopes": [
-        "admin"
+        "payments"
     ],
     "additionalProperties": false,
     "required": [
@@ -26,7 +26,9 @@
         },
         "amount": {
             "description": "Amount to withdraw (in the currency of the Trading account).",
-            "type": "number"
+            "type": "number",
+            "exclusiveMinimum": true,
+            "minimum": 0
         },
         "from_account": {
             "description": "Trading account login to withdraw money from.",
