@@ -36,7 +36,7 @@ our %MT5_ACCOUNTS = (
     # TO HERE
 
     'demo\p01_ts01\financial\svg_std_usd'            => '1001001',
-    'demo\p01_ts01\financial\svg_std-lim_usd'        => '1002001',
+    'demo\p01_ts01\financial\svg_std-lim_usd'        => '1002101',
     'demo\p01_ts01\financial\svg_stp_usd'            => '1001002',
     'demo\p01_ts01\financial\labuan_std_usd'         => '1001003',
     'demo\p01_ts01\financial\labuan_stp_usd'         => '1001004',
