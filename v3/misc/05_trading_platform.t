@@ -5,84 +5,265 @@ use Test::More;
 use Test::Deep;
 use BOM::Test::Helper qw/build_wsapi_test test_schema/;
 use BOM::Test::Helper::Client;
-
 use await;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Script::DevExperts;
 use BOM::Platform::Token::API;
 use BOM::Platform::Token;
+use BOM::Database::Model::OAuth;
+use BOM::Config::Runtime;
+use BOM::Config::Chronicle;
+use Guard;
+
+my $app_config = BOM::Config::Runtime->instance->app_config;
+$app_config->chronicle_writer(BOM::Config::Chronicle::get_chronicle_writer());
+
+# We need to restore previous values when tests is done
+my %init_config_values = (
+    'system.dxtrade.suspend.all' => $app_config->system->dxtrade->suspend->all,
+);
+
+scope_guard {
+    for my $key (keys %init_config_values) {
+        $app_config->set({$key => $init_config_values{$key}});
+    }
+};
+
+$app_config->set({'system.dxtrade.suspend.all' => 0});
 
 my $t = build_wsapi_test();
 
-my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR'});
+my $client1 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR'});
+my $client2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR'});
 
-BOM::User->create(
-    email    => $client->email,
+my $user = BOM::User->create(
+    email    => $client1->email,
     password => 'test'
-)->add_client($client);
-$client->account('USD');
+);
 
-my $token = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token', ['read', 'admin']);
+$user->add_client($client1);
+$user->add_client($client2);
+$client1->account('USD');
+$client2->account('USD');
 
-$t->await::authorize({authorize => $token});
+my $client1_token_read     = BOM::Platform::Token::API->new->create_token($client1->loginid, 'test token', ['read']);
+my $client1_token_admin    = BOM::Platform::Token::API->new->create_token($client1->loginid, 'test token', ['admin']);
+my $client1_token_payments = BOM::Platform::Token::API->new->create_token($client1->loginid, 'test token', ['payments']);
+my $client2_token_payments = BOM::Platform::Token::API->new->create_token($client2->loginid, 'test token', ['payments']);
+my ($client1_token_oauth)  = BOM::Database::Model::OAuth->new->store_access_token_only(1, $client1->loginid);
 
-my $acc = $t->await::trading_platform_new_account({
-    trading_platform_new_account => 1,
-    platform                     => 'dxtrade',
-    account_type                 => 'demo',
-    market_type                  => 'financial',
-    password                     => 'Test1234',
-});
+my $dx_acc;
 
-test_schema('trading_platform_new_account', $acc);
+subtest 'accounts' => sub {
 
-my $list = $t->await::trading_platform_accounts({
-    trading_platform_accounts => 1,
-    platform                  => 'dxtrade',
-});
+    my $params = {
+        trading_platform_new_account => 1,
+        platform                     => 'dxtrade',
+        account_type                 => 'real',
+        market_type                  => 'financial',
+        password                     => 'Test1234',
+    };
 
-test_schema('trading_platform_accounts', $list);
+    $t->await::authorize({authorize => $client1_token_read});
+    my $res = $t->await::trading_platform_new_account($params);
+    is $res->{error}{code}, 'PermissionDenied', 'cannot create account with read scope';
 
-cmp_deeply($list->{trading_platform_accounts}, [$acc->{trading_platform_new_account}], 'responses match');
+    $t->await::authorize({authorize => $client1_token_admin});
+    $res = $t->await::trading_platform_new_account($params);
+    ok $res->{trading_platform_new_account}{account_id}, 'create account successfully';
+    test_schema('trading_platform_new_account', $res);
+    $dx_acc = $res->{trading_platform_new_account};
 
-my $res = $t->await::trading_platform_password_change({
-    trading_platform_password_change => 1,
-    old_password                     => 'pr0tect!',
-    new_password                     => 'destr0y!',
-});
+    $params = {
+        trading_platform_accounts => 1,
+        platform                  => 'dxtrade',
+    };
 
-test_schema('trading_platform_password_change', $res);
+    $t->await::authorize({authorize => $client1_token_read});
+    my $list = $t->await::trading_platform_accounts($params);
+    test_schema('trading_platform_accounts', $list);
+    cmp_deeply($list->{trading_platform_accounts}, [$dx_acc], 'responses match');
 
-my $code = BOM::Platform::Token->new({
-        email       => $client->email,
-        expires_in  => 3600,
-        created_for => 'trading_platform_password_reset',
-    })->token;
+};
 
-$res = $t->await::trading_platform_password_reset({
-    trading_platform_password_reset => 1,
-    new_password                    => 'Rebui1ld!',
-    verification_code               => $code,
-});
+subtest 'passwords' => sub {
 
-test_schema('trading_platform_password_reset', $res);
-BOM::Test::Helper::Client::top_up($client, 'USD', 10);
+    my $params = {
+        trading_platform_password_change => 1,
+        old_password                     => 'Pr0tect!',
+        new_password                     => 'Destr0y!',
+    };
 
-my $dep = $t->await::trading_platform_deposit({
-    trading_platform_deposit => 1,
-    platform                 => 'dxtrade',
-    from_account             => $client->loginid,
-    to_account               => $acc->{account_id},
-});
-test_schema('trading_platform_deposit', $dep);
+    $t->await::authorize({authorize => $client1_token_read});
+    my $res = $t->await::trading_platform_password_change($params);
+    is $res->{error}{code}, 'PermissionDenied', 'cannot change password with read scope';
 
-my $wd = $t->await::trading_platform_withdrawal({
-    trading_platform_withdrawal => 1,
-    platform                 => 'dxtrade',
-    from_account             => $acc->{account_id},
-    to_account               => $client->loginid,
-});
-test_schema('trading_platform_withdrawal', $wd);
+    $t->await::authorize({authorize => $client1_token_admin});
+    $res = $t->await::trading_platform_password_change($params);
+    ok $res->{trading_platform_password_change}, 'successful response';
+    test_schema('trading_platform_password_change', $res);
+
+    my $code = BOM::Platform::Token->new({
+            email       => $client1->email,
+            expires_in  => 3600,
+            created_for => 'trading_platform_password_reset',
+        })->token;
+
+    $params = {
+        trading_platform_password_reset => 1,
+        new_password                    => 'Rebui1ld!',
+        verification_code               => $code,
+    };
+
+    $t->await::authorize({authorize => $client1_token_read});
+    $res = $t->await::trading_platform_password_reset($params);
+    is $res->{error}{code}, 'PermissionDenied', 'cannot change password with read scope';
+
+    $t->await::authorize({authorize => $client1_token_admin});
+    $res = $t->await::trading_platform_password_reset($params);
+    ok $res->{trading_platform_password_reset}, 'successful response';
+    test_schema('trading_platform_password_reset', $res);
+};
+
+subtest 'transfers' => sub {
+
+    BOM::Test::Helper::Client::top_up($client1, 'USD', 10);
+
+    my $params = {
+        trading_platform_deposit => 1,
+        platform                 => 'dxtrade',
+        amount                   => 10,
+        from_account             => $client1->loginid,
+        to_account               => $dx_acc->{account_id},
+    };
+
+    $t->await::authorize({authorize => $client1_token_read});
+    my $res = $t->await::trading_platform_deposit($params);
+    is $res->{error}{code}, 'PermissionDenied', 'cannot deposit with read scope';
+
+    $t->await::authorize({authorize => $client1_token_admin});
+    $res = $t->await::trading_platform_deposit($params);
+    is $res->{error}{code}, 'PermissionDenied', 'cannot deposit with admin scope';
+
+    $t->await::authorize({authorize => $client1_token_payments});
+    $res = $t->await::trading_platform_deposit($params);
+    ok $res->{trading_platform_deposit}{transaction_id}, 'deposit response has transaction id';
+    test_schema('trading_platform_deposit', $res);
+
+    $params = {
+        trading_platform_withdrawal => 1,
+        platform                    => 'dxtrade',
+        amount                      => 10,
+        from_account                => $dx_acc->{account_id},
+        to_account                  => $client1->loginid,
+    };
+
+    $t->await::authorize({authorize => $client1_token_read});
+    $res = $t->await::trading_platform_withdrawal($params);
+    is $res->{error}{code}, 'PermissionDenied', 'cannot withdraw with read scope';
+
+    $t->await::authorize({authorize => $client1_token_admin});
+    $res = $t->await::trading_platform_withdrawal($params);
+    is $res->{error}{code}, 'PermissionDenied', 'cannot withdraw with admin scope';
+
+    $t->await::authorize({authorize => $client1_token_payments});
+    $res = $t->await::trading_platform_withdrawal($params);
+    ok $res->{trading_platform_withdrawal}{transaction_id}, 'withdrawal response has transaction id';
+    test_schema('trading_platform_withdrawal', $res);
+
+    BOM::Test::Helper::Client::top_up($client2, 'USD', 10);
+
+    $params = {
+        trading_platform_deposit => 1,
+        platform                 => 'dxtrade',
+        amount                   => 10,
+        from_account             => $client2->loginid,
+        to_account               => $dx_acc->{account_id},
+    };
+
+    # client1 is authorized with payments scope
+    $res = $t->await::trading_platform_deposit($params);
+    is $res->{error}{code}, 'PlatformTransferOauthTokenRequired', 'cannot use sibling account with api token';
+
+    $t->await::authorize({authorize => $client1_token_oauth});
+    $res = $t->await::trading_platform_deposit($params);
+    ok $res->{trading_platform_deposit}{transaction_id}, 'can use sibling account with oauth token';
+
+    $res = $t->await::transfer_between_accounts({
+        transfer_between_accounts => 1,
+        accounts                  => 'all',
+    });
+
+    cmp_deeply(
+        $res->{accounts},
+        supersetof({
+                account_type => 'dxtrade',
+                balance      => num(10),
+                loginid      => $dx_acc->{account_id},
+                currency     => $dx_acc->{currency},
+                market_type  => $dx_acc->{market_type},
+            }
+        ),
+        'transfer_between_accounts with no params and accounts=all returns dx account'
+    );
+
+    # client1 is authorized with oauth token
+    $res = $t->await::transfer_between_accounts({
+        transfer_between_accounts => 1,
+        account_from              => $dx_acc->{account_id},
+        account_to                => $client2->loginid,
+        amount                    => 10,
+        currency                  => 'USD',
+    });
+
+    cmp_deeply(
+        $res->{accounts},
+        bag({
+                account_type => 'dxtrade',
+                balance      => num(0),
+                loginid      => $dx_acc->{account_id},
+                currency     => $dx_acc->{currency},
+                market_type  => $dx_acc->{market_type},
+            },
+            {
+                account_type => 'binary',
+                balance      => num($client2->account->balance),
+                currency     => $client2->currency,
+                loginid      => $client2->loginid,
+            }
+        ),
+        'successful withdrawal with transfer_between_accounts to sibling account using oauth token'
+    );
+
+    $t->await::authorize({authorize => $client2_token_payments});
+
+    $res = $t->await::transfer_between_accounts({
+        transfer_between_accounts => 1,
+        account_from              => $client2->loginid,
+        account_to                => $dx_acc->{account_id},
+        amount                    => 10,
+        currency                  => 'USD',
+    });
+
+    cmp_deeply(
+        $res->{accounts},
+        bag({
+                account_type => 'dxtrade',
+                balance      => num(10),
+                loginid      => $dx_acc->{account_id},
+                currency     => $dx_acc->{currency},
+                market_type  => $dx_acc->{market_type},
+            },
+            {
+                account_type => 'binary',
+                balance      => num($client2->account->balance),
+                currency     => $client2->currency,
+                loginid      => $client2->loginid,
+            }
+        ),
+        'successful deposit with transfer_between_accounts using api token'
+    );
+};
 
 $t->finish_ok;
 
