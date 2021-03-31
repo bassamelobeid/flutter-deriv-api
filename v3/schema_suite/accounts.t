@@ -247,4 +247,7 @@ test_sendrecv_params 'account_security/test_send_status.json', 'account_security
 test_sendrecv 'payment_methods/test_send_payment_methods.json',              'payment_methods/test_receive_empty.json';
 test_sendrecv 'payment_methods/test_send_payment_methods_with_country.json', 'payment_methods/test_receive_empty.json';
 
+# BINDING WALLET <-> TRADING ACCOUNTS (Admin Scope)
+test_sendrecv_params 'link_wallet/test_send.json', 'link_wallet/test_receive.json';
+
 finish;
