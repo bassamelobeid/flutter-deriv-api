@@ -123,9 +123,9 @@ sub _check_object_for_cpanel_json_xs_usage {
     }
     try {
         require $file;
-    } catch {
-        $@ =~ s/\n .*//xms;
-        push @results, [diag => "Testing JSON::MaybeXS ignores $orig_file because: $@"];
+    } catch ($e) {
+        $e =~ s/\n .*//xms;
+        push @results, [diag => "Testing JSON::MaybeXS ignores $orig_file because: $e"];
         _pipe_results($pipe, @results);
         return 1;
     }

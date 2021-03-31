@@ -2,6 +2,7 @@ package BOM::Test::Suite;
 use strict;
 use warnings;
 use Test::Most;
+use Syntax::Keyword::Try;
 
 BEGIN {
     local $ENV{NO_PURGE_REDIS} = 1;
@@ -58,7 +59,7 @@ sub new {
     # need to share it with other subs in this module, but should always start with an empty state.
     undef $response;
 
-    eval {
+    try {
         # Start with a clean database
         BOM::Test::Data::Utility::FeedTestDatabase->import(qw(:init));
         BOM::Test::Data::Utility::UnitTestMarketData->import(qw(:init));
@@ -91,10 +92,10 @@ sub new {
             $ticks_inserted = 1;
         }
         1;
-    } or do {
+    } catch ($e) {
         # Report on the failure for tracing
-        diag Carp::longmess("Test setup failure - $@");
-        BAIL_OUT($@);
+        diag Carp::longmess("Test setup failure - $e");
+        BAIL_OUT($e);
     };
 
     my $self = bless {

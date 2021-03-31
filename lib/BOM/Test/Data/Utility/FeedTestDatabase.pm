@@ -64,8 +64,8 @@ sub truncate_tables {
     foreach my $table (@tables) {
         try {
             $dbh->do('truncate table feed.' . $table);
-        } catch {
-            warn "error when truncate table feed.$table: $@";
+        } catch ($e) {
+            warn "error when truncate table feed.$table: $e";
         }
 
     }
