@@ -41,6 +41,7 @@ use BOM::Platform::RiskProfile;
 use BOM::Platform::Client::CashierValidation;
 use BOM::User::Client::PaymentNotificationQueue;
 use BOM::RPC::v3::MT5::Account;
+use BOM::RPC::v3::Trading;
 use BOM::RPC::v3::Utility qw(log_exception);
 use BOM::Transaction::Validation;
 use BOM::Database::Model::HandoffToken;
@@ -49,6 +50,7 @@ use BOM::Database::DataMapper::Payment;
 use BOM::Database::DataMapper::PaymentAgent;
 use BOM::Database::ClientDB;
 use BOM::Platform::Event::Emitter;
+use BOM::TradingPlatform;
 
 requires_auth('wallet');
 
@@ -1268,16 +1270,34 @@ rpc transfer_between_accounts => sub {
 
     # just return accounts list if loginid from or to is not provided
     if (not $loginid_from or not $loginid_to) {
-        if (($args->{accounts} // '') eq 'all' and not(BOM::Config::Runtime->instance->app_config->system->mt5->suspend->all)) {
-            my @mt5_accounts = BOM::RPC::v3::MT5::Account::get_mt5_logins($client)->else(sub { return Future->done(); })->get;
-            for my $mt5_acc (grep { not $_->{error} and $_->{group} !~ /^demo/ } @mt5_accounts) {
-                push @accounts,
-                    {
-                    loginid      => $mt5_acc->{login},
-                    balance      => $mt5_acc->{display_balance},
-                    account_type => 'mt5',
-                    mt5_group    => $mt5_acc->{group},
-                    currency     => $mt5_acc->{currency}};
+        if (($args->{accounts} // '') eq 'all') {
+            unless (BOM::Config::Runtime->instance->app_config->system->mt5->suspend->all) {
+                my @mt5_accounts = BOM::RPC::v3::MT5::Account::get_mt5_logins($client)->else(sub { return Future->done(); })->get;
+                for my $mt5_acc (grep { not $_->{error} and $_->{group} !~ /^demo/ } @mt5_accounts) {
+                    push @accounts,
+                        {
+                        loginid      => $mt5_acc->{login},
+                        balance      => $mt5_acc->{display_balance},
+                        account_type => 'mt5',
+                        mt5_group    => $mt5_acc->{group},
+                        currency     => $mt5_acc->{currency}};
+                }
+            }
+
+            unless (BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend->all) {
+                my $dxtrade = BOM::TradingPlatform->new(
+                    platform => 'dxtrade',
+                    client   => $client,
+                );
+                for my $dxtrade_account (grep { $_->{account_type} eq 'real' } $dxtrade->get_accounts->@*) {
+                    push @accounts,
+                        {
+                        loginid      => $dxtrade_account->{account_id},
+                        balance      => $dxtrade_account->{display_balance},
+                        account_type => 'dxtrade',
+                        market_type  => $dxtrade_account->{market_type},
+                        currency     => $dxtrade_account->{currency}};
+                }
             }
         }
 
@@ -1286,30 +1306,44 @@ rpc transfer_between_accounts => sub {
             accounts => \@accounts
         };
     }
+
     my @mt5_logins          = $client->user->get_mt5_loginids();
     my $is_mt5_loginid_from = any { $loginid_from eq $_ } @mt5_logins;
     my $is_mt5_loginid_to   = any { $loginid_to eq $_ } @mt5_logins;
+
+    my %loginid_details = $client->user->loginid_details->%*;
+    my @dxtrade_loginids =
+        grep { ($loginid_details{$_}->{platform} // '') eq 'dxtrade' and $loginid_details{$_}->{account_type} eq 'real' } keys %loginid_details;
+    my $is_dxtrade_loginid_from = any { $loginid_from eq $_ } @dxtrade_loginids;
+    my $is_dxtrade_loginid_to   = any { $loginid_to eq $_ } @dxtrade_loginids;
 
     # Both $loginid_from and $loginid_to must be either a real or a MT5 account
     # Unfortunately demo MT5 accounts will slip through this check, but they will
     # be caught in one of the BOM::RPC::v3::MT5::Account functions
     return BOM::RPC::v3::Utility::permission_error()
         unless ((
-            exists $siblings->{$loginid_from}
+               exists $siblings->{$loginid_from}
             or $is_mt5_loginid_from
+            or $is_dxtrade_loginid_from
         )
-        and (exists $siblings->{$loginid_to}
-            or $is_mt5_loginid_to));
+        and (  exists $siblings->{$loginid_to}
+            or $is_mt5_loginid_to
+            or $is_dxtrade_loginid_to));
 
     return _transfer_between_accounts_error(localize('Transfer between two MT5 accounts is not allowed.'))
         if ($is_mt5_loginid_from and $is_mt5_loginid_to);
+
+    return _transfer_between_accounts_error(localize('Transfer between two Deriv X accounts is not allowed.'))
+        if ($is_dxtrade_loginid_from and $is_dxtrade_loginid_to);
 
     # create client from siblings so that we are sure that from and to loginid
     # provided are for same user
     my ($client_from, $client_to, $res);
     try {
-        $client_from = BOM::User::Client->new({loginid => $siblings->{$loginid_from}->{loginid}}) if (!$is_mt5_loginid_from);
-        $client_to   = BOM::User::Client->new({loginid => $siblings->{$loginid_to}->{loginid}})   if (!$is_mt5_loginid_to);
+        $client_from = BOM::User::Client->new({loginid => $siblings->{$loginid_from}->{loginid}})
+            unless $is_mt5_loginid_from or $is_dxtrade_loginid_from;
+        $client_to = BOM::User::Client->new({loginid => $siblings->{$loginid_to}->{loginid}}) 
+            unless $is_mt5_loginid_to or $is_dxtrade_loginid_to;
     } catch {
         log_exception();
         $res = _transfer_between_accounts_error();
@@ -1407,6 +1441,59 @@ rpc transfer_between_accounts => sub {
                 log_exception();
                 return Future->done(_transfer_between_accounts_error($err->{error}->{message_to_client}));
             })->get;
+    }
+
+    if ($is_dxtrade_loginid_to or $is_dxtrade_loginid_from) {
+        $params->{args}->@{qw/from_account to_account/} = delete $params->{args}->@{qw/account_from account_to/};
+        $params->{args}{platform} = 'dxtrade';
+    }
+
+    if ($is_dxtrade_loginid_to) {
+        my $deposit = BOM::RPC::v3::Trading::deposit($params);
+        return $deposit if $deposit->{error};
+
+        my $from_client = BOM::User::Client->new({loginid => $loginid_from});
+
+        return {
+            status => 1,
+            accounts => [{
+                    loginid      => $loginid_from,
+                    balance      => $from_client->account->balance,
+                    currency     => $from_client->account->currency_code,
+                    account_type => 'binary',
+                },
+                {
+                    loginid      => $loginid_to,
+                    balance      => $deposit->{balance},
+                    currency     => $deposit->{currency},
+                    account_type => 'dxtrade',
+                    market_type  => $deposit->{market_type},
+                },
+            ]};
+    }
+
+    if ($is_dxtrade_loginid_from) {
+        my $withdrawal = BOM::RPC::v3::Trading::withdrawal($params);
+        return $withdrawal if $withdrawal->{error};
+
+        my $to_client = BOM::User::Client->new({loginid => $loginid_to});
+
+        return {
+            status => 1,
+            accounts => [{
+                    loginid      => $loginid_to,
+                    balance      => $to_client->account->balance,
+                    currency     => $to_client->account->currency_code,
+                    account_type => 'binary',
+                },
+                {
+                    loginid      => $loginid_from,
+                    balance      => $withdrawal->{balance},
+                    currency     => $withdrawal->{currency},
+                    account_type => 'dxtrade',
+                    market_type  => $withdrawal->{market_type},
+                },
+            ]};
     }
 
     my ($from_currency, $to_currency) =

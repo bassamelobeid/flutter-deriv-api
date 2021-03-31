@@ -9,42 +9,54 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Script::DevExperts;
 use BOM::Platform::Token::API;
 use BOM::Test::RPC::QueueClient;
+use BOM::Test::Helper::Client;
+use BOM::Config::Runtime;
+
+BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend->all(0);
 
 my $c = BOM::Test::RPC::QueueClient->new();
 
 subtest 'dxtrader accounts' => sub {
-    
+
     my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR'});
-    
+
     BOM::User->create(
-        email    => $client->email,
+        email    => 'dxaccounts@test.com',
         password => 'test'
     )->add_client($client);
     $client->account('USD');
-    
+
     my $token = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token');
 
-    my $params = { language => 'EN' };
-    
+    my $params = {language => 'EN'};
+
     $c->call_ok('trading_platform_new_account', $params)->has_no_system_error->has_error->error_code_is('InvalidToken', 'must be logged in');
-    
+
     $params->{token} = $token;
     $params->{args}{platform} = 'xxx';
-    
+
     $c->call_ok('trading_platform_new_account', $params)->has_no_system_error->has_error->error_code_is('TradingPlatformError', 'bad params');
 
     $params->{args} = {
-        platform => 'dxtrade',
+        platform     => 'dxtrade',
         account_type => 'demo',
-        market_type => 'financial',
-        password    => 'test',
+        market_type  => 'financial',
+        password     => 'test',
     };
 
+    BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend->all(1);
+
+    $c->call_ok('trading_platform_new_account', $params)->has_no_system_error->has_error->error_code_is('DXSuspended', 'dxtrade suspended')
+        ->error_message_is('Deriv X account management is currently suspended.');
+
+    BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend->all(0);
+
     my $acc = $c->call_ok('trading_platform_new_account', $params)->has_no_system_error->has_no_error->result;
-    
-    $c->call_ok('trading_platform_new_account', $params)->has_no_system_error->has_error
-        ->error_code_is('ExistingDXtradeAccount', 'error code for duplicate account.')
-        ->error_message_like(qr/You already have DXtrade account of this type/, 'error message for duplicate account');
+    like $acc->{account_id}, qr/DXD\d{4}/, 'account id';
+
+    $c->call_ok('trading_platform_new_account', $params)
+        ->has_no_system_error->has_error->error_code_is('DXExistingAccount', 'error code for duplicate account.')
+        ->error_message_like(qr/You already have Deriv X account of this type/, 'error message for duplicate account');
 
     $params->{args} = {
         platform => 'dxtrade',
@@ -55,11 +67,7 @@ subtest 'dxtrader accounts' => sub {
     delete $acc->{stash};
     cmp_deeply($list, [$acc], 'account list returns created account',);
 
-    cmp_deeply(
-        $list,
-        [ $acc ],
-        'account list returns created account',
-    );
+    cmp_deeply($list, [$acc], 'account list returns created account',);
 };
 
 subtest 'dxtrade password change' => sub {
@@ -176,7 +184,5 @@ subtest 'dxtrade password reset' => sub {
     $c->call_ok('trading_platform_password_reset', $params)->has_no_system_error->has_no_error->result_is_deeply(1, 'Password successfully reset');
     $mock_token->unmock_all;
 };
-
-ok 1;
 
 done_testing();

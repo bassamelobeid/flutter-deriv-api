@@ -10,6 +10,7 @@ use Syntax::Keyword::Try;
 use BOM::TradingPlatform;
 use BOM::Platform::Context qw (localize);
 use BOM::RPC::Registry '-dsl';
+use List::Util qw(first);
 
 requires_auth('trading', 'wallet');
 
@@ -20,25 +21,32 @@ my %ERROR_MAP = do {
     no warnings 'redefine';
     local *localize = sub { die 'you probably wanted an arrayref for this localize() call' if @_ > 1; shift };
     (
-        DXtradeNoCurrency      => localize('Please provide a currency for the DXtrade account.'),
-        ExistingDXtradeAccount => localize('You already have DXtrade account of this type (account ID [_1]).'),
-        PasswordRequired       => localize('A new password is required'),
+        DXSuspended           => localize('Deriv X account management is currently suspended.'),
+        DXtradeNoCurrency     => localize('Please provide a currency for the Deriv X account.'),
+        DXExistingAccount     => localize('You already have Deriv X account of this type (account ID [_1]).'),
+        DXInvalidAccount      => localize('An invalid Deriv X account ID was provided.'),
+        DXDepositFailed       => localize('The required funds could not be withdrawn from your Deriv account. Pleaese try a different account.'),
+        DXDepositIncomplete   => localize('The deposit to your Deriv X account did not complete. Please contact our Customer Support team.'),
+        DXInsufficientBalance => localize('Your Deriv X account balance is insufficient for this withdrawal.'),
+        DXWithdrawalFailed    =>
+            localize('The required funds could not be withdrawn from your Deriv X account. Pleaese try later or use a different account.'),
+        DXWithdrawalIncomplete  => localize('The credit to your Deriv account did not complete. Please contact our Customer Support team.'),
+        DXTransferCompleteError => localize('The transfer completed successfully, but an error occured when getting account details.'),
+        PlatformTransferTemporarilyUnavailable => localize('Transfers between these accounts are temporarily unavailable. Please try later.'),
+        PlatformTransferError                  => localize('The transfer could not be completed: [_1]'),
+        PlatformTransferSuspended              => localize('Transfers are suspended for system maintenance. Please try later.'),
+        PlatformTransferBlocked                => localize('Transfers have been blocked on this account.'),
+        PlatformTransferCurrencySuspended      => localize('[_1] currency transfers are suspended.'),
+        PlatformTransferNocurrency             => localize('Please select your account currency first.'),
+        PlatformTransferNoVirtual              => localize('This feature is not available for virtual accounts.'),
+        PlatformTransferWalletOnly             => localize('This feature is only available for wallet accounts.'),
+        PlatformTransferDemoOnly               => localize('Both accounts must be demo accounts.'),
+        PlatformTransferRealOnly               => localize('Both accounts must be real accounts.'),
+        PlatformTransferAccountInvalid         => localize('The provided Deriv account ID is not valid.'),
+        PlatformTransferOauthTokenRequired     =>
+            localize('This request must be made using a connection authorized by the Deriv account involved in the transfer.'),
+        PasswordRequired => localize('A new password is required'),
     );
-};
-
-=head2 trading_platform_accounts
-
-Return list of accounts.
-
-=cut
-
-rpc trading_platform_accounts => sub {
-    my $params = shift;
-    try {
-        return get_platform($params)->get_accounts($params->{args}->%*);
-    } catch ($e) {
-        handle_error($e);
-    }
 };
 
 =head2 trading_platform_new_account
@@ -51,7 +59,28 @@ rpc trading_platform_new_account => sub {
     my $params = shift;
 
     try {
-        return get_platform($params)->new_account($params->{args}->%*);
+        my $platform = BOM::TradingPlatform->new(
+            platform => $params->{args}{platform},
+            client   => $params->{client});
+        return $platform->new_account($params->{args}->%*);
+    } catch ($e) {
+        handle_error($e);
+    }
+};
+
+=head2 trading_platform_accounts
+
+Return list of accounts.
+
+=cut
+
+rpc trading_platform_accounts => sub {
+    my $params = shift;
+    try {
+        my $platform = BOM::TradingPlatform->new(
+            platform => $params->{args}{platform},
+            client   => $params->{client});
+        return $platform->get_accounts($params->{args}->%*);
     } catch ($e) {
         handle_error($e);
     }
@@ -59,26 +88,26 @@ rpc trading_platform_new_account => sub {
 
 =head2 trading_platform_deposit
 
-Placeholder for future documentation
+Transfer from deriv to platform account.
 
 =cut
 
-async_rpc trading_platform_deposit => sub {
-    my $params = shift;
-    #TODO Add logic for returning list of trading accounts
-    return Future->done({binary_transaction_id => 123});
+rpc trading_platform_deposit => sub {
+    my $deposit = deposit(shift);
+    return $deposit if $deposit->{error};
+    return {transaction_id => $deposit->{transaction_id}};
 };
 
 =head2 trading_platform_withdrawal
 
-Placeholder for future documentation
+Transfer from platform to deriv account.
 
 =cut
 
-async_rpc trading_platform_withdrawal => sub {
-    my $params = shift;
-    #TODO Add logic for returning list of trading accounts
-    return Future->done({binary_transaction_id => 123});
+rpc trading_platform_withdrawal => sub {
+    my $withdrawal = withdrawal(shift);
+    return $withdrawal if $withdrawal->{error};
+    return {transaction_id => $withdrawal->{transaction_id}};
 };
 
 =head2 trading_platform_password_change
@@ -102,9 +131,12 @@ async_rpc trading_platform_password_change => sub {
 
         # TODO: remianing trading platforms implementation
 
-        # DevExperts Implementation 
-        $params->{args}{platform} = 'dxtrade';
-        my $dxtrade = get_platform($params);
+        # DevExperts Implementation
+
+        my $dxtrade = BOM::TradingPlatform->new(
+            platform => 'dxtrade',
+            client   => $params->{client});
+
         $dxtrade->change_password(password => $password) if $dxtrade->dxclient_get;
 
         return Future->done(1);
@@ -129,18 +161,83 @@ async_rpc trading_platform_password_reset => sub {
     return Future->done(1);
 };
 
-=head2 get_platform
+=head2 deposit
 
-Creates the platform object from $params.
+Platform deposit implementation.
 
 =cut
 
-sub get_platform {
+sub deposit {
     my $params = shift;
 
-    return BOM::TradingPlatform->new(
-        platform => $params->{args}{platform},
-        client   => $params->{client});
+    my ($from_account, $to_account, $amount) = $params->{args}->@{qw/ from_account to_account amount /};
+
+    try {
+        my $client = get_transfer_client($params, $from_account);
+
+        my $platform = BOM::TradingPlatform->new(
+            platform => $params->{args}{platform},
+            client   => $client
+        );
+
+        return $platform->deposit(
+            to_account => $to_account,
+            amount     => $amount,
+        );
+
+    } catch ($e) {
+        handle_error($e);
+    }
+}
+
+=head2 withdrawal
+
+Platform withdrawal implementation.
+
+=cut
+
+sub withdrawal {
+    my $params = shift;
+
+    my ($from_account, $to_account, $amount) = $params->{args}->@{qw/ from_account to_account amount /};
+
+    try {
+        my $client = get_transfer_client($params, $to_account);
+
+        my $platform = BOM::TradingPlatform->new(
+            platform => $params->{args}{platform},
+            client   => $client
+        );
+
+        return $platform->withdraw(
+            from_account => $from_account,
+            amount       => $amount,
+        );
+
+    } catch ($e) {
+        handle_error($e);
+    }
+}
+
+=head2 get_transfer_client
+
+Validates and returns client instance for deposit and withdrawal.
+
+=cut
+
+sub get_transfer_client {
+    my ($params, $loginid) = @_;
+
+    my $client = $params->{client};
+
+    return $client if $client->loginid eq $loginid;
+
+    die +{error_code => 'PlatformTransferOauthTokenRequired'} unless ($params->{token_type} // '') eq 'oauth_token';
+
+    my @siblings = $client->user->clients(include_disabled => 0);
+    my $result   = first { $_->loginid eq $loginid } @siblings;
+    die +{error_code => 'PlatformTransferAccountInvalid'} unless $result;
+    return $result;
 }
 
 =head2 handle_error
