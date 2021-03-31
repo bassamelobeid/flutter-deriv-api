@@ -918,6 +918,19 @@ system:
           isa: json_string
           default: '{}'
           global: 1
+    dxtrade:
+      description: "Configuration for DXTrade"
+      isa: section
+      contains:
+        suspend:
+          description: "Suspend DXTrade features"
+          isa: section
+          contains:
+            all:
+              description: "Suspend all DXTrade API calls"
+              isa: Bool
+              default: 1
+              global: 1
 marketing:
     description:  "Marketing Bonus Settings"
     isa: section
