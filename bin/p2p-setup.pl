@@ -219,6 +219,7 @@ $client->p2p_advertiser_update(
     is_listed   => 0,
     is_approved => 1,
 );
+delete $client->{_p2p_advertiser_cached};
 
 $log->infof('Client Advertiser info: %s', $client->p2p_advertiser_info);
 $log->infof('Client is %s - Token: %s', $client->loginid, token_for_client($client));
@@ -253,7 +254,7 @@ $advertiser->p2p_advertiser_update(
     is_listed   => 1,
     is_approved => 1,
 );
-$advertiser->save;
+delete $advertiser->{_p2p_advertiser_cached};
 $log->infof('Advertiser info: %s', $advertiser->p2p_advertiser_info);
 
 $advertiser->p2p_advert_create(
@@ -306,7 +307,7 @@ if ($create_order) {
         is_listed   => 1,
         is_approved => 1,
     );
-    $client->save;
+    delete $client->{_p2p_advertiser_cached};
 
     # Create ad
     my $advert_buy = $client->p2p_advert_create(
