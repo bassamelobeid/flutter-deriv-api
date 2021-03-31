@@ -2,11 +2,16 @@ use strict;
 use warnings;
 use Test::More;
 use Test::Fatal;
+use Test::Deep;
 use Scalar::Util qw(refaddr);
+use BOM::Config::Runtime;
 
 use BOM::TradingPlatform;
 
 subtest 'Instantiate trading platform' => sub {
+
+    BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend->all(0);
+
     my $tests = [{
             platform => 'mt5',
             lives    => 1,
@@ -99,6 +104,16 @@ subtest 'Instantiate the platform without factory' => sub {
         my $platform = $class->new();
         isa_ok($platform, $class);
     }
+
+    isa_ok(BOM::TradingPlatform->new_base(), 'BOM::TradingPlatform');
+};
+
+subtest 'DXtrade suspend' => sub {
+    BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend->all(1);
+
+    cmp_deeply(exception { BOM::TradingPlatform->new(platform => 'dxtrade') }, {error_code => 'DXSuspended'}, 'use factory');
+    cmp_deeply(exception { BOM::TradingPlatform::DXTrader->new },              {error_code => 'DXSuspended'}, 'use direct');
+    is exception { BOM::TradingPlatform->new(platform => 'mt5') }, undef, 'mt5 unaffected';
 };
 
 done_testing();

@@ -6,6 +6,9 @@ use Test::Deep;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Script::DevExperts;
 use BOM::TradingPlatform;
+use BOM::Config::Runtime;
+
+BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend->all(0);
 
 my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR'});
 

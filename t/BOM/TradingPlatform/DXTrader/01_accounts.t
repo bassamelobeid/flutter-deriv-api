@@ -6,6 +6,9 @@ use Test::Deep;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Script::DevExperts;
 use BOM::TradingPlatform;
+use BOM::Config::Runtime;
+
+BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend->all(0);
 
 my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR'});
 
@@ -20,21 +23,6 @@ my $dxtrader = BOM::TradingPlatform->new(
 );
 isa_ok($dxtrader, 'BOM::TradingPlatform::DXTrader');
 
-cmp_deeply(
-    exception {
-        $dxtrader->new_account(
-            account_type => 'demo',
-            password     => 'test'
-        )
-    },
-    {
-        error_code => 'DXtradeNoCurrency',
-    },
-    'no account and no currency'
-);
-
-$client->account('USD');
-
 my $account1 = $dxtrader->new_account(
     account_type => 'demo',
     password     => 'test'
@@ -45,9 +33,9 @@ cmp_deeply(
     {
         account_id            => 'DXD1000',
         account_type          => 'demo',
-        balance               => '0.00',
+        balance               => num(10000),
         currency              => 'USD',
-        display_balance       => '0.00',
+        display_balance       => '10000.00',
         login                 => re('\w{40}'),
         platform              => 'dxtrade',
         market_type           => 'financial',
@@ -61,7 +49,7 @@ cmp_deeply(
     $client->user->loginid_details->{$account1->{account_id}},
     {
         platform     => 'dxtrade',
-        currency     => $account1->{currency},
+        currency     => 'USD',
         account_type => $account1->{account_type},
         attributes   => {
             clearing_code    => 'default',
@@ -76,7 +64,6 @@ cmp_deeply(
 
 my $account2 = $dxtrader->new_account(
     account_type => 'real',
-    currency     => 'SGD',
     password     => 'test',
 );
 
@@ -85,10 +72,10 @@ cmp_deeply(
     {
         account_id            => 'DXR1001',
         account_type          => 'real',
-        balance               => '0.00',
-        currency              => 'SGD',
+        balance               => num(0),
+        currency              => 'USD',
         display_balance       => '0.00',
-        login                 => re('\w{40}'),
+        login                 => $account1->{login},
         platform              => 'dxtrade',
         market_type           => 'financial',
         landing_company_short => 'svg',
@@ -101,10 +88,10 @@ cmp_deeply(
     $client->user->loginid_details->{$account2->{account_id}},
     {
         platform     => 'dxtrade',
-        currency     => $account2->{currency},
+        currency     => 'USD',
         account_type => $account2->{account_type},
         attributes   => {
-            login            => re('\w{40}'),
+            login            => $account2->{login},
             clearing_code    => 'default',
             client_domain    => 'default',
             account_code     => re('\w{40}'),
@@ -122,7 +109,7 @@ cmp_deeply(
         )
     },
     {
-        error_code     => 'ExistingDXtradeAccount',
+        error_code     => 'DXExistingAccount',
         message_params => [re('\w{40}')],
     },
     'cannot create duplicate account'
@@ -131,3 +118,13 @@ cmp_deeply(
 cmp_deeply($dxtrader->get_accounts, [$account1, $account2], 'account list');
 
 done_testing();
+
+sub _get_transaction_details {
+    my ($dbic, $transaction_id) = @_;
+
+    my ($result) = $dbic->run(
+        fixup => sub {
+            $_->selectrow_array('select details from transaction.transaction_details where transaction_id = ?', undef, $transaction_id,);
+        });
+    return JSON::MaybeUTF8::decode_json_utf8($result);
+}

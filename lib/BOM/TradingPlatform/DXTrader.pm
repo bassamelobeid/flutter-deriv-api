@@ -48,7 +48,9 @@ Creates and returns a new L<BOM::TradingPlatform::DXTrader> instance.
 =cut
 
 sub new {
-    return bless {}, 'BOM::TradingPlatform::DXTrader';
+    my ($class, %args) = @_;
+    die +{error_code => 'DXSuspended'} if BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend->all;
+    return bless {client => $args{client}}, $class;
 }
 
 =head1 RPC methods
@@ -76,14 +78,9 @@ Returns new account fields formatted for wesocket response.
 sub new_account {
     my ($self, %args) = @_;
 
-    my $account_type = $args{account_type} eq 'real' ? 'LIVE' : 'DEMO';
-    my $currency     = $args{currency};
-    unless ($currency) {
-        die +{error_code => 'DXtradeNoCurrency'} unless $self->client->account;
-        $currency = $self->client->account->currency_code;
-    }
-
-    my $trading_category = 'test';    # todo: set from %args, residence etc.
+    my $account_type     = $args{account_type} eq 'real' ? 'LIVE' : 'DEMO';
+    my $currency         = 'USD';                                             # all accounts are USD for now, in future this may change
+    my $trading_category = 'test';                                            # todo: set from %args, residence etc.
 
     my $password = $args{password};
     if (BOM::Config::Runtime->instance->app_config->system->suspend->universal_password) {
@@ -105,13 +102,13 @@ sub new_account {
         }
         ($dxclient->{accounts} // [])->@*;
         die +{
-            error_code     => 'ExistingDXtradeAccount',
+            error_code     => 'DXExistingAccount',
             message_params => [$existing->{account_code}]} if $existing;
-        # todo: if password provided, change it or die
+        # todo: validate trading password
     } else {
         # no existing client, try to create one
         die 'password required' unless $password;
-        my $login       = $self->config->{real_account_ids} ? $self->client->user->id : sha1_hex($$ . time . rand);
+        my $login       = $self->config->{real_account_ids} ? $self->client->user->id : $self->unique_id;
         my $client_resp = $self->call_api(
             'client_create',
             domain   => DX_DOMAIN,
@@ -128,8 +125,10 @@ sub new_account {
             $_->selectrow_array("SELECT nextval('users.devexperts_account_id')");
         });
 
-    my $account_code = $self->config->{real_account_ids} ? $seq_num         : sha1_hex($$ . time . rand);    # dx account id
-    my $account_id   = $args{account_type} eq 'real'     ? 'DXR' . $seq_num : 'DXD' . $seq_num;              # our login
+    my $account_code = $self->config->{real_account_ids} ? $seq_num         : $self->unique_id;    # dx account id, must be unique in their system
+    my $account_id   = $args{account_type} eq 'real'     ? 'DXR' . $seq_num : 'DXD' . $seq_num;    # our loginid
+
+    my $balance = $args{account_type} eq 'demo' ? 10000 : 0;
 
     my $account_resp = $self->call_api(
         'client_account_create',
@@ -139,7 +138,9 @@ sub new_account {
         clearing_code => DX_CLEARING_CODE,
         account_type  => $account_type,
         currency      => $currency,
-        categories    => [{
+        balance       => $balance,
+
+        categories => [{
                 category => 'Trading',
                 value    => $trading_category,
             }
@@ -232,6 +233,192 @@ sub change_password {
     die +{error_code => 'CouldNotChangePassword'};
 }
 
+=head2 deposit
+
+Transfer from our system to dxtrade.
+
+Takes the following arguments as named parameters:
+
+=over 4
+
+=item * C<amount> in deriv account currency.
+
+=item * C<to_account>. Our dxtrade account id.
+
+=back
+
+Returns transaction id in hashref.
+
+=cut
+
+sub deposit {
+    my ($self, %args) = @_;
+
+    my $account = $self->client->user->loginid_details->{$args{to_account}}
+        or die +{error_code => 'DXInvalidAccount'};
+
+    # Sequence:
+    # 1. Validation
+    # 2. Withdrawal from deriv
+    # 3. Deposit to dxtrade
+
+    my $tx_amounts = $self->validate_transfer(
+        action       => 'deposit',
+        amount       => $args{amount},
+        currency     => $account->{currency},
+        account_type => $account->{account_type},
+    );
+
+    my %txn_details = (
+        dxtrade_account_id        => $args{to_account},
+        fees                      => $tx_amounts->{fees},
+        fees_percent              => $tx_amounts->{fees_percent},
+        fees_currency             => $self->client->account->currency_code,     # sending account
+        min_fee                   => $tx_amounts->{min_fee},
+        fee_calculated_by_percent => $tx_amounts->{fee_calculated_by_percent});
+
+    my $remark = sprintf(
+        'Transfer from %s to dxtrade account %s (account id %s)',
+        $self->client->loginid,
+        $args{to_account}, $account->{attributes}{account_code});
+
+    my $txn;
+    try {
+        $txn = $self->client_payment(
+            payment_type => 'dxtrade_transfer',
+            amount       => -$args{amount},        # negative!
+            fees         => $tx_amounts->{fees},
+            remark       => $remark,
+            txn_details  => \%txn_details,
+        );
+    } catch {
+        die +{error_code => 'DXDepositFailed'};
+    }
+
+    my $resp = $self->call_api(
+        'account_deposit',
+        account_code  => $account->{attributes}{account_code},
+        clearing_code => $account->{attributes}{clearing_code},
+        id            => $self->unique_id,                        # must be unique for deposits on this login
+        amount        => $tx_amounts->{recv_amount},
+        currency      => $account->{currency},
+    );
+    die +{error_code => 'DXDepositIncomplete'} unless $resp->{success};
+
+    $self->insert_payment_details($txn->payment_id, $args{to_account}, $tx_amounts->{recv_amount});
+
+    my $update = $self->call_api(
+        'account_get',
+        account_code  => $account->{attributes}{account_code},
+        clearing_code => $account->{attributes}{clearing_code},
+    );
+    die +{error_code => 'DXTransferCompleteError'} unless $update->{success};
+
+    return {
+        $self->account_details($update->{content})->%*,
+        transaction_id => $txn->id,
+        account_id     => $args{to_account},
+        login          => $account->{attributes}{login},
+    };
+}
+
+=head2 withdraw
+
+Transfer from dxtrade to our system.
+
+Takes the following arguments as named parameters:
+
+=over 4
+
+=item * C<amount> in dxtrad account currency.
+
+=item * C<from_account>. Our dxtrade account id.
+
+=back
+
+Returns transaction id in hashref.
+
+=cut
+
+sub withdraw {
+    my ($self, %args) = @_;
+
+    my $account = $self->client->user->loginid_details->{$args{from_account}}
+        or die +{error_code => 'DXInvalidAccount'};
+
+    # Sequence:
+    # 1. Validation
+    # 2. Withdraw from dxtrade
+    # 3. Deposit to deriv
+
+    my $tx_amounts = $self->validate_transfer(
+        action       => 'withdrawal',
+        amount       => $args{amount},
+        currency     => $account->{currency},
+        account_type => $account->{account_type},
+    );
+
+    my $resp = $self->call_api(
+        'account_withdrawal',
+        account_code  => $account->{attributes}{account_code},
+        clearing_code => $account->{attributes}{clearing_code},
+        id            => $self->unique_id,                        # must be unique for withdrawals on this login
+        amount        => $args{amount},
+        currency      => $account->{currency},
+    );
+
+    die +{error_code => 'DXInsufficientBalance'}
+        if $resp->{content}{error_code}
+        and $resp->{content}{error_code} eq '30005'
+        and $resp->{status} eq '422';
+
+    die +{error_code => 'DXWithdrawalFailed'} unless $resp->{success};
+
+    my %txn_details = (
+        dxtrade_account_id        => $args{from_account},
+        fees                      => $tx_amounts->{fees},
+        fees_percent              => $tx_amounts->{fees_percent},
+        fees_currency             => $account->{currency},                      # sending account
+        min_fee                   => $tx_amounts->{min_fee},
+        fee_calculated_by_percent => $tx_amounts->{fee_calculated_by_percent});
+
+    my $remark = sprintf(
+        'Transfer from dxtrade account %s (account id %s) to %s',
+        $args{from_account},
+        $account->{attributes}{account_code},
+        $self->client->loginid
+    );
+
+    my $txn;
+    try {
+        $txn = $self->client_payment(
+            payment_type => 'dxtrade_transfer',
+            amount       => $tx_amounts->{recv_amount},
+            fees         => $tx_amounts->{fees_in_client_currency},
+            remark       => $remark,
+            txn_details  => \%txn_details,
+        );
+    } catch {
+        die +{error_code => 'DXWithdrawalIncomplete'};
+    }
+
+    $self->insert_payment_details($txn->payment_id, $args{from_account}, -$args{amount});
+
+    my $update = $self->call_api(
+        'account_get',
+        account_code  => $account->{attributes}{account_code},
+        clearing_code => $account->{attributes}{clearing_code},
+    );
+    die +{error_code => 'DXTransferCompleteError'} unless $update->{success};
+
+    return {
+        $self->account_details($update->{content})->%*,
+        transaction_id => $txn->id,
+        account_id     => $args{from_account},
+        login          => $account->{attributes}{login},
+    };
+}
+
 =head2 check_password
 
 The DXTrader implementation of checking password.
@@ -253,34 +440,6 @@ The DXTrader implementation of resetting password.
 =cut
 
 sub reset_password {
-    my ($self, $args) = @_;
-
-    # TODO: should call BOM::DevExperts::User related method
-
-    return $args;
-}
-
-=head2 deposit
-
-The DXTrader implementation of making a deposit.
-
-=cut
-
-sub deposit {
-    my ($self, $args) = @_;
-
-    # TODO: should call BOM::DevExperts::User related method
-
-    return $args;
-}
-
-=head2 withdraw
-
-The DXTrader implementation of making a withdrawal.
-
-=cut
-
-sub withdraw {
     my ($self, $args) = @_;
 
     # TODO: should call BOM::DevExperts::User related method
@@ -343,11 +502,13 @@ sub config {
 
 Calls API service with given $method and %parmams.
 
+Takes the following arguments:
+
 =over 4
 
 =item * C<method> (required).
 
-=item * C<args>.
+=item * C<args>. Arguments to method.
 
 =back
 
@@ -434,6 +595,73 @@ sub account_details {
         landing_company_short => 'svg',                                                                    #todo
         sub_account_type      => 'financial',                                                              #todo
     };
+}
+
+=head2 unique_id
+
+Generates a 40 character unique id.
+
+=cut
+
+sub unique_id {
+    return sha1_hex($$ . time . rand);
+}
+
+=head2 validate_payment
+
+Platform specific payment validation. Generic validation is performed by parent class method.
+
+Takes the following arguments as named parameters:
+
+=over 4
+
+=item * C<action>: deposit or withdrawal.
+
+=item * C<amount>: amount to be sent from source account.
+
+=item * C<currency>: currency of trading platform account.
+
+=item * C<account_type>: type of trading account, demo or real.
+
+=back
+
+Returns result of parent class method.
+
+=cut
+
+sub validate_payment {
+    my ($self, %params) = @_;
+    # dx specific validations to go here
+    return $self->SUPER::validate_payment(%params);
+}
+
+=head2 insert_payment_details
+
+Inserts transfer details to the payment.dxtrade_transfer table.
+This assists reporting to know which dxtrade account was involved.
+
+Takes the following arguments:
+
+=over 4
+
+=item * C<$payment_id>.
+
+=item * C<$account_id>: dxtrade account id.
+
+=item * C<$amount>: amount credited/debited to dxtrade account.
+
+=back
+
+=cut
+
+sub insert_payment_details {
+    my ($self, $payment_id, $account_id, $amount) = @_;
+
+    my ($seq_num) = $self->client->db->dbic->run(
+        ping => sub {
+            $_->do('INSERT INTO payment.dxtrade_transfer (payment_id, dxtrade_account_id, dxtrade_amount) VALUES (?,?,?)',
+                undef, $payment_id, $account_id, $amount);
+        });
 }
 
 1;
