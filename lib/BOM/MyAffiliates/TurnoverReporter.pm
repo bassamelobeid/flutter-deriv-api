@@ -61,12 +61,16 @@ sub activity {
     push @output, $self->format_data($self->headers_data()) if ($self->include_headers and scalar @$activity);
 
     foreach my $obj (@$activity) {
+        my $loginid = $obj->[1];
+
+        next if $self->is_broker_code_excluded($loginid);
+
         my $csv           = Text::CSV->new;
         my @output_fields = (
             # transaction date
             Date::Utility->new($obj->[0])->date_yyyymmdd,
             # loginid
-            $self->prefix_field($obj->[1]),
+            $self->prefix_field($loginid),
             # stake
             financialrounding('price', 'USD', $obj->[2]),
             # payout

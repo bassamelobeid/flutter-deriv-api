@@ -65,6 +65,9 @@ sub activity {
     push @output, $self->headers_data() if ($self->include_headers and keys %{$activity});
 
     foreach my $loginid (sort keys %{$activity}) {
+
+        next if $self->is_broker_code_excluded($loginid);
+
         my $currency = $activity->{$loginid}->{currency};
 
         # this is for optimization else we would need to call in_usd for each record

@@ -60,6 +60,8 @@ sub activity {
     push @output, $self->format_data($self->headers_data()) if ($self->include_headers and keys %{$result});
 
     foreach my $loginid (sort keys %{$result}) {
+        next if $self->is_broker_code_excluded($loginid);
+
         my $csv           = Text::CSV->new;
         my @output_fields = (
             $when->date_yyyymmdd,

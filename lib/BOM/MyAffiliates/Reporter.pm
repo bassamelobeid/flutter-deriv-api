@@ -16,7 +16,7 @@ use IO::Async::Loop;
 use Amazon::S3::SignedURLGenerator;
 use YAML::XS qw(LoadFile);
 use Net::Async::Webservice::S3;
-use List::Util qw(any);
+use List::Util qw(any first);
 
 use Brands;
 
@@ -58,6 +58,12 @@ has include_headers => (
     is      => 'ro',
     isa     => 'Bool',
     default => 1,
+);
+
+has exclude_broker_codes => (
+    is      => 'ro',
+    isa     => 'ArrayRef[Str]',
+    default => sub { ['MF'] },
 );
 
 # Required methods
@@ -252,6 +258,37 @@ sub prefix_field {
     return "${brand_name}_${field}" if $brand_name eq 'deriv';
 
     return $field;
+}
+
+=head2 get_broker_code
+
+Get broker code from the loginid
+
+=cut
+
+sub get_broker_code {
+    my $self    = shift;
+    my $loginid = shift;
+
+    return '' unless $loginid;
+
+    my ($broker_code) = $loginid =~ /^([A-Z]+)[0-9]+$/;
+
+    return $broker_code // '';
+}
+
+=head2 is_broker_code_excluded
+
+Check if broker code is in the excluded broker code list
+
+=cut
+
+sub is_broker_code_excluded {
+    my ($self, $loginid) = @_;
+
+    my $match = first { $_ eq $self->get_broker_code($loginid) } @{$self->exclude_broker_codes};
+
+    return $match ? 1 : 0;
 }
 
 no Moose;
