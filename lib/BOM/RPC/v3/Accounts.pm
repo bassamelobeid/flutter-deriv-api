@@ -2748,6 +2748,23 @@ sub _mt5_balance_call_enabled {
     return MT5_BALANCE_CALL_ENABLED;
 }
 
+rpc link_wallet => sub {
+    my $params = shift;
+    my $args   = $params->{args};
+    my $client = $params->{client};
+
+    my $user = $client->user;
+
+    try {
+        $user->link_wallet_to_trading_account($args);
+    } catch ($e) {
+        chomp $e;
+        return BOM::RPC::v3::Utility::create_error_by_code($e);
+    }
+    
+    return {status => 1};
+};
+
 rpc paymentagent_create => sub {
     my $params = shift;
 
