@@ -891,8 +891,10 @@ subtest 'get_account_by_loginid' => sub {
 
     throws_ok { $user->get_account_by_loginid('MTD2001') } qr/InvalidMT5Account/, 'invalid mt5 account';
 
+    BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend->all(0);
+
     # try dxtrade account
-    throws_ok { $user->get_account_by_loginid('DXD2000') } qr/DXInvalidAccount/, 'invalid dxtrade account';
+    throws_ok { $user->get_account_by_loginid('DXR2000') } qr/DXInvalidAccount/, 'invalid dxtrade account';
 
     $dxtrader = BOM::TradingPlatform->new(
         platform => 'dxtrade',

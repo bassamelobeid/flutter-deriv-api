@@ -40,7 +40,8 @@ Creates and returns a new L<BOM::TradingPlatform::MT5> instance.
 =cut
 
 sub new {
-    return bless {}, 'BOM::TradingPlatform::MT5';
+    my ($class, %args) = @_;
+    return bless {client => $args{client}}, $class;
 }
 
 =head2 get_account_info
