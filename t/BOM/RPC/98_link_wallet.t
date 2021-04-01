@@ -51,6 +51,8 @@ my $token = $m->create_token($vr_client->loginid, 'test token');
 my %ACCOUNTS = %Test::BOM::RPC::Accounts::MT5_ACCOUNTS;
 my %DETAILS  = %Test::BOM::RPC::Accounts::ACCOUNT_DETAILS;
 
+BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend->all(0);
+
 my $method = 'link_wallet';
 subtest 'link_wallet' => sub {
     my $params->{token} = $token;
@@ -171,5 +173,7 @@ subtest 'link_wallet' => sub {
         is($c->tcall($method, $params)->{error}{code}, 'DXInvalidAccount', 'correct error code for invalid dxtrader loginid');
     }
 };
+
+BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend->all(1);
 
 done_testing();
