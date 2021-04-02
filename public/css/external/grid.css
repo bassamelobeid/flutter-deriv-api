@@ -2735,3 +2735,7 @@ img.img-with-height {
 .content-with-height {
   min-height: 200px;
 }
+
+.inline-display {
+  display: inline-table;
+}
