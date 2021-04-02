@@ -247,6 +247,11 @@ payments:
           isa: json_string
           default: '{"bank_transfer": { "mode" : "exclude" }, "other": { "mode" : "exclude" }}'
           global: 1
+        archive_ads_days:
+          description: 'Number of days after which dormant ads are set inactive. Process is disabled when value is 0.'
+          isa: Num
+          global: 1
+          default: 0
     crypto:
       description: 'Cryptocurrencies related config'
       isa: section
