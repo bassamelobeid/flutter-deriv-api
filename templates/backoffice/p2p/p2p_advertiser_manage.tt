@@ -303,7 +303,7 @@
                 <td>[% item.remote_addr %]</td>
                 [% next = loop.next %]
                 [% FOREACH fld = ['is_enabled','is_approved','is_listed','blocked_until','trade_band','cc_sell_authorized','name','show_name','default_advert_description','payment_info','contact_info'] %]
-                    <td [% IF item.$fld != next.$fld %]style="bg-highlight;"[% END %]>[% item.$fld %]</td>
+                    <td [% IF item.$fld != next.$fld %]class="bg-highlight"[% END %]>[% item.$fld %]</td>
                 [% END %]                  
             </tr>
             [% END %]
