@@ -42,9 +42,10 @@ sub get_economic_events_for_date {
 
     $economic_events = dclone($economic_events);    # Avoid mutating the original cached value from get_latest_events_for_period
 
-    my @categorized_events = map { get_info($_) } grep { Volatility::EconomicEvents::is_defined($_->{symbol}, $_->{event_name}) } @$economic_events;
+    my @categorized_events =
+        map { get_info($_) } grep { Volatility::EconomicEvents::is_defined($_->{binary_ticker}, $_->{symbol}, $_->{event_name}) } @$economic_events;
     my @uncategorized_events =
-        map { get_info($_) } grep { !Volatility::EconomicEvents::is_defined($_->{symbol}, $_->{event_name}) } @$economic_events;
+        map { get_info($_) } grep { !Volatility::EconomicEvents::is_defined($_->{binary_ticker}, $_->{symbol}, $_->{event_name}) } @$economic_events;
     my @deleted_events =
         map  { get_info($_) }
         grep { Date::Utility->new($_->{release_date})->epoch >= $from->epoch && Date::Utility->new($_->{release_date})->epoch <= $to->epoch }
@@ -82,7 +83,7 @@ sub get_info {
     my $event = shift;
 
     $event->{release_date}    = Date::Utility->new($event->{release_date})->datetime;
-    $event->{not_categorized} = !Volatility::EconomicEvents::is_defined($event->{symbol}, $event->{event_name});
+    $event->{not_categorized} = !Volatility::EconomicEvents::is_defined($event->{binary_ticker}, $event->{symbol}, $event->{event_name});
     foreach my $symbol (_get_affected_underlying_symbols()) {
         my ($ev) = @{Volatility::EconomicEvents::categorize_events($symbol, [$event])};
         next unless $ev;
