@@ -53,6 +53,7 @@ my @setting_keys = qw(
     payments.p2p.fraud_blocking.sell_period
     payments.p2p.refund_timeout
     payments.p2p.disputed_timeout
+    payments.p2p.archive_ads_days
 );
 
 my $countries_list           = request()->brand->countries_instance->countries_list;

@@ -341,6 +341,7 @@ sub get_settings_by_group {
                 payments.p2p.refund_timeout
                 payments.p2p.disputed_timeout
                 payments.p2p.payment_method_countries
+                payments.p2p.archive_ads_days
                 )]};
 
     my $settings;
