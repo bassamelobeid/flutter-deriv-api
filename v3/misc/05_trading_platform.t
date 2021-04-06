@@ -202,6 +202,7 @@ subtest 'transfers' => sub {
                 loginid      => $dx_acc->{account_id},
                 currency     => $dx_acc->{currency},
                 market_type  => $dx_acc->{market_type},
+                demo_account => 0
             }
         ),
         'transfer_between_accounts with no params and accounts=all returns dx account'
@@ -226,7 +227,7 @@ subtest 'transfers' => sub {
                 market_type  => $dx_acc->{market_type},
             },
             {
-                account_type => 'binary',
+                account_type => 'trading',
                 balance      => num($client2->account->balance),
                 currency     => $client2->currency,
                 loginid      => $client2->loginid,
@@ -255,7 +256,7 @@ subtest 'transfers' => sub {
                 market_type  => $dx_acc->{market_type},
             },
             {
-                account_type => 'binary',
+                account_type => 'trading',
                 balance      => num($client2->account->balance),
                 currency     => $client2->currency,
                 loginid      => $client2->loginid,
