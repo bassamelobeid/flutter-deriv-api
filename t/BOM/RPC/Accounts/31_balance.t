@@ -71,9 +71,9 @@ $user_mlt_mf->add_client($test_client_mlt);
 $user_mlt_mf->add_client($test_client_mf);
 
 my $m              = BOM::Platform::Token::API->new;
-my $token          = $m->create_token($test_loginid, 'test token');
+my $token          = $m->create_token($test_loginid,                  'test token');
 my $token_disabled = $m->create_token($test_client_disabled->loginid, 'test token');
-my $token_mlt      = $m->create_token($test_client_mlt->loginid, 'test token');
+my $token_mlt      = $m->create_token($test_client_mlt->loginid,      'test token');
 
 my $c = Test::BOM::RPC::QueueClient->new();
 

@@ -140,7 +140,7 @@ sub startup {
             my $c = shift;
             $cpu_start = current_cpu_usage();
             $call      = $c->req->url->path;
-            $0         = "$service_base_name: " . $call if $on_production;    ## no critic (RequireLocalizedPunctuationVars)
+            $0         = "$service_base_name: " . $call if $on_production;                ## no critic (RequireLocalizedPunctuationVars)
             $call =~ s/\///;
             $request_start = [Time::HiRes::gettimeofday];
             DataDog::DogStatsd::Helper::stats_inc('bom_rpc.v_3.call.count', {tags => ["rpc:$call"]});

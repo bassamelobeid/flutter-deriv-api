@@ -60,10 +60,10 @@ sub start_document_upload {
         $upload_info = $client->start_document_upload({
             document_type   => $document_type,
             document_format => $args->{document_format},
-            document_id     => $args->{document_id} || '',
-            expiration_date => $args->{expiration_date} || undef,
+            document_id     => $args->{document_id}       || '',
+            expiration_date => $args->{expiration_date}   || undef,
             checksum        => $args->{expected_checksum} || '',
-            page_type       => $args->{page_type} || '',
+            page_type       => $args->{page_type}         || '',
         });
 
         return create_upload_error('duplicate_document') unless ($upload_info);

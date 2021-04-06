@@ -33,8 +33,8 @@ test_sendrecv_params 'landing_company_details/test_send.json', 'landing_company_
 test_sendrecv_params 'landing_company_details/test_send.json', 'landing_company_details/test_receive_maltainvest.json', 'maltainvest';
 test_sendrecv_params 'landing_company_details/test_send.json', 'landing_company_details/test_receive_error.json',       'unknown';
 test_sendrecv_params 'payout_currencies/test_send.json',       'payout_currencies/test_receive.json',                   '', $currencies, $length;
-test_sendrecv_params 'residence_list/test_send.json', 'residence_list/test_receive.json';
-test_sendrecv_params 'states_list/test_send.json',    'states_list/test_receive.json';
+test_sendrecv_params 'residence_list/test_send.json',          'residence_list/test_receive.json';
+test_sendrecv_params 'states_list/test_send.json',             'states_list/test_receive.json';
 
 # VIRTUAL ACCOUNT OPENING FOR (CR)
 test_sendrecv_params 'verify_email/test_send.json', 'verify_email/test_receive.json', 'test-rpc@binary.com', 'account_opening';
@@ -47,17 +47,17 @@ test_sendrecv_params 'authorize/test_send.json', 'authorize/test_receive_vrtc.js
 
 # READ SCOPE CALLS (VRTC)
 test_sendrecv_params 'payout_currencies/test_send.json', 'payout_currencies/test_receive.json', _get_stashed('authorize/stash/token'), 'USD', 1;
-test_sendrecv_params 'login_history/test_send.json', 'login_history/test_receive.json', _get_stashed('authorize/stash/token');
-test_sendrecv_params 'get_settings/test_send.json', 'get_settings/test_receive_vrtc.json', 'Zambia', 'zm', _get_stashed('authorize/stash/token');
-test_sendrecv_params 'get_account_status/test_send.json', 'get_account_status/test_receive.json', _get_stashed('authorize/stash/token');
-test_sendrecv_params 'profit_table/test_send.json', 'profit_table/test_receive_error_unauth.json', '12345', 1420041600, 1514736000;
+test_sendrecv_params 'login_history/test_send.json',     'login_history/test_receive.json',     _get_stashed('authorize/stash/token');
+test_sendrecv_params 'get_settings/test_send.json',      'get_settings/test_receive_vrtc.json', 'Zambia', 'zm', _get_stashed('authorize/stash/token');
+test_sendrecv_params 'get_account_status/test_send.json', 'get_account_status/test_receive.json',        _get_stashed('authorize/stash/token');
+test_sendrecv_params 'profit_table/test_send.json',       'profit_table/test_receive_error_unauth.json', '12345', 1420041600, 1514736000;
 test_sendrecv_params 'profit_table/test_send.json', 'profit_table/test_receive.json', _get_stashed('authorize/stash/token'), 1420041600, 1514736000;
-test_sendrecv_params 'statement/test_send.json', 'statement/test_receive_error_unauth.json', '12345';
-test_sendrecv_params 'statement/test_send.json', 'statement/test_receive.json',              _get_stashed('authorize/stash/token');
-test_sendrecv_params 'portfolio/test_send.json', 'portfolio/test_receive_error_unauth.json', '12345';
-test_sendrecv_params 'portfolio/test_send.json', 'portfolio/test_receive.json',              _get_stashed('authorize/stash/token');
-test_sendrecv_params 'balance/test_send.json',   'balance/test_receive_error_unauth.json',   '12345';
-test_sendrecv_params 'balance/test_send.json',   'balance/test_receive.json',                _get_stashed('authorize/stash/token');
+test_sendrecv_params 'statement/test_send.json',    'statement/test_receive_error_unauth.json', '12345';
+test_sendrecv_params 'statement/test_send.json',    'statement/test_receive.json',              _get_stashed('authorize/stash/token');
+test_sendrecv_params 'portfolio/test_send.json',    'portfolio/test_receive_error_unauth.json', '12345';
+test_sendrecv_params 'portfolio/test_send.json',    'portfolio/test_receive.json',              _get_stashed('authorize/stash/token');
+test_sendrecv_params 'balance/test_send.json',      'balance/test_receive_error_unauth.json',   '12345';
+test_sendrecv_params 'balance/test_send.json',      'balance/test_receive.json',                _get_stashed('authorize/stash/token');
 
 # TRADE SCOPE CALLS (VRTC)
 test_sendrecv_params 'topup_virtual/test_send.json', 'topup_virtual/test_receive.json', _get_stashed('authorize/stash/token');

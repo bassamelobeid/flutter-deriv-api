@@ -79,7 +79,7 @@ rpc active_symbols => sub {
 
 sub _description {
     my $symbol           = shift;
-    my $by               = shift || 'brief';
+    my $by               = shift                      || 'brief';
     my $ul               = create_underlying($symbol) || return;
     my $trading_calendar = eval { Quant::Framework->new->trading_calendar(BOM::Config::Chronicle::get_chronicle_reader) };
     my $iim              = $ul->intraday_interval ? $ul->intraday_interval->minutes : '';

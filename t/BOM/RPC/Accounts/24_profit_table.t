@@ -124,9 +124,9 @@ $user_mlt_mf->add_client($test_client_mlt);
 $user_mlt_mf->add_client($test_client_mf);
 
 my $m              = BOM::Platform::Token::API->new;
-my $token          = $m->create_token($test_loginid, 'test token');
+my $token          = $m->create_token($test_loginid,                  'test token');
 my $token_disabled = $m->create_token($test_client_disabled->loginid, 'test token');
-my $token_with_txn = $m->create_token($test_client_2->loginid, 'test token');
+my $token_with_txn = $m->create_token($test_client_2->loginid,        'test token');
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',

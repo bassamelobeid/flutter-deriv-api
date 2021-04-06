@@ -27,12 +27,12 @@ rpc app_register => sub {
     my $args                  = $params->{args};
     my $name                  = $args->{name};
     my $scopes                = $args->{scopes};
-    my $homepage              = $args->{homepage} // '';
-    my $github                = $args->{github} // '';
-    my $appstore              = $args->{appstore} // '';
-    my $googleplay            = $args->{googleplay} // '';
-    my $redirect_uri          = $args->{redirect_uri} // '';
-    my $verification_uri      = $args->{verification_uri} // '';
+    my $homepage              = $args->{homepage}              // '';
+    my $github                = $args->{github}                // '';
+    my $appstore              = $args->{appstore}              // '';
+    my $googleplay            = $args->{googleplay}            // '';
+    my $redirect_uri          = $args->{redirect_uri}          // '';
+    my $verification_uri      = $args->{verification_uri}      // '';
     my $app_markup_percentage = $args->{app_markup_percentage} // 0;
 
     my $error_sub = sub {
@@ -248,7 +248,7 @@ sub verify_app {
         stash => {
             valid_source               => $app_id,
             app_markup_percentage      => $app->{app_markup_percentage} // 0,
-            source_bypass_verification => $app->{bypass_verification} // 0
+            source_bypass_verification => $app->{bypass_verification}   // 0
         }};
 }
 

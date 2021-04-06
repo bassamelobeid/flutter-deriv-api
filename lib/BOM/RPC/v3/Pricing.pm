@@ -121,7 +121,7 @@ sub _serialize_contract_parameters {
         $staking_limits->{max}         // '',
         # non-binary
         $args->{maximum_ask_price} // '',    # callputspread is the only contract type that has this
-        $args->{multiplier} // '',
+        $args->{multiplier}        // '',
     );
 }
 

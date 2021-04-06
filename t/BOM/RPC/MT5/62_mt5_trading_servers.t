@@ -80,13 +80,13 @@ subtest 'trading servers for south africa' => sub {
         ->result;
 
     ok @$result == 4, 'returns 4 trade servers';
-    is $result->[0]->{id}, 'p01_ts02', 'first server p01_ts02';
-    ok $result->[0]->{disabled}, 'first server p01_ts02 is disabled';
+    is $result->[0]->{id},                'p01_ts02', 'first server p01_ts02';
+    ok $result->[0]->{disabled},          'first server p01_ts02 is disabled';
     is $result->[0]->{message_to_client}, 'Region added', 'correct error message';
-    is $result->[1]->{id}, 'p02_ts02', 'first server p02_ts02';
-    ok $result->[1]->{disabled}, 'first server p01_ts02 is disabled';
+    is $result->[1]->{id},                'p02_ts02',     'first server p02_ts02';
+    ok $result->[1]->{disabled},          'first server p01_ts02 is disabled';
     is $result->[1]->{message_to_client}, 'Temporarily unavailable', 'correct error message';
-    is $result->[2]->{id}, 'p01_ts03', 'first server p01_ts03';
+    is $result->[2]->{id},                'p01_ts03',                'first server p01_ts03';
     ok !$result->[2]->{disabled};
     is $result->[3]->{id}, 'p01_ts04', 'first server p01_ts04';
     ok !$result->[3]->{disabled};

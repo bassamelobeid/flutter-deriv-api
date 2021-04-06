@@ -371,7 +371,7 @@ order by ts
 
         # After subscribing to redis, there is no need to query Database further.
         @{$self->{ticks}->{$symbol}} = @ticks if $today->at_midnight <= $start;
-        last if $today->at_midnight <= $start;
+        last                                  if $today->at_midnight <= $start;
         # The whole day data has been written, now increment start
         $self->_update_start_day($symbol);
     }

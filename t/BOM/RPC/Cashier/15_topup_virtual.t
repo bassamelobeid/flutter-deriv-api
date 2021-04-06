@@ -34,7 +34,7 @@ $test_client_vr->set_default_account('USD');
 $test_client_vr->save;
 my $test_loginid = $test_client->loginid;
 
-my $oauth = BOM::Database::Model::OAuth->new;
+my $oauth      = BOM::Database::Model::OAuth->new;
 my ($token)    = $oauth->store_access_token_only(1, $test_loginid);
 my ($token_vr) = $oauth->store_access_token_only(1, $test_client_vr->loginid);
 

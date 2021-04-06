@@ -885,14 +885,13 @@ subtest $method => sub {
             );
         delete $params->{args}->{phone};
 
-        $params->{args}->{citizen} = 'gb';
+        $params->{args}->{citizen}   = 'gb';
         $params->{args}->{residence} = 'gb';
         $client->residence('gb');
         $client->address_postcode('');
         $params->{args}->{address_postcode} = '';
         $client->save();
-        $rpc_ct->call_ok($method, $params)
-            ->has_no_system_error->has_error->error_code_is('PostcodeRequired', 'needs address post code');
+        $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('PostcodeRequired', 'needs address post code');
 
         $params->{args}->{address_postcode} = '313131';
         $client->address_postcode('313131');

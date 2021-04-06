@@ -101,8 +101,9 @@ subtest 'Basic transfers' => sub {
     $client_cr2->status->set('disabled', 'system', 'test');
     ok $client_cr2->status->disabled, "account is disabled";
     $result = $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->result;
-    is $result->{error}->{code},              'PermissionDenied',   'Correct error code if account_to is disabled';
-    is $result->{error}->{message_to_client}, 'Permission denied.', 'Correct error message if account_to is disabled';
+    is $result->{error}->{code}, 'TransferBetweenAccountsError', 'Correct error code if account_to is disabled';
+    is $result->{error}->{message_to_client}, "You cannot perform this action, as your account $params->{args}->{account_to} is currently disabled.",
+        'Correct error message if account_to is disabled';
     $client_cr2->status->clear_disabled;
 
     $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->has_no_error('simple transfer between sibling accounts');
@@ -116,7 +117,7 @@ subtest 'Basic transfers' => sub {
     $params->{args}{account_from} = $client_cr2->loginid;
     $params->{args}{account_to}   = $client_cr1->loginid;
     $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->has_error->error_message_is(
-        'From account provided should be same as current authorized client.',
+        "You can only transfer from the current authorized client's account.",
         'Cannot transfer using api token when account_from is not authorized client'
     );
 };
@@ -295,6 +296,12 @@ subtest 'Virtual accounts' => sub {
         email_verified => 1,
     );
 
+    my $client_vr2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'VRTC',
+        email       => $email1,
+    });
+    $user2->add_client($client_vr2);
+
     my $client_cr2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'CR',
         email       => $email2
@@ -323,15 +330,29 @@ subtest 'Virtual accounts' => sub {
         remark   => 'free gift',
     );
 
-    $params->{args}       = {};
-    $params->{token}      = BOM::Platform::Token::API->new->create_token($client_vr1->loginid, 'test token');
+    $params->{args} = {
+        account_from => $client_cr2->loginid,
+        account_to   => $client_cr3->loginid,
+        currency     => 'USD',
+        amount       => 10
+    };
+    $params->{token}      = BOM::Platform::Token::API->new->create_token($client_vr2->loginid, 'test token');
     $params->{token_type} = 'api_token';
     $rpc_ct->call_ok('transfer_between_accounts', $params)
-        ->has_no_system_error->has_error->error_message_is('Permission denied.', 'Permission denied for vr account with api token');
+        ->has_no_system_error->has_error->error_message_is('You cannot transfer between real accounts because the authorized client is virtual.',
+        'Permission denied for vr account with api token');
 
     $params->{token_type} = 'oauth_token';
-    my $result =
-        $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->has_no_error('VR account allowed with oauth token')->result;
+    my $result = $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->has_no_error->result;
+    ok $result->{status} && $result->{transaction_id}, 'Can transfer between sibling real accounts with oauth virtual token';
+    cmp_ok($client_cr2->default_account->balance, '==', 3456 - 10, 'account_form debited');
+    cmp_ok($client_cr3->default_account->balance, '==', 4567 + 10, 'account_to credited');
+
+    # set token to that of another user
+    $params->{token} = BOM::Platform::Token::API->new->create_token($client_vr1->loginid, 'test token');
+    $params->{args}  = {};
+    $result =
+        $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->has_no_error('VR account allowed if no transer is made')->result;
     is($result->{status}, '0', 'expected response for empty args');
 
     $params->{args} = {
@@ -346,7 +367,8 @@ subtest 'Virtual accounts' => sub {
     $params->{args}{account_to} = $client_cr3->loginid;
 
     $rpc_ct->call_ok('transfer_between_accounts', $params)
-        ->has_no_system_error->has_error->error_message_is('Permission denied.', 'Permission denied for actual attempt to transfer');
+        ->has_no_system_error->has_error->error_message_is("You are not allowed to transfer from this account.",
+        'Permission denied for actual attempt to transfer because token is for another user');
 
     my $client_cr4 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'CR',
@@ -364,9 +386,24 @@ subtest 'Virtual accounts' => sub {
 
     $params->{args} = {};
     $result = $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->has_no_error()->result;
-    is($result->{accounts}[0]{loginid}, $client_cr4->loginid, 'real account loginid returned');
-    cmp_ok($result->{accounts}[0]{balance}, '==', 5678, 'real account balance returned');
-    is(scalar @{$result->{accounts}}, 1, 'only one account returned');
+    is(scalar @{$result->{accounts}}, 2, 'two accounts are returned');
+    cmp_bag $result->{accounts},
+        [{
+            'demo_account' => 0,
+            'account_type' => 'trading',
+            'balance'      => '5678.00',
+            'currency'     => 'USD',
+            'loginid'      => $client_cr4->loginid
+        },
+        {
+            'demo_account' => 1,
+            'account_type' => 'trading',
+            'balance'      => '2345.00',
+            'currency'     => 'USD',
+            'loginid'      => $client_vr1->loginid
+        }
+        ],
+        'Correct list of accounts';
 
     $params->{args} = {
         account_from => $client_vr1->loginid,
@@ -375,7 +412,8 @@ subtest 'Virtual accounts' => sub {
         amount       => 22
     };
     $rpc_ct->call_ok('transfer_between_accounts', $params)
-        ->has_no_system_error->has_error->error_message_is('Permission denied.', 'Cannot transfer from VR to real');
+        ->has_no_system_error->has_error->error_message_is('Transfer between real and virtual accounts is not allowed.',
+        'Cannot transfer from VR to real');
 
     $params->{args} = {
         account_from => $client_cr4->loginid,
@@ -384,7 +422,8 @@ subtest 'Virtual accounts' => sub {
         amount       => 33
     };
     $rpc_ct->call_ok('transfer_between_accounts', $params)
-        ->has_no_system_error->has_error->error_message_is('Permission denied.', 'Cannot transfer from real to VR');
+        ->has_no_system_error->has_error->error_message_is('Transfer between real and virtual accounts is not allowed.',
+        'Cannot transfer from real to VR');
 
     cmp_ok($client_vr1->default_account->balance, '==', 2345, 'VR account balance unchanged');
     cmp_ok($client_cr4->default_account->balance, '==', 5678, 'Real account balance unchanged');
@@ -468,13 +507,15 @@ subtest 'Get accounts list for transfer_between_accounts' => sub {
             loginid      => $test_client->loginid,
             balance      => num(1000),
             currency     => 'USD',
-            account_type => 'binary',
+            account_type => 'trading',
+            demo_account => 0,
         },
         {
             loginid      => $test_client_btc->loginid,
             balance      => num(10),
             currency     => 'BTC',
-            account_type => 'binary'
+            account_type => 'trading',
+            demo_account => 0,
         },
     );
     $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_error("no error for 'transfer_between_accounts' with no params");
@@ -507,23 +548,33 @@ subtest 'Get accounts list for transfer_between_accounts' => sub {
     $rpc_ct->call_ok('mt5_new_account', $params)->has_no_error('no error for financial_stp mt5_new_account');
 
     my @mt5_accounts = ({
+            loginid      => 'MTD' . $ACCOUNTS{'demo\p01_ts01\financial\svg_std_usd'},
+            balance      => num($DETAILS{balance}),
+            currency     => 'USD',
+            account_type => 'mt5',
+            mt5_group    => 'demo\p01_ts01\financial\svg_std_usd',
+            demo_account => 1
+        },
+        {
             loginid      => 'MTR' . $ACCOUNTS{'real\p01_ts01\financial\svg_std_usd'},
             balance      => num($DETAILS{balance}),
             currency     => 'USD',
             account_type => 'mt5',
-            mt5_group    => 'real\p01_ts01\financial\svg_std_usd'
+            mt5_group    => 'real\p01_ts01\financial\svg_std_usd',
+            demo_account => 0
         },
         {
             loginid      => 'MTR' . $ACCOUNTS{'real\p01_ts01\financial\labuan_stp_usd'},
             balance      => num($DETAILS{balance}),
             currency     => 'USD',
             account_type => 'mt5',
-            mt5_group    => 'real\p01_ts01\financial\labuan_stp_usd'
+            mt5_group    => 'real\p01_ts01\financial\labuan_stp_usd',
+            demo_account => 0
         },
     );
     $params->{args} = {accounts => 'all'};
     $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_error("no error for 'transfer_between_accounts' with no params");
-    cmp_bag($rpc_ct->result->{accounts}, [@real_accounts, @mt5_accounts], "accounts=all returns all binary accounts + MT5.");
+    cmp_bag($rpc_ct->result->{accounts}, [@real_accounts, @mt5_accounts], "accounts=all returns all trading and mt5 accounts.");
     $test_client->status->set('disabled', 'system', 'test');
     my $result = $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->result;
     is $result->{error}->{code}, 'DisabledClient', 'Correct error code for disabled acount';
@@ -604,16 +655,19 @@ subtest 'Current account is withdrawal_locked but its siblings can transfer betw
     $client_cr2->status->set('disabled', 'system', 'test');
     ok $client_cr2->status->disabled, "account_from is disabled";
     my $result = $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->result;
-    is $result->{error}->{code},              'PermissionDenied',   'Correct error code if account_from is disabled';
-    is $result->{error}->{message_to_client}, 'Permission denied.', 'Correct error message if account_from is disabled';
+    is $result->{error}->{code}, 'TransferBetweenAccountsError', 'Correct error code if account_from is disabled';
+    is $result->{error}->{message_to_client},
+        "You cannot perform this action, as your account $params->{args}->{account_from} is currently disabled.",
+        'Correct error message if account_from is disabled';
     $client_cr2->status->clear_disabled;
 
     # using token of current account but sibling (account_to) is disabled
     $client_cr3->status->set('disabled', 'system', 'test');
     ok $client_cr3->status->disabled, "account_to is disabled";
     $result = $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->result;
-    is $result->{error}->{code},              'PermissionDenied',   'Correct error code if account_to is disabled';
-    is $result->{error}->{message_to_client}, 'Permission denied.', 'Correct error message if account_to is disabled';
+    is $result->{error}->{code}, 'TransferBetweenAccountsError', 'Correct error code if account_to is disabled';
+    is $result->{error}->{message_to_client}, "You cannot perform this action, as your account $params->{args}->{account_to} is currently disabled.",
+        'Correct error message if account_to is disabled';
     $client_cr3->status->clear_disabled;
 
     # using token of current account but sibling (account_from) is withdrawal_locked
@@ -928,6 +982,92 @@ subtest 'Transfer from Sibling account when current account is withdrawal_locked
     $rpc_ct->call_ok('transfer_between_accounts', $params)
         ->has_no_system_error->has_no_error('simple transfer from sibling account to current no_withdrawal_or_trading account');
     $client_cr1->status->clear_no_withdrawal_or_trading;
+};
+
+subtest 'Transfer between virtual accounts' => sub {
+    my $email     = 'virtual_transfer@deriv.com';
+    my $client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+    });
+    my $client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'VRTC',
+    });
+    my $client_vdw = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'VRDW',
+    });
+    my $client_vdw2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'VRDW',
+    });
+
+    my $user = BOM::User->create(
+        email    => $email,
+        password => BOM::User::Password::hashpw('hello'),
+    );
+    $user->add_client($client_cr);
+    $user->add_client($client_vr);
+    $user->add_client($client_vdw);
+    $user->add_client($client_vdw2);
+
+    $client_cr->set_default_account('USD');
+    $client_vr->set_default_account('USD');
+    $client_vdw->set_default_account('USD');
+    $client_vdw2->set_default_account('EUR');
+
+    $params->{token} = BOM::Platform::Token::API->new->create_token($client_vr->loginid, 'test token');
+    $params->{args}  = {
+        account_from => $client_vdw->loginid,
+        account_to   => $client_vr->loginid,
+        currency     => 'USD',
+        amount       => 10
+    };
+    $params->{token_type} = 'api_token';
+    my $result = $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->has_error->result;
+    is_deeply $result->{error},
+        {
+        'message_to_client' => 'The maximum amount you may transfer is: 0.',
+        'code'              => 'TransferBetweenAccountsError'
+        },
+        'Correct error for insufficient balance';
+    $client_vdw->payment_free_gift(
+        currency => 'USD',
+        amount   => 10,
+        remark   => 'free gift',
+    );
+
+    $rpc_ct->call_ok('transfer_between_accounts', $params)
+        ->has_no_system_error->has_no_error('Transfer from virtual dwallet to virtual trading account is allowed');
+    cmp_ok($client_vdw->default_account->balance, '==', 0,  'Wallet account balance changed');
+    cmp_ok($client_vr->default_account->balance,  '==', 10, 'Virtual account balance changed');
+
+    $params->{args}->@{qw/account_from account_to/} = ($client_vr->loginid, $client_vdw->loginid);
+    $rpc_ct->call_ok('transfer_between_accounts', $params)
+        ->has_no_system_error->has_no_error('Transfer from virtual tranding to virtual dwallet account is allowed');
+    cmp_ok($client_vdw->default_account->balance, '==', 10, 'Wallet account balance changed again');
+    cmp_ok($client_vr->default_account->balance,  '==', 0,  'Virtual account balance changed again');
+
+    $params->{args}->{account_from} = $client_vdw2->loginid;
+    $result = $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->has_error->result;
+    is_deeply $result->{error},
+        {
+        'message_to_client' => 'Transfer between wallet accounts is not allowed.',
+        'code'              => 'TransferBetweenAccountsError'
+        },
+        'Transfer between wallet accounts will fail';
+
+    subtest 'Transfer between virtual and real acccounts is not allowed' => sub {
+        $params->{args}->{account_from} = $client_cr->loginid;
+        for my $account_to ($client_vr->loginid, $client_vdw->loginid) {
+            $params->{args}->{account_to} = $account_to;
+            $result = $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->result;
+            is $result->{error}->{code}, 'PermissionDenied', 'Transfer from real to virtual account is not allowed';
+        }
+        $params->{args}->{account_to} = $client_cr->loginid;
+        for my $account_from ($client_vr->loginid, $client_vdw->loginid) {
+            $params->{args}->{account_from} = $account_from;
+            $result = $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->result;
+            is $result->{error}->{code}, 'PermissionDenied', 'Transfer from virtual to real account is npt allowed';
+        }
+    };
 };
 
 done_testing();

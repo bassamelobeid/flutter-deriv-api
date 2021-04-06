@@ -618,9 +618,9 @@ subtest 'set settings' => sub {
     mailbox_clear();
     $params->{args}->{email_consent} = 1;
 
-    $poi_status = 'verified';
+    $poi_status                                  = 'verified';
     $params->{args}->{tax_identification_number} = $test_client_X_mf->tax_identification_number;
-    $params->{args}{tax_residence}             = 'de';
+    $params->{args}{tax_residence}               = 'de';
     is(
         $c->tcall($method, $params)->{error}{message_to_client},
         'Your tax residence cannot be changed.',
@@ -650,15 +650,15 @@ subtest 'set settings' => sub {
         $params->{args} = {%full_args, preferred_language => 'FA'};
         my $res = $c->tcall($method, $params);
 
-        is($c->tcall($method, $params)->{status},                                   1,    'update successfully');
+        is($c->tcall($method,        $params)->{status},                              1,    'update successfully');
         is($c->tcall('get_settings', {token => $token_Y_cr_1})->{preferred_language}, 'FA', 'preferred language updated to FA.');
 
         $params->{args} = {%full_args, preferred_language => undef};
-        is($c->tcall($method, $params)->{status},                                   1,    'update successfully');
+        is($c->tcall($method,        $params)->{status},                              1,    'update successfully');
         is($c->tcall('get_settings', {token => $token_Y_cr_1})->{preferred_language}, 'FA', 'preferred language didn\'t updated.');
 
         $params->{args} = {%full_args, preferred_language => 'ZH_CN'};
-        is($c->tcall($method, $params)->{status},                                   1,    'update successfully');
+        is($c->tcall($method,        $params)->{status},                              1,       'update successfully');
         is($c->tcall('get_settings', {token => $token_Y_cr_1})->{preferred_language}, 'ZH_CN', 'preferred language updated to ZH_CN.');
     };
 
@@ -697,7 +697,7 @@ subtest 'set settings' => sub {
                 $params->{args} = {%full_args, citizen => $restricted_country};
                 $test_client_X_mf->citizen('');
                 $test_client_X_mf->save();
-                is($c->tcall($method,        $params)->{status},            1,                   'update successfully');
+                is($c->tcall($method,        $params)->{status},                 1,                   'update successfully');
                 is($c->tcall('get_settings', {token => $token_X_mf})->{citizen}, $restricted_country, "Restricted country value for citizenship");
 
             }

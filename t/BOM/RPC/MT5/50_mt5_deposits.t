@@ -60,10 +60,16 @@ $test_client->tax_identification_number('111222333');
 $test_client->set_authentication('ID_DOCUMENT', {status => 'pass'});
 $test_client->account_opening_reason('nothing');
 $test_client->save;
+
 my $test_client_vr = create_client('VRTC');
 $test_client_vr->email($DETAILS{email});
 $test_client_vr->set_default_account('USD');
 $test_client_vr->save;
+
+my $test_wallet_vr = create_client('VRDW');
+$test_wallet_vr->email($DETAILS{email});
+$test_wallet_vr->set_default_account('USD');
+$test_wallet_vr->save;
 
 my $user = BOM::User->create(
     email    => $DETAILS{email},
@@ -71,9 +77,10 @@ my $user = BOM::User->create(
 );
 $user->add_client($test_client);
 $user->add_client($test_client_vr);
+$user->add_client($test_wallet_vr);
 
 my $m        = BOM::Platform::Token::API->new;
-my $token    = $m->create_token($test_client->loginid, 'test token');
+my $token    = $m->create_token($test_client->loginid,    'test token');
 my $token_vr = $m->create_token($test_client_vr->loginid, 'test token');
 
 # Throttle function limits requests to 1 per minute which may cause
@@ -94,6 +101,10 @@ my $params = {
 };
 BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real->p01_ts03->all(0);
 $c->call_ok('mt5_new_account', $params)->has_no_error('no error for mt5_new_account');
+
+$params->{args}->{account_type} = 'demo';
+BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
+$c->call_ok('mt5_new_account', $params)->has_no_error('no error for mt5_new_account')->result;
 
 sub _get_mt5transfer_from_transaction {
     my ($dbic, $transaction_id) = @_;
@@ -202,8 +213,7 @@ subtest 'demo account can not be tagged as an agent' => sub {
     $test_client->save;
 };
 
-subtest 'virtual_deposit' => sub {
-
+subtest 'virtual topup' => sub {
     my $method = "mt5_new_account";
     BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
 
@@ -271,6 +281,51 @@ subtest 'virtual_deposit' => sub {
         $config_mock->unmock_all;
         $status_mock->unmock_all;
     };
+
+    $demo_account_mock->unmock;
+
+};
+
+subtest 'virtual deposit' => sub {
+    my $loginid = $test_client->loginid;
+
+    my $method = "mt5_deposit";
+    my $params = {
+        language => 'EN',
+        token    => $token_vr,
+        args     => {
+            from_binary => $loginid,
+            to_mt5      => 'MTD' . $ACCOUNTS{'demo\p01_ts01\synthetic\svg_std_usd'},
+            amount      => 180,
+        },
+    };
+
+    set_absolute_time(Date::Utility->new('2018-02-15')->epoch);
+
+    my $demo_account_mock = Test::MockModule->new('BOM::RPC::v3::MT5::Account');
+    $demo_account_mock->mock('_fetch_mt5_lc', sub { return LandingCompany::Registry::get('svg'); });
+
+    BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
+    $c->call_ok($method, $params)->has_error('Cannot depoosit to demo mt5 from real trading account')
+        ->error_message_is('Transfer between real and virtual accounts is not allowed.', 'Demo to real error message');
+
+    is $test_wallet_vr->default_account->balance, 0, "Correct balance after deposited to mt5 account";
+    $params->{args}->{from_binary} = $test_client_vr->loginid;
+    BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
+    $c->call_ok($method, $params)->has_error('fail to deposit from virtual trading account')
+        ->error_code_is('InvalidVirtualAccount', 'Deposit to demo MT5 from virtual trading account is not allowed');
+
+    $params->{args}->{from_binary} = $test_wallet_vr->loginid;
+    BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
+    $c->call_ok($method, $params)->has_error('fail to deposit from an empty wallet')->error_code_is('MT5DepositError')
+        ->error_message_like(qr/The maximum amount you may transfer is/, 'Deposit from empty wallet fails.');
+
+    top_up $test_wallet_vr, USD => 180;
+    BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
+    $c->call_ok($method, $params)->has_no_error('no error for mt5_withdrawal');
+    ok(defined $c->result->{binary_transaction_id}, 'Virtual wallet to demo MT5 transfer is allowed');
+
+    is $test_wallet_vr->default_account->balance + 0, 0, "Correct balance after deposited to mt5 account";
 
     $demo_account_mock->unmock;
 
@@ -360,14 +415,14 @@ subtest 'withdrawal' => sub {
     $demo_account_mock->mock('_fetch_mt5_lc', sub { return LandingCompany::Registry::get('svg'); });
 
     BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
-    $c->call_ok($method, $params)->has_error('cannot withdrawals to virtual account')
-        ->error_message_is('You cannot perform this action with a virtual account.');
+    $c->call_ok($method, $params)->has_error('cannot withdrawals from real mt5 to virtual trading account')
+        ->error_message_is('Transfer between real and virtual accounts is not allowed.');
 
     $params->{args}->{to_binary} = $test_client->loginid;
     $params->{token} = $token_vr;
     $c->call_ok($method, $params)->has_error('fail withdrawals with vr_token')->error_code_is('PermissionDenied', 'error code is PermissionDenied');
-    $params->{token} = $token;
 
+    $params->{token} = $token;
     BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
     $c->call_ok($method, $params)->has_no_error('no error for mt5_withdrawal');
     ok(defined $c->result->{binary_transaction_id}, 'result has a transaction ID');
@@ -393,6 +448,42 @@ subtest 'withdrawal' => sub {
     $params->{args}{from_mt5} = "MTwrong";
     $c->call_ok($method, $params)->has_error('error for mt5_withdrawal wrong login')
         ->error_code_is('PermissionDenied', 'error code for mt5_withdrawal wrong login');
+
+    $demo_account_mock->unmock;
+};
+
+subtest 'virtual withdrawal' => sub {
+    my $method = "mt5_withdrawal";
+    my $params = {
+        language => 'EN',
+        token    => $token,
+        args     => {
+            from_mt5  => 'MTD' . $ACCOUNTS{'demo\p01_ts01\synthetic\svg_std_usd'},
+            to_binary => $test_client->loginid,
+            amount    => 150,
+        },
+    };
+
+    set_absolute_time(Date::Utility->new('2018-02-15')->epoch);
+
+    my $demo_account_mock = Test::MockModule->new('BOM::RPC::v3::MT5::Account');
+    $demo_account_mock->mock('_fetch_mt5_lc', sub { return LandingCompany::Registry::get('svg'); });
+
+    BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
+    $c->call_ok($method, $params)->has_error('Cannot withdrawals from demo mt5 to real trading account')
+        ->error_message_is('Transfer between real and virtual accounts is not allowed.', 'Demo to real error message');
+
+    $params->{args}->{to_binary} = $test_client_vr->loginid;
+    BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
+    $c->call_ok($method, $params)->has_error('fail withdrawals with vr_token')
+        ->error_code_is('InvalidVirtualAccount', 'Withdrawal from demo MT5 to demo trading account is not allowed');
+
+    $params->{args}->{to_binary} = $test_wallet_vr->loginid;
+    BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
+    $c->call_ok($method, $params)->has_no_error('no error for mt5_withdrawal');
+    ok(defined $c->result->{binary_transaction_id}, 'Demo to virtual wallet transfer is allowed');
+
+    is $test_wallet_vr->default_account->balance + 0, 150, "Correct balance after withdrawal from mt5 account";
 
     $demo_account_mock->unmock;
 };

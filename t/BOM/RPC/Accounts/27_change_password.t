@@ -39,7 +39,7 @@ my $test_client_disabled = BOM::Test::Data::Utility::UnitTestDatabase::create_cl
 $test_client_disabled->status->set('disabled', 1, 'test disabled');
 
 my $m              = BOM::Platform::Token::API->new;
-my $token          = $m->create_token($test_client->loginid, 'test token');
+my $token          = $m->create_token($test_client->loginid,          'test token');
 my $token_disabled = $m->create_token($test_client_disabled->loginid, 'test token');
 
 my $c = Test::BOM::RPC::QueueClient->new();

@@ -37,30 +37,26 @@ my %methods = map { $_ => 1 } map { split /,/ } @ARGV;
 $log->infof('Will remove RPC calls matching: %s', join(',', sort keys %methods));
 
 my $loop = IO::Async::Loop->new;
-$loop->add(
-    my $redis = Net::Async::Redis->new(
-        uri => $redis_uri
-    )
-);
+$loop->add(my $redis = Net::Async::Redis->new(uri => $redis_uri));
 
 async sub remove_methods {
     my ($stream) = @_;
-    my $limit = 50;
-    my $total = 0;
-    my $removed = 0;
-    my $prev = '0';
-    while(1) {
+    my $limit    = 50;
+    my $total    = 0;
+    my $removed  = 0;
+    my $prev     = '0';
+    while (1) {
         my ($response) = await $redis->xrange($stream, $prev, '+', COUNT => $limit);
         $log->infof('Have %d items', 0 + @$response);
         my @removal;
         for my $item ($response->@*) {
             ++$total;
-            my $id = $item->[0];
+            my $id   = $item->[0];
             my %data = $item->[1]->@*;
             $log->infof('ID %s data %s', $id, \%data);
             my $rpc = $data{rpc} or die 'Found request with no RPC method, queue format invalid? ' . Dumper(\%data);
-            if(exists $methods{$rpc}) {
-                push @removal, [ $id, $rpc ];
+            if (exists $methods{$rpc}) {
+                push @removal, [$id, $rpc];
             }
             $prev = $id;
         }
@@ -78,12 +74,10 @@ async sub remove_methods {
     return;
 }
 
-(async sub {
-    await Future->wait_any(
-        $redis->connected,
-        $loop->timeout_future(after => REDIS_CONNECTION_TIMEOUT)
-    );
-    for my $stream (@$streams) {
-        await remove_methods($stream);
-    }
-})->()->get;
+(
+    async sub {
+        await Future->wait_any($redis->connected, $loop->timeout_future(after => REDIS_CONNECTION_TIMEOUT));
+        for my $stream (@$streams) {
+            await remove_methods($stream);
+        }
+    })->()->get;

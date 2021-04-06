@@ -124,7 +124,7 @@ async sub stream_tick_range {
                     length => $size
                 );
 
-                die 'No bytes transferred' unless $bytes;
+                die 'No bytes transferred'                                                         unless $bytes;
                 $log->warnf('Failed to transfer expected size %d (had %d instead)', $size, $bytes) unless $size == $bytes;
                 $pending -= $bytes;
             }

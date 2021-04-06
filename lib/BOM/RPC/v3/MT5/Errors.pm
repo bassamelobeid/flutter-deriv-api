@@ -46,19 +46,19 @@ my %category_message_mapping = do {
         ClosedMarket       => localize('Transfers are unavailable on weekends. Please try again anytime from Monday to Friday.'),
         NoExchangeRates    => localize('Sorry, transfers are currently unavailable. Please try again later.'),
         NoTransferFee => localize('Transfers are currently unavailable between [_1] and [_2]. Please use a different currency or try again later.'),
-        AmountNotAllowed => localize('The minimum amount for transfers is [_1] [_2]. Please adjust your amount.'),
-        InvalidMinAmount => localize('The minimum amount for transfers is [_1] [_2]. Please adjust your amount.'),
-        InvalidMaxAmount => localize('The maximum amount for deposits is [_1] [_2]. Please adjust your amount.'),
-        InvalidPassword  => localize('Forgot your password? Please reset your password.'),
+        AmountNotAllowed           => localize('The minimum amount for transfers is [_1] [_2]. Please adjust your amount.'),
+        InvalidMinAmount           => localize('The minimum amount for transfers is [_1] [_2]. Please adjust your amount.'),
+        InvalidMaxAmount           => localize('The maximum amount for deposits is [_1] [_2]. Please adjust your amount.'),
+        InvalidPassword            => localize('Forgot your password? Please reset your password.'),
         IncorrectMT5PasswordFormat =>
             localize('Your password must be 8 to 25 characters long. It must include lowercase and uppercase letters, and numbers.'),
         MT5PasswordEmailLikenessError => localize('You cannot use your email address as your password.'),
         NoMoney                       => localize('Your withdrawal is unsuccessful. Please make sure you have enough funds in your account.'),
-        HaveOpenPositions =>
+        HaveOpenPositions             =>
             localize('Please withdraw your account balance and close all your open positions before revoking MT5 account manager permissions.'),
-        MissingSignupDetails => localize('Your profile appears to be incomplete. Please update your personal details to continue.'),
-        NoAccountDetails     => localize('We are retrieving your MT5 details. Please give us a few more seconds.'),
-        RealAccountMissing   => localize('You are on a virtual account. To open an MT5 account, please upgrade to a real account.'),
+        MissingSignupDetails    => localize('Your profile appears to be incomplete. Please update your personal details to continue.'),
+        NoAccountDetails        => localize('We are retrieving your MT5 details. Please give us a few more seconds.'),
+        RealAccountMissing      => localize('You are on a virtual account. To open an MT5 account, please upgrade to a real account.'),
         FinancialAccountMissing =>
             localize('Your existing account does not allow MT5 trading. To open an MT5 account, please upgrade to a financial account.'),
         GamingAccountMissing =>
@@ -74,7 +74,6 @@ my %category_message_mapping = do {
         MT5NotAllowed                => localize('MT5 [_1] account is not available in your country yet.'),
         MT5SwapFreeNotAllowed        => localize('MT5 swap-free [_1] account is not available in your country yet.'),
         MT5CreateUserError           => localize('An error occured while creating your account. Please check your information and try again.'),
-        NoDemoWithdrawals            => localize('Withdrawals are not possible for demo accounts.'),
         InvalidLoginid               => localize("We can't find this login ID in our database. Please check the details and try again."),
         NoManagerAccountWithdraw     => localize('Withdrawals from MT5 manager accounts is not possible. Please choose another payment method.'),
         AuthenticateAccount          => localize("Please authenticate your [_1] account to proceed with the fund transfer."),
@@ -88,15 +87,16 @@ my %category_message_mapping = do {
         TransferBetweenAccountsError => localize('Transfers between accounts are not available for your account.'),
         CurrencyConflict             => localize('Currency provided is different from account currency.'),
         InvalidMT5Group              => localize('This MT5 account has an invalid Landing Company.'),
-        VirtualProhibited            => localize('You cannot perform this action with a virtual account.'),
-        ExpiredDocuments =>
+        ExpiredDocuments             =>
             localize('Your identity documents have expired. Visit your account profile to submit your valid documents and unlock your cashier.'),
         Experimental     => localize('This currency is temporarily suspended. Please select another currency to proceed.'),
         MT5DepositLocked => localize('You cannot make a deposit because your MT5 account is disabled. Please contact our Customer Support team.'),
         TransferBetweenDifferentCurrencies =>
             localize('Your account currencies need to be the same. Please choose accounts with matching currencies and try again.'),
-        PasswordError => localize('That password is incorrect. Please try again.'),
-        PasswordReset => localize('Please reset your password to continue.'),
+        PasswordError         => localize('That password is incorrect. Please try again.'),
+        PasswordReset         => localize('Please reset your password to continue.'),
+        AccountTypesMismatch  => localize('Transfer between real and virtual accounts is not allowed.'),
+        InvalidVirtualAccount => localize('Virtual transfers are only possible between wallet and other account types.'),
     );
 };
 

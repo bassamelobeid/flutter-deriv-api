@@ -131,12 +131,12 @@ my $user_only_vr = BOM::User->create(
 $user_only_vr->add_client($test_client_vr);
 
 my $m             = BOM::Platform::Token::API->new;
-my $token         = $m->create_token($test_client->loginid, 'test token');
-my $token_cr      = $m->create_token($test_client_cr->loginid, 'test token');
-my $token_cr_2    = $m->create_token($test_client_cr_2->loginid, 'test token');
-my $token_vr      = $m->create_token($test_client_vr->loginid, 'test token');
-my $token_mlt     = $m->create_token($test_client_mlt->loginid, 'test token');
-my $token_mf      = $m->create_token($test_client_mf->loginid, 'test token');
+my $token         = $m->create_token($test_client->loginid,         'test token');
+my $token_cr      = $m->create_token($test_client_cr->loginid,      'test token');
+my $token_cr_2    = $m->create_token($test_client_cr_2->loginid,    'test token');
+my $token_vr      = $m->create_token($test_client_vr->loginid,      'test token');
+my $token_mlt     = $m->create_token($test_client_mlt->loginid,     'test token');
+my $token_mf      = $m->create_token($test_client_mf->loginid,      'test token');
 my $token_only_vr = $m->create_token($test_client_only_vr->loginid, 'test token');
 
 my $c = Test::BOM::RPC::QueueClient->new;

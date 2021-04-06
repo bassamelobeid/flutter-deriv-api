@@ -69,7 +69,7 @@ sub ticks_start_end_with_limit_for_charting {
 
     my $start_time = $args->{start_time} == 1      ? Time::Moment->now->minus_days(1) : Time::Moment->from_epoch($args->{start_time});
     my $end_time   = $args->{end_time} eq 'latest' ? Time::Moment->now                : Time::Moment->from_epoch($args->{end_time});
-    my $limit = $args->{limit} // $self->limit;
+    my $limit      = $args->{limit} // $self->limit;
     $limit = 0 if $limit > $start_time->delta_seconds($end_time);
 
     my @results;

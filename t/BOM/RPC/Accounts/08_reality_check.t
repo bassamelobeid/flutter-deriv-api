@@ -78,8 +78,8 @@ my $details       = BOM::RPC::v3::Utility::get_token_details($token);
 my $creation_time = $details->{epoch};
 
 $result = $c->call_ok($method, {token => $token})->result;
-is $result->{start_time}, $creation_time, 'Start time matches oauth token creation time';
-is $result->{loginid}, $test_client_mlt->loginid, 'Contains correct loginid';
+is $result->{start_time},          $creation_time, 'Start time matches oauth token creation time';
+is $result->{loginid},             $test_client_mlt->loginid, 'Contains correct loginid';
 is $result->{open_contract_count}, 0, 'zero open contracts';
 
 done_testing();

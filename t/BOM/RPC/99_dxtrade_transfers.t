@@ -141,21 +141,21 @@ subtest 'transfer between accounts' => sub {
         }};
 
     my $res = $c->call_ok('transfer_between_accounts', $params)->has_no_system_error->has_no_error->result;
-
     cmp_deeply(
         $res->{accounts},
         bag({
-                'account_type' => 'binary',
+                'account_type' => 'trading',
                 'balance'      => num($client1->account->balance),
                 'currency'     => $client1->currency,
                 'loginid'      => $client1->loginid,
+                'demo_account' => 0,
             },
             {
-                'account_type' => 'binary',
+                'account_type' => 'trading',
                 'balance'      => num($client2->account->balance),
-                ,
-                'currency' => $client2->currency,
-                'loginid'  => $client2->loginid,
+                'currency'     => $client2->currency,
+                'loginid'      => $client2->loginid,
+                'demo_account' => 0,
             },
             {
                 'account_type' => 'dxtrade',
@@ -163,9 +163,18 @@ subtest 'transfer between accounts' => sub {
                 'currency'     => $dx_real->{currency},
                 'loginid'      => $dx_real->{account_id},
                 'market_type'  => $dx_real->{market_type},
+                'demo_account' => 0,
+            },
+            {
+                'account_type' => 'dxtrade',
+                'balance'      => num(10000),
+                'currency'     => $dx_demo->{currency},
+                'loginid'      => $dx_demo->{account_id},
+                'market_type'  => $dx_demo->{market_type},
+                'demo_account' => 1,
             },
         ),
-        'all real accounts returned'
+        'all real and demo accounts returned'
     );
 
     $params->{args} = {
@@ -184,7 +193,7 @@ subtest 'transfer between accounts' => sub {
     cmp_deeply(
         $res->{accounts},
         bag({
-                'account_type' => 'binary',
+                'account_type' => 'trading',
                 'balance'      => num($client1->account->balance),
                 'currency'     => $client1->currency,
                 'loginid'      => $client1->loginid,
@@ -208,7 +217,7 @@ subtest 'transfer between accounts' => sub {
     cmp_deeply(
         $res->{accounts},
         bag({
-                'account_type' => 'binary',
+                'account_type' => 'trading',
                 'balance'      => num($client1->account->balance),
                 'currency'     => $client1->currency,
                 'loginid'      => $client1->loginid,

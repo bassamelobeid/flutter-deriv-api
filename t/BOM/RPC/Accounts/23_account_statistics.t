@@ -28,8 +28,8 @@ $test_client_cr->save;
 
 my $m              = BOM::Platform::Token::API->new;
 my $token_disabled = $m->create_token($test_client_disabled->loginid, 'test token');
-my $token_with_txn = $m->create_token($test_client_mf->loginid, 'test token');
-my $token_cr       = $m->create_token($test_client_cr->loginid, 'test token');
+my $token_with_txn = $m->create_token($test_client_mf->loginid,       'test token');
+my $token_cr       = $m->create_token($test_client_cr->loginid,       'test token');
 
 $test_client_mf->payment_free_gift(
     currency => 'USD',

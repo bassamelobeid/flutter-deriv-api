@@ -60,13 +60,13 @@ my $c = BOM::Test::RPC::QueueClient->new();
 # Setup clients
 ####################################################################
 
-my $trader_CR   = create_client('CR',   0, {email => 'trader_cr@binary.com'});
-my $copier_CR   = create_client('CR',   0, {email => 'copier_cr@binary.com'});
-my $trader_VRTC = create_client('VRTC', 0, {email => 'trader_vrtc@binary.com'});
-my $copier_VRTC = create_client('VRTC', 0, {email => 'copier_vrtc@binary.com'});
-my $copier_MLT  = create_client('MLT',  0, {email => 'copier_mlt@binary.com'});
-my $copier_MF   = create_client('MLT',  0, {email => 'copier_mf@binary.com'});
-my $EUR_copier  = create_client('CR');
+my $trader_CR    = create_client('CR',   0, {email => 'trader_cr@binary.com'});
+my $copier_CR    = create_client('CR',   0, {email => 'copier_cr@binary.com'});
+my $trader_VRTC  = create_client('VRTC', 0, {email => 'trader_vrtc@binary.com'});
+my $copier_VRTC  = create_client('VRTC', 0, {email => 'copier_vrtc@binary.com'});
+my $copier_MLT   = create_client('MLT',  0, {email => 'copier_mlt@binary.com'});
+my $copier_MF    = create_client('MLT',  0, {email => 'copier_mf@binary.com'});
+my $EUR_copier   = create_client('CR');
 my $unset_trader = create_client('CR');
 my $CR_client    = create_client('CR', 0, {email => 'client@binary.com'});
 
@@ -181,8 +181,8 @@ subtest 'Copy trading statistics with no deposits for the current month' => sub 
 
     my $statistics_response = copytrading_statistics($CR_client)->{monthly_profitable_trades};
     is $statistics_response->{"$past_year-$past_month"}, sprintf("%.4f", 0), "deposit ok for past month";
-    isnt $statistics_response->{"$year-$month"}, undef, 'not undef for current month';
-    isnt $statistics_response->{"$year-$month"}, sprintf("%.4f", 0), 'has only trades';
+    isnt $statistics_response->{"$year-$month"},         undef, 'not undef for current month';
+    isnt $statistics_response->{"$year-$month"},         sprintf("%.4f", 0), 'has only trades';
 
 };
 
@@ -296,7 +296,7 @@ sub buy_one_bet {
     my $buy_price    = delete $args->{buy_price}    // 20;
     my $payout_price = delete $args->{payout_price} // $buy_price * 10;
     my $limits       = delete $args->{limits};
-    my $duration = delete $args->{duration} // '15s';
+    my $duration     = delete $args->{duration} // '15s';
 
     my $loginid = $client->loginid;
 

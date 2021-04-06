@@ -487,10 +487,7 @@ rpc "paymentagent_list",
     my $broker_code = 'CR';
     if (ref $token_details eq 'HASH') {
         $loginid = $token_details->{loginid};
-        my $client = BOM::User::Client->new({
-            loginid      => $loginid,
-            db_operation => 'replica'
-        });
+        my $client = BOM::User::Client->get_client_instance($loginid, 'replica');
         $broker_code = $client->broker_code if $client;
     }
     my $payment_agent_mapper = BOM::Database::DataMapper::PaymentAgent->new({broker_code => $broker_code});
@@ -604,7 +601,7 @@ rpc paymentagent_transfer => sub {
 
     return $rpc_error if $rpc_error;
 
-    my $client_to = eval { BOM::User::Client->new({loginid => $loginid_to, db_operation => 'write'}) }
+    my $client_to = eval { BOM::User::Client->get_client_instance($loginid_to, 'write') }
         or return $error_sub->(localize('Login ID ([_1]) does not exist.', $loginid_to));
 
     return $error_sub->(localize('Payment agent transfers are not allowed for the specified accounts.'))
@@ -1248,62 +1245,57 @@ rpc transfer_between_accounts => sub {
         return _transfer_between_accounts_error(localize('Payments are suspended.'));
     }
 
-    return BOM::RPC::v3::Utility::permission_error() if $client->is_virtual && $token_type ne 'oauth_token';
-
     return _transfer_between_accounts_error(localize('You cannot perform this action, as your account is currently disabled.'))
         if $status->disabled;
 
-    my $siblings = $client->real_account_siblings_information(include_disabled => 0);
+    # retrieve disabled accounts just inn order to retrun relevant error messages for them
+    my $siblings = $client->get_siblings_information(include_disabled => 1);
 
     my ($loginid_from, $loginid_to) = @{$args}{qw/account_from account_to/};
 
-    my @accounts;
-    foreach my $cl (values %$siblings) {
-        push @accounts,
-            {
-            loginid      => $cl->{loginid},
-            balance      => $cl->{balance},
-            currency     => $cl->{currency},
-            account_type => 'binary',
-            };
-    }
-
     # just return accounts list if loginid from or to is not provided
     if (not $loginid_from or not $loginid_to) {
-        if (($args->{accounts} // '') eq 'all') {
-            unless (BOM::Config::Runtime->instance->app_config->system->mt5->suspend->all) {
-                my @mt5_accounts = BOM::RPC::v3::MT5::Account::get_mt5_logins($client)->else(sub { return Future->done(); })->get;
-                for my $mt5_acc (grep { not $_->{error} and $_->{group} !~ /^demo/ } @mt5_accounts) {
-                    push @accounts,
-                        {
-                        loginid      => $mt5_acc->{login},
-                        balance      => $mt5_acc->{display_balance},
-                        account_type => 'mt5',
-                        mt5_group    => $mt5_acc->{group},
-                        currency     => $mt5_acc->{currency}};
-                }
-            }
+        my @available_siblings_for_transfer = grep { not $_->{disabled} } values %$siblings;
+        @available_siblings_for_transfer = map {
+            { $_->%{qw/loginid balance account_type currency demo_account/} }
+        } @available_siblings_for_transfer;
 
-            unless (BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend->all) {
-                my $dxtrade = BOM::TradingPlatform->new(
-                    platform => 'dxtrade',
-                    client   => $client,
-                );
-                for my $dxtrade_account (grep { $_->{account_type} eq 'real' } $dxtrade->get_accounts->@*) {
-                    push @accounts,
-                        {
-                        loginid      => $dxtrade_account->{account_id},
-                        balance      => $dxtrade_account->{display_balance},
-                        account_type => 'dxtrade',
-                        market_type  => $dxtrade_account->{market_type},
-                        currency     => $dxtrade_account->{currency}};
-                }
+        if (($args->{accounts} // '') eq 'all' and not(BOM::Config::Runtime->instance->app_config->system->mt5->suspend->all)) {
+            my @mt5_accounts = BOM::RPC::v3::MT5::Account::get_mt5_logins($client)->else(sub { return Future->done(); })->get;
+            for my $mt5_acc (grep { not $_->{error} } @mt5_accounts) {
+                push @available_siblings_for_transfer,
+                    {
+                    loginid      => $mt5_acc->{login},
+                    balance      => $mt5_acc->{display_balance},
+                    account_type => 'mt5',
+                    mt5_group    => $mt5_acc->{group},
+                    currency     => $mt5_acc->{currency},
+                    demo_account => ($mt5_acc->{account_type} eq 'demo') ? 1 : 0,
+                    };
+            }
+        }
+
+        unless (BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend->all) {
+            my $dxtrade = BOM::TradingPlatform->new(
+                platform => 'dxtrade',
+                client   => $client,
+            );
+            for my $dxtrade_account ($dxtrade->get_accounts->@*) {
+                push @available_siblings_for_transfer,
+                    {
+                    loginid      => $dxtrade_account->{account_id},
+                    balance      => $dxtrade_account->{display_balance},
+                    account_type => 'dxtrade',
+                    market_type  => $dxtrade_account->{market_type},
+                    currency     => $dxtrade_account->{currency},
+                    demo_account => ($dxtrade_account->{account_type} eq 'demo') ? 1 : 0,
+                    };
             }
         }
 
         return {
             status   => 0,
-            accounts => \@accounts
+            accounts => \@available_siblings_for_transfer
         };
     }
 
@@ -1317,18 +1309,21 @@ rpc transfer_between_accounts => sub {
     my $is_dxtrade_loginid_from = any { $loginid_from eq $_ } @dxtrade_loginids;
     my $is_dxtrade_loginid_to   = any { $loginid_to eq $_ } @dxtrade_loginids;
 
-    # Both $loginid_from and $loginid_to must be either a real or a MT5 account
-    # Unfortunately demo MT5 accounts will slip through this check, but they will
-    # be caught in one of the BOM::RPC::v3::MT5::Account functions
-    return BOM::RPC::v3::Utility::permission_error()
-        unless ((
-               exists $siblings->{$loginid_from}
-            or $is_mt5_loginid_from
-            or $is_dxtrade_loginid_from
-        )
-        and (  exists $siblings->{$loginid_to}
-            or $is_mt5_loginid_to
-            or $is_dxtrade_loginid_to));
+# Both $loginid_from and $loginid_to must be either a real or a MT5 account
+# Unfortunately demo MT5 accounts will slip through this check, but they will
+# be caught in one of the BOM::RPC::v3::MT5::Account functions
+    return BOM::RPC::v3::Utility::create_error({
+            code              => 'PermissionDenied',
+            message_to_client => localize("You are not allowed to transfer from this account.")})
+        unless exists $siblings->{$loginid_from}
+        or $is_mt5_loginid_from
+        or $is_dxtrade_loginid_from;
+    return BOM::RPC::v3::Utility::create_error({
+            code              => 'PermissionDenied',
+            message_to_client => localize("You are not allowed to transfer to this account.")})
+        unless exists $siblings->{$loginid_to}
+        or $is_mt5_loginid_to
+        or $is_dxtrade_loginid_to;
 
     return _transfer_between_accounts_error(localize('Transfer between two MT5 accounts is not allowed.'))
         if ($is_mt5_loginid_from and $is_mt5_loginid_to);
@@ -1336,13 +1331,13 @@ rpc transfer_between_accounts => sub {
     return _transfer_between_accounts_error(localize('Transfer between two Deriv X accounts is not allowed.'))
         if ($is_dxtrade_loginid_from and $is_dxtrade_loginid_to);
 
-    # create client from siblings so that we are sure that from and to loginid
-    # provided are for same user
+# create client from siblings so that we are sure that from and to loginid
+# provided are for same user
     my ($client_from, $client_to, $res);
     try {
-        $client_from = BOM::User::Client->new({loginid => $siblings->{$loginid_from}->{loginid}})
+        $client_from = BOM::User::Client->get_client_instance($siblings->{$loginid_from}->{loginid})
             unless $is_mt5_loginid_from or $is_dxtrade_loginid_from;
-        $client_to = BOM::User::Client->new({loginid => $siblings->{$loginid_to}->{loginid}}) 
+        $client_to = BOM::User::Client->get_client_instance($siblings->{$loginid_to}->{loginid})
             unless $is_mt5_loginid_to or $is_dxtrade_loginid_to;
     } catch {
         log_exception();
@@ -1365,7 +1360,7 @@ rpc transfer_between_accounts => sub {
 
     my $transfers_blocked_err = localize("Transfers are not allowed for these accounts.");
 
-    # this transfer involves an MT5 account
+# this transfer involves an MT5 account
     if ($is_mt5_loginid_from or $is_mt5_loginid_to) {
         delete @{$params->{args}}{qw/account_from account_to/};
 
@@ -1373,9 +1368,10 @@ rpc transfer_between_accounts => sub {
 
         if ($is_mt5_loginid_to) {
 
-            return _transfer_between_accounts_error(localize('From account provided should be same as current authorized client.'))
+            return _transfer_between_accounts_error(localize("You can only transfer from the current authorized client's account."))
                 unless ($client->loginid eq $loginid_from)
-                or $token_type eq 'oauth_token';
+                or $token_type eq 'oauth_token'
+                or $client_from->is_virtual;
 
             return _transfer_between_accounts_error(localize('Currency provided is different from account currency.'))
                 if ($siblings->{$loginid_from}->{currency} ne $currency);
@@ -1388,9 +1384,10 @@ rpc transfer_between_accounts => sub {
 
         if ($is_mt5_loginid_from) {
 
-            return _transfer_between_accounts_error(localize('To account provided should be same as current authorized client.'))
+            return _transfer_between_accounts_error(localize("You can only transfer to the current authorized client's account."))
                 unless ($client->loginid eq $loginid_to)
-                or $token_type eq 'oauth_token';
+                or $token_type eq 'oauth_token',
+                or $client_to->is_virtual;
 
             $method                         = \&BOM::RPC::v3::MT5::Account::mt5_withdrawal;
             $params->{args}{to_binary}      = $binary_login = $loginid_to;
@@ -1408,13 +1405,14 @@ rpc transfer_between_accounts => sub {
                 $resp->{client_to_loginid}   = $loginid_to;
                 $resp->{client_to_full_name} = $is_mt5_loginid_to ? $mt5_data->{name} : $client->full_name;
 
-                my $binary_account = BOM::User::Client->new({loginid => $binary_login})->default_account;
+                my $binary_client = BOM::User::Client->get_client_instance($binary_login);
                 push @{$resp->{accounts}},
                     {
                     loginid      => $binary_login,
-                    balance      => $binary_account->balance,
-                    currency     => $binary_account->currency_code,
-                    account_type => 'binary',
+                    balance      => $binary_client->default_account->balance,
+                    currency     => $binary_client->default_account->currency_code,
+                    account_type => $binary_client->account_type,
+                    demo_account => $binary_client->is_virtual,
                     };
 
                 BOM::RPC::v3::MT5::Account::mt5_get_settings({
@@ -1430,6 +1428,7 @@ rpc transfer_between_accounts => sub {
                             currency     => $setting->{currency},
                             account_type => 'mt5',
                             mt5_group    => $setting->{group},
+                            demo_account => ($setting->{group} =~ qr/demo/ ? 1 : 0),
                             }
                             unless $setting->{error};
                         return Future->done($resp);
@@ -1452,15 +1451,15 @@ rpc transfer_between_accounts => sub {
         my $deposit = BOM::RPC::v3::Trading::deposit($params);
         return $deposit if $deposit->{error};
 
-        my $from_client = BOM::User::Client->new({loginid => $loginid_from});
+        my $from_client = BOM::User::Client->get_client_instance($loginid_from);
 
         return {
-            status => 1,
+            status   => 1,
             accounts => [{
                     loginid      => $loginid_from,
                     balance      => $from_client->account->balance,
                     currency     => $from_client->account->currency_code,
-                    account_type => 'binary',
+                    account_type => $from_client->account_type,
                 },
                 {
                     loginid      => $loginid_to,
@@ -1476,15 +1475,15 @@ rpc transfer_between_accounts => sub {
         my $withdrawal = BOM::RPC::v3::Trading::withdrawal($params);
         return $withdrawal if $withdrawal->{error};
 
-        my $to_client = BOM::User::Client->new({loginid => $loginid_to});
+        my $to_client = BOM::User::Client->get_client_instance($loginid_to);
 
         return {
-            status => 1,
+            status   => 1,
             accounts => [{
                     loginid      => $loginid_to,
                     balance      => $to_client->account->balance,
                     currency     => $to_client->account->currency_code,
-                    account_type => 'binary',
+                    account_type => $to_client->account_type,
                 },
                 {
                     loginid      => $loginid_from,
@@ -1577,12 +1576,19 @@ rpc transfer_between_accounts => sub {
 
     my $err_msg = "from[$loginid_from], to[$loginid_to], amount[$amount], curr[$currency]";
 
+    if ($client_from->is_virtual) {
+        return _transfer_between_accounts_error(localize("The maximum amount you may transfer is: [_1].", $client_from->default_account->balance))
+            if $amount > $client_from->default_account->balance;
+    }
+
     try {
-        $client_from->validate_payment(
+        $client_from->is_virtual
+            || $client_from->validate_payment(
             currency          => $currency,
             amount            => -1 * $amount,
             internal_transfer => 1,
-        ) || die "validate_payment [$loginid_from]";
+            )
+            || die "validate_payment [$loginid_from]";
     } catch ($err) {
         log_exception();
 
@@ -1609,11 +1615,13 @@ rpc transfer_between_accounts => sub {
     }
 
     try {
-        $client_to->validate_payment(
+        $client_to->is_virtual
+            || $client_to->validate_payment(
             currency          => $to_currency,
             amount            => $to_amount,
             internal_transfer => 1,
-        ) || die "validate_payment [$loginid_to]";
+            )
+            || die "validate_payment [$loginid_to]";
     } catch ($err) {
         log_exception();
 
@@ -1675,13 +1683,13 @@ rpc transfer_between_accounts => sub {
                 loginid      => $client_from->loginid,
                 balance      => $client_from->default_account->balance,
                 currency     => $client_from->default_account->currency_code,
-                account_type => 'binary',
+                account_type => $client_from->account_type,
             },
             {
                 loginid      => $client_to->loginid,
                 balance      => $client_to->default_account->balance,
                 currency     => $client_to->default_account->currency_code,
-                account_type => 'binary',
+                account_type => $client_to->account_type,
             }]};
 };
 
@@ -1738,15 +1746,29 @@ sub _validate_transfer_between_accounts {
     # loginid provided is wrong or not in siblings
     return _transfer_between_accounts_error() if (not $client_from or not $client_to);
 
-    return BOM::RPC::v3::Utility::permission_error() if ($client_from->is_virtual or $client_to->is_virtual);
+    return BOM::RPC::v3::Utility::create_error({
+            code              => 'PermissionDenied',
+            message_to_client => localize('Transfer between real and virtual accounts is not allowed.'),
+        }) unless $client_from->is_virtual == $client_to->is_virtual;
+
+    return BOM::RPC::v3::Utility::create_error({
+            code              => 'PermissionDenied',
+            message_to_client => localize('You cannot transfer between real accounts because the authorized client is virtual.'),
+        }) if ($current_client->is_virtual and $token_type ne 'oauth_token' and not $client_from->is_virtual);
 
     # error out if from and to loginid are same
     return _transfer_between_accounts_error(localize('Account transfers are not available within same account.'))
         unless ($client_from->loginid ne $client_to->loginid);
+
+    return _transfer_between_accounts_error(localize('Transfer between wallet accounts is not allowed.'))
+        if ($client_from->is_wallet and $client_to->is_wallet);
+
     # error out if current logged in client and loginid from passed are not same
-    return _transfer_between_accounts_error(localize('From account provided should be same as current authorized client.'))
+    # (unless token typpe is oauth or it's a virtual transfer)
+    return _transfer_between_accounts_error(localize("You can only transfer from the current authorized client's account."))
         unless ($current_client->loginid eq $client_from->loginid)
-        or $token_type eq 'oauth_token';
+        or ($token_type eq 'oauth_token')
+        or $client_from->is_virtual;
 
     my ($currency, $amount, $from_currency, $to_currency) = @{$args}{qw/currency amount from_currency to_currency/};
 
@@ -1757,17 +1779,20 @@ sub _validate_transfer_between_accounts {
 
     # error if landing companies are different with exception
     # of maltainvest and malta as we allow transfer between them
+    # and from wallet to any other account
     return _transfer_between_accounts_error()
-        if (($lc_from->short ne $lc_to->short)
-        and ($lc_from->short !~ /^(?:malta|maltainvest)$/ or $lc_to->short !~ /^(?:malta|maltainvest)$/));
+        unless (($lc_from->short eq $lc_to->short)
+        or ($client_from->is_wallet or $client_to->is_wallet)
+        or ($lc_from->short =~ /^(?:malta|maltainvest)$/ and $lc_to->short =~ /^(?:malta|maltainvest)$/));
 
     # error if currency is not legal for landing company
     return _transfer_between_accounts_error(localize('Currency provided is not valid for your account.'))
         if (not $lc_from->is_currency_legal($currency) or not $lc_to->is_currency_legal($currency));
 
-    return _transfer_between_accounts_error(
-        localize('You cannot perform this action, as your account [_1] is currently disabled.', $client_to->loginid))
-        if $client_to->status->disabled;
+    for ($client_from, $client_to) {
+        return _transfer_between_accounts_error(localize('You cannot perform this action, as your account [_1] is currently disabled.', $_->loginid))
+            if $_->status->disabled;
+    }
 
     return _transfer_between_accounts_error(
         localize("We are unable to transfer to [_1] because that account has been restricted.", $client_to->loginid))

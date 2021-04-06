@@ -79,14 +79,14 @@ subtest 'country=za; creates financial account with existing gaming account whil
     is $login_list->[0]->{group},        'real\p01_ts01\financial\svg_std_usd';
     is $login_list->[0]->{login},        'MTR' . $ACCOUNTS{'real\p01_ts01\financial\svg_std_usd'};
     is $login_list->[0]->{server_info}{geolocation}{location}, 'Ireland', 'location Ireland';
-    is $login_list->[0]->{server_info}{geolocation}{region}, 'Europe', 'region Europe';
+    is $login_list->[0]->{server_info}{geolocation}{region},   'Europe',  'region Europe';
 
     # second account inaccessible because API call is disabled
     ok $login_list->[1]->{error}, 'inaccessible account shows error';
     is $login_list->[1]->{error}{details}{login}, 'MTR' . $ACCOUNTS{'real\p01_ts02\synthetic\svg_std_usd\01'};
     is $login_list->[1]->{error}{message_to_client}, 'MT5 is currently unavailable. Please try again later.';
     is $login_list->[1]->{error}{details}{server_info}{geolocation}{location}, 'South Africa', 'location South Africa';
-    is $login_list->[1]->{error}{details}{server_info}{geolocation}{region}, 'Africa', 'region Africa';
+    is $login_list->[1]->{error}{details}{server_info}{geolocation}{region},   'Africa',       'region Africa';
 };
 
 done_testing();

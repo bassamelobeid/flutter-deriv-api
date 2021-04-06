@@ -13,8 +13,8 @@ use BOM::Transaction;
 
 sub prepare_contract {
     my %args              = @_;
-    my $underlying_symbol = $args{underlying} // 'R_50';
-    my $is_expired        = $args{is_expired} // 0;
+    my $underlying_symbol = $args{underlying}   // 'R_50';
+    my $is_expired        = $args{is_expired}   // 0;
     my $tick_epoches      = $args{tick_epoches} // [];
 
     my $start_time = $args{start_time} // time;

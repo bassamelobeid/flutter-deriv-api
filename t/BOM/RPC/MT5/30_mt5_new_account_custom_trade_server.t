@@ -50,7 +50,7 @@ $user->add_client($test_client_vr);
 $test_client->save;
 
 my $m        = BOM::Platform::Token::API->new;
-my $token    = $m->create_token($test_client->loginid, 'test token');
+my $token    = $m->create_token($test_client->loginid,    'test token');
 my $token_vr = $m->create_token($test_client_vr->loginid, 'test token');
 
 # Throttle function limits requests to 1 per minute which may cause
@@ -167,9 +167,9 @@ subtest 'use default routing rule if server is not provided' => sub {
     BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
     note('no server as user input');
     my $res = $c->call_ok($method, $params)->has_no_error->result;
-    is $res->{login}, 'MTR' . $ACCOUNTS{'real\p01_ts02\synthetic\svg_sf_usd'}, 'defaulted to account on real->p01_ts02';
+    is $res->{login},        'MTR' . $ACCOUNTS{'real\p01_ts02\synthetic\svg_sf_usd'}, 'defaulted to account on real->p01_ts02';
     is $res->{account_type}, 'gaming', 'gaming';
-    is $res->{agent}, $expected_agent_id, 'agent linked ' . $expected_agent_id;
+    is $res->{agent},        $expected_agent_id, 'agent linked ' . $expected_agent_id;
 };
 
 sub _add_affiliate_account {
@@ -179,7 +179,7 @@ sub _add_affiliate_account {
         ping => sub {
             $_->selectrow_array(
                 q{SELECT * FROM mt5.add_affiliate_account(?, ?, ?, ?, ?)},
-                undef,                 $args->{server}, $args->{mt5_account_id},
+                undef, $args->{server}, $args->{mt5_account_id},
                 $args->{affiliate_id}, $args->{binary_user_id},
                 $args->{account_type});
         });

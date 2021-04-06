@@ -69,13 +69,13 @@ rpc "payment_methods", sub {
         stats_inc('bom_rpc.v_3.no_payment_methods_found.count') unless scalar @$ret;
 
         return $ret;
-    } catch ($error) {        
+    } catch ($error) {
         if ($error =~ m/Unknown country code/) {
             return BOM::RPC::v3::Utility::create_error({
                     code              => 'UnknownCountryCode',
                     message_to_client => localize('Unknown country code.')});
         }
-        
+
         die $error;
     }
 };

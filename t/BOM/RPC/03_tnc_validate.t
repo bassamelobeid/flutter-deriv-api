@@ -39,7 +39,7 @@ my $user = BOM::User->create(
 $user->add_client($test_client);
 $user->add_client($test_client_cr);
 
-my $oauth = BOM::Database::Model::OAuth->new;
+my $oauth      = BOM::Database::Model::OAuth->new;
 my ($token)    = $oauth->store_access_token_only(1, $test_client->loginid);
 my ($token_cr) = $oauth->store_access_token_only(1, $test_client_cr->loginid);
 

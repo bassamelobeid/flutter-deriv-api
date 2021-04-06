@@ -77,7 +77,7 @@ sub email_verification {
     my ($has_social_signup, $user_name, $name);
     if (my $user = BOM::User->new(email => $email)) {
         $has_social_signup = $user->{has_social_signup};
-        $user_name         = ($user->clients)[0]->last_name if $user->clients;
+        $user_name         = ($user->clients)[0]->last_name  if $user->clients;
         $name              = ($user->clients)[0]->first_name if $user->clients;
     }
 

@@ -2760,7 +2760,7 @@ rpc link_wallet => sub {
         chomp $e;
         return BOM::RPC::v3::Utility::create_error_by_code($e);
     }
-    
+
     return {status => 1};
 };
 

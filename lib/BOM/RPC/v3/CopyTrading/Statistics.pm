@@ -104,8 +104,8 @@ rpc copytrading_statistics => sub {
         my $deposit    = $result_hash->{monthly_profitable_trades}->{$date}->{deposit}    // 0;
         my $withdrawal = $result_hash->{monthly_profitable_trades}->{$date}->{withdrawal} // 0;
         # balance_before = balance_after - amount in the trade transaction.
-        my $balance_before = $result_hash->{monthly_profitable_trades}->{$date}->{E0} // 0;
-        my $balance_after  = $result_hash->{monthly_profitable_trades}->{$date}->{E1} // 0;
+        my $balance_before       = $result_hash->{monthly_profitable_trades}->{$date}->{E0} // 0;
+        my $balance_after        = $result_hash->{monthly_profitable_trades}->{$date}->{E1} // 0;
         my $current_month_profit = sprintf("%.4f", ((($balance_after + $withdrawal) - ($balance_before + $deposit)) / ($balance_before + $deposit)));
         $result_hash->{monthly_profitable_trades}->{$date} = $current_month_profit;
         push @sorted_monthly_profits, $current_month_profit;

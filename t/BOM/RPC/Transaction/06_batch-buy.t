@@ -147,7 +147,7 @@ subtest 'normal contract', sub {
     for my $k (@equal) {
         isnt $result->[0]->{$k}, undef, "got 1st $k";
         isnt $result->[1]->{$k}, undef, "got 2nd $k";
-        is $result->[0]->{$k}, $result->[1]->{$k}, 'and they equal';
+        is $result->[0]->{$k},   $result->[1]->{$k}, 'and they equal';
     }
 
     is $result->[2]->{code},                'InsufficientBalance',                      'token[2]: InsufficientBalance';

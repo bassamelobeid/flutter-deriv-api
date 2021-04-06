@@ -56,7 +56,7 @@ subtest 'create mt5 client with different currency' => sub {
             },
         };
         my $result = $c->call_ok($method, $params)->has_no_error('gaming account successfully created')->result;
-        $DB::single=1;
+        $DB::single = 1;
         is $result->{account_type}, 'gaming';
         is $result->{login},        'MTR' . $ACCOUNTS{'real\p01_ts02\synthetic\svg_std_usd\01'};
     };

@@ -83,9 +83,9 @@ sub get_verification_message {
     # This addition is due to introduction of new email, which have slight different format
     # than the previous
     if ($message_name eq 'reset_password') {
-        $message =~ s/\[_1\]/there/g;
+        $message           =~ s/\[_1\]/there/g;
         $action ? $message =~ s/\[_2\]/$uri/g : $message =~ s/\[_2\]/$verification_way/g;
-        $message =~ s/\[_3\]/$website_name/g;
+        $message           =~ s/\[_3\]/$website_name/g;
     } else {
         $message =~ s/\[_1\]/$verification_way/g;
         $message =~ s/\[_2\]/$website_name/g;

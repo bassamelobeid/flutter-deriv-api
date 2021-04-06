@@ -477,16 +477,16 @@ sub error_map {
         'InvalidWithdrawalCommission' => localize('Invalid withdrawal commission amount: it should be between 0 and [_1].'),
         'CodeOfConductNotApproved'    => localize('Code of conduct should be accepted.'),
 
-        'DuplicateCurrency'          => localize("Please note that you are limited to only one [_1] account."),
-        'CurrencyTypeNotAllowed'     => localize('Please note that you are limited to one fiat currency account.'),
-        'CannotChangeWallet'         => localize("Sorry, your trading account is already linked to a wallet."),
-        'CurrencyMismatch'           => localize("Please ensure your trading account currency is the same as your wallet account currency."),
-        'CannotLinkWallet'           => localize("Sorry, we couldn't link your trading account to this wallet."),
-        'InvalidWalletAccount'       => localize("Sorry, we couldn't find your wallet account."),
-        'InvalidMT5Account'          => localize("Sorry, we couldn't find your MT5 account."),
-        'DXInvalidAccount'           => localize("Sorry, we couldn't find your DXTrader account."),
-        'InvalidTradingAccount'      => localize("Sorry, we couldn't find your trading account."),
-        'CannotLinkVirtualAndReal'   => localize("Please ensure your trading account type is the same as your wallet account type."),
+        'DuplicateCurrency'        => localize("Please note that you are limited to only one [_1] account."),
+        'CurrencyTypeNotAllowed'   => localize('Please note that you are limited to one fiat currency account.'),
+        'CannotChangeWallet'       => localize("Sorry, your trading account is already linked to a wallet."),
+        'CurrencyMismatch'         => localize("Please ensure your trading account currency is the same as your wallet account currency."),
+        'CannotLinkWallet'         => localize("Sorry, we couldn't link your trading account to this wallet."),
+        'InvalidWalletAccount'     => localize("Sorry, we couldn't find your wallet account."),
+        'InvalidMT5Account'        => localize("Sorry, we couldn't find your MT5 account."),
+        'DXInvalidAccount'         => localize("Sorry, we couldn't find your DXTrader account."),
+        'InvalidTradingAccount'    => localize("Sorry, we couldn't find your trading account."),
+        'CannotLinkVirtualAndReal' => localize("Please ensure your trading account type is the same as your wallet account type."),
     };
 }
 

@@ -73,6 +73,7 @@ my $error_handler  = sub {
 
 sub create_error_future {
     my ($error_code, $details, @extra) = @_;
+
     if (ref $details eq 'HASH' and ref $details->{message} eq 'HASH') {
         return Future->fail({error => $details->{message}});
     }
@@ -732,7 +733,7 @@ async_rpc "mt5_new_account",
         return create_error_future('GamingAccountMissing');
     }
 
-    return create_error_future('permission') if ($client->is_virtual() and $account_type ne 'demo');
+    return create_error_future('AccountTypesMismatch') if ($client->is_virtual() and $account_type ne 'demo');
 
     my $requirements        = LandingCompany::Registry->new->get($company_name)->requirements;
     my $signup_requirements = $requirements->{signup};
@@ -1713,28 +1714,36 @@ async_rpc "mt5_deposit",
                 # this status is intended to block withdrawals from binary to MT5
                 return create_error_future('WithdrawalLocked', {override_code => $error_code}) if $client->status->mt5_withdrawal_locked;
 
-                $account_type = 'real';
+                $account_type = $response->{account_type};
             }
 
-            my $fm_client = BOM::User::Client->new({loginid => $fm_loginid});
+            my $fm_client = BOM::User::Client->get_client_instance($fm_loginid, 'write');
 
             # From the point of view of our system, we're withdrawing
             # money to deposit into MT5
-            try {
-                $fm_client->validate_payment(
-                    currency          => $fm_client->default_account->currency_code(),
-                    amount            => -1 * $amount,
-                    internal_transfer => 1,
-                );
-            } catch ($e) {
+            if ($fm_client->is_virtual) {
                 return create_error_future(
                     $error_code,
                     {
-                        message => BOM::RPC::v3::Cashier::__client_withdrawal_notes({
-                                client => $fm_client,
-                                amount => $amount,
-                                error  => $e
-                            })});
+                        message => localize("The maximum amount you may transfer is: [_1].", $fm_client->default_account->balance),
+                    }) if $amount > $fm_client->default_account->balance;
+            } else {
+                try {
+                    $fm_client->validate_payment(
+                        currency          => $fm_client->default_account->currency_code(),
+                        amount            => -1 * $amount,
+                        internal_transfer => 1,
+                    );
+                } catch ($e) {
+                    return create_error_future(
+                        $error_code,
+                        {
+                            message => BOM::RPC::v3::Cashier::__client_withdrawal_notes({
+                                    client => $fm_client,
+                                    amount => $amount,
+                                    error  => $e
+                                })});
+                };
             }
 
             my $fees              = $response->{fees};
@@ -1854,13 +1863,13 @@ async_rpc "mt5_withdrawal",
     return create_error_future('Experimental')
         if BOM::RPC::v3::Utility::verify_experimental_email_whitelisted($client, $client->currency);
 
-    my $to_client = BOM::User::Client->new({loginid => $to_loginid});
+    my $to_client = BOM::User::Client->get_client_instance($to_loginid, 'write');
 
     return _mt5_validate_and_get_amount($client, $to_loginid, $fm_mt5, $amount, $error_code, $currency_check)->then(
         sub {
             my ($response) = @_;
             return Future->done($response) if (ref $response eq 'HASH' and $response->{error});
-            my $account_type = 'real';    # withdrawal is not allowed for demo accounts
+            my $account_type = $response->{account_type};
 
             my $fees                      = $response->{fees};
             my $fees_currency             = $response->{fees_currency};
@@ -2097,7 +2106,8 @@ sub _mt5_validate_and_get_amount {
     my @loginids_list = ($mt5_loginid);
     push @loginids_list, $loginid if $loginid;
 
-    return create_error_future('permission') unless _check_logins($authorized_client, \@loginids_list);
+    return create_error_future('PermissionDenied', {message => 'Both accounts should belong to the authorized client.'})
+        unless _check_logins($authorized_client, \@loginids_list);
 
     return _get_user_with_group($mt5_loginid)->then(
         sub {
@@ -2112,8 +2122,9 @@ sub _mt5_validate_and_get_amount {
             my $action             = ($error_code =~ /Withdrawal/) ? 'withdrawal' : 'deposit';
             my $action_counterpart = ($error_code =~ /Withdrawal/) ? 'deposit'    : 'withdraw';
 
-            my $mt5_group = $setting->{group};
-            my $mt5_lc    = _fetch_mt5_lc($setting);
+            my $mt5_group    = $setting->{group};
+            my $mt5_lc       = _fetch_mt5_lc($setting);
+            my $account_type = _is_account_demo($mt5_group) ? 'demo' : 'real';
 
             return create_error_future('InvalidMT5Group') unless $mt5_lc;
 
@@ -2137,15 +2148,9 @@ sub _mt5_validate_and_get_amount {
             return create_error_future('CurrencyConflict', {override_code => $error_code})
                 if $currency_check && $currency_check ne $mt5_currency;
 
-            # Check if id is a demo account
+            # Check if it's called for virtual top up
             # If yes, then no need to validate client
-            if (_is_account_demo($mt5_group)) {
-                return create_error_future('NoDemoWithdrawals', {override_code => $error_code})
-                    if $action eq 'withdrawal';
-
-                return create_error_future('TransferBetweenAccountsError', {override_code => $error_code})
-                    if $action eq 'deposit' and $loginid;
-
+            if ($account_type eq 'demo' and $action eq 'deposit' and not $loginid) {
                 my $max_balance_before_topup = BOM::Config::payment_agent()->{minimum_topup_balance}->{DEFAULT};
 
                 return create_error_future(
@@ -2160,7 +2165,6 @@ sub _mt5_validate_and_get_amount {
                 }
 
                 return Future->done({top_up_virtual => 1});
-
             }
 
             return create_error_future('MissingID', {override_code => $error_code}) unless $loginid;
@@ -2171,13 +2175,11 @@ sub _mt5_validate_and_get_amount {
 
             my $client;
             try {
-                $client = BOM::User::Client->new({
-                    loginid      => $loginid,
-                    db_operation => 'replica'
-                });
+                $client = BOM::User::Client->get_client_instance($loginid, 'replica');
 
             } catch {
                 log_exception();
+                warn $loginid;
                 return create_error_future(
                     'InvalidLoginid',
                     {
@@ -2185,6 +2187,11 @@ sub _mt5_validate_and_get_amount {
                         params        => $loginid
                     });
             }
+
+            # Transfer between real and demo accounts is not permitted
+            return create_error_future('AccountTypesMismatch') if $client->is_virtual xor ($account_type eq 'demo');
+            # Transfer between virtual trading and virtual mt5 is not permitted
+            return create_error_future('InvalidVirtualAccount') if $client->is_virtual and not $client->is_wallet;
 
             # Validate the binary client
             my ($err, $params) = _validate_client($client, $mt5_lc);
@@ -2195,8 +2202,10 @@ sub _mt5_validate_and_get_amount {
                     params        => $params
                 }) if $err;
 
-            #  Not allow virtual token/oauth to process with real account.
-            return create_error_future('permission') if $authorized_client->is_virtual and not $client->is_virtual;
+            # Don't allow a virtual token/oauth to process a real account.
+            return create_error_future('PermissionDenied',
+                {message => localize('You cannot transfer between real accounts because the authorized client is virtual.')})
+                if $authorized_client->is_virtual and not $client->is_virtual;
 
             my $client_currency = $client->account ? $client->account->currency_code() : undef;
             return create_error_future('TransferBetweenDifferentCurrencies')
@@ -2353,8 +2362,10 @@ sub _mt5_validate_and_get_amount {
                     params        => [formatnumber('amount', $source_currency, $max), $source_currency]}
             ) if $amount > financialrounding('amount', $source_currency, $max);
 
-            my $validation = BOM::Platform::Client::CashierValidation::validate($loginid, $action_counterpart);
-            return create_error_future($error_code, {message => $validation->{error}->{message_to_client}}) if exists $validation->{error};
+            unless ($client->is_virtual and _is_account_demo($mt5_group)) {
+                my $validation = BOM::Platform::Client::CashierValidation::validate($loginid, $action_counterpart);
+                return create_error_future($error_code, {message => $validation->{error}->{message_to_client}}) if exists $validation->{error};
+            }
 
             return Future->done({
                 mt5_amount              => $mt5_amount,
@@ -2365,7 +2376,8 @@ sub _mt5_validate_and_get_amount {
                 mt5_currency_code       => $mt5_currency,
                 min_fee                 => $min_fee,
                 calculated_fee          => $fee_calculated_by_percent,
-                mt5_data                => $setting
+                mt5_data                => $setting,
+                account_type            => $account_type,
             });
         });
 }
@@ -2448,8 +2460,8 @@ sub _validate_client {
 
     my $loginid = $client_obj->loginid;
 
-    # only for real money account
-    return 'VirtualProhibited' if ($client_obj->is_virtual);
+    # if it's a legitimate virtual transfer, skip the rest of validations
+    return undef if $client_obj->is_virtual;
 
     my $lc = $client_obj->landing_company->short;
 
