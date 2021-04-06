@@ -72,7 +72,7 @@ unless ($broker) {
 
 my $client = eval { BOM::User::Client::get_instance({'loginid' => $loginID, db_operation => 'backoffice_replica'}) };
 
-if (not $client) {
+unless ($client) {
     code_exit_BO("Error: Wrong Login ID ($encoded_loginID) could not get client instance.", $loginID);
 }
 
@@ -118,8 +118,12 @@ if (defined $action && $action eq "gross_transactions") {
     }
 }
 
-# print other untrusted section warning in backoffice
+# Deleting checked statuses
+my $status_op_summary = status_op_processor($client, request()->params);
+# Print other untrusted section warning in backoffice
 print build_client_warning_message(encode_entities($client->loginid));
+# The choice of positioning is to allow display under the buttons associated with this event
+print $status_op_summary if $status_op_summary;
 
 my $tel          = $client->phone;
 my $citizen      = Locale::Country::code2country($client->citizen);

@@ -62,7 +62,7 @@ if ($action eq 'delete') {
             });
         print '<p class="success">Band deleted</p>';
     } catch ($e) {
-        print '<p class="error">Failed to delete band:' . $@ . '</p>';
+        print '<p class="error">Failed to delete band: ' . $e . '</p>';
     }
     delete @input{qw/country trade_band currency max_daily_buy max_daily_sell action/};
     $action = 'new';
