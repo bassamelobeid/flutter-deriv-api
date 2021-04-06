@@ -40,10 +40,7 @@ sub validate {
     return _create_error(localize('Sorry, cashier is temporarily unavailable due to system maintenance.'))
         if (BOM::Config::CurrencyConfig::is_payment_suspended());
 
-    my $client = BOM::User::Client->new({
-            loginid      => $loginid,
-            db_operation => 'replica'
-        }) or return _create_error(localize('Invalid account.'));
+    my $client = BOM::User::Client->get_client_instance($loginid, 'replica') or return _create_error(localize('Invalid account.'));
 
     return _create_error(localize('This is a virtual-money account. Please switch to a real-money account to access cashier.'))
         if $client->is_virtual;
