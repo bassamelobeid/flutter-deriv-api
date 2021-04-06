@@ -24,7 +24,7 @@ eq_or_diff [sort $udb->available_expiry_types], [sort qw(intraday daily tick no_
 
 eq_or_diff [sort $udb->available_start_types], [sort qw(spot forward)], 'Correct list of available start types.';
 
-eq_or_diff [sort $udb->markets], [sort qw(commodities forex indices synthetic_index)], "Correct list of markets";
+eq_or_diff [sort $udb->markets], [sort qw(commodities forex indices synthetic_index stocks)], "Correct list of markets";
 
 eq_or_diff [sort $udb->symbols_for_intraday_fx], [
     sort qw(frxAUDCAD frxAUDCHF frxAUDJPY frxAUDNZD frxAUDUSD frxEURAUD frxEURCAD frxEURCHF
