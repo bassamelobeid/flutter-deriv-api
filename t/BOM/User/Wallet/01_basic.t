@@ -24,8 +24,8 @@ subtest 'initial methods' => sub {
 
     my $client_client = BOM::User::Client->get_client_instance($client->loginid);
     isa_ok($client_client, 'BOM::User::Client', 'get_client_instance()');
-    ok(!$client_client->is_wallet, 'wallet client is_wallet is false');
-    ok($client_client->can_trade,  'wallet client can_trade is true');
+    ok(!$client_client->is_wallet, 'trading client is_wallet is false');
+    ok($client_client->can_trade,  'tradint client can_trade is true');
 
     my $dummy_config = {landing_company => 'test_lc'};
     $mock_lc_wallet->mock(get_wallet_for_broker => sub { $dummy_config });

@@ -45,7 +45,7 @@ sub create_client {
     };
 
     my $client = $user->create_client(%$client_details, @_);
-    $client->set_default_account($currency);
+    $client->set_default_account($currency) if $currency;
 
     return $client;
 }
@@ -201,6 +201,102 @@ subtest 'has_siblings' => sub {
 
     ok $usd_client->has_siblings(), 'USD client has siblings';
     ok $btc_client->has_siblings(), 'BTC client has siblings';
+};
+
+subtest 'get_siblings_information' => sub {
+    my $user            = create_user();
+    my $client_virtual  = create_client($user, 'USD', broker_code => 'VRTC');
+    my $client_real     = create_client($user, 'BTC', broker_code => 'CR');
+    my $client_disabled = create_client($user, 'EUR', broker_code => 'CR');
+    $client_disabled->status->set('disabled', 'sysetm', 'test');
+    my $disabled_no_currency = create_client($user, undef, broker_code => 'CR');
+    $disabled_no_currency->status->set('disabled', 'sysetm', 'test');
+    my $wallet_virtual = create_client($user, 'LTC', broker_code => 'VRDW');
+
+    my $all_accounts = {
+        $client_real->loginid => {
+            'demo_account'         => 0,
+            'account_type'         => 'trading',
+            'disabled'             => 0,
+            'balance'              => '0.00000000',
+            'currency'             => 'BTC',
+            'loginid'              => $client_real->loginid,
+            'landing_company_name' => 'svg',
+        },
+        $client_disabled->loginid => {
+            'demo_account'         => 0,
+            'account_type'         => 'trading',
+            'disabled'             => 1,
+            'balance'              => '0.00',
+            'currency'             => 'EUR',
+            'loginid'              => $client_disabled->loginid,
+            'landing_company_name' => 'svg',
+        },
+        $disabled_no_currency->loginid => {
+            'demo_account'         => 0,
+            'account_type'         => 'trading',
+            'disabled'             => 1,
+            'balance'              => '0.00',
+            'currency'             => '',
+            'loginid'              => $disabled_no_currency->loginid,
+            'landing_company_name' => 'svg',
+        },
+        $wallet_virtual->loginid => {
+            'demo_account'         => 1,
+            'account_type'         => 'wallet',
+            'disabled'             => 0,
+            'balance'              => '0.00000000',
+            'currency'             => 'LTC',
+            'loginid'              => $wallet_virtual->loginid,
+            'landing_company_name' => 'samoa-virtual',
+        },
+        $client_virtual->loginid => {
+            'demo_account'         => 1,
+            'account_type'         => 'trading',
+            'disabled'             => 0,
+            'balance'              => '0.00',
+            'currency'             => 'USD',
+            'loginid'              => $client_virtual->loginid,
+            'landing_company_name' => 'virtual',
+        }};
+
+    is_deeply $client_real->get_siblings_information(), $all_accounts, 'List of all clients with default args';
+
+    is_deeply $client_real->get_siblings_information(exclude_disabled_no_currency => 1),
+        {$all_accounts->%{$client_real->loginid, $client_disabled->loginid, $client_virtual->loginid, $wallet_virtual->loginid}},
+        'disabled-no-currency is excluded';
+
+    is_deeply $client_real->get_siblings_information(
+        exclude_disabled_no_currency => 1,
+        include_self                 => 0
+        ),
+        {$all_accounts->%{$client_disabled->loginid, $client_virtual->loginid, $wallet_virtual->loginid}},
+        'self is excluded';
+
+    is_deeply $client_real->get_siblings_information(
+        include_self     => 0,
+        include_disabled => 0
+        ),
+        {$all_accounts->%{$client_virtual->loginid, $wallet_virtual->loginid}},
+        'self is excluded';
+
+    is_deeply $client_real->get_siblings_information(
+        include_self     => 0,
+        include_disabled => 0,
+        include_wallet   => 0
+        ),
+        {$all_accounts->%{$client_virtual->loginid}},
+        'wallet is excluded';
+
+    is_deeply $client_real->get_siblings_information(
+        include_self     => 0,
+        include_disabled => 0,
+        include_wallet   => 0,
+        include_virtual  => 0
+        ),
+        {},
+        'virual is excluded';
+
 };
 
 done_testing;

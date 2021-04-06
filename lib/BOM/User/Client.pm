@@ -354,7 +354,7 @@ sub get_objects_from_sql {
     return [map { bless $_, $class } @$clients];
 }
 
-sub is_virtual { return shift->broker =~ VIRTUAL_REGEX }
+sub is_virtual { return (shift->broker =~ VIRTUAL_REGEX) ? 1 : 0; }
 
 sub has_funded { return shift->first_funded_date ? 1 : 0 }
 
@@ -1467,15 +1467,51 @@ Returns information about real siblings of current client, including loginid, la
 =item * C<landing_company> - if it's not empty, only siblings of the given landing companh will be returned; 
     otherwise (default) there won't be any filter applied on landing companiesd.
 
+=item * include_wallet - include wallet accounts (default 1).
+
 =back
 
 =cut
 
 sub real_account_siblings_information {
     my ($self, %args) = @_;
-    my $include_disabled             = $args{include_disabled}             // 1;
-    my $include_self                 = $args{include_self}                 // 1;
-    my $exclude_disabled_no_currency = $args{exclude_disabled_no_currency} // 0;
+
+    return $self->get_siblings_information(%args, include_virtual => 0);
+}
+
+=head2 get_siblings_information
+
+Gets a list of siblings as a hash ref with keys: loginid, currency, balance, account_type (binary, wallet, ...), demo_account and disabled.
+It filters siblings with following args:
+
+=over
+
+=item * include_self - include the current object in the result (default 1).
+
+=item * include_disabled - include disabled sublings (default 1).
+
+=item * include_virtual - include virtual accounts (default 1).
+
+=item * include_wallet - include wallet accounts (default 1).
+
+=item *  exclude_disabled_no_currency - exclude disabled siblings with no currency (default 0).
+
+=item * C<landing_company> - if it's not empty, only siblings of the given landing companh will be returned; 
+    otherwise (default) there won't be any filter applied on landing companiesd.
+
+=back
+
+Returns B<value> of field or the whole B<data field> if field is null.
+
+=cut
+
+sub get_siblings_information {
+    my ($self, %args) = @_;
+    my $include_self                 = $args{include_self}     // 1;
+    my $include_disabled             = $args{include_disabled} // 1;
+    my $include_virtual              = $args{include_virtual}  // 1;
+    my $include_wallet               = $args{include_wallet}   // 1;
+    my $exclude_disabled_no_currency = $args{exclude_disabled_no_currency};
     my $landing_company              = $args{landing_company};
 
     my $user = $self->user;
@@ -1485,8 +1521,15 @@ sub real_account_siblings_information {
 
     my @clients = $user->clients(include_disabled => $include_disabled);
 
-    # filter out virtual clients
-    @clients = grep { not $_->is_virtual } @clients;
+    unless ($include_virtual) {
+        @clients = grep { not $_->is_virtual } @clients;
+    }
+
+    unless ($include_wallet) {
+        # filter out wallet accounts
+        @clients = grep { not $_->is_wallet } @clients;
+    }
+
     if ($landing_company) {
         @clients = grep { $_->landing_company->short eq $landing_company } @clients;
     }
@@ -1496,15 +1539,21 @@ sub real_account_siblings_information {
         @clients = grep { not($_->status->disabled && !$_->default_account) } @clients;
     }
 
-    my $siblings;
+    my $siblings = {};
     foreach my $cl (@clients) {
-        my $acc = $cl->default_account;
+        my $acc     = $cl->default_account;
+        my $balance = $acc ? formatnumber('amount', $acc->currency_code(), $acc->balance) : "0.00";
+
+        my $account_type = $cl->is_wallet ? 'wallet' : 'trading';
 
         $siblings->{$cl->loginid} = {
             loginid              => $cl->loginid,
             landing_company_name => $cl->landing_company->short,
-            currency             => $acc ? $acc->currency_code()                                        : '',
-            balance              => $acc ? formatnumber('amount', $acc->currency_code(), $acc->balance) : "0.00",
+            currency             => $acc ? $acc->currency_code() : '',
+            balance              => $balance,
+            account_type         => $account_type,
+            demo_account         => $cl->is_virtual,
+            disabled             => $cl->status->disabled ? 1 : 0,
             }
             unless (!$include_self && ($cl->loginid eq $self->loginid));
     }
@@ -5712,7 +5761,21 @@ Returns whether this client instance is a wallet.
 
 =cut
 
-sub is_wallet { 0 }
+sub is_wallet {
+    return 0;
+}
+
+=head2 account_type
+
+Returns account type as a string. There are two account types as the moment: trading and wallet.
+
+=cut
+
+sub account_type {
+    my $self = shift;
+
+    return $self->is_wallet ? 'wallet' : 'trading';
+}
 
 =head2 can_trade
 
@@ -5729,6 +5792,8 @@ Returns a client or wallet instance from a loginid.
 =over 4
 
 =item * C<loginid> - string
+
+=item * C<db_operation> - string
 
 =back
 

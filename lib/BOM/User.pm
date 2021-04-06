@@ -941,7 +941,7 @@ sub get_client_using_replica {
     }
 
     # try master if replica is down
-    $cl = BOM::User::Client->get_client_instance($login_id) if not $cl or $error;
+    $cl = BOM::User::Client->get_client_instance($login_id, 'write') if not $cl or $error;
 
     return $cl;
 }

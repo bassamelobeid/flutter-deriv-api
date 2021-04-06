@@ -860,12 +860,14 @@ subtest 'create_client' => sub {
     my $wallet_client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'VRDW',
     });
-    is $wallet_client_vr->is_wallet, 1, 'is wallet client instance';
+    is $wallet_client_vr->is_wallet,    1,        'is wallet client instance';
+    is $wallet_client_vr->account_type, 'wallet', 'Correct accouont type';
 
     my $trading_client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'VRTC',
     });
-    is $trading_client_vr->is_wallet, 0, 'is trading client instance';
+    is $trading_client_vr->is_wallet,    0,         'is trading client instance';
+    is $trading_client_vr->account_type, 'trading', 'Correct accouont type';
 };
 
 my $wallet;
