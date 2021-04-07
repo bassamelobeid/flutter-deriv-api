@@ -142,7 +142,7 @@ subtest 'call params validation' => sub {
     $params->{token}      = $token;
     $params->{token_type} = 'oauth_token';
     my $result = $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->result;
-    is @{$result->{accounts}}, 4, 'if no loginid from or to passed then it returns accounts';
+    is @{$result->{accounts}}, 3, 'if no loginid from or to passed then it returns real accounts';
 
     $params->{args} = {
         account_from => $client_cr->loginid,

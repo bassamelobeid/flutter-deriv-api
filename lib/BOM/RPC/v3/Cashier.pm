@@ -1255,7 +1255,7 @@ rpc transfer_between_accounts => sub {
 
     # just return accounts list if loginid from or to is not provided
     if (not $loginid_from or not $loginid_to) {
-        my @available_siblings_for_transfer = grep { not $_->{disabled} } values %$siblings;
+        my @available_siblings_for_transfer = grep { not $_->{disabled} and ($_->{demo_account} ==  $client->is_virtual) } values %$siblings;
         @available_siblings_for_transfer = map {
             { $_->%{qw/loginid balance account_type currency demo_account/} }
         } @available_siblings_for_transfer;
@@ -1263,6 +1263,9 @@ rpc transfer_between_accounts => sub {
         if (($args->{accounts} // '') eq 'all' and not(BOM::Config::Runtime->instance->app_config->system->mt5->suspend->all)) {
             my @mt5_accounts = BOM::RPC::v3::MT5::Account::get_mt5_logins($client)->else(sub { return Future->done(); })->get;
             for my $mt5_acc (grep { not $_->{error} } @mt5_accounts) {
+                my $is_demo = ($mt5_acc->{account_type} eq 'demo') ? 1 : 0;
+                next unless $client->is_virtual == $is_demo;
+
                 push @available_siblings_for_transfer,
                     {
                     loginid      => $mt5_acc->{login},
@@ -1281,6 +1284,9 @@ rpc transfer_between_accounts => sub {
                 client   => $client,
             );
             for my $dxtrade_account ($dxtrade->get_accounts->@*) {
+                my $is_demo = ($dxtrade_account->{account_type} eq 'demo') ? 1 : 0;
+                next unless $client->is_virtual == $is_demo;
+
                 push @available_siblings_for_transfer,
                     {
                     loginid      => $dxtrade_account->{account_id},

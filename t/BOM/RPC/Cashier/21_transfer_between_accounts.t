@@ -386,16 +386,9 @@ subtest 'Virtual accounts' => sub {
 
     $params->{args} = {};
     $result = $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->has_no_error()->result;
-    is(scalar @{$result->{accounts}}, 2, 'two accounts are returned');
+    is(scalar @{$result->{accounts}}, 1, 'one accounts are returned');
     cmp_bag $result->{accounts},
         [{
-            'demo_account' => 0,
-            'account_type' => 'trading',
-            'balance'      => '5678.00',
-            'currency'     => 'USD',
-            'loginid'      => $client_cr4->loginid
-        },
-        {
             'demo_account' => 1,
             'account_type' => 'trading',
             'balance'      => '2345.00',
@@ -403,7 +396,7 @@ subtest 'Virtual accounts' => sub {
             'loginid'      => $client_vr1->loginid
         }
         ],
-        'Correct list of accounts';
+        'Only virtual accounts are returned';
 
     $params->{args} = {
         account_from => $client_vr1->loginid,
@@ -548,14 +541,6 @@ subtest 'Get accounts list for transfer_between_accounts' => sub {
     $rpc_ct->call_ok('mt5_new_account', $params)->has_no_error('no error for financial_stp mt5_new_account');
 
     my @mt5_accounts = ({
-            loginid      => 'MTD' . $ACCOUNTS{'demo\p01_ts01\financial\svg_std_usd'},
-            balance      => num($DETAILS{balance}),
-            currency     => 'USD',
-            account_type => 'mt5',
-            mt5_group    => 'demo\p01_ts01\financial\svg_std_usd',
-            demo_account => 1
-        },
-        {
             loginid      => 'MTR' . $ACCOUNTS{'real\p01_ts01\financial\svg_std_usd'},
             balance      => num($DETAILS{balance}),
             currency     => 'USD',

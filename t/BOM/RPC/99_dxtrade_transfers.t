@@ -165,14 +165,6 @@ subtest 'transfer between accounts' => sub {
                 'market_type'  => $dx_real->{market_type},
                 'demo_account' => 0,
             },
-            {
-                'account_type' => 'dxtrade',
-                'balance'      => num(10000),
-                'currency'     => $dx_demo->{currency},
-                'loginid'      => $dx_demo->{account_id},
-                'market_type'  => $dx_demo->{market_type},
-                'demo_account' => 1,
-            },
         ),
         'all real and demo accounts returned'
     );
