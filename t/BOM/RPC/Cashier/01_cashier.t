@@ -9,6 +9,7 @@ use BOM::User;
 
 use BOM::Test::Email qw(:no_event);
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use BOM::Test::Data::Utility::CryptoTestDatabase qw(:init);
 use BOM::Test::RPC::QueueClient;
 use LWP::UserAgent;
 require Test::NoWarnings;
@@ -122,7 +123,9 @@ subtest 'Get deposit address' => sub {
     $rpc_ct->call_ok('cashier', $params)->has_no_system_error->has_no_error->result_is_deeply($expected_result, 'Empty Address');
 
     my $address = 'test_deposit_address';
-    $client->db->dbic->run(
+
+    my $cryptodb = BOM::Database::CryptoDB::rose_db();
+    $cryptodb->dbic->run(
         fixup => sub {
             $_->selectrow_array('SELECT payment.ctc_insert_new_deposit_address(?, ?, ?)', undef, $address, $client->currency, $client->loginid);
         },

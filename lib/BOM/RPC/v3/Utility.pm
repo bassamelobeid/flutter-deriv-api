@@ -40,6 +40,7 @@ use BOM::Config::Redis;
 use BOM::Config::Runtime;
 use BOM::Platform::Token::API;
 use BOM::Database::Model::OAuth;
+use BOM::Database::CryptoDB;
 use BOM::Platform::Context qw (localize request);
 use BOM::Platform::Token::API;
 use BOM::Platform::Token;
@@ -1307,7 +1308,8 @@ Returns an address string based on currency of client
 sub client_crypto_deposit_address {
     my ($client) = @_;
 
-    my ($address) = $client->db->dbic->run(
+    my $db = BOM::Database::CryptoDB::rose_db();
+    my ($address) = $db->dbic->run(
         fixup => sub {
             $_->selectrow_array('SELECT address from payment.ctc_find_new_deposit_address(?, ?)', undef, $client->currency, $client->loginid);
         });
