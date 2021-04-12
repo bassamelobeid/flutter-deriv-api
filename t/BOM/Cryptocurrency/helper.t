@@ -4,7 +4,7 @@ use warnings;
 
 use Test::More;
 
-use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use BOM::Test::Data::Utility::CryptoTestDatabase qw(:init);
 use BOM::Cryptocurrency::Helper qw(get_crypto_withdrawal_pending_total get_crypto_transactions);
 
 subtest 'get_crypto_withdrawal_pending_total' => sub {

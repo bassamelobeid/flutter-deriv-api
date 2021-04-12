@@ -18,7 +18,6 @@ use BOM::User::Client;
 use BOM::Platform::Locale;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Backoffice::Request qw( request );
-use BOM::Database::ClientDB;
 use BOM::Backoffice::Sysinit ();
 use BOM::Config;
 use BOM::CTC::Currency;
@@ -45,8 +44,6 @@ my $client = eval { BOM::User::Client::get_instance({'loginid' => $loginid, db_o
 if (not $client) {
     code_exit_BO("Error: wrong login id ($encoded_loginid) could not get client instance.", $loginid);
 }
-
-my $clientdb = BOM::Database::ClientDB->new({broker_code => $broker});
 
 Bar($loginid);
 
