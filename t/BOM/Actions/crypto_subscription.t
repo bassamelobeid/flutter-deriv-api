@@ -10,6 +10,7 @@ use Test::Exception;
 use Net::Async::Blockchain::Transaction;
 use BOM::Event::Actions::CryptoSubscription;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use BOM::Test::Data::Utility::CryptoTestDatabase qw(:init);
 use BOM::Test::Helper::Client qw( create_client );
 use BOM::Test;
 use BOM::CTC::Helper;

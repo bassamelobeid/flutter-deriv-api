@@ -9,7 +9,6 @@ use List::Util qw(any all first);
 use Syntax::Keyword::Try;
 use DataDog::DogStatsd::Helper qw/stats_inc/;
 
-use BOM::Database::ClientDB;
 use BOM::Platform::Event::Emitter;
 use BOM::CTC::Currency;
 use BOM::CTC::Database;
