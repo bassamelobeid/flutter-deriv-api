@@ -18,6 +18,7 @@ use BOM::RPC::v3::Utility qw(log_exception);
 use BOM::Platform::Context qw (localize request);
 use BOM::Config::Runtime;
 use BOM::User;
+use BOM::User::Onfido;
 use BOM::Platform::Event::Emitter;
 use BOM::Platform::Token;
 use BOM::Config;
@@ -41,7 +42,8 @@ rpc notification_event => sub {
     my $args    = $params->{args};
     my $client  = $params->{client};
 
-    my $event_category = $args->{category};
+    my $event_category = delete $args->{category} // '';
+    my $event          = delete $args->{event}    // '';
 
     # hash that contains what process should be triggered
     my $action_map = {
@@ -54,14 +56,14 @@ rpc notification_event => sub {
     return BOM::RPC::v3::Utility::create_error({
             code              => 'UnrecognizedEvent',
             message_to_client => localize('No such category or event. Please check the provided value.')}
-    ) unless (defined $action_map->{$event_category} && defined $action_map->{$event_category}->{$args->{event}});
+    ) unless $action_map->{$event_category} && $action_map->{$event_category}->{$event};
 
     # this contains a list of actions that will be carried out for the call
-    my $actions          = $action_map->{$event_category}->{$args->{event}};
+    my $actions          = $action_map->{$event_category}->{$event};
     my $all_success_flag = 1;
     for my $action (@$actions) {
         try {
-            $action->($client, $args);
+            $action->($client, $args->{args} // {});
         } catch ($e) {
             $all_success_flag = 0;
             warn "Error caught in $action : " . $e;
@@ -80,19 +82,15 @@ _trigger_poi_check triggers the event to request for Onfido check on the client
 =cut
 
 sub _trigger_poi_check {
-    my ($client) = @_;
+    my ($client, $args) = @_;
 
-    my $dbic = BOM::Database::UserDB::rose_db()->dbic;
-
-    my $user_applicant = $dbic->run(
-        fixup => sub {
-            $_->selectrow_hashref('SELECT * FROM users.get_onfido_applicant(?::BIGINT)', undef, $client->binary_user_id);
-        });
+    my $user_applicant = BOM::User::Onfido::get_user_onfido_applicant($client->binary_user_id);
 
     BOM::Platform::Event::Emitter::emit(
         ready_for_authentication => {
             loginid      => $client->loginid,
             applicant_id => $user_applicant->{id},
+            documents    => $args->{documents},
         });
 
     return 1;
