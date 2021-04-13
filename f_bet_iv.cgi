@@ -139,7 +139,7 @@ BOM::Backoffice::Request::template()->process(
         disabled   => $disabled_write,
     },
     \$form
-) || die BOM::Backoffice::Request::template()->error();
+) || die BOM::Backoffice::Request::template()->error(), "\n";
 
 print $form;
 

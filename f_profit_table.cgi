@@ -231,6 +231,6 @@ BOM::Backoffice::Request::template()->process(
         has_newer_page              => $has_newer_page,
         has_older_page              => $has_older_page,
         error                       => $error
-    }) || die BOM::Backoffice::Request::template()->error();
+    }) || die BOM::Backoffice::Request::template()->error(), "\n";
 
 code_exit_BO();

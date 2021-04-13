@@ -52,7 +52,7 @@ Bar("Monthly Client Reports");
     $yyyymm =~ s/-..$//;
 
     BOM::Backoffice::Request::template()->process('backoffice/account/monthly_client_report.tt', {yyyymm => $yyyymm})
-        || die BOM::Backoffice::Request::template()->error();
+        || die BOM::Backoffice::Request::template()->error(), "\n";
 }
 
 Bar("USEFUL EXCHANGE RATES");
@@ -148,7 +148,7 @@ BOM::Backoffice::Request::template()->process(
         upload_url => request()->url_for('backoffice/f_upload_ewallet.cgi'),
     },
     \$form
-) || die BOM::Backoffice::Request::template()->error();
+) || die BOM::Backoffice::Request::template()->error(), "\n";
 
 print $form;
 

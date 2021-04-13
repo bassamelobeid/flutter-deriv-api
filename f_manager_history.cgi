@@ -219,7 +219,7 @@ BOM::Backoffice::Request::template()->process(
         startdate => (not $all_in_one_page and $from_date) ? $from_date->datetime_yyyymmdd_hhmmss() : undef,
         enddate   => (not $all_in_one_page and $to_date)   ? $to_date->datetime_yyyymmdd_hhmmss()   : undef,
     },
-) || die BOM::Backoffice::Request::template()->error();
+) || die BOM::Backoffice::Request::template()->error(), "\n";
 
 BarEnd();
 

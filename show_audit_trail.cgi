@@ -228,7 +228,8 @@ unless ($myself_args->{category} eq 'payment_agent') {
 
 Bar($title_bar);
 
-BOM::Backoffice::Request::template()->process('backoffice/show_audit_trail.html.tt', $stash) || die BOM::Backoffice::Request::template()->error();
+BOM::Backoffice::Request::template()->process('backoffice/show_audit_trail.html.tt', $stash) || die BOM::Backoffice::Request::template()->error(),
+    "\n";
 
 code_exit_BO();
 

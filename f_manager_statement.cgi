@@ -108,6 +108,6 @@ BOM::Backoffice::Request::template()->process(
         currency  => $client->currency,
         loginid   => $client->loginid,
     },
-) || die BOM::Backoffice::Request::template()->error();
+) || die BOM::Backoffice::Request::template()->error(), "\n";
 
 code_exit_BO();

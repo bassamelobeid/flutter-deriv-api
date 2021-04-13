@@ -107,7 +107,7 @@ if (not $input{email_edit}) {
             bom_logins   => [@bom_logins],
             mt5_loginids => [@mt_logins_ids]
         },
-    ) || die BOM::Backoffice::Request::template()->error();
+    ) || die BOM::Backoffice::Request::template()->error(), "\n";
 
     code_exit_BO();
 }
@@ -182,7 +182,7 @@ if ($email ne $new_email) {
             bom_logins   => [@bom_logins],
             mt5_loginids => [@mt_logins_ids]
         },
-    ) || die BOM::Backoffice::Request::template()->error();
+    ) || die BOM::Backoffice::Request::template()->error(), "\n";
 } else {
     print "Same email [$new_email] provided, no update required";
 }

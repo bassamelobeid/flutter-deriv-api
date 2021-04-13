@@ -131,7 +131,7 @@ my $stash = {
 $stash->{isnew} = 1 if $input{isnew};
 
 BOM::Backoffice::Request::template()->process('backoffice/promocode_edit.html.tt', $stash)
-    || die("in promocode_edit: " . BOM::Backoffice::Request::template()->error());
+    || die BOM::Backoffice::Request::template()->error(), "\n";
 
 code_exit_BO();
 

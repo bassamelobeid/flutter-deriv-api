@@ -85,6 +85,6 @@ BOM::Backoffice::Request::template()->process(
             }
         ),
     },
-) || die BOM::Backoffice::Request::template()->error();
+) || die BOM::Backoffice::Request::template()->error(), "\n";
 
 code_exit_BO();

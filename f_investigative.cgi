@@ -56,6 +56,6 @@ BOM::Backoffice::Request::template()->process(
     {
         ip_search_url => request()->url_for('backoffice/ip_search.cgi'),
         ip            => $ENV{REMOTE_ADDR},
-    }) || die BOM::Backoffice::Request::template()->error();
+    }) || die BOM::Backoffice::Request::template()->error(), "\n";
 
 code_exit_BO();

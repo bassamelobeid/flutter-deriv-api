@@ -78,6 +78,6 @@ BOM::Backoffice::Request::template()->process(
         suspected_logins => $suspected_logins,
         date_from        => $date_from,
         date_to          => $date_to,
-    }) || die BOM::Backoffice::Request::template()->error();
+    }) || die BOM::Backoffice::Request::template()->error(), "\n";
 
 code_exit_BO();

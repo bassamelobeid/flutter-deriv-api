@@ -61,7 +61,7 @@ BOM::Backoffice::Request::template()->process(
     });
 
 Bar("SEND ACCOUNT RECOVERY EMAIL");
-BOM::Backoffice::Request::template()->process('backoffice/newpassword_email.html.tt') || die BOM::Backoffice::Request::template()->error();
+BOM::Backoffice::Request::template()->process('backoffice/newpassword_email.html.tt') || die BOM::Backoffice::Request::template()->error(), "\n";
 
 Bar("MAKE DUAL CONTROL CODE");
 print
@@ -104,7 +104,7 @@ BOM::Backoffice::Request::template()->process(
         show_untrusted            => 1,
         show_login                => 1,
         show_notification         => $show_notification,
-    }) || die BOM::Backoffice::Request::template()->error();
+    }) || die BOM::Backoffice::Request::template()->error(), "\n";
 
 Bar("Set Aml Risk Classification - Multiple loginids");
 BOM::Backoffice::Request::template()->process(
@@ -115,7 +115,7 @@ BOM::Backoffice::Request::template()->process(
         loginids                => request()->param('risk_loginids') // '',
         aml_risk_levels         => [get_aml_risk_classicications()],
         disabled                => not BOM::Backoffice::Auth0::has_authorisation(['Compliance']),
-    }) || die BOM::Backoffice::Request::template()->error();
+    }) || die BOM::Backoffice::Request::template()->error(), "\n";
 
 # Monitor client lists
 Bar("Monitor client lists");

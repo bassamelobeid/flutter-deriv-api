@@ -48,7 +48,7 @@ if (@request_list) {
             args      => \@request_list
         },
         \$request_f
-    ) || die BOM::Backoffice::Request::template()->error();
+    ) || die BOM::Backoffice::Request::template()->error(), "\n";
 
     print $request_f;
     print "</br></br>";
@@ -64,7 +64,7 @@ if (@response_list) {
             args      => \@response_list
         },
         $response_f
-    ) || die BOM::Backoffice::Request::template()->error();
+    ) || die BOM::Backoffice::Request::template()->error(), "\n";
 
     print $response_f;
 }

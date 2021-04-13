@@ -239,7 +239,7 @@ if ($input{whattodo} eq 'sync_to_DF') {
                 error    => 1,
                 self_url => $self_href,
             },
-        ) || die BOM::Backoffice::Request::template()->error();
+        ) || die BOM::Backoffice::Request::template()->error(), "\n";
         code_exit_BO();
     } else {
         BOM::Backoffice::Request::template()->process(
@@ -248,7 +248,7 @@ if ($input{whattodo} eq 'sync_to_DF') {
                 message  => "Successfully syncing client authentication status to Doughflow",
                 self_url => $self_href,
             },
-        ) || die BOM::Backoffice::Request::template()->error();
+        ) || die BOM::Backoffice::Request::template()->error(), "\n";
         code_exit_BO();
     }
 }
@@ -271,7 +271,7 @@ if ($input{whattodo} eq 'delete_copier_tokens') {
             message  => "deleted $delete_count copier, trader connections ",
             self_url => $self_href,
         },
-    ) || die BOM::Backoffice::Request::template()->error();
+    ) || die BOM::Backoffice::Request::template()->error(), "\n";
     code_exit_BO();
 }
 
@@ -288,7 +288,7 @@ if ($input{whattodo} eq 'sync_to_MT5') {
             message  => "Successfully requested syncing client information to MT5",
             self_url => $self_href,
         },
-    ) || die BOM::Backoffice::Request::template()->error();
+    ) || die BOM::Backoffice::Request::template()->error(), "\n";
     code_exit_BO();
 }
 
@@ -711,7 +711,7 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
         };
 
         BOM::Backoffice::Request::template()->process('backoffice/duplicate_client_details.tt', $data)
-            or die BOM::Backoffice::Request::template()->error();
+            or die BOM::Backoffice::Request::template()->error(), "\n";
 
         code_exit_BO();
     }
@@ -1025,7 +1025,7 @@ BOM::Backoffice::Request::template()->process(
         actions      => [sort { $a->{comments} cmp $b->{comments} } @{get_untrusted_types()}],
         actions_hash => get_untrusted_types_hashref(),
         p2p_approved => $p2p_approved,
-    }) || die BOM::Backoffice::Request::template()->error();
+    }) || die BOM::Backoffice::Request::template()->error(), "\n";
 
 # Show Self-Exclusion link
 Bar("$loginid SELF-EXCLUSION SETTINGS");
@@ -1456,7 +1456,7 @@ BOM::Backoffice::Request::template()->process(
     {
         tokens  => \@all_tokens,
         deleted => \@deleted_tokens
-    }) || die BOM::Backoffice::Request::template()->error();
+    }) || die BOM::Backoffice::Request::template()->error(), "\n";
 
 Bar("$loginid Copiers/Traders");
 my $copiers_data_mapper = BOM::Database::DataMapper::Copier->new({
@@ -1475,7 +1475,7 @@ BOM::Backoffice::Request::template()->process(
         traders   => $traders,
         loginid   => $encoded_loginid,
         self_post => $self_post
-    }) || die BOM::Backoffice::Request::template()->error();
+    }) || die BOM::Backoffice::Request::template()->error(), "\n";
 
 Bar('Send Client Statement');
 BOM::Backoffice::Request::template()->process(

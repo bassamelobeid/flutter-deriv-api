@@ -345,7 +345,7 @@ BOM::Backoffice::Request::template()->process(
         depositswithdrawalsonly => request()->param('depositswithdrawalsonly'),
         contract_details        => \&BOM::ContractInfo::get_info,
     },
-) || die BOM::Backoffice::Request::template()->error();
+) || die BOM::Backoffice::Request::template()->error(), "\n";
 
 #View updated statement
 print "<form action=\"" . request()->url_for("backoffice/f_manager_history.cgi") . "\" method=\"post\">";

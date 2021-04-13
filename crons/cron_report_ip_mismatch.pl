@@ -53,7 +53,7 @@ BOM::Backoffice::Request::template()->process(
         all_data => \%landing_company_data,
     },
     \$list_ip_mismatch_email
-) || die BOM::Backoffice::Request::template()->error();
+) || die BOM::Backoffice::Request::template()->error(), "\n";
 
 my $brands = BOM::Config->brand();
 
