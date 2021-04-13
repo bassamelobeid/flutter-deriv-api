@@ -263,7 +263,7 @@ my $display_transactions = sub {
 my $pending_withdrawal_amount = request()->param('pending_withdrawal_amount');
 
 my $pending_estimated_fee;
-if ($view_action eq 'withdrawals') {
+if ($view_action eq 'withdrawals' || $view_action eq 'run') {
     my $withdrawal_sum = get_crypto_withdrawal_pending_total($currency);
     $pending_withdrawal_amount = $withdrawal_sum->{pending_withdrawal_amount};
     $pending_estimated_fee     = $withdrawal_sum->{pending_estimated_fee};
@@ -307,32 +307,6 @@ try {
 }
 
 if ($view_action eq 'withdrawals') {
-    my $main_address_balance = $currency_wrapper->get_main_address_balance();
-
-    print "<hr><h3>Available Balance(s) for Payout:</h3>";
-    for my $currency_of_balance (sort keys %$main_address_balance) {
-        my $balance        = Math::BigFloat->new($main_address_balance->{$currency_of_balance});
-        my $remaining_text = '';
-        if ($currency_of_balance eq $currency) {
-            my $remaining = $balance->copy->bsub($pending_withdrawal_amount);
-            $remaining_text = sprintf(
-                " (Remaining after <b>payout</b>: <b class='%s'>%s</b>)",
-                $remaining->is_pos ? 'success' : 'error',
-                formatnumber('amount', $currency_of_balance, $remaining->bstr),
-            );
-        } else {
-            my $remaining = $balance->copy->bsub($pending_estimated_fee);
-            $remaining_text = sprintf(
-                " (Remaining after <b>total estimated fees</b>: <b class='%s'>%s</b>)",
-                $remaining->is_pos ? 'success' : 'error',
-                formatnumber('amount', $currency_of_balance, $remaining->bstr),
-            );
-        }
-        print sprintf("<p>%s : <b>%s</b>$remaining_text</p>", $currency_of_balance, formatnumber('amount', $currency_of_balance, $balance->bstr));
-    }
-    print
-        sprintf("<p>NOTE: The above values calculated on <b>%s</b>. To get new values, please click the <b>Withdrawal Transactions</b> button above.",
-        Date::Utility->new()->datetime_yyyymmdd_hhmmss);
 
     Bar("LIST OF TRANSACTIONS - WITHDRAWAL");
 
@@ -574,19 +548,40 @@ EOF
 } elsif ($view_action eq 'run') {
     my $cmd = request()->param('command');
 
-    if ($cmd eq 'getbalance') {
-        my $get_balance = $currency_wrapper->get_main_address_balance();
-        print "<b>Available Balance(s) for payout: </b>";
-        for my $currency_balance (sort keys %$get_balance) {
-            print sprintf("<p>%s : <b>%s</b></p>", $currency_balance, $get_balance->{$currency_balance});
-        }
-        #  We won't calculate for ETH and ERC20 as it will cost performance.
-    } elsif ($cmd eq 'getwallet') {
+    if ($cmd eq 'getwallet') {
         my $get_balance = $currency_wrapper->get_wallet_balance();
         print "<b>Total Balance(s) in Wallet: </b>";
         for my $currency_balance (sort keys %$get_balance) {
             print sprintf("<p>%s : <b>%s</b></p>", $currency_balance, $get_balance->{$currency_balance});
         }
+    } elsif ($cmd eq 'getavailablepayout') {
+        my $main_address_balance = $currency_wrapper->get_main_address_balance();
+
+        print "<hr><h3>Available Balance(s) for Payout:</h3>";
+        for my $currency_of_balance (sort keys %$main_address_balance) {
+            my $balance        = Math::BigFloat->new($main_address_balance->{$currency_of_balance});
+            my $remaining_text = '';
+            if ($currency_of_balance eq $currency) {
+                my $remaining = $balance->copy->bsub($pending_withdrawal_amount);
+                $remaining_text = sprintf(
+                    " (Remaining after <b>payout</b>: <b class='%s'>%s</b>)",
+                    $remaining->is_pos ? 'success' : 'error',
+                    formatnumber('amount', $currency_of_balance, $remaining->bstr),
+                );
+            } else {
+                my $remaining = $balance->copy->bsub($pending_estimated_fee);
+                $remaining_text = sprintf(
+                    " (Remaining after <b>total estimated fees</b>: <b class='%s'>%s</b>)",
+                    $remaining->is_pos ? 'success' : 'error',
+                    formatnumber('amount', $currency_of_balance, $remaining->bstr),
+                );
+            }
+            print sprintf("<p>%s : <b>%s</b>$remaining_text</p>", $currency_of_balance, formatnumber('amount', $currency_of_balance, $balance->bstr));
+        }
+        print sprintf(
+            "<p>NOTE: The above values calculated on <b>%s</b>. To get new values, please select <b>Get Available Balance for payout</b> from the above Dropdown.",
+            Date::Utility->new()->datetime_yyyymmdd_hhmmss);
+
     } elsif ($cmd eq 'getinfo') {
         my $get_info = $currency_wrapper->get_info;
         for my $info (sort keys %$get_info) {
