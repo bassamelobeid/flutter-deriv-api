@@ -61,7 +61,7 @@ my $auth_document_args = {
     document_format            => 'TST',
     document_path              => '/tmp/testfile2.tst',
     authentication_method_code => 'TESTY_TESTY',
-    status                     => 'uploaded',
+    status                     => 'verified',
     checksum                   => 'Abcder12345678',
     file_name                  => 'some_test.txt',
 };
@@ -563,6 +563,7 @@ for my $transfer_currency (@fiat_currencies, @crypto_currencies) {
                 return {
                     proof_of_identity => {
                         is_expired => 1,
+                        documents  => {},
                     },
                 };
             });
@@ -570,10 +571,12 @@ for my $transfer_currency (@fiat_currencies, @crypto_currencies) {
             'is_document_expiry_check_required',
             sub {
                 my $self = shift;
+
                 # Just for bob
                 return $self->loginid eq $Bob_id;
             });
         $res = BOM::RPC::v3::Cashier::paymentagent_transfer($testargs);
+
         is(
             $res->{error}{message_to_client},
             "You cannot transfer to account $Bob_id, as their verification documents have expired.",

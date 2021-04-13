@@ -369,7 +369,7 @@ subtest 'get account status' => sub {
                                     type        => 'passport',
                                     format      => 'pdf',
                                     id          => 2,
-                                    status      => 'uploaded'
+                                    status      => 'verified'
                                     },
                             },
                             expiry_date => Date::Utility->new->plus_time_interval('1d')->epoch,
@@ -436,7 +436,7 @@ subtest 'get account status' => sub {
                                         type        => 'passport',
                                         format      => 'pdf',
                                         id          => 2,
-                                        status      => 'uploaded'
+                                        status      => 'verified'
                                         },
                                 },
                                 expiry_date => Date::Utility->new->minus_time_interval('1d')->epoch,
@@ -684,7 +684,7 @@ subtest 'get account status' => sub {
             );
             $mocked_status->unmock_all();
 
-            subtest "Age verified client, don't check for expiry of documents" => sub {
+            subtest "Age verified client, do check for expiry of documents" => sub {
                 # For age verified clients
                 # we don't need to have a check for expiry of documents for svg
 
@@ -702,7 +702,7 @@ subtest 'get account status' => sub {
                                         type        => 'passport',
                                         format      => 'pdf',
                                         id          => 2,
-                                        status      => 'uploaded'
+                                        status      => 'verified'
                                         },
                                 },
                                 expiry_date => Date::Utility->new->minus_time_interval('1d')->epoch,
@@ -738,8 +738,9 @@ subtest 'get account status' => sub {
                                 status => "none",
                             },
                             identity => {
-                                status   => "verified",
-                                services => {
+                                status      => "expired",
+                                expiry_date => re('\d+'),
+                                services    => {
                                     onfido => {
                                         submissions_left     => $onfido_limit,
                                         last_rejected        => [],
@@ -748,7 +749,7 @@ subtest 'get account status' => sub {
                                         country_code         => 'IDN'
                                     }}
                             },
-                            needs_verification => [],
+                            needs_verification => ['identity'],
                         }
                     },
                     "authentication object is correct"
@@ -758,7 +759,7 @@ subtest 'get account status' => sub {
                 $mocked_status->unmock_all();
             };
 
-            subtest 'Fully authenticated CR does not have to check for expired documents' => sub {
+            subtest 'Fully authenticated CR have to check for expired documents' => sub {
                 my $mocked_client = Test::MockModule->new(ref($test_client_cr));
                 $mocked_client->mock('fully_authenticated', sub { return 1 });
                 $mocked_status->mock('age_verification',    sub { return 1 });
@@ -775,7 +776,7 @@ subtest 'get account status' => sub {
                                         type        => 'bankstatement',
                                         format      => 'pdf',
                                         id          => 1,
-                                        status      => 'uploaded'
+                                        status      => 'verified'
                                         },
                                 },
                                 expiry_date => Date::Utility->new->minus_time_interval('1d')->epoch,
@@ -789,7 +790,7 @@ subtest 'get account status' => sub {
                                         type        => 'passport',
                                         format      => 'pdf',
                                         id          => 2,
-                                        status      => 'uploaded'
+                                        status      => 'verified'
                                         },
                                 },
                                 expiry_date => Date::Utility->new->minus_time_interval('1d')->epoch,
@@ -798,11 +799,8 @@ subtest 'get account status' => sub {
                         };
                     });
 
-                # This test would be useless if this company authentication is mandatory
-                ok !$test_client_cr->landing_company->is_authentication_mandatory, 'Authentication is not mandatory';
                 ok $test_client_cr->documents_expired(), 'Client expiry is required';
                 ok $test_client_cr->fully_authenticated, 'Account is fully authenticated';
-                ok !$test_client_cr->is_document_expiry_check_required, "Fully authenticated CR account does not have to check documents expiry";
                 $result = $c->tcall($method, {token => $token_cr});
 
                 cmp_deeply(
@@ -822,8 +820,9 @@ subtest 'get account status' => sub {
                                 status => "verified",
                             },
                             identity => {
-                                status   => "verified",
-                                services => {
+                                status      => "expired",
+                                expiry_date => re('\d+'),
+                                services    => {
                                     onfido => {
                                         submissions_left     => $onfido_limit,
                                         last_rejected        => [],
@@ -832,7 +831,7 @@ subtest 'get account status' => sub {
                                         country_code         => 'IDN'
                                     }}
                             },
-                            needs_verification => superbagof(),
+                            needs_verification => ['identity'],
                         }
                     },
                     "authentication object is correct"
@@ -1221,7 +1220,7 @@ subtest 'get account status' => sub {
                                         type        => 'passport',
                                         format      => 'pdf',
                                         id          => 2,
-                                        status      => 'uploaded'
+                                        status      => 'verified'
                                         },
                                 },
                                 expiry_date => Date::Utility->new->minus_time_interval('1d')->epoch,
@@ -1445,7 +1444,7 @@ subtest 'get account status' => sub {
                                         type        => 'passport',
                                         format      => 'pdf',
                                         id          => 2,
-                                        status      => 'uploaded'
+                                        status      => 'verified'
                                         },
                                 },
                                 expiry_date => Date::Utility->new->minus_time_interval('1d')->epoch,
@@ -1570,7 +1569,7 @@ subtest 'get account status' => sub {
                                         type        => 'bankstatement',
                                         format      => 'pdf',
                                         id          => 1,
-                                        status      => 'uploaded'
+                                        status      => 'verified'
                                         },
                                 },
                                 expiry_date => Date::Utility->new->minus_time_interval('1d')->epoch,
@@ -1584,7 +1583,7 @@ subtest 'get account status' => sub {
                                         type        => 'passport',
                                         format      => 'pdf',
                                         id          => 2,
-                                        status      => 'uploaded'
+                                        status      => 'verified'
                                         },
                                 },
                                 expiry_date => Date::Utility->new->minus_time_interval('1d')->epoch,
@@ -1608,8 +1607,7 @@ subtest 'get account status' => sub {
                         prompt_client_to_authenticate => '0',
                         authentication                => {
                             document => {
-                                status      => "expired",
-                                expiry_date => $result->{authentication}{document}{expiry_date}
+                                status => "verified",
                             },
                             identity => {
                                 status      => "expired",
@@ -1623,10 +1621,10 @@ subtest 'get account status' => sub {
                                         country_code         => 'IDN'
                                     }}
                             },
-                            needs_verification => ["document", "identity"],
+                            needs_verification => ["identity"],
                         }
                     },
-                    'correct authenication object for authenticated client with expired documents'
+                    'correct authentication object for authenticated client with expired documents'
                 );
 
             };
@@ -1644,7 +1642,7 @@ subtest 'get account status' => sub {
                                         type        => 'bankstatement',
                                         format      => 'pdf',
                                         id          => 1,
-                                        status      => 'uploaded'
+                                        status      => 'verified'
                                         },
                                 },
                                 expiry_date => Date::Utility->new->minus_time_interval('1d')->epoch,
@@ -1658,7 +1656,7 @@ subtest 'get account status' => sub {
                                         type        => 'passport',
                                         format      => 'pdf',
                                         id          => 2,
-                                        status      => 'uploaded'
+                                        status      => 'verified'
                                         },
                                 },
                                 expiry_date => Date::Utility->new->minus_time_interval('1d')->epoch,
@@ -1667,46 +1665,30 @@ subtest 'get account status' => sub {
                         };
                     });
 
-                for my $is_required (1, 0) {
-                    $mocked_client->mock(
-                        'is_document_expiry_check_required_mt5',
-                        sub {
-                            return $is_required;
-                        });
+                my $method_response = $c->tcall($method, {token => $token});
 
-                    my $method_response = $c->tcall($method, {token => $token});
-
-                    my $expected_result = {
-                        document => {
-                            status => "verified",
-                        },
-                        identity => {
-                            status   => "verified",
-                            services => {
-                                onfido => {
-                                    submissions_left     => $onfido_limit,
-                                    last_rejected        => [],
-                                    documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport'],
-                                    is_country_supported => 1,
-                                    country_code         => 'IDN',
-                                },
+                my $expected_result = {
+                    document => {
+                        status => "verified",
+                    },
+                    identity => {
+                        status      => "expired",
+                        expiry_date => re('\d+'),
+                        services    => {
+                            onfido => {
+                                submissions_left     => $onfido_limit,
+                                last_rejected        => [],
+                                documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport'],
+                                is_country_supported => 1,
+                                country_code         => 'IDN',
                             },
                         },
-                        needs_verification => [],
-                    };
+                    },
+                    needs_verification => ['identity'],
+                };
 
-                    if ($is_required) {
-                        $expected_result->{identity}->{status}      = "expired";
-                        $expected_result->{identity}->{expiry_date} = $method_response->{authentication}{identity}{expiry_date};
-                        $expected_result->{document}->{status}      = "expired";
-                        $expected_result->{document}->{expiry_date} = $method_response->{authentication}{document}{expiry_date};
-                        push(@{$expected_result->{needs_verification}}, 'document');
-                        push(@{$expected_result->{needs_verification}}, 'identity');
-                    }
-
-                    my $result = $method_response->{authentication};
-                    cmp_deeply($result, $expected_result, "correct authenication object for authenticated client with expired documents");
-                }
+                my $result = $method_response->{authentication};
+                cmp_deeply($result, $expected_result, "correct authenication object for authenticated client with expired documents");
             };
             $mocked_status->unmock_all;
             $mocked_client->unmock_all;
@@ -1757,119 +1739,60 @@ subtest 'get account status' => sub {
             };
 
             subtest "with expired documents" => sub {
-                subtest "with expired proof of address only" => sub {
-                    $mocked_client->mock(
-                        'documents_uploaded',
-                        sub {
-                            return {
-                                proof_of_address => {
-                                    documents => {
-                                        $test_client->loginid
-                                            . '_bankstatement' => {
-                                            expiry_date => Date::Utility->new->minus_time_interval('1d')->epoch,
-                                            type        => 'bankstatement',
-                                            format      => 'pdf',
-                                            id          => 1,
-                                            status      => 'uploaded'
-                                            },
-                                    },
-                                    expiry_date => Date::Utility->new->minus_time_interval('1d')->epoch,
-                                    is_expired  => 1,
+                $mocked_client->mock(
+                    'documents_uploaded',
+                    sub {
+                        return {
+                            proof_of_identity => {
+                                documents => {
+                                    $test_client->loginid
+                                        . '_passport' => {
+                                        expiry_date => Date::Utility->new->minus_time_interval('1d')->epoch,
+                                        type        => 'passport',
+                                        format      => 'pdf',
+                                        id          => 1,
+                                        status      => 'verified'
+                                        },
                                 },
-                            };
-                        });
-
-                    my $result = $c->tcall($method, {token => $token});
-                    cmp_deeply(
-                        $result,
-                        {
-                            currency_config => {
-                                "EUR" => {
-                                    is_deposit_suspended    => 0,
-                                    is_withdrawal_suspended => 0,
-                                }
+                                expiry_date => Date::Utility->new->minus_time_interval('1d')->epoch,
+                                is_expired  => 1,
                             },
-                            status => superbagof(qw(age_verification financial_information_not_complete financial_assessment_not_complete)),
-                            risk_classification           => 'low',
-                            prompt_client_to_authenticate => 1,
-                            authentication                => {
-                                document => {
-                                    status      => "expired",
-                                    expiry_date => $result->{authentication}{document}{expiry_date},
-                                },
-                                identity => {
-                                    status   => "verified",
-                                    services => {
-                                        onfido => {
-                                            submissions_left     => $onfido_limit,
-                                            last_rejected        => [],
-                                            is_country_supported => 1,
-                                            documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport'],
-                                            country_code         => 'IDN'
-                                        }}
-                                },
-                                needs_verification => ["document"]}
+                        };
+                    });
+
+                my $result = $c->tcall($method, {token => $token});
+                cmp_deeply(
+                    $result,
+                    {
+                        currency_config => {
+                            "EUR" => {
+                                is_deposit_suspended    => 0,
+                                is_withdrawal_suspended => 0,
+                            }
                         },
-                        'correct authenication object for age verified client with expired documents'
-                    );
-                };
-
-                subtest "with only poi expired" => sub {
-                    $mocked_client->mock(
-                        'documents_uploaded',
-                        sub {
-                            return {
-                                proof_of_identity => {
-                                    documents => {
-                                        $test_client->loginid
-                                            . '_passport' => {
-                                            expiry_date => Date::Utility->new->minus_time_interval('1d')->epoch,
-                                            type        => 'passport',
-                                            format      => 'pdf',
-                                            id          => 1,
-                                            status      => 'uploaded'
-                                            },
-                                    },
-                                    expiry_date => Date::Utility->new->minus_time_interval('1d')->epoch,
-                                    is_expired  => 1,
-                                },
-                            };
-                        });
-
-                    my $result = $c->tcall($method, {token => $token});
-                    cmp_deeply(
-                        $result,
-                        {
-                            currency_config => {
-                                "EUR" => {
-                                    is_deposit_suspended    => 0,
-                                    is_withdrawal_suspended => 0,
-                                }
+                        status              => superbagof(qw(age_verification financial_information_not_complete financial_assessment_not_complete)),
+                        risk_classification => 'low',
+                        prompt_client_to_authenticate => 1,
+                        authentication                => {
+                            identity => {
+                                status      => "expired",
+                                expiry_date => $result->{authentication}{identity}{expiry_date},
+                                services    => {
+                                    onfido => {
+                                        submissions_left     => $onfido_limit,
+                                        last_rejected        => [],
+                                        is_country_supported => 1,
+                                        documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport'],
+                                        country_code         => 'IDN'
+                                    }}
                             },
-                            status => superbagof(qw(age_verification financial_information_not_complete financial_assessment_not_complete)),
-                            risk_classification           => 'low',
-                            prompt_client_to_authenticate => 1,
-                            authentication                => {
-                                identity => {
-                                    status      => "expired",
-                                    expiry_date => $result->{authentication}{identity}{expiry_date},
-                                    services    => {
-                                        onfido => {
-                                            submissions_left     => $onfido_limit,
-                                            last_rejected        => [],
-                                            is_country_supported => 1,
-                                            documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport'],
-                                            country_code         => 'IDN'
-                                        }}
-                                },
-                                document => {
-                                    status => "none",
-                                },
-                                needs_verification => ["document", "identity"]}
-                        },
-                        'correct authenication object for age verified client with expired proof of identity documents'
-                    );
-                };
+                            document => {
+                                status => "none",
+                            },
+                            needs_verification => ["document", "identity"]}
+                    },
+                    'correct authentication object for age verified client with expired proof of identity documents'
+                );
             };
 
             $mocked_status->unmock_all;

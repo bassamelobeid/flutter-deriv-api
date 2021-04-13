@@ -1040,7 +1040,7 @@ Possible C<status> values:
 
 =item * C<none> no POI/POA
 
-=item * C<expired> the POI/POA has expired
+=item * C<expired> POI only, the POI has expired
 
 =item * C<pending> the POI/POA is waiting for validation
 
@@ -1057,8 +1057,7 @@ Possible C<status> values:
 sub _get_authentication {
     my %args = @_;
 
-    my $client                            = $args{client};
-    my $is_document_expiry_check_required = $args{is_document_expiry_check_required};
+    my $client = $args{client};
 
     my $authentication_object = {
         needs_verification => [],
@@ -1083,9 +1082,8 @@ sub _get_authentication {
     # The `needs_verification` array can be filled with `identity` and/or `document`, there is a method for each one.
     my $documents = $client->documents_uploaded();
     my $args      = {
-        client                            => $client,
-        documents                         => $documents,
-        is_document_expiry_check_required => $is_document_expiry_check_required,
+        client    => $client,
+        documents => $documents,
     };
     # Resolve the POA
     $authentication_object->{document} = _get_authentication_poa($args);
@@ -1115,7 +1113,6 @@ It takes the following named params:
 
 =item * C<documents> hashref containing the client documents by type
 
-=item * C<is_document_expiry_check_required> indicates whether the expiry check is needed
 
 =back
 
@@ -1126,11 +1123,11 @@ Returns,
 
 sub _get_authentication_poi {
     my $params = shift;
-    my ($client, $documents, $is_document_expiry_check_required) = @{$params}{qw/client documents is_document_expiry_check_required/};
+    my ($client, $documents) = @{$params}{qw/client documents/};
     my $poi_expiry_date = $documents->{proof_of_identity}->{expiry_date};
-    my $expiry_date     = ($poi_expiry_date and $is_document_expiry_check_required) ? $poi_expiry_date : undef;
+    my $expiry_date     = $poi_expiry_date ? $poi_expiry_date : undef;
     my $country_code    = uc($client->place_of_birth || $client->residence // '');
-    my $poi_status      = $client->get_poi_status($documents, $is_document_expiry_check_required);
+    my $poi_status      = $client->get_poi_status($documents);
 
     my $last_rejected = [];
     $last_rejected =
@@ -1166,8 +1163,6 @@ It takes the following named params:
 
 =item * C<documents> hashref containing the client documents by type
 
-=item * C<is_document_expiry_check_required> indicates whether the expiry check is needed
-
 =back
 
 Returns,
@@ -1177,14 +1172,11 @@ Returns,
 
 sub _get_authentication_poa {
     my $params = shift;
-    my ($client, $documents, $is_document_expiry_check_required) = @{$params}{qw/client documents is_document_expiry_check_required/};
-    my $poa_expiry_date = $documents->{proof_of_address}->{expiry_date};
-    my $expiry_date     = ($poa_expiry_date and $is_document_expiry_check_required) ? $poa_expiry_date : undef;
+    my ($client, $documents) = @{$params}{qw/client documents/};
 
     # Return the document structure
     return {
-        status => $client->get_poa_status($documents, $is_document_expiry_check_required),
-        defined $expiry_date ? (expiry_date => $expiry_date) : (),
+        status => $client->get_poa_status($documents),
     };
 }
 
