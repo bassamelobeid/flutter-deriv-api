@@ -7,6 +7,7 @@ use lib "$Bin/../../lib";
 use lib "$Bin";
 
 use BOM::Test::Suite::DSL;
+use BOM::Test::Data::Utility::CryptoTestDatabase qw(:init);
 
 use LandingCompany::Registry;
 
