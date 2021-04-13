@@ -58,6 +58,14 @@ url used in the verification email.
 
 =item * C<utm_campaign> string [Optional] Identifies a specific product promotion or strategic campaign such as a spring sale or other promotions.
 
+=item * C<pa_loginid> string [Optional] The payment agent loginid received from the `paymentagent_list` call. Only allowed for payment agent withdraw.
+
+=item * C<pa_amount> number [Optional] The amount to withdraw to the payment agent. Only allowed for payment agent withdraw.
+
+=item * C<pa_currency> string [Optional] The currency code. Only allowed for payment agent withdraw.
+
+=item * C<pa_remarks> string [Optional] Remarks about the withdraw. Only letters, numbers, space, period, comma, - ' are allowed. Only allowed for payment agent withdraw.
+
 =back
 
 Returns a Hash Reference of subroutines used in the calling code,
@@ -253,14 +261,13 @@ Returns   string representation of the URL.
 
 sub _build_verification_url {
     my ($action, $args) = @_;
-    my $extra_params_string = '';
-    foreach my $extra_param (
-        qw( utm_source utm_campaign utm_medium signup_device gclid_url date_first_contact affiliate_token utm_content
-        utm_term utm_campaign_id utm_adgroup_id utm_ad_id utm_gl_client_id  utm_msclk_id utm_fbcl_id utm_adrollclk_id)
-        )
-    {
-        $extra_params_string .= "&$extra_param=" . $args->{$extra_param} if defined($args->{$extra_param});
-    }
+    my @extra_params =
+        qw( utm_source utm_campaign utm_medium signup_device gclid_url date_first_contact affiliate_token utm_content utm_term utm_campaign_id utm_adgroup_id utm_ad_id utm_gl_client_id  utm_msclk_id utm_fbcl_id utm_adrollclk_id );
+
+    push @extra_params, qw ( pa_loginid pa_amount pa_currency pa_remarks ) if ($action eq 'payment_agent_withdraw');
+    @extra_params = map { defined $args->{$_} ? join('=', $_, $args->{$_}) : () } @extra_params;
+    my $extra_params_string = @extra_params ? '&' . join('&', @extra_params) : '';
+
     return "$args->{verification_uri}?action=$action&lang=$args->{language}&code=$args->{code}$extra_params_string";
 }
 

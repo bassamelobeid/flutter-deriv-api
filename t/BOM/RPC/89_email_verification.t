@@ -245,6 +245,26 @@ subtest 'Build Verification  URL' => sub {
     is($result,
         'https://www.rover.com/search?action=action_test&lang=Eng&code=Thisisthecode&utm_source=google&utm_campaign=summer-sale&utm_medium=email&utm_content=2017_11_09_O_TGiving_NoSt_SDTest_NoCoup_2&utm_term=MyLink123&utm_campaign_id=111017190001&utm_adgroup_id=45637&utm_ad_id=f521708e-db6e-478b-9731-8243a692c2d5&utm_gl_client_id=3541&utm_msclk_id=5&utm_fbcl_id=6&utm_adrollclk_id=7'
     );
+
+    ## with extra payment_agent params
+
+    $args = {
+        verification_uri => "https://www.rover.com/search",
+        language         => 'Eng',
+        code             => "Thisisthecode",
+
+        pa_amount   => 100,
+        pa_loginid  => 'CR90000001',
+        pa_currency => 'USD',
+        pa_remarks  => 'Remarks'
+    };
+    $result = BOM::RPC::v3::EmailVerification::_build_verification_url('payment_agent_withdraw', $args);
+
+    is(
+        $result,
+        'https://www.rover.com/search?action=payment_agent_withdraw&lang=Eng&code=Thisisthecode&pa_loginid=CR90000001&pa_amount=100&pa_currency=USD&pa_remarks=Remarks',
+        'populates parameters correctly'
+    );
 };
 
 done_testing();

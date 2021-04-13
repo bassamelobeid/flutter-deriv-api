@@ -125,6 +125,9 @@ rpc "verify_email",
     my $loginid          = $params->{token_details} ? $params->{token_details}->{loginid} : undef;
     my $extra_url_params = {};
     $extra_url_params = $args->{url_parameters} if defined $args->{url_parameters};
+
+    return BOM::RPC::v3::Utility::invalid_params() if grep { /^pa/ } keys $extra_url_params->%* and $type ne 'paymentagent_withdraw';
+
     my $verification = email_verification({
         code             => $code,
         website_name     => $params->{website_name},

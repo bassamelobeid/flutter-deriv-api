@@ -229,6 +229,18 @@ sub invalid_email {
             message_to_client => localize('This email address is invalid.')});
 }
 
+=head2 invalid_params 
+pa parameters are allowed when the type provided is paymentagent_withdraw.
+invalid_params returns an error when the client declare pa params for other types.
+=cut
+
+sub invalid_params {
+    return create_error({
+        code              => 'InvalidParameters',
+        message_to_client => 'pa parameters are valid from paymentagent_withdraw only'
+    });
+}
+
 # Start this at zero to ensure we always load on first call.
 my $rates_file_last_load = 0;
 my $rates_file_content;
