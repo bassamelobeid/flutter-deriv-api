@@ -4,6 +4,7 @@ package main;
 use strict;
 use warnings;
 use HTML::Entities;
+use BOM::User::Client;
 
 use BOM::Backoffice::Sysinit ();
 use f_brokerincludeall;
@@ -63,6 +64,8 @@ for ($category) {
             params => [$status_code, "$broker%"],
         });
     } elsif (/^client_details$/) {
+        my $authentication_documents_queries = authentication_documents_queries($loginid, $broker);
+
         @tables = ({
                 table  => 'client',
                 query  => "loginid = ?",
@@ -75,11 +78,6 @@ for ($category) {
             },
             {
                 table  => 'client_authentication_method',
-                query  => "client_loginid = ?",
-                params => [$loginid],
-            },
-            {
-                table  => 'client_authentication_document',
                 query  => "client_loginid = ?",
                 params => [$loginid],
             },
@@ -108,6 +106,7 @@ for ($category) {
                 query  => "client_loginid = ?",
                 params => [$loginid],
             },
+            $authentication_documents_queries->@*,
         );
     } elsif (/^payment_agent$/) {
         @tables = ({
@@ -126,15 +125,22 @@ unless (@tables) {
 my (@logs, %hdrs, $hitcount);
 
 for my $table (@tables) {
+    my $query_broker = $table->{broker} // $broker;
+    my $tabname      = $table->{table};
+    my $query        = $table->{query};
+    my $database     = $db;
 
-    my $tabname = $table->{table};
-    my $query   = $table->{query};
+    if ($query_broker ne $broker) {
+        $database = BOM::Database::ClientDB->new({
+                broker_code => $query_broker,
+            })->db;
+    }
 
-    $hitcount = _get_table_count(%$table, db => $db) || next;
+    $hitcount = _get_table_count(%$table, db => $database) || next;
 
     my $rows = _get_table_rows(
         %$table,
-        db => $db,
+        db => $database,
         (
             $loginid
             ? ()
@@ -277,4 +283,53 @@ sub _get_table_rows {
             return $_->selectall_arrayref($sql, {Slice => {}}, @$params);
         });
 
+}
+
+=head2 authentication_documents_queries
+
+Gets the needed queries to hit the authentication document table for the audit trail.
+
+Takes the following arguments:
+
+=over 4
+
+=item * C<$loginid> - The loginid of the current client.
+
+=back
+
+Returns an arrayref of  database queries.
+
+=cut
+
+sub authentication_documents_queries {
+    my $loginid           = shift;
+    my $broker_code       = shift;
+    my $client            = BOM::User::Client->new({loginid => $loginid}) || die "Cannot find client: $loginid";
+    my @siblings_loginids = $client->is_virtual ? $client->user->bom_virtual_loginid : $client->user->bom_real_loginids;
+    my $broker_loginids   = {};
+    my $queries           = [];
+
+    # Create a bucket of loginids per broker code.
+
+    for (@siblings_loginids) {
+        my $sibling_broker = $_ =~ s/[0-9]*//gr;
+        $broker_loginids->{$sibling_broker} //= [];
+        push $broker_loginids->{$sibling_broker}->@*, $_;
+    }
+
+    # We need one query per broker code.
+
+    for my $broker (keys $broker_loginids->%*) {
+        my $siblings_where_in = join ',', map { '?' } $broker_loginids->{$broker}->@*;
+
+        push $queries->@*,
+            {
+            table  => 'client_authentication_document',
+            query  => "client_loginid IN ($siblings_where_in)",
+            params => [$broker_loginids->{$broker}->@*],
+            broker => $broker,
+            };
+    }
+
+    return $queries;
 }

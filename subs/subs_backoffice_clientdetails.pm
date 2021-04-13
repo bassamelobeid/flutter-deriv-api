@@ -398,17 +398,7 @@ sub print_client_details {
     unless ($client->is_virtual) {
         my @siblings = $user->loginids;
 
-        $show_uploaded_documents .= show_client_id_docs($_->loginid, show_delete => 1) for $client;
-
-        my $siblings_docs = '';
-        $siblings_docs .= show_client_id_docs(
-            $_,
-            show_delete => 1,
-            no_edit     => 1
-        ) for grep { $_ ne $client->loginid } @siblings;
-
-        $show_uploaded_documents .= 'To edit following documents, please select corresponding user<br>' . $siblings_docs
-            if $siblings_docs;
+        $show_uploaded_documents .= show_client_id_docs($_, show_delete => 1) for @siblings;
 
         if ($show_uploaded_documents) {
             my $confirm_box = qq{javascript:return get_checked_files()};
