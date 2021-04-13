@@ -27,14 +27,10 @@ my $user = BOM::User->create(
     password => $hash_pwd
 );
 
-my $client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code    => 'VRTC'
-});
+my $client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'VRTC'});
 $client_vr->save;
 
-my $wallet_client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code => 'VRDW'
-});
+my $wallet_client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'VRDW'});
 $wallet_client_vr->save;
 
 $user->add_client($client_vr);
