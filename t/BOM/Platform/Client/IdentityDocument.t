@@ -71,11 +71,11 @@ subtest 'Age Verified' => sub {
 
             ok !$client->has_valid_documents, "Client with documents uploading are not valid";
 
-            $doc->status('uploaded');
+            $doc->status('verified');
             $client->save;
             $client->load;
 
-            ok $client->has_valid_documents, "Documents with status of 'uploaded' are valid";
+            ok $client->has_valid_documents, "Documents with status of 'verified' are valid";
 
             $doc->expiration_date('2008-03-03');    #this day should never come again.
             $doc->save;
@@ -121,7 +121,7 @@ foreach my $broker_code (keys %all_clients) {
         document_path              => '/tmp/test.pdf',
         expiration_date            => '2008-03-03',
         authentication_method_code => 'ID_DOCUMENT',
-        status                     => 'uploaded',
+        status                     => 'verified',
         checksum                   => 'CE114E4501D2F4E2DCEA3E17B546F339'
     });
     $client->save;
@@ -164,16 +164,16 @@ subtest 'Valid document of Duplicate sibling account should validate its active 
         authentication_method_code => 'ID_DOCUMENT',
         checksum                   => '120EA8A25E5D487BF68B5F7096440019'
     });
-    $doc->status('uploaded');
+    $doc->status('verified');
     $mf_client_2->save;
     $mf_client_2->load;
-    ok $mf_client_2->has_valid_documents, "Documents with status of 'uploaded' are valid";
+    ok $mf_client_2->has_valid_documents, "Documents with status of 'verified' are valid";
     $mf_client_2->status->set('duplicate_account');
     ok $mf_client_2->status->duplicate_account, "MF2 Account is set as duplicate_account";
     $mf_client->status->clear_duplicate_account;
     ok !$mf_client->status->duplicate_account, "MF Account is enabled now.";
 
-    ok $mf_client->has_valid_documents, "Documents with status of 'uploaded' are valid";
+    ok $mf_client->has_valid_documents, "Documents with status of 'verified' are valid";
     $doc->expiration_date('2010-10-10');
     $doc->save;
     $doc->load;
