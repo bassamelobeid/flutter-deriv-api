@@ -9,6 +9,7 @@ use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::MarketData qw(create_underlying_db);
 use LandingCompany::Registry;
 
+my $non_offerings = {markets => ['stocks']};
 my $offerings_cfg = BOM::Config::Runtime->instance->get_offerings_config;
 
 my $udb = create_underlying_db();
@@ -21,21 +22,50 @@ subtest 'Sets match' => sub {
         'start_type'        => 'available_start_types',
         'barrier_category'  => 'available_barrier_categories',
     );
-    my $offerings_obj = LandingCompany::Registry::get('virtual')->basic_offerings($offerings_cfg);
 
-    while (my ($po, $udb_method) = each(%po_to_udb_method)) {
-        my @result = $offerings_obj->values_for_key($po);
-        eq_or_diff([sort @result], [sort $udb->$udb_method], $po . ' list match with UnderlyingDB->' . $udb_method);
+    subtest 'Virtual' => sub {
+        my $offerings_obj = LandingCompany::Registry::get('virtual')->basic_offerings($offerings_cfg);
 
-    }
+        while (my ($po, $udb_method) = each(%po_to_udb_method)) {
+            my @result     = $offerings_obj->values_for_key($po);
+            my @udb_result = $udb->$udb_method;
 
-    $offerings_obj = LandingCompany::Registry::get('svg')->basic_offerings($offerings_cfg);
+            if (defined $non_offerings->{$udb_method}) {
+                my @tmp_result = @udb_result;
+                @udb_result = ();
 
-    eq_or_diff([sort $offerings_obj->values_for_key('market')],            [sort $udb->markets]);
-    eq_or_diff([sort $offerings_obj->values_for_key('contract_category')], [sort $udb->available_contract_categories]);
-    eq_or_diff([sort $offerings_obj->values_for_key('expiry_type')],       [sort $udb->available_expiry_types]);
-    eq_or_diff([sort $offerings_obj->values_for_key('start_type')],        [sort $udb->available_start_types]);
-    eq_or_diff([sort $offerings_obj->values_for_key('barrier_category')],  [sort $udb->available_barrier_categories]);
+                for my $item (@tmp_result) {
+                    next if grep { $_ eq $item } $non_offerings->{$udb_method}->@*;
+                    push @udb_result, $item;
+                }
+            }
+
+            eq_or_diff([sort @result], [sort @udb_result], $po . ' list match with UnderlyingDB->' . $udb_method);
+
+        }
+    };
+
+    subtest 'SVG' => sub {
+        my $offerings_obj = LandingCompany::Registry::get('svg')->basic_offerings($offerings_cfg);
+
+        while (my ($po, $udb_method) = each(%po_to_udb_method)) {
+            my @result     = $offerings_obj->values_for_key($po);
+            my @udb_result = $udb->$udb_method;
+
+            if (defined $non_offerings->{$udb_method}) {
+                my @tmp_result = @udb_result;
+                @udb_result = ();
+
+                for my $item (@tmp_result) {
+                    next if grep { $_ eq $item } $non_offerings->{$udb_method}->@*;
+                    push @udb_result, $item;
+                }
+            }
+
+            eq_or_diff([sort @result], [sort @udb_result], $po . ' list match with UnderlyingDB->' . $udb_method);
+
+        }
+    };
 };
 
 1;
