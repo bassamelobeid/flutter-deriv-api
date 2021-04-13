@@ -403,7 +403,11 @@ sub print_client_details {
         if ($show_uploaded_documents) {
             my $confirm_box = qq{javascript:return get_checked_files()};
             $show_uploaded_documents .=
-                qq{<button name="delete_checked_documents" value = "1" onclick="$confirm_box" class="btn btn--red">Delete checked files</button>};
+                qq{<button name="delete_checked_documents" value = "1" onclick="$confirm_box" class="btn btn--red">Delete Checked Files</button>};
+            $show_uploaded_documents .=
+                qq{<button name="verify_checked_documents" value = "1" onclick="javascript:return get_to_verify_files()" class="btn btn--green">Verify Checked Files</button>};
+            $show_uploaded_documents .=
+                qq{<button name="reject_checked_documents" value = "1" onclick="javascript:return get_to_reject_files()" class="btn btn--orange">Reject Checked Files</button>};
         }
     }
 
@@ -1034,7 +1038,8 @@ SELECT id,
        comments,
        document_id,
        upload_date,
-       age(date_trunc('day', now()), date_trunc('day', upload_date)) AS age
+       age(date_trunc('day', now()), date_trunc('day', upload_date)) AS age,
+       status
   FROM betonmarkets.client_authentication_document
  WHERE client_loginid = ? AND status != 'uploading'
 SQL
@@ -1057,9 +1062,8 @@ SQL
 
     my $last_category_idx = -1;
     foreach my $doc (@$docs) {
-        my ($id, $file_name, $document_type, $issue_date, $expiration_date, $comments, $document_id, $upload_date, $age, $category_idx) = (
-            $doc->{id},       $doc->{file_name},   $doc->{document_type}, $doc->{issue_date}, $doc->{expiration_date},
-            $doc->{comments}, $doc->{document_id}, $doc->{upload_date},   $doc->{age},        $doc->{category_idx});
+        my ($id, $file_name, $document_type, $issue_date, $expiration_date, $comments, $document_id, $upload_date, $age, $category_idx, $status) =
+            $doc->@{qw/id file_name document_type issue_date expiration_date comments document_id upload_date age category_idx status/};
 
         if ($category_idx != $last_category_idx) {
             my $category_title = (
@@ -1102,6 +1106,13 @@ SQL
         $input .=
             qq{<td><label>Comments:</label><input type="text" style="width:100px" maxlength="255" name="comments_$id" value="$comments" data-lpignore="true" $extra> </td>};
 
+        my %status_string = (
+            verified => 'Verified',
+            rejected => 'Rejected',
+            uploaded => 'Needs Review'
+        );
+        $input .= "<td>$status_string{$status}</td>" if $status_string{$status};
+
         my $s3_client =
             BOM::Platform::S3Client->new(BOM::Config::s3()->{document_auth});
         my $url = $s3_client->get_s3_url($file_name);
@@ -1114,7 +1125,7 @@ SQL
         $links .=
             qq{<tr><td width="20" dir="rtl" $expired_poi_hint > &#9658; </td><td><a class="link link--primary" href="$url" target="_blank">$file_name</a></td>$age_display$input};
 
-        $links .= qq{<td><input type="checkbox" class='files_checkbox' name="del_document_list" value="$id-$loginid-$file_name"><td>};
+        $links .= qq{<td><input type="checkbox" class='files_checkbox' name="document_list" value="$id-$loginid-$file_name"><td>};
 
         $links .= "</tr>";
     }

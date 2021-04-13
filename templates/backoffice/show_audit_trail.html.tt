@@ -1,7 +1,7 @@
 [%
     titles = { stamp => 'Date', remote_addr => 'IP', staff_name => 'Staff' };
     groups_config = {
-        cs => ['stamp', 'staff_name', 'operation', 'table', 'reason', 'document_type', 'first_name', 'last_name', 'email', 'phone', 'address_city', 'address_line_1', 'address_line_2', 'address_postcode', 'address_state', 'no data found'],
+        cs => ['stamp', 'staff_name', 'operation', 'table', 'reason', 'document_type', 'status', 'first_name', 'last_name', 'email', 'phone', 'address_city', 'address_line_1', 'address_line_2', 'address_postcode', 'address_state', 'no data found'],
     };
 %]
 

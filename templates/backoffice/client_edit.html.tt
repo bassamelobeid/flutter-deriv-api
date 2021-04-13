@@ -690,6 +690,45 @@ function get_checked_files() {
     }
 }
 
+function get_to_verify_files() {
+    var checkboxes = document.getElementsByClassName('files_checkbox');
+    var doc_array = [];
+    for (var i=0, n=checkboxes.length;i<n;i++)
+    {
+        if (checkboxes[i].checked)
+        {
+            let match = checkboxes[i].value.match(/([0-9]+)-([A-Z0-9]+)-(.+)/);
+            doc_array.push(match[3]);
+        }
+    }
+    if (doc_array.length > 0){
+        return confirm('Are you sure you want to verify:\n\n' + doc_array.join('\n') + '\n\nVerified documents will be taken into consideration for authentication checkups (including expiry)');
+    } else {
+        alert('No files selected');
+        return false;
+    }
+}
+
+function get_to_reject_files() {
+    var checkboxes = document.getElementsByClassName('files_checkbox');
+    var doc_array = [];
+    for (var i=0, n=checkboxes.length;i<n;i++)
+    {
+        if (checkboxes[i].checked)
+        {
+            let match = checkboxes[i].value.match(/([0-9]+)-([A-Z0-9]+)-(.+)/);
+            doc_array.push(match[3]);
+        }
+    }
+    if (doc_array.length > 0){
+        return confirm('Are you sure you want to reject:\n\n' + doc_array.join('\n') + '\n\nRejected documents will not be taken into consideration for authentication checkups (including expiry)');
+    } else {
+        alert('No files selected');
+        return false;
+    }
+}
+
+
 function residence_change(sel) {
 
     var e = document.getElementById("original_residence");

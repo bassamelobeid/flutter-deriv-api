@@ -148,51 +148,62 @@ if (defined $input{run_onfido_check}) {
     code_exit_BO(qq[<p><a href="$self_href">&laquo; Return to client details<a/></p>]);
 }
 
-# Deleting checked statuses
-my $status_op_summary = status_op_processor($client, \%input);
-print $status_op_summary if $status_op_summary;
+if ($input{document_list}) {
+    my $new_doc_status;
+    $new_doc_status = 'rejected' if $input{reject_checked_documents};
+    $new_doc_status = 'verified' if $input{verify_checked_documents};
+    $new_doc_status = 'delete'   if $input{delete_checked_documents};
+    code_exit_BO(qq[<p><a href="$self_href">&laquo; Document update status not specified<a/></p>]) unless $new_doc_status;
 
-if ($input{delete_checked_documents} and $input{del_document_list}) {
-    my $documents = $input{del_document_list};
+    my $documents = $input{document_list};
     my @documents = ref $documents ? @$documents : ($documents);
+    my $loginid   = $client->loginid;
     my $full_msg  = "";
-    my $loginid   = "";
     my $client;
 
     for my $document (@documents) {
-
-# if the checkbox is checked and unchecked, the EventListener will still send input value as 0.
-# this line is to escape this case.
         next unless $document;
 
         my ($doc_id, $doc_loginid, $file_name) = $document =~ m/([0-9]+)-([A-Z0-9]+)-(.+)/;
 
-        if (   (not defined $client)
-            or ($client->loginid ne $doc_loginid))
-        {
+        if ((not defined $client) or ($client->loginid ne $doc_loginid)) {
             $client = BOM::User::Client::get_instance({loginid => $doc_loginid});
         }
-        if ($client) {
-            $client->set_db('write');
-            my ($doc) = $client->find_client_authentication_document(query => [id => $doc_id]);    # Rose
-            if ($doc) {
-                if ($doc->delete) {
-                    $full_msg .= "<p class=\"notify\">SUCCESS - $file_name is deleted!</p>";
-                } else {
-                    $full_msg .= "<p class=\"notify notify--warning\">ERROR: did not remove $file_name record from db</p>";
-                }
-            } else {
-                $full_msg .= "<p class=\"notify notify--warning\">ERROR: could not find $file_name record in db</p>";
-            }
 
+        if (!$client) {
+            $full_msg .= "<p style=\"color:red; font-weight:bold;\">ERROR: with client login $loginid</p>";
+            next;
+        }
+
+        $client->set_db('write');
+        my ($doc) = $client->find_client_authentication_document(query => [id => $doc_id]);    # Rose
+        if (!$doc) {
+            $full_msg .= "<p style=\"color:red; font-weight:bold;\">ERROR: could not find $file_name record in db</p>";
+            next;
+        }
+
+        if ($new_doc_status eq 'delete') {
+            if ($doc->delete) {
+                $full_msg .= "<p class=\"notify\">SUCCESS - $file_name is deleted!</p>";
+            } else {
+                $full_msg .= "<p class=\"notify notify--warning\">ERROR: did not remove $file_name record from db</p>";
+            }
         } else {
-            $full_msg .= "<p class=\"notify notify--warning\">ERROR: with client login $loginid</p>";
+            $doc->status($new_doc_status);
+            $full_msg .= (
+                $doc->save
+                ? "<p style=\"color:#eeee00; font-weight:bold;\">SUCCESS - $file_name has been $new_doc_status!</p>"
+                : "<p style=\"color:red; font-weight:bold;\">ERROR: did not update $file_name record from db</p>"
+            );
         }
     }
-
     print $full_msg;
-    code_exit_BO(qq[<p><a class="link" href="$self_href">&laquo; Return to client details</a></p>]);
+    code_exit_BO(qq[<p><a href="$self_href">&laquo;Return to Client Details</a></p>]);
 }
+
+# Deleting checked statuses
+my $status_op_summary = status_op_processor($client, \%input);
+print $status_op_summary if $status_op_summary;
 
 if ($broker eq 'MF') {
     if ($input{view_action} eq "mifir_reset") {
