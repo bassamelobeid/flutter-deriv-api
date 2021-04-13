@@ -670,10 +670,12 @@ async sub _store_applicant_documents {
     my $onfido               = _onfido();
     my $existing_onfido_docs = BOM::User::Onfido::get_onfido_document($client->binary_user_id);
     my @documents;
+    my $facial_similarity_report;
 
     # Build hash index for onfido document id to report.
     my %report_for_doc_id;
     for my $report (@{$check_reports}) {
+        $facial_similarity_report = $report if $report->name eq 'facial_similarity';
         next unless $report->name eq 'document';
         push @documents, map { $_->{id} } @{$report->documents};
         $report_for_doc_id{$_->{id}} = $report for @{$report->documents};
@@ -703,6 +705,7 @@ async sub _store_applicant_documents {
 
         BOM::Platform::Event::Emitter::emit(
             onfido_doc_ready_for_upload => {
+                final_status   => _get_document_final_status($report_for_doc_id{$doc->id}{result}),
                 type           => 'document',
                 document_id    => $doc->id,
                 client_loginid => $client->loginid,
@@ -737,6 +740,7 @@ async sub _store_applicant_documents {
 
     BOM::Platform::Event::Emitter::emit(
         onfido_doc_ready_for_upload => {
+            $facial_similarity_report ? (final_status => _get_document_final_status($facial_similarity_report->result)) : (),
             type           => 'photo',
             document_id    => $photo->id,
             client_loginid => $client->loginid,
@@ -747,6 +751,38 @@ async sub _store_applicant_documents {
     return undef;
 }
 
+=head2 _get_document_final_status
+
+Determines which status should we set the document uploaded
+
+We have `uploaded` and `verified`.
+
+For a `clear` result from Onfido Report we can set `verified` otherwise we pick `uploaded` (also known as needs review).
+
+It takes the following arguments:
+
+=over 4
+
+=item * C<result> The Onfido report result.
+
+=back
+
+
+Returns a string for this final status.
+
+=cut
+
+sub _get_document_final_status {
+    my $result = shift // '';
+    my $status = {
+        clear    => 'verified',
+        consider => 'rejected',
+        suspect  => 'rejected'
+    };
+
+    return $status->{$result} // 'uploaded';
+}
+
 =head2 onfido_doc_ready_for_upload
 
 Gets the client's documents from Onfido and upload to S3
@@ -755,14 +791,15 @@ Gets the client's documents from Onfido and upload to S3
 
 async sub onfido_doc_ready_for_upload {
     my $data = shift;
-    my ($type, $doc_id, $client_loginid, $applicant_id, $file_type, $document_info) =
-        @{$data}{qw/type document_id client_loginid applicant_id file_type document_info/};
+    my ($type, $doc_id, $client_loginid, $applicant_id, $file_type, $document_info, $final_status) =
+        @{$data}{qw/type document_id client_loginid applicant_id file_type document_info final_status/};
 
     my $client    = BOM::User::Client->new({loginid => $client_loginid});
     my $s3_client = BOM::Platform::S3Client->new(BOM::Config::s3()->{document_auth});
     my $onfido    = _onfido();
     my $doc_type  = $document_info->{type};
     my $page_type = $document_info->{side} // '';
+    $final_status //= 'uploaded';
 
     my $image_blob;
     if ($type eq 'document') {
@@ -847,7 +884,7 @@ async sub onfido_doc_ready_for_upload {
             $log->debugf("Successfully uploaded file_id: $file_id to S3 ");
             my $finish_upload_result = $client->db->dbic->run(
                 ping => sub {
-                    $_->selectrow_array('SELECT * FROM betonmarkets.finish_document_upload(?)', undef, $file_id);
+                    $_->selectrow_array('SELECT * FROM betonmarkets.finish_document_upload(?, ?::status_type)', undef, $file_id, $final_status);
                 });
 
             die "Db returned unexpected file_id on finish. Expected $file_id but got $finish_upload_result. Please check the record"

@@ -11,6 +11,7 @@ use BOM::User;
 use BOM::Event::Process;
 use MIME::Base64;
 use BOM::Config::Redis;
+use BOM::Event::Actions::Client;
 
 my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'CR',
@@ -81,6 +82,34 @@ subtest 'Concurrent calls to onfido_doc_ready_for_upload' => sub {
     $onfido_mocker->unmock_all;
     $s3_mocker->unmock_all;
     $event_mocker->unmock_all;
+};
+
+subtest 'Final status' => sub {
+    my $cases = [{
+            result => undef,
+            status => 'uploaded'
+        },
+        {
+            result => 'test',
+            status => 'uploaded',
+        },
+        {
+            result => 'clear',
+            status => 'verified',
+        },
+        {
+            result => 'consider',
+            status => 'rejected',
+        },
+        {
+            result => 'suspect',
+            status => 'rejected',
+        }];
+
+    for my $case ($cases->@*) {
+        is BOM::Event::Actions::Client::_get_document_final_status($case->{result}), $case->{status},
+            "The exepcted status for " . ($case->{result} // 'undef');
+    }
 };
 
 done_testing();
