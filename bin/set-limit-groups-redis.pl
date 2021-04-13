@@ -23,6 +23,6 @@ use Log::Any::Adapter qw(Stdout), log_level => 'info';
 my $redis = BOM::Config::RedisTransactionLimits::redis_limits_write();
 
 $log->info("Set default groups:contract into Redis: ",
-	   $redis->hmset('groups:contract', %{BOM::Transaction::Limits::Groups::get_default_contract_group_mappings()}));
+    $redis->hmset('groups:contract', %{BOM::Transaction::Limits::Groups::get_default_contract_group_mappings()}));
 $log->info("Set default groups:underlying into Redis: ",
-	   $redis->hmset('groups:underlying', %{BOM::Transaction::Limits::Groups::get_default_underlying_group_mappings()}));
+    $redis->hmset('groups:underlying', %{BOM::Transaction::Limits::Groups::get_default_underlying_group_mappings()}));

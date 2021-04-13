@@ -25,9 +25,9 @@ use ExpiryQueue;
 sub script_run {
     my $self = shift;
 
-    my $tags = {tags => ['rmgenv:' . BOM::Config::env,]};
+    my $tags    = {tags => ['rmgenv:' . BOM::Config::env,]};
     my $expiryq = ExpiryQueue->new(redis => BOM::Config::Redis::redis_expiryq_write);
-    my $status = $expiryq->queue_status();
+    my $status  = $expiryq->queue_status();
     foreach my $which (keys %$status) {
         stats_gauge('expiryqueue.' . $which, $status->{$which}, $tags);
     }

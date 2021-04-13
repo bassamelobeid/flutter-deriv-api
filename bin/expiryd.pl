@@ -42,15 +42,15 @@ $SIG{INT} = $SIG{TERM} = sub {
 
 sub _daemon_run {
     print("Starting as PID $$\n");
-    my $redis = BOM::Config::Redis::redis_expiryq_write;
+    my $redis   = BOM::Config::Redis::redis_expiryq_write;
     my $expiryq = ExpiryQueue->new(redis => $redis);
     while (1) {
         my $now       = Time::HiRes::time;
-        my $next_time = $now + 1;                     # we want this to execute every second
+        my $next_time = $now + 1;                               # we want this to execute every second
         my $iterator  = $expiryq->dequeue_expired_contract();
         # Outer `while` to live through possible redis disconnects/restarts
-        while (my $info = $iterator->()) {            # Blocking for next available.
-           eval {
+        while (my $info = $iterator->()) {                      # Blocking for next available.
+            eval {
                 my @processing_start = Time::HiRes::time;
                 my $contract_id      = $info->{contract_id};
                 my $client           = BOM::User::Client->new({
@@ -69,11 +69,12 @@ sub _daemon_run {
                 # This returns a result which might be useful for reporting
                 # but for now we will ignore it.
                 my $is_sold = BOM::Transaction::sell_expired_contracts({
-                        client        => $client,
-                        source        => 2,               # app id for `Binary.com expiryd.pl` in auth db => oauth.apps table
-                        contract_ids  => [$contract_id],
-                        collect_stats => 1});
-                
+                    client        => $client,
+                    source        => 2,                # app id for `Binary.com expiryd.pl` in auth db => oauth.apps table
+                    contract_ids  => [$contract_id],
+                    collect_stats => 1
+                });
+
                 my @processing_done = Time::HiRes::time;
 
                 if (not $is_sold or $is_sold->{number_of_sold_bets} == 0) {
@@ -89,7 +90,7 @@ sub _daemon_run {
 print "parent $$ launching child processes\n";
 
 for (my $i = 1; $i < $threads_number; $i++) {
-    if(my $pid = fork // die 'unable to fork - ' . $!) {
+    if (my $pid = fork // die 'unable to fork - ' . $!) {
         push @pids, $pid;
     } else {
         @pids = ();

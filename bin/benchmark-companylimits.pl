@@ -43,24 +43,27 @@ my $batch  = 1;
 my $datf;
 my $sample;
 
-unless (GetOptions('fork=i'     => \$nproc,
-                   'requests=i' => \$nreq,
-                   'prefix=s'   => \$prefix,
-                   'users=i'    => \$nuid,
-                   'method=s'   => \$meth,
-                   'batch=i'    => \$batch,
-                   'datafile=s' => \$datf,
-                   'sample=s'   => \$sample,
-                  )) {
+unless (
+    GetOptions(
+        'fork=i'     => \$nproc,
+        'requests=i' => \$nreq,
+        'prefix=s'   => \$prefix,
+        'users=i'    => \$nuid,
+        'method=s'   => \$meth,
+        'batch=i'    => \$batch,
+        'datafile=s' => \$datf,
+        'sample=s'   => \$sample,
+    ))
+{
     pod2usage(1);
 }
 
 {
-    my $x = int ($nreq / $nproc);
+    my $x = int($nreq / $nproc);
     unless ($x * $nproc == $nreq) {
-        warn "adjusting number of requests to ".($x * $nproc)."\n";
+        warn "adjusting number of requests to " . ($x * $nproc) . "\n";
     }
-    $nreq = $x;                 # this is now the number of reqs per thread
+    $nreq = $x;    # this is now the number of reqs per thread
 }
 
 # We are using a pipe for the children to report back their values.
@@ -70,9 +73,9 @@ unless (GetOptions('fork=i'     => \$nproc,
 # required. (see pipe(7))
 pipe my ($r, $w);
 my @pids;
-for (1..$nproc) {
+for (1 .. $nproc) {
     my $pid;
-    select undef, undef, undef, 0.1 until defined($pid=fork);
+    select undef, undef, undef, 0.1 until defined($pid = fork);
     exit chld() unless $pid;
     push @pids, $pid;
 }
@@ -84,7 +87,7 @@ for (@pids) {
     waitpid $_, 0;
     if ($?) {
         my $sig = $? & 0xff;
-        my $rc  = ($? & 0xff00)>>8;
+        my $rc  = ($? & 0xff00) >> 8;
         warn "$_ => sig=$sig, rc=$rc\n";
     }
 }
@@ -92,31 +95,31 @@ for (@pids) {
 sub parent {
     my @tm;
     my ($snd, $rcv) = (0, 0);
-    while (defined (my $l = readline $r)) {
+    while (defined(my $l = readline $r)) {
         my ($prc, $tm, $_snd, $_rcv);
         if (($prc, $tm) = $l =~ /^tm: (\S+) (\S+)$/) {
             push @tm, $tm;
         } elsif (($prc, $_snd, $_rcv) = $l =~ /^bw: (\S+) (\S+) (\S+)$/) {
-            $snd+=$_snd;
-            $rcv+=$_rcv;
+            $snd += $_snd;
+            $rcv += $_rcv;
         } else {
             warn "got garbage from pipe: $l";
         }
     }
 
-    @tm = sort {$a<=>$b} @tm;
+    @tm = sort { $a <=> $b } @tm;
 
     my $avg = 0;
     $avg += $_ for @tm;
     $avg /= @tm;
 
-    printf "number of requests: %d, parallelism: %d\n", 0+@tm, $nproc;
+    printf "number of requests: %d, parallelism: %d\n", 0 + @tm, $nproc;
     printf "min: %.3f ms, avg: %.3f ms, max: %.3f ms\n", $tm[0], $avg, $tm[-1];
     printf "median: <%.3f ms, 95%%: <%.3f ms, 99%%: <%.3f ms, 99.9%%: <%.3f ms\n",
-        $tm[int(0.5+@tm*.5)],
-        $tm[int(0.5+@tm*.95)],
-        $tm[int(0.5+@tm*.99)],
-        $tm[int(0.5+@tm*.999)],
+        $tm[int(0.5 + @tm * .5)],
+        $tm[int(0.5 + @tm * .95)],
+        $tm[int(0.5 + @tm * .99)],
+        $tm[int(0.5 + @tm * .999)],
         ;
 
     if ($datf and open my $fh, '>', $datf) {
@@ -129,9 +132,9 @@ sub parent {
         # is the last 25-50 data points where the curve is expected to bend
         # upwards.
 
-        my $step = @tm/500;
-        for (my $i=1; $i<500; $i++) {
-            printf $fh "%d %.3f\n", int($i*$step), $tm[int($i*$step)];
+        my $step = @tm / 500;
+        for (my $i = 1; $i < 500; $i++) {
+            printf $fh "%d %.3f\n", int($i * $step), $tm[int($i * $step)];
         }
         printf $fh "%d %.3f\n", $#tm, $tm[-1];
     } elsif ($datf) {
@@ -139,10 +142,8 @@ sub parent {
     }
 
     unless ($ENV{nobw}) {
-        printf("total bytes sent to redis: %d, number of bytes received from redis: %d\n",
-               $snd, $rcv);
-        printf("send bandwidth: %.3f bytes/req, receive bandwidth: %.3f bytes/req\n",
-               $snd/@tm, $rcv/@tm);
+        printf("total bytes sent to redis: %d, number of bytes received from redis: %d\n", $snd,       $rcv);
+        printf("send bandwidth: %.3f bytes/req, receive bandwidth: %.3f bytes/req\n",      $snd / @tm, $rcv / @tm);
     }
 }
 
@@ -152,31 +153,38 @@ sub C::binary_user_id {
 }
 
 sub C::new {
-    return bless \(my $dummy = 1+int rand $nuid), 'C';
+    return bless \(my $dummy = 1 + int rand $nuid), 'C';
 }
 
 sub chld {
     close $r;
     srand;
     $w->autoflush(1);
-    { no warnings 'redefine'; *BOM::Transaction::CompanyLimits::fake_it = sub {0}; }
-    my $contract = {bet_type => "higher_lower_bet",
-                    underlying_symbol => "R_100",
-                    short_code => "bla_S0P_0",
-                    tick_count => 10,
-                    payout_price => 100,
-                    buy_price => 50,
-                    sell_price => 45,
-                    bet_class => "not a lookback option"};
-    my $x=BOM::Transaction::CompanyLimits->new(landing_company => LandingCompany::Registry::get('virtual'),
-                                               currency => "EUR",
-                                               contract_data => $contract);
+    {
+        no warnings 'redefine';
+        *BOM::Transaction::CompanyLimits::fake_it = sub { 0 };
+    }
+    my $contract = {
+        bet_type          => "higher_lower_bet",
+        underlying_symbol => "R_100",
+        short_code        => "bla_S0P_0",
+        tick_count        => 10,
+        payout_price      => 100,
+        buy_price         => 50,
+        sell_price        => 45,
+        bet_class         => "not a lookback option"
+    };
+    my $x = BOM::Transaction::CompanyLimits->new(
+        landing_company => LandingCompany::Registry::get('virtual'),
+        currency        => "EUR",
+        contract_data   => $contract
+    );
     # patch the landing company to prevent overwriting potentially
     # important data
-    $x->{landing_company}=$prefix;
+    $x->{landing_company} = $prefix;
 
     # just in case there is no data for realized loss:
-    $x->_add_sells(map {C->new} 1..1000);
+    $x->_add_sells(map { C->new } 1 .. 1000);
 
     if ($sample) {
         my $fh;
@@ -186,17 +194,17 @@ sub chld {
             open $fh, '>', "$sample.$$"
                 or warn "Cannot open $sample.$$: $!\n";
         }
-        my @res = $x->$meth(map {C->new} 1..2);
+        my @res = $x->$meth(map { C->new } 1 .. 2);
         use Data::Dumper;
         print $fh +Data::Dumper->new([\@res], [qw/res/])->Useqq(1)->Sortkeys(1)->Dump;
         close $fh unless $fh = \*STDOUT;
     }
 
     ${*{$x->{redis}->{_socket}}}{' benchmark '} = 1;
-    for (1..$nreq) {
+    for (1 .. $nreq) {
         my $start = [Time::HiRes::gettimeofday];
-        $x->$meth(map {C->new} 1..$batch);
-        my $tm = Time::HiRes::tv_interval($start) * 1000; # in millisec
+        $x->$meth(map { C->new } 1 .. $batch);
+        my $tm = Time::HiRes::tv_interval($start) * 1000;    # in millisec
         print $w "tm: $$ $tm\n";
     }
 
