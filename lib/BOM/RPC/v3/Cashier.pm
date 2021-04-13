@@ -1255,7 +1255,7 @@ rpc transfer_between_accounts => sub {
 
     # just return accounts list if loginid from or to is not provided
     if (not $loginid_from or not $loginid_to) {
-        my @available_siblings_for_transfer = grep { not $_->{disabled} and ($_->{demo_account} ==  $client->is_virtual) } values %$siblings;
+        my @available_siblings_for_transfer = grep { not $_->{disabled} and ($_->{demo_account} == $client->is_virtual) } values %$siblings;
         @available_siblings_for_transfer = map {
             { $_->%{qw/loginid balance account_type currency demo_account/} }
         } @available_siblings_for_transfer;
