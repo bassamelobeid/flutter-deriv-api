@@ -3337,10 +3337,11 @@ sub _p2p_adverts {
     die +{error_code => 'InvalidListOffset'} if defined $offset && $offset < 0;
 
     $param{max_order} = convert_currency(BOM::Config::Runtime->instance->app_config->payments->p2p->limits->maximum_order, 'USD', $self->currency);
-    $param{reversible_limit} = BOM::Config::Runtime->instance->app_config->payments->reversible_balance_limits->p2p / 100,
-        $param{reversible_lookback} = BOM::Config::Runtime->instance->app_config->payments->reversible_deposits_lookback,
+    $param{reversible_limit}    = BOM::Config::Runtime->instance->app_config->payments->reversible_balance_limits->p2p / 100;
+    $param{reversible_lookback} = BOM::Config::Runtime->instance->app_config->payments->reversible_deposits_lookback;
+    $param{advertiser_name} =~ s/([%_])/\\$1/g if $param{advertiser_name};
 
-        $self->db->dbic->run(
+    $self->db->dbic->run(
         fixup => sub {
             $_->selectall_arrayref(
                 'SELECT * FROM p2p.advert_list(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',

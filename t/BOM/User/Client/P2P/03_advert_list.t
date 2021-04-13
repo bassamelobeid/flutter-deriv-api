@@ -130,9 +130,52 @@ subtest 'show real name' => sub {
     cmp_deeply($res, superhashof($names), 'ad update: real names returned');
 };
 
-BOM::Test::Helper::P2P::reset_escrow();
+subtest 'search by advertiser name' => sub {
+    my $advertiser1 = BOM::Test::Helper::P2P::create_advertiser(name => 'c%ol_guy$!_');
+    my $ad          = BOM::Test::Helper::P2P::create_advert(
+        client => $advertiser1,
+        type   => 'buy'
+    );
 
-# restore app config
-$app_config->payments->p2p->limits->maximum_order($max_order);
+    my $advertiser2 = BOM::Test::Helper::P2P::create_advertiser(name => 'bob');
+    BOM::Test::Helper::P2P::create_advert(
+        client => $advertiser2,
+        type   => 'buy'
+    );
+
+    is $advertiser2->p2p_advert_list(
+        advertiser_name => 'c%ol_guy$!_',
+        type            => 'buy'
+    )->[0]{id}, $ad->{id}, 'full match';
+    is $advertiser2->p2p_advert_list(
+        advertiser_name => 'c%ol',
+        type            => 'buy'
+    )->[0]{id}, $ad->{id}, 'partial match';
+    is $advertiser2->p2p_advert_list(
+        advertiser_name => 'l_g',
+        type            => 'buy'
+    )->[0]{id}, $ad->{id}, 'partial match';
+    is $advertiser2->p2p_advert_list(
+        advertiser_name => '%',
+        type            => 'buy'
+    )->[0]{id}, $ad->{id}, 'partial match';
+    cmp_deeply $advertiser2->p2p_advert_list(
+        advertiser_name => 'g_y',
+        type            => 'buy'
+        ),
+        [], 'no match';
+    cmp_deeply $advertiser2->p2p_advert_list(
+        advertiser_name => '___',
+        type            => 'buy'
+        ),
+        [], 'no match';
+    cmp_deeply $advertiser2->p2p_advert_list(
+        advertiser_name => 'b_b',
+        type            => 'buy'
+        ),
+        [], 'no match';
+};
+
+BOM::Test::Helper::P2P::reset_escrow();
 
 done_testing();
