@@ -445,7 +445,7 @@ async sub ready_for_authentication {
         await Future->wait_any(
             $loop->timeout_future(after => VERIFICATION_TIMEOUT)->on_fail(sub { $log->errorf('Time out waiting for Onfido verfication.') }),
 
-            _check_applicant($args, $onfido, $applicant_id, $broker, $loginid, $residence, $redis_events_write, $client));
+            _check_applicant($args, $onfido, $applicant_id, $broker, $loginid, $residence, $redis_events_write, $client, $args->{documents}));
     } catch ($e) {
         $log->errorf('Failed to process Onfido verification for %s: %s', $args->{loginid}, $e);
         exception_logged();
@@ -1862,7 +1862,7 @@ async sub _upload_documents {
 }
 
 async sub _check_applicant {
-    my ($args, $onfido, $applicant_id, $broker, $loginid, $residence, $redis_events_write, $client) = @_;
+    my ($args, $onfido, $applicant_id, $broker, $loginid, $residence, $redis_events_write, $client, $documents) = @_;
 
     try {
         my $error_type;
@@ -1882,10 +1882,11 @@ async sub _check_applicant {
             # - identity
             # - watchlist
             # that onfido will use to compare photo uploaded
-            # Document ID is not needed as Onfido will check for the most recently uploaded docs
+            # If document ids as specified, they will be included in request. Otherwise Onfido will check for the most recently uploaded docs
             # https://documentation.onfido.com/v2/#request-body-parameters-report
             reports => [{
                     name => 'document',
+                    $documents ? (documents => $documents) : ()
                 },
                 {
                     name    => 'facial_similarity',
@@ -1915,7 +1916,6 @@ async sub _check_applicant {
         )->on_done(
             sub {
                 my ($check) = @_;
-
                 BOM::User::Onfido::store_onfido_check($applicant_id, $check);
             });
 
