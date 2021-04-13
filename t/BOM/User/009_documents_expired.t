@@ -78,16 +78,16 @@ subtest 'client documents expiry' => sub {
             $client->client_authentication_document(undef);
             is($client->documents_expired(), 0, $test);
 
-            $test           = q{After call to finish_document_upload, document status changed to 'uploaded'};
-            $SQL            = 'SELECT * FROM betonmarkets.finish_document_upload(?)';
+            $test           = q{After call to finish_document_upload, document status changed to 'verified'};
+            $SQL            = 'SELECT * FROM betonmarkets.finish_document_upload(?, \'verified\'::status_type)';
             $sth_doc_finish = $dbh->prepare($SQL);
             $sth_doc_finish->execute($id1);
             $sth_doc_info->execute($client->loginid);
             $actual = $sth_doc_info->fetchall_arrayref({});
-            $expected->[0]{status} = 'uploaded';
+            $expected->[0]{status} = 'verified';
             cmp_deeply($actual, $expected, $test);
 
-            $test           = q{BOM::User::Client->documents_expired returns 0 if document in 'uploaded' status and no expiration date};
+            $test           = q{BOM::User::Client->documents_expired returns 0 if document in 'verified' status and no expiration date};
             $SQL            = 'UPDATE betonmarkets.client_authentication_document SET expiration_date = ? WHERE id = ?';
             $sth_doc_update = $dbh->prepare($SQL);
             $sth_doc_update->execute(undef, $id1);
@@ -149,16 +149,11 @@ subtest 'client documents expiry' => sub {
             $client->client_authentication_document(undef);
             is($client->documents_expired(), 0, $test);
 
-            $test =
-                qq{BOM::User::Client->documents_expired returns 1 depending if expiration check is requied and if documents within future date limit};
-            my $test_date = Date::Utility->new()->plus_time_interval('2d');
-            is($client->is_any_document_expiring_by_date($test_date), 1, $test);
-
             $SQL         = 'SELECT * FROM betonmarkets.start_document_upload(?,?,?,?,?,?,?,?)';
             $sth_doc_new = $dbh->prepare($SQL);
             $sth_doc_new->execute($client->loginid, 'bankstatement', 'PNG', 'yesterday', 65555, '75bada1e034d13b417083507db47ee4b', 'none', 'front');
             $id1            = $sth_doc_new->fetch()->[0];
-            $SQL            = 'SELECT * FROM betonmarkets.finish_document_upload(?)';
+            $SQL            = 'SELECT * FROM betonmarkets.finish_document_upload(?, \'verified\'::status_type)';
             $sth_doc_finish = $dbh->prepare($SQL);
             $sth_doc_finish->execute($id1);
         };
@@ -188,16 +183,16 @@ subtest 'client documents expiry' => sub {
             authentication_method_code => 'ID_DOCUMENT',
             checksum                   => '120EA8A25E5D487BF68B5F7096440019'
         });
-        $doc->status('uploaded');
+        $doc->status('verified');
         $mf_client_2->save;
         $mf_client_2->load;
-        ok !$mf_client_2->documents_expired, "Documents with status of 'uploaded' are valid";
+        ok !$mf_client_2->documents_expired, "Documents with status of 'verified' are valid";
         $mf_client_2->status->set('duplicate_account');
         ok $mf_client_2->status->duplicate_account, "MF2 Account is set as duplicate_account";
         $mf_client->status->clear_duplicate_account;
         ok !$mf_client->status->duplicate_account, "MF Account is enabled now.";
 
-        ok !$mf_client->documents_expired, "Documents with status of 'uploaded' are valid";
+        ok !$mf_client->documents_expired, "Documents with status of 'verified' are valid";
         $doc->expiration_date('2010-10-10');
         $doc->save;
         $doc->load;
@@ -217,7 +212,7 @@ subtest 'documents uploaded' => sub {
                         $documents_mlt->{proof_of_address}{documents}{$client_mlt->loginid . ".bankstatement.270744521_front.PNG"}{expiry_date},
                     format => "PNG",
                     id     => 65555,
-                    status => "uploaded",
+                    status => "verified",
                     type   => "bankstatement",
                     },
             },
@@ -231,7 +226,7 @@ subtest 'documents uploaded' => sub {
                         $documents_mlt->{proof_of_identity}{documents}{$client_mlt->loginid . ".passport.270744481_front.PNG"}{expiry_date},
                     format => "PNG",
                     id     => 55555,
-                    status => "uploaded",
+                    status => "verified",
                     type   => "passport",
                     },
                 $client_mlt->loginid
@@ -240,7 +235,7 @@ subtest 'documents uploaded' => sub {
                         $documents_mlt->{proof_of_identity}{documents}{$client_mlt->loginid . ".passport.270744501_front.PNG"}{expiry_date},
                     format => "PNG",
                     id     => 66666,
-                    status => "uploaded",
+                    status => "verified",
                     type   => "passport",
                     },
             },
@@ -261,7 +256,7 @@ subtest 'documents uploaded' => sub {
                         $documents_cr->{proof_of_address}{documents}{$client_cr->loginid . ".bankstatement.270744461_front.PNG"}{expiry_date},
                     format => "PNG",
                     id     => 65555,
-                    status => "uploaded",
+                    status => "verified",
                     type   => "bankstatement",
                     },
             },
@@ -274,7 +269,7 @@ subtest 'documents uploaded' => sub {
                     expiry_date => $documents_cr->{proof_of_identity}{documents}{$client_cr->loginid . ".passport.270744421_front.PNG"}{expiry_date},
                     format      => "PNG",
                     id          => 55555,
-                    status      => "uploaded",
+                    status      => "verified",
                     type        => "passport",
                     },
                 $client_cr->loginid
@@ -282,7 +277,7 @@ subtest 'documents uploaded' => sub {
                     expiry_date => $documents_cr->{proof_of_identity}{documents}{$client_cr->loginid . ".passport.270744441_front.PNG"}{expiry_date},
                     format      => "PNG",
                     id          => 66666,
-                    status      => "uploaded",
+                    status      => "verified",
                     type        => "passport",
                     },
             },
@@ -350,7 +345,7 @@ subtest 'documents uploaded' => sub {
         $sth_doc_update->execute('yesterday');
 
         my $id = $sth_doc_new->fetch()->[0];
-        $SQL = 'SELECT * FROM betonmarkets.finish_document_upload(?)';
+        $SQL = 'SELECT * FROM betonmarkets.finish_document_upload(?, \'verified\'::status_type)';
         my $sth_doc_finish = $dbh->prepare($SQL);
         $sth_doc_finish->execute($id);
 
@@ -400,7 +395,7 @@ subtest 'documents uploaded' => sub {
         $sth_doc_update->execute('yesterday');
 
         my $id = $sth_doc_new->fetch()->[0];
-        $SQL = 'SELECT * FROM betonmarkets.finish_document_upload(?)';
+        $SQL = 'SELECT * FROM betonmarkets.finish_document_upload(?, \'verified\'::status_type)';
         my $sth_doc_finish = $dbh->prepare($SQL);
         $sth_doc_finish->execute($id);
 
@@ -447,9 +442,11 @@ subtest 'has valid documents' => sub {
         $docs = {
             'other' => {
                 'is_expired' => 1,
+                'documents'  => {},
             },
             'proof_of_identity' => {
                 'is_expired' => 1,
+                'documents'  => {},
             }};
 
         ok !$client_cr->has_valid_documents($docs), 'Invalid due to expired documents';
@@ -457,9 +454,11 @@ subtest 'has valid documents' => sub {
         $docs = {
             'other' => {
                 'is_expired' => 0,
+                'documents'  => {},
             },
             'proof_of_identity' => {
                 'is_expired' => 1,
+                'documents'  => {},
             }};
 
         ok !$client_cr->has_valid_documents($docs, 'proof_of_identity'), 'Invalid due to expired POI';
@@ -468,9 +467,11 @@ subtest 'has valid documents' => sub {
         $docs = {
             'other' => {
                 'is_expired' => 1,
+                'documents'  => {},
             },
             'proof_of_identity' => {
                 'is_expired' => 0,
+                'documents'  => {},
             }};
 
         ok $client_cr->has_valid_documents($docs,  'proof_of_identity'), 'Valid due to non expired POI';
@@ -490,9 +491,11 @@ subtest 'has valid documents' => sub {
         $docs = {
             'other' => {
                 'is_expired' => 1,
+                'documents'  => {},
             },
             'proof_of_identity' => {
                 'is_expired' => 1,
+                'documents'  => {},
             }};
 
         ok $client_cr->has_valid_documents($docs), 'Expire check not required';
@@ -500,9 +503,11 @@ subtest 'has valid documents' => sub {
         $docs = {
             'other' => {
                 'is_expired' => 0,
+                'documents'  => {},
             },
             'proof_of_identity' => {
                 'is_expired' => 1,
+                'documents'  => {},
             }};
 
         ok $client_cr->has_valid_documents($docs, 'proof_of_identity'), 'Expire check not required';
@@ -511,13 +516,15 @@ subtest 'has valid documents' => sub {
         $docs = {
             'other' => {
                 'is_expired' => 1,
+                'documents'  => {},
             },
             'proof_of_identity' => {
                 'is_expired' => 0,
+                'documents'  => {},
             }};
 
-        ok $client_cr->has_valid_documents($docs, 'proof_of_identity'),, 'Expire check not required';
-        ok $client_cr->has_valid_documents($docs, 'other'),,             'Expire check not required';
+        ok $client_cr->has_valid_documents($docs, 'proof_of_identity'), 'Expire check not required';
+        ok $client_cr->has_valid_documents($docs, 'other'),             'Expire check not required';
     };
 
     $mock_client->unmock_all;
@@ -527,6 +534,7 @@ subtest 'Empty POI but has a POA' => sub {
     my $docs = {
         'proof_of_address' => {
             'is_expired' => 0,
+            'documents'  => {},
         }};
 
     my $mock_client = Test::MockModule->new('BOM::User::Client');
@@ -540,6 +548,368 @@ subtest 'Empty POI but has a POA' => sub {
     ok !$client_cr->documents_expired, 'The client does not have any POI document therefore cannot be expired';
 
     $mock_client->unmock_all;
+};
+
+subtest 'rejected and uploaded' => sub {
+
+    # Event though the tests above indirectly are proving this.
+    # We gotta test that `rejected` or `uploaded` documents should not
+    # be taken in consideration by the documents_uploaded sub.
+
+    my $user = BOM::User->create(
+        email          => 'fib@binary.com',
+        password       => BOM::User::Password::hashpw('1618goldfib'),
+        email_verified => 1,
+    );
+
+    my $client = create_client('CR');
+    $user->add_client($client);
+
+    $client->set_default_account('USD');
+    $client->save();
+
+    my $dbh = $client->db->dbic->dbh;
+    my $sth_doc_new;
+    my $SQL;
+    my $id;
+    my $id2;
+
+    $SQL         = 'SELECT * FROM betonmarkets.start_document_upload(?,?,?,?,?,?,?,?)';
+    $sth_doc_new = $dbh->prepare($SQL);
+    $sth_doc_new->execute($client->loginid, 'passport', 'PNG', 'yesterday', 12345, '75bada1e034d13b417083507db47ee4a', 'none', 'front');
+    $id = $sth_doc_new->fetch()->[0];
+
+    $SQL         = 'SELECT * FROM betonmarkets.finish_document_upload(?, \'rejected\'::status_type)';
+    $sth_doc_new = $dbh->prepare($SQL);
+    $sth_doc_new->execute($id);
+
+    $SQL         = 'SELECT * FROM betonmarkets.start_document_upload(?,?,?,?,?,?,?,?)';
+    $sth_doc_new = $dbh->prepare($SQL);
+    $sth_doc_new->execute($client->loginid, 'passport', 'PNG', 'yesterday', 54321, '75bada1e034d13b417083507db47ee4b', 'none', 'front');
+    $id2 = $sth_doc_new->fetch()->[0];
+
+    $SQL         = 'SELECT * FROM betonmarkets.finish_document_upload(?, \'uploaded\'::status_type)';
+    $sth_doc_new = $dbh->prepare($SQL);
+    $sth_doc_new->execute($id2);
+
+    my $expected = {
+        'proof_of_identity' => {
+            'documents' => {
+                'CR10001.passport.270744961_front.PNG' => {
+                    'id'          => '54321',
+                    'type'        => 'passport',
+                    'format'      => 'PNG',
+                    'expiry_date' => re('\d+'),
+                    'status'      => 'uploaded'
+                },
+                'CR10001.passport.270744941_front.PNG' => {
+                    'type'        => 'passport',
+                    'id'          => '12345',
+                    'format'      => 'PNG',
+                    'expiry_date' => re('\d+'),
+                    'status'      => 'rejected'
+                }
+            },
+            'is_pending' => 1
+        }};
+
+    # Note the documents above are expired but they aren't being taken into consideration
+    # for the expiration checkup since they aren't `verified`.
+
+    cmp_deeply $client->documents_uploaded(), $expected, 'We got the expected result from documents uploaded';
+
+    $SQL         = 'SELECT * FROM betonmarkets.finish_document_upload(?, \'verified\'::status_type)';
+    $sth_doc_new = $dbh->prepare($SQL);
+    $sth_doc_new->execute($id);
+
+    $sth_doc_new = $dbh->prepare($SQL);
+    $sth_doc_new->execute($id2);
+
+    # When docs are verified we process the expiration dates
+    # Since the client is not age_verification status yet `is_pending` is also set
+
+    $expected = {
+        'proof_of_identity' => {
+            'is_expired' => 1,
+            'documents'  => {
+                'CR10001.passport.270744961_front.PNG' => {
+                    'format'      => 'PNG',
+                    'type'        => 'passport',
+                    'status'      => 'verified',
+                    'expiry_date' => re('\d+'),
+                    'id'          => '54321'
+                },
+                'CR10001.passport.270744941_front.PNG' => {
+                    'format'      => 'PNG',
+                    'id'          => '12345',
+                    'type'        => 'passport',
+                    'expiry_date' => re('\d+'),
+                    'status'      => 'verified'
+                }
+            },
+            'expiry_date' => re('\d+'),
+            'is_pending'  => 1
+        }};
+
+    cmp_deeply $client->documents_uploaded(), $expected, 'We got the expected result from documents uploaded when docs are verified';
+
+    # Now the client is age_verification so `is_pending` will be gone
+
+    $client->status->setnx('age_verification', 'test', 'test');
+
+    $expected = {
+        'proof_of_identity' => {
+            'is_expired' => 1,
+            'documents'  => {
+                'CR10001.passport.270744961_front.PNG' => {
+                    'format'      => 'PNG',
+                    'type'        => 'passport',
+                    'status'      => 'verified',
+                    'expiry_date' => re('\d+'),
+                    'id'          => '54321'
+                },
+                'CR10001.passport.270744941_front.PNG' => {
+                    'format'      => 'PNG',
+                    'id'          => '12345',
+                    'type'        => 'passport',
+                    'expiry_date' => re('\d+'),
+                    'status'      => 'verified'
+                }
+            },
+            'expiry_date' => re('\d+'),
+        }};
+
+    cmp_deeply $client->documents_uploaded(), $expected, 'We got the expected result from documents uploaded when docs are verified';
+
+    # Now the client uploads fresh document
+    # When age_verification is true and we have fresh docs the status should be pending again
+
+    $SQL         = 'SELECT * FROM betonmarkets.start_document_upload(?,?,?,?,?,?,?,?)';
+    $sth_doc_new = $dbh->prepare($SQL);
+    $sth_doc_new->execute($client->loginid, 'passport', 'PNG', 'tomorrow', 618900, 'checsum18515', 'none', 'front');
+    $id = $sth_doc_new->fetch()->[0];
+
+    $SQL         = 'SELECT * FROM betonmarkets.finish_document_upload(?, \'uploaded\'::status_type)';
+    $sth_doc_new = $dbh->prepare($SQL);
+    $sth_doc_new->execute($id);
+
+    $expected = {
+        'proof_of_identity' => {
+            'is_expired' => 1,
+            'is_pending' => 1,
+            'documents'  => {
+                'CR10001.passport.270744961_front.PNG' => {
+                    'format'      => 'PNG',
+                    'type'        => 'passport',
+                    'status'      => 'verified',
+                    'expiry_date' => re('\d+'),
+                    'id'          => '54321'
+                },
+                'CR10001.passport.270744941_front.PNG' => {
+                    'format'      => 'PNG',
+                    'id'          => '12345',
+                    'type'        => 'passport',
+                    'expiry_date' => re('\d+'),
+                    'status'      => 'verified'
+                },
+                'CR10001.passport.270745001_front.PNG' => {
+                    'expiry_date' => re('\d+'),
+                    'format'      => 'PNG',
+                    'status'      => 'uploaded',
+                    'type'        => 'passport',
+                    'id'          => '618900'
+                },
+            },
+            'expiry_date' => re('\d+'),
+        }};
+
+    cmp_deeply $client->documents_uploaded(), $expected, 'Fresh documents in needs review make the is_pending flag appear again';
+
+    # The documents are verified
+
+    $SQL         = 'SELECT * FROM betonmarkets.finish_document_upload(?, \'verified\'::status_type)';
+    $sth_doc_new = $dbh->prepare($SQL);
+    $sth_doc_new->execute($id);
+
+    $expected = {
+        'proof_of_identity' => {
+            'expiry_date' => re('\d+'),
+            'is_expired'  => 0,
+            'documents'   => {
+                'CR10001.passport.270744961_front.PNG' => {
+                    'format'      => 'PNG',
+                    'type'        => 'passport',
+                    'status'      => 'verified',
+                    'expiry_date' => re('\d+'),
+                    'id'          => '54321'
+                },
+                'CR10001.passport.270744941_front.PNG' => {
+                    'format'      => 'PNG',
+                    'id'          => '12345',
+                    'type'        => 'passport',
+                    'expiry_date' => re('\d+'),
+                    'status'      => 'verified'
+                },
+                'CR10001.passport.270745001_front.PNG' => {
+                    'expiry_date' => re('\d+'),
+                    'format'      => 'PNG',
+                    'status'      => 'verified',
+                    'type'        => 'passport',
+                    'id'          => '618900'
+                },
+            },
+        }};
+
+    cmp_deeply $client->documents_uploaded(), $expected, 'Fresh verified documents make the account verified';
+
+    # Somebody rejected the doc (from BO)
+
+    $SQL         = 'SELECT * FROM betonmarkets.finish_document_upload(?, \'rejected\'::status_type)';
+    $sth_doc_new = $dbh->prepare($SQL);
+    $sth_doc_new->execute($id);
+
+    $expected = {
+        'proof_of_identity' => {
+            'expiry_date' => re('\d+'),
+            'is_expired'  => 1,
+            'documents'   => {
+                'CR10001.passport.270744961_front.PNG' => {
+                    'format'      => 'PNG',
+                    'type'        => 'passport',
+                    'status'      => 'verified',
+                    'expiry_date' => re('\d+'),
+                    'id'          => '54321'
+                },
+                'CR10001.passport.270744941_front.PNG' => {
+                    'format'      => 'PNG',
+                    'id'          => '12345',
+                    'type'        => 'passport',
+                    'expiry_date' => re('\d+'),
+                    'status'      => 'verified'
+                },
+                'CR10001.passport.270745001_front.PNG' => {
+                    'expiry_date' => re('\d+'),
+                    'format'      => 'PNG',
+                    'status'      => 'rejected',
+                    'type'        => 'passport',
+                    'id'          => '618900'
+                },
+            },
+        }};
+
+    cmp_deeply $client->documents_uploaded(), $expected, 'Rejected documents make the account expired';
+};
+
+subtest 'rejected an accepted' => sub {
+
+    # This test simulates:
+    # 1. Onfido consider (so documents left in the `uploaded` status)
+    # 2. Onfido successful resubmission (so new document has `verified` status)
+
+    my $user = BOM::User->create(
+        email          => 'fib2@binary.com',
+        password       => BOM::User::Password::hashpw('2618goldfib'),
+        email_verified => 1,
+    );
+
+    my $client = create_client('CR');
+    $user->add_client($client);
+
+    $client->set_default_account('USD');
+    $client->save();
+
+    my $dbh = $client->db->dbic->dbh;
+    my $sth_doc_new;
+    my $SQL;
+    my $id;
+    my $id2;
+
+    $SQL         = 'SELECT * FROM betonmarkets.start_document_upload(?,?,?,?,?,?,?,?)';
+    $sth_doc_new = $dbh->prepare($SQL);
+    $sth_doc_new->execute($client->loginid, 'passport', 'PNG', 'tomorrow', 12345, '75bada1e034d13b417083507db47ee4a', 'none', 'front');
+    $id = $sth_doc_new->fetch()->[0];
+
+    $SQL         = 'SELECT * FROM betonmarkets.finish_document_upload(?, \'uploaded\'::status_type)';
+    $sth_doc_new = $dbh->prepare($SQL);
+    $sth_doc_new->execute($id);
+
+    $SQL         = 'SELECT * FROM betonmarkets.start_document_upload(?,?,?,?,?,?,?,?)';
+    $sth_doc_new = $dbh->prepare($SQL);
+    $sth_doc_new->execute($client->loginid, 'passport', 'PNG', 'tomorrow', 54321, '75bada1e034d13b417083507db47ee4b', 'none', 'front');
+    $id2 = $sth_doc_new->fetch()->[0];
+
+    $SQL         = 'SELECT * FROM betonmarkets.finish_document_upload(?, \'uploaded\'::status_type)';
+    $sth_doc_new = $dbh->prepare($SQL);
+    $sth_doc_new->execute($id2);
+
+    my $expected = {
+        'proof_of_identity' => {
+            'documents' => {
+                'CR10002.passport.270745021_front.PNG' => {
+                    'id'          => '12345',
+                    'type'        => 'passport',
+                    'format'      => 'PNG',
+                    'expiry_date' => re('\d+'),
+                    'status'      => 'uploaded'
+                },
+                'CR10002.passport.270745041_front.PNG' => {
+                    'type'        => 'passport',
+                    'id'          => '54321',
+                    'format'      => 'PNG',
+                    'expiry_date' => re('\d+'),
+                    'status'      => 'uploaded'
+                }
+            },
+            'is_pending' => 1
+        }};
+
+    # The documents are left in `uploaded` just like an Onfido consider
+
+    cmp_deeply $client->documents_uploaded(), $expected, 'We got the expected result from documents uploaded';
+
+    # New doc comes in, time valid verification kicks in
+
+    $SQL         = 'SELECT * FROM betonmarkets.start_document_upload(?,?,?,?,?,?,?,?)';
+    $sth_doc_new = $dbh->prepare($SQL);
+    $sth_doc_new->execute($client->loginid, 'passport', 'PNG', 'tomorrow', 789, '75bada1e034d13b417083507db47ee43', 'none', 'front');
+    $id2 = $sth_doc_new->fetch()->[0];
+
+    $SQL         = 'SELECT * FROM betonmarkets.finish_document_upload(?, \'verified\'::status_type)';
+    $sth_doc_new = $dbh->prepare($SQL);
+    $sth_doc_new->execute($id2);
+
+    $client->status->setnx('age_verification', 'test', 'test');
+    $expected = {
+        'proof_of_identity' => {
+            'documents' => {
+                'CR10002.passport.270745021_front.PNG' => {
+                    'id'          => '12345',
+                    'type'        => 'passport',
+                    'format'      => 'PNG',
+                    'expiry_date' => re('\d+'),
+                    'status'      => 'uploaded'
+                },
+                'CR10002.passport.270745041_front.PNG' => {
+                    'type'        => 'passport',
+                    'id'          => '54321',
+                    'format'      => 'PNG',
+                    'expiry_date' => re('\d+'),
+                    'status'      => 'uploaded'
+                },
+                'CR10002.passport.270745061_front.PNG' => {
+                    'type'        => 'passport',
+                    'id'          => '789',
+                    'format'      => 'PNG',
+                    'expiry_date' => re('\d+'),
+                    'status'      => 'verified'
+                }
+            },
+            'is_pending'  => 0,
+            'expiry_date' => re('\d+'),
+            'is_expired'  => 0,
+
+        }};
+    cmp_deeply $client->documents_uploaded(), $expected, 'We got the expected result after Onfido verification';
 };
 
 subtest 'Payment Agent has expired documents' => sub {
@@ -594,7 +964,7 @@ subtest 'Payment Agent has expired documents' => sub {
         $docs = {
             'proof_of_address' => {
                 'is_expired' => 1,
-            }};
+                'documents'  => {}}};
 
         $risk = 'low';
         $pa   = 0;

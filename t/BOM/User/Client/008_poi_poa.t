@@ -15,8 +15,8 @@ subtest 'get_poa_status' => sub {
 
         my $mocked_client = Test::MockModule->new(ref($test_client_cr));
         subtest 'POA status none' => sub {
-            $mocked_client->mock('fully_authenticated',                   sub { return 0 });
-            $mocked_client->mock('is_document_expiry_check_required_mt5', sub { return 0 });
+            $mocked_client->mock('fully_authenticated', sub { return 0 });
+            $mocked_client->mock('fully_authenticated', sub { return 0 });
             $mocked_client->mock(
                 'documents_uploaded',
                 sub {
@@ -32,27 +32,8 @@ subtest 'get_poa_status' => sub {
             $mocked_client->unmock_all;
         };
 
-        subtest 'POA status expired' => sub {
-            $mocked_client->mock('fully_authenticated',                   sub { return 0 });
-            $mocked_client->mock('is_document_expiry_check_required_mt5', sub { return 1 });
-            $mocked_client->mock(
-                'documents_uploaded',
-                sub {
-                    return {
-                        proof_of_address => {
-                            is_expired  => 1,
-                            is_pending  => 0,
-                            is_rejected => 0,
-                        }};
-                });
-
-            is $test_client_cr->get_poa_status, 'expired', 'Client POA status is expired';
-            $mocked_client->unmock_all;
-        };
-
         subtest 'POA status pending' => sub {
-            $mocked_client->mock('fully_authenticated',                   sub { return 0 });
-            $mocked_client->mock('is_document_expiry_check_required_mt5', sub { return 0 });
+            $mocked_client->mock('fully_authenticated', sub { return 0 });
             $mocked_client->mock(
                 'documents_uploaded',
                 sub {
@@ -69,8 +50,7 @@ subtest 'get_poa_status' => sub {
         };
 
         subtest 'POA status rejected' => sub {
-            $mocked_client->mock('fully_authenticated',                   sub { return 0 });
-            $mocked_client->mock('is_document_expiry_check_required_mt5', sub { return 0 });
+            $mocked_client->mock('fully_authenticated', sub { return 0 });
             $mocked_client->mock(
                 'documents_uploaded',
                 sub {
@@ -87,8 +67,7 @@ subtest 'get_poa_status' => sub {
         };
 
         subtest 'POA status verified' => sub {
-            $mocked_client->mock('fully_authenticated',                   sub { return 1 });
-            $mocked_client->mock('is_document_expiry_check_required_mt5', sub { return 0 });
+            $mocked_client->mock('fully_authenticated', sub { return 1 });
             $mocked_client->mock(
                 'documents_uploaded',
                 sub {
@@ -112,8 +91,7 @@ subtest 'get_poa_status' => sub {
 
         my $mocked_client = Test::MockModule->new(ref($test_client_mf));
         subtest 'POA status none' => sub {
-            $mocked_client->mock('fully_authenticated',                   sub { return 0 });
-            $mocked_client->mock('is_document_expiry_check_required_mt5', sub { return 1 });
+            $mocked_client->mock('fully_authenticated', sub { return 0 });
             $mocked_client->mock(
                 'documents_uploaded',
                 sub {
@@ -129,27 +107,8 @@ subtest 'get_poa_status' => sub {
             $mocked_client->unmock_all;
         };
 
-        subtest 'POA status expired' => sub {
-            $mocked_client->mock('fully_authenticated',                   sub { return 0 });
-            $mocked_client->mock('is_document_expiry_check_required_mt5', sub { return 1 });
-            $mocked_client->mock(
-                'documents_uploaded',
-                sub {
-                    return {
-                        proof_of_address => {
-                            is_expired  => 1,
-                            is_pending  => 0,
-                            is_rejected => 0,
-                        }};
-                });
-
-            is $test_client_mf->get_poa_status, 'expired', 'Client POA status is expired';
-            $mocked_client->unmock_all;
-        };
-
         subtest 'POA status pending' => sub {
-            $mocked_client->mock('fully_authenticated',                   sub { return 0 });
-            $mocked_client->mock('is_document_expiry_check_required_mt5', sub { return 1 });
+            $mocked_client->mock('fully_authenticated', sub { return 0 });
             $mocked_client->mock(
                 'documents_uploaded',
                 sub {
@@ -166,8 +125,7 @@ subtest 'get_poa_status' => sub {
         };
 
         subtest 'POA status rejected' => sub {
-            $mocked_client->mock('fully_authenticated',                   sub { return 0 });
-            $mocked_client->mock('is_document_expiry_check_required_mt5', sub { return 1 });
+            $mocked_client->mock('fully_authenticated', sub { return 0 });
             $mocked_client->mock(
                 'documents_uploaded',
                 sub {
@@ -184,8 +142,7 @@ subtest 'get_poa_status' => sub {
         };
 
         subtest 'POA status verified' => sub {
-            $mocked_client->mock('fully_authenticated',                   sub { return 1 });
-            $mocked_client->mock('is_document_expiry_check_required_mt5', sub { return 1 });
+            $mocked_client->mock('fully_authenticated', sub { return 1 });
             $mocked_client->mock(
                 'documents_uploaded',
                 sub {
@@ -222,14 +179,14 @@ subtest 'get_poi_status' => sub {
 
         my $mocked_client = Test::MockModule->new(ref($test_client_cr));
         subtest 'POI status none' => sub {
-            $mocked_client->mock('fully_authenticated',                   sub { return 0 });
-            $mocked_client->mock('is_document_expiry_check_required_mt5', sub { return 0 });
+            $mocked_client->mock('fully_authenticated', sub { return 0 });
             $mocked_client->mock(
                 'documents_uploaded',
                 sub {
                     return {
                         proof_of_identity => {
                             is_expired => 0,
+                            documents  => {},
                         }};
                 });
 
@@ -238,14 +195,14 @@ subtest 'get_poi_status' => sub {
         };
 
         subtest 'POI status expired' => sub {
-            $mocked_client->mock('fully_authenticated',                   sub { return 0 });
-            $mocked_client->mock('is_document_expiry_check_required_mt5', sub { return 1 });
+            $mocked_client->mock('fully_authenticated', sub { return 0 });
             $mocked_client->mock(
                 'documents_uploaded',
                 sub {
                     return {
                         proof_of_identity => {
                             is_expired => 1,
+                            documents  => {},
                         }};
                 });
 
@@ -254,8 +211,7 @@ subtest 'get_poi_status' => sub {
         };
 
         subtest 'POI status pending' => sub {
-            $mocked_client->mock('fully_authenticated',                   sub { return 0 });
-            $mocked_client->mock('is_document_expiry_check_required_mt5', sub { return 0 });
+            $mocked_client->mock('fully_authenticated', sub { return 0 });
             $mocked_client->mock(
                 'documents_uploaded',
                 sub {
@@ -270,14 +226,14 @@ subtest 'get_poi_status' => sub {
             $mocked_client->unmock_all;
 
             subtest 'pending is above everything' => sub {
-                $mocked_client->mock('fully_authenticated',                   sub { return 0 });
-                $mocked_client->mock('is_document_expiry_check_required_mt5', sub { return 1 });
+                $mocked_client->mock('fully_authenticated', sub { return 0 });
                 $mocked_client->mock(
                     'documents_uploaded',
                     sub {
                         return {
                             proof_of_identity => {
                                 is_expired => 1,
+                                documents  => {},
                             }};
                     });
 
@@ -288,14 +244,14 @@ subtest 'get_poi_status' => sub {
         };
 
         subtest 'POI status is pending' => sub {
-            $mocked_client->mock('fully_authenticated',                   sub { return 0 });
-            $mocked_client->mock('is_document_expiry_check_required_mt5', sub { return 0 });
+            $mocked_client->mock('fully_authenticated', sub { return 0 });
             $mocked_client->mock(
                 'documents_uploaded',
                 sub {
                     return {
                         proof_of_identity => {
                             is_pending => 1,
+                            documents  => {},
                         }};
                 });
 
@@ -306,14 +262,14 @@ subtest 'get_poi_status' => sub {
 
         subtest 'POI documents expired but onfido status in_progress' => sub {
             $onfido_document_status = 'in_progress';
-            $mocked_client->mock('fully_authenticated',                   sub { return 0 });
-            $mocked_client->mock('is_document_expiry_check_required_mt5', sub { return 1 });
+            $mocked_client->mock('fully_authenticated', sub { return 0 });
             $mocked_client->mock(
                 'documents_uploaded',
                 sub {
                     return {
                         proof_of_identity => {
                             is_expired => 1,
+                            documents  => {},
                         }};
                 });
 
@@ -326,11 +282,33 @@ subtest 'get_poi_status' => sub {
             $mocked_client->unmock_all;
         };
 
+        subtest 'POI documents expired but onfido status is rejected' => sub {
+            $onfido_document_status = 'complete';
+            $onfido_sub_result      = 'rejected';
+            $mocked_client->mock('fully_authenticated', sub { return 0 });
+            $mocked_client->mock(
+                'documents_uploaded',
+                sub {
+                    return {
+                        proof_of_identity => {
+                            is_expired => 1,
+                            documents  => {},
+                        }};
+                });
+
+            is $test_client_cr->get_poi_status, 'rejected', 'Client POI status is rejected';
+
+            subtest 'even when fully authenticated' => sub {
+                $mocked_client->mock('fully_authenticated', sub { return 1 });
+                is $test_client_cr->get_poi_status, 'rejected', 'Client POI status is still rejected';
+            };
+            $mocked_client->unmock_all;
+        };
+
         subtest 'POI status rejected' => sub {
             $onfido_document_status = 'complete';
             $onfido_sub_result      = 'rejected';
-            $mocked_client->mock('fully_authenticated',                   sub { return 0 });
-            $mocked_client->mock('is_document_expiry_check_required_mt5', sub { return 0 });
+            $mocked_client->mock('fully_authenticated', sub { return 0 });
             $mocked_client->mock(
                 'documents_uploaded',
                 sub {
@@ -349,8 +327,7 @@ subtest 'get_poi_status' => sub {
         subtest 'POI status suspected' => sub {
             $onfido_document_status = 'complete';
             $onfido_sub_result      = 'suspected';
-            $mocked_client->mock('fully_authenticated',                   sub { return 0 });
-            $mocked_client->mock('is_document_expiry_check_required_mt5', sub { return 0 });
+            $mocked_client->mock('fully_authenticated', sub { return 0 });
             $mocked_client->mock(
                 'documents_uploaded',
                 sub {
@@ -367,8 +344,7 @@ subtest 'get_poi_status' => sub {
         };
 
         subtest 'POI status verified' => sub {
-            $mocked_client->mock('fully_authenticated',                   sub { return 1 });
-            $mocked_client->mock('is_document_expiry_check_required_mt5', sub { return 0 });
+            $mocked_client->mock('fully_authenticated', sub { return 1 });
             $mocked_client->mock(
                 'documents_uploaded',
                 sub {
@@ -386,8 +362,6 @@ subtest 'get_poi_status' => sub {
             $test_client_cr->status->clear_age_verification;
             my $authenticated = 1;
             $mocked_client->mock('fully_authenticated', sub { return $authenticated });
-            my $expiry_check_required = 1;
-            $mocked_client->mock('is_document_expiry_check_required_mt5', sub { return $expiry_check_required });
             my $poi_expired = 0;
             $mocked_client->mock(
                 'documents_uploaded',
@@ -399,18 +373,21 @@ subtest 'get_poi_status' => sub {
                 });
             my $authenticated_test_scenarios = sub {
                 $poi_expired            = 0;
-                $expiry_check_required  = 1;
                 $onfido_document_status = 'complete';
                 $onfido_sub_result      = 'rejected';
                 is $test_client_cr->get_poi_status, 'verified',
                     'POI status of an authenticated client is <verified> - even with rejected onfido check';
 
-                $poi_expired = 1;
+                $onfido_document_status = 'complete';
+                $onfido_sub_result      = 'clear';
+                $poi_expired            = 1;
                 is $test_client_cr->get_poi_status, 'expired', 'POI status of an authenticated client is <expired> - if expiry check is required';
 
-                $expiry_check_required = 0;
-                is $test_client_cr->get_poi_status, 'verified',
-                    'POI status of an authenticated client is <verified> - if expiry check is not required';
+                $onfido_document_status = 'complete';
+                $onfido_sub_result      = 'rejected';
+                $poi_expired            = 1;
+                is $test_client_cr->get_poi_status, 'rejected',
+                    'POI status of an authenticated client is <rejected> - if expiry check is required and onfido result is not clear';
             };
 
             $authenticated = 1;
@@ -436,8 +413,7 @@ subtest 'get_poi_status' => sub {
 
         my $mocked_client = Test::MockModule->new(ref($test_client_mf));
         subtest 'POI status none' => sub {
-            $mocked_client->mock('fully_authenticated',                   sub { return 0 });
-            $mocked_client->mock('is_document_expiry_check_required_mt5', sub { return 1 });
+            $mocked_client->mock('fully_authenticated', sub { return 0 });
             $mocked_client->mock(
                 'documents_uploaded',
                 sub {
@@ -452,8 +428,7 @@ subtest 'get_poi_status' => sub {
         };
 
         subtest 'POI status expired' => sub {
-            $mocked_client->mock('fully_authenticated',                   sub { return 0 });
-            $mocked_client->mock('is_document_expiry_check_required_mt5', sub { return 1 });
+            $mocked_client->mock('fully_authenticated', sub { return 0 });
             $mocked_client->mock(
                 'documents_uploaded',
                 sub {
@@ -468,8 +443,7 @@ subtest 'get_poi_status' => sub {
         };
 
         subtest 'POI status pending' => sub {
-            $mocked_client->mock('fully_authenticated',                   sub { return 0 });
-            $mocked_client->mock('is_document_expiry_check_required_mt5', sub { return 1 });
+            $mocked_client->mock('fully_authenticated', sub { return 0 });
             $mocked_client->mock(
                 'documents_uploaded',
                 sub {
@@ -487,8 +461,7 @@ subtest 'get_poi_status' => sub {
         subtest 'POI status rejected' => sub {
             $onfido_document_status = 'complete';
             $onfido_sub_result      = 'rejected';
-            $mocked_client->mock('fully_authenticated',                   sub { return 0 });
-            $mocked_client->mock('is_document_expiry_check_required_mt5', sub { return 1 });
+            $mocked_client->mock('fully_authenticated', sub { return 0 });
             $mocked_client->mock(
                 'documents_uploaded',
                 sub {
@@ -507,8 +480,7 @@ subtest 'get_poi_status' => sub {
         subtest 'POI status suspected' => sub {
             $onfido_document_status = 'complete';
             $onfido_sub_result      = 'suspected';
-            $mocked_client->mock('fully_authenticated',                   sub { return 0 });
-            $mocked_client->mock('is_document_expiry_check_required_mt5', sub { return 1 });
+            $mocked_client->mock('fully_authenticated', sub { return 0 });
             $mocked_client->mock(
                 'documents_uploaded',
                 sub {
@@ -525,8 +497,7 @@ subtest 'get_poi_status' => sub {
         };
 
         subtest 'POI status verified' => sub {
-            $mocked_client->mock('fully_authenticated',                   sub { return 1 });
-            $mocked_client->mock('is_document_expiry_check_required_mt5', sub { return 1 });
+            $mocked_client->mock('fully_authenticated', sub { return 1 });
             $mocked_client->mock(
                 'documents_uploaded',
                 sub {
@@ -751,7 +722,8 @@ subtest 'needs_poi_verification' => sub {
 
         my $mocked_client = Test::MockModule->new(ref($test_client_cr));
         my $mocked_status = Test::MockModule->new(ref($test_client_cr->status));
-        subtest 'Not needed' => sub {
+
+        subtest 'Needed when verified' => sub {
             $mocked_client->mock('get_poi_status',      sub { return 'verified' });
             $mocked_client->mock('fully_authenticated', sub { return 1 });
             $mocked_status->mock('age_verification',    sub { return 1 });
@@ -771,8 +743,30 @@ subtest 'needs_poi_verification' => sub {
             ok !$test_client_cr->needs_poi_verification, 'POI is not needed';
 
             $mocked_client->mock('get_poi_status', sub { return 'rejected' });
-            ok !$test_client_cr->needs_poi_verification,
-                'POI is not needed for fully authenticated and age verified - even if poi status is <rejected>';
+            ok $test_client_cr->needs_poi_verification, 'POI is needed for fully authenticated and age verified - when status is <rejected>';
+
+            $mocked_client->unmock_all;
+            $mocked_status->unmock_all;
+        };
+
+        subtest 'Not needed' => sub {
+            $mocked_client->mock('get_poi_status',      sub { return 'verified' });
+            $mocked_client->mock('fully_authenticated', sub { return 1 });
+            $mocked_status->mock('age_verification',    sub { return 1 });
+            $mocked_client->mock(
+                'documents_uploaded',
+                sub {
+                    return {
+                        proof_of_identity => {
+                            documents => 'something',
+                        }};
+                });
+            $mocked_client->mock(
+                'binary_user_id' => sub {
+                    return 'mocked';
+                });
+
+            ok !$test_client_cr->needs_poi_verification, 'POI is not needed';
 
             $mocked_client->unmock_all;
             $mocked_status->unmock_all;
@@ -816,7 +810,7 @@ subtest 'needs_poi_verification' => sub {
             $mocked_client->mock(
                 'documents_uploaded',
                 sub {
-                    return {proof_of_identity => {documents => undef}};
+                    return {proof_of_identity => {documents => {}}};
                 });
 
             ok $test_client_cr->needs_poi_verification, 'POI is needed due to verification required and current status is none';
@@ -1097,10 +1091,9 @@ subtest 'shared payment method' => sub {
         });
 
     my $mocked_client = Test::MockModule->new(ref($test_client_cr));
-    $mocked_client->mock('is_verification_required',              sub { return 0 });
-    $mocked_client->mock('fully_authenticated',                   sub { return 0 });
-    $mocked_client->mock('age_verification',                      sub { return 0 });
-    $mocked_client->mock('is_document_expiry_check_required_mt5', sub { return 0 });
+    $mocked_client->mock('is_verification_required', sub { return 0 });
+    $mocked_client->mock('fully_authenticated',      sub { return 0 });
+    $mocked_client->mock('age_verification',         sub { return 0 });
     $mocked_client->mock(
         'documents_uploaded',
         sub {
@@ -1246,7 +1239,8 @@ subtest 'Sign up' => sub {
         );
 
         my $mocked_client = Test::MockModule->new(ref($test_client));
-        $mocked_client->mock('user', sub { bless {}, 'BOM::User' });
+        $mocked_client->mock('user',               sub { bless {}, 'BOM::User' });
+        $mocked_client->mock('documents_uploaded', sub { return {} });
         ok !$test_client->status->age_verification, 'Not age verified';
         ok !$test_client->fully_authenticated, 'Not fully authenticated';
         ok $test_client->is_verification_required(check_authentication_status => 1), 'Unauthenticated MX account needs verification';
@@ -1254,6 +1248,35 @@ subtest 'Sign up' => sub {
         ok $test_client->needs_poa_verification, 'POA is needed for unauthenticated MX account without deposits';
         $mocked_client->unmock_all;
     };
+};
+
+subtest 'Unsupported Onfido country' => sub {
+    my $test_client = BOM::User::Client->rnew(
+        broker_code => 'CR',
+        residence   => 'aq',
+        citizen     => 'aq',
+        email       => 'nowthatsan@email.com',
+        loginid     => 'CR00001618'
+    );
+
+    my $mocked_client = Test::MockModule->new(ref($test_client));
+    $mocked_client->mock('user',                     sub { bless {}, 'BOM::User' });
+    $mocked_client->mock('is_verification_required', sub { return 1 });
+
+    my $mocked_onfido_config = Test::MockModule->new('BOM::Config::Onfido');
+    $mocked_onfido_config->mock('is_country_supported', sub { return 0 });
+
+    my $docs   = {};
+    my $status = 'verified';
+
+    ok !$test_client->needs_poi_verification($docs, $status), 'POI not needed if the client country is not supported';
+
+    $mocked_onfido_config->mock('is_country_supported', sub { return 1 });
+
+    ok $test_client->needs_poi_verification($docs, $status), 'POI needed if the client country is supported';
+
+    $mocked_client->unmock_all;
+    $mocked_onfido_config->unmock_all;
 };
 
 subtest 'Experian validated accounts' => sub {
