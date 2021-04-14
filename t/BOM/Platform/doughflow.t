@@ -39,8 +39,36 @@ my @doughflow_deriv_sportsbooks_mock = (
     'Deriv Investments Ltd GBP',
 );
 
-my $dummy =
-    '{"payout_options":[{"payment_type":"EWallet","payment_method":"AirTM","friendly_name":"AirTM","minimum_amount":0,"maximum_amount":10000,"daily_limit":0,"weekly_limit":0,"monthly_limit":0,"velocity_1":"unlimited","velocity_2":"unlimited","time_frame":"n/a","payment_processor":""},{"payment_type":"Manual","payment_method":"CCPayout","friendly_name":"Credit Card Payout","minimum_amount":0,"maximum_amount":10000,"daily_limit":100,"weekly_limit":200,"monthly_limit":300,"velocity_1":"unlimited","velocity_2":"unlimited","time_frame":"24 hours","payment_processor":""},{"payment_type":"Manual","payment_method":"CFT","friendly_name":"Refund Debit/Credit Card","minimum_amount":1,"maximum_amount":10000,"daily_limit":0,"weekly_limit":0,"monthly_limit":0,"velocity_1":"5 per day","velocity_2":"unlimited","time_frame":"n/a","payment_processor":""},{"payment_type":"EWallet","payment_method":"Directa24S","friendly_name":"Directa24S","minimum_amount":0,"maximum_amount":10000,"daily_limit":0,"weekly_limit":0,"monthly_limit":0,"velocity_1":"unlimited","velocity_2":"unlimited","time_frame":"n/a","payment_processor":""},{"payment_type":"EWallet","payment_method":"DragonPay","friendly_name":"DragonPay Payout","minimum_amount":0,"maximum_amount":10000,"daily_limit":0,"weekly_limit":0,"monthly_limit":0,"velocity_1":"unlimited","velocity_2":"unlimited","time_frame":"n/a","payment_processor":""},{"payment_type":"EWallet","payment_method":"FasaPay","friendly_name":"FasaPay","minimum_amount":0,"maximum_amount":10000,"daily_limit":0,"weekly_limit":0,"monthly_limit":0,"velocity_1":"unlimited","velocity_2":"unlimited","time_frame":"n/a","payment_processor":""},{"payment_type":"EWallet","payment_method":"JetonWL","friendly_name":"Jeton Payout","minimum_amount":0,"maximum_amount":10000,"daily_limit":0,"weekly_limit":0,"monthly_limit":0,"velocity_1":"unlimited","velocity_2":"unlimited","time_frame":"n/a","payment_processor":""},{"payment_type":"EWallet","payment_method":"NETellerPS","friendly_name":"NETELLET via PaySafe","minimum_amount":0,"maximum_amount":10000,"daily_limit":0,"weekly_limit":0,"monthly_limit":0,"velocity_1":"unlimited","velocity_2":"unlimited","time_frame":"n/a","payment_processor":""},{"payment_type":"EWallet","payment_method":"PayLivre","friendly_name":"PayLivre Payouts","minimum_amount":5,"maximum_amount":10000,"daily_limit":0,"weekly_limit":0,"monthly_limit":0,"velocity_1":"unlimited","velocity_2":"unlimited","time_frame":"n/a","payment_processor":""},{"payment_type":"EWallet","payment_method":"PerfectM","friendly_name":"PerfectMoney","minimum_amount":0,"maximum_amount":10000,"daily_limit":0,"weekly_limit":0,"monthly_limit":0,"velocity_1":"unlimited","velocity_2":"unlimited","time_frame":"n/a","payment_processor":""},{"payment_type":"EWallet","payment_method":"ZingPay","friendly_name":"ZingPay EFT","minimum_amount":0,"maximum_amount":10000,"daily_limit":0,"weekly_limit":0,"monthly_limit":0,"velocity_1":"unlimited","velocity_2":"unlimited","time_frame":"n/a","payment_processor":""}],"deposit_options":[{"payment_type":"EWallet","payment_method":"AirTM","minimum_amount":2,"maximum_amount":100,"daily_limit":250,"weekly_limit":500,"monthly_limit":1000,"payment_processor":""},{"payment_type":"CryptoCurrency","payment_method":"BCH","minimum_amount":20,"maximum_amount":100,"daily_limit":250,"weekly_limit":500,"monthly_limit":1000,"payment_processor":""},{"payment_type":"EWallet","payment_method":"Boleto","minimum_amount":20,"maximum_amount":100,"daily_limit":250,"weekly_limit":500,"monthly_limit":1000,"payment_processor":""},{"payment_type":"EWallet","payment_method":"CreditCard","minimum_amount":1,"maximum_amount":10000,"daily_limit":10000,"weekly_limit":10000,"monthly_limit":10000,"payment_processor":""},{"payment_type":"EWallet","payment_method":"DusPay","minimum_amount":20,"maximum_amount":100,"daily_limit":250,"weekly_limit":500,"monthly_limit":1000,"payment_processor":""},{"payment_type":"EWallet","payment_method":"ePayouts","minimum_amount":20,"maximum_amount":100,"daily_limit":250,"weekly_limit":500,"monthly_limit":1000},{"payment_type":"EWallet","payment_method":"MobileAfrica","minimum_amount":20,"maximum_amount":100,"daily_limit":250,"weekly_limit":500,"monthly_limit":1000,"payment_processor":""},{"payment_type":"EWallet","payment_method":"NETeller","minimum_amount":1,"maximum_amount":100,"daily_limit":250,"weekly_limit":500,"monthly_limit":1000,"payment_processor":""},{"payment_type":"EWallet","payment_method":"PayLivre","minimum_amount":20,"maximum_amount":100,"daily_limit":250,"weekly_limit":500,"monthly_limit":1000,"payment_processor":""},{"payment_type":"EWallet","payment_method":"PayTrust88","minimum_amount":20,"maximum_amount":100,"daily_limit":250,"weekly_limit":500,"monthly_limit":1000,"payment_processor":""},{"payment_type":"EWallet","payment_method":"ThunderXpay","minimum_amount":20,"maximum_amount":100,"daily_limit":250,"weekly_limit":500,"monthly_limit":1000,"payment_processor":""},{"payment_type":"EWallet","payment_method":"TradersCoin","minimum_amount":20,"maximum_amount":100,"daily_limit":250,"weekly_limit":500,"monthly_limit":1000,"payment_processor":""},{"payment_type":"CreditCard","payment_method":"UnionPay","minimum_amount":25,"maximum_amount":10000,"daily_limit":0,"weekly_limit":0,"monthly_limit":30000,"payment_processor":""},{"payment_type":"EWallet","payment_method":"UnionPay","minimum_amount":25,"maximum_amount":10000,"daily_limit":0,"weekly_limit":0,"monthly_limit":30000,"payment_processor":""},{"payment_type":"EWallet","payment_method":"Uphold","minimum_amount":20,"maximum_amount":100,"daily_limit":250,"weekly_limit":500,"monthly_limit":1000,"payment_processor":""},{"payment_type":"EWallet","payment_method":"WeChat","minimum_amount":10,"maximum_amount":1000,"daily_limit":1000,"weekly_limit":5000,"monthly_limit":10000,"payment_processor":""},{"payment_type":"EWallet","payment_method":"xpate","minimum_amount":20,"maximum_amount":100,"daily_limit":250,"weekly_limit":500,"monthly_limit":1000,"payment_processor":""},{"payment_type":"EWallet","payment_method":"Yandex","minimum_amount":20,"maximum_amount":100,"daily_limit":250,"weekly_limit":500,"monthly_limit":1000,"payment_processor":""},{"payment_type":"EWallet","payment_method":"ZPay","minimum_amount":20,"maximum_amount":100,"daily_limit":250,"weekly_limit":500,"monthly_limit":1000,"payment_processor":""}],"sbook_id":1,"base_currency":"USD","frontend_name":"test"}';
+sub _test_data {
+    my $file_name = shift;
+    open my $fh, '<', "/home/git/regentmarkets/bom-platform/t/BOM/Platform/$file_name";
+    read $fh, my $content, -s $fh;
+    close $fh;
+    return $content;
+}
+
+my $test_usd_ar  = _test_data('test_usd_ar.json');
+my $test_usd_br  = _test_data('test_usd_br.json');
+my $test_eur_ar  = _test_data('test_eur_ar.json');
+my $test_eur_br  = _test_data('test_eur_br.json');
+my $test_usd_all = _test_data('test_usd_all.json');
+my $test_eur_all = _test_data('test_eur_all.json');
+
+my %dummy_redis_data = (
+    'DERIV::CASHIER::PAYMENT_METHODS::1::AR' => $test_usd_ar,
+    'DERIV::CASHIER::PAYMENT_METHODS::1::BR' => $test_usd_br,
+    'DERIV::CASHIER::PAYMENT_METHODS::2::AR' => $test_eur_ar,
+    'DERIV::CASHIER::PAYMENT_METHODS::2::BR' => $test_eur_br,
+    'DERIV::CASHIER::PAYMENT_METHODS::1::@'  => $test_usd_all,
+    'DERIV::CASHIER::PAYMENT_METHODS::2::@'  => $test_eur_all,
+    'Any other key'                          => 'RandomString',
+    'More weird keys'                        => '123412341234',
+);
+
+my @params;
+my $mocked_redis = Test::MockModule->new('RedisDB');
+$mocked_redis->mock('scan', sub { [0, [sort keys %dummy_redis_data]]; });
+$mocked_redis->mock('get',  sub { shift; my $k = shift; push @params, $k; return $dummy_redis_data{$k}; });
 
 sub get_fiat_currencies {
     my $currencies = shift;
@@ -115,16 +143,6 @@ subtest 'doughflow deriv sportsbook landing company consistency' => sub {
 };
 
 subtest 'get_payment_methods' => sub {
-    my $stored_keys = [
-        'DERIV::CASHIER::PAYMENT_METHODS::1::AR', 'DERIV::CASHIER::PAYMENT_METHODS::1::BR',
-        'DERIV::CASHIER::PAYMENT_METHODS::2::AR', 'DERIV::CASHIER::PAYMENT_METHODS::2::BR',
-        'Any other key',                          'More weird keys'
-    ];
-
-    my @params;
-    my $mocked_redis = Test::MockModule->new('RedisDB');
-    $mocked_redis->mock('scan', sub { [0, $stored_keys]; });
-    $mocked_redis->mock('get',  sub { shift; push @params, @_; return $dummy; });
 
     my $brand   = 'deriv';
     my $country = 'br';
@@ -158,11 +176,9 @@ subtest 'get_payment_methods' => sub {
 
     is(ref $payment_methods, 'ARRAY', 'Returns an ARRAY ref. (no brand, no country)');
     ok(scalar $payment_methods->@*, 'Brand and country param are not passed, the array returned is not empty.');
-    is(scalar @params, 4,                                        'Get all the 4 keys');
-    is($params[0],     'DERIV::CASHIER::PAYMENT_METHODS::1::AR', 'Redis key for Argentina, sportsbook 1');
-    is($params[1],     'DERIV::CASHIER::PAYMENT_METHODS::1::BR', 'Redis key for Brazil, sportsbook 1');
-    is($params[2],     'DERIV::CASHIER::PAYMENT_METHODS::2::AR', 'Redis key for Argentina, sportsbook 2');
-    is($params[3],     'DERIV::CASHIER::PAYMENT_METHODS::2::BR', 'Redis key for Brazil, sportsbook 2');
+    is(scalar @params, 2,                                       'Get all the 2 keys');
+    is($params[0],     'DERIV::CASHIER::PAYMENT_METHODS::1::@', 'Redis key for global, sportsbook 1');
+    is($params[1],     'DERIV::CASHIER::PAYMENT_METHODS::2::@', 'Redis key for global, sportsbook 2');
 
     $brand   = 'binary';
     $country = undef;

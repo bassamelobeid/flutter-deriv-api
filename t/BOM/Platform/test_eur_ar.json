@@ -1,0 +1,55 @@
+{
+  "payout_options": [
+    {
+      "payment_type": "EWallet",
+      "payment_method": "PayLivre",
+      "friendly_name": "PayLivre Payouts",
+      "minimum_amount": 5,
+      "maximum_amount": 10000,
+      "daily_limit": 0,
+      "weekly_limit": 0,
+      "monthly_limit": 0,
+      "velocity_1": "unlimited",
+      "velocity_2": "unlimited",
+      "time_frame": "n/a",
+      "payment_processor": "",
+      "processor_type": "",
+      "processor_enabled": true,
+      "blocked": false,
+      "geo_blocked": false
+    }
+  ],
+  "deposit_options": [
+    {
+      "payment_type": "CryptoCurrency",
+      "payment_method": "BCH",
+      "minimum_amount": 20,
+      "maximum_amount": 100,
+      "daily_limit": 250,
+      "weekly_limit": 500,
+      "monthly_limit": 1000,
+      "payment_processor": "",
+      "processor_type": "",
+      "processor_enabled": true,
+      "blocked": false,
+      "geo_blocked": false
+    },
+    {
+      "payment_type": "EWallet",
+      "payment_method": "PayLivre",
+      "minimum_amount": 20,
+      "maximum_amount": 100,
+      "daily_limit": 250,
+      "weekly_limit": 500,
+      "monthly_limit": 1000,
+      "payment_processor": "",
+      "processor_type": "",
+      "processor_enabled": true,
+      "blocked": false,
+      "geo_blocked": false
+    }
+  ],
+  "sbook_id": 2,
+  "base_currency": "EUR",
+  "frontend_name": "test eur"
+}

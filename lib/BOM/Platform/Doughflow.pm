@@ -15,7 +15,7 @@ use strict;
 use warnings;
 
 use JSON::MaybeXS;
-use List::MoreUtils qw(uniq);
+use List::MoreUtils qw(any uniq);
 
 use BOM::Config;
 use BOM::Config::Runtime;
@@ -52,7 +52,8 @@ sub get_sportsbook_by_short_code {
         return 'test';
     }
 
-    return get_sportsbook_mapping_by_landing_company($short_code) . ' ' . $currency if is_deriv_sportsbooks_enabled();
+    return get_sportsbook_mapping_by_landing_company($short_code) . ' ' . $currency
+        if is_deriv_sportsbooks_enabled();
 
     # TODO: remove this check once Doughflow's side is live
     # for backward compatibility, we keep sportsbook prefixes as 'Binary'
@@ -245,7 +246,6 @@ sub get_payment_methods {
     } else {
         my %all_countries = Brands->new(name => $brand)->countries_instance->countries_list->%*;
         push @short_codes, @{$all_countries{$_}}{qw/financial_company gamming_company/} for keys %all_countries;
-        @short_codes = @short_codes;
     }
     @short_codes = uniq grep { $_ && ($_ ne 'none') } @short_codes;
     return [] unless scalar @short_codes;
@@ -279,13 +279,18 @@ sub get_payment_methods {
             @{$payment_methods->{$frontend_name}}{"deposit_options", "payout_options", "base_currency"};
         next unless (scalar @$deposit_options) + (scalar @$payout_options);
 
+        $deposit_options = _filter_payment_methods($deposit_options, $country);
+        $payout_options  = _filter_payment_methods($payout_options,  $country);
+
         for my $deposit (@$deposit_options) {
-            my $payment_method = ($response->{$deposit->{payment_method}} //= {});
-            my $limits         = ($payment_method->{deposit_limits}       //= {});
+            my $payment_method =
+                ($response->{$deposit->{payment_method}} //= {});
+            my $limits = ($payment_method->{deposit_limits} //= {});
             $payment_method->{id}                = $deposit->{payment_method};
             $payment_method->{display_name}      = $deposit->{payment_method};
             $payment_method->{description}       = $deposit->{payment_method};
             $payment_method->{payment_processor} = $deposit->{payment_processor};
+            $payment_method->{type}              = $deposit->{payment_type};
             $payment_method->{type_display_name} = $deposit->{payment_type};        # For now we don't have a friendly name for this
 
             $limits->{$base_currency} = {
@@ -297,11 +302,13 @@ sub get_payment_methods {
         }
 
         for my $payout (@$payout_options) {
-            my $payment_method = ($response->{$payout->{payment_method}} //= {});
-            my $limits         = ($payment_method->{withdraw_limits}     //= {});
+            my $payment_method =
+                ($response->{$payout->{payment_method}} //= {});
+            my $limits = ($payment_method->{withdraw_limits} //= {});
 
             $payment_method->{id}                = $payout->{payment_method};
             $payment_method->{type}              = $payout->{payment_type};
+            $payment_method->{type_display_name} = $payout->{payment_type};        # For now we don't have a friendly name for this
             $payment_method->{display_name}      = $payout->{friendly_name};
             $payment_method->{description}       = $payout->{friendly_name};
             $payment_method->{payment_processor} = $payout->{payment_processor};
@@ -309,14 +316,14 @@ sub get_payment_methods {
                 min => $payout->{minimum_amount},
                 max => $payout->{maximum_amount}};
 
-            $payment_method->{type_display_name}  = $payout->{payment_type};    # For now we don't have a friendly name for this
             $payment_method->{withdrawal_time}    = $payout->{time_frame};
-            $payment_method->{description}        = '';
+            $payment_method->{description}        = q{};
             $payment_method->{predefined_amounts} = [5, 10, 100, 300, 500];
-            $payment_method->{signup_link}        = '';
+            $payment_method->{signup_link}        = q{};
             $payment_method->{supported_currencies} //= [];
             push $payment_method->{supported_currencies}->@*, $base_currency;
-            $payment_method->{supported_currencies} = [uniq $payment_method->{supported_currencies}->@*];
+            $payment_method->{supported_currencies} =
+                [uniq $payment_method->{supported_currencies}->@*];
         }
     }
 
@@ -368,7 +375,7 @@ If no country is passed all the payment method keys are returned.
 sub _get_all_payment_keys {
     my $redis   = shift;
     my $country = shift;
-    my $regex   = "DERIV::CASHIER::PAYMENT_METHODS::.*::" . ($country ? uc $country : '[A-Z]{2}');
+    my $regex   = 'DERIV::CASHIER::PAYMENT_METHODS::.*::' . ($country ? uc $country : q{@});
     my @res;
 
     my $cursor = 0;
@@ -378,6 +385,61 @@ sub _get_all_payment_keys {
     } while ($cursor);
 
     return @res;
+}
+
+=head2 _filter_payment_methods
+
+Filter the payment methods following some business rules.
+
+should receive two arguments. The first is an array ref with payment methods (payout
+or deposit options), and the second is an scalar B<country> with the country code, 
+it can be undefined.
+
+It is expected that every hashref have the following attributes:
+
+=over 4
+
+=item * C<processor_enabled> - A number, acting as boolean 1 for true, 0 for false.  Determines if the processor was enabled. 
+
+=item * C<blocked> - A number, acting as boolean. Determines if the payment method is blocked.
+
+=item * C<geo_blocked> - A number, acting as boolean. Determines if payment method is blockef for some geographical reason. Only relevant when country is not null
+
+=item * C<payment_type> - A string describing what kind of payment type it is.
+
+=item * C<processor_type> - A string describing the processor type.
+
+=item * C<payment_method> - A string describing the payment method name.
+
+=back
+
+Returns an array ref to the filtered list of payout or deposit methods.
+
+=cut
+
+sub _filter_payment_methods {
+    my @payment_methods = shift->@*;
+    my $country         = shift;
+    # Doughflow is not used for Crypto processing.
+    # Manual types is mostly performed by PayOps team should be not offered.
+    # CFT and BankWire are hided by bussiness requirements.
+    my @ignored_payment_types   = qw( CryptoCurrency Manual );
+    my @ignored_processor_types = qw( CryptoCurrency );
+    my @ignored_payment_methods = qw ( CFT BankWire );
+
+    @payment_methods =
+        grep { (!defined $_->{processor_enabled} || $_->{processor_enabled}) && !$_->{blocked} && !($country && $_->{geo_blocked}) } @payment_methods;
+
+    my @ret = ();
+    for my $payment_method (@payment_methods) {
+        next if (any { $_ eq $payment_method->{payment_type} } @ignored_payment_types);
+        next if (any { $_ eq $payment_method->{processor_type} } @ignored_processor_types);
+        next if (any { $_ eq $payment_method->{payment_method} } @ignored_payment_methods);
+        push @ret, $payment_method;
+    }
+
+    return \@ret;
+
 }
 
 1;
