@@ -135,6 +135,12 @@ sub _process_multiplier_config {
     die 'stop out level is out of range. Allowable range from 0 to 70'
         if grep { $stop_out_level->{$_} < 0 || $stop_out_level->{$_} > 70 } keys %$stop_out_level;
 
+    if (my $expiry = $args->{expiry}) {
+        my ($day) = $expiry =~ /^(\d+)d$/;
+        die 'only \'d\'  unit and integer number of days are allowed' unless defined $day;
+        die 'expiry has to be greater than 1d' if $day < 1;
+    }
+
     return $args;
 }
 
@@ -195,7 +201,8 @@ sub get_multiplier_config {
     my $method          = $self->for_date ? 'get_for' : 'get';
     my $existing_config = $self->chronicle_reader->$method(CONFIG_NAMESPACE, $redis_key, $self->for_date);
 
-    return $default_config unless $existing_config;
+    return {}                 unless $default_config;
+    return {%$default_config} unless $existing_config;
 
     # sometimes we add something new to the yaml file without updating the cache.
     return {%$default_config, %$existing_config};

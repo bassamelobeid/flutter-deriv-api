@@ -458,3 +458,41 @@ common:
       50: 0
       100: 0
       200: 0
+  cryBTCUSD: &crypto_large_cap
+    multiplier_range: [10, 20, 30, 40, 50]
+    commission: 0.001
+    cancellation_commission: 0.05
+    cancellation_duration_range: []
+    stop_out_level:
+      10: 0
+      20: 0
+      30: 0
+      40: 0
+      50: 0
+    expiry: '7d'
+  cryETHUSD: *crypto_large_cap
+  cryBNBUSD: &crypto_medium_cap
+    multiplier_range: [10, 20, 30]
+    commission: 0.0015
+    cancellation_commission: 0.05
+    cancellation_duration_range: []
+    stop_out_level:
+      10: 0
+      20: 0
+      30: 0
+    expiry: '7d'
+  cryBCHUSD: *crypto_medium_cap
+  cryLTCUSD: *crypto_medium_cap
+  cryXRPUSD: *crypto_medium_cap
+  cryEOSUSD: &crypto_small_cap
+    multiplier_range: [5, 10]
+    commission: 0.01
+    cancellation_commission: 0.05
+    cancellation_duration_range: []
+    stop_out_level:
+      5: 0
+      10: 0
+    expiry: '7d'
+  cryZECUSD: *crypto_small_cap
+  cryXMRUSD: *crypto_small_cap
+  cryDSHUSD: *crypto_small_cap
