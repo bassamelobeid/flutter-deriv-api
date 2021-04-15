@@ -34,7 +34,7 @@ is @$timing, 2, 'Should make 2 logs';
 
 is $timing->[0]->[0], 'bom_websocket_api.v_3.rpc.call.timing';
 ok $timing->[0]->[1], 'Should log timing';
-cmp_bag $timing->[0]->[2]->{tags}, ['brand:binary', 'rpc:website_status', 'source_type:official'], 'Metric tags are correct';
+cmp_bag $timing->[0]->[2]->{tags}, ['brand:binary', 'rpc:website_status', 'source_type:official', 'stream:general'], 'Metric tags are correct';
 
 is $timing->[1]->[0], 'bom_websocket_api.v_3.rpc.call.timing.sent';
 ok $timing->[1]->[1], 'Should log timing';
@@ -124,7 +124,7 @@ is $res->{error}->{code}, 'CallError', 'Should make timing if returns CallError'
 
 is $timing->[0]->[0], 'bom_websocket_api.v_3.rpc.call.timing';
 ok $timing->[0]->[1], 'Should log timing';
-cmp_bag $timing->[0]->[2]->{tags}, ['brand:binary', 'rpc:website_status', 'source_type:official'], 'Metric tags are correct';
+cmp_bag $timing->[0]->[2]->{tags}, ['brand:binary', 'rpc:website_status', 'source_type:official', 'stream:general'], 'Metric tags are correct';
 
 is $timing->[1]->[0], 'bom_websocket_api.v_3.rpc.call.timing.sent';
 ok $timing->[1]->[1], 'Should log timing';
@@ -159,7 +159,7 @@ is $res->{error}->{code}, 'WrongResponse', 'Should make timing if returns WrongR
 
 is $timing->[0]->[0], 'bom_websocket_api.v_3.rpc.call.timing';
 ok $timing->[0]->[1], 'Should log timing';
-cmp_bag $timing->[0]->[2]->{tags}, ['brand:binary', 'rpc:website_status', 'source_type:official'], 'Metric tags are correct';
+cmp_bag $timing->[0]->[2]->{tags}, ['brand:binary', 'rpc:website_status', 'source_type:official', 'stream:general'], 'Metric tags are correct';
 
 is $timing->[1]->[0], 'bom_websocket_api.v_3.rpc.call.timing.sent';
 ok $timing->[1]->[1], 'Should log timing';
