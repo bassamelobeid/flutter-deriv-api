@@ -8,22 +8,44 @@
         }
         return true;
     }
+    
+    var extra_remarks = {
+        'external_cashier' : {
+            'CREDIT': 'deposit',
+            'DEBIT': 'withdrawal',
+            'WITHDRAWAL_REVERSAL': 'withdrawal_reversal',
+        }
+    };
+    
+    function set_remark() {
+        var remark = \$("#payment_type option:selected").text();
+        var payment_type = \$('#payment_type').val();
+        if (!payment_type) remark = '';
+        if (payment_type in extra_remarks) {
+            var ttype = \$('input:checked').val();
+            remark = remark + ' '+extra_remarks[payment_type][ttype];
+        }
+        \$('#remark').val(remark);
+    }
 
     \$(document).ready(function() {
         \$('.datepick').datepicker({dateFormat: "yy-mm-dd"}).datepicker('setDate', new Date());
         \$('#ui-datepicker-div').hide();
         \$('#mdc_credit').click(function(){\$('#payment_debit_credit').text('Confirm credit')});
         \$('#mdc_debit' ).click(function(){\$('#payment_debit_credit').text('Confirm debit')});
+        \$('#mdc_reversal' ).click(function(){\$('#payment_debit_credit').text('Confirm reversal')});
         \$('.all_payment_types').hide();
         \$('.all_payment_types input[insist]').removeAttr('required');
+         \$('input[name="ttype"]').click(set_remark);
         \$('#payment_type' ).change(function(){
             var payment_type = \$(this).val();
             \$('.all_payment_types').hide();
             \$('.all_payment_types input[insist]').removeAttr('required');
-            \$('.'+payment_type).show();
-            \$('.'+payment_type+' input[insist]').attr('required',1);
-            var remark = \$('option:selected', this).text();
-            \$('#remark').val(remark);
+            if (payment_type) {
+                \$('.'+payment_type).show();
+                \$('.'+payment_type+' input[insist]').attr('required',1);
+            }
+            set_remark();
         });
         
     })
@@ -36,6 +58,7 @@
 <p>
 <input type="radio" name="ttype" value="CREDIT" id="mdc_credit" checked="1" /><label for="mdc_credit">CREDIT this Client</label>
 <input type="radio" name="ttype" value="DEBIT"  id="mdc_debit" /><label for="mdc_debit" >DEBIT this Client</label>
+<input class="all_payment_types external_cashier" type="radio" name="ttype" value="WITHDRAWAL_REVERSAL"  id="mdc_reversal" /><label class="all_payment_types external_cashier" for="mdc_reversal" >Credit back a withdrawal</label>
 </p>
 
 <div class="row">
@@ -106,11 +129,11 @@
 <div class="row">
     <div class="all_payment_types external_cashier col-stack">
         <label>Trace ID:</label>
-        <input type="number" name="trace_id" />
+        <input type="number" name="trace_id" insist/>
     </div>
     <div class="all_payment_types external_cashier credit col-stack">
         <label>Payment processor:</label>
-        <input type="text" name="payment_processor" data-lpignore="true" style="width:134" insist />
+        <input type="text" name="payment_processor" data-lpignore="true" style="width:134" />
     </div>
     <div class="all_payment_types external_cashier credit col-stack">
         <label>Payment method:</label>
@@ -154,7 +177,7 @@
         <label>Remarks:</label>
         <input type="text" size="150" required id="remark" name="remark" data-lpignore="true" />
     </div>
-    <em>* Remarks will appear on client statement but are no longer used by the system</em>
+    <em>* Remarks will appear on client statement for some payment types, but are no longer used by the system</em>
 </div>
 
 <button type="submit" class="btn btn--red" id="payment_debit_credit" value="CONFIRM">Confirm credit</button>

@@ -228,13 +228,25 @@ try {
     my $fdp = $client->is_first_deposit_pending;
 
     if ($payment_type eq 'external_cashier') {
-        code_exit_BO("Remarks is mandatory for doughflow payments.") unless $remark;
 
-        if ($ttype eq 'CREDIT' and $remark !~ /withdrawal_reversal/i) {
-            code_exit_BO("Transaction id is mandatory for doughflow credit.") if not $params{transaction_id};
-            code_exit_BO("Transaction id provided does not match with one provided in remark (it should be in format like: transaction_id=33232).")
-                if $remark !~ /transaction_id=$params{transaction_id}/;
+        if ($ttype eq 'CREDIT') {
+            if (not $params{transaction_id}) {
+                code_exit_BO('Transaction id is mandatory for doughflow deposits.');
+            }
+            if (not $params{payment_processor}) {
+                code_exit_BO('Payment processor is mandatory for doughflow deposits.');
+            }
         }
+
+        if ($ttype =~ /^(DEBIT|WITHDRAWAL_REVERSAL)$/ and not $params{payment_method}) {
+            code_exit_BO("Payment method is mandatory for doughflow withdrawal and withdrawal reversals.");
+        }
+
+        $params{transaction_type} = {
+            CREDIT              => 'deposit',
+            DEBIT               => 'withdrawal',
+            WITHDRAWAL_REVERSAL => 'withdrawal_reversal'
+        }->{$ttype};
     }
 
     if ($payment_type eq 'mt5_adjustment') {
@@ -244,7 +256,7 @@ try {
             amount       => $signed_amount,
             staff        => $clerk,
         );
-    } elsif ($ttype eq 'CREDIT' || $ttype eq 'DEBIT') {
+    } elsif ($ttype eq 'CREDIT' || $ttype eq 'DEBIT' || $ttype eq 'WITHDRAWAL_REVERSAL') {
         my $trx = $client->smart_payment(
             %params,    # these are payment-type-specific params from the html form.
             amount => $signed_amount,
@@ -266,7 +278,7 @@ try {
                 client        => $client,
                 amount        => $signed_amount,
                 transfer_type => $ttype
-            }) if $is_internal_payment && $remark !~ /reversal/;
+            }) if $is_internal_payment && $ttype ne 'WITHDRAWAL_REVERSAL';
 
         $client_pa_exp = $client;
     } elsif ($ttype eq 'TRANSFER') {
