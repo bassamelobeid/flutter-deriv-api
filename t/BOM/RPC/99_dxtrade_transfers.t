@@ -34,7 +34,7 @@ BOM::User->create(
 $client3->account('USD');
 my $token3 = BOM::Platform::Token::API->new->create_token($client3->loginid, 'test token');
 
-my ($dx_demo, $dx_real);
+my ($dx_demo, $dx_real, $dx_synthetic);
 
 subtest 'platform deposit and withdrawal' => sub {
 
@@ -49,6 +49,7 @@ subtest 'platform deposit and withdrawal' => sub {
         account_type => 'demo',
         market_type  => 'financial',
         password     => 'test',
+        currency     => 'USD',
     };
     $dx_demo = $c->call_ok('trading_platform_new_account', $params)->result;
 
@@ -57,8 +58,18 @@ subtest 'platform deposit and withdrawal' => sub {
         account_type => 'real',
         market_type  => 'financial',
         password     => 'test',
+        currency     => 'USD',
     };
     $dx_real = $c->call_ok('trading_platform_new_account', $params)->result;
+
+    $params->{args} = {
+        platform     => 'dxtrade',
+        account_type => 'real',
+        market_type  => 'gaming',
+        password     => 'test2',
+        currency     => 'USD',
+    };
+    $dx_synthetic = $c->call_ok('trading_platform_new_account', $params)->result;
 
     $params->{args} = {
         platform     => 'dxtrade',
@@ -163,6 +174,14 @@ subtest 'transfer between accounts' => sub {
                 'currency'     => $dx_real->{currency},
                 'loginid'      => $dx_real->{account_id},
                 'market_type'  => $dx_real->{market_type},
+                'demo_account' => 0,
+            },
+            {
+                'account_type' => 'dxtrade',
+                'balance'      => num(0),
+                'currency'     => $dx_synthetic->{currency},
+                'loginid'      => $dx_synthetic->{account_id},
+                'market_type'  => 'synthetic',
                 'demo_account' => 0,
             },
         ),

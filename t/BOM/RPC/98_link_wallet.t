@@ -96,6 +96,7 @@ subtest 'link_wallet' => sub {
                 account_type => 'demo',
                 market_type  => 'financial',
                 password     => 'test',
+                currency     => 'USD',
             },
         };
 

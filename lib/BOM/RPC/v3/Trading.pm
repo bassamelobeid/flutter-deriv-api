@@ -45,8 +45,18 @@ my %ERROR_MAP = do {
         PlatformTransferAccountInvalid         => localize('The provided Deriv account ID is not valid.'),
         PlatformTransferOauthTokenRequired     =>
             localize('This request must be made using a connection authorized by the Deriv account involved in the transfer.'),
-        PasswordRequired => localize('A new password is required'),
-    );
+        PasswordRequired        => localize('A new password is required'),
+        RealAccountMissing      => localize('You are on a virtual account. To open a [_1] account, please upgrade to a real account.'),
+        FinancialAccountMissing =>
+            localize('Your existing account does not allow [_1] trading. To open a [_1] account, please upgrade to a financial account.'),
+        GamingAccountMissing =>
+            localize('Your existing account does not allow [_1] trading. To open a [_1] account, please upgrade to a gaming account.'),
+        AccountShouldBeReal              => localize('Only real accounts are allowed to open [_1] real accounts'),
+        NoAgeVerification                => localize("You haven't verified your age. Please contact us for more information."),
+        FinancialAssessmentMandatory     => localize('Please complete your financial assessment.'),
+        TINDetailsMandatory              => localize('We require your tax information for regulatory purposes. Please fill in your tax information.'),
+        TradingAccountNotAllowed         => localize('This trading platform account is not available in your country yet.'),
+        TradingAccountCurrencyNotAllowed => localize('This currency is not available.'));
 };
 
 =head2 trading_platform_new_account
@@ -249,18 +259,24 @@ Common error handler.
 sub handle_error {
     my $e = shift;
 
-    if (ref $e eq 'HASH' and $e->{error_code} and $ERROR_MAP{$e->{error_code}}) {
-        return BOM::RPC::v3::Utility::create_error({
-            code              => $e->{error_code},
-            message_to_client => localize($ERROR_MAP{$e->{error_code}}, ($e->{message_params} // [])->@*),
-        });
-    } else {
-        $log->errorf('Trading platform unexpected error: %s', $e);
-        return BOM::RPC::v3::Utility::create_error({
-            code              => 'TradingPlatformError',
-            message_to_client => localize('Sorry, an error occurred. Please try again later.'),
-        });
+    if (ref $e eq 'HASH') {
+        if (my $code = $e->{error_code} // $e->{code}) {
+            if (my $message = $ERROR_MAP{$code} // BOM::RPC::v3::Utility::error_map()->{$code}) {
+                return BOM::RPC::v3::Utility::create_error({
+                    code              => $code,
+                    message_to_client => localize($message, ($e->{message_params} // [])->@*),
+                    $e->{details} ? (details => $e->{details}) : (),
+                });
+            }
+        }
     }
+
+    $log->errorf('Trading platform unexpected error: %s', $e);
+
+    return BOM::RPC::v3::Utility::create_error({
+        code              => 'TradingPlatformError',
+        message_to_client => localize('Sorry, an error occurred. Please try again later.'),
+    });
 }
 
 1;
