@@ -14,6 +14,7 @@ use JSON::Validator;
 use Log::Any qw($log);
 use Mojo::IOLoop;
 use Net::Address::IP::Local;
+use Mojo::WebSocketProxy::Backend::ConsumerGroups;
 use Path::Tiny;
 #  module is loaded on server start and shared across connections
 #  %schema_cache is added onto as each unique request type is received.
@@ -110,7 +111,8 @@ sub log_call_timing {
     my ($c, $req_storage) = @_;
 
     my %tags = (
-        rpc => $req_storage->{method},
+        rpc    => $req_storage->{method},
+        stream => $req_storage->{msg_group},
         map { $_ => $c->stash($_) } qw/brand source_type/
     );
 
@@ -308,8 +310,6 @@ sub before_forward {
                 }
             }
 
-            DataDog::DogStatsd::Helper::stats_inc('bom_websocket_api.v_3.call.all', {tags => [$tag, "category:$req_storage->{name}"]});
-
             my $loginid = $c->stash('loginid');
             if ($send_schema->{auth_required} and not $loginid) {
                 return Future->fail($c->new_error($req_storage->{name}, 'AuthorizationRequired', $c->l('Please log in.')));
@@ -327,6 +327,15 @@ sub before_forward {
                 DataDog::DogStatsd::Helper::stats_inc('bom_websocket_api.v_3.authenticated_call.all',
                     {tags => [$tag, $req_storage->{name}, "account_type:$account_type"]});
             }
+
+            DataDog::DogStatsd::Helper::stats_inc(
+                'bom_websocket_api.v_3.call.all',
+                {
+                    tags => [
+                        $tag,
+                        "category:$req_storage->{name}",
+                        "stream:" . ($req_storage->{msg_group} // Mojo::WebSocketProxy::Backend::ConsumerGroups::DEFAULT_CATEGORY_NAME())]});
+
             return Future->done;
         },
         sub {
