@@ -686,7 +686,7 @@ async_rpc "mt5_new_account",
     my $brand              = request()->brand;
     my $countries_instance = $brand->countries_instance;
     my $countries_list     = $countries_instance->countries_list;
-    return create_error_future('permission') unless $countries_list->{$residence} && $countries_instance->is_signup_allowed($residence);
+    return create_error_future('InvalidAccountRegion') unless $countries_list->{$residence} && $countries_instance->is_signup_allowed($residence);
 
     my $user = $client->user;
 

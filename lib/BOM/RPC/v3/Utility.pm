@@ -442,14 +442,15 @@ sub error_map {
     local *localize = sub { die 'you probably wanted an arrayref for this localize() call' if @_ > 1; shift };
 
     return {
-        'email unverified'  => localize('Your email address is unverified.'),
-        'no residence'      => localize('Your account has no country of residence.'),
-        'invalid'           => localize('Sorry, account opening is unavailable.'),
-        'InvalidAccount'    => localize('Sorry, account opening is unavailable.'),
-        'invalid residence' => localize('Sorry, our service is not available for your country of residence.'),
-        'PostcodeRequired'  => localize('Postcode is required for UK residents.'),
-        'PoBoxInAddress'    => localize('P.O. Box is not accepted in address.'),
-        'duplicate email'   => localize(
+        'email unverified'     => localize('Your email address is unverified.'),
+        'no residence'         => localize('Your account has no country of residence.'),
+        'invalid'              => localize('Sorry, account opening is unavailable.'),
+        'InvalidAccount'       => localize('Sorry, account opening is unavailable.'),
+        'invalid residence'    => localize('Sorry, our service is not available for your country of residence.'),
+        'InvalidAccountRegion' => localize('Sorry, account opening is unavailable in your region.'),
+        'PostcodeRequired'     => localize('Postcode is required for UK residents.'),
+        'PoBoxInAddress'       => localize('P.O. Box is not accepted in address.'),
+        'duplicate email'      => localize(
             'Your provided email address is already in use by another Login ID. According to our terms and conditions, you may only register once through our site.'
         ),
         'DuplicateVirtualWallet' => localize('Sorry, a virtual wallet account already exists. Only one virtual wallet account is allowed.'),
@@ -610,8 +611,8 @@ sub validate_make_new_account {
     my $gaming_company     = $countries_instance->gaming_company_for_country($residence);
     my $financial_company  = $countries_instance->financial_company_for_country($residence);
 
-    return create_error_by_code('InvalidAccount') unless $countries_instance->is_signup_allowed($residence);
-    return create_error_by_code('InvalidAccount') unless ($gaming_company or $financial_company);
+    return create_error_by_code('InvalidAccountRegion') unless $countries_instance->is_signup_allowed($residence);
+    return create_error_by_code('InvalidAccount')       unless ($gaming_company or $financial_company);
     return create_error_by_code('InvalidResidence') if ($countries_instance->restricted_country($residence));
 
     # if no real sibling is present then its virtual
