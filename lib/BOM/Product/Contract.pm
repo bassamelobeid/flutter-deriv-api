@@ -529,6 +529,25 @@ sub allowed_slippage {
     return $self->base_commission * 0.5;
 }
 
+=head2 enqueue_settlement_epoch
+
+Shall we push this contract into settlement queue.
+
+Returns true if the contract has user defined expiry time.
+Returns true if internal contract duration is set to be less than 1 year, else false.
+
+=cut
+
+sub enqueue_settlement_epoch {
+    my $self = shift;
+
+    return 1 if $self->category->has_user_defined_expiry;
+    # Maximum contract duration is 1 year. For multipliers, there should be no expiry but as a workaround for swap charge on cryptocurrency,
+    # we have imposed a shorter (7d, configurable from back-office) expiry for crypto multipliers.
+    return 1 if $self->timeinyears->amount < 1;
+    return 0;
+}
+
 # INTERNAL METHODS
 
 #A TimeInterval which expresses the maximum time a tick trade may run, even if there are missing ticks in the middle.

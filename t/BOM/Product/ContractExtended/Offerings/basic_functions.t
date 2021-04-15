@@ -35,7 +35,8 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
 
 my $o = LandingCompany::Registry::get('svg')->basic_offerings({
     loaded_revision => 0,
-    action          => 'buy'
+    action          => 'buy',
+    suspend_markets => ['cryptocurrency'],    # not going to mess up the test with new market
 });
 my $expected_levels = 4;
 my $offerings       = new_ok('BOM::Product::Offerings::DisplayHelper' => [{offerings => $o}]);

@@ -29,12 +29,13 @@ $mocked->mock('commission',        sub { return 0 });
 $mocked->mock('commission_amount', sub { return 0 });
 
 subtest 'past date_expiry' => sub {
-    BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks([100, $now->epoch, 'R_100'], [101, $now->epoch + 100 * 365 * 86400, 'R_100']);
+    BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks([100, $now->epoch, 'R_100'],
+        [101, $now->truncate_to_day->plus_time_interval('36500d23h59m59s')->epoch, 'R_100']);
     my $args = {
         bet_type     => 'MULTDOWN',
         underlying   => 'R_100',
         date_start   => $now,
-        date_pricing => $now->plus_time_interval(100 * 365 . 'd1s'),
+        date_pricing => $now->truncate_to_day->plus_time_interval('36501d'),
         amount_type  => 'stake',
         amount       => 100,
         multiplier   => 10,

@@ -131,10 +131,17 @@ But, we need an expiry time for every contract the database. Hence, hard-coding 
 =cut
 
 override 'date_expiry' => sub {
-
     my $self = shift;
 
-    return $self->date_start->plus_time_interval(100 * 365 . 'd');
+    # default to 100 years from now if it is not defined.
+    my $expiry = $self->_multiplier_config->{expiry} // '36500d';
+
+    my $date_expiry = $self->date_start->truncate_to_day->plus_time_interval($expiry);
+
+    my $close = $self->trading_calendar->closing_on($self->underlying->exchange, $date_expiry);
+
+    return $close if $close;
+    return $self->trading_caledar->trade_date_after($self->underlying->exchange, $date_expiry);
 };
 
 =head2 take_profit
@@ -294,17 +301,23 @@ sub is_expired {
             $self->value(financialrounding('price', $self->currency, $value));
             return 1;
         }
-    } elsif ($self->date_pricing->is_after($self->date_expiry)) {
-        # we don't expect a contract to reach date_expiry, but we it does, we will need to close
+    } elsif (my $exit_tick = $self->exit_tick) {
+        # we don't expect a contract to reach date_expiry (except for cryptocurrency which has shorter duration), but we it does, we will need to close
         # it at current tick.
-        my $value =
-            $self->_user_input_stake + max($self->_calculate_pnl_at_tick({at_tick => $self->current_tick}), -$self->_user_input_stake);
+        my $value = $self->_user_input_stake + max($self->_calculate_pnl_at_tick({at_tick => $exit_tick}), -$self->_user_input_stake);
         $self->value(financialrounding('price', $self->currency, $value));
         return 1;
     }
 
     return 0;
 }
+
+override '_build_exit_tick' => sub {
+    my $self = shift;
+
+    return if $self->date_pricing->epoch <= $self->date_expiry->epoch;
+    return $self->underlying->tick_at($self->date_expiry->epoch);
+};
 
 =head2 hit_tick
 
@@ -707,7 +720,16 @@ sub close_tick {
 
     return $self->hit_tick if $self->hit_tick;
 
+    my $exit_tick = $self->exit_tick;
+
+    # right at the date_expiry and contract is not sold
+    return $exit_tick if $exit_tick and not $self->is_sold;
+
     return undef unless $self->is_sold;
+
+    # for contract that is sold at expiry
+    return $exit_tick if ($self->sell_time >= $self->date_expiry->epoch);
+
     # if it is not hit tick then we need to check for the tick used at sell time.
     my $sell_epoch = Date::Utility->new($self->sell_time)->epoch;
 
@@ -886,7 +908,10 @@ sub _validate_cancellation {
     return unless $self->cancellation;
 
     # deal cancellation is not offered to crash/boom and step indices.
-    if ($self->underlying->submarket->name eq 'crash_index' or $self->underlying->submarket->name eq 'step_index') {
+    if (   $self->underlying->submarket->name eq 'crash_index'
+        or $self->underlying->submarket->name eq 'step_index'
+        or $self->underlying->market->name eq 'cryptocurrency')
+    {
         return {
             message           => 'deal cancellation not available',
             message_to_client => $ERROR_MAPPING->{DealCancellationNotAvailable},
@@ -1076,7 +1101,7 @@ sub _build__multiplier_config {
 
     my $config = $self->_quants_config->get_multiplier_config($self->landing_company, $self->underlying->symbol);
 
-    return $config if $config;
+    return $config if $config && %$config;
 
     $self->_add_error({
         message           => 'multiplier config undefined for ' . $self->underlying->symbol,
@@ -1184,6 +1209,8 @@ override 'pricing_vol' => sub {
             delta => 50,
             ticks => $self->ticks_for_short_term_volatility_calculation,
         });
+    } elsif ($market eq 'cryptocurrency') {
+        $sigma = 0.20;    # flat 20% for crypto for compatibility sake. We're not offerings DC or DP on it.
     } else {
         die 'get_volatility for unknown market ' . $market;
     }
@@ -1228,11 +1255,46 @@ sub _minimum_cancellation_commission {
     return $self->_minimum_stake * 0.01;
 }
 
+=head2 commission_multiplier
+
+A factor used to scale commission
+
+=cut
+
 sub commission_multiplier {
     my $self = shift;
 
     # we do apply specific adjustment to forex commission
-    return 1 if $self->underlying->market->name ne 'forex';
+    my $market = $self->underlying->market->name;
+    return 1 if $market eq 'synthetic_index';
+
+    my $ee_multiplier = $self->_get_economic_event_commission_multiplier();
+    # Currently the multiplier for economic event is hard-coded to 3. In the future, this value might be configurable from the
+    # backoffice tool.
+    my $seasonality_multiplier = Quant::Framework::Spread::Seasonality->new->get_spread_seasonality($self->underlying->symbol, $self->date_start);
+
+    unless (defined $seasonality_multiplier) {
+        $self->_add_error({
+            message           => 'spread seasonality not defined for ' . $self->underlying->symbol,
+            message_to_client => $ERROR_MAPPING->{InvalidInputAsset},
+        });
+        # setting it max commission multiplier
+        $seasonality_multiplier = MAX_COMMISSION_MULTIPLIER;
+    }
+
+    return min(MAX_COMMISSION_MULTIPLIER, max($ee_multiplier, $seasonality_multiplier, MIN_COMMISSION_MULTIPLIER));
+}
+
+=head2 _get_economic_event_commission_mutliplier
+
+Economic event multiplier
+
+=cut
+
+sub _get_economic_event_commission_multiplier {
+    my $self = shift;
+
+    return 0 if $self->underlying->market->name ne 'forex';
 
     my $for_date    = $self->underlying->for_date;
     my $ee_calendar = Quant::Framework::EconomicEventCalendar->new(chronicle_reader => BOM::Config::Chronicle::get_chronicle_reader($for_date));
@@ -1269,20 +1331,7 @@ sub commission_multiplier {
         }
     }
 
-    # Currently the multiplier for economic event is hard-coded to 3. In the future, this value might be configurable from the
-    # backoffice tool.
-    my $seasonality_multiplier = Quant::Framework::Spread::Seasonality->new->get_spread_seasonality($self->underlying->symbol, $self->date_start);
-
-    unless (defined $seasonality_multiplier) {
-        $self->_add_error({
-            message           => 'spread seasonality not defined for ' . $self->underlying->symbol,
-            message_to_client => $ERROR_MAPPING->{InvalidInputAsset},
-        });
-        # setting it max commission multiplier
-        $seasonality_multiplier = MAX_COMMISSION_MULTIPLIER;
-    }
-
-    return min(MAX_COMMISSION_MULTIPLIER, max($ee_multiplier, $seasonality_multiplier, MIN_COMMISSION_MULTIPLIER));
+    return $ee_multiplier;
 }
 
 1;

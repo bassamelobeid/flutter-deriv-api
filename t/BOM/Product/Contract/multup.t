@@ -1083,4 +1083,41 @@ subtest 'no warnings if spread multiplier is undefined' => sub {
     is $c->primary_validation_error->message_to_client, 'Trading is not offered for this asset.';
 };
 
+subtest 'crypto on multiplier' => sub {
+    my $now = Date::Utility->new;
+    BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks([100, $now->epoch, 'cryBTCUSD'], [102, $now->epoch + 1, 'cryBTCUSD'],);
+    my $args = {
+        bet_type     => 'MULTUP',
+        underlying   => 'cryBTCUSD',
+        date_start   => $now,
+        date_pricing => $now,
+        amount_type  => 'stake',
+        amount       => 100,
+        multiplier   => 100,
+        currency     => 'USD',
+    };
+    my $c = produce_contract($args);
+    ok !$c->is_valid_to_buy, 'invalid to buy';
+    is $c->primary_validation_error->message, 'multiplier out of range', 'message - multiplier out of range';
+    is $c->primary_validation_error->message_to_client->[0], 'Multiplier is not in acceptable range. Accepts [_1].',
+        'message to client - Multiplier is not in acceptable range. Accepts [_1].';
+    is $c->primary_validation_error->message_to_client->[1], '10,20,30,40,50';
+
+    $args->{multiplier}   = 10;
+    $args->{cancellation} = '1h';
+    $c                    = produce_contract($args);
+    ok !$c->is_valid_to_buy, 'invalid to buy';
+    is $c->primary_validation_error->message, 'deal cancellation suspended', 'message - deal cancellation suspended';
+    is $c->primary_validation_error->message_to_client, 'Deal cancellation is not available at this moment.',
+        'message to client - Deal cancellation is not available at this moment.';
+
+    my $suspend = BOM::Config::Runtime->instance->app_config->quants->suspend_deal_cancellation->cryptocurrency;
+    BOM::Config::Runtime->instance->app_config->quants->suspend_deal_cancellation->cryptocurrency(0);
+    $c = produce_contract($args);
+    ok !$c->is_valid_to_buy, 'invalid to buy';
+    is $c->primary_validation_error->message, 'deal cancellation not available', 'message - deal cancellation not available';
+    is $c->primary_validation_error->message_to_client, 'Deal cancellation is not available for this asset.',
+        'message to client - Deal cancellation is not available for this asset.';
+};
+
 done_testing();

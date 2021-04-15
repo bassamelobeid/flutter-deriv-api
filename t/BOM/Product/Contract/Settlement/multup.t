@@ -28,32 +28,6 @@ my $mocked = Test::MockModule->new('BOM::Product::Contract::Multup');
 $mocked->mock('commission',        sub { return 0 });
 $mocked->mock('commission_amount', sub { return 0 });
 
-subtest 'past date_expiry' => sub {
-    BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks([100, $now->epoch, 'R_100'], [101, $now->epoch + 100 * 365 * 86400, 'R_100']);
-    my $args = {
-        bet_type     => 'MULTUP',
-        underlying   => 'R_100',
-        date_start   => $now,
-        date_pricing => $now->plus_time_interval(100 * 365 . 'd1s'),
-        amount_type  => 'stake',
-        amount       => 100,
-        multiplier   => 10,
-        currency     => 'USD',
-        limit_order  => {
-            stop_out => {
-                order_type   => 'stop_out',
-                order_amount => -100,
-                order_date   => $now->epoch,
-                basis_spot   => '100.00',
-            }
-        },
-    };
-    my $c = produce_contract($args);
-    ok !$c->hit_tick, 'no hit tick';
-    ok $c->is_expired, 'expired because it has past date_expiry';
-    is $c->value + 0, $c->bid_price + 0, 'contract is closed at bid price';
-};
-
 subtest 'hit stop out' => sub {
     BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks([100, $now->epoch, 'R_100'], [90.01, $now->epoch + 1, 'R_100']);
     my $args = {
@@ -472,6 +446,47 @@ subtest 'deal cancellation with stop loss' => sub {
     ok !$c->is_valid_to_buy, 'invalid to buy';
     is $c->primary_validation_error->message_to_client, 'You may use either stop loss or deal cancellation, but not both. Please select either one.',
         'correct message to client';
+};
+
+subtest 'past date expiry' => sub {
+    my $now     = Date::Utility->new;
+    my $pricing = $now->truncate_to_day->plus_time_interval('7d23h59m59s');
+    BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks(
+        [100,    $now->epoch,         'cryBTCUSD'],
+        [100.01, $now->epoch + 1,     'cryBTCUSD'],
+        [101,    $pricing->epoch - 1, 'cryBTCUSD']);
+    my $args = {
+        date_start   => $now,
+        date_pricing => $pricing->epoch + 1,
+        bet_type     => 'MULTUP',
+        underlying   => 'cryBTCUSD',
+        amount_type  => 'stake',
+        amount       => 100,
+        multiplier   => 10,
+        currency     => 'USD',
+        limit_order  => {
+            stop_out => {
+                order_type   => 'stop_out',
+                order_amount => -100,
+                order_date   => $now->epoch,
+                basis_spot   => '100.00',
+            }
+        },
+    };
+
+    my $c = produce_contract($args);
+    ok !$c->is_expired, 'is not expired because of no exit tick';
+
+    BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks(
+        [100,    $now->epoch,         'cryBTCUSD'],
+        [100.01, $now->epoch + 1,     'cryBTCUSD'],
+        [101,    $pricing->epoch - 1, 'cryBTCUSD'],
+        [102,    $pricing->epoch + 1, 'cryBTCUSD']);
+    $c = produce_contract($args);
+    ok !$c->hit_tick, 'not hit tick';
+    ok $c->is_expired, 'is expired';
+    is $c->exit_tick->epoch, $c->close_tick->epoch, 'exit tick == close tick';
+    is $c->value + 0, $c->bid_price + 0, 'value == bid price';
 };
 
 done_testing();
