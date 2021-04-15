@@ -354,7 +354,7 @@
                   },
                   "legal_allowed_markets" : {
                      "items" : {
-                        "pattern" : "^(commodities|forex|indices|synthetic_index)$",
+                        "pattern" : "^(commodities|forex|indices|synthetic_index|cryptocurrency)$",
                         "type" : "string"
                      },
                      "type" : "array",
@@ -370,7 +370,7 @@
                      "type" : "array",
                      "items" : {
                         "type" : "string",
-                        "pattern" : "^(commodities|forex|indices|synthetic_index)$"
+                        "pattern" : "^(commodities|forex|indices|synthetic_index|cryptocurrency)$"
                      }
                   },
                   "legal_allowed_currencies" : {
