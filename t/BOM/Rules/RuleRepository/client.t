@@ -51,4 +51,40 @@ subtest 'rule client.check_duplicate_account' => sub {
     $mock_client->unmock_all;
 };
 
+subtest 'rule client.has_currency_set' => sub {
+    my $rule_name = 'client.has_currency_set';
+
+    is_deeply exception { $rule_engine->apply_rules($rule_name) }, {code => 'SetExistingAccountCurrency'}, 'correct error when currency is missing';
+
+    $client->set_default_account('USD');
+
+    ok $rule_engine->apply_rules($rule_name), 'Test passes when currency is set';
+};
+
+subtest 'rule client.required_fields_are_non_empty' => sub {
+    my $rule_name   = 'client.required_fields_are_non_empty';
+    my $rule_engine = BOM::Rules::Engine->new(client => $client);
+
+    $client->first_name('');
+    $client->last_name('');
+    $client->save;
+
+    my $mock_lc = Test::MockModule->new('LandingCompany');
+    $mock_lc->redefine(requirements => sub { return +{signup => [qw(first_name last_name)]}; });
+
+    is_deeply exception { $rule_engine->apply_rules($rule_name) },
+        {
+        code    => 'InsufficientAccountDetails',
+        details => {missing => [qw(first_name last_name)]}
+        },
+        'Error with missing client data';
+
+    $client->first_name('Mister');
+    $client->last_name('family');
+    $client->save;
+
+    lives_ok { $rule_engine->apply_rules($rule_name) } 'Test passes when client has the data';
+
+    $mock_lc->unmock_all;
+};
 done_testing();

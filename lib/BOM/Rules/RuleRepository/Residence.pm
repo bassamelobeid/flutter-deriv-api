@@ -43,6 +43,7 @@ rule 'residence.is_signup_allowed' => {
         my ($self, $context, $action_args) = @_;
 
         my $countries_instance = request()->brand->countries_instance;
+
         die {code => 'InvalidAccount'} unless $countries_instance->is_signup_allowed($context->residence);
 
         return 1;

@@ -120,11 +120,7 @@ sub register_actions {
         return \%action_registry;
     }
 
-    opendir my $dir, CONFIG_PATH . '/actions/';
-    my @files = readdir $dir;
-    closedir $dir;
-
-    for my $file (@files) {
+    for my $file (_get_action_files()) {
         next unless $file =~ /\.yml$/;
         my $config   = YAML::XS::LoadFile(CONFIG_PATH . "/actions/$file");
         my $category = $file =~ qr/(.*)\.yml/;
@@ -145,6 +141,19 @@ sub register_actions {
     }
 
     return \%action_registry;
+}
+
+=head2 _get_action_files
+
+Returns a list of actions files from the /actions folder.
+
+=cut
+
+sub _get_action_files {
+    opendir my $dir, CONFIG_PATH . '/actions/';
+    my @files = readdir $dir;
+    closedir $dir;
+    return @files;
 }
 
 =head2 _register_action

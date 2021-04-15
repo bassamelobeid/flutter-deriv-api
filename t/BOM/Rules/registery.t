@@ -57,6 +57,10 @@ subtest 'Actions registery' => sub {
     my $mock_yml = Test::MockModule->new('YAML::XS');
     $mock_yml->redefine('LoadFile', sub { return $mock_data });
 
+    # when /actions has more than one file the test fails unless we mock to a single file
+    my $mock_registry = Test::MockModule->new('BOM::Rules::Registry');
+    $mock_registry->redefine('_get_action_files', sub { return ('action.yml') });
+
     my $actions = BOM::Rules::Registry::register_actions();
     is_deeply $actions, {}, 'No action is registered';
 
@@ -90,7 +94,6 @@ subtest 'Actions registery' => sub {
         'Correct warning when registering actions again'
     );
 
-    my $mock_registry = Test::MockModule->new('BOM::Rules::Registry');
     $mock_registry->redefine(
         register_actions => sub { undef %BOM::Rules::Registry::action_registry; return $mock_registry->original(qw/register_actions/)->(@_) });
     $mock_yml->redefine('LoadFile', sub { undef %BOM::Rules::Registry::action_registry; return $mock_data; });

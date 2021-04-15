@@ -52,3 +52,34 @@ rule 'client.check_duplicate_account' => {
         return 1;
     },
 };
+
+rule 'client.has_currency_set' => {
+    description => 'Checks whether the context client has its currency set',
+    code        => sub {
+        my ($self, $context, $args) = @_;
+
+        my $account = $context->client->account;
+        my $currency_code;
+
+        $currency_code = $account->currency_code if $account;
+
+        die +{code => 'SetExistingAccountCurrency'} unless $currency_code;
+
+        return 1;
+    },
+};
+
+rule 'client.required_fields_are_non_empty' => {
+    description => "Succeeds if all required fields of the context landing company are non-empty; fails otherwise",
+    code        => sub {
+        my ($self, $context) = @_;
+
+        my @missing = grep { !$context->client->$_() } $context->landing_company_object->requirements->{signup}->@*;
+        die +{
+            code    => 'InsufficientAccountDetails',
+            details => {missing => [@missing]},
+        } if @missing;
+
+        return 1;
+    },
+};
