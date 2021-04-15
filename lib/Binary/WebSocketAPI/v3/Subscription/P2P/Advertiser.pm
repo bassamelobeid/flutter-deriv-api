@@ -68,7 +68,7 @@ sub handle_message {
 
     if ($self->loginid ne $payload->{client_loginid}) {
         delete @{$payload}{
-            qw(contact_info payment_info chat_user_id chat_token daily_buy daily_sell daily_buy_limit daily_sell_limit show_name balance_available blocked_until)
+            qw(contact_info payment_info chat_user_id chat_token daily_buy daily_sell daily_buy_limit daily_sell_limit show_name balance_available blocked_until cancels_remaining)
         };
     }
 
