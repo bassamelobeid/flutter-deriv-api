@@ -43,6 +43,7 @@ my $account = $dxtrader->new_account(
     account_type => 'real',
     password     => 'test',
     currency     => 'USD',
+    market_type  => 'financial',
 );
 
 my $dxbal;
@@ -72,7 +73,6 @@ subtest 'deposits' => sub {
             platform              => $account->{platform},
             market_type           => $account->{market_type},
             landing_company_short => $account->{landing_company_short},
-            sub_account_type      => $account->{sub_account_type},
         },
         'expected result fields'
     );
@@ -141,7 +141,6 @@ subtest 'withdrawals' => sub {
             platform              => $account->{platform},
             market_type           => $account->{market_type},
             landing_company_short => $account->{landing_company_short},
-            sub_account_type      => $account->{sub_account_type},
         },
         'expected result fields'
     );

@@ -12,6 +12,8 @@ use BOM::Config::Runtime;
 use List::Util qw(first any);
 use Format::Util::Numbers qw(financialrounding formatnumber);
 use Digest::SHA1 qw(sha1_hex);
+use BOM::Platform::Context qw(request);
+use BOM::Rules::Engine;
 
 =head1 NAME 
 
@@ -78,9 +80,16 @@ Returns new account fields formatted for wesocket response.
 sub new_account {
     my ($self, %args) = @_;
 
+    # Currency validated by rules engine, if not given take it from LC default
+    $args{currency} //= $self->get_new_account_currency();
+    $args{platform} //= 'dxtrade';
+
+    my $rule_engine = BOM::Rules::Engine->new(client => $self->client);
+    $rule_engine->verify_action('new_trading_account', \%args);
+
     my $account_type     = $args{account_type} eq 'real' ? 'LIVE' : 'DEMO';
-    my $currency         = 'USD';                                             # all accounts are USD for now, in future this may change
-    my $trading_category = 'test';                                            # todo: set from %args, residence etc.
+    my $trading_category = $self->get_trading_category(%args);
+    my $currency         = $args{currency};
 
     my $password = $args{password};
     if (BOM::Config::Runtime->instance->app_config->system->suspend->universal_password) {
@@ -97,7 +106,7 @@ sub new_account {
                 and $_->{account_type} eq $account_type
                 and $_->{type} eq 'CLIENT'
                 and $_->{status} eq 'FULL_TRADING'
-                and any { $_->{category} eq 'Trading' and $_->{value} eq $trading_category }
+                and any { $_->{category} =~ /^(Trading|AutoExecution)$/ and $_->{value} eq $trading_category }
             ($_->{categories} // [])->@*
         }
         ($dxclient->{accounts} // [])->@*;
@@ -127,9 +136,7 @@ sub new_account {
 
     my $account_code = $self->config->{real_account_ids} ? $seq_num         : $self->unique_id;    # dx account id, must be unique in their system
     my $account_id   = $args{account_type} eq 'real'     ? 'DXR' . $seq_num : 'DXD' . $seq_num;    # our loginid
-
-    my $balance = $args{account_type} eq 'demo' ? 10000 : 0;
-
+    my $balance      = $args{account_type} eq 'demo'     ? 10000            : 0;
     my $account_resp = $self->call_api(
         'client_account_create',
         login         => $dxclient->{login},
@@ -139,11 +146,14 @@ sub new_account {
         account_type  => $account_type,
         currency      => $currency,
         balance       => $balance,
-
-        categories => [{
+        categories    => [{
+                category => 'AutoExecution',
+                value    => $trading_category,
+            },
+            {
                 category => 'Trading',
                 value    => $trading_category,
-            }
+            },
         ],
     );
 
@@ -163,7 +173,60 @@ sub new_account {
 
     $account->{account_id} = $account_id;
     $account->{login}      = $dxclient->{login};
+
     return $self->account_details($account);
+}
+
+=head2 get_new_account_currency
+
+Resolves the default currency for the account based on Landing Company.
+
+=cut
+
+sub get_new_account_currency {
+    my ($self)               = @_;
+    my $client               = $self->client;
+    my $available_currencies = $client->landing_company->available_trading_platform_currency_group->{dxtrade} // [];
+    my ($default_currency)   = $available_currencies->@*;
+    return $default_currency;
+}
+
+=head2 get_trading_category
+
+Given the input arguments, computes the trading category for this account.
+
+It takes named params as:
+
+=over 4
+
+=item * C<market_type> - gaming or financial
+
+=item * C<account_type> - demo or real
+
+=back
+
+Returns a string representing the trading category.
+
+=cut
+
+sub get_trading_category {
+    my ($self, %args) = @_;
+    my $chunks = [];
+
+    my $market_type         = $args{market_type} // 'gaming';
+    my $residence           = $self->client->residence;
+    my $countries_instance  = request()->brand->countries_instance;
+    my $countries_list      = $countries_instance->countries_list;
+    my $binary_company_name = $countries_list->{$residence}->{"${market_type}_company"};
+
+    # currency is hardcoded to USD, this may change
+    my $company_and_currency = join '_', $binary_company_name, 'USD';
+
+    # you are as confused as me, for now assume gaming = synthetic
+    $market_type = 'synthetic' if $market_type ne 'financial';
+    push $chunks->@*, $args{account_type}, 'dx', $market_type, $company_and_currency;
+
+    return lc join '\\', $chunks->@*;
 }
 
 =head2 get_accounts
@@ -537,7 +600,7 @@ Returns the current L<HTTP::Tiny> instance or creates a new one if neeeded.
 =cut
 
 sub http {
-    return shift->{http} // HTTP::Tiny->new(timeout => HTTP_TIMEOUT);
+    return shift->{http} //= HTTP::Tiny->new(timeout => HTTP_TIMEOUT);
 }
 
 =head2 dxclient_get
@@ -582,6 +645,11 @@ Format account details for websocket response.
 
 sub account_details {
     my ($self, $account) = @_;
+    my $category = first { $_->{value} } $account->{categories}->@*;
+    my (undef, undef, $market_type) = split qr/\\/, $category->{value} // '';
+
+    # avoid schema issues
+    $market_type = 'gaming' if ($market_type // '') eq 'synthetic';
 
     return {
         login                 => $account->{login},
@@ -591,9 +659,8 @@ sub account_details {
         currency              => $account->{currency},
         display_balance       => formatnumber('amount', $account->{currency}, $account->{balance}),
         platform              => 'dxtrade',
-        market_type           => 'financial',                                                              #todo
+        market_type           => $market_type,                                                             #todo
         landing_company_short => 'svg',                                                                    #todo
-        sub_account_type      => 'financial',                                                              #todo
     };
 }
 

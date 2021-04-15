@@ -17,6 +17,8 @@ BOM::User->create(
     password => 'test'
 )->add_client($client);
 
+$client->account('USD');
+
 my $dxtrader = BOM::TradingPlatform->new(
     platform => 'dxtrade',
     client   => $client
@@ -25,7 +27,9 @@ isa_ok($dxtrader, 'BOM::TradingPlatform::DXTrader');
 
 my $account1 = $dxtrader->new_account(
     account_type => 'demo',
-    password     => 'test'
+    password     => 'test',
+    market_type  => 'gaming',
+    currency     => 'USD',
 );
 
 cmp_deeply(
@@ -38,9 +42,8 @@ cmp_deeply(
         display_balance       => '10000.00',
         login                 => re('\w{40}'),
         platform              => 'dxtrade',
-        market_type           => 'financial',
+        market_type           => 'gaming',
         landing_company_short => 'svg',
-        sub_account_type      => 'financial',
     },
     'created first account'
 );
@@ -56,7 +59,7 @@ cmp_deeply(
             client_domain    => 'default',
             login            => re('\w{40}'),
             account_code     => re('\w{40}'),
-            trading_category => 'test',
+            trading_category => 'demo\dx\synthetic\svg_usd',
         }
     },
     'user attributes of first account'
@@ -65,6 +68,8 @@ cmp_deeply(
 my $account2 = $dxtrader->new_account(
     account_type => 'real',
     password     => 'test',
+    market_type  => 'gaming',
+    currency     => 'USD',
 );
 
 cmp_deeply(
@@ -77,9 +82,8 @@ cmp_deeply(
         display_balance       => '0.00',
         login                 => $account1->{login},
         platform              => 'dxtrade',
-        market_type           => 'financial',
+        market_type           => 'gaming',
         landing_company_short => 'svg',
-        sub_account_type      => 'financial',
     },
     'created second account'
 );
@@ -95,7 +99,7 @@ cmp_deeply(
             clearing_code    => 'default',
             client_domain    => 'default',
             account_code     => re('\w{40}'),
-            trading_category => 'test',
+            trading_category => 'real\dx\synthetic\svg_usd',
         }
     },
     'user attributes of second account'
@@ -105,7 +109,9 @@ cmp_deeply(
     exception {
         $dxtrader->new_account(
             account_type => 'demo',
-            password     => 'test'
+            password     => 'test',
+            market_type  => 'gaming',
+            currency     => 'USD',
         )
     },
     {
@@ -116,6 +122,29 @@ cmp_deeply(
 );
 
 cmp_deeply($dxtrader->get_accounts, [$account1, $account2], 'account list');
+
+my $account3 = $dxtrader->new_account(
+    account_type => 'real',
+    password     => 'test',
+    market_type  => 'financial',
+    currency     => 'USD',
+);
+
+cmp_deeply(
+    $account3,
+    {
+        account_id            => 'DXR1002',
+        account_type          => 'real',
+        balance               => num(0),
+        currency              => 'USD',
+        display_balance       => '0.00',
+        login                 => $account1->{login},
+        platform              => 'dxtrade',
+        market_type           => 'financial',
+        landing_company_short => 'svg',
+    },
+    'created third account'
+);
 
 done_testing();
 

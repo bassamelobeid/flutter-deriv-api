@@ -23,6 +23,7 @@ use BOM::Test::Helper::FinancialAssessment;
 use BOM::Test::Helper::Client qw(create_client);
 use BOM::Test::Script::DevExperts;
 use BOM::TradingPlatform;
+use BOM::Config::Runtime;
 
 my $email    = 'abc@binary.com';
 my $password = 'jskjd8292922';
@@ -882,6 +883,7 @@ subtest 'get_wallet_by_loginid' => sub {
 
 my ($dxtrade_account, $dxtrader);
 subtest 'get_account_by_loginid' => sub {
+    BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend->all(0);
     # try trading account (binary/deriv)
     ok $user->get_account_by_loginid($client_vr->{loginid}), 'can find trading account';
 
@@ -906,7 +908,9 @@ subtest 'get_account_by_loginid' => sub {
 
     $dxtrade_account = $dxtrader->new_account(
         account_type => 'demo',
-        password     => 'test'
+        password     => 'test',
+        market_type  => 'gaming',
+        currency     => 'USD',
     );
 
     my $dxtrade_loginid = $dxtrade_account->{account_id};
@@ -952,6 +956,8 @@ subtest 'link_wallet' => sub {
     my $dxtrade_real_account = $dxtrader->new_account(
         account_type => 'real',
         password     => 'test',
+        market_type  => 'financial',
+        currency     => 'USD',
     );
     $args->{wallet_id} = $wallet->loginid;
     $args->{client_id} = $dxtrade_real_account->{account_id};

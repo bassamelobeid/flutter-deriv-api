@@ -31,7 +31,9 @@ cmp_deeply exception { $dxtrader->change_password(password => 'test') }, +{error
 
 $dxtrader->new_account(
     account_type => 'demo',
-    password     => 'test'
+    password     => 'test',
+    market_type  => 'financial',
+    currency     => 'USD',
 );
 
 is $dxtrader->change_password(password => 'secret'), undef, 'Password change request is successful';
