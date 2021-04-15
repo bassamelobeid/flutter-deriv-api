@@ -53,9 +53,12 @@ subtest general => sub {
         advert_id => $ad1->{id},
         amount    => 1
     );
+    is $client->p2p_advertiser_info->{cancels_remaining}, 2, 'initial cancel count';
 
     tt_hours(1);
     $client->p2p_order_cancel(id => $ord1->{id});
+    is $client->p2p_advertiser_info->{cancels_remaining}, 1, 'cancel count decreases';
+
     ($client, $ord2) = BOM::Test::Helper::P2P::create_order(
         client    => $client,
         advert_id => $ord1->{id},
@@ -70,6 +73,7 @@ subtest general => sub {
         amount    => 1
     );
     $client->p2p_order_cancel(id => $ord2->{id});
+    is $client->p2p_advertiser_info->{cancels_remaining}, 0, 'cancel count decreases';
 
     my $block_until = Date::Utility->new('2000-01-02T02:00:00Z');
 

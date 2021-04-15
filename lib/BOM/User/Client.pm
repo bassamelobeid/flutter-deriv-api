@@ -3614,6 +3614,7 @@ sub _advertiser_details {
         $details->{balance_available}  = financialrounding('amount', $advertiser->{account_currency}, $self->balance_for_cashier('p2p'));
         $details->{basic_verification} = $self->status->age_verification ? 1 : 0;
         $details->{full_verification}  = $self->fully_authenticated      ? 1 : 0;
+        $details->{cancels_remaining}  = $self->_p2p_advertiser_cancellations_remaining;
 
         # band limits are not returned by all db functions
         if ($advertiser->{limit_currency}) {
@@ -4087,12 +4088,9 @@ sub _p2p_order_cancelled {
         $buyer_client->_p2p_record_stat($buyer_loginid, 'CANCEL_TIMES', $id, $elapsed);
     }
 
-    # config period is hours
-    my ($period, $count) = ($config->cancellation_barring->period, $config->cancellation_barring->count);
-    my $stats            = $buyer_client->_p2p_advertiser_stats($buyer_loginid, $period);
     my $buyer_advertiser = $buyer_client->_p2p_advertisers(loginid => $buyer_loginid)->[0] // return;
 
-    if (!$buyer_client->_p2p_get_advertiser_bar_error($buyer_advertiser) && $stats->{cancel_count} >= $count) {
+    if (!$buyer_client->_p2p_get_advertiser_bar_error($buyer_advertiser) && $buyer_client->_p2p_advertiser_cancellations_remaining == 0) {
         my $block_time = Date::Utility->new->plus_time_interval($config->cancellation_barring->bar_time . 'h');
         $buyer_client->db->dbic->run(
             fixup => sub {
@@ -4113,6 +4111,23 @@ sub _p2p_order_cancelled {
         });
 
     return;
+}
+
+=head2 _p2p_advertiser_cancellations_remaining
+
+Returns the remaining cancellations allowed for a client.
+
+=cut 
+
+sub _p2p_advertiser_cancellations_remaining {
+
+    my ($self) = @_;
+    my $config = BOM::Config::Runtime->instance->app_config->payments->p2p;
+
+    # config period is hours
+    my ($period, $limit) = ($config->cancellation_barring->period, $config->cancellation_barring->count);
+    my $stats = $self->_p2p_advertiser_stats($self->loginid, $period);
+    return max($limit - $stats->{cancel_count}, 0);
 }
 
 =head2 _p2p_get_advertiser_bar_error

@@ -18,6 +18,9 @@ my $email = 'p2p_adverts_test@binary.com';
 
 BOM::Config::Runtime->instance->app_config->payments->p2p->limits->maximum_advert(100);
 BOM::Config::Runtime->instance->app_config->payments->p2p->escrow([]);
+BOM::Config::Runtime->instance->app_config->payments->p2p->cancellation_barring->count(3);
+BOM::Config::Runtime->instance->app_config->payments->p2p->cancellation_barring->period(24);
+
 my $test_client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'CR',
     email       => $email
@@ -95,6 +98,7 @@ subtest 'advertiser Registration' => sub {
         total_orders_count    => num(0),
         show_name             => 0,
         balance_available     => num(0),
+        cancels_remaining     => 3,
         %params
     };
 
@@ -104,7 +108,8 @@ subtest 'advertiser Registration' => sub {
     my $other_client = BOM::Test::Helper::P2P::create_advertiser();
     $advertiser_info = $other_client->p2p_advertiser_info(id => $adv->{id});
     delete $expected->@{
-        qw/payment_info contact_info chat_user_id chat_token daily_buy daily_sell daily_buy_limit daily_sell_limit show_name balance_available/};
+        qw/payment_info contact_info chat_user_id chat_token daily_buy daily_sell daily_buy_limit daily_sell_limit show_name balance_available cancels_remaining/
+    };
     cmp_deeply($advertiser_info, $expected, 'sensitve fields hidden in advertiser_info for other client');
 };
 
