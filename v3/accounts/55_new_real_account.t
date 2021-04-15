@@ -205,7 +205,7 @@ subtest 'create account failed' => sub {
 
             my $res = $t->await::new_account_real(\%details);
 
-            is($res->{error}->{code},    'InvalidAccount', 'restricted country - US');
+            is($res->{error}->{code},    'InvalidAccountRegion', 'restricted country - US');
             is($res->{new_account_real}, undef,            'NO account created');
         };
 
@@ -218,7 +218,7 @@ subtest 'create account failed' => sub {
 
             my $res = $t->await::new_account_real(\%details);
 
-            is($res->{error}->{code},    'InvalidAccount', 'invalid country - xx');
+            is($res->{error}->{code},    'InvalidAccountRegion', 'invalid country - xx');
             is($res->{new_account_real}, undef,            'NO account created');
         };
     };
