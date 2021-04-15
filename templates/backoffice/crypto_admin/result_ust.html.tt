@@ -16,7 +16,7 @@ table td{
 
 [% IF response.error %]
 
-<p class="error"><b>[%response.error%]</b></p>
+    <p class="error">[% response.error.replace("\n", "<br>") | none %]</p>
 
 [% ELSE %]
 
@@ -321,6 +321,9 @@ table td{
                 </td>
             </tr>
         </table>
+
+   [% CASE DEFAULT %]
+        <p>[% response.replace("\n", "<br>") | none %]</p>
 [% END %]
 </div>
 

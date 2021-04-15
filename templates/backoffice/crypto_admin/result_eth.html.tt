@@ -16,7 +16,7 @@ table td{
 
 [% IF response.error %]
 
-<p class="error"><b>[%response.error%]</b></p>
+    <p class="error">[% response.error.replace("\n", "<br>") | none %]</p>
 
 [% ELSE %]
     <div class="tab">
@@ -210,6 +210,9 @@ table td{
                         <td>[% response.blockHash %]</td>
                     </tr>
                 </table>
+
+            [% CASE DEFAULT %]
+                <p>[% response.replace("\n", "<br>") | none %]</p>
         [% END %]
     </div>
     <div class="toggle-response invisible" style="width:1200px; word-wrap: break-word;">

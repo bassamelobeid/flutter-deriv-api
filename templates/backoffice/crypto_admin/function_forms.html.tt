@@ -1,4 +1,5 @@
 [%
+    import_address_currencies = ['BTC', 'LTC', 'UST'];
     all_no_param_functions = {
         get_accounts             => 'All accounts',
         get_block_count          => 'Block count',
@@ -47,6 +48,16 @@
                 { label => 'Transaction hash', name => 'txn_hash', required => 1, size => 50 },
             ],
         },
+        import_address => {
+            title       => 'Import address',
+            description => 'Use this when client performed an incorrect currency deposit to <b>' _ currency _ '</b> address.',
+            elements => [
+                { label => 'From currency', type => 'label',          text => '<b>' _ currency _ '</b>' },
+                { label => 'To currency',   name => 'to_currency',    type => 'select', options => import_address_currencies.sort.grep('^(?!' _ currency _ ').*$') },
+                { label => 'Address',       name => 'import_address', required => 1,    size => 50 },
+                { label => 'Block number',  name => 'block_number',   required => 1,    type => 'number' },
+            ],
+        },
         list_receivedby_address => {
             title    => 'List received by address',
             elements => [
@@ -70,9 +81,9 @@
         },
     };
     currency_forms = {
-        BTC => ['get_address_balance', 'get_transaction', 'list_unspent_utxo', 'list_receivedby_address', 'calculate_withdrawal_fee'],
-        UST => ['get_address_balance', 'get_transaction', 'list_unspent_utxo', 'list_receivedby_address', 'list_transactions'],
-        ETH => ['get_address_balance', 'get_transaction', 'get_estimatedgas',  'get_transaction_receipt'],
+        BTC => ['get_address_balance', 'get_transaction', 'import_address',   'list_unspent_utxo', 'list_receivedby_address', 'calculate_withdrawal_fee'],
+        UST => ['get_address_balance', 'get_transaction', 'import_address',   'list_unspent_utxo', 'list_receivedby_address', 'list_transactions'],
+        ETH => ['get_address_balance', 'get_transaction', 'get_estimatedgas', 'get_transaction_receipt'],
     };
 %]
 
@@ -81,23 +92,50 @@
     <div id="form_[% id %]" class="invisible">
         <hr>
         <h3>[% title %]</h3>
+        [% IF description %]
+            <p>
+                <i>[% description | none %]</i>
+            </p>
+        [% END %]
         <form action="[% controller_url %]" method="post">
-            [% FOREACH elm IN elements %]
-                [% INCLUDE input props=elm value=previous_values %]
-            [% END %]
             <input type="hidden" name="currency" value="[% currency %]" />
             <input type="hidden" name="req_title" value="[% title %]" />
-            <button type="submit" class="btn btn--primary" name="req_type" value="[% id %]">[% title %]</button>
-            [% note | none %]
+            <table>
+                [% FOREACH elm IN elements %]
+                    [% INCLUDE input props=elm value=previous_values %]
+                [% END %]
+                <tr>
+                    <td></td>
+                    <td>
+                        <button type="submit" class="btn btn--primary" name="req_type" value="[% id %]">[% title %]</button>
+                        [% note | none %]
+                    </td>
+                </tr>
+            </table>
         </form>
     </div>
 [% END %]
 
 [% BLOCK input %]
     [% import(props) %]
-    <div class="row">
-        <label>[% label %]: <input type="[% type || 'text' %]" name="[% name %]" value="[% value.$name %]" size="[% size %]" [% required && 'required' %] /></label>
-    </div>
+    <tr>
+        <td>
+            <label>[% label %]:</label>
+        </td>
+        <td>
+            [% IF type == 'label' %]
+                [% text | none %]
+            [% ELSIF type == 'select' %]
+                <select name="[% name %]">
+                    [% FOR item_value IN options %]
+                        <option value="[% item_value %]"[% IF (!value.$name && selected_value == item_value) || value.$name == item_value %] selected="selected"[% END %]>[% item_value %]</option>
+                    [% END %]
+                </select>
+            [% ELSE %]
+                <input type="[% type || 'text' %]" name="[% name %]" value="[% value.$name %]" size="[% size %]" [% required && 'required' %] />
+            [% END %]
+        </td>
+    </tr>
 [% END %]
 
 [% IF currency_no_param_functions.$form_type %]
@@ -147,6 +185,8 @@
             el_ddl.value = el_ddl.querySelector(`option[value='\${form_id}']`) ? form_id : '';
         });
     }
+
+    showForm('[% previous_req %]');
 </script>
 
 [% IF !currency_no_param_functions.$form_type && !currency_forms.$form_type %]

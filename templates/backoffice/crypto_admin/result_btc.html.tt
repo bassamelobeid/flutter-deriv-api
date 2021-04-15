@@ -6,7 +6,7 @@
 
 [% IF response.error %]
 
-    <p class="error">[%response.error%]</p>
+    <p class="error">[% response.error.replace("\n", "<br>") | none %]</p>
 
 [% ELSE %]
 
@@ -225,6 +225,9 @@
                         </td>
                     </tr>
                 </table>
+
+            [% CASE DEFAULT %]
+                <p>[% response.replace("\n", "<br>") | none %]</p>
         [% END %]
     </div>
 

@@ -12,6 +12,7 @@ use BOM::Config::Runtime;
 use BOM::Backoffice::Auth0;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::CTC::Currency;
+use BOM::CTC::Script::Address;
 use BOM::Backoffice::Request;
 use Syntax::Keyword::Try;
 use LandingCompany::Registry;
@@ -195,6 +196,22 @@ sub _get_function_map {
 
     die "Invalid address" if ($address && !$currency_wrapper->is_valid_address($address));
 
+    my $import_address = sub {
+        my $to_currency    = length $input->{to_currency}    ? $input->{to_currency}       : undef;
+        my $import_address = length $input->{import_address} ? $input->{import_address}    : undef;
+        my $block_number   = length $input->{block_number}   ? int($input->{block_number}) : undef;
+
+        die "Missing parameters entered for import address"
+            unless $currency && $to_currency && $import_address && $block_number;
+
+        BOM::CTC::Script::Address::import_address(
+            from_currency => $currency,
+            to_currency   => $to_currency,
+            address       => $import_address,
+            block_number  => $block_number,
+        );
+    };
+
     return +{
         list_unspent_utxo        => sub { $currency_wrapper->get_unspent_transactions($address ? [$address] : [], $confirmations) },
         get_transaction          => sub { $currency_wrapper->get_transaction_details($txn_hash) },
@@ -210,6 +227,7 @@ sub _get_function_map {
                 unless $address && $amount;
             $currency_wrapper->get_withdrawal_daemon()->calculate_transaction_fee($address, $amount);
         },
+        import_address => $import_address,
     } if ($currency =~ /^(BTC|LTC)$/);
 
     return +{
@@ -232,6 +250,7 @@ sub _get_function_map {
             my @res = $currency_wrapper->get_transaction_details($txn_hash);
             return \@res;
         },
+        import_address => $import_address,
     } if $currency eq 'UST';
 
     return +{
