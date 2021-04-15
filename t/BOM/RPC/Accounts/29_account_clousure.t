@@ -13,9 +13,10 @@ use BOM::User::Client;
 use BOM::Test::Helper::Token;
 use Test::BOM::RPC::Accounts;
 use Test::BOM::RPC::QueueClient;
+use BOM::Test::Script::DevExperts;
+use BOM::Config::Runtime;
 
 BOM::Test::Helper::Token::cleanup_redis_tokens();
-
 my $password = 'jskjd8292922';
 my $hash_pwd = BOM::User::Password::hashpw($password);
 
@@ -403,6 +404,127 @@ subtest 'account_closure with mt5 API disabled' => sub {
 
     note('since this is mocked mt5 account data, I won\'t want to change it.');
     is $res->{error}->{code}, 'AccountHasBalanceOrOpenPositions', 'account has balance error instead of server disabled.';
+};
+
+subtest 'Account closure DXTrader' => sub {
+    BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend->all(0);
+
+    my $email       = 'dxtrader@binary.com';
+    my $password    = 'dxTest0909099';
+    my $hash_pwd    = BOM::User::Password::hashpw($password);
+    my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+    });
+
+    $test_client->email($email);
+    $test_client->save;
+
+    my $test_loginid = $test_client->loginid;
+    my $user         = BOM::User->create(
+        email    => $email,
+        password => $hash_pwd,
+    );
+    $user->add_client($test_client);
+    my $token = $m->create_token($test_loginid, 'test token');
+
+    $test_client->set_default_account('USD');
+    $test_client->save;
+
+    # create the dxtrader account
+    my $params = {
+        language => 'EN',
+        token    => $token,
+        args     => {
+            market_type  => 'financial',
+            account_type => 'real',
+            password     => 'Abcd1234',
+            platform     => 'dxtrade',
+        },
+    };
+    my $dxtrader_account = $c->tcall('trading_platform_new_account', $params);
+    my $account_id       = $dxtrader_account->{account_id};
+
+    cmp_deeply $dxtrader_account,
+        {
+        account_type          => 'real',
+        display_balance       => '0.00',
+        landing_company_short => 'svg',
+        currency              => 'USD',
+        account_id            => re('.*'),
+        balance               => '0.00',
+        sub_account_type      => 'financial',
+        market_type           => 'financial',
+        login                 => re('.*'),
+        platform              => 'dxtrade'
+        },
+        'Dxtrader account created';
+
+    $params = {
+        language => 'EN',
+        token    => $token,
+        args     => {
+            reason => 'Financial concerns',
+        },
+    };
+
+    # TODO: give funds with proper dxtrader call (perhaps?)
+    # for now we gotta mock
+
+    my $mock         = Test::MockModule->new('BOM::TradingPlatform::DXTrader');
+    my $demo_balance = 100;
+    my $balance      = 10;
+
+    $mock->mock(
+        'get_accounts',
+        sub {
+            my $accounts = [
+                map {
+                    if ($_->{account_type} eq 'real') {
+                        $_->{display_balance} = $balance;
+                        $_->{balance}         = $balance;
+                    } else {
+                        $_->{display_balance} = $demo_balance;
+                        $_->{balance}         = $demo_balance;
+                    }
+
+                    $_
+                } $mock->original('get_accounts')->(@_)->@*
+            ];
+
+            return $accounts;
+        });
+
+    my $account_closure = $c->tcall('account_closure', $params);
+    cmp_deeply $account_closure,
+        {
+        error => {
+            message_to_client => "Please close open positions and withdraw all funds from your $account_id account(s) before proceeding.",
+            details           => {
+                balance => {
+                    $account_id => {
+                        'currency' => 'USD',
+                        'balance'  => '10.00'
+                    }}
+            },
+            code => 'AccountHasBalanceOrOpenPositions'
+        }
+        },
+        'Cannot close account with dxtrader balance > 0';
+
+    # demo balance is not relevant
+    $demo_balance = 0;
+    my $account_closure_demo = $c->tcall('account_closure', $params);
+    cmp_deeply $account_closure_demo, $account_closure, 'Demo balance not relevant';
+
+    # TODO: remove funds with proper dxtrader call (perhaps?)
+    # for now we gotta mock
+
+    $demo_balance    = 1000;
+    $balance         = 0;
+    $account_closure = $c->tcall('account_closure', $params);
+    ok $account_closure->{status}, 'Account closure status 1';
+    ok($test_client->status->disabled, 'Account disabled');
+    $mock->unmock_all;
 };
 
 done_testing();

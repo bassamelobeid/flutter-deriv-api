@@ -2488,6 +2488,25 @@ rpc account_closure => sub {
         }
     }
 
+    # DXTrader check balances
+    unless (BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend->all(0)) {
+        my $trading_platform = BOM::TradingPlatform->new(
+            platform => 'dxtrade',
+            client   => $client
+        );
+        my $dxtrader_accounts = $trading_platform->get_accounts();
+
+        foreach my $dxtrader_account (grep { $_->{account_type} eq 'real' } $dxtrader_accounts->@*) {
+            if ($dxtrader_account->{balance} > 0) {
+                $accounts_with_balance{$dxtrader_account->{account_id}} = {
+                    balance  => formatnumber('amount', $dxtrader_account->{currency}, $dxtrader_account->{balance}),
+                    currency => $dxtrader_account->{currency},
+                };
+            }
+            # TODO: check open positions
+        }
+    }
+
     if (%accounts_with_positions || %accounts_with_balance) {
         my @accounts_to_fix = uniq(keys %accounts_with_balance, keys %accounts_with_positions);
         return BOM::RPC::v3::Utility::create_error({
