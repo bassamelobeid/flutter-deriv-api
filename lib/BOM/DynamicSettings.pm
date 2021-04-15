@@ -256,6 +256,7 @@ sub get_settings_by_group {
                 quants.contract_types.suspend_early_sellback
                 quants.suspend_deal_cancellation.forex
                 quants.suspend_deal_cancellation.synthetic_index
+                quants.suspend_deal_cancellation.cryptocurrency
                 quants.underlyings.disable_autoupdate_vol
                 quants.underlyings.suspend_buy
                 quants.underlyings.suspend_trades

@@ -23,6 +23,7 @@
             <th>Deal cancellation commission</th>
             <th>Deal cancellation duration range</th>
             <th>Stop out level</th>
+            <th>Expiry</th>
             <th></th>
             <th></th>
         </tr></thead>
@@ -35,6 +36,7 @@
             <td><input type="text" name="cancellation_commission" value="[% data.cancellation_commission %]" data-lpignore="true" /></td>
             <td><input type="text" name="cancellation_duration_range" value="[% data.cancellation_duration_range_json %]" data-lpignore="true" /></td>
             <td><input type="text" name="stop_out_level" value="[% data.stop_out_level_json %]" data-lpignore="true" /></td>
+            <td><input type="text" name="expiry" value="[% data.expiry %]" data-lpignore="true" /></td>
             <td><button onClick="SaveMultiplierConfig('[% category %]', '[% data.symbol %]')" type="button" class="btn btn--primary">Save</button></td>
             <td class="multiplier_config_result"></td>
         </tr>
@@ -64,6 +66,7 @@ function SaveMultiplierConfig(id, symbol) {
             cancellation_commission: el.find('input[name="cancellation_commission"]').val(),
             cancellation_duration_range: el.find('input[name="cancellation_duration_range"]').val(),
             stop_out_level: el.find('input[name="stop_out_level"]').val(),
+            expiry: el.find('input[name="expiry"]').val(),
             landing_company: id
         },
         success: function(data) {

@@ -48,6 +48,7 @@ if ($r->param('save_multiplier_config')) {
             cancellation_commission     => $r->param('cancellation_commission'),
             cancellation_duration_range => decode_json_utf8($r->param('cancellation_duration_range')),
             stop_out_level              => decode_json_utf8($r->param('stop_out_level')),
+            expiry                      => $r->param('expiry'),
         };
         my $redis_key = join('::', 'multiplier_config', $landing_company, $symbol);
         $qc->save_config($redis_key, $multiplier_config);

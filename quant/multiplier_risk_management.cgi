@@ -103,6 +103,7 @@ sub _get_existing_multiplier_config {
     my %display_priority = (
         synthetic_index => 0,
         forex           => 1,
+        cryptocurrency  => 2,
     );
 
     my %existing;
