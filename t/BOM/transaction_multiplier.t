@@ -1304,4 +1304,71 @@ subtest 'buy multiplier on step index with VRTC' => sub {
     ok !$txn->buy, 'buy successful';
 };
 
+subtest 'buy multiplier on cryptocurrency' => sub {
+    my $vr = create_client('VRTC');
+    top_up $vr, 'USD', 5000;
+
+    my $contract_args = {
+        underlying   => 'cryBTCUSD',
+        bet_type     => 'MULTUP',
+        currency     => 'USD',
+        multiplier   => 100,
+        amount       => 100,
+        amount_type  => 'stake',
+        current_tick => $current_tick,
+    };
+    my $contract = produce_contract($contract_args);
+
+    my $txn = BOM::Transaction->new({
+        client        => $vr,
+        contract      => $contract,
+        price         => 100,
+        amount        => 100,
+        amount_type   => 'stake',
+        source        => 19,
+        purchase_date => $contract->date_start,
+    });
+
+    my $error = $txn->buy;
+    is $error->{'-type'},              'InvalidtoBuy',                            'Invalid to buy when multiplier is out of range';
+    is $error->{'-mesg'},              'stop out level undefined for multiplier', 'stop out level undefined for multiplier';
+    is $error->{'-message_to_client'}, 'Multiplier is not in acceptable range. Accepts 10,20,30,40,50.', 'message to client';
+
+    BOM::Config::Runtime->instance->app_config->quants->suspend_deal_cancellation->cryptocurrency(0);
+    $contract_args->{multiplier} = 10;
+    $contract_args->{cancellation} = '1h';
+    $contract = produce_contract($contract_args);
+
+    $txn = BOM::Transaction->new({
+        client        => $vr,
+        contract      => $contract,
+        price         => 100,
+        amount        => 100,
+        amount_type   => 'stake',
+        source        => 19,
+        purchase_date => $contract->date_start,
+    });
+
+    $error = $txn->buy;
+    is $error->{'-type'},              'InvalidtoBuy',                            'Invalid to buy when multiplier is out of range';
+    is $error->{'-mesg'},              'deal cancellation not available', 'deal cancellation not available';
+    is $error->{'-message_to_client'}, 'Deal cancellation is not available for this asset.', 'message to client';
+
+    delete $contract_args->{cancellation};
+    $contract = produce_contract($contract_args);
+
+    $txn = BOM::Transaction->new({
+        client        => $vr,
+        contract      => $contract,
+        price         => 100,
+        amount        => 100,
+        amount_type   => 'stake',
+        source        => 19,
+        purchase_date => $contract->date_start,
+    });
+
+    $error = $txn->buy;
+    ok !$error, 'buy without error';
+};
+
 done_testing();
