@@ -385,7 +385,8 @@ sub get_client_volume_limits {
         return $volume_limits;
     }
 
-    my $max_multiplier = max @{$config->{multiplier_range}};
+    # default to 1 to avoid warnings of uninitialised value
+    my $max_multiplier = max(@{$config->{multiplier_range}}, 1);
 
     my $default_limit;
     my $market_limit = $custom_volume_limits->{markets}{$self->market_name};

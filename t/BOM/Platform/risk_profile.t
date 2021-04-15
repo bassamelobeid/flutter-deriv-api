@@ -285,6 +285,13 @@ subtest 'get_current_profile_definitions' => sub {
                     'profile_name'   => 'medium_risk'
                 }
             ],
+            'cryptocurrency' => [{
+                    'turnover_limit' => "1000.00",
+                    'payout_limit'   => "100.00",
+                    'name'           => 'Cryptocurrency',
+                    'profile_name'   => 'extreme_risk'
+                }
+            ],
         },
     };
     foreach my $broker (keys %$expected) {
