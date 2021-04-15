@@ -401,10 +401,16 @@ sub _process_message {
         # Check <BOM::Test::Time> for more info
         BOM::Test::Time::set_date_from_file() if defined $INC{'BOM/Test/Time.pm'};
 
+        my ($timestamp) = $msg_id =~ /([0-9]+)-/;
+        $timestamp /= 1000.0;
+        my $elapsed = Time::HiRes::time - $timestamp;
+        stats_timing('bom_rpc.v_3.call.delivery.latency', $elapsed * 1000.0, {tags => ['rpc:' . $params->{rpc}, 'stream:' . $self->stream_name]});
+
         if ($params->{deadline} && $params->{deadline} <= time) {
             $self->_ack_message($msg_id);
 
-            DataDog::DogStatsd::Helper::stats_inc('bom_rpc.v_3.call.hit_deadline', {tags => [sprintf("rpc:%s", $params->{rpc})]});
+            DataDog::DogStatsd::Helper::stats_inc('bom_rpc.v_3.call.hit_deadline',
+                {tags => ['rpc:' . $params->{rpc}, 'stream:' . $self->stream_name]});
 
             return undef;
         }
@@ -459,15 +465,14 @@ sub _dispatch_request {
     my $request_start = [Time::HiRes::gettimeofday];
     my $vsz_start     = _current_virtual_mem_size();
 
-    DataDog::DogStatsd::Helper::stats_inc('bom_rpc.v_3.call.count', {tags => [sprintf("rpc:%s", $params->{rpc})]});
+    DataDog::DogStatsd::Helper::stats_inc('bom_rpc.v_3.call.count', {tags => ['rpc:' . $params->{rpc}, 'stream:' . $self->stream_name]});
 
     # DISPATCH
     try {
         $result = $services{$params->{rpc}}{rpc_sub}->($params->{args});
     } catch ($err) {
         $log->errorf("An error occurred while RPC requesting for '%s', ERROR: %s", $params->{rpc}, $err);
-        DataDog::DogStatsd::Helper::stats_inc('bom_rpc.v_3.call_failure.count', {tags => [sprintf("rpc:%s", $params->{rpc})]});
-
+        DataDog::DogStatsd::Helper::stats_inc('bom_rpc.v_3.call_failure.count', {tags => ['rpc:' . $params->{rpc}, 'stream:' . $self->stream_name]});
         die "InternalServerError\n";
     }
 
@@ -491,7 +496,7 @@ sub _dispatch_request {
     DataDog::DogStatsd::Helper::stats_timing(
         'bom_rpc.v_3.call.timing',
         (1000 * Time::HiRes::tv_interval($request_start)),
-        {tags => [sprintf("rpc:%s", $params->{rpc})]});
+        {tags => ['rpc:' . $params->{rpc}, 'stream:' . $self->stream_name]});
 
     push @recent, [$request_start, Time::HiRes::tv_interval($request_end, $request_start)];
     shift @recent if @recent > 50;

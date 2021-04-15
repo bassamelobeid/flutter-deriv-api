@@ -82,15 +82,11 @@ async sub stream_metrics {
     my ($redis_response) = await $redis->xinfo(STREAM => $stream);
     my %info = $redis_response->@*;
 
-    my $oldest     = $group_info->{'last-delivered-id'};
-    my $group_name = $group_info->{'name'};
-
-    ($redis_response) = await $redis->xpending($stream, $group_name);
-    my ($count, $first_id) = @$redis_response;
-    $oldest = $first_id if defined($first_id) and compare_id($oldest, $first_id) > 0;
+    my $last_delivered = $group_info->{'last-delivered-id'};
+    my $group_name     = $group_info->{'name'};
 
     my $total = 0;
-    if ($oldest and $oldest ne '0-0' and compare_id($oldest, $info{'first-entry'}[0]) > 0) {
+    if ($last_delivered and $last_delivered ne '0-0' and compare_id($last_delivered, $info{'first-entry'}[0]) > 0) {
 
         my ($direction, $endpoint, $limit) = ('xrange', '-', XRANGE_BATCH_LIMIT);
         {
@@ -99,14 +95,14 @@ async sub stream_metrics {
             # with the assumption that the items are evenly distributed
             # Data format is xxx-yyy, we really only care about the timestamp information
             # which is in epoch milliseconds as the xxx value
-            if ($oldest - $info{'first-entry'}[0] > $info{'last-entry'}[0] - $oldest) {
+            if ($last_delivered - $info{'first-entry'}[0] > $info{'last-entry'}[0] - $last_delivered) {
                 $direction = 'xrevrange';
                 $endpoint  = '+';
             }
         }
 
         while (1) {
-            my ($redis_response) = await $redis->$direction($stream, $endpoint, $oldest, COUNT => $limit);
+            my ($redis_response) = await $redis->$direction($stream, $endpoint, $last_delivered, COUNT => $limit);
             $total += @$redis_response;
             last unless @$redis_response >= $limit;
             # Overlapping ranges, so the next ID will be included twice
@@ -135,12 +131,6 @@ async sub group_metrics {
         my $group_name = $group_info->{name};
 
         my $tags = {tags => ['stream:' . $stream, 'group:' . $group_name]};
-
-        # Queue latency
-        my ($timestamp) = $group_info->{'last-delivered-id'} =~ /([0-9]+)-/;
-        $timestamp /= 1000.0;
-        my $elapsed = $loop->time - $timestamp;
-        stats_timing(DD_METRIC_PREFIX . 'delivery.latency', $elapsed * 1000.0, $tags);
 
         # Connected workers
         stats_gauge(DD_METRIC_PREFIX . 'workers.connected', $group_info->{'consumers'}, $tags);
