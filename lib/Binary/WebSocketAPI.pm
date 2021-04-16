@@ -37,13 +37,6 @@ use URI;
 use List::Util qw( first any );
 use Syntax::Keyword::Try;
 
-# to block apps from certain operations_domains (red, green etc ) enter the color/name of the domain to the list
-# with the associated list of app_id's
-# Currently 3rd Party Uses red only.
-use constant APPS_BLOCKED_FROM_OPERATION_DOMAINS => {
-    red  => [1],
-    blue => [24269, 23650, 19499]};
-
 # Set up the event loop singleton so that any code we pull in uses the Mojo
 # version, rather than trying to set its own.
 local $ENV{IO_ASYNC_LOOP} = 'IO::Async::Loop::Mojo';
@@ -61,6 +54,8 @@ our %DIVERT_MSG_GROUP = (mt5 => 'mt5');
 # This list is also overwritten by Redis.
 our %BLOCK_APP_IDS;
 our %BLOCK_ORIGINS;
+# These apps are blocked in certain operation domain (red, blue, green etc)
+our %APPS_BLOCKED_FROM_OPERATION_DOMAINS;
 
 # Keys are RPC calls that we want RPC to log, controlled by redis too.
 our %RPC_LOGGING;
@@ -75,6 +70,9 @@ my $node_config;
 
 # a hash of rpc queue configs per environment
 our %RPC_ACTIVE_QUEUES;
+
+my $redis = ws_redis_master();
+my $json  = JSON::MaybeXS->new;
 
 =head2 _category_timeout_config
 
@@ -107,6 +105,119 @@ sub apply_usergroup {
         }
     }
     return;
+}
+
+=head2 get_redis_value_setup
+
+    get_redis_value_setup($key, $log);
+
+Get the value stored in the redis based on the key and apply the value to global variable.
+
+Takes the following arguments
+
+=over 4
+
+=item * C<$key> Redis key example app_id::diverted
+
+=item * C<log> Log object
+
+=back
+
+=cut
+
+sub get_redis_value_setup {
+    my ($key, $log) = @_;
+
+    $redis->get(
+        $key,
+        sub {
+            my ($redis, $err, $value) = @_;
+            my $key_display = join " ", (split m/::/, $key);
+            if ($err) {
+                $log->error("Error reading $key_display from Redis: $err");
+                return;
+            }
+
+            if ($key eq 'rpc::logging') {
+                %RPC_LOGGING = $value ? $json->decode(Encode::decode_utf8($value))->%* : ();
+                $log->info("Enabled logging for RPC: " . join(', ', keys %RPC_LOGGING)) if %RPC_LOGGING;
+            } else {
+                return unless $value;
+
+                $log->info("Have $key_display applying: $value");
+
+                if ($key eq 'app_id::diverted') {
+                    %DIVERT_APP_IDS = %{$json->decode(Encode::decode_utf8($value))};
+                } elsif ($key eq 'app_id::blocked') {
+                    %BLOCK_APP_IDS = %{$json->decode(Encode::decode_utf8($value))};
+                } elsif ($key eq 'origins::blocked') {
+                    %BLOCK_ORIGINS = %{$json->decode(Encode::decode_utf8($value))};
+                } elsif ($key eq 'domain_based_apps::blocked') {
+                    update_apps_blocked_from_operation_domain($value);
+                }
+            }
+        });
+}
+
+=head2 backend_setup
+
+    backend_setup($log);
+
+Get the 'web_socket_proxy::backends' value from redis and setup the backends.
+
+Takes the following argument
+
+=over 4
+
+=item * C<$log> Log object
+
+=back
+
+=cut
+
+sub backend_setup {
+    my ($log) = @_;
+    my $backend_setup_finished = 0;
+
+    $redis->get(
+        'web_socket_proxy::backends',
+        sub {
+            my ($redis, $err, $backends_str) = @_;
+            if ($err) {
+                $log->error("Error reading backends from master redis: $err");
+            }
+            if ($backends_str) {
+                $log->info("Found rpc backends in redis, applying.");
+                try {
+                    my $backends = decode_json_utf8($backends_str);
+                    for my $method (keys %$backends) {
+                        my $backend = $backends->{$method} // 'default';
+                        $backend = 'default' if $backend eq 'rpc_redis';
+                        if (exists $WS_ACTIONS->{$method} and ($backend eq 'default' or $backend eq 'http' or exists $WS_BACKENDS->{$backend})) {
+                            $WS_ACTIONS->{$method}->{backend} = $backend;
+                        } else {
+                            $log->warn("Invalid  backend setting ignored: <$method $backend>");
+                        }
+                    }
+                    $backend_setup_finished = 1;
+                } catch ($e) {
+                    $log->error("Error applying backends from master: $e");
+                }
+            } else {    # there is nothing saved in redis yet.
+                $backend_setup_finished = 1;
+            }
+        });
+    for (my $seconds = 0.5; $seconds <= 4; $seconds *= 2) {
+        my $timeout = 0;
+        Mojo::IOLoop->timer($seconds => sub { ++$timeout });
+        Mojo::IOLoop->one_tick while !($timeout or $backend_setup_finished);
+        last if $backend_setup_finished;
+        $log->error("Timeout $seconds sec. reached when trying to load backends from master redis.");
+    }
+    unless ($backend_setup_finished) {
+        die 'Failed to read rpc backends from master redis. Please retry after ensuring that master redis is started.';
+    }
+
 }
 
 sub startup {
@@ -171,11 +282,10 @@ sub startup {
                 status => 403
             ) if exists $BLOCK_APP_IDS{$app_id};
 
-            # app_id 1 which is our static site should not be used on Red environment which is for 3rd party developers.
             return $c->render(
                 json   => {error => 'AccessRestricted'},
                 status => 403
-            ) if first { $app_id == $_ } APPS_BLOCKED_FROM_OPERATION_DOMAINS->{$node_config->{node}->{operation_domain} // ''}->@*;
+            ) if first { $app_id == $_ } $APPS_BLOCKED_FROM_OPERATION_DOMAINS{$node_config->{node}->{operation_domain} // ''}->@*;
 
             my $request_origin = $c->tx->req->headers->origin // '';
             $request_origin = 'https://' . $request_origin unless $request_origin =~ /^https?:/;
@@ -244,7 +354,6 @@ sub startup {
     };
 
     my $json = JSON::MaybeXS->new;
-
     for my $action (@$actions) {
         my $action_name = $action->[0];
         my $f           = '/home/git/regentmarkets/binary-websocket-api/config/v3';
@@ -367,101 +476,122 @@ sub startup {
             },
         });
 
-    my $redis = ws_redis_master();
-    $redis->get(
-        'app_id::diverted',
-        sub {
-            my ($redis, $err, $ids) = @_;
-            if ($err) {
-                $log->error("Error reading diverted app IDs from Redis: $err");
-                return;
-            }
-            return unless $ids;
-            $log->info("Have diverted app_ids, applying: $ids");
-            # We'd expect this to be an empty hashref - i.e. true - if there's a value back from Redis.
-            # No value => no update.
-            %Binary::WebSocketAPI::DIVERT_APP_IDS = %{$json->decode(Encode::decode_utf8($ids))};
-        });
-    $redis->get(
-        'app_id::blocked',
-        sub {
-            my ($redis, $err, $ids) = @_;
-            if ($err) {
-                $log->error("Error reading blocked app IDs from Redis: $err");
-                return;
-            }
-            return unless $ids;
-            $log->info("Have blocked app_ids, applying: $ids");
-            %BLOCK_APP_IDS = %{$json->decode(Encode::decode_utf8($ids))};
-        });
-    $redis->get(
-        'origins::blocked',
-        sub {
-            my ($redis, $err, $origins) = @_;
-            if ($err) {
-                $log->error("Error reading blocked origins from Redis: $err");
-                return;
-            }
-            return unless $origins;
-            $log->info("Have blocked origins, applying: $origins");
-            %BLOCK_ORIGINS = %{$json->decode(Encode::decode_utf8($origins))};
-        });
-    $redis->get(
-        'rpc::logging',
-        sub {
-            my ($redis, $err, $logging) = @_;
-            if ($err) {
-                $log->error("Error reading RPC logging config from Redis: $err");
-                return;
-            }
-            %RPC_LOGGING = $logging ? $json->decode(Encode::decode_utf8($logging))->%* : ();
-            $log->info("Enabled logging for RPC: " . join(', ', keys %RPC_LOGGING)) if %RPC_LOGGING;
-        });
-
-    my $backend_setup_finished = 0;
-    $redis->get(
-        'web_socket_proxy::backends',
-        sub {
-            my ($redis, $err, $backends_str) = @_;
-            if ($err) {
-                $log->error("Error reading backends from master redis: $err");
-            }
-
-            if ($backends_str) {
-                $log->info("Found rpc backends in redis, applying.");
-                try {
-                    my $backends = decode_json_utf8($backends_str);
-                    for my $method (keys %$backends) {
-                        my $backend = $backends->{$method} // 'default';
-                        $backend = 'default' if $backend eq 'rpc_redis';
-                        if (exists $WS_ACTIONS->{$method} and ($backend eq 'default' or $backend eq 'http' or exists $WS_BACKENDS->{$backend})) {
-                            $WS_ACTIONS->{$method}->{backend} = $backend;
-                        } else {
-                            $log->warn("Invalid  backend setting ignored: <$method $backend>");
-                        }
-                    }
-                    $backend_setup_finished = 1;
-                } catch ($e) {
-                    $log->error("Error applying backends from master: $e");
-                }
-            } else {    # there is nothing saved in redis yet.
-                $backend_setup_finished = 1;
-            }
-        });
-
-    for (my $seconds = 0.5; $seconds <= 4; $seconds *= 2) {
-        my $timeout = 0;
-        Mojo::IOLoop->timer($seconds => sub { ++$timeout });
-        Mojo::IOLoop->one_tick while !($timeout or $backend_setup_finished);
-        last if $backend_setup_finished;
-        $log->error("Timeout $seconds sec. reached when trying to load backends from master redis.");
-    }
-
-    unless ($backend_setup_finished) {
-        die 'Failed to read rpc backends from master redis. Please retry after ensuring that master redis is started.';
-    }
+    get_redis_value_setup('app_id::diverted',           $log);
+    get_redis_value_setup('app_id::blocked',            $log);
+    get_redis_value_setup('origins::blocked',           $log);
+    get_redis_value_setup('domain_based_apps::blocked', $log);
+    get_redis_value_setup('rpc::logging',               $log);
+    backend_setup($log);
 
     return;
+}
+
+=head2 update_apps_blocked_from_operation_domain
+
+    update_apps_blocked_from_operation_domain($apps_blocked_json);
+
+Update the global variable APPS_BLOCKED_FROM_OPERATION_DOMAINS from given JSON value.
+Note: Wrapped the global variable setting in the function.
+
+=cut
+
+sub update_apps_blocked_from_operation_domain {
+    my ($apps_blocked_json) = @_;
+    my $json = JSON::MaybeXS->new;
+    %APPS_BLOCKED_FROM_OPERATION_DOMAINS = %{$json->decode($apps_blocked_json)};
+}
+
+=head2 add_remove_apps_blocked_from_opertion_domain
+
+    add_remove_apps_blocked_from_opertion_domain($operation, $app_id, $domain);
+
+Add (block) or remove (unblock) the app ids from APPS_BLOCKED_FROM_OPERATION_DOMAINS.
+Note: This is also a wrapper to update the global variable based on block or unblock request from Introspection command.
+
+Taking the following arguments
+
+=over 4
+
+=item * C<$operation> add or delete
+
+=item * C<$app_id> app_id
+
+=item * C<$domain> red/blue/green etc operation domain
+
+=back
+
+=cut
+
+sub add_remove_apps_blocked_from_opertion_domain {
+    my ($operation, $app_id, $domain) = @_;
+
+    if ($operation eq 'add') {
+        push $APPS_BLOCKED_FROM_OPERATION_DOMAINS{$domain}->@*, $app_id;
+    } elsif ($operation eq 'del') {
+        $APPS_BLOCKED_FROM_OPERATION_DOMAINS{$domain} = [grep { $_ != $app_id } $APPS_BLOCKED_FROM_OPERATION_DOMAINS{$domain}->@*];
+    }
+
+    set_to_redis_master(
+        'domain_based_apps::blocked',
+        Encode::encode_utf8($json->encode(\%Binary::WebSocketAPI::APPS_BLOCKED_FROM_OPERATION_DOMAINS))
+    );
+}
+
+=head2 get_apps_blocked_from_operation_domain
+
+Get value stored in the global variable Binary::WebSocketAPI::APPS_BLOCKED_FROM_OPERATION_DOMAINS and returns.
+
+=cut
+
+sub get_apps_blocked_from_operation_domain {
+    my $apps_blocked = get_from_redis_master('domain_based_apps::blocked');
+    update_apps_blocked_from_operation_domain($apps_blocked);
+
+    return \%Binary::WebSocketAPI::APPS_BLOCKED_FROM_OPERATION_DOMAINS;
+}
+
+=head2 get_from_redis_master
+
+    get_from_redis_master($key);
+
+Get key value from redis master
+
+It takes the following argument
+
+=over 4
+
+=item * C<key> Key
+
+=back
+
+=cut
+
+sub get_from_redis_master {
+    my ($key) = @_;
+    return $redis->get($key) // '{}';
+}
+
+=head2 set_to_redis_master
+
+    set_to_redis_master($key, $value);
+
+Set value to redis master
+
+The following arguments are used
+
+=over 4
+
+=item * C<key> Key example domain_based_apps::blocked
+
+=item * C<value> Value
+
+=back
+
+=cut
+
+sub set_to_redis_master {
+    my ($key, $value) = @_;
+    $redis->set($key, $value);
 }
 
 1;

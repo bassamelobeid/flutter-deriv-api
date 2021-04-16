@@ -685,6 +685,41 @@ command logging => sub {
     return $f;
 };
 
+=head2 block_app_in_domain
+
+To block or unblock app ids from certain environments like red, blue etc
+
+=over 4
+
+=item * C<app_id> App id to block or unblock
+
+=item * C<env> Environment red/blue/green
+
+=item * C<block_status> Block/unblock example Yes to block, leave empty to unblock
+
+=back
+
+Returns the apps blocked from operation domain
+
+=cut
+
+command block_app_in_domain => sub {
+    my ($self, $app, $app_id, $env, $block_status) = @_;
+    my $redis = ws_redis_master();
+    my $f     = Future::Mojo->new;
+    if ($app_id && $env) {
+        if ($block_status) {
+            Binary::WebSocketAPI::add_remove_apps_blocked_from_opertion_domain('add', $app_id, $env);
+        } else {
+            Binary::WebSocketAPI::add_remove_apps_blocked_from_opertion_domain('del', $app_id, $env);
+        }
+    }
+    my $rslt  = {blocked => Binary::WebSocketAPI::get_apps_blocked_from_operation_domain()};
+    $f->done($rslt);
+
+    return $f;
+};
+
 =head2 help
 
 Returns a list of available commands.
