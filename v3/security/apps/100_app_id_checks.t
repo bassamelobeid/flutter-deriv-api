@@ -4,6 +4,8 @@ use Test::More;
 use BOM::Test::Helper qw/build_mojo_test/;
 use YAML::XS;
 use Test::MockModule;
+use Binary::WebSocketAPI::v3::Instance::Redis qw| ws_redis_master |;
+use JSON::MaybeXS;
 
 my $t = build_mojo_test(
     'Binary::WebSocketAPI',
@@ -31,10 +33,14 @@ $t->get_ok('/websockets/v3?app_id=1&l=EN');
 #404 is what you get if everything passes,  just means we have not sent an actual request.
 is $t->tx->error->{code}, 404, 'got 404 for app id = 1 when no opertaion Domain set.  ';
 
-my %blocked_appid_info = (
-    'red'  => [1],
-    'blue' => [24269, 23650, 19499]);
-
+my $redis             = ws_redis_master();
+my $block_apps_domain = '{
+    "red": [1],
+    "blue":[24269, 23650, 19499]
+    }';
+$redis->set('domain_based_apps::blocked', $block_apps_domain);
+my $redis_value = $redis->get('domain_based_apps::blocked');
+my %blocked_appid_info = %{JSON::MaybeXS->new->decode($redis_value)};
 for my $env (keys %blocked_appid_info) {
     my $module = Test::MockModule->new('YAML::XS');
     subtest "test blocked app id in $env env" => sub {
