@@ -134,14 +134,14 @@ override 'date_expiry' => sub {
     my $self = shift;
 
     # default to 100 years from now if it is not defined.
-    my $expiry = $self->_multiplier_config->{expiry} // '36500d';
+    my $expiry = $self->_multiplier_config->{expiry} || '36500d';
 
     my $date_expiry = $self->date_start->truncate_to_day->plus_time_interval($expiry);
 
     my $close = $self->trading_calendar->closing_on($self->underlying->exchange, $date_expiry);
 
     return $close if $close;
-    return $self->trading_caledar->trade_date_after($self->underlying->exchange, $date_expiry);
+    return $self->trading_calendar->trade_date_after($self->underlying->exchange, $date_expiry);
 };
 
 =head2 take_profit
