@@ -15,6 +15,8 @@ use LandingCompany;
 use Mojo::Redis2;
 use Binary::WebSocketAPI::v3::Instance::Redis qw| check_connections ws_redis_master |;
 use JSON::MaybeUTF8;
+use Syntax::Keyword::Try;
+use Scalar::Util qw(looks_like_number);
 
 use BOM::Backoffice::Sysinit ();
 
@@ -24,9 +26,10 @@ PrintContentType();
 
 BrokerPresentation('App management');
 
+our $redis = ws_redis_master();
+
 sub redis_push {
     my ($app_id, $is_block) = @_;
-    my $redis = ws_redis_master();
 
     $redis->get(
         'app_id::blocked',
@@ -92,6 +95,18 @@ sub show_form_result {
     return;
 }
 
+=head2 get_blocked_app_operation_domain
+
+Get the domain based app blocked value from redis
+
+Returns a json format apps blocked from operation domain
+
+=cut
+
+sub get_blocked_app_operation_domain {
+    return $redis->get('domain_based_apps::blocked') // '{}';
+}
+
 # Check if a staff is logged in
 BOM::Backoffice::Auth0::get_staff();
 
@@ -100,6 +115,34 @@ if ($action and $action eq 'BLOCK APP') {
     $block_app->();
 } elsif ($action and $action eq 'UNBLOCK APP') {
     $unblock_app->();
+} elsif ($action and $action eq 'BLOCK APPS IN DOMAIN') {
+    my $block_apps = request()->param('block_app_operation_domain');
+    try {
+        my %decoded = %{JSON::MaybeXS->new->decode($block_apps)};
+
+        foreach my $domain (keys %decoded) {
+            if (ref($decoded{$domain}) ne 'ARRAY') {
+                die "Entered string is not in expected format";
+            } else {
+                foreach my $app_id ($decoded{$domain}->@*) {
+                    if (!looks_like_number($app_id)) {
+                        die "App Id should be numeric value";
+                    }
+                }
+            }
+        }
+
+        $redis->set('domain_based_apps::blocked', $block_apps);
+        $redis->publish(
+            'introspection',
+            encode_json_utf8({
+                    command => 'block_app_in_domain',
+                    channel => 'introspection_response'
+                }));
+        show_form_result("Block apps based on domain has been updated successfully", "notify");
+    } catch ($e) {
+        show_form_result("JSON string provided is not valid: $e", "notify notify--warning");
+    }
 }
 
 # deactivate app
@@ -134,6 +177,28 @@ if (BOM::Backoffice::Auth0::has_authorisation(['Marketing'])) {
             <input type="number" id="app_id_activate" name="app_id" />
             <input type="submit" class="btn btn--red" name="action" value="UNBLOCK APP" onclick="return confirm('Are you sure you want to activate the app?')">
         </form>~;
+}
+
+# block app using certain operation domain
+if (BOM::Backoffice::Auth0::has_authorisation(['Marketing'])) {
+    Bar(
+        'Block apps',
+        {
+            container_class => 'card',
+            title_class     => 'card__label'
+        });
+    print qq~
+        <p>Block apps in certain opertation domain (red, blue, green etc). Expected format example: {
+        "red": [1],
+        "blue": [24269, 23650]
+        }
+        </p>
+        <form action="~ . request()->url_for('backoffice/f_app_management.cgi') . qq~" method="post">
+            <label for="block_app_operation_domain">Blocked App IDs:</label>
+            <textarea id="block_app_operation_domain" rows="3" cols="30" name="block_app_operation_domain" placeholder="{}">~
+        . get_blocked_app_operation_domain() . qq~</textarea>
+            <input type="submit" class="btn btn--red" name="action" value="BLOCK APPS IN DOMAIN" onclick="return confirm('Are you sure you want to block the app(s) in the domain(s)?'">
+            </form>~;
 }
 
 code_exit_BO();
