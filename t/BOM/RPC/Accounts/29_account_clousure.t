@@ -452,7 +452,6 @@ subtest 'Account closure DXTrader' => sub {
         currency              => 'USD',
         account_id            => re('.*'),
         balance               => '0.00',
-        sub_account_type      => 'financial',
         market_type           => 'financial',
         login                 => re('.*'),
         platform              => 'dxtrade'

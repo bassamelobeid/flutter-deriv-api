@@ -1462,6 +1462,9 @@ rpc transfer_between_accounts => sub {
         return $deposit if $deposit->{error};
 
         my $from_client = BOM::User::Client->get_client_instance($loginid_from);
+        # This endpoint schema expects synthetic or financial (not gaming)
+        my $market_type = $deposit->{market_type};
+        $market_type = 'synthetic' if $market_type eq 'gaming';
 
         return {
             status   => 1,
@@ -1476,7 +1479,7 @@ rpc transfer_between_accounts => sub {
                     balance      => $deposit->{balance},
                     currency     => $deposit->{currency},
                     account_type => 'dxtrade',
-                    market_type  => $deposit->{market_type},
+                    market_type  => $market_type,
                 },
             ]};
     }
@@ -1486,6 +1489,9 @@ rpc transfer_between_accounts => sub {
         return $withdrawal if $withdrawal->{error};
 
         my $to_client = BOM::User::Client->get_client_instance($loginid_to);
+        # This endpoint schema expects synthetic or financial (not gaming)
+        my $market_type = $withdrawal->{market_type};
+        $market_type = 'synthetic' if $market_type eq 'gaming';
 
         return {
             status   => 1,
@@ -1500,7 +1506,7 @@ rpc transfer_between_accounts => sub {
                     balance      => $withdrawal->{balance},
                     currency     => $withdrawal->{currency},
                     account_type => 'dxtrade',
-                    market_type  => $withdrawal->{market_type},
+                    market_type  => $market_type,
                 },
             ]};
     }

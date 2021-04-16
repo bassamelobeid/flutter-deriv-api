@@ -244,6 +244,53 @@ subtest 'transfer between accounts' => sub {
         'affected accounts returned'
     );
 
+    $params->{args}{account_from} = $client1->loginid;
+    $params->{args}{account_to}   = $dx_synthetic->{account_id};
+    $params->{args}{amount}       = 20;
+    $res = $c->call_ok('transfer_between_accounts', $params)->has_no_system_error->has_no_error('deposit to synthetic ok')->result;
+
+    cmp_deeply(
+        $res->{accounts},
+        bag({
+                'account_type' => 'trading',
+                'balance'      => num(0),
+                'currency'     => $client1->currency,
+                'loginid'      => $client1->loginid,
+            },
+            {
+                'account_type' => 'dxtrade',
+                'balance'      => num(20),
+                'currency'     => $dx_synthetic->{currency},
+                'loginid'      => $dx_synthetic->{account_id},
+                'market_type'  => 'synthetic',
+            },
+        ),
+        'affected accounts returned'
+    );
+
+    $params->{args}{account_from} = $dx_synthetic->{account_id};
+    $params->{args}{account_to}   = $client1->loginid;
+    $params->{args}{amount}       = 20;
+    $res = $c->call_ok('transfer_between_accounts', $params)->has_no_system_error->has_no_error('withdraw from synthetic ok')->result;
+
+    cmp_deeply(
+        $res->{accounts},
+        bag({
+                'account_type' => 'trading',
+                'balance'      => num(20),
+                'currency'     => $client1->currency,
+                'loginid'      => $client1->loginid,
+            },
+            {
+                'account_type' => 'dxtrade',
+                'balance'      => num(0),
+                'currency'     => $dx_synthetic->{currency},
+                'loginid'      => $dx_synthetic->{account_id},
+                'market_type'  => 'synthetic',
+            },
+        ),
+        'affected accounts returned'
+    );
 };
 
 done_testing();
