@@ -1092,7 +1092,7 @@ subtest 'crypto on multiplier' => sub {
         date_start   => $now,
         date_pricing => $now,
         amount_type  => 'stake',
-        amount       => 100,
+        amount       => 10,
         multiplier   => 100,
         currency     => 'USD',
     };
