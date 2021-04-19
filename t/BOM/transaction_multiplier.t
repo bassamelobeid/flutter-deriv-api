@@ -1313,7 +1313,7 @@ subtest 'buy multiplier on cryptocurrency' => sub {
         bet_type     => 'MULTUP',
         currency     => 'USD',
         multiplier   => 100,
-        amount       => 100,
+        amount       => 10,
         amount_type  => 'stake',
         current_tick => $current_tick,
     };
@@ -1335,14 +1335,14 @@ subtest 'buy multiplier on cryptocurrency' => sub {
     is $error->{'-message_to_client'}, 'Multiplier is not in acceptable range. Accepts 10,20,30,40,50.', 'message to client';
 
     BOM::Config::Runtime->instance->app_config->quants->suspend_deal_cancellation->cryptocurrency(0);
-    $contract_args->{multiplier} = 10;
+    $contract_args->{multiplier}   = 10;
     $contract_args->{cancellation} = '1h';
-    $contract = produce_contract($contract_args);
+    $contract                      = produce_contract($contract_args);
 
     $txn = BOM::Transaction->new({
         client        => $vr,
         contract      => $contract,
-        price         => 100,
+        price         => 10,
         amount        => 100,
         amount_type   => 'stake',
         source        => 19,
@@ -1350,8 +1350,8 @@ subtest 'buy multiplier on cryptocurrency' => sub {
     });
 
     $error = $txn->buy;
-    is $error->{'-type'},              'InvalidtoBuy',                            'Invalid to buy when multiplier is out of range';
-    is $error->{'-mesg'},              'deal cancellation not available', 'deal cancellation not available';
+    is $error->{'-type'},              'InvalidtoBuy',                                       'Invalid to buy when multiplier is out of range';
+    is $error->{'-mesg'},              'deal cancellation not available',                    'deal cancellation not available';
     is $error->{'-message_to_client'}, 'Deal cancellation is not available for this asset.', 'message to client';
 
     delete $contract_args->{cancellation};
