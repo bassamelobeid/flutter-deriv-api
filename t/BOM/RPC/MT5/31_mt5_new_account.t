@@ -404,4 +404,38 @@ subtest 'real & demo split on account creation' => sub {
     is $result->{login},        'MTD' . $ACCOUNTS{'demo\p01_ts01\synthetic\svg_std_usd'};
 };
 
+subtest 'account creation throttle' => sub {
+    my $new_email  = 'throttle' . $DETAILS{email};
+    my $new_client = create_client('CR');
+    my $token      = $m->create_token($new_client->loginid, 'test token 2');
+    $new_client->set_default_account('EUR');
+    $new_client->email($new_email);
+
+    my $user = BOM::User->create(
+        email    => $new_email,
+        password => 's3kr1t',
+    );
+    $user->add_client($new_client);
+
+    my $method = 'mt5_new_account';
+    my $params = {
+        language => 'EN',
+        token    => $token,
+        args     => {
+            account_type => 'gaming',
+            email        => $new_email,
+            name         => $DETAILS{name},
+            mainPassword => $DETAILS{password}{main},
+            leverage     => 100,
+        },
+    };
+    my $result = $c->call_ok($method, $params)->has_no_error('gaming account successfully created')->result;
+    is $result->{account_type}, 'gaming';
+    is $result->{login},        'MTR' . $ACCOUNTS{'real\p01_ts03\synthetic\svg_std_usd\01'};
+
+    $result = $c->call_ok($method, $params)->has_error->error_code_is('MT5CreateUserError')
+        ->error_message_is("We're unable to add another MT5 account right now. Please try again in a minute.");
+    BOM::RPC::v3::MT5::Account::reset_throttler($new_client->loginid);
+};
+
 done_testing();

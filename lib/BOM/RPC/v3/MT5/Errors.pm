@@ -34,6 +34,7 @@ my %category_message_mapping = do {
         MT5SamePassword            => localize('Please use different passwords for your investor and main accounts.'),
         InvalidSubAccountType      => localize("We can't find this account. Please check the details and try again."),
         Throttle                   => localize('It looks like you have already made the request. Please try again later.'),
+        MT5AccountCreationThrottle => localize("We're unable to add another MT5 account right now. Please try again in a minute."),
         MT5PasswordChangeError     => localize("You've used this password before. Please create a different one."),
         DemoTopupThrottle          => localize('We are processing your top-up request. Please wait for your virtual funds to be credited.'),
         DemoTopupBalance           => localize(

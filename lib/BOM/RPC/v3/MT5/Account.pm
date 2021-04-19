@@ -847,7 +847,7 @@ async_rpc "mt5_new_account",
     }
     # Check if client is throttled before sending MT5 request
     if (_throttle($client->loginid)) {
-        return create_error_future('Throttle', {override_code => $error_code});
+        return create_error_future('MT5AccountCreationThrottle', {override_code => $error_code});
     }
 
     if ($args->{dry_run}) {
