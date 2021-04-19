@@ -56,7 +56,8 @@
             "forex",
             "commodities",
             "synthetic_index",
-            "indices"
+            "indices",
+            "cryptocurrency"
          ],
          "properties" : {
             "forex" : {
@@ -162,6 +163,32 @@
                "properties" : {},
                "additionalProperties" : false,
                "type" : "object"
+            },
+            "cryptocurrency" : {
+               "patternProperties" : {
+                  "^[A-Z]{3,4}$" : {
+                     "required" : [
+                        "max_payout",
+                        "min_stake"
+                     ],
+                     "properties" : {
+                        "min_stake" : {
+                           "type" : "number",
+                           "minimum" : 0,
+                           "maximum" : 10
+                        },
+                        "max_payout" : {
+                           "type" : "number",
+                           "minimum" : 0
+                        }
+                     },
+                     "additionalProperties" : false,
+                     "type" : "object"
+                  }
+               },
+               "properties" : {},
+               "additionalProperties" : false,
+               "type" : "object"
             }
          },
          "type" : "object",
@@ -178,7 +205,7 @@
       "legal_allowed_markets" : {
          "type" : "array",
          "items" : {
-            "pattern" : "^(commodities|forex|indices|synthetic_index)$",
+            "pattern" : "^(commodities|forex|indices|synthetic_index|cryptocurrency)$",
             "type" : "string"
          },
          "minItems" : 4

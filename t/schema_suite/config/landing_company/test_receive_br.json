@@ -59,7 +59,7 @@
                "minItems" : 4,
                "items" : {
                   "type" : "string",
-                  "pattern" : "^(commodities|forex|indices|synthetic_index)$"
+                  "pattern" : "^(commodities|forex|indices|synthetic_index|cryptocurrency)$"
                },
                "type" : "array"
             },
@@ -216,7 +216,7 @@
                "minItems" : 4,
                "type" : "array",
                "items" : {
-                  "pattern" : "^(commodities|forex|indices|synthetic_index)$",
+                  "pattern" : "^(commodities|forex|indices|synthetic_index|cryptocurrency)$",
                   "type" : "string"
                }
             },
