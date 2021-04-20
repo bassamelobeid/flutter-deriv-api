@@ -53,6 +53,7 @@ __PACKAGE__->meta->setup(
         mifir_id                                 => { type => 'varchar', length => 35 },
         binary_user_id                           => { type => 'bigint' },
         non_pep_declaration_time                 => { type => 'timestamp' },
+        payment_method                           => { type => 'text' },
     ],
 
     primary_key_columns => [ 'loginid' ],
