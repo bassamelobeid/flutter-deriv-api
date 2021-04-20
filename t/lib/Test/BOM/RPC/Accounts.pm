@@ -62,6 +62,7 @@ our %MT5_ACCOUNTS = (
     'real\p01_ts02\synthetic\svg_std_usd\03'         => '21000001',
     'real\p01_ts02\synthetic\svg_std_usd\04'         => '21000001',
     'real\p01_ts02\synthetic\svg_sf_usd'             => '21000003',
+    'real\p01_ts02\synthetic\svg_std-hr_usd'         => '21000004',
     # real03 account
     'real\p01_ts03\synthetic\svg_std_usd\01' => '41000001',
     'real\p01_ts03\synthetic\svg_std_usd\02' => '41000001',

@@ -865,6 +865,7 @@ async_rpc "mt5_new_account",
 
             my %existing_groups;
             my $trade_server_error;
+            my $has_hr_account = undef;
             foreach my $mt5_account (@logins) {
                 if ($mt5_account->{error} and $mt5_account->{error}{code} eq 'MT5AccountInaccessible') {
                     $trade_server_error = $mt5_account->{error};
@@ -872,15 +873,38 @@ async_rpc "mt5_new_account",
                 }
 
                 $existing_groups{$mt5_account->{group}} = $mt5_account->{login} if $mt5_account->{group};
+
+                $has_hr_account = 1 if lc($mt5_account->{group}) =~ /synthetic/ and lc($mt5_account->{group}) =~ /(\-hr|highrisk)/;
             }
 
             if ($trade_server_error) {
+
                 return create_error_future(
                     'MT5AccountCreationSuspended',
                     {
                         override_code => $error_code,
                         message       => $trade_server_error->{message_to_client},
                     });
+            }
+
+            # If one of client's account has been moved to high-risk groups
+            # client shouldn't be able to open a non high-risk account anymore
+            # so, here we set convert the group to high-risk version of the selected group if applicable
+            if ($has_hr_account and $account_type ne 'demo' and $group =~ /synthetic/ and not $group =~ /\-/) {
+                my ($division) = $group =~ /\\[a-zA-Z]+_([a-zA-Z]+)_/;
+                my $new_group = $group =~ s/$division/$division-hr/r;
+
+                # We don't have counter for svg hr groups.
+                # Remove it from group name if the original has it
+                $new_group =~ s/\\\d+$//;
+
+                if (get_mt5_account_type_config($new_group)) {
+                    $group = $new_group;
+                } else {
+                    $log->warnf("Unable to find high risk group %s for client %s with original group of %s.", $new_group, $client->loginid, $group);
+
+                    return create_error_future('MT5CreateUserError');
+                }
             }
 
             # can't create account on the same group
@@ -1009,11 +1033,6 @@ async_rpc "mt5_new_account",
                             } else {
                                 Future->done;
                             }
-                        }
-                    )->then(
-                        sub {
-                            # Get currency from MT5 group
-                            return BOM::MT5::User::Async::get_group($group);
                         }
                     )->then(
                         sub {

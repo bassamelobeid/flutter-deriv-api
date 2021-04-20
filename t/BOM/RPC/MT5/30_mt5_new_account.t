@@ -196,6 +196,86 @@ subtest 'new account dry_run' => sub {
     BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
 };
 
+subtest 'new account with account in highRisk groups' => sub {
+    my $mock_mt5_rpc = Test::MockModule->new('BOM::RPC::v3::MT5::Account');
+    $mock_mt5_rpc->mock(
+        get_mt5_logins => sub {
+            return Future->done({
+                login    => '1001014',
+                group    => 'real\p01_ts01\synthetic\svg_std-hr_usd',
+                balance  => 0,
+                currency => 'USD',
+            });
+        });
+
+    my $new_email  = 'highrisk' . $details{email};
+    my $new_client = create_client('CR', undef, {residence => 'id'});
+    my $token      = $m->create_token($new_client->loginid, 'test token');
+    $new_client->set_default_account('USD');
+    $new_client->email($new_email);
+
+    my $user = BOM::User->create(
+        email    => $new_email,
+        password => 's3kr1t',
+    );
+    $user->add_client($new_client);
+
+    subtest 'corresponding high risk group exists' => sub {
+        my $method = 'mt5_new_account';
+        my $params = {
+            language => 'EN',
+            token    => $token,
+            args     => {
+                account_type => 'gaming',
+                country      => 'id',
+                email        => $details{email},
+                name         => $details{name},
+                mainPassword => $details{password}{main},
+                leverage     => 100,
+                server       => 'p01_ts02',
+            },
+        };
+
+        BOM::RPC::v3::MT5::Account::reset_throttler($new_client->loginid);
+        BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real->p01_ts03->all(0);
+        $c->call_ok($method, $params)->has_no_error('no error for mt5_new_account without investPassword');
+        is $c->result->{login}, 'MTR' . $accounts{'real\p01_ts02\synthetic\svg_std-hr_usd'}, 'group changed to high risk';
+    };
+
+    subtest 'corresponding high risk group does not exist' => sub {
+        $mock_mt5_rpc->mock(
+            get_mt5_account_type_config => sub {
+                my ($group) = @_;
+
+                return undef if $group =~ /\-hr/;
+                return $mock_mt5_rpc->original('get_mt5_account_type_config')->($group);
+            });
+
+        my $method = 'mt5_new_account';
+        my $params = {
+            language => 'EN',
+            token    => $token,
+            args     => {
+                account_type => 'gaming',
+                country      => 'id',
+                email        => $details{email},
+                name         => $details{name},
+                mainPassword => $details{password}{main},
+                leverage     => 100,
+                server       => 'p01_ts03',
+            },
+        };
+
+        BOM::RPC::v3::MT5::Account::reset_throttler($new_client->loginid);
+        BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real->p01_ts03->all(0);
+        $c->call_ok($method, $params)->has_error('high risk group does not exist for corresponding group')
+            ->error_code_is('MT5CreateUserError', 'error code for mt5_new_account with navailable high risk group')
+            ->error_message_is('An error occured while creating your account. Please check your information and try again.');
+    };
+
+    $mock_mt5_rpc->unmock_all();
+};
+
 subtest 'status allow_document_upload is added upon mt5 create account dry_run advanced' => sub {
     my $ID_DOCUMENT = $test_client->get_authentication('ID_DOCUMENT')->status;
 
