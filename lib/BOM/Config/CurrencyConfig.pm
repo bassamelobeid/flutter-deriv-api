@@ -605,7 +605,7 @@ sub get_minimum_safe_amount {
 
 =head2 get_sweep_reserve_balance
 
-To get the reverse balance for sweep.
+To get the reserve balance for sweep.
 
 =over 4
 
@@ -620,9 +620,75 @@ Returns the C<sweep_reserve_balance> for the currency.
 sub get_sweep_reserve_balance {
     my $currency = shift;
 
-    my $sweep_reserve_balance = JSON::MaybeUTF8::decode_json_utf8(app_config()->get('payments.crypto.sweep_reserve_balance'));
+    my $sweep_reserve_balance = JSON::MaybeUTF8::decode_json_utf8(app_config()->get('payments.sweep.reserve_balance'));
 
     return $sweep_reserve_balance->{$currency};
+}
+
+=head2 get_sweep_min_transfer
+
+To get the minimum transfer limit for sweep.
+
+=over 4
+
+=item * C<currency> - Currency code
+
+=back
+
+Returns the C<sweep_min_transfer> for the currency.
+
+=cut
+
+sub get_sweep_min_transfer {
+    my $currency = shift;
+
+    my $sweep_min_transfer = JSON::MaybeUTF8::decode_json_utf8(app_config()->get('payments.sweep.min_transfer'));
+
+    return $sweep_min_transfer->{$currency};
+}
+
+=head2 get_sweep_max_transfer
+
+To get the maximum transfer limit for sweep.
+
+=over 4
+
+=item * C<currency> - Currency code
+
+=back
+
+Returns the C<sweep_max_transfer> for the currency.
+
+=cut
+
+sub get_sweep_max_transfer {
+    my $currency = shift;
+
+    my $sweep_max_transfer = JSON::MaybeUTF8::decode_json_utf8(app_config()->get('payments.sweep.max_transfer'));
+
+    return $sweep_max_transfer->{$currency};
+}
+
+=head2 get_sweep_max_fee_percentage
+
+To get the maximum fee percentage limit for sweep.
+
+=over 4
+
+=item * C<currency> - Currency code
+
+=back
+
+Returns the C<sweep_max_percentage_fee> for the currency.
+
+=cut
+
+sub get_sweep_max_fee_percentage {
+    my $currency = shift;
+
+    my $sweep_max_fee_percentage = JSON::MaybeUTF8::decode_json_utf8(app_config()->get('payments.sweep.max_fee_percentage'));
+
+    return $sweep_max_fee_percentage->{$currency};
 }
 
 =head2 get_crypto_new_address_threshold

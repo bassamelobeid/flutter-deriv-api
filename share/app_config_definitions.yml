@@ -266,11 +266,6 @@ payments:
           isa: Num
           default: 12
           global: 1
-        sweep_reserve_balance:
-          description: "Reserve Balance of Sweep"
-          isa: json_string
-          default: '{"BTC":50,"ETH":240,"LTC":1000,"USDC":5000,"UST":150000}'
-          global: 1
         minimum_safe_amount:
           description: "Minimum safe amount"
           isa: json_string
@@ -300,6 +295,30 @@ payments:
           description: "Configurations for internal sweep batches (utxos)"
           isa: json_string
           default: '{"BTC": [{"amount": 0.1, "weight": 1}], "LTC": [{"amount": 0.1, "weight": 1}]}'
+          global: 1
+    sweep:
+      description: 'Sweep related limit configuration'
+      isa: section
+      contains:
+        reserve_balance:
+          isa: json_string
+          description: "Reserve Balance of Sweep"
+          default: '{"BTC":50,"ETH":240,"LTC":1000,"USDC":5000,"UST":150000}'
+          global: 1
+        min_transfer:
+          isa: json_string
+          description: "Minimum transfer limit of Sweep"
+          default: '{"BTC":1,"ETH":10,"LTC":1,"USDC":100,"UST":1000}'
+          global: 1
+        max_transfer:
+          isa: json_string
+          description: "Maximum transfer limit of Sweep"
+          default: '{"BTC":100,"ETH":100,"LTC":600,"USDC":2000,"UST":10000}'
+          global: 1
+        max_fee_percentage:
+          isa: json_string
+          description: "Maximum fee percentage limit of Sweep"
+          default: '{"BTC":1,"LTC":1,"UST":5}'
           global: 1
     transfer_between_accounts:
       description: 'Transfer between accounts config'

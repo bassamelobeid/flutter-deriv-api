@@ -8,9 +8,6 @@ BTC:
     decimal_places: 8
     dust_relay_tx_fee: 0.00003 # in BTC/kB
     sweep:
-        min_transfer: 1
-        max_transfer: 100
-        max_percentage_fee: 1
         address: 1QEdWqpiEfWMCGLHmmABLFqym8SSeib8Ks
     thirdparty_api:
         bitgo:
@@ -31,9 +28,6 @@ LTC:
     decimal_places: 8
     dust_relay_tx_fee: 0.0003 # in LTC/kB
     sweep:
-        min_transfer: 1
-        max_transfer: 600
-        max_percentage_fee: 1
         address: MN42N4FdC6scDQzAW1W3kUJeawcjECDRvB
     thirdparty_api:
         bitgo:
@@ -55,8 +49,6 @@ ETH:
     safe_gas_price: 20000000000 # Wei
     internal_transaction_max_age: 8 # Hours
     sweep:
-        min_transfer: 10 # ETH
-        max_transfer: 100 # ETH
         address: 0x067f48d1bbaab135cfbe43535cc34312facc54a1 # multis.co address
 BUSD:
     withdrawal:
@@ -109,8 +101,6 @@ USDC:
     protocol_cost: 0
     decimal_places: 6
     sweep:
-        min_transfer: 100
-        max_transfer: 2000
         address: 0x067f48d1BbaAb135cFBe43535Cc34312FACc54a1
 USDK:
     withdrawal:
@@ -128,9 +118,6 @@ UST:
     decimal_places: 8
     sweep:
         address: 1GMin1HSJPFBYjYTikqLVN9dKs8h4myVfB
-        min_transfer: 1000
-        max_transfer: 10000
-        max_percentage_fee: 5
 eUSDT:
     withdrawal:
         timeout: "3d"
