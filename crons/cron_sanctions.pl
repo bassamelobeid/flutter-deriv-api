@@ -38,9 +38,7 @@ my $sanctions = Data::Validate::Sanctions->new(
 );
 
 if ($update) {
-    $sanctions->update_data;
-
-    print "The source $_ updated. \n" for (keys $sanctions->{_data}->%*);
+    $sanctions->update_data(verbose => $verbose);
     exit 0;
 }
 
