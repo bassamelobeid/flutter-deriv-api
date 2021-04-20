@@ -396,7 +396,7 @@ sub actions_config {
         ['trading_platform_password_reset'],
 
         ['new_account', {stash_params => [qw/ token server_name client_ip user_agent /]}],
-
+        ['new_account_wallet', {stash_params => [qw/ server_name client_ip user_agent /]}],
         ['link_wallet'],
     ];
 }

@@ -8,6 +8,7 @@
     "additionalProperties": false,
     "required": [
         "new_account",
+        "residence",
         "subtype",
         "type"
     ],
