@@ -303,9 +303,12 @@ sub get_settings_by_group {
                 payments.crypto.new_address_threshold
                 payments.crypto.internal_sweeps_config
                 payments.crypto.restricted_countries
-                payments.crypto.sweep_reserve_balance
                 payments.crypto_withdrawal_approvals_required
                 payments.crypto.withdrawal_processing_max_duration
+                payments.sweep.reserve_balance
+                payments.sweep.min_transfer
+                payments.sweep.max_transfer
+                payments.sweep.max_fee_percentage
                 payments.transfer_between_accounts.limits.fiat_to_crypto
                 payments.transfer_between_accounts.exchange_rate_expiry.crypto
                 )

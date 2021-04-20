@@ -296,8 +296,8 @@ sub _get_currency_info {
         $currency_info->{$cur} = {
             main_address          => $currency->account_config->{account}->{address},
             exchange_rate         => eval { in_usd(1.0, $cur) } // 'Not Specified',
-            sweep_limit_max       => $currency->config->{sweep}{max_transfer},
-            sweep_limit_min       => $currency->config->{sweep}{min_transfer},
+            sweep_limit_max       => $currency->sweep_max_transfer(),
+            sweep_limit_min       => $currency->sweep_min_transfer(),
             sweep_reserve_balance => $currency->sweep_reserve_balance(),
         };
     }

@@ -140,8 +140,8 @@ my $blockchain_transaction = $currency_wrapper->get_transaction_blockchain_url()
 code_exit_BO('No currency urls for ' . $currency) unless $blockchain_transaction and $blockchain_address;
 
 my $exchange_rate         = eval { in_usd(1.0, $currency) } // 'N.A.';
-my $sweep_limit_max       = $currency_wrapper->config->{sweep}{max_transfer};
-my $sweep_limit_min       = $currency_wrapper->config->{sweep}{min_transfer};
+my $sweep_limit_max       = $currency_wrapper->sweep_max_transfer();
+my $sweep_limit_min       = $currency_wrapper->sweep_min_transfer();
 my $sweep_reserve_balance = $currency_wrapper->sweep_reserve_balance();
 
 my $transaction_uri = URI->new($blockchain_transaction);
