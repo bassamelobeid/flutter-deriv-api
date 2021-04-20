@@ -194,11 +194,11 @@ sub create_client {
 
 =head2 create_wallet
 
-Takes one or more named parameters:
+Creates a new wallet
 
 =over 4
 
-=item * C<landing_company> - e.g. `svg`
+=item * C<args> new wallet details
 
 =back
 
@@ -207,7 +207,11 @@ Takes one or more named parameters:
 sub create_wallet {
     my ($self, %args) = @_;
     $args{binary_user_id} = $self->{id};
-    my $wallet = BOM::User::Wallet->register_and_return_new_client(\%args);
+    my $currency_code = delete $args{currency};
+    my $wallet        = BOM::User::Wallet->register_and_return_new_client(\%args);
+    $wallet->set_default_account($currency_code);
+
+    # in current back-end perspective wallet is a client
     $self->add_client($wallet);
     return $wallet;
 }

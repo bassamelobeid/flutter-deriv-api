@@ -40,7 +40,6 @@ Returns the landing company config.
 
 sub landing_company {
     my $self = shift;
-
     # config may be empty when we register a new wallet client
     my $config = $self->{config} // LandingCompany::Wallet::get_wallet_for_broker($self->broker_code);
 
@@ -66,3 +65,4 @@ Returns whether this client instance can perform trading.
 sub can_trade { 0 }
 
 1;
+
