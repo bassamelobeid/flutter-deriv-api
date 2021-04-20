@@ -626,25 +626,19 @@ rpc 'new_account',
 
         # create virtual account
         if ($subtype eq 'virtual') {
-            $client  = create_virtual_account($args);
-            $account = $client->default_account;
-
-            return {
-                client_loginid => $client->loginid,
-                email          => $client->email,
-                currency       => $account->currency_code(),
-                balance        => formatnumber('amount', $account->currency_code(), $account->balance),
-                oauth_token    => _create_oauth_token($params->{source}, $client->loginid),
-            };
+            $client = create_virtual_account($args);
+        } else {
+            die 'Unsupported account subtype';
         }
+        $account = $client->default_account;
 
-        # create real account
-        if ($subtype eq 'real') {
-            # TODO: handle real account, look into auth scope for this
-            die 'Create of real account is not supported yet through `new_account`';
-        }
-
-        die 'Unsupported account subtype';
+        return {
+            client_loginid => $client->loginid,
+            email          => $client->email,
+            currency       => $account->currency_code(),
+            balance        => formatnumber('amount', $account->currency_code(), $account->balance),
+            oauth_token    => _create_oauth_token($params->{source}, $client->loginid),
+        };
     } catch ($e) {
         my $error_map = BOM::RPC::v3::Utility::error_map();
         my $error->{code} = $e;
@@ -659,6 +653,46 @@ rpc 'new_account',
                 details           => $error->{details}});
     }
     };
+
+rpc new_account_wallet => sub {
+    my $params = shift;
+
+    my ($from_client, $args) = @{$params}{qw/client args/};
+    try {
+
+        $args->{ip}          = $params->{client_ip} // '';
+        $args->{country}     = uc($params->{country_code} // '');
+        $args->{environment} = request()->login_env($params);
+        $args->{source}      = $params->{source};
+        $args->{residence}   = $from_client->residence;
+
+        my $response = new_wallet_real($from_client, $args);
+        return $response->{error} if $response->{error};
+
+        my $client          = $response->{wallet};
+        my $account         = $client->default_account;
+        my $landing_company = $client->landing_company;
+
+        return {
+            client_id                 => $client->loginid,
+            landing_company           => $landing_company->name,
+            landing_company_shortcode => $landing_company->short,
+            oauth_token               => _create_oauth_token($params->{source}, $client->loginid),
+        };
+    } catch ($e) {
+        my $error_map = BOM::RPC::v3::Utility::error_map();
+        my $error->{code} = $e;
+        $error = $e->{error} // $e if (ref $e eq 'HASH');
+        $error->{message_to_client} = $error->{message_to_client} // $error_map->{$error->{code}};
+
+        return BOM::RPC::v3::Utility::client_error() unless ($error->{message_to_client});
+
+        return BOM::RPC::v3::Utility::create_error({
+                code              => $error->{code},
+                message_to_client => $error->{message_to_client},
+                details           => $error->{details}});
+    }
+};
 
 =head2 create_virtual_account
 
@@ -783,4 +817,101 @@ sub create_virtual_account {
 
     return $client;
 }
+
+=head2 new_wallet_real
+
+Creates a new real wallet
+
+=over 4
+
+=item * C<client> form client which wallet is being created
+=item * C<args> new wallet details
+
+=back
+
+Returns a C<BOM::User::Wallet> instance
+
+=cut
+
+sub new_wallet_real {
+    my ($client, $args) = @_;
+    my $user = $client->user;
+    my ($new_wallet, $error);
+
+    # TODO Move this hardcoded logic to perl brand, we should make decisions based on the brand and country of residence
+    my $broker = 'DW';
+    my $type   = 'wallet';
+
+    $args->{broker_code} = $broker;
+    # has remianed from the history of design
+    $args->{client_type} //= 'retail';
+
+    my $non_pep_declaration = delete $args->{non_pep_declaration};
+    $args->{non_pep_declaration_time} = _get_non_pep_declaration_time($client, 'wallet', $non_pep_declaration, $args->{source});
+
+    my $error_map   = BOM::RPC::v3::Utility::error_map();
+    my $details_ref = BOM::Platform::Account::Real::default::validate_account_details($args, $client, $broker, $args->{source});
+    if (my $err = $details_ref->{error}) {
+        return {
+            error => BOM::RPC::v3::Utility::create_error({
+                    code              => $details_ref->{error},
+                    message_to_client => $details_ref->{message_to_client} // $error_map->{$details_ref->{error}},
+                    details           => $details_ref->{details}})};
+    }
+
+    # The method validate_account_details keeps only predefined args in its result
+    $details_ref->{details}->{type}           = $type;
+    $details_ref->{details}->{currency}       = $args->{currency};
+    $details_ref->{details}->{payment_method} = $args->{payment_method};
+    my $acc = BOM::Platform::Account::Real::default::create_account({
+        ip          => $args->{ip} // '',
+        country     => uc($args->{country} // ''),
+        from_client => $client,
+        user        => $user,
+        details     => $details_ref->{details},
+    });
+
+    if (my $err_code = $acc->{error}) {
+        return {
+            error => BOM::RPC::v3::Utility::create_error({
+                    code              => $err_code,
+                    message_to_client => $error_map->{$err_code}})};
+    }
+
+    $user       = $acc->{user};
+    $new_wallet = $acc->{client};
+
+    # Not sure if the following notfications are required for wallet creation or not
+    $user->add_login_history(
+        action      => 'login',
+        environment => $args->{environment},
+        successful  => 't',
+        app_id      => $args->{source});
+
+    BOM::User::AuditLog::log("successful login", "$client->email");
+    BOM::User::Client::PaymentNotificationQueue->add(
+        source        => 'real',
+        currency      => $args->{currency} // 'USD',
+        loginid       => $new_wallet->loginid,
+        type          => 'newaccount',
+        amount        => 0,
+        payment_agent => 0,
+    );
+
+    BOM::Platform::Event::Emitter::emit(
+        'signup',
+        {
+            loginid    => $new_wallet->loginid,
+            properties => {
+                type    => $type,
+                subtype => 'real'
+            }});
+
+    return {
+        wallet => $new_wallet,
+        error  => $error
+    };
+}
+
 1;
+

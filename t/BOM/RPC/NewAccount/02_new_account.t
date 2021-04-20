@@ -1366,6 +1366,76 @@ subtest 'Duplicate accounts are not created in race condition' => sub {
     is $error_code, 'RateLimitExceeded', 'second account creation face error RateLimitExceeded in race condition';
 };
 
+$method = 'new_account_wallet';
+$params = {
+    language => 'EN',
+    source   => $app_id,
+    args     => {
+        residence        => 'id',
+        last_name        => 'Test' . rand(999),
+        first_name       => 'Test1' . rand(999),
+        date_of_birth    => '1987-09-04',
+        address_line_1   => 'Sovetskaya street',
+        address_city     => 'Samara',
+        address_state    => 'Samara',
+        address_postcode => '112233',
+    },
+};
+
+subtest $method => sub {
+    my ($user, $client, $auth_token);
+
+    subtest 'Initialization' => sub {
+        lives_ok {
+            my $password = 'Abcd3s3!@';
+            my $hash_pwd = BOM::User::Password::hashpw($password);
+            $email = 'new_email' . rand(999) . '@binary.com';
+            $user  = BOM::User->create(
+                email    => $email,
+                password => $hash_pwd
+            );
+            $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+                broker_code => 'VRTC',
+                email       => $email,
+                citizen     => 'de',
+            });
+            $auth_token = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token');
+
+            $user->add_client($client);
+        }
+        'Initial users and clients';
+    };
+
+    subtest 'Create new wallet real' => sub {
+        $params->{token} = $auth_token;
+        $user->update_email_fields(email_verified => 1);
+
+        $rpc_ct->call_ok($method, $params)
+            ->has_no_system_error->has_error->error_code_is('InsufficientAccountDetails', 'It should return error code if missing any details')
+            ->error_message_is('Please provide complete details for account opening.', 'It should return error message if missing any details')
+            ->error_details_is({missing => ["currency", "payment_method"]});
+
+        $params->{args}->{payment_method} = 'Skrill';
+        $params->{args}->{currency}       = 'USD';
+
+        $rpc_ct->call_ok($method, $params)
+            ->has_no_system_error->has_no_error('If passed argumets are ok a new real wallet will be created successfully');
+        $rpc_ct->result_value_is(sub { shift->{landing_company_shortcode} }, 'samoa', 'It should return wallet landing company');
+
+        my $new_loginid = $rpc_ct->result->{client_id};
+        ok $new_loginid =~ /^DW\d+/, 'new DW loginid';
+
+        my $wallet_client = BOM::User::Client->get_client_instance($new_loginid);
+        isa_ok($wallet_client, 'BOM::User::Wallet', 'get_client_instance returns instance of wallet');
+        ok($wallet_client->is_wallet,  'wallet client is_wallet is true');
+        ok(!$wallet_client->can_trade, 'wallet client can_trade is false');
+
+        is($wallet_client->payment_method, 'Skrill', 'Payment method is set for wallet');
+        ok $emitted{"signup_$new_loginid"}, "signup event emitted";
+
+    };
+};
+
 subtest 'Empty phone number' => sub {
     my $email = 'empty+phone1241241@asdf.com';
     $params->{country}                   = 'br';
