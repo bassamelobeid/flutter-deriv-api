@@ -129,7 +129,7 @@ subtest 'doughflow deriv sportsbook landing company consistency' => sub {
     for my $broker (@all_broker_codes) {
         my $lc = LandingCompany::Registry->get_by_broker($broker);
 
-        next if $lc->short =~ /virtual|champion/;
+        next if $lc->short =~ /virtual|champion|samoa/;
 
         my $sportsbook = BOM::Platform::Doughflow::get_sportsbook_mapping_by_landing_company($lc->short);
         next unless $sportsbook;

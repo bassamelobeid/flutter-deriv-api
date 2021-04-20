@@ -62,6 +62,7 @@ sub get_sportsbook_by_short_code {
         malta       => 'Binary (Europe) Ltd',
         iom         => 'Binary (IOM) Ltd',
         maltainvest => 'Binary Investments Ltd',
+        samoa       => 'Binary (CR) SA',           # Should be removed after switching Dwallet to SVG
     );
 
     return $mapping{$short_code} . ' ' . $currency;
@@ -164,7 +165,8 @@ sub get_sportsbook_mapping_by_landing_company {
         svg         => 'Deriv (SVG) LLC',
         malta       => 'Deriv (Europe) Ltd',
         iom         => 'Deriv (MX) Ltd',
-        maltainvest => 'Deriv Investments Ltd'
+        maltainvest => 'Deriv Investments Ltd',
+        samoa       => 'Deriv (SVG) LLC',
     );
 
     return $mapping{$landing_company_shortcode} // '';

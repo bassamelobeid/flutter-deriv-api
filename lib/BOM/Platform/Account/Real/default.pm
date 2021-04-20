@@ -23,12 +23,17 @@ use BOM::Platform::Client::Sanctions;
 sub create_account {
     my $args = shift;
     my ($user, $details) = @{$args}{'user', 'details'};
+    my $type = delete $details->{type} // 'trading';
 
     my $client;
     try {
-        $client = $user->create_client(%$details);
+        if ($type eq 'wallet') {
+            $client = $user->create_wallet(%$details);
+        } else {
+            $client = $user->create_client(%$details);
+        }
     } catch ($e) {
-        warn "Real: create_client exception [$e]";
+        warn "Real account creation exception [$e]";
         return {error => 'invalid'};
     }
 
@@ -178,12 +183,29 @@ sub validate_account_details {
         }
     }
 
-    my @missing = grep { !$args->{$_} } required_fields($lc);
+    if (my @missing = grep { !$args->{$_} } required_fields($lc)) {
+        return {
+            error   => 'InsufficientAccountDetails',
+            details => {missing => [@missing]}};
+    }
 
-    return {
-        error   => 'InsufficientAccountDetails',
-        details => {missing => [@missing]},
-    } if @missing;
+    if ($broker eq 'DW') {
+        #TODO: Doesn't look like right place for this code
+        if (grep { ($_->payment_method // '') eq $args->{payment_method} && ($_->account->currency_code // '') eq $args->{currency} }
+            $client->user->clients(include_disabled => 0))
+        {
+
+            return {
+                error   => 'DuplicateWallet',
+                details => {message => localize('Sorry, a wallet already exists with those details.')}};
+        }
+
+        return {
+            error             => 'CurrencyTypeNotAllowed',
+            message_to_client => localize("The provided currency [_1] is not applicable for this account.", $args->{currency}),
+            }
+            unless $lc->is_currency_legal($args->{currency});
+    }
 
     return {error => 'P2PRestrictedCountry'}
         if ($args->{account_opening_reason} // '') eq 'Peer-to-peer exchange' && !$lc->p2p_available;
