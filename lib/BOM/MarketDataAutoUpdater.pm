@@ -6,6 +6,7 @@ use BOM::Config::Runtime;
 use Email::Address::UseXS;
 use Email::Stuffer;
 use Cache::RedisDB;
+use Brands;
 
 use constant MIN_TIME_BETWEEN_EMAILS => 3600;
 
@@ -61,8 +62,9 @@ sub run {
 
         my $body         = join "\n", (@successes, "\n\n", @failures, "\n\n", @errors);
         my $subject_line = $market . ' failed. Number of failures is ' . $number_failures . '. Number of errors is ' . $number_errors . '.';
+        my $to           = Brands->new(name => 'deriv')->emails('quants');
 
-        return Email::Stuffer->from('system@binary.com')->to('quants-market-data@binary.com')->subject($subject_line)->text_body($body)->send_or_die;
+        return Email::Stuffer->from('system@binary.com')->to($to)->subject($subject_line)->text_body($body)->send_or_die;
     }
 }
 

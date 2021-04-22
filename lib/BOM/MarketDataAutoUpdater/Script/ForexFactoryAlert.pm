@@ -10,6 +10,7 @@ use Email::Address::UseXS;
 use Email::Stuffer;
 use Date::Utility;
 use Cache::RedisDB;
+use Brands;
 
 use constant {
     NAMESPACE => 'FOREX_FACTORY_ALERT',
@@ -40,8 +41,9 @@ sub script_run {
         )
     {
         my $subject_line = 'Forex Factory Alert';
-        my $body = join "\n", map { $_->{event_name} . ' release at ' . Date::Utility->new($_->{release_date})->datetime } @alert;
-        Email::Stuffer->from('system@binary.com')->to('x-quants@binary.com')->subject($subject_line)->text_body($body)->send_or_die;
+        my $body         = join "\n", map { $_->{event_name} . ' release at ' . Date::Utility->new($_->{release_date})->datetime } @alert;
+        my $to           = Brands->new(name => 'deriv')->emails('quants');
+        Email::Stuffer->from('system@binary.com')->to($to)->subject($subject_line)->text_body($body)->send_or_die;
 
         my $val       = md5_hex($body);
         my $cache_val = Cache::RedisDB->get(NAMESPACE, REDIS_KEY);
