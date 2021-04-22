@@ -89,19 +89,20 @@ sub DOCUMENT_TYPE_CATEGORIES {
     return %document_type_categories;
 }
 
-use constant P2P_TOKEN_MIN_EXPIRY => 2 * 60 * 60;    # 2 hours
-
 use constant {
+    P2P_TOKEN_MIN_EXPIRY => 2 * 60 * 60,    # 2 hours
+
     MT5_REGEX                           => qr/^MT[DR]?(?=\d+$)/,
     VIRTUAL_REGEX                       => qr/^VR/,
     PROFILE_FIELDS_IMMUTABLE_AFTER_AUTH => [
         sort qw/account_opening_reason citizen date_of_birth first_name last_name place_of_birth
             residence salutation secret_answer secret_question tax_residence tax_identification_number /,
     ],
-};
 
-use constant {
     SR_UNWELCOME_REASON => 'Social responsibility thresholds breached - Pending financial assessment',
+
+    # Redis key for SR keys expire
+    SR_30_DAYS_EXP => 86400 * 30,
 };
 
 # this email address should not be added into brand as it is specific to internal system
@@ -1426,7 +1427,7 @@ sub is_available {
 =head2 real_account_siblings_information
 
 Returns information about real siblings of current client, including loginid, landing company name, currency and balance, taking following named args:
-    
+
 =over 4
 
 =item * C<include_disabled> - wether or not include disabled sibling accounts
@@ -1435,7 +1436,7 @@ Returns information about real siblings of current client, including loginid, la
 
 =item * C<exclude_disabled_no_currency> - if true, disabled siblings with no currency will be excluded; otherwise (default) they will be included.
 
-=item * C<landing_company> - if it's not empty, only siblings of the given landing companh will be returned; 
+=item * C<landing_company> - if it's not empty, only siblings of the given landing companh will be returned;
     otherwise (default) there won't be any filter applied on landing companiesd.
 
 =item * include_wallet - include wallet accounts (default 1).
@@ -1467,7 +1468,7 @@ It filters siblings with following args:
 
 =item *  exclude_disabled_no_currency - exclude disabled siblings with no currency (default 0).
 
-=item * C<landing_company> - if it's not empty, only siblings of the given landing companh will be returned; 
+=item * C<landing_company> - if it's not empty, only siblings of the given landing companh will be returned;
     otherwise (default) there won't be any filter applied on landing companiesd.
 
 =back
@@ -1702,29 +1703,32 @@ sub increment_social_responsibility_values {
 
     my $redis = BOM::Config::Redis::redis_events();
 
-    # We only queue if the client is at low-risk only (low-risk means no '$loginid:sr_risk_status' key in redis)
-    if (!$redis->get($loginid . ':sr_risk_status')) {
+    # We need to emit an event for each SR threshold breached, unless Compliance
+    # is already monitoring the client for this specific threshold
 
-        foreach my $attribute (keys %$sr_hashref) {
-            my $field_name = $event_name . $attribute;
-            my $value      = $sr_hashref->{$attribute};
+    foreach my $attribute (keys %$sr_hashref) {
+        my $field_name = $event_name . $attribute;
+        my $value      = $sr_hashref->{$attribute};
 
-            $redis->multi();
+        $redis->multi();
 
-            $redis->set(
-                $field_name,
-                '0',
-                'EX' => 86400 * 30,
-                'NX'
-            );
+        $redis->set(
+            $field_name,
+            '0',
+            'EX' => SR_30_DAYS_EXP,
+            'NX'
+        );
 
-            $redis->incrbyfloat($field_name, $value);
+        $redis->incrbyfloat($field_name, $value);
 
-            $redis->exec();
+        $redis->exec();
 
-        }
-
-        BOM::Platform::Event::Emitter::emit('social_responsibility_check', {loginid => $loginid});
+        BOM::Platform::Event::Emitter::emit(
+            'social_responsibility_check',
+            {
+                loginid   => $loginid,
+                attribute => $attribute
+            }) unless ($redis->get($field_name . ":email"));
     }
 
     return undef;
@@ -2044,7 +2048,7 @@ Validates date of birth and possibly checks the minumum age, taking following ar
 
 =item * C<rule_engine> (optional) - a rule engine object. If rule engine is empty, the whole checks should be done here;
    otherwise, minimum age won't be checked (TODO: will be deprecated as soon as rule engine is integrated into all account opening RPC calls).
-   
+
 =back
 
 =cut
@@ -3065,7 +3069,7 @@ Takes the following named arguments:
 
 =item * C<fraud> - is this being resolved as the result of fraud
 
-=back 
+=back
 
 =cut
 
@@ -5812,7 +5816,7 @@ sub get_client_instance {
 
 =head2 ignore_age_verification
 
-We may want to override or invalidate the age verification under 
+We may want to override or invalidate the age verification under
 specific circumstances.
 
 Exception: when client is fully authenticated through scans / notarized docs (because that's a non Experian full auth)
@@ -5848,7 +5852,7 @@ sub ignore_age_verification {
 
 =head2 ignore_address_verification
 
-We may want to override or invalidate the address verification under 
+We may want to override or invalidate the address verification under
 specific circumstances.
 
 Rules:
@@ -5884,7 +5888,7 @@ sub ignore_address_verification {
 
 =head2 start_document_upload
 
-Starts a document upload. This sub is a wrapper for `betonmarkets.start_document_upload` 
+Starts a document upload. This sub is a wrapper for `betonmarkets.start_document_upload`
 database function.
 
 Allocates a row into the table with status `uploading`.
@@ -5948,7 +5952,7 @@ sub start_document_upload {
 
 =head2 finish_document_upload
 
-Finishes a document upload. This sub is a wrapper for `betonmarkets.finish_document_upload` 
+Finishes a document upload. This sub is a wrapper for `betonmarkets.finish_document_upload`
 database function.
 
 Updates the document status to `uploaded`.
