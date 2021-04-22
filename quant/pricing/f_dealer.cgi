@@ -44,7 +44,7 @@ my $bet_ref  = request()->param('ref');
 my $subject;
 my @body;
 my $brand            = request()->brand;
-my $to               = $brand->emails('alert_quants');
+my $to               = $brand->emails('quants');
 my $encoded_loginID  = encode_entities($loginID);
 my $encoded_currency = encode_entities($currency);
 my $encoded_broker   = encode_entities($broker);

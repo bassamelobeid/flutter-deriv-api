@@ -254,7 +254,7 @@ sub _send_compliance_email {
 
     my $brand = request()->brand;
     # send an email to compliance
-    my $recipients = join(',', $brand->emails('compliance'), $brand->emails('alert_quants'));
+    my $recipients = join(',', $brand->emails('compliance'), $brand->emails('quants'));
     send_email({
         from    => $brand->emails('system'),
         to      => $recipients,

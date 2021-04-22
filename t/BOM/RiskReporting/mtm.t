@@ -176,7 +176,7 @@ subtest 'realtime report generation' => sub {
     is($called_count, 1, 'BOM::Transaction::sell_expired_contracts called only once');
 
     my @msgs = mailbox_search(
-        email   => 'quants-market-data@regentmarkets.com',
+        email   => 'x-trading-ops@deriv.com',
         subject => qr/AutoSell Failures/,
         body    => qr/Shortcode:/,
     );

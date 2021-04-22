@@ -21,6 +21,7 @@ extends 'BOM::RiskReporting::Base';
 use JSON::MaybeXS;
 use Syntax::Keyword::Try;
 
+use Brands;
 use Email::Address::UseXS;
 use Email::Stuffer;
 use BOM::Database::ClientDB;
@@ -159,7 +160,7 @@ sub check_open_bets {
 
                 if (@mail_content and $self->send_alerts) {
                     my $from    = 'Risk reporting <risk-reporting@binary.com>';
-                    my $to      = 'Quants <x-quants-alert@binary.com>';
+                    my $to      = Brands->new(name => 'deriv')->emails('quants');
                     my $subject = 'Problem in MtM bets pricing';
                     my $body    = join "\n", @mail_content;
 
@@ -288,7 +289,7 @@ sub sell_expired_contracts {
 
         if (BOM::Config::on_production()) {
             my $from = '"Autosell" <autosell@regentmarkets.com>';
-            my $to   = 'quants-market-data@regentmarkets.com';
+            my $to   = Brands->new(name => 'deriv')->emails('quants');
             Email::Stuffer->from($from)->to($to)->subject($subject)->text_body(join("\n", @msg) . "\n\n")->send
                 || warn "sending email from $from to $to subject $subject failed";
         }
