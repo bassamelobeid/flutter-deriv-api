@@ -642,8 +642,11 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
 
         # There is no need to store clients with low risk in redis, as it is default
         # and also: if the status is changed from high, we don't need the expiry time
+        # also when client is risk_status "low", we need to resend the emails for breached thresholds
         if ($sr_risk_val eq 'low') {
             $redis->del($key_name);
+            $redis->del($loginid . ':sr_check:losses:email');
+            $redis->del($loginid . ':sr_check:net_deposits:email');
         } else {
             $redis->set($key_name, $sr_risk_val);
         }
