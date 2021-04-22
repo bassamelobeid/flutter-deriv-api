@@ -11,6 +11,7 @@ use Syntax::Keyword::Try;
 use JSON::MaybeXS;
 use Log::Any qw($log);
 use BOM::Platform::Email qw(send_email);
+use Brands;
 
 my $json = JSON::MaybeXS->new;
 my %notification_cache;
@@ -33,6 +34,7 @@ sub _publish {
     }
 
     my ($subject, $email_list, $status);
+    my $brand = Brands->new(name => 'deriv');
     # trading is suspended. So sound the alarm!
     if ($msg->{current_amount} >= $msg->{limit_amount}) {
         $status = 'disabled';
@@ -40,14 +42,14 @@ sub _publish {
             $msg->{type} =~ /^global/
             ? "TRADING SUSPENDED! $msg->{type} LIMIT is crossed for landing company $msg->{landing_company}."
             : "TRADING SUSPENDED! $msg->{type} LIMIT is crossed for user $msg->{binary_user_id} loginid $msg->{client_loginid}.";
-        $email_list = 'x-quants@binary.com,x-marketing@binary.com,compliance@binary.com,x-cs@binary.com';
+        $email_list = join ", ", map { $brand->emails($_) } qw(quants compliance cs marketing_x);
     } else {
         $status = 'threshold_crossed';
         $subject =
             $msg->{type} =~ /^global/
             ? "$msg->{type} THRESHOLD is crossed for landing company $msg->{landing_company}."
             : "$msg->{type} THRESHOLD is crossed for user $msg->{binary_user_id}. loginid $msg->{client_loginid}";
-        $email_list = 'x-quants@binary.com';
+        $email_list = $brand->emails('quants');
     }
 
     # cache for a day

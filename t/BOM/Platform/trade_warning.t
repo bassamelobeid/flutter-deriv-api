@@ -8,6 +8,11 @@ use Log::Any qw($log);
 
 use BOM::Platform::Script::TradeWarnings;
 
+use Brands;
+
+my $brand = Brands->new(name => 'deriv');
+my $email_list = join ", ", map { $brand->emails($_) } qw(quants compliance cs marketing_x);
+
 subtest 'Send email notification when global limit is crossed' => sub {
     my $mocked_warning = Test::MockModule->new('BOM::Platform::Script::TradeWarnings');
     $mocked_warning->mock(
@@ -21,7 +26,7 @@ subtest 'Send email notification when global limit is crossed' => sub {
                     message => ['{"is_market_default":0}'],
                     subject =>
                         'TRADING SUSPENDED! global_financial_potential_loss LIMIT is crossed for landing company champion. Limit set: 50. Current amount: 60',
-                    to => 'x-quants@binary.com,x-marketing@binary.com,compliance@binary.com,x-cs@binary.com'
+                    to => $email_list,
                 },
                 'Email message object is properly created'
             );
@@ -53,7 +58,7 @@ subtest 'Send email notification when user limit is more than or equal to new cl
                     message => ['{"is_market_default":0}'],
                     subject =>
                         'TRADING SUSPENDED! user_financial_potential_loss LIMIT is crossed for user 1 loginid CR90000000. Limit set: 50. Current amount: 110',
-                    to => 'x-quants@binary.com,x-marketing@binary.com,compliance@binary.com,x-cs@binary.com'
+                    to => $email_list,
                 },
                 'Email message object is properly created'
             );
