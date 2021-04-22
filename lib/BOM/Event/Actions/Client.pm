@@ -108,6 +108,9 @@ use constant ONFIDO_POI_EMAIL_NOTIFICATION_SENT_PREFIX => 'ONFIDO::POI::EMAIL::N
 use constant ONFIDO_RESUBMISSION_COUNTER_KEY_PREFIX => 'ONFIDO::RESUBMISSION_COUNTER::ID::';
 use constant ONFIDO_RESUBMISSION_COUNTER_TTL        => 2592000;                                                             # 30 days (in seconds)
 
+# Redis key for SR keys expire
+use constant SR_30_DAYS_EXP => 86400 * 30;
+
 # List of document types that we use as proof of address
 use constant POA_DOCUMENTS_TYPE => qw(
     proofaddress payslip bankstatement cardstatement utility_bill
@@ -1643,6 +1646,8 @@ sub social_responsibility_check {
 
     my $loginid = $data->{loginid} or die "Missing loginid";
 
+    my $attribute = $data->{attribute} or die "No attribute to check";
+
     my $client = BOM::User::Client->new({loginid => $loginid}) or die "Invalid loginid: $loginid";
 
     my $redis = BOM::Config::Redis::redis_events();
@@ -1655,9 +1660,7 @@ sub social_responsibility_check {
 
     my $client_sr_values = {};
 
-    foreach my $sr_key (qw/losses net_deposits/) {
-        $client_sr_values->{$sr_key} = $redis->get($event_name . $sr_key) // 0;
-    }
+    $client_sr_values->{$attribute} = $redis->get($event_name . $attribute) // 0;
 
     #get the net income of the client
     my $fa_net_income = $client->get_financial_assessment('net_income');
@@ -1676,70 +1679,75 @@ sub social_responsibility_check {
 
     my @breached_info;
 
-    foreach my $attribute (keys %$client_sr_values) {
+    my $client_attribute_val = $client_sr_values->{$attribute};
+    my $threshold_val        = $threshold_list->{$attribute};
 
-        my $client_attribute_val = $client_sr_values->{$attribute};
-        my $threshold_val        = $threshold_list->{$attribute};
+    if ($client_attribute_val >= $threshold_val) {
 
-        if ($client_attribute_val >= $threshold_val) {
+        $client_attribute_val = formatnumber('amount', $client->currency, $client_attribute_val);
+        $threshold_val        = formatnumber('amount', $client->currency, $threshold_val);
 
-            $client_attribute_val = formatnumber('amount', $client->currency, $client_attribute_val);
-            $threshold_val        = formatnumber('amount', $client->currency, $threshold_val);
-
-            push @breached_info,
-                {
-                attribute     => $attribute,
-                client_val    => $client_attribute_val,
-                threshold_val => $threshold_val,
-                net_income    => $fa_net_income // "No FA filled",
-                };
-
-            my $system_email  = $brand->emails('system');
-            my $sr_email      = $brand->emails('social_responsibility');
-            my $email_subject = 'Social Responsibility Check required - ' . $loginid;
-
-            # Client cannot trade or deposit without a financial assessment check
-            # Hence, they will be put under unwelcome
-            $client->status->setnx('unwelcome', 'system', 'Social responsibility thresholds breached - Pending financial assessment')
-                unless ($client_net_income ne "No FA filled" or $client->status->unwelcome);
-            $client->status->setnx('financial_assessment_required', 'system', 'Social responsibility thresholds breached')
-                unless ($client_net_income ne "No FA filled");
-
-            my $tt = Template::AutoFilter->new({
-                ABSOLUTE => 1,
-                ENCODING => 'utf8'
-            });
-
-            my $data = {
-                loginid       => $loginid,
-                breached_info => \@breached_info
+        push @breached_info,
+            {
+            attribute     => $attribute,
+            client_val    => $client_attribute_val,
+            threshold_val => $threshold_val,
+            net_income    => $fa_net_income // "No FA filled",
             };
 
-            # Remove keys from redis
-            $redis->del($event_name . $_) for keys %$client_sr_values;
+        my $system_email  = $brand->emails('system');
+        my $sr_email      = $brand->emails('social_responsibility');
+        my $email_subject = "Social Responsibility Check required ($attribute) - " . $loginid;
 
-            # Set the client's SR risk status as at-risk and keep it like that for 30 days
-            # TODO: Remove this when we move from redis to database
-            my $sr_status_key = $loginid . ':sr_risk_status';
+        # Client cannot trade or deposit without a financial assessment check
+        # Hence, they will be put under unwelcome
+        $client->status->setnx('unwelcome', 'system', 'Social responsibility thresholds breached - Pending financial assessment')
+            unless ($client_net_income ne "No FA filled" or $client->status->unwelcome);
+        $client->status->setnx('financial_assessment_required', 'system', 'Social responsibility thresholds breached')
+            unless ($client_net_income ne "No FA filled");
+
+        my $tt = Template::AutoFilter->new({
+            ABSOLUTE => 1,
+            ENCODING => 'utf8'
+        });
+
+        my $data = {
+            loginid       => $loginid,
+            breached_info => \@breached_info
+        };
+
+        # Remove keys from redis
+        $redis->del($event_name . $_) for keys %$client_sr_values;
+
+        # Set the client's SR risk status as at-risk and keep it like that for 30 days
+        my $sr_status_key = $loginid . ':sr_risk_status';
+        $redis->set(
+            $sr_status_key => 'high',
+            EX             => SR_30_DAYS_EXP
+        );
+
+        try {
+            $tt->process(TEMPLATE_PREFIX_PATH . 'social_responsibiliy.html.tt', $data, \my $html);
+            die "Template error: @{[$tt->error]}" if $tt->error;
+
+            die "failed to send social responsibility email ($loginid)"
+                unless Email::Stuffer->from($system_email)->to($sr_email)->subject($email_subject)->html_body($html)->send();
+            # Here we set a key for which breached thresholds we have
+            # sent an email. There is no point for the key to have a ttl
+            # longer than the client's monitoring period of 30 days so
+            # we copy the remaining ttl of "$loginid:sr_risk_status"
             $redis->set(
-                $sr_status_key => 'high',
-                EX             => 86400 * 30
+                $event_name . $attribute . ":email" => 1,
+                'EX'                                => $redis->ttl($sr_status_key),
+                'NX'
             );
-
-            try {
-                $tt->process(TEMPLATE_PREFIX_PATH . 'social_responsibiliy.html.tt', $data, \my $html);
-                die "Template error: @{[$tt->error]}" if $tt->error;
-
-                die "failed to send social responsibility email ($loginid)"
-                    unless Email::Stuffer->from($system_email)->to($sr_email)->subject($email_subject)->html_body($html)->send();
-                BOM::Platform::Redis::release_lock($lock_key);
-                return undef;
-            } catch ($e) {
-                $log->warn($e);
-                exception_logged();
-                BOM::Platform::Redis::release_lock($lock_key);
-                return undef;
-            }
+            BOM::Platform::Redis::release_lock($lock_key);
+            return undef;
+        } catch ($e) {
+            $log->warn($e);
+            exception_logged();
+            BOM::Platform::Redis::release_lock($lock_key);
+            return undef;
         }
     }
     BOM::Platform::Redis::release_lock($lock_key);
