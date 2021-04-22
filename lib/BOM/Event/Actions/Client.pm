@@ -543,7 +543,7 @@ async sub client_verification {
                     my ($first_dob) = keys %dob;
                     # All documents should have the same date of birth
                     # Override date_of_birth if there is mismatch between Onfido report and client submited data
-                    if ($client->date_of_birth ne $first_dob) {
+                    if (not defined $client->date_of_birth or $client->date_of_birth ne $first_dob) {
                         try {
                             my $user = $client->user;
 

@@ -254,6 +254,31 @@ subtest "client_verification" => sub {
     is($report_data->{check_id}, $check->{id}, 'report is correct');
 };
 
+subtest "Uninitialized date of birth" => sub {
+
+    my $mocked_report =
+        Test::MockModule->new('WebService::Async::Onfido::Report');    #TODO Refactor mock_onfido.pl inorder to return report with initialized dob
+    $mocked_report->mock(
+        'new' => sub {
+            my $self = shift, my %data = @_;
+            $data{properties}->{date_of_birth} = '2003-01-01';
+            $mocked_report->original('new')->($self, %data);
+        });
+
+    my $mocked_client = Test::MockModule->new('BOM::User::Client');
+    $mocked_client->mock(date_of_birth => sub { return undef; });
+
+    lives_ok {
+        BOM::Event::Actions::Client::client_verification({
+                check_url => $check->{href},
+            })->get;
+    }
+    "client verification should pass with undef dob";
+
+    $mocked_client->unmock_all();
+    $mocked_report->unmock_all();
+};
+
 subtest "document upload request context" => sub {
     my $context = {
         brand_name => 'deriv',
