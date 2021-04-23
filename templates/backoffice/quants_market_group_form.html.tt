@@ -2,7 +2,7 @@
 
 <ul>
     <li>default: use market information for the specific underlying symbol defined in yaml configuration. (share/underlyings.yml in perl-Finance-Underlying repository)</li>
-    <li>new category: set contract type's group as 'new category'. This is used to limit new product.</li>
+    <li>new category: set market group as the 'new category'. This is used to limit new product.</li>
 </ul>
 
 <fieldset  [% IF disabled %] disabled title='no write access' [% END %]>

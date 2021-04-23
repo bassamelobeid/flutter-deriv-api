@@ -8,6 +8,11 @@
     </li>
 </ul>
 
+<p>
+default -> if the limit applies to per symbol <br/>
+- -> if the limit applies to all symbols of the market <br/>
+underlying symbol, example frxUSDJPY -> If limit applies to a particular symbol <br/>
+</p>
 <p>Risk Profile Guidelines (there's no strict enforcement on limit amount but please use the guidelines so that we don't end up with hundreds of different numbers):</p>
 
 <ul>
@@ -38,57 +43,78 @@
 <div class="row scrollable">
 <fieldset  [% IF disabled %] disabled title='no write access' [% END %]>
 <table class="pretty small border nowrap">
-    <thead>
-    <tr>
-        <th>Market</th>
-        <th>Underlying<br />Symbol</th>
-        <th>Expiry<br />Type</th>
-        <th>Barrier<br />Type</th>
-        <th>Contract<br />Group</th>
-        <th>Landing<br />Company</th>
-        <th>Limit Type</th>
-        <th>Limit<br />Amount (USD)</th>
-        <th>Comment</th>
-        <th><span tooltip=
-"Format is YYYY-MM-DD HH:MI e.g. 2018-01-02 09:00
-You can also enter 'today 9'
-Or just enter the time ('9') and the date defaults to today">Start time <span class="tooltip-blue">?</span></span></th>
-        <th>End time</th>
-    </tr>
-    </thead>
     <tbody>
     <tr style="vertical-align: top;">
-        <td><div id="market"></div></td>
         <td>
+            <div>
+                <b>Market</b><br/>
+                <div id="market"></div>
+            </div>
+            <hr/>
             <div id="underlying_symbol">
+                <b>Underlying Symbol</b><br/>
                 <input type="text" name="underlying_symbol" size="10" data-lpignore="true" />
             </div>
         </td>
-        <td><div id="expiry_type"></div></td>
-        <td><div id="barrier_type"></div></td>
-        <td><div id="contract_group"></div></td>
-        <td><div id="landing_company"></div></td>
         <td>
-            <select name="limit_type">
-                [% FOREACH limit_type IN data.limit_types %]
-                    <option value="[% limit_type.item(0) %]">[% limit_type.item(1) %]</option>
-                [% END %]
-            </select>
+            <b>Expiry Type<b><br/>
+            <div id="expiry_type"></div>
         </td>
         <td>
-            <input type="text" name="limit_amount" size="12" data-lpignore="true" />
+            <b>Barrier Type</b><br/>
+            <div id="barrier_type"></div>
         </td>
         <td>
-            <input type="text" name="comment" size="15" data-lpignore="true" />
+            <b>Contract Group</b><br/>
+            <div id="contract_group"></div>
         </td>
-        <td style="text-align:center;">
-            <input type="text" name="start_time" class="datepick" size="15" maxlength="19" pattern="^\d{4}-\d{2}-\d{2}( \d{2}:\d{2}:\d{2})?\$" data-lpignore="true" />
-            <br /><span class="hint">Format: yyyy-mm-dd (HH:mm:ss)</span>
+        <td>
+            <b>Landing Company</b><br/>
+            <div id="landing_company"></div>
         </td>
-        <td style="text-align:center;">
-            <input type="text" name="end_time" class="datepick" size="15" maxlength="19" pattern="^\d{4}-\d{2}-\d{2}( \d{2}:\d{2}:\d{2})?\$" data-lpignore="true" />
-            <br /><span class="hint">Format: yyyy-mm-dd (HH:mm:ss)</span>
-         </td>
+        <td>
+            <div>
+                <b>Limit Type</b><br/>
+                <select name="limit_type">
+                    [% FOREACH limit_type IN data.limit_types %]
+                        <option value="[% limit_type.item(0) %]">[% limit_type.item(1) %]</option>
+                    [% END %]
+                </select>
+            </div>
+            <hr/>
+            <div>
+                <b>Limit Amount (USD)</b><br/>
+                <input type="text" name="limit_amount" size="12" data-lpignore="true" />
+            </div>
+            <hr/>
+            <div>
+                <span tooltip=
+                "Format is YYYY-MM-DD HH:MI e.g. 2018-01-02 09:00
+                You can also enter 'today 9'
+                Or just enter the time ('9') and the date defaults to today">
+                    <b>Start time</b>
+                    <span class="tooltip-blue">?</span>
+                </span> <br/>
+
+                <input type="text" name="start_time" class="datepick" size="15" maxlength="19"
+                    pattern="^\d{4}-\d{2}-\d{2}( \d{2}:\d{2}:\d{2})?\$" data-lpignore="true" />
+
+                <br /><span class="hint" style="font-size:10px">Format: yyyy-mm-dd (HH:mm:ss)</span>
+            </div>
+            <hr/>
+            <div>
+                <b>End time</b><br/>
+                <input type="text" name="end_time" class="datepick" size="15" maxlength="19"
+                    pattern="^\d{4}-\d{2}-\d{2}( \d{2}:\d{2}:\d{2})?\$" data-lpignore="true" />
+
+                <br /><span class="hint" style="font-size:10px">Format: yyyy-mm-dd (HH:mm:ss)</span>
+            </div>
+            <hr/>
+            <div>
+                <b>Comment</b><br/>
+                <input type="text" name="comment" size="15" data-lpignore="true" />
+            </div>
+        </td>
         <td>
             <button onClick="saveLimit()" type="button" class="btn btn--red">Save</button>
             <br><span class="save_result"></span>
@@ -139,10 +165,82 @@ Or just enter the time ('9') and the date defaults to today">Start time <span cl
         });
     }
 
+    function updateLimit(table_id, target_name, row_id) {
+        var el = \$('table#'+table_id).find('tr#'+row_id);
+        var result = el.find('td.' + target_name + ' button[name="update"]');
+        result.html(
+            '... &nbsp; &nbsp;' +
+            '<svg width="18" height="18" style="vertical-align: inherit" viewBox="0 0 38 38" xmlns="http://www.w3.org/2000/svg" stroke="#fff">' +
+            '<g fill="none" fill-rule="evenodd"> <g transform="translate(1 1)" stroke-width="2"> ' +
+            '<circle stroke-opacity=".5" cx="18" cy="18" r="18"/> <path d="M36 18c0-9.94-8.06-18-18-18">' +
+            '<animateTransform attributeName="transform" type="rotate" from="0 18 18" to="360 18 18" dur="0.5s" repeatCount="indefinite"/>' +
+            '</path> </g> </g> </svg>'
+        );
+        var limit = {
+              market: el.find('td.market').attr('data_key'),
+              underlying_symbol: el.find('td.underlying_symbol').attr('data_key'),
+              expiry_type: el.find('td.expiry_type').attr('data_key'),
+              contract_group: el.find('td.contract_group').attr('data_key'),
+              landing_company: el.find('td.landing_company').attr('data_key'),
+              limit_type: target_name,
+              barrier_type: el.find('td.barrier_type').attr('data_key'),
+              type: el.find('td.type').attr('data_key'),
+              start_time: el.find('td.start_time').attr('data_key'),
+              end_time: el.find('td.end_time').attr('data_key'),
+              limit_amount: el.find('td.' + target_name + ' input').val(),
+              comment: el.find('td.comment').attr('data_key'),
+              new_market: '',
+        };
+
+        \$.ajax({
+            url: upload_url,
+            data: Object.assign({ delete_limit: "1"}, limit),
+            success: function(data) {
+                var config = \$.parseJSON(data);
+                if (config.error) {
+                    result.text(config.error).css('color', 'var(--color-red)');
+                } else {
+                    Object.keys(limit).forEach(function(key) {
+                        var keys = [
+                            'market', 'expiry_type', 'contract_group', 'landing_company',
+                            'barrier_type', 'type'
+                        ];
+                        if(limit[key] == 'default' || limit[key] == '-') {
+                            limit[key] = '';
+                        } else if(keys.indexOf(key) !== -1) {
+                            limit[key] = key + '=' + limit[key];
+                        }
+                    });
+
+                    \$.ajax({
+                        url: upload_url,
+                        data: Object.assign({ save_limit: "1"}, limit),
+                        success: function(data) {
+                            var config = \$.parseJSON(data);
+                            if (config.error) {
+                                result.text(config.error).css('color', 'var(--color-red)');
+                            } else {
+                                result.text('Update');
+                                createDisplayTable(config.limit.records, config.limit.header, 'per_landing_company');
+                            }
+                         }
+                     });
+                }
+            }
+        });
+    }
+
     function deleteLimit(table_id, target_name, row_id) {
         var el = \$('table#'+table_id).find('tr#'+row_id);
-        var result = el.find('td.result');
-        result.text('processing ...');
+        var result = el.find('.' + target_name + ' button[name="delete"]');
+        result.html(
+            '... &nbsp; &nbsp;' +
+            '<svg width="18" height="18" style="vertical-align: inherit" viewBox="0 0 38 38" xmlns="http://www.w3.org/2000/svg" stroke="#fff">' +
+            '<g fill="none" fill-rule="evenodd"> <g transform="translate(1 1)" stroke-width="2"> ' +
+            '<circle stroke-opacity=".5" cx="18" cy="18" r="18"/> <path d="M36 18c0-9.94-8.06-18-18-18">' +
+            '<animateTransform attributeName="transform" type="rotate" from="0 18 18" to="360 18 18" dur="0.5s" repeatCount="indefinite"/>' +
+            '</path> </g> </g> </svg>'
+        );
 
         \$.ajax({
             url: upload_url,
@@ -171,7 +269,7 @@ Or just enter the time ('9') and the date defaults to today">Start time <span cl
     }
 
     function createDisplayTable(data, header, id) {
-        var table = '<table class="small border" id="'+id+'"><thead><tr>';
+        var table = '<table class="pretty small hover alternate" id="'+id+'"><thead><tr>';
 
         for (var i=0; i < header.length; i++) {
             if (header[i][1] == 'Time Status') {
@@ -199,10 +297,14 @@ Or just enter the time ('9') and the date defaults to today">Start time <span cl
                 }
                 table += '<td class="'+key+'" data_key="'+value.data_key+'">';
                 if (key.substr(0,7) == 'global_' && \$.isNumeric(value.display_value)) {
-                    table += '<button class="btn btn--red" onClick="deleteLimit(\''+id+'\',\''+key+'\','+i+')" type="button">Delete</button>  ';
+                    table += '<button class="btn btn--red" name="delete" onClick="deleteLimit(\''+id+'\',\''+key+'\','+i+')">Delete</button> ';
+                    table += '<button class="btn btn--primary" name="update" onClick="updateLimit(\''+id+'\',\''+key+'\','+i+')">Update</button>';
+                    table += '<input style="border-radius: 5px; line-height: 18px; width: 65px" type="text" value="' +
+                                value.display_value + '"></input>';
+                    table += '</td>';
                 }
                 // Special handling for start_time and end_time
-                if (key.substr(-4) == 'time') {
+                else if (key.substr(-4) == 'time') {
                     table += ' &nbsp; '; // Don't let numbers squash together
                     if (key = 'start time' && time_status == 2) { table += '<font color="#006600">'; } // active
                     if (key = 'start time' && time_status == 3) { table += '<font color="#ff3300">'; } // expired
@@ -248,17 +350,39 @@ Or just enter the time ('9') and the date defaults to today">Start time <span cl
         var el = \$("table.pretty");
         if (el) {
             var market = el.find('input[name="market"]:checked').serialize();
+            el.find('input[name="market"]:checked').each(function() { this.checked = false; });
+
             var new_market = el.find('input[name="new_market"]').val();
+            el.find('input[name="new_market"]').val('');
+
             var underlying_symbol = el.find('input[name="underlying_symbol"]').val();
+            el.find('input[name="underlying_symbol"]').val('');
+
             var expiry_type = el.find('input[name="expiry_type"]:checked').serialize();
+            el.find('input[name="expiry_type"]:checked').each(function() { this.checked = false; });
+
             var contract_group = el.find('input[name="contract_group"]:checked').serialize();
+            el.find('input[name="contract_group"]:checked').each(function() { this.checked = false; });
+
             var barrier_type = el.find('input[name="barrier_type"]:checked').serialize();
+            el.find('input[name="barrier_type"]:checked').each(function() { this.checked = false; });
+
             var limit_type = el.find('select[name="limit_type"]').val();
+
             var limit_amount = el.find('input[name="limit_amount"]').val();
+            el.find('input[name="limit_amount"]').val('');
+
             var landing_company = el.find('input[name="landing_company"]:checked').serialize();
+            el.find('input[name="landing_company"]:checked').each(function() { this.checked = false; });
+
             var comment = el.find('input[name="comment"]').val();
+            el.find('input[name="comment"]').val('');
+
             var start_time = el.find('input[name="start_time"]').val();
+            el.find('input[name="start_time"]').val('');
+
             var end_time = el.find('input[name="end_time"]').val();
+            el.find('input[name="end_time"]').val('');
 
             var result = el.find("span.save_result");
 

@@ -18,6 +18,7 @@ use BOM::Backoffice::Auth0;
 use BOM::Backoffice::QuantsAuditLog;
 use Time::Duration::Concise;
 use Scalar::Util qw(looks_like_number);
+use Data::Compare;
 
 my $app_config = BOM::Config::Runtime->instance->app_config;
 $app_config->chronicle_writer(BOM::Config::Chronicle::get_chronicle_writer());
@@ -182,21 +183,25 @@ sub decorate_for_display {
             $_->selectall_arrayref("SELECT market from betonmarkets.quants_wishlist group by market");
         });
     my @market_order = uniq(qw(forex indices commodities synthetic_index default), (map { @$_ } (@$output, @$potentially_new_market)));
-    my @type_order   = qw(market symbol_default symbol);
+
+    my $supported = BOM::Database::QuantsConfig::supported_config_type()->{per_landing_company};
+
+    # combine same records that have different global_potential_loss & global_realized_loss limit amounts.
+    my $records_set = {};
+    for my $record (@$records) {
+        my $rec = {$record->%*, map { $_ => 0 } keys %$supported, limit_amount => 0};
+        my $key = join '-', %$rec{sort keys %$rec};
+
+        $records_set->{$key} //= {};
+        $records_set->{$key} = {$records_set->{$key}->%*, $record->%*};
+        delete $records_set->{$key}->{limit_amount};
+    }
+    my $combined_records = [@$records_set{sort keys %$records_set}];
 
     my @sorted_records = ();
     foreach my $market (@market_order) {
-        my $group  = [grep { $_->{market} and $_->{market} eq $market } @$records];
-        my @sorted = ();
-        foreach my $type (@type_order) {
-            ## This is to enforce a consistent but arbitrary ordering of things via createDisplayTable
-            push @sorted, map { $_->[0] }
-                sort { $a->[1] cmp $b->[1] }
-                map  { [$_, (join '.' => sort values %$_)] }
-                grep { $_->{type} eq $type } @$group;
-        }
-
-        foreach my $record (@sorted) {
+        my $group = [grep { $_->{market} and $_->{market} eq $market } @$combined_records];
+        foreach my $record (@$group) {
             my $type = $record->{type};
             foreach my $key (keys %$record) {
                 my $val = $record->{$key};
@@ -219,8 +224,6 @@ sub decorate_for_display {
             push @sorted_records, $record;
         }
     }
-
-    my $supported = BOM::Database::QuantsConfig::supported_config_type()->{per_landing_company};
 
     return {
         records => \@sorted_records,
