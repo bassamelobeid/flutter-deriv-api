@@ -10,6 +10,7 @@ use BOM::Backoffice::Sysinit ();
 use f_brokerincludeall;
 use BOM::Backoffice::Request qw(request);
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
+use BOM::Database::UserDB;
 
 BOM::Backoffice::Sysinit::init();
 
@@ -32,7 +33,7 @@ my $page        = request()->param('page')     || 0;
 my $pagesize    = request()->param('pagesize') || 40;
 my $offset      = $page * $pagesize;
 my @system_cols = qw/stamp staff_name operation remote_addr/;
-my @noshow_cols = qw/client_port id client_addr client_loginid document_format/;
+my @noshow_cols = qw/client_port id client_addr client_loginid document_format tbl/;
 
 my $myself_args = {
     broker   => $broker,
@@ -65,6 +66,7 @@ for ($category) {
         });
     } elsif (/^client_details$/) {
         my $authentication_documents_queries = authentication_documents_queries($loginid, $broker);
+        my $user_db_queries                  = user_db_queries($loginid, $broker);
 
         @tables = ({
                 table  => 'client',
@@ -107,6 +109,7 @@ for ($category) {
                 params => [$loginid],
             },
             $authentication_documents_queries->@*,
+            $user_db_queries->@*,
         );
     } elsif (/^payment_agent$/) {
         @tables = ({
@@ -131,9 +134,13 @@ for my $table (@tables) {
     my $database     = $db;
 
     if ($query_broker ne $broker) {
-        $database = BOM::Database::ClientDB->new({
-                broker_code => $query_broker,
-            })->db;
+        if ($query_broker eq 'users') {
+            $database = BOM::Database::UserDB::rose_db();
+        } else {
+            $database = BOM::Database::ClientDB->new({
+                    broker_code => $query_broker,
+                })->db;
+        }
     }
 
     $hitcount = _get_table_count(%$table, db => $database) || next;
@@ -165,7 +172,7 @@ for my $table (@tables) {
         my $changes = {};
 
         my $data = {
-            table      => $tabname,
+            table      => delete $row->{tbl} // $tabname,
             staff_name => $row->{pg_userid}};
 
         for my $col (qw/stamp operation remote_addr/) {
@@ -225,7 +232,6 @@ my $stash = {
 unless ($myself_args->{category} eq 'payment_agent') {
     $stash->{hidden_cols} = {map { $_ => 1 } (qw/client_password secret_answer secret_question date_joined document_path/)};
 }
-
 Bar($title_bar);
 
 BOM::Backoffice::Request::template()->process('backoffice/show_audit_trail.html.tt', $stash) || die BOM::Backoffice::Request::template()->error(),
@@ -275,7 +281,9 @@ sub _get_table_rows {
     my $query  = $args{query};
     my $limit  = $args{limit};
     my $offset = $args{offset} // 0;
-    my $sql    = "select * from $table t1 where $query order by stamp ";
+    my $select = $args{select} // '*';
+
+    my $sql = "select $select from $table t1 where $query order by stamp ";
     $sql .= "limit $limit offset $offset" if $limit;
     my $params = $args{params};
     my $db     = $args{db};
@@ -283,7 +291,6 @@ sub _get_table_rows {
         fixup => sub {
             return $_->selectall_arrayref($sql, {Slice => {}}, @$params);
         });
-
 }
 
 =head2 authentication_documents_queries
@@ -334,3 +341,48 @@ sub authentication_documents_queries {
 
     return $queries;
 }
+
+=head2 user_db_queries
+
+Gets the needed queries to hit the users db for the audit trail.
+
+Takes the following arguments:
+
+=over 4
+
+=item * C<$loginid> - The loginid of the current client.
+
+=back
+
+Returns an arrayref of  database queries.
+
+=cut
+
+sub user_db_queries {
+    my $loginid            = shift;
+    my $client             = BOM::User::Client->new({loginid => $loginid}) || die "Cannot find client: $loginid";
+    my $binary_user_id     = $client->binary_user_id;
+    my $queries            = [];
+    my @interesting_fields = qw/is_totp_enabled/;
+    my $query              = "tbl = ? AND binary_user_id = ?";
+
+    # Since audittable stores data as JSON we may only want to retrieve those records that
+    # contains changes in our interesting fields.
+
+    $query = join ' AND ', $query, map { "original_cols->'$_' IS NOT NULL" } @interesting_fields;
+
+    # Tell the db which fields to grab
+    my $pg_userid = "COALESCE(metadata->>'staff', 'system') AS pg_userid";
+    my $select    = join ',', 'stamp', 'tbl', $pg_userid, map { "new_row->>'$_' AS $_" } @interesting_fields;
+
+    push $queries->@*, {
+        select => $select,
+        table  => 'audittable',
+        query  => $query,
+        params => ['binary_user', $binary_user_id],
+        broker => 'users',                            # gonna hint the code to use UserDB
+    };
+
+    return $queries;
+}
+
