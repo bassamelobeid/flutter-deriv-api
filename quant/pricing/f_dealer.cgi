@@ -26,6 +26,8 @@ use BOM::Backoffice::Sysinit ();
 use BOM::Product::ContractFactory qw( produce_contract );
 use BOM::Backoffice::QuantsAuditLog;
 use BOM::Transaction::Utility;
+use BOM::Product::ContractFactory qw(produce_contract);
+use Finance::Contract::Longcode qw(shortcode_to_parameters);
 BOM::Backoffice::Sysinit::init();
 
 PrintContentType();
@@ -79,7 +81,15 @@ if (request()->param('whattodo') eq 'closeatzero') {
     });
 
     my $fmbs = $fmb_mapper->get_fmb_by_id([$bet_ref]);
+    my %prices;
     if ($fmbs and @$fmbs) {
+        # In some ocasion, we need to close at market price, hence we're calculating it here.
+        foreach my $fmb (map { $_->financial_market_bet_record } @$fmbs) {
+            my $params = shortcode_to_parameters($fmb->{short_code}, $currency);
+            $params->{limit_order} = BOM::Transaction::Utility::extract_limit_orders($fmb) if $fmb->{bet_class} eq 'multiplier';
+            my $contract = produce_contract($params);
+            $prices{$fmb->id} = $contract->bid_price;
+        }
         my $sold = BOM::Database::Helper::FinancialMarketBet->new({
                 account_data => {
                     client_loginid => $loginID,
@@ -148,7 +158,9 @@ if (request()->param('whattodo') eq 'closeatzero') {
  </FORM>";
 
     $subject = "Manually close contract at zero price. ";
-    @body    = ("We manually closed the contract [Ref: $bet_ref] at price $currency 0 for client[$loginID]. \n");
+    @body    = map {
+        "We manually closed the contract [Ref: $_] at price $currency 0 for client[$loginID]. Current market bid price is  $currency $prices{$_}.\n"
+    } keys %prices;
 
     send_email({
         from    => $brand->emails('system'),
