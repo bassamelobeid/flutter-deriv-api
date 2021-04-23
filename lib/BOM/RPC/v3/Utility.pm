@@ -50,6 +50,7 @@ use BOM::Platform::Event::Emitter;
 use BOM::Platform::Client::CashierValidation;
 use BOM::User;
 use BOM::Transaction::Validation;
+use BOM::Config;
 
 use Exporter qw(import export_to_level);
 our @EXPORT_OK = qw(longcode log_exception);
@@ -278,10 +279,24 @@ sub client_error() {
             message_to_client => localize('Sorry, an error occurred while processing your request.')});
 }
 
+=head2 website_name
+
+accepts server name & depending on production/qa environment returns website url
+
+=over 4
+
+=item * C<$server_name> server name
+
+=back
+
+returns website url
+
+=cut
+
 sub website_name {
     my $server_name = shift;
 
-    return "Binary$server_name.com" if ($server_name =~ /^qa\d+$/);
+    return get_qa_node_website_url($server_name) if ($server_name =~ /^qa\d+$/);
 
     return request()->brand->website_name;
 }
@@ -1393,6 +1408,26 @@ sub cashier_validation {
     return create_error($validation->{error}) if exists $validation->{error};
 
     return;
+}
+
+=head2 get_qa_node_website_url
+
+Return website url as per environment (aws|openstack)
+
+=over 4
+
+=item * C<qa_number>: current qa's number
+
+=back
+
+Returns website URL as per QA number
+
+=cut
+
+sub get_qa_node_website_url {
+    my ($qa_number) = @_;
+    my $node_config = BOM::Config->qa_config()->{'nodes'}->{$qa_number . '.regentmarkets.com'};
+    return $node_config->{'website'};
 }
 
 1;

@@ -451,7 +451,7 @@ subtest 'crypto_cashier_forward_page' => sub {
     $args->{website_name} = 'binaryqa25.com';
     $args->{domain}       = 'binary.me';
     my $valid_QA_deposit = BOM::RPC::v3::Cashier::_get_cashier_url($prefix, $args);
-    ok $valid_QA_deposit =~ /^https:\/\/www.binaryqa25.com/;
+    ok $valid_QA_deposit =~ /^https:\/\/binaryqa25.com/;
     test_uri_params($valid_QA_deposit, $args);
 
     $mock_cashier->unmock_all;

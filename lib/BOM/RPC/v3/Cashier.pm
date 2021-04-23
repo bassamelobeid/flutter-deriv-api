@@ -363,7 +363,7 @@ sub _get_cashier_url {
 
     my $url = 'https://';
     if (($website_name // '') =~ /qa/) {
-        $url .= 'www.' . lc($website_name) . "/cryptocurrency/$prefix";
+        $url .= lc($website_name) . "/cryptocurrency/$prefix";
     } else {
         my $is_white_listed = $domain && (any { $domain eq $_ } BOM::Config->domain->{white_list}->@*);
         $domain = BOM::Config->domain->{default_domain} unless $domain and $is_white_listed;
