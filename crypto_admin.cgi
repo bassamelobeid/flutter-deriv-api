@@ -275,7 +275,7 @@ sub _get_function_map {
         },
         get_transaction => sub {
             die "Please provide transaction_hash" unless length $txn_hash;
-            $currency_wrapper->get_transactionbyhash($txn_hash);
+            $currency_wrapper->get_transaction($txn_hash);
         },
         get_transaction_receipt => sub {
             die "Transaction hash must be specified" unless length $txn_hash;
