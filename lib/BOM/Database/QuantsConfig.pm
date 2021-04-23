@@ -377,22 +377,21 @@ sub get_all_global_limit {
 sub _get_unique_records {
     my ($self, $data, $landing_company) = @_;
 
+    my $records = [];
     my @all_ids = uniq map { keys %{$data->{$_}} } keys %$data;
     # fill the landing_company field for each record.
     foreach my $id (@all_ids) {
         if (all { $data->{$_}{$id} } @$landing_company) {
             $data->{$_}{$id}{landing_company} = 'default' for @$landing_company;
+            push @$records, $data->{$landing_company->[0]}{$id};
         } else {
             for (grep { $data->{$_}{$id} } @$landing_company) {
                 $data->{$_}{$id}{landing_company} = $_;
+                push @$records, $data->{$_}{$id};
             }
         }
     }
-
-    my @records      = values %$data;
-    my %uniq_records = map { %{$records[$_]} } (0 .. $#records);
-
-    return [values %uniq_records];
+    return $records;
 }
 
 # This as a separate function is purely for testability.
