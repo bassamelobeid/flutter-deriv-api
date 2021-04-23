@@ -25,10 +25,14 @@ sub rose_db {
         %overrides,
     );
 
-    return BOM::Database::Rose::DB->new_or_cached(
+    my $db = BOM::Database::Rose::DB->new_or_cached(
         domain => 'userdb',
         type   => 'write',
     );
+
+    $db->dbic->dbh->selectall_arrayref('SELECT audit.set_metadata(?::TEXT)', undef, $ENV{AUDIT_STAFF_NAME} // 'system');
+
+    return $db;
 }
 
 1;
