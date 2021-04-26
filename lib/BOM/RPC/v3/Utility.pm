@@ -1427,7 +1427,8 @@ Returns website URL as per QA number
 sub get_qa_node_website_url {
     my ($qa_number) = @_;
     my $node_config = BOM::Config->qa_config()->{'nodes'}->{$qa_number . '.regentmarkets.com'};
-    return $node_config->{'website'};
+    my $website     = $node_config->{'website'};
+    return ($website =~ /^binaryqa/ ? "www.$website" : $website);
 }
 
 1;

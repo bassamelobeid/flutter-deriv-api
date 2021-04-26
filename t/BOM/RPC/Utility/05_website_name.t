@@ -45,7 +45,7 @@ $mock_bom_config->mock(
     });
 
 my $server_name = 'qa20';
-is BOM::RPC::v3::Utility::website_name($server_name), 'binaryqa20.com', 'Correct website_name returned for aws QA';
+is BOM::RPC::v3::Utility::website_name($server_name), 'www.binaryqa20.com', 'Correct website_name returned for aws QA';
 $server_name = 'qa91';
 is BOM::RPC::v3::Utility::website_name($server_name), 'qa91.deriv.dev', 'Correct website_name returned for openstack QA';
 
