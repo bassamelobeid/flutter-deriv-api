@@ -7,10 +7,10 @@ PROVE=p () { $M; echo '$P' "$$@"; $P "$$@"; }; p
 test_all: $(TESTS)
 
 test:
-	@$(PROVE)  t/BOM
+	@$(PROVE) t/BOM
 
 syntax:
-	@$(PROVE) t/*.t
+	@$(PROVE) --norc t/*.t
 
 tidy:
 	find . -name '*.p?.bak' -delete
