@@ -24,9 +24,9 @@ if ($lib_pattern) {
 
     if (@lib_targets) {
         subtest "Check modules in lib" => sub {
+            pass 'Syntax check starts here';
             for (@lib_targets) {
                 syntax_ok($_) if $_ =~ /\.pl$/;
-                critic_ok($_);
             }
         }
     }
