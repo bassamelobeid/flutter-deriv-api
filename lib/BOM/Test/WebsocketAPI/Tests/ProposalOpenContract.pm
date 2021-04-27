@@ -1,4 +1,4 @@
-package BOM::Test::APITester::Tests::ProposalOpenContract;
+package BOM::Test::APITester::Tests::ProposalOpenContract;  ## no critic
 
 no indirect;
 

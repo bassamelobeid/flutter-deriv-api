@@ -16,10 +16,6 @@ BEGIN {
 
         exec($^X, qw(-MBOM::Test), $script) or die "Couldn't execute $script: $!";
     }
-    # it will cause the test bom-websocket-tests/v3/misc/02_website_status.t to fail if it is not ready before starting test.
-    # so let's waiting binary_rpc_redis ready
-    # TODO find a better way to check its status
-    sleep 5;
 }
 
 END {
