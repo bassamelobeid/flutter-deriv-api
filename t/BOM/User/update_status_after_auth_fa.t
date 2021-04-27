@@ -130,42 +130,18 @@ subtest 'MLT unwelcome status (after first deposit) removal' => sub {
     $mocked_client->unmock_all();
 };
 
-subtest 'VR unwelcome status for GB clients' => sub {
-    for ($client_mx, $client_vr) {
-        $_->status->upsert('unwelcome', 'system', 'Pending proof of age');
-        $_->status->clear_age_verification for ($client_mx, $client_vr);
-    }
+subtest 'VR age_verification for GB clients' => sub {
+
+    $_->status->clear_age_verification for ($client_mx, $client_vr);
 
     my $mocked_client = Test::MockModule->new('BOM::User::Client');
     my $residence     = 'gb';
     $mocked_client->mock(residence => sub { return $residence });
 
-    $client_mx->update_status_after_auth_fa;
-    undef $_->{status}                                                             for ($client_mx, $client_vr);
-    ok($_->status->unwelcome, "Status was not removed form client " . $_->loginid) for ($client_mx, $client_vr);
-
     $client_mx->status->set('age_verification', 'system', 'test');
     $client_mx->update_status_after_auth_fa;
     undef $_->{status} for ($client_mx, $client_vr);
-    ok $client_mx->status->unwelcome, "Status was not removed by age verification form MX client";
-    ok !$client_vr->status->unwelcome, "Status was removed form VR client";
     ok $client_vr->status->age_verification, 'VR client is age verified';
-
-    $client_vr->status->upsert('unwelcome', 'system', 'Pending proof of age');
-    $client_vr->status->clear_age_verification;
-    $residence = 'ru';
-    $client_mx->update_status_after_auth_fa;
-    undef $_->{status}                                                                                  for ($client_mx, $client_vr);
-    ok($_->status->unwelcome, "Status was not removed with other residence form client " . $_->loginid) for ($client_mx, $client_vr);
-    ok !$client_vr->status->age_verification, 'VR client is not age verified';
-
-    $residence = 'gb';
-    $client_mx->status->upsert('age_verification', 'system', 'test');
-    $client_vr->status->upsert('unwelcome',        'system', 'Dummy reason');
-    $client_mx->update_status_after_auth_fa;
-    undef $_->{status}                                                                               for ($client_mx, $client_vr);
-    ok($_->status->unwelcome, "Status with other reason was not removed form client " . $_->loginid) for ($client_mx, $client_vr);
-    ok !$client_vr->status->age_verification, 'VR client is not age verified';
 
     $mocked_client->unmock_all();
 };

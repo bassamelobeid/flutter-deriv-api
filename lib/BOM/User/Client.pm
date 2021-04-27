@@ -1795,9 +1795,8 @@ sub is_verification_required {
         and $self->has_deposits());
 
     return 1
-        if ($country_config->{require_verification_when_not_age_verified_and_unwelcome}
-        and not $self->status->age_verification
-        and $self->status->unwelcome);
+        if ($country_config->{require_verification_when_not_age_verified}
+        and not $self->status->age_verification);
 
     return 1 if $self->landing_company->short eq 'maltainvest';
 
@@ -5221,16 +5220,11 @@ sub update_status_after_auth_fa {
         }
     }
 
+    # gb residents cannot trade synthetics on demo account while not age verified
     my $config = request()->brand->countries_instance->countries_list->{$self->residence};
-    if ($config->{ukgc_funds_protection} and $self->status->age_verification and $self->user->bom_virtual_loginid) {
-        # gb residents cant use demo account while not age verified.
-        # should remove unwelcome status once respective MX or MF marked
-        # as age verified.
+    if ($config->{require_age_verified_for_synthetic} and $self->status->age_verification and $self->user->bom_virtual_loginid) {
         my $vr_acc = BOM::User::Client->new({loginid => $self->user->bom_virtual_loginid});
-        if (($vr_acc->status->reason('unwelcome') // '') =~ 'Pending proof of age') {
-            $vr_acc->status->clear_unwelcome;
-            $vr_acc->status->setnx('age_verification', 'system', $msg // '');
-        }
+        $vr_acc->status->setnx('age_verification', 'system', $msg // '');
     }
 }
 
