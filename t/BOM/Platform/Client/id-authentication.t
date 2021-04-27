@@ -216,8 +216,6 @@ subtest 'MX accounts' => sub {
                 my ($vr_client, $mx_client) =
                     @{create_user_and_clients(['VRTC', 'MX'], 'mx_test_' . $match . '@binary.com', {residence => 'gb'})}{'VRTC', 'MX'};
 
-                $vr_client->status->set('unwelcome', 'system', 'test');
-
                 my $loginid      = $mx_client->loginid;
                 my $client_email = $mx_client->email;
                 $emails = {};
@@ -236,9 +234,7 @@ subtest 'MX accounts' => sub {
 
                 ok $v->client->status->disabled,          "Disabled due to $match";
                 ok $v->client->status->proveid_requested, "ProveID requested";
-
-                $vr_client = BOM::User::Client->new({loginid => $vr_client->loginid});
-                ok $vr_client->status->unwelcome, "VR still unwelcomed";
+                ok !$vr_client->status->age_verification, "VR not age verified";
 
                 is($emails->{$support_email}->{subject}, "Account $loginid disabled following Experian results", "CS received email");
                 is($emails->{$client_email}->{subject},  "Documents are required to verify your identity",       "Client received email");
@@ -247,8 +243,6 @@ subtest 'MX accounts' => sub {
     };
     subtest "Insufficient DOB Match in ProveID" => sub {
         my ($vr_client, $mx_client) = @{create_user_and_clients(['VRTC', 'MX'], 'mx_test_lowdob@binary.com', {residence => 'gb'})}{'VRTC', 'MX'};
-
-        $vr_client->status->set('unwelcome', 'system', 'test');
 
         my $loginid      = $mx_client->loginid;
         my $client_email = $mx_client->email;
@@ -270,8 +264,7 @@ subtest 'MX accounts' => sub {
         ok $v->client->status->unwelcome,         "Unwelcome due to Insufficient DOB Match";
         ok $v->client->status->proveid_requested, "ProveID requested";
 
-        $vr_client = BOM::User::Client->new({loginid => $vr_client->loginid});
-        ok $vr_client->status->unwelcome, "VR still unwelcomed";
+        ok !$vr_client->status->age_verification, "VR not age verified";
 
         is($emails->{$client_email}->{subject}, "Documents are required to verify your identity", "Client received email");
     };
@@ -287,8 +280,6 @@ subtest 'MX accounts' => sub {
                 return $mock_client->original('update_status_after_auth_fa')->(@_);
             });
 
-        $vr_client->status->set('unwelcome', 'system', 'test');
-
         my $v = BOM::Platform::Client::IDAuthentication->new(client => $mx_client);
 
         my $file_path = "/home/git/regentmarkets/bom-test/data/Experian/SavedXML/ExperianValid.xml";
@@ -302,8 +293,7 @@ subtest 'MX accounts' => sub {
 
         $v->run_validation('signup');
 
-        ok !$v->client->status->disabled,  "Not disabled due to sufficient DOB Match";
-        ok !$v->client->status->unwelcome, "Not unwelcome due to sufficient FullNameAndAddress Match";
+        ok !$v->client->status->disabled, "Not disabled due to sufficient DOB Match";
         ok $v->client->status->age_verification,  "Age verified due to suffiecient DOB Match";
         ok $v->client->status->proveid_requested, "ProveID requested";
 
@@ -311,8 +301,7 @@ subtest 'MX accounts' => sub {
             'eq', 'pass', "Online Verification authenticated due to sufficient FullNameAndAddress Match");
         ok $v->client->status->proveid_requested, "ProveID requested";
 
-        $vr_client = BOM::User::Client->new({loginid => $vr_client->loginid});
-        ok !$vr_client->status->unwelcome, "VR welcomed";
+        ok $vr_client->status->age_verification, "VR age verified";
 
         is $update_status_loginid, $mx_client->loginid, 'update_status_after_auth_fa called with the correct args';
     };
@@ -320,8 +309,6 @@ subtest 'MX accounts' => sub {
     subtest "Sufficient DOB, Insufficient DATA" => sub {
         my ($vr_client, $mx_client) =
             @{create_user_and_clients(['VRTC', 'MX'], 'mx_test_highdob_no_data@binary.com', {residence => 'gb'})}{'VRTC', 'MX'};
-
-        $vr_client->status->set('unwelcome', 'system', 'test');
 
         my $loginid = $mx_client->loginid;
 
@@ -338,20 +325,15 @@ subtest 'MX accounts' => sub {
 
         $v->run_validation('signup');
         ok !$v->client->status->disabled, "Not disabled due to Insufficient DOB Match";
-        ok $v->client->status->unwelcome, "Unwelcome due to insufficient DOB Match";
         ok !$v->client->get_authentication('ID_ONLINE'), "Not online verification authenticated due to insufficient FullNameAndAddress match";
         ok $v->client->status->proveid_requested, "ProveID requested";
 
-        $vr_client = BOM::User::Client->new({loginid => $vr_client->loginid});
-        ok !$vr_client->status->unwelcome, "VR welcomed";
-
+        ok $vr_client->status->age_verification, "VR age verified";
     };
     subtest "No Experian entry found" => sub {
         subtest "Error 501" => sub {
             my ($vr_client, $mx_client) =
                 @{create_user_and_clients(['VRTC', 'MX'], 'mx_test_no_entry@binary.com', {residence => 'gb'})}{'VRTC', 'MX'};
-
-            $vr_client->status->set('unwelcome', 'system', 'test');
 
             my $loginid      = $mx_client->loginid;
             my $client_email = $mx_client->email;
@@ -368,12 +350,12 @@ subtest 'MX accounts' => sub {
             ok $v->client->status->unwelcome,         "Unwelcome due to no entry";
             ok $v->client->status->proveid_requested, "ProveID requested";
 
+            ok !$vr_client->status->age_verification, "VR not age verified";
+
             is($emails->{$client_email}->{subject}, "Documents are required to verify your identity", "Client received email");
         };
         subtest "Blank Response" => sub {
             my ($vr_client, $mx_client) = @{create_user_and_clients(['VRTC', 'MX'], 'mx_test_blank@binary.com', {residence => 'gb'})}{'VRTC', 'MX'};
-
-            $vr_client->status->set('unwelcome', 'system', 'test');
 
             my $loginid      = $mx_client->loginid;
             my $client_email = $mx_client->email;
@@ -396,14 +378,14 @@ subtest 'MX accounts' => sub {
             ok $v->client->status->unwelcome,         "Unwelcome due to no entry";
             ok $v->client->status->proveid_requested, "ProveID requested";
 
+            ok !$vr_client->status->age_verification, "VR not age verified";
+
             is($emails->{$client_email}->{subject}, "Documents are required to verify your identity", "Client received email");
         };
     };
     subtest "Error connecting to Experian" => sub {
         my ($vr_client, $mx_client) =
             @{create_user_and_clients(['VRTC', 'MX'], 'mx_test_connection_error@binary.com', {residence => 'gb'})}{'VRTC', 'MX'};
-
-        $vr_client->status->set('unwelcome', 'system', 'test');
 
         my $loginid = $mx_client->loginid;
 
@@ -422,8 +404,7 @@ subtest 'MX accounts' => sub {
         ok $v->client->status->proveid_requested, "ProveID requested";
         ok $v->client->status->proveid_pending,   "ProveID flag for retry set";
 
-        $vr_client = BOM::User::Client->new({loginid => $vr_client->loginid});
-        ok $vr_client->status->unwelcome, "VR still unwelcomed";
+        ok !$vr_client->status->age_verification, "VR not age verified";
 
         is($emails->{$compliance_email}->{subject}, "Experian request error for client $loginid", "CS received email");
     };

@@ -72,7 +72,7 @@ sub copy_status_from_siblings {
             }
 
             my $config = request()->brand->countries_instance->countries_list->{$cur_client->residence};
-            if (    $config->{virtual_age_verification}
+            if (    $config->{require_age_verified_for_synthetic}
                 and $status eq 'age_verification')
             {
                 my $vr_acc = BOM::User::Client->new({loginid => $cur_client->user->bom_virtual_loginid});

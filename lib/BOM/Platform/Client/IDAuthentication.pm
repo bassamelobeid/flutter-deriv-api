@@ -147,7 +147,6 @@ sub proveid {
     if ($dob_match >= NEEDED_MATCHES_FOR_AGE_VERIFICATION) {
         $client->status->setnx('age_verification', 'system', "Experian results are sufficient to mark client as age verified.");
         my $vr_acc = BOM::User::Client->new({loginid => $client->user->bom_virtual_loginid});
-        $vr_acc->status->clear_unwelcome;
         $vr_acc->status->setnx('age_verification', 'system', 'Experian results are sufficient to mark client as age verified.');
         if ($name_address_match >= NEEDED_MATCHES_FOR_ONLINE_AUTH) {
             $client->set_authentication('ID_ONLINE', {status => 'pass'});
