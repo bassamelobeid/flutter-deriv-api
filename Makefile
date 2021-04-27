@@ -10,7 +10,7 @@ test:
 	@$(PROVE) t/BOM
 
 syntax:
-	@$(PROVE) t/*.t
+	@$(PROVE) --norc t/*.t
 
 tidy:
 	find . -name '*.p?.bak' -delete
@@ -18,7 +18,7 @@ tidy:
 	find . -name '*.tidyup' -delete
 
 pod_test:
-	@$(PROVE) t/*pod*.t
+	@$(PROVE) --norc t/*pod*.t
 
 cover:
 	cover -delete
