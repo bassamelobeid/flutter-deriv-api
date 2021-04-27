@@ -101,11 +101,6 @@ my $tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     underlying => 'R_50',
 });
 
-my $usdjpy_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-    epoch      => $now->epoch,
-    underlying => 'frxUSDJPY',
-});
-
 my $tick_r100 = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     epoch      => $now->epoch,
     underlying => 'R_100',
@@ -2389,6 +2384,93 @@ subtest 'buy a 1HZ bet for China account', sub {
         }
         'survived';
     };
+};
+
+subtest 'buy binary option for Australian' => sub {
+    # specific date instead of current date to avoid failure over non-trading day.
+    my $mocked = Test::MockModule->new('BOM::Transaction::Validation');
+    $mocked->mock('_validate_date_pricing', sub { return undef });
+    my $now = Date::Utility->new('2021-04-13');
+
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+        'currency',
+        {
+            symbol        => $_,
+            recorded_date => $now,
+        }) for qw(JPY USD JPY-USD);
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+        'volsurface_delta',
+        {
+            symbol        => 'frxUSDJPY',
+            recorded_date => $now,
+        });
+
+    my $usdjpy_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+        epoch      => $now->epoch,
+        underlying => 'frxUSDJPY',
+    });
+
+    my $au_account = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+        residence   => 'au'
+    });
+
+    #make sure client can trade
+    ok(!BOM::Transaction::Validation->new({clients => [$au_account]})->check_trade_status($au_account),
+        "Australia client can trade: check_trade_status");
+    ok(!BOM::Transaction::Validation->new({clients => [$au_account]})->_validate_client_status($au_account),
+        "Australia client can trade: _validate_client_status");
+
+    top_up $au_account, 'USD', 5000;
+
+    my $contract = produce_contract({
+        underlying   => 'frxUSDJPY',
+        bet_type     => 'CALL',
+        date_start   => $now,
+        date_pricing => $now,
+        currency     => 'USD',
+        payout       => 1000,
+        duration     => '1d',
+        barrier      => 'S0P',
+        current_tick => $usdjpy_tick,
+    });
+
+    my $txn = BOM::Transaction->new({
+        client        => $au_account,
+        contract      => $contract,
+        price         => 511.47,
+        payout        => $contract->payout,
+        amount_type   => 'payout',
+        source        => 19,
+        purchase_date => $contract->date_start,
+    });
+    my $error = $txn->buy;
+    is $error->{'-type'},              'InvalidOfferings',                       '-type [InvalidOfferings]';
+    is $error->{'-message_to_client'}, 'Trading is not offered for this asset.', '-message_to_client [Trading is not offered for this asset.]';
+
+    note "multipliers on FX is still available";
+
+    $contract = produce_contract({
+        underlying   => 'frxUSDJPY',
+        bet_type     => 'MULTUP',
+        date_start   => $now,
+        date_pricing => $now,
+        currency     => 'USD',
+        amount       => 100,
+        amount_type  => 'stake',
+        multiplier   => 100,
+        current_tick => $usdjpy_tick,
+    });
+
+    $txn = BOM::Transaction->new({
+        client        => $au_account,
+        contract      => $contract,
+        price         => 100,
+        amount_type   => 'stake',
+        source        => 19,
+        purchase_date => $contract->date_start,
+    });
+    ok !$txn->buy, 'valid to buy';
 };
 
 #######
