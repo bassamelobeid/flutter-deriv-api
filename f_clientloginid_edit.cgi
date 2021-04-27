@@ -576,11 +576,6 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
             $client->set_authentication('ID_DOCUMENT', {status => 'needs_action'});
             # 'Needs Action' shouldn't replace the locks from the account because we'll lose the request authentication reason
             $client->status->setnx('allow_document_upload', $clerk, 'MARKED_AS_NEEDS_ACTION');
-
-            # if client is marked as needs action then we need to inform
-            # CS for new POA document hence we need to remove any
-            # key set for email already sent for POA
-            BOM::Config::Redis::redis_replicated_write()->hdel("EMAIL_NOTIFICATION_POA", $client->binary_user_id);
         }
 
         $client->save;
