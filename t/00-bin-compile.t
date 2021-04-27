@@ -2,6 +2,7 @@
 use strict;
 use warnings;
 
+use Test::Warnings;
 use Test::More;
 use FindBin;
 use File::Basename;

@@ -7,13 +7,13 @@ PROVE=p () { $M; echo '$P' "$$@"; $P "$$@"; }; p
 test_all: $(TESTS)
 
 syntax:
-	@$(PROVE) t/*.t
+	@$(PROVE) --norc t/*.t
 
 test:
 	@$(PROVE) t/BOM/ t/999_redis_keys.t
 
 pod_test:
-	@$(PROVE) t/*pod*.t
+	@$(PROVE) --norc t/*pod*.t
 
 json_schemas:
 	@$(PROVE) t/schema_suite/*.t
