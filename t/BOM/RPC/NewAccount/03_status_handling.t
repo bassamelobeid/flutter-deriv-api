@@ -78,7 +78,7 @@ subtest 'MX' => sub {
 
         my $vr_client = BOM::User::Client->new({loginid => $loginid});
 
-        ok($vr_client->status->unwelcome, 'gb virtual account unwelcome on creation');
+        ok(!$vr_client->status->unwelcome, 'gb virtual account not unwelcome on creation');
 
         _reset_params();
 
@@ -101,8 +101,8 @@ subtest 'MX' => sub {
         my $mx_client = BOM::User::Client->new({loginid => $loginid});
         $vr_client = BOM::User::Client->new({loginid => $vr_client->loginid});
 
-        ok($mx_client->status->unwelcome, 'Unwelcome on creation');
-        ok($vr_client->status->unwelcome, 'Virtual remains unwelcome');
+        ok($mx_client->status->unwelcome,  'Real account unwelcome due to experian fail');
+        ok(!$vr_client->status->unwelcome, 'Virtual remains not unwelcome');
     };
 
     subtest 'Pass age verification' => sub {
@@ -124,7 +124,7 @@ subtest 'MX' => sub {
 
         my $vr_client = BOM::User::Client->new({loginid => $loginid});
 
-        ok($vr_client->status->unwelcome, 'gb virtual account unwelcome on creation');
+        ok(!$vr_client->status->unwelcome, 'gb virtual account not unwelcome on creation');
 
         _reset_params();
 
@@ -147,8 +147,8 @@ subtest 'MX' => sub {
 
         $vr_client = BOM::User::Client->new({loginid => $vr_client->loginid});
 
-        ok(!$mx_client->status->unwelcome, 'Account not unwelcome on creation');
-        ok(!$vr_client->status->unwelcome, 'Virtual no longer unwelcome');
+        ok(!$mx_client->status->unwelcome, 'Real account not unwelcome on creation');
+        ok(!$vr_client->status->unwelcome, 'Virtual still not unwelcome');
     };
 };
 

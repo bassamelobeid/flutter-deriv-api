@@ -775,12 +775,6 @@ sub create_virtual_account {
         die $error if $error;
     }
 
-    # Check if it is from UK, instantly mark it as unwelcome
-    my $config = request()->brand->countries_instance->countries_list->{$account->{client}->residence};
-    if ($config->{virtual_age_verification}) {
-        $account->{client}->status->set('unwelcome', 'SYSTEM', 'Pending proof of age');
-    }
-
     my $user = $account->{user};
     $user->add_login_history(
         action      => 'login',
