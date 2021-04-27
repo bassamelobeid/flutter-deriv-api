@@ -1737,12 +1737,12 @@ sub client_text_field_validation_info {
 
         },
         address_1 => {
-            pattern => q/^[\p{L}\p{Nd}\s'.,:;()@#\/-]{1,70}$/,
+            pattern => q/^[\p{L}\p{Nd}\s'.,:;()\x{b0}@#\/-]{1,70}$/,
             message => 'Within 70 characters, Only letters, numbers, space, and these special characters are allowed: - . \' # ; : ( ) , @ /',
             name    => 'Address 1',
         },
         address_2 => {
-            pattern => q/^[\p{L}\p{Nd}\s'.,:;()@#\/-]{0,70}$/,
+            pattern => q/^[\p{L}\p{Nd}\s'.,:;()\x{b0}@#\/-]{0,70}$/,
             message => 'Within 70 characters, Only letters, numbers, space, and these special characters are allowed: - . \' # ; : ( ) , @ /',
             name    => 'Address 2',
         },
