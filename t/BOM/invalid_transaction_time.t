@@ -22,7 +22,7 @@ my $port      = $ENV{DB_TEST_PORT} // 5432;
 my $database  = lc($client->broker_code);
 my $now       = Date::Utility->new;
 my $past_10s  = $now->minus_time_interval('10s');
-my $past_11s  = $now->minus_time_interval('11s');
+my $past_61s  = $now->minus_time_interval('61s');
 my $future_3d = $now->plus_time_interval('3d');
 my $future_4d = $now->plus_time_interval('4d');
 
@@ -69,7 +69,7 @@ SQL
 subtest 'Adding a tx 11s older than now should fail' => sub {
     _enable_trigger();
 
-    my $txn = _create_tx($past_11s->db_timestamp);
+    my $txn = _create_tx($past_61s->db_timestamp);
 
     my $error_match = qr/Transaction time is too old/;
 
