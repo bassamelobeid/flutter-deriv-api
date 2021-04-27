@@ -599,6 +599,12 @@ sub calculate_limits {
         $limits{lookback_open_position_limit} = $custom_limit if defined $custom_limit;
     }
 
+    if ($client->is_virtual) {
+        delete $limits{specific_turnover_limits};
+        delete $limits{max_turnover};
+        delete $limits{max_losses};
+    }
+
     return \%limits;
 }
 
