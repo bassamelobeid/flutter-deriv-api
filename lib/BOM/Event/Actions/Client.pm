@@ -101,9 +101,6 @@ use constant SR_CHECK_TIMEOUT                                  => 5;
 # Redis TTLs
 use constant TTL_ONFIDO_APPLICANT_CONTEXT_HOLDER => 240 * 60 * 60;                                                          # 10 days in seconds
 
-# Redis keys to stop sending new emails in a specific time
-use constant ONFIDO_POI_EMAIL_NOTIFICATION_SENT_PREFIX => 'ONFIDO::POI::EMAIL::NOTIFICATION::SENT::';
-
 # Redis key for resubmission counter
 use constant ONFIDO_RESUBMISSION_COUNTER_KEY_PREFIX => 'ONFIDO::RESUBMISSION_COUNTER::ID::';
 use constant ONFIDO_RESUBMISSION_COUNTER_TTL        => 2592000;                                                             # 30 days (in seconds)
@@ -426,10 +423,7 @@ async sub ready_for_authentication {
 
         if ($resubmission_flag) {
             # The following redis keys block email sending on client verification failure. We might clear them for resubmission
-            my @delete_on_resubmission = (
-                ONFIDO_AGE_BELOW_EIGHTEEN_EMAIL_PER_USER_PREFIX . $client->binary_user_id,
-                ONFIDO_POI_EMAIL_NOTIFICATION_SENT_PREFIX . $client->binary_user_id,
-            );
+            my @delete_on_resubmission = (ONFIDO_AGE_BELOW_EIGHTEEN_EMAIL_PER_USER_PREFIX . $client->binary_user_id,);
 
             await $redis_events_write->connect;
             foreach my $email_blocker (@delete_on_resubmission) {
@@ -1469,22 +1463,6 @@ async sub _send_CS_email_POA_uploaded {
     # don't send POA notification if client is not age verified
     # POA don't make any sense if client is not age verified
     return undef unless $client->status->age_verification;
-
-    # Checking if we already sent a notification for POA
-    # redis replicated is used as this key is used in BO too
-    my $redis_replicated_write = _redis_replicated_write();
-    await $redis_replicated_write->connect;
-
-    return undef unless await $redis_replicated_write->hsetnx('EMAIL_NOTIFICATION_POA', $client->binary_user_id, 1);
-
-    unless ($client->landing_company->is_eu) {
-
-        my $redis_events_read = _redis_events_read();
-        await $redis_events_read->connect;
-
-        # We should not send any POA notification if we already sent POI notification.
-        return if await $redis_events_read->get(ONFIDO_POI_EMAIL_NOTIFICATION_SENT_PREFIX . $client->binary_user_id);
-    }
 
     my $from_email = $brand->emails('no-reply');
     my $to_email   = $brand->emails('authentications');

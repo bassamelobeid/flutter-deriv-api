@@ -1255,7 +1255,6 @@ subtest 'onfido resubmission' => sub {
 
     # These keys blocks email sending on client verification failure
     use constant ONFIDO_AGE_BELOW_EIGHTEEN_EMAIL_PER_USER_PREFIX => 'ONFIDO::AGE::BELOW::EIGHTEEN::EMAIL::PER::USER::';
-    use constant ONFIDO_POI_EMAIL_NOTIFICATION_SENT_PREFIX       => 'ONFIDO::POI::EMAIL::NOTIFICATION::SENT::';
     # This key gives resubmission context to onfido webhook event
     use constant ONFIDO_IS_A_RESUBMISSION_KEY_PREFIX => 'ONFIDO::IS_A_RESUBMISSION::ID::';
 
@@ -1349,7 +1348,6 @@ subtest 'onfido resubmission' => sub {
         applicant_id => $applicant_id
     };
     $redis_events->set(ONFIDO_AGE_BELOW_EIGHTEEN_EMAIL_PER_USER_PREFIX . $test_client->binary_user_id, 1)->get;
-    $redis_events->set(ONFIDO_POI_EMAIL_NOTIFICATION_SENT_PREFIX . $test_client->binary_user_id,       1)->get;
     $redis_write->del(ONFIDO_IS_A_RESUBMISSION_KEY_PREFIX . $test_client->binary_user_id)->get;
     $action_handler->($call_args)->get;
     $counter_after = $redis_write->get(ONFIDO_RESUBMISSION_COUNTER_KEY_PREFIX . $test_client->binary_user_id)->get;
@@ -1357,9 +1355,7 @@ subtest 'onfido resubmission' => sub {
     is($counter + 1, $counter_after, 'Resubmission Counter has been incremented by 1');
 
     my $age_below_eighteen_per_user = $redis_events->get(ONFIDO_AGE_BELOW_EIGHTEEN_EMAIL_PER_USER_PREFIX . $test_client->binary_user_id)->get;
-    my $poi_email_sent              = $redis_events->get(ONFIDO_POI_EMAIL_NOTIFICATION_SENT_PREFIX . $test_client->binary_user_id)->get;
     ok(!$age_below_eighteen_per_user, 'Email blocker is gone');
-    ok(!$poi_email_sent,              'Email blocker is gone');
 
     my $resubmission_context = $redis_write->get(ONFIDO_IS_A_RESUBMISSION_KEY_PREFIX . $test_client->binary_user_id)->get;
     ok($resubmission_context, 'Resubmission Context is set');
@@ -1734,6 +1730,26 @@ subtest 'withdrawal_limit_reached' => sub {
     is $test_client->status->reason('allow_document_upload'), 'WITHDRAWAL_LIMIT_REACHED', 'Allow Document upload with custom reason set';
 
     $client_mock->unmock_all;
+};
+
+subtest 'POA email notification' => sub {
+    my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+    });
+
+    $test_client->status->setnx('age_verification', 'test', 'test');
+
+    mailbox_clear();
+    BOM::Event::Actions::Client::_send_CS_email_POA_uploaded($test_client)->get;
+
+    my $msg = mailbox_search(subject => qr/New uploaded POA document for/);
+    ok $msg, 'First email sent';
+
+    mailbox_clear();
+    BOM::Event::Actions::Client::_send_CS_email_POA_uploaded($test_client)->get;
+
+    $msg = mailbox_search(subject => qr/New uploaded POA document for/);
+    ok $msg, 'Second email sent';
 };
 
 done_testing();
