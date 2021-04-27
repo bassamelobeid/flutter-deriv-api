@@ -1225,15 +1225,12 @@ sub _set_age_verification {
     _email_client_age_verified($client);
 
     $setter->($client);
-    # gb residents cant use demo account while not age verified.
-    # should remove unwelcome status once respective MX or MF marked
-    # as age verified.
-    if ($client->residence eq 'gb') {
+
+    # gb residents cannot trade synthetics on demo account while not age verified
+    my $config = request()->brand->countries_instance->countries_list->{$client->residence};
+    if ($config->{require_age_verified_for_synthetic}) {
         my $vr_acc = BOM::User::Client->new({loginid => $client->user->bom_virtual_loginid});
-        if ($vr_acc->status->unwelcome and $vr_acc->status->unwelcome->{reason} eq 'Pending proof of age') {
-            $vr_acc->status->clear_unwelcome;
-            $setter->($vr_acc);
-        }
+        $setter->($vr_acc);
     }
 
     # We should sync age verification between allowed landing companies.
