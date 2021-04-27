@@ -223,8 +223,9 @@ sub _process_commission {
 
     return [values %$existing_config] unless $args;
 
-    my $underlying_symbol  = $args->{underlying_symbol};
-    my $finance_underlying = eval { Finance::Underlying->by_symbol($underlying_symbol) } if $underlying_symbol and $underlying_symbol =~ /^(frx|WLD)/;
+    my $finance_underlying;
+    my $underlying_symbol = $args->{underlying_symbol};
+    $finance_underlying = eval { Finance::Underlying->by_symbol($underlying_symbol) } if $underlying_symbol and $underlying_symbol =~ /^(frx|WLD)/;
 
     my $foreign_curr  = '';
     my $domestic_curr = '';

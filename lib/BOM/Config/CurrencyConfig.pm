@@ -220,6 +220,7 @@ sub get_mt5_transfer_limit_by_brand {
 
     $result->{maximum} = $maximum_config->{$brand} if $maximum_config->{$brand};
     $result->{minimum} = $minimum_config->{$brand} if $minimum_config->{$brand};
+
     return $result;
 }
 
@@ -303,7 +304,8 @@ Returns the allowed age for exchange rate quote in seconds.
 =cut
 
 sub rate_expiry {
-    my @types  = map { LandingCompany::Registry::get_currency_type($_) } @_;
+    my @args   = @_;
+    my @types  = map { LandingCompany::Registry::get_currency_type($_) } @args;
     my %config = map { $_ => app_config()->get('payments.transfer_between_accounts.exchange_rate_expiry.' . $_) } qw( fiat fiat_holidays crypto );
 
     my $reader   = BOM::Config::Chronicle::get_chronicle_reader;

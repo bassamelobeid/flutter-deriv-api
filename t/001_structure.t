@@ -1,6 +1,8 @@
-use Test::More tests => 2;
 use strict;
 use warnings;
+
+use Test::More tests => 2;
+use Test::Warnings;
 
 # Skip the module name that appear in comment lines. like the format in the following line:
 # lib/BOM/Config.pm:# This is a comment line that include 'BOM::Test'
