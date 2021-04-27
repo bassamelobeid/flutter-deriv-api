@@ -206,7 +206,7 @@ subtest 'create account failed' => sub {
             my $res = $t->await::new_account_real(\%details);
 
             is($res->{error}->{code},    'InvalidAccountRegion', 'restricted country - US');
-            is($res->{new_account_real}, undef,            'NO account created');
+            is($res->{new_account_real}, undef,                  'NO account created');
         };
 
         subtest 'invalid - xx' => sub {
@@ -219,7 +219,7 @@ subtest 'create account failed' => sub {
             my $res = $t->await::new_account_real(\%details);
 
             is($res->{error}->{code},    'InvalidAccountRegion', 'invalid country - xx');
-            is($res->{new_account_real}, undef,            'NO account created');
+            is($res->{new_account_real}, undef,                  'NO account created');
         };
     };
 
@@ -371,6 +371,32 @@ subtest 'validate phone field' => sub {
         my $res = $t->await::new_account_real(\%details);
         is($res->{error}->{code}, 'InvalidPhone', 'phone can not contain more than 3 special characters in a row.');
     };
+};
+
+subtest 'Address validation' => sub {
+    my ($vr_client, $user) = create_vr_account({
+        email           => 'addr@binary.com',
+        client_password => 'abc123',
+        residence       => 'br',
+    });
+
+    my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $vr_client->loginid);
+    $t->await::authorize({authorize => $token});
+    my $cli_details = {
+        %client_details,
+        residence      => 'br',
+        first_name     => 'Homer',
+        last_name      => 'Thompson',
+        address_line_1 => '123° Fake Street',
+        address_line_2 => '123º Evergreen Terrace',
+    };
+
+    my $res = $t->await::new_account_real($cli_details);
+    test_schema('new_account_real', $res);
+
+    my $cli = BOM::User::Client->new({loginid => $res->{new_account_real}->{client_id}});
+    is $cli->address_line_1, $cli_details->{address_line_1}, 'Expected address line 1';
+    is $cli->address_line_2, $cli_details->{address_line_2}, 'Expected address line 2';
 };
 
 sub create_vr_account {

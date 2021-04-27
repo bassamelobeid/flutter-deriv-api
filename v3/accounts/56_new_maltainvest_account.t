@@ -826,6 +826,34 @@ subtest 'validate phone field' => sub {
     };
 };
 
+subtest 'Address validation' => sub {
+    # create VR acc, authorize
+    my ($vr_client, $user) = create_vr_account({
+        email           => 'addr1+de@binary.com',
+        client_password => 'abc123',
+        residence       => 'de',
+    });
+    my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $vr_client->loginid);
+    $t->await::authorize({authorize => $token});
+
+    my %details = (%client_details, %$mf_details);
+    delete $details{new_account_real};
+    $details{first_name}                = "Homer";
+    $details{last_name}                 = "Thompson";
+    $details{address_line_1}            = "123° Fake Street";
+    $details{address_line_2}            = "123º Evergreen Terrace";
+    $details{residence}                 = 'de';
+    $details{phone}                     = '+442072343457';
+    $details{tax_identification_number} = '11122233344';
+
+    my $res = $t->await::new_account_maltainvest(\%details);
+    test_schema('new_account_maltainvest', $res);
+
+    my $cli = BOM::User::Client->new({loginid => $res->{new_account_maltainvest}->{client_id}});
+    is $cli->address_line_1, $details{address_line_1}, 'Expected address line 1';
+    is $cli->address_line_2, $details{address_line_2}, 'Expected address line 2';
+};
+
 sub create_vr_account {
     my $args   = shift;
     my $params = {
