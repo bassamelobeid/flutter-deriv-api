@@ -54,6 +54,9 @@ sub verify {
     my $c      = shift;
     my $app_id = defang($c->req->json->{app_id}) or return $c->_unauthorized;
     my $expire = time + CHALLENGE_TIMEOUT;
+    my $model  = BOM::Database::Model::OAuth->new();
+
+    return $c->_unauthorized unless $model->is_official_app($app_id);
 
     $c->render(
         json => {
@@ -101,6 +104,7 @@ sub authorize {
     my $model = BOM::Database::Model::OAuth->new();
 
     return $c->_unauthorized unless $model->verify_app($app_id);
+    return $c->_unauthorized unless $model->is_official_app($app_id);
 
     my $solution  = defang($c->req->json->{solution});
     my $tokens    = $model->get_app_tokens($app_id);

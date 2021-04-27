@@ -31,6 +31,11 @@ my $app_id = do {
 my $api_mock = Test::MockModule->new('BOM::OAuth::RestAPI');
 $api_mock->mock('_secret', sub { 'dummy' });
 
+# Rest API is only for official apps
+my $is_official_app;
+my $model_mock = Test::MockModule->new('BOM::Database::Model::OAuth');
+$model_mock->mock('is_official_app', sub { $is_official_app });
+
 # Create a challenge from app_id and expire using the dummy secret
 my $challenger = sub {
     my ($app_id, $expire) = @_;
@@ -50,7 +55,12 @@ my $expire;
 
 subtest 'verify' => sub {
     my $url = '/api/v1/verify';
+    $is_official_app = 0;
 
+    # unofficial app is restricted
+    $post->($url, {app_id => $app_id})->status_is(401);
+
+    $is_official_app = 1;
     my $response = $post->($url, {app_id => $app_id})->status_is(200)->json_has('/challenge', 'Response has a challenge')
         ->json_has('/expire', 'Response has an expire')->tx->res->json;
 
@@ -118,10 +128,22 @@ subtest 'authorize' => sub {
             solution => $solution
         })->status_is(401);
 
-    # success
+    # activate the app
     $app->{active} = 1;
     $m->update_app($app_id, $app);
 
+    # unofficial app
+    $is_official_app = 0;
+    $post->(
+        $url,
+        {
+            app_id   => $app_id,
+            expire   => $expire,
+            solution => $solution
+        })->status_is(401);
+
+    # success
+    $is_official_app = 1;
     my $response = $post->(
         $url,
         {
