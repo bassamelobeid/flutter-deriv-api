@@ -17,7 +17,7 @@ test:
 	@$(PROVE) -I./t t/BOM
 
 syntax:
-	@$(PROVE) -I./t $(wildcard t/0*.t)
+	@$(PROVE) --norc -I./t $(wildcard t/0*.t)
 
 localize:
 	@$(PROVE) -I./t t/localize.t

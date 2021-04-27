@@ -6,6 +6,8 @@ BEGIN {
     BOM::Backoffice::PlackApp::Streaming->import();
 }
 
+use Dir::Self;
+use lib __DIR__ . '/..';
 use Test::More;
 use File::Find::Rule;
 use Test::Perl::Critic -profile => '/home/git/regentmarkets/cpan/rc/.perlcriticrc';
@@ -13,7 +15,7 @@ use Test::Strict;
 use Cwd;
 use Test::PerlTidy;
 
-my $pattern = $ARGV[0];        # confines test to just files matching this pattern.
+my $pattern = $ARGV[0] // '';    # confines test to just files matching this pattern.
 my $PATH    = Cwd::abs_path;
 my @tested_modules;
 
@@ -38,10 +40,6 @@ subtest 'Check modules which are not covered by above test' => sub {
 
 subtest 'Check syntax for pl files' => sub {
     syntax_ok($_) for get_scripts(qr/\.pl$/);
-};
-
-subtest 'Run perl critic on all modules' => sub {
-    all_critic_ok(get_scripts(qr/\.p[lm]|\.cgi$/));
 };
 
 sub get_scripts {

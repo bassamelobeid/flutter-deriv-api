@@ -1,6 +1,8 @@
 use strict;
 use warnings;
 
+use Dir::Self;
+use lib __DIR__ . '/..';
 use Test::More;
 use Test::Vars;
 
