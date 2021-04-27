@@ -26,10 +26,10 @@ unit_test_database_all:
 	@$(PROVE) t/BOM/Database/*.t
 
 syntax:
-	@$(PROVE) t/*.t
+	@$(PROVE) --norc t/*.t
 
 pod_test:
-	@$(PROVE) t/*pod*.t
+	@$(PROVE) --norc t/*pod*.t
 
 unit:
 	/etc/rmg/bin/prove -rv --timer t/unit/
