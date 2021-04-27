@@ -594,10 +594,15 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
     }
     if ($input{age_verification} and not $client->is_virtual) {
         my @allowed_lc_to_sync = @{$client->landing_company->allowed_landing_companies_for_age_verification_sync};
+
         # Apply age verification for one client per each landing company since we have a DB trigger that sync age verification between the same landing companies.
         my @clients_to_update =
             map { [$client->user->clients_for_landing_company($_)]->[0] // () } @allowed_lc_to_sync;
         push @clients_to_update, $client;
+
+        # uk clients need to be age verified to trade synthetics in vr
+        push @clients_to_update, BOM::User::Client->new({loginid => $client->user->bom_virtual_loginid}) if $client->residence eq 'gb';
+
         foreach my $client_to_update (@clients_to_update) {
             if ($input{'age_verification'} eq 'yes') {
                 $client_to_update->status->setnx('age_verification', $clerk, 'Age verified client from Backoffice.');
@@ -750,6 +755,11 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
             print
                 qq{<p class="notify notify--warning">Invalid residence change, due to different broker codes or different country restrictions.</p>};
             code_exit_BO(qq[<p><a class="link" href="$self_href">&laquo; Return to client details</a></p>]);
+        }
+
+        if ($new_residence eq 'gb' and $client->status->age_verification) {
+            my $vr_client = BOM::User::Client->new({loginid => $client->user->bom_virtual_loginid});
+            $vr_client->status->setnx('age_verification', $clerk, 'VR age verified due to residence change.');
         }
 
         do {
@@ -1672,19 +1682,6 @@ sub _residence_change_validation {
 
     my @new_lc = $get_lc->($new_residence);
     return undef unless @new_lc;
-
-# NOTE: GB residents are marked as unwelcome in their virtual, as per regulations
-    if ($data->{is_virtual_only}) {
-        my $client = $all_clients[0];
-
-        if ($new_residence eq 'gb') {
-            $client->status->setnx('unwelcome', 'SYSTEM', 'Pending proof of age');
-        } else {
-            $client->status->clear_unwelcome if $client->status->unwelcome;
-        }
-
-        return 1;
-    }
 
     # Get the list of non-virtual landing companies from created clients
     my @current_lc;

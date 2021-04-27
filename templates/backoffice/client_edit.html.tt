@@ -322,7 +322,7 @@ window.addEventListener('DOMContentLoaded', init_text_validations, false);
     <tr>
         <td class="label">Age Verified</td>
         <td>:
-            <select name="age_verification" id="age_verification">
+            <select name="age_verification" id="age_verification" [% IF client.is_virtual %]disabled[% END %]>
                 [% client_age_verified = client.status.age_verification %]
                 <option value="yes" [% IF client_age_verified %]selected="selected"[% END %]>YES</option>
                 <option value="no" [% UNLESS client_age_verified %]selected="selected"[% END %]>NO</option>
