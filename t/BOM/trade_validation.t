@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::Most tests => 8;
+use Test::Most tests => 9;
 use File::Spec;
 use YAML::XS qw(LoadFile);
 use Test::Warnings;
@@ -544,6 +544,86 @@ subtest 'validate stake limit' => sub {
         like($err->{-message_to_client}, qr/This contract's price is/, 'correct error message');
     }
     'error out on 4.9 stake for MF borker';
+};
+
+subtest 'synthetic_age_verification_check' => sub {
+
+    $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'VRTC',
+        residence   => 'id'
+    });
+    BOM::User->create(
+        email    => 'ukgc@test.com',
+        password => 'xxx'
+    )->add_client($client);
+
+    my $currency = 'USD';
+    $client->set_default_account($currency);
+
+    $client->payment_free_gift(
+        amount   => 100,
+        remark   => 'free money',
+        currency => $currency
+    );
+
+    $now = Date::Utility->new;
+    my $expiry = $now->plus_time_interval('1d');
+
+    my %contract_params = (
+        underlying   => 'R_50',
+        bet_type     => 'CALL',
+        currency     => $currency,
+        payout       => 10,
+        date_start   => Date::Utility->new($now->epoch),
+        date_pricing => $now->epoch,
+        date_expiry  => $expiry,
+        entry_tick   => $random_tick,
+        current_tick => $random_tick,
+        barrier      => 'S0P',
+    );
+
+    $contract = produce_contract({%contract_params, underlying => 'R_50'});
+
+    my $tx = BOM::Transaction->new({
+        client        => $client,
+        contract      => $contract,
+        price         => $contract->ask_price,
+        amount_type   => 'stake',
+        purchase_date => $contract->date_start,
+    });
+
+    my $mock_countries = Test::MockModule->new('Brands::Countries');
+    $mock_countries->mock(countries_list => {id => {require_age_verified_for_synthetic => 1}});
+
+    my $error = $tx->buy;
+    is $error->get_type, 'NeedAuthenticateForSynthetic', 'error code ok';
+    is $error->{-message_to_client}, 'Please authenticate your account to trade on synthetic markets.', 'error message ok';
+
+    $contract = produce_contract({%contract_params, underlying => 'frxUSDJPY'});
+
+    $tx = BOM::Transaction->new({
+        client        => $client,
+        contract      => $contract,
+        price         => $contract->ask_price,
+        amount_type   => 'stake',
+        purchase_date => $contract->date_start,
+    });
+
+    is $tx->buy, undef, 'can buy financial contract ok';
+
+    $client->status->set('age_verification', 'staff', 'testing');
+
+    $contract = produce_contract({%contract_params, underlying => 'R_50'});
+
+    $tx = BOM::Transaction->new({
+        client        => $client,
+        contract      => $contract,
+        price         => $contract->ask_price,
+        amount_type   => 'stake',
+        purchase_date => $contract->date_start,
+    });
+
+    is $tx->buy, undef, 'can buy synthetic contract when age verified';
 };
 
 done_testing();

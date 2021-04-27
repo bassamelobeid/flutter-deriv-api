@@ -725,9 +725,6 @@ sub _validate_jurisdictional_restrictions {
 Validates to make sure that the client with unwelcome status
 is not able to purchase contract.
 
-NOTE: VRTC clients (with residence of UK or IOM) needs this check, as they need
-to be age verified for contract purchases.
-
 =cut
 
 sub _validate_client_status {
@@ -919,6 +916,31 @@ sub allow_paymentagent_withdrawal {
     @all_loginids;
 
     return 0;
+}
+
+=head2 synthetic_age_verification_check
+
+If client residence has require_age_verified_for_synthetic flag,
+they must be age verified to buy synthetic contracts.
+
+=cut
+
+sub synthetic_age_verification_check {
+    my ($self, $client) = (shift, shift);
+
+    return undef if $self->transaction->contract->market->name ne 'synthetic_index';
+
+    if (request()->brand->countries_instance->countries_list->{$client->residence}{require_age_verified_for_synthetic}
+        and not $client->status->age_verification)
+    {
+        return Error::Base->cuss(
+            -quiet             => 1,
+            -type              => 'NeedAuthenticateForSynthetic',
+            -mesg              => 'Please authenticate your account to trade on synthetic markets.',
+            -message_to_client => localize('Please authenticate your account to trade on synthetic markets.'));
+    }
+
+    return undef;
 }
 
 1;
