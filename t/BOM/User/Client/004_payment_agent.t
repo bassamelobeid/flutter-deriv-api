@@ -6,6 +6,7 @@ use Test::Fatal;
 use Test::MockModule;
 use Test::FailWarnings;
 use Test::Exception;
+use Test::Deep;
 use BOM::User::Client::PaymentAgent;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
@@ -218,7 +219,7 @@ subtest 'validate payment agent details' => sub {
 
     cmp_deeply exception { $pa->validate_payment_agent_details() },
         {
-        'code'    => 'InputValidationFailed',
+        'code'    => 'RequiredFieldMissing',
         'details' => {
             fields => bag(
                 'payment_agent_name', 'url', 'information', 'supported_banks',
@@ -233,7 +234,7 @@ subtest 'validate payment agent details' => sub {
         'url'                      => 'http://abcd.com',
         'commission_withdrawal'    => 4,
         'commission_deposit'       => 5,
-        'supported_banks'          => 'Visa, bank_transfer',
+        'supported_banks'          => 'Visa,bank_transfer',
         'code_of_conduct_approval' => 0,
     );
 
@@ -247,8 +248,54 @@ subtest 'validate payment agent details' => sub {
         'Code if conduct applroval is required';
 
     $args{code_of_conduct_approval} = 1;
+
+    for my $name (qw/payment_agent_name information supported_banks/) {
+        for my $value ('_ -+,.', '_', '+', ',', '.') {
+            is_deeply exception { $pa->validate_payment_agent_details(%args, $name => $value) },
+                {
+                'code'    => 'InvalidStringValue',
+                'details' => {fields => [$name]}
+                },
+                "Expected failure for field: $name, value: <$value>";
+        }
+    }
+
+    for my $name (qw/commission_withdrawal commission_deposit/) {
+        is_deeply exception { $pa->validate_payment_agent_details(%args, $name => 'abcd') },
+            {
+            'code'    => 'InvalidNumericValue',
+            'details' => {fields => [$name]}
+            },
+            "Invalid commission value: $name, value: abcd";
+
+        for my $value (-1, 9.1) {
+            is_deeply exception { $pa->validate_payment_agent_details(%args, $name => $value) },
+                {
+                code    => 'ValueOutOfRange',
+                details => {fields => [$name]},
+                params  => [0, 9],
+                },
+                "Commission $name value $value is out of range";
+        }
+
+        is_deeply exception { $pa->validate_payment_agent_details(%args, $name => 3.001) },
+
+            {
+            'code'    => 'TooManyDecimalPlaces',
+            'details' => {fields => [$name]},
+            'params'  => [2],
+            },
+            "Invalid commission $name, value: 3.001";
+
+    }
+
     my $min_max = BOM::Config::PaymentAgent::get_transfer_min_max('USD');
-    my $result  = $pa->validate_payment_agent_details(%args);
+
+    my $result = $pa->validate_payment_agent_details(
+        %args,
+        payment_agent_name => " Nobody  ",
+        supported_banks    => 'Visa ,  bank_transfer'
+    );
     is_deeply $result,
         {
         'payment_agent_name'       => 'Nobody',
@@ -265,7 +312,7 @@ subtest 'validate payment agent details' => sub {
         'commission_withdrawal'    => 4,
         'is_authenticated'         => 0,
         'is_listed'                => 0,
-        'supported_banks'          => 'Visa, bank_transfer',
+        'supported_banks'          => 'Visa,bank_transfer',
         'code_of_conduct_approval' => 1,
         'affiliate_id'             => '',
         },
@@ -295,11 +342,11 @@ subtest 'validate payment agent details' => sub {
         'commission_deposit'       => 5,
         'max_withdrawal'           => 100,
         'commission_deposit'       => 1,
-        'commission_withdrawal'    => 3,
+        'commission_withdrawal'    => 3.01,
         'min_withdrawal'           => 10,
         'is_authenticated'         => 1,
         'is_listed'                => 1,
-        'supported_banks'          => 'Visa, bank_transfer',
+        'supported_banks'          => 'Visa,bank_transfer',
         'code_of_conduct_approval' => 1,
         'affiliate_id'             => '123abcd',
     );
@@ -327,30 +374,17 @@ subtest 'validate payment agent details' => sub {
         'Max must be larger than min';
     $args{max_withdrawal} = 2;
 
-    for my $value (-1, 10) {
-        $args{commission_deposit} = $value;
-        is_deeply exception { $pa->validate_payment_agent_details(%args) },
+    for my $commission (qw/commission_deposit commission_withdrawal/) {
+        cmp_deeply exception { $pa->validate_payment_agent_details(%args, $commission => 9.01) },
             {
-            'code'    => 'InvalidDepositCommission',
+            'code'    => ignore(),
             'details' => {
-                fields => ['commission_deposit'],
-            }
+                fields => [$commission],
             },
-            "Invalid deposit commission $value";
-    }
-    $args{commission_deposit} = 0;
-    for my $value (-1, 10) {
-        $args{commission_withdrawal} = $value;
-        is_deeply exception { $pa->validate_payment_agent_details(%args) },
-            {
-            'code'    => 'InvalidWithdrawalCommission',
-            'details' => {
-                fields => ['commission_withdrawal'],
-            }
+            'params' => [0, 9]
             },
-            "Invalid withdrawal commission $value";
+            "$commission should not exceed maximum (9)";
     }
-    $args{commission_withdrawal} = 0;
 };
 
 done_testing();

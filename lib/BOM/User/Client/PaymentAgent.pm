@@ -196,7 +196,7 @@ Returns the details with default values set (if mssing), ready to be saved into 
 
 sub validate_payment_agent_details {
     my ($self, %details) = @_;
-    my $args   = {%details};
+    my $args   = \%details;
     my $client = $self->client;
 
     # initialze non-null fields
@@ -206,14 +206,15 @@ sub validate_payment_agent_details {
     $args->{phone}          ||= $client->phone;
 
     my $error_sub = sub {
-        my ($error_code, $fields, $message) = @_;
+        my ($error_code, $fields, %extra) = @_;
         $fields = [$fields] unless ref $fields;
         return {
-            code => $error_code,
-            $message ? (message => $message) : (),
+            code    => $error_code,
             details => {
                 fields => $fields,
             },
+            $extra{params}  ? (params  => $extra{params})  : (),
+            $extra{message} ? (message => $extra{message}) : (),
         };
     };
 
@@ -221,20 +222,67 @@ sub validate_payment_agent_details {
     die "NoAccountCurrency\n" unless $client->default_account;
     die "PaymentAgentsSupended\n" if BOM::User::is_payment_agents_suspended_in_country($client->residence);
 
+    # required fields
     my @missing = grep { !$args->{$_} } qw/payment_agent_name url email phone information supported_banks/;
     push @missing, grep { not defined $args->{$_} } (qw/code_of_conduct_approval commission_deposit commission_withdrawal/);
-    die $error_sub->('InputValidationFailed', [@missing]) if @missing;
+    die $error_sub->('RequiredFieldMissing', [@missing]) if @missing;
 
+    # COC approval
     die $error_sub->('CodeOfConductNotApproved', 'code_of_conduct_approval') unless $args->{code_of_conduct_approval};
 
+    # duplicate name
     my $pa_list = $self->get_payment_agents_by_name($args->{payment_agent_name});
     die $error_sub->(
-        'DuplicateName', 'payment_agent_name', "The name <$args->{payment_agent_name}> is already taken by $pa_list->[0]->{client_loginid}"
+        'DuplicateName', 'payment_agent_name',
+        message => "The name <$args->{payment_agent_name}> is already taken by $pa_list->[0]->{client_loginid}"
         )
         if $pa_list
         and $pa_list->[0]
         and $pa_list->[0]->{client_loginid} ne $client->loginid;
 
+    my $remove_redundant_spaces = sub {
+        my $value = shift // '';
+        $value =~ s/^\s+|\s+$//g;
+        $value =~ s/\s+/ /g;
+
+        return $value;
+    };
+
+    # validate string fields
+    my @invalid_fields;
+    for (qw/payment_agent_name information/) {
+        $args->{$_} = $remove_redundant_spaces->($args->{$_});
+        push(@invalid_fields, $_) unless $args->{$_} =~ /\p{L}/;
+    }
+
+    my @supported_payment_methods = split ',', ($args->{supported_banks} // '');
+    @supported_payment_methods = map { $remove_redundant_spaces->($_) } @supported_payment_methods;
+    push(@invalid_fields, 'supported_banks')
+        unless scalar @supported_payment_methods and all { $_ =~ m/\p{L}/ } @supported_payment_methods;
+
+    die $error_sub->('InvalidStringValue', \@invalid_fields) if @invalid_fields;
+
+    # numeric vlues
+    for (qw/commission_deposit commission_withdrawal min_withdrawal max_withdrawal/) {
+        $args->{$_} //= 0;
+        push(@invalid_fields, $_) unless looks_like_number($args->{$_});
+    }
+    die $error_sub->('InvalidNumericValue', \@invalid_fields) if @invalid_fields;
+
+    # commissions
+    $args->{'commission_deposit'}    += 0;
+    $args->{'commission_withdrawal'} += 0;
+    for (qw/commission_deposit commission_withdrawal/) {
+        push(@invalid_fields, $_) unless $args->{$_} >= 0 and $args->{$_} <= MAX_PA_COMMISSION;
+    }
+    die $error_sub->('ValueOutOfRange', \@invalid_fields, params => [0, MAX_PA_COMMISSION]) if @invalid_fields;
+
+    for (qw/commission_deposit commission_withdrawal/) {
+        push(@invalid_fields, $_) unless $args->{$_} =~ m/^\d(.\d{1,2})?$/;
+    }
+    die $error_sub->('TooManyDecimalPlaces', \@invalid_fields, params => [2]) if @invalid_fields;
+
+    # withdrawal limits
     my $pa = $client->get_payment_agent;
     $args->{currency_code} ||= ($pa ? $pa->currency_code : undef) // $client->currency;
 
@@ -247,20 +295,14 @@ sub validate_payment_agent_details {
     die $error_sub->('MinWithdrawalIsNegative', ['min_withdrawal', 'max_withdrawal'])
         if ($args->{max_withdrawal} < $args->{min_withdrawal});
 
-    my $comm_depo = $args->{'commission_deposit'} + 0;
-    my $comm_with = $args->{'commission_withdrawal'} + 0;
-    die $error_sub->('InvalidDepositCommission', 'commission_deposit')
-        unless $comm_depo >= 0 and $comm_depo <= MAX_PA_COMMISSION;
-    die $error_sub->('InvalidWithdrawalCommission', 'commission_withdrawal')
-        unless $comm_with >= 0 and $comm_with <= MAX_PA_COMMISSION;
-
-    # let the empty optional field appear explicitly in the output
-    $args->{affiliate_id} //= '';
-    $args->{summary}      //= '';
-    $args->{commission_deposit}    = $comm_depo;
-    $args->{commission_withdrawal} = $comm_with;
+    # let the empty optional fields get their default values
+    $args->{affiliate_id}     //= '';
+    $args->{summary}          //= '';
     $args->{is_listed}        //= 0;
     $args->{is_authenticated} //= 0;
+
+    # rebuild supported_banks from array
+    $args->{supported_banks} = join(',', @supported_payment_methods);
 
     return $args;
 }
