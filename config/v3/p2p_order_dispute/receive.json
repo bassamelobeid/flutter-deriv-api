@@ -67,7 +67,10 @@
                         },
                         "payment_method": {
                             "description": "The payment method.",
-                            "type": "string"
+                            "type": [
+                                "null",
+                                "string"
+                            ]
                         },
                         "type": {
                             "description": "Type of the advert.",
