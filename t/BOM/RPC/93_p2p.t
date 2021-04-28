@@ -805,8 +805,7 @@ subtest 'P2P Order Info' => sub {
     };
 
     my $res = $c->call_ok(p2p_order_info => $params)->has_no_system_error->has_no_error->result;
-    cmp_deeply $res,
-        {
+    cmp_deeply $res, {
         chat_channel_url => '',
         rate_display     => '1.00',
         local_currency   => 'myr',
@@ -844,11 +843,16 @@ subtest 'P2P Order Info' => sub {
             disputer_loginid => undef,
             dispute_reason   => undef
         },
-        stash => {
+        payment_method         => undef,
+        payment_method_ids     => undef,
+        payment_method_details => undef,
+        stash                  => {
             source_bypass_verification => 0,
             app_markup_percentage      => '0',
             valid_source               => 1
-        }};
+        }
+
+    };
 };
 
 subtest 'RestrictedCountry error before PermissionDenied' => sub {

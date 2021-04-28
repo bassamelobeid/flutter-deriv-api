@@ -155,6 +155,22 @@ our %ERROR_MAP = do {
         InvalidFinalStateForDispute      => localize('This order is complete and can no longer be disputed.'),
         TemporaryBar                     =>
             localize("You've been temporarily barred from using our services due to multiple cancellation attempts. Try again after [_1]."),
+        PaymentMethodNotFound     => localize('The payment method ID does not exist.'),
+        InvalidPaymentMethodField => localize('[_1] is not a valid field for payment method [_2].'),
+        InvalidPaymentMethod      => localize('Invalid payment method provided: [_1].'),
+        MissingPaymentMethodField => localize('[_1] is a required field for payment method [_2]. Please provide a value.'),
+        DuplicatePaymentMethod    => localize('You have a payment method with the same values for [_1].'),
+        PaymentMethodUsedByAd     =>
+            localize('This payment method is in use by the following ad(s): [_1]. Please add other payment methods to the ad, or deactivate the ad.'),
+        PaymentMethodUsedByOrder    => localize('This payment method is in use by the following order(s): [_1]. Please wait until it completes.'),
+        PaymentMethodInUse          => localize('This payment method is in use by multiple ads and/or orders, and cannot be deleted or deactivated.'),
+        AdvertNoPaymentMethod       => localize('This advert has no payment methods. Please add at least one before activating it.'),
+        InvalidPaymentMethods       => localize('Invalid payment methods provided.'),
+        ActivePaymentMethodRequired => localize('At least one active payment method is required.'),
+        AdvertPaymentMethodRequired => localize("Please provide a payment method."),
+        PaymentMethodRemoveActiveOrders => localize('You must keep a [_1] payment method on this advert while it has active orders.'),
+        PaymentMethodNotInAd            => localize('[_1] is not available as a payment method for this advert.'),
+        PaymentMethodParam              => localize('payment_method field can not be updated for sell ads.'),
     );
 };
 
