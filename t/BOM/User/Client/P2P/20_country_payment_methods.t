@@ -87,22 +87,4 @@ subtest p2p_payment_methods => sub {
 
 };
 
-subtest 'p2p_advertiser_payment_methods' => sub {
-    my $client = BOM::Test::Helper::P2P::create_advertiser;
-
-    cmp_deeply(
-        $client->p2p_advertiser_payment_methods,
-        {
-            1 => {
-                method     => 'bank_transfer',
-                is_enabled => 1,
-                fields     => {
-                    bank_name => 'placeholder',
-                    account   => 'placeholder',
-                }}
-        },
-        'dummy data returned for now'
-    );
-};
-
 done_testing();

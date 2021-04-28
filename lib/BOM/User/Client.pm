@@ -13,7 +13,7 @@ use Syntax::Keyword::Try;
 use Email::Address::UseXS;
 use Email::Stuffer;
 use Date::Utility;
-use List::Util qw(all first any min max none);
+use List::Util qw(all first any min max none pairgrep uniq);
 use Array::Utils qw(array_minus intersect);
 use Locale::Country::Extra;
 use Text::Trim qw(trim);
@@ -91,6 +91,11 @@ sub DOCUMENT_TYPE_CATEGORIES {
 
 use constant {
     P2P_TOKEN_MIN_EXPIRY => 2 * 60 * 60,    # 2 hours
+                                            # Statuses here should match the DB function p2p.is_status_final.
+    P2P_ORDER_STATUS     => {
+        active => [qw(pending buyer-confirmed timed-out disputed)],
+        final  => [qw(completed cancelled refunded dispute-refunded dispute-completed)],
+    },
 
     MT5_REGEX                           => qr/^MT[DR]?(?=\d+$)/,
     VIRTUAL_REGEX                       => qr/^VR/,
@@ -2412,23 +2417,42 @@ sub p2p_advert_create {
             message_params => [0]};
     }
 
-    die +{error_code => 'AdvertPaymentContactInfoNotAllowed'}
-        if $param{type} eq 'buy' && (trim($param{payment_info}) || trim($param{contact_info}));
+    if ($param{type} eq 'buy') {
+        die +{error_code => 'AdvertPaymentContactInfoNotAllowed'}
+            if trim($param{payment_info})
+            or trim($param{contact_info})
+            or ($param{payment_method_ids} && $param{payment_method_ids}->@*);
 
-    die +{error_code => 'AdvertPaymentInfoRequired'}
-        if $param{type} eq 'sell' && !trim($param{payment_info});
+        my @methods = $self->_validate_advert_payment_method($param{payment_method});
+        die +{error_code => 'AdvertPaymentMethodRequired'} unless @methods;
+        $param{payment_method} = join ',', @methods;
+    }
 
-    die +{error_code => 'AdvertContactInfoRequired'}
-        if $param{type} eq 'sell' && !trim($param{contact_info});
+    if ($param{type} eq 'sell') {
+        die +{error_code => 'AdvertContactInfoRequired'} unless trim($param{contact_info});
+
+        if ($param{payment_method_ids} && $param{payment_method_ids}->@*) {
+            delete $param{payment_method};    # for backwards compatibility, we'll keep it unless payment_method_ids is sent
+            my $methods = $self->_p2p_advertiser_payment_methods(advertiser_id => $advertiser_info->{id});
+            die +{error_code => 'InvalidPaymentMethods'}       unless all { exists $methods->{$_} } $param{payment_method_ids}->@*;
+            die +{error_code => 'ActivePaymentMethodRequired'} unless any { $methods->{$_}{is_enabled} } $param{payment_method_ids}->@*;
+        } elsif (trim($param{payment_info}) and trim($param{payment_method})) {
+            my @methods = $self->_validate_advert_payment_method($param{payment_method});
+            die +{error_code => 'AdvertPaymentInfoRequired'} unless @methods;
+            $param{payment_method} = join ',', @methods;
+        } else {
+            die +{error_code => 'AdvertPaymentInfoRequired'};
+        }
+    }
 
     my $advert = $self->db->dbic->run(
         fixup => sub {
             $_->selectrow_hashref(
-                'SELECT * FROM p2p.advert_create(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                'SELECT * FROM p2p.advert_create(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
                 undef,
                 $advertiser_info->{id},
                 @param{
-                    qw/type account_currency local_currency country amount rate min_order_amount max_order_amount description payment_method payment_info contact_info/
+                    qw/type account_currency local_currency country amount rate min_order_amount max_order_amount description payment_method payment_info contact_info payment_method_ids/
                 });
         });
 
@@ -2437,7 +2461,7 @@ sub p2p_advert_create {
 
 =head2 p2p_advert_info
 
-Get a single advert by $id.
+Get a single advert by id.
 
 =cut
 
@@ -2491,17 +2515,60 @@ sub p2p_advert_update {
     my $id          = delete $param{id}                   or die +{error_code => 'AdvertNotFound'};
     my $advert_info = $self->_p2p_adverts(id => $id)->[0] or die +{error_code => 'AdvertNotFound'};
 
-    die +{error_code => 'PermissionDenied'} if $advert_info->{advertiser_loginid} ne $self->loginid;
+    die +{error_code => 'PermissionDenied'}   if $advert_info->{advertiser_loginid} ne $self->loginid;
+    die +{error_code => 'PaymentMethodParam'} if $param{payment_method} and $advert_info->{type} eq 'sell';
 
     # return current advert details if nothing changed
-    unless ($param{delete} or grep { exists $advert_info->{$_} and $param{$_} ne $advert_info->{$_} } keys %param) {
+    unless ($param{delete} or $param{payment_method_ids} or grep { exists $advert_info->{$_} and $param{$_} ne $advert_info->{$_} } keys %param) {
         delete $advert_info->@{qw/max_order_amount_actual advertiser_completion/};    # not usually returned by this call
         return $self->_advert_details([$advert_info])->[0];
     }
 
-    # throw error if re-enabling this ad will cause duplicates or exceed limits
     if ($param{is_active}) {
+        # throw error if re-enabling this ad will cause duplicates or exceed limits
         $self->_validate_advert_limits($advert_info->%*);
+
+        # a disabled ad might have had its payment methods disabled or deleted
+        die +{error_code => 'AdvertNoPaymentMethod'}
+            if ((!$advert_info->{payment_method}) and (!$param{payment_method_ids}) and $advert_info->{type} eq 'sell');
+    }
+
+    if (defined $param{payment_method}) {
+        my @methods = $self->_validate_advert_payment_method($param{payment_method});
+        @methods ? $param{payment_method} = join ',', @methods : delete $param{payment_method};
+    }
+
+    if (defined $param{payment_method_ids}) {
+        die +{error_code => 'AdvertPaymentContactInfoNotAllowed'} if $advert_info->{type} eq 'buy';
+
+        my $methods = $self->_p2p_advertiser_payment_methods(advertiser_id => $advert_info->{advertiser_id});
+
+        die +{error_code => 'InvalidPaymentMethods'}
+            unless all { exists $methods->{$_} } $param{payment_method_ids}->@*;
+
+        my @method_names = map { $methods->{$_}{method} } grep { $methods->{$_}{is_enabled} } $param{payment_method_ids}->@*;
+
+        # if ad is active at least one active payment method must be provided
+        if ($param{is_active} or $advert_info->{is_active}) {
+            die +{error_code => 'ActivePaymentMethodRequired'} unless @method_names;
+        }
+
+        if ($advert_info->{active_orders} > 0) {
+            my @ad_methods     = split ',', $advert_info->{payment_method};
+            my $removed_method = first {
+                my $m = $_;
+                none { $m eq $_ } @method_names
+            }
+            @ad_methods;
+            if ($removed_method) {
+                my $method_defs = $self->p2p_payment_methods;
+                die +{
+                    error_code     => 'PaymentMethodRemoveActiveOrders',
+                    message_params => [$method_defs->{$removed_method}{display_name}]};
+            }
+        }
+
+        delete $param{payment_method};
     }
 
     my $update = $self->db->dbic->run(
@@ -2519,8 +2586,8 @@ sub p2p_advert_update {
                 die +{error_code => 'OpenOrdersDeleteAdvert'} if @$open_orders;
             }
 
-            $dbh->selectrow_hashref('SELECT * FROM p2p.advert_update(?, ?, ?, ?, ?, ?, ?)',
-                undef, $id, @param{qw/is_active delete description payment_method payment_info contact_info/});
+            $dbh->selectrow_hashref('SELECT * FROM p2p.advert_update(?, ?, ?, ?, ?, ?, ?, ?)',
+                undef, $id, @param{qw/is_active delete description payment_method payment_info contact_info payment_method_ids/});
         });
 
     return $self->_advert_details([$update])->[0];
@@ -2589,19 +2656,51 @@ sub p2p_order_create {
     my ($order_type, $amount_advertiser, $amount_client);
 
     if ($advert_type eq 'buy') {
-        $order_type = 'sell';
-        die +{error_code => 'OrderCreateFailClientBalance'} if $amount > $self->balance_for_cashier('p2p');
-        die +{error_code => 'OrderPaymentInfoRequired'}     if !trim($param{payment_info});
-        die +{error_code => 'OrderContactInfoRequired'}     if !trim($param{contact_info});
+
+        $order_type        = 'sell';
         $amount_advertiser = $amount;
         $amount_client     = -$amount;
+
+        die +{error_code => 'OrderCreateFailClientBalance'} if $amount > $self->balance_for_cashier('p2p');
+        die +{error_code => 'OrderPaymentInfoRequired'}
+            unless trim($param{payment_info})
+            or ($param{payment_method_ids} && $param{payment_method_ids}->@*);
+        die +{error_code => 'OrderContactInfoRequired'} if !trim($param{contact_info});
+
+        if ($param{payment_method_ids} && $param{payment_method_ids}->@*) {
+            my $methods = $self->_p2p_advertiser_payment_methods(advertiser_id => $client_info->{id});
+            die +{error_code => 'InvalidPaymentMethods'} unless all { exists $methods->{$_} } $param{payment_method_ids}->@*;
+            my @order_methods = map { $methods->{$_}{method} } grep { $methods->{$_}{is_enabled} } $param{payment_method_ids}->@*;
+            die +{error_code => 'ActivePaymentMethodRequired'} unless @order_methods;
+            my @ad_methods     = split ',', $advert_info->{payment_method};
+            my $invalid_method = first {
+                my $m = $_;
+                none { $m eq $_ } @ad_methods
+            }
+            @order_methods;
+            if ($invalid_method) {
+                my $method_defs = $self->p2p_payment_methods;
+                die +{
+                    error_code     => 'PaymentMethodNotInAd',
+                    message_params => [$method_defs->{$invalid_method}{display_name}]} if $invalid_method;
+            }
+
+        }
+
     } elsif ($advert_type eq 'sell') {
-        $order_type = 'buy';
-        die +{error_code => 'OrderCreateFailAdvertiser'}         if $amount > $advertiser->balance_for_cashier('p2p');
-        die +{error_code => 'OrderPaymentContactInfoNotAllowed'} if $payment_info or $contact_info;
-        ($payment_info, $contact_info) = $advert_info->@{qw/payment_info contact_info/};
+
+        $order_type        = 'buy';
         $amount_advertiser = -$amount;
         $amount_client     = $amount;
+
+        die +{error_code => 'OrderCreateFailAdvertiser'} if $amount > $advertiser->balance_for_cashier('p2p');
+        die +{error_code => 'OrderPaymentContactInfoNotAllowed'}
+            if $payment_info
+            or $contact_info
+            or ($param{payment_method_ids} && $param{payment_method_ids}->@*);
+
+        ($payment_info, $contact_info) = $advert_info->@{qw/payment_info contact_info/};
+
     } else {
         die 'Invalid advert type ' . ($advert_type // 'undef') . ' for advert ' . $advert_info->{id};
     }
@@ -2681,9 +2780,14 @@ sub p2p_order_create {
                     $locked_advert->{account_currency}]}
                 if $amount < ($locked_advert->{min_order_amount} // 0);
 
-            return $dbh->selectrow_hashref('SELECT * FROM p2p.order_create(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-                undef, $advert_id, $self->loginid, $escrow->loginid, $amount, $expiry, $payment_info, $contact_info, $source, $self->loginid,
-                $limit_per_day_per_client, $txn_time);
+            return $dbh->selectrow_hashref(
+                'SELECT * FROM p2p.order_create(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, NULL, NULL, ?)', undef,
+                $advert_id,                                                                             $self->loginid,
+                $escrow->loginid,                                                                       $amount,
+                $expiry,                                                                                $payment_info,
+                $contact_info,                                                                          $source,
+                $self->loginid,                                                                         $limit_per_day_per_client,
+                $txn_time,                                                                              $param{payment_method_ids});
         });
 
     my $redis = BOM::Config::Redis->redis_p2p_write();
@@ -2705,6 +2809,7 @@ sub p2p_order_create {
         );
     }
 
+    $order->{payment_method_details} = $self->_p2p_order_payment_method_details($order);
     return $self->_order_details([$order])->[0];
 }
 
@@ -2720,11 +2825,13 @@ sub p2p_order_info {
     my $id = $param{id} // return;
 
     # ensure client can only see their orders
-    my $list = $self->_p2p_orders(
+    my $order = $self->_p2p_orders(
         id      => $id,
         loginid => $self->loginid
-    );
-    return $self->_order_details($list)->[0];
+    )->[0] // return;
+
+    $order->{payment_method_details} = $self->_p2p_order_payment_method_details($order);
+    return $self->_order_details([$order])->[0];
 }
 
 =head2 p2p_order_list
@@ -2737,10 +2844,7 @@ sub p2p_order_list {
     my ($self, %param) = @_;
 
     $param{loginid} = $self->loginid;
-    $param{status} =
-        $param{active}
-        ? ['pending',   'buyer-confirmed', 'timed-out', 'disputed']
-        : ['completed', 'cancelled', 'refunded', 'dispute-refunded', 'dispute-completed']
+    $param{status}  = $param{active} ? P2P_ORDER_STATUS->{active} : P2P_ORDER_STATUS->{final}
         if exists $param{active};
 
     my $list = $self->_p2p_orders(%param);
@@ -3025,9 +3129,8 @@ sub p2p_create_order_dispute {
     die +{error_code => 'InvalidReasonForSeller'} if not $buyer and $dispute_reason eq 'seller_not_released';
 
     # We allow buyer-confirmed due to FE relying on expire_time to show complain button.
-    die +{error_code => 'OrderUnderDispute'} if $order->{status} eq 'disputed';
-    die +{error_code => 'InvalidFinalStateForDispute'}
-        if grep { $order->{status} eq $_ } qw/completed refunded cancelled dispute-completed dispute-refunded/;
+    die +{error_code => 'OrderUnderDispute'}           if $order->{status} eq 'disputed';
+    die +{error_code => 'InvalidFinalStateForDispute'} if $self->_is_order_status_final($order->{status});
     die +{error_code => 'InvalidStateForDispute'} unless grep { $order->{status} eq $_ } qw/timed-out buyer-confirmed/;
     # Confirm the order is expired
     die +{error_code => 'InvalidStateForDispute'} unless $order->{is_expired};
@@ -3147,6 +3250,12 @@ sub p2p_resolve_order_dispute {
     return undef;
 }
 
+=head2 p2p_order_update
+
+Updates an order. Only payment methods can be updated at this point.
+
+=cut
+
 =head1 Non-RPC P2P methods
 
 The methods below are not called by RPC and, therefore, they are not needed to die in the 'P2P way'.
@@ -3193,7 +3302,7 @@ sub p2p_expire_order {
     die 'Invalid order provided to p2p_expire_order' unless $old_status;
     $new_status //= '';
 
-    my $order_complete     = any { $old_status eq $_ } qw(cancelled refunded completed disputed dispute-completed dispute-refunded);
+    my $order_complete     = ($self->_is_order_status_final($old_status) or $old_status eq 'disputed');
     my $hit_expire_refund  = ($old_status eq 'pending'         and $new_status eq 'refunded');
     my $hit_timeout        = ($old_status eq 'buyer-confirmed' and $new_status eq 'timed-out');
     my $hit_timeout_refund = ($old_status eq 'timed-out'       and $new_status eq 'refunded');
@@ -3318,11 +3427,11 @@ sub _p2p_adverts {
     $self->db->dbic->run(
         fixup => sub {
             $_->selectall_arrayref(
-                'SELECT * FROM p2p.advert_list(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                'SELECT * FROM p2p.advert_list(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
                 {Slice => {}},
                 @param{
                     qw/id account_currency advertiser_id is_active type country can_order max_order advertiser_is_listed advertiser_is_approved
-                        client_loginid limit offset show_deleted sort_by advertiser_name reversible_limit reversible_lookback/
+                        client_loginid limit offset show_deleted sort_by advertiser_name reversible_limit reversible_lookback payment_method/
                 });
         }) // [];
 }
@@ -3353,6 +3462,59 @@ sub _p2p_orders {
                 {Slice => {}},
                 @param{qw/id advert_id loginid status limit offset/});
         }) // [];
+}
+
+=head2 _p2p_advertiser_payment_methods
+
+Gets advertiser payment methods from DB.
+Returns hashref keyed by id.
+
+=cut
+
+sub _p2p_advertiser_payment_methods {
+    my ($self, %param) = @_;
+
+    my $result = $self->db->dbic->run(
+        fixup => sub {
+            $_->selectall_hashref(
+                'SELECT * FROM p2p.advertiser_payment_method_list(?, ?, ?, ?)',
+                'id',
+                {Slice => {}},
+                @param{qw/advertiser_id advert_id order_id is_enabled/});
+        }) // {};
+
+    for my $item (values %$result) {
+        delete $item->{id};
+        $item->{fields} = $json->decode(delete $item->{params});
+    }
+    return $result;
+}
+
+=head2 _p2p_order_payment_method_details
+
+Gets the active payment methods for a given order.
+Completed orders are ignored.
+
+=cut
+
+sub _p2p_order_payment_method_details {
+    my ($self, $order) = @_;
+
+    return if $self->_is_order_status_final($order->{status});
+
+    my $methods =
+        $order->{type} eq 'buy'
+        ? $self->_p2p_advertiser_payment_methods(
+        advert_id  => $order->{advert_id},
+        is_enabled => 1
+        )
+        : $self->_p2p_advertiser_payment_methods(
+        order_id   => $order->{id},
+        is_enabled => 1
+        );
+
+    return undef unless %$methods;
+    return [map { {method => $_->{method}, $_->{fields}->%*} } values %$methods];
 }
 
 =head2 _order_ownership_type
@@ -3690,7 +3852,7 @@ sub _advert_details {
                     max_order_amount_display => formatnumber('amount', $advert->{account_currency}, $advert->{max_order_amount}),
                     remaining_amount         => financialrounding('amount', $advert->{account_currency}, $advert->{remaining}),
                     remaining_amount_display => formatnumber('amount', $advert->{account_currency}, $advert->{remaining}),
-                    )
+                    payment_method_ids       => $advert->{payment_method_ids})
                 : ()
             ),
             advertiser_details => {
@@ -3774,12 +3936,27 @@ sub _order_details {
                 dispute_reason   => $order->{dispute_reason},
                 disputer_loginid => $order->{disputer_loginid},
             },
+            (exists $order->{payment_method_ids} and $self->loginid eq $order->{client_loginid})
+            ? (payment_method_ids => $order->{payment_method_ids})
+            : (),    # only order creator can see this field
+            (exists $order->{payment_method})         ? (payment_method         => $order->{payment_method})         : (),
+            (exists $order->{payment_method_details}) ? (payment_method_details => $order->{payment_method_details}) : (),
         };
-
         push @results, $result;
     }
 
     return \@results;
+}
+
+=head2 _is_order_status_final
+
+Returns true if the status is final.
+
+=cut
+
+sub _is_order_status_final {
+    my (undef, $status) = @_;
+    return any { $status eq $_ } P2P_ORDER_STATUS->{final}->@*;
 }
 
 =head2 _validate_advert_amounts
@@ -3862,6 +4039,26 @@ sub _validate_advert_limits {
     @ads_by_criteria;
 
     return;
+}
+
+=head2 _validate_advert_payment_method
+
+Parse and validate payment_method field for p2p_advert_create and p2p_advert_update.
+
+=cut
+
+sub _validate_advert_payment_method {
+    my ($self, $input) = @_;
+
+    my @methods        = sort { $a cmp $b } uniq map { trim($_) } split ',', $input;
+    my $method_defs    = $self->p2p_payment_methods;
+    my $invalid_method = first { !exists $method_defs->{$_} } @methods;
+
+    die +{
+        error_code     => 'InvalidPaymentMethod',
+        message_params => [$invalid_method]} if $invalid_method;
+
+    return @methods;
 }
 
 sub _p2p_rate_format {
@@ -4309,7 +4506,7 @@ sub p2p_payment_methods {
 
 =head2 p2p_advertiser_payment_methods
 
-Get the list of status changes of the specified order.
+Sets and returns advertiser payment methods.
 
 Takes the following named parameters, all optional:
 
@@ -4328,20 +4525,221 @@ Returns hashref compatible with websocket schema.
 =cut
 
 sub p2p_advertiser_payment_methods {
-    my ($self) = @_;
+    my ($self, %param) = @_;
 
-    my $advertiser_info = $self->_p2p_advertisers(loginid => $self->loginid)->[0];
-    die +{error_code => 'AdvertiserNotRegistered'} unless $advertiser_info;
+    my $advertiser = $self->_p2p_advertiser_cached;
+    die +{error_code => 'AdvertiserNotRegistered'} unless $advertiser;
 
-    # return dummy data for now
-    return {
-        1 => {
-            method     => 'bank_transfer',
-            is_enabled => 1,
-            fields     => {
-                bank_name => 'placeholder',
-                account   => 'placeholder',
-            }}};
+    my $existing = $self->_p2p_advertiser_payment_methods(advertiser_id => $advertiser->{id});
+    return $existing unless %param;
+
+    my $method_defs = $self->p2p_payment_methods;
+
+    $existing = $self->_p2p_advertiser_payment_method_delete($existing, $param{delete})               if $param{delete};
+    $existing = $self->_p2p_advertiser_payment_method_update($method_defs, $existing, $param{update}) if $param{update};
+    $self->_p2p_advertiser_payment_method_create($method_defs, $existing, $param{create}) if $param{create};
+
+    return $self->_p2p_advertiser_payment_methods(advertiser_id => $advertiser->{id});
+}
+
+=head2 _p2p_advertiser_payment_method_delete
+
+Deletes advertiser payment methods.
+
+Takes the following parameters:
+
+=over 4
+
+=item * existing: hashref of existing methods
+
+=item * deletes: arrayref of ids to delete
+
+=back
+
+Returns $existing with deleted items removed.
+
+=cut
+
+sub _p2p_advertiser_payment_method_delete {
+    my ($self, $existing, $deletes) = @_;
+
+    for my $id (@$deletes) {
+        die +{error_code => 'PaymentMethodNotFound'} unless delete $existing->{$id};
+    }
+
+    $self->_p2p_check_payment_methods_in_use($deletes);
+
+    $self->db->dbic->run(
+        fixup => sub {
+            $_->do('SELECT p2p.advertiser_payment_method_delete(?)', undef, $deletes);
+        });
+
+    return $existing;
+}
+
+=head2 _p2p_advertiser_payment_method_update
+
+Updates advertiser payment methods.
+
+Takes the following parameters:
+
+=over 4
+
+=item * method_defs: payment method definitions returned from p2p_payment_methods()
+
+=item * existing: hashref of existing methods
+
+=item * updates: hashref of items to update
+
+=back
+
+Returns $existing with updated items.
+
+=cut
+
+sub _p2p_advertiser_payment_method_update {
+    my ($self, $method_defs, $existing, $updates) = @_;
+
+    my (@disabled_ids, @updated_ids);
+
+    for my $id (keys %$updates) {
+
+        die +{error_code => 'PaymentMethodNotFound'}
+            unless exists $existing->{$id};
+
+        my $method_def = $method_defs->{$existing->{$id}{method}} or return;    # skip the update if method is disabled for country
+
+        for my $item_field (grep { $_ !~ /^(method|is_enabled)$/ } keys $updates->{$id}->%*) {
+            die +{
+                error_code     => 'InvalidPaymentMethodField',
+                message_params => [$item_field, $method_def->{display_name}]}
+                unless exists $method_def->{fields}{$item_field};
+
+            $existing->{$id}{fields}{$item_field} = $updates->{$id}{$item_field};
+        }
+
+        push(@disabled_ids, $id) if exists $updates->{$id}{is_enabled} and (!$updates->{$id}{is_enabled}) and $existing->{$id}{is_enabled};
+        push(@updated_ids,  $id);
+    }
+
+    $self->_p2p_check_payment_methods_in_use(\@disabled_ids, \@updated_ids);
+
+    $self->db->dbic->run(
+        fixup => sub {
+            $_->do('SELECT p2p.advertiser_payment_method_update(?)', undef, Encode::encode_utf8($json->encode($updates)));
+        });
+
+    return $existing;
+}
+
+=head2 _p2p_advertiser_payment_method_create
+
+Creates advertiser payment methods.
+
+Takes the following parameters:
+
+=over 4
+
+=item * method_defs: payment method definitions returned from p2p_payment_methods()
+
+=item * existing: hashref of existing methods
+
+=item * updates: hashref of items to create
+
+=back
+
+Returns undef.
+
+=cut
+
+sub _p2p_advertiser_payment_method_create {
+    my ($self, $method_defs, $existing, $new) = @_;
+
+    for my $item (@$new) {
+        my $method = $item->{method};
+        die +{
+            error_code     => 'InvalidPaymentMethod',
+            message_params => [$method]}
+            unless exists $method_defs->{$method};
+
+        for my $item_field (grep { $_ !~ /^(method|is_enabled)$/ } keys %$item) {
+            die +{
+                error_code     => 'InvalidPaymentMethodField',
+                message_params => [$item_field, $method_defs->{$method}{display_name}]}
+                unless exists $method_defs->{$method}{fields}{$item_field};
+        }
+
+        for my $required_field (grep { $method_defs->{$method}{fields}{$_}{required} } $method_defs->{$method}{fields}->%*) {
+            die +{
+                error_code     => 'MissingPaymentMethodField',
+                message_params => [$method_defs->{$method}{fields}{$required_field}{display_name}, $method_defs->{$method}{display_name}]}
+                unless $item->{$required_field};
+        }
+
+        for my $m (values %$existing) {
+            die +{
+                error_code     => 'DuplicatePaymentMethod',
+                message_params => [$method_defs->{$method}{display_name}]}
+                if $m->{method} eq $method and (all { lc $item->{$_} eq lc $m->{fields}{$_} } keys $m->{fields}->%*);
+        }
+
+        # try to detect duplicates within same call, it will be caught by db in any case
+        $existing->{rand()} = {
+            method => $method,
+            fields => {pairgrep { $a !~ /^(method|is_enabled)$/ } %$item}};
+    }
+
+    $self->db->dbic->run(
+        fixup => sub {
+            $_->do(
+                'SELECT p2p.advertiser_payment_method_create(?, ?)',
+                undef,
+                $self->_p2p_advertiser_cached->{id},
+                Encode::encode_utf8($json->encode($new)));
+        });
+
+    return;
+}
+
+=head2 _p2p_check_payment_methods_in_use
+
+Validates that payment methods can be deactivated or deleted.
+
+=over 4
+
+=item * $deleted_ids: payment method ids to be deleted or deactivated
+
+=item * $updated_ids: payment method ids to be updated
+
+=back
+
+Dies or returns undef.
+
+=cut
+
+sub _p2p_check_payment_methods_in_use {
+    my ($self, $deleted_ids, $updated_ids) = @_;
+
+    my $in_use = $self->db->dbic->run(
+        fixup => sub {
+            $_->selectall_arrayref('SELECT * FROM p2p.advertiser_payment_method_in_use(?, ?)', {Slice => {}}, $deleted_ids, $updated_ids);
+        });
+
+    return unless @$in_use;
+
+    die +{
+        error_code     => 'PaymentMethodUsedByAd',
+        message_params => [join ', ', $in_use->[0]{advert_ids}->@*],
+        }
+        unless grep { $_->{order_ids} } @$in_use;
+
+    die +{
+        error_code     => 'PaymentMethodUsedByOrder',
+        message_params => [join ', ', $in_use->[0]{order_ids}->@*],
+        }
+        unless grep { $_->{advert_ids} } @$in_use;
+
+    die +{error_code => 'PaymentMethodInUse'};
 }
 
 =head1 METHODS - Payments

@@ -362,6 +362,7 @@ subtest 'Creating advert' => sub {
             name                  => $name,
             total_completion_rate => undef,
         },
+        payment_method_ids => undef,
     };
 
     cmp_deeply($advert, $expected_advert, "advert_create returns expected fields");
@@ -382,7 +383,7 @@ subtest 'Creating advert' => sub {
 
     # Fields that should only be visible to advert owner
     delete @$expected_advert{
-        qw( amount amount_display max_order_amount max_order_amount_display min_order_amount min_order_amount_display remaining_amount remaining_amount_display payment_info contact_info)
+        qw( amount amount_display max_order_amount max_order_amount_display min_order_amount min_order_amount_display remaining_amount remaining_amount_display payment_info contact_info payment_method_ids)
     };
 
     cmp_deeply($test_client_cr->p2p_advert_list, [$expected_advert], "p2p_advert_list returns less fields for client");
@@ -760,6 +761,39 @@ subtest 'p2p_advert_info' => sub {
             use_client_limits => 1
         )->{max_order_amount_limit}, '==', 0, 'unorderable ad is returned';
     };
+};
+
+subtest 'payment method validation' => sub {
+    my $advertiser = BOM::Test::Helper::P2P::create_advertiser;
+
+    cmp_deeply(
+        exception { $advertiser->p2p_advert_create(%advert_params, payment_method => ' ') },
+        {error_code => 'AdvertPaymentInfoRequired'},
+        'spaces only'
+    );
+
+    cmp_deeply(
+        exception { $advertiser->p2p_advert_create(%advert_params, payment_method => 'nonsense') },
+        {
+            error_code     => 'InvalidPaymentMethod',
+            message_params => ['nonsense']
+        },
+        'invalid method'
+    );
+
+    cmp_deeply(
+        exception { $advertiser->p2p_advert_create(%advert_params, payment_method => 'bank_transfer,bogus,other') },
+        {
+            error_code     => 'InvalidPaymentMethod',
+            message_params => ['bogus']
+        },
+        'mix of good and bad'
+    );
+
+    my $ad;
+    is exception { $ad = $advertiser->p2p_advert_create(%advert_params, payment_method => ' other, bank_transfer ') }, undef, 'valid methods';
+    is $ad->{payment_method}, 'bank_transfer,other', 'payment_method field parsed correctly';
+
 };
 
 done_testing();
