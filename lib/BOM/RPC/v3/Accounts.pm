@@ -2814,6 +2814,10 @@ rpc paymentagent_create => sub {
             return BOM::RPC::v3::Utility::create_error_by_code($error, ($msg_params->{$error} // [])->@*);
         }
 
+        if ($error->{details}->{fields}) {
+            $error->{details}->{fields} = [map { $_ =~ s/supported_banks/supported_payment_methods/r } $error->{details}->{fields}->@*];
+        }
+
         return BOM::RPC::v3::Utility::create_error_by_code($error->{code}, %$error, override_code => 'InputValidationFailed');
     }
 

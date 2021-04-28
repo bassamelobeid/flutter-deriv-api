@@ -3,6 +3,7 @@ use warnings;
 
 use Test::Most;
 use Test::MockModule;
+use Test::Deep;
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw( :init );
 use BOM::Test::RPC::QueueClient;
@@ -19,16 +20,8 @@ subtest 'paymentagent set and get' => sub {
     my $set_method = 'paymentagent_create';
     my $set_params = {
         language => 'EN',
-        token    => $token,
-        args     => {
-            'payment_agent_name'        => 'Nobody',
-            'information'               => 'Request for pa application',
-            'url'                       => 'http://abcd.com',
-            'commission_withdrawal'     => 4,
-            'commission_deposit'        => 5,
-            'supported_payment_methods' => ['Visa', 'bank_transfer'],
-            'code_of_conduct_approval'  => 0,
-        }};
+        token    => $token
+    };
     my $get_params = {
         language => 'EN',
         token    => $token
@@ -37,23 +30,99 @@ subtest 'paymentagent set and get' => sub {
     my $mock_client = Test::MockModule->new("BOM::User::Client");
     $mock_client->redefine(is_virtual => sub { return 1 });
     $c->call_ok($set_method, $set_params)->has_error->error_message_is('Permission denied.')
-        ->error_code_is('PermissionDenied', 'error code is correct');
+        ->error_code_is('PermissionDenied', 'error code is correct for pa_create request with virtul account.');
     $c->call_ok('paymentagent_details', $get_params)->has_error->error_message_is('Permission denied.')
-        ->error_code_is('PermissionDenied', 'error code is correct');
+        ->error_code_is('PermissionDenied', 'error code is for pa_details request with virtul account.');
     $mock_client->unmock_all;
 
     $c->call_ok($set_method, $set_params)->has_error->error_message_is('Please set the currency for your existing account.', 'no-currency error')
-        ->error_code_is('NoAccountCurrency', 'error code is correct');
-
+        ->error_code_is('NoAccountCurrency', 'error code is correct for an account with no currency.');
     $client->set_default_account('USD');
-    is_deeply $c->call_ok($set_method, $set_params)->has_error->result->{error},
-        {
-        code              => 'InputValidationFailed',
-        message_to_client => 'Code of conduct should be accepted.',
-        details           => {fields => ['code_of_conduct_approval']}
-        },
-        'COC approval isrequired';
-    $set_params->{args}->{code_of_conduct_approval} = 1;
+
+    subtest 'Input validations' => sub {
+        cmp_deeply $c->call_ok($set_method, $set_params)->has_error->result->{error},
+            {
+            code              => 'InputValidationFailed',
+            message_to_client => 'This field is required.',
+            details           => {
+                fields => bag(
+                    'supported_payment_methods', 'information',        'payment_agent_name', 'url',
+                    'code_of_conduct_approval',  'commission_deposit', 'commission_withdrawal'
+                )}
+            },
+            'required fields cannot be empty';
+
+        $set_params->{args} = {
+            'payment_agent_name'        => '+_',
+            'information'               => '   ',
+            'url'                       => ' &^% ',
+            'commission_withdrawal'     => 'abcd',
+            'commission_deposit'        => 'abcd',
+            'supported_payment_methods' => ['   ', 'bank_transfer'],
+            'code_of_conduct_approval'  => 0,
+        };
+
+        is_deeply $c->call_ok($set_method, $set_params)->has_error->result->{error},
+            {
+            code              => 'InputValidationFailed',
+            message_to_client => 'Code of conduct should be accepted.',
+            details           => {fields => ['code_of_conduct_approval']}
+            },
+            'COC approval is required';
+
+        $set_params->{args}->{code_of_conduct_approval} = 1;
+
+        cmp_deeply $c->call_ok($set_method, $set_params)->has_error->result->{error},
+            {
+            code              => 'InputValidationFailed',
+            message_to_client => 'This field must contain at least one alphabetic character.',
+            details           => {fields => bag('payment_agent_name', 'information', 'supported_payment_methods')}
+            },
+            'String values must contain at least one alphabetic character';
+
+        $set_params->{args}->{$_} = 'Valid String' for (qw/payment_agent_name information/);
+        $set_params->{args}->{supported_payment_methods} = ['Valid method'];
+
+        cmp_deeply $c->call_ok($set_method, $set_params)->has_error->result->{error},
+            {
+            code              => 'InputValidationFailed',
+            message_to_client => 'The numeric value is invalid.',
+            details           => {fields => bag('commission_withdrawal', 'commission_deposit')}
+            },
+            'Commission must be a valid number.';
+
+        $set_params->{args}->{commission_withdrawal} = -1;
+        $set_params->{args}->{commission_deposit}    = 4.0001;
+
+        cmp_deeply $c->call_ok($set_method, $set_params)->has_error->result->{error},
+            {
+            code              => 'InputValidationFailed',
+            message_to_client => 'It must be between 0 and 9.',
+            details           => {fields => bag('commission_withdrawal')}
+            },
+            'Commissions should be in range';
+
+        $set_params->{args}->{commission_withdrawal} = 1;
+
+        cmp_deeply $c->call_ok($set_method, $set_params)->has_error->result->{error},
+            {
+            code              => 'InputValidationFailed',
+            message_to_client => 'Only 2 decimal places are allowed.',
+            details           => {fields => bag('commission_deposit')}
+            },
+            'Commission decimal precision is 2';
+        $set_params->{args}->{commission_deposit} = 1;
+    };
+
+    $set_params->{args} = {
+        'payment_agent_name'        => 'Nobody',
+        'information'               => 'Request for pa application',
+        'url'                       => 'http://abcd.com',
+        'commission_withdrawal'     => 4,
+        'commission_deposit'        => 5,
+        'supported_payment_methods' => ['Visa', 'bank_transfer'],
+        'code_of_conduct_approval'  => 1,
+    };
 
     is my $pa = $client->get_payment_agent, undef, 'Client does not have any payment agent yet';
     $c->call_ok('paymentagent_details', $get_params)
@@ -128,10 +197,11 @@ subtest 'call with non-empty args' => sub {
         'is_authenticated'          => 1,
         'is_listed'                 => 1,
         'affiliate_id'              => 'test token',
-        'supported_payment_methods' => ['Visa', 'Bank Transfer'],
+        'supported_payment_methods' => ['Visa'],
         'code_of_conduct_approval'  => 1,
         'affiliate_id'              => 'abcd1234',
     };
+
     $c->call_ok('paymentagent_create', $set_params)->has_no_error;
 
     my $expected_values = {
@@ -148,7 +218,7 @@ subtest 'call with non-empty args' => sub {
         'commission_deposit'        => 5,
         'is_authenticated'          => 0,
         'is_listed'                 => 0,
-        'supported_payment_methods' => ['Visa', 'Bank Transfer'],
+        'supported_payment_methods' => ['Visa'],
         'code_of_conduct_approval'  => 1,
         'affiliate_id'              => 'abcd1234',
     };
@@ -157,12 +227,12 @@ subtest 'call with non-empty args' => sub {
     is_deeply $result, $expected_values, 'PA get result is correct';
 
     delete $expected_values->{supported_payment_methods};
-    $expected_values->{supported_banks} = 'Visa,Bank Transfer';
+    $expected_values->{supported_banks} = 'Visa';
 
     delete $client->{payment_agent};
     ok my $pa = $client->get_payment_agent, 'Client has a payment agent now';
     is_deeply {
-        map { $_ => $pa->$_ } (keys %$expected_values)
+        map { $_ => $pa->$_ } (keys %$expected_values),
     }, $expected_values, 'PA details are correct';
 
     ok $email_args, 'An email is sent';
