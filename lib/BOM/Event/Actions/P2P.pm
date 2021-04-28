@@ -155,13 +155,12 @@ sub order_updated {
     $order_event //= 'missing';
 
     my $client = BOM::User::Client->new({loginid => $loginid});
-
-    my $order          = $client->_p2p_orders(id => $order_id)->[0];
-    my $order_response = $client->_order_details([$order])->[0];
-
+    my $order  = $client->_p2p_orders(id => $order_id)->[0];
+    $order->{payment_method_details} = $client->_p2p_order_payment_method_details($order);
     my $redis     = BOM::Config::Redis->redis_p2p_write();
     my $redis_key = _get_order_channel_name($client);
-    my $parties;
+    my ($parties, $order_response);
+
     for my $client_type (qw(advertiser_loginid client_loginid)) {
         my $cur_client = $client;
         if ($order->{$client_type} ne $client->loginid) {
@@ -171,6 +170,7 @@ sub order_updated {
         # set $parties->{advertiser} and $parties->{client}
         $parties->{$client_type =~ s/_loginid//r} = $cur_client;
 
+        # _order_details() is different for each client, so need to publish both verisons
         $order_response = $cur_client->_order_details([$order])->[0];
         $order_response->{$client_type} = $order->{$client_type};
         $redis->publish($redis_key, encode_json_utf8($order_response));
