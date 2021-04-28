@@ -935,13 +935,11 @@ sub get_payment_agent_registration_form {
         },
         'validation' => [{
                 'type'    => 'regexp',
-                'regexp'  => '^[0-9a-zA-Z,]*$',
-                'err_msg' => 'Supported payment methods list is invalid',
+                'regexp'  => '^[\w \-,]{2,500}$',
+                'err_msg' => 'Supported payment methods must be between 2 and 500 characters (only latin alphabets, space and comma).',
             },
         ],
-        comment => {
-            'text' => '** Comma-separated list (no spaces) of: ' . (join ' ', _get_payment_methods()),
-        }};
+    };
 
     # Input field for pa_auth
     my $input_field_pa_auth = {
@@ -1122,12 +1120,6 @@ sub _select_yes_no {
 
 sub _email_check_regexp {
     return '^([a-zA-Z0-9_.+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4})?$';
-}
-
-# better to maintain the sort order else use sort before returning
-sub _get_payment_methods {
-    return
-        qw(AlertPay Alipay BNI BankBRI CIMBNIAGA DiamondBank EGold FirstBank GTBank GrupBCA ICBC LibertyReserve Mandiri MandiriSyariah MasterCard MoneyGram PayPal PerfectMoney PermataBank SolidTrustPay VISA Verve WeChatPay ZenithBank);
 }
 
 =head2 get_csrf_token
