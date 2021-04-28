@@ -288,7 +288,7 @@ subtest 'get_current_profile_definitions' => sub {
             'cryptocurrency' => [{
                     'turnover_limit' => "1000.00",
                     'payout_limit'   => "100.00",
-                    'name'           => 'Cryptocurrency',
+                    'name'           => 'Cryptocurrencies',
                     'profile_name'   => 'extreme_risk'
                 }
             ],
