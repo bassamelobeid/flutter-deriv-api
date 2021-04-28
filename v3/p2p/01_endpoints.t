@@ -338,7 +338,7 @@ subtest 'create advert (sell)' => sub {
         my %expected = %$advert;
         # Fields that should only be visible to advert owner
         delete @expected{
-            qw( amount amount_display max_order_amount max_order_amount_display min_order_amount min_order_amount_display remaining_amount remaining_amount_display payment_info contact_info)
+            qw( amount amount_display max_order_amount max_order_amount_display min_order_amount min_order_amount_display remaining_amount remaining_amount_display payment_info contact_info payment_method_ids)
         };
         cmp_deeply($resp->{p2p_advert_info}, \%expected, 'Advert info sensitive fields hidden');
     };
@@ -396,6 +396,11 @@ subtest 'create order (buy)' => sub {
             id             => $order->{id}});
     test_schema('p2p_order_info', $resp);
     my $order_info = $resp->{p2p_order_info};
+    
+    # not returned from order list
+    delete $order->{payment_method_details};
+    delete $order_info->{payment_method_details};
+    
     cmp_deeply($order_info,   $listed_order, 'Order info matches order list');
     cmp_deeply($listed_order, $order,        'Order list matches order create');
 };
