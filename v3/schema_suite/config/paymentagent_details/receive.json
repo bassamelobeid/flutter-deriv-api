@@ -1,0 +1,109 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "Payment agent details (response)",
+    "description": "Gets client's payment agent details.",
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+        "echo_req",
+        "msg_type",
+        "paymentagent_details"
+    ],
+    "properties": {
+        "paymentagent_details": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "affiliate_id": {
+                    "type": "string",
+                    "pattern" : "^1231234$"
+                },
+                "code_of_conduct_approval": {
+                    "type": "integer",
+                    "enum": [
+                        1
+                    ]
+                },
+                "commission_deposit": {
+                    "type": "number",
+                    "enum": [2]
+                },
+                "commission_withdrawal": {
+                    "type": "number",
+                    "enum": [3]
+                },
+                "currency_code": {
+                    "type": "string",
+                    "pattern" : "^USD$"
+                },
+                "email": {
+                    "type": "string",
+                    "pattern" : "^joe@joy.com$"
+                },
+                "information": {
+                    "type": "string",
+                    "pattern" : "^The best person you can find$"
+                },
+                "is_authenticated": {
+                    "type": "integer",
+                    "enum": [
+                        0
+                    ]
+                },
+                "is_listed": {
+                    "type": "integer",
+                    "enum": [
+                        0
+                    ]
+                },
+                "max_withdrawal": {
+                    "type": "number"
+                },
+                "min_withdrawal": {
+                    "type": "number"
+                },
+                "payment_agent_name": {
+                    "type": "string",
+                    "pattern" : "^Joe Joy$"
+                },
+                "phone": {
+                    "type": "string",
+                    "pattern" : "^+923-22-23-13$"
+                },
+                "supported_payment_methods": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "target_country": {
+                    "type": "string",
+                    "pattern": "id"
+                },
+                "url": {
+                    "type": "string",
+                    "pattern": "https://abc.com"
+                }
+            }
+        },
+        "passthrough": {
+            "description": "Used to pass data through the websocket, which may be retrieved via the `echo_req` output field.",
+            "type": "object"
+        },
+        "echo_req": {
+            "description": "Echo of the request made.",
+            "type": "object"
+        },
+        "msg_type": {
+            "description": "Action name of the request made.",
+            "type": "string",
+            "enum": [
+                "paymentagent_details"
+            ]
+        },
+        "req_id": {
+            "description": "Optional field sent in request to map to response, present only when request contains `req_id`.",
+            "type": "integer"
+        }
+    }
+}

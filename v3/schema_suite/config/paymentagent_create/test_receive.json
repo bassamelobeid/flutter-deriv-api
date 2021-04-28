@@ -1,0 +1,23 @@
+{
+    "$schema" : "http://json-schema.org/draft-04/schema#",
+    "required" : [
+       "paymentagent_create",
+       "echo_req",
+       "msg_type"
+    ],
+    "description" : null,
+    "type" : "object",
+    "title" : null,
+    "properties" : {
+       "paymentagent_create" : {
+          "enum" : [1],
+          "type" : "integer"
+       },
+       "echo_req" : {},
+       "msg_type" : {
+          "pattern" : "^paymentagent_create",
+          "type" : "string"
+       }
+    }
+ }
+ 

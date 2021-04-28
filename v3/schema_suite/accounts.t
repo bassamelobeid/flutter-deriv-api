@@ -126,6 +126,11 @@ test_sendrecv_params 'cashier/test_send_deposit.json',  'cashier/test_receive_er
 test_sendrecv_params 'verify_email/test_send.json',     'verify_email/test_receive.json',  'test1@binary.com', 'payment_withdraw';
 test_sendrecv_params 'cashier/test_send_withdraw.json', 'cashier/test_receive_error.json', $suite->get_token('test1@binary.com');
 
+
+#  paymentagent  create and details
+test_sendrecv_params 'paymentagent_create/test_send.json', 'paymentagent_create/test_receive.json';
+test_sendrecv_params 'paymentagent_details/test_send.json', 'paymentagent_details/test_receive.json';
+
 test_sendrecv_params 'change_password/test_send.json', 'change_password/test_receive_error.json', 'Abcd123!', 'Abcd123!';
 test_sendrecv_params 'change_password/test_send.json', 'change_password/test_receive_error.json', 'Abcd123!', 'Test1@binary.com';
 test_sendrecv_params 'change_password/test_send.json', 'change_password/test_receive_error.json', '1231asda', 'Abcd33!@';
