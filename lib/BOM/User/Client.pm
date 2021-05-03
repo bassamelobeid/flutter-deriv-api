@@ -2214,6 +2214,7 @@ use constant {
     P2P_ADVERTISER_BLOCK_ENDS_AT => 'P2P::ADVERTISER::BLOCK_ENDS_AT',
     P2P_STATS_REDIS_PREFIX       => 'P2P::ADVERTISER_STATS',
     P2P_STATS_TTL_IN_DAYS        => 120,                                # days after which to prune redis stats
+    P2P_ARCHIVE_DATES_KEY        => 'P2P::AD_ARCHIVAL_DATES',
 };
 
 =head2 p2p_advertiser_create
@@ -2456,7 +2457,9 @@ sub p2p_advert_create {
                 });
         });
 
-    return $self->_advert_details([$advert])->[0];
+    my $response = $self->_advert_details([$advert])->[0];
+    delete $response->{days_until_archive};    # guard against almost impossible race condition
+    return $response;
 }
 
 =head2 p2p_advert_info
@@ -2527,6 +2530,10 @@ sub p2p_advert_update {
     if ($param{is_active}) {
         # throw error if re-enabling this ad will cause duplicates or exceed limits
         $self->_validate_advert_limits($advert_info->%*);
+
+        # reset archive date, cron will recreate it
+        my $redis = BOM::Config::Redis->redis_p2p_write();
+        $redis->hdel(P2P_ARCHIVE_DATES_KEY, $id);
 
         # a disabled ad might have had its payment methods disabled or deleted
         die +{error_code => 'AdvertNoPaymentMethod'}
@@ -2794,6 +2801,9 @@ sub p2p_order_create {
 
     # used in p2p daemon to expire orders
     $redis->zadd(P2P_ORDER_EXPIRES_AT, Date::Utility->new($order->{expire_time})->epoch, join('|', $order->{id}, $self->loginid));
+
+    # reset ad archive date, cron will recreate it
+    $redis->hdel(P2P_ARCHIVE_DATES_KEY, $advert_id);
 
     BOM::Platform::Event::Emitter::emit(
         p2p_order_created => {
@@ -3867,6 +3877,14 @@ sub _advert_details {
                 : ()
             },
         };
+
+        if ($advert->{is_active} and $self->loginid eq $advert->{advertiser_loginid}) {
+            my $redis = BOM::Config::Redis->redis_p2p();
+            if (my $archive_date = $redis->hget(P2P_ARCHIVE_DATES_KEY, $advert->{id})) {
+                my $days = Date::Utility->new($archive_date)->days_between(Date::Utility->new);
+                $result->{days_until_archive} = $days < 0 ? 0 : $days;
+            }
+        }
 
         push @results, $result;
     }
