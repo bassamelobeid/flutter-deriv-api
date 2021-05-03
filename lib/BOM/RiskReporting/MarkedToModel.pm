@@ -385,7 +385,7 @@ sub get_fmb_for_manual_settlement {
         fmb_id    => $open_fmb->{id},
         buy_price => $open_fmb->{buy_price},
         currency  => $open_fmb->{currency_code},
-        shortcode => $open_fmb->{shortcode},
+        shortcode => $open_fmb->{short_code},
         payout    => $bet->payout,
         reason    => $error,
     };
