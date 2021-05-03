@@ -82,7 +82,7 @@ sub new_account {
 
     # Currency validated by rules engine, if not given take it from LC default
     $args{currency} //= $self->get_new_account_currency();
-    $args{platform} //= 'dxtrade';
+    $args{platform} //= $self->name;
 
     my $rule_engine = BOM::Rules::Engine->new(client => $self->client);
     $rule_engine->verify_action('new_trading_account', \%args);
@@ -320,16 +320,19 @@ sub deposit {
     my $account = $self->client->user->loginid_details->{$args{to_account}}
         or die +{error_code => 'DXInvalidAccount'};
 
+    my $from_currency = $args{currency} // $self->client->account->currency_code;
+
     # Sequence:
     # 1. Validation
     # 2. Withdrawal from deriv
     # 3. Deposit to dxtrade
 
     my $tx_amounts = $self->validate_transfer(
-        action       => 'deposit',
-        amount       => $args{amount},
-        currency     => $account->{currency},
-        account_type => $account->{account_type},
+        action        => 'deposit',
+        amount        => $args{amount},
+        currency      => $account->{currency},
+        account_type  => $account->{account_type},
+        from_currency => $from_currency,
     );
 
     my %txn_details = (
@@ -377,6 +380,7 @@ sub deposit {
     );
     die +{error_code => 'DXTransferCompleteError'} unless $update->{success};
 
+    $self->client->user->daily_transfer_incr('dxtrade');
     return {
         $self->account_details($update->{content})->%*,
         transaction_id => $txn->id,
@@ -409,6 +413,8 @@ sub withdraw {
     my $account = $self->client->user->loginid_details->{$args{from_account}}
         or die +{error_code => 'DXInvalidAccount'};
 
+    my $to_currency = $args{currency} // $self->client->account->currency_code;
+
     # Sequence:
     # 1. Validation
     # 2. Withdraw from dxtrade
@@ -419,6 +425,7 @@ sub withdraw {
         amount       => $args{amount},
         currency     => $account->{currency},
         account_type => $account->{account_type},
+        to_currency  => $to_currency,
     );
 
     my $resp = $self->call_api(
@@ -474,6 +481,7 @@ sub withdraw {
     );
     die +{error_code => 'DXTransferCompleteError'} unless $update->{success};
 
+    $self->client->user->daily_transfer_incr('dxtrade');
     return {
         $self->account_details($update->{content})->%*,
         transaction_id => $txn->id,

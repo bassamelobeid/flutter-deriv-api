@@ -18,19 +18,60 @@ $mock_fees->mock(
             'EUR' => {'USD' => 5}};
     });
 
+my $mock_trading_platform = Test::MockModule->new('BOM::TradingPlatform', no_auto => 1);
+$mock_trading_platform->mock(
+    name => sub {
+        return 'dxtrade';
+    });
+
 subtest 'common' => sub {
 
     for my $action ('deposit', 'withdrawal') {
-
-        my $client_vr   = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'VRTC'});
-        my $client_real = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR'});
+        my $client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+            broker_code => 'VRTC',
+            email       => $action . '+testvr@binary.com'
+        });
+        my $client_real = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+            broker_code => 'CR',
+            email       => $action . '+test@binary.com'
+        });
         # todo: wallet tests
+
+        my $user = BOM::User->create(
+            email    => $client_real->email,
+            password => 'test'
+        );
+
+        $client_vr->account('USD');
+        $client_real->account('USD');
+        $user->add_client($client_vr);
+        $user->add_client($client_real);
 
         my $dxtrader = BOM::TradingPlatform->new_base(client => $client_real);
 
         BOM::Config::Runtime->instance->app_config->system->suspend->payments(1);
+        my $e = exception {
+            $dxtrader->validate_transfer(
+                action        => $action,
+                amount        => 10,
+                currency      => 'USD',
+                account_type  => 'real',
+                from_currency => 'USD',
+                to_currency   => 'USD'
+            )
+        };
+
         cmp_deeply(
-            exception { $dxtrader->validate_transfer(action => $action, amount => 10, currency => 'USD', account_type => 'real') },
+            exception {
+                $dxtrader->validate_transfer(
+                    action        => $action,
+                    amount        => 10,
+                    currency      => 'USD',
+                    account_type  => 'real',
+                    from_currency => 'USD',
+                    to_currency   => 'USD'
+                )
+            },
             {error_code => 'PlatformTransferSuspended'},
             "payments suspended for $action"
         );
@@ -38,7 +79,16 @@ subtest 'common' => sub {
 
         BOM::Config::Runtime->instance->app_config->system->suspend->transfer_between_accounts(1);
         cmp_deeply(
-            exception { $dxtrader->validate_transfer(action => $action, amount => 10, currency => 'USD', account_type => 'real') },
+            exception {
+                $dxtrader->validate_transfer(
+                    action        => $action,
+                    amount        => 10,
+                    currency      => 'USD',
+                    account_type  => 'real',
+                    from_currency => 'USD',
+                    to_currency   => 'USD'
+                )
+            },
             {error_code => 'PlatformTransferSuspended'},
             "transfer between accounts suspended for $action"
         );
@@ -46,63 +96,85 @@ subtest 'common' => sub {
 
         $client_real->status->set('transfers_blocked', 'system', 'test');
         cmp_deeply(
-            exception { $dxtrader->validate_transfer(action => $action, amount => 10, currency => 'USD', account_type => 'real') },
+            exception {
+                $dxtrader->validate_transfer(
+                    action        => $action,
+                    amount        => 10,
+                    currency      => 'USD',
+                    account_type  => 'real',
+                    from_currency => 'USD',
+                    to_currency   => 'USD'
+                )
+            },
             {error_code => 'PlatformTransferBlocked'},
             "$action: client has transfers_blocked status"
         );
         $client_real->status->clear_transfers_blocked;
 
-        cmp_deeply(
-            exception { $dxtrader->validate_transfer(action => $action, amount => 10, currency => 'USD', account_type => 'real') },
-            {error_code => 'PlatformTransferNocurrency'},
-            "$action: currency not yet chosen"
-        );
-
-        $client_vr->account('USD');
-        $client_real->account('USD');
-
         my $dxtrader_vr = BOM::TradingPlatform->new_base(client => $client_vr);
 
         cmp_deeply(
-            exception { $dxtrader_vr->validate_transfer(action => $action, amount => 10, currency => 'USD', account_type => 'real') },
+            exception {
+                $dxtrader_vr->validate_transfer(
+                    action        => $action,
+                    amount        => 10,
+                    currency      => 'USD',
+                    account_type  => 'real',
+                    from_currency => 'USD',
+                    to_currency   => 'USD'
+                )
+            },
             {error_code => 'PlatformTransferNoVirtual'},
             "demo client cannot $action on real"
         );
 
         cmp_deeply(
-            exception { $dxtrader_vr->validate_transfer(action => $action, amount => 10, currency => 'USD', account_type => 'demo') },
+            exception {
+                $dxtrader_vr->validate_transfer(
+                    action        => $action,
+                    amount        => 10,
+                    currency      => 'USD',
+                    account_type  => 'demo',
+                    from_currency => 'USD',
+                    to_currency   => 'USD'
+                )
+            },
             {error_code => 'PlatformTransferNoVirtual'},
             "demo client cannot $action on demo"
         );
 
         cmp_deeply(
-            exception { $dxtrader_vr->validate_transfer(action => $action, amount => 10, currency => 'USD', account_type => 'demo') },
+            exception {
+                $dxtrader_vr->validate_transfer(
+                    action        => $action,
+                    amount        => 10,
+                    currency      => 'USD',
+                    account_type  => 'demo',
+                    from_currency => 'USD',
+                    to_currency   => 'USD'
+                )
+            },
             {error_code => 'PlatformTransferNoVirtual'},
             "real client cannot $action on demo"
         );
 
-        my $client_eur = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR'});
-        $client_eur->account('EUR');
-        my $dxtrader_eur = BOM::TradingPlatform->new_base(client => $client_eur);
-
-        BOM::Config::Runtime->instance->app_config->system->suspend->transfer_currencies(['EUR', 'BTC']);
-
+        BOM::Config::Runtime->instance->app_config->system->suspend->transfer_currencies(['USD', 'EUR']);
         cmp_deeply(
-            exception { $dxtrader_eur->validate_transfer(action => $action, amount => 10, currency => 'USD', account_type => 'real') },
+            exception {
+                $dxtrader->validate_transfer(
+                    action        => $action,
+                    amount        => 10,
+                    currency      => 'USD',
+                    account_type  => 'real',
+                    from_currency => 'USD',
+                    to_currency   => 'USD'
+                )
+            },
             {
                 error_code     => 'PlatformTransferCurrencySuspended',
-                message_params => ['EUR']
+                message_params => ['USD']
             },
             "$action: deriv transfer currency suspended"
-        );
-
-        cmp_deeply(
-            exception { $dxtrader->validate_transfer(action => $action, amount => 10, currency => 'EUR', account_type => 'real') },
-            {
-                error_code     => 'PlatformTransferCurrencySuspended',
-                message_params => ['EUR']
-            },
-            "$action: dxtrade transfer currency suspended"
         );
 
         BOM::Config::Runtime->instance->app_config->system->suspend->transfer_currencies([]);
@@ -114,16 +186,28 @@ subtest 'common' => sub {
 
 subtest 'deposit' => sub {
 
-    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR'});
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+        email       => 'deposit2@test.com'
+    });
     $client->account('USD');
     BOM::User->create(
-        email    => 'deposit@test.com',
+        email    => $client->email,
         password => 'test'
     )->add_client($client);
     my $dxtrader = BOM::TradingPlatform->new_base(client => $client);
 
     cmp_deeply(
-        exception { $dxtrader->validate_transfer(action => 'deposit', amount => 10, currency => 'USD', account_type => 'real') },
+        exception {
+            $dxtrader->validate_transfer(
+                action        => 'deposit',
+                amount        => 10,
+                currency      => 'USD',
+                account_type  => 'real',
+                from_currency => 'USD',
+                to_currency   => 'USD'
+            )
+        },
         {
             error_code     => 'PlatformTransferError',
             message_params => [re('exceeds client balance')]
@@ -135,10 +219,12 @@ subtest 'deposit' => sub {
 
     cmp_deeply(
         $dxtrader->validate_transfer(
-            action       => 'deposit',
-            amount       => 10,
-            currency     => 'USD',
-            account_type => 'real'
+            action        => 'deposit',
+            amount        => 10,
+            currency      => 'USD',
+            account_type  => 'real',
+            from_currency => 'USD',
+            to_currency   => 'USD'
         ),
         {
             recv_amount               => num(10),
@@ -152,19 +238,75 @@ subtest 'deposit' => sub {
     );
 
     cmp_deeply(
-        exception { $dxtrader->validate_transfer(action => 'deposit', amount => 10, currency => 'EUR', account_type => 'real') },
-        {error_code => 'PlatformTransferTemporarilyUnavailable'},
+        exception {
+            $dxtrader->validate_transfer(
+                action        => 'deposit',
+                amount        => 10,
+                currency      => 'EUR',
+                account_type  => 'real',
+                from_currency => 'USD',
+                to_currency   => 'USD'
+            )
+        },
+        {code => 'PlatformTransferTemporarilyUnavailable'},
         'no exchange rate'
     );
 
     populate_exchange_rates({EUR => 2});
 
+    my $app_config = BOM::Config::Runtime->instance->app_config();
+    $app_config->chronicle_writer(BOM::Config::Chronicle::get_chronicle_writer());
+    $app_config->set({'payments.transfer_between_accounts.minimum.dxtrade' => '{"default":{"currency":"USD","amount":100}}'});
+    $app_config->set({'payments.transfer_between_accounts.maximum.dxtrade' => '{"default":{"currency":"USD","amount":1000}}'});
+
+    cmp_deeply(
+        exception {
+            $dxtrader->validate_transfer(
+                action        => 'deposit',
+                amount        => 10,
+                currency      => 'EUR',
+                account_type  => 'real',
+                from_currency => 'USD',
+                to_currency   => 'USD'
+            )
+        },
+        {
+            code           => 'InvalidMinAmount',
+            message_params => ['100.00', 'USD'],
+        },
+        'Minimum limit reached'
+    );
+
+    $app_config->set({'payments.transfer_between_accounts.minimum.dxtrade' => '{"default":{"currency":"USD","amount":1}}'});
+    $app_config->set({'payments.transfer_between_accounts.maximum.dxtrade' => '{"default":{"currency":"USD","amount":5}}'});
+
+    cmp_deeply(
+        exception {
+            $dxtrader->validate_transfer(
+                action        => 'deposit',
+                amount        => 10,
+                currency      => 'EUR',
+                account_type  => 'real',
+                from_currency => 'USD',
+                to_currency   => 'USD'
+            )
+        },
+        {
+            code           => 'InvalidMaxAmount',
+            message_params => ['5.00', 'USD'],
+        },
+        'Maximum limit reached'
+    );
+    $app_config->set({'payments.transfer_between_accounts.maximum.dxtrade' => '{"default":{"currency":"USD","amount":100}}'});
+
     cmp_deeply(
         $dxtrader->validate_transfer(
-            action       => 'deposit',
-            amount       => 10,
-            currency     => 'EUR',
-            account_type => 'real'
+            action        => 'deposit',
+            amount        => 10,
+            currency      => 'EUR',
+            account_type  => 'real',
+            from_currency => 'USD',
+            to_currency   => 'USD',
         ),
         {
             recv_amount               => num(4),
@@ -180,20 +322,25 @@ subtest 'deposit' => sub {
 
 subtest 'withdrawal' => sub {
 
-    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR'});
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+        email       => 'withdrawal@test.com'
+    });
     $client->account('USD');
     BOM::User->create(
-        email    => 'withdrawal@test.com',
+        email    => $client->email,
         password => 'test'
     )->add_client($client);
     my $dxtrader = BOM::TradingPlatform->new_base(client => $client);
 
     cmp_deeply(
         $dxtrader->validate_transfer(
-            action       => 'withdrawal',
-            amount       => 10,
-            currency     => 'USD',
-            account_type => 'real'
+            action        => 'withdrawal',
+            amount        => 10,
+            currency      => 'USD',
+            account_type  => 'real',
+            from_currency => 'USD',
+            to_currency   => 'USD'
         ),
         {
             recv_amount               => num(10),
@@ -208,10 +355,12 @@ subtest 'withdrawal' => sub {
 
     cmp_deeply(
         $dxtrader->validate_transfer(
-            action       => 'withdrawal',
-            amount       => 10,
-            currency     => 'EUR',
-            account_type => 'real'
+            action        => 'withdrawal',
+            amount        => 10,
+            currency      => 'EUR',
+            account_type  => 'real',
+            from_currency => 'USD',
+            to_currency   => 'USD'
         ),
         {
             recv_amount               => num(19),

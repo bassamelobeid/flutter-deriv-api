@@ -33,6 +33,7 @@ use BOM::Platform::Client::CashierValidation;
 use Format::Util::Numbers qw(financialrounding);
 use ExchangeRates::CurrencyConverter qw(convert_currency);
 use List::Util qw(first);
+use BOM::Rules::Engine;
 
 use constant CLASS_DICT => {
     mt5     => 'BOM::TradingPlatform::MT5',
@@ -54,6 +55,24 @@ for my $method (INTERFACE) {
         my ($self) = @_;
         die sprintf '%s not yet implemented by %s', $method, ref($self);
     }
+}
+
+=head2 name
+
+Gets the name of the current trading platform instance.
+
+=cut
+
+sub name {
+    my $class = ref(shift);
+
+    for my $platform (keys CLASS_DICT->%*) {
+        if ($class eq CLASS_DICT->{$platform}) {
+            return $platform;
+        }
+    }
+
+    return 'trading_platform';
 }
 
 =head2 new
@@ -133,9 +152,17 @@ Generic validation of transfers and fee calculation. There are no platform-speci
 
 =item * C<amount>: amount to be sent from source account.
 
-=item * C<currency>: currency of trading platform account.
+=item * C<currency>: currency specified for the transfer.
 
-=item * C<account_type>: type of trading account, demo or real.
+=item * C<account>: a hashref including:
+
+=over 4 
+
+=item * C<type>: type of trading account, demo or real.
+
+=item * C<currency>: currency of the account.
+
+=back
 
 =back
 
@@ -144,10 +171,12 @@ Returns hashref of validated amounts or dies with error.
 =cut
 
 sub validate_transfer {
-    my ($self, %args) = @_;
-
-    my ($action, $send_amount, $platform_currency, $account_type) = @args{qw/ action amount currency account_type /};
+    my ($self,        %args) = @_;
+    my ($action,      $send_amount, $platform_currency, $account_type) = @args{qw/ action amount currency account_type /};
     my ($recv_amount, $fees, $fees_percent, $min_fee, $fee_calculated_by_percent, $fees_in_client_currency);
+
+    my $rule_engine = BOM::Rules::Engine->new(client => $self->client);
+    $rule_engine->verify_action("trading_account_$action", {%args, platform => $self->name});
 
     die +{error_code => 'PlatformTransferSuspended'} if BOM::Config::Runtime->instance->app_config->system->suspend->payments;
     die +{error_code => 'PlatformTransferSuspended'} if BOM::Config::Runtime->instance->app_config->system->suspend->transfer_between_accounts;

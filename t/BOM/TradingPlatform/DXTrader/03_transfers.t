@@ -49,13 +49,20 @@ my $account = $dxtrader->new_account(
 my $dxbal;
 
 subtest 'deposits' => sub {
-
     cmp_deeply(exception { $dxtrader->deposit(amount => 10, to_account => 'xxx') }, {error_code => 'DXInvalidAccount'}, 'invalid account');
+    cmp_deeply(
+        exception { $dxtrader->deposit(amount => 10, to_account => $account->{account_id}, currency => 'JPY') },
+        {code => 'CurrencyShouldMatch'},
+        'invalid currency'
+    );
 
     my $dep = $dxtrader->deposit(
         to_account => $account->{account_id},
-        amount     => 10
+        amount     => 10,
+        currency   => 'AUD',
     );
+
+    is $client->user->daily_transfer_count('dxtrade'), 1, 'Daily transfer counter increased';
 
     my $fee = 10 * 0.15;
     $dxbal = sprintf("%.2f", (10 - $fee) * 0.75);    # fee is deducted from source
@@ -145,6 +152,7 @@ subtest 'withdrawals' => sub {
         'expected result fields'
     );
 
+    is $client->user->daily_transfer_count('dxtrade'), 2, 'Daily transfer counter increased';
     cmp_ok $dxtrader->get_accounts->[0]->{balance}, '==', 0, 'dxtrade account balance decreased';
     cmp_ok $client->account->balance, '==', $localbal, 'client balance increased';
 
