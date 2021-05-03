@@ -272,14 +272,17 @@ sub get_settings_by_group {
                 payments.payment_limits
                 payments.transfer_between_accounts.limits.between_accounts
                 payments.transfer_between_accounts.limits.MT5
+                payments.transfer_between_accounts.limits.dxtrade
                 payments.transfer_between_accounts.limits.fiat_to_crypto
                 payments.transfer_between_accounts.exchange_rate_expiry.fiat
                 payments.transfer_between_accounts.exchange_rate_expiry.fiat_holidays
                 payments.transfer_between_accounts.exchange_rate_expiry.crypto
                 payments.transfer_between_accounts.minimum.default
                 payments.transfer_between_accounts.minimum.MT5
+                payments.transfer_between_accounts.minimum.dxtrade
                 payments.transfer_between_accounts.maximum.default
                 payments.transfer_between_accounts.maximum.MT5
+                payments.transfer_between_accounts.maximum.dxtrade
                 payments.experimental_currencies_allowed
                 payments.credit_card_processors
                 payments.reversible_balance_limits.ctc
@@ -437,11 +440,14 @@ sub get_extra_validation {
     state $setting_validators = {
         'cgi.terms_conditions_versions'                              => \&_validate_tnc_string,
         'payments.transfer_between_accounts.minimum.default'         => \&_validate_transfer_min_default,
-        'payments.transfer_between_accounts.minimum.MT5'             => \&_validate_transfer_mt5,
+        'payments.transfer_between_accounts.minimum.MT5'             => \&_validate_transfer_trading_platform,
+        'payments.transfer_between_accounts.minimum.dxtrade'         => \&_validate_transfer_trading_platform,
         'payments.transfer_between_accounts.limits.between_accounts' => \&_validate_positive_number,
         'payments.transfer_between_accounts.limits.MT5'              => \&_validate_positive_number,
+        'payments.transfer_between_accounts.limits.dxtrade'          => \&_validate_positive_number,
         'payments.transfer_between_accounts.maximum.default'         => \&_validate_positive_number,
-        'payments.transfer_between_accounts.maximum.MT5'             => \&_validate_transfer_mt5,
+        'payments.transfer_between_accounts.maximum.MT5'             => \&_validate_transfer_trading_platform,
+        'payments.transfer_between_accounts.maximum.dxtrade'         => \&_validate_transfer_trading_platform,
         'payments.payment_limits'                                    => \&_validate_payment_min_by_staff,
     };
 
@@ -474,13 +480,13 @@ sub _validate_transfer_min_default {
     return 1;
 }
 
-=head2 _validate_transfer_mt5
+=head2 _validate_transfer_trading_platform
 
-Validates json string containing the maximum/minimum MT5 transfer limit per brand
+Validates json string containing the maximum/minimum trading platform transfer limit per brand
 
 =cut
 
-sub _validate_transfer_mt5 {
+sub _validate_transfer_trading_platform {
     my $input_string = shift;
 
     my $json_config    = JSON::MaybeXS->new->decode($input_string);
