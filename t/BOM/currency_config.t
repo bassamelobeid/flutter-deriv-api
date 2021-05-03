@@ -162,6 +162,109 @@ subtest 'mt5_transfer_limits' => sub {
     is_deeply $mt5_transfer_limits, $expected_currency_config, 'correct mt5 limits config';
 };
 
+subtest 'get_dxtrade_transfer_limit_by_brand' => sub {
+    my $dxtrade_max_limit = {
+        default => {
+            currency => 'USD',
+            amount   => 2500
+        },
+        derivcrypto => {
+            currency => 'DOGE',
+            amount   => 42069
+        }};
+
+    my $dxtrade_min_limit = {
+        default => {
+            currency => 'USD',
+            amount   => 1
+        },
+        derivcrypto => {
+            currency => 'DOGE',
+            amount   => 1
+        }};
+
+    my $app_config = BOM::Config::Runtime->instance->app_config();
+    $app_config->set({
+        'payments.transfer_between_accounts.maximum.dxtrade' => JSON::MaybeUTF8::encode_json_utf8($dxtrade_max_limit),
+        'payments.transfer_between_accounts.minimum.dxtrade' => JSON::MaybeUTF8::encode_json_utf8($dxtrade_min_limit),
+    });
+
+    my $expected_config_for_derivCrypto = {
+        maximum => {
+            currency => 'DOGE',
+            amount   => 42069
+        },
+        minimum => {
+            currency => 'DOGE',
+            amount   => 1
+        }};
+
+    my $expected_default_config = {
+        maximum => {
+            currency => 'USD',
+            amount   => 2500
+        },
+        minimum => {
+            currency => 'USD',
+            amount   => 1
+        }};
+
+    my $derivCrypto_config = BOM::Config::CurrencyConfig::get_platform_transfer_limit_by_brand('dxtrade', 'derivcrypto');
+    is_deeply $derivCrypto_config, $expected_config_for_derivCrypto, 'Correct config for derivcrypto';
+
+    my $default_config = BOM::Config::CurrencyConfig::get_platform_transfer_limit_by_brand('dxtrade');
+    is_deeply $default_config, $expected_default_config, 'Correct default config';
+
+};
+
+subtest 'dxtrade_transfer_limits' => sub {
+    my $dxtrade_max_limit = {
+        default => {
+            currency => 'USD',
+            amount   => 2500
+        },
+        derivcrypto => {
+            currency => 'DOGE',
+            amount   => 42069
+        }};
+
+    my $dxtrade_min_limit = {
+        default => {
+            currency => 'USD',
+            amount   => 1
+        },
+        derivcrypto => {
+            currency => 'DOGE',
+            amount   => 1
+        }};
+
+    my $app_config = BOM::Config::Runtime->instance->app_config();
+    $app_config->set({
+        'payments.transfer_between_accounts.maximum.dxtrade' => JSON::MaybeUTF8::encode_json_utf8($dxtrade_max_limit),
+        'payments.transfer_between_accounts.minimum.dxtrade' => JSON::MaybeUTF8::encode_json_utf8($dxtrade_min_limit),
+    });
+
+    my @all_currencies = LandingCompany::Registry::all_currencies();
+
+    my $expected_currency_config = {};
+    my $min_amount               = $dxtrade_min_limit->{default}->{amount};
+    my $max_amount               = $dxtrade_max_limit->{default}->{amount};
+    my $min_currency             = $dxtrade_min_limit->{default}->{currency};
+    my $max_currency             = $dxtrade_max_limit->{default}->{currency};
+    for my $currency (@all_currencies) {
+        my ($min, $max);
+
+        $min = eval { 0 + financialrounding('amount', $currency, convert_currency($min_amount, $min_currency, $currency)); };
+        $max = eval { 0 + financialrounding('amount', $currency, convert_currency($max_amount, $max_currency, $currency)); };
+
+        $expected_currency_config->{$currency}->{min} = $min // 0;
+        $expected_currency_config->{$currency}->{max} = $max // 0;
+    }
+
+    my $dxtrade_transfer_limits = BOM::Config::CurrencyConfig::platform_transfer_limits('dxtrade', 1);
+    is_deeply $dxtrade_transfer_limits, $expected_currency_config, 'correct deriv x limits config';
+};
+
 subtest 'transfer_between_accounts_limits' => sub {
     my $app_config = BOM::Config::Runtime->instance->app_config();
     $app_config->set({

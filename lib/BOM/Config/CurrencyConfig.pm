@@ -167,11 +167,48 @@ These values are extracted from app_config->payment.transfer_between_accounts.mi
 =cut
 
 sub mt5_transfer_limits {
-    my ($brand) = @_;
+    return platform_transfer_limits('MT5', shift);
+}
+
+=head2 get_mt5_transfer_limit_by_brand
+
+Returns a hash reference of MT5 transfer limits config {maximum => {...}, minimum => {...}}.
+Returns the default config when C<brand> is undefined or we didn't find any config related.
+
+=over 4
+
+=item * C<brand> - The brand name (e.g. derivcrypto, binary, ....) (optional)
+
+=back
+
+=cut
+
+sub get_mt5_transfer_limit_by_brand {
+    return get_platform_transfer_limit_by_brand('MT5', shift);
+}
+
+=head2 platform_transfer_limits
+
+Trading Platform transfer limits for specific platform/brand.
+
+=over 4
+
+=item * C<trading_platform> - The trading platform dxtrade, MT5.
+
+=item * C<brand> - The requester brand name (e.g. derivcrypto, binary, ....) (optional)
+
+=back
+
+Returns a hashref of currency limits.
+
+=cut
+
+sub platform_transfer_limits {
+    my ($platform, $brand) = @_;
 
     my @all_currencies = LandingCompany::Registry::all_currencies();
 
-    my $configs      = get_mt5_transfer_limit_by_brand($brand);
+    my $configs      = get_platform_transfer_limit_by_brand($platform, $brand);
     my $min_amount   = $configs->{minimum}->{amount};
     my $min_currency = $configs->{minimum}->{currency};
     my $max_amount   = $configs->{maximum}->{amount};
@@ -191,9 +228,9 @@ sub mt5_transfer_limits {
     return $currency_limits;
 }
 
-=head2 get_mt5_transfer_limit_by_brand
+=head2 get_platform_transfer_limit_by_brand
 
-Returns a hash reference of MT5 transfer limits config {maximum => {...}, minimum => {...}}.
+Returns a hash reference of the given trading platform transfer limits config {maximum => {...}, minimum => {...}}.
 Returns the default config when C<brand> is undefined or we didn't find any config related.
 
 =over 4
@@ -204,13 +241,14 @@ Returns the default config when C<brand> is undefined or we didn't find any conf
 
 =cut
 
-sub get_mt5_transfer_limit_by_brand {
-    my $brand = shift;
+sub get_platform_transfer_limit_by_brand {
+    my ($platform, $brand) = @_;
 
-    my $configs = app_config()->get(['payments.transfer_between_accounts.minimum.MT5', 'payments.transfer_between_accounts.maximum.MT5']);
+    my $configs =
+        app_config()->get(['payments.transfer_between_accounts.minimum.' . $platform, 'payments.transfer_between_accounts.maximum.' . $platform]);
 
-    my $maximum_config = JSON::MaybeUTF8::decode_json_utf8($configs->{'payments.transfer_between_accounts.maximum.MT5'});
-    my $minimum_config = JSON::MaybeUTF8::decode_json_utf8($configs->{'payments.transfer_between_accounts.minimum.MT5'});
+    my $maximum_config = JSON::MaybeUTF8::decode_json_utf8($configs->{'payments.transfer_between_accounts.maximum.' . $platform});
+    my $minimum_config = JSON::MaybeUTF8::decode_json_utf8($configs->{'payments.transfer_between_accounts.minimum.' . $platform});
 
     my $result = {
         maximum => $maximum_config->{default},

@@ -343,6 +343,11 @@ payments:
               description: 'Limits the cumulative amount for transferring Fiat to Crypto for unauthenticated clients. Amount is in USD.'
               default: 200
               global: 1
+            dxtrade:
+              isa: Num
+              description: 'Limits the numbers of daily transfers between binary accounts and Deriv X accounts'
+              default: 6
+              global: 1
         exchange_rate_expiry:
           isa: section
           description: 'Exchange Rates expiry age in seconds e.g. allow conversion from BTC to USD if last known rate IS NOT OLDER THAN 1800 second'
@@ -414,6 +419,11 @@ payments:
               description: 'Minimum amount for transferring between binary accounts and MT5 accounts per the brand. ("default" applies to all brands that are not in the config)'
               default: '{"default":{"currency":"USD","amount":1},"derivcrypto":{"currency":"BTC","amount":0.00008}}'
               global: 1
+            dxtrade:
+              isa: json_string
+              description: 'Minimum amount for transferring between binary accounts and Deriv X accounts per the brand. ("default" applies to all brands that are not in the config)'
+              default: '{"default":{"currency":"USD","amount":1}}'
+              global: 1
         maximum:
           isa: section
           description: 'Transfer maximum amount'
@@ -427,6 +437,11 @@ payments:
               isa: json_string
               description: 'Maximum amount for transferring between binary accounts and MT5 accounts per the brand. ("default" applies to all brands that are not in the config)'
               default: '{"default":{"currency":"USD","amount":2500},"derivcrypto":{"currency":"BTC","amount":0.25}}'
+              global: 1
+            dxtrade:
+              isa: json_string
+              description: 'Maximum amount for transferring between binary accounts and Deriv X accounts per the brand. ("default" applies to all brands that are not in the config)'
+              default: '{"default":{"currency":"USD","amount":2500}}'
               global: 1
     experimental_currencies_allowed:
       description: "List of emails that allowed to deposit using experimental currencies"
