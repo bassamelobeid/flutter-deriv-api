@@ -210,6 +210,7 @@ rpc website_status => sub {
     $app_config->check_for_update;
     my $tnc_config  = $app_config->cgi->terms_conditions_versions;
     my $tnc_version = decode_json($tnc_config)->{request()->brand->name};
+    my $p2p_config  = $app_config->payments->p2p;
 
     return {
         terms_conditions_version => $tnc_version // '',
@@ -218,7 +219,18 @@ rpc website_status => sub {
         supported_languages      => $app_config->cgi->supported_languages,
         currencies_config        => _currencies_config(),
         crypto_config            => _crypto_config(),
-    };
+        p2p_config               => {
+            $p2p_config->archive_ads_days ? (adverts_archive_period => $p2p_config->archive_ads_days) : (),
+            order_payment_period        => $p2p_config->order_timeout / 60,
+            cancellation_block_duration => $p2p_config->cancellation_barring->bar_time,
+            cancellation_grace_period   => $p2p_config->cancellation_grace_period,
+            cancellation_limit          => $p2p_config->cancellation_barring->count,
+            cancellation_count_period   => $p2p_config->cancellation_barring->period,
+            maximum_advert_amount       => $p2p_config->limits->maximum_advert,
+            maximum_order_amount        => $p2p_config->limits->maximum_order,
+            adverts_active_limit        => $p2p_config->limits->maximum_ads_per_type,
+            order_daily_limit           => $p2p_config->limits->count_per_day_per_client,
+        }};
 };
 
 1;

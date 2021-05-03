@@ -3,9 +3,11 @@ use warnings;
 
 use utf8;
 use Test::Most;
+use Test::Deep;
 use Test::Mojo;
 use BOM::Test::RPC::QueueClient;
 use BOM::Config::CurrencyConfig;
+use BOM::Config::Runtime;
 use BOM::Test::Helper::ExchangeRates qw/populate_exchange_rates/;
 use Format::Util::Numbers qw/financialrounding/;
 
@@ -283,6 +285,43 @@ subtest 'trading_servers' => sub {
         is $response->[1]->{recommended}, 0, 'Correctly set as not recommended';
         is $response->[1]->{geolocation}{region}, 'Africa', 'Correctly sorted';
     };
+};
+
+subtest 'p2p_config' => sub {
+
+    my $p2p_config = BOM::Config::Runtime->instance->app_config->payments->p2p;
+
+    my %vals = (
+        adverts_active_limit        => int(rand(1000)),
+        adverts_archive_period      => int(rand(1000)),
+        cancellation_block_duration => int(rand(1000)),
+        cancellation_count_period   => int(rand(1000)),
+        cancellation_grace_period   => int(rand(1000)),
+        cancellation_limit          => int(rand(1000)),
+        maximum_advert_amount       => int(rand(1000)),
+        maximum_order_amount        => int(rand(1000)),
+        order_daily_limit           => int(rand(1000)),
+        order_payment_period        => int(rand(1000)),
+    );
+
+    $p2p_config->archive_ads_days($vals{adverts_archive_period});
+    $p2p_config->limits->maximum_ads_per_type($vals{adverts_active_limit});
+    $p2p_config->cancellation_barring->bar_time($vals{cancellation_block_duration});
+    $p2p_config->cancellation_barring->period($vals{cancellation_count_period});
+    $p2p_config->cancellation_grace_period($vals{cancellation_grace_period});
+    $p2p_config->cancellation_barring->count($vals{cancellation_limit});
+    $p2p_config->limits->maximum_advert($vals{maximum_advert_amount});
+    $p2p_config->limits->maximum_order($vals{maximum_order_amount});
+    $p2p_config->limits->count_per_day_per_client($vals{order_daily_limit});
+    $p2p_config->order_timeout($vals{order_payment_period} * 60);
+
+    my $result = $c->call_ok(
+        'website_status',
+        {
+            language => 'EN',
+            args     => {website_status => 1}})->has_no_system_error->has_no_error->result;
+
+    cmp_deeply($result->{p2p_config}, \%vals, 'expected results from runtime config');
 };
 
 done_testing();
