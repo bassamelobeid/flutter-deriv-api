@@ -19,11 +19,12 @@ my $mfdb = BOM::Database::ClientDB->new({
         operation   => 'replica'
     })->db->dbic;
 
+# note: some old MX records have null binary_user_id
 my $query = sub {
     $_->selectall_arrayref(
         "SELECT c.binary_user_id, s.reason FROM betonmarkets.client_status s 
         JOIN betonmarkets.client c ON c.loginid = s.client_loginid 
-        WHERE c.residence = 'gb' AND status_code = 'age_verification'", {Slice => {}});
+        WHERE c.residence = 'gb' AND status_code = 'age_verification' AND c.binary_user_id IS NOT NULL", {Slice => {}});
 };
 
 my %age_verified;
