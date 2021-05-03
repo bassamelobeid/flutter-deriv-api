@@ -170,7 +170,7 @@ our %ERROR_MAP = do {
         AdvertPaymentMethodRequired => localize("Please provide a payment method."),
         PaymentMethodRemoveActiveOrders => localize('You must keep a [_1] payment method on this advert while it has active orders.'),
         PaymentMethodNotInAd            => localize('[_1] is not available as a payment method for this advert.'),
-        PaymentMethodParam              => localize('payment_method field can not be updated for sell ads.'),
+        PaymentMethodParam              => localize('Payment method can not be changed for sell ads.'),
     );
 };
 
