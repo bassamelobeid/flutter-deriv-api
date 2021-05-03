@@ -15,6 +15,7 @@ use Date::Utility;
 use Quant::Framework::Calendar;
 use BOM::Backoffice::Auth0;
 use BOM::Backoffice::QuantsAuditLog;
+use Syntax::Keyword::Try;
 
 PrintContentType();
 BrokerPresentation("Upload Calendar");
@@ -39,7 +40,13 @@ if ($input{upload_excel}) {
     code_exit_BO("<p class='error'>Please select a CSV file</p>", $title) unless ($file);
     copy($file, $filename);
     my $type_to_parser = $calendar_type eq 'holidays' ? 'exchange_holiday' : $calendar_type;
-    $calendar_hash = Bloomberg::BloombergCalendar::parse_calendar($filename, $type_to_parser);
+    try {
+        $calendar_hash = Bloomberg::BloombergCalendar::parse_calendar($filename, $type_to_parser);
+    } catch($error) {
+        my $err_msg = "Unknown error happened while parsing the file.";
+        ($err_msg) = split '#', $error if ($error =~ m/invalid file/i);
+        code_exit_BO("<p class='error'>$err_msg</p>", $title);
+    }
     # since partial_trading is handled separately in the function below, calendar_name is set to holidays
     $calendar_name = 'holidays';
     _save_early_closes_calendar($calendar_hash->{early_closes_data}, $staff) if defined $calendar_hash->{early_closes_data};
