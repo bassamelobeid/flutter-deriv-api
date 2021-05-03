@@ -87,4 +87,5 @@ subtest 'rule client.required_fields_are_non_empty' => sub {
 
     $mock_lc->unmock_all;
 };
+
 done_testing();

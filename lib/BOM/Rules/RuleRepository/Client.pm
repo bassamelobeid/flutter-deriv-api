@@ -17,6 +17,8 @@ use LandingCompany::Registry;
 
 use BOM::Platform::Context qw(localize);
 use BOM::Rules::Registry qw(rule);
+use BOM::Config::Runtime;
+use BOM::Config::CurrencyConfig;
 
 rule 'client.address_postcode_mandatory' => {
     description => "Checks if there's a postalcode in action args or in the context client",
