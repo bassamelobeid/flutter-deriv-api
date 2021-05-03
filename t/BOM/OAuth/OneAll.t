@@ -7,7 +7,7 @@ use Brands;
 use BOM::Platform::Account::Virtual;
 use BOM::Platform::Context qw(request);
 use BOM::Platform::Context::Request;
-use BOM::OAuth::OneAll;
+use BOM::OAuth::Common;
 use BOM::Platform::Context qw(localize);
 use BOM::OAuth::Static qw(get_message_mapping);
 use Locale::Codes::Country qw(code2country);
@@ -29,8 +29,6 @@ get '/callback' => sub {
     my $residence     = $c->stash('request')->country_code;
     my $signup_device = $c->param('signup_device');
 
-    my $one_all = BOM::OAuth::OneAll->new($c);
-
     my $user_details = {
         email         => $email,
         brand         => $brand,
@@ -41,7 +39,7 @@ get '/callback' => sub {
         utm_term     => "utm_term test",
         utm_msclk_id => 756,
     };
-    my $account = $one_all->__create_virtual_account($user_details, $utm_data);
+    my $account = BOM::OAuth::Common::create_virtual_account($user_details, $utm_data);
 
     if ($account->{error}) {
         if ($account->{error}->{code} eq 'invalid residence') {

@@ -4,7 +4,10 @@ use strict;
 use warnings;
 
 use Exporter qw( import );
-our @EXPORT_OK = qw( get_message_mapping get_valid_device_types );
+our @EXPORT_OK = qw(
+    get_message_mapping  get_api_errors_mapping  get_valid_device_types
+    get_valid_login_types
+);
 
 =head1 NAME
 
@@ -40,14 +43,42 @@ my $config = {
         INVALID_PROVIDER     => "The email address you provided is already registered with your [_1] account.",
         'duplicate email'    =>
             "Your provided email address is already in use by another Login ID. According to our terms and conditions, you may only register once through our site.",
-        InvalidBrand        => "Brand is invalid.",
-        invalid             => "Sorry, an error occurred. Please try again later.",
-        UNAUTHORIZED_ACCESS => 'Sorry, your account is not authorized to access this application. Currently, only USD accounts are allowed.',
-        SUSPICIOUS_BLOCKED  => 'Suspicious activity detected from this device - for safety, login has been blocked temporarily.',
-
-        LOGIN_ERROR => "Your email and/or password is incorrect. Perhaps you signed up with a social account?",
+        InvalidBrand       => "Brand is invalid.",
+        invalid            => "Sorry, an error occurred. Please try again later.",
+        SUSPICIOUS_BLOCKED => 'Suspicious activity detected from this device - for safety, login has been blocked temporarily.',
+        LOGIN_ERROR        => "Your email and/or password is incorrect. Perhaps you signed up with a social account?",
+        AccountUnavailable => 'Your account is deactivated. Please contact us via live chat.',
     },
-};
+    api_errors => {
+        INVALID_USER               => "Invalid user.",
+        INVALID_EMAIL              => "The provided email is invalid.",
+        INVALID_PASSWORD           => "The provided password is invalid.",
+        INVALID_TOKEN              => "The provided token is invalid.",
+        INVALID_APP_ID             => "The provided app_id is invalid.",
+        INVALID_EXPIRE_TIMESTAMP   => "The provided expire timestamp is invalid",
+        INVALID_BRAND              => "The brand is unknown.",
+        INVALID_LOGIN_TYPE         => "The provided login type is invalid.",
+        INVALID_DATE_FIRST_CONTACT => "The provided date_first_contact is invalid.",
+        NEED_JSON_BODY             => "The request must contains JSON body.",
+        API_LOGIN_OTP_ENABLED      => "You cannot perform login with enabled TOTP at the moment.",
+        UNOFFICIAL_APP             => "Using this endpoint is allowed only for official apps.",
+        SUSPICIOUS_BLOCKED         => 'Suspicious activity detected from this device - for safety, login has been blocked temporarily.',
+        MISSED_CONNECTION_TOKEN    => "The connection_token not given.",
+        SELF_CLOSED                => "The account has been flagged as self-closed.",
+        NO_USER_IDENTITY           => "Failed to get user identity.",
+        UNKNOWN                    => "An error occurred while processing your request, please try again.",
+        LOGIN_ERROR                => "Your email and/or password is incorrect. Perhaps you signed up with a social account?",
+        TEMP_DISABLED        => "Login to this account has been temporarily disabled due to system maintenance. Please try again in 30 minutes.",
+        DISABLED             => "This account has been disabled.",
+        NO_AUTHENTICATION    => "Please log in to your social account to continue.",
+        INVALID_SOCIAL_EMAIL => "Please grant access to your email address to log in with.",
+        INVALID_PROVIDER     => "The email address you provided is already registered with one of your accounts.",
+        NO_LOGIN_SIGNUP      => "Social login is not enabled for this account. Please log in with your email and password instead.",
+        INVALID_RESIDENCE    => "Sorry, our service is currently unavailable in your region.",
+        DUPLICATE_EMAIL      =>
+            "Your provided email address is already in use by another Login ID. According to our terms and conditions, you may only register once through our site.",
+        NO_APP_TOKEN_FOUND => "There is no token defined for this application.",
+    }};
 
 =head2 get_message_mapping
 
@@ -59,6 +90,16 @@ sub get_message_mapping {
     return $config->{messages};
 }
 
+=head2 get_api_errors_mapping
+
+Return messages mapping for Api errors
+
+=cut
+
+sub get_api_errors_mapping {
+    return $config->{api_errors};
+}
+
 =head2 get_valid_device_types
 
 Return an array of valid device types
@@ -67,6 +108,16 @@ Return an array of valid device types
 
 sub get_valid_device_types {
     return qw(mobile desktop);
+}
+
+=head2 get_valid_login_types
+
+Return an array of valid login types
+
+=cut
+
+sub get_valid_login_types {
+    return qw( system social );
 }
 
 1;

@@ -10,9 +10,10 @@ use Test::Pod::CoverageChange;
 
 my $allowed_naked_packages = {
     'BOM::OAuth'               => 1,
-    'BOM::OAuth::O'            => 12,
-    'BOM::OAuth::OneAll'       => 4,
+    'BOM::OAuth::O'            => 8,
+    'BOM::OAuth::OneAll'       => 3,
     'BOM::OAuth::SingleSignOn' => 5,
+    'BOM::OAuth::Common'       => 3,
 };
 
 my $ignored_packages = ['BOM::OAuth::SingleSignOn',];

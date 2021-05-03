@@ -11,10 +11,10 @@ use URI::QueryParam;
 use BOM::OAuth::Helper;
 use BOM::Platform::Context qw( localize );
 use DataDog::DogStatsd::Helper qw( stats_inc );
-use BOM::OAuth::Static qw( get_message_mapping get_valid_device_types );
+use BOM::OAuth::Static qw( get_message_mapping );
 use Locale::Codes::Country qw( code2country );
 use Email::Valid;
-use List::Util qw( none );
+use BOM::OAuth::Common;
 
 sub callback {
     my $c = shift;
@@ -60,7 +60,7 @@ sub callback {
     }
 
     my $provider_data = $provider_result->{data};
-    my $email         = _get_email($provider_data);
+    my $email         = BOM::OAuth::Common::get_email_by_provider($provider_data);
     my $provider_name = $provider_data->{user}->{identity}->{provider} // '';
 
     # Check that whether user has granted access to a valid email address in her/his social account
@@ -121,7 +121,7 @@ sub callback {
         };
 
         # Create virtual client if user not found
-        my $account = $c->__create_virtual_account($user_details, $utm_data);
+        my $account = BOM::OAuth::Common::create_virtual_account($user_details, $utm_data);
 
         if ($account->{error}) {
             my $error_msg =
@@ -179,72 +179,6 @@ sub _get_provider_token {
     my $request = URI->new($c->{stash}->{request}->{mojo_request}->{content}->{headers}->{headers}->{referer}[0]);
 
     return $request->query_param('provider_connection_token');
-}
-
-sub _get_email {
-    my ($provider_data) = @_;
-
-    # for Google
-    my $emails = $provider_data->{user}->{identity}->{emails};
-    return $emails->[0]->{value};    # or need check is_verified?
-}
-
-=head2 __create_virtual_account
-
-Register user and create a virtual account for user with given information
-Returns a hashref {error}/{client, user}
-
-Arguments:
-
-=over 1
-
-=item C<$email>
-
-User's email
-
-=item C<$brand>
-
-Company's brand
-
-=item C<$residence>
-
-User's country of residence
-
-=item C<$date_first_contact>
-
-Date of registration. It's optinal
-
-=item C<$signup_device>
-
-Device(platform) used for signing up on the website. It's optinal
-
-=back
-
-=cut
-
-sub __create_virtual_account {
-    my ($c, $user_details, $utm_data) = @_;
-    my $details = {
-        email             => $user_details->{email},
-        client_password   => rand(999999),                 # random password so you can't login without password
-        has_social_signup => 1,
-        brand_name        => $user_details->{brand},
-        residence         => $user_details->{residence},
-        source            => $user_details->{source},
-    };
-
-    $details->{$_} = $user_details->{$_}
-        for grep { $user_details->{$_} } qw (date_first_contact signup_device myaffiliates_token gclid_url utm_medium utm_source utm_campaign);
-
-    # Validate signup_device and reset it to null in case of invalid value
-    if (exists $details->{'signup_device'} && none { $_ eq $details->{'signup_device'} } get_valid_device_types) {
-        $details->{'signup_device'} = undef;
-    }
-
-    return BOM::Platform::Account::Virtual::create_account({
-        details  => $details,
-        utm_data => $utm_data
-    });
 }
 
 1;
