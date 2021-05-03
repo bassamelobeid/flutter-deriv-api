@@ -96,7 +96,7 @@ sub website_status {
                     my $current_state = ws_redis_master()->get("NOTIFY::broadcast::state");
                     $rpc_response->{clients_country} //= '';
                     $website_status->{$_} = $rpc_response->{$_}
-                        for qw|api_call_limits clients_country supported_languages terms_conditions_version currencies_config crypto_config|;
+                        for qw|api_call_limits clients_country supported_languages terms_conditions_version currencies_config crypto_config p2p_config|;
 
                     $current_state = eval { $json->decode(Encode::decode_utf8($current_state)) }
                         if $current_state && !ref $current_state;
