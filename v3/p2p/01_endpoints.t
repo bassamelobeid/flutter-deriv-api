@@ -17,6 +17,7 @@ use BOM::User::Client;
 use BOM::Platform::Token::API;
 use BOM::Config::Runtime;
 use BOM::Config::Chronicle;
+use BOM::User::Script::P2PDailyMaintenance;
 use Guard;
 
 my $app_config = BOM::Config::Runtime->instance->app_config;
@@ -30,6 +31,7 @@ my %init_config_values = (
     'payments.p2p.available_for_countries'  => $app_config->payments->p2p->available_for_countries,
     'payments.p2p.available_for_currencies' => $app_config->payments->p2p->available_for_countries,
     'payments.p2p.limits.maximum_order'     => $app_config->payments->p2p->limits->maximum_order,
+    'payments.p2p.archive_ads_days'         => $app_config->payments->p2p->archive_ads_days,
 );
 
 scope_guard {
@@ -44,6 +46,7 @@ $app_config->set({'payments.p2p.available'                => 1});
 $app_config->set({'payments.p2p.available_for_countries'  => []});
 $app_config->set({'payments.p2p.available_for_currencies' => ['usd']});
 $app_config->set({'payments.p2p.limits.maximum_order'     => 10});
+$app_config->set({'payments.p2p.archive_ads_days'         => 10});
 
 my $t = build_wsapi_test();
 
@@ -308,8 +311,12 @@ subtest 'create advert (sell)' => sub {
     is $advert->{payment_info}, $advert_params{payment_info}, 'payment_info';
     is $advert->{contact_info}, $advert_params{contact_info}, 'contact_info';
 
+    BOM::User::Script::P2PDailyMaintenance->new->run;
+    $advert->{days_until_archive} = 10;  # not returned for new ad
+    
     $resp = $t->await::p2p_advertiser_adverts({p2p_advertiser_adverts => 1});
     test_schema('p2p_advertiser_adverts', $resp);
+
     cmp_deeply($resp->{p2p_advertiser_adverts}{list}[0], $advert, 'Advertiser adverts item matches advert create');
 
     # These fields are not returned from advert_create and advertiser_adverts, but should be returned from following calls
@@ -338,7 +345,7 @@ subtest 'create advert (sell)' => sub {
         my %expected = %$advert;
         # Fields that should only be visible to advert owner
         delete @expected{
-            qw( amount amount_display max_order_amount max_order_amount_display min_order_amount min_order_amount_display remaining_amount remaining_amount_display payment_info contact_info payment_method_ids)
+            qw( amount amount_display max_order_amount max_order_amount_display min_order_amount min_order_amount_display remaining_amount remaining_amount_display payment_info contact_info days_until_archive payment_method_ids)
         };
         cmp_deeply($resp->{p2p_advert_info}, \%expected, 'Advert info sensitive fields hidden');
     };

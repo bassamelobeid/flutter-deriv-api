@@ -13,7 +13,7 @@
             "type" : "string"
         },
         "website_status" : {
-            "required" : ["crypto_config", "currencies_config", "api_call_limits", "supported_languages", "site_status", "terms_conditions_version", "clients_country"],
+            "required" : ["crypto_config", "currencies_config", "api_call_limits", "supported_languages", "site_status", "terms_conditions_version", "clients_country", "p2p_config"],
             "properties" : {
                  "crypto_config": {
                     "description" : "Provides minimum withdrawal for all crypto currency in USD",
@@ -224,7 +224,6 @@
             }
         }
     },
-
     "msg_type" : {
         "type" : "string",
         "description" : "website_status"
