@@ -63,6 +63,10 @@ my $transfer_limits       = {
     mt5 => {
         allowed   => $transfer_limit_config->MT5,
         available => $transfer_limit_config->MT5
+    },
+    dxtrade => {
+        allowed   => $transfer_limit_config->dxtrade,
+        available => $transfer_limit_config->dxtrade
     }};
 
 # Test for CR accounts which use USD as the currency

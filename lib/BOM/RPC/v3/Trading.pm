@@ -46,6 +46,7 @@ my %ERROR_MAP = do {
         PlatformTransferOauthTokenRequired     =>
             localize('This request must be made using a connection authorized by the Deriv account involved in the transfer.'),
         PasswordRequired        => localize('A new password is required'),
+        CurrencyShouldMatch     => localize('Currency provided is different from account currency.'),
         RealAccountMissing      => localize('You are on a virtual account. To open a [_1] account, please upgrade to a real account.'),
         FinancialAccountMissing =>
             localize('Your existing account does not allow [_1] trading. To open a [_1] account, please upgrade to a financial account.'),
@@ -56,7 +57,12 @@ my %ERROR_MAP = do {
         FinancialAssessmentMandatory     => localize('Please complete your financial assessment.'),
         TINDetailsMandatory              => localize('We require your tax information for regulatory purposes. Please fill in your tax information.'),
         TradingAccountNotAllowed         => localize('This trading platform account is not available in your country yet.'),
-        TradingAccountCurrencyNotAllowed => localize('This currency is not available.'));
+        TradingAccountCurrencyNotAllowed => localize('This currency is not available.'),
+        CurrencyRequired                 => localize('Please provide valid currency.'),
+        MaximumTransfers                 => localize('You can only perform up to [_1] transfers a day. Please try again tomorrow.'),
+        InvalidMinAmount                 => localize('The minimum amount for transfers is [_1] [_2]. Please adjust your amount.'),
+        InvalidMaxAmount                 => localize('The maximum amount for deposits is [_1] [_2]. Please adjust your amount.'),
+        CurrencyTypeNotAllowed           => localize('This currency is temporarily suspended. Please select another currency to proceed.'));
 };
 
 =head2 trading_platform_new_account
@@ -180,7 +186,11 @@ Platform deposit implementation.
 sub deposit {
     my $params = shift;
 
-    my ($from_account, $to_account, $amount) = $params->{args}->@{qw/ from_account to_account amount /};
+    # Note `transfer_between_accounts` may pass `currency` param, which we should validate.
+    # The validation will always pass for `transfer_between_deposit` and `transfer_between_withdrawal`
+    # as they don't pass the `currency` param, we use the account currency instead which should be valid.
+
+    my ($from_account, $to_account, $amount, $currency) = $params->{args}->@{qw/from_account to_account amount currency/};
 
     try {
         my $client = get_transfer_client($params, $from_account);
@@ -193,6 +203,7 @@ sub deposit {
         return $platform->deposit(
             to_account => $to_account,
             amount     => $amount,
+            currency   => $currency,
         );
 
     } catch ($e) {
@@ -209,8 +220,7 @@ Platform withdrawal implementation.
 sub withdrawal {
     my $params = shift;
 
-    my ($from_account, $to_account, $amount) = $params->{args}->@{qw/ from_account to_account amount /};
-
+    my ($from_account, $to_account, $amount) = $params->{args}->@{qw/from_account to_account amount/};
     try {
         my $client = get_transfer_client($params, $to_account);
 

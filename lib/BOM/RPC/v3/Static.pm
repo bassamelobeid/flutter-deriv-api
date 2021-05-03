@@ -141,9 +141,10 @@ sub _currencies_config {
     # if there were no amount entered by client), we get max out of two minimal possible stakes.
     # Logic is copied from _build_staking_limits
 
-    my $transfer_limits     = BOM::Config::CurrencyConfig::transfer_between_accounts_limits();
-    my $transfer_limits_mt5 = BOM::Config::CurrencyConfig::mt5_transfer_limits($brand_name);
-    my $transfer_fees       = BOM::Config::CurrencyConfig::transfer_between_accounts_fees();
+    my $transfer_limits         = BOM::Config::CurrencyConfig::transfer_between_accounts_limits();
+    my $transfer_limits_mt5     = BOM::Config::CurrencyConfig::platform_transfer_limits('MT5', $brand_name);
+    my $transfer_fees           = BOM::Config::CurrencyConfig::transfer_between_accounts_fees();
+    my $transfer_limits_dxtrade = BOM::Config::CurrencyConfig::platform_transfer_limits('dxtrade', $brand_name);
 
     # Get available currencies
     my @all_currencies = LandingCompany::Registry::all_currencies();
@@ -160,9 +161,10 @@ sub _currencies_config {
             is_withdrawal_suspended   => BOM::RPC::v3::Utility::verify_cashier_suspended($_, 'withdrawal'),
             name                      => LandingCompany::Registry::get_currency_definition($_)->{name},
             transfer_between_accounts => {
-                limits     => $transfer_limits->{$_},
-                limits_mt5 => $transfer_limits_mt5->{$_},
-                fees       => $transfer_fees->{$_},
+                limits         => $transfer_limits->{$_},
+                limits_mt5     => $transfer_limits_mt5->{$_},
+                limits_dxtrade => $transfer_limits_dxtrade->{$_},
+                fees           => $transfer_fees->{$_},
             }}
     } @all_currencies;
 

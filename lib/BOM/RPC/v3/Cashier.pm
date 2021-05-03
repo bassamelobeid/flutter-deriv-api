@@ -446,24 +446,32 @@ rpc get_limits => sub {
 
     # also add Daily Transfer Limits
     if (defined $client->default_account) {
-        my $between_accounts_transfer_limit =
-            BOM::Config::Runtime->instance->app_config->payments->transfer_between_accounts->limits->between_accounts;
-        my $mt5_transfer_limits     = BOM::Config::Runtime->instance->app_config->payments->transfer_between_accounts->limits->MT5;
-        my $user_internal_transfers = $client->user->daily_transfer_count();
-        my $user_mt5_transfers      = $client->user->daily_transfer_count('mt5');
-
-        my $available_internal_transfer = $between_accounts_transfer_limit - $user_internal_transfers;
-        my $available_mt5_transfer      = $mt5_transfer_limits - $user_mt5_transfers;
-
-        $limit->{daily_transfers} = {
-            'internal' => {
-                allowed   => $between_accounts_transfer_limit,
-                available => $available_internal_transfer > 0 ? $available_internal_transfer : 0,
+        my $daily_transfer_limits = {
+            internal => {
+                config  => 'between_accounts',
+                counter => undef,
             },
-            'mt5' => {
-                allowed   => $mt5_transfer_limits,
-                available => $available_mt5_transfer > 0 ? $available_mt5_transfer : 0
-            }};
+            mt5 => {
+                config  => 'MT5',
+                counter => 'mt5',
+            },
+            dxtrade => {
+                config  => 'dxtrade',
+                counter => 'dxtrade',
+            },
+        };
+
+        for my $transfer (keys $daily_transfer_limits->%*) {
+            my ($config, $counter) = @{$daily_transfer_limits->{$transfer}}{qw/config counter/};
+            my $transfers_limit   = BOM::Config::Runtime->instance->app_config->payments->transfer_between_accounts->limits->$config;
+            my $transfers_counter = $client->user->daily_transfer_count($counter);
+            my $available         = $transfers_limit - $transfers_counter;
+
+            $limit->{daily_transfers}->{$transfer} = {
+                allowed   => $transfers_limit,
+                available => $available > 0 ? $available : 0,
+            };
+        }
     }
     return $limit;
 };
