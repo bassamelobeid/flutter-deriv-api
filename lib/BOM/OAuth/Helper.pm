@@ -15,14 +15,14 @@ sub extract_brand_from_params {
     # extract encoded brand name from parameters curried from oneall
     my $brand_key = (grep { /(?:amp;){0,1}brand/ } keys %$params)[0];
 
-    return undef unless $brand_key;
+    return undef unless $brand_key;    ## no critic (ProhibitExplicitReturnUndef)
 
     my $brand = $params->{$brand_key};
 
-    return undef unless $brand;
+    return undef unless $brand;        ## no critic (ProhibitExplicitReturnUndef)
 
     if (ref($brand) eq 'ARRAY') {
-        return undef unless $brand->[0] =~ /\w+/;
+        return undef unless $brand->[0] =~ /\w+/;    ## no critic (ProhibitExplicitReturnUndef)
 
         return $brand->[0];
     }

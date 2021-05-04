@@ -546,7 +546,8 @@ sub _make_error {
 
     $error_code //= 'UNKNOWN';
 
-    my $message = get_api_errors_mapping()->{$error_code} if $error_code;
+    my $message;
+    $message = get_api_errors_mapping()->{$error_code} if $error_code;
     $message //= get_api_errors_mapping()->{UNKNOWN};
 
     return $c->render(

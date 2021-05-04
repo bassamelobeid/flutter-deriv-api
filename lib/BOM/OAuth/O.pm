@@ -110,7 +110,7 @@ sub authorize {
     }
 
     my $date_first_contact = $c->param('date_first_contact') // '';
-    eval {
+    eval {    ## no critic (Eval)
         return unless $date_first_contact =~ /^[0-9]{4}-[0-9]{2}-[0-9]{2}$/;
         my $date = Date::Utility->new($date_first_contact);
         return if $date->is_after(Date::Utility->today);
@@ -135,7 +135,7 @@ sub authorize {
 
     # detect and validate social_login param if provided
     if (my $method = $c->param('social_signup')) {
-        if (!$c->param('email') and !$c->param('password')) {
+        if (!$c->param('email') && !$c->param('password')) {
             if (BOM::OAuth::Common::is_social_login_suspended()) {
                 _stats_inc_error($brand_name, "TEMP_DISABLED");
                 $template_params{error} = localize(get_message_mapping()->{TEMP_DISABLED});
@@ -346,7 +346,7 @@ sub _handle_self_closed {
 
     $c->_activate_accounts(\@closed_clients, $app);
 
-    return undef;
+    return undef;    ## no critic (ProhibitExplicitReturnUndef)
 }
 
 =head2 _activate_accounts
