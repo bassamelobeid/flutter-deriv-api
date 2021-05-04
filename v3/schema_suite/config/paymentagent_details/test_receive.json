@@ -68,7 +68,7 @@
                 },
                 "phone": {
                     "type": "string",
-                    "pattern" : "^+923-22-23-13$"
+                    "enum" : ["+923-22-23-13"]
                 },
                 "supported_payment_methods": {
                     "type": "array",
