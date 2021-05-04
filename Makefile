@@ -14,7 +14,7 @@ tidy:
 	find . -name '*.tidyup' -delete
 
 syntax:
-	@$(PROVE) t/*.t
+	@$(PROVE) --norc t/*.t
 
 pod_test:
 	@$(PROVE) t/*pod*.t
