@@ -23,7 +23,7 @@ my %client_details = (
     new_account_real       => 1,
     salutation             => 'Ms',
     last_name              => 'last-name',
-    first_name             => 'first\'name',
+    first_name             => 'first-name',
     date_of_birth          => '1990-12-30',
     residence              => 'au',
     place_of_birth         => 'de',
@@ -77,6 +77,55 @@ subtest 'Address validation' => sub {
     my $cli = BOM::User::Client->new({loginid => $loginid});
     is $cli->address_line_1, $set_settings_params->{address_line_1}, 'Expected address line 1';
     is $cli->address_line_2, $set_settings_params->{address_line_2}, 'Expected address line 2';
+};
+
+subtest 'Tax residence on restricted country' => sub {
+    my ($vr_client, $user) = create_vr_account({
+        email           => 'addr-tax-residence@binary.com',
+        client_password => 'abc123',
+        residence       => 'br',
+    });
+
+    my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $vr_client->loginid);
+    $t->await::authorize({authorize => $token});
+    my $cli_details = {
+        %client_details,
+        residence  => 'br',
+        first_name => 'Mr',
+        last_name  => 'Familyman',
+        date_of_birth  => '1990-12-30',
+    };
+
+    my $res = $t->await::new_account_real($cli_details);
+    test_schema('new_account_real', $res);
+
+    my $loginid = $res->{new_account_real}->{client_id};
+    ok $loginid, 'We got a client loginid';
+
+    my ($cr_token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $loginid);
+    $t->await::authorize({authorize => $cr_token});
+
+    my $set_settings_params = {
+        set_settings  => 1,
+        tax_residence => 'my',
+    };
+
+    $res = $t->await::set_settings($set_settings_params);
+    test_schema('set_settings', $res);
+
+    my $cli = BOM::User::Client->new({loginid => $loginid});
+    is $cli->tax_residence, $set_settings_params->{tax_residence}, 'Expected tax residence';
+
+    $set_settings_params = {
+        set_settings   => 1,
+        address_line_1 => 'Lake of Rage 123',
+    };
+
+    $res = $t->await::set_settings($set_settings_params);
+    test_schema('set_settings', $res);
+    $cli = BOM::User::Client->new({loginid => $loginid});
+    is $cli->address_line_1, $set_settings_params->{address_line_1},
+        'Successfully called /set_settings under restricted country in tax residence scenario';
 };
 
 sub create_vr_account {

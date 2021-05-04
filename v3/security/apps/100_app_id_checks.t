@@ -39,7 +39,7 @@ my $block_apps_domain = '{
     "blue":[24269, 23650, 19499]
     }';
 $redis->set('domain_based_apps::blocked', $block_apps_domain);
-my $redis_value = $redis->get('domain_based_apps::blocked');
+my $redis_value        = $redis->get('domain_based_apps::blocked');
 my %blocked_appid_info = %{JSON::MaybeXS->new->decode($redis_value)};
 for my $env (keys %blocked_appid_info) {
     my $module = Test::MockModule->new('YAML::XS');
