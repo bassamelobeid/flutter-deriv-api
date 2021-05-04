@@ -448,7 +448,9 @@ sub print_client_details {
             );
         });
     my $tnc_status;
-    $tnc_status->{$_->{brand}}{$_->{version}} = $_->{stamp} for @$rows;
+    $tnc_status->{$_->{brand}} = {
+        version => $_->{version},
+        stamp   => $_->{stamp}} for @$rows;
     my $tnc_versions = decode_json_utf8(BOM::Config::Runtime->instance->app_config->cgi->terms_conditions_versions);
 
     my $crs_tin_status          = $client->status->crs_tin_information;

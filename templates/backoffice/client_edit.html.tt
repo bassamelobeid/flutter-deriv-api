@@ -631,7 +631,7 @@ window.addEventListener('DOMContentLoaded', init_text_validations, false);
             <td class="label top">T&C acceptance</td>
             <td style='display:inline-flex;'>:&nbsp;<table class="collapsed border">[% FOR brand IN tnc_versions.keys.sort %]
                 [% version = tnc_versions.$brand %]
-                <tr><td>[% brand %] ([% version %])</td><td>[% IF tnc_status.$brand.$version %]<b>Yes</b> at [% tnc_status.$brand.$version %][% ELSE %]<b>No</b>[% END %]</td></tr>
+                <tr><td>[% brand %] ([% version %])</td><td>[% IF tnc_status.$brand.version == version %]<b>Yes</b> at [% tnc_status.$brand.stamp %][% ELSE %]<b>No </b> ([% IF tnc_status.$brand.version %]Bound by [% tnc_status.$brand.version %][% ELSE %]None[% END %])[% END %]</td></tr>
             [% END %]
             </table></td>
         </tr>
