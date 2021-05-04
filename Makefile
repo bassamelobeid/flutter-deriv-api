@@ -10,7 +10,7 @@ test:
 	@$(PROVE) t/BOM
 
 syntax:
-	@$(PROVE) t/*.t
+	@$(PROVE) --norc t/*.t
 
 tidy:
 	find . -name '*.p?.bak' -delete
