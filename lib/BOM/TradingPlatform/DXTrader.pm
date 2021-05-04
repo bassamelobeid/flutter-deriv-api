@@ -87,8 +87,8 @@ sub new_account {
     my $rule_engine = BOM::Rules::Engine->new(client => $self->client);
     $rule_engine->verify_action('new_trading_account', \%args);
 
-    my $account_type     = $args{account_type} eq 'real' ? 'LIVE' : 'DEMO';
-    my $trading_category = $self->get_trading_category(%args);
+    my $account_type     = $args{account_type} eq 'real'     ? 'LIVE'            : 'DEMO';
+    my $trading_category = $args{market_type} eq 'financial' ? 'Financials Only' : 'Synthetics Only';
     my $currency         = $args{currency};
 
     my $password = $args{password};
@@ -106,7 +106,7 @@ sub new_account {
                 and $_->{account_type} eq $account_type
                 and $_->{type} eq 'CLIENT'
                 and $_->{status} eq 'FULL_TRADING'
-                and any { $_->{category} =~ /^(Trading|AutoExecution)$/ and $_->{value} eq $trading_category }
+                and any { $_->{category} eq 'Trading' and $_->{value} eq $trading_category }
             ($_->{categories} // [])->@*
         }
         ($dxclient->{accounts} // [])->@*;
@@ -134,9 +134,11 @@ sub new_account {
             $_->selectrow_array("SELECT nextval('users.devexperts_account_id')");
         });
 
-    my $account_code = $self->config->{real_account_ids} ? $seq_num         : $self->unique_id;    # dx account id, must be unique in their system
-    my $account_id   = $args{account_type} eq 'real'     ? 'DXR' . $seq_num : 'DXD' . $seq_num;    # our loginid
-    my $balance      = $args{account_type} eq 'demo'     ? 10000            : 0;
+    my $prefix = $args{account_type} eq 'real' ? 'DXR' : 'DXD';
+    my $account_code =
+        $self->config->{real_account_ids} ? $prefix . $seq_num : $prefix . $self->unique_id;    # dx account id, must be unique in their system
+    my $account_id   = $prefix . $seq_num;                                                      # our loginid
+    my $balance      = $args{account_type} eq 'demo' ? 10000 : 0;
     my $account_resp = $self->call_api(
         'client_account_create',
         login         => $dxclient->{login},
@@ -147,12 +149,32 @@ sub new_account {
         currency      => $currency,
         balance       => $balance,
         categories    => [{
-                category => 'AutoExecution',
+                category => 'Trading',
                 value    => $trading_category,
             },
             {
-                category => 'Trading',
-                value    => $trading_category,
+                category => 'AutoExecution',
+                value    => 'Bbook',
+            },
+            {
+                category => 'Commissions',
+                value    => 'Zero Commissions',
+            },
+            {
+                category => 'Financing',
+                value    => 'Standard Swaps',
+            },
+            {
+                category => 'Limits',
+                value    => 'Standard Limits',
+            },
+            {
+                category => 'Margining',
+                value    => 'Standard Margining',
+            },
+            {
+                category => 'Spreads',
+                value    => 'Standard Spreads',
             },
         ],
     );
@@ -162,11 +184,11 @@ sub new_account {
     die 'Created account does not have requested account code' unless $account->{account_code} eq $account_code;
 
     my %attributes = (
-        login            => $dxclient->{login},
-        trading_category => $trading_category,
-        client_domain    => $dxclient->{domain},
-        account_code     => $account->{account_code},
-        clearing_code    => $account->{clearing_code},
+        login         => $dxclient->{login},
+        market_type   => $args{market_type},
+        client_domain => $dxclient->{domain},
+        account_code  => $account->{account_code},
+        clearing_code => $account->{clearing_code},
     );
 
     $self->client->user->add_loginid($account_id, 'dxtrade', $args{account_type}, $account->{currency}, \%attributes);
@@ -189,44 +211,6 @@ sub get_new_account_currency {
     my $available_currencies = $client->landing_company->available_trading_platform_currency_group->{dxtrade} // [];
     my ($default_currency)   = $available_currencies->@*;
     return $default_currency;
-}
-
-=head2 get_trading_category
-
-Given the input arguments, computes the trading category for this account.
-
-It takes named params as:
-
-=over 4
-
-=item * C<market_type> - gaming or financial
-
-=item * C<account_type> - demo or real
-
-=back
-
-Returns a string representing the trading category.
-
-=cut
-
-sub get_trading_category {
-    my ($self, %args) = @_;
-    my $chunks = [];
-
-    my $market_type         = $args{market_type} // 'gaming';
-    my $residence           = $self->client->residence;
-    my $countries_instance  = request()->brand->countries_instance;
-    my $countries_list      = $countries_instance->countries_list;
-    my $binary_company_name = $countries_list->{$residence}->{"${market_type}_company"};
-
-    # currency is hardcoded to USD, this may change
-    my $company_and_currency = join '_', $binary_company_name, 'USD';
-
-    # you are as confused as me, for now assume gaming = synthetic
-    $market_type = 'synthetic' if $market_type ne 'financial';
-    push $chunks->@*, $args{account_type}, 'dx', $market_type, $company_and_currency;
-
-    return lc join '\\', $chunks->@*;
 }
 
 =head2 get_accounts
@@ -653,11 +637,8 @@ Format account details for websocket response.
 
 sub account_details {
     my ($self, $account) = @_;
-    my $category = first { $_->{value} } $account->{categories}->@*;
-    my (undef, undef, $market_type) = split qr/\\/, $category->{value} // '';
-
-    # avoid schema issues
-    $market_type = 'gaming' if ($market_type // '') eq 'synthetic';
+    my $category    = first { $_->{category} eq 'Trading' } $account->{categories}->@*;
+    my $market_type = $category->{value} eq 'Financials Only' ? 'financial' : 'gaming';
 
     return {
         login                 => $account->{login},
@@ -667,7 +648,7 @@ sub account_details {
         currency              => $account->{currency},
         display_balance       => formatnumber('amount', $account->{currency}, $account->{balance}),
         platform              => 'dxtrade',
-        market_type           => $market_type,                                                             #todo
+        market_type           => $market_type,
         landing_company_short => 'svg',                                                                    #todo
     };
 }

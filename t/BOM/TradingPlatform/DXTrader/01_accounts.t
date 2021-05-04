@@ -55,11 +55,11 @@ cmp_deeply(
         currency     => 'USD',
         account_type => $account1->{account_type},
         attributes   => {
-            clearing_code    => 'default',
-            client_domain    => 'default',
-            login            => re('\w{40}'),
-            account_code     => re('\w{40}'),
-            trading_category => 'demo\dx\synthetic\svg_usd',
+            clearing_code => 'default',
+            client_domain => 'default',
+            login         => re('\w{40}'),
+            account_code  => re('\w{40}'),
+            market_type   => 'gaming',
         }
     },
     'user attributes of first account'
@@ -95,11 +95,11 @@ cmp_deeply(
         currency     => 'USD',
         account_type => $account2->{account_type},
         attributes   => {
-            login            => $account2->{login},
-            clearing_code    => 'default',
-            client_domain    => 'default',
-            account_code     => re('\w{40}'),
-            trading_category => 'real\dx\synthetic\svg_usd',
+            login         => $account2->{login},
+            clearing_code => 'default',
+            client_domain => 'default',
+            account_code  => re('\w{40}'),
+            market_type   => 'gaming',
         }
     },
     'user attributes of second account'
