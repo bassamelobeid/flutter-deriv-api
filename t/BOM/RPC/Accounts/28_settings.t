@@ -545,32 +545,36 @@ subtest 'set settings' => sub {
         my $res = $c->tcall($method, $params);
         is($res->{error}{code}, 'PermissionDenied', $tax_field . ' cannot be removed once it has been set');
     }
+
+    $poi_status = 'none';
+
+    for my $imaginary_country (qw(xyz asdf)) {
+        local $params->{args} = {
+            tax_residence             => $imaginary_country,
+            tax_identification_number => '111-222-543',
+        };
+        my $res = $c->tcall($method, $params);
+        is($res->{status}, 1, "Can set tax residence to $imaginary_country") or note explain $res;
+    }
+
     for my $restricted_country (qw(us ir hk my)) {
         local $params->{args} = {
-            tax_residence             => $restricted_country,
-            tax_identification_number => '111-222-543',
+            tax_residence => $restricted_country,
         };
 
         my $res = $c->tcall($method, $params);
-        is($res->{error}{code}, 'RestrictedCountry', 'restricted country ' . $restricted_country . ' for tax residence is blocked as expected')
-            or note explain $res;
+        is($res->{status}, 1, 'restricted country ' . $restricted_country . ' for tax residence is allowed') or note explain $res;
     }
+
     # Testing the comma-separated list form of input separately
     for my $restricted_country (qw(us ir hk)) {
         local $params->{args} = {
-            tax_residence             => "id,$restricted_country,my",
-            tax_identification_number => '111-222-543',
+            tax_residence => "id,$restricted_country,my",
         };
 
         my $res = $c->tcall($method, $params);
-        is($res->{error}{code},
-            'RestrictedCountry', 'one restricted country (' . $restricted_country . ') in list of tax residences is also blocked as expected')
-            or note explain $res;
-        like($res->{error}{message_to_client}, qr/"\Q$restricted_country"/, 'error message mentioned the country')
-            or note explain $res->{error};
+        is($res->{status}, 1, 'restricted country ' . $restricted_country . ' for tax residence is allowed') or note explain $res;
     }
-
-    $poi_status = 'none';
 
     for my $unrestricted_country (qw(id ru)) {
         local $params->{args} = {

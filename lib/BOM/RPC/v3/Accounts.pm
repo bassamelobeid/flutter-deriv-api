@@ -1463,13 +1463,6 @@ rpc set_settings => sub {
 
         my $error = $current_client->format_input_details($args);
         return BOM::RPC::v3::Utility::create_error_by_code($error->{error}) if $error;
-        # This can be a comma-separated list - if that's the case, we'll just use the first failing residence in
-        # the error message.
-        if (my $bad_residence = first { $countries_instance->restricted_country($_) } split /,/, $tax_residence || '') {
-            return BOM::RPC::v3::Utility::create_error({
-                    code              => 'RestrictedCountry',
-                    message_to_client => localize('The supplied tax residence "[_1]" is in a restricted country.', $bad_residence)});
-        }
 
         for my $field ($current_client->immutable_fields) {
             next unless defined($args->{$field});
@@ -1743,7 +1736,7 @@ sub _send_update_account_settings_email {
         [localize('Telephone'), $current_client->phone, _contains_any($updated_fields, 'phone')],
         [localize('Citizen'),   $citizen_country,       _contains_any($updated_fields, 'citizen')]);
 
-    my $tr_tax_residence = join ', ', map { Locale::Country::code2country($_) } split /,/, ($current_client->tax_residence || '');
+    my $tr_tax_residence = join ', ', map { Locale::Country::code2country($_) // $_ } split /,/, ($current_client->tax_residence || '');
     my $pob_country = $current_client->place_of_birth ? Locale::Country::code2country($current_client->place_of_birth) : '';
 
     push @email_updated_fields,
