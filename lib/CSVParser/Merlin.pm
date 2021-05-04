@@ -147,7 +147,7 @@ sub _build_records {
             merlin_tv         => $line->{TV},
             bet_num           => $line->{bet_num},
             atm_vol           => $line->{ATMVol},
-            date_expiry => _get_formatted_date_expiry($line->{Expiry}, $self->_expiry->{$line->{Cut}}->{bom}),
+            date_expiry       => _get_formatted_date_expiry($line->{Expiry}, $self->_expiry->{$line->{Cut}}->{bom}),
         );
 
         if ($line->{Strike}) {
@@ -263,8 +263,8 @@ sub _set_surface_data {
 
 sub _get_interest_rate_data {
     my $file_path = '/home/git/regentmarkets/bom-quant-benchmark/t/csv/interest_rates.csv';
-    my $csv = Text::CSV->new({sep_char => ','});
-    open(my $data, '<', $file_path) or die "Could not open '$file_path' $!\n";
+    my $csv       = Text::CSV->new({sep_char => ','});
+    open(my $data, '<', $file_path) or die "Could not open '$file_path' $!\n";    ## no critic (RequireBriefOpen)
     my $rates;
     while (my $line = <$data>) {
         chomp $line;

@@ -480,7 +480,7 @@ sub get_csv_header {
 
 sub exported_field_headers {
     my $lines = shift;
-    my $csv = Text::CSV->new({binary => 1});
+    my $csv   = Text::CSV->new({binary => 1});
     if (not $csv->parse($lines->[0])) {
         die('Unable to parge line ' . $lines->[0]);
     }
@@ -502,7 +502,7 @@ sub exported_field_headers {
 
 sub exported_field_headers_adding_bom_for_output {
     my $lines = shift;
-    my $csv = Text::CSV->new({binary => 1});
+    my $csv   = Text::CSV->new({binary => 1});
     if (not $csv->parse($lines->[0])) {
         die('Unable to parse line ' . $lines->[0]);
     }
@@ -736,7 +736,7 @@ sub price_list {
     for (my $i = 1; $i < scalar @{$cleaned_lines}; $i++) {
         my $contract;
         my $line = $cleaned_lines->[$i];
-        my $csv = Text::CSV->new({binary => 1});
+        my $csv  = Text::CSV->new({binary => 1});
         if (not $csv->parse($line)) {
             die('Unable to parse line ' . $line);
         }
@@ -756,15 +756,15 @@ sub price_list {
         }
 
         my $underlying_symbol = exported_underlying_symbol(\@fields, $headers);
-        my $contract_args = {
-            id                           => exported_external_id(\@fields,         $headers),
-            bet_type                     => exported_bet_type(\@fields,            $headers),
-            payout_currency              => exported_payout_currency(\@fields,     $headers),
+        my $contract_args     = {
+            id                           => exported_external_id(\@fields, $headers),
+            bet_type                     => exported_bet_type(\@fields, $headers),
+            payout_currency              => exported_payout_currency(\@fields, $headers),
             underlying_symbol            => $underlying_symbol,
-            cut_off_time                 => exported_cut_off_time(\@fields,        $headers),
+            cut_off_time                 => exported_cut_off_time(\@fields, $headers),
             price_type                   => 'theo',
             portfolio                    => 'Reprice',
-            current_spot                 => exported_spot(\@fields,                $headers),
+            current_spot                 => exported_spot(\@fields, $headers),
             date_start                   => $pricing_date,
             expiry_date_bom              => $expiry_date_bom,
             date_pricing                 => $pricing_date,
@@ -775,7 +775,7 @@ sub price_list {
         };
         if ($contract_args->{bet_type} eq 'RANGE' or $contract_args->{bet_type} eq 'UPORDOWN') {
             $contract_args->{high_barrier} = exported_high_barrier(\@fields, $headers);
-            $contract_args->{low_barrier} = exported_low_barrier(\@fields, $headers);
+            $contract_args->{low_barrier}  = exported_low_barrier(\@fields, $headers);
         } else {
             $contract_args->{barrier} = exported_high_barrier(\@fields, $headers);
         }
@@ -783,7 +783,7 @@ sub price_list {
         my $interest_rates_config = _get_interest_rate_data();
 
         my $rate = {
-            asset_rate => {continuous => $interest_rates_config->{$underlying->asset_symbol}},
+            asset_rate           => {continuous => $interest_rates_config->{$underlying->asset_symbol}},
             quoted_currency_rate => $interest_rates_config->{$underlying->quoted_currency_symbol},
         };
 
@@ -797,8 +797,7 @@ sub price_list {
         try {
             $contract = CSVParser::Bloomberg->new($contract_args);
             $content .= $contract->get_csv_line(\@fields, $headers) . "\n";
-        }
-        catch {
+        } catch {
             print "not able to process line[$line] $_\n";
         };
     }
@@ -807,8 +806,8 @@ sub price_list {
 
 sub _get_interest_rate_data {
     my $file_path = '/home/git/regentmarkets/bom-quant-benchmark/t/csv/interest_rates.csv';
-    my $csv = Text::CSV->new({sep_char => ','});
-    open(my $data, '<', $file_path) or die "Could not open '$file_path' $!\n";
+    my $csv       = Text::CSV->new({sep_char => ','});
+    open(my $data, '<', $file_path) or die "Could not open '$file_path' $!\n";    ## no critic (RequireBriefOpen)
     my $rates;
     while (my $line = <$data>) {
         chomp $line;

@@ -83,7 +83,7 @@ sub _build_records {
         next if !looks_like_number($record->{mid});
 
         my $sd_mid   = $record->{mid} / 100;
-        my $barrier  = (defined $record->{barrier}) ? $record->{barrier} / 100 * $spot : undef;
+        my $barrier  = (defined $record->{barrier})  ? $record->{barrier} / 100 * $spot  : undef;
         my $barrier2 = (defined $record->{barrier2}) ? $record->{barrier2} / 100 * $spot : undef;
         my $bet_type = $record->{bet_type};
 
@@ -239,7 +239,7 @@ sub calculate_moneyness_surface {
     foreach my $term (keys %$moneyness_smile) {
 
         my %modified_smile = map { $_ => $moneyness_smile->{$term}->{smile}->{$_} / 100 } keys %{$moneyness_smile->{$term}->{smile}};
-        $surface_data->{$term}->{smile} = \%modified_smile;
+        $surface_data->{$term}->{smile}      = \%modified_smile;
         $surface_data->{$term}->{vol_spread} = {100 => $interpolator->linear($term)};
     }
 
@@ -316,7 +316,7 @@ sub read_the_lines_and_parse_the_categories {
         }
 
         if (my ($foreign_curr, $domestic_curr) = $line =~ /^FX Vol ([A-Z]+) ([A-Z]+)/) {
-            $data->{quanto_volsurface}->{data} = $self->read_quanto_volsurface($fh, $data);
+            $data->{quanto_volsurface}->{data}   = $self->read_quanto_volsurface($fh, $data);
             $data->{quanto_volsurface}->{symbol} = 'frx' . $foreign_curr . $domestic_curr;
         }
 
@@ -393,7 +393,7 @@ sub read_vol_lines {
     while (defined $fh and $line = <$fh> and $line !~ /END VOL SURFACE STANDARD DATES/) {
         $line =~ s/(\r|\n)+//g;
         if ($line =~ /^(\d+-\D+-\d+)/) {
-            my $date = $1;
+            my $date   = $1;
             my @values = split(/,/, $line);
 
             for (my $i = 0; $i < 21; $i++) {
@@ -499,11 +499,11 @@ sub read_interest_rates {
     while (defined $fh and $line = <$fh> and $line !~ /END TERM STRUCTURE STANDARD DATES\s?([A-Z]+)?/) {
         $line =~ s/(\r|\n)+//g;
         if ($line =~ /^(\d+-\w+-\d+)/) {
-            my $date = $1;
+            my $date   = $1;
             my @values = split(/,/, $line);
             #Possible duplicates will be ignored
             my $days_between;
-            eval { $days_between = Date::Utility->new($date)->days_between($start_date); };
+            eval { $days_between = Date::Utility->new($date)->days_between($start_date); };    ## no critic (Eval)
             if (exists $term_structure->{$days_between}) { next; }
             my $r_rate = 0;
             for (my $i = 0; $i < 8; $i++) {
@@ -532,7 +532,7 @@ sub read_vol_spread_lines {
     while (defined $fh and $line = <$fh> and $line !~ /END VOL SPREADS/) {
         $line =~ s/(\r|\n)+//g;
         if ($line =~ /^(\d+-\D+-\d+)/) {
-            my $date = $1;
+            my $date   = $1;
             my @values = split(/,/, $line);
             $vol_spread->{$values[1]} = $values[2];
         }

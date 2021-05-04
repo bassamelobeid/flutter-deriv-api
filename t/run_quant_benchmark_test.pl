@@ -31,7 +31,7 @@ sub _benchmark_testing_setup {
     $Quant::Framework::Underlying::interest_rates_source = 'market';
 
     my $file_path = '/home/git/regentmarkets/bom-quant-benchmark/t/csv/interest_rates.csv';
-    my $csv = Text::CSV->new({sep_char => ','});
+    my $csv       = Text::CSV->new({sep_char => ','});
 
     open(my $data, '<', $file_path) or die "Could not open '$file_path' $!\n";
     my $dummy_line       = <$data>;
@@ -136,7 +136,7 @@ sub script_run {
     eval {
         foreach my $test (@{$self->test_suite}) {
             my $test_class = $self->test_suite_mapper->{$test};
-            my $report = $test_class->new(suite => $self->getOption('suite'))->run_dataset($self->getOption('file'));
+            my $report     = $test_class->new(suite => $self->getOption('suite'))->run_dataset($self->getOption('file'));
             $self->analyse_report($report, $test);
         }
     };

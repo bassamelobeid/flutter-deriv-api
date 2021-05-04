@@ -172,7 +172,7 @@ jobs:
         name: SDFX benchmark minor
     - store_test_results:
         path: /var/tmp/test-output
-  critique:
+  syntax:
     <<: *6
     steps:
     - *1
@@ -183,8 +183,8 @@ jobs:
         <<: *5
         command: |
           echo '--formatter TAP::Formatter::JUnit' >> .proverc
-          make critique
-        name: Perl critique
+          make syntax
+        name: syntax
     - store_test_results:
         path: /var/tmp/test-output
   merlin:
@@ -206,6 +206,8 @@ version: 2
 workflows:
   build-workflow:
     jobs: &7
+    - syntax:
+        context: perl
     - merlin:
         context: perl
     - SDFX_benchmark_major:

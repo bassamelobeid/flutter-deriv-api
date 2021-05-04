@@ -20,8 +20,8 @@ default:
 	@echo "  test         - Run lib tests"
 	@echo "  tidy         - Run perltidy"
 
-critique:
-	/etc/rmg/bin/prove -l t/BOM/002_autosyntax.t
+syntax:
+	/etc/rmg/bin/prove -l --norc t/002_autosyntax.t t/002_critic_check.t
 
 test: $(TESTS)
 

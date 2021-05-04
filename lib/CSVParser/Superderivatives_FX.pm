@@ -40,7 +40,7 @@ sub _build_records {
     my @lines      = path($self->file)->lines;
     my $rate_lines = $self->_get_lines_between([@lines], 'START RATES', 'END RATES');
     my $rate       = $self->_get_rates($rate_lines);
-    my $vol_lines  = $self->_get_lines_between([@lines], 'START VOL', 'END VOL');
+    my $vol_lines  = $self->_get_lines_between([@lines], 'START VOL',    'END VOL');
     my $data       = $self->_get_lines_between([@lines], 'START PRICES', 'END PRICES');
     my $hr         = $self->_convert_to_array_of_hashes($data);
 
@@ -289,7 +289,7 @@ sub _convert_to_array_of_hashes {
     my @wanted_strings = map { join ',', @$_ } @wanted;
 
     my $wanted_string = join "\n", @wanted_strings;
-    my $ar_of_hr      = Text::CSV::Slurp->load(string => $wanted_string);
+    my $ar_of_hr = Text::CSV::Slurp->load(string => $wanted_string);
 
     return $ar_of_hr;
 }
@@ -361,8 +361,8 @@ sub _get_surface_data {
     my ($self, $vol_lines, $underlying, $spot, $rate) = @_;
 
     my $premium_adjusted = $underlying->market_convention->{delta_premium_adjusted};
-    my $t_vol     = $self->_transpose($vol_lines);                # we need to do this. If not I will go crazy trying to calculate delta
-    my $t_vol_ref = $self->_convert_to_array_of_hashes($t_vol);
+    my $t_vol            = $self->_transpose($vol_lines);                # we need to do this. If not I will go crazy trying to calculate delta
+    my $t_vol_ref        = $self->_convert_to_array_of_hashes($t_vol);
     $self->_removes_brackets($t_vol_ref);
 
     my $deltas = $self->_calculate_vol_at_delta($t_vol_ref, $underlying, $spot);

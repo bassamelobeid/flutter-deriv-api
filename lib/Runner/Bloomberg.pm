@@ -53,7 +53,7 @@ sub run_dataset {
     my $file   = $self->report_file->{all};
     $file->spew($output);
 
-    my $csv = Text::CSV::Slurp->load(file => $file);
+    my $csv               = Text::CSV::Slurp->load(file => $file);
     my @base_results      = grep { $_->{'base/numeraire'} eq 'base' } @$csv;
     my @numeraire_results = grep { $_->{'base/numeraire'} eq 'numeraire' } @$csv;
 
