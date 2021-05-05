@@ -128,14 +128,17 @@ sub get_events_from_bloomberg_data_license {
     }
     stats_gauge('economic_events_updates', scalar(@$events_received), {tags => ['tag: bb']});
 
-    my $file_timestamp = Date::Utility->new->date_yyyymmdd;
+    # Some events that we get will not have 'symbol' or 'binary_ticker'. Those events won't be helpful.
+    # They are discarded here
+    my @filtered_events = grep { $_->{symbol} || $_->{binary_ticker} } @$events_received;
+    my $file_timestamp  = Date::Utility->new->date_yyyymmdd;
 
-    foreach my $event_param (@$events_received) {
+    foreach my $event_param (@filtered_events) {
         $event_param->{recorded_date} = Date::Utility->new->epoch;
         Path::Tiny::path("/feed/economic_events/$file_timestamp")->append_utf8(time . ' BB  ' . JSON::MaybeXS->new->encode($event_param) . "\n");
     }
 
-    return $events_received;
+    return \@filtered_events;
 }
 
 sub consolidate_events {
