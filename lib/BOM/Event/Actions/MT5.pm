@@ -28,6 +28,8 @@ use Path::Tiny qw(tempdir);
 use JSON::MaybeUTF8 qw/encode_json_utf8/;
 use DataDog::DogStatsd::Helper;
 use Syntax::Keyword::Try;
+use Future::Utils qw(fmap_void);
+use Time::Moment;
 
 use Future;
 use IO::Async::Loop;
@@ -287,7 +289,9 @@ It needs a hashref as param, expected keys:
 =over 4
 
 =item * C<mt5_login_id> - mt5 login id
+
 =item * C<mt5_group> - mt5 group
+
 =item * C<client> - the client itself, so we can email him/her and customize email template
 
 =back
@@ -342,6 +346,65 @@ sub send_mt5_account_opening_email {
         });
 
     return;
+}
+
+=head2 mt5_inactive_notification
+
+Sends emails to a user notifiying them about their inactive mt5 accounts before they're closed.
+Takes the following named parameters
+
+=over 4
+
+=item * C<email> - user's  email address
+
+=item * C<name> - user's name
+
+=item * C<accounts> - user's inactive mt5 accounts grouped by days remaining to their closure, for example:
+
+{
+   7 => [{
+             loginid => '1234',
+             account_type => 'real gaming',
+        },
+        ...
+    ],
+    10 => [{
+             loginid => '2345',
+             account_type => 'demo financial',
+        },
+        ...
+     ]
+}
+
+=back
+
+=cut
+
+sub mt5_inactive_notification {
+    my $args = shift;
+
+    my $user    = eval { BOM::User->new(email => $args->{email}) } or die 'Invalid email address';
+    my $loginid = eval { [$user->bom_loginids()]->[0] }            or die "User $args->{email} doesn't have any accounts";
+
+    my $now   = Time::Moment->now();
+    my $today = Time::Moment->new(
+        year  => $now->year,
+        month => $now->month,
+        day   => $now->day_of_month
+    );
+
+    my $futures = fmap_void {
+        BOM::Event::Services::Track::mt5_inactive_notification({
+            loginid      => $loginid,
+            email        => $args->{email},
+            name         => $args->{name},
+            accounts     => $args->{accounts}->{$_},
+            closure_date => $today->plus_days($_)->epoch,
+        });
+    }
+    foreach => [sort { $a <=> $b } keys $args->{accounts}->%*];
+
+    return $futures->then(sub { Future->done(1) });
 }
 
 1;

@@ -3,6 +3,8 @@ use warnings;
 
 use Test::More;
 use Test::Fatal;
+use Time::Moment;
+
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Event::Actions::MT5;
@@ -24,7 +26,7 @@ $mock_segment->redefine(
         return Future->done(1);
     },
     'track' => sub {
-        @track_args = @_;
+        push @track_args, \@_;
         return Future->done(1);
     });
 my @enabled_brands = ('deriv', 'binary');
@@ -131,7 +133,8 @@ subtest 'mt5 track event' => sub {
         my $result         = $action_handler->($args)->get;
         ok $result, 'Success mt5 new account result';
 
-        my ($customer, %args) = @track_args;
+        is scalar @track_args, 1;
+        my ($customer, %args) = $track_args[0]->@*;
         my $mt5_details = parse_mt5_group($args->{mt5_group});
         my $type_label  = $mt5_details->{market_type};
         $type_label .= '_stp' if $mt5_details->{sub_account_type} eq 'stp';
@@ -189,7 +192,8 @@ subtest 'mt5 track event' => sub {
         my $result = $action_handler->($args)->get;
         ok $result, 'Success mt5 password change result';
 
-        my ($customer, %args) = @track_args;
+        is scalar @track_args, 1;
+        my ($customer, %args) = $track_args[0]->@*;
         is_deeply \%args,
             {
             context => {
@@ -378,6 +382,105 @@ subtest 'mt5 account opening mail' => sub {
     }
 
     $mocker_mt5->unmock_all;
+};
+
+subtest 'mt5 inactive notification' => sub {
+    my $req = BOM::Platform::Context::Request->new(
+        brand_name => 'deriv',
+    );
+    request($req);
+    my $args = {
+        email    => '',
+        name     => 'Matt Smith',
+        accounts => {
+            4 => [{
+                    loginid => 'MT900000',
+                    type    => 'demo financial'
+                },
+                {
+                    loginid => 'MT900002',
+                    type    => 'real financial'
+                }
+            ],
+            14 => [{
+                    loginid => 'MT900001',
+                    type    => 'real gaming'
+                }
+            ],
+        }};
+    my $now   = Time::Moment->now();
+    my $today = Time::Moment->new(
+        year  => $now->year,
+        month => $now->month,
+        day   => $now->day_of_month
+    );
+
+    undef @identify_args;
+    undef @track_args;
+
+    my $action_handler = BOM::Event::Process::get_action_mappings()->{mt5_inactive_notification};
+
+    like exception { $action_handler->($args)->get; }, qr/invalid email address/i, 'correct exception when mt5 loginid is missing';
+    is scalar @track_args,    0, 'Track is not triggered';
+    is scalar @identify_args, 0, 'Identify is not triggered';
+
+    $args->{email} = $test_client->{email};
+    my $result = $action_handler->($args)->get;
+    ok $result, 'Success event result';
+
+    is scalar @track_args, 2, 'Track is called twice';
+    my ($customer, %args) = $track_args[0]->@*;
+    isa_ok $customer, 'WebService::Async::Segment::Customer', 'First arg is a customer';
+    is_deeply \%args,
+        {
+        context => {
+            active => 1,
+            app    => {name => 'deriv'},
+            locale => 'EN'
+        },
+        event      => 'mt5_inactive_notification',
+        properties => {
+            email        => $test_client->email,
+            name         => 'Matt Smith',
+            closure_date => $today->plus_days(4)->epoch,
+            accounts     => $args->{accounts}->{4},
+            brand        => 'deriv',
+        }
+        },
+        'properties of the first event tracking is correct';
+
+    ($customer, %args) = $track_args[1]->@*;
+    isa_ok $customer, 'WebService::Async::Segment::Customer', 'First arg of the second track call is a customer';
+    is_deeply \%args,
+        {
+        context => {
+            active => 1,
+            app    => {name => 'deriv'},
+            locale => 'EN'
+        },
+        event      => 'mt5_inactive_notification',
+        properties => {
+            email        => $test_client->email,
+            name         => 'Matt Smith',
+            closure_date => $today->plus_days(14)->epoch,
+            accounts     => $args->{accounts}->{14},
+            brand        => 'deriv',
+        }
+        },
+        'properties of the second event tracking is correct';
+
+    is scalar(@identify_args), 0, 'Identify is not triggered';
+
+    undef @track_args;
+
+    $args->{accounts}->{14} = {
+        loginid => 'MT900001',
+        type    => 'real gaming'
+    };
+
+    undef @identify_args;
+    undef @track_args;
+
 };
 
 done_testing();

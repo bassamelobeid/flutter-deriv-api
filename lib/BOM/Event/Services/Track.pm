@@ -55,9 +55,10 @@ my %EVENT_PROPERTIES = (
     mt5_signup => [
         qw(loginid account_type language mt5_group mt5_loginid sub_account_type client_first_name type_label mt5_integer_id brand mt5_server mt5_server_location mt5_server_region mt5_server_environment)
     ],
-    mt5_password_changed     => [qw(loginid mt5_loginid brand)],
-    document_upload          => [qw(loginid document_type expiration_date file_name id upload_date uploaded_manually_by_staff brand)],
-    set_financial_assessment => [
+    mt5_password_changed      => [qw(loginid mt5_loginid brand)],
+    mt5_inactive_notification => [qw(loginid email name closure_date accounts brand)],
+    document_upload           => [qw(loginid document_type expiration_date file_name id upload_date uploaded_manually_by_staff brand)],
+    set_financial_assessment  => [
         qw(loginid education_level employment_industry estimated_worth income_source net_income occupation account_turnover binary_options_trading_experience
             binary_options_trading_frequency cfd_trading_experience cfd_trading_frequency employment_status forex_trading_experience forex_trading_frequency other_instruments_trading_experience
             other_instruments_trading_frequency source_of_wealth brand)
@@ -121,6 +122,7 @@ my @SKIP_BRAND_VALIDATION = qw(
     payment_deposit
     payment_withdrawal
     payment_withdrawal_reversal
+    mt5_inactive_notification
 );
 
 my $loop = IO::Async::Loop->new;
@@ -532,6 +534,43 @@ sub set_financial_assessment {
         event      => 'set_financial_assessment',
         loginid    => $args->{loginid},
         properties => {$args->{params}->%*, loginid => $args->{loginid}},
+    );
+}
+
+=head2 mt5_inactive_notification
+
+It is triggered for each B<mt5_inactive_notification> event emitted, delivering it to Segment. It's called with following arguments:
+
+=over
+
+=item * C<loginid> - required. Login Id of the user.
+
+=item * C<email> - required. Email address to which the notification should be sent.
+
+=item * C<closure_date> - required. The closure date of the accounts, represented as Linux epoch.
+
+=item * C<accounts> - required. An array-ref holding a list of MT5 accounts with following structure:
+
+=over
+
+=item - C<loginid> - MT5 account id.
+
+=item - C<account_type> - MT5 account type.
+
+=back
+
+=back
+
+=cut
+
+sub mt5_inactive_notification {
+    my ($args) = @_;
+
+    my $loginid = delete $args->{loginid};
+    return track_event(
+        event      => 'mt5_inactive_notification',
+        loginid    => $loginid,
+        properties => $args,
     );
 }
 
