@@ -74,13 +74,24 @@ sub get_transaction_history {
         operation   => 'replica',
     });
 
-    my $results = $clientdb->db->dbic->run(
-        fixup => sub {
-            $_->selectall_arrayref(
-                'SELECT * FROM transaction.get_transaction_history_details(?, ?, ?, ?, ?, ?)',
-                {Slice => {}},
-                $account->id, $args->@{qw/date_from date_to action_type limit offset/});
-        });
+    my $results = [];
+    if ($args->{action_type} and $args->{action_type} eq 'transfer') {
+        $results = $clientdb->db->dbic->run(
+            fixup => sub {
+                $_->selectall_arrayref(
+                    'SELECT * FROM transaction.get_account_transfer_details(?, ?, ?, ?, ?)',
+                    {Slice => {}},
+                    $account->id, $args->@{qw/date_from date_to limit offset/});
+            });
+    } else {
+        $results = $clientdb->db->dbic->run(
+            fixup => sub {
+                $_->selectall_arrayref(
+                    'SELECT * FROM transaction.get_history_details(?, ?, ?, ?, ?, ?)',
+                    {Slice => {}},
+                    $account->id, $args->@{qw/date_from date_to action_type limit offset/});
+            });
+    }
 
     for my $txn (@$results) {
         # Set transaction time for different transaction types
@@ -91,6 +102,14 @@ sub get_transaction_history {
 
         # Get localized user-friendly payment remark
         $txn->{payment_remark} = _get_txn_remark($txn, $client) // $txn->{payment_remark};
+
+        my $txn_account_transfer_details = get_account_transfer_details($txn, $client);
+
+        if ($txn_account_transfer_details) {
+            $txn->{fees} = $txn_account_transfer_details->{fees};
+            $txn->{from} = $txn_account_transfer_details->{from};
+            $txn->{to}   = $txn_account_transfer_details->{to};
+        }
     }
 
     return $results;
@@ -137,16 +156,18 @@ sub _get_txn_remark {
 
     # MT5
     if (my $mt5_account = $details->{mt5_account}) {
-        if ($txn->{action_type} eq 'withdrawal') {
-            if ($details->{fees} > 0) {
-                return localize('Transfer to MT5 account [_1]. [_2].', $mt5_account, _get_fee_remark($details));
+        if ($txn->{action_type} eq 'transfer') {
+            if ($txn->{amount} < 0) {
+                if ($details->{fees} > 0) {
+                    return localize('Transfer to MT5 account [_1]. [_2].', $mt5_account, _get_fee_remark($details));
+                }
+                return localize('Transfer to MT5 account [_1]', $mt5_account);
+            } else {
+                if ($details->{fees} > 0) {
+                    return localize('Transfer from MT5 account [_1]. [_2].', $mt5_account, _get_fee_remark($details));
+                }
+                return localize('Transfer from MT5 account [_1]', $mt5_account);
             }
-            return localize('Transfer to MT5 account [_1]', $mt5_account);
-        } elsif ($txn->{action_type} eq 'deposit') {
-            if ($details->{fees} > 0) {
-                return localize('Transfer from MT5 account [_1]. [_2].', $mt5_account, _get_fee_remark($details));
-            }
-            return localize('Transfer from MT5 account [_1]', $mt5_account);
         }
     }
 
@@ -179,16 +200,18 @@ sub _get_txn_remark {
 
     # Account transfers
     if ($gateway eq 'account_transfer' and $txn->{payment_type_code} eq 'internal_transfer') {
-        if ($txn->{action_type} eq 'withdrawal') {
-            if ($details->{fees} > 0) {
-                return localize('Account transfer to [_1]. [_2].', $details->{to_login}, _get_fee_remark($details));
+        if ($txn->{action_type} eq 'transfer') {
+            if ($txn->{amount} < 0) {
+                if ($details->{fees} > 0) {
+                    return localize('Account transfer to [_1]. [_2].', $details->{to_login}, _get_fee_remark($details));
+                }
+                return localize('Account transfer to [_1]', $details->{to_login});
+            } else {
+                if ($details->{fees} > 0) {
+                    return localize('Account transfer from [_1]. [_2].', $details->{from_login}, _get_fee_remark($details));
+                }
+                return localize('Account transfer from [_1]', $details->{from_login});
             }
-            return localize('Account transfer to [_1]', $details->{to_login});
-        } elsif ($txn->{action_type} eq 'deposit') {
-            if ($details->{fees} > 0) {
-                return localize('Account transfer from [_1]. [_2].', $details->{from_login}, _get_fee_remark($details));
-            }
-            return localize('Account transfer from [_1]', $details->{from_login});
         }
     }
 
@@ -293,6 +316,125 @@ sub _get_fee_remark {
         'Includes the minimum transfer fee of [_1] [_2]',
         formatnumber('amount', $args->{fees_currency}, $args->{min_fee}),
         $args->{fees_currency});
+}
+
+=head2 get_account_transfer_details
+
+Get the account transfer details for the transaction
+
+Takes the following arguments
+
+=over 4
+
+=item * C<txn> - hashref containing details of transaction
+
+=item * C<client> - client object
+
+=back
+
+Returns a hashref with following structure:
+
+    {
+        fees => {
+            amount => 2,
+            minimum => 0.1,
+            percentage => 1,
+            currency => USD,
+        },
+        from => {
+            loginid => "CR9000",
+        },
+        to => {
+            loginid => "MTR1000",
+        }
+    }
+
+=cut
+
+sub get_account_transfer_details {
+    my ($txn, $client) = @_;
+
+    return undef unless $txn->{details};
+
+    my $gateway = $txn->{payment_gateway_code} // '';
+
+    return undef unless $gateway eq 'account_transfer';
+
+    my $payment_type = $txn->{payment_type_code} // '';
+
+    return undef unless $payment_type =~ /^(?:internal_transfer|mt5_transfer)$/;
+
+    my $details = $txn->{details};
+
+    if ($payment_type eq 'mt5_transfer') {
+        my $response = get_mt5_transfer_details($txn, $client);
+
+        if ($response) {
+            $details->{from_login} = $response->{from_login};
+            $details->{to_login}   = $response->{to_login};
+        }
+    }
+
+    return {
+        fees => {
+            percentage => ($details->{fees_percent}  // 0.0),
+            minimum    => ($details->{min_fee}       // '0.0'),
+            currency   => ($details->{fees_currency} // ''),
+            amount => ($details->{fees_currency} and $details->{fees}) ? formatnumber('amount', $details->{fees_currency}, $details->{fees}) : 0.0,
+        },
+        from => {
+            loginid => $details->{from_login},
+        },
+        to => {
+            loginid => $details->{to_login},
+        },
+    };
+}
+
+=head2 get_mt5_transfer_details
+
+Get mt5 details for the transfer transaction.
+Populates from and to details as we don't have those
+in database.
+
+Takes the following arguments
+
+=over 4
+
+=item * C<txn> - hashref containing details of transaction
+
+=item * C<client> - client object
+
+=back
+
+Returns a hashref with following structure:
+
+    {
+        from_login => "CR9000",
+        to_login   => "MTR100,
+    }
+
+=cut
+
+sub get_mt5_transfer_details {
+    my ($txn, $client) = @_;
+
+    return undef unless $txn->{details};
+
+    my $details = $txn->{details};
+
+    my $response;
+    # deposit to client account if amount is positive
+    if ($txn->{amount} > 0) {
+        $response->{to_login}   = $client->loginid;
+        $response->{from_login} = 'MTR' . $details->{mt5_account};
+    } else {
+        # withdraw from client account
+        $response->{from_login} = $client->loginid;
+        $response->{to_login}   = 'MTR' . $details->{mt5_account};
+    }
+
+    return $response;
 }
 
 1;

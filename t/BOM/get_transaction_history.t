@@ -20,7 +20,7 @@ use Date::Utility;
 use Data::Dumper;
 
 use Test::MockModule;
-use Test::More;
+use Test::Most;
 use Test::Warn;
 
 my $now = Date::Utility->new();
@@ -249,6 +249,96 @@ $res = get_transaction_history($transac_param);
 ok !$res, 'client does not have an account';
 
 $default_account->unmock('default_account');
+
+subtest 'transfer between accounts' => sub {
+    my $client_usd = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+        email       => 'tba+1@binary.com'
+    });
+    $client_usd->account('USD');
+    my $client_btc = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+        email       => $client_usd->email
+    });
+    $client_btc->account('BTC');
+
+    my $user = BOM::User->create(
+        email    => $client_usd->email,
+        password => 'test'
+    );
+    $user->add_client($client_usd);
+    $user->add_client($client_btc);
+    BOM::Test::Helper::Client::top_up($client_usd, $client_usd->currency, 1000);
+
+    # setting of txn_details values is covered in bom-rpc/t/BOM/RPC/Cashier/20_transfer_between_accounts.t
+    my $txn = $client_usd->payment_account_transfer(
+        currency    => 'USD',
+        amount      => 10,
+        to_amount   => 1,
+        toClient    => $client_btc,
+        remark      => 'blabla',
+        fees        => 1.1,
+        txn_details => {
+            from_login                => $client_usd->loginid,
+            to_login                  => $client_btc->loginid,
+            fees                      => 1.1,
+            fees_currency             => 'USD',
+            fees_percent              => 1.5,
+            min_fee                   => 0.5,
+            fee_calculated_by_percent => 1.1,
+        },
+    );
+
+    my $res = get_transaction_history({
+        client => $client_usd,
+        args   => {action_type => 'transfer'},
+    });
+
+    is scalar(@$res), 1, 'Correct number of internal account transfers';
+
+    my $expected = $res->[0];
+    is $expected->{action_type},       'transfer',          'Correct action type';
+    is $expected->{payment_type_code}, 'internal_transfer', 'Currect payment type code';
+
+    ok exists $expected->{fees}, 'fees exists';
+    ok exists $expected->{from}, 'from exists';
+    ok exists $expected->{to},   'to exists';
+
+    my $output = [{
+            'action_type'   => 'transfer',
+            'amount'        => '-10.00',
+            'balance_after' => '990.00',
+            'details'       => {
+                'fee_calculated_by_percent' => '1.1',
+                'fees'                      => '1.1',
+                'fees_currency'             => 'USD',
+                'fees_percent'              => '1.5',
+                'from_login'                => 'CR10003',
+                'min_fee'                   => '0.5',
+                'to_login'                  => 'CR10004'
+            },
+            'fees' => {
+                'amount'     => '1.10',
+                'currency'   => 'USD',
+                'minimum'    => '0.5',
+                'percentage' => '1.5'
+            },
+            'from'                 => {'loginid' => 'CR10003'},
+            'id'                   => $expected->{id},
+            'payment_gateway_code' => 'account_transfer',
+            'payment_id'           => '201979',
+            'payment_remark'       => 'Account transfer to CR10004. Includes transfer fee of 1.10 USD (1.5%).',
+            'payment_time'         => $expected->{payment_time},
+            'payment_type_code'    => 'internal_transfer',
+            'referrer_type'        => 'payment',
+            'source'               => undef,
+            'staff_loginid'        => 'system',
+            'to'                   => {'loginid' => 'CR10004'},
+            'transaction_time'     => $expected->{transaction_time},
+        }];
+
+    cmp_deeply($output, $res, 'Correct structure');
+};
 
 done_testing();
 1;
