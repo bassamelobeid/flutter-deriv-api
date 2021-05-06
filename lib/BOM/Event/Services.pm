@@ -38,6 +38,31 @@ sub segment {
     }
 }
 
+=head2 rudderstack
+
+Provides connector to Rudderstack, we leverage the API compatibility to use our Segment library.
+
+Returns a L<WebService::Async::Segment> instance.
+
+=cut
+
+sub rudderstack {
+    my ($self) = @_;
+
+    return $self->{rudderstack} //= do {
+        my %args = (
+            write_key => $ENV{RUDDERSTACK_WRITE_KEY} || BOM::Config::third_party()->{rudderstack}->{write_key},
+            base_uri  => $ENV{RUDDERSTACK_BASE_URL}  || BOM::Config::third_party()->{rudderstack}->{base_uri},
+        );
+
+        # https://docs.rudderstack.com/rudderstack-api-spec/http-api-specification
+        # >> RudderStack HTTP API is compatible with Segment.
+
+        $self->add_child(my $service = WebService::Async::Segment->new(%args));
+        $service;
+    }
+}
+
 sub onfido {
     my ($self) = @_;
     return $self->{onfido} //= do {

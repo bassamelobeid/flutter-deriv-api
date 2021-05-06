@@ -128,10 +128,15 @@ my @SKIP_BRAND_VALIDATION = qw(
 my $loop = IO::Async::Loop->new;
 $loop->add(my $services = BOM::Event::Services->new);
 
-# Provides a wrapper instance for communicating with the Segment web API.
-# It's a singleton - we don't want to leak memory by creating new ones for every event.
-sub _segment {
-    return $services->segment();
+=head2 _api
+
+Provides a wrapper instance for communicating with the Segment web API.
+It's a singleton - we don't want to leak memory by creating new ones for every event.
+
+=cut
+
+sub _api {
+    return $services->rudderstack();
 }
 
 =head2 multiplier_hit_type
@@ -1151,7 +1156,7 @@ sub _create_customer {
         $unsubscribed = 'true';
     }
 
-    my $customer = _segment->new_customer(
+    my $customer = _api->new_customer(
         user_id => $client->binary_user_id(),
         traits  => {
             # Reserved traits
@@ -1226,7 +1231,7 @@ sub _validate_params {
     $brand  //= request->brand;
     $app_id //= request->app_id;
 
-    unless (_segment->write_key) {
+    unless (_api->write_key) {
         $log->debugf('Write key was not set.');
         return undef;
     }
