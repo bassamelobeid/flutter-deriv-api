@@ -565,6 +565,9 @@ rpc "statement",
             action_type      => $txn->{action_type},
             amount           => $txn->{amount},
             payout           => $txn->{payout_price},
+            $txn->{fees} ? (fees => $txn->{fees}) : (),
+            $txn->{from} ? (from => $txn->{from}) : (),
+            $txn->{to}   ? (to   => $txn->{to})   : (),
         };
 
         if ($txn->{financial_market_bet_id}) {
