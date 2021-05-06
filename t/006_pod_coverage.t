@@ -17,7 +17,6 @@ my $allowed_naked_packages = {
     'BOM::Platform::S3Client'                    => 7,
     'BOM::Platform::Context'                     => 2,
     'BOM::Platform::Account::Virtual'            => 1,
-    'BOM::Platform::Client::CashierValidation'   => 3,
     'BOM::Platform::Client::IDAuthentication'    => 2,
     'BOM::Platform::Client::DoughFlowClient'     => 16,
     'BOM::Platform::Context::Request'            => 11,

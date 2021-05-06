@@ -19,6 +19,8 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 
 my ($generic_err_code, $new_email, $vr_client, $cr_client, $cr_client_2, $mlt_client, $mf_client, $mx_client) = ('CashierForwardError');
 
+my $app_config = BOM::Config::Runtime->instance->app_config;
+
 subtest prepare => sub {
     $new_email = 'test' . rand . '@binary.com';
     my $user_client = BOM::User->create(
@@ -68,20 +70,9 @@ subtest prepare => sub {
     pass "Prepration successful";
 };
 
-subtest 'When payments is suspended' => sub {
-    BOM::Config::Runtime->instance->app_config->system->suspend->payments(1);
-    my $res = BOM::Platform::Client::CashierValidation::validate($vr_client->loginid, 'deposit');
-    is $res->{error}->{code}, $generic_err_code, 'Correct error code';
-    is $res->{error}->{message_to_client}, 'Sorry, cashier is temporarily unavailable due to system maintenance.', 'Correct error message';
-    BOM::Config::Runtime->instance->app_config->system->suspend->payments(0);
-};
+subtest 'basic tests' => sub {
 
-subtest 'Cashier validation common' => sub {
-    my $res = BOM::Platform::Client::CashierValidation::validate('CR332112', 'deposit');
-    is $res->{error}->{code}, $generic_err_code, 'Correct error code for invalid loginid';
-    is $res->{error}->{message_to_client}, 'Invalid account.', 'Correct error message for invalid loginid';
-
-    $res = BOM::Platform::Client::CashierValidation::validate($vr_client->loginid, 'withdraw');
+    my $res = BOM::Platform::Client::CashierValidation::validate($vr_client->loginid, 'withdraw');
     is $res->{error}->{code}, $generic_err_code, 'Correct error code';
     is $res->{error}->{message_to_client}, 'This is a virtual-money account. Please switch to a real-money account to access cashier.',
         'Correct error message';
@@ -90,16 +81,71 @@ subtest 'Cashier validation common' => sub {
     is $res->{error}->{code},              'ASK_CURRENCY',             'Correct error code for account currency not set';
     is $res->{error}->{message_to_client}, 'Please set the currency.', 'Correct error message for account currency not set';
 
-    my $country = $cr_client->residence;
+    $res = BOM::Platform::Client::CashierValidation::validate('CR332112', 'deposit');
+    is $res->{error}->{code}, $generic_err_code, 'Correct error code for invalid loginid';
+    is $res->{error}->{message_to_client}, 'Invalid account.', 'Correct error message for invalid loginid';
+};
+
+subtest 'System suspend' => sub {
     $cr_client->set_default_account('USD');
+    $cr_client_2->set_default_account('BTC');
+
+    $app_config->system->suspend->payments(1);
+
+    my $res = BOM::Platform::Client::CashierValidation::base_validation($cr_client);
+    is $res->{error}->{code}, $generic_err_code, 'Correct error code';
+    is $res->{error}->{message_to_client}, 'Sorry, cashier is temporarily unavailable due to system maintenance.',
+        'Payments suspended error for fiat client';
+
+    $res = BOM::Platform::Client::CashierValidation::base_validation($cr_client_2);
+    is $res->{error}->{code}, $generic_err_code, 'Correct error code';
+    is $res->{error}->{message_to_client}, 'Sorry, crypto cashier is temporarily unavailable due to system maintenance.',
+        'Payments suspended error for crypto client';
+
+    $app_config->system->suspend->payments(0);
+
+    $app_config->system->suspend->cashier(1);
+
+    $res = BOM::Platform::Client::CashierValidation::base_validation($cr_client);
+    is $res->{error}->{code}, $generic_err_code, 'Correct error code';
+    is $res->{error}->{message_to_client}, 'Sorry, cashier is temporarily unavailable due to system maintenance.',
+        'Cashier suspended error for fiat client';
+
+    $res = BOM::Platform::Client::CashierValidation::base_validation($cr_client_2);
+    unlike $res->{message_to_client} // '', '/cashier is temporarily unavailable/', 'crypto client is unaffected';
+
+    $app_config->system->suspend->cashier(0);
+
+    $app_config->system->suspend->cryptocashier(1);
+
+    $res = BOM::Platform::Client::CashierValidation::base_validation($cr_client_2);
+    is $res->{error}->{code}, $generic_err_code, 'Correct error code';
+    is $res->{error}->{message_to_client}, 'Sorry, crypto cashier is temporarily unavailable due to system maintenance.',
+        'Cashier suspended error for crypto client';
+
+    $res = BOM::Platform::Client::CashierValidation::base_validation($cr_client);
+    unlike $res->{message_to_client} // '', '/cashier is temporarily unavailable/', 'fiat client is unaffected';
+
+    $app_config->system->suspend->cryptocashier(0);
+
+    $app_config->system->suspend->cryptocurrencies('BTC');
+    $res = BOM::Platform::Client::CashierValidation::base_validation($cr_client_2);
+    is $res->{error}{message_to_client}, 'Sorry, crypto cashier is temporarily unavailable due to system maintenance.', 'Crypto currency suspended';
+    $app_config->system->suspend->cryptocurrencies('');
+};
+
+subtest 'Cashier validation common' => sub {
+
+    my $country = $cr_client->residence;
     $cr_client->residence('');
     $cr_client->save();
 
-    $res = BOM::Platform::Client::CashierValidation::validate($cr_client->loginid, 'withdraw');
+    my $res = BOM::Platform::Client::CashierValidation::validate($cr_client->loginid, 'withdraw');
     is $res->{error}->{code}, $generic_err_code, 'Correct error code for no residence';
     is $res->{error}->{message_to_client}, 'Please set your country of residence.', 'Correct error message for no residence';
 
     $cr_client->residence($country);
+
     $cr_client->status->set('cashier_locked', 'system', 'pending investigations');
     $cr_client->save();
 
@@ -136,7 +182,6 @@ subtest 'Cashier validation common' => sub {
     $mock_client->mock(is_document_expiry_check_required => sub { note "mocked Client->is_document_expiry_check_required returning true"; 1 });
 
     $res = BOM::Platform::Client::CashierValidation::validate($cr_client->loginid, 'deposit');
-    diag $res;
     is $res->{error}->{code}, 'CashierForwardError', 'Correct error code for expired documents with expired check required';
     is $res->{error}->{message_to_client},
         'Your identity documents have expired. Visit your account profile to submit your valid documents and unlock your cashier.',
@@ -153,14 +198,13 @@ subtest 'Cashier validation common' => sub {
     $cr_client->save;
 
     my $expected = {
-        'error' => {
-            'code'              => 'ASK_FIX_DETAILS',
-            'details'           => {'fields' => ['address_city']},
-            'message_to_client' => 'Your profile appears to be incomplete. Please update your personal details to continue.'
-        }};
+        'code'              => 'ASK_FIX_DETAILS',
+        'details'           => {'fields' => ['address_city']},
+        'message_to_client' => 'Your profile appears to be incomplete. Please update your personal details to continue.'
+    };
 
     $res = BOM::Platform::Client::CashierValidation::validate($cr_client->loginid, 'withdraw');
-    is_deeply($res, $expected, 'lc withdrawal requirements validated');
+    is_deeply($res->{error}, $expected, 'lc withdrawal requirements validated');
 
     $cr_client->address_city($address_city);
     $cr_client->save;
@@ -174,6 +218,11 @@ subtest 'Cashier validation deposit' => sub {
     is $res->{error}->{message_to_client}, 'Your account is restricted to withdrawals only.', 'Correct error message for unwelcome client';
 
     $cr_client->status->clear_unwelcome;
+
+    $app_config->system->suspend->cryptocurrencies_deposit(['BTC']);
+    $res = BOM::Platform::Client::CashierValidation::validate($cr_client_2->loginid, 'deposit');
+    is $res->{error}{message_to_client}, 'Deposits are temporarily unavailable for BTC. Please try later.', 'crypto currency deposit suspended';
+    $app_config->system->suspend->cryptocurrencies_deposit([]);
 };
 
 subtest 'Cashier validation withdraw' => sub {
@@ -193,6 +242,10 @@ subtest 'Cashier validation withdraw' => sub {
 
     $cr_client->status->clear_withdrawal_locked;
 
+    $app_config->system->suspend->cryptocurrencies_withdrawal(['BTC']);
+    $res = BOM::Platform::Client::CashierValidation::validate($cr_client_2->loginid, 'withdraw');
+    is $res->{error}{message_to_client}, 'Withdrawals are temporarily unavailable for BTC. Please try later.', 'crypto currency withdrawal suspended';
+    $app_config->system->suspend->cryptocurrencies_withdrawal([]);
 };
 
 subtest 'Cashier validation landing company and country specific' => sub {
@@ -289,51 +342,6 @@ subtest 'Cashier validation landing company and country specific' => sub {
         $mx_client->status->clear_max_turnover_limit_not_set;
 
         is BOM::Platform::Client::CashierValidation::validate($mx_client->loginid, 'deposit'), undef, 'Validation passed';
-    };
-
-    subtest 'pre withdrawal validation' => sub {
-        my $res = BOM::Platform::Client::CashierValidation::pre_withdrawal_validation('CR332112', undef);
-        is $res->{error}->{code}, $generic_err_code, 'Correct error code';
-        is $res->{error}->{message_to_client}, 'Invalid amount.', 'Correct error message';
-
-        $res = BOM::Platform::Client::CashierValidation::pre_withdrawal_validation('CR332112', 100);
-        is $res->{error}->{code}, $generic_err_code, 'Correct error code';
-        is $res->{error}->{message_to_client}, 'Invalid account.', 'Correct error message';
-
-        $res = BOM::Platform::Client::CashierValidation::pre_withdrawal_validation($mlt_client->loginid, 1000);
-        is $res->{error}->{code}, $generic_err_code, 'Correct error code';
-        is $res->{error}->{message_to_client}, 'Account needs age verification.', 'Correct error message';
-
-        $mlt_client->status->set('age_verification', 'system', 1);
-
-        $res = BOM::Platform::Client::CashierValidation::pre_withdrawal_validation($mlt_client->loginid, 2000);
-        is $res->{error}->{code}, $generic_err_code, 'Correct error code';
-        is $res->{error}->{message_to_client}, 'Please authenticate your account.', 'Correct error message';
-        is BOM::Platform::Client::CashierValidation::pre_withdrawal_validation($mlt_client->loginid, 1999), undef,
-            'Amount less than allowed limit hence validation passed';
-
-        $res = BOM::Platform::Client::CashierValidation::pre_withdrawal_validation($mx_client->loginid, 1000);
-        is $res->{error}->{code}, $generic_err_code, 'Correct error code';
-        is $res->{error}->{message_to_client}, 'Account needs age verification.', 'Correct error message';
-
-        $mx_client->status->set('age_verification', 'system', 1);
-
-        $res = BOM::Platform::Client::CashierValidation::pre_withdrawal_validation($mx_client->loginid, 3000);
-        is $res->{error}->{code}, $generic_err_code, 'Correct error code';
-        is $res->{error}->{message_to_client}, 'Please authenticate your account.', 'Correct error message';
-
-        is BOM::Platform::Client::CashierValidation::pre_withdrawal_validation($cr_client->loginid, 10000), undef,
-            'Not applicable for CR hence validation passed';
-
-        my $mock_client = Test::MockModule->new('BOM::User::Client');
-        $mock_client->mock(fully_authenticated => sub { note "mocked Client->fully_authenticated returning true"; 1 });
-
-        is BOM::Platform::Client::CashierValidation::pre_withdrawal_validation($mlt_client->loginid, 10000), undef,
-            'Fully authenticated and age verified hence passed';
-        is BOM::Platform::Client::CashierValidation::pre_withdrawal_validation($mx_client->loginid, 10000), undef,
-            'Fully authenticated and age verified hence passed';
-
-        $mock_client->unmock('fully_authenticated');
     };
 };
 

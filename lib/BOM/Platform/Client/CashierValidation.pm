@@ -32,6 +32,16 @@ use BOM::Config::CurrencyConfig;
 Validates various checks related to cashier including
 regulation, compliance requirements
 
+=over 4
+
+=item * C<$loginid> - For creating an instance of L<BOM::User::Client>.
+
+=item * C<action> - takes either deposit or withdraw to include their specific rules.
+
+=back
+
+Returns undef for successful validation or a hashref containing error details.
+
 =cut
 
 sub validate {
@@ -42,46 +52,74 @@ sub validate {
 
     my $client = BOM::User::Client->get_client_instance($loginid, 'replica') or return _create_error(localize('Invalid account.'));
 
-    return _create_error(localize('This is a virtual-money account. Please switch to a real-money account to access cashier.'))
-        if $client->is_virtual;
+    my @validations = (\&base_validation);
+    push @validations, \&deposit_validation  if $action eq 'deposit';
+    push @validations, \&withdraw_validation if $action eq 'withdraw';
 
-    # Self-excluded clients are not allowed to deposit
-    if ($action eq 'deposit') {
-        my $lim = $client->get_self_exclusion_until_date;
-        return _create_error(
-            localize(
-                'Sorry, but you have self-excluded yourself from the website until [_1]. If you are unable to place a trade or deposit after your self-exclusion period, please contact the Customer Support team for assistance.',
-                $lim
-            ),
-            'SelfExclusion'
-        ) if $lim;
+    for my $sub (@validations) {
+        my $res = $sub->($client);
+        return $res if $res->{error};
     }
 
-    my $currency = $client->default_account ? $client->default_account->currency_code : '';
-    return _create_error(localize('Please set the currency.'), 'ASK_CURRENCY') unless $currency;
+    return undef;
+}
 
-    return _create_error(localize('Please set your country of residence.')) unless $client->residence;
+=head2 base_validation
+
+Check general rules that determines the cashier is locked completely or not.
+
+=over 4
+
+=item * C<client> - an instance of L<BOM::User::Client>.
+
+=back
+
+Returns empty hashref for successful validation or a hashref containing error details.
+
+=cut
+
+sub base_validation {
+    my ($client) = @_;
+
+    my $errors = {};
+
+    _add_error($errors, localize('This is a virtual-money account. Please switch to a real-money account to access cashier.'))
+        if $client->is_virtual;
+
+    my $currency = $client->default_account ? $client->default_account->currency_code : '';
+    _add_error($errors, localize('Please set the currency.'), 'ASK_CURRENCY') unless $currency;
+
+    my $currency_type = LandingCompany::Registry::get_currency_type($currency);
+
+    _add_error($errors, localize('Sorry, cashier is temporarily unavailable due to system maintenance.'))
+        if $currency_type eq 'fiat' and BOM::Config::CurrencyConfig::is_cashier_suspended();
+
+    _add_error($errors, localize('Sorry, crypto cashier is temporarily unavailable due to system maintenance.'))
+        if $currency_type eq 'crypto'
+        and (BOM::Config::CurrencyConfig::is_crypto_cashier_suspended() or BOM::Config::CurrencyConfig::is_crypto_currency_suspended($currency));
+
+    _add_error($errors, localize('Please set your country of residence.')) unless $client->residence;
 
     # better to do generic error validation before landing company or account specific
-    return _create_error(localize('Your cashier is locked.'))   if ($client->status->cashier_locked);
-    return _create_error(localize('Your account is disabled.')) if ($client->status->disabled);
+    _add_error($errors, localize('Your cashier is locked.'))   if $client->status->cashier_locked;
+    _add_error($errors, localize('Your account is disabled.')) if $client->status->disabled;
 
     my $landing_company = $client->landing_company;
-    return _create_error(localize('[_1] transactions may not be performed with this account.', $currency))
-        unless ($landing_company->is_currency_legal($currency));
+    _add_error($errors, localize('[_1] transactions may not be performed with this account.', $currency))
+        unless $landing_company->is_currency_legal($currency);
 
-    return _create_error(
+    _add_error($errors,
         localize('Your identity documents have expired. Visit your account profile to submit your valid documents and unlock your cashier.'))
-        if ($client->documents_expired);
+        if $client->documents_expired;
 
     # landing company or country specific validations
     if ($landing_company->short eq 'maltainvest') {
-        return _create_error(localize('Please authenticate your account.'), 'ASK_AUTHENTICATE') unless $client->fully_authenticated;
+        _add_error($errors, localize('Please authenticate your account.'), 'ASK_AUTHENTICATE') unless $client->fully_authenticated;
 
-        return _create_error(localize('Financial Risk approval is required.'), 'ASK_FINANCIAL_RISK_APPROVAL')
+        _add_error($errors, localize('Financial Risk approval is required.'), 'ASK_FINANCIAL_RISK_APPROVAL')
             unless $client->status->financial_risk_approval;
 
-        return _create_error(
+        _add_error($errors,
             localize('Tax-related information is mandatory for legal and regulatory requirements. Please provide your latest tax information.'),
             'ASK_TIN_INFORMATION')
             unless $client->status->crs_tin_information;
@@ -92,32 +130,107 @@ sub validate {
     if ($client->landing_company->short ne 'maltainvest'
         && ($config->{need_set_max_turnover_limit} || $client->landing_company->check_max_turnover_limit_is_set))
     {
-        return _create_error(localize('Please accept Funds Protection.'), 'ASK_UK_FUNDS_PROTECTION')
-            if $config->{ukgc_funds_protection}
-            && !$client->status->ukgc_funds_protection;
-        return _create_error(localize('Please set your 30-day turnover limit in our self-exclusion facilities to access the cashier.'),
-            'ASK_SELF_EXCLUSION_MAX_TURNOVER_SET')
-            if $client->status->max_turnover_limit_not_set;
+        _add_error($errors, localize('Please accept Funds Protection.'), 'ASK_UK_FUNDS_PROTECTION')
+            if $config->{ukgc_funds_protection} && !$client->status->ukgc_funds_protection;
+
+        _add_error(
+            $errors,
+            localize('Please set your 30-day turnover limit in our self-exclusion facilities to access the cashier.'),
+            'ASK_SELF_EXCLUSION_MAX_TURNOVER_SET'
+        ) if $client->status->max_turnover_limit_not_set;
     }
-    # action specific validation should be last to be validated
-    return _create_error(localize('Your account is restricted to withdrawals only.'))
-        if ($action eq 'deposit' and $client->status->unwelcome);
 
-    return _create_error(localize('Your account is restricted to deposits only.'))
-        if ($action eq 'withdraw' and $client->status->no_withdrawal_or_trading);
+    return $errors;
+}
 
-    return _create_error(localize('Your account is locked for withdrawals.'))
-        if ($action eq 'withdraw' and $client->status->withdrawal_locked);
+=head2 deposit_validation
 
-    my @missing_fields;
-    @missing_fields = $client->missing_requirements('deposit')    if $action eq 'deposit';
-    @missing_fields = $client->missing_requirements('withdrawal') if $action eq 'withdraw';
+Check deposit specific rules that determines the deposit is locked or not.
 
-    return _create_error(localize('Your profile appears to be incomplete. Please update your personal details to continue.'),
+=over 4
+
+=item * C<client> - an instance of L<BOM::User::Client>.
+
+=back
+
+Returns empty hashref for successful validation or a hashref containing error details.
+
+=cut
+
+sub deposit_validation {
+    my ($client) = @_;
+
+    my $errors = {};
+
+    my $lim = $client->get_self_exclusion_until_date;
+    _add_error(
+        $errors,
+        localize(
+            'Sorry, but you have self-excluded yourself from the website until [_1]. If you are unable to place a trade or deposit after your self-exclusion period, please contact the Customer Support team for assistance.',
+            $lim
+        ),
+        'SelfExclusion'
+    ) if $lim;
+
+    _add_error($errors, localize('Your account is restricted to withdrawals only.'))
+        if $client->status->unwelcome;
+
+    my @missing_fields = $client->missing_requirements('deposit');
+    _add_error($errors, localize('Your profile appears to be incomplete. Please update your personal details to continue.'),
         'ASK_FIX_DETAILS', {fields => \@missing_fields})
         if @missing_fields;
 
-    return;
+    if ($client->default_account) {
+        my $currency = $client->default_account->currency_code;
+        if (LandingCompany::Registry::get_currency_type($currency) eq 'crypto') {
+            _add_error($errors, localize('Deposits are temporarily unavailable for [_1]. Please try later.', $currency))
+                if BOM::Config::CurrencyConfig::is_crypto_currency_deposit_suspended($currency);
+        }
+    }
+
+    return $errors;
+}
+
+=head2 withdraw_validation
+
+Check withdrawal specific rules that determines the withdrawal is locked or not.
+
+=over 4
+
+=item * C<client> - an instance of L<BOM::User::Client>.
+
+=back
+
+Returns empty hashref for successful validation or a hashref containing error details.
+
+=cut
+
+sub withdraw_validation {
+    my ($client) = @_;
+
+    my $errors = {};
+
+    _add_error($errors, localize('Your account is restricted to deposits only.'))
+        if $client->status->no_withdrawal_or_trading;
+
+    _add_error($errors, localize('Your account is locked for withdrawals.'))
+        if $client->status->withdrawal_locked;
+
+    my @missing_fields = $client->missing_requirements('withdrawal');
+
+    _add_error($errors, localize('Your profile appears to be incomplete. Please update your personal details to continue.'),
+        'ASK_FIX_DETAILS', {fields => \@missing_fields})
+        if @missing_fields;
+
+    if ($client->default_account) {
+        my $currency = $client->default_account->currency_code;
+        if (LandingCompany::Registry::get_currency_type($currency) eq 'crypto') {
+            _add_error($errors, localize('Withdrawals are temporarily unavailable for [_1]. Please try later.', $currency))
+                if BOM::Config::CurrencyConfig::is_crypto_currency_withdrawal_suspended($currency);
+        }
+    }
+
+    return $errors;
 }
 
 =head2 invalid_currency_error
@@ -143,42 +256,6 @@ sub invalid_currency_error {
         code              => 'InvalidCurrency',
         message_to_client => BOM::Platform::Context::localize('The provided currency [_1] is invalid.', $currency),
     };
-}
-
-=head2 pre_withdrawal_validation
-
-Validates withdrawal amount
-
-Used to validate withdrawal request before forwarding
-to external cashiers
-
-As of now doughflow have these checks in their code
-but crypto cashier needs it explicitly
-
-=cut
-
-sub pre_withdrawal_validation {
-    my ($loginid, $amount) = @_;
-
-    return _create_error(localize('Invalid amount.')) if (not $amount or not looks_like_number($amount) or $amount <= 0);
-
-    my $client = BOM::User::Client->new({
-            loginid      => $loginid,
-            db_operation => 'replica'
-        }) or return _create_error(localize('Invalid account.'));
-
-    # TODO: implement logic to compare to EUR/USD limits
-    # as currenctly it returns amount in account currency
-    my $total = 0;
-    if (my $p = _withdrawal_validation_period($client->landing_company->short)) {
-        $total = BOM::Database::DataMapper::Payment->new({client_loginid => $client->loginid})->get_total_withdrawal($p);
-    }
-
-    if (my $err = _withdrawal_validation($client, $total + $amount)) {
-        return $err;
-    }
-
-    return;
 }
 
 =head2 calculate_to_amount_with_fees
@@ -262,33 +339,23 @@ sub calculate_to_amount_with_fees {
     return ($amount, $fee_applied, $fee_percent, $min_fee, $fee_calculated_by_percent);
 }
 
-sub _withdrawal_validation_period {
-    my $lc = shift;
+=head2 _create_error
 
-    return {
-        start_time => Date::Utility->new(time - 86400 * 30),
-        exclude    => ['currency_conversion_transfer', 'account_transfer'],
-        }
-        if $lc eq 'iom';
+Create error structure.
 
-    return {
-        exclude => ['currency_conversion_transfer', 'account_transfer'],
-    } if $lc eq 'malta';
+=over 4
 
-    return;
-}
+=item * C<message> - localized error message to be returned by api.
 
-sub _withdrawal_validation {
-    my ($client, $total) = @_;
+=item * C<code> - error code to be returned by api, optional.
 
-    my ($lc, $is_authenticated) = ($client->landing_company->short, $client->fully_authenticated);
+=item * C<details> - hashref of additional details to be returned by api, optional.
 
-    return _create_error(localize('Account needs age verification.'))   if ($lc =~ /^(?:malta|iom)$/ and not $client->status->age_verification);
-    return _create_error(localize('Please authenticate your account.')) if ($lc eq 'iom'   and not $is_authenticated and $total >= 3000);
-    return _create_error(localize('Please authenticate your account.')) if ($lc eq 'malta' and not $is_authenticated and $total >= 2000);
+=back
 
-    return;
-}
+Returns error structure.
+
+=cut
 
 sub _create_error {
     my ($message, $code, $details) = @_;
@@ -299,6 +366,33 @@ sub _create_error {
             message_to_client => $message,
             $details ? (details => $details) : (),
         }};
+}
+
+=head2 _add_error
+
+Generates first message and accumulates all error codes that FE is interested in.
+
+=over 4
+
+=item * C<current> - hashref to be updated in-place.
+
+=item * C<message> - localized error message to be returned by api.
+
+=item * C<code> - error code to be returned by api, optional.
+
+=item * C<details> - hashref of additional details to be returned by api, optional.
+
+=back
+
+Returns nothing.
+
+=cut
+
+sub _add_error {
+    my ($current, $message, $code, $details) = @_;
+
+    $current->{error} = _create_error($message, $code, $details)->{error} unless $current->{error};
+    push $current->{status}->@*, $code if $code and $code =~ /^[A-Z_]+$/;
 }
 
 1;
