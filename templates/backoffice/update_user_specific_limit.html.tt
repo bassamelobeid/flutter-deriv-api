@@ -84,7 +84,7 @@
             <td> (required) accepts 'old' or 'new'. If 'new' is selected, it will affect new client who places their first financial trade</td>
         </tr>
         <tr>
-            <td><input class="btn btn--red" type="submit" name="delete_limit" value="Delete"></td>
+            <td><input class="btn btn--primary" type="submit" name="delete_limit" value="Delete"></td>
         </tr>
     </table>
     </fieldset>

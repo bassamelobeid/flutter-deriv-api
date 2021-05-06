@@ -35,7 +35,7 @@
     <tbody>
     [% FOR result = results %]
         <tr>
-            <td align="left" ><a class="link link--primary" href="[% request.url_for( 'backoffice/f_clientloginid_edit.cgi', {loginID => result.loginid}) %]">[% result.loginid %]</td>
+            <td align="left" ><a class="link" href="[% request.url_for( 'backoffice/f_clientloginid_edit.cgi', {loginID => result.loginid}) %]">[% result.loginid %]</td>
             <td>[% result.salutation %]</td>
             <td>[% result.first_name %]</td>
             <td>[% result.last_name %]</td>

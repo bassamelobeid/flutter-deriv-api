@@ -151,14 +151,14 @@ if (BOM::Backoffice::Auth0::has_authorisation(['Marketing'])) {
         'Deactivate app',
         {
             container_class => 'card',
-            title_class     => 'card__label'
+            title_class     => 'card__label toggle'
         });
     print qq~
         <p>Revoke app ID</p>
         <form action="~ . request()->url_for('backoffice/f_app_management.cgi') . qq~" method="post">
             <label for="app_id_revoke">App ID:</label>
             <input type="number" id="app_id_revoke" name="app_id" />
-            <input type="submit" class="btn btn--red" name="action" value="BLOCK APP" onclick="return confirm('Are you sure you want to revoke the app?')">
+            <input type="submit" class="btn btn--primary" name="action" value="BLOCK APP" onclick="return confirm('Are you sure you want to revoke the app?')">
         </form>~;
 }
 
@@ -168,14 +168,14 @@ if (BOM::Backoffice::Auth0::has_authorisation(['Marketing'])) {
         'Activate app',
         {
             container_class => 'card',
-            title_class     => 'card__label'
+            title_class     => 'card__label toggle'
         });
     print qq~
         <p>Activate app ID</p>
         <form action="~ . request()->url_for('backoffice/f_app_management.cgi') . qq~" method="get">
             <label for="app_id_activate">App ID:</label>
             <input type="number" id="app_id_activate" name="app_id" />
-            <input type="submit" class="btn btn--red" name="action" value="UNBLOCK APP" onclick="return confirm('Are you sure you want to activate the app?')">
+            <input type="submit" class="btn btn--primary" name="action" value="UNBLOCK APP" onclick="return confirm('Are you sure you want to activate the app?')">
         </form>~;
 }
 
@@ -185,7 +185,7 @@ if (BOM::Backoffice::Auth0::has_authorisation(['Marketing'])) {
         'Block apps',
         {
             container_class => 'card',
-            title_class     => 'card__label'
+            title_class     => 'card__label toggle'
         });
     print qq~
         <p>Block apps in certain opertation domain (red, blue, green etc). Expected format example: {
@@ -197,7 +197,7 @@ if (BOM::Backoffice::Auth0::has_authorisation(['Marketing'])) {
             <label for="block_app_operation_domain">Blocked App IDs:</label>
             <textarea id="block_app_operation_domain" rows="3" cols="30" name="block_app_operation_domain" placeholder="{}">~
         . get_blocked_app_operation_domain() . qq~</textarea>
-            <input type="submit" class="btn btn--red" name="action" value="BLOCK APPS IN DOMAIN" onclick="return confirm('Are you sure you want to block the app(s) in the domain(s)?'">
+            <input type="submit" class="btn btn--primary" name="action" value="BLOCK APPS IN DOMAIN" onclick="return confirm('Are you sure you want to block the app(s) in the domain(s)?'">
             </form>~;
 }
 

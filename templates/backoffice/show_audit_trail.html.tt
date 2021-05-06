@@ -16,28 +16,29 @@
 
 <style type="text/css">
     .hidden {
-        background: #000000;
+        background: var(--bg-primary-light);
         font-size: 0;
         user-select: none;
     }
     .hidden_show {
-        background: #000000;
-        color: #ffffff;
+        background: var(--bg-primary-light);
+        color: var(--text-primary);
         padding: 0 4px;
     }
     #group_display span {
         cursor: pointer;
         display: inline-block;
         font-weight: bold;
-        background: var(--color-grey-4);
+        background: var(--bg-primary-light);
         padding: 4px 8px;
         border-bottom: 2px solid transparent;
+        font-size: 1rem;
     }
     #group_display span.selected {
-        border-bottom: 2px solid var(--color-red);
+        border-bottom: 2px solid var(--color-orange);
     }
     #group_display span:hover {
-        background: var(--color-grey-3);
+        background: var(--bg-active);
     }
     table#show_log_list_table th, table#show_log_list_table td {
         font-size: 1.4rem;
@@ -45,10 +46,11 @@
     table#show_log_list_table td div.changed {
         padding: 0 4px;
         background: var(--color-pink);
+        color: var(--grey-800);
     }
     table#show_log_list_table td div.unavailable {
         padding: 0 4px;
-        background: var(--color-grey-2);
+        background: var(--bg-disabled);
         height: 20px;
     }
 </style>

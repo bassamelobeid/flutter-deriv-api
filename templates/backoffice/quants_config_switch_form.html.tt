@@ -44,7 +44,7 @@
                     el.find('td.config_status').text(status);
                     var button = config.status == 1 ? '<button class="btn btn--secondary" onClick="UpdateConfigStatus(\''+config_type+'\', 0)">Turn off</button>' : '<button class="btn btn--primary" onClick="UpdateConfigStatus(\''+config_type+'\', 1)">Turn on</button>';
                     el.find('td.config_button').html(button);
-                    result.text('config updated').css('color', 'var(--color-green-2)');
+                    result.text('config updated').css('color', 'var(--color-green)');
                 }
             }
         });

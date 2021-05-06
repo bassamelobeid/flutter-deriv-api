@@ -10,7 +10,7 @@
         <td>(accepts any of the following values: 1m, 5m, 10m, 1m 30s etc.)</td>
     </tr>
     <tr>
-        <td><button class="btn btn--red" onClick="Save()" type="button">Save</button></td>
+        <td><button class="btn btn--primary" onClick="Save()" type="button">Save</button></td>
         <td class="result"></td>
     </tr>
 </table>
@@ -36,7 +36,7 @@
                     result.text(config.error).css('color', 'var(--color-red)');
                 } else {
                     old_duration.text(config.result);
-                    result.text('saved').css('color', 'var(--color-green-2)');
+                    result.text('saved').css('color', 'var(--color-green)');
                 }
             }
         });

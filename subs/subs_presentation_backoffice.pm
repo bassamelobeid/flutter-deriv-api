@@ -38,7 +38,7 @@ sub BrokerPresentation {
     print '<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;700&display=swap" rel="stylesheet">';
 
     print '<link rel="stylesheet" type="text/css" href="' . request()->url_for('css/' . $_) . '"/>'
-        for ('style_new.css?v=2021-03-30', 'sell_popup.css', 'external/grid.css?v=2021-03-31', 'external/jquery-ui.custom.css');
+        for ('style_new.css?v=2021-05-06', 'sell_popup.css', 'external/grid.css?v=2021-03-31', 'external/jquery-ui.custom.css?v=2021-05-06');
 
     foreach my $js_file (BOM::JavascriptConfig->instance->bo_js_files_for($0)) {
         print '<script type="text/javascript" src="' . $js_file . '"></script>';
@@ -107,7 +107,7 @@ sub Bar {
 
     $title = uc($title // '');
     my $container_class = $options->{container_class} // 'card';
-    my $title_class     = $options->{title_class}     // 'card__label';
+    my $title_class     = $options->{title_class}     // 'card__label toggle';
     my $content_align   = $options->{is_content_centered} ? 'center' : '';
 
     BarEnd();    #see sub below
@@ -133,7 +133,7 @@ sub ServerWarningBar {
     my $state_key  = BOM::Backoffice::CGI::SettingWebsiteStatus::get_redis_keys()->{state};
     my $reasons    = BOM::Backoffice::CGI::SettingWebsiteStatus::get_messages();
     my $redis      = BOM::Config::Redis->redis_ws();
-    my $ip_message = "Your IP: $ENV{'REMOTE_ADDR'}";
+    my $ip_message = "Your IP: <strong>$ENV{'REMOTE_ADDR'}</strong>";
     my $state      = eval { decode_json_utf8($redis->get($state_key) // '{}') };
     $state->{site_status} //= 'up';
     $state->{message}     //= '';
@@ -142,11 +142,14 @@ sub ServerWarningBar {
         my $url = request()->url_for('backoffice/login.cgi?backprice=');
         my ($c, $h) = BOM::Backoffice::Cookie::get_cookie('backprice') ? ('YES', $url . '0') : ('NO', $url . '1');
 
-        $ip_message .= ", backprice config: <a href='$h' class='link'>$c</a>";
+        $ip_message .= ", backprice config: <a href='$h' class='link'><strong>$c</strong></a>";
     }
 
-    my $status_message = sprintf('Site status: %s', uc $state->{site_status});
-    $status_message .= sprintf(', %s', $reasons->{$state->{message}}) if defined $reasons->{$state->{message}};
+    my $status_message =
+        $state->{site_status} eq 'up'
+        ? sprintf('Site status: <strong class="success">%s</strong>', uc $state->{site_status})
+        : sprintf('Site status: <strong class="error">%s</strong>',   uc $state->{site_status});
+    $status_message .= sprintf(', <strong>%s</strong>', $reasons->{$state->{message}}) if defined $reasons->{$state->{message}};
 
     my $scroll_link =
         $location eq 'bottom'
@@ -183,14 +186,36 @@ sub vk_BOtopPRES    # this sub executed in BrokerPresentation
         . request()->url_for('images/bo_deriv_logo.svg', undef, undef, {internal_static => 1})
         . qq~" width="347" height="68" alt="Back Office Home Page" />
         </a>
+        <div id="settings">
+            <span id="gmt_clock" class="gmt_clock" tooltip></span>
+            <div class="theme-switch__container">
+                <input type="checkbox" id="theme_switcher" name="theme-switch" class="theme-switch__input" />
+                <label for="theme_switcher" class="theme-switch__label">
+                    <span class="sun_icon">&#9788;</span>
+                    <span class="toggler"></span>
+                    <span class="moon_icon">&#9790;</span>
+                </label>
+            </div>
+        </div>
         <img src="~
         . request()->url_for('images/bo_binary_brand.svg', undef, undef, {internal_static => 1}) . qq~" />
     </header>
     ~;
 
-    ServerWarningBar();
+    print qq~
+    <script>
+        /* Render blocking script - sets Theme color before rendering rest of the page to prevent from colors 'flickering' on load */
+        const theme = localStorage.getItem('theme');
+        if (theme) {
+            document.documentElement.setAttribute('data-theme', theme);
+            if (theme === 'dark') {
+                document.getElementById('theme_switcher').checked = true;
+            }
+        }
+    </script>
+    ~;
 
-    print '<div id="top_bar" class="link-group center"></div>';
+    ServerWarningBar();
 
     my @menu_items = ({
             text => 'Main Sections',
@@ -246,6 +271,7 @@ sub vk_BOtopPRES    # this sub executed in BrokerPresentation
 
     print qq~
     <div class="layout_main">
+    <div id="top_bar" class="link-group center"></div>
     <nav>
         <ul class="sidebar">
     ~;

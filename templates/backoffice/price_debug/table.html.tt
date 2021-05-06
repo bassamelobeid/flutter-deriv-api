@@ -1,5 +1,5 @@
 [% WRAPPER 'backoffice/container/full_table.html.tt' extra_class="smaller-font small-space left-align" %]
-    <caption style="text-align:left; font-weight:bold; color:#072365;">[% title %]</caption>
+    <caption style="text-align:left; font-weight:bold; color:var(--color-blue);">[% title %]</caption>
     <tr>
         [% FOREACH header = headers %]
             <th>[% header %]</th>

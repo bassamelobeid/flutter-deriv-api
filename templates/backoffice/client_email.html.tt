@@ -10,7 +10,7 @@
     </span>
     <ul>
         [% FOREACH entry IN bom_logins %]
-            <li><a class="link link--primary" href="[% request.url_for('backoffice/f_clientloginid_edit.cgi', {loginID => entry.text }) %]" [% entry.style %]>[% entry.text %][% entry.currency %]</a><span style="margin-left:12px; color:#f44336"><strong>[% entry.balance %]</strong></span></li>
+            <li><a class="link" href="[% request.url_for('backoffice/f_clientloginid_edit.cgi', {loginID => entry.text }) %]" [% entry.style %]>[% entry.text %][% entry.currency %]</a><span style="margin-left:12px; color:#f44336"><strong>[% entry.balance %]</strong></span></li>
         [% END %]
         [% FOREACH mt5_loginid IN mt5_loginids %]
             <li>[% mt5_loginid %]</li>

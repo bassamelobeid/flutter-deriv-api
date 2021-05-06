@@ -23,7 +23,7 @@
                 <input type="hidden" name="view_action" value="withdrawals" />
                 <input type="hidden" class="selected_transactions" name="selected_transactions" value="" />
                 <button class="btn btn--secondary" name="action" value="bulkSave" disabled>Bulk Remark</button>
-                <button class="btn btn--red" name="action" value="bulkReject" disabled>Bulk Reject</button>
+                <button class="btn btn--primary" name="action" value="bulkReject" disabled>Bulk Reject</button>
                 <button class="btn btn--primary" name="action" value="bulkVerify" disabled>Bulk Verify</button>
             </form>
         </td>
@@ -57,11 +57,11 @@
 <style>
     .status-group {
         margin: 5px 0 10px;
-        border: 1px solid var(--color-grey-3);
+        border: 1px solid var(--bg-primary-light);
         line-height: 30px;
     }
     .status-group span {
-        background: var(--color-grey-1);
+        background: var(--bg-secondary-light);
         display: inline-block;
         line-height: 30px;
         padding: 2px 10px;
@@ -278,7 +278,7 @@
                             <br/>
                             <textarea name="remark" placeholder="Replaces current remark" data-trxid="[% trx.id %]" oninput="bulkUpdateRemark(this)"></textarea>
                             <br/>
-                            <input class="btn btn--red" type="submit" name="action" value="Save"/>
+                            <input class="btn btn--primary" type="submit" name="action" value="Save"/>
                             [% IF trx.is_withdrawal_locked %]
                                 <span class="warning_tag">The client withdrawal is locked</span>
                             [% ELSIF trx.authorisers.grep("^$staff\$").size > 0 %]

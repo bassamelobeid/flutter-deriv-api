@@ -1,6 +1,6 @@
     function createEcoTable(events, id) {
 
-        var table = '<table id="' + id + '" class="economic_event_table border">';
+        var table = '<table id="' + id + '" class="economic_event_table border full-width">';
         table += '<thead><tr><th>Event Name</th><th>Release Date</th><th>Symeconomic_event_tablebol</th><th>Binary\'s Category, vol_changes are in percent, duration in minutes</th><th width=20%>Change</th><th>functions</th></tr><thead>';
         table += '<tbody><tr class="empty"><td>Empty</td></tr>';
         table += '</tbody></table>';
@@ -55,7 +55,7 @@
                     if (r.error) {
                         result.text(r.error).css('color', 'var(--color-red)');
                     } else {
-                        result.text("ok").css('color', 'var(--color-green-2)');
+                        result.text("ok").css('color', 'var(--color-green)');
                         el.find('td#binary_info').html(formatInfo(r));
                     }
                 }
@@ -149,7 +149,7 @@
                     if (event.error) {
                         result.text(event.error).css('color', 'var(--color-red)');
                     } else {
-                        result.text('Event Saved. ID: ' + event.id).css('color', 'var(--color-green-2)');
+                        result.text('Event Saved. ID: ' + event.id).css('color', 'var(--color-green)');
                         appendEvent(event, 'scheduled_event_list');
                     }
                 }
@@ -185,7 +185,7 @@
         to_append += '</td>';
 
         if (table_id === 'deleted_event_list') {
-            to_append += '<td><button onclick="restoreEvent(\'' + event.id + '\')" class="btn btn--red">Restore</button></td> <td style="display:none;" class="update_result"></td>';
+            to_append += '<td><button onclick="restoreEvent(\'' + event.id + '\')" class="btn btn--primary">Restore</button></td> <td style="display:none;" class="update_result"></td>';
         } else {
             to_append += '<td> <button onclick="comparePricePreview(\''+event.id+'\')" class="btn btn--primary">Preview</button> </br></br> <button onclick="update( \'' + event.id + '\' )" class="btn btn--primary">Update</button> </br></br> <button onclick="deleteEvent( \'' + event.id + '\' )" class="btn btn--secondary">Delete</button> </td> <td style="display:none;" class="update_result"></td>';
         }
@@ -198,7 +198,7 @@
         createDropDown(el.find("select[name='decay_factor_before']"), [['default', ''],['FAST', 10],['SLOW', 3],['FLAT', -1000]]);
 
         if (make_green) {
-            table.find('tr#' + event.id).css('color', 'var(--color-green-2)');
+            table.find('tr#' + event.id).css('color', 'var(--color-green)');
         }
     }
 
@@ -286,7 +286,7 @@
                 if (event.error) {
                     result.text(event.error).css('color', 'var(--color-red)');
                 } else {
-                    result.text('Price updated for '+symbol).css('color', 'var(--color-green-2)');
+                    result.text('Price updated for '+symbol).css('color', 'var(--color-green)');
                     createPriceTable(event.headers, event.prices, 'price_preview_original');
                 }
             }
@@ -343,7 +343,7 @@
                     if (r.error) {
                         result.text(r.error).css('color', 'var(--color-red)');
                     } else {
-                        result.text("ok").css('color', 'var(--color-green-2)');
+                        result.text("ok").css('color', 'var(--color-green)');
                         createPriceTable(r.headers, r.prices, 'price_preview_compare');
                     }
                 }
@@ -379,7 +379,7 @@
                     if(event.headers == undefined){
                         result.text('Event not found').css('color', 'var(--color-red)');
                     }else{
-                        result.text('Price updated').css('color', 'var(--color-green-2)');
+                        result.text('Price updated').css('color', 'var(--color-green)');
                         createEconomicEventPriceTable(event.headers, event.prices, 'economic_event_price_preview_original');
                         createEconomicEventInfo(event.news_info, 'economic_event_info');
 
@@ -552,7 +552,7 @@
                     if(event.headers == undefined){
                         result.text('Event not found').css('color', 'var(--color-red)');
                     }else{
-                        result.text('Comparison updated').css('color', 'var(--color-green-2)');
+                        result.text('Comparison updated').css('color', 'var(--color-green)');
                         updateEconomicEventPricePreview();
                         createEconomicEventPriceTable(event.headers, event.prices, 'economic_event_price_preview_updated');
                     }

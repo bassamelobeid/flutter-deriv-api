@@ -1,4 +1,4 @@
-<div id="pricing_details_popup" class="draggable invisible" style="background-color:#FFFFFF;border:3px ridge #153A6E;left:26%;padding:15px;position:fixed;top:0;z-index:101;">
+<div id="pricing_details_popup" class="draggable invisible">
     <div id="[% bet_id %]">
         <ul>
             [% FOREACH tab = tabs %]
@@ -10,6 +10,6 @@
             [% END %]
     </div>
     <script> \$(function() { \$( "#[% bet_id %]" ).tabs(); }); </script>
-    <a class="centerText pricing-details-close" href="#">[close]</a>
+    <a class="link centerText pricing-details-close" href="#">[close]</a>
 </div>
 <a class="centerText pricing-details link" style="bottom:10px;clear:both;display:block;font-size:10px;position:relative;" href="#">[Pricing details]</a>

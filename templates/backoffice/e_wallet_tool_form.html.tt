@@ -87,7 +87,7 @@
     <table>
         <tr><input type="hidden" name="upload_coinpayment_html" value="1"></input></tr>
         <tr><td>Please select the file to upload</td><td><input type="file" name="filetoupload" id="upload_coinpayment_html_file" value="" size="45"></td></tr>
-        <tr><td colspan=2><input type="submit" class="btn btn--red" name="submit_coinpayment_html" value="Process HTML file"></td></tr>
+        <tr><td colspan=2><input type="submit" class="btn btn--primary" name="submit_coinpayment_html" value="Process HTML file"></td></tr>
     </table>
 </fieldset>
 </form>
@@ -100,7 +100,7 @@
     <table>
         <tr><input type="hidden" name="upload_ewallet_exchange_csv" value="1"></input></tr>
         <tr><td>Please select the file to upload</td><td><input type="file" name="filetoupload" id="upload_ewallet_exchange_csv_file" value="" size="45"></td></tr>
-        <tr><td colspan=2><input type="submit" class="btn btn--red" name="submit_ewallet_exchange_csv" value="Process CSV file"></td></tr>
+        <tr><td colspan=2><input type="submit" class="btn btn--primary" name="submit_ewallet_exchange_csv" value="Process CSV file"></td></tr>
     </table>
 </fieldset>
 </form>

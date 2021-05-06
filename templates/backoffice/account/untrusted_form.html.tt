@@ -57,7 +57,7 @@
     <input type="hidden" name="broker" value="[% broker %]">
     <input type="hidden" name="untrusted_action" value="insert_data">
     <input type="hidden" name="p2p_approved" value="[% p2p_approved %]">
-    <input type="submit" class="btn btn--red" value="Save">
+    <input type="submit" class="btn btn--primary" value="Save">
 </form>
 
 [% IF show_untrusted %]

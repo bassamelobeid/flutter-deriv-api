@@ -139,7 +139,7 @@
             <span class="label grd-grid-2">Note:</span>
             <span>
                 If the client did not register through an affiliate but you think the bonus request is valid, you can refer to the
-                <a class="link link--primary" href="https://docs.google.com/spreadsheets/d/1fr3b-ec2kjApQUUEtgCX5QnJLfndcTyoIN1nHFPTvzE" target="_blank">Active Bonus List</a>.
+                <a class="link" href="https://docs.google.com/spreadsheets/d/1fr3b-ec2kjApQUUEtgCX5QnJLfndcTyoIN1nHFPTvzE" target="_blank">Active Bonus List</a>.
             </span>
         </div>
         <form name="bonus_code" method="post">
@@ -149,7 +149,7 @@
             </div>
             <div class="row ">
                 <span class="label grd-grid-2"></span>
-                <button class="btn btn--red" type="submit" name="loginID" value="[% client.loginid %]">Apply Bonus Code</button>
+                <button class="btn btn--primary" type="submit" name="loginID" value="[% client.loginid %]">Apply Bonus Code</button>
             </div>
     </form>
     [% END %]

@@ -46,7 +46,7 @@
     <label><input type="checkbox" name="skip_validation" value="on" id="skip_validation2" />Override status checks?</label>
 </div>
 
-<button type="submit" class="btn btn--red" name="ttype" value="TRANSFER">Confirm transfer</button>
+<button type="submit" class="btn btn--primary" name="ttype" value="TRANSFER">Confirm transfer</button>
 <input type=reset class="btn btn--secondary" name=Reset>
 
 </form>

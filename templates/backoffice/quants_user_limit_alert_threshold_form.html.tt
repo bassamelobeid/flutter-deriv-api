@@ -21,7 +21,7 @@
         <td><input type="text" name="user_threshold_amount" data-lpignore="true" /></td>
     </tr>
     <tr>
-        <td><button onClick="SaveUserThreshold()" type="button" class="btn btn--red">Save</button></td>
+        <td><button onClick="SaveUserThreshold()" type="button" class="btn btn--primary">Save</button></td>
         <td class="user_threshold_result"></td>
     </tr>
 </table>
@@ -48,7 +48,7 @@
                 } else {
                     var el_display = \$('table#user_limits_threshold_display');
                     el_display.find('td#'+config.id).text(config.amount);
-                    result.text('saved').css('color', 'var(--color-green-2)');
+                    result.text('saved').css('color', 'var(--color-green)');
                 }
             }
         });

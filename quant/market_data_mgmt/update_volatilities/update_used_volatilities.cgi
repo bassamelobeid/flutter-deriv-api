@@ -136,7 +136,7 @@ print q~<td align=right>~;
 print "<form method=post action='" . request()->url_for('backoffice/quant/market_data_mgmt/update_volatilities/save_used_volatilities.cgi') . "'>";
 print "<input type=hidden name=markets value='" . encode_entities($markets) . "'>";
 print "<input type=hidden name=warndifference value='" . encode_entities($warndifference) . "'>";
-print "<input id='confirm_volatility' type=submit class='btn btn--red' value='Confirm all'>";
+print "<input id='confirm_volatility' type=submit class='btn btn--primary' value='Confirm all'>";
 print "</form>";
 print '</td>';
 print '</tr>';

@@ -1,4 +1,8 @@
-<table class="alternate">
+[% IF is_hidden %] 
+<table class="alternate small toggle collapsed">
+[% ELSE %]
+<table class="alternate small toggle">
+[% END %]
     <thead>
         <tr>
             <th>Comment</th>

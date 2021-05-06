@@ -84,10 +84,10 @@
 </table>
 
 [% IF item.action %]
-<button type="submit" class="btn btn--red" name="[% item.action %]" value="1">Save</button>
+<button type="submit" class="btn btn--primary" name="[% item.action %]" value="1">Save</button>
 <button type="submit" class="btn btn--secondary" name="cancel" value="1">Cancel</button>
 [% ELSE %]
-<button type="submit" class="btn btn--red" name="save" value="1">Submit</button>
+<button type="submit" class="btn btn--primary" name="save" value="1">Submit</button>
 [% END %]
 
 </form>

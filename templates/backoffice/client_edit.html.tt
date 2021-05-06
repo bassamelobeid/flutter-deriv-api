@@ -433,10 +433,10 @@ window.addEventListener('DOMContentLoaded', init_text_validations, false);
                      %]
                         <p>An Experian <strong>[% option %]</strong> request <strong>has</strong> been done.
                         <span class="link-group">
-                            <a target="_blank" class="link link--primary" href="[% href_rpt | none %]">[Report]</a>
-                            <a target="_blank" class="link link--primary" href="[% href_xml | none %]">[XML]</a>
+                            <a target="_blank" class="link" href="[% href_rpt | none %]">[Report]</a>
+                            <a target="_blank" class="link" href="[% href_xml | none %]">[XML]</a>
                             [% IF proveID.has_saved_pdf %]
-                            <a target="_blank" class="link link--primary" href="[% href_pdf | none %] ">[PDF]</a>
+                            <a target="_blank" class="link" href="[% href_pdf | none %] ">[PDF]</a>
                         </span>
                         </p>
                         [% # has_saved_pdf
@@ -456,7 +456,7 @@ window.addEventListener('DOMContentLoaded', init_text_validations, false);
             [% IF client.residence == 'gb' && !client.is_virtual %]
                     <input type="submit" class="btn btn--primary" name="do_id_check" value="Submit a new ProveID request"/>
                 [% IF proveID.has_saved_xml or proveID.has_saved_pdf %]
-                    <input type="submit" class="btn btn--red" name="delete_existing_192" value="Delete existing Experian results"/>
+                    <input type="submit" class="btn btn--primary" name="delete_existing_192" value="Delete existing Experian results"/>
                 <br/>
                 [% # proveID.has_saved_xml or proveID.has_saved_pdf
                 END %]

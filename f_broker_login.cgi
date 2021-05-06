@@ -44,7 +44,7 @@ my $brokerselection = 'Broker code : '
 if (BOM::Backoffice::Auth0::has_authorisation(['CS'])) {
     print qq~
     <div class="card">
-        <div class="card__label">
+        <div class="card__label toggle">
             Transaction reports
         </div>
         <div class="card__content">
@@ -61,7 +61,7 @@ if (BOM::Backoffice::Auth0::has_authorisation(['CS'])) {
 if (BOM::Backoffice::Auth0::has_authorisation(['Accounts'])) {
     print qq~
     <div class="card">
-        <div class="card__label">
+        <div class="card__label toggle">
             Accounting reports
         </div>
         <div class="card__content">
@@ -78,7 +78,7 @@ if (BOM::Backoffice::Auth0::has_authorisation(['Accounts'])) {
 if (BOM::Backoffice::Auth0::has_authorisation(['Payments'])) {
     print qq~
     <div class="card">
-        <div class="card__label">
+        <div class="card__label toggle">
             Deposits & withdrawals
         </div>
         <div class="card__content">
@@ -95,7 +95,7 @@ if (BOM::Backoffice::Auth0::has_authorisation(['Payments'])) {
 if (BOM::Backoffice::Auth0::has_authorisation(['CS'])) {
     print qq~
         <div class="card">
-            <div class="card__label">
+            <div class="card__label toggle">
                 Client management
             </div>
             <div class="card__content">
@@ -107,7 +107,7 @@ if (BOM::Backoffice::Auth0::has_authorisation(['CS'])) {
             </div>
         </div>
         <div class="card">
-            <div class="card__label">
+            <div class="card__label toggle">
                 Contract details
             </div>
             <div class="card__content">
@@ -122,7 +122,7 @@ if (BOM::Backoffice::Auth0::has_authorisation(['CS'])) {
 # INVESTIGATIVE TOOLS
 print qq~
 <div class="card">
-    <div class="card__label">
+    <div class="card__label toggle">
         Investigative tools
     </div>
     <div class="card__content">
@@ -145,7 +145,7 @@ print qq~
 if (BOM::Backoffice::Auth0::has_authorisation(['Marketing'])) {
     print qq~
     <div class="card">
-        <div class="card__label">
+        <div class="card__label toggle">
             App management
         </div>
         <div class="card__content">
@@ -159,7 +159,7 @@ if (BOM::Backoffice::Auth0::has_authorisation(['Marketing'])) {
 if (BOM::Backoffice::Auth0::has_authorisation(['Marketing'])) {
     print qq~
     <div class="card">
-        <div class="card__label">
+        <div class="card__label toggle">
             Marketing
         </div>
         <div class="card__content">
@@ -175,7 +175,7 @@ if (BOM::Backoffice::Auth0::has_authorisation(['Marketing'])) {
 # P2P
 print qq~
     <div class="card">
-        <div class="card__label">
+        <div class="card__label toggle">
             P2P
         </div>
         <div class="card__content grid2col border">~;
@@ -233,7 +233,7 @@ print qq~
 if (BOM::Backoffice::Auth0::has_authorisation(['Quants'])) {
     print qq~
     <div class="card">
-        <div class="card__label">
+        <div class="card__label toggle">
             Quant tools
         </div>
         <div class="card__content grid2col border">
@@ -314,7 +314,7 @@ if (BOM::Backoffice::Auth0::has_authorisation(['IT'])) {
     );
     print qq~
     <div class="card">
-        <div class="card__label">
+        <div class="card__label toggle">
             Website customization & shutdown
         </div>
         <div class="card__content">
@@ -335,7 +335,7 @@ if (BOM::Backoffice::Auth0::has_authorisation(['IT'])) {
 if (BOM::Backoffice::Auth0::has_authorisation(['CSWrite'])) {
     print qq~
     <div class="card">
-        <div class="card__label">
+        <div class="card__label toggle">
             Website status
         </div>
         <div class="card__content">

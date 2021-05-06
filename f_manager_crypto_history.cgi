@@ -91,9 +91,9 @@ my $self_url = request()->url_for(
     });
 
 print "<div class='row'>"
-    . "<input class='btn btn--primary' type='button' value='View $loginid details' onclick='location.href=\"$client_edit_url\"' />"
-    . "<input class='btn btn--primary' type='button' value='View $loginid profit' onclick='location.href=\"$client_profit_url\"' />"
-    . "<input class='btn btn--primary' type='button' value='View $loginid statement' onclick='location.href=\"$client_statement_url\"' />"
+    . "<input class='btn btn--secondary' type='button' value='View $loginid details' onclick='location.href=\"$client_edit_url\"' />"
+    . "<input class='btn btn--secondary' type='button' value='View $loginid profit' onclick='location.href=\"$client_profit_url\"' />"
+    . "<input class='btn btn--secondary' type='button' value='View $loginid statement' onclick='location.href=\"$client_statement_url\"' />"
     . "</div>";
 
 my $render_crypto_transactions = sub {
@@ -204,7 +204,7 @@ my $client_email     = $client->email;
 my $client_joined_at = $client->date_joined;
 
 print qq~
-<div class="row row-align-top notify notify--secondary">
+<div class="row row-align-top bg-lightgrey grd-margin-top grd-margin-bottom">
     <div class="grd-grid-2">
         <strong>Login ID</strong>
         <div class="copy-on-click">$loginid</div>

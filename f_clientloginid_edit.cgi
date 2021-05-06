@@ -1022,9 +1022,10 @@ if (@client_comments) {
     BOM::Backoffice::Request::template()->process(
         'backoffice/client_comments_table.html.tt',
         {
-            comments => [@client_comments],
-            loginid  => $client->loginid,
-            csrf     => BOM::Backoffice::Form::get_csrf_token(),
+            comments  => [@client_comments],
+            loginid   => $client->loginid,
+            csrf      => BOM::Backoffice::Form::get_csrf_token(),
+            is_hidden => BOM::Backoffice::Auth0::has_authorisation(['CS']),
         });
     print qq~<br><a class="link" href="$comments_url">Add a new comment / View full list</a>~;
 }
@@ -1162,7 +1163,7 @@ foreach my $lid ($user_clients->@*) {
         });
 
     print "<li><a href='$link_href'"
-        . ($client->status->disabled ? ' class="link link--disabled"' : ' class="link link--primary"') . ">"
+        . ($client->status->disabled ? ' class="link link--disabled"' : ' class="link"') . ">"
         . encode_entities($lid->loginid) . " ("
         . $currency
         . ") </a><span class='error'> "
@@ -1228,7 +1229,7 @@ if ($payment_agent) {
 }
 
 print qq[<hr><form action="$self_post?loginID=$encoded_loginid" id="clientInfoForm" method="post">
-    <input type="submit" class="btn btn--red" value="Save client details">
+    <input type="submit" class="btn btn--primary" value="Save client details">
     <input type="hidden" name="broker" value="$encoded_broker">
     <input type="hidden" name="p2p_approved" value="$p2p_approved">];
 
@@ -1240,7 +1241,7 @@ my $INPUT_SELECTOR = 'input:not([type="hidden"]):not([type="submit"]):not([type=
 
 print qq[
     <hr>
-    <input type=submit class="btn btn--red" value="Save client details"></form>
+    <input type=submit class="btn btn--primary" value="Save client details"></form>
     <style>
         .data-changed {
             background: pink;
@@ -1355,8 +1356,8 @@ for my $section_name (qw(trading_experience financial_information)) {
     print "<p class='error'>Financial Assessment questionnaire triggered.</p>"
         if ($section_name eq 'financial_information' && $fa_updated{force_financial_assessment});
 
-    print "<hr><div class='row'><span class='right'>$title score:</span>&nbsp;<h3>" . $fa_score->{$section_name} . '</h3></div>';
-    print '<div class="row"><span class="right">CFD Score:</span>&nbsp;<h3>' . $fa_score->{cfd_score} . '</h3></div>'
+    print "<hr><div class='row'><span class='right'>$title score:</span>&nbsp;<strong>" . $fa_score->{$section_name} . '</strong></div>';
+    print '<div><span class="right">CFD Score:</span>&nbsp;<strong>' . $fa_score->{cfd_score} . '</strong></div>'
         if ($section_name eq 'trading_experience');
 }
 
@@ -1368,7 +1369,7 @@ sub print_fa_table {
 
     print "<form method='post' action='$self_href#$section_name'><input type='hidden' name='whattodo' value='$section_name'>"
         if $is_editable;
-    print '<table class="sortable alternate hover"><thead><tr>';
+    print '<table class="sortable alternate hover small"><thead><tr>';
     print '<th scope="col">' . encode_entities($_) . '</th>' for @hdr;
     print '</thead><tbody>';
     for my $key (sort keys %section) {
@@ -1400,7 +1401,7 @@ sub print_fa_force_btn {
 
     print '<input type="hidden" name="whattodo" value="force_financial_assessment">';
 
-    print '<input type="submit" class="btn btn--red" value="Click to force financial assessment">';
+    print '<input type="submit" class="btn btn--primary" value="Click to force financial assessment">';
 
     print '</form>';
 }
@@ -1424,7 +1425,7 @@ if (not $client->is_virtual) {
             <input type="hidden" name="whattodo" value="sync_to_DF">
             <input type="hidden" name="broker" value="$encoded_broker">
             <input type="hidden" name="loginID" value="$encoded_loginid">
-            <input type="submit" class="btn btn--red" value="Sync now !!">
+            <input type="submit" class="btn btn--primary" value="Sync now !!">
         </form>
     };
     Bar("Sync Client Information to MT5");
@@ -1433,7 +1434,7 @@ if (not $client->is_virtual) {
         <form action="$self_post" method="get">
             <input type="hidden" name="whattodo" value="sync_to_MT5">
             <input type="hidden" name="loginID" value="$encoded_loginid">
-            <input type="submit" class="btn btn--red" value="Sync to MT5">
+            <input type="submit" class="btn btn--primary" value="Sync to MT5">
         </form>
     };
 }

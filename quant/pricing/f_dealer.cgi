@@ -185,7 +185,7 @@ print qq~
 <div class='row'><label>Bet reference (not TXNID):</label><input type=text size=12 name=ref value='' data-lpignore='true' /></div>
 <div class='row'><label>Client Login ID:</label><input type=text size=12 name=loginid value=$encoded_broker data-lpignore='true' /></div>
 <div class='row'><label>Comment:</label><input type=text size=45 maxlength=90 name=comment data-lpignore='true' /></div>
-<div class='row'><input type=submit value='Close contract' class="btn btn--red"></div>
+<div class='row'><input type=submit value='Close contract' class="btn btn--primary"></div>
 </form>
 ~;
 

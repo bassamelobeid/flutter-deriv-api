@@ -67,7 +67,7 @@ foreach my $transaction (@{$transactions}) {
             {
             timestring  => $key,
             description => $key_value,
-            color       => 'gray'
+            color       => 'var(--grey-400)'
             };
     } else {
         my $key = $transaction->{date}->datetime;
@@ -85,7 +85,7 @@ foreach my $transaction (@{$transactions}) {
             {
             timestring  => $key,
             description => $key_value,
-            color       => 'red'
+            color       => 'var(--color-red)'
             };
     }
 }
@@ -161,7 +161,7 @@ foreach my $table (
                 {
                 timestring  => $old->{stamp},
                 description => "$desc</ul>",
-                color       => 'blue'
+                color       => 'var(--color-blue)'
                 };
         }
         $old = $new;
@@ -169,8 +169,8 @@ foreach my $table (
     }
 }
 
-print "<div style='background-color:yellow'>$encoded_loginid</div>";
-print "<div style='background-color:white'>";
+print "<div style='background-color: var(--bg-secondary-dark);color: var(--white); padding: 8px 16px; font-size: 1.2rem; font-weight: bold; text-transform: uppercase;'>$encoded_loginid</div>";
+print "<div>";
 my $old;
 foreach (sort { Date::Utility->new($a->{timestring})->epoch <=> Date::Utility->new($b->{timestring})->epoch } @audit_entries) {
     print '<hr>' if (substr($_->{timestring}, 0, 10) ne substr($old->{timestring}, 0, 10));

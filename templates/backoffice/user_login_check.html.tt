@@ -40,7 +40,7 @@
                 <td width='150'>[% date %] GMT</td>
                 <td>[% l.action %]</td>
                 <td>[% status %]</td>
-                <td><a class="link link--primary" href="./ip_search.cgi?ip=[% ip %]&search_type=ip&lastndays=100">[% ip %]</td>
+                <td><a class="link" href="./ip_search.cgi?ip=[% ip %]&search_type=ip&lastndays=100">[% ip %]</td>
                 <td>[% is_company_ip %]</td>
                 <td>[% cc %]</td>
                 <td>[% env %]</td>

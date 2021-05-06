@@ -88,7 +88,7 @@ function SaveMultiplierUserLmit(){
             if (config.error) {
                 result.text(config.error).css('color', 'var(--color-red)');
             } else {
-                result.text('saved').css('color', 'var(--color-green-2)');
+                result.text('saved').css('color', 'var(--color-green)');
             }
         }
     });
@@ -111,7 +111,7 @@ function DeleteCustomLimit(loginid, uniq_key) {
             if (config.error) {
                 result.text(config.error).css('color', 'var(--color-red)');
             } else {
-                result.text('removed').css('color', 'var(--color-green-2)');
+                result.text('removed').css('color', 'var(--color-green)');
                 el.remove();
             }
         }

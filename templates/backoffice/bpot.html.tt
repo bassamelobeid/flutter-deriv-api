@@ -2,8 +2,8 @@
 <form action="" method="post" class="row">
     <table>
         <tr><td>Shortcode</td><td><input value="[% bet.shortcode %]" size="80" type="text" name="shortcode" id="shortcode" data-lpignore="true" /></td></tr>
-        <tr><td>Currency</td><td><input value="[% bet.currency %]" size="4" type="text" name="currency" id="currency" style="none" data-lpignore="true" /></td></tr>
-        <tr><td>Time step</td><td><input value="[% timestep %]" size="4" type="text" name="timestep" id="timestep" data-lpignore="true" /></td></tr>
+        <tr><td>Currency</td><td><input value="[% bet.currency %]" size="8" type="text" name="currency" id="currency" style="none" data-lpignore="true" /></td></tr>
+        <tr><td>Time step</td><td><input value="[% timestep %]" size="8" type="text" name="timestep" id="timestep" data-lpignore="true" /></td></tr>
         <tr><td>Graph start </td><td><input value="[% start %]" size="20" type="text" name="start" id="start" data-lpignore="true" />[For a forward starting contract, it will start from purchase time]</td></tr>
         <tr><td>Graph end</td><td><input value="[% end %]" size="20" type="text" name="end" id="end" data-lpignore="true" /></td></tr>
         <tr><td><input value="[% limit_order || none %]" size="20" type="hidden" name="limit_order" id="limit_order"/></td></tr>

@@ -120,7 +120,7 @@ foreach my $lid ($user_clients->@*) {
         });
 
     print "<li><a href='$link_href'"
-        . ($client->status->disabled ? ' class="error"' : ' class="link link--primary"') . ">"
+        . ($client->status->disabled ? ' class="error"' : ' class="link"') . ">"
         . encode_entities($lid->loginid) . " ("
         . $currency
         . ") </a></li>";

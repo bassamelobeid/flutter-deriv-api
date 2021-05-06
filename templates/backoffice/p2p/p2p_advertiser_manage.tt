@@ -152,11 +152,11 @@
     <br/>
     <input type="hidden" name="update_id" value="[% advertiser.id %]"/>
     <input type="hidden" name="current_name" value="[% advertiser.name %]"/>
-    <button style="width:150px;" type="submit" name="update" value="1">Update advertiser</button>
+    <button class="btn btn--primary" type="submit" name="update" value="1">Update advertiser</button>
     </form>
     
     <hr>
-    <h3>Statisics</h3>
+    <h3>Statistics</h3>
     
     <table class="border" style="width:500px">
         <tr>
@@ -175,7 +175,7 @@
     Generate stats for days: <input type="text" name="days" value="[% days %]" size=6 data-lpignore="true" /> (0 is lifetime)&nbsp;&nbsp;
     <button type="submit" class="btn btn--primary">Get</button>
     </form>
-    
+    <br>
     <table class="border" style="width:500px">
         <tr>
             <td style="width:50%">Buy orders completed</td>
@@ -334,6 +334,6 @@
     <form action="[% request.url_for('backoffice/p2p_advertiser_manage.cgi', { loginID => client.loginid }) %]" method="post">
     <input type="hidden" name="new_loginid" value="[% client.loginid %]"/>
     <label>Name:</label><input type="text" name="new_name" size=50 data-lpignore="true" />
-    <button class="btn btn--red" type="submit" name="create" value="1">Create advertiser</button>
+    <button class="btn btn--primary" type="submit" name="create" value="1">Create advertiser</button>
     </form>        
 [% END %]

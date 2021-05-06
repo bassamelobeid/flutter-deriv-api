@@ -12,7 +12,7 @@
     <tr><td>Max multiplier </td><td> : <input type="text" name="max_multiplier" data-lpignore="true" /></td></tr>
     <tr><td>Commission_adjustment </td><td> : <input type="text" name="multiplier_commission_adjustment" data-lpignore="true" /></td></tr>
     <tr><td>DC Commission </td><td> : <input type="text" name="dc_commission" data-lpignore="true" /></td></tr>
-    <tr><td></td><button onclick="saveCustomMultiplierCommission()" style="margin-left: 8px;" class="btn btn--red">Save</button></td><td class="result"></td></tr>
+    <tr><td></td><button onclick="saveCustomMultiplierCommission()" style="margin-left: 8px;" class="btn btn--primary">Save</button></td><td class="result"></td></tr>
 </table>
 </fieldset>
 
@@ -103,7 +103,6 @@
 
 <style>
     #custom_multiplier_commission_table td {
-        border: 1px solid #dddddd;
         text-align: left;
         padding: 4px;
         vertical-align: top;

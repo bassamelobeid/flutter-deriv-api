@@ -18,7 +18,7 @@
         <div class="row">
             <textarea rows="10" cols="100" name="comment" maxlength="1000" minlength="1" autofocus>[% input.comment || result.comment %]</textarea>
         </div>
-        <input type="submit" class="btn btn--red" value="Save changes">
+        <input type="submit" class="btn btn--primary" value="Save changes">
         <a class="btn btn--secondary" href="[% request.url_for('backoffice/f_client_comments.cgi', { loginid => input.loginid }) | url %]">Cancel</a>
     </form>
     [% END %]
@@ -44,7 +44,7 @@
 
 [% BLOCK layout %]
     <div class="card">
-        <div class="card__label">[% title %]</div>
+        <div class="card__label toggle">[% title %]</div>
         <div class="card__content">
             [% content | none %]
         </div>

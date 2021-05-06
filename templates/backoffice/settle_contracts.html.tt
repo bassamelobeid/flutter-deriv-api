@@ -14,9 +14,9 @@
         <th>Buy Price</th>
         <th>Full Payout</th>
         <th>Skip</th>
-        <th bgcolor="#ccf">Cancel</th>
-        <th bgcolor="#fcc">As Loss</th>
-        <th bgcolor="#cfc">As Win</th>
+        <th class="bg-danger error">Cancel</th>
+        <th class="bg-red">As Loss</th>
+        <th class="bg-highlight">As Win</th>
     </tr>
     [% FOREACH contract IN unsettled %]
     <tr>
@@ -27,14 +27,14 @@
         <td>[% contract.currency %][% contract.buy_price %]</td>
         <td>[% contract.currency %][% contract.payout %]</td>
         <td><input type="radio" name="fmb_[% contract.fmb_id %]" value="skip" checked></td>
-        <td bgcolor="#ccf"><input type="radio" name="fmb_[% contract.fmb_id %]" value="cancel"> </td>
-        <td bgcolor="#fcc"><input type="radio" name="fmb_[% contract.fmb_id %]" value="loss"> </td>
-        <td bgcolor="#cfc"><input type="radio" name="fmb_[% contract.fmb_id %]" value="win"> </td>
+        <td class="bg-danger error"><input type="radio" name="fmb_[% contract.fmb_id %]" value="cancel"> </td>
+        <td class="bg-red"><input type="radio" name="fmb_[% contract.fmb_id %]" value="loss"> </td>
+        <td class="bg-highlight"><input type="radio" name="fmb_[% contract.fmb_id %]" value="win"> </td>
     </tr>
     [% END %]
 </table>
 <hr/>
-<input type="submit" class="btn btn--red" name="perform_actions"  value="Perform Selected Actions"/>
+<input type="submit" class="btn btn--primary" name="perform_actions"  value="Perform Selected Actions"/>
 <input type="hidden" name="broker"  value="[% broker_code %]"/>
 </fieldset>
 </form>

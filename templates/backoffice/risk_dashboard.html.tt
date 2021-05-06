@@ -1,4 +1,4 @@
-<p>See, also: <a class="link link--primary" href="[% dtr_link | none %]">this month's daily turnover report</a>.</p>
+<p>See, also: <a class="link" href="[% dtr_link | none %]">this month's daily turnover report</a>.</p>
 <p>Summary of period starting at [% start_date %] and ending [% end_date %].</p>
 <div id="rd-tabs" class="scrollable">
   <ul>

@@ -1,9 +1,9 @@
 [% USE date %]
 
 <div class="row btn-group">
-    <input type="button" class="btn btn--primary"  value="View [% loginid %] details" onclick='location.href="[% clientedit_url %]"' />
-    <input type="button" class="btn btn--primary"  value="View [% loginid %] profit" onclick='location.href="[% profit_url %]"' />
-    <input type="button" class="btn btn--primary"  value="View [% loginid %] Crypto statement" onclick='location.href="[% crypto_statement_url %]"' />
+    <input type="button" class="btn btn--secondary"  value="View [% loginid %] details" onclick='location.href="[% clientedit_url %]"' />
+    <input type="button" class="btn btn--secondary"  value="View [% loginid %] profit" onclick='location.href="[% profit_url %]"' />
+    <input type="button" class="btn btn--secondary"  value="View [% loginid %] Crypto statement" onclick='location.href="[% crypto_statement_url %]"' />
 </div>
 
 <hr>
@@ -21,7 +21,7 @@
 </form>
 
 [% IF total_deposits %]
-<div class="row notify notify--secondary">
+<div class="row bg-lightgrey grd-margin-top grd-margin-bottom">
     <div class="grd-grid-2">
         <strong>Total Deposits</strong><br>
         <p>[% total_deposits %] [% currency %]</p>
@@ -70,7 +70,7 @@
 
 [%# Note: keep the table in one row, so that it takes less vertical space in page %]
 <br>
-<div class="row row-align-top notify notify--secondary">
+<div class="row row-align-top bg-lightgrey grd-margin-top grd-margin-bottom">
     <div class="grd-grid-2 inline-display">
         <strong>Login ID</strong>
         <div class="copy-on-click">[% loginid %]</div>
@@ -174,7 +174,7 @@
 
         [% IF transaction.financial_market_bet_id.defined %]
             <td>
-                <a class="link link--primary" href="[% request.url_for('backoffice/quant/pricing/bpot.cgi', {currency => currency, limit_order => transaction.limit_order, shortcode => transaction.short_code , purchase_time => transaction.purchase_time, loginid => loginid, transaction_id => transaction.id}) | none %]">
+                <a class="link" href="[% request.url_for('backoffice/quant/pricing/bpot.cgi', {currency => currency, limit_order => transaction.limit_order, shortcode => transaction.short_code , purchase_time => transaction.purchase_time, loginid => loginid, transaction_id => transaction.id}) | none %]">
                     [% transaction.id %]
                 </a>
             </td>

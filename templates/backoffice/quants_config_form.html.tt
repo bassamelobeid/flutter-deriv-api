@@ -116,7 +116,7 @@ underlying symbol, example frxUSDJPY -> If limit applies to a particular symbol 
             </div>
         </td>
         <td>
-            <button onClick="saveLimit()" type="button" class="btn btn--red">Save</button>
+            <button onClick="saveLimit()" type="button" class="btn btn--primary">Save</button>
             <br><span class="save_result"></span>
         </td>
     </tr>
@@ -297,7 +297,7 @@ underlying symbol, example frxUSDJPY -> If limit applies to a particular symbol 
                 }
                 table += '<td class="'+key+'" data_key="'+value.data_key+'">';
                 if (key.substr(0,7) == 'global_' && \$.isNumeric(value.display_value)) {
-                    table += '<button class="btn btn--red" name="delete" onClick="deleteLimit(\''+id+'\',\''+key+'\','+i+')">Delete</button> ';
+                    table += '<button class="btn btn--secondary" name="delete" onClick="deleteLimit(\''+id+'\',\''+key+'\','+i+')">Delete</button> ';
                     table += '<button class="btn btn--primary" name="update" onClick="updateLimit(\''+id+'\',\''+key+'\','+i+')">Update</button>';
                     table += '<input style="border-radius: 5px; line-height: 18px; width: 65px" type="text" value="' +
                                 value.display_value + '"></input>';
@@ -321,7 +321,7 @@ underlying symbol, example frxUSDJPY -> If limit applies to a particular symbol 
             }
 
             if (id == 'market_group_display') {
-                table += '<td><button class="btn btn--red" onClick="deleteMarketGroup(\''+id+'\','+i+')" type="button">Delete</button></td><td class="result"></td>';
+                table += '<td><button class="btn btn--primary" onClick="deleteMarketGroup(\''+id+'\','+i+')" type="button">Delete</button></td><td class="result"></td>';
             }
             table += '</tr>'
         }
@@ -427,7 +427,7 @@ underlying symbol, example frxUSDJPY -> If limit applies to a particular symbol 
                     if (config.error) {
                         result.text(config.error).css('color', 'var(--color-red)');
                     } else {
-                        result.text('saved').css('color', 'var(--color-green-2)');
+                        result.text('saved').css('color', 'var(--color-green)');
                         createDisplayTable(config.limit.records, config.limit.header, 'per_landing_company');
                         createDisplayTable(config.market_group.records, config.market_group.header, 'market_group_display');
                     }
@@ -483,7 +483,7 @@ underlying symbol, example frxUSDJPY -> If limit applies to a particular symbol 
 </script>
 <style>
     .pretty td {
-        border: 1px solid var(--color-grey-3);
+        border: 1px solid var(--bg-primary-light);
         text-align: left;
         white-space: nowrap;
     }
@@ -496,7 +496,7 @@ underlying symbol, example frxUSDJPY -> If limit applies to a particular symbol 
         border-radius: 3px;
         display: inline-block;
         padding: 2px 6px;
-        background-color: var(--color-green-2);
+        background-color: var(--color-green);
         border: none;
         margin: 4px;
     }

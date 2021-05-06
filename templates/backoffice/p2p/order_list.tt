@@ -99,7 +99,7 @@
 
 [% BLOCK layout %]
     <div class="card">
-        <div class="card__label">[% title %]</div>
+        <div class="card__label toggle">[% title %]</div>
         <div class="card__content">[% content | none %]</div>
     </div>
 [% END %]

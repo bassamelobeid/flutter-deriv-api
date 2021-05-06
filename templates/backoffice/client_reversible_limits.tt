@@ -14,5 +14,5 @@
   <input type="hidden" name="whattodo" value="save_reversible_limits">
   <input type="hidden" name="broker" value="[% broker %]">
   <input type="hidden" name="loginID" value="[% loginid %]">
-  <input type=submit class="btn btn--red" value="Save">
+  <input type=submit class="btn btn--primary" value="Save">
 </form>

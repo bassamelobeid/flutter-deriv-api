@@ -38,7 +38,7 @@ function pc_fields() {
 
 <hr>
 <form action="[% request.url_for('backoffice/promocode_edit.cgi') | none %]" method="post">
-    <div class="row"><input class="btn btn--red" type="submit" name="save" value="Save promocode details" /></div>
+    <div class="row"><input class="btn btn--primary" type="submit" name="save" value="Save promocode details" /></div>
     
     <input type="hidden" name="broker" value="[% request.broker_code %]" />
     [% IF isnew %]<input type="hidden" name="isnew" value="1" />[% END %]

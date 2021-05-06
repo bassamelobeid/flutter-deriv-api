@@ -30,7 +30,7 @@
     <tr><td>ITM_2 </td><td> : <input type="text" name="ITM_2" data-lpignore="true" /></td></tr>
     <tr><td>ITM_3 </td><td> : <input type="text" name="ITM_3" data-lpignore="true" /></td></tr>
     <tr><td>ITM_max </td><td> : <input type="text" name="ITM_max" data-lpignore="true" /></td><td> The commission to be charged if barriers goes out of the tiered commission as spot moves.</td></tr>
-    <tr><td></td><button onclick="saveCustom()" style="margin-left: 4px;" class="btn btn--red">Save</button></td><td class="result"></td></tr>
+    <tr><td></td><button onclick="saveCustom()" style="margin-left: 4px;" class="btn btn--primary">Save</button></td><td class="result"></td></tr>
 </table>
 </fieldset>
 

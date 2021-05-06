@@ -68,7 +68,7 @@ print "<form id='clientAnonymization' action='"
     . $prev_dcc . "'>"
     . "<br><br><input type='checkbox' name='verification' id='chk_verify' value='true'> <label for='chk_verify'>I understand this action is irreversible ("
     . encode_entities($clerk)
-    . ")</label><br><br><input type='submit' class='btn btn--red' name='transtype' value='Anonymize client'/>"
+    . ")</label><br><br><input type='submit' class='btn btn--primary' name='transtype' value='Anonymize client'/>"
     . " <input type='submit' class='btn btn--secondary' name='transtype' value='Delete customerio record'/>"
     . "</form>";
 

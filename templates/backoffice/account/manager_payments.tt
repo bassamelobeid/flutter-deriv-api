@@ -180,7 +180,7 @@
     <em>* Remarks will appear on client statement for some payment types, but are no longer used by the system</em>
 </div>
 
-<button type="submit" class="btn btn--red" id="payment_debit_credit" value="CONFIRM">Confirm credit</button>
+<button type="submit" class="btn btn--primary" id="payment_debit_credit" value="CONFIRM">Confirm credit</button>
 <input type=reset class="btn btn--secondary" name=Reset>
 
 </form>

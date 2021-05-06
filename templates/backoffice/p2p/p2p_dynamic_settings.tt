@@ -51,5 +51,5 @@
     </table>
     <hr/>
     <input type="hidden" name="revision" value="[% revision %]"/>
-    <button type="submit" class="btn btn--red" name="save" value="1">Save Dynamic Settings</button></td>
+    <button type="submit" class="btn btn--primary" name="save" value="1">Save Dynamic Settings</button></td>
 </form>

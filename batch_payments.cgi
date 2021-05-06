@@ -196,7 +196,7 @@ read_csv_row_and_callback(
 
         if ($error) {
             $client_account_table .= construct_row_line(%row, error => $error);
-            push @invalid_lines, qq[<a class="link link--primary" href="#ln$line_number">Invalid line $line_number</a> : ] . encode_entities($error);
+            push @invalid_lines, qq[<a class="link" href="#ln$line_number">Invalid line $line_number</a> : ] . encode_entities($error);
             return;
         }
 
@@ -265,11 +265,11 @@ if (scalar @invalid_lines > 0) {
 if (%summary_amount_by_currency and scalar @invalid_lines == 0) {
     $summary_table .= qq[
       <style>
-        table.summary { width: 30%; margin: 0 auto 12px auto; background-color: #fff; border-collapse: collapse }
+        table.summary { width: 30%; margin: 0 auto 12px auto; background-color: var(--bg-primary); border-collapse: collapse }
         table.summary th { border: 1px solid #777 }
         table.summary td { border: 1px solid #777; text-align: right }
       </style>
-      <table class="summary"><caption>Currency Totals</caption><tr><th>Currency</th><th>Credits</th><th>Debits</th></tr>
+      <table class="summary"><caption>Currency Totals</caption><thead><tr><th>Currency</th><th>Credits</th><th>Debits</th></tr></thead><tbody>
     ];
     foreach my $currency (sort keys %summary_amount_by_currency) {
         my $c  = encode_entities($currency);
@@ -277,7 +277,7 @@ if (%summary_amount_by_currency and scalar @invalid_lines == 0) {
         my $db = encode_entities(formatnumber('amount', $currency, $summary_amount_by_currency{$currency}{debit}  // 0));
         $summary_table .= "<tr><th>$c</th><td>$cr</td><td>$db</td></tr>";
     }
-    $summary_table .= '</table>';
+    $summary_table .= '</tbody></table>';
 }
 
 print $summary_table;
@@ -313,7 +313,7 @@ if ($preview and @invalid_lines == 0) {
             <select name="transtype">
 				<option value="BATCHACCOUNT">Batch Account</option><option value="BATCHDOUGHFLOW">Batch Doughflow</option>
             </select>
-            <button type="submit" class="btn btn--red" name="confirm" value="$format">Confirm (Do it for real!)</button>
+            <button type="submit" class="btn btn--primary" name="confirm" value="$format">Confirm (Do it for real!)</button>
          </form></div>];
 } elsif (not $preview and $confirm and scalar(keys %client_to_be_processed) > 0) {
     my @clients_has_been_processed = values %client_to_be_processed;

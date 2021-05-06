@@ -1,5 +1,5 @@
 <div id="[% table_id %]" class="rbox[% IF extra_class %] [% extra_class %][% END %]">
-    <table class="small full-width [% table_class %]">
+    <table class="small full-width alternate [% table_class %]">
         [% content | none %]
     </table>
     <span class="cr"><span class="tl"></span><span class="tr"></span><span class="bl"></span><span class="br"></span></span>

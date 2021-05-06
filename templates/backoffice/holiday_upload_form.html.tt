@@ -32,7 +32,7 @@
         <tr><td>Symbol</td><td> : <INPUT type="text" name="symbol" data-lpignore="true" /></td><td>(e.g. USD GBP EUR NYSE TSE)</td></tr>
         <tr><td>Holiday Date</td><td> : <INPUT type="text" name="holiday_date" pattern="\d{4}-\d{2}-\d{2}" class="datepick" data-lpignore="true" /></td><td>(e.g. 2014-12-12)</td></tr>
         <tr><td>Holiday Description</td><td> : <INPUT type="text" name="holiday_desc" data-lpignore="true" /></td><td>(e.g. New Year's Eve)</td></tr>
-        <tr><td></td><td><INPUT type="submit" class="btn btn--red" name='save' value="Save"><INPUT type="submit" class="btn btn--secondary"  name='delete' value="Delete"></td></tr>
+        <tr><td></td><td><INPUT type="submit" class="btn btn--primary" name='save' value="Save"><INPUT type="submit" class="btn btn--secondary"  name='delete' value="Delete"></td></tr>
     </table>
 </fieldset>
 </form>
@@ -53,7 +53,7 @@
         <tr><td>Exchange symbol</td><td> : <INPUT type="text" name="symbol" data-lpignore="true" /></td><td>(e.g. NYSE TSE)</td></tr>
         <tr><td>Date</td><td> : <INPUT type="text" name="date" class="datepick" pattern="\d{4}-\d{2}-\d{2}" data-lpignore="true" /></td><td>(e.g. 2014-12-12)</td></tr>
         <tr><td>Time</td><td> : <INPUT type="text" name="time" data-lpignore="true" /></td><td>(e.g. XXhYYm format, example 12h30m)</td></tr>
-        <tr><td></td><td><INPUT type="submit" class="btn btn--red" name='save' value="Save"><INPUT type="submit" class="btn btn--secondary" name='delete' value="Delete"></td></tr>
+        <tr><td></td><td><INPUT type="submit" class="btn btn--primary" name='save' value="Save"><INPUT type="submit" class="btn btn--secondary" name='delete' value="Delete"></td></tr>
     </table>
 </fieldset>
 </form>

@@ -403,11 +403,11 @@ sub print_client_details {
         if ($show_uploaded_documents) {
             my $confirm_box = qq{javascript:return get_checked_files()};
             $show_uploaded_documents .=
-                qq{<button name="delete_checked_documents" value = "1" onclick="$confirm_box" class="btn btn--red">Delete Checked Files</button>};
+                qq{<button name="delete_checked_documents" value = "1" onclick="$confirm_box" class="btn btn--primary">Delete Checked Files</button>};
             $show_uploaded_documents .=
-                qq{<button name="verify_checked_documents" value = "1" onclick="javascript:return get_to_verify_files()" class="btn btn--green">Verify Checked Files</button>};
+                qq{<button name="verify_checked_documents" value = "1" onclick="javascript:return get_to_verify_files()" class="btn btn--primary">Verify Checked Files</button>};
             $show_uploaded_documents .=
-                qq{<button name="reject_checked_documents" value = "1" onclick="javascript:return get_to_reject_files()" class="btn btn--orange">Reject Checked Files</button>};
+                qq{<button name="reject_checked_documents" value = "1" onclick="javascript:return get_to_reject_files()" class="btn btn--secondary">Reject Checked Files</button>};
         }
     }
 
@@ -621,13 +621,10 @@ sub link_for_remove_status_from_all_siblings {
     my $siblings                        = $client->siblings();
     $messages //= {};
 
-    return
-          '<span class="text-muted">'
-        . (defined($messages->{disabled}) ? $messages->{disabled} : 'status has not been set to its siblings')
-        . '</span>'
+    return '<span>' . (defined($messages->{disabled}) ? $messages->{disabled} : 'status has not been set to its siblings') . '</span>'
         if scalar @{$sibling_loginids_without_status} == scalar @{$siblings};
 
-    return '<a class="link link--primary" href="'
+    return '<a class="link" href="'
         . request()->url_for(
         'backoffice/sync_client_status.cgi',
         {
@@ -660,15 +657,15 @@ Returns a string.
 sub siblings_status_summary {
     my ($client, $code) = @_;
 
-    return "<span class='text-muted'>doesn't have siblings across the same landing company</span>" unless $client->has_siblings();
+    return "<span>doesn't have siblings across the same landing company</span>" unless $client->has_siblings();
 
     my $sibling_loginids_without_status = $client->get_sibling_loginids_without_status($code);
 
-    return '<span class="text-muted">status synced among siblings</span>' if scalar $sibling_loginids_without_status->@* == 0;
+    return '<span>status synced among siblings</span>' if scalar $sibling_loginids_without_status->@* == 0;
 
     my $siblings = join ', ', $sibling_loginids_without_status->@*;
 
-    return "<span class='text-muted'>some siblings are not synced: $siblings</span>";
+    return "<span>some siblings are not synced: $siblings</span>";
 }
 
 sub link_for_copy_status_status_to_siblings {
@@ -677,10 +674,10 @@ sub link_for_copy_status_status_to_siblings {
     my $sibling_loginids_without_status = $client->get_sibling_loginids_without_status($status_code);
     $messages //= {};
 
-    return '<span class="text-muted">' . (defined($messages->{disabled}) ? $messages->{disabled} : 'status synced among siblings') . '</span>'
+    return '<span>' . (defined($messages->{disabled}) ? $messages->{disabled} : 'status synced among siblings') . '</span>'
         if scalar @{$sibling_loginids_without_status} == 0;
 
-    return '<a class="link link--primary" href="'
+    return '<a class="link" href="'
         . request()->url_for(
         'backoffice/sync_client_status.cgi',
         {
@@ -719,7 +716,7 @@ sub build_client_warning_message {
 
     my $remove_client_from = sub {
         my $action_type = shift;
-        return '<a class="link link--primary" href="'
+        return '<a class="link" href="'
             . request()->url_for(
             "backoffice/untrusted_client_edit.cgi",
             {
@@ -761,7 +758,7 @@ sub build_client_warning_message {
     if (@output || scalar keys %client_status) {
         $output =
               '<form method="POST" class="row">'
-            . '<div class="row"><table class="collapsed hover alternate"><thead><tr>'
+            . '<div class="row"><table class="collapsed hover alternate small"><thead><tr>'
             . '<th>&nbsp;</th>'
             . '<th>Status</th>'
             . '<th>Reason/Info</th>'
@@ -1125,7 +1122,7 @@ SQL
             : "";
 
         $links .=
-            qq{<tr><td width="20" dir="rtl" $expired_poi_hint > &#9658; </td><td><a class="link link--primary" href="$url" target="_blank">$file_name</a></td>$age_display$input};
+            qq{<tr><td width="20" dir="rtl" $expired_poi_hint > &#9658; </td><td><a class="link" href="$url" target="_blank">$file_name</a></td>$age_display$input};
 
         $links .= qq{<td><input type="checkbox" class='files_checkbox' name="document_list" value="$id-$loginid-$file_name"><td>};
 
@@ -1605,7 +1602,7 @@ sub client_search_and_navigation {
         print qq{
         <form action="$self_post" method="get">
         <input type="hidden" name="loginID" value="$encoded_prev_loginid">
-        <input type="submit" class="btn btn--red" value="Previous client ($encoded_prev_loginid)">
+        <input type="submit" class="btn btn--primary" value="Previous client ($encoded_prev_loginid)">
         </form>
         }
     } else {
@@ -1616,7 +1613,7 @@ sub client_search_and_navigation {
         print qq{
         <form action="$self_post" method="get">
         <input type="hidden" name="loginID" value="$encoded_next_loginid">
-        <input type="submit" class="btn btn--red" value="Next client ($encoded_next_loginid)">
+        <input type="submit" class="btn btn--primary" value="Next client ($encoded_next_loginid)">
         </form>
         }
     } else {
@@ -1800,7 +1797,7 @@ sub link_for_clientloginid_edit {
     my $login_id = shift;
 
     return
-          '<a class="link link--primary" href="'
+          '<a class="link" href="'
         . request()->url_for("backoffice/f_clientloginid_edit.cgi", {loginID => encode_entities($login_id)}) . '">'
         . encode_entities($login_id) . '</a>';
 }

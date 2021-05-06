@@ -55,7 +55,7 @@
                 if (config.error) {
                     result.text(config.error).css('color', 'var(--color-red)');
                 } else {
-                    result.text('successfully updated').css('color', 'var(--color-green-2)');
+                    result.text('successfully updated').css('color', 'var(--color-green)');
                 }
             }
         });

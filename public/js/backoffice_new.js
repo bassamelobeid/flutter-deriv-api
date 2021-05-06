@@ -611,10 +611,11 @@ function debounce(func, wait, immediate) {
 function createSectionLinks() {
     const highlight_class = 'highlight';
     const el_top_bar = document.getElementById('top_bar');
+    const el_main_title = document.getElementById('main_title');
 
-    if (!el_top_bar) return;
+    if (!el_top_bar || !el_main_title) return;
 
-    const top_margin = el_top_bar.clientHeight + document.getElementById('main_title').clientHeight + 32;
+    const top_margin = el_top_bar.clientHeight + el_main_title.clientHeight + 32;
     const all_sections = [];
 
     document.querySelectorAll('.card__label').forEach(el_title => {
@@ -654,9 +655,9 @@ function createSectionLinks() {
 function setSectionLinksScrolling() {
     $('#top_bar').on('mousemove', function(e) {
         const container = $(this);
-        const mouse_x = e.pageX;
-        const offset = 50; // specifies the areas from left/right sides that capture mouse movement for scrolling
-        const distance = mouse_x < offset ? mouse_x : container.width() - mouse_x;
+        const mouse_x = e.pageX - container.offset().left;
+        const offset = 40; // specifies the areas from left/right sides that capture mouse movement for scrolling
+        const distance = (mouse_x < offset ? mouse_x : container.width() - mouse_x) ;
         if (distance < offset) {
             const direction = mouse_x - container.offset().left < container.width() / 2 ? '-' : '+';
             // distance multiplication makes the scroll faster as mouse pointer
@@ -710,9 +711,50 @@ function initCardToggle() {
     });
 }
 
+function initTableToggle() {
+    document.querySelectorAll('table.toggle').forEach(el_table => {
+        el_table.querySelector('thead').addEventListener('click', e => {
+            el_table.classList[el_table.classList.contains('collapsed') ? 'remove' : 'add']('collapsed');
+        });
+    });
+}
+
+function initThemeSwitcher() {
+    const toggle_theme = document.getElementById('theme_switcher');
+    toggle_theme.addEventListener('change', function(e) {
+        const theme = e.target.checked ? 'dark' : 'light';
+        document.documentElement.setAttribute('data-theme', theme);
+        localStorage.setItem('theme', theme);
+    }, false);
+}
+
+let clock_interval;
+
+function initGMTClock() {
+    const clock = document.getElementById('gmt_clock');
+
+    function timer() {
+        const now = new Date();
+        clock.innerHTML = now.toISOString().split('.')[0].replace('T', ' ') + ' GMT';
+        clock.setAttribute('tooltip', now.toString());
+    };
+
+    timer(); // run timer onload
+    clock_interval = setInterval(timer, 1000);
+}
+
 $(function() {
     createSectionLinks();
     initCopyText();
     initCardToggle();
+    initTableToggle();
     $(`.sidebar a[href*="${window.location.pathname}"]`).parent().addClass('active');
+    initThemeSwitcher();
+    initGMTClock();
+    $('.datepick').datepicker({dateFormat: "yy-mm-dd"});
 });
+
+
+window.onunload = function() {
+    clearInterval(clock_interval);
+};

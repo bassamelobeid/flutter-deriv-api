@@ -167,7 +167,7 @@
                     <option value="[% key %]">[% dispute_reasons.$key %]</option>
                 [% END %]
             </select>
-            <button class="btn btn--red" type="submit" name="dispute" value="1" onclick="return confirm('Are you sure? Order status will change to disputed.');">RAISE A DISPUTE</button>
+            <button class="btn btn--primary" type="submit" name="dispute" value="1" onclick="return confirm('Are you sure? Order status will change to disputed.');">RAISE A DISPUTE</button>
         </form>
         [% END %]
 

@@ -1,7 +1,7 @@
 <form action="[% self_post %]" method="get">
     <h3>COPIERS ([% copiers.size %])</h3>
     [% IF copiers.size > 0 %]
-        <table class="hover alternate nowrap">
+        <table class="hover alternate nowrap small">
             <thead>
                 <tr><th>Copier ID</th><th>Token</th></tr>
             </thead>
@@ -23,7 +23,7 @@
 
     <h3>TRADERS ([% traders.size %])</h3>
     [% IF traders.size > 0 %]
-        <table class="hover alternate nowrap">
+        <table class="hover alternate nowrap small">
             <thead>
                 <tr>
                     <th>Trader ID</th>
@@ -46,7 +46,7 @@
     <br>
     <input type="hidden" name="loginID" value="[% loginid %]">
     <input type="hidden" name="whattodo" value="delete_copier_tokens">
-    <input type="submit" class="btn btn--red" value="Delete selected" />
+    <input type="submit" class="btn btn--primary" value="Delete selected" />
     <br>
     <p>* NOTE: This only removes the existing link between the copier and trader, existing tokens remain valid.</p>
     [% END %]

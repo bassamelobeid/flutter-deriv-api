@@ -24,9 +24,9 @@
     [% ELSE %]
         [% ident = contract.buy_transaction_id %]
     [% END %]
-<div class="grd-parent grd-grid-12 table-body table-body-lines grd-row-padding">
-    <div class="grd-grid-1">[% contract.purchase_time %]</div>
-    <div class="grd-grid-1">
+<tr>
+    <td>[% contract.purchase_time %]</td>
+    <td>
         <a class="link" href="[% request.url_for('backoffice/quant/pricing/bpot.cgi', { currency => currency, limit_order => contract.limit_order, shortcode => contract.short_code, purchase_time => contract.purchase_time, loginid => loginid, transaction_id => ident}) | none %]">[% ident %]</a>
         <div>
             <label class="investigate">
@@ -34,27 +34,27 @@
                        value='[% ident %]:::[% contract.info.description FILTER truncate(70) %]:::[% contract.purchase_time %]'>QQ
             </label>
         </div>
-    </div>
-    <div class="grd-grid-1">
+    </td>
+    <td>
         [% display_amount(contract.payout_price) | none %]
-    </div>
-    <div class="grd-grid-3">[% contract.info.description %]</div>
-    <div class="grd-grid-1">
+    </td>
+    <td>[% contract.info.description %]</td>
+    <td>
         [% display_amount(contract.buy_price) | none %]
-    </div>
+    </td>
     [% IF is_sold %]
-        <div class="grd-grid-2">[% contract.sell_time %]</div>
+        <td>[% contract.sell_time %]</td>
     [% END %]
-    <div class="grd-grid-1">
+    <td>
         [% display_amount(get_sell_price(contract, is_sold)) | none %]
-    </div>
-    <div class="grd-grid-1">
+    </td>
+    <td>
         [% display_amount(get_sell_price(contract, is_sold) - contract.buy_price) | none %]
-    </div>
-    <div class="[% IF is_sold %] grd-grid-1 [% ELSE %] grd-grid-3 [% END %]">
+    </td>
+    <td>
         [% display_amount(contract.cumulative_pl) | none %]
-    </div>
-</div>
+    </td>
+</tr>
 [%- END -%]
 
 [%- MACRO display_pagination_link(page_number, submit_value) BLOCK -%]
@@ -131,32 +131,39 @@
         contract.cumulative_pl = cumulative_pl;
     END %]
     [% pagination | none %]
-<div class="grd-parent grd-grid-12 table-header">
-    <div class="grd-grid-1">Purchase Date</div>
-    <div class="grd-grid-1">Id</div>
-    <div class="grd-grid-1">Payout</div>
-    <div class="grd-grid-3">Contract</div>
-    <div class="grd-grid-1">Purchase Price</div>
-    <div class="grd-grid-2">Sale Date</div>
-    <div class="grd-grid-1">Sale Price</div>
-    <div class="grd-grid-1">Profit/Loss</div>
-    <div class="grd-grid-1">Cumulative Profit/Loss</div>
-</div>
 <form action="[% request.url_for('backoffice/f_quant_query.cgi') | none %]" method="post">
-    [% FOREACH contract IN sold_contracts %]
-        [%
-        display_contract(contract, 1) | none
-        %]
-    [% END %]
+    <table class="hover alternate border full-width">
+        <thead>
+            <tr>
+                <th>Purchase Date</th>
+                <th>Id</th>
+                <th>Payout</th>
+                <th>Contract</th>
+                <th>Purchase Price</div>
+                <th>Sale Date</th>
+                <th>Sale Price</th>
+                <th>Profit/Loss</th>
+                <th>Cumulative Profit/Loss</th>
+            </tr>
+        </thead>
+        <tbody>
+            [% FOREACH contract IN sold_contracts %]
+                [%
+                display_contract(contract, 1) | none
+                %]
+            [% END %]
+        </tbody>
+    </table>
+    <br>
     <input type="hidden" name="loginID" value="[% loginid %]"/>
     <input type=hidden name="broker" value="[% request.broker_code %]"/>
-    <div class="row"></div>
-    <input type="submit" name="QQ" value="Quant Query" class="btn btn--red">
+    <input type="submit" name="QQ" value="Quant Query" class="btn btn--primary">
 </form>
     [% pagination | none %]
 [% END %]
 
 <hr>
+
 <h3>Open Contracts</h3>
 [% IF open_contracts.size == 0 %]
 <div class="center-aligned grd-with-padding">[% l('There is no open contract for the client!') %]</div>
@@ -169,23 +176,29 @@
         contract.cumulative_pl = cumulative_pl;
     END
     %]
-<div class="grd-parent grd-grid-12 table-header">
-    <div class="grd-grid-1">Purchase Date</div>
-    <div class="grd-grid-1">Id</div>
-    <div class="grd-grid-1">Payout</div>
-    <div class="grd-grid-3">Contract</div>
-    <div class="grd-grid-1">Purchase Price</div>
-    <div class="grd-grid-1">Sale Price</div>
-    <div class="grd-grid-1">Profit/Loss</div>
-    <div class="grd-grid-3">Cumulative Profit/Loss</div>
-</div>
 <form action="[% request.url_for('backoffice/f_quant_query.cgi') | none %]" method="post">
-    [% FOREACH contract IN open_contracts %]
-        [% display_contract(contract, 0) | none; %]
-    [% END %]
+    <table class="hover alternate border full-width">
+        <thead>
+            <tr>
+                <th>Purchase Date</th>
+                <th>Id</th>
+                <th>Payout</th>
+                <th>Contract</th>
+                <th>Purchase Price</div>
+                <th>Sale Price</th>
+                <th>Profit/Loss</th>
+                <th>Cumulative Profit/Loss</th>
+            </tr>
+        </thead>
+        <tbody>
+            [% FOREACH contract IN open_contracts %]
+                [% display_contract(contract, 0) | none; %]
+            [% END %]
+        </tbody>
+    </table>
+    <br>
     <input type="hidden" name="loginID" value="[% loginid %]"/>
     <input type=hidden name="broker" value="[% request.broker_code %]"/>
-    <div class="row"></div>
-    <input type="submit" name="QQ" value="Quant Query" class="btn btn--red">
+    <input type="submit" name="QQ" value="Quant Query" class="btn btn--primary">
 </form>
 [% END %]

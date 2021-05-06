@@ -12,7 +12,7 @@
             </SELECT>
         </tr>
         <tr><td><INPUT type="file" name="dividend_point_file" id="dividend_point_file" value="" size="45"></td></tr>
-        <tr><td><INPUT type="submit" id="upload_dividend_compare_submit" class="btn btn--red" value="Upload"></td></tr>
+        <tr><td><INPUT type="submit" id="upload_dividend_compare_submit" class="btn btn--primary" value="Upload"></td></tr>
     </table>
 </fieldset>
 </form>

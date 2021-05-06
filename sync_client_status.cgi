@@ -20,7 +20,7 @@ sub link_to_edit_client {
     my $loginid = shift->loginid;
 
     return
-          '<a class="link link--primary" href="'
+          '<a class="link" href="'
         . request()->url_for('backoffice/f_clientloginid_edit.cgi', {loginID => encode_entities($loginid)}) . '">'
         . encode_entities($loginid) . '</a>';
 }

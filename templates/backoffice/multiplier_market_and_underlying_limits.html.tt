@@ -1,7 +1,7 @@
 <p>
 <b>max volume</b>, is calculated as follows:
 
-<p class="notify notify--secondary">max volume = max stake * max volume positions * max multiplier</p>
+<p class="bg-primary-light">max volume = max stake * max volume positions * max multiplier</p>
 
 <ul>
   <li>Risk profile, defines the "max stake" per contract - see the table at the top of the page.</li>
@@ -161,7 +161,7 @@ function SaveMultiplierOrUnderlyingLimit(){
             if (config.error) {
                 result.text(config.error).css('color', 'var(--color-red)');
             } else {
-                result.text('saved').css('color', 'var(--color-green-2)');
+                result.text('saved').css('color', 'var(--color-green)');
             }
         }
     });

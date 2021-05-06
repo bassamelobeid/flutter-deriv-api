@@ -10,12 +10,12 @@
         border: none;
         padding: 4px 8px;
         margin-bottom: 5px;
-        background: var(--color-grey-3);
+        background: var(--bg-primary-light);
         cursor: pointer;
         transition: all 0.25s;
     }
     fieldset legend:hover {
-        background: var(--color-grey-1);
+        background: var(--bg-active);
     }
     fieldset ul {
         padding-left: 5px;
@@ -31,10 +31,10 @@
         padding: 16px;
         border-radius: 8px;
         width: calc(100% - 25px);
-        background-color: var(--color-grey-4);
+        background-color: var(--bg-secondary-light);
     }
     fieldset ul li.leaf:hover {
-        background: var(--color-grey-3);
+        background: var(--bg-active);
     }
     fieldset ul label {
         color: var(--color-blue);
@@ -56,7 +56,7 @@
         padding-left: 10px;
     }
     fieldset ul li.leaf cite {
-        color: var(--color-grey);
+        color: var(--grey-200);
         margin-top: 3px;
         display: block;
     }
@@ -65,7 +65,7 @@
     }
     fieldset ul li.leaf cite em {
         font-family: monospace;
-        color: var(--color-green-2);
+        color: var(--color-green);
         word-break: break-all;
     }
     span.close {
@@ -186,7 +186,7 @@
 [% BLOCK settings_form %]
     [% FOREACH s IN settings %]
         <div class="card">
-            <div class="card__label">[% s.title %]</div>
+            <div class="card__label toggle">[% s.title %]</div>
             <div class="card__content">
                 <form method="POST" id="global" action="?page=[% s.submitted %]&group=[% s.group %]">
                     <input type="hidden" name="submitted" value="[% s.submitted %]">

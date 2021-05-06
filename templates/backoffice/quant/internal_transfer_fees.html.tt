@@ -135,7 +135,7 @@ function redraw_table(){
         let tr = dynamic_table.insertRow(-1);
         tr.id = 'row_'+pairs;
         tr.innerHTML = '<td>'+from+'</td><td>'+to+'</td><td>'+fee+
-            ' %</td><td><a href="#" onclick="delete_fee_by_crurrency(`'+from+'_'+to+'`)" class="btn btn--red">Delete</a></td>';
+            ' %</td><td><a href="#" onclick="delete_fee_by_crurrency(`'+from+'_'+to+'`)" class="btn btn--primary">Delete</a></td>';
     });
 }
 
@@ -248,7 +248,7 @@ window.onload = initialize_values;
 <i class="text-red"> * Changes you've made above will not be saved until you click <strong>Apply Changes</strong> button.</i>
 <br/>
 <br/>
-<input type="submit" class="btn btn--red" name='submit' value='Apply Changes'></input>
+<input type="submit" class="btn btn--primary" name='submit' value='Apply Changes'></input>
 <br/>
 </fieldset>
 </form>

@@ -169,7 +169,7 @@ if (@$pcs) {
                 broker    => $broker,
                 promocode => $pc->code,
             });
-        $show{link} = qq[<a class="link link--primary" target="_blank" href="$href">Edit</a>];
+        $show{link} = qq[<a class="link" target="_blank" href="$href">Edit</a>];
 
         print qq{
 <tr>
@@ -370,21 +370,21 @@ foreach my $client (@clients) {
 
     $total_turnover ||= '&nbsp;';
 
-    my $bonuscheck_link = '<a class="link link--primary" href="'
+    my $bonuscheck_link = '<a class="link" href="'
         . request()->url_for(
         'backoffice/f_client_bonus_check.cgi',
         {
             broker  => $broker,
             loginID => $client_login
         }) . '" target=_blank>bonus check</a>';
-    my $clientdetail_link = '<a class="link link--primary" href="'
+    my $clientdetail_link = '<a class="link" href="'
         . request()->url_for(
         'backoffice/f_clientloginid_edit.cgi',
         {
             broker  => $broker,
             loginID => $client_login
         }) . '" target=_blank>client details</a>';
-    my $statement_link = '<a class="link link--primary" href="'
+    my $statement_link = '<a class="link" href="'
         . request()->url_for(
         'backoffice/f_manager_history.cgi',
         {
@@ -426,7 +426,7 @@ foreach my $client (@clients) {
 
 my $table_end =
       '</table>'
-    . '<br /><input type="submit" class="btn btn--red" value="Save">'
+    . '<br /><input type="submit" class="btn btn--primary" value="Save">'
     . '<input type=hidden name="save_file" value="save">'
     . '<input type=hidden name="broker" value="'
     . $broker . '">'

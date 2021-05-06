@@ -1,5 +1,5 @@
 <h3>ACTIVE ([% tokens.size %])</h3>
-<table class="hover alternate nowrap">
+<table class="hover alternate nowrap small">
     [% IF tokens.size > 0 %]
     <thead>
     <tr>
@@ -31,7 +31,7 @@
 <hr>
 
 <h3>DELETED ([% deleted.size %])</h3>
-<table class="hover alternate">
+<table class="hover alternate nowrap small">
     [% IF deleted.size > 0 %]
     <thead>
     <tr>

@@ -24,7 +24,7 @@
 <br>
 
 [% IF dtr.risk_report %]
-<p>See, also: <a class="link link--primary" href="[% dtr.risk_report | none %]">the latest Risk Dashboard</a></p>
+<p>See, also: <a class="link" href="[% dtr.risk_report | none %]">the latest Risk Dashboard</a></p>
 [% END %]
 [% IF dtr.mtm_calc_time %]
     <p id='mtm_last_calculated_time'>Latest marked to market calculation prices at [% dtr.mtm_calc_time %]</p>
@@ -91,11 +91,11 @@
     #dtr span.warning, span.warning * { color:var(--color-red); }
     #dtr th { text-align: left; }
     #dtr td { white-space: nowrap; }
-    #dtr td.up, td.up * { color: var(--color-green-2); }
+    #dtr td.up, td.up * { color: var(--color-green); }
     #dtr td.down, td.down * { color: var(--color-red); }
-    #dtr tr.weekend td { background-color: var(--color-grey-1); }
-#summary th { font-weight: normal; font-size: medium; border: 1px solid white; background-color: var(--color-grey-1); }
-#summary td { text-align: right; font-weight: bold; font-size: medium; padding: 5px; border: 1px solid white; }
+    #dtr tr.weekend td { background-color: var(--bg-disabled); }
+#summary th { font-weight: normal; font-size: medium; border: 1px solid var(--bg-primary); background-color: var(--bg-primary-light); }
+#summary td { text-align: right; font-weight: bold; font-size: medium; padding: 5px; border: 1px solid var(--bg-primary); }
 #summary td.shared { text-align: center; }
 #summary caption { caption-side: bottom; font-size: small;  }
 

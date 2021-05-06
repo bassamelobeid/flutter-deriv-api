@@ -38,7 +38,7 @@
                 <input type='hidden' name='loginid' value='[% loginid %]'>
                 <input type='hidden' name='_csrf' value='[% csrf %]'>
                 <input type='hidden' name='action' value='sync_to_mt5'>
-                <input type='submit' class="btn btn--red" value='Start sync process'>
+                <input type='submit' class="btn btn--primary" value='Start sync process'>
             </form>
         [% END %]
     [% END %]
@@ -46,7 +46,7 @@
 
 [% BLOCK layout %]
     <div class="card">
-        <div class="card__label">[% title %]</div>
+        <div class="card__label toggle">[% title %]</div>
         <div class="card__content">
             [% content | none %]
         </div>

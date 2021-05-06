@@ -61,12 +61,12 @@
             <div class="row">
                 <div class="grd-grid-3">
                     <label>Client:</label>
-                    <a class="link link--primary" href="[% details_link %]" target="_blank"> [% loginid %] </a>
+                    <a class="link" href="[% details_link %]" target="_blank"> [% loginid %] </a>
                 </div>
                 [% IF fiat_loginid %]
                 <div class="grd-grid-3">
                     <label>FIAT Login ID:</label>
-                    <a class="link link--primary" href="[% fiat_link %]" target="_blank"> [% fiat_loginid %]</a>
+                    <a class="link" href="[% fiat_link %]" target="_blank"> [% fiat_loginid %]</a>
                 </div>
                 [% END %]
             </div>

@@ -42,7 +42,7 @@
     <tr><td>Annoucement Name</td><td> : <INPUT type="text" name="event_name" data-lpignore="true" /></td><td>(e.g. German Trade Balance)</td></tr>
     <tr><td>Impact</td><td> : <INPUT type="text" name="impact" data-lpignore="true" /></td><td>(e.g. 1=low, 3=medium, 5=high)</td></tr>
     <INPUT type="hidden" name="source" value="binary">
-    <tr><td></td><td><button onclick="saveEvent()" class="btn btn--red">Save</td><td class='save_result'></td></tr>
+    <tr><td></td><td><button onclick="saveEvent()" class="btn btn--primary">Save</td><td class='save_result'></td></tr>
 </table>
 </fieldset>
 </div>
@@ -53,21 +53,21 @@
 <p>Display for date: <select onchange="updateTable(this.value)">[% FOREACH date IN dates %]<option value="[% date %]">[% date %]</option>[% END %]</select></p>
 
 <p><b>List of Scheduled Categorized Economic Events</b></p>
-<div class="scrollable row">
+<div class="scrollable">
 <fieldset  [% IF disabled %] disabled title='no write access' [% END %]>
 <div id='scheduled_event_list'></div>
 </fieldset>
 </div>
 
 <p><b>List of Scheduled Uncategorized Economic Events</b></p>
-<div class="scrollable row">
+<div class="scrollable">
 <fieldset  [% IF disabled %] disabled title='no write access' [% END %]>
 <div id='scheduled_uncategorized_event_list'></div>
 </fieldset>
 </div>
 
 <p><b>List of Deleted Economic Events</b></p>
-<div class="scrollable row">
+<div class="scrollable">
 <fieldset  [% IF disabled %] disabled title='no write access' [% END %]>
 <div id='deleted_event_list'></div>
 </fieldset>
