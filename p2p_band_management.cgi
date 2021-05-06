@@ -12,6 +12,7 @@ BOM::Backoffice::Sysinit::init();
 use BOM::Database::ClientDB;
 use Syntax::Keyword::Try;
 use Scalar::Util qw(looks_like_number);
+use Text::Trim;
 
 my $cgi = CGI->new;
 
@@ -39,12 +40,15 @@ if ($input{edit}) {
         for (qw(max_daily_buy max_daily_sell)) {
             die "invalid value for $_\n" unless (looks_like_number($input{$_}) && $input{$_} > 0);
         }
+        for (qw(min_order_amount max_order_amount min_balance)) {
+            $input{$_} = undef unless trim($input{$_}) ne '';
+        }
 
         $db->run(
             fixup => sub {
                 $_->do(
-                    "UPDATE p2p.p2p_country_trade_band SET max_daily_buy = ?, max_daily_sell =? WHERE country = ? AND trade_band = LOWER(?) AND currency = ?",
-                    undef, @input{qw/max_daily_buy max_daily_sell country trade_band currency/});
+                    "UPDATE p2p.p2p_country_trade_band SET max_daily_buy = ?, max_daily_sell = ?, min_order_amount = ?, max_order_amount = ?, min_balance = ? WHERE country = ? AND trade_band = LOWER(?) AND currency = ?",
+                    undef, @input{qw/max_daily_buy max_daily_sell min_order_amount max_order_amount min_balance country trade_band currency/});
             });
         print '<p class="success">Band configuration updated</p>';
     } catch ($e) {
@@ -70,10 +74,13 @@ if ($action eq 'delete') {
 
 if ($input{save} or $input{copy}) {
     Bar('Save new band');
-    my @fields = qw/country trade_band currency max_daily_buy max_daily_sell/;
+    my @required_fields = qw/country trade_band currency max_daily_buy max_daily_sell/;
 
     try {
-        die "$_ is required\n" for grep { !$input{$_} } @fields;
+        die "$_ is required\n" for grep { !$input{$_} } @required_fields;
+        for (qw(min_order_amount max_order_amount min_balance)) {
+            $input{$_} = undef unless trim($input{$_}) ne '';
+        }
 
         my ($existing) = $db->run(
             fixup => sub {
@@ -89,15 +96,16 @@ if ($input{save} or $input{copy}) {
             . $input{currency} . "\n"
             if $existing;
 
-        for (qw(max_daily_buy max_daily_sell)) {
-            die "invalid value for $_\n" unless (looks_like_number($input{$_}) && $input{$_} > 0);
+        for (qw(max_daily_buy max_daily_sell min_order_amount max_order_amount min_balance)) {
+            die "invalid value for $_\n" if $input{$_} and not(looks_like_number($input{$_}) && $input{$_} > 0);
         }
 
         $db->run(
             fixup => sub {
                 $_->do(
-                    "INSERT INTO p2p.p2p_country_trade_band (country, trade_band, currency, max_daily_buy, max_daily_sell) VALUES (?,LOWER(?),?,?,?)",
-                    undef, @input{@fields});
+                    "INSERT INTO p2p.p2p_country_trade_band (country, trade_band, currency, max_daily_buy, max_daily_sell, min_order_amount, max_order_amount, min_balance) VALUES (?,LOWER(?),?,?,?,?,?,?)",
+                    undef,
+                    @input{@required_fields, 'min_order_amount', 'max_order_amount', 'min_balance'});
             });
         print '<p class="success">New band configuration saved</p>';
     } catch ($e) {
@@ -105,7 +113,6 @@ if ($input{save} or $input{copy}) {
     }
     $action = 'new';
 }
-
 my $bands = $db->run(
     fixup => sub {
         $_->selectall_arrayref("SELECT * FROM p2p.p2p_country_trade_band ORDER BY country = 'default' DESC, country, trade_band", {Slice => {}});

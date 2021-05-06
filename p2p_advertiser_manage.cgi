@@ -130,7 +130,7 @@ if ($input{loginID} || $input{name} || $input{id}) {
     $output{advertiser} = $db->run(
         fixup => sub {
             $_->selectrow_hashref(
-                'SELECT l.*, c.first_name, c.last_name FROM p2p.advertiser_list(?,?,NULL,?) l
+                'SELECT l.*, c.first_name, c.last_name, c.residence FROM p2p.advertiser_list(?,?,NULL,?) l
             JOIN betonmarkets.client c ON c.loginid = l.client_loginid', undef, @input{qw/id loginID name/});
         });
     $output{error} //= 'Advertiser not found' unless $output{advertiser};
@@ -141,6 +141,12 @@ if ($output{advertiser}) {
     if (my $blocked_until = $output{advertiser}->{blocked_until}) {
         $output{advertiser}->{barred} = Date::Utility->new($blocked_until)->is_after(Date::Utility->new);
     }
+
+    $output{advertiser}->{$_} = financialrounding('amount', $output{advertiser}->{account_currency}, $output{advertiser}->{$_})
+        for (qw/daily_buy daily_sell/);
+
+    $output{advertiser}->{$_} = defined $output{advertiser}->{$_} ? $output{advertiser}->{limit_currency} . ' ' . $output{advertiser}->{$_} : '-'
+        for (qw/daily_buy_limit daily_sell_limit min_order_amount max_order_amount min_balance/);
 
     my $loginid = $output{advertiser}->{client_loginid};
     my $client  = BOM::User::Client->new({loginid => $loginid});
@@ -180,11 +186,8 @@ if ($output{advertiser}) {
 
     my $bands = $db->run(
         fixup => sub {
-            $_->selectall_arrayref(
-                "SELECT DISTINCT(trade_band) FROM p2p.p2p_country_trade_band b, betonmarkets.client c 
-                    WHERE c.loginid = ? AND (b.country = c.residence OR b.country = 'default')",
-                undef,
-                $output{advertiser}->{client_loginid});
+            $_->selectall_arrayref("SELECT DISTINCT(trade_band) FROM p2p.p2p_country_trade_band WHERE country = ? OR country = 'default'",
+                undef, $output{advertiser}->{residence});
         });
     $output{bands}                 = [map { $_->[0] } @$bands];
     $output{p2p_balance}           = financialrounding('amount', $output{advertiser}->{account_currency}, $client->balance_for_cashier('p2p'));

@@ -58,11 +58,29 @@
         </td>
     </tr>
     <tr>
-        <td class="label">Sell Limit </td>
+        <td class="label">Sell Limit</td>
         <td>
             <input type="text" name="max_daily_sell" value="[% item.action && item.max_daily_sell %]" size=20 data-lpignore="true" />
         </td>
     </tr>
+    <tr>
+        <td class="label">Minimum Ad Order Limit</td>
+        <td>
+            <input type="text" name="min_order_amount" value="[% item.action && item.min_order_amount %]" size=20 data-lpignore="true" />(optional)
+        </td>
+    </tr>
+    <tr>
+        <td class="label">Maximum Ad Order Limit</td>
+        <td>
+            <input type="text" name="max_order_amount" value="[% item.action && item.max_order_amount %]" size=20 data-lpignore="true" />(optional)
+        </td>
+    </tr>
+    <tr>
+        <td class="label">Minimum Balance</td>
+        <td>
+            <input type="text" name="min_balance" value="[% item.action && item.min_balance %]" size=20 data-lpignore="true" />(optional)
+        </td>
+    </tr>    
 </table>
 
 [% IF item.action %]

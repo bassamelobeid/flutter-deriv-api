@@ -15,6 +15,9 @@
             <th scope="col">Currency</th>
             <th scope="col">Buy Limit</th>
             <th scope="col">Sell Limit</th>
+            <th scope="col">Min Order</th>
+            <th scope="col">Max Order</th>
+            <th scope="col">Min Balance</th>
             <th></th>
         </tr>
     </thead>
@@ -33,6 +36,9 @@
             <td>[% b.currency %]</td>
             <td>[% b.max_daily_buy %]</td>
             <td>[% b.max_daily_sell %]</td>
+            <td>[% b.min_order_amount || '-' %]</td>
+            <td>[% b.max_order_amount || '-' %]</td>
+            <td>[% b.min_balance || '-' %]</td>
             <td>
                 <form style="margin-block-end:0;" action="[% request.url_for('backoffice/p2p_band_management.cgi', {broker => broker}) %]" method="post">
                     <input type="hidden" name="country" value="[% b.country %]"/>
@@ -40,6 +46,9 @@
                     <input type="hidden" name="currency" value="[% b.currency %]"/>
                     <input type="hidden" name="max_daily_buy" value="[% b.max_daily_buy %]"/>
                     <input type="hidden" name="max_daily_sell" value="[% b.max_daily_sell %]"/>
+                    <input type="hidden" name="min_order_amount" value="[% b.min_order_amount %]"/>
+                    <input type="hidden" name="max_order_amount" value="[% b.max_order_amount %]"/>
+                    <input type="hidden" name="min_balance" value="[% b.min_balance %]"/>
                     <select name="action" style="width:80;">
                         <option value="edit">Edit</option>
                         [% IF b.country != 'default' %]<option value="delete">Delete</option>[% END %]

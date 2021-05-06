@@ -125,13 +125,17 @@
                 [% ELSE %]
                 [% advertiser.trade_band | ucfirst %]
                 [% END %]
-                <p>Effective daily turnover limits:
-                [% advertiser.limit_currency %] [% advertiser.daily_buy_limit %] for buy ads,
-                [% advertiser.limit_currency %] [% advertiser.daily_sell_limit %] for sell ads
-                </br>Today turnover: Buy: [% advertiser.account_currency %] [% advertiser.daily_buy %], sell: [% advertiser.account_currency %] [% advertiser.daily_sell %]
-                </p>
+                &nbsp;&nbsp;(Band country: [% advertiser.band_country %])
+                <br/>Daily turnover limits: buy [% advertiser.daily_buy_limit %], sell [% advertiser.daily_sell_limit %]
+                <br/>Ad order amount limits: min [% advertiser.min_order_amount %], max [% advertiser.max_order_amount || '-' %]
+                <br/>Minimum balance: [% advertiser.min_balance %]
             </td>
         </tr>
+         <tr>
+            <td>Today turnover</td>
+            <td>Buy: [% advertiser.account_currency %] [% advertiser.daily_buy %]<br/>
+            Sell: [% advertiser.account_currency %] [% advertiser.daily_sell %]</td>
+        </tr>        
          <tr>
             <td>P2P available balance</td>
             <td>[% advertiser.account_currency %] [% p2p_balance %]</td>
@@ -139,7 +143,11 @@
         <tr>
             <td>Sendbird ID</td>
             <td>[% advertiser.chat_user_id %]</td>
-        </tr>        
+        </tr>
+        <tr>
+            <td>Residence</td>
+            <td>[% advertiser.residence %]</td>
+        </tr>          
     </table>
     <br/>
     <input type="hidden" name="update_id" value="[% advertiser.id %]"/>
@@ -231,7 +239,9 @@
                 <th scope="col">Remaining</th>
                 <th scope="col">Min order</th>
                 <th scope="col">Max order</th>
+                <th scope="col">Actual min</th>
                 <th scope="col">Actual max</th>
+                <th scope="col">Orderable</th>
                 <th scope="col">Country</th>
                 <th scope="col">Payment method</th>
                 <th scope="col">Payment info</th>
@@ -255,7 +265,9 @@
                 <td>[% ad.remaining %]</td>
                 <td>[% ad.min_order_amount %]</td>
                 <td>[% ad.max_order_amount %]</td>
+                <td>[% ad.min_order_amount_actual %]</td>
                 <td>[% ad.max_order_amount_actual %]</td>
+                <td>[% IF ad.min_order_amount_actual <= ad.max_order_amount_actual %]Yes[% ELSE %]No[% END %]</td>
                 <td>[% ad.country %]</td>
                 <td>[% ad.payment_method %]</td>
                 <td>[% ad.payment_info %]</td>
