@@ -961,6 +961,19 @@ rpc get_account_status => sub {
 
     push(@$status, 'financial_assessment_not_complete') unless $client->is_financial_assessment_complete();
 
+    my $base_validation     = BOM::Platform::Client::CashierValidation::base_validation($client);
+    my $deposit_validation  = BOM::Platform::Client::CashierValidation::deposit_validation($client);
+    my $withdraw_validation = BOM::Platform::Client::CashierValidation::withdraw_validation($client);
+
+    my @cashier_validation = map { ($_->{status} // [])->@* } $base_validation, $deposit_validation, $withdraw_validation;
+
+    if ($base_validation->{error}) {
+        push @$status, 'cashier_locked';
+    } else {
+        push @$status, 'deposit_locked'    if $deposit_validation->{error};
+        push @$status, 'withdrawal_locked' if $withdraw_validation->{error};
+    }
+
     if (!BOM::Config::Runtime->instance->app_config->system->suspend->universal_password) {
         push(@$status, 'password_reset_required') unless $client->status->migrated_universal_password;
     }
@@ -994,12 +1007,13 @@ rpc get_account_status => sub {
     } $client->currency;
 
     return {
-        status                        => $status,
+        status                        => [sort(uniq(@$status))],
         risk_classification           => $client->risk_level(),
         prompt_client_to_authenticate => $is_verification_required,
         authentication                => $authentication,
         currency_config               => \%currency_config,
-        $provider ? (social_identity_provider => $provider) : (),
+        @cashier_validation ? (cashier_validation       => [sort(uniq(@cashier_validation))]) : (),
+        $provider           ? (social_identity_provider => $provider)                         : (),
     };
 };
 

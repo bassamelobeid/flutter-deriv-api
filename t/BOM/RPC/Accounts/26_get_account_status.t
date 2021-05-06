@@ -129,6 +129,7 @@ $user_mlt_mf->add_client($test_client_mf);
 
 my $m              = BOM::Platform::Token::API->new;
 my $token          = $m->create_token($test_client->loginid,          'test token');
+my $token_vr       = $m->create_token($test_client_cr_vr->loginid,    'test token');
 my $token_cr       = $m->create_token($test_client_cr->loginid,       'test token');
 my $token_disabled = $m->create_token($test_client_disabled->loginid, 'test token');
 my $token_mx       = $m->create_token($test_client_mx->loginid,       'test token');
@@ -139,6 +140,68 @@ my $c = Test::BOM::RPC::QueueClient->new();
 my $method = 'get_account_status';
 subtest 'get account status' => sub {
     subtest "account generic" => sub {
+
+        subtest 'cashier statuses' => sub {
+            my $mocked_cashier_validation = Test::MockModule->new("BOM::Platform::Client::CashierValidation");
+
+            my $result = $c->tcall('get_account_status', {token => $token_vr});
+            cmp_deeply(
+                $result->{status},
+                ['cashier_locked', 'financial_information_not_complete', 'trading_experience_not_complete'],
+                "cashier is locked for virtual accounts"
+            );
+
+            $mocked_cashier_validation->mock('base_validation', {error => 1});
+            $result = $c->tcall('get_account_status', {token => $token_cr});
+            cmp_deeply(
+                $result->{status},
+                ['cashier_locked', 'financial_information_not_complete', 'trading_experience_not_complete'],
+                "cashier is locked correctly."
+            );
+
+            $mocked_cashier_validation->mock('base_validation', {});
+            $result = $c->tcall('get_account_status', {token => $token_cr});
+
+            cmp_deeply(
+                $result->{status},
+                ['financial_information_not_complete', 'trading_experience_not_complete',],
+                "cashier is not locked for correctly"
+            );
+
+            $mocked_cashier_validation->mock('withdraw_validation', {error => 1});
+            $result = $c->tcall('get_account_status', {token => $token_cr});
+            cmp_deeply(
+                $result->{status},
+                ['financial_information_not_complete', 'trading_experience_not_complete', 'withdrawal_locked'],
+                "withdrawal is locked correctly"
+            );
+
+            $mocked_cashier_validation->mock('withdraw_validation', {});
+            $result = $c->tcall('get_account_status', {token => $token_cr});
+            cmp_deeply(
+                $result->{status},
+                ['financial_information_not_complete', 'trading_experience_not_complete'],
+                "withdrawal is not locked correctly"
+            );
+
+            $mocked_cashier_validation->mock('deposit_validation', {error => 1});
+            $result = $c->tcall('get_account_status', {token => $token_cr});
+            cmp_deeply(
+                $result->{status},
+                ['deposit_locked', 'financial_information_not_complete', 'trading_experience_not_complete'],
+                "deposit is not locked correctly"
+            );
+
+            $mocked_cashier_validation->mock('deposit_validation', {});
+            $result = $c->tcall('get_account_status', {token => $token_cr});
+            cmp_deeply(
+                $result->{status},
+                ['financial_information_not_complete', 'trading_experience_not_complete',],
+                "deposit is not locked correctly"
+            );
+
+            $mocked_cashier_validation->unmock_all();
+        };
 
         subtest 'validations' => sub {
             is($c->tcall($method, {token => '12345'})->{error}{message_to_client}, 'The token is invalid.', 'invalid token error');
@@ -277,7 +340,8 @@ subtest 'get account status' => sub {
                                 }}
                         },
                         needs_verification => ["document", "identity"],
-                    }
+                    },
+                    cashier_validation => ['ASK_AUTHENTICATE', 'ASK_CURRENCY', 'ASK_FINANCIAL_RISK_APPROVAL', 'ASK_TIN_INFORMATION'],
                 },
                 'prompt for non authenticated MF client'
             );
@@ -315,7 +379,8 @@ subtest 'get account status' => sub {
                                 }}
                         },
                         needs_verification => [],
-                    }
+                    },
+                    cashier_validation => ['ASK_CURRENCY', 'ASK_FINANCIAL_RISK_APPROVAL', 'ASK_TIN_INFORMATION'],
                 },
                 'authenticated, no deposits so it will not prompt for authentication'
             );
@@ -351,7 +416,8 @@ subtest 'get account status' => sub {
                                 }}
                         },
                         needs_verification => ['identity'],
-                    }
+                    },
+                    cashier_validation => ['ASK_CURRENCY', 'ASK_FINANCIAL_RISK_APPROVAL', 'ASK_TIN_INFORMATION'],
                 },
                 'correct account status returned for document expired, please note that this test for status key, authentication expiry structure is tested later'
             );
@@ -407,7 +473,8 @@ subtest 'get account status' => sub {
                                 }}
                         },
                         needs_verification => [],
-                    }
+                    },
+                    cashier_validation => ['ASK_CURRENCY', 'ASK_FINANCIAL_RISK_APPROVAL', 'ASK_TIN_INFORMATION'],
                 },
                 'correct account status returned for document expiring in next month'
             );
@@ -490,7 +557,8 @@ subtest 'get account status' => sub {
                                     }}
                             },
                             needs_verification => superbagof(qw(identity)),
-                        }
+                        },
+                        cashier_validation => ['ASK_CURRENCY', 'ASK_UK_FUNDS_PROTECTION'],
                     },
                     "authentication object is correct"
                 );
@@ -548,7 +616,7 @@ subtest 'get account status' => sub {
                                 is_withdrawal_suspended => 0,
                             }
                         },
-                        status              => [qw(financial_information_not_complete trading_experience_not_complete password_reset_required)],
+                        status              => bag(qw(financial_information_not_complete trading_experience_not_complete password_reset_required)),
                         risk_classification => 'low',
                         prompt_client_to_authenticate => '0',
                         authentication                => {
@@ -873,7 +941,7 @@ subtest 'get account status' => sub {
                                 }}
                         },
                         needs_verification => ["document", "identity"],
-                    }
+                    },
                 },
                 'ask for documents for unauthenticated client marked as high risk'
             );
@@ -1117,7 +1185,7 @@ subtest 'get account status' => sub {
                                 }}
                         },
                         needs_verification => ["document", "identity"],
-                    }
+                    },
                 },
                 'ask for documents for client marked as high risk'
             );
@@ -1154,7 +1222,7 @@ subtest 'get account status' => sub {
                                 }}
                         },
                         needs_verification => [],
-                    }
+                    },
                 },
                 'no prompt for malta client if first deposit is pending'
             );
@@ -1191,7 +1259,7 @@ subtest 'get account status' => sub {
                                 }}
                         },
                         needs_verification => ["document", "identity"],
-                    }
+                    },
                 },
                 'ask for documents for malta client if first deposit has been done and not authorized'
             );
@@ -1316,7 +1384,8 @@ subtest 'get account status' => sub {
                                 }}
                         },
                         needs_verification => ["document", "identity"],
-                    }
+                    },
+                    cashier_validation => ignore(),
                 },
                 'ask for documents for client marked as high risk'
             );
@@ -1369,7 +1438,8 @@ subtest 'get account status' => sub {
                                 }}
                         },
                         needs_verification => ["document"],
-                    }
+                    },
+                    cashier_validation => ignore(),
                 },
                 'ask for proof of address and proof of identity documents for iom client if age verified and not fully authenticated client is marked as unwelcome'
             );
@@ -1416,7 +1486,8 @@ subtest 'get account status' => sub {
                         },
                         needs_verification => ["document"],
                         needs_verification => [],
-                    }
+                    },
+                    cashier_validation => ignore(),
                 },
                 'Dont allow for further resubmission if MX client is fully authenticated.'
             );
@@ -1497,7 +1568,8 @@ subtest 'get account status' => sub {
                                     }}
                             },
                             needs_verification => superbagof(qw(identity)),
-                        }
+                        },
+                        cashier_validation => ignore(),
                     },
                     "authentication object is correct"
                 );
@@ -1550,7 +1622,8 @@ subtest 'get account status' => sub {
                                     }}
                             },
                             needs_verification => [],
-                        }
+                        },
+                        cashier_validation => ignore(),
                     },
                     'correct authenication object for authenticated client with valid documents'
                 );
@@ -1622,7 +1695,8 @@ subtest 'get account status' => sub {
                                     }}
                             },
                             needs_verification => ["identity"],
-                        }
+                        },
+                        cashier_validation => ignore(),
                     },
                     'correct authentication object for authenticated client with expired documents'
                 );
@@ -1732,7 +1806,8 @@ subtest 'get account status' => sub {
                                     }}
                             },
                             needs_verification => ["document"],
-                        }
+                        },
+                        cashier_validation => ignore(),
                     },
                     'correct authenication object for age verified client only'
                 );
@@ -1789,7 +1864,9 @@ subtest 'get account status' => sub {
                             document => {
                                 status => "none",
                             },
-                            needs_verification => ["document", "identity"]}
+                            needs_verification => ["document", "identity"]
+                        },
+                        cashier_validation => ignore(),
                     },
                     'correct authentication object for age verified client with expired proof of identity documents'
                 );
@@ -1832,7 +1909,9 @@ subtest 'get account status' => sub {
                                     country_code         => 'IDN'
                                 }}
                         },
-                        needs_verification => ["document", "identity"]}
+                        needs_verification => ["document", "identity"],
+                    },
+                    cashier_validation => ignore(),
                 },
                 'correct authenication object for unauthenticated client'
             );
@@ -1871,7 +1950,8 @@ subtest 'get account status' => sub {
                                     country_code         => 'IDN'
                                 }}
                         },
-                        needs_verification => ["identity"]}
+                        needs_verification => ["identity"],
+                    },
                 },
                 'correct authenication object for shared_payment_method client'
             );
@@ -2018,11 +2098,8 @@ subtest 'Experian validated account' => sub {
                         is_withdrawal_suspended => 0,
                     }
                 },
-                status => [
-                    'age_verification',      'authenticated',
-                    'allow_document_upload', 'financial_information_not_complete',
-                    'trading_experience_not_complete',
-                ],
+                status => superbagof(
+                    qw(age_verification authenticated allow_document_upload financial_information_not_complete trading_experience_not_complete)),
                 risk_classification           => 'low',
                 prompt_client_to_authenticate => 0,
                 authentication                => {
@@ -2049,7 +2126,9 @@ subtest 'Experian validated account' => sub {
                                 country_code => 'GBR'
                             }}
                     },
-                    needs_verification => []}
+                    needs_verification => []
+                },
+                cashier_validation => ignore(),
             },
             'Experian validated low risk account does not need POI validation'
         );
@@ -2069,11 +2148,9 @@ subtest 'Experian validated account' => sub {
                         is_withdrawal_suspended => 0,
                     }
                 },
-                status => [
-                    'age_verification',                'authenticated',
-                    'allow_document_upload',           'financial_information_not_complete',
-                    'trading_experience_not_complete', 'financial_assessment_not_complete',
-                ],
+                status => superbagof(
+                    qw(age_verification authenticated allow_document_upload financial_information_not_complete trading_experience_not_complete financial_assessment_not_complete)
+                ),
                 risk_classification           => 'high',
                 prompt_client_to_authenticate => 0,
                 authentication                => {
@@ -2100,7 +2177,9 @@ subtest 'Experian validated account' => sub {
                                 country_code => 'GBR'
                             }}
                     },
-                    needs_verification => supersetof('identity', 'document')}
+                    needs_verification => supersetof('identity', 'document'),
+                },
+                cashier_validation => ignore(),
             },
             'Experian validated high risk account needs POI and POA validation'
         );
@@ -2125,11 +2204,9 @@ subtest 'Experian validated account' => sub {
                             is_withdrawal_suspended => 0,
                         }
                     },
-                    status => [
-                        'age_verification',                'authenticated',
-                        'allow_document_upload',           'financial_information_not_complete',
-                        'trading_experience_not_complete', 'financial_assessment_not_complete',
-                    ],
+                    status => superbagof(
+                        qw(age_verification authenticated allow_document_upload financial_information_not_complete trading_experience_not_complete financial_assessment_not_complete)
+                    ),
                     risk_classification           => 'high',
                     prompt_client_to_authenticate => 0,
                     authentication                => {
@@ -2156,7 +2233,9 @@ subtest 'Experian validated account' => sub {
                                     country_code => 'GBR'
                                 }}
                         },
-                        needs_verification => ['identity']}
+                        needs_verification => ['identity']
+                    },
+                    cashier_validation => ignore(),
                 },
                 'Experian validated high risk account has pending status after Docs upload'
             );
@@ -2185,11 +2264,9 @@ subtest 'Experian validated account' => sub {
                                 is_withdrawal_suspended => 0,
                             }
                         },
-                        status => [
-                            'age_verification',                'authenticated',
-                            'allow_document_upload',           'financial_information_not_complete',
-                            'trading_experience_not_complete', 'financial_assessment_not_complete',
-                        ],
+                        status => superbagof(
+                            qw(age_verification authenticated allow_document_upload financial_information_not_complete trading_experience_not_complete financial_assessment_not_complete)
+                        ),
                         risk_classification           => 'high',
                         prompt_client_to_authenticate => 0,
                         authentication                => {
@@ -2216,7 +2293,9 @@ subtest 'Experian validated account' => sub {
                                         country_code => 'GBR'
                                     }}
                             },
-                            needs_verification => []}
+                            needs_verification => [],
+                        },
+                        cashier_validation => ignore(),
                     },
                     'Former Experian validated high risk account has verified POA and POI when fully authenticated'
                 );
@@ -2248,11 +2327,9 @@ subtest 'Experian validated account' => sub {
                             is_withdrawal_suspended => 0,
                         }
                     },
-                    status => [
-                        'age_verification',                'authenticated',
-                        'allow_document_upload',           'financial_information_not_complete',
-                        'trading_experience_not_complete', 'financial_assessment_not_complete',
-                    ],
+                    status => superbagof(
+                        qw(age_verification authenticated allow_document_upload financial_information_not_complete trading_experience_not_complete financial_assessment_not_complete)
+                    ),
                     risk_classification           => 'high',
                     prompt_client_to_authenticate => 0,
                     authentication                => {
@@ -2279,7 +2356,9 @@ subtest 'Experian validated account' => sub {
                                     country_code => 'GBR'
                                 }}
                         },
-                        needs_verification => []}
+                        needs_verification => [],
+                    },
+                    cashier_validation => ignore(),
                 },
                 'Experian validated high risk account has pending status after Onfido upload'
             );
@@ -2299,11 +2378,9 @@ subtest 'Experian validated account' => sub {
                                 is_withdrawal_suspended => 0,
                             }
                         },
-                        status => [
-                            'age_verification',                'authenticated',
-                            'allow_document_upload',           'financial_information_not_complete',
-                            'trading_experience_not_complete', 'financial_assessment_not_complete',
-                        ],
+                        status => superbagof(
+                            qw(age_verification authenticated allow_document_upload financial_information_not_complete trading_experience_not_complete financial_assessment_not_complete)
+                        ),
                         risk_classification           => 'high',
                         prompt_client_to_authenticate => 0,
                         authentication                => {
@@ -2330,7 +2407,9 @@ subtest 'Experian validated account' => sub {
                                         country_code => 'GBR'
                                     }}
                             },
-                            needs_verification => []}
+                            needs_verification => []
+                        },
+                        cashier_validation => ignore(),
                     },
                     'Former Experian validated high risk does not need POI as the validator is Onfido now'
                 );
@@ -2369,12 +2448,9 @@ subtest 'Experian validated account' => sub {
                                 is_withdrawal_suspended => 0,
                             }
                         },
-                        status => [
-                            'age_verification',                'authenticated',
-                            'allow_document_upload',           'financial_information_not_complete',
-                            'trading_experience_not_complete', 'financial_assessment_not_complete',
-                            'document_expired',
-                        ],
+                        status => superbagof(
+                            qw(age_verification authenticated allow_document_upload financial_information_not_complete trading_experience_not_complete financial_assessment_not_complete document_expired)
+                        ),
                         risk_classification           => 'high',
                         prompt_client_to_authenticate => 0,
                         authentication                => {
@@ -2402,7 +2478,9 @@ subtest 'Experian validated account' => sub {
                                         country_code => 'GBR'
                                     }}
                             },
-                            needs_verification => ['identity']}
+                            needs_verification => ['identity'],
+                        },
+                        cashier_validation => ignore(),
                     },
                     'Former Experian validated high risk account has expired status after Onfido upload and docs expired'
                 );
@@ -2541,6 +2619,7 @@ subtest 'Social identity provider' => sub {
                 }}});
 
     my $client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR'});
+    $client_cr->account('USD');
     $user->add_client($client_cr);
 
     my $token_cr = $m->create_token($client_cr->loginid, 'test token');
@@ -2550,7 +2629,7 @@ subtest 'Social identity provider' => sub {
         $result,
         {
             social_identity_provider => 'google',
-            status                   => ['social_signup', 'financial_information_not_complete', 'trading_experience_not_complete'],
+            status                   => bag(qw(social_signup financial_information_not_complete trading_experience_not_complete)),
             currency_config          => {
                 'USD' => {
                     is_deposit_suspended    => 0,
@@ -2573,7 +2652,8 @@ subtest 'Social identity provider' => sub {
                     status => 'none'
                 },
                 needs_verification => [],
-                document           => {'status' => 'none'}}
+                document           => {'status' => 'none'}
+            },
         },
         'has social_identity_provider as google'
     );
