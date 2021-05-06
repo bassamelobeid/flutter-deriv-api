@@ -90,6 +90,8 @@ check the current environment is ci environment
     $ENV{SEGMENT_WRITE_KEY}           = 'test';
     $ENV{DEVEXPERTS_API_SERVICE_PORT} = 8083;
     $ENV{DEVEXPERTS_SERVER_PORT}      = 8084;
+    $ENV{RUDDERSTACK_BASE_URL}        = 'http://dummy/';
+    $ENV{RUDDERSTACK_WRITE_KEY}       = 'test';
 
     # remove PERL5OPT which could cause confusion when forking to perls
     # different from our own (e.g. from binary-com/perl to /usr/bin/perl)
