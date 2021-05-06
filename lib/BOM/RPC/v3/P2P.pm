@@ -80,6 +80,7 @@ our %ERROR_MAP = do {
         InvalidMinMaxAmount => localize("The minimum order amount should be less than or equal to the maximum ad amount. Please adjust the value."),
         InvalidNumericValue => localize("Please enter a value that's greater than 0."),
         MaximumExceeded     => localize("Maximum ad limit is [_1] [_2]. Please adjust the value."),
+        BelowPerOrderLimit  => localize("Minimum ad order amount is [_1] [_2]. Please adjust the value."),
         MaxPerOrderExceeded => localize("Maximum ad order amount is [_1] [_2]. Please adjust the value."),
         MinPriceTooSmall    => localize("Minimum order amount is [_1]. Please adjust the value."),
         OrderContactInfoRequired          => localize("Please provide your contact details."),
