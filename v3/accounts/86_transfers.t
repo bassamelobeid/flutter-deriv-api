@@ -220,11 +220,11 @@ subtest 'transfer between accounts' => sub {
     cmp_ok($client_balance - $amount, '==', $client_usd->default_account->balance, 'Client balance is correct after transfer.');
     $client_balance = $client_usd->default_account->balance;
 
-    check_last_statement($t, $client_token, -$amount, 'withdrawal', qr/^Account transfer to $to_id. Includes transfer fee of .* USD \(.*%\).$/,
+    check_last_statement($t, $client_token, -$amount, 'transfer', qr/^Account transfer to $to_id. Includes transfer fee of .* USD \(.*%\).$/,
         $client_balance, $response->{transaction_id});
     check_last_statement(
         $t, $btc_token, $client_btc->default_account->balance,
-        'deposit',
+        'transfer',
         qr/^Account transfer from $from_id. Includes transfer fee of .* USD \(.*%\).$/,
         $client_btc->default_account->balance
     );
