@@ -3396,9 +3396,10 @@ sub _p2p_advertisers {
             $_->selectall_arrayref('SELECT * FROM p2p.advertiser_list(?, ?, ?, ?)', {Slice => {}}, @param{qw/id loginid name unique_name/});
         });
 
-    for my $item (@$advertisers) {
-        $item->{daily_buy_limit}  = convert_currency($item->{daily_buy_limit},  $item->{limit_currency}, $item->{account_currency});
-        $item->{daily_sell_limit} = convert_currency($item->{daily_sell_limit}, $item->{limit_currency}, $item->{account_currency});
+    for my $adv (@$advertisers) {
+        for my $limit (qw/daily_buy_limit daily_sell_limit min_order_amount max_order_amount min_balance/) {
+            $adv->{$limit} = convert_currency($adv->{$limit}, $adv->{limit_currency}, $adv->{account_currency}) if defined $adv->{$limit};
+        }
     }
     return $advertisers;
 }
@@ -3791,17 +3792,15 @@ sub _advertiser_details {
         $details->{full_verification}  = $self->fully_authenticated      ? 1 : 0;
         $details->{cancels_remaining}  = $self->_p2p_advertiser_cancellations_remaining;
 
-        # band limits are not returned by all db functions
-        if ($advertiser->{limit_currency}) {
-            $details->{daily_buy}        = financialrounding('amount', $advertiser->{account_currency}, $advertiser->{daily_buy});
-            $details->{daily_sell}       = financialrounding('amount', $advertiser->{account_currency}, $advertiser->{daily_sell});
-            $details->{daily_buy_limit}  = financialrounding('amount', $advertiser->{account_currency}, $advertiser->{daily_buy_limit});
-            $details->{daily_sell_limit} = financialrounding('amount', $advertiser->{account_currency}, $advertiser->{daily_sell_limit});
+        for my $limit (qw/daily_buy daily_sell daily_buy_limit daily_sell_limit min_order_amount max_order_amount min_balance/) {
+            $details->{$limit} = financialrounding('amount', $advertiser->{account_currency}, $advertiser->{$limit}) if defined $advertiser->{$limit};
         }
+
         if ($advertiser->{blocked_until}) {
             my $block_time = Date::Utility->new($advertiser->{blocked_until});
             $details->{blocked_until} = $block_time->epoch if Date::Utility->new->is_before($block_time);
         }
+
     } else {
         my $auth_client = BOM::User::Client->new({loginid => $loginid});
         $details->{basic_verification} = $auth_client->status->age_verification ? 1 : 0;
@@ -3993,19 +3992,31 @@ sub _validate_advert_amounts {
         };
     }
 
-    my $maximum_advert = BOM::Config::Runtime->instance->app_config->payments->p2p->limits->maximum_advert;
-    if (in_usd($param{amount}, $param{account_currency}) > $maximum_advert) {
+    my ($band_min_order, $band_max_order) = $self->_p2p_advertiser_cached->@{qw/min_order_amount max_order_amount/};
+
+    my $global_max_ad =
+        convert_currency(BOM::Config::Runtime->instance->app_config->payments->p2p->limits->maximum_advert, 'USD', $param{account_currency});
+    if ($param{amount} > $global_max_ad) {
         die +{
             error_code     => 'MaximumExceeded',
-            message_params => [convert_currency($maximum_advert, 'USD', $param{account_currency}), $param{account_currency}],
+            message_params => [financialrounding('amount', $param{account_currency}, $global_max_ad), $param{account_currency}],
         };
     }
 
-    my $maximum_order = BOM::Config::Runtime->instance->app_config->payments->p2p->limits->maximum_order;
-    if (in_usd($param{max_order_amount}, $param{account_currency}) > $maximum_order) {
+    if (defined $band_min_order and $param{min_order_amount} < $band_min_order) {
+        die +{
+            error_code     => 'BelowPerOrderLimit',
+            message_params => [financialrounding('amount', $param{account_currency}, $band_min_order), $param{account_currency}],
+        };
+    }
+
+    my $global_max_order =
+        convert_currency(BOM::Config::Runtime->instance->app_config->payments->p2p->limits->maximum_order, 'USD', $param{account_currency});
+    my $max_order = min grep { defined $_ } ($global_max_order, $band_max_order);
+    if ($param{max_order_amount} > $max_order) {
         die +{
             error_code     => 'MaxPerOrderExceeded',
-            message_params => [convert_currency($maximum_order, 'USD', $param{account_currency}), $param{account_currency}],
+            message_params => [financialrounding('amount', $param{account_currency}, $max_order), $param{account_currency}],
         };
     }
 

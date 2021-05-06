@@ -19,7 +19,7 @@ populate_exchange_rates({EUR => 2});
 BOM::Test::Helper::P2P::bypass_sendbird();
 my $original_admax = BOM::Config::Runtime->instance->app_config->payments->p2p->limits->maximum_advert;
 BOM::Config::Runtime->instance->app_config->payments->p2p->limits->maximum_advert(1000);
-BOM::Config::Runtime->instance->app_config->payments->p2p->limits->maximum_order(100);
+BOM::Config::Runtime->instance->app_config->payments->p2p->limits->maximum_order(1000);
 
 my $original_escrow = BOM::Config::Runtime->instance->app_config->payments->p2p->escrow;
 my $escrow_client   = BOM::Test::Helper::Client::create_client();
@@ -228,6 +228,111 @@ subtest 'ad list' => sub {
     is scalar($client->p2p_advert_list(id => $ad2->{id})->@*), 1, 'buy ad is shown without use_client_limits=1';
 
     BOM::Test::Helper::P2P::reset_escrow();
+};
+
+subtest 'min balance' => sub {
+
+    my $advertiser = BOM::Test::Helper::P2P::create_advertiser(
+        balance        => 9,
+        currency       => 'EUR',
+        client_details => {residence => 'za'},
+    );
+
+    $advertiser->db->dbic->dbh->do("INSERT into p2p.p2p_country_trade_band VALUES ('za','low','USD',100,100,NULL,NULL,20)");
+    cmp_ok $advertiser->p2p_advertiser_info->{min_balance}, '==', 10, 'min balance from low band, converted from USD';
+
+    # we don't convert band currency in the db yet, so need to have a band with same currency
+    $advertiser->db->dbic->dbh->do("INSERT into p2p.p2p_country_trade_band VALUES ('za','low','EUR',100,100,NULL,NULL,10)");
+    my $advert = BOM::Test::Helper::P2P::create_advert(
+        client           => $advertiser,
+        type             => 'sell',
+        min_order_amount => 1,
+        max_order_amount => 20
+    );
+
+    cmp_deeply($advert->{id}, none(map { $_->{id} } $advertiser->p2p_advert_list(type => 'sell')->@*), 'ad is hidden due to low balance');
+
+    $advertiser->db->dbic->dbh->do("INSERT into p2p.p2p_country_trade_band VALUES ('za','medium','EUR',100,100,NULL,NULL,5)");
+    $advertiser->db->dbic->dbh->do("UPDATE p2p.p2p_advertiser SET trade_band = 'medium' WHERE id = " . $advertiser->p2p_advertiser_info->{id});
+    delete $advertiser->{_p2p_advertiser_cached};
+    cmp_ok $advertiser->p2p_advertiser_info->{min_balance}, '==', 5, 'min balance from medium band';
+
+    cmp_deeply([$advert->{id}], subsetof(map { $_->{id} } $advertiser->p2p_advert_list(type => 'sell')->@*), 'ad is shown when limit is lowered');
+};
+
+subtest 'ad limits' => sub {
+    my $advertiser = BOM::Test::Helper::P2P::create_advertiser(
+        currency       => 'EUR',
+        client_details => {residence => 'ng'},
+    );
+    $advertiser->db->dbic->dbh->do(
+        "INSERT into p2p.p2p_country_trade_band VALUES ('ng','low','USD',100,100,10,100), ('ng','medium','USD',100,100,1,200)");
+
+    cmp_ok $advertiser->p2p_advertiser_info->{min_order_amount}, '==', 5,  'min_order_amount from low band, converted from USD';
+    cmp_ok $advertiser->p2p_advertiser_info->{max_order_amount}, '==', 50, 'max_order_amount from low band, converted from USD';
+
+    cmp_deeply(
+        exception {
+            $advertiser->p2p_advert_create(
+                type             => 'sell',
+                amount           => 100,
+                rate             => 1,
+                min_order_amount => 1,
+                max_order_amount => 20,
+                payment_method   => 'bank_transfer',
+                payment_info     => 'x',
+                contact_info     => 'x'
+            );
+        },
+        {
+            error_code     => 'BelowPerOrderLimit',
+            message_params => ['5.00', 'EUR']
+        },
+        'min order amount'
+    );
+
+    cmp_deeply(
+        exception {
+            $advertiser->p2p_advert_create(
+                type             => 'sell',
+                amount           => 100,
+                rate             => 1,
+                min_order_amount => 10,
+                max_order_amount => 100,
+                payment_method   => 'bank_transfer',
+                payment_info     => 'x',
+                contact_info     => 'x'
+            );
+        },
+        {
+            error_code     => 'MaxPerOrderExceeded',
+            message_params => ['50.00', 'EUR']
+        },
+        'max order amount'
+    );
+
+    $advertiser->db->dbic->dbh->do("UPDATE p2p.p2p_advertiser SET trade_band = 'medium' WHERE id = " . $advertiser->p2p_advertiser_info->{id});
+    delete $advertiser->{_p2p_advertiser_cached};
+
+    cmp_ok $advertiser->p2p_advertiser_info->{min_order_amount}, '==', 0.5, 'min_order_amount from low band, converted from USD';
+    cmp_ok $advertiser->p2p_advertiser_info->{max_order_amount}, '==', 100, 'max_order_amount from low band, converted from USD';
+
+    cmp_deeply(
+        exception {
+            $advertiser->p2p_advert_create(
+                type             => 'sell',
+                amount           => 100,
+                rate             => 1,
+                min_order_amount => 1,
+                max_order_amount => 100,
+                payment_method   => 'bank_transfer',
+                payment_info     => 'x',
+                contact_info     => 'x'
+            );
+        },
+        undef,
+        'no error with different band'
+    );
 };
 
 sub order {
