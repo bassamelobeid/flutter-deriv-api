@@ -516,6 +516,7 @@ sub _website_domain {
     die "Invalid application id." unless $app_id;
 
     return 'binary.me' if $app_id == 15284;
+    return 'deriv.me'  if $app_id == 1411;
 
     return lc $c->stash('brand')->website_name;
 }
