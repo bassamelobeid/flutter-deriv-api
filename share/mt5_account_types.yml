@@ -93,7 +93,7 @@ demo\p01_ts01\financial\vanuatu_std_usd: *demo_vanuatu_financial_financial
 demo_malta_gaming_swap_free: &demo_malta_gaming_swap_free
   account_type: demo
   landing_company_short: malta
-  market_type: gaming
+  market_type: synthetic
   sub_account_type: swap_free
   server: p01_ts01
 demo01\synthetic\malta_sf_eur: *demo_malta_gaming_swap_free
@@ -103,7 +103,7 @@ demo\p01_ts01\synthetic\malta_sf_eur: *demo_malta_gaming_swap_free
 demo_malta_gaming_financial: &demo_malta_gaming_financial
   account_type: demo
   landing_company_short: malta
-  market_type: gaming
+  market_type: synthetic
   sub_account_type: financial
   server: p01_ts01
 demo\malta: *demo_malta_gaming_financial
@@ -114,7 +114,7 @@ demo\p01_ts01\synthetic\malta_std_eur: *demo_malta_gaming_financial
 demo_samoa_gaming_financial: &demo_samoa_gaming_financial
   account_type: demo
   landing_company_short: samoa
-  market_type: gaming
+  market_type: synthetic
   sub_account_type: financial
   server: p01_ts01
 demo01\synthetic\samoa_std_btc: *demo_samoa_gaming_financial
@@ -126,7 +126,7 @@ demo\p01_ts01\synthetic\samoa_std_ust: *demo_samoa_gaming_financial
 demo_svg_gaming_swap_free: &demo_svg_gaming_swap_free
   account_type: demo
   landing_company_short: svg
-  market_type: gaming
+  market_type: synthetic
   sub_account_type: swap_free
   server: p01_ts01
 demo01\synthetic\svg_sf_usd: *demo_svg_gaming_swap_free
@@ -136,7 +136,7 @@ demo\p01_ts01\synthetic\svg_sf_usd: *demo_svg_gaming_swap_free
 demo_svg_gaming_financial: &demo_svg_gaming_financial
   account_type: demo
   landing_company_short: svg
-  market_type: gaming
+  market_type: synthetic
   sub_account_type: financial
   server: p01_ts01
 demo\svg: *demo_svg_gaming_financial
@@ -606,7 +606,7 @@ real\p02_ts02\financial\vanuatu_std-hr_usd: &real_p02ts02_vanuatu_financial_fina
 real_malta_gaming_swap_free: &real_malta_gaming_swap_free
   account_type: real
   landing_company_short: malta
-  market_type: gaming
+  market_type: synthetic
   sub_account_type: swap_free
   server: p01_ts01
 real01\synthetic\malta_sf_eur: *real_malta_gaming_swap_free
@@ -614,28 +614,28 @@ real\p01_ts01\synthetic\malta_sf_eur: *real_malta_gaming_swap_free
 real02\synthetic\malta_sf_eur: &real_p01ts02_malta_gaming_swap_free
   account_type: real
   landing_company_short: malta
-  market_type: gaming
+  market_type: synthetic
   sub_account_type: swap_free
   server: p01_ts02
 real\p01_ts02\synthetic\malta_sf_eur: *real_p01ts02_malta_gaming_swap_free
 real03\synthetic\malta_sf_eur: &real_p01ts03_malta_gaming_swap_free
   account_type: real
   landing_company_short: malta
-  market_type: gaming
+  market_type: synthetic
   sub_account_type: swap_free
   server: p01_ts03
 real\p01_ts03\synthetic\malta_sf_eur: *real_p01ts03_malta_gaming_swap_free
 real04\synthetic\malta_sf_eur: &real_p01ts04_malta_gaming_swap_free
   account_type: real
   landing_company_short: malta
-  market_type: gaming
+  market_type: synthetic
   sub_account_type: swap_free
   server: p01_ts04
 real\p01_ts04\synthetic\malta_sf_eur: *real_p01ts04_malta_gaming_swap_free
 real\p02_ts02\synthetic\malta_sf_eur: &real_p02ts02_malta_gaming_swap_free
   account_type: real
   landing_company_short: malta
-  market_type: gaming
+  market_type: synthetic
   sub_account_type: swap_free
   server: p02_ts02
 
@@ -643,7 +643,7 @@ real\p02_ts02\synthetic\malta_sf_eur: &real_p02ts02_malta_gaming_swap_free
 real_malta_gaming_financial: &real_malta_gaming_financial
   account_type: real
   landing_company_short: malta
-  market_type: gaming
+  market_type: synthetic
   sub_account_type: financial
   server: p01_ts01
 real\malta: *real_malta_gaming_financial
@@ -652,28 +652,28 @@ real\p01_ts01\synthetic\malta_std_eur: *real_malta_gaming_financial
 real02\synthetic\malta_std_eur: &real_p01ts02_malta_gaming_financial
   account_type: real
   landing_company_short: malta
-  market_type: gaming
+  market_type: synthetic
   sub_account_type: financial
   server: p01_ts02
 real\p01_ts02\synthetic\malta_std_eur: *real_p01ts02_malta_gaming_financial
 real03\synthetic\malta_std_eur: &real_p01ts03_malta_gaming_financial
   account_type: real
   landing_company_short: malta
-  market_type: gaming
+  market_type: synthetic
   sub_account_type: financial
   server: p01_ts03
 real\p01_ts03\synthetic\malta_std_eur: *real_p01ts03_malta_gaming_financial
 real04\synthetic\malta_std_eur: &real_p01ts04_malta_gaming_financial
   account_type: real
   landing_company_short: malta
-  market_type: gaming
+  market_type: synthetic
   sub_account_type: financial
   server: p01_ts04
 real\p01_ts04\synthetic\malta_std_eur: *real_p01ts04_malta_gaming_financial
 real\p02_ts02\synthetic\malta_std_eur: &real_p02ts02_malta_gaming_financial
   account_type: real
   landing_company_short: malta
-  market_type: gaming
+  market_type: synthetic
   sub_account_type: financial
   server: p02_ts02
 
@@ -681,7 +681,7 @@ real\p02_ts02\synthetic\malta_std_eur: &real_p02ts02_malta_gaming_financial
 real_samoa_gaming_financial: &real_samoa_gaming_financial
   account_type: real
   landing_company_short: samoa
-  market_type: gaming
+  market_type: synthetic
   sub_account_type: financial
   server: p01_ts01
 real01\synthetic\samoa_std_btc: *real_samoa_gaming_financial
@@ -691,7 +691,7 @@ real\p01_ts01\synthetic\samoa_std_ust: *real_samoa_gaming_financial
 real02\synthetic\samoa_std_btc: &real_p01ts02_samoa_gaming_financial
   account_type: real
   landing_company_short: samoa
-  market_type: gaming
+  market_type: synthetic
   sub_account_type: financial
   server: p01_ts02
 real02\synthetic\samoa_std_ust: *real_p01ts02_samoa_gaming_financial
@@ -700,7 +700,7 @@ real\p01_ts02\synthetic\samoa_std_ust: *real_p01ts02_samoa_gaming_financial
 real03\synthetic\samoa_std_btc: &real_p01ts03_samoa_gaming_financial
   account_type: real
   landing_company_short: samoa
-  market_type: gaming
+  market_type: synthetic
   sub_account_type: financial
   server: p01_ts03
 real03\synthetic\samoa_std_ust: *real_p01ts03_samoa_gaming_financial
@@ -709,7 +709,7 @@ real\p01_ts03\synthetic\samoa_std_ust: *real_p01ts03_samoa_gaming_financial
 real04\synthetic\samoa_std_btc: &real_p01ts04_samoa_gaming_financial
   account_type: real
   landing_company_short: samoa
-  market_type: gaming
+  market_type: synthetic
   sub_account_type: financial
   server: p01_ts04
 real04\synthetic\samoa_std_ust: *real_p01ts04_samoa_gaming_financial
@@ -718,7 +718,7 @@ real\p01_ts04\synthetic\samoa_std_ust: *real_p01ts04_samoa_gaming_financial
 real\p02_ts02\synthetic\samoa_std_btc: &real_p02ts02_samoa_gaming_financial
   account_type: real
   landing_company_short: samoa
-  market_type: gaming
+  market_type: synthetic
   sub_account_type: financial
   server: p02_ts02
 real\p02_ts02\synthetic\samoa_std_ust: *real_p02ts02_samoa_gaming_financial
@@ -727,7 +727,7 @@ real\p02_ts02\synthetic\samoa_std_ust: *real_p02ts02_samoa_gaming_financial
 real_svg_gaming_swap_free: &real_svg_gaming_swap_free
   account_type: real
   landing_company_short: svg
-  market_type: gaming
+  market_type: synthetic
   sub_account_type: swap_free
   server: p01_ts01
 real01\synthetic\svg_sf-hr_usd: *real_svg_gaming_swap_free
@@ -737,7 +737,7 @@ real\p01_ts01\synthetic\svg_sf_usd: *real_svg_gaming_swap_free
 real02\synthetic\svg_sf-hr_usd: &real_p01ts02_svg_gaming_swap_free
   account_type: real
   landing_company_short: svg
-  market_type: gaming
+  market_type: synthetic
   sub_account_type: swap_free
   server: p01_ts02
 real02\synthetic\svg_sf_usd: *real_p01ts02_svg_gaming_swap_free
@@ -746,7 +746,7 @@ real\p01_ts02\synthetic\svg_sf_usd: *real_p01ts02_svg_gaming_swap_free
 real03\synthetic\svg_sf-hr_usd: &real_p01ts03_svg_gaming_swap_free
   account_type: real
   landing_company_short: svg
-  market_type: gaming
+  market_type: synthetic
   sub_account_type: swap_free
   server: p01_ts03
 real03\synthetic\svg_sf_usd: *real_p01ts03_svg_gaming_swap_free
@@ -755,7 +755,7 @@ real\p01_ts03\synthetic\svg_sf_usd: *real_p01ts03_svg_gaming_swap_free
 real04\synthetic\svg_sf-hr_usd: &real_p01ts04_svg_gaming_swap_free
   account_type: real
   landing_company_short: svg
-  market_type: gaming
+  market_type: synthetic
   sub_account_type: swap_free
   server: p01_ts04
 real04\synthetic\svg_sf_usd: *real_p01ts04_svg_gaming_swap_free
@@ -764,7 +764,7 @@ real\p01_ts04\synthetic\svg_sf_usd: *real_p01ts04_svg_gaming_swap_free
 real\p02_ts02\synthetic\svg_sf-hr_usd: &real_p02ts02_svg_gaming_swap_free
   account_type: real
   landing_company_short: svg
-  market_type: gaming
+  market_type: synthetic
   sub_account_type: swap_free
   server: p02_ts02
 real\p02_ts02\synthetic\svg_sf_usd: *real_p02ts02_svg_gaming_swap_free
@@ -773,7 +773,7 @@ real\p02_ts02\synthetic\svg_sf_usd: *real_p02ts02_svg_gaming_swap_free
 real_svg_gaming_financial: &real_svg_gaming_financial
   account_type: real
   landing_company_short: svg
-  market_type: gaming
+  market_type: synthetic
   sub_account_type: financial
   server: p01_ts01
 real\svg: *real_svg_gaming_financial
@@ -793,7 +793,7 @@ real\p01_ts01\synthetic\svg_std_usd\04: *real_svg_gaming_financial
 real02\synthetic\svg_std-hr_usd: &real_p01ts02_svg_gaming_financial
   account_type: real
   landing_company_short: svg
-  market_type: gaming
+  market_type: synthetic
   sub_account_type: financial
   server: p01_ts02
 real02\synthetic\svg_std_usd: *real_p01ts02_svg_gaming_financial
@@ -805,7 +805,7 @@ real\p01_ts02\synthetic\svg_std_usd\04: *real_p01ts02_svg_gaming_financial
 real03\synthetic\svg_std_usd: &real_p01ts03_svg_gaming_financial
   account_type: real
   landing_company_short: svg
-  market_type: gaming
+  market_type: synthetic
   sub_account_type: financial
   server: p01_ts03
 real03\synthetic\svg_std-hr_usd: *real_p01ts03_svg_gaming_financial
@@ -817,7 +817,7 @@ real\p01_ts03\synthetic\svg_std_usd\04: *real_p01ts03_svg_gaming_financial
 real04\synthetic\svg_std-hr_usd: &real_p01ts04_svg_gaming_financial
   account_type: real
   landing_company_short: svg
-  market_type: gaming
+  market_type: synthetic
   sub_account_type: financial
   server: p01_ts04
 real04\synthetic\svg_std_usd: *real_p01ts04_svg_gaming_financial
@@ -829,7 +829,7 @@ real\p01_ts04\synthetic\svg_std_usd\04: *real_p01ts04_svg_gaming_financial
 real\p02_ts02\synthetic\svg_std-hr_usd: &real_p02ts02_svg_gaming_financial
   account_type: real
   landing_company_short: svg
-  market_type: gaming
+  market_type: synthetic
   sub_account_type: financial
   server: p02_ts02
 real\p02_ts02\synthetic\svg_std_usd\01: *real_p02ts02_svg_gaming_financial
