@@ -29,7 +29,8 @@ rule 'trading_account.should_match_landing_company' => {
         my $residence           = $context->residence;
         my $countries_instance  = request()->brand->countries_instance;
         my $countries_list      = $countries_instance->countries_list;
-        my $binary_company_name = $countries_list->{$residence}->{"${market_type}_company"} // '';
+        my $lc_type = $market_type eq 'synthetic' ? 'gaming' : $market_type;
+        my $binary_company_name = $countries_list->{$residence}->{"${lc_type}_company"} // '';
 
         # TODO: add some sort of LC entry for this.
         die_with_params(+{code => 'TradingAccountNotAllowed'}, $args) if $binary_company_name ne 'svg';
