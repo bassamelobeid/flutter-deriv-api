@@ -153,7 +153,7 @@ async_rpc trading_platform_password_change => sub {
             platform => 'dxtrade',
             client   => $params->{client});
 
-        $dxtrade->change_password(password => $password) if $dxtrade->dxclient_get;
+        $dxtrade->change_password(password => $password);
 
         return Future->done(1);
     } catch ($e) {

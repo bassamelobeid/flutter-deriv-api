@@ -1236,6 +1236,7 @@ sub _filter_settings {
     my ($settings, @allowed_keys) = @_;
     my $filtered_settings = {};
     @{$filtered_settings}{@allowed_keys} = @{$settings}{@allowed_keys};
+    $filtered_settings->{market_type} = 'synthetic' if $filtered_settings->{market_type} and $filtered_settings->{market_type} eq 'gaming';
     return $filtered_settings;
 }
 

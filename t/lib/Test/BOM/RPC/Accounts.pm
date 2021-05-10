@@ -129,97 +129,97 @@ our %EXPECTED_MT5_GROUP_MAPPINGS = (
     'real01\synthetic\svg_std_usd' => {
         'account_type'          => 'real',
         'landing_company_short' => 'svg',
-        'market_type'           => 'gaming',
+        'market_type'           => 'synthetic',
         'sub_account_type'      => 'financial'
     },
     'real02\synthetic\svg_std_usd' => {
         'account_type'          => 'real',
         'landing_company_short' => 'svg',
-        'market_type'           => 'gaming',
+        'market_type'           => 'synthetic',
         'sub_account_type'      => 'financial'
     },
     'real01\synthetic\svg_std-hr_usd' => {
         'account_type'          => 'real',
         'landing_company_short' => 'svg',
-        'market_type'           => 'gaming',
+        'market_type'           => 'synthetic',
         'sub_account_type'      => 'financial'
     },
     'real02\synthetic\svg_std-hr_usd' => {
         'account_type'          => 'real',
         'landing_company_short' => 'svg',
-        'market_type'           => 'gaming',
+        'market_type'           => 'synthetic',
         'sub_account_type'      => 'financial'
     },
     'real01\synthetic\svg_sf_usd' => {
         'account_type'          => 'real',
         'landing_company_short' => 'svg',
-        'market_type'           => 'gaming',
+        'market_type'           => 'synthetic',
         'sub_account_type'      => 'swap_free'
     },
     'real02\synthetic\svg_sf_usd' => {
         'account_type'          => 'real',
         'landing_company_short' => 'svg',
-        'market_type'           => 'gaming',
+        'market_type'           => 'synthetic',
         'sub_account_type'      => 'swap_free'
     },
     'real01\synthetic\svg_sf-hr_usd' => {
         'account_type'          => 'real',
         'landing_company_short' => 'svg',
-        'market_type'           => 'gaming',
+        'market_type'           => 'synthetic',
         'sub_account_type'      => 'swap_free'
     },
     'real02\synthetic\svg_sf-hr_usd' => {
         'account_type'          => 'real',
         'landing_company_short' => 'svg',
-        'market_type'           => 'gaming',
+        'market_type'           => 'synthetic',
         'sub_account_type'      => 'swap_free'
     },
     'real01\synthetic\malta_std_eur' => {
         'account_type'          => 'real',
         'landing_company_short' => 'malta',
-        'market_type'           => 'gaming',
+        'market_type'           => 'synthetic',
         'sub_account_type'      => 'financial'
     },
     'real02\synthetic\malta_std_eur' => {
         'account_type'          => 'real',
         'landing_company_short' => 'malta',
-        'market_type'           => 'gaming',
+        'market_type'           => 'synthetic',
         'sub_account_type'      => 'financial'
     },
     'real01\synthetic\malta_sf_eur' => {
         'account_type'          => 'real',
         'landing_company_short' => 'malta',
-        'market_type'           => 'gaming',
+        'market_type'           => 'synthetic',
         'sub_account_type'      => 'swap_free'
     },
     'real02\synthetic\malta_sf_eur' => {
         'account_type'          => 'real',
         'landing_company_short' => 'malta',
-        'market_type'           => 'gaming',
+        'market_type'           => 'synthetic',
         'sub_account_type'      => 'swap_free'
     },
     'real01\synthetic\samoa_std_btc' => {
         'account_type'          => 'real',
         'landing_company_short' => 'samoa',
-        'market_type'           => 'gaming',
+        'market_type'           => 'synthetic',
         'sub_account_type'      => 'financial'
     },
     'real02\synthetic\samoa_std_btc' => {
         'account_type'          => 'real',
         'landing_company_short' => 'samoa',
-        'market_type'           => 'gaming',
+        'market_type'           => 'synthetic',
         'sub_account_type'      => 'financial'
     },
     'real01\synthetic\samoa_std_ust' => {
         'account_type'          => 'real',
         'landing_company_short' => 'samoa',
-        'market_type'           => 'gaming',
+        'market_type'           => 'synthetic',
         'sub_account_type'      => 'financial'
     },
     'real02\synthetic\samoa_std_ust' => {
         'account_type'          => 'real',
         'landing_company_short' => 'samoa',
-        'market_type'           => 'gaming',
+        'market_type'           => 'synthetic',
         'sub_account_type'      => 'financial'
     },
     'real01\financial\labuan_stp_usd' => {
@@ -453,37 +453,37 @@ our %EXPECTED_MT5_GROUP_MAPPINGS = (
     'demo01\synthetic\svg_std_usd' => {
         'account_type'          => 'demo',
         'landing_company_short' => 'svg',
-        'market_type'           => 'gaming',
+        'market_type'           => 'synthetic',
         'sub_account_type'      => 'financial'
     },
     'demo01\synthetic\svg_sf_usd' => {
         'account_type'          => 'demo',
         'landing_company_short' => 'svg',
-        'market_type'           => 'gaming',
+        'market_type'           => 'synthetic',
         'sub_account_type'      => 'swap_free'
     },
     'demo01\synthetic\malta_std_eur' => {
         'account_type'          => 'demo',
         'landing_company_short' => 'malta',
-        'market_type'           => 'gaming',
+        'market_type'           => 'synthetic',
         'sub_account_type'      => 'financial'
     },
     'demo01\synthetic\malta_sf_eur' => {
         'account_type'          => 'demo',
         'landing_company_short' => 'malta',
-        'market_type'           => 'gaming',
+        'market_type'           => 'synthetic',
         'sub_account_type'      => 'swap_free'
     },
     'demo01\synthetic\samoa_std_btc' => {
         'account_type'          => 'demo',
         'landing_company_short' => 'samoa',
-        'market_type'           => 'gaming',
+        'market_type'           => 'synthetic',
         'sub_account_type'      => 'financial'
     },
     'demo01\synthetic\samoa_std_ust' => {
         'account_type'          => 'demo',
         'landing_company_short' => 'samoa',
-        'market_type'           => 'gaming',
+        'market_type'           => 'synthetic',
         'sub_account_type'      => 'financial'
     },
     'demo01\financial\labuan_stp_usd' => {
@@ -549,37 +549,37 @@ our %EXPECTED_MT5_GROUP_MAPPINGS = (
     'demo01\synthetic\svg_std_usd' => {
         'account_type'          => 'demo',
         'landing_company_short' => 'svg',
-        'market_type'           => 'gaming',
+        'market_type'           => 'synthetic',
         'sub_account_type'      => 'financial'
     },
     'demo01\synthetic\svg_sf_usd' => {
         'account_type'          => 'demo',
         'landing_company_short' => 'svg',
-        'market_type'           => 'gaming',
+        'market_type'           => 'synthetic',
         'sub_account_type'      => 'swap_free'
     },
     'demo01\synthetic\malta_std_eur' => {
         'account_type'          => 'demo',
         'landing_company_short' => 'malta',
-        'market_type'           => 'gaming',
+        'market_type'           => 'synthetic',
         'sub_account_type'      => 'financial'
     },
     'demo01\synthetic\malta_sf_eur' => {
         'account_type'          => 'demo',
         'landing_company_short' => 'malta',
-        'market_type'           => 'gaming',
+        'market_type'           => 'synthetic',
         'sub_account_type'      => 'swap_free'
     },
     'demo01\synthetic\samoa_std_btc' => {
         'account_type'          => 'demo',
         'landing_company_short' => 'samoa',
-        'market_type'           => 'gaming',
+        'market_type'           => 'synthetic',
         'sub_account_type'      => 'financial'
     },
     'demo01\synthetic\samoa_std_ust' => {
         'account_type'          => 'demo',
         'landing_company_short' => 'samoa',
-        'market_type'           => 'gaming',
+        'market_type'           => 'synthetic',
         'sub_account_type'      => 'financial'
     },
     'demo01\financial\labuan_stp_usd' => {
@@ -645,19 +645,19 @@ our %EXPECTED_MT5_GROUP_MAPPINGS = (
     'real\svg' => {
         'account_type'          => 'real',
         'landing_company_short' => 'svg',
-        'market_type'           => 'gaming',
+        'market_type'           => 'synthetic',
         'sub_account_type'      => 'financial'
     },
     'real\svg_highrisk' => {
         'account_type'          => 'real',
         'landing_company_short' => 'svg',
-        'market_type'           => 'gaming',
+        'market_type'           => 'synthetic',
         'sub_account_type'      => 'financial'
     },
     'real\malta' => {
         'account_type'          => 'real',
         'landing_company_short' => 'malta',
-        'market_type'           => 'gaming',
+        'market_type'           => 'synthetic',
         'sub_account_type'      => 'financial'
     },
     'real\labuan_financial_stp' => {
@@ -699,13 +699,13 @@ our %EXPECTED_MT5_GROUP_MAPPINGS = (
     'demo\svg' => {
         'account_type'          => 'demo',
         'landing_company_short' => 'svg',
-        'market_type'           => 'gaming',
+        'market_type'           => 'synthetic',
         'sub_account_type'      => 'financial'
     },
     'demo\malta' => {
         'account_type'          => 'demo',
         'landing_company_short' => 'malta',
-        'market_type'           => 'gaming',
+        'market_type'           => 'synthetic',
         'sub_account_type'      => 'financial'
     },
     'demo\labuan_financial_stp' => {

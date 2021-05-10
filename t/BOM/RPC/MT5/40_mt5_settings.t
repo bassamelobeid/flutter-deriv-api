@@ -115,7 +115,7 @@ subtest 'login list' => sub {
 
     my @accounts = map { $_->{login} } @{$c->result};
     is($c->result->[0]->{landing_company_short}, 'svg',       "landing_company_short result");
-    is($c->result->[0]->{market_type},           'gaming',    "market_type result");
+    is($c->result->[0]->{market_type},           'synthetic', "market_type result");
     is($c->result->[0]->{sub_account_type},      'financial', "sub_account_type result");
     is($c->result->[0]->{account_type},          'real',      "account_type result");
     cmp_bag(\@accounts, ['MTR' . $ACCOUNTS{'real\p01_ts03\synthetic\svg_std_usd\01'}], "mt5_login_list result");

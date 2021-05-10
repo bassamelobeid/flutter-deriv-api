@@ -18,7 +18,6 @@ BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend->all(0);
 my $c = BOM::Test::RPC::QueueClient->new();
 
 subtest 'dxtrader accounts' => sub {
-
     my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR'});
 
     BOM::User->create(
