@@ -62,7 +62,7 @@
                         "type": "string",
                         "enum": [
                             "financial",
-                            "gaming"
+                            "synthetic"
                         ]
                     },
                     "platform": {

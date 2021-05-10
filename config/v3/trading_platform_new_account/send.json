@@ -51,7 +51,7 @@
             "type": "string",
             "enum": [
                 "financial",
-                "gaming"
+                "synthetic"
             ]
         },
         "password": {
