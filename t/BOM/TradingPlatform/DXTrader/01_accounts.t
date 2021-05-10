@@ -28,7 +28,7 @@ isa_ok($dxtrader, 'BOM::TradingPlatform::DXTrader');
 my $account1 = $dxtrader->new_account(
     account_type => 'demo',
     password     => 'test',
-    market_type  => 'gaming',
+    market_type  => 'synthetic',
     currency     => 'USD',
 );
 
@@ -42,7 +42,7 @@ cmp_deeply(
         display_balance       => '10000.00',
         login                 => re('\w{40}'),
         platform              => 'dxtrade',
-        market_type           => 'gaming',
+        market_type           => 'synthetic',
         landing_company_short => 'svg',
     },
     'created first account'
@@ -59,7 +59,7 @@ cmp_deeply(
             client_domain => 'default',
             login         => re('\w{40}'),
             account_code  => re('\w{40}'),
-            market_type   => 'gaming',
+            market_type   => 'synthetic',
         }
     },
     'user attributes of first account'
@@ -68,7 +68,7 @@ cmp_deeply(
 my $account2 = $dxtrader->new_account(
     account_type => 'real',
     password     => 'test',
-    market_type  => 'gaming',
+    market_type  => 'synthetic',
     currency     => 'USD',
 );
 
@@ -82,7 +82,7 @@ cmp_deeply(
         display_balance       => '0.00',
         login                 => $account1->{login},
         platform              => 'dxtrade',
-        market_type           => 'gaming',
+        market_type           => 'synthetic',
         landing_company_short => 'svg',
     },
     'created second account'
@@ -99,7 +99,7 @@ cmp_deeply(
             clearing_code => 'default',
             client_domain => 'default',
             account_code  => re('\w{40}'),
-            market_type   => 'gaming',
+            market_type   => 'synthetic',
         }
     },
     'user attributes of second account'
@@ -110,7 +110,7 @@ cmp_deeply(
         $dxtrader->new_account(
             account_type => 'demo',
             password     => 'test',
-            market_type  => 'gaming',
+            market_type  => 'synthetic',
             currency     => 'USD',
         )
     },

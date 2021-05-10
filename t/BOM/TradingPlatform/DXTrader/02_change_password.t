@@ -27,7 +27,7 @@ $client->account('USD');
 
 cmp_deeply exception { $dxtrader->change_password() }, +{error_code => 'PasswordRequired'}, 'Password is required';
 
-cmp_deeply exception { $dxtrader->change_password(password => 'test') }, +{error_code => 'ClientNotFound'}, 'DXClient not found';
+cmp_deeply exception { $dxtrader->change_password(password => 'test') }, undef, 'No error with no account';
 
 $dxtrader->new_account(
     account_type => 'demo',

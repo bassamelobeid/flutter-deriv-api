@@ -87,9 +87,11 @@ sub new_account {
     my $rule_engine = BOM::Rules::Engine->new(client => $self->client);
     $rule_engine->verify_action('new_trading_account', \%args);
 
+    my $server           = $args{account_type};    # account_type means a different thing for dxtrade
     my $account_type     = $args{account_type} eq 'real'     ? 'LIVE'            : 'DEMO';
     my $trading_category = $args{market_type} eq 'financial' ? 'Financials Only' : 'Synthetics Only';
-    my $currency         = $args{currency};
+
+    my $currency = $args{currency};
 
     my $password = $args{password};
     if (BOM::Config::Runtime->instance->app_config->system->suspend->universal_password) {
@@ -98,7 +100,7 @@ sub new_account {
         $password = $self->client->user->password;
     }
 
-    my $dxclient = $self->dxclient_get;
+    my $dxclient = $self->dxclient_get($server);
 
     if ($dxclient) {
         my $existing = first {
@@ -113,12 +115,13 @@ sub new_account {
         die +{
             error_code     => 'DXExistingAccount',
             message_params => [$existing->{account_code}]} if $existing;
-        # todo: validate trading password
+
     } else {
         # no existing client, try to create one
         die 'password required' unless $password;
-        my $login       = $self->config->{real_account_ids} ? $self->client->user->id : $self->unique_id;
+        my $login       = $self->dxtrade_login;
         my $client_resp = $self->call_api(
+            $server,
             'client_create',
             domain   => DX_DOMAIN,
             login    => $login,
@@ -140,6 +143,7 @@ sub new_account {
     my $account_id   = $prefix . $seq_num;                                                      # our loginid
     my $balance      = $args{account_type} eq 'demo' ? 10000 : 0;
     my $account_resp = $self->call_api(
+        $server,
         'client_account_create',
         login         => $dxclient->{login},
         domain        => $dxclient->{domain},
@@ -222,21 +226,25 @@ Gets all client accounts and returns list formatted for websocket response.
 sub get_accounts {
     my ($self) = @_;
 
-    my $dxclient = $self->dxclient_get;
-    return [] unless $dxclient and $dxclient->{accounts};
-
     my @accounts;
+    for my $server ('demo', 'real') {
+        my $dxclient = $self->dxclient_get($server);
+        push @accounts, ($dxclient->{accounts} // [])->@*;
+    }
+    return [] unless @accounts;
+
     my $logins = $self->client->user->loginid_details;
+    my @result;
 
     for my $login (sort keys %$logins) {
         next unless ($logins->{$login}{platform} // '') eq 'dxtrade';
-        if (my $account = first { $_->{account_code} eq $logins->{$login}{attributes}{account_code} } $dxclient->{accounts}->@*) {
+        if (my $account = first { $_->{account_code} eq $logins->{$login}{attributes}{account_code} } @accounts) {
             $account->{account_id} = $login;
             $account->{login}      = $logins->{$login}{attributes}{login};
-            push @accounts, $self->account_details($account);
+            push @result, $self->account_details($account);
         }
     }
-    return \@accounts;
+    return \@result;
 }
 
 =head2 change_password
@@ -265,19 +273,21 @@ sub change_password {
         $password = $self->client->user->password;
     }
 
-    my $dxclient = $self->dxclient_get;
-    die +{error_code => 'ClientNotFound'} unless $dxclient;
+    for my $server ('demo', 'real') {
+        my $dxclient = $self->dxclient_get($server) or next;
 
-    my $resp = $self->call_api(
-        'client_update',
-        login    => $dxclient->{login},
-        domain   => $dxclient->{domain},
-        password => $password,
-    );
+        my $resp = $self->call_api(
+            $server,
+            'client_update',
+            login    => $dxclient->{login},
+            domain   => $dxclient->{domain},
+            password => $password,
+        );
 
-    return undef if $resp->{success};
+        die +{error_code => 'CouldNotChangePassword'} unless $resp->{success};
+    }
 
-    die +{error_code => 'CouldNotChangePassword'};
+    return undef;
 }
 
 =head2 deposit
@@ -346,6 +356,7 @@ sub deposit {
     }
 
     my $resp = $self->call_api(
+        $account->{account_type},
         'account_deposit',
         account_code  => $account->{attributes}{account_code},
         clearing_code => $account->{attributes}{clearing_code},
@@ -358,6 +369,7 @@ sub deposit {
     $self->insert_payment_details($txn->payment_id, $args{to_account}, $tx_amounts->{recv_amount});
 
     my $update = $self->call_api(
+        $account->{account_type},
         'account_get',
         account_code  => $account->{attributes}{account_code},
         clearing_code => $account->{attributes}{clearing_code},
@@ -413,6 +425,7 @@ sub withdraw {
     );
 
     my $resp = $self->call_api(
+        $account->{account_type},
         'account_withdrawal',
         account_code  => $account->{attributes}{account_code},
         clearing_code => $account->{attributes}{clearing_code},
@@ -459,6 +472,7 @@ sub withdraw {
     $self->insert_payment_details($txn->payment_id, $args{from_account}, -$args{amount});
 
     my $update = $self->call_api(
+        $account->{account_type},
         'account_get',
         account_code  => $account->{attributes}{account_code},
         clearing_code => $account->{attributes}{clearing_code},
@@ -546,9 +560,13 @@ sub config {
     my $self = shift;
     return $self->{config} //= do {
         my $config = YAML::XS::LoadFile('/etc/rmg/devexperts.yml');
-        my $host   = $config->{service}{host}          // 'localhost';
-        my $port   = $ENV{DEVEXPERTS_API_SERVICE_PORT} // $config->{service}{port};
-        $config->{service_url} = "http://$host:$port";
+        if ($ENV{DEVEXPERTS_API_SERVICE_PORT}) {
+            # running under tests
+            $config->{service_url} = 'http://localhost:' . $ENV{DEVEXPERTS_API_SERVICE_PORT};
+        } else {
+            $config->{service_url} = $config->{service}{host} // 'http://localhost';
+            $config->{service_url} .= ':' . $config->{service}{port} if $config->{service}{port};
+        }
         $config;
     }
 }
@@ -570,9 +588,10 @@ Takes the following arguments:
 =cut
 
 sub call_api {
-    my ($self, $method, %args) = @_;
+    my ($self, $server, $method, %args) = @_;
 
     my $payload = encode_json_utf8({
+        server => $server,
         method => $method,
         %args
     });
@@ -602,18 +621,12 @@ Gets the devexperts client information of $self->client, if it exists.
 =cut
 
 sub dxclient_get {
-    my ($self) = @_;
+    my ($self, $server) = @_;
 
-    my $login;
-    if ($self->config->{real_account_ids}) {
-        $login = $self->client->user->id;
-    } else {
-        my $account = first { ($_->{platform} // '') eq 'dxtrade' } values $self->client->user->loginid_details->%*;
-        return undef unless $account;
-        $login = $account->{attributes}{login};
-    }
+    my $login = $self->dxtrade_login;
 
     my $api_resp = $self->call_api(
+        $server,
         'client_get',
         login  => $login,
         domain => DX_DOMAIN,
@@ -629,6 +642,24 @@ sub dxclient_get {
     }
 }
 
+=head2 dxtrade_login
+
+Gets the common login id for dxtrade. The same login is used for all accounts.
+
+=cut
+
+sub dxtrade_login {
+    my $self = shift;
+
+    if ($self->config->{real_account_ids}) {
+        return $self->client->user->id;
+    } else {
+        my $account = first { ($_->{platform} // '') eq 'dxtrade' } values $self->client->user->loginid_details->%*;
+        return $account->{attributes}{login} if $account;
+        return sha1_hex($$ . time . rand);
+    }
+}
+
 =head2 account_details
 
 Format account details for websocket response.
@@ -637,8 +668,9 @@ Format account details for websocket response.
 
 sub account_details {
     my ($self, $account) = @_;
+
     my $category    = first { $_->{category} eq 'Trading' } $account->{categories}->@*;
-    my $market_type = $category->{value} eq 'Financials Only' ? 'financial' : 'gaming';
+    my $market_type = $category->{value} eq 'Financials Only' ? 'financial' : 'synthetic';
 
     return {
         login                 => $account->{login},

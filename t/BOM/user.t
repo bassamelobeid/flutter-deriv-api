@@ -909,7 +909,7 @@ subtest 'get_account_by_loginid' => sub {
     $dxtrade_account = $dxtrader->new_account(
         account_type => 'demo',
         password     => 'test',
-        market_type  => 'gaming',
+        market_type  => 'synthetic',
         currency     => 'USD',
     );
 

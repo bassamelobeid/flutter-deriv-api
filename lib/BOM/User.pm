@@ -775,7 +775,7 @@ sub get_mt5_loginids {
 
     my $regex = MT5_REGEX;
     if ($account_type) {
-        # $account_type of 'real', 'gaming' and 'financial' are real accounts
+        # $account_type of 'real', 'synthetic' and 'financial' are real accounts
         $regex = $account_type eq 'demo' ? MT5_DEMO_REGEX : MT5_REAL_REGEX;
     }
 
