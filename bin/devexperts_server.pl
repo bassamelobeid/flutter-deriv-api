@@ -18,21 +18,19 @@ Runs a DevExperts simulated server instance.
 =cut
 
 GetOptions(
-    'l|log=s'        => \my $log_level,
-    'p|port=s'       => \my $port,
-    'k|api_key=s'    => \my $api_key,
-    's|api_secret=s' => \my $api_secret,
-    'pid-file=s'     => \my $pid_file,     # for tests
+    'l|log=s'    => \my $log_level,
+    'p|port=s'   => \my $port,
+    'e|env=s'    => \my $env,
+    'pid-file=s' => \my $pid_file,    # for tests
 );
 
 path($pid_file)->spew("$$") if $pid_file;
 
 my $config = YAML::XS::LoadFile('/etc/rmg/devexperts.yml');
 
-$log_level  //= 'info';
-$port       //= $config->{api}{port};
-$api_key    //= $config->{api}{api_key};
-$api_secret //= $config->{api}{api_secret};
+$log_level //= 'info';
+$env       //= 'demo';
+$port      //= $config->{servers}{$env}{port};
 
 Log::Any::Adapter->import('Stderr', log_level => $log_level);
 
@@ -43,10 +41,7 @@ $loop->add(
             family   => "inet",
             socktype => "stream",
             port     => $port
-        },
-        api_key    => $api_key,
-        api_secret => $api_secret,
-    ));
+        }));
 
 $server->start->get;
 $loop->run;

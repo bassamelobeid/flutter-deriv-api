@@ -42,19 +42,21 @@ Takes the following named parameters:
 
 =item * C<listen_port> - port for incoming requests. A random free port will be assigned if empty.
 
-=item * C<api_host> - DNS Name or IP address  of devexperts API server.
+=item * Cdemo_host> - devexperts demo server host name including protocol.
 
-=item * C<api_port> - port of devexperts API server.
+=item * Cdemo_port> - demo server.
 
-=item * C<api_auth> - 'hmac' or 'auth' authentication type. Default is hmac.
+=item * Cdemo_user> - demo server username for basic authentication.
 
-=item * C<api_key> - public API token of devexperts API server, used for hmac auth.
+=item * Cdemo_pass> - demo server password for basic authentication.
 
-=item * C<api_secret> - private API token of devexperts API server, used for hmac auth.
+=item * Creal_host> - devexperts real server host name including protocol.
 
-=item * C<api_user> - username for basic authentication.
+=item * Creal_port> - real server.
 
-=item * C<api_pass> - password for basic authentication.
+=item * Creal_user> - real server username for basic authentication.
+
+=item * Creal_pass> - real server password for basic authentication.
 
 =back
 
@@ -63,7 +65,7 @@ Takes the following named parameters:
 sub configure {
     my ($self, %args) = @_;
 
-    for (qw(listen_port api_host api_port api_auth api_key api_secret api_user api_pass)) {
+    for (qw(listen_port demo_host demo_port demo_user demo_pass real_host real_port real_user real_pass)) {
         $self->{$_} = delete $args{$_} if exists $args{$_};
     }
     return $self->next::method(%args);
@@ -88,16 +90,24 @@ sub _add_to_loop {
                 $self->{active_requests}{$k} = $self->handle_http_request($req)->on_ready(sub { delete $self->{active_requests}{$k} });
             }));
 
-    # devexperts API client
+    # devexperts API client for demo server
     $self->add_child(
-        $self->{client} = WebService::Async::DevExperts::Client->new(
-            host       => $self->{api_host},
-            service    => $self->{api_port},
-            auth       => $self->{api_auth},
-            api_key    => $self->{api_key},
-            api_secret => $self->{api_secret},
-            user       => $self->{api_user},
-            pass       => $self->{api_pass},
+        $self->{clients}{demo} = WebService::Async::DevExperts::Client->new(
+            host => $self->{demo_host},
+            port => $self->{demo_port},
+            auth => $self->{demo_host} ne 'http://localhost' ? 'basic' : '',
+            user => $self->{demo_user},
+            pass => $self->{demo_pass},
+        ));
+
+    # devexperts API client for real server
+    $self->add_child(
+        $self->{clients}{real} = WebService::Async::DevExperts::Client->new(
+            host => $self->{real_host},
+            port => $self->{real_port},
+            auth => $self->{real_host} ne 'http://localhost' ? 'basic' : '',
+            user => $self->{real_user},
+            pass => $self->{real_pass},
         ));
 
     return undef;
@@ -123,11 +133,14 @@ async sub handle_http_request {
     try {
         die "Only POST is allowed\n" unless $req->method eq 'POST';
         my $params = decode_json_utf8($req->body || '{}');
+        my $server = delete $params->{server} || die "Server not provided\n";
+        die "Invalid server: $server\n" unless exists $self->{clients}{$server};
         my $method = delete $params->{method} || die "Method not provided\n";
         $log->debugf('Got request for method %s with params %s', $method, $params);
-        my $data     = await $self->{client}->$method($params->%*);
+        my $data     = await $self->{clients}{$server}->$method($params->%*);
         my $response = HTTP::Response->new(200);
         my $response_content;
+
         if ($data) {
             if (ref $data eq 'ARRAY') {
                 $response_content = [map { WebService::Async::DevExperts::Model::Common::convert_case($_->as_hashref) } $data->@*];

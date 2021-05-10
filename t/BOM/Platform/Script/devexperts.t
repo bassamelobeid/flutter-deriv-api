@@ -12,8 +12,12 @@ use JSON::MaybeUTF8 qw(:v1);
 use Log::Any::Adapter qw(TAP);
 
 my $loop = IO::Async::Loop->new;
-$loop->add(my $service = BOM::Platform::Script::DevExpertsAPIService->new);
-$loop->add(my $http    = Net::Async::HTTP->new);
+$loop->add(
+    my $service = BOM::Platform::Script::DevExpertsAPIService->new(
+        demo_host => 'http://localhost',
+        real_host => 'http://localhost'
+    ));
+$loop->add(my $http = Net::Async::HTTP->new);
 
 isa_ok($service, 'BOM::Platform::Script::DevExpertsAPIService');
 
@@ -35,6 +39,10 @@ subtest 'bad requests' => sub {
     ok $resp->is_error, 'bad json - error';
 
     $resp = $http->POST($url, '{ "x": 1 }', content_type => 'application/json')->get;
+    is $resp->content, 'Server not provided', 'Server missing - message';
+    ok $resp->is_error, 'Method missing - error';
+
+    $resp = $http->POST($url, '{ "server": "demo", "x": 1 }', content_type => 'application/json')->get;
     is $resp->content, 'Method not provided', 'Method missing - message';
     ok $resp->is_error, 'Method missing - error';
 
@@ -45,15 +53,15 @@ subtest 'API response types' => sub {
     my $mock_api = Test::MockModule->new('WebService::Async::DevExperts::Client');
     $mock_api->mock('http_send', sub { Future->done(decode_json_utf8($_[3])) });
     my $login = 'mylogin';
-    $resp = $http->POST($url, '{ "method": "client_create", "login": "' . $login . '" }', content_type => 'application/json')->get;
+    $resp = $http->POST($url, '{ "server": "demo", "method": "client_create", "login": "' . $login . '" }', content_type => 'application/json')->get;
     is decode_json_utf8($resp->content)->{login}, $login, 'client_create (scalar result)';
 
     $mock_api->mock('http_get', sub { Future->done([{login => $login}]) });
-    $resp = $http->POST($url, '{ "method": "client_list" }', content_type => 'application/json')->get;
+    $resp = $http->POST($url, '{ "server": "demo", "method": "client_list" }', content_type => 'application/json')->get;
     is decode_json_utf8($resp->content)->[0]{login}, $login, 'client_list (array result)';
 
     $mock_api->mock('account_category_set', sub { Future->done() });
-    $resp = $http->POST($url, '{ "method": "account_category_set" }', content_type => 'application/json')->get;
+    $resp = $http->POST($url, '{ "server": "demo", "method": "account_category_set" }', content_type => 'application/json')->get;
     is $resp->content, '', 'account_category_set (empty result)';
 
     $mock_api->mock(
@@ -66,7 +74,7 @@ subtest 'API response types' => sub {
             );
         });
 
-    $resp = $http->POST($url, '{ "method": "client_create" }', content_type => 'application/json')->get;
+    $resp = $http->POST($url, '{ "server": "demo", "method": "client_create" }', content_type => 'application/json')->get;
     my $msg = decode_json_utf8($resp->content);
     is $msg->{error_code},    123,         'error code';
     is $msg->{error_message}, 'it failed', 'error message';
