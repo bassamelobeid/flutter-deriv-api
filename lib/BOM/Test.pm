@@ -88,8 +88,9 @@ check the current environment is ci environment
     $ENV{TEST_DATABASE}               = 1;                 ## no critic (RequireLocalizedPunctuationVars)
     $ENV{SEGMENT_BASE_URL}            = 'http://dummy/';
     $ENV{SEGMENT_WRITE_KEY}           = 'test';
-    $ENV{DEVEXPERTS_API_SERVICE_PORT} = 8083;
-    $ENV{DEVEXPERTS_SERVER_PORT}      = 8084;
+    $ENV{DEVEXPERTS_API_SERVICE_PORT} = 8084;
+    $ENV{DEVEXPERTS_DEMO_SERVER_PORT} = 8085;
+    $ENV{DEVEXPERTS_REAL_SERVER_PORT} = 8086;
     $ENV{RUDDERSTACK_BASE_URL}        = 'http://dummy/';
     $ENV{RUDDERSTACK_WRITE_KEY}       = 'test';
 
