@@ -259,6 +259,8 @@ sub _initialize_other_parameters {
         $params->{date_start} = Date::Utility->new($params->{date_start});
     }
 
+    $params->{pricing_new} = 1
+        if $params->{date_pricing} and Date::Utility->new($params->{date_pricing})->is_same_as(Date::Utility->new($params->{date_start}));
     $params->{date_expiry} = Date::Utility->new($params->{date_expiry}) if defined $params->{date_expiry};
 
     if (defined $params->{duration}) {
@@ -300,6 +302,14 @@ sub _initialize_other_parameters {
             details    => {field => 'duration'},
         ) unless (defined $params->{date_expiry} or defined $params->{duration});
     } elsif ($params->{pricing_new} and (defined $params->{date_expiry} or defined $params->{duration})) {
+        BOM::Product::Exception->throw(
+            error_code => 'InvalidExpiry',
+            error_args => [$params->{bet_type}],
+            details    => {field => 'duration'},
+        );
+    }
+
+    if (not $params->{category}->has_user_defined_expiry and $params->{date_expiry} and $params->{pricing_new}) {
         BOM::Product::Exception->throw(
             error_code => 'InvalidExpiry',
             error_args => [$params->{bet_type}],

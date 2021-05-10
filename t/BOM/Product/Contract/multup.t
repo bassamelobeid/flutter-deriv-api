@@ -38,12 +38,33 @@ subtest 'pricing new - general' => sub {
         underlying   => 'R_100',
         date_start   => $now,
         date_pricing => $now,
+        date_expiry  => $now->plus_time_interval('1d'),
         amount_type  => 'stake',
         amount       => 100,
         multiplier   => 10,
         currency     => 'USD',
     };
+    my $error = exception { produce_contract($args) };
+    isa_ok $error, 'BOM::Product::Exception';
+    is $error->message_to_client->[0], 'Invalid input (duration or date_expiry) for this contract type ([_1]).',
+        'Invalid input (duration or date_expiry) for this contract type ([_1]).';
+
+    $args->{date_pricing} = $now->plus_time_interval('1s');
+    $args->{limit_order}  = {
+        stop_out => {
+            order_type   => 'stop_out',
+            order_amount => -100,
+            order_date   => $now->epoch,
+            basis_spot   => '100.00',
+        }};
     my $c = produce_contract($args);
+    is $c->date_expiry->epoch, $now->plus_time_interval('1d')->epoch,
+        'date expiry is correct if it is included as parameter for non-pricing new contract';
+
+    delete $args->{limit_order};
+    delete $args->{date_expiry};
+    $args->{date_pricing} = $now;
+    $c = produce_contract($args);
     is $c->code,            'MULTUP', 'code is MULTUP';
     is $c->pricing_code,    'MULTUP', 'pricing_code is MULTUP';
     is $c->other_side_code, undef,    'other_side_code is undef';

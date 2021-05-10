@@ -130,7 +130,7 @@ But, we need an expiry time for every contract the database. Hence, hard-coding 
 
 =cut
 
-override 'date_expiry' => sub {
+override '_build_date_expiry' => sub {
     my $self = shift;
 
     # default to 100 years from now if it is not defined.

@@ -105,8 +105,8 @@ subtest 'sold after start' => sub {
     BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks(@before);
     my $c = produce_contract({
         %$args,
-        is_sold     => 1,
-        pricing_new => 0
+        is_sold      => 1,
+        date_pricing => $args->{date_start}->plus_time_interval('1s'),
     });
     ok $c->is_sold, 'is sold';
     ok !$c->is_expired, 'no expired';
@@ -123,7 +123,7 @@ subtest 'forward starting sold after start' => sub {
     my $c = produce_contract({
         %$args,
         is_sold                    => 1,
-        pricing_new                => 0,
+        date_pricing               => $args->{date_start}->plus_time_interval('1s'),
         starts_as_forward_starting => 1
     });
     ok $c->is_sold, 'is sold';

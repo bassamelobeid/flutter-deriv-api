@@ -1107,13 +1107,15 @@ subtest 'contract must be held' => sub {
     my $c = produce_contract($args);
     ok $c->is_valid_to_sell, 'valid to sell';
 
+    my $mocked_contract = Test::MockModule->new('BOM::Product::Contract::Call');
+    $mocked_contract->mock('date_pricing', sub { return $oft_used_date });
     $args->{_date_pricing_milliseconds} = $oft_used_date->epoch + 0.1;
-    $args->{date_pricing}               = $oft_used_date->epoch;
-    $c                                  = produce_contract($args);
+    $c = produce_contract($args);
     ok !$c->pricing_new,      'not pricing_new if it is 0.1 second from start';
     ok !$c->is_valid_to_sell, 'invalid to sell right after buy';
     is $c->primary_validation_error->message, 'wait for next second after start time';
     is $c->primary_validation_error->message_to_client->[0], 'Contract cannot be sold at this time. Please try again.';
+    $mocked_contract->unmock_all();
 };
 
 subtest 'zero payout' => sub {
