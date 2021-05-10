@@ -177,6 +177,7 @@ sub _get_ask {
                 display_value       => $ask_price,
                 spot_time           => $contract->current_tick->epoch,
                 date_start          => $contract->date_start->epoch,
+                date_expiry         => $contract->date_expiry->epoch,
                 contract_parameters => $contract_parameters,
             };
 

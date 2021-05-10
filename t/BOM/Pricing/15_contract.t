@@ -93,7 +93,7 @@ subtest 'prepare_ask' => sub {
         'currency'    => 'USD',
         'amount'      => '2',
         'proposal'    => 1,
-        'date_start'  => 0
+        'date_start'  => 0,
     };
     cmp_deeply(BOM::Pricing::v3::Contract::prepare_ask($params), $expected, 'prepare_ask result ok');
     $params = {
@@ -155,6 +155,7 @@ subtest 'get_ask' => sub {
         'spot'                => '963.3054',
         'payout'              => '100',
         'theo_probability'    => 0.499862430427529,
+        'date_expiry'         => ignore(),
         'contract_parameters' => {
             'deep_otm_threshold'    => '0.025',
             'barrier'               => 'S0P',
@@ -274,7 +275,7 @@ subtest 'send_ask' => sub {
     my $result        = $c->call_ok('send_ask', $params)->has_no_error->result;
     my $expected_keys = [
         sort { $a cmp $b } (
-            qw(longcode spot display_value ask_price spot_time date_start rpc_time payout contract_parameters stash auth_time theo_probability subscription_channel channel subchannel)
+            qw(date_expiry longcode spot display_value ask_price spot_time date_start rpc_time payout contract_parameters stash auth_time theo_probability subscription_channel channel subchannel)
         )];
 
     cmp_deeply([sort keys %$result], $expected_keys, 'result keys is correct');
