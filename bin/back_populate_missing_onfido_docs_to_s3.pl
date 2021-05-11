@@ -30,13 +30,19 @@ GetOptions(
     'l|log=s'               => \my $log_level,
     'requests_per_minute=i' => \my $requests_per_minute,
     'filename=s'            => \my $file_name,
+    'json_log_file=s'       => \my $json_log_file,
 ) or die;
 
 die("--filename NAME is required\n") unless $file_name;
 
 $log_level           ||= 'info';
 $requests_per_minute ||= 30;
-Log::Any::Adapter->import(qw(Stdout), log_level => $log_level);
+$json_log_file       ||= '/var/log/deriv/' . path($0)->basename . '.json.log';
+Log::Any::Adapter->import(
+    qw(DERIV),
+    log_level     => $log_level,
+    json_log_file => $json_log_file
+);
 
 =head2
 

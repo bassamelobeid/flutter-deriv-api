@@ -11,20 +11,29 @@ use Time::HiRes;
 use Getopt::Long;
 use Log::Any qw($log);
 use Syntax::Keyword::Try;
+use Date::Utility;
+use Path::Tiny qw(path);
 
 use BOM::Config::Runtime;
 use BOM::Config::Redis;
-use Date::Utility;
 
 binmode STDOUT, ':encoding(UTF-8)';
 binmode STDERR, ':encoding(UTF-8)';
 
 require Log::Any::Adapter;
-GetOptions('l|log=s' => \my $log_level) or die;
+GetOptions(
+    'l|log=s'         => \my $log_level,
+    'json_log_file=s' => \my $json_log_file,
+) or die;
 
-$log_level ||= 'info';
-
-Log::Any::Adapter->import(qw(Stderr), log_level => $log_level);
+$log_level     ||= 'info';
+$json_log_file ||= '/var/log/deriv/' . path($0)->basename . '.json.log';
+Log::Any::Adapter->import(
+    qw(DERIV),
+    log_level     => $log_level,
+    json_log_file => $json_log_file
+);
+$log->info('p2p daemon is running  now');
 
 =head1 Name
 

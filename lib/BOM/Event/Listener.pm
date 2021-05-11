@@ -50,7 +50,7 @@ sub handler { return shift->{handler} }
 
 sub run {    ## no critic (RequireFinalReturn)
     my $self = shift;
-    $log->debugf('Starting listener for queue %s', $self->queue);
+    $log->infof('Starting listener for queue %s', $self->queue);
     my $loop    = IO::Async::Loop->new;
     my $handler = BOM::Event::QueueHandler->new(
         queue                   => $self->queue,

@@ -13,6 +13,7 @@ use Getopt::Long;
 use List::UtilsBy qw(rev_nsort_by);
 use Digest::HMAC;
 use Digest::SHA1;
+use Path::Tiny;
 use JSON::MaybeUTF8 qw(:v1);
 
 binmode STDOUT, ':encoding(UTF-8)';
@@ -20,17 +21,23 @@ binmode STDERR, ':encoding(UTF-8)';
 
 require Log::Any::Adapter;
 GetOptions(
-    't|token=s'     => \my $token,
-    'l|log=s'       => \my $log_level,
-    'c|count=s'     => \my $count,
-    'a|applicant=s' => \my $applicant_id,
-    'e|endpoint=s'  => \my $endpoint,
+    't|token=s'       => \my $token,
+    'l|log=s'         => \my $log_level,
+    'json_log_file=s' => \my $json_log_file,
+    'c|count=s'       => \my $count,
+    'a|applicant=s'   => \my $applicant_id,
+    'e|endpoint=s'    => \my $endpoint,
 ) or die;
 
 $endpoint ||= 'https://www.binaryqa23.com/onfido/';
 $count //= 10;
-$log_level ||= 'info';
-Log::Any::Adapter->import(qw(Stdout), log_level => $log_level);
+$log_level     ||= 'info';
+$json_log_file ||= '/var/log/deriv/' . path($0)->basename . '.json.log';
+Log::Any::Adapter->import(
+    qw(DERIV),
+    log_level     => $log_level,
+    json_log_file => $json_log_file
+);
 
 my $loop = IO::Async::Loop->new;
 $loop->add(my $onfido = WebService::Async::Onfido->new(token => $token));

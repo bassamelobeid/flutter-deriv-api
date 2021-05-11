@@ -10,7 +10,8 @@ use Parallel::ForkManager;
 use BOM::Event::Listener;
 use DataDog::DogStatsd::Helper;
 use LWP::Simple;
-use Log::Any::Adapter qw(Stderr), log_level => $ENV{BOM_LOG_LEVEL} // 'info';
+use Path::Tiny;
+use Log::Any::Adapter;
 
 =head1 NAME
 
@@ -43,6 +44,7 @@ capable of being rerun.
 
 =item * --shutdown_time_out :  The amount of time to allow for a graceful shutdown after the C<TERM> or C<INT> signal is received. Once reached the C<KILL> signal will be sent.
 
+=item * --json_log_file : The json format log file
 =back
 
 
@@ -53,8 +55,14 @@ my %options;
 $options{running_parallel}  = 0;
 $options{shutdown_time_out} = 60;    #this defaults to 60 seconds in BOM::Event::Listener so makes sense to default to the same here.
 $options{number_of_workers} = max(1, Sys::Info->new->device("CPU")->count);
+$options{json_log_file}     = '/var/log/deriv/' . path($0)->basename . '.json.log';
 
-GetOptions(\%options, "number_of_workers=i", "queue=s", "maximum_job_time=i", "maximum_process_time=i", "shutdown_time_out=i",);
+GetOptions(\%options, "number_of_workers=i", "queue=s", "maximum_job_time=i", "maximum_process_time=i", "shutdown_time_out=i", "json_log_file=s");
+Log::Any::Adapter->import(
+    qw(DERIV),
+    log_level     => $ENV{BOM_LOG_LEVEL} // 'info',
+    json_log_file => $options{json_log_file},
+);
 
 my @required_options = qw/queue maximum_job_time maximum_process_time/;
 
