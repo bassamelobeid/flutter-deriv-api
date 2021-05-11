@@ -567,6 +567,8 @@ sub print_client_details {
         poa_reasons                        => \@poa_reasons_tpl,
         onfido_submissions_left            => BOM::User::Onfido::submissions_left($client),
         onfido_submissions_reset           => BOM::User::Onfido::submissions_reset_at($client),
+        onfido_reported_properties         => BOM::User::Onfido::reported_properties($client),
+        poi_name_mismatch                  => $client->status->poi_name_mismatch,
     };
 
     return BOM::Backoffice::Request::template()->process('backoffice/client_edit.html.tt', $template_param, undef, {binmode => ':utf8'})

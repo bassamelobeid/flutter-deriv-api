@@ -950,6 +950,10 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
         $client->update_status_after_auth_fa();
     }
 
+    if ($updated_fields{first_name} || $updated_fields{last_name}) {
+        BOM::Platform::Event::Emitter::emit('check_onfido_rules', {loginid => $client->loginid});
+    }
+
     # Sync onfido with latest updates
     BOM::Platform::Event::Emitter::emit('sync_onfido_details', {loginid => $client->loginid});
 

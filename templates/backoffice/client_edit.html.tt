@@ -341,6 +341,18 @@ window.addEventListener('DOMContentLoaded', init_text_validations, false);
             [% END %]
         </td>
     </tr>
+
+    [% IF client.status.poi_name_mismatch %]
+        <tr>
+            <td class="label">ONFIDO NAME MISMATCH</td>
+            <td>
+                [% FOREACH prop IN onfido_reported_properties.keys %]
+                    <b>[% prop %]:</b> [% onfido_reported_properties.item(prop) %]<br/>
+                [% END %]
+            </td>
+        </tr>
+    [% END %]
+
     [% IF is_client_in_onfido_country %]
     <tr>
         <td class="label"></td>
