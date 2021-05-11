@@ -77,7 +77,7 @@ my %details              = get_client_details(\%input, 'backoffice/f_clientlogin
 my %doc_types_categories = BOM::User::Client::DOCUMENT_TYPE_CATEGORIES();
 my @expirable_doctypes   = @{$doc_types_categories{POI}{doc_types}};
 my @poi_doctypes         = @{$doc_types_categories{POI}{doc_types_appreciated}};
-my @no_date_doctypes     = qw(other);
+my @no_date_doctypes     = qw(other photo selfie_with_id);
 
 my $client          = $details{client};
 my $user            = $details{user};
@@ -198,7 +198,7 @@ if ($input{document_list}) {
         }
     }
     print $full_msg;
-    code_exit_BO(qq[<p><a href="$self_href">&laquo;Return to Client Details</a></p>]);
+    %input = ();    # stay in the same page and avoid side effects
 }
 
 # Deleting checked statuses
@@ -305,7 +305,6 @@ if ($input{whattodo} eq 'sync_to_MT5') {
 
 # UPLOAD NEW ID DOC.
 if ($input{whattodo} eq 'uploadID') {
-
     local $CGI::POST_MAX        = 1024 * 1600;    # max 1600K posts
     local $CGI::DISABLE_UPLOADS = 0;              # enable uploads
 
@@ -322,13 +321,15 @@ if ($input{whattodo} eq 'uploadID') {
         my $is_expirable = any { $_ eq $doctype } @expirable_doctypes;
         my $no_date_doc  = any { $_ eq $doctype } @no_date_doctypes;
 
-        my $filetoupload                = $cgi->upload('FILE_' . $i);
-        my $page_type                   = $cgi->param('page_type_' . $i);
-        my $issue_date                  = $is_expirable  || $no_date_doc ? undef : $cgi->param('issue_date_' . $i);
-        my $expiration_date             = !$is_expirable || $no_date_doc ? undef : $cgi->param('expiration_date_' . $i);
-        my $document_id                 = $input{'document_id_' . $i} // '';
-        my $comments                    = $input{'comments_' . $i}    // '';
-        my $is_expiration_date_optional = $cgi->param('is_expiration_date_optional_' . $i) eq "on";
+        my $filetoupload    = $cgi->upload('FILE_' . $i);
+        my $page_type       = $cgi->param('page_type_' . $i);
+        my $issue_date      = $is_expirable  || $no_date_doc ? undef : $cgi->param('issue_date_' . $i);
+        my $expiration_date = !$is_expirable || $no_date_doc ? undef : $cgi->param('expiration_date_' . $i);
+        my $document_id     = $input{'document_id_' . $i}     // '';
+        my $comments        = $input{'comments_' . $i}        // '';
+        my $expiration      = $cgi->param('expiration_' . $i) // '';
+        my $lifetime_valid  = $expiration eq 'lifetime_valid' ? 1 : 0;
+        $expiration_date = undef unless $expiration eq 'expiration_date';
 
         next unless $filetoupload;
 
@@ -344,7 +345,7 @@ if ($input{whattodo} eq 'uploadID') {
             code_exit_BO(qq[<p><a class="link"href="$self_href">&laquo; Return to client details<a/></p>]);
         }
 
-        if ($is_poi and not $expiration_date and not $is_expiration_date_optional) {
+        if ($is_poi and not $expiration_date and $expiration eq 'expiration_date') {
             print qq[<p class="notify notify--warning">Expiration date is missing for the POI document $doctype.</p>];
             code_exit_BO(qq[<p><a class="link" href="$self_href">&laquo; Return to client details<a/></p>]);
         }
@@ -375,11 +376,12 @@ if ($input{whattodo} eq 'uploadID') {
             $upload_info = $client->db->dbic->run(
                 ping => sub {
                     $_->selectrow_hashref(
-                        'SELECT * FROM betonmarkets.start_document_upload(?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                        'SELECT * FROM betonmarkets.start_document_upload(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
                         undef, $loginid, $doctype, $docformat, $expiration_date || undef,
                         $document_id, $file_checksum, $comments,
                         $page_type  || '',
-                        $issue_date || undef
+                        $issue_date || undef,
+                        $lifetime_valid,
                     );
                 });
             die 'Document already exists.' unless $upload_info;
@@ -839,8 +841,12 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
 
         CLIENT_KEY:
         foreach my $key (keys %input) {
-            if (my ($document_field, $id) = $key =~ /^(expiration_date|issue_date|comments|document_id)_([0-9]+)$/) {
+            if (my ($document_field, $id) = $key =~ /^(expiration|expiration_date|issue_date|comments|document_id)_([0-9]+)$/) {
+                $key            = 'expiration_date_' . $id if $document_field eq 'expiration';
+                $document_field = 'expiration_date'        if $document_field eq 'expiration';
+
                 my $val = ($document_field =~ /^(expiration_date|issue_date)$/ && $input{$key} eq '') ? 'clear' : $input{$key};
+
                 next CLIENT_KEY unless $val && update_needed($client, $cli, 'client_authentication_document', \%clients_updated);
                 my ($doc) = grep { $_->id eq $id } $cli->client_authentication_document;    # Rose
                 next CLIENT_KEY unless $doc;
@@ -853,6 +859,27 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
                         print qq{<p class="notify notify--warning">ERROR: Could not parse $document_field for doc $id with $val: $err</p>};
                         next CLIENT_KEY;
                     }
+
+                    my $expiration = $input{'expiration_' . $id};
+
+                    unless ($expiration) {
+                        if ($doc->lifetime_valid) {
+                            $expiration = 'lifetime_valid';
+                        } elsif ($doc->expiration_date) {
+                            $expiration = 'expiration_date';
+                        } else {
+                            $expiration = 'not_applicable';
+                        }
+                    }
+
+                    my $lifetime_valid = $expiration eq 'lifetime_valid' ? 1 : 0;
+                    $doc->lifetime_valid($lifetime_valid);
+
+                    if ($expiration ne 'expiration_date') {
+                        $doc->expiration_date(undef);
+                        next CLIENT_KEY if $document_field eq 'expiration_date';
+                    }
+
                 } else {
                     my $maxLength =
                           ($document_field eq 'document_id') ? 30
@@ -1253,12 +1280,9 @@ print qq[
     </style>
     <script>
         \$(function() {
-            \$('.datepick').datepicker( {
-                onClose: function(date) {
-                    \$(this).addClass('data-changed')
-                },
-                dateFormat: 'yy-mm-dd',
-             });
+            \$('.datepick').datepicker('option', 'onSelect', function (date) {
+                \$(this).addClass('data-changed');
+            });
         });
         clientInfoForm.querySelectorAll('$INPUT_SELECTOR,select').forEach(input => {
             input.addEventListener('change', ev => ev.target.classList.add('data-changed'));

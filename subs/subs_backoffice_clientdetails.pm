@@ -48,9 +48,9 @@ use constant ONFIDO_RESUBMISSION_COUNTER_KEY_PREFIX => 'ONFIDO::RESUBMISSION_COU
 use constant ACCOUNT_OPENING_REASONS                => ['Speculative', 'Income Earning', 'Hedging', 'Peer-to-peer exchange'];
 
 my %doc_type_categories = BOM::User::Client::DOCUMENT_TYPE_CATEGORIES();
-my @expirable_doctypes  = @{$doc_type_categories{POI}{doc_types}};
 my @poi_doctypes        = @{$doc_type_categories{POI}{doc_types_appreciated}};
-my @no_date_doctypes    = qw(other);
+my @no_date_doctypes    = qw(other photo selfie_with_id);
+my @expirable_doctypes  = grep { $_ !~ /^(photo|selfie_with_id)$/ } @{$doc_type_categories{POI}{doc_types}};
 
 my $POI_REASONS = {
     cropped => {
@@ -399,6 +399,7 @@ sub print_client_details {
         my @siblings = $user->loginids;
 
         $show_uploaded_documents .= show_client_id_docs($_, show_delete => 1) for @siblings;
+        $show_uploaded_documents = "<table class='full-width' style='margin-bottom: 10px;'>$show_uploaded_documents</table>";
 
         if ($show_uploaded_documents) {
             my $confirm_box = qq{javascript:return get_checked_files()};
@@ -1002,7 +1003,7 @@ sub date_html {
     }
 
     return
-        qq{ $label$required_mark<input type="text" $required style="width:100px" maxlength="15" name="${name}_${id}" value="$date" pattern="\\d{4}-\\d{2}-\\d{2}" class="datepick" data-lpignore="true" $extra>};
+        qq{ $label$required_mark<input type="text" $required maxlength="15" name="${name}_${id}" value="$date" pattern="\\d{4}-\\d{2}-\\d{2}" class="datepick" data-lpignore="true" $extra>};
 }
 
 ## show_client_id_docs #######################################
@@ -1040,7 +1041,8 @@ SELECT id,
        document_id,
        upload_date,
        age(date_trunc('day', now()), date_trunc('day', upload_date)) AS age,
-       status
+       status,
+       lifetime_valid
   FROM betonmarkets.client_authentication_document
  WHERE client_loginid = ? AND status != 'uploading'
 SQL
@@ -1063,15 +1065,19 @@ SQL
 
     my $last_category_idx = -1;
     foreach my $doc (@$docs) {
-        my ($id, $file_name, $document_type, $issue_date, $expiration_date, $comments, $document_id, $upload_date, $age, $category_idx, $status) =
-            $doc->@{qw/id file_name document_type issue_date expiration_date comments document_id upload_date age category_idx status/};
+        my (
+            $id,          $file_name,   $document_type, $issue_date,   $expiration_date, $comments,
+            $document_id, $upload_date, $age,           $category_idx, $status,          $lifetime_valid
+            )
+            = $doc->@{
+            qw/id file_name document_type issue_date expiration_date comments document_id upload_date age category_idx status lifetime_valid/};
 
         if ($category_idx != $last_category_idx) {
             my $category_title = (
                 ($doc_types_categories{$document_type} && $doc_types_categories{$document_type}{title})
                 ? $doc_types_categories{$document_type}{title}
                 : $doc_types_categories{other}{title}) . ":";
-            $links .= qq(<tr><th colspan='7' class='left'>$category_title</th></tr>);
+            $links .= qq(<tr><th colspan='9' class='left'>$category_title</th></tr>);
         }
         $last_category_idx = $category_idx;
 
@@ -1084,28 +1090,41 @@ SQL
         if ($age) {
             $age =~ s/[\d:]{8}//g;
             $age_display = $age ? "$age old" : "today";
-            $age_display = qq{<td title="$upload_date">$age_display</td>};
+            $age_display = qq{<td style="width:60px;overflow:hidden;" title="$upload_date">$age_display</td>};
         } else {
-            $age_display = '<td></td>';
+            $age_display = '<td style="width:60px;overflow:hidden;"></td>';
         }
 
         my $poi_doc       = any { $_ eq $document_type } @poi_doctypes;
         my $expirable_doc = any { $_ eq $document_type } @expirable_doctypes;
         my $no_date_doc   = any { $_ eq $document_type } @no_date_doctypes;
 
+        my $expiration = 'not_applicable';
+        $expiration = 'expiration_date' if $expiration_date;
+        $expiration = 'lifetime_valid'  if $lifetime_valid;
+
+        my @issue_date_chunks = split(' ', $issue_date // '');
+        my $input             = '';
+        BOM::Backoffice::Request::template()->process(
+            'backoffice/client_edit_document_dates.html.tt',
+            {
+                poi_doc         => $poi_doc,
+                expirable_doc   => $expirable_doc,
+                no_date_doc     => $no_date_doc,
+                lifetime_valid  => $lifetime_valid,
+                expiration_date => $expiration_date,
+                expiration      => $expiration,
+                id              => $id,
+                issue_date      => $issue_date_chunks[0] // '',
+            },
+            \$input
+        );
+
         my $required_mark = $poi_doc ? '*' : ' ';
-
-        my $input = '<td align="left">';
         $input .=
-            $expirable_doc
-            ? date_html('expiration_date', $expiration_date, 'Expires on:', $id, 0, $extra)
-            : ($no_date_doc ? '' : date_html('issue_date', $issue_date, 'Issued on:', $id, 0, $extra));
-        $input .= "</td>";
-
+            qq{<td align="left"><label>Document ID:</label>$required_mark<br/><input type="text" maxlength="30" name="document_id_$id" value="$document_id" data-lpignore="true" $extra> </td>};
         $input .=
-            qq{<td align="left"><label>Document ID:</label>$required_mark<input type="text" style="width:100px" maxlength="30" name="document_id_$id" value="$document_id" data-lpignore="true" $extra> </td>};
-        $input .=
-            qq{<td><label>Comments:</label><input type="text" style="width:100px" maxlength="255" name="comments_$id" value="$comments" data-lpignore="true" $extra> </td>};
+            qq{<td><label>Comments:</label><br/><input type="text" maxlength="255" name="comments_$id" value="$comments" data-lpignore="true" $extra> </td>};
 
         my %status_string = (
             verified => 'Verified',
@@ -1124,13 +1143,12 @@ SQL
             : "";
 
         $links .=
-            qq{<tr><td width="20" dir="rtl" $expired_poi_hint > &#9658; </td><td><a class="link" href="$url" target="_blank">$file_name</a></td>$age_display$input};
+            qq{<tr><td width="20" dir="rtl" $expired_poi_hint > &#9658; </td><td style="width:400px;overflow:hidden;"><a class="link" href="$url" target="_blank">$file_name</a></td>$age_display$input};
 
         $links .= qq{<td><input type="checkbox" class='files_checkbox' name="document_list" value="$id-$loginid-$file_name"><td>};
 
         $links .= "</tr>";
     }
-    $links = "<table class='full-width'>$links</table>" if $links;
 
     return $links;
 }

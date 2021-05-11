@@ -411,9 +411,55 @@ window.addEventListener('DOMContentLoaded', init_text_validations, false);
         </td>
     </tr>
     <tr>
-        <td></td>
-        <td style="padding: 4px 8px;">
-            <p>
+        <td class="label" style="vertical-align:middle">Allow POA Resubmission</td>
+        <td>:<input type="checkbox" onclick="toggle_checkbox(this)" name="allow_poa_resubmission" value="1" [% IF poa_resubmission_allowed %] checked="checked" [% END %]>
+        <span id="allow_poa_resubmission_toggle" [% IF poa_resubmission_allowed %] style="display:inline" [% ELSE %]  style="display:none" [% END %] >
+        <label for="poa_reasons">REASON:</label>
+        <select name="poa_reason" onchange="kyc_reason_changed()" >
+                <option value="unselected"  [% IF poa_resubmission_allowed && poa_resubmission_allowed=="unselected" %] selected [% END %] > Please Select </option>
+                [% FOREACH option IN poa_reasons %]
+                  <option value="[% option.index %]" [% IF poa_resubmission_allowed && poa_resubmission_allowed==option.index %] selected [% END %] >[% option.reason %]</option>
+                [% END %]
+                <option value="other"  [% IF poa_resubmission_allowed && poa_resubmission_allowed=="other" %] selected [% END %] > Other </option>
+            </select>
+        </span>
+        </td>
+    </tr>
+    <tr title="if poi/poa resubmission is checked by checking this and after clicking the save button, an email will be sent to the client to resubmit documents">
+        <td class="label" style="vertical-align:middle">KYC EMAIL</td>
+        <td>:<input type="checkbox"  style="vertical-align:middle" name="kyc_email_checkbox" value="1" /> </td>
+    </tr>
+    <tr>
+        <td class="label">Account Opening Reason</td>
+        <td>:
+            [% IF client.is_virtual %]
+                [% client.account_opening_reason %]
+            [% ELSE %]
+                <select name="account_opening_reason">
+                    [% FOREACH reason IN account_opening_reasons %]
+                        <option value="[% reason %]" [% IF reason == client.account_opening_reason %]selected="selected"[% END %]>[% reason %]</option>
+                    [% END %]
+                </select>
+            [% END %]
+        </td>
+    </tr>
+    <tr>
+        <td class="bg-lightgrey" colspan="2">#Documents</td>
+    </tr>
+    <tr>
+        <script>
+            function resizeDocumentsWrapper() {
+                const main_title = document.getElementById('main_title');
+                const documents_wrapper = document.getElementById('documents_wrapper');
+                documents_wrapper.style.width = (main_title.offsetWidth - 64) + 'px';
+            }
+
+            (function() {
+                document.addEventListener("DOMContentLoaded", resizeDocumentsWrapper);
+            })();
+        </script>
+        <td style="padding: 16px;" colspan="2">
+            <p style="overflow-x: scroll;" id="documents_wrapper">
             [%
                 IF show_uploaded_documents;
                 THEN;
@@ -474,39 +520,6 @@ window.addEventListener('DOMContentLoaded', init_text_validations, false);
                 END %]
             [% # client.residence == 'gb'
             END %]
-        </td>
-    </tr>
-<tr>
-        <td class="label" style="vertical-align:middle">Allow POA Resubmission</td>
-        <td>:<input type="checkbox" onclick="toggle_checkbox(this)" name="allow_poa_resubmission" value="1" [% IF poa_resubmission_allowed %] checked="checked" [% END %]>
-        <span id="allow_poa_resubmission_toggle" [% IF poa_resubmission_allowed %] style="display:inline" [% ELSE %]  style="display:none" [% END %] >
-        <label for="poa_reasons">REASON:</label>
-        <select name="poa_reason" onchange="kyc_reason_changed()" >
-                <option value="unselected"  [% IF poa_resubmission_allowed && poa_resubmission_allowed=="unselected" %] selected [% END %] > Please Select </option>
-                [% FOREACH option IN poa_reasons %]
-                  <option value="[% option.index %]" [% IF poa_resubmission_allowed && poa_resubmission_allowed==option.index %] selected [% END %] >[% option.reason %]</option>
-                [% END %]
-                <option value="other"  [% IF poa_resubmission_allowed && poa_resubmission_allowed=="other" %] selected [% END %] > Other </option>
-            </select>
-        </span>
-        </td>
-    </tr>
-    <tr title="if poi/poa resubmission is checked by checking this and after clicking the save button, an email will be sent to the client to resubmit documents">
-        <td class="label" style="vertical-align:middle">KYC EMAIL</td>
-        <td>:<input type="checkbox"  style="vertical-align:middle" name="kyc_email_checkbox" value="1" /> </td>
-    </tr>
-    <tr>
-        <td class="label">Account Opening Reason</td>
-        <td>:
-            [% IF client.is_virtual %]
-                [% client.account_opening_reason %]
-            [% ELSE %]
-                <select name="account_opening_reason">
-                    [% FOREACH reason IN account_opening_reasons %]
-                        <option value="[% reason %]" [% IF reason == client.account_opening_reason %]selected="selected"[% END %]>[% reason %]</option>
-                    [% END %]
-                </select>
-            [% END %]
         </td>
     </tr>
     <tr>

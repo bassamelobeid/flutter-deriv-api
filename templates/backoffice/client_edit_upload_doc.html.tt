@@ -47,11 +47,14 @@
   <td>*<input type="FILE" name="FILE_[% n %]" onchange="file_size_validation(this)"></td>
   <td align="right">
     <div id="expiration_date_div_[% n %]" anch>
-      Expiration date:
-      <span name="doc_field_required_[% n %]">
-      <input type="checkbox" name="is_expiration_date_optional_[% n %]" onClick="check_is_expiration_date_optional([% n %])" title="Make optional" style="vertical-align:middle;margin:0;padding:0">
+      <select class="expiration_dropdown" name="expiration_[% n %]" onChange="expiration_changed([% n %])">
+        <option value="expiration_date">Expiration date</option>
+        <option value="lifetime_valid">Lifetime valid</option>
+        <option value="not_applicable">Not applicable</option>
+      </select>
+      <span class="expiration_input_[% n %]" name="doc_field_required_[% n %]">
       <label id="required_star_[% n %]">*</label></span>
-      <input type="text" size=11 name="expiration_date_[% n %]" placeholder="YYYY-MM-DD" pattern="\d{4}-\d{2}-\d{2}" class="datepick" data-lpignore="true" />
+      <input type="text" size=11 name="expiration_date_[% n %]" placeholder="YYYY-MM-DD" pattern="\d{4}-\d{2}-\d{2}" class="expiration_input_[% n %] datepick" data-lpignore="true" />
     </div>
     <div id="issue_date_div_[% n %]" style="display:none">
       Issue date:
@@ -83,12 +86,29 @@
 
 var regex_poi = /([% poi_doctypes %])/i;
 var regex_expirable =  /([% expirable_doctypes %])/i;
+var regex_non_expirable =  /(photo|other|selfie_with_id)/i;
 var regex_no_date = /[% no_date_doctypes %]/i;
 var regex_selfie_with_id = /selfie_with_id/i;
 
+function expiration_changed(i) {
+  const expiration = document.getElementsByName('expiration_' + i)[0].value;
+  const elems = document.getElementsByClassName('expiration_input_' + i);
+  let display;
+
+  if (expiration === 'expiration_date') {
+    display = 'inline';
+  } else {
+    display = 'none';
+  }
+
+  for(let elem of elems) {
+      elem.style.display = display;
+  }
+}
+
 function doc_type_changed(i){
   let doc_type = document.getElementById('doctype_'+i).value;
-  let is_expirable_doc = doc_type.match(regex_expirable);
+  let is_expirable_doc = doc_type.match(regex_expirable) && !doc_type.match(regex_non_expirable);
   let is_no_date_doc = doc_type.match(regex_no_date);
   let is_poi_doc = doc_type.match(regex_poi);
   let is_selfie_with_id = doc_type.match(regex_selfie_with_id);
@@ -113,10 +133,6 @@ function doc_type_changed(i){
   let req_elements = document.getElementsByName('doc_field_required_'+i);
   for (let i = 0; i < req_elements.length; i++)
       req_elements[i].style.display = is_poi_doc ? 'inline': 'none';
-}
-
-function check_is_expiration_date_optional(i){
-   document.getElementById('required_star_' + i).innerHTML = document.getElementsByName('is_expiration_date_optional_' + i)[0].checked ? '': '*';
 }
 
 function file_size_validation(file) {
@@ -163,8 +179,7 @@ function validate_document_info() {
     let is_poi_doc = doc_type.match(regex_poi);
     let is_expirable_doc = doc_type.match(regex_expirable);
     let is_no_date_doc = doc_type.match(regex_no_date);
-    let is_expiration_date_optional = document.getElementsByName('is_expiration_date_optional_' + i)[0].checked;
-
+    let expiration = document.getElementsByName('expiration_' + i)[0].value;
 
     // Check if file uploaded (if not, proceed to next file)
     if(!get_value('FILE_' + i)) {
@@ -193,7 +208,7 @@ function validate_document_info() {
         file_comments_errors += "Document ID is required.\n";
       }
 
-      if (!expiry_date && !is_expiration_date_optional)
+      if (!expiry_date && expiration === 'expiration_date')
         file_comments_errors += "Expiry date is required.\n";
       if (expiry_date)
         file_comments_errors += validate_expiry_date(expiry_date);
@@ -246,5 +261,11 @@ function handle_page_type_control(i, enabled_options) {
 \$(document).ready(function() {
       \$('.datepick').datepicker({dateFormat: "yy-mm-dd",changeMonth: true,
       changeYear: true});
+
+      const dropdowns = document.getElementsByClassName('expiration_dropdown');
+      for(const elem of dropdowns) {
+        const id = elem.name.replace('expiration_', '');
+        expiration_changed(id);
+      }
 });
 </script>

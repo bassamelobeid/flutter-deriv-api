@@ -1,0 +1,23 @@
+<td align="left">
+    [% IF expirable_doc %]
+        <label>Expires on:</label><br />
+        <select class="expiration_dropdown" name="expiration_[% id %]" onChange="expiration_changed([% id %])">
+            <option value="expiration_date" [% IF expiration == 'expiration_date'%] selected="selected" [% END %]>Expiration date</option>
+            <option value="lifetime_valid" [% IF expiration == 'lifetime_valid'%] selected="selected" [% END %]>Lifetime valid</option>
+            <option value="not_applicable" [% IF expiration == 'not_applicable'%] selected="selected" [% END %]>Not applicable</option>
+        </select>
+    [% END %]
+</td>
+
+<td align="left">
+    [% IF expirable_doc %]
+        <span class="expiration_input_[% id %]" name="doc_field_required_[% id %]">
+        <label id="required_star_[% id %]">Exp Date: *</label><br/></span>
+        <input type="text" value="[% expiration_date %]" size=11 name="expiration_date_[% id %]" placeholder="YYYY-MM-DD" pattern="\d{4}-\d{2}-\d{2}" class="expiration_input_[% id %] datepick" data-lpignore="true" />
+    [% ELSE %]
+        [% UNLESS no_date_doc %]
+            <span><label id="required_star_[% id %]">Issued on: *</label><br/></span>
+            <input type="text" value="[% issue_date %]" size=11 name="issue_date_[% id %]" placeholder="YYYY-MM-DD" pattern="\d{4}-\d{2}-\d{2}" class="datepick" data-lpignore="true" />
+        [% END %]
+    [% END %]
+</td>

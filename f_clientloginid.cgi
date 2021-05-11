@@ -149,7 +149,8 @@ print qq~
         <label>Login ID:</label>
         <input type=text size=15 name="loginid" value="" data-lpignore="true" />
         <label>From:</label>
-        <input class="datepick" name=startdate type=text data-lpignore='true' size=10 value='~ . Date::Utility->today()->minus_time_interval('30d')->date . qq~'/>
+        <input class="datepick" name=startdate type=text data-lpignore='true' size=10 value='~
+    . Date::Utility->today()->minus_time_interval('30d')->date . qq~'/>
         <label>To:</label>
         <input class="datepick" name=enddate type=text data-lpignore='true' size=10 value='~ . Date::Utility->today()->date . qq~'/>
     </div>

@@ -42,7 +42,7 @@ if ($input{upload_excel}) {
     my $type_to_parser = $calendar_type eq 'holidays' ? 'exchange_holiday' : $calendar_type;
     try {
         $calendar_hash = Bloomberg::BloombergCalendar::parse_calendar($filename, $type_to_parser);
-    } catch($error) {
+    } catch ($error) {
         my $err_msg = "Unknown error happened while parsing the file.";
         ($err_msg) = split '#', $error if ($error =~ m/invalid file/i);
         code_exit_BO("<p class='error'>$err_msg</p>", $title);

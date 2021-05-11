@@ -169,7 +169,8 @@ foreach my $table (
     }
 }
 
-print "<div style='background-color: var(--bg-secondary-dark);color: var(--white); padding: 8px 16px; font-size: 1.2rem; font-weight: bold; text-transform: uppercase;'>$encoded_loginid</div>";
+print
+    "<div style='background-color: var(--bg-secondary-dark);color: var(--white); padding: 8px 16px; font-size: 1.2rem; font-weight: bold; text-transform: uppercase;'>$encoded_loginid</div>";
 print "<div>";
 my $old;
 foreach (sort { Date::Utility->new($a->{timestring})->epoch <=> Date::Utility->new($b->{timestring})->epoch } @audit_entries) {

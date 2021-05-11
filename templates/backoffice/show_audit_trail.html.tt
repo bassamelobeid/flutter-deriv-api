@@ -1,7 +1,7 @@
 [%
     titles = { stamp => 'Date', remote_addr => 'IP', staff_name => 'Staff', comment => 'Account review' };
     groups_config = {
-        cs => ['stamp', 'staff_name', 'operation', 'table', 'reason', 'document_type', 'expiration_date', 'status', 'comments', 'status_code', 'first_name', 'last_name', 'email', 'client_password', 'is_totp_enabled', 'phone', 'address_city', 'address_line_1', 'address_line_2', 'address_postcode', 'address_state', 'no data found'],
+        cs => ['stamp', 'staff_name', 'operation', 'table', 'reason', 'document_type', 'lifetime_valid', 'expiration_date', 'status', 'comments', 'status_code', 'first_name', 'last_name', 'email', 'client_password', 'is_totp_enabled', 'phone', 'address_city', 'address_line_1', 'address_line_2', 'address_postcode', 'address_state', 'no data found'],
     };
 %]
 
