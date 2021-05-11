@@ -246,6 +246,12 @@ subtest 'get consider reasons' => sub {
             };
         });
 
+    # the report must include valid properties for the comparison check
+    my $properties = {
+        first_name => $test_client->first_name,
+        last_name  => $test_client->last_name,
+    };
+
     # Every possible reason is here
 
     my $breakdowns = {
@@ -304,9 +310,10 @@ subtest 'get consider reasons' => sub {
     # Cases to test
 
     my $cases = [{
-            test      => 'Testing empty reasons',
-            reasons   => [],
-            breakdown => {},
+            test       => 'Testing empty reasons',
+            reasons    => [],
+            breakdown  => {},
+            properties => $properties,
         }];
 
     # Breakdown payload builder
@@ -324,7 +331,6 @@ subtest 'get consider reasons' => sub {
     };
 
     # Create a case for each possible reason
-
     for my $breakdown (keys $breakdowns->%*) {
         if (ref($breakdowns->{$breakdown}) eq 'HASH') {
             for my $sub_breakdown (keys $breakdowns->{$breakdown}->%*) {
@@ -341,8 +347,9 @@ subtest 'get consider reasons' => sub {
 
                         push @$cases,
                             {
-                            test    => 'Testing reason ' . $reason,
-                            reasons =>
+                            test       => 'Testing reason ' . $reason,
+                            properties => $properties,
+                            reasons    =>
                                 [join('.', $breakdown), join('.', $breakdown, $sub_breakdown), join('.', $breakdown, $sub_breakdown, $reason),],
                             breakdown => $breakdown_payload,
                             };
@@ -352,9 +359,10 @@ subtest 'get consider reasons' => sub {
 
                     push @$cases,
                         {
-                        test      => 'Testing reason ' . $sub_breakdown,
-                        reasons   => [join('.', $breakdown), join('.', $breakdown, $sub_breakdown),],
-                        breakdown => $breakdown_payload,
+                        test       => 'Testing reason ' . $sub_breakdown,
+                        properties => $properties,
+                        reasons    => [join('.', $breakdown), join('.', $breakdown, $sub_breakdown),],
+                        breakdown  => $breakdown_payload,
                         };
                 }
 
@@ -362,9 +370,10 @@ subtest 'get consider reasons' => sub {
         } else {
             push @$cases,
                 {
-                test      => 'Testing reason ' . $breakdown,
-                reasons   => [$breakdown],
-                breakdown => {
+                test       => 'Testing reason ' . $breakdown,
+                reasons    => [$breakdown],
+                properties => $properties,
+                breakdown  => {
                     $breakdown => {
                         result => 'consider',
                     }
@@ -388,7 +397,8 @@ subtest 'get consider reasons' => sub {
                 visual_authenticity.original_document_present
                 visual_authenticity.original_document_present.screenshot/
         ],
-        breakdown => {
+        properties => $properties,
+        breakdown  => {
             visual_authenticity => {
                 result    => 'consider',
                 breakdown => {
@@ -423,9 +433,10 @@ subtest 'get consider reasons' => sub {
 
     push @$cases,
         {
-        test      => 'Testing special case null document numbers',
-        reasons   => [qw/data_validation data_validation.no_document_numbers/],
-        breakdown => {
+        test       => 'Testing special case null document numbers',
+        reasons    => [qw/data_validation data_validation.no_document_numbers/],
+        properties => $properties,
+        breakdown  => {
             data_validation => {
                 result    => 'consider',
                 breakdown => {
@@ -445,9 +456,10 @@ subtest 'get consider reasons' => sub {
                 sub {
                     return {
                         TESTING => {
-                            result    => 'consider',
-                            api_name  => 'document',
-                            breakdown => encode_json_utf8($case->{breakdown}),
+                            result     => 'consider',
+                            api_name   => 'document',
+                            breakdown  => encode_json_utf8($case->{breakdown}),
+                            properties => encode_json_utf8($case->{properties}),
                         },
                     };
                 });
@@ -483,9 +495,10 @@ subtest 'get consider reasons' => sub {
                         api_name => 'facial_similarity',
                     },
                     DOC => {
-                        result    => 'consider',
-                        api_name  => 'document',
-                        breakdown => encode_json_utf8({
+                        result     => 'consider',
+                        api_name   => 'document',
+                        properties => encode_json_utf8($properties),
+                        breakdown  => encode_json_utf8({
                                 visual_authenticity => {
                                     result    => 'consider',
                                     breakdown => {
@@ -509,6 +522,7 @@ subtest 'get consider reasons' => sub {
                 });
 
             my $reasons = BOM::User::Onfido::get_consider_reasons($test_client);
+
             cmp_deeply($reasons, set($test->{reasons}->@*), $test->{test});
         }
     };
@@ -578,8 +592,9 @@ subtest 'get consider reasons' => sub {
             sub {
                 return {
                     TESTING => {
-                        api_name => 'document',
-                        result   => 'clear'
+                        api_name   => 'document',
+                        result     => 'clear',
+                        properties => encode_json_utf8($properties),
                     }};
             });
 
@@ -689,9 +704,10 @@ subtest 'get consider reasons' => sub {
                 sub {
                     return {
                         DOC => {
-                            result    => 'consider',
-                            api_name  => 'document',
-                            breakdown => ref($test->{payload}) ? encode_json_utf8($test->{payload}) : $test->{payload},
+                            result     => 'consider',
+                            api_name   => 'document',
+                            properties => encode_json_utf8($properties),
+                            breakdown  => ref($test->{payload}) ? encode_json_utf8($test->{payload}) : $test->{payload},
                         }};
                 });
 
@@ -705,6 +721,114 @@ subtest 'get consider reasons' => sub {
 
             is $hit_dd, $test->{hit_dd}, $test->{hit_dd} ? 'Dog correctly annoyed' : 'The good boy has deep sleep';
         }
+    };
+
+    subtest 'Get reported properties' => sub {
+        my $check;
+        my $properties;
+
+        my $tests = [{
+                check      => undef,
+                properties => {
+                    a => 1,
+                },
+                reported => {},
+            },
+            {
+                check      => {},
+                properties => {
+                    a => 1,
+                },
+                reported => {},
+            },
+            {
+                check => {
+                    id => undef,
+                },
+                properties => {
+                    a => 1,
+                },
+                reported => {},
+            },
+            {
+                check => {
+                    id => 'test',
+                },
+                properties => {first_name => 'husky'},
+                reported   => {first_name => 'husky'},
+            },
+            {
+                check => {
+                    id => 'test',
+                },
+                properties => {
+                    first_name => 'husky',
+                    last_name  => 'dusky',
+                },
+                reported => {
+                    first_name => 'husky',
+                    last_name  => 'dusky',
+                },
+            },
+            {
+                check => {
+                    id => 'test',
+                },
+                properties => {
+                    first_name => 'husky',
+                    last_name  => 'dusky',
+                    other      => 'dusty',
+                },
+                reported => {
+                    first_name => 'husky',
+                    last_name  => 'dusky',
+                },
+            }];
+
+        $onfido_mock->mock(
+            'get_latest_onfido_check',
+            sub {
+                return $check;
+            });
+
+        $onfido_mock->mock(
+            'get_all_onfido_reports',
+            sub {
+                return {
+                    DOC => {
+                        result     => 'consider',
+                        api_name   => 'document',
+                        properties => encode_json_utf8($properties),
+                    }};
+            });
+
+        for my $test ($tests->@*) {
+            $properties = $test->{properties};
+            $check      = $test->{check};
+            cmp_deeply(BOM::User::Onfido::reported_properties($test_client), $test->{reported}, 'Expected reported properties seen');
+        }
+    };
+
+    subtest 'Get our own rules reasons (Name Mismatch)' => sub {
+        my $reasons;
+        my $poi_name_mismatch;
+
+        my $status_mock = Test::MockModule->new('BOM::User::Client::Status');
+        $status_mock->mock(
+            'poi_name_mismatch',
+            sub {
+                return $poi_name_mismatch;
+            });
+
+        $poi_name_mismatch = 1;
+        $reasons           = BOM::User::Onfido::get_rules_reasons($test_client);
+        cmp_deeply($reasons, set(['data_comparison.first_name']->@*), 'Name mismatch reported');
+
+        $poi_name_mismatch = 0;
+        $reasons           = BOM::User::Onfido::get_rules_reasons($test_client);
+        cmp_deeply($reasons, set([]->@*), 'No reason reported');
+
+        $status_mock->unmock_all;
     };
 
     # Finish it

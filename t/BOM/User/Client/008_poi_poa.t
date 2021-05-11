@@ -401,6 +401,28 @@ subtest 'get_poi_status' => sub {
 
             $mocked_client->unmock_all;
         };
+
+        subtest 'POI status reject - POI name mismatch' => sub {
+            $mocked_client->mock('is_document_expiry_check_required_mt5', sub { return 1 });
+
+            $mocked_client->mock(
+                'documents_uploaded',
+                sub {
+                    return {proof_of_identity => {documents => {}}};
+                });
+
+            $onfido_document_status = 'complete';
+            $onfido_sub_result      = 'clear';
+            $test_client_cr->status->clear_age_verification;
+            $test_client_cr->status->setnx('poi_name_mismatch', 'test', 'test');
+
+            is $test_client_cr->get_poi_status, 'rejected', 'Rejected when POI name mismatch reported';
+
+            $test_client_cr->status->clear_poi_name_mismatch;
+            is $test_client_cr->get_poi_status, 'none', 'Non rejected when POI name mismatch is cleared';
+
+            $mocked_client->unmock_all;
+        };
     };
 
     subtest 'Regulated account' => sub {

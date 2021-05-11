@@ -494,6 +494,33 @@ sub get_consider_reasons {
     return [uniq @reasons];
 }
 
+=head2 get_rules_reasons
+
+Performs checks based on our business rules upon the given Onfido check.
+
+These rules may or may not take into account check result (consider/clear).
+
+It takes the following arguments:
+
+=over 4
+
+=item * C<$client> - a L<BOM::User::Client> instance
+
+=back
+
+Returns an arrayref of rejection reasons.
+
+=cut
+
+sub get_rules_reasons {
+    my $client  = shift;
+    my $reasons = [];
+
+    push $reasons->@*, 'data_comparison.first_name' if $client->status->poi_name_mismatch;
+
+    return $reasons;
+}
+
 =head2 _extract_breakdown_reasons
 
 Performs a recursive parsing of the breakdown JSON from Onfido.
@@ -642,6 +669,34 @@ Returns,
 
 sub timeout_per_user {
     return $ENV{ONFIDO_REQUEST_PER_USER_TIMEOUT} // 15 * 24 * 60 * 60;    # 15 days
+}
+
+=head2 reported_properties
+
+Returns the client document's detected properties, from the last Onfido check, as hashref.
+
+It takes the following arguments:
+
+=over 4
+
+=item * C<$client> - the L<BOM::User::Client> instance.
+
+=back
+
+Returns a hashref containing detected document properties.
+
+=cut
+
+sub reported_properties {
+    my ($client) = @_;
+    my $check    = get_latest_onfido_check($client->binary_user_id, undef, 1) || return {};
+    my $check_id = $check->{id}                                               || return {};
+
+    my ($report)   = grep { $_->{api_name} eq 'document' } values get_all_onfido_reports($client->binary_user_id, $check_id)->%*;
+    my $properties = decode_json_utf8($report->{properties} // '{}');
+    my $fields     = [qw/first_name last_name/];
+
+    return +{map { defined $properties->{$_} ? ($_ => $properties->{$_}) : () } $fields->@*};
 }
 
 1;

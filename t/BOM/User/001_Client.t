@@ -15,6 +15,7 @@ use BOM::Test::Helper::Client qw( create_client );
 
 use Date::Utility;
 use Array::Utils qw(array_minus);
+use List::Util qw(uniq);
 
 my $login_id = 'CR0022';
 my $client;
@@ -495,6 +496,8 @@ subtest "immutable_fields and validate_immutable_fields" => sub {
 
     subtest 'poi and authentication' => sub {
         my @excluded_fields;
+        my @poi_name_mismatch_fields = qw(first_name last_name);
+
         for my $field (@all_immutables) {
             push @excluded_fields, $field;
 
@@ -512,9 +515,26 @@ subtest "immutable_fields and validate_immutable_fields" => sub {
         $test_poi_status->{svg} = 'verified';
         cmp_bag [$client_cr->immutable_fields], \@all_immutables, "Immutable fields are reverted to default after authentication";
 
+        $client_cr->status->setnx('poi_name_mismatch', 'test', 'test');
+        cmp_bag [uniq($client_cr->immutable_fields)], [array_minus(@all_immutables, @poi_name_mismatch_fields)],
+            "Can update first_name and last_name on name mismatch";
+
+        $client_cr->status->clear_poi_name_mismatch;
         $test_poi_status->{svg} = 'expired';
         cmp_bag [$client_cr->immutable_fields], \@all_immutables, "Immutable fields remain unchanged";
 
+        $client_cr->status->setnx('poi_name_mismatch', 'test', 'test');
+        cmp_bag [uniq($client_cr->immutable_fields)], [array_minus(@all_immutables, @poi_name_mismatch_fields)],
+            "Can update first_name and last_name on name mismatch";
+
+        # basically, the lock has more weight
+        subtest 'personal_detail_locked and poi_name_mismatch' => sub {
+            $client_cr->status->setnx('personal_details_locked', 'test', 'test');
+            cmp_bag [uniq($client_cr->immutable_fields)], \@all_immutables, "Personal details locked has more weight";
+        };
+
+        $client_cr->status->clear_personal_details_locked;
+        $client_cr->status->clear_poi_name_mismatch;
         $test_poi_status->{svg} = 'none';
         cmp_bag [$client_cr->immutable_fields], [], "Immutable fields are reverted to empty";
     };

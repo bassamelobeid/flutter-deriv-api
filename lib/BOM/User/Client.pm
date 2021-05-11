@@ -2117,6 +2117,11 @@ sub immutable_fields {
 
     my @immutable = grep { $self->$_ } PROFILE_FIELDS_IMMUTABLE_AFTER_AUTH->@*;
 
+    # Allow first and last name edition when poi name mismatch (should not be locked though)
+    if ($self->status->poi_name_mismatch && !$self->status->personal_details_locked) {
+        @immutable = grep { $_ !~ qr/(first_name|last_name)/ } @immutable;
+    }
+
     return @immutable if $self->get_poi_status() =~ qr/verified|expired/;
 
     # the remaining part is for un-authenticated clients only
@@ -5963,6 +5968,8 @@ sub get_poi_status {
     }
 
     return 'suspected' if $report_document_sub_result eq 'suspected';
+
+    return 'rejected' if $self->status->poi_name_mismatch;
 
     return 'rejected' if any { $_ eq $report_document_sub_result } qw/rejected caution/;
 
