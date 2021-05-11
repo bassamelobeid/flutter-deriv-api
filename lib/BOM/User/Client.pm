@@ -711,6 +711,7 @@ sub documents_uploaded {
         };
     };
 
+    my $has_lifetime_valid  = {};
     my %doc_type_categories = DOCUMENT_TYPE_CATEGORIES();
     my %documents           = ();
 
@@ -737,6 +738,11 @@ sub documents_uploaded {
 
             # there should be no expiration date for POA
             next if $type eq 'proof_of_address';
+
+            # Populate the lifetime valid hashref per category
+            $has_lifetime_valid->{$type} = 1 if $single_document->lifetime_valid;
+            next                             if $has_lifetime_valid->{$type};
+
             my $expires = $documents{$type}{documents}{$single_document->file_name}{expiry_date};
             next unless $expires;
 
@@ -760,6 +766,12 @@ sub documents_uploaded {
             $documents{$type}{expiry_date} = $expiry_date;
             $documents{$type}{is_expired}  = Date::Utility->new->epoch > $expiry_date ? 1 : 0;
         }
+    }
+
+    # Remove expiration from category if lifetime valid doc was observed
+    for my $type (keys $has_lifetime_valid->%*) {
+        delete $documents{$type}->{expiry_date};
+        delete $documents{$type}->{is_expired};
     }
 
     if (scalar(keys %documents) and exists $documents{proof_of_identity}) {
@@ -6341,6 +6353,8 @@ It takes a hashref containing the following parameters:
 
 =item * C<issue_date> The issuance date of the given document if applies.
 
+=item * C<lifetime_valid> boolean that indicates whether the document is lifetime valid.
+
 =back
 
 Returns a hashref containing:
@@ -6357,13 +6371,13 @@ Returns a hashref containing:
 
 sub start_document_upload {
     my ($self, $params) = @_;
-    my ($document_type, $document_format, $expiration_date, $document_id, $checksum, $comments, $page_type, $issue_date) =
-        @$params{qw/document_type document_format expiration_date document_id checksum comments page_type issue_date/};
+    my ($document_type, $document_format, $expiration_date, $document_id, $checksum, $comments, $page_type, $issue_date, $lifetime_valid) =
+        @$params{qw/document_type document_format expiration_date document_id checksum comments page_type issue_date lifetime_valid/};
 
     return $self->db->dbic->run(
         ping => sub {
             $_->selectrow_hashref(
-                'SELECT * FROM betonmarkets.start_document_upload(?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                'SELECT * FROM betonmarkets.start_document_upload(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
                 undef,
                 $self->loginid,
                 $document_type,
@@ -6374,6 +6388,7 @@ sub start_document_upload {
                 $comments // '',    # This field has non null constraint however feels like it should be optional anyway
                 $page_type,
                 $issue_date,
+                $lifetime_valid ? 1 : 0,
             );
         });
 }

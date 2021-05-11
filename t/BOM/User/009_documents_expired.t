@@ -973,7 +973,92 @@ subtest 'Payment Agent has expired documents' => sub {
         $risk = 'low';
         $pa   = 1;
         ok !$client_cr->has_valid_documents($docs), 'Invalid documents';
+
+        $mock_client->unmock_all;
     }
 };
+
+subtest 'Lifetime Valid Documents' => sub {
+    my $mock_client = Test::MockModule->new('BOM::User::Client');
+    $mock_client->mock(
+        'is_document_expiry_check_required',
+        sub {
+            return 1;
+        });
+
+    my $client = create_client('CR');
+    my $user   = BOM::User->create(
+        email          => 'lifetimevalid@binary.com',
+        password       => BOM::User::Password::hashpw('asdf12345'),
+        email_verified => 1,
+    );
+    $user->add_client($client);
+
+    ok upload_new_doc(
+        $client,
+        {
+            document_type   => 'passport',
+            document_format => 'PNG',
+            expiration_date => 'yesterday',
+            document_id     => '993439339',
+            checksum        => 'aegeg3f23gg',
+            comments        => 'text',
+            page_type       => 'front',
+            issue_date      => undef,
+            lifetime_valid  => undef,
+        }
+        ),
+        'Expired document uploaded';
+
+    ok $client->documents_expired(), 'Client has expired docs';
+    ok !$client->has_valid_documents(), 'Client does not have valid docs';
+
+    my $documents_uploaded = $client->documents_uploaded();
+    ok $documents_uploaded->{proof_of_identity}->{expiry_date}, 'POI has expiry_date reported';
+    ok $documents_uploaded->{proof_of_identity}->{is_expired},  'POI has is_expired reported';
+
+    ok upload_new_doc(
+        $client,
+        {
+            document_type   => 'passport',
+            document_format => 'PNG',
+            expiration_date => undef,
+            document_id     => '1363135',
+            checksum        => 'ger332583',
+            comments        => 'text',
+            page_type       => 'back',
+            issue_date      => undef,
+            lifetime_valid  => 1,
+        }
+        ),
+        'Lifetime valid document uploaded';
+
+    ok !$client->documents_expired(), 'Client has lifetime valid docs';
+    ok $client->has_valid_documents(), 'Client has valid docs';
+
+    $documents_uploaded = $client->documents_uploaded();
+    ok !$documents_uploaded->{proof_of_identity}->{expiry_date}, 'POI does not have expiry_date reported';
+    ok !$documents_uploaded->{proof_of_identity}->{is_expired},  'POI does not have is_expired reported';
+
+    $mock_client->unmock_all;
+};
+
+sub upload_new_doc {
+    my ($client, $document) = @_;
+    my $dbh         = $client->db->dbic->dbh;
+    my $SQL         = 'SELECT * FROM betonmarkets.start_document_upload(?,?,?,?,?,?,?,?,?,?)';
+    my $sth_doc_new = $dbh->prepare($SQL);
+    $sth_doc_new->execute($client->loginid,
+        @{$document}{qw/document_type document_format expiration_date document_id checksum comments page_type issue_date lifetime_valid/});
+
+    my $id     = $sth_doc_new->fetch()->[0];
+    my $status = $document->{status} // 'verified';
+    $SQL = 'SELECT * FROM betonmarkets.finish_document_upload(?, ?)';
+
+    my $sth_doc_finish = $dbh->prepare($SQL);
+    $sth_doc_finish->execute($id, $status);
+
+    return $id;
+}
 
 done_testing();
