@@ -29,7 +29,8 @@ sub market_pricing_limits {
             for my $currency (@$currencies) {
                 my $min_stake  = $cat_min->{$currency};
                 my $max_payout = $cat_max->{$currency};
-                warn "Unsupported currency $currency" if (not defined $min_stake or not defined $max_payout);
+                warn "Unsupported currency $currency query params [landing company: $lc, market: $market, contract category: $contract_category]"
+                    if (not defined $min_stake or not defined $max_payout);
 
                 $limits->{$market}->{$currency}->{max_payout} = $max_payout + 0
                     if defined $max_payout;    #add plus 0 to ensure it will always be a number instead of string
