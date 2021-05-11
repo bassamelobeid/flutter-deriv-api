@@ -42,7 +42,7 @@ sub _get_upgradeable_landing_companies {
 
         # Push to upgradeable_landing_companies, if possible to open another CR account
         push @upgradeable_landing_companies, 'svg'
-            if BOM::RPC::v3::Utility::get_available_currencies($siblings, $client->landing_company->short);
+            if BOM::RPC::v3::Utility::get_available_currencies($siblings, 'svg');
     } else {
         for my $lc (uniq($gaming_company, $financial_company)) {
             next unless $lc;

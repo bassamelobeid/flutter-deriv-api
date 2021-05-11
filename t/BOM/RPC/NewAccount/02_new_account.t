@@ -554,8 +554,8 @@ subtest $method => sub {
         ok $new_loginid =~ /^CR\d+$/, 'new CR loginid';
         # check disabled but account currency selected case
         $new_client->set_default_account("USD");
-        $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('PermissionDenied', 'correct error code.')
-            ->error_message_is('Permission denied.', 'It should return expected error message');
+        is $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error->result->{landing_company_shortcode},
+            'svg', 'can open another account after disabled account has currency';
 
     };
     subtest 'Create multiple accounts in CR' => sub {
