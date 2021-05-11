@@ -34,6 +34,7 @@ use BOM::Rules::RuleRepository::User;
 use BOM::Rules::RuleRepository::Client;
 use BOM::Rules::RuleRepository::LandingCompany;
 use BOM::Rules::RuleRepository::Residence;
+use BOM::Rules::RuleRepository::Onfido;
 use BOM::Rules::RuleRepository::TradingAccount;
 use BOM::Rules::RuleRepository::Transfers;
 use BOM::Rules::Registry qw(get_action);

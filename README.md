@@ -7,13 +7,12 @@ Contains hooks and logic for the various regulatory requirements
     use BOM::Rules::Engine;
     my $rule_engine = BOM::Rules::Engine->new(loginid => 'CR1234', landing_company => 'svg');
 
-    my $result = $rule_engine->verify_action('new_account', {first_name => 'Sir John', last_name => 'Falstaff'});
-    if ($result->{error}) {
-        # return or handle the error
-    } else {
+    try {
+        $rule_engine->verify_action('new_account', {first_name => 'Sir John', last_name => 'Falstaff'});
         # we are happily compliant to rules
+    } catch($error) {
+        # return or handle the error
     }
-
 ```
 
 # Repository structure
