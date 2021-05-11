@@ -1343,6 +1343,12 @@ rpc transfer_between_accounts => sub {
         or $is_mt5_loginid_to
         or $is_dxtrade_loginid_to;
 
+    # Cannot transfer dxtrade <--> mt5
+    return BOM::RPC::v3::Utility::create_error({
+            code              => 'PermissionDenied',
+            message_to_client => localize("You are not allowed to transfer to this account.")}
+    ) if ($is_mt5_loginid_to && $is_dxtrade_loginid_from) || ($is_mt5_loginid_from && $is_dxtrade_loginid_to);
+
     return _transfer_between_accounts_error(localize('Transfer between two MT5 accounts is not allowed.'))
         if ($is_mt5_loginid_from and $is_mt5_loginid_to);
 

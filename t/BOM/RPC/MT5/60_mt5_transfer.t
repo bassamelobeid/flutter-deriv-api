@@ -20,6 +20,7 @@ use BOM::Config::Runtime;
 use BOM::Config::Redis;
 use BOM::Config::CurrencyConfig;
 
+use BOM::Test::Script::DevExperts;
 use Test::BOM::RPC::Accounts;
 
 my $c = BOM::Test::RPC::QueueClient->new();
@@ -689,6 +690,43 @@ subtest 'offer_to_clients' => sub {
 
     _offer_to_clients(1, 'BTC');
 
+};
+
+subtest 'Transfers in between MT5 and Deriv X' => sub {
+    BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend->all(0);
+
+    my $params = {language => 'EN'};
+    $params->{token} = $token;
+    $params->{args}  = {
+        platform     => 'dxtrade',
+        account_type => 'real',
+        market_type  => 'financial',
+        password     => 'test',
+        currency     => 'USD',
+    };
+
+    my $dx          = $c->call_ok('trading_platform_new_account', $params)->result;
+    my $mt5_account = 'MTR' . $ACCOUNTS{'real\p01_ts03\synthetic\svg_std_usd\01'};
+
+    $params->{args} = {
+        account_from => $dx->{account_id},
+        account_to   => $mt5_account,
+        amount       => 10,
+        currency     => 'USD',
+    };
+
+    $c->call_ok('transfer_between_accounts', $params)
+        ->has_no_system_error->has_error->error_code_is('PermissionDenied', 'Cannot transfer from DX to MT5');
+
+    $params->{args} = {
+        account_to   => $dx->{account_id},
+        account_from => $mt5_account,
+        amount       => 10,
+        currency     => 'USD',
+    };
+
+    $c->call_ok('transfer_between_accounts', $params)
+        ->has_no_system_error->has_error->error_code_is('PermissionDenied', 'Cannot transfer from MT5 to DX');
 };
 
 done_testing();

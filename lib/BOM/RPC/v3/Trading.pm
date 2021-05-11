@@ -220,7 +220,7 @@ Platform withdrawal implementation.
 sub withdrawal {
     my $params = shift;
 
-    my ($from_account, $to_account, $amount) = $params->{args}->@{qw/from_account to_account amount/};
+    my ($from_account, $to_account, $amount, $currency) = $params->{args}->@{qw/from_account to_account amount currency/};
     try {
         my $client = get_transfer_client($params, $to_account);
 
@@ -232,6 +232,7 @@ sub withdrawal {
         return $platform->withdraw(
             from_account => $from_account,
             amount       => $amount,
+            currency     => $currency,
         );
 
     } catch ($e) {
