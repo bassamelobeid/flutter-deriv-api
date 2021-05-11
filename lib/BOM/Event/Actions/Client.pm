@@ -27,7 +27,7 @@ use Future::AsyncAwait;
 use Future::Utils qw(fmap0);
 use IO::Async::Loop;
 use JSON::MaybeUTF8 qw(decode_json_utf8 encode_json_utf8);
-use List::Util qw(any all first uniq);
+use List::Util qw(any all first uniq none);
 use Locale::Codes::Country qw(country_code2code);
 use Log::Any qw($log);
 use POSIX qw(strftime);
@@ -926,14 +926,21 @@ async sub onfido_doc_ready_for_upload {
     return                                unless $acquire_lock;
 
     try {
+        my $lifetime_valid      = $expiration_date ? 0 : 1;
+        my %doc_type_categories = BOM::User::Client::DOCUMENT_TYPE_CATEGORIES();
+        my @poi_doctypes        = @{$doc_type_categories{POI}{doc_types_appreciated}};
+
+        # lifetime only applies to favored POI types
+        $lifetime_valid = 0 if none { $_ eq $doc_type } @poi_doctypes;
+
         $upload_info = $client->db->dbic->run(
             ping => sub {
                 $_->selectrow_hashref(
-                    'SELECT * FROM betonmarkets.start_document_upload(?, ?, ?, ?, ?, ?, ?, ?)',
+                    'SELECT * FROM betonmarkets.start_document_upload(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
                     undef, $client_loginid, $doc_type, $file_type,
                     $expiration_date || undef,
                     $document_info->{number} || '',
-                    $file_checksum, '', $page_type,
+                    $file_checksum, '', $page_type, undef, $lifetime_valid
                 );
             });
 
@@ -1208,7 +1215,8 @@ SELECT id,
    comments,
    document_id,
    upload_date,
-   document_type
+   document_type,
+   lifetime_valid
 FROM betonmarkets.client_authentication_document
 WHERE client_loginid = ?
 AND status != 'uploading'

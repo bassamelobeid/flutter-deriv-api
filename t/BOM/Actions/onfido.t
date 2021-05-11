@@ -34,18 +34,18 @@ my $s3_mocker        = Test::MockModule->new('BOM::Platform::S3Client');
 my $event_mocker     = Test::MockModule->new('BOM::Event::Actions::Client');
 my $redis_replicated = BOM::Config::Redis::redis_replicated_write();
 
+$s3_mocker->mock(
+    'upload',
+    sub {
+        return Future->done(1);
+    });
+
 subtest 'Concurrent calls to onfido_doc_ready_for_upload' => sub {
     $onfido_mocker->mock(
         'download_photo',
         sub {
             return Future->done(
                 decode_base64('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVQYV2NgYAAAAAMAAWgmWQ0AAAAASUVORK5CYII='));
-        });
-
-    $s3_mocker->mock(
-        'upload',
-        sub {
-            return Future->done(1);
         });
 
     my $exceptions = 0;
@@ -82,7 +82,66 @@ subtest 'Concurrent calls to onfido_doc_ready_for_upload' => sub {
     print @warnings if scalar @warnings;
 
     $onfido_mocker->unmock_all;
-    $s3_mocker->unmock_all;
+    $event_mocker->unmock_all;
+};
+
+subtest 'Onfido lifetime valid' => sub {
+    my $doc_id;
+    my $expiration_date;
+    my $document;
+    my $type;
+    my $doc_type;
+
+    $onfido_mocker->mock(
+        'download_document',
+        sub {
+            return Future->done(join '|', 'test', $doc_id);
+        });
+
+    $onfido_mocker->mock(
+        'download_photo',
+        sub {
+            return Future->done(join '|', 'test', $doc_id);
+        });
+
+    $event_mocker->mock(
+        '_get_document_details',
+        sub {
+            $document = $event_mocker->original('_get_document_details')->(@_);
+            return $document;
+        });
+
+    my $upload = sub {
+        $doc_id          = shift;
+        $expiration_date = shift;
+        $type            = shift;
+        $doc_type        = shift;
+
+        return $action_handler->({
+                type           => $type,
+                document_id    => $doc_id,
+                client_loginid => $test_client->loginid,
+                applicant_id   => 'dummy_applicant_id',
+                file_type      => 'png',
+                document_info  => {
+                    type            => $doc_type,
+                    expiration_date => $expiration_date,
+                }});
+    };
+
+    $upload->('abcd', '2019-01-01', 'document', 'passport')->get;
+    is $document->{expiration_date}, '2019-01-01', 'Expected expiration date';
+    ok !$document->{lifetime_valid}, 'No lifetime valid doc';
+
+    $upload->('qwerty', '', 'document', 'passport')->get;
+    ok !$document->{expiration_date}, 'Empty expiration date';
+    ok $document->{lifetime_valid}, 'Lifetime valid doc';
+
+    $upload->('cucamonga', '', 'photo', 'selfie')->get;
+    ok !$document->{expiration_date}, 'Empty expiration date';
+    ok !$document->{lifetime_valid},  'Lifetime valid does not apply to selfie';
+
+    $onfido_mocker->unmock_all;
     $event_mocker->unmock_all;
 };
 
@@ -203,5 +262,7 @@ subtest 'Final status' => sub {
             "The exepcted status for " . ($case->{result} // 'undef');
     }
 };
+
+$s3_mocker->unmock_all;
 
 done_testing();
