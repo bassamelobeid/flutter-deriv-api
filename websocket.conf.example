@@ -1,7 +1,7 @@
 # This application expects file like that at /etc/rmg directory
 app->log(Mojo::Log->new(
     level => 'info',
-    path  => '/var/log/httpd/binary-websocket-api_trace.log'
+    path  => '/tmp/binary-websocket-api.log'
 ));
 app->renderer->default_format('json');
 
