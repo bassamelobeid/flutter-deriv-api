@@ -1,6 +1,7 @@
 use strict;
 use warnings;
 
+use Test::Deep;
 use Test::More;
 use Test::MockModule;
 use Test::Warnings qw/warnings/;
@@ -11,6 +12,7 @@ use BOM::User;
 use BOM::Event::Process;
 use MIME::Base64;
 use BOM::Config::Redis;
+use JSON::MaybeUTF8 qw(encode_json_utf8);
 use BOM::Event::Actions::Client;
 
 my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
@@ -82,6 +84,96 @@ subtest 'Concurrent calls to onfido_doc_ready_for_upload' => sub {
     $onfido_mocker->unmock_all;
     $s3_mocker->unmock_all;
     $event_mocker->unmock_all;
+};
+
+subtest 'Check Onfido Rules' => sub {
+    my $action_handler = BOM::Event::Process::get_action_mappings()->{check_onfido_rules};
+    my $first_name;
+    my $last_name;
+    my $result;
+    my $current;
+    my $check_result;
+    my @rejected;
+
+    my $onfido_mock = Test::MockModule->new('BOM::User::Onfido');
+    $onfido_mock->mock(
+        'get_consider_reasons',
+        sub {
+            return [@rejected];
+        });
+
+    $onfido_mock->mock(
+        'get_latest_onfido_check',
+        sub {
+            return {
+                id     => 'TEST',
+                status => 'complete',
+                result => $check_result,
+            };
+        });
+
+    $onfido_mock->mock(
+        'get_all_onfido_reports',
+        sub {
+            return {
+                DOC => {
+                    result     => $result,
+                    api_name   => 'document',
+                    properties => encode_json_utf8({
+                            first_name => $first_name,
+                            last_name  => $last_name,
+                        }
+                    ),
+                    breakdown => {},
+                }};
+        });
+
+    $test_client->first_name('elon');
+    $test_client->last_name('musk');
+    $test_client->save;
+
+    for (qw/consider clear suspect/) {
+        $check_result = $_;
+
+        for (qw/consider clear suspect/) {
+            $result = $_;
+
+            for (qw/data_comparison.first_name data_comparison.last_name data_comparison.birthday/) {
+                @rejected    = ($_);
+                $test_client = BOM::User::Client->new({loginid => $test_client->loginid});
+                $last_name   = 'musk';
+                $first_name  = 'elon';
+
+                my $mismatch = $test_client->status->poi_name_mismatch;
+                ok $action_handler->({
+                        loginid  => $test_client->loginid,
+                        check_id => 'TEST'
+                    })->get, 'Successfull event execution';
+
+                $test_client = BOM::User::Client->new({loginid => $test_client->loginid});
+                ok !$test_client->status->poi_name_mismatch, 'POI name mismatch not set';
+
+                if ($mismatch && $result eq 'clear' && $check_result eq 'clear' && $_ ne 'data_comparison.birthday') {
+                    ok $test_client->status->age_verification, 'Age verified set';
+                } else {
+                    ok !$test_client->status->age_verification, 'Age verified not set';
+                }
+
+                $test_client->status->clear_age_verification;
+                $last_name  = 'mask';
+                $first_name = 'elon';
+
+                $test_client = BOM::User::Client->new({loginid => $test_client->loginid});
+                ok $action_handler->({
+                        loginid  => $test_client->loginid,
+                        check_id => 'TEST'
+                    })->get, 'Successfull event execution';
+                ok $test_client->status->poi_name_mismatch, 'POI name mismatch set';
+            }
+        }
+    }
+
+    $onfido_mock->unmock_all;
 };
 
 subtest 'Final status' => sub {

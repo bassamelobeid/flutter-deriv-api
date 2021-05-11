@@ -1416,9 +1416,14 @@ subtest 'onfido resubmission' => sub {
         my $req = BOM::Platform::Context::Request->new(language => 'EN');
         request($req);
 
+        $test_client->status->setnx('poi_name_mismatch', 'test', 'test');
         BOM::Event::Actions::Client::_set_age_verification($test_client);
+        ok !$test_client->status->age_verification, 'Could not set age verification: poi name mismatch';
 
+        $test_client->status->clear_poi_name_mismatch;
+        BOM::Event::Actions::Client::_set_age_verification($test_client);
         my $msg = mailbox_search(subject => qr/Your identity is verified/);
+        ok $test_client->status->age_verification, 'Client is age verified';
         ok($msg, 'Valid email sent to client for resubmission passed');
     };
 

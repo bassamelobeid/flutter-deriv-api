@@ -98,6 +98,7 @@ my $action_mapping = {
     shared_payment_method_found => \&BOM::Event::Actions::Client::shared_payment_method_found,
     dispute_notification        => \&BOM::Event::Actions::Client::DisputeNotification::dispute_notification,
     account_reactivated         => \&BOM::Event::Actions::Client::account_reactivated,
+    check_onfido_rules          => \&BOM::Event::Actions::Client::check_onfido_rules,
 };
 
 =head1 METHODS

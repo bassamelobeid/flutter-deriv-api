@@ -55,6 +55,7 @@ use BOM::User::Client;
 use BOM::User::Client::PaymentTransaction;
 use BOM::User::Onfido;
 use BOM::User::PaymentRecord;
+use BOM::Rules::Engine;
 
 # this one shoud come after BOM::Platform::Email
 use Email::Stuffer;
@@ -563,6 +564,11 @@ async sub client_verification {
                     my $min_age = $brand->countries_instance->minimum_age_for_country($client->residence);
 
                     if (Date::Utility->new($first_dob)->is_before(Date::Utility->new->_minus_years($min_age))) {
+                        await check_onfido_rules({
+                            loginid  => $client->loginid,
+                            check_id => $check_id
+                        });
+
                         _set_age_verification($client);
                     } else {
                         my $siblings = $client->real_account_siblings_information(include_disabled => 0);
@@ -746,6 +752,73 @@ async sub _store_applicant_documents {
         });
 
     return undef;
+}
+
+=head2 check_onfido_rules
+
+Applies the `check_results` L<BOM::Rules::Engine> action upon the latest Onfido check.
+
+Takes the following named parameters:
+
+=over 4
+
+=item * C<loginid> - the login id of the client.
+
+=item * C<check_id> - the id of the onfido check (optional, if not given will try to get the last one from db).
+
+=back
+
+The following side effects could happen on rules engine verification error:
+
+=over 4
+
+=item * C<NameMismatch>: the client will be flagged with the C<poi_name_mismatch> status.
+
+=back
+
+Returns a L<Future> which resolves to C<1> on success.
+
+=cut
+
+async sub check_onfido_rules {
+    my ($args)   = @_;
+    my $loginid  = $args->{loginid}                              or die 'No loginid supplied';
+    my $client   = BOM::User::Client->new({loginid => $loginid}) or die "Client not found: $loginid";
+    my $check_id = $args->{check_id};
+    my $check    = BOM::User::Onfido::get_latest_check($client)->{user_check} // {};
+    $check_id = $check->{id};
+
+    if ($check_id) {
+        my ($report) = grep { $_->{api_name} eq 'document' } values BOM::User::Onfido::get_all_onfido_reports($client->binary_user_id, $check_id)->%*;
+
+        if ($report) {
+            my $rule_engine   = BOM::Rules::Engine->new(client => $client);
+            my $report_result = $report->{result} // '';
+            my $check_result  = $check->{result}  // '';
+            # get the current rejected reasons and drop the name mismatches if any.
+            my @reasons =
+                grep { $_ !~ /^(data_comparison\.first_name|data_comparison\.last_name)$/ } BOM::User::Onfido::get_consider_reasons($client)->@*;
+
+            try {
+                $rule_engine->verify_action('check_results', +{report => $report});
+
+                my $poi_name_mismatch = $client->status->poi_name_mismatch;
+
+                $client->status->clear_poi_name_mismatch;
+
+                # If the user had this status but now is clear then age verification is due,
+                # we should alse ensure the aren't other rejection reasons.
+                _set_age_verification($client) if $poi_name_mismatch && $report_result eq 'clear' && $check_result eq 'clear' && scalar @reasons == 0;
+            } catch ($e) {
+                my $error_code = '';
+                $error_code = $e->{code} // '' if ref($e) eq 'HASH';
+                $client->status->setnx('poi_name_mismatch', 'system', "Name in client details and Onfido report don't match")
+                    if $error_code eq 'NameMismatch';
+            }
+        }
+    }
+
+    return 1;
 }
 
 =head2 _get_document_final_status
@@ -1204,6 +1277,8 @@ sub _set_age_verification {
     my $status_code = 'age_verification';
     my $reason      = 'Onfido - age verified';
     my $staff       = 'system';
+
+    return undef if $client->status->poi_name_mismatch;
 
     my $setter = sub {
         my $c = shift;
