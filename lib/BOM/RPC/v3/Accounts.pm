@@ -1086,6 +1086,7 @@ sub _get_authentication {
                     is_country_supported => 0,
                     documents_supported  => [],
                     last_rejected        => [],
+                    reported_properties  => {},
                 }
             },
         },
@@ -1147,10 +1148,8 @@ sub _get_authentication_poi {
     my $poi_status      = $client->get_poi_status($documents);
 
     my $last_rejected = [];
-    $last_rejected =
-        [uniq map { defined $RejectedOnfidoReasons{$_} ? localize($RejectedOnfidoReasons{$_}) : () }
-            BOM::User::Onfido::get_consider_reasons($client)->@*]
-        if $poi_status =~ /rejected|suspected/;
+    push $last_rejected->@*, BOM::User::Onfido::get_consider_reasons($client)->@* if $poi_status =~ /rejected|suspected/;
+    push $last_rejected->@*, BOM::User::Onfido::get_rules_reasons($client)->@*;
 
     # Return the identity structure
     return {
@@ -1161,7 +1160,8 @@ sub _get_authentication_poi {
                 is_country_supported => BOM::Config::Onfido::is_country_supported($country_code),
                 documents_supported  => BOM::Config::Onfido::supported_documents_for_country($country_code),
                 country_code         => uc(Locale::Country::country_code2code($country_code, LOCALE_CODE_ALPHA_2, LOCALE_CODE_ALPHA_3) // ""),
-                last_rejected        => $last_rejected,
+                last_rejected => [uniq map { defined $RejectedOnfidoReasons{$_} ? localize($RejectedOnfidoReasons{$_}) : () } $last_rejected->@*],
+                reported_properties => BOM::User::Onfido::reported_properties($client),
             }
         },
         defined $expiry_date ? (expiry_date => $expiry_date) : (),
@@ -1686,8 +1686,9 @@ rpc set_settings => sub {
     }
 
     # Send request to update onfido details
+    BOM::Platform::Event::Emitter::emit('check_onfido_rules',  {loginid => $current_client->loginid});
     BOM::Platform::Event::Emitter::emit('sync_onfido_details', {loginid => $current_client->loginid});
-    BOM::Platform::Event::Emitter::emit('verify_address', {loginid => $current_client->loginid}) if $needs_verify_address_trigger;
+    BOM::Platform::Event::Emitter::emit('verify_address',      {loginid => $current_client->loginid}) if $needs_verify_address_trigger;
     $current_client->add_note('Update Address Notification', $cil_message) if $cil_message;
 
     # send email only if there was any changes

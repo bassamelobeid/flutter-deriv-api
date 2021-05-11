@@ -194,9 +194,14 @@ my $c = Test::BOM::RPC::QueueClient->new();
 
 my $method = 'get_settings';
 subtest 'get settings' => sub {
+    my $poi_name_mismatch;
+    my $personal_details_locked;
     my $poi_status  = 'none';
     my $mock_client = Test::MockModule->new('BOM::User::Client');
     $mock_client->redefine('get_poi_status' => sub { return $poi_status });
+    my $mock_status = Test::MockModule->new('BOM::User::Client::Status');
+    $mock_status->redefine('poi_name_mismatch'       => sub { return $poi_name_mismatch });
+    $mock_status->redefine('personal_details_locked' => sub { return $personal_details_locked });
     is($c->tcall($method, {token => '12345'})->{error}{message_to_client}, 'The token is invalid.', 'invalid token error');
 
     is(
@@ -377,13 +382,32 @@ subtest 'get settings' => sub {
     $expected->{immutable_fields} =
         ['citizen', 'date_of_birth', 'first_name', 'last_name', 'residence', 'salutation', 'secret_answer', 'secret_question'];
     is_deeply($result, $expected, 'immutable fields changed after authentication');
-#test_client_Y_cr_2
+
+    # poi name mismatch
+    $poi_status                   = 'expired';
+    $poi_name_mismatch            = 1;
+    $result                       = $c->tcall($method, $params);
+    $expected->{immutable_fields} = ['citizen', 'date_of_birth', 'residence', 'salutation', 'secret_answer', 'secret_question'];
+    is_deeply($result, $expected, 'first and last name allowed after poi name mismatch');
+
+    # personal details locked
+    $poi_status              = 'expired';
+    $poi_name_mismatch       = 1;
+    $personal_details_locked = 1;
+    $result                  = $c->tcall($method, $params);
+    $expected->{immutable_fields} =
+        ['citizen', 'date_of_birth', 'first_name', 'last_name', 'residence', 'salutation', 'secret_answer', 'secret_question'];
+    is_deeply($result, $expected, 'first and last name forbidden once again due to personal details locked');
+
     $poi_status                   = 'none';
+    $poi_name_mismatch            = 0;
+    $personal_details_locked      = 0;
     $result                       = $c->tcall($method, $params);
     $expected->{immutable_fields} = ['residence', 'secret_answer', 'secret_question'];
     is_deeply($result, $expected, 'immutable fields changed back to pre-authentication list');
 
     $mock_client->unmock_all;
+    $mock_status->unmock_all;
 };
 
 $method = 'set_settings';
@@ -868,6 +892,7 @@ subtest 'set settings' => sub {
         "address line 1",
         "Was able to set settings correctly for second CR client"
     );
+    ok($emitted->{check_onfido_rules}, 'onfido rules emit exist');
 };
 
 subtest 'set_settings on virtual account should not change real account settings' => sub {

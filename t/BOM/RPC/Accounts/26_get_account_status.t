@@ -272,6 +272,7 @@ subtest 'get account status' => sub {
             # duplicate_account is not supposed to be shown to the users
             $test_client->status->set('duplicate_account');
             my $result = $c->tcall($method, {token => $token_cr});
+
             cmp_deeply(
                 $result,
                 {
@@ -296,7 +297,8 @@ subtest 'get account status' => sub {
                                     last_rejected        => [],
                                     is_country_supported => 1,
                                     documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport'],
-                                    country_code         => 'IDN'
+                                    country_code         => 'IDN',
+                                    reported_properties  => {},
                                 }}
                         },
                         needs_verification => [],
@@ -336,7 +338,8 @@ subtest 'get account status' => sub {
                                     last_rejected        => [],
                                     is_country_supported => 1,
                                     documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport'],
-                                    country_code         => 'IDN'
+                                    country_code         => 'IDN',
+                                    reported_properties  => {},
                                 }}
                         },
                         needs_verification => ["document", "identity"],
@@ -375,7 +378,8 @@ subtest 'get account status' => sub {
                                     last_rejected        => [],
                                     is_country_supported => 1,
                                     documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport'],
-                                    country_code         => 'IDN'
+                                    country_code         => 'IDN',
+                                    reported_properties  => {},
                                 }}
                         },
                         needs_verification => [],
@@ -412,7 +416,8 @@ subtest 'get account status' => sub {
                                     last_rejected        => [],
                                     is_country_supported => 1,
                                     documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport'],
-                                    country_code         => 'IDN'
+                                    country_code         => 'IDN',
+                                    reported_properties  => {},
                                 }}
                         },
                         needs_verification => ['identity'],
@@ -469,7 +474,8 @@ subtest 'get account status' => sub {
                                     last_rejected        => [],
                                     is_country_supported => 1,
                                     documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport'],
-                                    country_code         => 'IDN'
+                                    country_code         => 'IDN',
+                                    reported_properties  => {},
                                 }}
                         },
                         needs_verification => [],
@@ -553,7 +559,8 @@ subtest 'get account status' => sub {
                                             'Residence Permit',
                                             'Visa'
                                         ],
-                                        country_code => 'GBR',
+                                        country_code        => 'GBR',
+                                        reported_properties => {},
                                     }}
                             },
                             needs_verification => superbagof(qw(identity)),
@@ -594,7 +601,8 @@ subtest 'get account status' => sub {
                                     last_rejected        => [],
                                     is_country_supported => 1,
                                     documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport'],
-                                    country_code         => 'IDN'
+                                    country_code         => 'IDN',
+                                    reported_properties  => {},
                                 }}
                         },
                         needs_verification => [],
@@ -631,7 +639,8 @@ subtest 'get account status' => sub {
                                         is_country_supported => 1,
                                         submissions_left     => $onfido_limit,
                                         documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport'],
-                                        country_code         => 'IDN'
+                                        country_code         => 'IDN',
+                                        reported_properties  => {},
                                     }}
                             },
                             needs_verification => [],
@@ -669,7 +678,8 @@ subtest 'get account status' => sub {
                                     last_rejected        => [],
                                     is_country_supported => 1,
                                     documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport'],
-                                    country_code         => 'IDN'
+                                    country_code         => 'IDN',
+                                    reported_properties  => {},
                                 }}
                         },
                         needs_verification => [],
@@ -706,7 +716,8 @@ subtest 'get account status' => sub {
                                     last_rejected        => [],
                                     is_country_supported => 1,
                                     documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport'],
-                                    country_code         => 'IDN'
+                                    country_code         => 'IDN',
+                                    reported_properties  => {},
                                 }}
                         },
                         needs_verification => ["document", "identity"],
@@ -742,7 +753,8 @@ subtest 'get account status' => sub {
                                     last_rejected        => [],
                                     is_country_supported => 1,
                                     documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport'],
-                                    country_code         => 'IDN'
+                                    country_code         => 'IDN',
+                                    reported_properties  => {},
                                 }}
                         },
                         needs_verification => ["document"],
@@ -814,7 +826,8 @@ subtest 'get account status' => sub {
                                         last_rejected        => [],
                                         is_country_supported => 1,
                                         documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport'],
-                                        country_code         => 'IDN'
+                                        country_code         => 'IDN',
+                                        reported_properties  => {},
                                     }}
                             },
                             needs_verification => ['identity'],
@@ -896,7 +909,8 @@ subtest 'get account status' => sub {
                                         last_rejected        => [],
                                         is_country_supported => 1,
                                         documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport'],
-                                        country_code         => 'IDN'
+                                        country_code         => 'IDN',
+                                        reported_properties  => {},
                                     }}
                             },
                             needs_verification => ['identity'],
@@ -937,7 +951,8 @@ subtest 'get account status' => sub {
                                     last_rejected        => [],
                                     is_country_supported => 1,
                                     documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport'],
-                                    country_code         => 'IDN'
+                                    country_code         => 'IDN',
+                                    reported_properties  => {},
                                 }}
                         },
                         needs_verification => ["document", "identity"],
@@ -978,7 +993,8 @@ subtest 'get account status' => sub {
                                     last_rejected        => [],
                                     is_country_supported => 1,
                                     documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport'],
-                                    country_code         => 'IDN'
+                                    country_code         => 'IDN',
+                                    reported_properties  => {},
                                 }}
                         },
                         needs_verification => [],
@@ -1016,7 +1032,8 @@ subtest 'get account status' => sub {
                                     last_rejected        => [],
                                     is_country_supported => 1,
                                     documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport'],
-                                    country_code         => 'IDN'
+                                    country_code         => 'IDN',
+                                    reported_properties  => {},
                                 }}
                         },
                         needs_verification => [],
@@ -1057,7 +1074,8 @@ subtest 'get account status' => sub {
                                     last_rejected        => [],
                                     is_country_supported => 1,
                                     documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport'],
-                                    country_code         => 'IDN'
+                                    country_code         => 'IDN',
+                                    reported_properties  => {},
                                 }}
                         },
                         needs_verification => [],
@@ -1100,7 +1118,8 @@ subtest 'get account status' => sub {
                                         last_rejected        => [],
                                         is_country_supported => 1,
                                         documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport'],
-                                        country_code         => 'IDN'
+                                        country_code         => 'IDN',
+                                        reported_properties  => {},
                                     }}
                             },
                             needs_verification => superbagof(qw(identity)),
@@ -1139,7 +1158,8 @@ subtest 'get account status' => sub {
                                         last_rejected        => [],
                                         is_country_supported => 1,
                                         documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport'],
-                                        country_code         => 'IDN'
+                                        country_code         => 'IDN',
+                                        reported_properties  => {},
                                     }}
                             },
                             needs_verification => superbagof(qw(document))}
@@ -1181,7 +1201,8 @@ subtest 'get account status' => sub {
                                     last_rejected        => [],
                                     is_country_supported => 1,
                                     documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport', 'Residence Permit', 'Visa'],
-                                    country_code         => 'AUT'
+                                    country_code         => 'AUT',
+                                    reported_properties  => {},
                                 }}
                         },
                         needs_verification => ["document", "identity"],
@@ -1218,7 +1239,8 @@ subtest 'get account status' => sub {
                                     last_rejected        => [],
                                     is_country_supported => 1,
                                     documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport', 'Residence Permit', 'Visa'],
-                                    country_code         => 'AUT'
+                                    country_code         => 'AUT',
+                                    reported_properties  => {},
                                 }}
                         },
                         needs_verification => [],
@@ -1255,7 +1277,8 @@ subtest 'get account status' => sub {
                                     last_rejected        => [],
                                     is_country_supported => 1,
                                     documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport', 'Residence Permit', 'Visa'],
-                                    country_code         => 'AUT'
+                                    country_code         => 'AUT',
+                                    reported_properties  => {},
                                 }}
                         },
                         needs_verification => ["document", "identity"],
@@ -1328,7 +1351,8 @@ subtest 'get account status' => sub {
                                         last_rejected        => [],
                                         is_country_supported => 1,
                                         documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport', 'Residence Permit', 'Visa'],
-                                        country_code         => 'AUT'
+                                        country_code         => 'AUT',
+                                        reported_properties  => {},
                                     }}
                             },
                             needs_verification => superbagof(qw(identity)),
@@ -1380,7 +1404,8 @@ subtest 'get account status' => sub {
                                         'Residence Permit',
                                         'Visa'
                                     ],
-                                    country_code => 'GBR'
+                                    country_code        => 'GBR',
+                                    reported_properties => {},
                                 }}
                         },
                         needs_verification => ["document", "identity"],
@@ -1434,7 +1459,8 @@ subtest 'get account status' => sub {
                                         'Residence Permit',
                                         'Visa'
                                     ],
-                                    country_code => 'GBR'
+                                    country_code        => 'GBR',
+                                    reported_properties => {},
                                 }}
                         },
                         needs_verification => ["document"],
@@ -1481,7 +1507,8 @@ subtest 'get account status' => sub {
                                         'Residence Permit',
                                         'Visa'
                                     ],
-                                    country_code => 'GBR'
+                                    country_code        => 'GBR',
+                                    reported_properties => {},
                                 }}
                         },
                         needs_verification => ["document"],
@@ -1564,7 +1591,8 @@ subtest 'get account status' => sub {
                                             'Residence Permit',
                                             'Visa'
                                         ],
-                                        country_code => 'GBR'
+                                        country_code        => 'GBR',
+                                        reported_properties => {},
                                     }}
                             },
                             needs_verification => superbagof(qw(identity)),
@@ -1618,7 +1646,8 @@ subtest 'get account status' => sub {
                                         last_rejected        => [],
                                         is_country_supported => 1,
                                         documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport'],
-                                        country_code         => 'IDN'
+                                        country_code         => 'IDN',
+                                        reported_properties  => {},
                                     }}
                             },
                             needs_verification => [],
@@ -1691,7 +1720,8 @@ subtest 'get account status' => sub {
                                         last_rejected        => [],
                                         is_country_supported => 1,
                                         documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport'],
-                                        country_code         => 'IDN'
+                                        country_code         => 'IDN',
+                                        reported_properties  => {},
                                     }}
                             },
                             needs_verification => ["identity"],
@@ -1740,7 +1770,6 @@ subtest 'get account status' => sub {
                     });
 
                 my $method_response = $c->tcall($method, {token => $token});
-
                 my $expected_result = {
                     document => {
                         status => "verified",
@@ -1755,6 +1784,7 @@ subtest 'get account status' => sub {
                                 documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport'],
                                 is_country_supported => 1,
                                 country_code         => 'IDN',
+                                reported_properties  => {},
                             },
                         },
                     },
@@ -1802,7 +1832,8 @@ subtest 'get account status' => sub {
                                         last_rejected        => [],
                                         is_country_supported => 1,
                                         documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport'],
-                                        country_code         => 'IDN'
+                                        country_code         => 'IDN',
+                                        reported_properties  => {},
                                     }}
                             },
                             needs_verification => ["document"],
@@ -1851,14 +1882,15 @@ subtest 'get account status' => sub {
                         authentication                => {
                             identity => {
                                 status      => "expired",
-                                expiry_date => $result->{authentication}{identity}{expiry_date},
+                                expiry_date => re('\d+'),
                                 services    => {
                                     onfido => {
                                         submissions_left     => $onfido_limit,
                                         last_rejected        => [],
                                         is_country_supported => 1,
                                         documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport'],
-                                        country_code         => 'IDN'
+                                        country_code         => 'IDN',
+                                        reported_properties  => {},
                                     }}
                             },
                             document => {
@@ -1868,7 +1900,7 @@ subtest 'get account status' => sub {
                         },
                         cashier_validation => ignore(),
                     },
-                    'correct authentication object for age verified client with expired proof of identity documents'
+                    'correct authenication object for age verified client with expired documents'
                 );
             };
 
@@ -1906,7 +1938,8 @@ subtest 'get account status' => sub {
                                     last_rejected        => [],
                                     is_country_supported => 1,
                                     documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport'],
-                                    country_code         => 'IDN'
+                                    country_code         => 'IDN',
+                                    reported_properties  => {},
                                 }}
                         },
                         needs_verification => ["document", "identity"],
@@ -1947,7 +1980,8 @@ subtest 'get account status' => sub {
                                     last_rejected        => [],
                                     is_country_supported => 1,
                                     documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport'],
-                                    country_code         => 'IDN'
+                                    country_code         => 'IDN',
+                                    reported_properties  => {},
                                 }}
                         },
                         needs_verification => ["identity"],
@@ -2019,7 +2053,8 @@ subtest "Test onfido is_country_supported" => sub {
                             last_rejected        => [],
                             is_country_supported => 0,
                             documents_supported  => [],
-                            country_code         => 'ATA'
+                            country_code         => 'ATA',
+                            reported_properties  => {},
                         }}
                 },
                 needs_verification => [],
@@ -2053,7 +2088,8 @@ subtest "Test onfido is_country_supported" => sub {
                             last_rejected        => [],
                             is_country_supported => 1,
                             documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport'],
-                            country_code         => 'IDN'
+                            country_code         => 'IDN',
+                            reported_properties  => {},
                         }}
                 },
                 needs_verification => [],
@@ -2123,7 +2159,8 @@ subtest 'Experian validated account' => sub {
                                     'Residence Permit',
                                     'Visa'
                                 ],
-                                country_code => 'GBR'
+                                country_code        => 'GBR',
+                                reported_properties => {},
                             }}
                     },
                     needs_verification => []
@@ -2174,7 +2211,8 @@ subtest 'Experian validated account' => sub {
                                     'Residence Permit',
                                     'Visa'
                                 ],
-                                country_code => 'GBR'
+                                country_code        => 'GBR',
+                                reported_properties => {},
                             }}
                     },
                     needs_verification => supersetof('identity', 'document'),
@@ -2230,7 +2268,8 @@ subtest 'Experian validated account' => sub {
                                         'Residence Permit',
                                         'Visa'
                                     ],
-                                    country_code => 'GBR'
+                                    country_code        => 'GBR',
+                                    reported_properties => {},
                                 }}
                         },
                         needs_verification => ['identity']
@@ -2290,7 +2329,8 @@ subtest 'Experian validated account' => sub {
                                             'Residence Permit',
                                             'Visa'
                                         ],
-                                        country_code => 'GBR'
+                                        country_code        => 'GBR',
+                                        reported_properties => {},
                                     }}
                             },
                             needs_verification => [],
@@ -2353,7 +2393,8 @@ subtest 'Experian validated account' => sub {
                                         'Residence Permit',
                                         'Visa'
                                     ],
-                                    country_code => 'GBR'
+                                    country_code        => 'GBR',
+                                    reported_properties => {},
                                 }}
                         },
                         needs_verification => [],
@@ -2404,7 +2445,8 @@ subtest 'Experian validated account' => sub {
                                             'Residence Permit',
                                             'Visa'
                                         ],
-                                        country_code => 'GBR'
+                                        country_code        => 'GBR',
+                                        reported_properties => {},
                                     }}
                             },
                             needs_verification => []
@@ -2475,7 +2517,8 @@ subtest 'Experian validated account' => sub {
                                             'Residence Permit',
                                             'Visa'
                                         ],
-                                        country_code => 'GBR'
+                                        country_code        => 'GBR',
+                                        reported_properties => {},
                                     }}
                             },
                             needs_verification => ['identity'],
@@ -2511,7 +2554,8 @@ subtest 'Rejected reasons' => sub {
 
     my $onfido_mock = Test::MockModule->new('BOM::User::Onfido');
     my $poi_status  = 'rejected';
-    my $reasons     = [];
+    my $poi_name_mismatch;
+    my $reasons = [];
 
     $onfido_mock->mock(
         'get_consider_reasons',
@@ -2524,6 +2568,13 @@ subtest 'Rejected reasons' => sub {
         'get_poi_status',
         sub {
             return $poi_status;
+        });
+
+    my $status_mock = Test::MockModule->new('BOM::User::Client::Status');
+    $status_mock->mock(
+        'poi_name_mismatch',
+        sub {
+            return $poi_name_mismatch;
         });
 
     my %catalog = %BOM::RPC::v3::Accounts::RejectedOnfidoReasons;
@@ -2567,9 +2618,37 @@ subtest 'Rejected reasons' => sub {
         poi_status => 'verified',
         };
 
+    push $tests->@*,
+        {
+        reasons           => [],
+        expected          => ["The name on your document doesn't match your profile.",],
+        test              => 'From our rules (poi_name_mismatch)',
+        poi_status        => 'suspected',
+        poi_name_mismatch => 1,
+        };
+
+    push $tests->@*,
+        {
+        reasons           => [],
+        expected          => ["The name on your document doesn't match your profile.",],
+        test              => 'From our rules (poi_name_mismatch)',
+        poi_status        => 'verified',
+        poi_name_mismatch => 1,
+        };
+
+    push $tests->@*,
+        {
+        reasons           => [],
+        expected          => [],
+        test              => 'From our rules (poi_name_mismatch => undef)',
+        poi_status        => 'verified',
+        poi_name_mismatch => undef,
+        };
+
     for my $test ($tests->@*) {
-        $reasons    = $test->{reasons};
-        $poi_status = $test->{poi_status};
+        $reasons           = $test->{reasons};
+        $poi_status        = $test->{poi_status};
+        $poi_name_mismatch = $test->{poi_name_mismatch};
 
         my $result        = $c->tcall($method, {token => $token_rejected});
         my $last_rejected = $result->{authentication}->{identity}->{services}->{onfido}->{last_rejected};
@@ -2578,6 +2657,92 @@ subtest 'Rejected reasons' => sub {
 
     $onfido_mock->unmock_all;
     $client_mock->unmock_all;
+    $status_mock->unmock_all;
+};
+
+subtest 'Reported properties' => sub {
+    my $test_client_rejected = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+        residence   => 'br',
+    });
+    $test_client_rejected->email('testing.reported+properties@binary.com');
+    $test_client_rejected->set_default_account('USD');
+    $test_client_rejected->save;
+
+    my $user_rejected = BOM::User->create(
+        email    => 'testing.reported+properties@binary.com',
+        password => 'hey you'
+    );
+
+    $user_rejected->add_client($test_client_rejected);
+
+    my $token_rejected = $m->create_token($test_client_rejected->loginid, 'test token');
+
+    my $onfido_mock = Test::MockModule->new('BOM::User::Onfido');
+    $onfido_mock->mock(
+        'get_latest_onfido_check',
+        sub {
+            return {
+                id => 'DOC',
+            };
+        });
+
+    my $properties;
+    $onfido_mock->mock(
+        'get_all_onfido_reports',
+        sub {
+            return {
+                DOC => {
+                    result     => 'consider',
+                    api_name   => 'document',
+                    properties => encode_json_utf8($properties // {}),
+                }};
+        });
+
+    my $tests = [{
+            properties => undef,
+            expected   => {},
+        },
+        {
+            properties => {},
+            expected   => {},
+        },
+        {
+            properties => {first_name => 'mad'},
+            expected   => {first_name => 'mad'},
+        },
+        {
+            properties => {
+                first_name => 'mad',
+                last_name  => 'dog',
+            },
+            expected => {
+                first_name => 'mad',
+                last_name  => 'dog',
+            },
+        },
+        {
+            properties => {
+                first_name => 'mad',
+                last_name  => 'dog',
+                age        => 90,
+            },
+            expected => {
+                first_name => 'mad',
+                last_name  => 'dog',
+            },
+        },
+    ];
+
+    for my $test ($tests->@*) {
+        $properties = $test->{properties};
+
+        my $result              = $c->tcall($method, {token => $token_rejected});
+        my $reported_properties = $result->{authentication}->{identity}->{services}->{onfido}->{reported_properties};
+        cmp_deeply($reported_properties, $test->{expected}, 'Expected reported properties seen');
+    }
+
+    $onfido_mock->unmock_all;
 };
 
 subtest 'Social identity provider' => sub {
@@ -2646,7 +2811,8 @@ subtest 'Social identity provider' => sub {
                             is_country_supported => 1,
                             last_rejected        => [],
                             documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport'],
-                            country_code         => 'IDN'
+                            country_code         => 'IDN',
+                            reported_properties  => {},
                         }
                     },
                     status => 'none'
