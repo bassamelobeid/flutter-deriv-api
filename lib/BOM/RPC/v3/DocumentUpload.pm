@@ -57,13 +57,25 @@ sub start_document_upload {
 
     my $upload_info;
     try {
+        my $expiration_date     = $args->{expiration_date} || undef;
+        my $lifetime_valid      = $args->{lifetime_valid} ? 1 : 0;
+        my %doc_type_categories = BOM::User::Client::DOCUMENT_TYPE_CATEGORIES();
+        my @poi_doctypes        = @{$doc_type_categories{POI}{doc_types_appreciated}};
+
+        # lifetime only applies to favored POI types
+        $lifetime_valid = 0 if none { $_ eq $document_type } @poi_doctypes;
+
+        # If lifetime valid nullify the expiration date
+        $expiration_date = undef if $lifetime_valid;
+
         $upload_info = $client->start_document_upload({
             document_type   => $document_type,
             document_format => $args->{document_format},
-            document_id     => $args->{document_id}       || '',
-            expiration_date => $args->{expiration_date}   || undef,
+            document_id     => $args->{document_id} || '',
+            expiration_date => $expiration_date,
             checksum        => $args->{expected_checksum} || '',
             page_type       => $args->{page_type}         || '',
+            lifetime_valid  => $lifetime_valid
         });
 
         return create_upload_error('duplicate_document') unless ($upload_info);
@@ -153,6 +165,7 @@ sub validate_id_and_exp_date {
     my $document_type = $args->{document_type};
 
     return if not $document_type;
+    return if $args->{lifetime_valid};
 
     # The fields expiration_date and document_id are only required for certain
     #   document types, so only do this check in these cases.

@@ -498,6 +498,90 @@ subtest 'Siblings accounts sync' => sub {
     };
 };
 
+subtest 'Lifetime valid' => sub {
+    my $mx_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'MX',
+    });
+    my ($mx_token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $mx_client->loginid);
+
+    my $user = BOM::User->create(
+        email          => 'upload.lifetime@binary.com',
+        password       => BOM::User::Password::hashpw('ASDF2222'),
+        email_verified => 1,
+    );
+    $user->add_client($mx_client);
+
+    my $result = $c->call_ok(
+        'document_upload',
+        {
+            token => $mx_token,
+            args  => {
+                document_id       => '1618',
+                document_type     => 'passport',
+                document_format   => 'png',
+                expected_checksum => '124124124124',
+                expiration_date   => '2099-01-01',
+                lifetime_valid    => 1,
+            }})->has_no_error->result;
+
+    my $file_id = $result->{file_id};
+
+    $c->call_ok(
+        'document_upload',
+        {
+            token => $mx_token,
+            args  => {
+                file_id => $file_id,
+                status  => 'success',
+            }})->has_no_error->result;
+
+    my ($document) = $mx_client->client_authentication_document;
+    ok $document->lifetime_valid, 'Document uploaded is lifetime valid';
+    ok !$document->expiration_date, 'Expiration date is empty';
+
+    subtest 'POA' => sub {
+        my $mx_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+            broker_code => 'MX',
+        });
+        my ($mx_token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $mx_client->loginid);
+
+        my $user = BOM::User->create(
+            email          => 'upload.lifetime.poa@binary.com',
+            password       => BOM::User::Password::hashpw('ASDF2222'),
+            email_verified => 1,
+        );
+        $user->add_client($mx_client);
+
+        my $result = $c->call_ok(
+            'document_upload',
+            {
+                token => $mx_token,
+                args  => {
+                    document_id       => '0990',
+                    document_type     => 'utility_bill',
+                    document_format   => 'png',
+                    expected_checksum => '3512542',
+                    expiration_date   => '2099-01-01',
+                    lifetime_valid    => 1,
+                }})->has_no_error->result;
+
+        my $file_id = $result->{file_id};
+
+        $result = $c->call_ok(
+            'document_upload',
+            {
+                token => $mx_token,
+                args  => {
+                    file_id => $file_id,
+                    status  => 'success',
+                }})->has_no_error->result;
+
+        my ($document) = $mx_client->client_authentication_document;
+        ok $document->expiration_date, 'Expiration date set';
+        ok !$document->lifetime_valid, 'POA cannot be lifetime valid';
+    };
+};
+
 #########################################################
 ## Helper methods
 #########################################################
