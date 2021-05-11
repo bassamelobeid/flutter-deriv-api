@@ -17,7 +17,7 @@ use Path::Tiny 'path';
 my $specified_rptDate = $ARGV[0];
 my $brand             = BOM::Config->brand();
 
-my $report_recipients  = join(',', 'compliance-alerts@binary.com', 'bill@binary.com');
+my $report_recipients  = join(',', 'compliance-alerts@binary.com', 'bill@binary.com', 'x-trading-ops@deriv.com');
 my $failure_recipients = join(',', 'compliance-alerts@binary.com', 'sysadmin@binary.com');
 
 # If we pass in a date, then we presumably want to use that date as our reference date
