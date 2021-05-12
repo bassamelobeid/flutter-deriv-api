@@ -2864,9 +2864,8 @@ rpc paymentagent_details => sub {
     my %result = map { $_ => $payment_agent->$_ }
         qw(payment_agent_name url email phone  information currency_code target_country max_withdrawal min_withdrawal commission_deposit commission_withdrawal is_authenticated is_listed code_of_conduct_approval affiliate_id);
     $result{supported_payment_methods} = $payment_agent->{supported_banks} ? [split(',', $payment_agent->{supported_banks})] : [];
-    # COC and affiliate ID are null for old payment agents.
-    $result{code_of_conduct_approval} //= 0;
-    $result{affiliate_id}             //= '';
+    # affiliate IDs are null for old payment agents.
+    $result{affiliate_id} //= '';
 
     return \%result;
 };
