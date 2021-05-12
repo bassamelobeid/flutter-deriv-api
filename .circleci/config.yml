@@ -30,8 +30,7 @@ alias:
     PERL_TEST_HARNESS_DUMP_TAP: /var/tmp/test-output
 - &check_services
     run:
-      command:
-        /opt/circle/check_services
+      command: /opt/circle/check_services
       name: Check services are running
 default: &6
   docker:
