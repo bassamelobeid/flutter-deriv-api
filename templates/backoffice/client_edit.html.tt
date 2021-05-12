@@ -274,7 +274,7 @@ window.addEventListener('DOMContentLoaded', init_text_validations, false);
             [% END %]
             [% IF tin_validation_required AND not is_valid_tin %]
                 <span class="error">Tax format is not provided or invalid</span>
-            [% END %]     
+            [% END %]
         </td>
     </tr>
     [% IF tin_validation_required %]
@@ -797,5 +797,14 @@ function kyc_reason_changed() {
      document.getElementsByName("kyc_email_checkbox")[0].disabled = true;
     }
 }
+
+\$(document).ready(function() {
+
+    [% IF  onfido_resubmission_counter && onfido_submissions_left == 0 %]
+        \$('input[name="allow_onfido_resubmission"]').attr('disabled', true);
+    [% ELSE %]
+        \$('input[name="allow_onfido_resubmission"]').removeAttr("disabled");
+    [% END %]
+  });
 
 </script>

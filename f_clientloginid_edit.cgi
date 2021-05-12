@@ -48,6 +48,8 @@ use BOM::User::Onfido;
 use BOM::User::Phone;
 use Log::Any qw($log);
 
+use constant ONFIDO_REQUEST_PER_USER_PREFIX => 'ONFIDO::REQUEST::PER::USER::';
+
 BOM::Backoffice::Sysinit::init();
 my %input = %{request()->params};
 PrintContentType();
@@ -101,9 +103,21 @@ $poi_status_reason = join(' ', $poi_status_reason, $input{kyc_email_checkbox} ? 
 
 # POI resubmission logic
 if ($input{allow_onfido_resubmission} or $input{poi_reason}) {
+    #this also allows the client only 1 time to resubmit the documents
+    if (   !$client->status->reason('allow_poi_resubmission')
+        && BOM::User::Onfido::submissions_left($client) == 0
+        && !$redis->get(ONFIDO_RESUBMISSION_COUNTER_KEY_PREFIX . $client->binary_user_id))
+    {
+
+        BOM::Config::Redis::redis_events()->incrby(ONFIDO_REQUEST_PER_USER_PREFIX . $client->binary_user_id, -1);
+    }
     $client->propagate_status('allow_poi_resubmission', $clerk, $poi_status_reason);
 } elsif (defined $input{allow_onfido_resubmission}) {    # resubmission is unchecked
     $client->propagate_clear_status('allow_poi_resubmission');
+    if (BOM::User::Onfido::submissions_left($client) == 1) {
+
+        BOM::Config::Redis::redis_events()->incrby(ONFIDO_REQUEST_PER_USER_PREFIX . $client->binary_user_id, 1);
+    }
 } elsif ($input{kyc_email_checkbox} && $client->status->allow_poi_resubmission) {
     $client->propagate_status('allow_poi_resubmission', $clerk, $poi_status_reason);
 }
