@@ -6,6 +6,7 @@ use Test::Fatal;
 use Test::MockModule;
 use Test::FailWarnings;
 use Test::Exception;
+use Test::MockTime qw(restore_time set_absolute_time);
 use Test::Deep;
 use BOM::User::Client::PaymentAgent;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
@@ -291,32 +292,58 @@ subtest 'validate payment agent details' => sub {
 
     my $min_max = BOM::Config::PaymentAgent::get_transfer_min_max('USD');
 
-    my $result = $pa->validate_payment_agent_details(
+    set_absolute_time(1000);
+    my $result = $pa->validate_payment_agent_details(%args);
+    is_deeply $result,
+        {
+        'payment_agent_name'            => 'Nobody',
+        'email'                         => $test_client->email,
+        'phone'                         => $test_client->phone,
+        'summary'                       => '',
+        'information'                   => 'Request for pa application',
+        'currency_code'                 => 'USD',
+        'target_country'                => $test_client->residence,
+        'url'                           => 'http://abcd.com',
+        'max_withdrawal'                => $min_max->{maximum},
+        'min_withdrawal'                => $min_max->{minimum},
+        'commission_deposit'            => 5,
+        'commission_withdrawal'         => 4,
+        'is_authenticated'              => 0,
+        'is_listed'                     => 0,
+        'supported_banks'               => 'Visa,bank_transfer',
+        'code_of_conduct_approval'      => 1,
+        'affiliate_id'                  => '',
+        'code_of_conduct_approval_time' => 1000,
+        },
+        'Expected default values are returned - coc approval is set to current time';
+
+    $result = $pa->validate_payment_agent_details(
         %args,
         payment_agent_name => " Nobody  ",
         supported_banks    => 'Visa ,  bank_transfer'
     );
     is_deeply $result,
         {
-        'payment_agent_name'       => 'Nobody',
-        'email'                    => $test_client->email,
-        'phone'                    => $test_client->phone,
-        'summary'                  => '',
-        'information'              => 'Request for pa application',
-        'currency_code'            => 'USD',
-        'target_country'           => $test_client->residence,
-        'url'                      => 'http://abcd.com',
-        'max_withdrawal'           => $min_max->{maximum},
-        'min_withdrawal'           => $min_max->{minimum},
-        'commission_deposit'       => 5,
-        'commission_withdrawal'    => 4,
-        'is_authenticated'         => 0,
-        'is_listed'                => 0,
-        'supported_banks'          => 'Visa,bank_transfer',
-        'code_of_conduct_approval' => 1,
-        'affiliate_id'             => '',
+        'payment_agent_name'            => 'Nobody',
+        'email'                         => $test_client->email,
+        'phone'                         => $test_client->phone,
+        'summary'                       => '',
+        'information'                   => 'Request for pa application',
+        'currency_code'                 => 'USD',
+        'target_country'                => $test_client->residence,
+        'url'                           => 'http://abcd.com',
+        'max_withdrawal'                => $min_max->{maximum},
+        'min_withdrawal'                => $min_max->{minimum},
+        'commission_deposit'            => 5,
+        'commission_withdrawal'         => 4,
+        'is_authenticated'              => 0,
+        'is_listed'                     => 0,
+        'supported_banks'               => 'Visa,bank_transfer',
+        'code_of_conduct_approval'      => 1,
+        'affiliate_id'                  => '',
+        'code_of_conduct_approval_time' => 1000,
         },
-        'Expected default values are returned';
+        'Expected default values are returned - payment methods and PA name are trimmed.';
 
     $args{payment_agent_name} = 'Joe';
     is_deeply exception { $pa->validate_payment_agent_details(%args) },
@@ -330,29 +357,27 @@ subtest 'validate payment agent details' => sub {
         'Duplicate names are not allowed';
 
     %args = (
-        'payment_agent_name'       => 'Nobody',
-        'email'                    => 'abcd@binary.com',
-        'phone'                    => '1234',
-        'summary'                  => 'I am a test pa',
-        'information'              => 'Request for pa application',
-        'currency_code'            => 'EUR',
-        'target_country'           => 'de',
-        'url'                      => 'http://abcd.com',
-        'commission_withdrawal'    => 4,
-        'commission_deposit'       => 5,
-        'max_withdrawal'           => 100,
-        'commission_deposit'       => 1,
-        'commission_withdrawal'    => 3.01,
-        'min_withdrawal'           => 10,
-        'is_authenticated'         => 1,
-        'is_listed'                => 1,
-        'supported_banks'          => 'Visa,bank_transfer',
-        'code_of_conduct_approval' => 1,
-        'affiliate_id'             => '123abcd',
+        'payment_agent_name'            => 'Nobody',
+        'email'                         => 'abcd@binary.com',
+        'phone'                         => '1234',
+        'summary'                       => 'I am a test pa',
+        'information'                   => 'Request for pa application',
+        'currency_code'                 => 'EUR',
+        'target_country'                => 'de',
+        'url'                           => 'http://abcd.com',
+        'commission_withdrawal'         => 4,
+        'commission_deposit'            => 5,
+        'max_withdrawal'                => 100,
+        'commission_deposit'            => 1,
+        'commission_withdrawal'         => 3,
+        'min_withdrawal'                => 10,
+        'is_authenticated'              => 1,
+        'is_listed'                     => 1,
+        'supported_banks'               => 'Visa,bank_transfer',
+        'code_of_conduct_approval'      => 1,
+        'affiliate_id'                  => '123abcd',
+        'code_of_conduct_approval_time' => 1000
     );
-
-    $result = $pa->validate_payment_agent_details(%args);
-    is_deeply($result, \%args, 'Non-empty args are not changed');
 
     @args{qw(payment_agent_name min_withdrawal max_withdrawal)} = ('test name', -1, -1);
     is_deeply exception { $pa->validate_payment_agent_details(%args) },
@@ -385,6 +410,58 @@ subtest 'validate payment agent details' => sub {
             },
             "$commission should not exceed maximum (9)";
     }
+
+    $args{commission_withdrawal} = 0;
+
+    subtest 'Code of conduct approval time' => sub {
+        $result = $pa->validate_payment_agent_details(%args);
+        is_deeply($result, \%args, 'Non-empty args are not changed');
+
+        $result = $pa->validate_payment_agent_details(
+            %args,
+            code_of_conduct_approval => 0,
+            skip_coc_validation      => 1,
+        );
+        is_deeply(
+            $result,
+            {
+                %args,
+                code_of_conduct_approval      => 0,
+                code_of_conduct_approval_time => undef
+            },
+            'Code of conduct is not approved and approval time is set to null'
+        );
+
+        my $existing_pa = $pa_client->get_payment_agent;
+        $existing_pa->code_of_conduct_approval_time(2000);
+        $existing_pa->code_of_conduct_approval(0);
+        $existing_pa->save;
+        $result = $pa->validate_payment_agent_details(
+            %args,
+            code_of_conduct_approval => 0,
+            skip_coc_validation      => 1
+        );
+        is_deeply(
+            $result,
+            {
+                %args,
+                code_of_conduct_approval      => 0,
+                code_of_conduct_approval_time => undef
+            },
+            'Code of conduct undefined if coc is not approved (even when for existing pa)'
+        );
+
+        $result = $pa->validate_payment_agent_details(%args);
+        is_deeply($result, {%args, code_of_conduct_approval_time => 1000}, 'COC approval time is set to current time if is not already approved');
+
+        $existing_pa->code_of_conduct_approval(0);
+        $existing_pa->save;
+        $result = $pa->validate_payment_agent_details(%args);
+        is_deeply($result, {%args, code_of_conduct_approval_time => 1000}, 'COC approval time is not changed if it is already approved');
+
+    };
+
+    restore_time();
 };
 
 done_testing();

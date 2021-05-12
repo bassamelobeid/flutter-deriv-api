@@ -42,6 +42,18 @@ sub client {
     return bless $self->SUPER::client, 'BOM::User::Client';
 }
 
+=head2 code_of_conduct_approval_date
+
+Converts code_of_conduct_approval_time into a string containing only the date.
+
+=cut
+
+sub code_of_conduct_approval_date {
+    my ($self) = @_;
+
+    return $self->code_of_conduct_approval_time ? Date::Utility->new($self->code_of_conduct_approval_time)->date_yyyymmdd : '';
+}
+
 =head2 get_payment_agents
 
 Will deliver the list of payment agents based on the provided country, currency and broker code.
@@ -204,6 +216,7 @@ sub validate_payment_agent_details {
     $args->{email}          ||= $client->email;
     $args->{target_country} ||= $client->residence;
     $args->{phone}          ||= $client->phone;
+    my $skip_coc_validation = delete $args->{skip_coc_validation};
 
     my $error_sub = sub {
         my ($error_code, $fields, %extra) = @_;
@@ -227,8 +240,8 @@ sub validate_payment_agent_details {
     push @missing, grep { not defined $args->{$_} } (qw/code_of_conduct_approval commission_deposit commission_withdrawal/);
     die $error_sub->('RequiredFieldMissing', [@missing]) if @missing;
 
-    # COC approval
-    die $error_sub->('CodeOfConductNotApproved', 'code_of_conduct_approval') unless $args->{code_of_conduct_approval};
+    die $error_sub->('CodeOfConductNotApproved', 'code_of_conduct_approval')
+        unless $skip_coc_validation or $args->{code_of_conduct_approval};
 
     # duplicate name
     my $pa_list = $self->get_payment_agents_by_name($args->{payment_agent_name});
@@ -301,7 +314,15 @@ sub validate_payment_agent_details {
     $args->{is_listed}        //= 0;
     $args->{is_authenticated} //= 0;
 
-    # rebuild supported_banks from array
+    if ($args->{code_of_conduct_approval}) {
+        # If coc time is already set, don't touch it; otherwise set to current time.
+        $args->{code_of_conduct_approval_time} = ($pa && $pa->code_of_conduct_approval_time) ? $pa->code_of_conduct_approval_time : time();
+    } else {
+        #  clear coc time; because it's not approved.
+        $args->{code_of_conduct_approval_time} = undef;
+    }
+
+    # rebuild supported_banks from array of payment methods
     $args->{supported_banks} = join(',', @supported_payment_methods);
 
     return $args;
