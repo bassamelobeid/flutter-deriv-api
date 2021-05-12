@@ -26,8 +26,10 @@ __PACKAGE__->meta->setup(
         min_withdrawal        => { type => 'numeric' },
         max_withdrawal        => { type => 'numeric' },
         is_listed             => { type => 'boolean', default => 'true', not_null => 1 },
-        code_of_conduct_approval => { type => 'boolean'},
         affiliate_id          => { type => 'varchar', length => 100 },
+        
+        code_of_conduct_approval      => { type => 'boolean'},
+        code_of_conduct_approval_time => { type => 'timestamp'},
     ],
 
     primary_key_columns => [ 'client_loginid' ],
