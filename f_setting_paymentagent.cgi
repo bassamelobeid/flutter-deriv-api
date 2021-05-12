@@ -73,10 +73,12 @@ if ($whattodo eq 'create') {
 my $pa = BOM::User::Client::PaymentAgent->new({loginid => $loginid});
 
 if ($whattodo eq 'show') {
-    my $payment_agent_registration_form = BOM::Backoffice::Form::get_payment_agent_registration_form($loginid, $broker);
-    my $pa_countries                    = $pa->get_countries;
+    my $payment_agent_registration_form =
+        BOM::Backoffice::Form::get_payment_agent_registration_form($loginid, $broker, $pa->code_of_conduct_approval_date);
+    my $pa_countries = $pa->get_countries;
 
     my %input_fields = map { my $sub_name = $MAP_FIELDS{$_}; $_ => $pa->$sub_name } keys %MAP_FIELDS;
+    # convery 0/1 to yes/no
     $input_fields{$_} = $input_fields{$_} ? 'yes' : 'no' for (qw/pa_coc_approval pa_auth pa_listed/);
     $input_fields{$_} ||= '0.00' for (qw/pa_comm_depo pa_comm_with/);
     $input_fields{pa_countries} = join(',', @$pa_countries);
@@ -126,8 +128,8 @@ if ($whattodo eq 'show') {
     my %args = map { $MAP_FIELDS{$_} => request()->param($_) } keys %MAP_FIELDS;
     $args{$_} = ($args{$_} eq 'yes') for (qw/is_authenticated is_listed code_of_conduct_approval/);
     $args{currency_code} = $currency;
-    # let's skip COC apprival if a PA is being edited.
-    $args{code_of_conduct_approval} = 1 if $editing;
+
+    $args{skip_coc_validation} = 1 if $editing;
     try {
         %args = $pa->validate_payment_agent_details(%args)->%*;
     } catch ($error) {
@@ -147,10 +149,8 @@ if ($whattodo eq 'show') {
         }
         code_exit_BO(encode_entities("Error - $message"));
     }
-    # update payment agent fields
-    $args{code_of_conduct_approval} = request()->param('pa_coc_approval') eq 'yes' ? 1 : 0;
-    $pa->$_($args{$_}) for keys %args;
 
+    $pa->$_($args{$_}) for keys %args;
     $pa->save || die "failed to save payment_agent!";
     code_exit_BO("Invalid Countries: could not add countries.")
         unless ($client->get_payment_agent->set_countries(\@countries));
@@ -179,4 +179,3 @@ if ($whattodo eq 'show') {
 }
 
 1;
-

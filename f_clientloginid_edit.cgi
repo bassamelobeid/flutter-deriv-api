@@ -1102,13 +1102,14 @@ if (BOM::Backoffice::Auth0::has_authorisation(['Compliance']) and $client->landi
 Bar("$loginid PAYMENT AGENT DETAILS");
 
 # Show Payment-Agent details if this client is also a Payment Agent.
-my $payment_agent = $client->payment_agent;
+my $payment_agent = $client->get_payment_agent;
 if ($payment_agent) {
     print '<div class="row"><table class="border small">';
 
     foreach my $column (
         qw/payment_agent_name url email phone information commission_deposit commission_withdrawal
-        currency_code supported_banks min_withdrawal max_withdrawal code_of_conduct_approval affiliate_id is_authenticated is_listed/
+        currency_code supported_banks min_withdrawal max_withdrawal code_of_conduct_approval
+        code_of_conduct_approval_date affiliate_id is_authenticated is_listed/
         )
     {
 

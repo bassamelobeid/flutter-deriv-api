@@ -664,7 +664,7 @@ sub _validate_date_field {
 }
 
 sub get_payment_agent_registration_form {
-    my ($loginid, $brokercode) = @_;
+    my ($loginid, $brokercode, $coc_approval_time) = @_;
 
     # input field for pa_name
     my $input_field_pa_name = {
@@ -691,7 +691,7 @@ sub get_payment_agent_registration_form {
 
     my $input_field_pa_coc_approval = {
         'label' => {
-            'text' => 'Code of conduct approval',
+            'text' => 'Code of conduct approval' . ($coc_approval_time ? " <br/> (approved on $coc_approval_time)" : ''),
             'for'  => 'pa_coc_approval'
         },
         'input' => HTML::FormBuilder::Select->new(
@@ -755,7 +755,7 @@ sub get_payment_agent_registration_form {
             },
             {
                 'type'    => 'regexp',
-                'regexp'  => '^(|\+?[0-9\s]+)$',
+                'regexp'  => '^(|\+?[0-9\s\-]+)$',
                 'err_msg' => 'Invalid telephone number.',
             },
         ],
