@@ -685,6 +685,16 @@ sub validate_make_new_account {
         $landing_company_name = $gaming_company;
     }
 
+    if ($client->is_virtual) {
+        my @landing_company_clients;
+        if ($account_type eq 'real') {
+            @landing_company_clients = $client->user->clients_for_landing_company($gaming_company);
+        } else {
+            @landing_company_clients = $client->user->clients_for_landing_company($financial_company);
+        }
+        return permission_error() if (any { not $_->status->duplicate_account } @landing_company_clients);
+    }
+
     # filter siblings by landing company as we don't want to check cross
     # landing company siblings, for example MF should check only its
     # corresponding siblings not MLT one

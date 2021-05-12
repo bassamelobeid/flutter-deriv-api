@@ -450,50 +450,22 @@ subtest 'upgradeable_landing_companies' => sub {
     });
     $user5->add_client($vr_client5);
 
-    my $vr_client5_token = BOM::Database::Model::OAuth->new->store_access_token_only(1, $vr_client5->loginid);
-    $params->{token} = $vr_client5_token;
+    $params->{token} = BOM::Database::Model::OAuth->new->store_access_token_only(1, $vr_client5->loginid);
 
     # Test 12
     $result = $c->call_ok($method, $params)->has_no_error->result;
-    is_deeply $result->{upgradeable_landing_companies}, ['svg'], 'VR client can upgrade to svg.';
+    is_deeply $result->{upgradeable_landing_companies}, ['svg'], 'Client can upgrade to svg.';
     my $client5 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'CR',
         residence   => 'id',
         email       => $email5,
     });
     $user5->add_client($client5);
-    $client5->account('USD');
-    my $client5_token = BOM::Database::Model::OAuth->new->store_access_token_only(1, $client5->loginid);
+    $params->{token} = BOM::Database::Model::OAuth->new->store_access_token_only(1, $client5->loginid);
 
     # Test 13
-    $params->{token} = $client5_token;
     $result = $c->call_ok($method, $params)->has_no_error->result;
-    is_deeply $result->{upgradeable_landing_companies}, ['svg'], 'SVG Client can still updagrade.';
-
-    $params->{token} = $vr_client5_token;
-    $result = $c->call_ok($method, $params)->has_no_error->result;
-    is_deeply $result->{upgradeable_landing_companies}, ['svg'], 'VR client can still updagrade.';
-
-    my $currencies = LandingCompany::Registry::get('svg')->legal_allowed_currencies;
-    my @crypto     = grep { $currencies->{$_}{type} ne 'fiat' } keys %$currencies;
-
-    for my $cur (@crypto) {
-        my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-            broker_code => 'CR',
-            residence   => 'id',
-            email       => $email5,
-        });
-        $user5->add_client($client);
-        $client->account($cur);
-    }
-
-    $params->{token} = $client5_token;
-    $result = $c->call_ok($method, $params)->has_no_error->result;
-    is_deeply $result->{upgradeable_landing_companies}, [], 'SVG Real client can no longer upgrade.';
-
-    $params->{token} = $vr_client5_token;
-    $result = $c->call_ok($method, $params)->has_no_error->result;
-    is_deeply $result->{upgradeable_landing_companies}, [], 'VR client can no longer upgrade.';
+    is_deeply $result->{upgradeable_landing_companies}, ['svg'], 'Client has upgraded all accounts.';
 
 };
 
