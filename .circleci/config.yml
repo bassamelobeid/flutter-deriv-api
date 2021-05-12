@@ -31,8 +31,7 @@ alias:
 - &check_services
   run:
     background: true
-    command:
-      /opt/circle/check_services
+    command: /opt/circle/check_services
     name: Check services are running
 default: &6
   docker:
