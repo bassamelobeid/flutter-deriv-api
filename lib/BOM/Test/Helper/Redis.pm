@@ -7,7 +7,7 @@ use Test::More;
 use Syntax::Keyword::Try;
 use BOM::Test;
 
-use constant MAX_REDIS_KEYS => 103;
+use constant MAX_REDIS_KEYS => 105;
 
 our @EXPORT_OK = qw( is_within_threshold );
 
