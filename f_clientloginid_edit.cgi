@@ -94,6 +94,8 @@ my $self_post       = $details{self_post};
 my $self_href       = $details{self_href};
 my $loginid         = $client->loginid;
 my $aff_mt_accounts = $details{affiliate_mt5_accounts};
+my $dx_logins       = $details{dx_logins};
+my $loginid_details = $details{loginid_details};
 
 # Enabling onfido resubmission
 my $redis             = BOM::Config::Redis::redis_replicated_write();
@@ -1243,6 +1245,19 @@ foreach my $mt_ac (keys %$aff_mt_accounts) {
         "<li style='color: #555'>%s (Aff. %s %s acc. on %s)</li>",
         encode_entities($mt_ac),                      $aff_mt_accounts->{$mt_ac}{mt5_myaffiliate_id},
         $aff_mt_accounts->{$mt_ac}{mt5_account_type}, $aff_mt_accounts->{$mt_ac}{mt5_server_id});
+}
+
+# Show DevExperts accounts.
+foreach my $dx_ac ($dx_logins->@*) {
+    print "<li>";
+    print encode_entities($dx_ac);
+
+    if (my $details = $loginid_details->{$dx_ac}) {
+        my $extra = join '\\', grep { $_ } $details->{account_type}, @{$details->{attributes}}{qw/market_type/};
+        print " (" . encode_entities($extra) . ")" if $extra;
+    }
+
+    print "</li>";
 }
 
 print "</ul>";

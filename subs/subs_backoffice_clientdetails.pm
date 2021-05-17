@@ -1532,7 +1532,9 @@ sub get_client_details {
         push @user_clients, BOM::User::Client->new({loginid => $login_id});
     }
 
+    my $loginid_details = $user->loginid_details;
     my @mt_logins       = sort $user->get_mt5_loginids;
+    my @dx_logins       = sort $user->get_trading_platform_loginids('dxtrader');
     my $is_virtual_only = (@user_clients == 1 and @mt_logins == 0 and $client->is_virtual);
     my $broker          = $client->broker;
     my $encoded_broker  = encode_entities($broker);
@@ -1558,6 +1560,8 @@ sub get_client_details {
         clerk                  => $clerk,
         self_post              => $self_post,
         self_href              => $self_href,
+        dx_logins              => \@dx_logins,
+        loginid_details        => $loginid_details,
     );
 }
 

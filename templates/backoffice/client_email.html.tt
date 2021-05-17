@@ -15,6 +15,9 @@
         [% FOREACH mt5_loginid IN mt5_loginids %]
             <li>[% mt5_loginid %]</li>
         [% END %]
+        [% FOREACH dx_loginid IN dx_loginids %]
+            <li>[% dx_loginid %]</li>
+        [% END %]
     </ul>
 
     [% IF list == 1 %]

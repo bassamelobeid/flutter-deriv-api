@@ -73,6 +73,7 @@ Bar($title);
 
 my @mt_logins_ids = $user->get_mt5_loginids;
 my @bom_login_ids = $user->bom_loginids();
+my @dx_logins_ids = $user->get_trading_platform_loginids('dxtrader');
 my @bom_logins;
 
 foreach my $lid (sort @bom_login_ids) {
@@ -105,7 +106,8 @@ if (not $input{email_edit}) {
             list         => 1,
             email        => $email,
             bom_logins   => [@bom_logins],
-            mt5_loginids => [@mt_logins_ids]
+            mt5_loginids => [@mt_logins_ids],
+            dx_loginids  => [@dx_logins_ids],
         },
     ) || die BOM::Backoffice::Request::template()->error(), "\n";
 
@@ -180,7 +182,8 @@ if ($email ne $new_email) {
             old_email    => $email,
             new_email    => $new_email,
             bom_logins   => [@bom_logins],
-            mt5_loginids => [@mt_logins_ids]
+            mt5_loginids => [@mt_logins_ids],
+            dx_loginids  => [@dx_logins_ids],
         },
     ) || die BOM::Backoffice::Request::template()->error(), "\n";
 } else {
