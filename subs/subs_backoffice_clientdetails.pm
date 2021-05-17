@@ -15,6 +15,7 @@ use JSON::MaybeUTF8 qw(:v1);
 use Syntax::Keyword::Try;
 use LandingCompany::Registry;
 use List::MoreUtils qw(any);
+use BOM::Config::Onfido;
 
 use BOM::Transaction::Utility;
 use BOM::Config;
@@ -1649,12 +1650,9 @@ sub client_search_and_navigation {
 }
 
 sub is_client_in_onfido_country {
-    my $client         = shift;
-    my $country        = uc($client->place_of_birth // $client->residence);
-    my $countries_list = BOM::Config::Redis::redis_events()->get('ONFIDO_SUPPORTED_COUNTRIES');
-    return undef unless $countries_list;
-    $countries_list = decode_json_utf8($countries_list);
-    return ($countries_list->{uc $country} // 0);
+    my $client  = shift;
+    my $country = uc($client->place_of_birth // $client->residence);
+    return BOM::Config::Onfido::is_country_supported($country);
 }
 
 =head2 get_fiat_login_id_for

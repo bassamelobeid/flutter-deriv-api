@@ -337,7 +337,13 @@ window.addEventListener('DOMContentLoaded', init_text_validations, false);
                     [% onfido_check_result FILTER upper %]
                 </a>
             [% ELSE %]
-                <strong>Check not performed</strong>
+                <strong>
+                    [% IF is_client_in_onfido_country %]
+                        Check not performed
+                    [% ELSE %]
+                        Country not supported by Onfido
+                    [% END %]
+                </strong>
             [% END %]
         </td>
     </tr>
