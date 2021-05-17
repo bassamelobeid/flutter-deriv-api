@@ -345,49 +345,113 @@ sub actions_config {
         ],
         ['exchange_rates', {stash_params => [qw/ exchange_rates base_currency /]}],
         # P2P cashier
-        ['p2p_advert_create'],
-        ['p2p_advert_update'],
-        ['p2p_advert_info'],
-        ['p2p_advert_list'],
-        ['p2p_order_cancel'],
-        ['p2p_order_confirm'],
+        [
+            'p2p_advert_create',
+            {
+                msg_group => 'p2p',
+            },
+        ],
+        [
+            'p2p_advert_update',
+            {
+                msg_group => 'p2p',
+            },
+        ],
+        [
+            'p2p_advert_info',
+            {
+                msg_group => 'p2p',
+            },
+        ],
+        [
+            'p2p_advert_list',
+            {
+                msg_group => 'p2p',
+            },
+        ],
+        [
+            'p2p_order_cancel',
+            {
+                msg_group => 'p2p',
+            },
+        ],
+        [
+            'p2p_order_confirm',
+            {
+                msg_group => 'p2p',
+            },
+        ],
         [
             'p2p_order_create',
             {
                 rpc_response_cb => \&Binary::WebSocketAPI::v3::Wrapper::P2P::subscribe_orders,
+                msg_group       => 'p2p',
             }
         ],
         [
             'p2p_order_info',
             {
                 rpc_response_cb => \&Binary::WebSocketAPI::v3::Wrapper::P2P::subscribe_orders,
+                msg_group       => 'p2p',
             }
         ],
         [
             'p2p_order_list',
             {
                 rpc_response_cb => \&Binary::WebSocketAPI::v3::Wrapper::P2P::subscribe_orders,
+                msg_group       => 'p2p',
             }
         ],
         [
             'p2p_advertiser_create',
             {
                 rpc_response_cb => \&Binary::WebSocketAPI::v3::Wrapper::P2P::subscribe_advertisers,
+                msg_group       => 'p2p',
             }
         ],
         [
             'p2p_advertiser_info',
             {
                 rpc_response_cb => \&Binary::WebSocketAPI::v3::Wrapper::P2P::subscribe_advertisers,
+                msg_group       => 'p2p',
             }
         ],
-        ['p2p_advertiser_update'],
-        ['p2p_advertiser_adverts'],
-        ['p2p_chat_create'],
-        ['p2p_order_dispute'],
-        ['p2p_payment_methods'],
-        ['p2p_advertiser_payment_methods'],
-
+        [
+            'p2p_advertiser_update',
+            {
+                msg_group => 'p2p',
+            },
+        ],
+        [
+            'p2p_advertiser_adverts',
+            {
+                msg_group => 'p2p',
+            },
+        ],
+        [
+            'p2p_chat_create',
+            {
+                msg_group => 'p2p',
+            },
+        ],
+        [
+            'p2p_order_dispute',
+            {
+                msg_group => 'p2p',
+            },
+        ],
+        [
+            'p2p_payment_methods',
+            {
+                msg_group => 'p2p',
+            },
+        ],
+        [
+            'p2p_advertiser_payment_methods',
+            {
+                msg_group => 'p2p',
+            },
+        ],
         ['trading_platform_accounts'],
         ['trading_platform_new_account'],
         ['trading_platform_deposit',    {stash_params => [qw/ token_type /]}],
