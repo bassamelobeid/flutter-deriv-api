@@ -66,6 +66,8 @@ use constant {
     VIRTUAL_REGEX        => qr/^VR[TC|CH]/,
     VIRTUAL_WALLET_REGEX => qr/^VRDW\d+/,
     DXTRADE_REGEX        => qr/^DX[DR]\d{4,}/,
+    DXTRADE_REAL_REGEX   => qr/^DXR(?=\d+$)/,
+    DXTRADE_DEMO_REGEX   => qr/^DXD(?=\d+$)/,
 };
 
 sub create {
@@ -772,14 +774,14 @@ my $mt5_real = $self->get_mt5_loginids('real'); real mt5 loginids
 
 sub get_mt5_loginids {
     my ($self, $account_type) = @_;
+    $account_type //= 'all';
 
-    my $regex = MT5_REGEX;
-    if ($account_type) {
-        # $account_type of 'real', 'synthetic' and 'financial' are real accounts
-        $regex = $account_type eq 'demo' ? MT5_DEMO_REGEX : MT5_REAL_REGEX;
-    }
+    my $type = 'real';
+    $type = 'demo' if $account_type eq 'demo';
+    $type = 'all'  if $account_type eq 'all';
 
-    return (sort grep { $_ =~ $regex } $self->loginids);
+    my @loginids = sort $self->get_trading_platform_loginids('mt5', $type // 'all');
+    return @loginids;
 }
 
 =head2 get_loginid_for_mt5_id
@@ -1329,4 +1331,42 @@ sub get_account_by_loginid {
     };
 }
 
+=head2 get_trading_platform_loginids
+
+Get all the recorded loginids for the given trading platform.
+
+Takes the following arguments:
+
+=over 4
+
+=item * C<$platform> - the trading platform.
+
+=item * C<$account_type> - either: real|demo|all, defaults to all.
+
+=back
+
+Returns a list of loginids.
+
+=cut
+
+sub get_trading_platform_loginids {
+    my ($self, $platform, $account_type) = @_;
+    $account_type //= 'all';
+
+    my $regex_stash = {
+        dxtrader => {
+            real => DXTRADE_REAL_REGEX,
+            demo => DXTRADE_DEMO_REGEX,
+            all  => DXTRADE_REGEX,
+        },
+        mt5 => {
+            real => MT5_REAL_REGEX,
+            demo => MT5_DEMO_REGEX,
+            all  => MT5_REGEX,
+        }};
+
+    my $regex = $regex_stash->{$platform}->{$account_type} or return ();
+
+    return grep { $_ =~ qr/$regex/ } $self->loginids;
+}
 1;
