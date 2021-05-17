@@ -71,13 +71,15 @@ subtest 'accounts' => sub {
 
     $t->await::authorize({authorize => $client1_token_admin});
     $res = $t->await::trading_platform_new_account($params);
+    is $res->{error}, undef, 'No error';
     ok $res->{trading_platform_new_account}{account_id}, 'create account successfully';
     test_schema('trading_platform_new_account', $res);
     $dx_acc = $res->{trading_platform_new_account};
 
-    $params->{market_type} = 'gaming';
+    $params->{market_type} = 'synthetic';
     $t->await::authorize({authorize => $client1_token_admin});
     $res = $t->await::trading_platform_new_account($params);
+    is $res->{error}, undef, 'No error';
     ok $res->{trading_platform_new_account}{account_id}, 'create gaming account successfully';
     test_schema('trading_platform_new_account', $res);
     $dx_syn = $res->{trading_platform_new_account};

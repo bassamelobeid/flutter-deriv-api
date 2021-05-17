@@ -90,10 +90,10 @@ subtest 'Tax residence on restricted country' => sub {
     $t->await::authorize({authorize => $token});
     my $cli_details = {
         %client_details,
-        residence  => 'br',
-        first_name => 'Mr',
-        last_name  => 'Familyman',
-        date_of_birth  => '1990-12-30',
+        residence     => 'br',
+        first_name    => 'Mr',
+        last_name     => 'Familyman',
+        date_of_birth => '1990-12-30',
     };
 
     my $res = $t->await::new_account_real($cli_details);

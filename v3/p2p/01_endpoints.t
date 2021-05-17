@@ -312,8 +312,8 @@ subtest 'create advert (sell)' => sub {
     is $advert->{contact_info}, $advert_params{contact_info}, 'contact_info';
 
     BOM::User::Script::P2PDailyMaintenance->new->run;
-    $advert->{days_until_archive} = 10;  # not returned for new ad
-    
+    $advert->{days_until_archive} = 10;    # not returned for new ad
+
     $resp = $t->await::p2p_advertiser_adverts({p2p_advertiser_adverts => 1});
     test_schema('p2p_advertiser_adverts', $resp);
 
@@ -403,11 +403,11 @@ subtest 'create order (buy)' => sub {
             id             => $order->{id}});
     test_schema('p2p_order_info', $resp);
     my $order_info = $resp->{p2p_order_info};
-    
+
     # not returned from order list
     delete $order->{payment_method_details};
     delete $order_info->{payment_method_details};
-    
+
     cmp_deeply($order_info,   $listed_order, 'Order info matches order list');
     cmp_deeply($listed_order, $order,        'Order list matches order create');
 };
