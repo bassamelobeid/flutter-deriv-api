@@ -192,7 +192,10 @@ sub _anonymize {
         return "userNotFound" unless $user;
         return "userAlreadyAnonymized" if $user->email =~ /\@deleted\.binary\.user$/;
         return "activeClient" unless ($user->valid_to_anonymize);
-        @clients_hashref = $client->user->clients;
+        @clients_hashref = $client->user->clients(
+            include_disabled   => 1,
+            include_duplicated => 1,
+        );
         # Anonymize data for all the user's clients
         foreach my $cli (@clients_hashref) {
             # Skip mt5 because we dont want to anonymize third parties yet

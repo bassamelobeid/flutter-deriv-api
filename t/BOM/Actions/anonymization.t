@@ -186,6 +186,49 @@ subtest users_clients_will_set_to_disabled_after_anonymization => sub {
     }
 };
 
-# TODO: We should add more tests here for `anonymize_client` code which was written in the past.
+subtest 'Anonymization disabled accounts' => sub {
+    # Mock BOM::User module
+    my $mock_user_module = Test::MockModule->new('BOM::User');
+    $mock_user_module->mock(valid_to_anonymize => 1);
+
+    # Mock BOM::User::Client module
+    my $mock_client_module = Test::MockModule->new('BOM::User::Client');
+    $mock_client_module->mock(remove_client_authentication_docs_from_S3 => 1);
+
+    my $email = random_email_address;
+
+    # Create a user
+    my $user = BOM::User->create(
+        email    => $email,
+        password => BOM::User::Password::hashpw('password'));
+    my $user_id = $user->id;
+
+    my $client_details = {
+        date_joined => Date::Utility->new()->_minus_years(11)->datetime_yyyymmdd_hhmmss,
+        broker_code => 'VRTC',
+    };
+    my $vr_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client($client_details);
+
+    $client_details->{broker_code} = 'CR';
+    my $cr_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client($client_details);
+
+    # Disable CR client before anonymization
+    $cr_client->status->set('disabled', 'system', 'Some reason for disabling');
+
+    # Add clients to the user.
+    $user->add_client($vr_client);
+    $user->add_client($cr_client);
+
+    # Anonymize user
+    my $result = BOM::Event::Actions::Anonymization::anonymize_client({'loginid' => $cr_client->loginid});
+    ok($result, 'Returns 1 after user anonymized.');
+
+    # Retrieve anonymized user from database by id
+    my @anonymized_clients = $user->clients(include_disabled => 1);
+
+    is $_->email, lc($_->loginid . '@deleted.binary.user'), 'Email was anonymized' for @anonymized_clients;
+
+    ok((grep { $_->broker_code eq 'CR' } @anonymized_clients), 'CR client was anonymized');
+};
 
 done_testing()
