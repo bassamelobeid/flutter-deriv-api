@@ -11,6 +11,8 @@ use Test::Warnings;
 use Date::Utility;
 use Test::MockObject::Extends;
 use Format::Util::Numbers qw(roundcommon);
+use Quant::Framework;
+use BOM::Config::Chronicle;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
@@ -599,17 +601,23 @@ subtest 'synthetic_age_verification_check' => sub {
     is $error->get_type, 'NeedAuthenticateForSynthetic', 'error code ok';
     is $error->{-message_to_client}, 'Please authenticate your account to trade on synthetic markets.', 'error message ok';
 
-    $contract = produce_contract({%contract_params, underlying => 'frxUSDJPY'});
+    my $trading_calendar = Quant::Framework->new->trading_calendar(BOM::Config::Chronicle::get_chronicle_reader);
+    my $exchange         = Finance::Exchange->create_exchange('FOREX');
+    SKIP: {
+        skip 'no forex feed available over weekend/holiday', 1 unless $trading_calendar->is_open($exchange);
 
-    $tx = BOM::Transaction->new({
-        client        => $client,
-        contract      => $contract,
-        price         => $contract->ask_price,
-        amount_type   => 'stake',
-        purchase_date => $contract->date_start,
-    });
+        $contract = produce_contract({%contract_params, underlying => 'frxUSDJPY'});
 
-    is $tx->buy, undef, 'can buy financial contract ok';
+        $tx = BOM::Transaction->new({
+            client        => $client,
+            contract      => $contract,
+            price         => $contract->ask_price,
+            amount_type   => 'stake',
+            purchase_date => $contract->date_start,
+        });
+
+        is $tx->buy, undef, 'can buy financial contract ok';
+    }
 
     $client->status->set('age_verification', 'staff', 'testing');
 
