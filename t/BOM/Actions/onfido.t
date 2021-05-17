@@ -8,12 +8,14 @@ use Test::Warnings qw/warnings/;
 use Future;
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use BOM::Test::Email;
 use BOM::User;
 use BOM::Event::Process;
 use MIME::Base64;
 use BOM::Config::Redis;
 use JSON::MaybeUTF8 qw(encode_json_utf8);
 use BOM::Event::Actions::Client;
+use Locale::Country qw/code2country/;
 
 my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'CR',
@@ -33,6 +35,7 @@ my $onfido_mocker    = Test::MockModule->new('WebService::Async::Onfido');
 my $s3_mocker        = Test::MockModule->new('BOM::Platform::S3Client');
 my $event_mocker     = Test::MockModule->new('BOM::Event::Actions::Client');
 my $redis_replicated = BOM::Config::Redis::redis_replicated_write();
+my $redis_events     = BOM::Config::Redis::redis_events_write();
 
 $s3_mocker->mock(
     'upload',
@@ -263,6 +266,48 @@ subtest 'Final status' => sub {
     }
 };
 
+subtest 'Unsupported country email' => sub {
+    my $tests = [{
+            place_of_birth => undef,
+            residence      => 'aq',
+            strings        => [
+                '<p>Place of birth is not set and residence is not supported by Onfido. Please verify the age of the client manually.</p>',
+                '<li><b>place of birth:</b> not set</li>',
+                '<li><b>residence:</b> ' . code2country('aq') . '</li>'
+            ],
+        },
+        {
+            place_of_birth => 'aq',
+            residence      => 'aq',
+            strings        => [
+                '<p>Place of birth is not supported by Onfido. Please verify the age of the client manually.</p>',
+                '<li><b>place of birth:</b> ' . code2country('aq') . '</li>',
+                '<li><b>residence:</b> ' . code2country('aq') . '</li>'
+            ],
+        }];
+
+    for my $test ($tests->@*) {
+        my ($place_of_birth, $residence, $strings) = @{$test}{qw/place_of_birth residence strings/};
+
+        $test_client->place_of_birth($place_of_birth);
+        $test_client->residence($residence);
+        $test_client->save;
+
+        $redis_events->del('ONFIDO::UNSUPPORTED::COUNTRY::EMAIL::PER::USER::' . $test_client->binary_user_id);
+
+        mailbox_clear();
+
+        ok BOM::Event::Actions::Client::_send_email_onfido_unsupported_country_cs($test_client)->get, 'email sent';
+
+        my $msg = mailbox_search(subject => qr/Manual age verification needed for/);
+
+        ok $msg, 'Email found';
+
+        for my $string ($strings->@*) {
+            ok index($msg->{body}, $string) > -1, 'Expected content found';
+        }
+    }
+};
 $s3_mocker->unmock_all;
 
 done_testing();

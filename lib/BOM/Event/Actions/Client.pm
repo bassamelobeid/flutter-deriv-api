@@ -56,6 +56,7 @@ use BOM::User::Client::PaymentTransaction;
 use BOM::User::Onfido;
 use BOM::User::PaymentRecord;
 use BOM::Rules::Engine;
+use Locale::Country qw/code2country/;
 
 # this one shoud come after BOM::Platform::Email
 use Email::Stuffer;
@@ -1644,14 +1645,19 @@ async sub _send_email_onfido_unsupported_country_cs {
     await $redis_events_read->connect;
     return undef if await $redis_events_read->exists($redis_key);
 
-    my $email_subject  = "Automated age verification failed for " . $client->loginid;
+    my $msg =
+        $client->place_of_birth
+        ? 'Place of birth is not supported by Onfido. Please verify the age of the client manually.'
+        : 'Place of birth is not set and residence is not supported by Onfido. Please verify the age of the client manually.';
+
+    my $email_subject  = "Manual age verification needed for " . $client->loginid;
     my $email_template = "\
-        <p>Client residence is not supported by Onfido. Please verify age of client manually.</p>
-        <p>
-            <b>loginid:</b> " . $client->loginid . "\
-            <b>place of birth:</b> " . $client->place_of_birth . "\
-            <b>residence:</b> " . $client->residence . "\
-        </p>
+        <p>$msg</p>
+        <ul>
+            <li><b>loginid:</b> " . $client->loginid . "</li>
+            <li><b>place of birth:</b> " . (code2country($client->place_of_birth) // 'not set') . "</li>
+            <li><b>residence:</b> " . code2country($client->residence) . "</li>
+        </ul>
         Team " . $brand->website_name . "\
         ";
 
