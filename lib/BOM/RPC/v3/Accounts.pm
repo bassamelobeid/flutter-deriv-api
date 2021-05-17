@@ -2500,7 +2500,7 @@ rpc account_closure => sub {
     }
 
     # DXTrader check balances
-    unless (BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend->all(0)) {
+    unless (BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend->all) {
         my $trading_platform = BOM::TradingPlatform->new(
             platform => 'dxtrade',
             client   => $client
