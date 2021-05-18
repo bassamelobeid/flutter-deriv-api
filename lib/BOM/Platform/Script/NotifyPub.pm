@@ -27,13 +27,13 @@ use Syntax::Keyword::Try;
 use RedisDB;
 use JSON::MaybeUTF8 qw(:v1);
 
-my $conn;
+my @conn;
 
 sub run {
-    $conn = _master_db_connections();
+    @conn = _master_db_connections();
     my $forks = 0;
     my @cpid;
-    foreach my $addr (keys %{$conn}) {
+    foreach my $addr (@conn) {
         my $pid = fork;
         if (not defined $pid) {
             die 'Could not fork';
@@ -47,7 +47,7 @@ sub run {
             while (1) {
                 try {
                     my $redis = _redis();
-                    my $dbh   = _db($conn->{$addr});
+                    my $dbh   = _db($addr);
 
                     $dbh->do("LISTEN transaction_watchers");
                     my $sel = IO::Select->new;
@@ -104,39 +104,19 @@ sub _msg {
 }
 
 sub _master_db_connections {
-    my $config = YAML::XS::LoadFile('/etc/rmg/clientdb.yml');
-    my $conn;
-    foreach my $lc (keys %{$config}) {
-        if (ref $config->{$lc}) {
-            my $data = $config->{$lc}->{write};
-            my $port;
-
-            if ($ENV{DB_TEST_PORT}) {
-                # Unit test env, specific only to QA:
-                $port = $ENV{DB_TEST_PORT};
-                $data->{dbname} = 'cr';
-            }
-
-            $data->{dbname}         //= 'regentmarkets';
-            $data->{write_password} //= $config->{password};
-            # conn contains a hash ref which contains conection details needed per database
-            $conn->{$data->{ip} . '/' . $data->{dbname}} = {
-                ip       => $data->{ip},
-                dbname   => $data->{dbname},
-                password => $data->{write_password},
-                port     => $port // 5432,
-            };
-        }
+    my @conn = ('vr01', 'cr01', 'mx01', 'mf01', 'mlt01', 'vrdw01', 'dw01');
+    if ($ENV{BOM_TEST_ON_QA}) {
+        # Unit test env, specific only to QA:
+        @conn = ('cr01_test');
     }
-    return $conn;
+    return @conn;
 }
 
 sub _db {
     my $conn_info = shift;
     return DBI->connect(
-        "dbi:Pg:dbname=$conn_info->{dbname};host=$conn_info->{ip};port=$conn_info->{port};application_name=notify_pub;sslmode=require",
-        'write',
-        $conn_info->{password},
+        "dbi:Pg:service=$conn_info;application_name=notify_pub",
+        undef, undef,
         {
             AutoCommit => 1,
             RaiseError => 1,

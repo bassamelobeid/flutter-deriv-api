@@ -81,39 +81,19 @@ sub _refresh_notification_cache {
 }
 
 sub _master_db_connections {
-    my $config = YAML::XS::LoadFile('/etc/rmg/clientdb.yml');
-    my $conn;
-    foreach my $lc (keys %{$config}) {
-        if (ref $config->{$lc}) {
-            my $data = $config->{$lc}->{write};
-            my $port;
-
-            if ($ENV{DB_TEST_PORT}) {
-                # Unit test env, specific only to QA:
-                $port = $ENV{DB_TEST_PORT};
-                $data->{dbname} = 'cr_test';
-            }
-
-            $data->{dbname}         //= 'regentmarkets';
-            $data->{write_password} //= $config->{password};
-            # conn contains a hash ref which contains conection details needed per database
-            $conn->{$lc} = {
-                ip       => $data->{ip},
-                dbname   => $data->{dbname},
-                password => $data->{write_password},
-                port     => $port // 5432,
-                lc       => $lc,
-            };
-        }
+    my @conn = ('vr01', 'cr01', 'mx01', 'mf01', 'mlt01', 'vrdw01', 'dw01');
+    if ($ENV{BOM_TEST_ON_QA}) {
+        # Unit test env, specific only to QA:
+        @conn = ('cr01_test');
     }
-    return $conn;
+    return @conn;
 }
 
 sub _db {
     my $conn_info = shift;
     return DBI->connect(
-        "dbi:Pg:dbname=$conn_info->{dbname};host=$conn_info->{ip};port=$conn_info->{port};application_name=trade_warnings;sslmode=require",
-        write => $conn_info->{password},
+        "dbi:Pg:service=$conn_info;application_name=trade_warnings",
+        undef, undef,
         {
             AutoCommit => 1,
             RaiseError => 1,
@@ -130,26 +110,26 @@ sub _get_new_clients_limit {
 
 sub run {
 
-    my %kids;
+    my %connection_details;
 
     local $SIG{INT} = sub {
         my $signame = shift;
         $log->infof('%d: Got signal: %s', $$, $signame);
-        foreach my $p (values %kids) {
-            next unless exists $p->{pid};
-            $log->debugf('%d: Killing %d (lc: %s)', $$, $p->{pid}, $p->{lc});
-            kill TERM => $p->{pid};
+        foreach my $lc (keys %connection_details) {
+            next unless exists $connection_details{$lc};
+            my $pid = $connection_details{$lc};
+            $log->debugf('%d: Killing %d (lc: %s)', $$, $pid, $lc);
+            kill TERM => $pid;
         }
     };
     local $SIG{TERM} = $SIG{INT};
 
-    my $conn = _master_db_connections();
-    my @lcs  = keys %{$conn};
+    my @conn = _master_db_connections();
+    my @lcs  = @conn;
     $log->infof('%d: setting up configs for %s', $$, \@lcs);
     foreach my $lc (@lcs) {
-        $log->debugf('%d: setting up config %s', $$, $lc);
+        $log->debugf('%d: setting up config for %s', $$, $lc);
 
-        my $connection_details = $conn->{$lc};
         my $pid;
         # yes, this `select` emulates `sleep`. But the built-in `sleep` can only
         # sleep for entire seconds. There is no point in loading an external module
@@ -161,21 +141,20 @@ sub run {
         # publishing such "best practices".
         select undef, undef, undef, 0.3 until defined($pid = fork);    ## no critic
         if ($pid) {                                                    # parent
-            $connection_details->{pid} = $pid;
-            $kids{$pid} = $connection_details;
+            $connection_details{$lc} = $pid;
             next;
         }
         # although both @SIG{qw/TERM INT/} have been localized above
         # perlcritic is still complaining. Hence, no critic.
-        $SIG{TERM} = $SIG{INT} = 'DEFAULT';    ## no critic
-        %kids = ();
+        $SIG{TERM} = $SIG{INT} = 'DEFAULT';             ## no critic
+        %connection_details = ();
 
         # child
-        $log->debugf('%d: starting to listen on %s/%s (%s)', $$, $connection_details->{ip}, $connection_details->{dbname}, $lc);
+        $log->debugf('%d: starting to listen on %s ', $$, $lc);
 
         while (1) {
             try {
-                my $dbh = _db($connection_details);
+                my $dbh = _db($lc);
                 $dbh->do("LISTEN trade_warning");
                 my $limit = _get_new_clients_limit($dbh);
                 my $sel   = IO::Select->new;
@@ -184,7 +163,7 @@ sub run {
                     while (my $notify = $dbh->pg_notifies) {
                         my ($name, $pid, $payload) = @$notify;
                         my $msg = $json->decode($payload);
-                        $msg->{landing_company} = $connection_details->{lc};
+                        $msg->{landing_company} = $lc;
                         _publish($msg, $limit);
                     }
                 }
@@ -196,10 +175,10 @@ sub run {
         exit;
     }
 
-    while (keys %kids) {
+    foreach my $lc (keys %connection_details) {
         my $pid = wait();
-        my $cf  = delete $kids{$pid};
-        $log->debugf('%d: Parent saw %d (%s) exiting', $$, $pid, $cf->{lc}) if $cf;
+        $pid = delete $connection_details{$lc};
+        $log->debugf('%d: Parent saw %d (%s) exiting', $$, $pid, $lc) if $pid;
     }
     $log->info('Stopping binary_limits-notification serivce - TradeWarning process terminated');
     return 0;

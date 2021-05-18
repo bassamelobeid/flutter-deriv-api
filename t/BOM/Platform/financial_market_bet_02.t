@@ -1326,22 +1326,29 @@ subtest 'batch_buy', sub {
     use DBD::Pg;
     use YAML::XS;
 
-    my $config = YAML::XS::LoadFile('/etc/rmg/clientdb.yml');
-    my $ip     = $config->{svg}->{write}->{ip};                 # create_client creates CR clients
-    my $db     = $config->{svg}->{write}->{dbname};             # create_client creates CR clients
-    my $pw     = $config->{password};
-    my $port   = $ENV{DB_TEST_PORT} // 5432;
+    # create_client creates CR clients
 
-    $pw = $config->{svg}->{write}->{write_password} //= $config->{password};
-
-    my $listener = DBI->connect(
-        "dbi:Pg:dbname=$db;host=$ip;port=$port;application_name=notify_pub",
-        'write', $pw,
-        {
-            AutoCommit => 1,
-            RaiseError => 1,
-            PrintError => 0
-        });
+    my $listener;
+    # We need to use unittest on qa and use normal db on ci
+    if ($ENV{BOM_TEST_ON_QA}) {
+        $listener = DBI->connect(
+            "dbi:Pg:service=cr01_test;application_name=notify_pub",
+            undef, undef,
+            {
+                AutoCommit => 1,
+                RaiseError => 1,
+                PrintError => 0
+            });
+    } else {
+        $listener = DBI->connect(
+            "dbi:Pg:service=cr01;application_name=notify_pub",
+            undef, undef,
+            {
+                AutoCommit => 1,
+                RaiseError => 1,
+                PrintError => 0
+            });
+    }
 
     my ($cl1, $cl2, $cl3, $cl4, $acc1, $acc2, $acc3, $acc4);
     lives_ok {
