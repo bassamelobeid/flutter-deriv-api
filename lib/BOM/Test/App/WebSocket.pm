@@ -2,7 +2,7 @@ package BOM::Test::App::WebSocket;
 
 use strict;
 use warnings;
-
+use Test::More;
 use Role::Tiny;
 
 use Encode;
@@ -21,10 +21,11 @@ sub test_schema {
 
     my $t = $self->{t};
     $t = $t->send_ok({json => $req_params});
-    my $i = 0;
+    my $i         = 0;
+    my $max_times = 15;
     my $result;
     my @subscribed_streams_ids = map { $_->{id} } values %{$self->{streams}};
-    while ($i++ < 5 && !$result) {
+    while ($i++ < $max_times && !$result) {
         $t->message_ok;
         my $message = $json->decode(Encode::decode_utf8($t->message->[1]));
         # skip subscribed stream's messages
@@ -33,9 +34,8 @@ sub test_schema {
             && grep { $message->{$message->{msg_type}}->{id} && $message->{$message->{msg_type}}->{id} eq $_ } @subscribed_streams_ids;
         $result = $message;
     }
-    if ($i >= 5) {
-        diag("There isn't testing message in last 5 stream messages");
-        next;
+    if (!$result) {
+        diag("There isn't testing message in last $max_times stream messages");
     }
 
     $self->_test_schema($result, $expected_json_schema, $descr, $should_be_failed);
