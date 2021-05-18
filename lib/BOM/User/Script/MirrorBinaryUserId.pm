@@ -75,14 +75,26 @@ sub userdb {
 
     # We can't use BOM::Database::UserDB here because it connects
     # through pgbouncer in transaction mode.
-    return DBI->connect(
-        "dbi:Pg:service=user01;application_name=MirrorBinaryUserId",
-        undef, undef,
-        {
-            AutoCommit => 1,
-            RaiseError => 1,
-            PrintError => 0
-        });
+    # We need to use unittest on qa and use normal db on ci
+    if ($ENV{BOM_TEST_ON_QA}) {
+        return DBI->connect(
+            "dbi:Pg:service=user01_test;application_name=MirrorBinaryUserId",
+            undef, undef,
+            {
+                AutoCommit => 1,
+                RaiseError => 1,
+                PrintError => 0
+            });
+    } else {
+        return DBI->connect(
+            "dbi:Pg:service=user01;application_name=MirrorBinaryUserId",
+            undef, undef,
+            {
+                AutoCommit => 1,
+                RaiseError => 1,
+                PrintError => 0
+            });
+    }
 }
 
 sub update_clientdb {

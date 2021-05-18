@@ -582,9 +582,6 @@ subtest 'MirrorBinaryUserId' => sub {
     use BOM::User::Script::MirrorBinaryUserId;
     use BOM::User::Client;
 
-    # setup pgservice and pass for userdb01
-    BOM::Test::setup_pgservice_pass_for_userdb01();
-
     my $dbh;
     lives_ok {
         $dbh = BOM::User::Script::MirrorBinaryUserId::userdb;
