@@ -38,9 +38,11 @@ This module must provide support to each DevExperts integration within our syste
 use parent qw(BOM::TradingPlatform);
 
 use constant {
-    DX_CLEARING_CODE => 'default',
-    DX_DOMAIN        => 'default',
-    HTTP_TIMEOUT     => 30,
+    DX_CLEARING_CODE           => 'default',
+    DX_DOMAIN                  => 'default',
+    HTTP_TIMEOUT               => 30,
+    DEMO_TOPUP_AMOUNT          => 10000,
+    DEMO_TOPUP_MINIMUM_BALANCE => 1000,
 };
 
 =head2 new
@@ -141,7 +143,7 @@ sub new_account {
     my $account_code =
         $self->config->{real_account_ids} ? $prefix . $seq_num : $prefix . $self->unique_id;    # dx account id, must be unique in their system
     my $account_id   = $prefix . $seq_num;                                                      # our loginid
-    my $balance      = $args{account_type} eq 'demo' ? 10000 : 0;
+    my $balance      = $args{account_type} eq 'demo' ? DEMO_TOPUP_AMOUNT : 0;
     my $account_resp = $self->call_api(
         $server,
         'client_account_create',
@@ -313,6 +315,8 @@ sub deposit {
 
     my $account = $self->client->user->loginid_details->{$args{to_account}}
         or die +{error_code => 'DXInvalidAccount'};
+
+    return $self->demo_top_up($account) if $account->{account_type} eq 'demo';
 
     my $from_currency = $args{currency} // $self->client->account->currency_code;
 
@@ -486,6 +490,41 @@ sub withdraw {
         account_id     => $args{from_account},
         login          => $account->{attributes}{login},
     };
+}
+
+=head2 demo_top_up
+
+Top up demo account.
+
+=cut
+
+sub demo_top_up {
+    my ($self, $account) = @_;
+
+    my $check = $self->call_api(
+        $account->{account_type},
+        'account_get',
+        account_code  => $account->{attributes}{account_code},
+        clearing_code => $account->{attributes}{clearing_code},
+    );
+
+    die +{
+        error_code     => 'DXDemoTopupBalance',
+        message_params => [formatnumber('amount', 'USD', DEMO_TOPUP_MINIMUM_BALANCE), 'USD']}
+        unless $check->{content}{balance} < DEMO_TOPUP_MINIMUM_BALANCE;
+
+    my $resp = $self->call_api(
+        $account->{account_type},
+        'account_deposit',
+        account_code  => $account->{attributes}{account_code},
+        clearing_code => $account->{attributes}{clearing_code},
+        id            => $self->unique_id,                        # must be unique for deposits on this login
+        amount        => DEMO_TOPUP_AMOUNT,
+        currency      => $account->{currency},
+    );
+    die +{error_code => 'DXDemoTopFailed'} unless $resp->{success};
+
+    return;
 }
 
 =head2 check_password
