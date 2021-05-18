@@ -10,14 +10,24 @@
     "properties": {
         "trading_platform_deposit": {
             "title": "trading_platform_deposit",
-            "description": "Information about deposit transaction",
-            "type": "object",
-            "properties": {
-                "transaction_id": {
-                    "description": "The reference number for the related deposit to the wallet account",
-                    "type": "integer"
+            "description": "Information about deposit transaction, or status of demo account top up.",
+            "oneOf": [
+                {
+                    "type": "object",
+                    "properties": {
+                        "transaction_id": {
+                            "description": "The reference number for the related deposit to the trading account",
+                            "type": "integer"
+                        }
+                    }
+                },
+                {
+                    "type": "integer",
+                    "enum": [
+                        1
+                    ]
                 }
-            }
+            ]
         },
         "echo_req": {
             "description": "Echo of the request made.",

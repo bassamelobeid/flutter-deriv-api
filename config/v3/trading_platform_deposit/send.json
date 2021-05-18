@@ -11,8 +11,6 @@
     "additionalProperties": false,
     "required": [
         "trading_platform_deposit",
-        "amount",
-        "from_account",
         "platform",
         "to_account"
     ],
