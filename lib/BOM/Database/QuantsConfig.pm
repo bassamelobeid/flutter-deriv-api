@@ -43,14 +43,12 @@ use Moo;
 use Digest::MD5 qw(md5_hex);
 use Scalar::Util qw(looks_like_number);
 use List::Util qw(uniq all);
-use YAML::XS qw(LoadFile);
 use Finance::Underlying;
 use Syntax::Keyword::Try;
 
 use LandingCompany::Registry;
 
 use BOM::Database::ClientDB;
-my $clientdb_config = LoadFile('/etc/rmg/clientdb.yml');
 
 =head2 supported_config_type
 
@@ -83,38 +81,16 @@ A landing company to broker code mapper.
 
 =cut
 
-has active_landing_company => (
+has broker_code_mapper => (
     is      => 'ro',
     default => sub {
         {
-            svg         => 1,
-            iom         => 1,
-            malta       => 1,
-            maltainvest => 1,
+            svg         => 'CR',
+            iom         => 'MX',
+            malta       => 'MLT',
+            maltainvest => 'MF',
         };
     });
-
-has broker_code_mapper => (is => 'lazy');
-
-sub _build_broker_code_mapper {
-    my $self = shift;
-
-    my %list_by_dbname;
-    foreach my $short (grep { $self->active_landing_company->{$_} } keys %$clientdb_config) {
-        my $write_info = $clientdb_config->{$short}{write};
-        push @{$list_by_dbname{$write_info->{name}}}, $short;
-    }
-    my %map;
-    foreach my $lc_list (values %list_by_dbname) {
-        foreach my $lc_name (@$lc_list) {
-            my $lc = LandingCompany::Registry::get($lc_name) or next;
-
-            my $broker_code = $lc->{broker_codes}->[0];
-            $map{$lc_name} = $broker_code if $broker_code;
-        }
-    }
-    return \%map;
-}
 
 =head2 set_global_limit
 

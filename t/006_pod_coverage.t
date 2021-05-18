@@ -10,7 +10,7 @@ use Test::Pod::CoverageChange;
 
 my $allowed_naked_packages = {
     'BOM::Database::AuthDB'                                    => 1,
-    'BOM::Database::QuantsConfig'                              => 10,
+    'BOM::Database::QuantsConfig'                              => 8,
     'BOM::Database::ClientDB'                                  => 5,
     'BOM::Database::UserDB'                                    => 1,
     'BOM::Database::Rose::DB'                                  => 4,
