@@ -22,7 +22,7 @@ sub is_within_threshold ($$;$) {    ## no critic (Subroutines::ProhibitSubroutin
 
     note "Checking for number of Redis keys on $redis_name";
     my $total_keys_count = $redis->get(BOM::Test::REDIS_KEY_COUNTER) || 0;
-    cmp_ok $total_keys_count , '<=', $threshold, "Current number of Redis keys ($total_keys_count}) for $redis_name within threshold ($threshold)";
+    cmp_ok $total_keys_count , '<=', $threshold, "Current number of Redis keys ($total_keys_count) for $redis_name within threshold ($threshold)";
     # When we call this funciton, that means this variable has finished its mission. So we delete it to avoid keeping increasing.
     try {
         $redis->del(BOM::Test::REDIS_KEY_COUNTER);

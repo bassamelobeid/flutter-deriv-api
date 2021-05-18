@@ -187,6 +187,7 @@ sub purge_redis {
                     host => $config->{host},
                     port => $config->{port},
                     ($config->{password} ? ('password' => $config->{password}) : ()));
+
                 die "Purge redis $redis_yml failed: Database index is not $REDIS_DB_INDEX. RedisDB hook not applied ?"
                     if $redis->{database} != $REDIS_DB_INDEX;
                 my $redis_key_counter = get_and_add_redis_key_counter($redis);
@@ -218,6 +219,8 @@ sub get_and_add_redis_key_counter {
     # output format is like: 'keys=XXX,expires=XXX'
     my $info              = $redis->info('keyspace')->{"db$REDIS_DB_INDEX"};
     my $redis_key_counter = $redis->get($key) || 0;
+    # each test file running this redis_key_counter get considered in count. So just excluding it.
+    $redis_key_counter-- if $redis_key_counter;
     if ($info) {
         my %stats = split /[,=]/, $info;
         $redis_key_counter += $stats{keys};
