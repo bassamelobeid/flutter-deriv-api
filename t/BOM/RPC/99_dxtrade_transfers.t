@@ -13,6 +13,7 @@ use BOM::Test::Helper::Client;
 use BOM::Config::Runtime;
 
 BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend->all(0);
+BOM::Config::Runtime->instance->app_config->system->suspend->wallets(1);
 
 my $c = BOM::Test::RPC::QueueClient->new();
 
@@ -80,18 +81,32 @@ subtest 'platform deposit and withdrawal' => sub {
     $dx_synthetic = $c->call_ok('trading_platform_new_account', $params)->result;
 
     $params->{args} = {
-        platform     => 'dxtrade',
-        from_account => $client2->loginid,
-        to_account   => $dx_real->{account_id},
-        amount       => 10,
+        platform   => 'dxtrade',
+        to_account => $dx_demo->{account_id},
     };
+
+    $c->call_ok('trading_platform_deposit', $params)
+        ->has_no_system_error->has_error->error_code_is('DXDemoTopupBalance', 'expected error for top up virtual');
+
+    $params->{args}{from_account} = 'xyz';
+    $params->{args}{amount}       = -1;
+    $c->call_ok('trading_platform_deposit', $params)
+        ->has_no_system_error->has_error->error_code_is('DXDemoTopupBalance', 'from_account and demo ignored for demo');
+
+    delete $params->{args}{amount};
+    $params->{args}{to_account} = $dx_real->{account_id};
+
+    $c->call_ok('trading_platform_deposit', $params)
+        ->has_no_system_error->has_error->error_code_is('PlatformTransferRealParams', 'from_account and amount needed for real account');
+
+    $params->{args}{from_account} = $client2->loginid;
+    $params->{args}{amount}       = 10;
 
     $c->call_ok('trading_platform_deposit', $params)
         ->has_no_system_error->has_error->error_code_is('PlatformTransferOauthTokenRequired', 'non oauth token not allowed')
         ->error_message_is('This request must be made using a connection authorized by the Deriv account involved in the transfer.');
 
     $params->{args}{from_account} = $client1->loginid;
-    $params->{args}{to_account}   = $dx_demo->{account_id};
 
     $is_experimental_currency = 1;
     $c->call_ok('trading_platform_deposit', $params)
@@ -106,11 +121,6 @@ subtest 'platform deposit and withdrawal' => sub {
         ->error_message_is('You can only perform up to 1 transfers a day. Please try again tomorrow.');
 
     BOM::Config::Runtime->instance->app_config->payments->transfer_between_accounts->limits->dxtrade(100);
-
-    $c->call_ok('trading_platform_deposit', $params)
-        ->has_no_system_error->has_error->error_code_is('PlatformTransferNoVirtual', 'Cannot deposit to demo account');
-
-    $params->{args}{to_account} = $dx_real->{account_id};
 
     $c->call_ok('trading_platform_deposit', $params)->has_no_system_error->has_error->error_code_is('PlatformTransferError', 'Insufficient balance');
 
