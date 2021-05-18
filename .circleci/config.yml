@@ -33,13 +33,19 @@ alias:
     background: true
     command: /opt/circle/check_services
     name: Check services are running
-default: &6
-  docker:
-  - auth:
+- &redis6
+  image: redis:6
+  name: "redis-v6"
+- &debian-ci
+  auth:
       password: $DOCKERHUB_PASSWORD
       username: circle4regentmarkets
-    image: regentmarkets/debian-ci:stable
-    user: nobody
+  image: regentmarkets/debian-ci:stable
+  user: nobody
+default: &6
+  docker:
+  - *debian-ci
+  - *redis6
   shell: /bin/bash -leo pipefail
   working_directory: /home/git/regentmarkets/bom-rpc
 jobs:
