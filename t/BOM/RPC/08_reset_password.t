@@ -331,7 +331,7 @@ subtest 'reset_password - universal password' => sub {
         $c->call_ok('reset_password', $params)->error_code_is('PasswordResetError');
 
         is $test_client->user->login(password => 'Jolly123')->{error},
-            'Your email and/or password is incorrect. Please check and try again. Perhaps you signed up with a social account?',
+            'Your email and/or password is incorrect. Perhaps you signed up with a social account?',
             'Cannot login with new password';
 
         ok $test_client->user->login(password => $new_password)->{success}, 'user password should remain unchanged';

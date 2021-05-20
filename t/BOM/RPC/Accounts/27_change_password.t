@@ -337,7 +337,7 @@ subtest 'change_password - universal password' => sub {
         is($c->tcall($method, $params)->{error}{code}, 'PasswordChangeError', 'Correct error code');
 
         is $test_client->user->login(password => $new_password)->{error},
-            'Your email and/or password is incorrect. Please check and try again. Perhaps you signed up with a social account?',
+            'Your email and/or password is incorrect. Perhaps you signed up with a social account?',
             'Cannot login with new password';
 
         ok $test_client->user->login(password => 'Ijkl6789')->{success}, 'user password should remain unchanged';
