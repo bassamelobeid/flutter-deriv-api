@@ -874,36 +874,6 @@ sub set_professional_status {
     return undef;
 }
 
-=head2 set_migrated_universal_password_status
-
-Set migrated_universal_password status for newly created accounts.
-
-It takes:
-
-=over 4
-
-=item * C<client> A L<BOM::User::Client> instance.
-
-=back
-
-Returns undef, otherwise returns error.
-
-=cut
-
-sub set_migrated_universal_password_status {
-    my ($client) = @_;
-
-    unless ($client->status->migrated_universal_password) {
-        try {
-            $client->status->set('migrated_universal_password', 'SYSTEM', 'Client has migrated to universal password');
-        } catch {
-            return client_error();
-        }
-    }
-
-    return undef;
-}
-
 sub send_professional_requested_email {
     my ($loginid, $residence) = @_;
 
@@ -1411,6 +1381,35 @@ sub cashier_validation {
     return create_error($validation->{error}) if exists $validation->{error};
 
     return;
+}
+
+=head2 set_trading_password_new_account
+
+Validates or sets the user trading password when creating a new trading accout.
+
+=over 4
+
+=item * C<client>: C<BOM::User::Client> object
+
+=item * C<trading_password>: plain password
+
+=back
+
+Returns scalar error code.
+
+=cut
+
+sub set_trading_password_new_account {
+    my ($client, $trading_password) = @_;
+
+    return 'PasswordRequired' unless $trading_password;
+
+    if (my $current_password = $client->user->trading_password) {
+        return validate_password_with_attempts($trading_password, $current_password, $client->loginid);
+    } else {
+        $client->user->update_trading_password($trading_password);
+        return undef;
+    }
 }
 
 =head2 get_qa_node_website_url

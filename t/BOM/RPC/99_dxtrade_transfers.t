@@ -75,7 +75,7 @@ subtest 'platform deposit and withdrawal' => sub {
         platform     => 'dxtrade',
         account_type => 'real',
         market_type  => 'gaming',
-        password     => 'test2',
+        password     => 'test',
         currency     => 'USD',
     };
     $dx_synthetic = $c->call_ok('trading_platform_new_account', $params)->result;
@@ -214,6 +214,7 @@ subtest 'transfer between accounts' => sub {
         }};
 
     my $res = $c->call_ok('transfer_between_accounts', $params)->has_no_system_error->has_no_error->result;
+
     cmp_deeply(
         $res->{accounts},
         bag({

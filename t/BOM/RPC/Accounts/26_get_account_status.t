@@ -147,7 +147,7 @@ subtest 'get account status' => sub {
             my $result = $c->tcall('get_account_status', {token => $token_vr});
             cmp_deeply(
                 $result->{status},
-                ['cashier_locked', 'financial_information_not_complete', 'trading_experience_not_complete'],
+                ['cashier_locked', 'financial_information_not_complete', 'trading_experience_not_complete', 'trading_password_required'],
                 "cashier is locked for virtual accounts"
             );
 
@@ -155,7 +155,7 @@ subtest 'get account status' => sub {
             $result = $c->tcall('get_account_status', {token => $token_cr});
             cmp_deeply(
                 $result->{status},
-                ['cashier_locked', 'financial_information_not_complete', 'trading_experience_not_complete'],
+                ['cashier_locked', 'financial_information_not_complete', 'trading_experience_not_complete', 'trading_password_required'],
                 "cashier is locked correctly."
             );
 
@@ -164,7 +164,7 @@ subtest 'get account status' => sub {
 
             cmp_deeply(
                 $result->{status},
-                ['financial_information_not_complete', 'trading_experience_not_complete',],
+                ['financial_information_not_complete', 'trading_experience_not_complete', 'trading_password_required'],
                 "cashier is not locked for correctly"
             );
 
@@ -172,7 +172,7 @@ subtest 'get account status' => sub {
             $result = $c->tcall('get_account_status', {token => $token_cr});
             cmp_deeply(
                 $result->{status},
-                ['financial_information_not_complete', 'trading_experience_not_complete', 'withdrawal_locked'],
+                ['financial_information_not_complete', 'trading_experience_not_complete', 'trading_password_required', 'withdrawal_locked'],
                 "withdrawal is locked correctly"
             );
 
@@ -180,7 +180,7 @@ subtest 'get account status' => sub {
             $result = $c->tcall('get_account_status', {token => $token_cr});
             cmp_deeply(
                 $result->{status},
-                ['financial_information_not_complete', 'trading_experience_not_complete'],
+                ['financial_information_not_complete', 'trading_experience_not_complete', 'trading_password_required'],
                 "withdrawal is not locked correctly"
             );
 
@@ -188,7 +188,7 @@ subtest 'get account status' => sub {
             $result = $c->tcall('get_account_status', {token => $token_cr});
             cmp_deeply(
                 $result->{status},
-                ['deposit_locked', 'financial_information_not_complete', 'trading_experience_not_complete'],
+                ['deposit_locked', 'financial_information_not_complete', 'trading_experience_not_complete', 'trading_password_required'],
                 "deposit is not locked correctly"
             );
 
@@ -196,7 +196,7 @@ subtest 'get account status' => sub {
             $result = $c->tcall('get_account_status', {token => $token_cr});
             cmp_deeply(
                 $result->{status},
-                ['financial_information_not_complete', 'trading_experience_not_complete',],
+                ['financial_information_not_complete', 'trading_experience_not_complete', 'trading_password_required'],
                 "deposit is not locked correctly"
             );
 
@@ -586,8 +586,8 @@ subtest 'get account status' => sub {
                             is_withdrawal_suspended => 0,
                         }
                     },
-                    status                        => [qw(financial_information_not_complete trading_experience_not_complete)],
-                    risk_classification           => 'low',
+                    status              => [qw(financial_information_not_complete trading_experience_not_complete trading_password_required)],
+                    risk_classification => 'low',
                     prompt_client_to_authenticate => '0',
                     authentication                => {
                         document => {
@@ -610,47 +610,6 @@ subtest 'get account status' => sub {
                 },
                 'Intial CR status is correct'
             );
-
-            subtest 'get_account_status - universal password' => sub {
-                BOM::Config::Runtime->instance->app_config->system->suspend->universal_password(0);    # enable universal password
-
-                my $result = $c->tcall($method, {token => $token_cr});
-                cmp_deeply(
-                    $result,
-                    {
-                        currency_config => {
-                            "USD" => {
-                                is_deposit_suspended    => 0,
-                                is_withdrawal_suspended => 0,
-                            }
-                        },
-                        status              => bag(qw(financial_information_not_complete trading_experience_not_complete password_reset_required)),
-                        risk_classification => 'low',
-                        prompt_client_to_authenticate => '0',
-                        authentication                => {
-                            document => {
-                                status => "none",
-                            },
-                            identity => {
-                                status   => "none",
-                                services => {
-                                    onfido => {
-                                        last_rejected        => [],
-                                        is_country_supported => 1,
-                                        submissions_left     => $onfido_limit,
-                                        documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport'],
-                                        country_code         => 'IDN',
-                                        reported_properties  => {},
-                                    }}
-                            },
-                            needs_verification => [],
-                        }
-                    },
-                    'Intial CR status is correct'
-                );
-
-                BOM::Config::Runtime->instance->app_config->system->suspend->universal_password(1);    # disable universal password
-            };
 
             $test_client_cr->status->set('withdrawal_locked', 'system', 'For test purposes');
             $result = $c->tcall($method, {token => $token_cr});
@@ -2114,6 +2073,7 @@ my $user_experian = BOM::User->create(
 $user_experian->add_client($test_client_experian);
 my $token_client_experian = $m->create_token($test_client_experian->loginid, 'test token');
 
+$user_experian->update_trading_password('Abcd12345');
 subtest 'Experian validated account' => sub {
     $test_client_experian->status->upsert('age_verification',  'test', 'Experian results are sufficient to mark client as age verified.');
     $test_client_experian->status->upsert('proveid_requested', 'test', 'ProveID request has been made for this account.');
@@ -2794,8 +2754,8 @@ subtest 'Social identity provider' => sub {
         $result,
         {
             social_identity_provider => 'google',
-            status                   => bag(qw(social_signup financial_information_not_complete trading_experience_not_complete)),
-            currency_config          => {
+            status          => bag(qw(social_signup financial_information_not_complete trading_experience_not_complete trading_password_required)),
+            currency_config => {
                 'USD' => {
                     is_deposit_suspended    => 0,
                     is_withdrawal_suspended => 0

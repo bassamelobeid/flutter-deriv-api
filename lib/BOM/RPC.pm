@@ -174,7 +174,6 @@ sub wrap_rpc_sub {
         } catch ($error) {
             #Future->fail()  will raise exception here, in this case error is already formatted
             #otherwise die again, let outer catch handle it.
-
             if (ref $error eq 'HASH' and ref $error->{error} eq 'HASH') {
                 $result = $error;
             } else {

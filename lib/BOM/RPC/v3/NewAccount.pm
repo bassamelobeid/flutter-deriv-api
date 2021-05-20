@@ -177,10 +177,22 @@ rpc "verify_email",
                     message_to_client => localize('You can not perform a withdrawal while impersonating an account')});
         }
         request_email($email, $verification->{payment_withdraw}->());
-    } elsif ($existing_user and $type eq 'mt5_password_reset') {
-        request_email($email, $verification->{mt5_password_reset}->());
     } elsif ($existing_user and $type eq 'trading_platform_password_reset') {
-        # TODO: send email
+        # TODO: replace with bom-events
+        request_email($email, $verification->{trading_platform_password_reset}->());
+
+        # my $data = $verification->{trading_platform_password_reset}->();
+        # BOM::Platform::Event::Emitter::emit(
+        #     'trading_platform_password_reset_request',
+        #     {
+        #         loginid          => $existing_user->get_default_client->loginid,
+        #         verification_url => $data->{verification_url} // '',
+        #         first_name       => $existing_user->get_default_client->first_name,
+        #         email            => $email,
+        #         language         => $params->{language},
+        #     });
+    } elsif ($existing_user and $type eq 'trading_platform_investor_password_reset') {
+        request_email($email, $verification->{trading_platform_investor_password_reset}->());
     }
 
     # always return 1, so not to leak client's email
@@ -219,33 +231,6 @@ sub _update_professional_existing_clients {
     if ($professional_requested && $clients) {
         foreach my $client (@{$clients}) {
             my $error = BOM::RPC::v3::Utility::set_professional_status($client, $professional_status, $professional_requested);
-            return $error if $error;
-        }
-    }
-
-    return undef;
-}
-
-=head2 _update_migrated_universal_password_existing_clients
-
-Update migrate_universal_password of each clients for the user.
-
-=over 4
-
-=item * C<$clients> - list of clients
-
-=back
-
-Returns undef on success, otherwise return error
-
-=cut
-
-sub _update_migrated_universal_password_existing_clients {
-    my ($clients) = @_;
-
-    if ($clients) {
-        foreach my $client (@{$clients}) {
-            my $error = BOM::RPC::v3::Utility::set_migrated_universal_password_status($client);
             return $error if $error;
         }
     }
@@ -350,12 +335,6 @@ rpc new_account_real => sub {
     my $val = _update_professional_existing_clients($clients, $professional_status, $professional_requested);
     return $val if $val;
 
-    my $sibling_has_migrated_universal_password_status = any { $_->status->migrated_universal_password } $user->clients;
-    if (!BOM::Config::Runtime->instance->app_config->system->suspend->universal_password && $sibling_has_migrated_universal_password_status) {
-        $val = _update_migrated_universal_password_existing_clients($clients);
-        return $val if $val;
-    }
-
     my $lock = BOM::Platform::Redis::acquire_lock($client->user_id, 10);
     return BOM::RPC::v3::Utility::rate_limit_error() if not $lock;
 
@@ -393,11 +372,6 @@ rpc new_account_real => sub {
     $error = BOM::RPC::v3::Utility::set_professional_status($new_client, $professional_status, $professional_requested);
 
     return $error if $error;
-
-    if (!BOM::Config::Runtime->instance->app_config->system->suspend->universal_password && $sibling_has_migrated_universal_password_status) {
-        $error = BOM::RPC::v3::Utility::set_migrated_universal_password_status($new_client);
-        return $error if $error;
-    }
 
     if ($args->{currency}) {
         my $currency_set_result = BOM::RPC::v3::Accounts::set_account_currency({
@@ -504,12 +478,6 @@ rpc new_account_maltainvest => sub {
     my $val = _update_professional_existing_clients($clients, $professional_status, $professional_requested);
     return $val if $val;
 
-    my $sibling_has_migrated_universal_password_status = any { $_->status->migrated_universal_password } $user->clients;
-    if (!BOM::Config::Runtime->instance->app_config->system->suspend->universal_password && $sibling_has_migrated_universal_password_status) {
-        $val = _update_migrated_universal_password_existing_clients($clients);
-        return $val if $val;
-    }
-
     try {
         $rule_engine->verify_action('new_account', {%$args, account_type => 'financial'});
     } catch ($error) {
@@ -554,11 +522,6 @@ rpc new_account_maltainvest => sub {
 
     $error = BOM::RPC::v3::Utility::set_professional_status($new_client, $professional_status, $professional_requested);
     return $error if $error;
-
-    if (!BOM::Config::Runtime->instance->app_config->system->suspend->universal_password && $sibling_has_migrated_universal_password_status) {
-        $error = BOM::RPC::v3::Utility::set_migrated_universal_password_status($new_client);
-        return $error if $error;
-    }
 
     $user->add_login_history(
         action      => 'login',
@@ -770,9 +733,10 @@ sub create_virtual_account {
     my $account = BOM::Platform::Account::Virtual::create_account($account_args);
     die $account->{error} if $account->{error};
 
-    if (!BOM::Config::Runtime->instance->app_config->system->suspend->universal_password) {
-        $error = BOM::RPC::v3::Utility::set_migrated_universal_password_status($account->{client});
-        die $error if $error;
+    # Check if it is from UK, instantly mark it as unwelcome
+    my $config = request()->brand->countries_instance->countries_list->{$account->{client}->residence};
+    if ($config->{virtual_age_verification}) {
+        $account->{client}->status->set('unwelcome', 'SYSTEM', 'Pending proof of age');
     }
 
     my $user = $account->{user};

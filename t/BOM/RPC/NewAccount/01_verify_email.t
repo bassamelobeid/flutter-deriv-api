@@ -285,7 +285,7 @@ subtest 'withdrawal validation' => sub {
         is $rpc_ct->call_ok(@params)->has_no_system_error->result, 'dummy', $type . ' has withdrawal validation';
     }
 
-    for my $type (qw(account_opening reset_password mt5_password_reset)) {
+    for my $type (qw(account_opening reset_password)) {
         $params[1]->{args}->{type} = $type;
         $rpc_ct->call_ok(@params)
             ->has_no_system_error->has_no_error->result_is_deeply($expected_result, $type . ' does not have withdrawal validation');

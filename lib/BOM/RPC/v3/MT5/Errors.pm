@@ -98,6 +98,7 @@ my %category_message_mapping = do {
         PasswordReset         => localize('Please reset your password to continue.'),
         AccountTypesMismatch  => localize('Transfer between real and virtual accounts is not allowed.'),
         InvalidVirtualAccount => localize('Virtual transfers are only possible between wallet and other account types.'),
+        Deprecated            => localize('This API is deprecated.'),
         InvalidAccountRegion  => localize('Sorry, account opening is unavailable in your region.'),
     );
 };

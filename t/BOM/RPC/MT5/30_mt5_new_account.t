@@ -288,7 +288,7 @@ subtest 'status allow_document_upload is added upon mt5 create account dry_run a
     my $params = {token => $token};
     $c->call_ok($method, $params);
     my $status = $c->result->{status};
-    ok(!grep(/^allow_document_upload$/, @$status), "There's no allow_document_upload");
+    ok(!grep(/^allow_document_upload$/, @$status), 'allow_document_upload status not present');
 
     $method = 'mt5_new_account';
     $params = {
@@ -298,19 +298,19 @@ subtest 'status allow_document_upload is added upon mt5 create account dry_run a
             country          => 'mt',
             email            => $details{email},
             name             => $details{name},
-            mainPassword     => $details{password},
+            mainPassword     => $details{password}{main},
             leverage         => 100,
             dry_run          => 1,
             mt5_account_type => 'financial_stp',
         },
     };
-    $c->call_ok($method, $params)->has_error('You haven\'t authenticated your account. Please contact us for more information.');
+    $c->call_ok($method, $params)->has_error->error_code_is('AuthenticateAccount', 'error code is AuthenticateAccount');
 
     $method = 'get_account_status';
     $params = {token => $token};
     $c->call_ok($method, $params);
     $status = $c->result->{status};
-    ok(grep(/^allow_document_upload$/, @$status), "There's a allow_document_upload");
+    ok(grep(/^allow_document_upload$/, @$status), 'allow_document_upload status present');
 
     $test_client->set_authentication('ID_DOCUMENT', {status => $ID_DOCUMENT});
     $test_client->save;
@@ -657,69 +657,6 @@ subtest 'VRTC to MLT and MF account switching' => sub {
     BOM::RPC::v3::MT5::Account::reset_throttler($mf_switch_client->loginid);
     $c->call_ok($method, $params)->has_no_error('financial account should be created');
     is($c->result->{account_type}, 'financial', 'account type should be financial');
-};
-
-subtest 'mt5_new_account - universal password' => sub {
-    BOM::Config::Runtime->instance->app_config->system->suspend->universal_password(0);    # enable universal password
-
-    my $method = 'mt5_new_account';
-    my $token  = BOM::Platform::Token::API->new->create_token($test_client->loginid, 'token');
-
-    subtest 'user password did not pass mt5 password validation' => sub {
-        my $params = {
-            language => 'EN',
-            token    => $token,
-            args     => {
-                account_type => 'gaming',
-                country      => 'mt',
-                email        => $details{email},
-                name         => $details{name},
-                mainPassword => 'Abcd1234',
-            }};
-
-        BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
-        $c->call_ok($method, $params)->has_error->error_code_is('PasswordError')
-            ->error_message_is('That password is incorrect. Please try again.', 'Correct error message when user password is invalid');
-
-        BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
-
-        $params->{args}->{mainPassword} = $password;
-        $c->call_ok($method, $params)->has_error->error_code_is('IncorrectMT5PasswordFormat')->error_message_is(
-            "Sorry, we couldn't verify your password. Please reset your password.",
-            'Correct error message when user password did not pass mt5 password validation'
-        );
-    };
-
-    subtest 'can create new MT5 account with the current user password' => sub {
-        my $new_password          = 'Ijkl6789';
-        my $oauth_token           = $m->create_token($test_client->loginid, 'test token');
-        my $reset_password_params = {
-            token      => $oauth_token,
-            token_type => 'oauth_token',
-            args       => {
-                old_password => $password,
-                new_password => $new_password,
-            }};
-
-        $c->call_ok('change_password', $reset_password_params)->has_no_error('No error resetting user password');
-
-        BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
-        my $params = {
-            language => 'EN',
-            token    => $token,
-            args     => {
-                account_type     => 'financial',
-                mt5_account_type => 'financial_stp',
-                country          => 'mt',
-                email            => $details{email},
-                name             => $details{name},
-                mainPassword     => $new_password,
-            }};
-
-        $c->call_ok($method, $params)->has_no_error('No error creating new MT5 account using user password');
-    };
-
-    BOM::Config::Runtime->instance->app_config->system->suspend->universal_password(1);    # disable universal password
 };
 
 subtest 'new account on addtional trade server' => sub {

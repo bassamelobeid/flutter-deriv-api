@@ -195,28 +195,6 @@ sub email_verification {
                 },
             };
         },
-        mt5_password_reset => sub {
-            my $subject =
-                $brand->name eq 'deriv'
-                ? localize("Your DMT5 account new password request")
-                : localize('[_1] New MT5 Password Request', ucfirst $brand->name);
-
-            return {
-                subject       => $subject,
-                template_name => 'mt5_password_reset',
-                template_args => {
-                    name          => $name,
-                    title         => localize("Forgot your password? Let's get you a new one."),
-                    title_padding => 100,
-                    (
-                        $verification_uri
-                        ? (verification_url => _build_verification_url('mt5_password_reset', $args))
-                        : ()
-                    ),
-                    %common_args,
-                },
-            };
-        },
         closed_account => sub {
             my ($subject, $title, $title_padding);
             if ($type eq 'account_opening') {
@@ -238,7 +216,45 @@ sub email_verification {
                     %common_args,
                 },
             };
-        }
+        },
+        trading_platform_password_reset => sub {
+            return {
+                subject       => localize('Get a new trading account password'),
+                template_name => 'reset_password_request',
+                template_args => {
+                    name          => $name,
+                    title         => localize("Forgot your trading password? Let's get you a new one."),
+                    title_padding => 50,
+                    brand_name    => ucfirst $brand->name,
+                    (
+                        $verification_uri
+                        ? (verification_url => _build_verification_url('trading_platform_password_reset', $args))
+                        : ()
+                    ),
+                    is_trading_password => 1,
+                    %common_args,
+                },
+            };
+        },
+        trading_platform_investor_password_reset => sub {
+            return {
+                subject       => localize('Get a new trading account investor password'),
+                template_name => 'reset_password_request',
+                template_args => {
+                    name          => $name,
+                    title         => localize("Forgot your investor password? Let's get you a new one."),
+                    title_padding => 50,
+                    brand_name    => ucfirst $brand->name,
+                    (
+                        $verification_uri
+                        ? (verification_url => _build_verification_url('trading_platform_investor_password_reset', $args))
+                        : ()
+                    ),
+                    is_investor_password => 1,
+                    %common_args,
+                },
+            };
+        },
     };
 }
 

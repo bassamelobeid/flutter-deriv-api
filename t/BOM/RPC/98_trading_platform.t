@@ -9,6 +9,7 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Script::DevExperts;
 use BOM::Platform::Token::API;
 use BOM::Test::RPC::QueueClient;
+use BOM::User::Password;
 use BOM::Test::Helper::Client;
 use BOM::Config::Runtime;
 use Brands::Countries;
@@ -33,9 +34,20 @@ subtest 'dxtrader accounts' => sub {
     $c->call_ok('trading_platform_new_account', $params)->has_no_system_error->has_error->error_code_is('InvalidToken', 'must be logged in');
 
     $params->{token} = $token;
-    $params->{args}{platform} = 'xxx';
 
+    $params->{args} = {
+        platform => 'xxx',
+        password => 'test',
+    };
     $c->call_ok('trading_platform_new_account', $params)->has_no_system_error->has_error->error_code_is('TradingPlatformError', 'bad params');
+
+    $params->{args} = {
+        platform     => 'dxtrade',
+        account_type => 'demo',
+        market_type  => 'financial',
+        password     => '',
+    };
+    $c->call_ok('trading_platform_new_account', $params)->has_no_system_error->has_error->error_code_is('PasswordRequired', 'bad params');
 
     $params->{args} = {
         platform     => 'dxtrade',
@@ -45,15 +57,15 @@ subtest 'dxtrader accounts' => sub {
         currency     => 'USD',
     };
 
+    my $acc = $c->call_ok('trading_platform_new_account', $params)->has_no_system_error->has_no_error->result;
+    ok BOM::User::Password::checkpw('test', $client->user->trading_password), 'trading password was set';
+
     BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend->all(1);
 
     $c->call_ok('trading_platform_new_account', $params)->has_no_system_error->has_error->error_code_is('DXSuspended', 'dxtrade suspended')
         ->error_message_is('Deriv X account management is currently suspended.');
 
     BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend->all(0);
-
-    my $acc = $c->call_ok('trading_platform_new_account', $params)->has_no_system_error->has_no_error->result;
-    like $acc->{account_id}, qr/DXD\d{4}/, 'account id';
 
     $c->call_ok('trading_platform_new_account', $params)
         ->has_no_system_error->has_error->error_code_is('DXExistingAccount', 'error code for duplicate account.')
@@ -69,6 +81,21 @@ subtest 'dxtrader accounts' => sub {
     cmp_deeply($list, [$acc], 'account list returns created account',);
 
     cmp_deeply($list, [$acc], 'account list returns created account',);
+
+    $params->{args} = {
+        platform     => 'dxtrade',
+        account_type => 'real',
+        market_type  => 'financial',
+        password     => 'test',
+    };
+    my $acc2 = $c->call_ok('trading_platform_new_account', $params)->has_no_system_error->has_no_error('create 2nd account')->result;
+
+    $params->{args}{password} = 'wrong';
+    for my $attempt (1 .. 6) {
+        my $res = $c->call_ok('trading_platform_new_account', $params);
+        $res->error_code_is('PasswordError', 'error code for 5th bad password') if $attempt == 5;
+        $res->error_code_is('PasswordReset', 'error code for 6th bad password') if $attempt == 6;
+    }
 };
 
 subtest 'dxtrade password change' => sub {
@@ -90,11 +117,19 @@ subtest 'dxtrade password change' => sub {
         language => 'EN',
         token    => $token,
         args     => {
+            old_password => 'test',
             new_password => 'C0rrect0',
-            old_password => 'InC0rrect0',
         }};
+    $c->call_ok('trading_platform_password_change', $params)
+        ->has_no_system_error->has_error->error_code_is('NoOldPassword', 'cannot provide old password yet');
 
-    $c->call_ok('trading_platform_password_change', $params)->has_no_system_error->has_no_error->result_is_deeply(1, 'Password successfully changed');
+    $params = {
+        language => 'EN',
+        token    => $token,
+        args     => {
+            new_password => 'C0rrect0',
+        }};
+    $c->call_ok('trading_platform_password_change', $params)->has_no_system_error->has_no_error->result_is_deeply(1, 'New password successfully set');
 
     # Add dxtrade account
 
@@ -108,7 +143,10 @@ subtest 'dxtrade password change' => sub {
             password     => 'test',
             currency     => 'USD',
         }};
+    $c->call_ok('trading_platform_new_account', $params)->has_no_system_error->has_error->error_code_is('PasswordError')
+        ->error_message_like(qr/password is incorrect/, 'wrong password');
 
+    $params->{args}{password} = 'C0rrect0';
     $c->call_ok('trading_platform_new_account', $params)->has_no_system_error->has_no_error->result;
 
     # change trading password
@@ -127,11 +165,18 @@ subtest 'dxtrade password change' => sub {
         language => 'EN',
         token    => $token,
         args     => {
-            new_password => 'C0rrect0',
-            old_password => 'InC0rrect0',
+            new_password => 'C0rrect1',
+            old_password => 'C0rrect0',
         }};
 
     $c->call_ok('trading_platform_password_change', $params)->has_no_system_error->has_no_error->result_is_deeply(1, 'Password successfully changed');
+
+    for my $attempt (1 .. 6) {
+        my $res = $c->call_ok('trading_platform_password_change', $params);
+        $res->error_code_is('PasswordError', 'error code for 5th bad password') if $attempt == 5;
+        $res->error_code_is('PasswordReset', 'error code for 6th bad password') if $attempt == 6;
+    }
+
 };
 
 subtest 'dxtrade password reset' => sub {
@@ -170,12 +215,8 @@ subtest 'dxtrade password reset' => sub {
 
     ok $verification_code, 'Got a verification code';
 
-    $c->call_ok('trading_platform_password_reset', {})->has_no_system_error->has_error->error_code_is('InvalidToken', 'must be logged in');
-
-    my $token = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token');
     $params = {
         language => 'EN',
-        token    => $token,
         args     => {
             account           => 'DX1000',
             platform          => 'dxtrade',

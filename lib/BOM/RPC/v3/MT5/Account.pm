@@ -623,7 +623,11 @@ sub _get_sub_account_type {
 async_rpc "mt5_new_account",
     category => 'mt5',
     sub {
-    my $params = shift;
+    my $params      = shift;
+    my $brand       = request()->brand;
+    my $contact_url = $brand->contact_url({
+            source   => $params->{source},
+            language => $params->{language}});
 
     my $error_code = 'MT5CreateUserError';
 
@@ -648,33 +652,23 @@ async_rpc "mt5_new_account",
     $mt5_account_type     = '' if $account_type eq 'gaming';
     $mt5_account_category = '' if $mt5_account_type eq 'financial_stp' or $mt5_account_category !~ /^swap_free|conventional$/;
 
-    if (!BOM::Config::Runtime->instance->app_config->system->suspend->universal_password) {
-        # validate new password
-        my $error = BOM::RPC::v3::Utility::validate_password_with_attempts($args->{mainPassword}, $client->user->password, $client->loginid);
-        return create_error_future($error) if $error;
+    my $passwd_validation_err = BOM::RPC::v3::Utility::validate_mt5_password({
+        email           => $client->email,
+        main_password   => $args->{mainPassword}   // '',
+        invest_password => $args->{investPassword} // '',
+    });
+    return create_error_future($passwd_validation_err) if $passwd_validation_err;
 
-        # validate new password against mt5 password validation
-        # it should never hit this error, but in case it did
-        # we ask users to reset their password
-        return create_error_future(
-            'IncorrectMT5PasswordFormat',
-            {
-                message => localize("Sorry, we couldn't verify your password. Please reset your password."),
-            })
-            if BOM::RPC::v3::Utility::validate_mt5_password({
-                email         => $client->email,
-                main_password => $args->{mainPassword} // '',
-            });
-    } else {
-        my $passwd_validation_err = BOM::RPC::v3::Utility::validate_mt5_password({
-            email           => $client->email,
-            main_password   => $args->{mainPassword}   // '',
-            invest_password => $args->{investPassword} // '',
-        });
-        return create_error_future($passwd_validation_err) if $passwd_validation_err;
+    my $trading_password = $args->{mainPassword};
+
+    unless ($args->{dry_run}) {
+        if (my $current_password = $client->user->trading_password) {
+            my $error = BOM::RPC::v3::Utility::validate_password_with_attempts($trading_password, $current_password, $client->loginid);
+            return create_error_future($error) if $error;
+        }
     }
 
-    $args->{investPassword} = _generate_password($args->{mainPassword}) unless $args->{investPassword};
+    $args->{investPassword} = _generate_password($trading_password) unless $args->{investPassword};
 
     return create_error_future('InvalidSubAccountType')
         if ($mt5_account_type and $mt5_account_type !~ /^financial|financial_stp/)
@@ -683,7 +677,6 @@ async_rpc "mt5_new_account",
     # legal validation
     my $residence = $client->residence;
 
-    my $brand              = request()->brand;
     my $countries_instance = $brand->countries_instance;
     my $countries_list     = $countries_instance->countries_list;
     return create_error_future('InvalidAccountRegion') unless $countries_list->{$residence} && $countries_instance->is_signup_allowed($residence);
@@ -1039,6 +1032,26 @@ async_rpc "mt5_new_account",
                             my ($group_details) = @_;
                             return create_error_future('MT5CreateUserError', {message => $group_details->{error}})
                                 if ref $group_details eq 'HASH' and $group_details->{error};
+
+                            unless ($client->user->trading_password) {
+                                $client->user->update_trading_password($trading_password);
+                                BOM::Platform::Email::send_email({
+                                        to            => $client->email,
+                                        subject       => localize('Your [_1] trading password has been set', ucfirst($brand->name)),
+                                        template_name => 'reset_password_confirm',
+                                        template_args => {
+                                            email               => $client->email,
+                                            name                => $client->first_name,
+                                            title               => localize("You've got a new trading password"),
+                                            contact_url         => $contact_url,
+                                            is_trading_password => 1,
+                                            logins              => [$mt5_login],
+                                        },
+                                        use_email_template => 1,
+                                        template_loginid   => $client->loginid,
+                                        use_event          => 1,
+                                    });
+                            }
 
                             return Future->done({
                                     login           => $mt5_login,
@@ -1482,56 +1495,12 @@ async_rpc "mt5_password_change",
     sub {
     my $params = shift;
 
-    my $client = $params->{client};
-    my $args   = $params->{args};
-    my $login  = $args->{login};
+    my $args          = $params->{args};
+    my $password_type = $args->{password_type} // 'main';
 
-    return create_error_future('MT5PasswordChangeError') if $args->{old_password} and ($args->{new_password} eq $args->{old_password});
-    # MT5 login not belongs to user
-    return create_error_future('permission') unless _check_logins($client, [$login]);
-
-    if (_throttle($client->loginid)) {
-        return create_error_future('Throttle', {override_code => 'MT5PasswordChangeError'});
-    }
-
-    my $passwd_validation_err = BOM::RPC::v3::Utility::validate_mt5_password({
-            email         => $client->email,
-            main_password => $args->{new_password}});
-    return create_error_future($passwd_validation_err) if $passwd_validation_err;
-
-    return BOM::MT5::User::Async::password_check({
-            login    => $login,
-            password => $args->{old_password},
-            type     => $args->{password_type} // 'main',
-        }
-    )->then(
-        sub {
-            my ($status) = @_;
-
-            if ($status->{error}) {
-                return create_error_future($status->{code}, {override_code => 'MT5PasswordChangeError'});
-            }
-
-            return BOM::MT5::User::Async::password_change({
-                    login        => $login,
-                    new_password => $args->{new_password},
-                    type         => $args->{password_type} // 'main',
-                })->then_done(1);
-        }
-    )->then(
-        sub {
-            BOM::Platform::Event::Emitter::emit(
-                'mt5_password_changed',
-                {
-                    loginid     => $client->loginid,
-                    mt5_loginid => $login
-                });
-            return Future->done(1);
-        },
-        sub {
-            my $err = shift;
-            return create_error_future($err->{code});
-        });
+    my $new_api = $password_type eq 'investor' ? 'trading_platform_investor_password_change' : 'trading_platform_password_change';
+    return create_error_future('Deprecated',
+        {message => localize("To change your [_1] password, please use the [_2] API.", $password_type, $new_api)});
     };
 
 =head2 mt5_password_reset
@@ -1613,62 +1582,12 @@ async_rpc "mt5_password_reset",
     sub {
     my $params = shift;
 
-    my $client = $params->{client};
-    my $args   = $params->{args};
-    my $login  = $args->{login};
+    my $args          = $params->{args};
+    my $password_type = $args->{password_type} // 'main';
 
-    my $email = $client->user->email;
-
-    my $verification = BOM::RPC::v3::Utility::is_verification_token_valid($args->{verification_code}, $email, 'mt5_password_reset');
-
-    if ($verification->{error}) {
-        return Future->fail($verification);
-    }
-
-    # MT5 login not belongs to user
-    return create_error_future('permission')
-        unless _check_logins($client, [$login]);
-
-    my $passwd_validation_err = BOM::RPC::v3::Utility::validate_mt5_password({
-            email         => $email,
-            main_password => $args->{new_password}});
-    return create_error_future($passwd_validation_err) if $passwd_validation_err;
-
-    return BOM::MT5::User::Async::password_change({
-            login        => $login,
-            new_password => $args->{new_password},
-            type         => $args->{password_type} // 'main',
-        }
-    )->then(
-        sub {
-            my ($status) = @_;
-
-            if ($status->{error}) {
-                return create_error_future($status->{code}, {override_code => 'MT5PasswordChangeError'});
-            }
-            my $brand       = request()->brand;
-            my $contact_url = $brand->contact_url($params);
-            send_email({
-                    from    => Brands->new(name => $brand)->emails('support'),
-                    to      => $email,
-                    subject => $brand->name eq 'deriv' ? localize('Your new DMT5 account password') : localize('Your MT5 password has been reset.'),
-                    template_name => 'mt5_password_reset_notification',
-                    template_args => {
-                        name        => $client->first_name,
-                        title       => localize("You've got a new password"),
-                        loginid     => $login,
-                        email       => $email,
-                        contact_url => $contact_url,
-                    },
-                    use_event             => 1,
-                    use_email_template    => 1,
-                    email_content_is_html => 1,
-                    template_loginid      => ucfirst BOM::MT5::User::Async::get_account_type($login) . ' ' . $login =~ s/${\BOM::User->MT5_REGEX}//r,
-                });
-
-            return Future->done(1);
-
-        })->catch($error_handler);
+    my $new_api = $password_type eq 'investor' ? 'trading_platform_investor_password_reset' : 'trading_platform_password_reset';
+    return create_error_future('Deprecated',
+        {message => localize("To reset your [_1] password, please use the [_2] API.", $password_type, $new_api)});
     };
 
 sub _send_email {

@@ -107,7 +107,7 @@ subtest 'new account' => sub {
     $test_client->set_default_account('USD');
     $test_client->save();
 
-    my $password = 'Abcd33@!';
+    my $password = 'UserPassAbcd33@!';
     my $hash_pwd = BOM::User::Password::hashpw($password);
     my $user     = BOM::User->create(
         email    => 'test.account@binary.com',
@@ -185,35 +185,12 @@ subtest 'new account' => sub {
     $params->{args}->{mainPassword} = 'Test1@binary.com';
     $c->call_ok($method, $params)->has_error->error_code_is('MT5PasswordEmailLikenessError')
         ->error_message_is('You cannot use your email address as your password.', 'Correct error message for using email as mainPassword');
-    $params->{args}->{mainPassword} = 'Abcd33@!';
-
-    BOM::Config::Runtime->instance->app_config->system->suspend->universal_password(0);    # enable universal password
-
-    $params->{args}->{mainPassword} = 'This password should not pass';
-    $c->call_ok($method, $params)->has_error->error_code_is('PasswordError')
-        ->error_message_is('That password is incorrect. Please try again.',
-        'Correct error message for using binary account password as mainPassword');
-
-    $params->{args}->{mainPassword} = $password;
-    delete $params->{args}->{investPassword};
-    $c->call_ok($method, $params)->has_no_error('No error creating new account using binary account password');
-
-    BOM::Config::Runtime->instance->app_config->system->suspend->universal_password(1);    # disable universal password
 
     $params->{args}->{mainPassword} = '123sdadasd';
     $c->call_ok($method, $params)->has_error->error_code_is('IncorrectMT5PasswordFormat')
         ->error_message_is('Your password must be 8 to 25 characters long. It must include lowercase and uppercase letters, and numbers.',
         'Correct error message for using weak mainPassword');
     $params->{args}->{mainPassword} = 'Abcd33@!';
-
-    $params->{args}->{investPassword} = '123sdadasd';
-    $c->call_ok($method, $params)->has_error->error_code_is('IncorrectMT5PasswordFormat')
-        ->error_message_is('Your password must be 8 to 25 characters long. It must include lowercase and uppercase letters, and numbers.',
-        'Correct error message for using weak investPassword');
-
-    $params->{args}->{investPassword} = 'Test1@binary.com';
-    $c->call_ok($method, $params)->has_error->error_code_is('MT5PasswordEmailLikenessError')
-        ->error_message_is('You cannot use your email address as your password.', 'Correct error message for using email as investPassword');
 
     $params->{args}->{investPassword}   = 'Abcd31231233@!';
     $params->{args}->{mt5_account_type} = 'dummy';
@@ -1200,6 +1177,8 @@ foreach my $broker_code (keys %lc_company_specific_details) {
 
 sub create_mt5_account {
     my ($c, $token, $client, $args, $expected_error, $error_message) = @_;
+
+    $client->user->update_trading_password('Abcd33@!') unless $client->user->trading_password;
 
     undef @emit_args;
     my $params = {

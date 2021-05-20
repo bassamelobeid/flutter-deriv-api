@@ -964,6 +964,8 @@ rpc get_account_status => sub {
 
     push(@$status, 'financial_assessment_not_complete') unless $client->is_financial_assessment_complete();
 
+    push(@$status, 'trading_password_required') unless $client->user->trading_password;
+
     my $base_validation     = BOM::Platform::Client::CashierValidation::base_validation($client);
     my $deposit_validation  = BOM::Platform::Client::CashierValidation::deposit_validation($client);
     my $withdraw_validation = BOM::Platform::Client::CashierValidation::withdraw_validation($client);
@@ -1230,7 +1232,7 @@ rpc change_password => sub {
     return $err if $err;
 
     try {
-        $client->user->update_all_passwords($args->{new_password}, 'change_password');
+        $client->user->update_user_password($args->{new_password}, 'change_password');
         my $brand       = request()->brand;
         my $contact_url = $brand->contact_url({
                 source   => $params->{source},
@@ -1291,7 +1293,7 @@ rpc "reset_password",
     }
 
     try {
-        $client->user->update_all_passwords($args->{new_password}, 'reset_password');
+        $client->user->update_user_password($args->{new_password}, 'reset_password');
         my $brand       = request()->brand;
         my $contact_url = $brand->contact_url({
                 source   => $params->{source},
@@ -1359,13 +1361,6 @@ sub _send_reset_password_confirmation_email {
         template_loginid   => $client->loginid,
         use_event          => 1,
     };
-
-    if (!BOM::Config::Runtime->instance->app_config->system->suspend->universal_password) {
-        $email_args->{subject} = $is_reset_password ? localize("You've set your password") : localize("You've changed your password");
-        $email_args->{template_args}->{is_universal_password} = 1;
-        $email_args->{template_args}->{title}                 = $email_args->{subject};
-        delete $email_args->{template_loginid};    # don't need this in new reset_password_confirm email
-    }
 
     send_email($email_args);
 
