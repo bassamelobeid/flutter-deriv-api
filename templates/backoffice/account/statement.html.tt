@@ -8,8 +8,7 @@
 
 <hr>
 
-[% INCLUDE 'backoffice/account/statement_summary.html.tt' %]
-
+[% INCLUDE 'backoffice/account/statement_summary.html.tt' %]    
 <br>
 <form action="[% self_post %]" method="get" class="row">
     <label>Client deposits/withdrawals for the lifetime of the account:</label>

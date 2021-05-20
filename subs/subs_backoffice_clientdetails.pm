@@ -1221,6 +1221,155 @@ sub client_statement_summary {
     return $summary;
 }
 
+=head2 client_inernal_transfer_summary
+
+Returns a summary of client's internal transfers per action types (deposit, withdrawal) 
+and payment types (internal tansfer, free gift, doughflow, ...).
+
+=cut
+
+sub client_inernal_transfer_summary {
+    my %args = @_;
+    my ($client, $from, $to) = @args{qw/client from to/};
+
+    my $raw_summary = $client->db->dbic->run(
+        fixup => sub {
+            $_->selectall_arrayref('SELECT * FROM payment.get_internal_transfer_summary(?,?,?)', {Slice => {}}, $client->account->id, $from, $to);
+        },
+    );
+
+    my $summary = {};
+    foreach my $item (@$raw_summary) {
+        my ($amount, $action, $type) = @{$item}{qw/amount action_type payment_type/};
+
+        $summary->{$action}->{type}->{$type} = $amount;
+        $summary->{$action}->{total} += $amount;
+        $summary->{total} += $amount;
+    }
+
+    return $summary;
+}
+
+=head2 client_payment_agent_transfer_summary
+
+Returns a summary of client's payment agent transfers.
+
+It takes the following named arguments:
+
+=over 4
+
+=item * C<client>: client we are report on.
+
+=item * C<from>: start date.
+
+=item * C<to>: end date.
+
+=back
+
+=cut
+
+sub client_payment_agent_transfer_summary {
+    my %args = @_;
+    my ($client, $from, $to) = @args{qw/client from to/};
+
+    my $raw_summary = $client->db->dbic->run(
+        fixup => sub {
+            $_->selectall_arrayref('SELECT * FROM payment.get_payment_agent_transfer_summary(?,?,?)', {Slice => {}}, $client->account->id, $from,
+                $to);
+        },
+    );
+
+    my $summary = {};
+    foreach my $item (@$raw_summary) {
+        my ($amount, $count, $action, $loginid, $account_id, $is_payment_agent, $api_call) =
+            @{$item}{qw/amount count action_type fellow_loginid fellow_accountid fellow_is_payment_agent api_call/};
+
+        $summary->{$loginid}->{by_call}->{$api_call}->{$action}->{amount} = $amount;
+        $summary->{$loginid}->{by_call}->{$api_call}->{$action}->{count}  = $count;
+        $summary->{$loginid}->{by_call}->{$api_call}->{total}->{count} += $count;
+
+        $summary->{$loginid}->{loginid}          = $loginid;
+        $summary->{$loginid}->{accountid}        = $account_id;
+        $summary->{$loginid}->{is_payment_agent} = $is_payment_agent;
+
+        $summary->{$loginid}->{total}->{amount} += abs($amount);
+        $summary->{$loginid}->{total}->{count}  += $count;
+        $summary->{$action}->{total}->{amount}  += $amount;
+        $summary->{$action}->{total}->{count}   += $count;
+    }
+
+    # create a list of fellow clients, sorted by their number of transactions.
+    my @fellows = map { $_ =~ qr/deposit|withdraw/ ? () : $summary->{$_} } keys %$summary;
+    $summary->{sorted} = [sort { $b->{total}->{count} <=> $a->{total}->{count} } @fellows];
+
+    return $summary;
+}
+
+=head2 client_payment_agent_transfer_details
+
+Returns the details of client's payment agent transfers with a specific fellow client.
+
+It takes the following named arguments:
+
+=over 4
+
+=item * C<client>: client we are report on.
+
+=item * C<fellow_account>: client we are report on.
+
+=item * C<from>: start date.
+
+=item * C<to>: end date.
+
+=item * C<api_call>: (optional) the target api call: valid amounts: 
+C<paymentagent_deposit>, C<paymentagent_dwithdraw> and C<total> (both api calls)
+
+=back
+
+=cut
+
+sub client_payment_agent_transfer_details {
+    my %args = @_;
+    my ($client, $fellow_account, $from, $to, $api_call) = @args{qw/client fellow_account from to api_call/};
+
+    my $result = $client->db->dbic->run(
+        fixup => sub {
+            $_->selectall_arrayref(
+                'SELECT * FROM payment.get_payment_agent_transfer_details(?,?,?,?)',
+                {Slice => {}},
+                $client->account->id, $fellow_account, $from, $to
+            );
+        },
+    );
+
+    return $result if not $api_call or $api_call eq 'total';
+
+    return [grep { $_->{api_call} eq $api_call } @$result];
+}
+
+=head2 internal_transfer_statement_urls
+
+Returns urls that allow displaying a detailed stement report for internal transfer types in L<f_statement_internal_transfer.cgi> page.
+Note: it supports onnly B<payment_agent_transfer> transfer type at the moment.
+
+=cut
+
+sub internal_transfer_statement_urls {
+    my ($client, $from_date, $to_date) = @_;
+
+    return {
+        payment_agent_transfer => request()->url_for(
+            'backoffice/f_statement_internal_transfer.cgi',
+            {
+                loginID       => $client->loginid,
+                from_date     => $from_date->date_yyyymmdd(),
+                to_date       => $to_date->date_yyyymmdd(),
+                transfer_type => 'payment_agent_transfer'
+            }
+        ),
+    };
+}
+
 sub get_transactions_details {
     my ($args) = @_;
     my ($client, $from, $to, $currency, $dw_only, $limit, $transaction_id) =

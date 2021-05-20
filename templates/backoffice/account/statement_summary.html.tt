@@ -1,5 +1,3 @@
-<h3>Statement summary</h3>
-
 <div class="row">
     <p>Profit & loss since [% client.date_joined %]:&nbsp;<strong>[% currency %]&nbsp;[% summary.income %]</strong></p>
 </div>
@@ -15,14 +13,9 @@
         <input type="submit" class="btn btn--primary" value="View">
     </form>
 </div>
+<br/>
+<h3>Statement summary [% client_summary_ranges.from %] - [% client_summary_ranges.to %]</h3>
 <table>
-    <thead>
-    <tr>
-        <th colspan="2">
-            [% client_summary_ranges.from %] - [% client_summary_ranges.to %]  
-        </th>
-    </tr>
-    </thead>
     <tbody class="top">
     <tr>
         [% FOR t IN ['deposits', 'withdrawals'] %]
@@ -33,10 +26,22 @@
                     <th>TOTAL: [% summary.$t.total %]</th>
                 </tr>
                 [% FOR sys_key IN summary.$t.systems.keys.sort %]
-                <tr>
-                    <td width="180">[% sys_key %]</td>
-                    <td width="30">[% summary.$t.systems.$sys_key %]</td>
-                </tr>
+                    [% IF sys_key != 'internal_transfer' %] 
+                    <tr>
+                        <td width="180">[% sys_key %]</td>
+                        <td width="30">[% summary.$t.systems.$sys_key %]</td>
+                    </tr>
+                    [% END %]
+                [% END %]
+                [% FOR transfer_type IN internal_summary.$t.type.keys.sort %]
+                    <tr>
+                        [% IF transfer_type_urls.$transfer_type %] 
+                            <td width="180"><a href='[% transfer_type_urls.$transfer_type %]'>[% transfer_type %]</a></td>
+                        [% ELSE %]
+                            <td width="180">[% transfer_type %]</td>
+                        [%END%]
+                        <td width="30">[% internal_summary.$t.type.$transfer_type %]</td>
+                    </tr>
                 [% END %]
             </table>
         </td>

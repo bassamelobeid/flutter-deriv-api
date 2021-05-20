@@ -1,0 +1,46 @@
+<div class="row btn-group">
+    <input type="button" class="btn btn--primary"  value="View [% loginid %] details" onclick='location.href="[% clientedit_url %]"' />
+    <input type="button" class="btn btn--primary"  value="View [% loginid %] statement" onclick='location.href="[% statement_url %]"' />
+</div>
+
+<table class="row row-align-top notify notify--secondary">
+    <tr>
+        <td><strong>Login ID</strong></td>
+        <td><strong>Name</strong></td>
+        <td><strong>Email</strong></td>
+        <td><strong>Country</strong></td>
+        <td><strong>Residence</strong></td>
+        <td><strong>Tel</strong></td>
+        <td><strong>Date Joined</strong></td>
+    </tr>
+    <tr>
+        <td class="copy-on-click">[% loginid %]</td>
+        <td class="copy-on-click">[% client.name %]</td>
+        <td class="copy-on-click">[% client.email %]</td>
+        <td>[% client.country %]</td>
+        <td>[% client.residence %]</td>
+        <td>[% client.tel %]</td>
+        <td>[% client.date_joined %]</td>
+    </tr>
+</table>
+
+<div class="row">
+    <form action="[% self_post %]" method="get" class="row">
+        <label>Overview search:</label>
+        <input name="from_date" type="text" value="[% from_date %]" class="datepick" data-lpignore="true" />
+        <input name="to_date" type="text" value="[% to_date %]" class="datepick" data-lpignore="true" />
+        <input name="loginID" type="hidden" value="[% loginid %]">
+        <input name="broker" type="hidden" value="[% broker %]">
+        <input type="submit" class="btn btn--primary" value="View">
+
+        <input name="transfer_type" type="hidden" value="[% transfer_type %]">
+        <input name="fellow_account" type="hidden" value="[% fellow_account %]">
+        <input name="api_call" type="hidden" value="[% api_call %]">
+    </form>
+</div>
+
+<script type="text/javascript" language="javascript">
+  \$(document).ready(function() {
+      \$('.datepick').datepicker({dateFormat: "yy-mm-dd"});
+  });
+</script>
