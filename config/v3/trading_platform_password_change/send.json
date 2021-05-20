@@ -11,8 +11,7 @@
     "additionalProperties": false,
     "required": [
         "trading_platform_password_change",
-        "new_password",
-        "old_password"
+        "new_password"
     ],
     "properties": {
         "trading_platform_password_change": {
@@ -23,15 +22,14 @@
             ]
         },
         "new_password": {
-            "description": "New password of the account. For validation (Accepts any printable ASCII character. Must be within 8-25 characters, and include numbers, lowercase and uppercase letters. Must not be the same as the user's email address).",
+            "description": "New trading password. Accepts any printable ASCII character. Must be within 8-25 characters, and include numbers, lowercase and uppercase letters. Must not be the same as the user's email address.",
             "type": "string",
             "pattern": "^(?=.*[a-z])(?=.*[0-9])(?=.*[A-Z])[ -~]{8,25}$",
             "sensitive": 1
         },
         "old_password": {
-            "description": "Old password for validation (non-empty string, accepts any printable ASCII character)",
+            "description": "Old password for validation. Must be empty if a password has not been set yet.",
             "type": "string",
-            "pattern": "^[ -~]+$",
             "sensitive": 1
         },
         "passthrough": {

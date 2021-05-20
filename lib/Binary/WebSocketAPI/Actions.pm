@@ -456,8 +456,30 @@ sub actions_config {
         ['trading_platform_new_account'],
         ['trading_platform_deposit',    {stash_params => [qw/ token_type /]}],
         ['trading_platform_withdrawal', {stash_params => [qw/ token_type /]}],
-        ['trading_platform_password_change'],
-        ['trading_platform_password_reset'],
+        [
+            'trading_platform_password_change',
+            {
+                msg_group => 'mt5_hybrid',
+            }
+        ],
+        [
+            'trading_platform_password_reset',
+            {
+                msg_group => 'mt5_hybrid',
+            }
+        ],
+        [
+            'trading_platform_investor_password_change',
+            {
+                msg_group => 'mt5_hybrid',
+            }
+        ],
+        [
+            'trading_platform_investor_password_reset',
+            {
+                msg_group => 'mt5_hybrid',
+            }
+        ],
 
         ['new_account', {stash_params => [qw/ token server_name client_ip user_agent /]}],
         ['new_account_wallet', {stash_params => [qw/ server_name client_ip user_agent /]}],
