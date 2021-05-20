@@ -132,5 +132,7 @@ my %dbs;
                         expiry_started => [Time::HiRes::gettimeofday],
                     });
             }
+
+            await Future->wait_any($loop->delay_future(after => POLLING_INTERVAL), $shutdown->without_cancel);
         }
     })->()->get;
