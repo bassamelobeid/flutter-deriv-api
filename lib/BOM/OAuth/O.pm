@@ -414,7 +414,9 @@ sub _login {
         password       => $password,
     });
 
-    if (my $err = $result->{error_code}) {
+    if ($result->{error_code}) {
+        my $err = $result->{error_msg} // $result->{error_code};
+
         _stats_inc_error($brand_name, $err);
         BOM::OAuth::Common::failed_login_attempt($c);
 

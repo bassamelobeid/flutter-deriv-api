@@ -44,8 +44,10 @@ sub validate_login {
     my ($login_details) = @_;
 
     my $err_var = sub {
-        my ($error_code) = @_;
-        return {error_code => $error_code};
+        my ($error_code, $error_msg) = @_;
+        return {
+            error_code => $error_code,
+            defined $error_msg ? (error_msg => $error_msg) : ()};
     };
 
     my $c              = delete $login_details->{c};
@@ -104,7 +106,7 @@ sub validate_login {
         };
     }
 
-    return $err_var->($result->{error_code}) if exists $result->{error};
+    return $err_var->(@{$result}{qw/error_code error/}) if exists $result->{error};
 
     my @clients = $user->clients(include_self_closed => $result->{self_closed});
     my $client  = $clients[0];
