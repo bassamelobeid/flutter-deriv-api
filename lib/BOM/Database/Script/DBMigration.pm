@@ -119,6 +119,10 @@ sub script_run {
         $dir      = $home_git . '/regentmarkets/bom-postgres-cryptodb/config/sql/';
         $database = 'crypto';
         $port     = '5438';
+    } elsif ($dbset eq 'cms') {
+        $dir      = $home_git . '/regentmarkets/bom-postgres-commissiondb/config/sql/';
+        $database = 'cms';
+        $port     = '5439';
     } elsif ($dbset eq 'chronicle') {
         $dir      = $home_git . '/regentmarkets/bom-postgres-chronicledb/config/sql/';
         $port     = '5437';
