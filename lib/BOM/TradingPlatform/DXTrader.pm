@@ -8,7 +8,6 @@ use Syntax::Keyword::Try;
 use YAML::XS;
 use HTTP::Tiny;
 use JSON::MaybeUTF8 qw(:v1);
-use BOM::Config::Runtime;
 use List::Util qw(first any);
 use Format::Util::Numbers qw(financialrounding formatnumber);
 use Digest::SHA1 qw(sha1_hex);
@@ -53,7 +52,10 @@ Creates and returns a new L<BOM::TradingPlatform::DXTrader> instance.
 
 sub new {
     my ($class, %args) = @_;
-    die +{error_code => 'DXSuspended'} if BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend->all;
+    die +{error_code => 'DXSuspended'}
+        if BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend->all
+        and $args{client}
+        and $args{client}->user->dxtrade_loginids;
     return bless {client => $args{client}}, $class;
 }
 
@@ -261,19 +263,14 @@ Takes the following arguments as named parameters:
 
 =back
 
-Returnds undef on success, dies on error.
+Returns undef on success, dies on error.
 
 =cut
 
 sub change_password {
     my ($self, %args) = @_;
 
-    my $password = $args{password};
-    if (BOM::Config::Runtime->instance->app_config->system->suspend->universal_password) {
-        die +{error_code => 'PasswordRequired'} unless $password;
-    } else {
-        $password = $self->client->user->password;
-    }
+    my $password = $args{password} or die +{error_code => 'PasswordRequired'};
 
     for my $server ('demo', 'real') {
         my $dxclient = $self->dxclient_get($server) or next;

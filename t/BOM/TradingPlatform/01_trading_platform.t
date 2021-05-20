@@ -3,6 +3,9 @@ use warnings;
 use Test::More;
 use Test::Fatal;
 use Test::Deep;
+
+use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+
 use Scalar::Util qw(refaddr);
 use BOM::Config::Runtime;
 
@@ -49,22 +52,24 @@ subtest 'Implementation completeness' => sub {
 
     my $tests = {
         mt5 => {
-            new_account        => 0,
-            change_password    => 0,
-            deposit            => 0,
-            withdraw           => 0,
-            get_account_info   => 1,
-            get_accounts       => 0,
-            get_open_positions => 0,
+            new_account              => 0,
+            change_investor_password => 1,
+            change_password          => 1,
+            deposit                  => 0,
+            withdraw                 => 0,
+            get_account_info         => 1,
+            get_accounts             => 0,
+            get_open_positions       => 0,
         },
         dxtrade => {
-            new_account        => 1,
-            change_password    => 1,
-            deposit            => 1,
-            withdraw           => 1,
-            get_account_info   => 1,
-            get_accounts       => 1,
-            get_open_positions => 1,
+            new_account              => 1,
+            change_investor_password => 0,
+            change_password          => 1,
+            deposit                  => 1,
+            withdraw                 => 1,
+            get_account_info         => 1,
+            get_accounts             => 1,
+            get_open_positions       => 1,
         },
     };
 
@@ -108,12 +113,40 @@ subtest 'Instantiate the platform without factory' => sub {
     isa_ok(BOM::TradingPlatform->new_base(), 'BOM::TradingPlatform');
 };
 
+my $user;
 subtest 'DXtrade suspend' => sub {
     BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend->all(1);
 
-    cmp_deeply(exception { BOM::TradingPlatform->new(platform => 'dxtrade') }, {error_code => 'DXSuspended'}, 'use factory');
-    cmp_deeply(exception { BOM::TradingPlatform::DXTrader->new },              {error_code => 'DXSuspended'}, 'use direct');
+    $user = BOM::User->create(
+        email    => 'dsds@binary.com',
+        password => 'Abcd1234'
+    );
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+    });
+    $user->add_client($client);
+    $user->add_loginid('DXD1000');
+
+    cmp_deeply(exception { BOM::TradingPlatform->new(platform => 'dxtrade', client => $client) }, {error_code => 'DXSuspended'}, 'use factory');
+    is exception { BOM::TradingPlatform::DXTrader->new }, undef, 'use direct';
     is exception { BOM::TradingPlatform->new(platform => 'mt5') }, undef, 'mt5 unaffected';
+};
+
+subtest 'MT5 suspend' => sub {
+    $user->add_loginid('MTR1000');
+
+    BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real->p01_ts03->all(1);
+    my $mt5 = BOM::TradingPlatform->new(
+        platform => 'mt5',
+        client   => $user->get_default_client());
+
+    cmp_deeply(
+        exception { $mt5->change_password(password => 'Abcd1234') },
+        {error_code => 'PlatformPasswordChangeSuspended'},
+        'correct error_code when one of mt5 servers is suspended'
+    );
+
+    BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real->p01_ts03->all(0);
 };
 
 done_testing();

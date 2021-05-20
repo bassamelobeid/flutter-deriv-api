@@ -765,66 +765,6 @@ subtest 'fail if mt5 api return empty login' => sub {
     $mock->unmock_all;
 };
 
-subtest 'update_mt5_passwords' => sub {
-    my $mock = Test::MockModule->new('BOM::MT5::User::Async');
-    $mock->mock(
-        password_change => sub {
-            my ($args) = @_;
-
-            if ($args->{new_password} ne 'Ijkl6789') {
-                return Future->fail({
-                    error => 'UserPasswordChange',
-                    code  => 'UserPasswordChange',
-                });
-            }
-
-            return Future->done({status => 1});
-        });
-
-    subtest 'should fail if mt5 password_change has error' => sub {
-        like($client_cr->user->update_mt5_passwords('hEllo123')->failure->{error}, qr/UserPasswordChange/, 'mt5 password_change failed');
-    };
-
-    subtest 'should return { status => 1 } on success' => sub {
-        is $client_cr->user->update_mt5_passwords('Ijkl6789')->result->{status}, 1, 'mt5 password_change is OK';
-    };
-
-    $mock->unmock_all;
-};
-
-subtest 'update_all_passwords' => sub {
-    my $mock = Test::MockModule->new('BOM::MT5::User::Async');
-    $mock->mock(
-        password_change => sub {
-            my ($args) = @_;
-
-            if ($args->{new_password} ne 'Ijkl6789') {
-                return Future->fail({
-                    error => 'UserPasswordChange',
-                    code  => 'UserPasswordChange',
-                });
-            }
-
-            return Future->done({status => 1});
-        });
-
-    subtest 'universal password' => sub {
-        BOM::Config::Runtime->instance->app_config->system->suspend->universal_password(0);    # enable universal password
-
-        subtest 'should fail if mt5 password_change has error' => sub {
-            dies_ok { $client_cr->user->update_all_passwords('hEllo123') } "mt5 password_change failed";
-        };
-
-        subtest 'should return 1 on success' => sub {
-            is $client_cr->user->update_all_passwords('Ijkl6789'), 1, 'all passwords change is OK';
-        };
-
-        BOM::Config::Runtime->instance->app_config->system->suspend->universal_password(1);    # disable universal password
-    };
-
-    $mock->unmock_all;
-};
-
 subtest 'test get_financial_assessment' => sub {
     my $client_mx = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'MX',
@@ -959,6 +899,22 @@ subtest 'link_wallet' => sub {
     $args->{wallet_id} = $wallet->loginid;
     $args->{client_id} = $dxtrade_real_account->{account_id};
     throws_ok { $user->link_wallet_to_trading_account($args); } qr/CannotLinkVirtualAndReal/, 'cannot bind virtual wallet to a real dxtrade account';
+};
+
+subtest 'update trading password' => sub {
+    is $user->trading_password, undef, 'user has no trading password';
+
+    lives_ok { $user->update_trading_password('Abcd1234'); } 'trading password saved';
+
+    ok $user->trading_password, 'user has set trading password successfully';
+
+    my $hash_pw = BOM::User::Password::hashpw('Abcd1234');
+    ok BOM::User::Password::checkpw('Abcd1234', $user->trading_password), 'trading password is OK';
+};
+
+subtest 'update user password' => sub {
+    my $hash_pw = BOM::User::Password::hashpw('Ijkl6789');
+    is $user->update_user_password($hash_pw), 1, 'user password changed is OK';
 };
 
 done_testing();

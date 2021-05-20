@@ -50,7 +50,7 @@ Create new record in table users.binary_user
 =cut
 
 my @fields =
-    qw(id email password email_verified utm_source utm_medium utm_campaign app_id email_consent gclid_url has_social_signup secret_key is_totp_enabled signup_device date_first_contact utm_data preferred_language);
+    qw(id email password email_verified utm_source utm_medium utm_campaign app_id email_consent gclid_url has_social_signup secret_key is_totp_enabled signup_device date_first_contact utm_data preferred_language trading_password);
 
 # generate attribute accessor
 for my $k (@fields) {
@@ -484,12 +484,22 @@ sub mt5_logins_with_group {
     my $mt5_logins_with_group = {};
 
     for my $login (sort $self->get_mt5_loginids()) {
-        my $group = BOM::MT5::User::Async::get_user($login)->else(sub { Future->done({}); })->get->{group} // '';
-
+        my $group = BOM::MT5::User::Async::get_user($login)->else(sub { Future->done({}) })->get->{group} // '';
         $mt5_logins_with_group->{$login} = $group if (not $filter or $group =~ /^$filter/);
     }
 
     return $mt5_logins_with_group;
+}
+
+=head2 dxtrade_loginids
+
+get dxtrade loginids for the user
+
+=cut
+
+sub dxtrade_loginids {
+    my $self = shift;
+    return grep { $_ =~ DXTRADE_REGEX } $self->loginids;
 }
 
 sub get_last_successful_login_history {
@@ -1148,33 +1158,9 @@ sub has_virtual_client {
     return undef;
 }
 
-=head2 update_mt5_passwords
+=head2 update_user_password
 
-Update all mt5 passwords for the user.
-
-=over 4
-
-=item * C<$new_password> - new user password
-
-=back
-
-Returns L<Future> object.
-
-=cut
-
-sub update_mt5_passwords {
-    my ($self, $new_password) = @_;
-
-    my @mt5_logins = $self->mt5_logins;
-
-    my @futures = map { BOM::MT5::User::Async::password_change({login => $_, new_password => $new_password, type => 'main'}) } @mt5_logins;
-
-    return Future->needs_all(@futures);
-}
-
-=head2 update_all_passwords
-
-Update clients and mt5 passwords for the user.
+Update user & clients password for the user.
 
 =over 4
 
@@ -1184,23 +1170,15 @@ Update clients and mt5 passwords for the user.
 
 =back
 
-Returns 1 on success, otherwise return error
+Returns 1 on success
 
 =cut
 
-sub update_all_passwords {
+sub update_user_password {
     my ($self, $new_password, $type) = @_;
     my $is_reset_password = ($type && $type eq 'reset_password') || 0;
     my $log               = '';
 
-    # update mt5 passwords
-    if (!BOM::Config::Runtime->instance->app_config->system->suspend->universal_password) {
-        $self->update_mt5_passwords($new_password)->get;
-        $log = $is_reset_password ? 'MT5 password has been reset' : 'MT5 password has been changed';
-        BOM::User::AuditLog::log($log, $self->email);
-    }
-
-    # update user & clients passwords
     my $hash_pw = BOM::User::Password::hashpw($new_password);
     $self->update_password($hash_pw);
 
@@ -1210,17 +1188,39 @@ sub update_all_passwords {
         $client->password($hash_pw);
         $client->save;
         $oauth->revoke_tokens_by_loginid($client->loginid);
-
-        if (!BOM::Config::Runtime->instance->app_config->system->suspend->universal_password) {
-            $client->status->set('migrated_universal_password', 'SYSTEM', 'Client has migrated to universal password')
-                unless $client->status->migrated_universal_password;
-        }
     }
 
     $log = $is_reset_password ? 'your password has been reset' : 'your password has been changed';
     BOM::User::AuditLog::log($log, $self->email);
 
     return 1;
+}
+
+=head2 update_trading_password
+
+Calls a db function to store a hashed trading_password for the user.
+
+=over 4
+
+=item * C<$trading_password> - new trading password
+
+=back
+
+Returns $self
+
+=cut
+
+sub update_trading_password {
+    my ($self, $trading_password) = @_;
+
+    my $hash_pw = BOM::User::Password::hashpw($trading_password);
+
+    $self->{trading_password} = $self->dbic->run(
+        fixup => sub {
+            $_->selectrow_array('select * from users.update_trading_password(?, ?)', undef, $self->{id}, $hash_pw);
+        });
+
+    return $self;
 }
 
 =head2 link_wallet_to_trading_account

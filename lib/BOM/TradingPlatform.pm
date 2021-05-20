@@ -41,6 +41,7 @@ use constant CLASS_DICT => {
 };
 use constant INTERFACE => qw(
     new_account
+    change_investor_password
     change_password
     deposit
     withdraw
