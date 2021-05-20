@@ -910,6 +910,7 @@ sub _validate_cancellation {
     # deal cancellation is not offered to crash/boom and step indices.
     if (   $self->underlying->submarket->name eq 'crash_index'
         or $self->underlying->submarket->name eq 'step_index'
+        or $self->underlying->submarket->name eq 'jump_index'
         or $self->underlying->market->name eq 'cryptocurrency')
     {
         return {

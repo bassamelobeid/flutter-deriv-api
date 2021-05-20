@@ -61,6 +61,11 @@ subtest 'multiplier range' => sub {
         cryZECUSD   => [5,   10],
         cryXMRUSD   => [5,   10],
         cryDSHUSD   => [5,   10],
+        JD10        => [100, 200, 300, 500, 1000],
+        JD25        => [50,  100, 150, 250, 500],
+        JD50        => [20,  40,  60,  100, 200],
+        JD75        => [15,  30,  50,  75,  150],
+        JD100       => [10,  20,  30,  50,  100],
     };
     my $args = {
         bet_type   => 'multup',

@@ -61,6 +61,11 @@ subtest 'commission for underlying' => sub {
         cryZECUSD   => [10,  0.01],
         cryXMRUSD   => [10,  0.01],
         cryDSHUSD   => [10,  0.01],
+        JD10        => [100, 0.000024],
+        JD25        => [100, 0.000059],
+        JD50        => [100, 0.000118],
+        JD75        => [15,  0.000177],
+        JD100       => [100, 0.000236],
     );
     # fixed time because commission for forex is a function of spread seasonality and economic events
     my $now  = Date::Utility->new('2020-06-10');
