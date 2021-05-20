@@ -496,3 +496,58 @@ common:
   cryZECUSD: *crypto_small_cap
   cryXMRUSD: *crypto_small_cap
   cryDSHUSD: *crypto_small_cap
+  JD10:
+    multiplier_range: [100, 200, 300, 500, 1000]
+    commission: 0.000024
+    cancellation_commission: 0.05
+    cancellation_duration_range: []
+    stop_out_level:
+      100: 10
+      200: 20
+      300: 30
+      500: 40
+      1000: 50
+  JD25:
+    multiplier_range: [50, 100, 150, 250 ,500]
+    commission: 0.000059
+    cancellation_commission: 0.05
+    cancellation_duration_range: []
+    stop_out_level:
+      50: 10
+      100: 20
+      150: 30
+      250: 40
+      500: 50
+  JD50:
+    multiplier_range: [20, 40, 60, 100, 200]
+    commission: 0.000118
+    cancellation_commission: 0.05
+    cancellation_duration_range: []
+    stop_out_level:
+      20: 10
+      40: 20
+      60: 30
+      100: 40
+      200: 50
+  JD75:
+    multiplier_range: [15, 30, 50, 75, 150]
+    commission: 0.000177
+    cancellation_commission: 0.05
+    cancellation_duration_range: []
+    stop_out_level:
+      15: 10
+      30: 20
+      50: 30
+      75: 40
+      150: 50
+  JD100:
+    multiplier_range: [10, 20, 30, 50, 100]
+    commission: 0.000236
+    cancellation_commission: 0.05
+    cancellation_duration_range: []
+    stop_out_level:
+      10: 10
+      20: 20
+      30: 30
+      50: 40
+      100: 50
