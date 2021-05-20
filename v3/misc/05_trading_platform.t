@@ -100,7 +100,7 @@ subtest 'passwords' => sub {
 
     my $params = {
         trading_platform_password_change => 1,
-        old_password                     => 'Pr0tect!',
+        old_password                     => 'Test1234',
         new_password                     => 'Destr0y!',
     };
 
