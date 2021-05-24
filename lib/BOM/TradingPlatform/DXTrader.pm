@@ -284,6 +284,17 @@ sub change_password {
         );
 
         die +{error_code => 'CouldNotChangePassword'} unless $resp->{success};
+
+        try {
+            $self->call_api(
+                $server,
+                'logout_user_by_login',
+                login  => $dxclient->{login},
+                domain => $dxclient->{domain},
+            );
+        } catch {
+            warn 'Failed to logout Deriv X login ' . $dxclient->{login} . ' for ' . $self->client->loginid;
+        }
     }
 
     return undef;
