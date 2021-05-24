@@ -141,6 +141,8 @@ sub new_account {
             $_->selectrow_array("SELECT nextval('users.devexperts_account_id')");
         });
 
+    $seq_num += $self->config->{real_account_ids_offset} // 0;
+
     my $prefix = $args{account_type} eq 'real' ? 'DXR' : 'DXD';
     my $account_code =
         $self->config->{real_account_ids} ? $prefix . $seq_num : $prefix . $self->unique_id;    # dx account id, must be unique in their system
@@ -699,7 +701,8 @@ sub dxtrade_login {
     my $self = shift;
 
     if ($self->config->{real_account_ids}) {
-        return $self->client->user->id;
+        my $prefix = $self->config->{real_account_ids_login_prefix} // '';
+        return $prefix . $self->client->user->id;
     } else {
         my $account = first { ($_->{platform} // '') eq 'dxtrade' } values $self->client->user->loginid_details->%*;
         return $account->{attributes}{login} if $account;

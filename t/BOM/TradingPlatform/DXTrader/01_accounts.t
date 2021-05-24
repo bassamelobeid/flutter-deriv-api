@@ -7,8 +7,24 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Script::DevExperts;
 use BOM::TradingPlatform;
 use BOM::Config::Runtime;
+use Test::MockModule;
 
 BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend->all(0);
+
+my $dxtrader_mock                 = Test::MockModule->new('BOM::TradingPlatform::DXTrader');
+my $real_account_ids_offset       = undef;
+my $real_account_ids_login_prefix = undef;
+
+$dxtrader_mock->mock(
+    'config',
+    sub {
+        return {
+            $dxtrader_mock->original('config')->(@_)->%*,
+            real_account_ids_offset       => $real_account_ids_offset,
+            real_account_ids_login_prefix => $real_account_ids_login_prefix,
+            real_account_ids              => 1,
+        };
+    });
 
 my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR'});
 
@@ -25,6 +41,7 @@ my $dxtrader = BOM::TradingPlatform->new(
 );
 isa_ok($dxtrader, 'BOM::TradingPlatform::DXTrader');
 
+$real_account_ids_login_prefix = 'TEST';
 my $account1 = $dxtrader->new_account(
     account_type => 'demo',
     password     => 'test',
@@ -40,7 +57,7 @@ cmp_deeply(
         balance               => num(10000),
         currency              => 'USD',
         display_balance       => '10000.00',
-        login                 => re('\w{40}'),
+        login                 => re('^TEST\d+$'),
         platform              => 'dxtrade',
         market_type           => 'synthetic',
         landing_company_short => 'svg',
@@ -63,8 +80,8 @@ cmp_deeply(
         attributes   => {
             clearing_code => 'default',
             client_domain => 'default',
-            login         => re('\w{40}'),
-            account_code  => re('\w{40}'),
+            login         => re('^TEST\d+$'),
+            account_code  => $account1->{account_id},
             market_type   => 'synthetic',
         }
     },
@@ -110,7 +127,7 @@ cmp_deeply(
             login         => $account2->{login},
             clearing_code => 'default',
             client_domain => 'default',
-            account_code  => re('\w{40}'),
+            account_code  => $account2->{account_id},
             market_type   => 'synthetic',
         }
     },
@@ -128,7 +145,7 @@ cmp_deeply(
     },
     {
         error_code     => 'DXExistingAccount',
-        message_params => [re('\w{40}')],
+        message_params => [re($account1->{account_id})],
     },
     'cannot create duplicate account'
 );
@@ -164,6 +181,31 @@ cmp_deeply([$client->user->get_trading_platform_loginids('dxtrader', 'demo')], b
 
 cmp_deeply([$client->user->get_trading_platform_loginids('dxtrader', 'real')], bag(qw/DXR1001 DXR1002/), 'Correct loginids reported');
 
+$real_account_ids_offset = 618;
+
+my $account4 = $dxtrader->new_account(
+    account_type => 'demo',
+    password     => 'test',
+    market_type  => 'financial',
+    currency     => 'USD',
+);
+
+cmp_deeply(
+    $account4,
+    {
+        account_id            => 'DXD1621',
+        account_type          => 'demo',
+        balance               => num(10000),
+        currency              => 'USD',
+        display_balance       => '10000.00',
+        login                 => $account1->{login},
+        platform              => 'dxtrade',
+        market_type           => 'financial',
+        landing_company_short => 'svg',
+    },
+    'created 4th account'
+);
+
 done_testing();
 
 sub _get_transaction_details {
@@ -175,3 +217,4 @@ sub _get_transaction_details {
         });
     return JSON::MaybeUTF8::decode_json_utf8($result);
 }
+
