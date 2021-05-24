@@ -1312,6 +1312,7 @@ sub _set_age_verification {
     }
 
     # We should sync age verification between allowed landing companies.
+
     my @allowed_lc_to_sync = @{$client->landing_company->allowed_landing_companies_for_age_verification_sync};
     # Apply age verification for one client per each landing company since we have a DB trigger that sync age verification between the same landing companies.
     my @clients_to_update =
@@ -2445,20 +2446,29 @@ sub signup {
     my @args = @_;
 
     my ($data) = @args;
+    my $loginid = $data->{loginid};
 
-    my ($emit, $error);
+    my $client = BOM::User::Client->new({loginid => $loginid})
+        or die 'Could not instantiate client for login ID ' . $loginid;
+
+    my $emitting = 'new_crypto_address';
     try {
-        $emit = BOM::Platform::Event::Emitter::emit(
-            'new_crypto_address',
+        BOM::Platform::Event::Emitter::emit(
+            $emitting,
             {
-                loginid => $data->{loginid},
+                loginid => $client->loginid,
             });
-    } catch ($e) {
-        $error = $e;
-    }
 
-    $log->warnf('Failed to emit event - new_crypto_address - for loginid: %s, after creating a new account with error: %s', $data->{loginid}, $error)
-        unless $emit;
+        $emitting = 'verify_false_profile_info';
+        BOM::Platform::Event::Emitter::emit(
+            $emitting,
+            {
+                loginid => $client->loginid,
+                map { $_ => $client->$_ } qw /first_name last_name/
+            }) unless $client->is_virtual;
+    } catch ($error) {
+        $log->warnf('Failed to emit %s event for loginid %s, while processing the signup event: %s', $emitting, $client->loginid, $error);
+    };
 
     return BOM::Event::Services::Track::signup(@args);
 }

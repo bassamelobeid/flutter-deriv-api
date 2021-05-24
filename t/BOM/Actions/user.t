@@ -1,5 +1,6 @@
 use strict;
 use warnings;
+use utf8;
 
 use Test::More;
 use Test::Warnings qw(warning);
@@ -46,8 +47,13 @@ $mock_segment->redefine(
         return $segment_response;
     });
 
+my @emit_args;
+my $mock_emitter = new Test::MockModule('BOM::Platform::Event::Emitter');
+$mock_emitter->mock('emit', sub { @emit_args = @_ });
+
 my @enabled_brands = ('deriv', 'binary');
 my $mock_brands    = Test::MockModule->new('Brands');
+
 $mock_brands->mock(
     'is_track_enabled' => sub {
         my $self = shift;
@@ -275,6 +281,7 @@ subtest 'user profile change event' => sub {
         }};
     undef @identify_args;
     undef @track_args;
+    undef @emit_args;
     my $segment_response = Future->done(1);
     my $result           = $action_handler->($args)->get;
     ok $result, 'Success profile_change result';
@@ -315,6 +322,8 @@ subtest 'user profile change event' => sub {
         }
         },
         'properties are set properly for user profile change event';
+
+    ok !@emit_args, 'No event is emitted';
 
     subtest 'apply sanctions on profile change' => sub {
         my $sanctions_mock = Test::MockModule->new('BOM::Platform::Client::Sanctions');
@@ -364,10 +373,12 @@ subtest 'user profile change event' => sub {
                         'address_line_1' => 'other st',
                     },
                 }};
-
+            undef @emit_args;
             my $result = $action_handler->($args)->get;
             ok $result, 'Success profile_change result';
             is scalar keys %sanctions_args, 0, 'Sanctions not triggered for address_line_1 update';
+
+            ok !@emit_args, 'No false info event emitted for address update';
         };
 
         # Sanctions called for update, but this data is innoffensive
@@ -514,6 +525,251 @@ subtest 'user profile change event' => sub {
     };
 };
 
+subtest 'false profile info' => sub {
+    my $req = BOM::Platform::Context::Request->new(
+        brand_name => 'deriv',
+        language   => 'en'
+    );
+    request($req);
+
+    my $event_handler = BOM::Event::Process::get_action_mappings()->{verify_false_profile_info};
+
+    my $client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+    });
+
+    my $client_mlt = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'MLT',
+    });
+
+    my $test_user = BOM::User->create(
+        email          => 'false_profile@deriv.com',
+        password       => "hello",
+        email_verified => 1,
+    );
+
+    $test_user->add_client($client_cr);
+    $test_user->add_client($client_mlt);
+
+    my @mail_box;
+    my $mock_email = Test::MockModule->new('BOM::Event::Actions::User');
+    $mock_email->mock('send_email' => sub { push @mail_box, shift; });
+
+    my $args = {
+        loginid => $client_cr->loginid,
+    };
+
+    my @test_set = ({
+            field      => 'first_name',
+            'value'    => 'bcd',
+            result     => 'fake',
+            label      => 'all-consonant latin ascii name',
+            email_sent => 1
+        },
+        {
+            field      => 'first_name',
+            'value'    => 'asdf',
+            result     => 0,
+            label      => 'latin ascii name with vowels',
+            email_sent => 0
+        },
+        {
+            field      => 'last_name',
+            'value'    => 'محمد',
+            result     => 'fake',
+            label      => 'arabic unicode name without vowels',
+            email_sent => 1
+        },
+        {
+            field      => 'last_name',
+            'value'    => 'احمد',
+            result     => 'fake',
+            label      => 'arabic name is locked even with vowels (unless it is seen before)',
+            email_sent => 1
+        },
+        {
+            field      => 'first_name',
+            'value'    => 'лкс',
+            result     => 'fake',
+            label      => 'cyrillic unicode name without vowels',
+            email_sent => 1
+        },
+        {
+            field      => 'first_name',
+            'value'    => 'Алексе́й',
+            result     => 0,
+            label      => 'cyrillic unicode name with vowels',
+            email_sent => 0
+        },
+        {
+            field      => 'last_name',
+            'value'    => 'company',
+            result     => 'corporate',
+            label      => 'corporate names are not banned',
+            email_sent => 1
+        },
+        {
+            field      => 'address_line_1',
+            'value'    => 'bcd',
+            result     => 0,
+            label      => 'address field is not checked',
+            email_sent => 0
+        },
+        {
+            field      => 'secret_answer',
+            'value'    => 'bcd',
+            result     => 0,
+            label      => 'secret_answer is not checked',
+            email_sent => 0
+        },
+    );
+
+    my $brand = Brands->new(name => 'deriv');
+    for my $test_case (@test_set) {
+        $args = {
+            loginid             => $client_cr->loginid,
+            $test_case->{field} => $test_case->{value}};
+        $event_handler->($args);
+        test_fake_name($test_case, $client_cr,  \@mail_box, $brand);
+        test_fake_name($test_case, $client_mlt, \@mail_box, $brand);
+
+        $_->status->clear_cashier_locked for $test_user->clients;
+        $_->status->clear_unwelcome      for $test_user->clients;
+        undef @mail_box;
+    }
+
+    subtest 'corner cases' => sub {
+        my $mock_client = Test::MockModule->new('BOM::User::Client');
+
+        # accounts won't be locked if POI is verified
+        $mock_client->mock(get_poi_status => sub { return 'verified' });
+        $args = {
+            loginid    => $client_cr->loginid,
+            first_name => 'BBBBBB',
+            last_name  => 'DDDDDD'
+        };
+        $event_handler->($args);
+        test_fake_name({
+                result     => 0,
+                value      => 'BBBBBB',
+                label      => 'no lock after POI',
+                email_sent => 0
+            },
+            $client_cr,
+            \@mail_box,
+            $brand
+        );
+        $mock_client->unmock('get_poi_status');
+
+        # if account has deposits, the account will be cashier-locked
+        $mock_client->mock(has_deposits => sub { return 1 });
+        $event_handler->($args);
+        test_fake_name({
+                result     => 'fake',
+                value      => 'BBBBBB',
+                label      => 'accounts with deposits are cashier_locked',
+                status     => 'cashier_locked',
+                reason     => 'fake profile info - pending POI',
+                email_sent => 1
+            },
+            $client_cr,
+            \@mail_box,
+            $brand
+        );
+        $_->status->clear_cashier_locked for $test_user->clients;
+        undef @mail_box;
+        $mock_client->unmock('has_deposits');
+
+        # Sibling is locked with a dummy reason -> email will be sent
+        $client_cr->status->upsert('unwelcome', 'system', 'dummy reason');
+        $event_handler->($args);
+        undef $client_cr->{status};
+        is $client_cr->status->reason('unwelcome'), 'dummy reason', 'CR unwelcome is not changed';
+        ok !$client_cr->status->cashier_locked, 'CR client is not cashier-locked';
+        test_fake_name({
+                result     => 'fake',
+                value      => 'BBBBBB',
+                label      => 'CR was already locked (with dummy reason)',
+                status     => 'unwelcome',
+                email_sent => 1
+            },
+            $client_mlt,
+            \@mail_box,
+            $brand
+        );
+        $_->status->clear_unwelcome for $test_user->clients;
+        undef @mail_box;
+
+        # Sibling is locked with false-name reason -> no email is sent
+        $client_cr->status->upsert('unwelcome', 'system', 'fake profile info - pending POI');
+        $event_handler->($args);
+        ok !$client_cr->status->cashier_locked, 'CR client is not cashier-locked';
+        test_fake_name({
+                result     => 'fake',
+                value      => 'BBBBBB',
+                label      => 'CR was already locked with false-name reason',
+                status     => 'unwelcome',
+                email_sent => 0
+            },
+            $client_mlt,
+            \@mail_box,
+            $brand
+        );
+        $_->status->clear_unwelcome for $test_user->clients;
+        undef @mail_box;
+
+        $mock_client->unmock_all;
+    };
+
+    $mock_email->unmock_all;
+};
+
+sub test_fake_name {
+    my ($test_case, $client, $emails, $brand) = @_;
+
+    my %reason = (
+        corporate => 'potential corporate account - pending POI',
+        fake      => 'fake profile info - pending POI',
+    );
+    my $loginid = $client->loginid;
+    undef $client->{status};
+
+    my $status = $test_case->{status} // 'unwelcome';
+    if ($test_case->{result}) {
+        ok $reason{$test_case->{result}}, "Test result is <$test_case->{result}> - $test_case->{label} -$loginid";
+        ok $client->status->$status, "client is $status - $test_case->{label}";
+        is $client->status->$status->{reason}, $reason{$test_case->{result}}, "correct  status reason - $test_case->{label} -$loginid";
+
+    } else {
+        ok !$client->status->unwelcome,      "client is not unwelcome - $test_case->{label} -$loginid";
+        ok !$client->status->cashier_locked, "client is not locked - $test_case->{label} - $loginid";
+    }
+
+    if ($test_case->{email_sent}) {
+        is scalar @$emails, 1, 'Just one email is sent - system does not sent duplicate emails';
+        is_deeply $emails->[0],
+            {
+            from          => $brand->emails('no-reply'),
+            to            => $client->email,
+            subject       => "Account verification",
+            template_name => 'authentication_required',
+            template_args => {
+                l                  => \&BOM::Platform::Context::localize,
+                name               => $client->first_name,
+                title              => "Account verification",
+                authentication_url => $brand->authentication_url,
+                profile_url        => $brand->profile_url,
+            },
+            use_email_template    => 1,
+            email_content_is_html => 1,
+            use_event             => 0
+            },
+            'email args are correct';
+    } else {
+        ok !@$emails, "no email is sent - $test_case->{label} - $loginid";
+    }
+}
+
 sub test_segment_customer {
     my ($customer, $test_client, $currencies, $created_at) = @_;
 
@@ -553,5 +809,9 @@ sub test_segment_customer {
         },
         'Customer traits are set correctly';
 }
+
+$mock_segment->unmock_all;
+$mock_emitter->unmock_all;
+$mock_brands->unmock_all;
 
 done_testing();

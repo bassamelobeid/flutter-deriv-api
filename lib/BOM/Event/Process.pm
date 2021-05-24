@@ -96,6 +96,7 @@ my $action_mapping = {
     crypto_withdrawal           => \&BOM::Event::Actions::Client::handle_crypto_withdrawal,
     client_promo_codes_upload   => \&BOM::Event::Actions::Client::client_promo_codes_upload,
     shared_payment_method_found => \&BOM::Event::Actions::Client::shared_payment_method_found,
+    verify_false_profile_info   => \&BOM::Event::Actions::User::verify_false_profile_info,
     dispute_notification        => \&BOM::Event::Actions::Client::DisputeNotification::dispute_notification,
     account_reactivated         => \&BOM::Event::Actions::Client::account_reactivated,
     check_onfido_rules          => \&BOM::Event::Actions::Client::check_onfido_rules,

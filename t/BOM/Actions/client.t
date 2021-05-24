@@ -37,6 +37,10 @@ $mock_segment->redefine(
         return $segment_response;
     });
 
+my @emit_args;
+my $mock_emitter = new Test::MockModule('BOM::Platform::Event::Emitter');
+$mock_emitter->mock('emit', sub { push @emit_args, @_ });
+
 my @enabled_brands = ('deriv', 'binary');
 my $mock_brands    = Test::MockModule->new('Brands');
 $mock_brands->mock(
@@ -528,6 +532,7 @@ subtest 'signup event' => sub {
     request($req);
     undef @identify_args;
     undef @track_args;
+    undef @emit_args;
     my $vr_args = {
         loginid    => $virtual_client2->loginid,
         properties => {
@@ -587,6 +592,8 @@ subtest 'signup event' => sub {
         'properties is properly set for virtual account signup';
     test_segment_customer($customer, $virtual_client2, '', $virtual_client2->date_joined, 'virtual', 'labuan,svg');
 
+    is_deeply \@emit_args, ['new_crypto_address', {loginid => $virtual_client2->loginid}], 'new_crypto_address event is emitted';
+
     my $test_client2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'CR',
         email       => 'test2@bin.com',
@@ -600,6 +607,7 @@ subtest 'signup event' => sub {
 
     undef @identify_args;
     undef @track_args;
+    undef @emit_args;
 
     $result = $handler->($real_args)->get;
 
@@ -658,6 +666,19 @@ subtest 'signup event' => sub {
         }
         },
         'properties is set properly for real account signup event';
+
+    is_deeply \@emit_args,
+        [
+        'new_crypto_address',
+        {loginid => $test_client2->loginid},
+        'verify_false_profile_info',
+        {
+            loginid    => $test_client2->loginid,
+            first_name => $test_client2->first_name,
+            last_name  => $test_client2->last_name,
+        }
+        ],
+        'new_crypto_address and verify_false_profile_info events are emitted';
 
     $test_client2->set_default_account('EUR');
 
