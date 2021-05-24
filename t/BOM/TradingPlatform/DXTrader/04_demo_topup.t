@@ -45,13 +45,13 @@ $dxtrader->call_api(
     account_code  => $meta->{attributes}{account_code},
     clearing_code => $meta->{attributes}{clearing_code},
     id            => $dxtrader->unique_id,
-    amount        => $account->{balance} - 100,
+    amount        => $account->{balance} - 1000,
     currency      => $account->{currency},
 );
 
 is exception {
     $dxtrader->deposit(to_account => $account->{account_id});
-}, undef, 'successful top up';
+}, undef, 'can top up at 1000';
 
 my $resp = $dxtrader->call_api(
     $account->{account_type},
@@ -60,6 +60,6 @@ my $resp = $dxtrader->call_api(
     clearing_code => $meta->{attributes}{clearing_code},
 );
 
-cmp_ok $resp->{content}{balance}, '==', 10100, 'expected account balance after top up';
+cmp_ok $resp->{content}{balance}, '==', 11000, 'expected account balance after top up';
 
 done_testing();

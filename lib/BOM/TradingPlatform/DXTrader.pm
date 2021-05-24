@@ -521,7 +521,7 @@ sub demo_top_up {
     die +{
         error_code     => 'DXDemoTopupBalance',
         message_params => [formatnumber('amount', 'USD', DEMO_TOPUP_MINIMUM_BALANCE), 'USD']}
-        unless $check->{content}{balance} < DEMO_TOPUP_MINIMUM_BALANCE;
+        unless $check->{content}{balance} <= DEMO_TOPUP_MINIMUM_BALANCE;
 
     my $resp = $self->call_api(
         $account->{account_type},
