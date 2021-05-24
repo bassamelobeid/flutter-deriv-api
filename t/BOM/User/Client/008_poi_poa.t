@@ -4,6 +4,7 @@ use Test::More;
 use Test::MockModule;
 use BOM::User::Client;
 use BOM::User;
+use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 
@@ -711,7 +712,7 @@ subtest 'needs_poa_verification' => sub {
                 });
             $mocked_client->mock(
                 'binary_user_id' => sub {
-                    return 'mocked';
+                    return -1;
                 });
             $resubmission = 1;
 
@@ -1138,7 +1139,7 @@ subtest 'shared payment method' => sub {
         });
     $mocked_client->mock(
         'binary_user_id' => sub {
-            return 'mocked';
+            return -1;
         });
 
     ok !$test_client_cr->needs_poi_verification, 'Shared PM is gone and so does the needs POI verification';
@@ -1146,6 +1147,29 @@ subtest 'shared payment method' => sub {
     $mocked_client->unmock_all;
     $mocked_status->unmock_all;
     $mocked_onfido->unmock_all;
+};
+
+subtest 'false profile info' => sub {
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+        email       => 'locked_for_false_info@email.com'
+    });
+    my $user = BOM::User->create(
+        email          => 'locked_for_false_info@email.com',
+        password       => "Coconut9009",
+        email_verified => 1,
+    );
+
+    $user->add_client($client);
+
+    ok !$client->needs_poi_verification, 'POI is not requrired in the begining';
+    ok !$client->needs_poa_verification, 'POA is not requrired in the begining';
+
+    my $mocked_client = Test::MockModule->new('BOM::User::Client');
+    $mocked_client->mock('locked_for_false_profile_info', sub { return 1 });
+
+    ok $client->needs_poi_verification, 'POI is requrired because for false profile info';
+    ok !$client->needs_poa_verification, 'POA is not requrired for false profile info';
 };
 
 subtest 'payment agent' => sub {

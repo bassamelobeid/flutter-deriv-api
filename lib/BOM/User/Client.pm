@@ -99,6 +99,7 @@ use constant {
 
     MT5_REGEX                           => qr/^MT[DR]?(?=\d+$)/,
     VIRTUAL_REGEX                       => qr/^VR/,
+    FALSE_PROFILE_INFO_REGEX            => qr/(potential corporate account|fake profile info)/,
     PROFILE_FIELDS_IMMUTABLE_AFTER_AUTH => [
         sort qw/account_opening_reason citizen date_of_birth first_name last_name place_of_birth
             residence salutation secret_answer secret_question tax_residence tax_identification_number /,
@@ -5650,6 +5651,14 @@ sub update_status_after_auth_fa {
             }
         }
 
+        if ($self->get_poi_status(undef, 0) eq 'verified') {
+            for my $code (qw/cashier_locked unwelcome/) {
+                my $status   = $sibling->status->$code;
+                my $clear_fn = "clear_$code";
+                $sibling->status->$clear_fn if $status and $status->{reason} =~ FALSE_PROFILE_INFO_REGEX;
+            }
+        }
+
         if ($sibling->is_financial_assessment_complete) {
             # Clear unwelcome status for clients without financial assessment and have breached
             # social responsibility thresholds
@@ -5670,6 +5679,27 @@ sub update_status_after_auth_fa {
         my $vr_acc = BOM::User::Client->new({loginid => $self->user->bom_virtual_loginid});
         $vr_acc->status->setnx('age_verification', 'system', $msg // '');
     }
+}
+
+=head2 locked_for_false_profile_info
+
+Checks if the client's account is locked for providing false or corporate profile information.
+Such clients have B<cashier_locked> or B<unwelcome> status with predefined reasons.
+Returns 1 if the account was locked for providing false information otherwise undef.  
+=cut
+
+sub locked_for_false_profile_info {
+    my $self = shift;
+
+    return undef if $self->is_virtual;
+
+    for my $code (qw/cashier_locked unwelcome/) {
+        my $reason = $self->status->reason($code) // '';
+
+        return 1 if $reason =~ FALSE_PROFILE_INFO_REGEX;
+    }
+
+    return;
 }
 
 =head2 anonymize_client
@@ -6080,9 +6110,14 @@ sub needs_poi_verification {
         return 1 if $self->status->shared_payment_method;
         # POI is required for payment agents
         return 1 if $self->get_payment_agent;
+        #  Account locked  for  false profile, will be unlocked only by POI
+        return 1 if $self->locked_for_false_profile_info;
 
-        $is_required_auth //= $self->is_verification_required(check_authentication_status => 1);
-        return 1 if $is_required_auth and $status eq 'none';
+        $is_required_auth //=
+            # requires both poi and poa needed
+            $self->is_verification_required(check_authentication_status => 1);
+
+        return 1 if $is_required_auth && $status eq 'none';
 
         # Try to infer state from onfido results
         my $country_code     = uc($self->place_of_birth || $self->residence // '');

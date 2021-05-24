@@ -250,6 +250,74 @@ subtest 'closed status code' => sub {
     cmp_deeply($client->status->all, [], 'closed status is removed along with disabled status');
 };
 
+subtest 'false profile lock' => sub {
+    my $email   = 'locked_for_false_info@email.com';
+    my $client1 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+        email       => $email
+    });
+    my $client2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+        email       => $email
+    });
+    my $user = BOM::User->create(
+        email          => 'locked_for_false_info@email.com',
+        password       => "Coconut9009",
+        email_verified => 1,
+    );
+
+    $user->add_client($client1);
+    $user->add_client($client2);
+
+    ok !$client1->locked_for_false_profile_info, 'client1 is not locked yet';
+    ok !$client2->locked_for_false_profile_info, 'client2 is not locked yet';
+
+    my @test_cases = ({
+            status => 'unwelcome',
+            reason => 'arbitrary reason',
+            result => undef
+        },
+        {
+            status => 'unwelcome',
+            reason => 'potential corporate account - pending KYC',
+            result => 1
+        },
+        {
+            status => 'unwelcome',
+            reason => 'fake profile info - pending KYC',
+            result => 1
+        },
+        {
+            status => 'cashier_locked',
+            reason => 'arbitrary reason',
+            result => undef
+        },
+        {
+            status => 'cashier_locked',
+            reason => 'potential corporate account - pending KYC',
+            result => 1
+        },
+        {
+            status => 'cashier_locked',
+            reason => 'fake profile info - pending KYC',
+            result => 1
+        },
+        {
+            status => 'withdrawal_locked',
+            reason => 'fake profile info - pending KYC',
+            result => undef
+        });
+
+    for my $test_case (@test_cases) {
+        $client1->status->set($test_case->{status}, 'test', $test_case->{reason});
+        is $client1->locked_for_false_profile_info, $test_case->{result},
+            "client's result is correct for <$test_case->{status}>, <$test_case->{reason}>";
+        ok !$client2->locked_for_false_profile_info, 'Sibling client is not affected';
+
+        reset_client_statuses($client1);
+    }
+};
+
 subtest 'Upsert' => sub {
     reset_client_statuses($client) if $client->status->all->@*;
     my $mock = Test::MockModule->new('BOM::User::Client::Status');
