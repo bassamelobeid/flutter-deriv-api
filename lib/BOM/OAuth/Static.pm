@@ -60,7 +60,6 @@ my $config = {
         INVALID_LOGIN_TYPE         => "The provided login type is invalid.",
         INVALID_DATE_FIRST_CONTACT => "The provided date_first_contact is invalid.",
         NEED_JSON_BODY             => "The request must contains JSON body.",
-        API_LOGIN_OTP_ENABLED      => "You cannot perform login with enabled TOTP at the moment.",
         UNOFFICIAL_APP             => "Using this endpoint is allowed only for official apps.",
         SUSPICIOUS_BLOCKED         => 'Suspicious activity detected from this device - for safety, login has been blocked temporarily.',
         MISSED_CONNECTION_TOKEN    => "The connection_token not given.",
@@ -77,7 +76,9 @@ my $config = {
         INVALID_RESIDENCE    => "Sorry, our service is currently unavailable in your region.",
         DUPLICATE_EMAIL      =>
             "Your provided email address is already in use by another Login ID. According to our terms and conditions, you may only register once through our site.",
-        NO_APP_TOKEN_FOUND => "There is no token defined for this application.",
+        NO_APP_TOKEN_FOUND        => "There is no token defined for this application.",
+        MISSING_ONE_TIME_PASSWORD => "Please provide an authentication code.",
+        TFA_FAILURE               => "Invalid authentication code.",
     }};
 
 =head2 get_message_mapping

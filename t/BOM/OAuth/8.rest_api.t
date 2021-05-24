@@ -45,7 +45,7 @@ $system_client_cr->email($system_user_email);
 $system_client_cr->save;
 my $sytem_user = BOM::User->create(
     email    => $system_user_email,
-    password => $hash_pwd,
+    password => $hash_pwd
 );
 $sytem_user->add_client($system_client_cr);
 
@@ -60,7 +60,7 @@ $social_client_cr->save;
 my $social_user = BOM::User->create(
     email             => $social_user_email,
     password          => $hash_pwd,
-    has_social_signup => 1,
+    has_social_signup => 1
 );
 $social_user->add_client($social_client_cr);
 
@@ -72,6 +72,16 @@ $api_mock->mock('_secret', sub { 'dummy' });
 my $is_official_app;
 my $model_mock = Test::MockModule->new('BOM::Database::Model::OAuth');
 $model_mock->mock('is_official_app', sub { $is_official_app });
+
+# Mocking BOM::User::TOTP since _verify_otp only checks if is_totp_enabled then calls verify_totp
+my $totp_mock  = Test::MockModule->new('BOM::User::TOTP');
+my $totp_value = '323667';
+$totp_mock->mock(
+    'verify_totp',
+    sub {
+        my (undef, undef, $totp) = @_;
+        return $totp eq $totp_value;
+    });
 
 # Create a challenge from app_id and expire using the dummy secret
 my $challenger = sub {
@@ -352,16 +362,61 @@ subtest 'login' => sub {
             {
                 Authorization => "Bearer $jwt_token",
             })->status_is(200)->json_has('/tokens');
+
+        # Updating system_user to is_totp_enabled
+        $sytem_user->update_totp_fields(is_totp_enabled => 1);
+        note "Missing ONE TIME PASSWORD";
+        $post->(
+            $login_url,
+            {
+                app_id            => $app_id,
+                type              => $login_type,
+                email             => $system_user_email,
+                password          => $password,
+                one_time_password => ''
+            },
+            {
+                Authorization => "Bearer $jwt_token",
+            })->status_is(400)->json_is('/error_code', 'MISSING_ONE_TIME_PASSWORD');
+
+        note "Wrong ONE TIME PASSWORD";
+        $post->(
+            $login_url,
+            {
+                app_id            => $app_id,
+                type              => $login_type,
+                email             => $system_user_email,
+                password          => $password,
+                one_time_password => 'XyZxYz'
+            },
+            {
+                Authorization => "Bearer $jwt_token",
+            })->status_is(400)->json_is('/error_code', 'TFA_FAILURE');
+
+        note "Successful Login with ONE TIME PASSWORD";
+        $post->(
+            $login_url,
+            {
+                app_id            => $app_id,
+                type              => $login_type,
+                email             => $system_user_email,
+                password          => $password,
+                one_time_password => $totp_value
+            },
+            {
+                Authorization => "Bearer $jwt_token",
+            })->status_is(200)->json_has('/tokens');
     };
 
     subtest 'Login via social' => sub {
         my $login_type = 'social';
+
         note "Missed connection token";
         $post->(
             $login_url,
             {
                 app_id => $app_id,
-                type   => $login_type,
+                type   => $login_type
             },
             {
                 Authorization => "Bearer $jwt_token",
@@ -399,6 +454,7 @@ subtest 'login' => sub {
                 };
             });
 
+        note "Successful social login without ONE TIME PASSWORD";
         $post->(
             $login_url,
             {
@@ -409,9 +465,50 @@ subtest 'login' => sub {
             {
                 Authorization => "Bearer $jwt_token",
             })->status_is(200)->json_has('/tokens');
+
+        # Updating social_user to is_totp_enabled
+        $social_user->update_totp_fields(is_totp_enabled => 1);
+        note "Missing ONE TIME PASSWORD";
+        $post->(
+            $login_url,
+            {
+                app_id            => $app_id,
+                type              => $login_type,
+                connection_token  => 'true',
+                one_time_password => ''
+            },
+            {
+                Authorization => "Bearer $jwt_token",
+            })->status_is(400)->json_is('/error_code', 'MISSING_ONE_TIME_PASSWORD');
+
+        note "Wrong ONE TIME PASSWORD";
+        $post->(
+            $login_url,
+            {
+                app_id            => $app_id,
+                type              => $login_type,
+                connection_token  => 'true',
+                one_time_password => 'XyZxYz'
+            },
+            {
+                Authorization => "Bearer $jwt_token",
+            })->status_is(400)->json_is('/error_code', 'TFA_FAILURE');
+
+        note "Successful social login with ONE TIME PASSWORD";
+        $post->(
+            $login_url,
+            {
+                app_id            => $app_id,
+                type              => $login_type,
+                connection_token  => 'true',
+                one_time_password => $totp_value,
+            },
+            {
+                Authorization => "Bearer $jwt_token",
+            })->status_is(200)->json_has('/tokens');
     };
 };
 
 $api_mock->unmock_all;
-
+$totp_mock->unmock_all;
 done_testing()

@@ -28,6 +28,7 @@ use Syntax::Keyword::Try;
 use Text::Trim;
 use WWW::OneAll;
 
+use BOM::User::TOTP;
 use BOM::Config::Redis;
 use BOM::Config;
 use BOM::Database::Model::UserConnect;
@@ -224,8 +225,6 @@ sub login {
     my $client  = $clients->[0];
     return $c->_make_error('NO_USER_IDENTITY') unless $client;
 
-    return $c->_make_error('API_LOGIN_OTP_ENABLED') if $client->user->{is_totp_enabled};
-
     if ($c->tx and $c->tx->req and $c->tx->req->headers->header('REMOTE_ADDR')) {
         $ip = $c->tx->req->headers->header('REMOTE_ADDR');
     }
@@ -292,6 +291,7 @@ sub _perform_system_login {
             code => $err,
         };
     }
+    _verify_otp($result->{user}, defang($c->req->json->{one_time_password}));
 
     return $result;
 }
@@ -436,7 +436,37 @@ sub _perform_social_login {
             app            => $app,
             oneall_user_id => $user->{id}});
 
+    _verify_otp($result->{user}, defang($c->req->json->{one_time_password}));
+
     return $result;
+}
+
+=head2 _verify_otp
+
+Checks if OTP is enabled and validates the OTP
+
+=over 4
+
+=item * C<$user> User object
+
+=item * C<$otp> One Time Password
+
+=back
+
+=cut
+
+sub _verify_otp {
+    my ($user, $otp) = @_;
+    if ($user->{is_totp_enabled}) {
+        die +{
+            code   => 'MISSING_ONE_TIME_PASSWORD',
+            status => 400
+        } unless $otp;
+        die +{
+            code   => 'TFA_FAILURE',
+            status => 400
+        } unless BOM::User::TOTP->verify_totp($user->{secret_key}, $otp);
+    }
 }
 
 =head2 _jwt_token
@@ -533,7 +563,7 @@ Helper that make and return a generic error response.
 
 =item * C<$error_code> - The error code for prepare message for user end.
 
-=item * C<$status_code> - The http status code 
+=item * C<$status_code> - The http status code
 
 =back
 
@@ -559,7 +589,7 @@ sub _make_error {
     );
 }
 
-=head2 _secret 
+=head2 _secret
 
 Helper that retrieves the current secret for hmac signing.
 
@@ -571,4 +601,4 @@ sub _secret {
     return $c->app->secrets->@[0] // 'dummy';
 }
 
-1
+1;
