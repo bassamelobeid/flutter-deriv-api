@@ -525,6 +525,35 @@ subtest 'has valid documents' => sub {
 
         ok $client_cr->has_valid_documents($docs, 'proof_of_identity'), 'Expire check not required';
         ok $client_cr->has_valid_documents($docs, 'other'),             'Expire check not required';
+
+        subtest 'Enforce' => sub {
+            my $client_mock = Test::MockModule->new('BOM::User::Client');
+            $client_mock->mock(
+                'documents_uploaded',
+                sub {
+                    return $docs;
+                });
+
+            $docs = {
+                'proof_of_identity' => {
+                    'is_expired' => 1,
+                    'documents'  => {},
+                }};
+
+            ok $client_cr->has_valid_documents($docs, 'proof_of_identity'), 'Expire check not enforced';
+            ok !$client_cr->documents_expired(), 'Expire check not enforced';
+
+            $docs = {
+                'proof_of_identity' => {
+                    'is_expired' => 1,
+                    'documents'  => {},
+                }};
+
+            ok !$client_cr->has_valid_documents($docs, 'proof_of_identity', 1), 'Expire check was enforced';
+            ok $client_cr->documents_expired(1), 'Expire check was enforced';
+
+            $client_mock->unmock('documents_uploaded');
+        };
     };
 
     $mock_client->unmock_all;
@@ -1012,6 +1041,26 @@ subtest 'Lifetime Valid Documents' => sub {
 
     ok $client->documents_expired(), 'Client has expired docs';
     ok !$client->has_valid_documents(), 'Client does not have valid docs';
+
+    ok upload_new_doc(
+        $client,
+        {
+            document_type   => 'passport',
+            document_format => 'PNG',
+            expiration_date => 'yesterday',
+            document_id     => '993439339',
+            checksum        => '235123123',
+            comments        => 'text',
+            page_type       => 'back',
+            issue_date      => undef,
+            lifetime_valid  => undef,
+            status          => 'uploaded',
+        }
+        ),
+        'Expired document uploaded';
+
+    ok $client->documents_expired(), 'Client has expired docs still';
+    ok !$client->has_valid_documents(), 'Client does not have valid docs still';
 
     my $documents_uploaded = $client->documents_uploaded();
     ok $documents_uploaded->{proof_of_identity}->{expiry_date}, 'POI has expiry_date reported';

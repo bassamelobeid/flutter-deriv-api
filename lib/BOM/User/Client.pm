@@ -643,16 +643,24 @@ documents_expired returns a boolean indicating if this client has all his
 POI documents expired (note at least one non expired document make this method return 0).
 It also returns 0 if there are no documents in sight.
 
+It may take the following arguments:
+
+=over 4
+
+=item * enforce, (optional) activate this flag to always check for expired docs no matter the context
+
+=back
+
 =cut
 
 sub documents_expired {
-    my ($self) = @_;
+    my ($self, $enforce) = @_;
 
     my $documents = $self->documents_uploaded();
 
     # no POI documents
     return 0 unless defined $documents->{proof_of_identity}{documents};
-    return $self->has_valid_documents($documents, 'proof_of_identity') ? 0 : 1;
+    return $self->has_valid_documents($documents, 'proof_of_identity', $enforce) ? 0 : 1;
 }
 
 =head2 documents_uploaded
@@ -740,13 +748,6 @@ sub documents_uploaded {
             # there should be no expiration date for POA
             next if $type eq 'proof_of_address';
 
-            # Populate the lifetime valid hashref per category
-            $has_lifetime_valid->{$type} = 1 if $single_document->lifetime_valid;
-            next                             if $has_lifetime_valid->{$type};
-
-            my $expires = $documents{$type}{documents}{$single_document->file_name}{expiry_date};
-            next unless $expires;
-
             # If doc is in Needs Review and age_verification is true, then flag the category as pending
             # note that this is a `maybe pending` and can be cancelled some lines below outside the looping
             $documents{proof_of_identity}{is_pending} = 1
@@ -754,6 +755,13 @@ sub documents_uploaded {
 
             # only verified documents pass for expiration analysis
             next if $doc_status ne 'verified';
+
+            # Populate the lifetime valid hashref per category
+            $has_lifetime_valid->{$type} = 1 if $single_document->lifetime_valid;
+            next                             if $has_lifetime_valid->{$type};
+
+            my $expires = $documents{$type}{documents}{$single_document->file_name}{expiry_date};
+            next unless $expires;
 
             # Dont propagate expiry if is age verified by Experian
             next if $self->status->is_experian_validated and $type eq 'proof_of_identity';
@@ -811,6 +819,8 @@ It may take the following arguments:
 
 =item * type, (optional) the type of document we are checking, check them all if not specified
 
+=item * enforce, (optional) activate this flag to always check for expired docs no matter the context
+
 =back
 
 Returns
@@ -819,10 +829,10 @@ Returns
 =cut
 
 sub has_valid_documents {
-    my ($self, $documents, $type) = @_;
+    my ($self, $documents, $type, $enforce) = @_;
     $documents //= $self->documents_uploaded();
 
-    my $is_document_expiry_check_required = $self->is_document_expiry_check_required();
+    my $is_document_expiry_check_required = $enforce // $self->is_document_expiry_check_required();
 
     # If type is specified disregard the other types
     # and ensure there is a `documents` section defined
@@ -5982,7 +5992,6 @@ sub get_poi_status {
     my ($self, $documents) = @_;
     # Note optional arguments will be resolved if not provided
     $documents //= $self->documents_uploaded();
-
     my ($is_poi_already_expired, $is_poi_pending) =
         @{$documents->{proof_of_identity}}{qw/is_expired is_pending/};
 
