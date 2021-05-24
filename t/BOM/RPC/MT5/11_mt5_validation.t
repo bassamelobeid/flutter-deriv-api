@@ -95,6 +95,15 @@ $mocked_mt5->mock(
     },
 );
 
+my $mock_client = Test::MockModule->new('BOM::User::Client');
+my $documents_expired;
+
+$mock_client->mock(
+    'documents_expired',
+    sub {
+        return $documents_expired // $mock_client->original('documents_expired')->(@_);
+    });
+
 my $c = BOM::Test::RPC::QueueClient->new();
 
 subtest 'new account' => sub {
@@ -344,6 +353,18 @@ subtest 'CR account types - low risk' => sub {
     );
     authenticate($client);
 
+    $documents_expired = 1;
+    create_mt5_account->(
+        $c, $token, $client,
+        {
+            account_type     => 'financial',
+            mt5_account_type => 'financial_stp'
+        },
+        'ExpiredDocumentsMT5',
+        'valid documents are required for financial_stp mt5 accounts'
+    );
+    $documents_expired = 0;
+
     $login = create_mt5_account->(
         $c, $token, $client,
         {
@@ -441,8 +462,20 @@ subtest 'CR account types - high risk' => sub {
         'AuthenticateAccount',
         'authentication is required by labuan'
     );
-
     authenticate($client);
+
+    $documents_expired = 1;
+    create_mt5_account->(
+        $c, $token, $client,
+        {
+            account_type     => 'financial',
+            mt5_account_type => 'financial_stp'
+        },
+        'ExpiredDocumentsMT5',
+        'valid documents are required for financial_stp mt5 accounts'
+    );
+    $documents_expired = 0;
+
     $login = create_mt5_account->(
         $c, $token, $client,
         {

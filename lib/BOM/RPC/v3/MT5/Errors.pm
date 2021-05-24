@@ -100,6 +100,9 @@ my %category_message_mapping = do {
         InvalidVirtualAccount => localize('Virtual transfers are only possible between wallet and other account types.'),
         Deprecated            => localize('This API is deprecated.'),
         InvalidAccountRegion  => localize('Sorry, account opening is unavailable in your region.'),
+        ExpiredDocumentsMT5   => localize(
+            'Your identity documents have expired. Visit your account profile to submit your valid documents and create your MT5 Financial STP account.'
+        ),
     );
 };
 

@@ -791,8 +791,9 @@ async_rpc "mt5_new_account",
             : create_error_future('NoAgeVerification');
     }
 
+    my $compliance_requirements = $requirements->{compliance};
+
     if ($group !~ /^demo/) {
-        my $compliance_requirements = $requirements->{compliance};
         return create_error_future('FinancialAssessmentMandatory')
             unless _is_financial_assessment_complete(
             client                            => $client,
@@ -808,12 +809,18 @@ async_rpc "mt5_new_account",
             and $countries_instance->is_tax_detail_mandatory($residence)
             and not $client->status->crs_tin_information);
     }
-    if (    $account_type ne 'demo'
-        and ($company_name eq 'labuan' or $company_name eq 'bvi')
-        and not $client->fully_authenticated)
-    {
-        $client->status->setnx('allow_document_upload', 'system', 'MT5_ACCOUNT_IS_CREATED');
-        return create_error_future('AuthenticateAccount', {params => $client->loginid});
+
+    my %mt5_compliance_requirements = map { ($_ => 1) } $compliance_requirements->{mt5}->@*;
+    if ($account_type ne 'demo' && $mt5_compliance_requirements{fully_authenticated}) {
+        if ($client->fully_authenticated) {
+            if ($mt5_compliance_requirements{expiration_check} && $client->documents_expired(1)) {
+                $client->status->setnx('allow_document_upload', 'system', 'MT5_ACCOUNT_IS_CREATED');
+                return create_error_future('ExpiredDocumentsMT5', {params => $client->loginid});
+            }
+        } else {
+            $client->status->setnx('allow_document_upload', 'system', 'MT5_ACCOUNT_IS_CREATED');
+            return create_error_future('AuthenticateAccount', {params => $client->loginid});
+        }
     }
 
     #TODO (JB): clean up old group name after we have migrated all accounts to new group
