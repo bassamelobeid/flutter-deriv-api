@@ -646,7 +646,27 @@ subtest 'get account status' => sub {
                 },
                 'allow_document_upload is automatically added along with withdrawal_locked'
             );
+
             $test_client_cr->status->clear_withdrawal_locked;
+
+            # unwelcome + false name
+            $test_client_cr->status->set('unwelcome', 'system', 'For test purposes');
+            cmp_deeply(
+                $c->tcall($method, {token => $token_cr})->{status},
+                superbagof(qw(unwelcome)),
+                'allow_document_upload is not added along with unwelcome'
+            );
+
+            my $mocked_client = Test::MockModule->new(ref($test_client_cr));
+            $mocked_client->mock(locked_for_false_profile_info => sub { return 1 });
+            cmp_deeply(
+                $c->tcall($method, {token => $token_cr})->{status},
+                superbagof(qw(unwelcome allow_document_upload)),
+                'allow_document_upload is automatically added along with unwelcome if account is locked for false name'
+            );
+
+            $test_client_cr->status->clear_unwelcome;
+            $mocked_client->unmock('locked_for_false_profile_info');
 
             $test_client_cr->set_authentication('ID_DOCUMENT', {status => 'needs_action'});
             $test_client_cr->save;
@@ -963,7 +983,6 @@ subtest 'get account status' => sub {
             );
 
             # mark as fully authenticated
-            my $mocked_client = Test::MockModule->new(ref($test_client_cr));
             $mocked_client->mock('fully_authenticated', sub { return 1 });
 
             $result = $c->tcall($method, {token => $token_cr});
@@ -1381,8 +1400,8 @@ subtest 'get account status' => sub {
             $mocked_client->mock('is_first_deposit_pending', sub { return 0 });
 
             my $mocked_status = Test::MockModule->new(ref($test_client_mx->status));
-            $mocked_status->mock('age_verification', sub { return 1 });
-            $mocked_status->mock('unwelcome',        sub { return 1 });
+            $mocked_status->mock('age_verification', sub { return {reason => 'test reason'} });
+            $mocked_status->mock('unwelcome',        sub { return {reason => 'test reason'} });
 
             $result = $c->tcall($method, {token => $token_mx});
             cmp_deeply(

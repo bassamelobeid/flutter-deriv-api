@@ -931,6 +931,11 @@ rpc get_account_status => sub {
     my $is_withdrawal_locked_for_fa =
         $client->status->withdrawal_locked && $client->status->withdrawal_locked->{reason} =~ /FA needs to be completed/;
 
+    # TODO: The following variable is being added just sbecause Deriv FE needs allow_document_upload along with unwelcome status in order to enable Onfido:
+    # https://github.com/binary-com/deriv-app/blob/eda89620b4ccd59198be3fc1c5da65696ad5dd57/packages/account/src/Sections/Verification/ProofOfIdentity/proof-of-identity-container.jsx#L176
+    # It won't be needed if this rule is removed from the FE code.
+    my $is_unwelcome_for_false_profile_info = $client->status->unwelcome && $client->locked_for_false_profile_info;
+
     push @$status, 'document_' . $id_auth_status if $authentication_in_progress;
 
     if ($client->fully_authenticated()) {
@@ -941,7 +946,8 @@ rpc get_account_status => sub {
     } elsif ($client->landing_company->is_authentication_mandatory
         or ($client->aml_risk_classification // '') eq 'high'
         or ($client->status->withdrawal_locked and not $is_withdrawal_locked_for_fa)
-        or $client->status->allow_document_upload)
+        or $client->status->allow_document_upload
+        or $is_unwelcome_for_false_profile_info)
     {
         push @$status, 'allow_document_upload';
     }
