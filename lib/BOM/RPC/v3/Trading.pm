@@ -534,8 +534,6 @@ sub change_platform_passwords {
             push @{$_->is_failed ? $failed_logins : $logins}, $_->is_failed ? $_->failure->{login} : $_->result->{login} for @results;
 
             if ($failed_logins) {
-                $log->infof('Failed to change passwords for: %s', $failed_logins);
-
                 my $failed_logins_str = join(', ', @{$failed_logins});
                 my $message_to_client =
                     scalar(@{$failed_logins}) > 1
