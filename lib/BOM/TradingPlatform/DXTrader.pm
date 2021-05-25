@@ -672,6 +672,8 @@ Gets the devexperts client information of $self->client, if it exists.
 sub dxclient_get {
     my ($self, $server) = @_;
 
+    return undef if BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend->all;
+
     my $login = $self->dxtrade_login;
 
     my $api_resp = $self->call_api(

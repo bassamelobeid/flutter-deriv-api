@@ -78,7 +78,22 @@ sub change_password {
     # get users
     my @mt5_users = map {
         my $login = $_;
-        BOM::MT5::User::Async::get_user($login)->else(sub { Future->fail({login => $login}) })->then(sub { Future->done({login => $login}) });
+        BOM::MT5::User::Async::get_user($login)->then(
+            sub {
+                Future->done({login => $login});
+            }
+        )->catch(
+            sub {
+                my $error = shift;
+                if (($error->{code} // '') eq 'NotFound') {
+                    Future->done;
+                } else {
+                    Future->fail({
+                        login => $login,
+                        error => $error
+                    });
+                }
+            });
     } @mt5_loginids;
 
     my @mt5_users_results = Future->wait_all(@mt5_users)->get;
