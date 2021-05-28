@@ -1,27 +1,8 @@
 # bom-marketdataautoupdater
 
-Code that pulls market data from third party systems (Bloomberg, ForexFactory) into our system.
+Code that pulls market data from third party systems (Bloomberg, ForexFactory) into our system. 
 
-(1) bin/bom_updateohlc.pl
-
-A script runs BOM::MarketDataAutoUpdater::OHLC to update indices' official daily open, high , low and close value on the db file which will then be populated to feed.ohlc_daily db table. This script also do some sanity check of ohlc updated to the db file.
-
-```
-To update ohlc : bin/bom_updateohlc.pl --action=update
-To verify and perform sanity check of ohlc: bin/bom_updateohlc.pl --action=verify
-```
-
-Source: Bloomberg Data License
-
-Package depedency: BOM::MarketDataAutoUpdater::OHLC
-
-Frequency of this script being called: Hourly basic 
-
-Input: ohlc file type from Bloomberg::FileDownloader e.g. ohlc_NIFTY_i.csv.enc 
-
-Output: feed/market/[underlying].db file   
-
-(2) bin/bom_update_economic_events.pl 
+(1) bin/bom_update_economic_events.pl 
 
 A script runs ForexFactory::extract_economic_events to extract economic events for 2 weeks and update economic event chronicle documents.
 
@@ -40,7 +21,7 @@ Input: www.forexfactory.com
 Output: category='economic_events'at Chronicle
 
 
-(3) bin/update_interest_rates.pl
+(2) bin/update_interest_rates.pl
 
 A script run BOM::MarketDataAutoUpdater::InterestRates to update currency interest rate. 
 
@@ -58,7 +39,7 @@ Input: interest rates file type from Bloomberg::FileDownloader e.g. interest_rat
 
 Output: category='interest_rates' at Chronicle
 
-(4) bin/update_implied_interest_rates.pl
+(3) bin/update_implied_interest_rates.pl
 
 A script run BOM::MarketDataAutoUpdater::ImpliedInterestRates to update implied interest rate. For each currency pair, to hold the interest rate parity, the rate of one the currency need to be implied from the forward rate of pair and the market rate of corresponding currency. Example: USDJPY, interest rate of JPY on this pair need to implied from the forward rate of USDJPY and the market rate of USD.
 
@@ -79,7 +60,7 @@ forward rates file type from Bloomberg::FileDownloader e.g. forward_rates.csv
 
 Output: category='interest_rates' at Chronicle
 
-(5) bin/update_smartfx_rate.pl
+(4) bin/update_smartfx_rate.pl
 
 A scripts to update interest rate of smart fx based on the rate of the forex pairs of the basket.
 
@@ -96,7 +77,7 @@ Frequency of this script being called: 00GMT on daily basic
 Input: 'interest_rates' at Chronicle <br/>
 Output: 'interest_rates' at Chronicle
 
-(6) bin/updatevol.pl
+(5) bin/updatevol.pl
 
 A script runs BOM::MarketDataAutoUpdater::Indices to update vol of indices and BOM::MarketDataAutoUpdater::Forex to update vol of forex and commodities
 
