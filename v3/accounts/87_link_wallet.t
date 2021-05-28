@@ -28,13 +28,17 @@ my $user = BOM::User->create(
 );
 
 my $client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'VRTC'});
+$client_vr->set_default_account('USD');
+$client_vr->deposit_virtual_funds;
 $client_vr->save;
 
-my $wallet_client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'VRDW'});
-$wallet_client_vr->save;
+my $wallet_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'VRDW'});
+$wallet_vr->set_default_account('USD');
+$wallet_vr->deposit_virtual_funds;
+$wallet_vr->save;
 
 $user->add_client($client_vr);
-$user->add_client($wallet_client_vr);
+$user->add_client($wallet_vr);
 
 subtest 'link_wallet' => sub {
     my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $client_vr->loginid);
@@ -43,7 +47,7 @@ subtest 'link_wallet' => sub {
 
     my $res = $t->await::link_wallet({
         link_wallet => 1,
-        wallet_id   => $wallet_client_vr->loginid,
+        wallet_id   => $wallet_vr->loginid,
         client_id   => $client_vr->loginid,
     });
 

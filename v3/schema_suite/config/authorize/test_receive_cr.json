@@ -64,6 +64,12 @@
                      "is_disabled" : {
                         "enum" : [0,1],
                         "type" : "integer"
+                     },
+                     "trading": {
+                        "type": "object"
+                     },
+                     "wallet": {
+                        "type": "object"
                      }
                   }
                },
@@ -89,6 +95,12 @@
             "country" : {
                "pattern" : "^[a-z]{0,2}$",
                "type" : "string"
+            },
+            "trading": {
+               "type": "object"
+            },
+            "wallet": {
+               "type": "object"
             }
          },
          "preferred_language" : {

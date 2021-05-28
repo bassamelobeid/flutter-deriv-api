@@ -71,6 +71,12 @@
             "preferred_language" : {
                "type" : "string",
                "pattern" : "^[A-Z]{0,2}$|^[A-Z]{2}_[A-Z]{2}$"
+            },
+            "trading": {
+               "type": "object"
+            },
+            "wallet": {
+               "type": "object"
             }
          },
          "type" : "object"

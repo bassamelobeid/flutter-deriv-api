@@ -36,6 +36,9 @@
                "description" : "List of accounts for current client",
                "items" : {
                   "properties" : {
+                     "account_type": {
+                        "type": "string"
+                     },
                      "excluded_until" : {
                         "type" : "integer"
                      },
@@ -56,6 +59,12 @@
                      "is_disabled" : {
                         "type" : "integer",
                         "enum" : [0,1]
+                     },
+                     "trading": {
+                        "type": "object"
+                     },
+                     "wallet": {
+                        "type": "object"
                      }
                   },
                   "type" : "object"
@@ -88,6 +97,12 @@
             "preferred_language" : {
                "type" : "string",
                "pattern" : "^[A-Z]{0,2}$|^[A-Z]{2}_[A-Z]{2}$"
+            },
+            "trading": {
+               "type": "object"
+            },
+            "wallet": {
+               "type": "object"
             }
          },
          "type" : "object",

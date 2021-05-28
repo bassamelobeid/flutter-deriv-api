@@ -48,6 +48,9 @@
             "account_list" : {
                "items" : {
                   "properties" : {
+                     "account_type": {
+                        "type": "string"
+                     },
                      "is_disabled" : {
                         "enum" : [1,0],
                         "type" : "integer"
@@ -68,6 +71,12 @@
                      },
                      "excluded_until" : {
                         "type" : "integer"
+                     },
+                     "trading": {
+                        "type": "object"
+                     },
+                     "wallet": {
+                        "type": "object"
                      }
                   },
                   "type" : "object"
@@ -106,6 +115,12 @@
             "preferred_language" : {
                "type" : "string",
                "pattern" : "^[A-Z]{0,2}$|^[A-Z]{2}_[A-Z]{2}$"
+            },
+            "trading": {
+               "type": "object"
+            },
+            "wallet": {
+               "type": "object"
             }
          }
       },
