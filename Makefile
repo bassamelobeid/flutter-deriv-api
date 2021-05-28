@@ -24,10 +24,13 @@ PROVE=p () { $M; echo '$P' "$$@"; $P "$$@"; }; p
 
 test_all: $(TESTS)
 
+unit_test_syntax:
+	@$(PROVE) --norc t/*.t
+
 test: $(CORETESTS)
 
 syntax:
-	@$(PROVE) t/*.t
+	@$(PROVE) --norc t/*.t
 
 unit_test_product_contract:
 	@$(PROVE) -r t/BOM/Product/Contract/ -r t/BOM/Product/ContractFinder/
@@ -65,7 +68,7 @@ unit_test_product_base:
 unit_test_product_all: $(PRODUCTALL)
 
 pod_test:
-	@$(PROVE) t/*pod*.t
+	@$(PROVE) --norc t/*pod*.t
 
 tidy:
 	find . -name '*.p?.bak' -delete
