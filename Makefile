@@ -23,7 +23,7 @@ leaktest:
 	@$(PROVE) t/BOM/leaks
 
 pod_test:
-	@$(PROVE) t/*pod*.t
+	@$(PROVE) --norc t/*pod*.t
 
 tidy:
 	find . -name '*.p?.bak' -delete
