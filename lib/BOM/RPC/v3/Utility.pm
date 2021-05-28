@@ -519,6 +519,10 @@ sub error_map {
         'DXInvalidAccount'         => localize("Sorry, we couldn't find your DXTrader account."),
         'InvalidTradingAccount'    => localize("Sorry, we couldn't find your trading account."),
         'CannotLinkVirtualAndReal' => localize("Please ensure your trading account type is the same as your wallet account type."),
+        'SelfExclusion'            => localize(
+            'Sorry, but you have self-excluded yourself from the website until [_1]. If you are unable to place a trade or deposit after your self-exclusion period, please contact the Customer Support team for assistance.'
+        ),
+        'SetSelfExclusionError' => localize('Sorry, but setting your maximum deposit limit is unavailable in your country.'),
     };
 }
 

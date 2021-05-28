@@ -60,6 +60,7 @@ use BOM::RPC::v3::Services;
 use BOM::RPC::v3::Services::Onramp;
 use BOM::Config::Redis;
 use BOM::User::Onfido;
+use BOM::Rules::Engine;
 use Locale::Country;
 use DataDog::DogStatsd::Helper qw(stats_gauge);
 
@@ -1893,20 +1894,15 @@ rpc set_self_exclusion => sub {
     my $params = shift;
 
     my $client = $params->{client};
-    return BOM::RPC::v3::Utility::permission_error() if $client->is_virtual;
-
-    my $is_regulated = $client->landing_company->is_eu;
-
-    my $excluded_until = $client->get_self_exclusion_until_date;
-    return BOM::RPC::v3::Utility::create_error({
-            code              => 'SelfExclusion',
-            message_to_client => localize(
-                'Sorry, but you have self-excluded yourself from the website until [_1]. If you are unable to place a trade or deposit after your self-exclusion period, please contact the Customer Support team for assistance.',
-                $excluded_until
-            ),
-        }) if $excluded_until;
 
     my %args = %{$params->{args}};
+
+    my $rule_engine = BOM::Rules::Engine->new(client => $client);
+    try {
+        $rule_engine->verify_action('set_self_exclusion', \%args);
+    } catch ($error) {
+        return BOM::RPC::v3::Utility::rule_engine_error($error);
+    }
 
     # get old from above sub _get_self_exclusion_details
     my $self_exclusion = _get_self_exclusion_details($client);
@@ -1914,6 +1910,8 @@ rpc set_self_exclusion => sub {
     # Max balance and Max open bets are given default values, if not set by client
     $self_exclusion->{max_balance}   //= $client->get_limit_for_account_balance;
     $self_exclusion->{max_open_bets} //= $client->get_limit_for_open_positions;
+
+    my $is_regulated = $client->landing_company->is_eu;
 
     my $error_sub = sub {
         my ($error, $field) = @_;
@@ -1936,15 +1934,6 @@ rpc set_self_exclusion => sub {
                 },
             });
     };
-
-    for my $max_deposit_field (qw/max_deposit max_7day_deposit max_30day_deposit/) {
-        return BOM::RPC::v3::Utility::create_error({
-                code              => 'SetSelfExclusionError',
-                message_to_client => localize('Sorry, but setting your maximum deposit limit is unavailable in your country.'),
-                message           => '',
-                details           => $max_deposit_field
-            }) if $args{$max_deposit_field} and not $client->landing_company->deposit_limit_enabled;
-    }
 
     ## validate
     my %fields = (
