@@ -5927,12 +5927,15 @@ sub get_account_details {
     my $exclude_until = $self->get_self_exclusion_until_date;
 
     return {
+        account_type         => $self->account_type,                                   # 'trading' or 'wallet'
         loginid              => $self->loginid,
         currency             => $self->account ? $self->account->currency_code : '',
         landing_company_name => $self->landing_company->short,
         is_disabled          => $self->status->disabled ? 1 : 0,
         is_virtual           => $self->is_virtual       ? 1 : 0,
-        $exclude_until ? (excluded_until => Date::Utility->new($exclude_until)->epoch) : ()};
+        $exclude_until ? (excluded_until => Date::Utility->new($exclude_until)->epoch) : (),
+        $self->linked_accounts->%*
+    };
 }
 
 =head2 get_poa_status
@@ -6480,6 +6483,52 @@ sub payment_accounts_limit {
     my $default_limit             = BOM::Config::client_limits()->{max_payment_accounts_per_user};
 
     return $custom_limit // $account_broker_code_limit // $default_limit;
+}
+
+=head2 linked_accounts
+
+Returns L<BOM::User::Wallet> account details linked to a L<BOM::User::Client> instance:
+
+    {
+        trading => {
+            linked_to => [
+                {
+                    account_id      => 'DW1000',
+                    payment_method  => 'Skrill',
+                    balance         => '0.00',
+                    currency        => 'USD',
+                }
+            ]
+        }
+    }
+
+=cut
+
+sub linked_accounts {
+    my $self = shift;
+
+    my $linked_wallet = $self->user->linked_wallet;
+
+    my $link = first { $_->{loginid} eq $self->loginid } @{$linked_wallet};
+
+    return {trading => {}} unless $link;
+
+    my $wallet  = $self->user->get_wallet_by_loginid($link->{wallet_loginid});
+    my $account = $self->user->get_account_by_loginid($link->{loginid});
+    return {
+        trading => {
+            # keeping it as an array for consistency with Wallet
+            linked_to => [{
+                    account_id     => $wallet->loginid,
+                    balance        => formatnumber('amount', $wallet->currency, $wallet->default_account->balance),
+                    currency       => $wallet->currency,
+                    payment_method => $wallet->payment_method,
+                }
+            ],
+            account_id => $account->{account_id},
+            balance    => $account->{display_balance},
+            currency   => $account->{currency},
+            platform   => $account->{platform}}};
 }
 
 1;

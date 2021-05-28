@@ -202,7 +202,7 @@ sub get_account_info {
         account_type          => $mt5_group->{account_type},
         balance               => financialrounding('amount', $currency, $mt5_user->{balance}),
         currency              => $currency,
-        display_balance       => formatnumber('amount', $currency, $mt5_user->{balance}),
+        display_balance       => formatnumber('amount', $currency, $mt5_user->{balance}) // '0.00',
         platform              => 'mt5',
         market_type           => $mt5_group->{market_type},
         landing_company_short => $mt5_group->{landing_company_short},

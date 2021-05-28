@@ -811,6 +811,10 @@ subtest 'create_client' => sub {
 my $wallet;
 subtest 'get_wallet_by_loginid' => sub {
     $wallet = create_client('VRDW');
+    $wallet->set_default_account('USD');
+    $wallet->deposit_virtual_funds('10000');
+
+    $client_vr->set_default_account('USD');
     $user->add_client($wallet);
 
     ok $user->get_wallet_by_loginid($wallet->{loginid}), 'can find wallet account';
@@ -821,7 +825,7 @@ subtest 'get_wallet_by_loginid' => sub {
 my ($dxtrade_account, $dxtrader);
 subtest 'get_account_by_loginid' => sub {
     BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend->all(0);
-    # try trading account (binary/deriv)
+    # try default account (binary/deriv)
     ok $user->get_account_by_loginid($client_vr->{loginid}), 'can find trading account';
 
     # try wallet account
@@ -873,6 +877,7 @@ subtest 'link_wallet' => sub {
     ok $user->link_wallet_to_trading_account($args), 'can bind virtual wallet to a demo dxtrade account';
 
     my $wallet_2 = create_client('VRDW');
+    $wallet_2->set_default_account('USD');
     $user->add_client($wallet_2);
 
     $args->{wallet_id} = $wallet_2->loginid;
@@ -880,6 +885,7 @@ subtest 'link_wallet' => sub {
     throws_ok { $user->link_wallet_to_trading_account($args); } qr/CannotChangeWallet/, 'cannot change to another wallet';
 
     my $client_cr = create_client('CR');
+    $client_cr->set_default_account('USD');
     $user->add_client($client_cr);
 
     $args->{wallet_id} = $wallet->loginid;
@@ -899,6 +905,105 @@ subtest 'link_wallet' => sub {
     $args->{wallet_id} = $wallet->loginid;
     $args->{client_id} = $dxtrade_real_account->{account_id};
     throws_ok { $user->link_wallet_to_trading_account($args); } qr/CannotLinkVirtualAndReal/, 'cannot bind virtual wallet to a real dxtrade account';
+
+    subtest 'get list of linked_wallet for user' => sub {
+        my $linked_wallet = $user->linked_wallet;
+
+        cmp_deeply(
+            $linked_wallet,
+            [{
+                    loginid        => $client_vr->loginid,
+                    wallet_loginid => $wallet->loginid
+                },
+                {
+                    loginid        => 'MTD2000',
+                    wallet_loginid => $wallet->loginid
+                },
+                {
+                    loginid        => $dxtrade_account->{account_id},
+                    wallet_loginid => $wallet->loginid
+                }
+            ],
+            'user list of linked_wallet is ok'
+        );
+    };
+
+    subtest 'get list of linked_accounts for a wallet' => sub {
+        my $new_wallet = create_client('VRDW');
+        $new_wallet->set_default_account('USD');
+
+        $user->add_client($new_wallet);
+
+        cmp_deeply(
+            $new_wallet->linked_accounts,
+            {
+                wallet => {
+                    linked_to      => [],                            # should be empty
+                    account_id     => $new_wallet->loginid,
+                    payment_method => $new_wallet->payment_method,
+                    balance        => '0.00',
+                    currency       => 'USD',
+                }
+            },
+            'there is no linked_to trading accounts to this new wallet'
+        );
+
+        cmp_deeply(
+            $wallet->linked_accounts,
+            {
+                wallet => {
+                    linked_to => [{
+                            account_id => $client_vr->loginid,
+                            balance    => '0.00',
+                            currency   => 'USD',
+                            platform   => 'deriv',
+                        },
+                        {
+                            account_id => 'MTD2000',
+                            balance    => '0.00',
+                            currency   => 'USD',
+                            platform   => 'mt5',
+                        },
+                        {
+                            account_id => $dxtrade_account->{account_id},
+                            balance    => '10000.00',
+                            currency   => 'USD',
+                            platform   => 'dxtrade'
+                        }
+                    ],
+                    account_id     => $wallet->loginid,
+                    payment_method => $wallet->payment_method,
+                    balance        => '10000.00',
+                    currency       => 'USD'
+                }
+            },
+            'returns correct list of linked_to trading account ids and wallet details'
+        );
+    };
+
+    subtest 'get list of linked_accounts for a client' => sub {
+        cmp_deeply($client_cr->linked_accounts, {trading => {}}, 'there is no wallet linked to this client');
+
+        cmp_deeply(
+            $client_vr->linked_accounts,
+            {
+                trading => {
+                    linked_to => [{
+                            account_id     => $wallet->loginid,
+                            payment_method => $wallet->payment_method,
+                            balance        => '10000.00',
+                            currency       => 'USD'
+                        }
+                    ],
+                    account_id => $client_vr->loginid,
+                    balance    => '0.00',
+                    currency   => 'USD',
+                    platform   => 'deriv',
+                }
+            },
+            'returns correct linked wallet info for this client'
+        );
+    }
 };
 
 subtest 'update trading password' => sub {

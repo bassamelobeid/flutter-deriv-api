@@ -7,6 +7,7 @@ no indirect;
 use feature 'state';
 use Syntax::Keyword::Try;
 use Date::Utility;
+use Format::Util::Numbers qw(formatnumber);
 use List::Util qw(first any all minstr);
 use Scalar::Util qw(blessed looks_like_number);
 use Carp qw(croak carp);
@@ -1267,6 +1268,8 @@ sub link_wallet_to_trading_account {
 
     die "CannotChangeWallet\n" unless $result;
 
+    delete $self->{linked_wallet};
+
     return 1;
 }
 
@@ -1300,7 +1303,7 @@ Gets a trading account by loginid.
 
 =back
 
-Returns a hashref of trading account info on success, throws exception on error
+Returns a hashref of Trading account details on success, throws exception on error
 
 =cut
 
@@ -1319,16 +1322,51 @@ sub get_account_by_loginid {
     )->get_account_info($loginid)
         if $loginid =~ DXTRADE_REGEX;
 
-    my $account = first { $_->loginid eq $loginid && !$_->is_wallet } $self->clients;
+    my $client = first { $_->loginid eq $loginid && !$_->is_wallet } $self->clients;
 
-    die "InvalidTradingAccount\n" unless ($account);
+    die "InvalidTradingAccount\n" unless ($client);
+
+    my $account = $client->default_account;
 
     return {
-        account_id   => $account->loginid,
-        account_type => $account->is_virtual ? 'demo' : 'real',
-        currency     => $account->currency,
-        platform     => 'trading',
+        account_id      => $client->loginid,
+        account_type    => $client->is_virtual ? 'demo'                                                             : 'real',
+        balance         => $account            ? $account->balance                                                  : 0,
+        currency        => $account            ? $account->currency_code                                            : '',
+        display_balance => $account            ? formatnumber('amount', $account->currency_code, $account->balance) : '0.00',
+        platform        => 'deriv',
     };
+}
+
+=head2 linked_wallet
+
+Calls a db function to get a list of linked wallet for a user.
+
+=over 4
+
+=item * C<$loginid> - a L<BOM::User::Client> or L<BOM::User::Wallet> loginid
+
+=back
+
+Returns a list of linked wallet.
+
+=cut
+
+sub linked_wallet {
+    my ($self, $wallet_loginid) = @_;
+
+    return $self->{linked_wallet} if $self->{linked_wallet};
+
+    $self->{linked_wallet} = $self->dbic->run(
+        fixup => sub {
+            return $_->selectall_arrayref(
+                'select loginid, wallet_loginid from users.get_linked_wallet(?,?,?)',
+                {Slice => {}},
+                undef, $self->{id}, $wallet_loginid
+            );
+        });
+
+    return $self->{linked_wallet};
 }
 
 =head2 get_trading_platform_loginids
