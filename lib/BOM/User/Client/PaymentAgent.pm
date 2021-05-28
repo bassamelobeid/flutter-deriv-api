@@ -244,14 +244,15 @@ sub validate_payment_agent_details {
         unless $skip_coc_validation or $args->{code_of_conduct_approval};
 
     # duplicate name
-    my $pa_list = $self->get_payment_agents_by_name($args->{payment_agent_name});
-    die $error_sub->(
-        'DuplicateName', 'payment_agent_name',
-        message => "The name <$args->{payment_agent_name}> is already taken by $pa_list->[0]->{client_loginid}"
-        )
-        if $pa_list
-        and $pa_list->[0]
-        and $pa_list->[0]->{client_loginid} ne $client->loginid;
+    for my $found_pa ($self->get_payment_agents_by_name($args->{payment_agent_name})->@*) {
+        # skip clients of the same user
+        next if List::Util::any { $found_pa->{client_loginid} eq $_->loginid } $client->user->clients;
+
+        die $error_sub->(
+            'DuplicateName', 'payment_agent_name',
+            message => "The name <$args->{payment_agent_name}> is already taken by $found_pa->{client_loginid}"
+        );
+    }
 
     my $remove_redundant_spaces = sub {
         my $value = shift // '';

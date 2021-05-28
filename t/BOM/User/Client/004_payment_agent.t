@@ -18,18 +18,27 @@ use BOM::Config::Runtime;
 use BOM::Config::PaymentAgent;
 
 my $email       = 'JoeSmith@binary.com';
-my $password    = 'jskjd8292922';
-my $hash_pwd    = BOM::User::Password::hashpw($password);
 my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'CR',
 });
 $test_client->email($email);
 $test_client->save;
+BOM::User->create(
+    email    => $test_client->email,
+    password => 'test',
+)->add_client($test_client);
 
 my $pa_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'CR',
 });
+$pa_client->email('pa+' . $email);
 $pa_client->set_default_account('USD');
+$pa_client->save;
+my $user = BOM::User->create(
+    email    => $pa_client->email,
+    password => 'test',
+);
+$user->add_client($pa_client);
 
 # make him a payment agent
 my $object_pa = $pa_client->payment_agent({
@@ -103,7 +112,10 @@ ok($payment_agent_4->{'CR10001'}->{'is_listed'} == 1);
 my $pa_client_2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'CR',
 });
+$pa_client_2->email('pa+' . $email);
 $pa_client_2->set_default_account('USD');
+$pa_client_2->save;
+$user->add_client($pa_client_2);
 
 # make him a payment agent
 my $object_pa2 = $pa_client_2->payment_agent({
@@ -120,6 +132,7 @@ my $object_pa2 = $pa_client_2->payment_agent({
     is_listed             => 'f'
 });
 $pa_client_2->save;
+
 $pa_client_2->get_payment_agent->set_countries(['id', 'pk']);
 my $payment_agent_5 = BOM::User::Client::PaymentAgent->get_payment_agents(
     country_code => 'id',
@@ -162,7 +175,10 @@ dies_ok { BOM::User::Client::PaymentAgent->get_payment_agents() };
 my $pa_client_3 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'CR',
 });
+$pa_client_3->email('pa+' . $email);
 $pa_client_3->set_default_account('USD');
+$pa_client_3->save;
+$user->add_client($pa_client_3);
 # make him a payment agent
 $pa_client_3->payment_agent({
     payment_agent_name    => 'Joe 3',
@@ -203,7 +219,18 @@ subtest 'get payment agents by name' => sub {
 };
 
 subtest 'validate payment agent details' => sub {
-    my $pa = $test_client->set_payment_agent();
+    my $client1 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+    });
+    $client1->email('validate+' . $email);
+    $client1->save;
+
+    BOM::User->create(
+        email    => $client1->email,
+        password => 'test',
+    )->add_client($client1);
+
+    my $pa = $client1->set_payment_agent();
 
     my $mock_client = Test::MockModule->new("BOM::User::Client");
     $mock_client->redefine(is_virtual => sub { return 1 });
@@ -211,7 +238,7 @@ subtest 'validate payment agent details' => sub {
     $mock_client->unmock_all;
 
     like exception { $pa->validate_payment_agent_details() }, qr/NoAccountCurrency/, 'Client currency cannot be empty';
-    $test_client->set_default_account('USD');
+    $client1->set_default_account('USD');
 
     my $mock_user = Test::MockModule->new('BOM::User');
     $mock_user->redefine(is_payment_agents_suspended_in_country => sub { return 1 });
@@ -297,12 +324,12 @@ subtest 'validate payment agent details' => sub {
     is_deeply $result,
         {
         'payment_agent_name'            => 'Nobody',
-        'email'                         => $test_client->email,
-        'phone'                         => $test_client->phone,
+        'email'                         => $client1->email,
+        'phone'                         => $client1->phone,
         'summary'                       => '',
         'information'                   => 'Request for pa application',
         'currency_code'                 => 'USD',
-        'target_country'                => $test_client->residence,
+        'target_country'                => $client1->residence,
         'url'                           => 'http://abcd.com',
         'max_withdrawal'                => $min_max->{maximum},
         'min_withdrawal'                => $min_max->{minimum},
@@ -325,12 +352,12 @@ subtest 'validate payment agent details' => sub {
     is_deeply $result,
         {
         'payment_agent_name'            => 'Nobody',
-        'email'                         => $test_client->email,
-        'phone'                         => $test_client->phone,
+        'email'                         => $client1->email,
+        'phone'                         => $client1->phone,
         'summary'                       => '',
         'information'                   => 'Request for pa application',
         'currency_code'                 => 'USD',
-        'target_country'                => $test_client->residence,
+        'target_country'                => $client1->residence,
         'url'                           => 'http://abcd.com',
         'max_withdrawal'                => $min_max->{maximum},
         'min_withdrawal'                => $min_max->{minimum},
@@ -412,6 +439,11 @@ subtest 'validate payment agent details' => sub {
     }
 
     $args{commission_withdrawal} = 0;
+
+    lives_ok { $object_pa->validate_payment_agent_details(%args, payment_agent_name => $object_pa->payment_agent_name) }
+    'No error if pa name is the same as the PA itself';
+    lives_ok { $object_pa->validate_payment_agent_details(%args, payment_agent_name => $object_pa2->payment_agent_name) }
+    'No error if pa name is the same as one of sibling PAs';
 
     subtest 'Code of conduct approval time' => sub {
         $result = $pa->validate_payment_agent_details(%args);
