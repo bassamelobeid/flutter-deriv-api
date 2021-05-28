@@ -112,6 +112,7 @@ subtest 'link_wallet' => sub {
         my $vr_wallet_2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
             broker_code => 'VRDW',
         });
+        $vr_wallet_2->set_default_account('USD');
         $user->add_client($vr_wallet_2);
 
         $params->{args}->{wallet_id} = $vr_wallet_2->loginid;
@@ -130,6 +131,7 @@ subtest 'link_wallet' => sub {
         my $vr_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
             broker_code => 'VRTC',
         });
+        $vr_client->set_default_account('USD');
         $vr_client->email($email);
         $vr_client->save;
         $user->add_client($vr_client);

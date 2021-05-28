@@ -143,7 +143,9 @@ subtest $method => sub {
                 'is_disabled'          => '0',
                 'is_virtual'           => '0',
                 'landing_company_name' => $landing_company,
-                'loginid'              => $test_client->loginid
+                'loginid'              => $test_client->loginid,
+                'account_type'         => 'trading',
+                'trading'              => {},
             },
             {
                 'currency'             => '',
@@ -152,6 +154,8 @@ subtest $method => sub {
                 'is_virtual'           => '0',
                 'landing_company_name' => $landing_company,
                 'loginid'              => $self_excluded_client->loginid,
+                'account_type'         => 'trading',
+                'trading'              => {},
             },
             {
                 'currency'             => 'USD',
@@ -159,9 +163,12 @@ subtest $method => sub {
                 'is_virtual'           => '0',
                 'landing_company_name' => $landing_company,
                 'loginid'              => $test_client_disabled->loginid,
-            }
+                'account_type'         => 'trading',
+                'trading'              => {},
+            },
             # Duplicated client must  not be returned
         ],
+        'trading' => {},    # no wallet is linked
     };
 
     my $result = $c->call_ok($method, $params)->has_no_error->result;
@@ -234,6 +241,272 @@ subtest $method => sub {
 
     delete $params->{args};
 
+    subtest 'authorize with linked wallet' => sub {
+        # create wallet
+        my $vr_wallet = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+            broker_code => 'VRDW',
+        });
+        $vr_wallet->email($email);
+        $vr_wallet->set_default_account('USD');
+        $vr_wallet->deposit_virtual_funds;
+        $vr_wallet->save;
+
+        $user->add_client($vr_wallet);
+
+        $test_client_vr->deposit_virtual_funds;
+        $user->add_client($test_client_vr);
+
+        # link wallet
+        my $link_wallet_params->{token} = $token_vr;
+
+        $link_wallet_params->{args}->{wallet_id} = $vr_wallet->loginid;
+        $link_wallet_params->{args}->{client_id} = $test_client_vr->loginid;
+
+        $c->call_ok('link_wallet', $link_wallet_params)->has_no_error->result;
+
+        # call authorize
+        $params->{token} = $token_vr;
+
+        my $expected_result = {
+            'stash' => {
+                app_markup_percentage      => 0,
+                valid_source               => 1,
+                source_bypass_verification => 0,
+                'email'                    => 'dummy@binary.com',
+                'scopes'                   => ['read', 'admin', 'trade', 'payments'],
+                'country'                  => 'id',
+                'loginid'                  => $test_client_vr->loginid,
+                'token'                    => $token_vr,
+                'token_type'               => 'oauth_token',
+                'account_id'               => '201219',
+                'currency'                 => 'USD',
+                'landing_company_name'     => 'virtual',
+                'is_virtual'               => '1',
+                'broker'                   => 'VRTC',
+            },
+            'currency'                      => 'USD',
+            'local_currencies'              => {IDR => {fractional_digits => 2}},
+            'email'                         => 'dummy@binary.com',
+            'scopes'                        => ['read', 'admin', 'trade', 'payments'],
+            'balance'                       => '10000.00',
+            'landing_company_name'          => 'virtual',
+            'fullname'                      => $test_client_vr->full_name,
+            'user_id'                       => $test_client_vr->binary_user_id,
+            'loginid'                       => $test_client_vr->loginid,
+            'is_virtual'                    => '1',
+            'country'                       => 'id',
+            'landing_company_fullname'      => 'Deriv Limited',
+            'upgradeable_landing_companies' => [],
+            'preferred_language'            => 'EN',
+            'account_list'                  => [{
+                    'currency'             => 'USD',
+                    'is_disabled'          => '0',
+                    'is_virtual'           => '0',
+                    'landing_company_name' => $landing_company,
+                    'loginid'              => $test_client->loginid,
+                    'account_type'         => 'trading',
+                    'trading'              => {},
+                },
+                {
+                    'currency'             => 'USD',
+                    'is_disabled'          => '0',
+                    'is_virtual'           => '1',
+                    'landing_company_name' => 'samoa-virtual',
+                    'loginid'              => $vr_wallet->loginid,
+                    'account_type'         => 'wallet',
+                    'wallet'               => {
+                        linked_to => [{
+                                account_id => $test_client_vr->loginid,
+                                balance    => '10000.00',
+                                currency   => 'USD',
+                                platform   => 'deriv'
+                            }
+                        ],
+                        account_id     => $vr_wallet->loginid,
+                        payment_method => $vr_wallet->payment_method,
+                        balance        => '10000.00',
+                        currency       => 'USD'
+                    }
+                },
+                {
+                    'currency'             => 'USD',
+                    'is_disabled'          => '0',
+                    'is_virtual'           => '1',
+                    'landing_company_name' => 'virtual',
+                    'loginid'              => $test_client_vr->loginid,
+                    'account_type'         => 'trading',
+                    'trading'              => {
+                        linked_to => [{
+                                account_id     => $vr_wallet->loginid,
+                                payment_method => $vr_wallet->payment_method,
+                                balance        => '10000.00',
+                                currency       => $vr_wallet->currency
+                            }
+                        ],
+                        account_id => $test_client_vr->loginid,
+                        balance    => '10000.00',
+                        currency   => 'USD',
+                        platform   => 'deriv'
+                    }
+                },
+                {
+                    'currency'             => '',
+                    'excluded_until'       => $exclude_until,
+                    'is_disabled'          => '0',
+                    'is_virtual'           => '0',
+                    'landing_company_name' => $landing_company,
+                    'loginid'              => $self_excluded_client->loginid,
+                    'account_type'         => 'trading',
+                    'trading'              => {}
+                },
+                {
+                    'currency'             => 'USD',
+                    'is_disabled'          => '1',
+                    'is_virtual'           => '0',
+                    'landing_company_name' => $landing_company,
+                    'loginid'              => $test_client_disabled->loginid,
+                    'account_type'         => 'trading',
+                    'trading'              => {}
+                },
+            ],
+            'trading' => {
+                linked_to => [{
+                        account_id     => $vr_wallet->loginid,
+                        payment_method => $vr_wallet->payment_method,
+                        balance        => '10000.00',
+                        currency       => $vr_wallet->currency
+                    }
+                ],
+                account_id => $test_client_vr->loginid,
+                balance    => '10000.00',
+                currency   => 'USD',
+                platform   => 'deriv'
+            },
+        };
+        cmp_deeply($c->call_ok($method, $params)->has_no_error->result, $expected_result, 'result is correct');
+
+        # call authorize for a wallet account
+        my $token_wallet = $oauth->store_access_token_only(1, $vr_wallet->loginid);
+        $params->{token} = $token_wallet;
+        $expected_result = {
+            'stash' => {
+                app_markup_percentage      => 0,
+                valid_source               => 1,
+                source_bypass_verification => 0,
+                'email'                    => 'dummy@binary.com',
+                'scopes'                   => ['read', 'admin', 'trade', 'payments'],
+                'country'                  => 'id',
+                'loginid'                  => $vr_wallet->loginid,
+                'token'                    => $token_wallet,
+                'token_type'               => 'oauth_token',
+                'account_id'               => '201199',
+                'currency'                 => 'USD',
+                'landing_company_name'     => 'samoa-virtual',
+                'is_virtual'               => '1',
+                'broker'                   => 'VRDW',
+            },
+            'currency'                      => 'USD',
+            'local_currencies'              => {IDR => {fractional_digits => 2}},
+            'email'                         => 'dummy@binary.com',
+            'scopes'                        => ['read', 'admin', 'trade', 'payments'],
+            'balance'                       => '10000.00',
+            'landing_company_name'          => 'samoa-virtual',
+            'fullname'                      => $vr_wallet->full_name,
+            'user_id'                       => $vr_wallet->binary_user_id,
+            'loginid'                       => $vr_wallet->loginid,
+            'is_virtual'                    => '1',
+            'country'                       => 'id',
+            'landing_company_fullname'      => 'Deriv Capital International Ltd (Virtual)',
+            'upgradeable_landing_companies' => [],
+            'preferred_language'            => 'EN',
+            'account_list'                  => [{
+                    'currency'             => 'USD',
+                    'is_disabled'          => '0',
+                    'is_virtual'           => '0',
+                    'landing_company_name' => $landing_company,
+                    'loginid'              => $test_client->loginid,
+                    'account_type'         => 'trading',
+                    'trading'              => {},
+                },
+                {
+                    'currency'             => 'USD',
+                    'is_disabled'          => '0',
+                    'is_virtual'           => '1',
+                    'landing_company_name' => 'samoa-virtual',
+                    'loginid'              => $vr_wallet->loginid,
+                    'account_type'         => 'wallet',
+                    'wallet'               => {
+                        linked_to => [{
+                                account_id => $test_client_vr->loginid,
+                                balance    => '10000.00',
+                                currency   => 'USD',
+                                platform   => 'deriv'
+                            }
+                        ],
+                        account_id     => $vr_wallet->loginid,
+                        payment_method => $vr_wallet->payment_method,
+                        balance        => '10000.00',
+                        currency       => $vr_wallet->currency
+                    }
+                },
+                {
+                    'currency'             => 'USD',
+                    'is_disabled'          => '0',
+                    'is_virtual'           => '1',
+                    'landing_company_name' => 'virtual',
+                    'loginid'              => $test_client_vr->loginid,
+                    'account_type'         => 'trading',
+                    'trading'              => {
+                        linked_to => [{
+                                account_id     => $vr_wallet->loginid,
+                                payment_method => $vr_wallet->payment_method,
+                                balance        => '10000.00',
+                                currency       => 'USD'
+                            }
+                        ],
+                        account_id => $test_client_vr->loginid,
+                        balance    => '10000.00',
+                        currency   => 'USD',
+                        platform   => 'deriv'
+                    }
+                },
+                {
+                    'currency'             => '',
+                    'excluded_until'       => $exclude_until,
+                    'is_disabled'          => '0',
+                    'is_virtual'           => '0',
+                    'landing_company_name' => $landing_company,
+                    'loginid'              => $self_excluded_client->loginid,
+                    'account_type'         => 'trading',
+                    'trading'              => {}
+                },
+                {
+                    'currency'             => 'USD',
+                    'is_disabled'          => '1',
+                    'is_virtual'           => '0',
+                    'landing_company_name' => $landing_company,
+                    'loginid'              => $test_client_disabled->loginid,
+                    'account_type'         => 'trading',
+                    'trading'              => {}
+                },
+            ],
+            'wallet' => {
+                linked_to => [{
+                        account_id => $test_client_vr->loginid,
+                        balance    => '10000.00',
+                        currency   => 'USD',
+                        platform   => 'deriv'
+                    }
+                ],
+                account_id     => $vr_wallet->loginid,
+                payment_method => $vr_wallet->payment_method,
+                balance        => '10000.00',
+                currency       => $vr_wallet->currency
+            },
+        };
+
+        cmp_deeply($c->call_ok($method, $params)->has_no_error->result, $expected_result, 'result is correct');
+    };
 };
 
 subtest 'update preferred language' => sub {

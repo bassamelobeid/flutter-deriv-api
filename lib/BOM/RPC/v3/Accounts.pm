@@ -2770,6 +2770,7 @@ rpc link_wallet => sub {
         $user->link_wallet_to_trading_account($args);
     } catch ($e) {
         chomp $e;
+        log_exception();
         return BOM::RPC::v3::Utility::create_error_by_code($e);
     }
 

@@ -66,10 +66,7 @@ rpc authorize => sub {
 
     my ($loginid, $scopes) = @{$token_details}{qw/loginid scopes/};
 
-    my $client = BOM::User::Client->new({
-        loginid      => $loginid,
-        db_operation => 'replica'
-    });
+    my $client = BOM::User::Client->get_client_instance($loginid, 'replica');
     return BOM::RPC::v3::Utility::invalid_token_error() unless $client;
 
     my $user = $client->user;
@@ -169,6 +166,7 @@ rpc authorize => sub {
             is_virtual           => ($client->is_virtual ? 1 : 0),
             broker               => $client->broker,
         },
+        $client->linked_accounts->%*,
     };
 };
 
