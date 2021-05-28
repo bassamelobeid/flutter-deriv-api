@@ -481,7 +481,7 @@ sub actions_config {
             }
         ],
 
-        ['new_account', {stash_params => [qw/ token server_name client_ip user_agent /]}],
+        ['new_account',        {stash_params => [qw/ token server_name client_ip user_agent /]}],
         ['new_account_wallet', {stash_params => [qw/ server_name client_ip user_agent /]}],
         ['link_wallet'],
     ];

@@ -714,7 +714,7 @@ command block_app_in_domain => sub {
             Binary::WebSocketAPI::add_remove_apps_blocked_from_opertion_domain('del', $app_id, $env);
         }
     }
-    my $rslt  = {blocked => Binary::WebSocketAPI::get_apps_blocked_from_operation_domain()};
+    my $rslt = {blocked => Binary::WebSocketAPI::get_apps_blocked_from_operation_domain()};
     $f->done($rslt);
 
     return $f;

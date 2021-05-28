@@ -9,7 +9,7 @@ use List::Util qw( first any none);
 
 my $json = JSON::MaybeXS->new;
 
-my $mock_websocketAPI = Test::MockModule->new('Binary::WebSocketAPI');
+my $mock_websocketAPI                   = Test::MockModule->new('Binary::WebSocketAPI');
 my $mock_apps_blocked_from_domain_redis = '{}';
 $mock_websocketAPI->mock(
     'set_to_redis_master',

@@ -531,10 +531,8 @@ sub add_remove_apps_blocked_from_opertion_domain {
         $APPS_BLOCKED_FROM_OPERATION_DOMAINS{$domain} = [grep { $_ != $app_id } $APPS_BLOCKED_FROM_OPERATION_DOMAINS{$domain}->@*];
     }
 
-    set_to_redis_master(
-        'domain_based_apps::blocked',
-        Encode::encode_utf8($json->encode(\%Binary::WebSocketAPI::APPS_BLOCKED_FROM_OPERATION_DOMAINS))
-    );
+    set_to_redis_master('domain_based_apps::blocked',
+        Encode::encode_utf8($json->encode(\%Binary::WebSocketAPI::APPS_BLOCKED_FROM_OPERATION_DOMAINS)));
 }
 
 =head2 get_apps_blocked_from_operation_domain
