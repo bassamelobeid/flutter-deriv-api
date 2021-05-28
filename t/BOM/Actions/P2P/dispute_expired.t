@@ -9,11 +9,7 @@ use BOM::Event::Actions::P2P;
 use BOM::Test::Email;
 use BOM::Platform::Context qw(request);
 
-use BOM::Test;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
-use BOM::Test::Helper::Client;
-use BOM::Config::Runtime;
-use BOM::Database::ClientDB;
 use BOM::Test::Helper::P2P;
 use Date::Utility;
 

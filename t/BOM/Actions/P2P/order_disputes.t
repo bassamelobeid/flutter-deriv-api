@@ -4,21 +4,12 @@ use warnings;
 use Test::More;
 use Test::Deep;
 use Test::MockModule;
-use feature 'state';
 use BOM::Event::Actions::P2P;
-
-use BOM::Test;
-use BOM::Config::Runtime;
-use Data::Dumper;
-use BOM::Database::ClientDB;
-use BOM::Config::Redis;
 use BOM::Test::Helper::P2P;
-use BOM::Event::Process;
 use Date::Utility;
 use Time::Moment;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
-use BOM::Platform::Context qw(localize request);
 
 use JSON::MaybeUTF8 qw(decode_json_utf8);
 

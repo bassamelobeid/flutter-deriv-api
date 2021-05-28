@@ -2,16 +2,9 @@ use strict;
 use warnings;
 
 use Test::More;
-use feature 'state';
 use BOM::Event::Actions::P2P;
-
-use BOM::Test;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
-use BOM::Test::Helper::Client;
-use BOM::Config::Runtime;
-use Data::Dumper;
-use BOM::Database::ClientDB;
 use BOM::Test::Helper::P2P;
 
 use JSON::MaybeUTF8 qw(decode_json_utf8);

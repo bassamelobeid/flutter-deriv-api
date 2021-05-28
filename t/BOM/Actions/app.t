@@ -11,11 +11,7 @@ use WebService::Async::Segment::Customer;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Platform::Context qw(request);
 use BOM::Platform::Context::Request;
-use BOM::Event::Actions::App;
 use BOM::User;
-use Time::Moment;
-use Date::Utility;
-use BOM::Platform::Locale qw/get_state_by_id/;
 use BOM::Event::Process;
 
 my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({

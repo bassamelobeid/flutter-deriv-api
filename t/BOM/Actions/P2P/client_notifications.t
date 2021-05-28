@@ -2,18 +2,12 @@ use strict;
 use warnings;
 
 use Test::More;
-use feature 'state';
 use BOM::Event::Actions::P2P;
 
 use RedisDB;
-use BOM::Test;
-use BOM::Config::Runtime;
-use Data::Dumper;
-use BOM::Database::ClientDB;
 use BOM::Config::Redis;
 use BOM::Test::Helper::P2P;
 use BOM::Event::Process;
-use Date::Utility;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 

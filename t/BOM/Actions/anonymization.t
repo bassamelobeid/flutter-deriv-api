@@ -3,23 +3,19 @@ use warnings;
 
 use Test::More;
 use Test::Deep;
-use feature 'state';
 use Test::MockModule;
-use BOM::Event::Actions::P2P;
+use BOM::Event::Actions::Anonymization;
 use BOM::Test;
 use BOM::Test::Email;
 use BOM::Config::Runtime;
 use BOM::User;
 use BOM::User::Client;
 use BOM::Database::ClientDB;
-use BOM::Test::Helper::P2P;
-use BOM::Event::Process;
 use BOM::Platform::Context;
 use Date::Utility;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Helper::Utility qw(random_email_address);
-
 use JSON::MaybeUTF8 qw(decode_json_utf8);
 
 subtest client_anonymization => sub {
