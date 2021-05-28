@@ -120,6 +120,7 @@ sub create_account {
             phone              => '',
             secret_question    => '',
             secret_answer      => '',
+            ($type eq 'wallet') ? (payment_method => 'VirtualMoney') : (),
         );
 
         $client = $type eq 'wallet' ? $user->create_wallet(%args) : $user->create_client(%args);
