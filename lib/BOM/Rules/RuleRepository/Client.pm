@@ -85,3 +85,16 @@ rule 'client.required_fields_are_non_empty' => {
         return 1;
     },
 };
+
+rule 'client.is_not_virtual' => {
+    description => 'It dies with a permission error if the context client is virtual; succeeds otherwise.',
+    code        => sub {
+        my ($self, $context) = @_;
+
+        die {code => 'PermissionDenied'} if $context->client->is_virtual;
+
+        return 1;
+    }
+};
+
+1;

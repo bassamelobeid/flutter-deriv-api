@@ -37,6 +37,7 @@ use BOM::Rules::RuleRepository::Residence;
 use BOM::Rules::RuleRepository::Onfido;
 use BOM::Rules::RuleRepository::TradingAccount;
 use BOM::Rules::RuleRepository::Transfers;
+use BOM::Rules::RuleRepository::SelfExclusion;
 use BOM::Rules::Registry qw(get_action);
 use BOM::Rules::Context;
 

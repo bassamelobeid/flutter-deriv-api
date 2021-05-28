@@ -11,6 +11,9 @@ use BOM::Rules::Engine;
 my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'CR',
 });
+my $client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    broker_code => 'VRTC',
+});
 
 my $rule_engine = BOM::Rules::Engine->new(client => $client);
 
@@ -86,6 +89,16 @@ subtest 'rule client.required_fields_are_non_empty' => sub {
     lives_ok { $rule_engine->apply_rules($rule_name) } 'Test passes when client has the data';
 
     $mock_lc->unmock_all;
+};
+
+subtest 'rule client.is_not_virtual' => sub {
+    my $rule_name = 'client.is_not_virtual';
+
+    my $rule_engine = BOM::Rules::Engine->new(client => $client);
+    lives_ok { $rule_engine->apply_rules($rule_name) } 'Test passes for real client';
+
+    $rule_engine = BOM::Rules::Engine->new(client => $client_vr);
+    is_deeply exception { $rule_engine->apply_rules($rule_name) }, {code => 'PermissionDenied'}, 'Error with a virtual client';
 };
 
 done_testing();

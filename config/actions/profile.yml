@@ -1,0 +1,6 @@
+set_self_exclusion:
+  description: "Rules applied when trying to set self-exclusion settings."
+  general:
+    - client.is_not_virtual
+    - self_exclusion.not_self_excluded
+    - self_exclusion.deposit_limits_allowed

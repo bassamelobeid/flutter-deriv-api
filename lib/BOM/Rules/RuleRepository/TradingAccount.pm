@@ -29,7 +29,7 @@ rule 'trading_account.should_match_landing_company' => {
         my $residence           = $context->residence;
         my $countries_instance  = request()->brand->countries_instance;
         my $countries_list      = $countries_instance->countries_list;
-        my $lc_type = $market_type eq 'synthetic' ? 'gaming' : $market_type;
+        my $lc_type             = $market_type eq 'synthetic' ? 'gaming' : $market_type;
         my $binary_company_name = $countries_list->{$residence}->{"${lc_type}_company"} // '';
 
         # TODO: add some sort of LC entry for this.
