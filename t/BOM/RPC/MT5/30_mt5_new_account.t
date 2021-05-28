@@ -840,6 +840,15 @@ subtest 'country=au, financial account' => sub {
     $params->{args}->{mt5_account_type} = 'financial_stp';
     $result                             = $c->call_ok($method, $params)->has_error->error_code_is('MT5NotAllowed')
         ->error_message_is('MT5 financial account is not available in your country yet.');
+
+    BOM::RPC::v3::MT5::Account::reset_throttler($new_client->loginid);
+    $params->{args}->{mt5_account_type} = 'financial';
+    BOM::Config::Runtime->instance->app_config->system->mt5->suspend->auto_Bbook_svg_financial(0);
+    # same account 'real\p01_ts01\financial\svg_std-lim_usd' is already created
+    $result =
+        $c->call_ok($method, $params)->has_error->error_code_is('MT5CreateUserError')
+        ->error_message_is(
+        'An account already exists with the information you provided. If you\'ve forgotten your username or password, please contact us.');
 };
 
 done_testing();

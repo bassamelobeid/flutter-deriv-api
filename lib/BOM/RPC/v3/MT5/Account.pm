@@ -426,7 +426,8 @@ sub _mt5_group {
                 or $landing_company_short eq 'samoa')
                 and not $app_config->system->mt5->suspend->auto_Bbook_svg_financial
         );
-        $sub_account_type .= '-hr' if $market_type eq 'financial' and $sub_account_type ne 'stp' and not $apply_auto_b_book;
+        # as per requirements of mt5 operation team, australian financial account will not be categorised as high-risk (hr)
+        $sub_account_type .= '-hr' if $market_type eq 'financial' and $country ne 'au' and $sub_account_type ne 'stp' and not $apply_auto_b_book;
     }
 
     # restricted trading group
