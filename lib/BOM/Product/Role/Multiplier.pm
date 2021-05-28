@@ -847,6 +847,19 @@ sub stop_out_level {
     return $level;
 }
 
+around maximum_feed_delay_seconds => sub {
+    my $orig = shift;
+    my $self = shift;
+
+    return $self->$orig() if $self->underlying->market->name ne 'synthetic_index';
+
+    # multipliers on synthetic indices will need to have much stricter checks on feed outage.
+    # setting the threshold at twice the generation interval.
+    my $delay_threshold = $self->underlying->generation_interval->seconds * 2;
+
+    return $delay_threshold;
+};
+
 ### PRIVATE METHODS ###
 
 sub _validation_methods {

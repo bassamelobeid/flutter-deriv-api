@@ -10,6 +10,7 @@ use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Config::Runtime;
 
+use BOM::MarketData qw(create_underlying);
 use BOM::Product::ContractFactory qw(produce_contract);
 use Finance::Contract::Longcode qw(shortcode_to_parameters);
 use Date::Utility;
@@ -1267,6 +1268,38 @@ subtest 'crypto on multiplier' => sub {
     is $c->primary_validation_error->message, 'deal cancellation not available', 'message - deal cancellation not available';
     is $c->primary_validation_error->message_to_client, 'Deal cancellation is not available for this asset.',
         'message to client - Deal cancellation is not available for this asset.';
+};
+
+subtest 'delay threshold for synthetic' => sub {
+    my $now = Date::Utility->new;
+    my $u   = create_underlying('R_100');
+    BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks(
+        [100, $now->epoch - $u->generation_interval->seconds * 2, 'R_100'],
+        [102, $now->epoch + 1,                                    'R_100'],
+    );
+    my $args = {
+        bet_type     => 'MULTUP',
+        underlying   => 'R_100',
+        date_start   => $now,
+        date_pricing => $now,
+        amount_type  => 'stake',
+        amount       => 10,
+        multiplier   => 100,
+        currency     => 'USD',
+    };
+    my $c = produce_contract($args);
+    is $c->maximum_feed_delay_seconds, 4, 'max delay is set to twice of generation interval';
+    ok $c->is_valid_to_buy, 'valid to buy if feed is on the dot';
+
+    BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks(
+        [100, $now->epoch - $u->generation_interval->seconds * 2 - 1, 'R_100'],
+        [102, $now->epoch + 1,                                        'R_100'],
+    );
+    $c = produce_contract($args);
+    ok !$c->is_valid_to_buy, 'valid to buy if feed is on the dot';
+    is $c->primary_validation_error->message, 'Quote too old [symbol: R_100]', 'Quote too old [symbol: R_100]';
+    is $c->primary_validation_error->message_to_client->[0], 'Trading is suspended due to missing market (old) data.',
+        'message to client - Trading is suspended due to missing market (old) data.';
 };
 
 done_testing();
