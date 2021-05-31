@@ -28,216 +28,223 @@ use constant CRYPTO_DEFAULT_TRANSACTION_COUNT => 50;
 BOM::Backoffice::Sysinit::init();
 PrintContentType();
 
-my $loginid = uc(request()->param('loginID'));
+my $broker  = request()->broker_code;
+my $loginid = uc(request()->param('loginID') // '');
+my $address = request()->param('address');
+my $action  = request()->param('action') // '';
+
+unless ($loginid || $address) {
+    BrokerPresentation('Crypto History');
+    code_exit_BO('Please provide either "loginID" or crypto "address".');
+}
+
 $loginid =~ s/\s//g;
-
 my $encoded_loginid = encode_entities($loginid);
+BrokerPresentation($loginid ? "$encoded_loginid Crypto History" : "$address Address History");
 
-BrokerPresentation($encoded_loginid . ' CRYPTO HISTORY', '', '');
+my $tt = BOM::Backoffice::Request::template;
+my ($client_currency, $currencies_info);
 
-my $broker = request()->broker_code;
-
-code_exit_BO("Error: wrong login id $encoded_loginid") unless ($broker);
-
-my $client = eval { BOM::User::Client::get_instance({'loginid' => $loginid, db_operation => 'backoffice_replica'}) };
-
-if (not $client) {
-    code_exit_BO("Error: wrong login id ($encoded_loginid) could not get client instance.", $loginid);
-}
-
-Bar($loginid);
-
-# We either choose the dropdown currency from transaction page or use the client currency for quick jump
-my $currency = $client->currency;
-if (my $currency_dropdown = request()->param('currency_dropdown')) {
-    $currency = $currency_dropdown unless $currency_dropdown eq 'default';
-}
-
-my $currency_wrapper = BOM::CTC::Currency->new(currency_code => $currency);
-
-my $action = request()->param('action');
-
-# print other untrusted section warning in backoffice
-print build_client_warning_message(encode_entities($loginid));
-
-my $client_edit_url = request()->url_for(
-    'backoffice/f_clientloginid_edit.cgi',
+my $get_client_edit_url      = get_url_factory('f_clientloginid_edit',     $broker);
+my $get_statement_url        = get_url_factory('f_manager_history',        $broker);
+my $get_crypto_statement_url = get_url_factory('f_manager_crypto_history', $broker);
+my $get_profit_url           = get_url_factory(
+    'f_profit_check',
+    $broker,
     {
-        loginID => $loginid,
-        broker  => $broker
-    });
-
-my $client_profit_url = request()->url_for(
-    'backoffice/f_profit_check.cgi',
-    {
-        broker    => $broker,
-        loginID   => $loginid,
         startdate => Date::Utility->today()->_minus_months(1)->date,
         enddate   => Date::Utility->today()->date,
     });
 
-my $client_statement_url = request()->url_for(
-    'backoffice/f_manager_history.cgi',
-    {
-        loginID => $loginid,
-        broker  => $client->broker,
-    });
+my $get_currency_info = sub {
+    my ($currency_code) = @_;
 
-my $self_url = request()->url_for(
-    'backoffice/f_manager_crypto_history.cgi',
-    {
-        loginID => $loginid,
-        broker  => $client->broker,
-    });
+    my $info = $currencies_info->{$currency_code};
 
-print "<div class='row'>"
-    . "<input class='btn btn--secondary' type='button' value='View $loginid details' onclick='location.href=\"$client_edit_url\"' />"
-    . "<input class='btn btn--secondary' type='button' value='View $loginid profit' onclick='location.href=\"$client_profit_url\"' />"
-    . "<input class='btn btn--secondary' type='button' value='View $loginid statement' onclick='location.href=\"$client_statement_url\"' />"
-    . "</div>";
+    unless ($info) {
+        $info->{wrapper}         = BOM::CTC::Currency->new(currency_code => $currency_code);
+        $info->{address_url}     = $info->{wrapper}->get_address_blockchain_url;
+        $info->{transaction_url} = $info->{wrapper}->get_transaction_blockchain_url;
+        $info->{exchange_rate}   = eval { in_usd(1.0, $currency_code) };
+    }
+
+    return $info;
+};
+
+my $render_client_info = sub {
+    return undef unless $loginid;
+
+    code_exit_BO("Error: wrong login id $encoded_loginid") unless ($broker);
+
+    my $client = eval { BOM::User::Client::get_instance({loginid => $loginid, db_operation => 'backoffice_replica'}) };
+
+    if (not $client) {
+        code_exit_BO("Error: wrong login id ($encoded_loginid) could not get client instance.", $loginid);
+    }
+
+    Bar($loginid);
+
+    # We either choose the dropdown currency from transaction page or use the client currency for quick jump
+    $client_currency = $client->currency;
+    if (my $currency_dropdown = request()->param('currency_dropdown')) {
+        $client_currency = $currency_dropdown unless $currency_dropdown eq 'default';
+    }
+
+    # print other untrusted section warning in backoffice
+    print build_client_warning_message(encode_entities($loginid));
+
+    $tt->process(
+        'backoffice/common/client_quick_links.html.tt',
+        {
+            loginid        => $loginid,
+            clientedit_url => $get_client_edit_url->($loginid),
+            statement_url  => $get_statement_url->($loginid),
+            profit_url     => $get_profit_url->($loginid),
+        }) || die $tt->error();
+
+    $tt->process(
+        'backoffice/common/client_info_brief.html.tt',
+        {
+            loginid => $loginid,
+            client  => {
+                name        => $client->full_name,
+                email       => $client->email,
+                country     => Locale::Country::code2country($client->citizen) // '',
+                residence   => Locale::Country::code2country($client->residence),
+                tel         => $client->phone,
+                date_joined => $client->date_joined,
+            },
+        }) || die $tt->error();
+
+    BarEnd();
+};
 
 my $render_crypto_transactions = sub {
     my ($txn_type) = @_;
 
-    return undef unless BOM::Config::CurrencyConfig::is_valid_crypto_currency($currency);
+    return undef if $client_currency && !BOM::Config::CurrencyConfig::is_valid_crypto_currency($client_currency);
 
     my $offset_param = "crypto_${txn_type}_offset";
     my $offset       = max(request()->param($offset_param) // 0, 0);
     my $limit        = max(request()->param('limit')       // 0, 0) || CRYPTO_DEFAULT_TRANSACTION_COUNT;
     my $search_param = "${txn_type}_address_search";
 
-    my ($search_address, $search_message);
-    if ($action && $action eq $search_param && trim(request()->param($search_param))) {
+    my $search_address = $address;
+    if ($action eq $search_param && trim(request()->param($search_param))) {
         $search_address = trim(request()->param($search_param));
-        $search_message = "Search result for address: $search_address";
     }
 
-    my %params = (
-        loginid        => $client->loginid,
+    my %query_params = (
+        ($loginid ? (loginid => $loginid) : ()),
         limit          => $limit,
         offset         => $offset,
         address        => $search_address,
         sort_direction => 'DESC'
     );
 
-    my $exchange_rate;
-    try {
-        $exchange_rate = in_usd(1.0, $currency);
-    } catch {
-        code_exit_BO("No exchange rate found for currency $currency. Please contact IT.");
-    }
-
     my @trxns = map {
+        my $currency_info = $get_currency_info->($_->{currency_code});
         my $amount = $_->{amount} //= 0;    # it will be undef on newly generated addresses
-        $_->{usd_amount} = formatnumber('amount', 'USD', $amount * $exchange_rate);
+        if ($currency_info->{exchange_rate}) {
+            $_->{usd_amount} = formatnumber('amount', 'USD', $amount * $currency_info->{exchange_rate});
+        }
+        $_->{address_url}     = URI->new($currency_info->{address_url} . $_->{address})            if $_->{address};
+        $_->{transaction_url} = URI->new($currency_info->{transaction_url} . $_->{blockchain_txn}) if $_->{blockchain_txn};
 
         $_
-    } get_crypto_transactions($txn_type, %params)->@*;
+    } get_crypto_transactions($txn_type, %query_params)->@*;
 
-    my $transaction_uri = URI->new($currency_wrapper->get_transaction_blockchain_url);
-    my $address_uri     = URI->new($currency_wrapper->get_address_blockchain_url);
+    my %client_details;
+    if ($loginid) {
+        my %fiat = get_fiat_login_id_for($loginid, $broker);
+        %client_details = (
+            loginid      => $loginid,
+            details_link => $get_client_edit_url->($loginid),
+            fiat_loginid => $fiat{fiat_loginid},
+            fiat_link    => $fiat{fiat_link},
+        );
+    }
 
-    my $details_link = request()->url_for(
-        'backoffice/f_clientloginid_edit.cgi',
-        {
-            broker  => $broker,
-            loginID => $loginid
-        });
-
-    my %fiat           = get_fiat_login_id_for($loginid, $broker);
-    my %client_details = (
-        loginid      => $loginid,
-        details_link => "$details_link",
-        fiat_loginid => $fiat{fiat_loginid},
-        fiat_link    => "$fiat{fiat_link}",
-    );
-
-    my ($trx_id_to_reprocess, $reprocess_result);
-    if ($txn_type eq 'deposit' && $action && $action eq 'reprocess_address') {
-        $trx_id_to_reprocess = request()->param('db_row_id');
-        $reprocess_result    = reprocess_address($currency_wrapper, request()->param('address_to_reprocess'));
+    my $reprocess_info;
+    if ($txn_type eq 'deposit' && $action eq 'reprocess_address') {
+        $reprocess_info->{trx_id} = request()->param('trx_id_to_reprocess');
+        $reprocess_info->{result} = reprocess_address(
+            $get_currency_info->(request()->param('trx_currency_to_reprocess'))->{wrapper},
+            request()->param('address_to_reprocess'),
+        );
     }
 
     my $make_pagination_url = sub {
         my ($offset_value) = @_;
         return request()->url_for(
-            'backoffice/f_manager_history.cgi',
+            'backoffice/f_manager_crypto_history.cgi',
             {
                 request()->params->%*,
                 $offset_param => max($offset_value, 0),
             })->fragment($txn_type);
     };
-    my $prev_url = $offset                 ? $make_pagination_url->($offset - $limit) : undef;
-    my $next_url = $limit == scalar @trxns ? $make_pagination_url->($offset + $limit) : undef;
+    my $pagination_info = {
+        prev_url => $offset                 ? $make_pagination_url->($offset - $limit) : undef,
+        next_url => $limit == scalar @trxns ? $make_pagination_url->($offset + $limit) : undef,
+        range    => ($offset + !!@trxns) . ' - ' . ($offset + @trxns),
+    };
 
-    my $tt = BOM::Backoffice::Request::template;
     $tt->process(
         'backoffice/crypto_cashier/manage_crypto_transactions_cs.tt',
         {
-            transactions    => \@trxns,
-            broker          => $broker,
-            currency        => $currency,
-            transaction_uri => $transaction_uri,
-            address_uri     => $address_uri,
-            testnet         => BOM::Config::on_qa() ? 1 : 0,
-            txn_type        => $txn_type,
-            search_message  => $search_message,
-            pagination      => {
-                prev_url => $prev_url,
-                next_url => $next_url,
-                range    => ($offset + !!@trxns) . ' - ' . ($offset + @trxns),
-            },
-            reprocess => {
-                trx_id => $trx_id_to_reprocess,
-                result => $reprocess_result,
-            },
-            self_url => $self_url,
+            transactions             => \@trxns,
+            broker                   => $broker,
+            currency                 => $client_currency,
+            testnet                  => BOM::Config::on_qa() ? 1 : 0,
+            txn_type                 => $txn_type,
+            search_address           => $search_address,
+            pagination               => $pagination_info,
+            reprocess                => $reprocess_info,
+            get_clientedit_url       => $get_client_edit_url,
+            get_crypto_statement_url => $get_crypto_statement_url,
+            get_profit_url           => $get_profit_url,
             %client_details,
-        }) || die $tt->error();
+        }) || die $tt->error() . "\n";
 };
 
-my $tel              = $client->phone;
-my $country          = Locale::Country::code2country($client->citizen) // '';
-my $residence        = Locale::Country::code2country($client->residence);
-my $client_name      = $client->full_name;
-my $client_email     = $client->email;
-my $client_joined_at = $client->date_joined;
-
-print qq~
-<div class="row row-align-top bg-lightgrey grd-margin-top grd-margin-bottom">
-    <div class="grd-grid-2">
-        <strong>Login ID</strong>
-        <div class="copy-on-click">$loginid</div>
-    </div>
-    <div class="grd-grid-2">
-        <strong>Name</strong>
-        <div class="copy-on-click">$client_name</div>
-    </div>
-    <div class="grd-grid-2">
-        <strong>Email</strong>
-        <div class="copy-on-click">$client_email</div>
-    </div>
-    <div class="grd-grid-1">
-        <strong>Country</strong>
-        <div>$country</div>
-    </div>
-    <div class="grd-grid-1">
-        <strong>Residence</strong>
-        <div>$residence</div>
-    </div>
-    <div class="grd-grid-2">
-        <strong>Tel</strong>
-        <div>$tel</div>
-    </div>
-    <div class="grd-grid-2">
-        <strong>Date Joined</strong>
-        <div>$client_joined_at</div>
-    </div>
-</div>
-~;
-
-BarEnd();
+$render_client_info->();
 
 $render_crypto_transactions->($_) for qw(deposit withdrawal);
 
 code_exit_BO();
+
+=head2 get_url_factory
+
+Creates subroutines to be used for generating different URLs.
+
+Takes the following arguments:
+
+=over 4
+
+=item * C<$page> - Page name to create the URL for. e.g. C<f_cliendloginig_edit>
+
+=item * C<$broker_code> - Current broker code
+
+=item * C<$args> - Additional arguments to be used in URL
+
+=back
+
+Returns a subroutine which takes the loginID and creates the URL accordingly.
+
+=cut
+
+sub get_url_factory {
+    my ($page, $broker_code, $args) = @_;
+
+    return sub {
+        my ($client_loginid) = @_;
+        return request()->url_for(
+            "backoffice/$page.cgi",
+            {
+                loginID => $client_loginid,
+                broker  => $broker_code,
+                (ref $args eq 'HASH' ? $args->%* : ()),
+            },
+        );
+    }
+}

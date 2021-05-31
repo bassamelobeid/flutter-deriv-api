@@ -1,16 +1,14 @@
-[% MACRO address_link BLOCK %]
-[% IF addr %]
-    <a href="[% address_uri _ addr %]" target="_blank" class="link">[% addr %]</a>
-[% ELSE %]
-    &nbsp;
+[% BLOCK html_link %]
+    [% IF text && url %]
+        <a class="link" href="[% url %]" target="_blank">[% text %]</a>
+    [% END %]
 [% END %]
-[% END %]
-[% MACRO transaction_link BLOCK %]
-[% IF tx %]
-    <a href="[% transaction_uri _ tx %]" target="_blank" class="link">[% tx.substr(0,6) %]...</a>
-[% ELSE %]
-    &nbsp;
-[% END %]
+
+[% BLOCK info %]
+<div class="grd-margin-bottom">
+    <strong>[% title %]:</strong><br />
+    [% content | none %]
+</div>
 [% END %]
 
 [% BLOCK pagination %]
@@ -37,27 +35,29 @@
     </div>
 [% END %]
 
-<style>
-    .filter {
-        margin-bottom: 15px;
-    }
-</style>
-
 <div class="card">
     <div class="card__label toggle">
         CRYPTOCURRENCY ACTIVITY: [% txn_type.upper %]
     </div>
     <div class="card__content">
-        <div class="filter">
+        [% IF loginid %]
+        <div class="grd-margin-bottom">
             <form method="POST">
-                <label>Address:</label>
-                <input type="text" name="[% trx_type %]_address_search" autocomplete="off"/>
-                <button type="submit" class="btn btn--primary" name="action" value="[% trx_type %]_address_search">Search</button>
-                <label><strong>[% search_message | none %]</strong></label>
+                <label>
+                    Address: <input type="text" name="[% txn_type %]_address_search" autocomplete="off" size="40" />
+                </label>
+                <button type="submit" class="btn btn--primary" name="action" value="[% txn_type %]_address_search">Search</button>
             </form>
         </div>
+        [% END %]
+        [% IF search_address %]
+            <div class="error grd-margin-bottom">
+                <strong>Search result for address: [% search_address %]</strong>
+            </div>
+        [% END %]
         <div id="crypto" class="grd-parent grd-grid-12">
-            <a name="[% trx_type %]"></a>
+            <a name="[% txn_type %]"></a>
+            [% IF loginid %]
             <div class="row">
                 <div class="grd-grid-3">
                     <label>Client:</label>
@@ -70,9 +70,12 @@
                 </div>
                 [% END %]
             </div>
+            [% END %]
+
             [% PROCESS pagination %]
+
             <div class="row scrollable">
-            <table class="hover border full-width">
+            <table class="hover alternate border full-width">
                 <thead>
                     <tr>
                         <th>Status</th>
@@ -95,44 +98,55 @@
                     [% FOREACH trx IN transactions %]
                         <tr id="trx_[% trx.id %]">
                             <td valign="top">
-                                <b>[% trx.transaction_type FILTER ucfirst %]: </b>
-                                [% IF trx.status == 'LOCKED' %]PENDING[% ELSE %][% trx.status %][% END %]
+                                [% WRAPPER info title=trx.transaction_type.ucfirst %]
+                                    [% IF trx.status == 'LOCKED' %]PENDING[% ELSE %][% trx.status %][% END %]
+                                [% END %]
                             </td>
                             <td valign="top">
-                                <div><strong>Address:</strong><p>[% address_link(addr = trx.address) %]</p></div>
-                                <div><strong>Blockchain ID:</strong>[% transaction_link(tx = trx.blockchain_txn) %]</div>
+                                [% WRAPPER info title='Address' %][% INCLUDE html_link url=trx.address_url text=trx.address %][% END %]
+                                [% WRAPPER info title='Blockchain ID' %][% INCLUDE html_link url=trx.transaction_url text=trx.blockchain_txn.substr(0, 6) _ '...' %][% END %]
                             </td>
                             <td valign="top">
-                                <div><strong>Amount:</strong><p>[% trx.currency_code %] [% trx.amount %] (USD [% trx.usd_amount %])</p></div>
-                                <div><strong>Payment ID:</strong><p>[% trx.payment_id %]</p></div>
+                                [% WRAPPER info title='Amount' %][% trx.currency_code %] [% trx.amount %] (USD [% trx.usd_amount || 'not available' %])[% END %]
+                                [% UNLESS loginid %]
+                                    [% WRAPPER info title='Client' %]
+                                        <ul style="margin-top: 0;">
+                                            <li><a class="link link--primary" href="[% get_clientedit_url(trx.client_loginid) %]">[% trx.client_loginid %]</a></li>
+                                            <li><a class="link" href="[% get_crypto_statement_url(trx.client_loginid) %]">Crypto Statement</a></li>
+                                            <li><a class="link" href="[% get_profit_url(trx.client_loginid) %]">Profit</a></li>
+                                        </ul>
+                                    [% END %]
+                                [% END %]
+                                [% INCLUDE info title='Payment ID' content=trx.payment_id %]
                                 [% IF trx.transaction_type == 'withdrawal'%]
-                                    <div><strong>Estimated Fee:</strong><p>[% trx.estimated_fee %]</p></div>
-                                    <div><strong>Transaction Fee:</strong><p>[% trx.txn_fee %]</p></div>
+                                    [% INCLUDE info title='Estimated Fee' content=trx.estimated_fee %]
+                                    [% INCLUDE info title='Transaction Fee' content=trx.txn_fee %]
                                 [% END %]
                             </td>
                             <td valign="top">
-                                    <div><strong>Creation:</strong><p>[% trx.creation_date %]</p></div>
+                                    [% INCLUDE info title='Creation' content=trx.creation_date %]
                                 [% IF trx.transaction_type == 'deposit' %]
-                                    <div><strong>Pending:</strong><p>[% trx.pending_date %]</p></div>
-                                    <div><strong>Confirmed:</strong><p>[% trx.confirmed_date %]</p></div>
+                                    [% INCLUDE info title='Pending' content=trx.pending_date %]
+                                    [% INCLUDE info title='Confirmed' content=trx.confirmed_date %]
                                 [% ELSIF trx.transaction_type == 'withdrawal' %]
-                                    <div><strong>Verified:</strong><p>[% trx.verified_date %]</p></div>
-                                    <div><strong>Rejected:</strong><p>[% trx.rejected_date %]</p></div>
-                                    <div><strong>Cancelled:</strong><p>[% trx.cancelled_date %]</p></div>
-                                    <div><strong>Processing:</strong><p>[% trx.processing_date %]</p></div>
-                                    <div><strong>Performing Blockchain:</strong><p>[% trx.performing_blockchain_txn_date %]</p></div>
-                                    <div><strong>Sent:</strong><p>[% trx.sent_date %]</p></div>
+                                    [% INCLUDE info title='Verified' content=trx.verified_date %]
+                                    [% INCLUDE info title='Rejected' content=trx.rejected_date %]
+                                    [% INCLUDE info title='Cancelled' content=trx.cancelled_date %]
+                                    [% INCLUDE info title='Processing' content=trx.processing_date %]
+                                    [% INCLUDE info title='Performing Blockchain' content=trx.performing_blockchain_txn_date %]
+                                    [% INCLUDE info title='Sent' content=trx.sent_date %]
                                 [% END %]
                             </td>
                             <td valign="top">
-                                <div><strong>Remark:</strong><p>[% trx.remark %]</p></div>
-                                <div><strong>Error:</strong><p>[% trx.error_text %]</p></div>
+                                [% INCLUDE info title='Remark' content=trx.remark %]
+                                [% INCLUDE info title='Error' content=trx.error_text %]
                             </td>
                             <td valign="top" align="center">
                                 [% IF trx.transaction_type == 'deposit' %]
                                     <form method="POST">
                                         <input type="hidden" name="loginID" value="[% loginid %]" />
-                                        <input type="hidden" name="db_row_id" value="[% trx.id %]" />
+                                        <input type="hidden" name="trx_id_to_reprocess" value="[% trx.id %]" />
+                                        <input type="hidden" name="trx_currency_to_reprocess" value="[% trx.currency_code %]" />
                                         <input type="hidden" name="address_to_reprocess" value="[% trx.address %]" />
                                         <button type="submit" class="btn btn--primary" name="action" value="reprocess_address">Reprocess Address</button>
                                     </form>
@@ -148,8 +162,8 @@
                 </tbody>
             </table>
             </div>
+
             [% PROCESS pagination %]
         </div>
     </div>
 </div>
-

@@ -1,4 +1,7 @@
 <style type="text/css">
+    #error_txn_list {
+        margin-bottom: 30px;    /* remove vertical scroll caused by tooltip position (top) */
+    }
     #error_txn_list td {
         padding: 5px;
     }
@@ -19,7 +22,8 @@
 
 [% IF error_withdrawals.size > 0 %]
 <form name="revert_processing_form" method="post" onsubmit="return checkEmpty()">
-    <table id="error_txn_list" class="border">
+    <div class="scrollable">
+    <table id="error_txn_list" class="alternate border">
         <tr>
             <td></td>
             <th>ID</th>
@@ -53,6 +57,7 @@
             </tr>
         [% END %]
     </table>
+    </div>
     <div class="grd-margin-top">
         <a href="javascript:;" class="btn btn--secondary" onclick="selectMultiple()">Select multiple transactions</a>
         <a href="javascript:;" class="btn btn--secondary" onclick="selectTransactions()">Deselect all</a>
