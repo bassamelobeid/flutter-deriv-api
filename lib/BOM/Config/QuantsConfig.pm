@@ -59,7 +59,9 @@ sub save_config {
     my ($self, $config_type, $args) = @_;
 
     my $config;
-    if ($config_type =~ /commission/) {
+    if ($config_type eq 'custom_multiplier_commission') {
+        $config = $args;
+    } elsif ($config_type =~ /commission/) {
         $config = $self->_process_commission_config($args);
     } elsif ($config_type =~ /multiplier_config/) {
         $config = $self->_process_multiplier_config($args);
