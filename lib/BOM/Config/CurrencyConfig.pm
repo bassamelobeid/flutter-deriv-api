@@ -29,6 +29,7 @@ use Finance::Exchange;
 use Quant::Framework;
 use Locale::Object::Currency;
 use Locale::Country;
+use BOM::Config;
 
 use constant MAX_TRANSFER_FEE => 7;
 require Exporter;
@@ -777,6 +778,29 @@ sub get_currency_internal_sweep_config {
 
     return $currency_sweeps_config->{$currency};
 
+}
+
+=head2 get_currency_external_sweep_address
+
+Gets the external sweep address
+
+=over 4
+
+=item * C<currency> - Currency code
+
+=back
+
+Returns external_sweep address
+
+=cut
+
+sub get_currency_external_sweep_address {
+    my $currency = shift;
+
+    my $currency_config = BOM::Config::crypto()->{$currency};
+    # Not all currencies has the sweep config
+    return '' unless $currency_config && $currency_config->{sweep} && $currency_config->{sweep}->{address};
+    return $currency_config->{sweep}->{address};
 }
 
 1;
