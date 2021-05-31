@@ -1552,8 +1552,9 @@ sub get_siblings_information {
             currency             => $acc ? $acc->currency_code() : '',
             balance              => $balance,
             account_type         => $account_type,
-            demo_account         => $cl->is_virtual,
-            disabled             => $cl->status->disabled ? 1 : 0,
+            ($cl->is_wallet ? (payment_method => $cl->payment_method) : ()),
+            demo_account => $cl->is_virtual,
+            disabled     => $cl->status->disabled ? 1 : 0,
             }
             unless (!$include_self && ($cl->loginid eq $self->loginid));
     }

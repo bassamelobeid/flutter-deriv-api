@@ -249,6 +249,7 @@ subtest 'get_siblings_information' => sub {
             'currency'             => 'LTC',
             'loginid'              => $wallet_virtual->loginid,
             'landing_company_name' => 'samoa-virtual',
+            'payment_method'       => undef,
         },
         $client_virtual->loginid => {
             'demo_account'         => 1,
