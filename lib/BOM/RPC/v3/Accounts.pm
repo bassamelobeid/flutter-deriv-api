@@ -1497,10 +1497,6 @@ rpc set_settings => sub {
         return BOM::RPC::v3::Utility::create_error_by_code($error->{error}, details => $error->{details}) if $error;
     }
 
-    return BOM::RPC::v3::Utility::permission_error()
-        if $allow_copiers
-        and ($current_client->landing_company->short ne 'svg' and not $current_client->is_virtual);
-
     if (
         $allow_copiers
         and @{BOM::Database::DataMapper::Copier->new(
