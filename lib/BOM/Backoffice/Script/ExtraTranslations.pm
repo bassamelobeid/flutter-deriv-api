@@ -22,6 +22,8 @@ use BOM::OAuth::Static;
 use Finance::Contract::Longcode;
 use BOM::Config::Runtime;
 use BOM::Config;
+use BOM::Backoffice::Request qw(request);
+use Brands;
 
 has file_container => (
     is         => 'ro',
@@ -76,6 +78,8 @@ sub script_run {
     $self->add_longcodes;
     $self->add_messages;
     $self->add_p2p_payment_methods;
+    $self->add_idv_document_types;
+    $self->add_onfido_document_types;
 
     return 0;
 }
@@ -286,6 +290,57 @@ sub add_p2p_payment_methods {
         }
     }
 
+    return;
+}
+
+=head2 add_idv_document_types
+
+Adds localizable strings from bom-config/share/idv_config.yml
+
+=cut
+
+sub add_idv_document_types {
+    my $self   = shift;
+    my $fh     = $self->pot_append_fh;
+    my $config = request()->brand->countries_instance->countries_list;
+
+    for my $country_config (values $config->%*) {
+        for (values $country_config->{config}->{idv}->{document_types}->%*) {
+            my $msgid = $self->msg_id($_->{display_name});
+            if ($self->is_id_unique($msgid)) {
+                print $fh "\n";
+                print $fh "msgctxt \"IDV document type \"\n";
+                print $fh $msgid . "\n";
+                print $fh "msgstr \"\"\n";
+            }
+        }
+    }
+
+    return;
+}
+
+=head2 add_onfido_document_types
+
+Adds localizable strings from bom-config/share/onfido_supported_documents.yml
+
+=cut
+
+sub add_onfido_document_types {
+    my $self   = shift;
+    my $fh     = $self->pot_append_fh;
+    my $config = BOM::Config::onfido_supported_documents();
+
+    for my $country_config ($config->@*) {
+        for ($country_config->{doc_types_list}->@*) {
+            my $msgid = $self->msg_id($_);
+            if ($self->is_id_unique($msgid)) {
+                print $fh "\n";
+                print $fh "msgctxt \"Onfido document type \"\n";
+                print $fh $msgid . "\n";
+                print $fh "msgstr \"\"\n";
+            }
+        }
+    }
     return;
 }
 
