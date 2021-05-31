@@ -507,8 +507,8 @@ subtest $method => sub {
         ok $new_loginid =~ /^CR\d+$/, 'new CR loginid';
         ok $emitted{"signup_$new_loginid"}, "signup event emitted";
         # check disabled case
-        $new_client = BOM::User::Client->new({loginid => $new_loginid});
-        $new_client->status->set('disabled', 'system', 'reason');
+        my $disabled_client = BOM::User::Client->new({loginid => $new_loginid});
+        $disabled_client->status->set('disabled', 'system', 'reason');
         $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error->result_value_is(
             sub { shift->{landing_company} },
             'Deriv (SVG) LLC',
@@ -518,10 +518,14 @@ subtest $method => sub {
         $new_loginid = $rpc_ct->result->{client_id};
         ok $new_loginid =~ /^CR\d+$/, 'new CR loginid';
         # check disabled but account currency selected case
-        $new_client->set_default_account("USD");
-        $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('PermissionDenied', 'correct error code.')
-            ->error_message_is('Permission denied.', 'It should return expected error message');
+        $new_client = BOM::User::Client->new({loginid => $new_loginid});
 
+        $disabled_client->set_default_account("USD");
+        $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('SetExistingAccountCurrency', 'correct error code.')
+            ->error_message_is("Please set the currency for your existing account $new_loginid, in order to create more accounts.",
+            'It should return expected error message');
+
+        $new_client->set_default_account("USD");
     };
     subtest 'Create multiple accounts in CR' => sub {
         $email = 'new_email' . rand(999) . '@binary.com';
@@ -608,7 +612,7 @@ subtest $method => sub {
 
         $params->{args}->{currency} = 'BTC';
         $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error('cannot create another crypto currency account with same currency')
-            ->error_code_is('CurrencyTypeNotAllowed', 'error code is CurrencyTypeNotAllowed');
+            ->error_code_is('DuplicateCurrency', 'error code is DuplicateCurrency');
 
         # Set financial assessment for default client before making a new account to check if new account inherits the financial assessment data
         my $data = BOM::Test::Helper::FinancialAssessment::get_fulfilled_hash();
@@ -721,55 +725,54 @@ subtest $method => sub {
         %datadog_args = ();
         $params->{token} = $auth_token;
 
+        my $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->result;
+        is $result->{error}->{code}, 'PermissionDenied', 'It should return error if client residense does not fit for maltainvest';
+
+        $client->residence('de');
+        $client->save;
+
         $rpc_ct->call_ok($method, $params)
             ->has_no_system_error->has_error->error_code_is('email unverified', 'It should return error if email unverified')
             ->error_message_is('Your email address is unverified.', 'It should return error if email unverified');
 
         $user->update_email_fields(email_verified => 1);
-        my $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->result;
-        is $result->{error}->{code}, 'InvalidAccount', 'It should return error if client residense does not fit for maltainvest';
 
-        $client->residence('de');
-        $client->save;
         delete $params->{args}->{accept_risk};
 
         $rpc_ct->call_ok($method, $params)
             ->has_no_system_error->has_error->error_code_is('InsufficientAccountDetails', 'It should return error if client does not accept risk')
             ->error_message_is('Please provide complete details for account opening.', 'It should return error if client does not accept risk');
 
-        $params->{args}->{residence} = 'de';
-
         @{$params->{args}}{keys %$client_details} = values %$client_details;
-        delete $params->{args}->{first_name};
 
+        $params->{args}->{first_name} = '';
+        $params->{args}->{residence}  = '';
         $rpc_ct->call_ok($method, $params)
             ->has_no_system_error->has_error->error_code_is('InsufficientAccountDetails', 'It should return error if missing any details')
             ->error_message_is('Please provide complete details for account opening.', 'It should return error if missing any details')
-            ->error_details_is({missing => ["tax_residence", "tax_identification_number", "first_name"]});
+            ->error_details_is({missing => ["tax_residence", "tax_identification_number", "first_name", "residence"]});
         $params->{args}->{first_name}  = $client_details->{first_name};
         $params->{args}->{residence}   = 'de';
         $params->{args}->{accept_risk} = 1;
 
         $rpc_ct->call_ok($method, $params)
             ->has_no_system_error->has_error->error_code_is('InsufficientAccountDetails', 'It should return error if missing any details')
-            ->error_message_is('Please provide complete details for account opening.', 'It should return error if missing any details');
+            ->error_message_is('Please provide complete details for account opening.', 'It should return error if missing any details')
+            ->error_details_is({missing => ["tax_residence", "tax_identification_number"]});
 
         $params->{args}->{place_of_birth}            = "de";
         $params->{args}->{tax_residence}             = "de,nl";
         $params->{args}->{tax_identification_number} = "111222";
 
-        delete $params->{args}->{citizen};
+        $params->{args}->{citizen} = '';
 
         $rpc_ct->call_ok($method, $params)
             ->has_no_system_error->has_error->error_code_is('InsufficientAccountDetails', 'It should return error if missing any details')
-            ->error_message_is('Please provide complete details for account opening.', 'It should return error if missing any details');
-
+            ->error_message_is('Please provide complete details for account opening.', 'It should return error if missing any details')
+            ->error_details_is({missing => ["citizen"]});
         $params->{args}->{citizen} = 'at';
 
-        $client->save;
-
         $params->{args}->{residence} = 'id';
-
         $rpc_ct->call_ok($method, $params)
             ->has_no_system_error->has_error->error_code_is('InvalidResidence', 'It should return error if residence does not fit with maltainvest')
             ->error_message_is(

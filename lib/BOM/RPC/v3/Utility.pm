@@ -17,7 +17,7 @@ no indirect;
 use Syntax::Keyword::Try;
 use Date::Utility;
 use YAML::XS qw(LoadFile);
-use List::Util qw(any uniqstr shuffle);
+use List::Util qw(any uniqstr shuffle minstr);
 use List::UtilsBy qw(bundle_by);
 use JSON::MaybeXS qw{encode_json};
 use URI;
@@ -213,6 +213,7 @@ sub invalid_token_error {
 }
 
 sub permission_error {
+    #use Carp; warn Carp::cluck("PERMISSION ERROR");
     return create_error({
             code              => 'PermissionDenied',
             message_to_client => localize('Permission denied.')});
@@ -510,6 +511,7 @@ sub error_map {
         'InvalidStringValue'         => localize('This field must contain at least one alphabetic character.'),
 
         'DuplicateCurrency'        => localize("Please note that you are limited to only one [_1] account."),
+        'CurrencyNotAllowed'       => localize("The provided currency [_1] is not selectable at the moment."),
         'CurrencyTypeNotAllowed'   => localize('Please note that you are limited to one fiat currency account.'),
         'CannotChangeWallet'       => localize("Sorry, your trading account is already linked to a wallet."),
         'CurrencyMismatch'         => localize("Please ensure your trading account currency is the same as your wallet account currency."),
@@ -519,7 +521,13 @@ sub error_map {
         'DXInvalidAccount'         => localize("Sorry, we couldn't find your DXTrader account."),
         'InvalidTradingAccount'    => localize("Sorry, we couldn't find your trading account."),
         'CannotLinkVirtualAndReal' => localize("Please ensure your trading account type is the same as your wallet account type."),
-        'SelfExclusion'            => localize(
+
+        'CurrencySuspended'     => localize("The provided currency [_1] is not selectable at the moment."),
+        'InvalidCryptoCurrency' => localize("The provided currency [_1] is not a valid cryptocurrency."),
+        'ExperimentalCurrency'  => localize("This currency is temporarily suspended. Please select another currency to proceed."),
+        'DuplicateWallet'       => localize('Sorry, a wallet already exists with those details.'),
+
+        'SelfExclusion' => localize(
             'Sorry, but you have self-excluded yourself from the website until [_1]. If you are unable to place a trade or deposit after your self-exclusion period, please contact the Customer Support team for assistance.'
         ),
         'SetSelfExclusionError' => localize('Sorry, but setting your maximum deposit limit is unavailable in your country.'),
@@ -575,151 +583,6 @@ sub get_available_currencies {
     return @available_currencies;
 }
 
-=head2 validate_make_new_account
-
-    validate_make_new_account($client, $account_type, $request_data)
-
-    Make several checks based on $client and $account type.
-    Updates $request_data(hashref) with $client's sensitive data.
-
-=cut
-
-sub validate_make_new_account {
-    my ($client, $account_type, $request_data, $rule_engine) = @_;
-
-    return permission_error() if (not $account_type and $account_type !~ /^(?:real|financial)$/);
-
-    my $residence = $client->residence;
-    my $loginid   = $client->loginid;
-    if (BOM::Config::Runtime->instance->app_config->system->suspend->new_accounts) {
-        warn "acc opening err: from_loginid:$loginid, account_type:$account_type, residence:$residence, error: - new account opening suspended";
-        return create_error_by_code('InvalidAccount');
-    }
-    unless ($client->user->{email_verified}) {
-        return create_error_by_code('email unverified');
-    }
-    return create_error_by_code('NoResidence') unless $residence;
-    return create_error_by_code('InvalidResidence') if ($request_data->{residence} and $residence ne $request_data->{residence});
-
-    unless ($client->is_virtual) {
-        # we have real account, and going to create another one
-        # So, lets populate all sensitive data from current client, ignoring provided input
-        # this logic should gone after we separate new_account with new_currency for account
-        foreach (qw/first_name last_name residence address_city phone date_of_birth address_line_1/) {
-            $request_data->{$_} = $client->$_;
-        }
-    }
-
-    # get all real account siblings
-    my $siblings = $client->real_account_siblings_information(exclude_disabled_no_currency => 1);
-
-    if ($rule_engine) {
-        my $is_currency_allowed =
-            $request_data->{currency} ? _is_currency_allowed($client, $siblings, $request_data->{currency}, $rule_engine) : {allowed => 1};
-        return _currency_type_error($is_currency_allowed->{message}) unless $is_currency_allowed->{allowed};
-
-        # This single rule is applied, because we cannot wait until the end of validations when action is verified.
-        try {
-            $rule_engine->apply_rules([qw/residence.account_type_is_allowed/], {%$request_data, account_type => $account_type});
-        } catch ($error) {
-            return rule_engine_error($error);
-        }
-    }
-
-    # the rest of the rules covered by rule engine
-    return undef if $rule_engine;
-
-    my $countries_instance = request()->brand->countries_instance;
-    my $gaming_company     = $countries_instance->gaming_company_for_country($residence);
-    my $financial_company  = $countries_instance->financial_company_for_country($residence);
-
-    return create_error_by_code('InvalidAccountRegion') unless $countries_instance->is_signup_allowed($residence);
-    return create_error_by_code('InvalidAccount')       unless ($gaming_company or $financial_company);
-    return create_error_by_code('InvalidResidence') if ($countries_instance->restricted_country($residence));
-
-    # if no real sibling is present then its virtual
-    if (scalar(keys %$siblings) == 0) {
-        if ($account_type eq 'real') {
-            return undef if $gaming_company;
-            # some countries (like Australia and singapore) don't have any gaming account;
-            # for their residents the financial landing company will be used; but it's not supposed to be maltainvest.
-            # maltainvest accounts are created by an exclusive API call, with account_type=financial.
-            return create_error_by_code('InvalidAccount') if ($financial_company and $financial_company eq 'maltainvest');
-        } elsif ($account_type eq 'financial' and not($financial_company and $financial_company eq 'maltainvest')) {
-            return create_error_by_code('InvalidAccount');
-        }
-
-        # No further checks are needed for the first real account
-        return undef;
-    }
-
-    my $landing_company_name = $client->landing_company->short;
-    my $config               = $countries_instance->countries_list->{$client->residence};
-    if ($account_type eq 'financial') {
-        #moved from Platform::Account::Real::maltainvest::_validate
-        # also allow MLT UK client to open MF account
-        unless (($financial_company // '') eq 'maltainvest'
-            or ($config->{lc_to_open_mf_account} // '') eq $landing_company_name)
-        {
-            warn "maltainvest acc opening err: loginid:$loginid, residence:$residence, financial_company:" . ($financial_company // '');
-            return create_error_by_code('InvalidAccount');
-        }
-    }
-    # as maltainvest can be opened in few ways, upgrade from malta,
-    # directly from virtual, from iom
-    # or from maltainvest itself as we support multiple account now
-    # so upgrade is only allow once
-    if (($account_type and $account_type eq 'financial') and $landing_company_name =~ /^(?:malta|iom|maltainvest)$/) {
-        # return error if client already has maltainvest account
-        return create_error_by_code('FinancialAccountExists')
-            if (grep { $siblings->{$_}->{landing_company_name} eq 'maltainvest' } keys %$siblings);
-
-        # if from malta and account type is maltainvest, assign
-        # maltainvest to landing company as client is upgrading
-        $landing_company_name = 'maltainvest';
-    }
-
-    # If from maltainvest and account type is gaming, assign
-    # gaming company to landing company as client is able to have both
-    # gaming and financial without upgrading.
-    if (    ($account_type and $account_type eq 'real')
-        and $gaming_company
-        and $landing_company_name =~ /^maltainvest$/)
-    {
-        $landing_company_name = $gaming_company;
-    }
-
-    if ($client->is_virtual) {
-        my @landing_company_clients;
-        if ($account_type eq 'real') {
-            @landing_company_clients = $client->user->clients_for_landing_company($gaming_company);
-        } else {
-            @landing_company_clients = $client->user->clients_for_landing_company($financial_company);
-        }
-        return permission_error() if (any { not $_->status->duplicate_account } @landing_company_clients);
-    }
-
-    # filter siblings by landing company as we don't want to check cross
-    # landing company siblings, for example MF should check only its
-    # corresponding siblings not MLT one
-    $siblings = filter_siblings_by_landing_company($landing_company_name, $siblings);
-
-    # return if any one real client has not set account currency
-    if (my ($loginid_no_curr) = grep { not $siblings->{$_}->{currency} } keys %$siblings) {
-        return create_error_by_code('SetExistingAccountCurrency', params => $loginid_no_curr);
-    }
-
-    if ($request_data->{currency}) {
-        my $is_currency_allowed = _is_currency_allowed($client, $siblings, $request_data->{currency});
-        return _currency_type_error($is_currency_allowed->{message}) unless $is_currency_allowed->{allowed};
-    }
-
-    # Check if client can create anymore accounts, if currency is available. Otherwise, return error
-    return create_error_by_code('NewAccountLimitReached') unless get_available_currencies($siblings, $landing_company_name);
-
-    return undef;
-}
-
 sub validate_set_currency {
     my ($client, $currency) = @_;
 
@@ -772,7 +635,7 @@ Checks if the client is allowed to take the requested currency (for itself or fo
 =cut
 
 sub _is_currency_allowed {
-    my ($client, $siblings, $currency, $rule_engine) = @_;
+    my ($client, $siblings, $currency) = @_;
 
     my $type = LandingCompany::Registry::get_currency_type($currency);
 
@@ -781,8 +644,10 @@ sub _is_currency_allowed {
         message => localize("The provided currency [_1] is not applicable for this account.", $currency),
     };
 
-    return $result if (!$rule_engine && !$client->landing_company->is_currency_legal($currency));
+    # bom-rules -> landing_company.currency_is_allowed
+    return $result if (!$client->landing_company->is_currency_legal($currency));
 
+    # bom-rules -> currency.is_currency_suspended
     my $error;
     try {
         $error = localize("The provided currency [_1] is not selectable at the moment.", $currency)
@@ -796,19 +661,22 @@ sub _is_currency_allowed {
         return $result;
     }
 
+    #  bom-rules -> currency.experimental_currency
     # if currency is experimental and client is not allowed to use such currencies we don't allow
     $result->{message} = localize('This currency is temporarily suspended. Please select another currency to proceed.');
     return $result if verify_experimental_email_whitelisted($client, $currency);
 
     #that's enough for virtual accounts or empty siblings or when there's a rule engine
-    return {allowed => 1} if ($rule_engine or $client->is_virtual or scalar(keys %$siblings) == 0);
+    return {allowed => 1} if ($client->is_virtual or scalar(keys %$siblings) == 0);
 
+    # bom-rules -> user.currency_is_available
     # if fiat then check if client has already any fiat, if yes then don't allow
     $result->{message} = localize('Please note that you are limited to one fiat currency account.');
     return $result
         if ($type eq 'fiat'
         and grep { (LandingCompany::Registry::get_currency_type($siblings->{$_}->{currency}) // '') eq 'fiat' } keys %$siblings);
 
+    # bom-rules -> user.currency_is_available
     # if crypto check if client has same crypto, if yes then don't allow
     $result->{message} = localize("Please note that you are limited to only one [_1] account.", $currency);
     return $result if ($type eq 'crypto' and grep { $currency eq ($siblings->{$_}->{currency} // '') } keys %$siblings);

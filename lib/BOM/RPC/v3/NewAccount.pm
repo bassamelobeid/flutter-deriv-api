@@ -252,174 +252,50 @@ sub _get_professional_details_clients {
     return (\@clients, $professional_status, $professional_requested);
 }
 
-=head2 _get_non_pep_declaration_time
-
-Called on new real account rpc calls, it returns the time clients have submitted their (non-)PEP declartion for a landing company.
-If there is an older account in the same landing company, it's declaration time will be returned.
-If there is not any non-PEP declaration found for the specified landing company, current time will be returned.
-
-#TODO(Mat): If all apps (both official and third-party) send non_pep_declaration whenever it's submitted by clients on signup,
-#    the return value should be changed to undef if non-PEP declaration was missing.
-
-=over 4
-
-=item * C<client> - current client who has initated a new real account request
-
-=item * C<company> - landing company of the new account being created
-
-= item * C<non_pep_declaration> - boolean value that determines if non-PEP declaration is made through the current signup process
-
-- item * C<app_id> - the id of the app through which the request is made
-
-=back
-
-returns the time when the client has declared they are not a PEP/RCA for the requested C<company>.
-
-=cut
-
-sub _get_non_pep_declaration_time {
-    my ($client, $company, $non_pep_declaration) = @_;
-
-    return time if $non_pep_declaration;
-
-    # declaration time can be safely extracted from older siblings in the same landing company.
-    my @same_lc_siblings = $client->user->clients_for_landing_company($company);
-
-    for (@same_lc_siblings) {
-        return $_->non_pep_declaration_time if $_->non_pep_declaration_time;
-    }
-
-    #TODO(Mat): we will return undef here, provided that nothing is logged by the above line
-    #           (non_pep_declaration is sent from all appls for the first real account per landing complany).
-    return minstr(map { $_->date_joined } @same_lc_siblings) || time;
-}
-
 rpc new_account_real => sub {
     my $params = shift;
 
     my ($client, $args) = @{$params}{qw/client args/};
 
-    $args->{client_type} //= 'retail';
-
     $client->residence($args->{residence}) unless $client->residence;
     my $countries_instance = request()->brand->countries_instance;
 
-    # Send error if maltainvest client tried to make this call as they have their own call,
-    # except whom has a gaming company.
-    return BOM::RPC::v3::Utility::permission_error()
-        if ($client->landing_company->short eq 'maltainvest' and not $countries_instance->gaming_company_for_country($client->residence));
+    my $market_type = 'synthetic';
+    my $company     = $countries_instance->gaming_company_for_country($client->residence);
+    unless ($company) {
+        # for CR countries like Australia (au) where only financial market is available.
+        $market_type = 'financial';
+        $company     = $countries_instance->financial_company_for_country($client->residence) // '';
 
-    my $error = BOM::RPC::v3::Utility::validate_make_new_account($client, 'real', $args);
-    return $error if $error;
+        return BOM::RPC::v3::Utility::create_error_by_code('InvalidAccountRegion') unless $company;
+    }
 
-    my $company = $countries_instance->gaming_company_for_country($client->residence)
-        // $countries_instance->financial_company_for_country($client->residence);
     my $broker = LandingCompany::Registry->new->get($company)->broker_codes->[0];
 
-    my $non_pep_declaration = delete $args->{non_pep_declaration};
-    $args->{non_pep_declaration_time} = _get_non_pep_declaration_time($client, $company, $non_pep_declaration, $params->{source});
-    my $details_ref = BOM::Platform::Account::Real::default::validate_account_details($args, $client, $broker, $params->{source});
+    # Send error if a maltainvest account  is going to be created here;
+    # because they should be creaed using new_account_maltainvest call
+    return BOM::RPC::v3::Utility::create_error_by_code('InvalidAccount')
+        unless ($company // '' and $company ne 'maltainvest');
 
-    my $error_map = BOM::RPC::v3::Utility::error_map();
-    if ($details_ref && $details_ref->{error}) {
-        return BOM::RPC::v3::Utility::create_error({
-                code              => $details_ref->{error},
-                message_to_client => $details_ref->{message_to_client} // $error_map->{$details_ref->{error}},
-                details           => $details_ref->{details}});
-    }
-
-    my $user = $client->user;
-
-    my ($clients, $professional_status, $professional_requested) = _get_professional_details_clients($user, $args);
-
-    my $val = _update_professional_existing_clients($clients, $professional_status, $professional_requested);
-    return $val if $val;
-
-    my $lock = BOM::Platform::Redis::acquire_lock($client->user_id, 10);
-    return BOM::RPC::v3::Utility::rate_limit_error() if not $lock;
-
-    my $acc;
-    try {
-        $acc = BOM::Platform::Account::Real::default::create_account({
-            ip          => $params->{client_ip} // '',
-            country     => uc($client->residence // ''),
-            from_client => $client,
-            user        => $user,
-            details     => $details_ref->{details},
-        });
-    } finally {
-        BOM::Platform::Redis::release_lock($client->user_id);
-    }
-
-    if (my $err_code = $acc->{error}) {
-        return BOM::RPC::v3::Utility::create_error({
-                code              => $err_code,
-                message_to_client => $error_map->{$err_code}});
-    }
-
-    # Updates the financial assessment for the new client, will be removed when financial assessment is moved to the user level
-
-    update_financial_assessment($client->user, decode_fa($client->financial_assessment())) if $client->financial_assessment();
-
-    my $new_client      = $acc->{client};
-    my $landing_company = $new_client->landing_company;
-
-    # XXX If we fail after account creation then we could end up with these flags not set,
-    # ideally should be handled in a single transaction
-    # as account is already created so no need to die on status set
-    # else it will give false impression to client
-
-    $error = BOM::RPC::v3::Utility::set_professional_status($new_client, $professional_status, $professional_requested);
-
-    return $error if $error;
-
-    if ($args->{currency}) {
-        my $currency_set_result = BOM::RPC::v3::Accounts::set_account_currency({
-                client   => $new_client,
-                currency => $args->{currency}});
-        return $currency_set_result if $currency_set_result->{error};
-    }
-
-    $user->add_login_history(
-        action      => 'login',
-        environment => request()->login_env($params),
-        successful  => 't',
-        app_id      => $params->{source});
-
-    my $config = request()->brand->countries_instance->countries_list->{$new_client->residence};
-    if (   $config->{need_set_max_turnover_limit}
-        or $new_client->landing_company->check_max_turnover_limit_is_set)
-    {    # RTS 12 - Financial Limits - UK Clients and MLT Clients
-        try { $new_client->status->set('max_turnover_limit_not_set', 'system', 'new GB client or MLT client - have to set turnover limit') }
-        catch { return BOM::RPC::v3::Utility::client_error() }
-    }
-    try {
-        $new_client->sync_authentication_from_siblings;
-    } catch ($error) {
-        $log->errorf('Failed to sync authentication for client %s: %s', $new_client->loginid, $error);
-        return BOM::RPC::v3::Utility::client_error()
-    };
-    BOM::User::AuditLog::log("successful login", "$client->email");
-    BOM::User::Client::PaymentNotificationQueue->add(
-        source        => 'real',
-        currency      => $args->{currency} // 'USD',
-        loginid       => $new_client->loginid,
-        type          => 'newaccount',
-        amount        => 0,
-        payment_agent => 0,
+    my $response = create_new_real_account(
+        client          => $client,
+        args            => $args,
+        account_type    => 'trading',
+        broker_code     => $broker,
+        market_type     => $market_type,
+        environment     => request()->login_env($params),
+        ip              => $params->{client_ip} // '',
+        source          => $params->{source},
+        landing_company => $company,
     );
+    return $response if $response->{error};
 
-    BOM::Platform::Event::Emitter::emit(
-        'signup',
-        {
-            loginid    => $new_client->loginid,
-            properties => {type => 'real'}});
-
+    my $new_client = $response->{client};
     return {
         client_id                 => $new_client->loginid,
-        landing_company           => $landing_company->name,
-        landing_company_shortcode => $landing_company->short,
-        oauth_token               => _create_oauth_token($params->{source}, $new_client->loginid),
+        landing_company           => $new_client->landing_company->name,
+        landing_company_shortcode => $new_client->landing_company->short,
+        oauth_token               => $response->{oauth_token},
         $args->{currency} ? (currency => $new_client->currency) : (),
     };
 };
@@ -430,123 +306,44 @@ rpc new_account_maltainvest => sub {
     my ($client, $args) = @{$params}{qw/client args/};
     my $user = $client->user;
 
-    $args->{client_type} //= 'retail';
+    $client->residence($args->{residence}) unless $client->residence;
+    my $countries_instance = request()->brand->countries_instance;
 
-    my $rule_engine = BOM::Rules::Engine->new(
+    my $company = $countries_instance->financial_company_for_country($client->residence) // '';
+
+    return BOM::RPC::v3::Utility::create_error_by_code('InvalidAccount') unless $company;
+
+    # this call is exclusively for maltainvest
+    return BOM::RPC::v3::Utility::permission_error if ($company ne 'maltainvest');
+
+    my $broker = LandingCompany::Registry->new->get($company)->broker_codes->[0];
+
+    my $response = create_new_real_account(
         client          => $client,
-        landing_company => 'maltainvest'
+        args            => $args,
+        account_type    => 'trading',
+        broker_code     => $broker,
+        market_type     => 'financial',
+        environment     => request()->login_env($params),
+        ip              => $params->{client_ip} // '',
+        source          => $params->{source},
+        landing_company => 'maltainvest',
     );
+    return $response if $response->{error};
 
-    # send error if anyone other than maltainvest, virtual,
-    # malta, iom tried to make this call
-    return BOM::RPC::v3::Utility::permission_error()
-        if ($client->landing_company->short !~ /^(?:virtual|malta|maltainvest|iom)$/);
-
-    my $non_pep_declaration = delete $args->{non_pep_declaration};
-    $args->{non_pep_declaration_time} = _get_non_pep_declaration_time($client, 'maltainvest', $non_pep_declaration, $params->{source});
-
-    my $error = BOM::RPC::v3::Utility::validate_make_new_account($client, 'financial', $args, $rule_engine);
-    return $error if $error;
-    my $error_map = BOM::RPC::v3::Utility::error_map();
-
-    my $details_ref = BOM::Platform::Account::Real::default::validate_account_details($args, $client, 'MF', $params->{source}, $rule_engine);
-    if (my $err = $details_ref->{error}) {
-        return BOM::RPC::v3::Utility::create_error({
-                code              => $details_ref->{error},
-                message_to_client => $error_map->{$details_ref->{error}},
-                details           => $details_ref->{details}});
-    }
-
-    # When a Deriv (Europe) Limited/Deriv (MX) Ltd account is created,
-    # the 'place of birth' field is not present.
-    # After creating Deriv (Europe) Limited/Deriv (MX) Ltd account, client can select
-    # their place of birth in their profile settings.
-    # However, when a Deriv Investments (Europe) Limited account account is created,
-    # the 'place of birth' field is mandatory.
-    # Hence, this check is added for backward compatibility (assuming no place of birth is selected)
-    if (!$client->place_of_birth && $args->{place_of_birth} && !$client->is_virtual) {
-        $client->place_of_birth($args->{place_of_birth});
-
-        if (not $client->save) {
-            stats_inc('bom_rpc.v_3.call_failure.count', {tags => ["rpc:new_account_maltainvest"]});
-            return BOM::RPC::v3::Utility::client_error();
-        }
-    }
-
-    my ($clients, $professional_status, $professional_requested) = _get_professional_details_clients($user, $args);
-
-    my $val = _update_professional_existing_clients($clients, $professional_status, $professional_requested);
-    return $val if $val;
-
-    try {
-        $rule_engine->verify_action('new_account', {%$args, account_type => 'financial'});
-    } catch ($error) {
-        return BOM::RPC::v3::Utility::rule_engine_error($error);
-    }
-
-    my $acc = BOM::Platform::Account::Real::maltainvest::create_account({
-        ip          => $params->{client_ip} // '',
-        country     => uc($params->{country_code} // ''),
-        from_client => $client,
-        user        => $user,
-        details     => $details_ref->{details},
-        params      => $args
-    });
-
-    if (my $err_code = $acc->{error}) {
-        return BOM::RPC::v3::Utility::create_error({
-                code              => $err_code,
-                message_to_client => $error_map->{$err_code}});
-    }
-
-    my $new_client      = $acc->{client};
-    my $landing_company = $new_client->landing_company;
+    my $new_client = $response->{client};
 
     # Client's citizenship can only be set from backoffice.
     # However, when a Deriv Investments (Europe) Limited account is created, the citizenship
     # is not updated in the new account.
     # Hence, the following check is necessary
     $new_client->citizen($client->citizen) if ($client->citizen && !$client->is_virtual);
-
     # Save new account
     if (not $new_client->save) {
         stats_inc('bom_rpc.v_3.call_failure.count', {tags => ["rpc:new_account_maltainvest"]});
         return BOM::RPC::v3::Utility::client_error();
 
     }
-    try {
-        $new_client->sync_authentication_from_siblings;
-    } catch {
-        return BOM::RPC::v3::Utility::client_error()
-    };
-
-    $error = BOM::RPC::v3::Utility::set_professional_status($new_client, $professional_status, $professional_requested);
-    return $error if $error;
-
-    $user->add_login_history(
-        action      => 'login',
-        environment => request()->login_env($params),
-        successful  => 't',
-        app_id      => $params->{source});
-
-    BOM::User::AuditLog::log("successful login", "$client->email");
-    BOM::User::Client::PaymentNotificationQueue->add(
-        source        => 'real',
-        currency      => $args->{currency} // 'USD',
-        loginid       => $new_client->loginid,
-        type          => 'newaccount',
-        amount        => 0,
-        payment_agent => 0,
-    );
-
-    BOM::Platform::Event::Emitter::emit(
-        'signup',
-        {
-            loginid    => $new_client->loginid,
-            properties => {type => 'real'}});
-
-    # We want to have stats of number of clients that provide wrong tax number
-    my $countries_instance = request()->brand->countries_instance();
     # In case of having more than a tax residence, client residence will replaced.
     my $selected_tax_residence = $args->{tax_residence} =~ /\,/g ? $args->{residence} : $args->{tax_residence};
     my $tin_format             = $countries_instance->get_tin_format($selected_tax_residence);
@@ -558,9 +355,9 @@ rpc new_account_maltainvest => sub {
 
     return {
         client_id                 => $new_client->loginid,
-        landing_company           => $landing_company->name,
-        landing_company_shortcode => $landing_company->short,
-        oauth_token               => _create_oauth_token($params->{source}, $new_client->loginid),
+        landing_company           => $new_client->landing_company->name,
+        landing_company_shortcode => $new_client->landing_company->short,
+        oauth_token               => $response->{oauth_token},
     };
 };
 
@@ -621,40 +418,38 @@ rpc new_account_wallet => sub {
     my $params = shift;
 
     my ($from_client, $args) = @{$params}{qw/client args/};
-    try {
 
-        $args->{ip}          = $params->{client_ip} // '';
-        $args->{country}     = uc($params->{country_code} // '');
-        $args->{environment} = request()->login_env($params);
-        $args->{source}      = $params->{source};
-        $args->{residence}   = $from_client->residence;
+    my $broker = 'DW';
 
-        my $response = new_wallet_real($from_client, $args);
-        return $response->{error} if $response->{error};
+    # TODO: Rule engine's landing company is better to be set dynamically.
+    # But it's hard-coded as of now in order to avoid conflicts with the samoa to svg migaration task.
+    my $company = 'svg';
 
-        my $client          = $response->{wallet};
-        my $account         = $client->default_account;
-        my $landing_company = $client->landing_company;
+    $args->{residence} = $from_client->residence;
 
-        return {
-            client_id                 => $client->loginid,
-            landing_company           => $landing_company->name,
-            landing_company_shortcode => $landing_company->short,
-            oauth_token               => _create_oauth_token($params->{source}, $client->loginid),
-        };
-    } catch ($e) {
-        my $error_map = BOM::RPC::v3::Utility::error_map();
-        my $error->{code} = $e;
-        $error = $e->{error} // $e if (ref $e eq 'HASH');
-        $error->{message_to_client} = $error->{message_to_client} // $error_map->{$error->{code}};
+    my $response = create_new_real_account(
+        client          => $from_client,
+        args            => $args,
+        account_type    => 'wallet',
+        broker_code     => $broker,
+        landing_company => $company,
+        # TODO: again better to unbind wallet accunts from synthetic/gaming accounts.
+        market_type => 'synthetic',
+        environment => request()->login_env($params),
+        ip          => $params->{client_ip} // '',
+        source      => $params->{source},
+    );
+    return $response if $response->{error};
 
-        return BOM::RPC::v3::Utility::client_error() unless ($error->{message_to_client});
+    my $client          = $response->{client};
+    my $landing_company = $client->landing_company;
 
-        return BOM::RPC::v3::Utility::create_error({
-                code              => $error->{code},
-                message_to_client => $error->{message_to_client},
-                details           => $error->{details}});
-    }
+    return {
+        client_id                 => $client->loginid,
+        landing_company           => $landing_company->name,
+        landing_company_shortcode => $landing_company->short,
+        oauth_token               => _create_oauth_token($params->{source}, $client->loginid),
+    };
 };
 
 =head2 create_virtual_account
@@ -776,71 +571,333 @@ sub create_virtual_account {
     return $client;
 }
 
-=head2 new_wallet_real
+=head2 create_new_real_account
 
-Creates a new real wallet
+Creates a new real account. It's called by all real account opening RPC handlers.
 
 =over 4
 
-=item * C<client> form client which wallet is being created
-=item * C<args> new wallet details
+=item * C<client> form client which the new real account is being created
+=item * C<args> new account request arguments
 
 =back
 
-Returns a C<BOM::User::Wallet> instance
+Returns a C<BOM::User::Client> instance
 
 =cut
 
-sub new_wallet_real {
-    my ($client, $args) = @_;
+sub create_new_real_account {
+    my %params = @_;
+    my $client = $params{client};
+    my $args   = $params{args};
+
+    $args->{$_} = $params{$_} for (qw/broker_code account_type market_type source landing_company environment/);
+
+    my $details_ref = _new_account_pre_process($args, $client);
+    my $error_map   = BOM::RPC::v3::Utility::error_map();
+    if ($details_ref->{error}) {
+        return BOM::RPC::v3::Utility::create_error({
+                code              => $details_ref->{error},
+                message_to_client => $details_ref->{message_to_client} // $error_map->{$details_ref->{error}},
+                details           => $details_ref->{details}});
+    }
+
     my $user = $client->user;
-    my ($new_wallet, $error);
+    my ($clients, $professional_status, $professional_requested) = _get_professional_details_clients($user, $args);
+    my $val = _update_professional_existing_clients($clients, $professional_status, $professional_requested);
+    return $val if $val;
 
-    # TODO Move this hardcoded logic to perl brand, we should make decisions based on the brand and country of residence
-    my $broker = 'DW';
-    my $type   = 'wallet';
+    my $sibling_has_migrated_universal_password_status = any { $_->status->migrated_universal_password } $user->clients;
+    if (!BOM::Config::Runtime->instance->app_config->system->suspend->universal_password && $sibling_has_migrated_universal_password_status) {
+        $val = _update_migrated_universal_password_existing_clients($clients);
+        return $val if $val;
+    }
 
-    $args->{broker_code} = $broker;
+    my $rule_engine = BOM::Rules::Engine->new(
+        client          => $client,
+        landing_company => $params{landing_company},
+    );
+    try {
+        # Rules are applied on actual request arguments ($args),
+        # not the initialized values ($details_ref->{details}) used for creating the client object.
+        $rule_engine->verify_action('new_account', $args);
+    } catch ($error) {
+        return BOM::RPC::v3::Utility::rule_engine_error($error);
+    };
+
+    my $lock = BOM::Platform::Redis::acquire_lock($client->user_id, 10);
+    return BOM::RPC::v3::Utility::rate_limit_error() if not $lock;
+
+    my $create_account_sub =
+        $params{landing_company} eq 'maltainvest'
+        ? \&BOM::Platform::Account::Real::maltainvest::create_account
+        : \&BOM::Platform::Account::Real::default::create_account;
+
+    # It's safe to create the new client now
+    my $acc;
+    try {
+        $acc = $create_account_sub->({
+            ip          => $params{ip} // '',
+            country     => uc($client->residence // ''),
+            from_client => $client,
+            user        => $user,
+            details     => $details_ref->{details},
+            params      => $args,
+        });
+    } finally {
+        BOM::Platform::Redis::release_lock($client->user_id);
+    }
+
+    my $error;
+    if ($error = $acc->{error}) {
+        return BOM::RPC::v3::Utility::create_error({
+                code              => $error,
+                message_to_client => $error_map->{$error}});
+    }
+
+    my $new_client = $acc->{client};
+
+    _new_account_post_process(
+        client                                         => $client,
+        new_client                                     => $new_client,
+        args                                           => $args,
+        professional_status                            => $professional_status,
+        professional_requested                         => $professional_requested,
+        sibling_has_migrated_universal_password_status => $sibling_has_migrated_universal_password_status
+    );
+
+    return {
+        client      => $new_client,
+        oauth_token => _create_oauth_token($params{source}, $new_client->loginid),
+    };
+}
+
+=head2 _new_account_pre_process
+
+Validates and initilizes account details on real account opening, taking following arguments:
+
+=over 4
+
+=item * C<args> - RPC call arguments
+
+=item * C<client> - The client who is requesting for account opening
+
+=item * C<broker> - broker code of the new account
+
+=item * C<source> - the source app id
+
+=back
+
+Returns {
+    error   => C<error_code>
+    details => C<detail info>
+}
+
+=cut
+
+sub _new_account_pre_process {
+    my ($args, $client) = @_;
+
+    $client = (sort { $b->date_joined cmp $a->date_joined } grep { not $_->is_virtual } $client->user->clients(include_disabled => 0))[0] // $client
+        if $client->is_virtual;
+
     # has remianed from the history of design
     $args->{client_type} //= 'retail';
 
+    my $broker       = $args->{broker_code};
+    my $market_type  = $args->{market_type};
+    my $account_type = $args->{account_type};
+
+    if (BOM::Config::Runtime->instance->app_config->system->suspend->new_accounts) {
+        my $loginid   = $client->loginid;
+        my $residence = $client->residence;
+        warn "acc opening err: from_loginid:$loginid, account_type:$account_type, residence:$residence, error: - new account opening suspended";
+        return BOM::RPC::v3::Utility::create_error_by_code('InvalidAccount');
+    }
+
+    return BOM::RPC::v3::Utility::create_error_by_code('NoResidence') unless $client->residence;
+
+    unless ($client->is_virtual) {
+        # Lets populate all sensitive data from current client, ignoring provided input
+        # this logic should gone after we separate new_account with new_currency for account
+        foreach (qw/first_name last_name residence address_city phone date_of_birth address_line_1/) {
+            $args->{$_} = $client->$_ if $client->$_;
+        }
+    }
+
     my $non_pep_declaration = delete $args->{non_pep_declaration};
-    $args->{non_pep_declaration_time} = _get_non_pep_declaration_time($client, 'wallet', $non_pep_declaration, $args->{source});
+    $args->{non_pep_declaration_time} = _get_non_pep_declaration_time($client, $args->{landing_company}, $non_pep_declaration, $args->{source});
 
-    my $error_map   = BOM::RPC::v3::Utility::error_map();
-    my $details_ref = BOM::Platform::Account::Real::default::validate_account_details($args, $client, $broker, $args->{source});
-    if (my $err = $details_ref->{error}) {
-        return {
-            error => BOM::RPC::v3::Utility::create_error({
-                    code              => $details_ref->{error},
-                    message_to_client => $details_ref->{message_to_client} // $error_map->{$details_ref->{error}},
-                    details           => $details_ref->{details}})};
+    # If it's a virtual client, replace client with the newest real account if any
+    if ($client->is_virtual) {
+        $client = (sort { $b->date_joined cmp $a->date_joined } grep { not $_->is_virtual } $client->user->clients(include_disabled => 0))[0]
+            // $client;
     }
 
-    # The method validate_account_details keeps only predefined args in its result
-    $details_ref->{details}->{type}           = $type;
-    $details_ref->{details}->{currency}       = $args->{currency};
-    $details_ref->{details}->{payment_method} = $args->{payment_method};
-    my $acc = BOM::Platform::Account::Real::default::create_account({
-        ip          => $args->{ip} // '',
-        country     => uc($args->{country} // ''),
-        from_client => $client,
-        user        => $user,
-        details     => $details_ref->{details},
-    });
+    my $details = {
+        broker_code                   => $broker,
+        email                         => $client->email,
+        client_password               => $client->password,
+        myaffiliates_token_registered => 0,
+        checked_affiliate_exposures   => 0,
+        latest_environment            => '',
+        source                        => $args->{source},
+    };
 
-    if (my $err_code = $acc->{error}) {
-        return {
-            error => BOM::RPC::v3::Utility::create_error({
-                    code              => $err_code,
-                    message_to_client => $error_map->{$err_code}})};
+    my $affiliate_token;
+    $affiliate_token = delete $args->{affiliate_token} if (exists $args->{affiliate_token});
+    $details->{myaffiliates_token} = $affiliate_token || $client->myaffiliates_token || '';
+
+    my @fields_to_duplicate =
+        qw(citizen salutation first_name last_name date_of_birth residence address_line_1 address_line_2 address_city address_state address_postcode phone secret_question secret_answer place_of_birth tax_residence tax_identification_number account_opening_reason);
+
+    unless ($client->is_virtual) {
+        for my $field (@fields_to_duplicate) {
+            if ($field eq "secret_answer") {
+                $args->{$field} ||= BOM::User::Utility::decrypt_secret_answer($client->$field);
+            } else {
+                $args->{$field} ||= $client->$field;
+            }
+        }
     }
 
-    $user       = $acc->{user};
-    $new_wallet = $acc->{client};
+    my $error = $client->format_input_details($args);
+    return $error if $error;
+
+    $args->{secret_answer} = BOM::User::Utility::encrypt_secret_answer($args->{secret_answer}) if $args->{secret_answer};
+
+    # This exist to accommodate some rules in our database (mostly NOT NULL and NULL constraints). Should change to be more consistent. Also used to filter the args to return for new account creation.
+    my %default_values = (
+        citizen                   => '',
+        salutation                => '',
+        first_name                => '',
+        last_name                 => '',
+        date_of_birth             => undef,
+        residence                 => '',
+        address_line_1            => '',
+        address_line_2            => '',
+        address_city              => '',
+        address_state             => '',
+        address_postcode          => '',
+        phone                     => '',
+        secret_question           => '',
+        secret_answer             => '',
+        place_of_birth            => '',
+        tax_residence             => '',
+        tax_identification_number => '',
+        account_opening_reason    => '',
+        place_of_birth            => undef,
+        tax_residence             => undef,
+        tax_identification_number => undef,
+        non_pep_declaration_time  => undef,
+        currency                  => undef,
+        payment_method            => undef,
+    );
+
+    for my $field (keys %default_values) {
+        $details->{$field} = $args->{$field} // $default_values{$field};
+    }
+    $details->{type} = $account_type;
+
+    if ($account_type eq 'trading' and $market_type eq 'financial') {
+        # When a Deriv (Europe) Limited/Deriv (MX) Ltd account is created,
+        # the 'place of birth' field is not present.
+        # After creating Deriv (Europe) Limited/Deriv (MX) Ltd account, client can select
+        # their place of birth in their profile settings.
+        # However, when a Deriv Investments (Europe) Limited account account is created,
+        # the 'place of birth' field is mandatory.
+        # Hence, this check is added for backward compatibility (assuming no place of birth is selected)
+        if (!$client->place_of_birth && $args->{place_of_birth} && !$client->is_virtual) {
+            $client->place_of_birth($args->{place_of_birth});
+
+            if (not $client->save) {
+                stats_inc('bom_rpc.v_3.call_failure.count', {tags => ["rpc:new_account_maltainvest"]});
+                return BOM::RPC::v3::Utility::client_error();
+            }
+        }
+    }
+
+    return {details => $details};
+}
+
+=head2 _new_account_post_process
+
+Validates and initilizes account details on real account opening, taking following arguments:
+
+=over 4
+
+=item * C<args> - RPC call arguments
+
+=item * C<client> - The client who is requesting for account opening
+
+=item * C<broker> - broker code of the new account
+
+=item * C<source> - the source app id
+
+=back
+
+Returns {
+    error   => C<error_code>
+    details => C<detail info>
+}
+
+=cut
+
+sub _new_account_post_process {
+    my %par = @_;
+
+    my ($client, $new_client, $args, $professional_status, $professional_requested, $sibling_has_migrated_universal_password_status) =
+        @par{qw/client new_client args professional_status  professional_requested sibling_has_migrated_universal_password_status/};
+
+    # Ported from previous implementations of new_account_real, new_account_maltainvest  and new_wallet_real RPC codes
+    my $error;
+    try {
+        $new_client->sync_authentication_from_siblings;
+    } catch {
+        return BOM::RPC::v3::Utility::client_error()
+    };
+
+    if ($args->{account_type} eq 'trading') {
+
+        update_financial_assessment($client->user, decode_fa($client->financial_assessment()))
+            if $args->{market_type} eq 'synthetic' && $client->financial_assessment();
+
+        # XXX If we fail after account creation then we could end up with these flags not set,
+        # ideally should be handled in a single transaction
+        # as account is already created so no need to die on status set
+        # else it will give false impression to client
+        $error = BOM::RPC::v3::Utility::set_professional_status($new_client, $professional_status, $professional_requested);
+        return $error if $error;
+
+        if ($args->{currency}) {
+            my $currency_set_result = BOM::RPC::v3::Accounts::set_account_currency({
+                    client   => $new_client,
+                    currency => $args->{currency}});
+            return $currency_set_result if $currency_set_result->{error};
+        }
+
+        my $config = request()->brand->countries_instance->countries_list->{$new_client->residence};
+        if (   $config->{need_set_max_turnover_limit}
+            or $new_client->landing_company->check_max_turnover_limit_is_set)
+        {    # RTS 12 - Financial Limits - UK Clients and MLT Clients
+            try { $new_client->status->set('max_turnover_limit_not_set', 'system', 'new GB client or MLT client - have to set turnover limit') }
+            catch { return BOM::RPC::v3::Utility::client_error() }
+        }
+        try {
+            $new_client->sync_authentication_from_siblings;
+        } catch ($error) {
+            $log->errorf('Failed to sync authentication for client %s: %s', $new_client->loginid, $error);
+            return BOM::RPC::v3::Utility::client_error()
+        };
+    }
+
+    if (!BOM::Config::Runtime->instance->app_config->system->suspend->universal_password && $sibling_has_migrated_universal_password_status) {
+        $error = BOM::RPC::v3::Utility::set_migrated_universal_password_status($new_client);
+        return $error if $error;
+    }
 
     # Not sure if the following notfications are required for wallet creation or not
-    $user->add_login_history(
+    $client->user->add_login_history(
         action      => 'login',
         environment => $args->{environment},
         successful  => 't',
@@ -850,7 +907,7 @@ sub new_wallet_real {
     BOM::User::Client::PaymentNotificationQueue->add(
         source        => 'real',
         currency      => $args->{currency} // 'USD',
-        loginid       => $new_wallet->loginid,
+        loginid       => $new_client->loginid,
         type          => 'newaccount',
         amount        => 0,
         payment_agent => 0,
@@ -859,16 +916,54 @@ sub new_wallet_real {
     BOM::Platform::Event::Emitter::emit(
         'signup',
         {
-            loginid    => $new_wallet->loginid,
+            loginid    => $new_client->loginid,
             properties => {
-                type    => $type,
+                # TODO: CHECK PROPERTIES AGAINST EVENT HANDLER
+                type    => $args->{account_type},
                 subtype => 'real'
             }});
+}
 
-    return {
-        wallet => $new_wallet,
-        error  => $error
-    };
+=head2 _get_non_pep_declaration_time
+
+Called on new real account rpc calls, it returns the time clients have submitted their (non-)PEP declartion for a landing company.
+If there is an older account in the same landing company, it's declaration time will be returned.
+If there is not any non-PEP declaration found for the specified landing company, current time will be returned.
+
+#TODO(Mat): If all apps (both official and third-party) send non_pep_declaration whenever it's submitted by clients on signup,
+#    the return value should be changed to undef if non-PEP declaration was missing.
+
+=over 4
+
+=item * C<client> - current client who has initated a new real account request
+
+=item * C<company> - landing company of the new account being created
+
+= item * C<non_pep_declaration> - boolean value that determines if non-PEP declaration is made through the current signup process
+
+- item * C<app_id> - the id of the app through which the request is made
+
+=back
+
+returns the time when the client has declared they are not a PEP/RCA for the requested C<company>.
+
+=cut
+
+sub _get_non_pep_declaration_time {
+    my ($client, $company, $non_pep_declaration) = @_;
+
+    return time if $non_pep_declaration;
+
+    # declaration time can be safely extracted from older siblings in the same landing company.
+    my @same_lc_siblings = $client->user->clients_for_landing_company($company);
+
+    for (@same_lc_siblings) {
+        return $_->non_pep_declaration_time if $_->non_pep_declaration_time;
+    }
+
+    #TODO(Mat): we will return undef here, provided that nothing is logged by the above line
+    #           (non_pep_declaration is sent from all appls for the first real account per landing complany).
+    return minstr(map { $_->date_joined } @same_lc_siblings) || time;
 }
 
 1;
