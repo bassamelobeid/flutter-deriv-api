@@ -52,14 +52,23 @@ is $res->{error}->{code}, 'UnknownLandingCompany';
 ## residence_list
 $res = $t->await::residence_list({residence_list => 1});
 ok $res->{residence_list};
-is_deeply $res->{residence_list}->[104],
-    {
+is_deeply $res->{residence_list}->[104], {
     disabled  => 'DISABLED',
     value     => 'ir',
     text      => 'Iran',
     phone_idd => '98',
-    disabled  => 'DISABLED'
-    };
+    identity  => {
+        services => {
+            idv => {
+                documents_supported => {
+
+                },
+                is_country_supported => 0,
+            },
+            onfido => {
+                documents_supported  => {passport => {display_name => 'Passport'}},
+                is_country_supported => 1,
+            }}}};
 test_schema('residence_list', $res);
 
 ## states_list

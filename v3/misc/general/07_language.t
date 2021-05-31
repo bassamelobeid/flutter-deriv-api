@@ -11,38 +11,73 @@ my $t   = build_wsapi_test();
 my $res = $t->await::residence_list({residence_list => 1});
 is $res->{msg_type}, 'residence_list';
 ok $res->{residence_list};
-is_deeply $res->{residence_list}->[104],
-    {
+is_deeply $res->{residence_list}->[104], {
     disabled  => 'DISABLED',
     value     => 'ir',
     text      => 'Iran',
     phone_idd => '98',
-    disabled  => 'DISABLED'
-    };
+    identity  => {
+        services => {
+            idv => {
+                documents_supported => {
+
+                },
+                is_country_supported => 0,
+            },
+            onfido => {
+                documents_supported  => {passport => {display_name => 'Passport'}},
+                is_country_supported => 1,
+            }}}};
 
 # test RU
 $t   = build_wsapi_test({language => 'RU'});
 $res = $t->await::residence_list({residence_list => 1});
 ok $res->{residence_list};
+
 is_deeply $res->{residence_list}->[0],
     {
     value     => 'au',
     text      => decode_utf8('Австралия'),
-    phone_idd => '61'
-    };
+    phone_idd => '61',
+    identity  => {
+        services => {
+            idv => {
+                documents_supported  => {},
+                is_country_supported => 0,
+            },
+            onfido => {
+                documents_supported => {
+                    driving_licence => {
+                        display_name => 'Driving Licence',
+                    },
+                    passport => {
+                        display_name => 'Passport',
+                    }
+                },
+                is_country_supported => 1,
+            }}}};
 
 # back to EN
 $t   = build_wsapi_test();
 $res = $t->await::residence_list({residence_list => 1});
 ok $res->{residence_list};
-is_deeply $res->{residence_list}->[104],
-    {
+is_deeply $res->{residence_list}->[104], {
     disabled  => 'DISABLED',
     value     => 'ir',
     text      => 'Iran',
     phone_idd => '98',
-    disabled  => 'DISABLED'
-    };
+    identity  => {
+        services => {
+            idv => {
+                documents_supported => {
+
+                },
+                is_country_supported => 0,
+            },
+            onfido => {
+                documents_supported  => {passport => {display_name => 'Passport'}},
+                is_country_supported => 1,
+            }}}};
 
 $t->finish_ok;
 
