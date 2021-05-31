@@ -1160,6 +1160,7 @@ sub _get_authentication_poi {
     push $last_rejected->@*, BOM::User::Onfido::get_consider_reasons($client)->@* if $poi_status =~ /rejected|suspected/;
     push $last_rejected->@*, BOM::User::Onfido::get_rules_reasons($client)->@*;
 
+    my $country_code_triplet = uc(Locale::Country::country_code2code($country_code, LOCALE_CODE_ALPHA_2, LOCALE_CODE_ALPHA_3) // "");
     # Return the identity structure
     return {
         status   => $poi_status,
@@ -1168,7 +1169,7 @@ sub _get_authentication_poi {
                 submissions_left     => BOM::User::Onfido::submissions_left($client),
                 is_country_supported => BOM::Config::Onfido::is_country_supported($country_code),
                 documents_supported  => BOM::Config::Onfido::supported_documents_for_country($country_code),
-                country_code         => uc(Locale::Country::country_code2code($country_code, LOCALE_CODE_ALPHA_2, LOCALE_CODE_ALPHA_3) // ""),
+                $country_code_triplet ? (country_code => $country_code_triplet) : (),
                 last_rejected => [uniq map { defined $RejectedOnfidoReasons{$_} ? localize($RejectedOnfidoReasons{$_}) : () } $last_rejected->@*],
                 reported_properties => BOM::User::Onfido::reported_properties($client),
             }

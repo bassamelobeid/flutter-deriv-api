@@ -2802,7 +2802,29 @@ subtest 'Social identity provider' => sub {
         },
         'has social_identity_provider as google'
     );
+};
 
+subtest 'Empty country code scenario' => sub {
+    my $user = BOM::User->create(
+        email    => 'emptycountry@cc.com',
+        password => 'Abcd4455',
+    );
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR'});
+    $user->add_client($client);
+    $client->place_of_birth('');
+    $client->residence('');
+    $client->save;
+
+    my $token  = $m->create_token($client->loginid, 'test token');
+    my $result = $c->tcall($method, {token => $token});
+    ok !exists($result->{authentication}->{identity}->{services}->{onfido}->{country_code}), 'Country code not reported';
+
+    $client->place_of_birth('br');
+    $client->residence('br');
+    $client->save;
+
+    $result = $c->tcall($method, {token => $token});
+    is $result->{authentication}->{identity}->{services}->{onfido}->{country_code}, 'BRA', 'Expected country code found';
 };
 
 done_testing();
