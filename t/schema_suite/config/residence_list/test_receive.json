@@ -32,6 +32,9 @@
          "text" : {
             "type" : "string"
          },
+         "identity" : {
+            "type" : "object"
+         },
          "disabled" : {
             "enum" : [
                "DISABLED"

@@ -21,16 +21,88 @@ populate_exchange_rates();
 my $c = BOM::Test::RPC::QueueClient->new();
 subtest 'residence_list' => sub {
     my $result = $c->call_ok('residence_list', {language => 'EN'})->has_no_system_error->result;
-    my ($cn) = grep { $_->{value} eq 'cn' } @$result;
+    my $index  = +{map { (delete $_->{value} => $_) } $result->@*};
+
     is_deeply(
-        $cn,
+        $index->{cn},
         {
-            'value'      => 'cn',
-            'text'       => "China",
-            'phone_idd'  => '86',
-            'tin_format' => ['^\d{17}[Xx\d]$', '^[CcWwHhMmTt]\d{16}[xX\d]$', '^[Jj]\d{14}$', '^(\d{15}|\d{18})$', '^\d{8}\w{10}$'],
+            identity => {
+                services => {
+                    idv => {
+                        is_country_supported => 0,
+                        documents_supported  => {},
+                    },
+                    onfido => {
+                        is_country_supported => 1,
+                        documents_supported  => {
+                            driving_licence        => {display_name => 'Driving Licence'},
+                            national_identity_card => {display_name => 'National Identity Card'},
+                            passport               => {display_name => 'Passport'},
+                        },
+                    },
+                }
+            },
+            text       => 'China',
+            phone_idd  => '86',
+            tin_format => ['^\d{17}[Xx\d]$', '^[CcWwHhMmTt]\d{16}[xX\d]$', '^[Jj]\d{14}$', '^(\d{15}|\d{18})$', '^\d{8}\w{10}$'],
         },
         'cn is correct'
+    );
+
+    is_deeply(
+        $index->{ng},
+        {
+            identity => {
+                services => {
+                    idv => {
+                        is_country_supported => 1,
+                        documents_supported  => {
+                            bvn => {
+                                display_name => 'BVN',
+                                format       => '^[0-9]{11}$'
+                            },
+                            nin => {
+                                display_name => 'NIN',
+                                format       => '^[0-9]{11}$',
+                            },
+                            nin_slip => {
+                                display_name => 'NIN Slip',
+                                format       => '^[0-9]{11}$',
+                            },
+                            drivers_license => {
+                                display_name => 'Drivers License',
+                                format       => '^(?=.*[0-9])(?=.*[A-Z])[A-Z0-9]{3}([ -]{1})?[A-Z0-9]{6,12}$',
+                            },
+                            voter_id => {
+                                display_name => 'Voter ID',
+                                format       => '^([A-Z0-9]{19}|[A-Z0-9]{9})$',
+                            },
+                            cac => {
+                                display_name => 'CAC',
+                                format       => '^(RC)?[0-9]{5,8}$',
+                            },
+                            tin => {
+                                display_name => 'TIN',
+                                format       => '^[0-9]{8,}-[0-9]{4,}$',
+                            },
+                        },
+                    },
+                    onfido => {
+                        is_country_supported => 1,
+                        documents_supported  => {
+                            driving_licence        => {display_name => 'Driving Licence'},
+                            national_identity_card => {display_name => 'National Identity Card'},
+                            passport               => {display_name => 'Passport'},
+                            voter_id               => {display_name => 'Voter Id'},
+                        },
+                    },
+                }
+            },
+            text       => 'Nigeria',
+            phone_idd  => '234',
+            tin_format => ['^\d{10}$', '^\d{8}$', '^[A-Za-z]\\d{4,8}$', '^\\d{11}$'],
+        },
+        'ng is correct'
     );
 };
 

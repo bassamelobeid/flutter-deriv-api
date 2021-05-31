@@ -34,6 +34,8 @@ use BOM::Platform::Context qw (request);
 use BOM::Database::ClientDB;
 use BOM::RPC::v3::Utility;
 use BOM::Config::CurrencyConfig;
+use BOM::Config::Onfido;
+use BOM::Platform::Context qw(localize);
 
 =head2 residence_list
 
@@ -69,14 +71,37 @@ rpc residence_list => sub {
     {
         my $country_code = $country_selection->{code};
         next if $country_code eq '';
-        my $country_name = $country_selection->{translated_name};
-        my $phone_idd    = $countries->idd_from_code($country_code);
-        my $tin_format   = $countries_instance->get_tin_format($country_code);
-        my $option       = {
+        my $country_name       = $country_selection->{translated_name};
+        my $phone_idd          = $countries->idd_from_code($country_code);
+        my $tin_format         = $countries_instance->get_tin_format($country_code);
+        my $idv_config         = $countries_instance->get_idv_config($country_code) // {};
+        my $idv_docs_supported = $idv_config->{document_types}                      // {};
+
+        my $option = {
             value => $country_code,
             text  => $country_name,
             $phone_idd  ? (phone_idd  => $phone_idd)  : (),
-            $tin_format ? (tin_format => $tin_format) : ()};
+            $tin_format ? (tin_format => $tin_format) : (),
+            identity => {
+                services => {
+                    idv => {
+                        documents_supported => +{
+                            map { (
+                                    $_ => {
+                                        display_name => localize($idv_docs_supported->{$_}->{display_name}),
+                                        format       => $idv_docs_supported->{$_}->{format},
+                                    })
+                            } keys $idv_docs_supported->%*
+                        },
+                        is_country_supported => $countries_instance->is_idv_supported($country_code) // 0,
+                    },
+                    onfido => {
+                        documents_supported =>
+                            +{map { _onfido_doc_type($_) } BOM::Config::Onfido::supported_documents_for_country($country_code)->@*},
+                        is_country_supported => BOM::Config::Onfido::is_country_supported($country_code),
+                    }
+                },
+            }};
         if ($countries_instance->restricted_country($country_code)
             || !$countries_instance->is_signup_allowed($country_code))
         {
@@ -89,6 +114,38 @@ rpc residence_list => sub {
 
     return $residence_countries_list;
 };
+
+=head2 _onfido_doc_type
+
+Process the Onfido doc types given into the hash form expected by the api schema response,
+since Onfido config provides a flat list of doc types is somewhat complicated to give it
+the conforming structure.
+
+It takes the following parameter:
+
+=over 4
+
+=item * C<$doc_type> - the given onfido doc type
+
+=back
+
+Returns a single element hash as:
+
+( $snake_case_key => {
+    display_name => $doc_type,
+})
+
+=cut
+
+sub _onfido_doc_type {
+    my ($doc_type) = $_;
+    my $snake_case_key = lc $doc_type =~ s/\s+/_/rg;
+
+    return (
+        $snake_case_key => {
+            display_name => $doc_type,
+        });
+}
 
 =head2 states_list
 
