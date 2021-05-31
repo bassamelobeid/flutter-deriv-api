@@ -39,6 +39,7 @@ use BOM::Rules::RuleRepository::TradingAccount;
 use BOM::Rules::RuleRepository::Currency;
 use BOM::Rules::RuleRepository::Profile;
 use BOM::Rules::RuleRepository::Transfers;
+use BOM::Rules::RuleRepository::FinancialAssessment;
 use BOM::Rules::RuleRepository::SelfExclusion;
 use BOM::Rules::Registry qw(get_action);
 use BOM::Rules::Context;

@@ -103,3 +103,5 @@ rule 'user.email_is_verified' => {
         return 1;
     },
 };
+
+1;

@@ -1,6 +1,12 @@
+set_financial_assessment:
+  description: "Rules applied when trying to set financial assessment."
+  general:
+    - client.is_not_virtual
+    - financial_assessment.required_sections_are_complete
 set_self_exclusion:
   description: "Rules applied when trying to set self-exclusion settings."
   general:
     - client.is_not_virtual
     - self_exclusion.not_self_excluded
     - self_exclusion.deposit_limits_allowed
+

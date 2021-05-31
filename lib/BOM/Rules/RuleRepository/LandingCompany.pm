@@ -106,3 +106,4 @@ rule 'landing_company.p2p_availability' => {
     },
 };
 
+1;

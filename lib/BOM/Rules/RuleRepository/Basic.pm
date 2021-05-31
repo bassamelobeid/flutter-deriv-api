@@ -23,3 +23,5 @@ rule 'pass' => {
         return 1;
     },
 };
+
+1;

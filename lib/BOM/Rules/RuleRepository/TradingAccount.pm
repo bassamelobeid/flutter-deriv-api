@@ -168,3 +168,5 @@ sub die_with_params {
 
     die $e;
 }
+
+1;

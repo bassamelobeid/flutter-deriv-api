@@ -72,3 +72,5 @@ sub word_by_word_comparison {
 
     return 1;
 }
+
+1;

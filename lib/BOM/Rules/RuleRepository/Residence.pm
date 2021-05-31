@@ -65,4 +65,3 @@ rule 'residence.not_restricted' => {
         return 1;
     },
 };
-

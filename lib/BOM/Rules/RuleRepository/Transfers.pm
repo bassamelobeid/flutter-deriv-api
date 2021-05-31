@@ -154,3 +154,5 @@ rule 'transfers.experimental_currency_email_whitelisted' => {
         return 1;
     },
 };
+
+1;
