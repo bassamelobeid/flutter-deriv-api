@@ -24,6 +24,7 @@ use BOM::Platform::RiskProfile;
 use BOM::Config::Runtime;
 use BOM::Platform::Email qw(send_email);
 use BOM::Backoffice::QuantsAuditLog;
+use BOM::Backoffice::QuantsAuditEmail qw(send_trading_ops_email);
 use LandingCompany::Registry;
 use BOM::Config::Runtime;
 
@@ -163,19 +164,25 @@ if ($r->param('update_limit')) {
 
         $args_content = join(q{, }, map { qq{$_ =>  $current_client_profiles->{$id}->{$_}} } keys %{$current_client_profiles->{$id}});
         BOM::Backoffice::QuantsAuditLog::log($staff, "updateclientlimitviaPMS clientid:$id", $args_content);
-
+        send_trading_ops_email(
+            "Product management: client limit updated ($id##$uniq_key):",
+            {
+                %ref,
+                updated_by => $staff,
+                updated_on => Date::Utility->new->date
+            });
     } else {
         $ref{updated_by}                       = $staff;
         $ref{updated_on}                       = Date::Utility->new->date;
         $current_product_profiles->{$uniq_key} = \%ref;
         send_notification_email(\%ref, 'Disable') if ($profile and $profile eq 'no_business');
+        send_trading_ops_email("Product management: limit updated ($uniq_key):", \%ref);
         $current_product_profiles = _filter_past_limits($current_product_profiles);
         $app_config->set({'quants.custom_product_profiles' => $json->encode($current_product_profiles)});
 
         $args_content = join(q{, }, map { qq{$_ => $ref{$_}} } keys %ref);
         BOM::Backoffice::QuantsAuditLog::log($staff, "updatecustomlimitviaPMS", $args_content);
     }
-
 }
 
 if ($r->param('delete_limit')) {
@@ -184,6 +191,8 @@ if ($r->param('delete_limit')) {
     code_exit_BO('ID is required. Nothing is deleted.') if not $id;
 
     if (my $client_loginid = $r->param('client_loginid')) {
+        send_trading_ops_email("Product management: client limit deleted ($client_loginid##$id):",
+            $current_client_profiles->{$client_loginid}->{custom_limits}->{$id});
         delete $current_client_profiles->{$client_loginid}->{custom_limits}->{$id};
         $app_config->set({'quants.custom_client_profiles' => $json->encode($current_client_profiles)});
 
@@ -194,6 +203,7 @@ if ($r->param('delete_limit')) {
     } else {
         send_notification_email($current_product_profiles->{$id}, 'Enable')
             if exists $current_product_profiles->{$id}->{risk_profile} and $current_product_profiles->{$id}->{risk_profile} eq 'no_business';
+        send_trading_ops_email("Product management: limit deleted ($id):", $current_product_profiles->{$id});
 
         $args_content = join(q{, }, map { qq{$_ =>  $current_product_profiles->{$id}->{$_}} } keys %{$current_product_profiles->{$id}});
         BOM::Backoffice::QuantsAuditLog::log($staff, "deletecustomlimitviaPMS id:$id", $args_content);
@@ -206,6 +216,14 @@ if ($r->param('delete_limit')) {
 if ($r->param('delete_client')) {
     code_exit_BO("permission denied: no write access") if $disabled_write;
     my $client_loginid = $r->param('client_loginid');
+
+    my @limit_ids = keys %{$current_client_profiles->{$client_loginid}->{custom_limits}};
+    send_trading_ops_email(
+        "Product management: $client_loginid deleted from custom client limits:",
+        {
+            "limit ids" => join "\n",
+            @limit_ids
+        }) if scalar @limit_ids;
     delete $current_client_profiles->{$client_loginid};
     $app_config->set({'quants.custom_client_profiles' => $json->encode($current_client_profiles)});
 

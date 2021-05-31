@@ -21,6 +21,7 @@ use Digest::MD5 qw(md5_hex);
 use Text::Trim qw(trim);
 use LandingCompany::Registry;
 use BOM::Config::Runtime;
+use BOM::Backoffice::QuantsAuditEmail qw(send_trading_ops_email);
 
 BOM::Backoffice::Sysinit::init();
 my $staff = BOM::Backoffice::Auth0::get_staffname();
@@ -52,7 +53,7 @@ if ($r->param('save_multiplier_config')) {
         };
         my $redis_key = join('::', 'multiplier_config', $landing_company, $symbol);
         $qc->save_config($redis_key, $multiplier_config);
-
+        send_trading_ops_email("Multiplier risk management tool: updated $symbol configuration", $multiplier_config);
         BOM::Backoffice::QuantsAuditLog::log($staff, "ChangeMultiplierConfig", $multiplier_config);
         $output = {success => 1};
     } catch ($e) {
@@ -79,6 +80,12 @@ if ($r->param('save_multiplier_affiliate_commission')) {
         $app_config->set({'quants.multiplier_affiliate_commission.financial'     => $financial});
         $app_config->set({'quants.multiplier_affiliate_commission.non_financial' => $non_financial});
 
+        send_trading_ops_email(
+            "Multiplier risk management tool: updated affiliate commission",
+            {
+                financial     => $financial,
+                non_financial => $non_financial
+            });
         BOM::Backoffice::QuantsAuditLog::log(
             $staff,
             "ChangeAffiliateMultiplierCommission",
@@ -140,6 +147,7 @@ if ($r->param('save_multiplier_user_limit')) {
         $client_limits->{$user_id}{$uniq_key} = $limit;
         $custom_volume_limits->{clients} = $client_limits;
 
+        send_trading_ops_email("Multiplier risk management tool: updated client limit ($loginid)", $limit);
         $app_config->set({'quants.custom_volume_limits' => encode_json_utf8($custom_volume_limits)});
 
         BOM::Backoffice::QuantsAuditLog::log($staff, "ChangeCustomVolumeLimits", $custom_volume_limits);
@@ -167,11 +175,12 @@ if ($r->param('delete_multiplier_user_limit')) {
         my $user_id = 'binary_user_id::' . $client->binary_user_id;
 
         die "limit not found" unless $client_limits->{$user_id}{$uniq_key};
-        delete $client_limits->{$user_id}{$uniq_key};
+        my $limit = delete $client_limits->{$user_id}{$uniq_key};
 
         $custom_volume_limits->{clients} = $client_limits;
         $app_config->set({'quants.custom_volume_limits' => encode_json_utf8($custom_volume_limits)});
 
+        send_trading_ops_email("Multiplier risk management tool: deleted client limit ($loginid)", $limit);
         BOM::Backoffice::QuantsAuditLog::log($staff, "ChangeCustomVolumeLimits", $custom_volume_limits);
         $output = {success => 1};
     } catch ($e) {
@@ -208,13 +217,14 @@ if ($r->param('save_multiplier_market_or_underlying_limit')) {
         die "comma seperated markets are not allowed" if $market =~ /,/;
         die "comma seperated symbols are not allowed" if $symbol =~ /,/;
 
+        my $limit;
         if ($market) {
-            $market_limits->{$market} = {
+            $limit = $market_limits->{$market} = {
                 risk_profile         => $risk_profile,
                 max_volume_positions => $max_volume_positions
             };
         } elsif ($symbol) {
-            $symbol_limits->{$symbol} = {
+            $limit = $symbol_limits->{$symbol} = {
                 risk_profile         => $risk_profile,
                 max_volume_positions => $max_volume_positions
             };
@@ -224,6 +234,8 @@ if ($r->param('save_multiplier_market_or_underlying_limit')) {
 
         $app_config->set({'quants.custom_volume_limits' => encode_json_utf8($custom_volume_limits)});
 
+        send_trading_ops_email("Multiplier risk management tool: updated custom volume limit",
+            {$limit->%*, $market ? 'market' : 'symbol' => $market || $symbol});
         BOM::Backoffice::QuantsAuditLog::log($staff, "ChangeCustomVolumeLimits", $custom_volume_limits);
         $output = {success => 1};
     } catch ($e) {
@@ -245,8 +257,9 @@ if ($r->param('delete_multiplier_market_or_underlying_limit')) {
         my $market = $r->param('market');
         my $symbol = $r->param('symbol');
 
-        if    ($market) { delete $market_limits->{$market}; }
-        elsif ($symbol) { delete $symbol_limits->{$symbol}; }
+        my $limit;
+        if    ($market) { $limit = delete $market_limits->{$market}; }
+        elsif ($symbol) { $limit = delete $symbol_limits->{$symbol}; }
         else            { die "market and symbol can not be both empty"; }
 
         $custom_volume_limits->{markets} = $market_limits;
@@ -254,6 +267,8 @@ if ($r->param('delete_multiplier_market_or_underlying_limit')) {
 
         $app_config->set({'quants.custom_volume_limits' => encode_json_utf8($custom_volume_limits)});
 
+        send_trading_ops_email("Multiplier risk management tool: deleted custom volume limit",
+            {$limit->%*, $market ? 'market' : 'symbol' => $market || $symbol});
         BOM::Backoffice::QuantsAuditLog::log($staff, "ChangeCustomVolumeLimits", $custom_volume_limits);
         $output = {success => 1};
     } catch ($e) {
@@ -342,6 +357,7 @@ sub _save_multiplier_custom_commission {
         $qc->save_config('custom_multiplier_commission', \%existing_configs);
         $args->{start_time} = Date::Utility->new($args->{start_time})->datetime;
         $args->{end_time}   = Date::Utility->new($args->{end_time})->datetime;
+        send_trading_ops_email("Multiplier risk management tool: updated custom multiplier commission", $args,);
         return $args;
     } catch ($e) {
         return {error => 'ERR: ' . $e};
@@ -357,10 +373,21 @@ if ($r->param('delete_multiplier_custom_commission')) {
         recorded_date    => Date::Utility->new,
     );
 
+    my $deleted;
     try {
-        $qc->delete_config('custom_multiplier_commission', $name);
+        $deleted = $qc->delete_config('custom_multiplier_commission', $name);
         print encode_json_utf8({success => $name});
     } catch ($e) {
         print encode_json_utf8({error => 'ERR: ' . $e});
+    }
+
+    if ($deleted) {
+        if ($deleted->{start_time}) {
+            $deleted->{start_time} = Date::Utility->new($deleted->{start_time})->datetime;
+        }
+        if ($deleted->{end_time}) {
+            $deleted->{end_time} = Date::Utility->new($deleted->{end_time})->datetime;
+        }
+        send_trading_ops_email("Multiplier risk management tool: deleted custom multiplier commission", $deleted,);
     }
 }

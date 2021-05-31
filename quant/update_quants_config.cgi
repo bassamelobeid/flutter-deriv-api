@@ -49,6 +49,7 @@ if (request()->param('save_limit')) {
     if (!$output->{error}) {
         my %email = _format_email_for_limit(%email_args);
         _send_compliance_email(%email);
+        send_trading_ops_email("Quants risk management tool: limit saved", \%email_args);
     }
 }
 
@@ -111,6 +112,7 @@ if (request()->param('save_ultra_short')) {
     print $json->encode($output);
 
     if (!$output->{error}) {
+
         my %email = _format_email_for_config_value_change(
             prev_value => $prev_value->as_string(),
             cur_value  => $output->{result},
@@ -254,7 +256,7 @@ sub _send_compliance_email {
 
     my $brand = request()->brand;
     # send an email to compliance
-    my $recipients = join(',', $brand->emails('compliance'), $brand->emails('quants'));
+    my $recipients = join(',', $brand->emails('compliance'), $brand->emails('quants'), $brand->emails('trading_ops'));
     send_email({
         from    => $brand->emails('system'),
         to      => $recipients,
