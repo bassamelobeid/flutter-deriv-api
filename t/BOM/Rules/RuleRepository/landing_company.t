@@ -50,6 +50,13 @@ subtest 'rule landing_company.accounts_limit_not_reached' => sub {
     $user->add_client($client_mf);
     is_deeply exception { $rule_engine->apply_rules($rule_name) }, {code => 'FinancialAccountExists'}, 'Number of MF accounts is limited';
 
+    lives_ok { $rule_engine->apply_rules($rule_name, {account_type => 'wallet'}) } 'Wallet accounts is not restricted by trading accounts';
+
+    my $mock_client = Test::MockModule->new('BOM::User::Client');
+    $mock_client->redefine(is_wallet => sub { 1 });
+    lives_ok { $rule_engine->apply_rules($rule_name, {account_type => 'wallet'}) } 'Wallet accounts is not restricted';
+    $mock_client->unmock_all;
+
     $client_mf->status->set('disabled', 'test', 'test');
     lives_ok { $rule_engine->apply_rules($rule_name) } 'Disabled accounts are excluded';
 };
@@ -58,16 +65,26 @@ subtest 'rule landing_company.required_fields_are_non_empty' => sub {
     my $rule_name   = 'landing_company.required_fields_are_non_empty';
     my $rule_engine = BOM::Rules::Engine->new(client => $client);
 
-    my $mock_lc = Test::MockModule->new('LandingCompany');
-    $mock_lc->redefine(requirements => sub { return +{signup => [qw(a b)]}; });
+    my $args = {
+        first_name => '',
+        last_name  => ''
+    };
 
-    is_deeply exception { $rule_engine->apply_rules($rule_name) },
+    my $mock_lc = Test::MockModule->new('LandingCompany');
+    $mock_lc->redefine(requirements => sub { return +{signup => [qw(first_name last_name)]}; });
+
+    is_deeply exception { $rule_engine->apply_rules($rule_name, $args) },
         {
         code    => 'InsufficientAccountDetails',
-        details => {missing => [qw(a b)]}
+        details => {missing => [qw(first_name last_name)]}
         },
-        'Error with missing args';
-    lives_ok { $rule_engine->apply_rules($rule_name, {a => 1, b => 2}) } 'Test passes with args';
+        'Error with missing client data';
+
+    $args = {
+        first_name => 'Master',
+        last_name  => 'Mind'
+    };
+    lives_ok { $rule_engine->apply_rules($rule_name, $args) } 'Test passes when client has the data';
 
     $mock_lc->unmock_all;
 };
@@ -81,7 +98,7 @@ subtest 'rule landing_company.currency_is_allowed' => sub {
     lives_ok { $rule_engine->apply_rules($rule_name) } 'Empty currency is accepted';
     is_deeply exception { $rule_engine->apply_rules($rule_name, {currency => 'USD'}) },
         {
-        code   => 'CurrencyTypeNotAllowed',
+        code   => 'CurrencyNotAllowed',
         params => 'USD'
         },
         'Error for illegal currency';
@@ -92,8 +109,8 @@ subtest 'rule landing_company.currency_is_allowed' => sub {
     $mock_lc->unmock_all;
 };
 
-subtest 'rule landing_company.p2p_account_opening_reason' => sub {
-    my $rule_name   = 'landing_company.p2p_account_opening_reason';
+subtest 'rule landing_company.p2p_availability' => sub {
+    my $rule_name   = 'landing_company.p2p_availability';
     my $rule_engine = BOM::Rules::Engine->new(client => $client);
 
     my $mock_lc = Test::MockModule->new('LandingCompany');

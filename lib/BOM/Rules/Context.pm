@@ -61,4 +61,24 @@ sub landing_company_object {
     return $self->{landing_company_object};
 }
 
+=head2 client_switched
+
+If the context client is virtual has a real sibling account in the context landing company, it will return that real sibling;
+otherwise it will return the context client itself.
+
+=cut
+
+sub client_switched {
+    my $self = shift;
+
+    my $client = $self->client;
+
+    return $client unless ($client and $client->user and not $client->is_virtual);
+
+    $self->{client_switch} //=
+        (sort { $b->date_joined cmp $a->date_joined } grep { not $_->is_virtual } $client->user->clients(include_disabled => 0))[0] // $client;
+
+    return $self->{client_switch};
+}
+
 1;

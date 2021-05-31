@@ -9,7 +9,7 @@ new_trading_account:
   args:
     account_type:
       real:
-        - client.required_fields_are_non_empty
+        - landing_company.required_fields_are_non_empty
         - trading_account.client_should_be_real
         - trading_account.should_complete_financial_assessment
         - trading_account.should_provide_tax_details

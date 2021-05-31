@@ -17,8 +17,8 @@ my $client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
 
 my $rule_engine = BOM::Rules::Engine->new(client => $client);
 
-subtest 'rule client.address_postcode_mandatory' => sub {
-    my $rule_name = 'client.address_postcode_mandatory';
+subtest 'rule profile.address_postcode_mandatory' => sub {
+    my $rule_name = 'profile.address_postcode_mandatory';
     $client->address_postcode('');
 
     is_deeply exception { $rule_engine->apply_rules($rule_name) }, {code => 'PostcodeRequired'}, 'correct error when postcode is missing';
@@ -29,8 +29,8 @@ subtest 'rule client.address_postcode_mandatory' => sub {
     ok $rule_engine->apply_rules($rule_name), 'Test passes with non-empty postcode';
 };
 
-subtest 'rule client.no_pobox_in_address' => sub {
-    my $rule_name = 'client.no_pobox_in_address';
+subtest 'rule profile.no_pobox_in_address' => sub {
+    my $rule_name = 'profile.no_pobox_in_address';
 
     for my $arg (qw/address_line_1 address_line_2/) {
         for my $value ('p.o. box', 'p o. box', 'p o box', 'P.O Box', 'Po. BOX') {
@@ -64,31 +64,53 @@ subtest 'rule client.has_currency_set' => sub {
     ok $rule_engine->apply_rules($rule_name), 'Test passes when currency is set';
 };
 
-subtest 'rule client.required_fields_are_non_empty' => sub {
-    my $rule_name   = 'client.required_fields_are_non_empty';
-    my $rule_engine = BOM::Rules::Engine->new(client => $client);
+subtest 'rule client.residence_is_not_empty' => sub {
+    my $rule_name = 'client.residence_is_not_empty';
 
-    $client->first_name('');
-    $client->last_name('');
-    $client->save;
+    my $mock_client = Test::MockModule->new('BOM::User::Client');
+    my $residence   = 'id';
+    $mock_client->redefine(residence => sub { return $residence });
 
-    my $mock_lc = Test::MockModule->new('LandingCompany');
-    $mock_lc->redefine(requirements => sub { return +{signup => [qw(first_name last_name)]}; });
+    lives_ok { $rule_engine->apply_rules($rule_name) } 'Rule applies when residence is set.';
 
-    is_deeply exception { $rule_engine->apply_rules($rule_name) },
-        {
-        code    => 'InsufficientAccountDetails',
-        details => {missing => [qw(first_name last_name)]}
-        },
-        'Error with missing client data';
+    $residence = undef;
+    is_deeply exception { $rule_engine->apply_rules($rule_name) }, {code => 'NoResidence'}, 'Rule fails when residence is empty';
 
-    $client->first_name('Mister');
-    $client->last_name('family');
-    $client->save;
+    $mock_client->unmock_all;
+};
 
-    lives_ok { $rule_engine->apply_rules($rule_name) } 'Test passes when client has the data';
+subtest 'rule client.residence_not_changed' => sub {
+    my $rule_name = 'client.residence_not_changed';
 
-    $mock_lc->unmock_all;
+    lives_ok { $rule_engine->apply_rules($rule_name) } 'Rule applies with empty args.';
+
+    lives_ok { $rule_engine->apply_rules($rule_name, {residence => $client->residence}) } 'Rule applies if residence is the same.';
+
+    is_deeply exception { $rule_engine->apply_rules($rule_name, {residence => 'xyz'}) }, {code => 'InvalidResidence'},
+        'Rule fails when residence is different';
+
+};
+
+subtest 'rule client.signup_immitable_fields_not_changed' => sub {
+    my $rule_name = 'client.signup_immitable_fields_not_changed';
+
+    lives_ok { $rule_engine->apply_rules($rule_name) } 'Rule applies with empty args.';
+
+    for my $field (qw/citizen place_of_birth residence/) {
+        $client->$field('');
+        $client->save;
+        lives_ok { $rule_engine->apply_rules($rule_name, {$field => 'xyz'}) } "Rule applies if client's $field is empty.";
+
+        $client->$field('af');
+        $client->save;
+        is_deeply exception { $rule_engine->apply_rules($rule_name, {$field => 'xyz'}) },
+            {
+            code    => 'CannotChangeAccountDetails',
+            details => {changed => [$field]}
+            },
+            "Rule fails when non-empty immutalbe fiel $field is different";
+    }
+
 };
 
 subtest 'rule client.is_not_virtual' => sub {

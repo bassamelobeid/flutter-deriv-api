@@ -36,6 +36,8 @@ use BOM::Rules::RuleRepository::LandingCompany;
 use BOM::Rules::RuleRepository::Residence;
 use BOM::Rules::RuleRepository::Onfido;
 use BOM::Rules::RuleRepository::TradingAccount;
+use BOM::Rules::RuleRepository::Currency;
+use BOM::Rules::RuleRepository::Profile;
 use BOM::Rules::RuleRepository::Transfers;
 use BOM::Rules::RuleRepository::SelfExclusion;
 use BOM::Rules::Registry qw(get_action);
@@ -124,10 +126,10 @@ sub apply_rules {
 
         die "Unknown rule '$rule_name' cannot be applied" unless $rule;
 
-        $rule->apply($self->context, $args);
+        $rule->apply($self->context, $args // {});
         # TODO: in some contexts we will need to return all failures rather than the first one.
         # In that case the output should be restructured like:
-        # failures => ['residence.account_type_is_allowed', 'residence.not_restricted']
+        # failures => ['residence.market_type_is_available', 'residence.not_restricted']
     }
 
     return 1;
