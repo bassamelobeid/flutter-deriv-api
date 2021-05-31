@@ -21,10 +21,6 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Config;
 
-#required for validate_account_details
-use Crypt::NamedKeys;
-Crypt::NamedKeys::keyfile '/etc/rmg/aes_keys.yml';
-
 my $on_production = 1;
 my $config_mocked = Test::MockModule->new('BOM::Config');
 $config_mocked->mock('on_production', sub { return $on_production });
@@ -297,45 +293,6 @@ subtest 'create account' => sub {
         isa_ok($vr_acc_n->{client}, 'BOM::User::Client', 'No error when under 30 days old ');
     };
 
-    $t_details{place_of_birth} = 'xx';
-    my $details = BOM::Platform::Account::Real::default::validate_account_details(\%t_details, $vr_client, $broker, 1);
-    is $details->{error}, 'InvalidPlaceOfBirth', 'invalid place of birth returns correct error';
-
-    delete $t_details{phone};
-    $t_details{place_of_birth} = '';
-    $details = BOM::Platform::Account::Real::default::validate_account_details(\%t_details, $vr_client, $broker, 1);
-    is $details->{error}, 'TooLateNonPepTime', 'Non-pep declaratin time is too late';
-    $t_details{non_pep_declaration_time} = Date::Utility->today->date_yyyymmdd;
-
-    $details = BOM::Platform::Account::Real::default::validate_account_details(\%t_details, $vr_client, $broker, 1);
-    is $details->{error}, undef, 'no error for empty place of birth';
-
-    # Invalid phone
-    $t_details{phone} = '+623234234234777a';
-    $details = BOM::Platform::Account::Real::default::validate_account_details(\%t_details, $vr_client, $broker, 1);
-    is $details->{error}, 'InvalidPhone', 'Invalid phone';
-
-    $details = BOM::Platform::Account::Real::default::validate_account_details({%t_details, phone => ''}, $vr_client, $broker, 1);
-    is $details->{error}, undef, 'no error for empty phone';
-
-    $details = BOM::Platform::Account::Real::default::validate_account_details({
-            %t_details,
-            phone => undef,
-        },
-        $vr_client,
-        $broker, 1
-    );
-    is $details->{error}, undef, 'no error for undef phone';
-
-    $details = BOM::Platform::Account::Real::default::validate_account_details({
-            %t_details,
-            phone => '123456789',
-        },
-        $vr_client,
-        $broker, 1
-    );
-    is $details->{error}, undef, 'no error for 123456789 phone';
-
     $t_details{phone} = sprintf("+15417555%03d", rand(999));
 
     # real acc
@@ -545,39 +502,6 @@ subtest 'create account' => sub {
 
         ok !$client_vr_new->status->allow_poi_resubmission, 'allow_poi_resubmission status must not set or copied for virtual accounts';
         ok !$client_vr_new->status->allow_poa_resubmission, 'allow_poa_resubmission status must not set or copied for virtual accounts';
-    };
-
-    subtest 'P2P account opening reason' => sub {
-
-        my $vr_acc = create_vr_acc({
-            email           => 'p2p_mlt@binary.com',
-            client_password => 'test',
-            residence       => 'nl',
-        });
-        my ($vr_client, $user) = @{$vr_acc}{'client', 'user'};
-
-        my %details = (
-            %real_client_details,
-            first_name               => 'john',
-            residence                => 'nl',
-            citizen                  => 'nl',
-            non_pep_declaration_time => Date::Utility->today->date_yyyymmdd,
-            account_opening_reason   => 'Peer-to-peer exchange',
-        );
-
-        $details = BOM::Platform::Account::Real::default::validate_account_details(\%details, $vr_client, 'MLT', 1);
-        is $details->{error}, 'P2PRestrictedCountry', 'error for P2P on MLT';
-
-        $details = BOM::Platform::Account::Real::default::validate_account_details(\%details, $vr_client, 'CR', 1);
-        ok !$details->{error}, 'no error for P2P on CR';
-
-        $details{account_opening_reason} = 'Hedging';
-        $details = BOM::Platform::Account::Real::default::validate_account_details(\%details, $vr_client, 'MLT', 1);
-        ok !$details->{error}, 'no error for other reason on MLT';
-
-        delete $details{account_opening_reason};
-        $details = BOM::Platform::Account::Real::default::validate_account_details(\%details, $vr_client, 'MLT', 1);
-        ok !$details->{error}, 'no warning if account_opening_reason is missing';
     };
 };
 
