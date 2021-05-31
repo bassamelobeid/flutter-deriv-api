@@ -61,6 +61,7 @@ use BOM::RPC::v3::Services::Onramp;
 use BOM::Config::Redis;
 use BOM::User::Onfido;
 use BOM::Rules::Engine;
+
 use Locale::Country;
 use DataDog::DogStatsd::Helper qw(stats_gauge);
 
@@ -2616,15 +2617,12 @@ rpc set_financial_assessment => sub {
     my $client         = $params->{client};
     my $client_loginid = $client->loginid;
 
-    return BOM::RPC::v3::Utility::permission_error() if ($client->is_virtual);
-
-    my $is_FI_complete = is_section_complete($params->{args}, "financial_information");
-    my $is_TE_complete = is_section_complete($params->{args}, "trading_experience");
-
-    return BOM::RPC::v3::Utility::create_error({
-            code              => 'IncompleteFinancialAssessment',
-            message_to_client => localize("The financial assessment is not complete")}
-    ) unless ($client->landing_company->short eq "maltainvest" ? $is_TE_complete && $is_FI_complete : $is_FI_complete);
+    my $rule_engine = BOM::Rules::Engine->new(client => $client);
+    try {
+        $rule_engine->verify_action(set_financial_assessment => $params->{args});
+    } catch ($error) {
+        return BOM::RPC::v3::Utility::rule_engine_error($error);
+    }
 
     my $old_financial_assessment = decode_fa($client->financial_assessment());
 

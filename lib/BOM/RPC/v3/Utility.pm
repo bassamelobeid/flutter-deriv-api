@@ -522,6 +522,8 @@ sub error_map {
         'InvalidTradingAccount'    => localize("Sorry, we couldn't find your trading account."),
         'CannotLinkVirtualAndReal' => localize("Please ensure your trading account type is the same as your wallet account type."),
 
+        'IncompleteFinancialAssessment' => localize("The financial assessment is not complete"),
+
         'CurrencySuspended'     => localize("The provided currency [_1] is not selectable at the moment."),
         'InvalidCryptoCurrency' => localize("The provided currency [_1] is not a valid cryptocurrency."),
         'ExperimentalCurrency'  => localize("This currency is temporarily suspended. Please select another currency to proceed."),
