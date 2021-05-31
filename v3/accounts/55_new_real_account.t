@@ -56,7 +56,6 @@ subtest 'new CR real account' => sub {
         ok($res->{msg_type}, 'new_account_real');
         ok($res->{new_account_real});
         test_schema('new_account_real', $res);
-
         my $loginid = $res->{new_account_real}->{client_id};
         like($loginid, qr/^CR\d+$/, "got CR client $loginid");
     };
@@ -177,7 +176,7 @@ subtest 'create account failed' => sub {
         $details{residence} = 'id';
 
         my $res = $t->await::new_account_real({%details, date_of_birth => '2008-01-01'});
-        is($res->{error}->{code},    'too young', 'min age unmatch');
+        is($res->{error}->{code},    'BelowMinimumAge', 'min age unmatch');
         is($res->{new_account_real}, undef,       'NO account created');
     };
 
@@ -284,7 +283,7 @@ subtest 'new_real_account with currency provided' => sub {
 
     $details{currency} = 'XXX';
     $res = $t->await::new_account_real(\%details);
-    is($res->{error}->{code}, 'CurrencyTypeNotAllowed', 'Try to create account with incorrect currency');
+    is($res->{error}->{code}, 'CurrencyNotAllowed', 'Try to create account with incorrect currency');
 };
 
 subtest 'validate phone field' => sub {
