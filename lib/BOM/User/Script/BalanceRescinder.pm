@@ -226,7 +226,7 @@ sub _build_currencies {
         my $amount = FIAT_BALANCE_LIMIT;
 
         if ($type ne 'fiat' && !$stable) {
-            $amount = eval { convert_currency(CRYPTO_CONVERSION_AMOUNT, $currency, CRYPTO_CONVERSION_CURRENCY) };
+            $amount = eval { convert_currency(CRYPTO_CONVERSION_AMOUNT, CRYPTO_CONVERSION_CURRENCY, $currency) };
         }
 
         unless (defined $amount) {

@@ -59,7 +59,7 @@ my $mock = Test::MockModule->new('BOM::User::Script::BalanceRescinder');
 $mock->mock(
     'convert_currency',
     sub {
-        my ($amount, $currency) = @_;
+        my ($amount, undef, $currency) = @_;
 
         return $amount * ($fake_rates->{$currency} // BOM::User::Script::BalanceRescinder::FIAT_BALANCE_LIMIT);
     });
