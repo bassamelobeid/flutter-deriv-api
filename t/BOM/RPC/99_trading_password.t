@@ -25,7 +25,6 @@ $mock_events->mock(
         $emitted{$type}++;
     });
 
-BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend->all(0);
 BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real->p01_ts03->all(0);
 BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real->p02_ts02->all(0);
 
@@ -498,8 +497,6 @@ subtest 'partially changed password' => sub {
 
     $mock_mt5->unmock_all();
 };
-
-BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend->all(1);
 
 $mock_events->unmock_all();
 

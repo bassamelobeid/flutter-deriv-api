@@ -58,20 +58,18 @@ my %ERROR_MAP = do {
         PlatformTransferAccountInvalid         => localize('The provided Deriv account ID is not valid.'),
         PlatformTransferOauthTokenRequired     =>
             localize('This request must be made using a connection authorized by the Deriv account involved in the transfer.'),
-        PlatformTransferRealParams      => localize('A Deriv account ID and amount must be provided for real accounts.'),
-        PasswordRequired                => localize('A new password is required'),
-        PasswordError                   => localize('Provided password is incorrect.'),
-        PasswordReset                   => localize('Please reset your password to continue.'),
-        OldPasswordRequired             => localize('Old password cannot be empty.'),
-        NoOldPassword                   => localize('Old password cannot be provided until a trading password has been set.'),
-        OldPasswordError                => localize("You've used this password before. Please create a different one."),
-        MT5InvalidAccount               => localize('An invalid MT5 account ID was provided.'),
-        MT5Suspended                    => localize('MT5 account management is currently suspended.'),
-        PlatformPasswordChangeSuspended =>
-            localize("We're unable to change your trading password due to scheduled maintenance. Please try again later."),
-        CurrencyShouldMatch     => localize('Currency provided is different from account currency.'),
-        RealAccountMissing      => localize('You are on a virtual account. To open a [_1] account, please upgrade to a real account.'),
-        FinancialAccountMissing =>
+        PlatformTransferRealParams => localize('A Deriv account ID and amount must be provided for real accounts.'),
+        PasswordRequired           => localize('A new password is required'),
+        PasswordError              => localize('Provided password is incorrect.'),
+        PasswordReset              => localize('Please reset your password to continue.'),
+        OldPasswordRequired        => localize('Old password cannot be empty.'),
+        NoOldPassword              => localize('Old password cannot be provided until a trading password has been set.'),
+        OldPasswordError           => localize("You've used this password before. Please create a different one."),
+        MT5InvalidAccount          => localize('An invalid MT5 account ID was provided.'),
+        MT5Suspended               => localize('MT5 account management is currently suspended.'),
+        CurrencyShouldMatch        => localize('Currency provided is different from account currency.'),
+        RealAccountMissing         => localize('You are on a virtual account. To open a [_1] account, please upgrade to a real account.'),
+        FinancialAccountMissing    =>
             localize('Your existing account does not allow [_1] trading. To open a [_1] account, please upgrade to a financial account.'),
         GamingAccountMissing =>
             localize('Your existing account does not allow [_1] trading. To open a [_1] account, please upgrade to a gaming account.'),
@@ -173,6 +171,12 @@ async_rpc trading_platform_password_change => sub {
     my $user = $client->user;
 
     try {
+        die +{
+            error_code        => 'PlatformPasswordChangeSuspended',
+            message_to_client => localize("We're unable to change your trading password due to system maintenance. Please try again later."),
+            }
+            if $client->user->dxtrade_loginids and BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend->all;
+
         my $new_password = $params->{args}{new_password} or die +{error_code => 'PasswordRequired'};
         my $old_password = $params->{args}{old_password};
 
@@ -243,6 +247,13 @@ async_rpc trading_platform_password_reset => auth => [],
         die $error->{error} if $error;
 
         my $user = BOM::User->new(email => $email);
+
+        die +{
+            error_code        => 'PlatformPasswordChangeSuspended',
+            message_to_client => localize("We're unable to reset your trading password due to system maintenance. Please try again later."),
+            }
+            if $user->dxtrade_loginids and BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend->all;
+
         change_platform_passwords($user->get_default_client(), $password, $contact_url, $brand)->get;
 
         $user->update_trading_password($password);
