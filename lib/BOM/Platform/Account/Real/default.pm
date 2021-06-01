@@ -52,6 +52,7 @@ sub create_account {
 sub copy_status_from_siblings {
     my ($cur_client, $user, $status_list) = @_;
     my @allowed_lc_to_sync;
+
     # We should sync age verification for allowed landing companies and other statuses to all siblings
     # Age verification sync if current client is one of existing client allowed landing companies for age verification
     for my $client ($user->clients) {
@@ -61,7 +62,7 @@ sub copy_status_from_siblings {
             next if $client->status->$status && $cur_client->status->$status;
 
             my $cur_client_lc = $cur_client->landing_company->short;
-            next if ($status eq 'age_verification' && (none { $_ eq $cur_client_lc } @allowed_lc_to_sync));
+            next if ($status eq 'age_verification' && ($client->status->is_experian_validated || none { $_ eq $cur_client_lc } @allowed_lc_to_sync));
 
             my $reason = $client->status->$status ? $client->status->$status->{reason} : 'Sync upon signup';
 

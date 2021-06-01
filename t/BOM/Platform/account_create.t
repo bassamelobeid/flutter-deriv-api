@@ -130,7 +130,6 @@ subtest 'create account' => sub {
             is($user->email_consent,           $vr_details->{$broker}->{email_consent}, 'email consent ok');
         }
         'create VR acc';
-
         # real acc
         lives_ok {
             $real_acc = create_real_acc($vr_client, $user, $broker);
@@ -144,13 +143,44 @@ subtest 'create account' => sub {
 
         # MF acc
         if ($broker eq 'MLT' or $broker eq 'MX') {
-            $real_client->status->set('age_verification', 'system', 'test');
+            my $status_mock        = Test::MockModule->new('BOM::User::Client::Status');
+            my $real_mock          = Test::MockModule->new('BOM::Platform::Account::Real::default');
+            my $experian_validated = $broker eq 'MX';
+            # mock some experian
+            $status_mock->mock(
+                'is_experian_validated',
+                sub {
+                    return $experian_validated;
+                });
+            # tricky stuff, is seems we only deploy one testing DB, so the trigger propagates the
+            # age verified regardless of broker code, making the test useless unless we do the following:
+            my $mf_fresh;
+            $real_mock->mock(
+                'copy_status_from_siblings',
+                sub {
+                    my ($cur_client) = @_;
+                    $mf_fresh = $cur_client;
+                    return $real_mock->original('copy_status_from_siblings')->(@_);
+                });
+            $status_mock->mock(
+                'age_verification',
+                sub {
+                    my ($self) = @_;
+                    return 0 if $self->client_loginid eq $mf_fresh->loginid;
+                    return {
+                        reason => 'test',
+                    };
+                });
 
             lives_ok { $real_acc = create_mf_acc($real_client, $user); } "create MF acc";
             is($real_acc->{client}->broker, 'MF', "Successfully create " . $real_acc->{client}->loginid);
+            $status_mock->unmock_all;
+
             my $cl   = BOM::User::Client->new({loginid => $real_acc->{client}->loginid});
             my $data = decode_fa($cl->financial_assessment());
             is $data->{forex_trading_experience}, '0-1 year', "got the forex trading experience";
+            ok $cl->status->age_verification, 'MF got age verified' unless $experian_validated;
+            ok !$cl->status->age_verification, 'Experian age verification is not propagated' if $experian_validated;
         }
 
         # Prepare for the email_consent-less test
