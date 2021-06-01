@@ -328,19 +328,17 @@ sub deposit {
 
     return $self->demo_top_up($account) if $account->{account_type} eq 'demo';
 
-    my $from_currency = $args{currency} // $self->client->account->currency_code;
-
     # Sequence:
     # 1. Validation
     # 2. Withdrawal from deriv
     # 3. Deposit to dxtrade
 
     my $tx_amounts = $self->validate_transfer(
-        action        => 'deposit',
-        amount        => $args{amount},
-        currency      => $account->{currency},
-        account_type  => $account->{account_type},
-        from_currency => $from_currency,
+        action            => 'deposit',
+        amount            => $args{amount},
+        platform_currency => $account->{currency},
+        account_type      => $account->{account_type},
+        currency          => $args{currency},
     );
 
     my %txn_details = (
@@ -423,19 +421,17 @@ sub withdraw {
     my $account = $self->client->user->loginid_details->{$args{from_account}}
         or die +{error_code => 'DXInvalidAccount'};
 
-    my $to_currency = $args{currency} // $self->client->account->currency_code;
-
     # Sequence:
     # 1. Validation
     # 2. Withdraw from dxtrade
     # 3. Deposit to deriv
 
     my $tx_amounts = $self->validate_transfer(
-        action       => 'withdrawal',
-        amount       => $args{amount},
-        currency     => $account->{currency},
-        account_type => $account->{account_type},
-        to_currency  => $to_currency,
+        action            => 'withdrawal',
+        amount            => $args{amount},
+        platform_currency => $account->{currency},
+        account_type      => $account->{account_type},
+        currency          => $args{currency},
     );
 
     my $resp = $self->call_api(

@@ -153,9 +153,9 @@ Generic validation of transfers and fee calculation. There are no platform-speci
 
 =item * C<amount>: amount to be sent from source account.
 
-=item * C<currency>: currency specified for the transfer.
+=item * C<platform_currency>: currency of platform account.
 
-=item * C<account>: a hashref including:
+=item * C<account_type>: type of platform account, demo or real
 
 =over 4 
 
@@ -172,8 +172,9 @@ Returns hashref of validated amounts or dies with error.
 =cut
 
 sub validate_transfer {
-    my ($self,        %args) = @_;
-    my ($action,      $send_amount, $platform_currency, $account_type) = @args{qw/ action amount currency account_type /};
+    my ($self, %args) = @_;
+
+    my ($action, $send_amount, $platform_currency, $account_type) = @args{qw/ action amount platform_currency account_type /};
     my ($recv_amount, $fees, $fees_percent, $min_fee, $fee_calculated_by_percent, $fees_in_client_currency);
 
     my $rule_engine = BOM::Rules::Engine->new(client => $self->client);
