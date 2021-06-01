@@ -60,6 +60,7 @@ use BOM::RPC::v3::Services;
 use BOM::RPC::v3::Services::Onramp;
 use BOM::Config::Redis;
 use BOM::User::Onfido;
+use BOM::User::IdentityVerification;
 use BOM::Rules::Engine;
 
 use Locale::Country;
@@ -1097,6 +1098,11 @@ sub _get_authentication {
                     documents_supported  => [],
                     last_rejected        => [],
                     reported_properties  => {},
+                },
+                idv => {
+                    submissions_left    => 0,
+                    last_rejected       => [],
+                    reported_properties => {},
                 }
             },
         },
@@ -1161,6 +1167,8 @@ sub _get_authentication_poi {
     push $last_rejected->@*, BOM::User::Onfido::get_consider_reasons($client)->@* if $poi_status =~ /rejected|suspected/;
     push $last_rejected->@*, BOM::User::Onfido::get_rules_reasons($client)->@*;
 
+    my $idv = BOM::User::IdentityVerification->new(user_id => $client->binary_user_id);
+
     my $country_code_triplet = uc(Locale::Country::country_code2code($country_code, LOCALE_CODE_ALPHA_2, LOCALE_CODE_ALPHA_3) // "");
     # Return the identity structure
     return {
@@ -1173,7 +1181,12 @@ sub _get_authentication_poi {
                 $country_code_triplet ? (country_code => $country_code_triplet) : (),
                 last_rejected => [uniq map { defined $RejectedOnfidoReasons{$_} ? localize($RejectedOnfidoReasons{$_}) : () } $last_rejected->@*],
                 reported_properties => BOM::User::Onfido::reported_properties($client),
-            }
+            },
+            idv => {
+                submissions_left    => $idv->submissions_left,
+                last_rejected       => $idv->get_rejected_reasons,
+                reported_properties => $idv->reported_properties,
+            },
         },
         defined $expiry_date ? (expiry_date => $expiry_date) : (),
     };
