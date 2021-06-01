@@ -1038,7 +1038,7 @@ subtest $method => sub {
         isnt(keys %$result, 0, 'MF client has financial assessment set');
 
         ok $emitted{"signup_$new_loginid"}, "signup event emitted";
-        ok !$cl->status->age_verification, 'age verification not synced between mx(gb) and mf.';
+        ok $cl->status->age_verification, 'age verification synced between mx(gb) and mf.';
         ok $cl->non_pep_declaration_time, 'non_pep_declaration_time is auto-initialized with no non_pep_delclaration in args';
         cmp_ok $cl->non_pep_declaration_time, 'ne', '2020-01-02T00:00:00', 'non_pep declaration time is different from MLT account';
     };
