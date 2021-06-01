@@ -9,17 +9,18 @@ use Test::Pod::CoverageChange;
 # The number of naked (undocumented) subs should never be increased in this hashref.
 
 my $allowed_naked_packages = {
-    'BOM::Event::Listener'                    => 8,
-    'BOM::Event::QueueHandler'                => 1,
-    'BOM::Event::Services'                    => 9,
-    'BOM::Event::Actions::P2P'                => 2,
-    'BOM::Event::Actions::CryptoSubscription' => 2,
-    'BOM::Event::Actions::MyAffiliate'        => 4,
-    'BOM::Event::Actions::Client'             => 23,
-    'BOM::Event::Actions::MT5'                => 2,
-    'BOM::Event::Actions::CustomerStatement'  => 2,
-    'BOM::Event::Services::Track'             => 6,
-    'BOM::Event::Actions::User'               => 1,
+    'BOM::Event::Listener'                              => 8,
+    'BOM::Event::QueueHandler'                          => 1,
+    'BOM::Event::Services'                              => 9,
+    'BOM::Event::Actions::P2P'                          => 2,
+    'BOM::Event::Actions::CryptoSubscription'           => 2,
+    'BOM::Event::Actions::MyAffiliate'                  => 4,
+    'BOM::Event::Actions::Client'                       => 23,
+    'BOM::Event::Actions::MT5'                          => 2,
+    'BOM::Event::Actions::CustomerStatement'            => 2,
+    'BOM::Event::Services::Track'                       => 6,
+    'BOM::Event::Actions::User'                         => 1,
+    'BOM::Event::Actions::Client::IdentityVerification' => 4,
 };
 
 Test::Pod::CoverageChange::pod_coverage_syntax_ok(allowed_naked_packages => $allowed_naked_packages);
