@@ -2607,8 +2607,8 @@ sub p2p_advert_update {
         delete $param{payment_method};
     }
 
-    my $update = $self->db->dbic->run(
-        txn => sub {
+    my $update = $self->db->dbic->txn(
+        fixup => sub {
             my $dbh = shift;
 
             # lock advert row while checking open orders (order create will update the row)
