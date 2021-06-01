@@ -19,7 +19,6 @@ trading_account_deposit:
   description: Contains rules to be applied on deposit to trading platform accounts
   general:
     - transfers.experimental_currency_email_whitelisted
-    - transfers.currency_required
     - transfers.currency_should_match
     - transfers.daily_limit
     - transfers.limits
@@ -27,7 +26,6 @@ trading_account_withdrawal:
   description: Contains rules to be applied on withdrawal from trading platform accounts
   general:
     - transfers.experimental_currency_email_whitelisted
-    - transfers.currency_required
     - transfers.currency_should_match
     - transfers.daily_limit
     - transfers.limits

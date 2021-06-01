@@ -13,37 +13,6 @@ use BOM::Config::Chronicle;
 use BOM::Test::Helper::ExchangeRates qw(populate_exchange_rates);
 use ExchangeRates::CurrencyConverter qw/convert_currency/;
 
-subtest 'rule transfers.currency_required' => sub {
-    my $rule_name = 'transfers.currency_required';
-
-    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'VRTC',
-    });
-    my $user = BOM::User->create(
-        email    => 'test+vrtc@test.deriv',
-        password => 'TRADING PASS',
-    );
-    $user->add_client($client);
-    $client->account('USD');
-
-    my $rule_engine = BOM::Rules::Engine->new(client => $client);
-    my $params      = {
-
-    };
-
-    is_deeply exception { $rule_engine->apply_rules($rule_name, $params) },
-        {
-        code => 'CurrencyRequired',
-        },
-        'expected error when no currency passed';
-
-    $params = {
-        currency => 'EUR',
-    };
-
-    ok $rule_engine->apply_rules($rule_name, $params), 'The test passes';
-};
-
 subtest 'rule transfers.currency_should_match' => sub {
     my $rule_name = 'transfers.currency_should_match';
 
@@ -55,12 +24,17 @@ subtest 'rule transfers.currency_should_match' => sub {
         password => 'TRADING PASS',
     );
     $user->add_client($client);
-    $client->account('USD');
+    $client->account('GBP');
 
     my $rule_engine = BOM::Rules::Engine->new(client => $client);
     my $params      = {
-
+        platform_currency => 'USD',
+        action            => 'relax'
     };
+
+    ok $rule_engine->apply_rules($rule_name, $params), 'no error when no currency passed';
+
+    $params->{currency} = 'USD';
     is_deeply exception { $rule_engine->apply_rules($rule_name, $params) },
         {
         code => 'InvalidAction',
@@ -72,18 +46,9 @@ subtest 'rule transfers.currency_should_match' => sub {
         {
         code => 'CurrencyShouldMatch',
         },
-        'expected error when no currency passed';
-
-    $params->{action}        = 'deposit';
-    $params->{from_currency} = 'EUR';
-
-    is_deeply exception { $rule_engine->apply_rules($rule_name, $params) },
-        {
-        code => 'CurrencyShouldMatch',
-        },
         'expected error when currency mismatch';
 
-    $params->{from_currency} = 'USD';
+    $params->{currency} = 'GBP';
     ok $rule_engine->apply_rules($rule_name, $params), 'The test passes';
 
     $params->{action} = 'withdrawal';
@@ -93,14 +58,7 @@ subtest 'rule transfers.currency_should_match' => sub {
         },
         'expected error when currency mismatch';
 
-    $params->{to_currency} = 'EUR';
-    is_deeply exception { $rule_engine->apply_rules($rule_name, $params) },
-        {
-        code => 'CurrencyShouldMatch',
-        },
-        'expected error when currency mismatch';
-
-    $params->{to_currency} = 'USD';
+    $params->{currency} = 'USD';
     ok $rule_engine->apply_rules($rule_name, $params), 'The test passes';
 };
 
@@ -149,9 +107,8 @@ subtest 'rule transfers.limits' => sub {
 
     my $rule_engine = BOM::Rules::Engine->new(client => $client);
     my $params      = {
-        platform => 'dxtrade',
-        amount   => 1,
-        currency => 'USD',
+        platform          => 'dxtrade',
+        platform_currency => 'USD',
     };
 
     is_deeply exception { $rule_engine->apply_rules($rule_name, $params) },
@@ -169,13 +126,13 @@ subtest 'rule transfers.limits' => sub {
         'expected error when invalid action given';
 
     subtest 'Deposit' => sub {
-        $params->{from_currency} = 'USD';
-        $params->{action}        = 'deposit';
+        $params->{action} = 'deposit';
 
         my $app_config = BOM::Config::Runtime->instance->app_config();
         $app_config->chronicle_writer(BOM::Config::Chronicle::get_chronicle_writer());
         $app_config->set({'payments.transfer_between_accounts.minimum.dxtrade' => '{"default":{"currency":"USD","amount":10}}'});
 
+        $params->{amount} = 1;
         is_deeply exception { $rule_engine->apply_rules($rule_name, $params) },
             {
             code           => 'InvalidMinAmount',
@@ -206,18 +163,9 @@ subtest 'rule transfers.limits' => sub {
             $client->account('BTC');
 
             my $rule_engine = BOM::Rules::Engine->new(client => $client);
-            $params->{currency}      = 'USD';
-            $params->{from_currency} = 'BTC';
 
-            is_deeply exception { $rule_engine->apply_rules($rule_name, $params); },
-                {
-                code => 'PlatformTransferTemporarilyUnavailable',
-                },
-                'conversion rate not available';
-
-            populate_exchange_rates({BTC => 100});
-            $app_config->set({'payments.transfer_between_accounts.minimum.dxtrade' => '{"default":{"currency":"USD","amount":1}}'});
-            $app_config->set({'payments.transfer_between_accounts.maximum.dxtrade' => '{"default":{"currency":"USD","amount":20}}'});
+            $app_config->set({'payments.transfer_between_accounts.minimum.dxtrade' => '{"default":{"currency":"BTC","amount":0.01}}'});
+            $app_config->set({'payments.transfer_between_accounts.maximum.dxtrade' => '{"default":{"currency":"BTC","amount":1}}'});
             $params->{amount} = 0.0099;
 
             is_deeply exception { $rule_engine->apply_rules($rule_name, $params); },
@@ -227,28 +175,27 @@ subtest 'rule transfers.limits' => sub {
                 },
                 'min limit hit';
 
-            $params->{amount} = 0.01 * 20 + 0.0001;
+            $params->{amount} = 2;
             is_deeply exception { $rule_engine->apply_rules($rule_name, $params); },
                 {
                 code           => 'InvalidMaxAmount',
-                message_params => [formatnumber('amount', 'BTC', 0.01 * 20), 'BTC']
+                message_params => [formatnumber('amount', 'BTC', 1), 'BTC']
                 },
                 'max limit hit';
 
-            $params->{amount} = 0.01 * 20;
+            $params->{amount} = 0.02;
             ok $rule_engine->apply_rules($rule_name, $params), 'The test passes';
         };
     };
 
     subtest 'Withdrawal' => sub {
-        $params->{amount}      = 1;
-        $params->{to_currency} = 'USD';
-        $params->{action}      = 'withdrawal';
+        $params->{action} = 'withdrawal';
 
         my $app_config = BOM::Config::Runtime->instance->app_config();
         $app_config->chronicle_writer(BOM::Config::Chronicle::get_chronicle_writer());
         $app_config->set({'payments.transfer_between_accounts.minimum.dxtrade' => '{"default":{"currency":"USD","amount":10}}'});
 
+        $params->{amount} = 1;
         is_deeply exception { $rule_engine->apply_rules($rule_name, $params) },
             {
             code           => 'InvalidMinAmount',
@@ -279,30 +226,8 @@ subtest 'rule transfers.limits' => sub {
             $client->account('BTC');
 
             my $rule_engine = BOM::Rules::Engine->new(client => $client);
-            $params->{currency}    = 'USD';
-            $params->{to_currency} = 'BTC';
 
-            populate_exchange_rates({BTC => 100});
-            $app_config->set({'payments.transfer_between_accounts.minimum.dxtrade' => '{"default":{"currency":"USD","amount":5}}'});
-            $app_config->set({'payments.transfer_between_accounts.maximum.dxtrade' => '{"default":{"currency":"USD","amount":100}}'});
-            $params->{amount} = 4;
-
-            is_deeply exception { $rule_engine->apply_rules($rule_name, $params); },
-                {
-                code           => 'InvalidMinAmount',
-                message_params => [formatnumber('amount', 'USD', 5), 'USD']
-                },
-                'min limit hit';
-
-            $params->{amount} = 101;
-            is_deeply exception { $rule_engine->apply_rules($rule_name, $params); },
-                {
-                code           => 'InvalidMaxAmount',
-                message_params => [formatnumber('amount', 'USD', 100), 'USD']
-                },
-                'max limit hit';
-
-            $params->{amount} = 100;
+            $app_config->set({'payments.transfer_between_accounts.maximum.dxtrade' => '{"default":{"currency":"USD","amount":20}}'});
             ok $rule_engine->apply_rules($rule_name, $params), 'The test passes';
         };
     };
@@ -318,55 +243,41 @@ subtest 'rule transfers.experimental_currency_email_whitelisted' => sub {
         password => 'TRADING PASS',
     );
     $user->add_client($client);
-    $client->account('USD');
+    $client->account('BTC');
     $client->email($email);
 
     my $rule_name   = 'transfers.experimental_currency_email_whitelisted';
     my $rule_engine = BOM::Rules::Engine->new(client => $client);
 
     # Mock for config
-    my $currency_config_mock = Test::MockModule->new('BOM::Config::CurrencyConfig');
-    my $is_experimental_currency;
+    my $currency_config_mock  = Test::MockModule->new('BOM::Config::CurrencyConfig');
+    my $experimental_currency = 'USD';
 
-    $currency_config_mock->mock(
-        'is_experimental_currency',
-        sub {
-            $is_experimental_currency;
-        });
+    $currency_config_mock->mock('is_experimental_currency', sub { shift eq $experimental_currency });
 
-    my $params = {};
-
-    is_deeply exception { $rule_engine->apply_rules($rule_name, $params) },
-        {
-        code => 'InvalidAction',
-        },
-        'Expected error when no action is given';
-
-    $params->{action} = 'walk the dog';
-
-    is_deeply exception { $rule_engine->apply_rules($rule_name, $params) },
-        {
-        code => 'InvalidAction',
-        },
-        'Expected error when invalid action is given';
+    my $params = {platform_currency => 'USD'};
 
     BOM::Config::Runtime->instance->app_config->payments->experimental_currencies_allowed([]);
-    $params->{action}         = 'deposit';
-    $params->{from_currency}  = 'USD';
-    $is_experimental_currency = 1;
+    $params->{platform_currency} = 'USD';
 
     is_deeply exception { $rule_engine->apply_rules($rule_name, $params) },
         {
         code => 'CurrencyTypeNotAllowed',
         },
-        'Expected error when experimental currency and email is not whitelisted';
+        'Expected error when platform account currency is experimental and email is not whitelisted';
 
-    $is_experimental_currency = 0;
+    $experimental_currency = 'BTC';
+    is_deeply exception { $rule_engine->apply_rules($rule_name, $params) },
+        {
+        code => 'CurrencyTypeNotAllowed',
+        },
+        'Expected error when local account currency is experimental and email is not whitelisted';
 
+    $experimental_currency = 'GBP';
     lives_ok { $rule_engine->apply_rules($rule_name, $params) } 'Test passes when currency is not experimental';
 
     BOM::Config::Runtime->instance->app_config->payments->experimental_currencies_allowed([$email]);
-    $is_experimental_currency = 1;
+    $experimental_currency = 'USD';
 
     lives_ok { $rule_engine->apply_rules($rule_name, $params) } 'Test passes when currency is experimental and email is whitelisted';
 };
