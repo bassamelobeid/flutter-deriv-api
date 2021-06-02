@@ -39,7 +39,7 @@ use parent qw(BOM::TradingPlatform);
 use constant {
     DX_CLEARING_CODE           => 'default',
     DX_DOMAIN                  => 'default',
-    HTTP_TIMEOUT               => 30,
+    HTTP_TIMEOUT               => 10,
     DEMO_TOPUP_AMOUNT          => 10000,
     DEMO_TOPUP_MINIMUM_BALANCE => 1000,
 };
@@ -265,7 +265,7 @@ Takes the following arguments as named parameters:
 
 =back
 
-Returns undef on success, dies on error.
+Returns future or dies with error.
 
 =cut
 
@@ -273,19 +273,25 @@ sub change_password {
     my ($self, %args) = @_;
 
     my $password = $args{password} or die +{error_code => 'PasswordRequired'};
+    my $pwd_changed;
 
     for my $server ('demo', 'real') {
-        my $dxclient = $self->dxclient_get($server) or next;
+        my $dxclient;
+        try {
+            $dxclient = $self->dxclient_get($server) or next;
 
-        my $resp = $self->call_api(
-            $server,
-            'client_update',
-            login    => $dxclient->{login},
-            domain   => $dxclient->{domain},
-            password => $password,
-        );
-
-        die +{error_code => 'CouldNotChangePassword'} unless $resp->{success};
+            my $resp = $self->call_api(
+                $server,
+                'client_update',
+                login    => $dxclient->{login},
+                domain   => $dxclient->{domain},
+                password => $password,
+            );
+            die unless $resp->{success};
+            $pwd_changed = 1;
+        } catch {
+            return Future->done({failed_dx_logins => [$self->dxtrade_login]});
+        }
 
         try {
             $self->call_api(
@@ -299,7 +305,7 @@ sub change_password {
         }
     }
 
-    return undef;
+    return Future->done($pwd_changed ? {successful_dx_logins => [$self->dxtrade_login]} : undef);
 }
 
 =head2 deposit

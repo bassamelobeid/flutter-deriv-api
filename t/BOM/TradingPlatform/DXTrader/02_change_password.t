@@ -25,17 +25,18 @@ isa_ok($dxtrader, 'BOM::TradingPlatform::DXTrader');
 
 $client->account('USD');
 
-cmp_deeply exception { $dxtrader->change_password() }, +{error_code => 'PasswordRequired'}, 'Password is required';
+is exception { $dxtrader->change_password(password => 'test')->get }, undef, 'No DXClient has no error';
 
-cmp_deeply exception { $dxtrader->change_password(password => 'test') }, undef, 'No error with no account';
+cmp_deeply(exception { $dxtrader->change_password()->get }, {error_code => 'PasswordRequired'}, 'Password is required',);
 
-$dxtrader->new_account(
+my $acc = $dxtrader->new_account(
     account_type => 'demo',
     password     => 'test',
     market_type  => 'financial',
     currency     => 'USD',
 );
 
-is $dxtrader->change_password(password => 'secret'), undef, 'Password change request is successful';
+cmp_deeply($dxtrader->change_password(password => 'secret')->get, {successful_dx_logins => [$acc->{login}]}, 'Password change request is successful',
+);
 
 done_testing();

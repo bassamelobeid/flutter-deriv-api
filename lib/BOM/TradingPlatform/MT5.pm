@@ -70,57 +70,32 @@ Returns list of logins on success, throws exception on error
 sub change_password {
     my ($self, %args) = @_;
 
-    my @mt5_loginids = sort $self->client->user->get_mt5_loginids;
-    die +{error_code => 'PlatformPasswordChangeSuspended'} if ($self->is_any_mt5_servers_suspended and @mt5_loginids);
+    my @mt5_loginids = $self->client->user->get_mt5_loginids or return Future->done;
+    die +{error_code => 'PlatformPasswordChangeSuspended'} if $self->is_any_mt5_servers_suspended;
 
     my $password = $args{password} or die 'no password provided';
 
-    # get users
-    my @mt5_users = map {
-        my $login = $_;
-        BOM::MT5::User::Async::get_user($login)->then(
-            sub {
-                Future->done({login => $login});
+    my (@valid_logins, $res);
+
+    my @mt5_users_get = map { BOM::MT5::User::Async::get_user($_)->set_label($_) } @mt5_loginids;
+    Future->wait_all(@mt5_users_get)->then(
+        sub {
+            for my $result (@_) {
+                push @valid_logins, $result->label if !$result->is_failed;
+                # NotFound error indicates an archived account which should be ignored
+                push $res->{failed_mt5_logins}->@*, $result->label
+                    if $result->is_failed and not(ref $result->failure eq 'HASH' and ($result->failure->{code} // '') eq 'NotFound');
             }
-        )->catch(
-            sub {
-                my $error = shift;
-                if (($error->{code} // '') eq 'NotFound') {
-                    Future->done;
-                } else {
-                    Future->fail({
-                        login => $login,
-                        error => $error
-                    });
-                }
-            });
-    } @mt5_loginids;
+        })->get;
 
-    my @mt5_users_results = Future->wait_all(@mt5_users)->get;
+    my @mt5_password_change =
+        map { BOM::MT5::User::Async::password_change({login => $_, new_password => $password, type => 'main'})->set_label($_) } @valid_logins;
 
-    my ($failed_future, $done_future);
-    push @{$_->is_failed ? $failed_future : $done_future}, $_->is_failed ? $_->failure : $_->result for @mt5_users_results;
-
-    return Future->fail(@mt5_users_results) if $failed_future;
-
-    # do password change
-    my @mt5_password_change = map {
-        my $login = $_->{login};
-        BOM::MT5::User::Async::password_change({
-                login        => $login,
-                new_password => $password,
-                type         => 'main'
-            })->else(sub { Future->fail({login => $login}) })->then(sub { Future->done({login => $login}) });
-    } @{$done_future};
-
-    my @results = Future->wait_all(@mt5_password_change)->get;
-
-    $failed_future = ();
-    $done_future   = ();
-    push @{$_->is_failed ? $failed_future : $done_future}, $_->is_failed ? $_->failure : $_->result for @results;
-
-    return Future->fail(@results) if $failed_future;
-    return Future->done(@$done_future);
+    return Future->wait_all(@mt5_password_change)->then(
+        sub {
+            push $res->{$_->is_failed ? 'failed_mt5_logins' : 'successful_mt5_logins'}->@*, $_->label for @_;
+            Future->done($res);
+        });
 }
 
 =head2 change_investor_password
@@ -167,7 +142,7 @@ sub change_investor_password {
     return BOM::MT5::User::Async::password_change({
         login        => $account_id,
         new_password => $new_password,
-        type         => 'investor'
+        type         => 'investor',
     });
 }
 
