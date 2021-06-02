@@ -2850,4 +2850,116 @@ sub _send_shared_payment_method_email {
     return;
 }
 
+=head2 trading_platform_account_created
+
+Handler for trading_platform_account_created event
+
+=cut
+
+sub trading_platform_account_created {
+    my ($args) = @_;
+
+    return BOM::Event::Services::Track::track_event(
+        event      => 'trading_platform_account_created',
+        loginid    => $args->{loginid},
+        properties => $args->{properties},
+    );
+}
+
+=head2 trading_platform_password_reset_request
+
+Handler for trading_platform_password_reset_request event
+
+=cut
+
+sub trading_platform_password_reset_request {
+    my ($args) = @_;
+
+    return BOM::Event::Services::Track::track_event(
+        event      => 'trading_platform_password_reset_request',
+        loginid    => $args->{loginid},
+        properties => $args->{properties},
+    );
+}
+
+=head2 trading_platform_investor_password_reset_request
+
+Handler for trading_platform_investor_password_reset_request event
+
+=cut
+
+sub trading_platform_investor_password_reset_request {
+    my ($args) = @_;
+
+    return BOM::Event::Services::Track::track_event(
+        event      => 'trading_platform_investor_password_reset_request',
+        loginid    => $args->{loginid},
+        properties => $args->{properties},
+    );
+}
+
+=head2 trading_platform_password_changed
+
+Handler for trading_platform_password_changed event
+
+=cut
+
+sub trading_platform_password_changed {
+    my ($args) = @_;
+
+    return BOM::Event::Services::Track::track_event(
+        event      => 'trading_platform_password_changed',
+        loginid    => $args->{loginid},
+        properties => $args->{properties},
+    );
+}
+
+=head2 trading_platform_password_change_failed
+
+Handler for trading_platform_password_change_failed event
+
+=cut
+
+sub trading_platform_password_change_failed {
+    my ($args) = @_;
+
+    return BOM::Event::Services::Track::track_event(
+        event      => 'trading_platform_password_change_failed',
+        loginid    => $args->{loginid},
+        properties => $args->{properties},
+    );
+}
+
+=head2 trading_platform_investor_password_changed
+
+Handler for trading_platform_investor_password_changed
+
+=cut
+
+sub trading_platform_investor_password_changed {
+    my ($args) = @_;
+
+    return BOM::Event::Services::Track::track_event(
+        event      => 'trading_platform_investor_password_changed',
+        loginid    => $args->{loginid},
+        properties => $args->{properties},
+    );
+}
+
+=head2 trading_platform_investor_password_change_failed
+
+Handler for trading_platform_investor_password_change_failed event
+
+=cut
+
+sub trading_platform_investor_password_change_failed {
+    my ($args) = @_;
+
+    return BOM::Event::Services::Track::track_event(
+        event      => 'trading_platform_investor_password_change_failed',
+        loginid    => $args->{loginid},
+        properties => $args->{properties},
+    );
+}
+
 1;

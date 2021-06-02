@@ -1778,4 +1778,40 @@ subtest 'POA email notification' => sub {
     ok $msg, 'Second email sent';
 };
 
+subtest 'Deriv X events' => sub {
+
+    my @events = qw(trading_platform_account_created trading_platform_password_reset_request trading_platform_password_changed
+        trading_platform_password_change_failed trading_platform_investor_password_reset_request trading_platform_investor_password_changed
+        trading_platform_investor_password_change_failed);
+
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+    });
+
+    my $req = BOM::Platform::Context::Request->new(
+        brand_name => 'deriv',
+        language   => 'EN',
+        app_id     => $app_id,
+    );
+    request($req);
+
+    for my $event (@events) {
+        my $payload = {
+            loginid    => $client->loginid,
+            properties => {
+                first_name => rand(1000),
+            }};
+
+        undef @track_args;
+        no strict 'refs';
+        &{"BOM::Event::Actions::Client::$event"}($payload)->get;
+
+        my ($customer, %args) = @track_args;
+        is $args{event}, $event, "$event event name";
+        is $args{properties}{first_name}, $payload->{properties}{first_name}, "$event properties";
+        is $customer->traits->{email}, $client->email, "$event customer email";
+    }
+
+};
+
 done_testing();
