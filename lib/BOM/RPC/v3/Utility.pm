@@ -1281,6 +1281,12 @@ sub set_trading_password_new_account {
     if (my $current_password = $client->user->trading_password) {
         return validate_password_with_attempts($trading_password, $current_password, $client->loginid);
     } else {
+        my $error = check_password({
+            email        => $client->email,
+            new_password => $trading_password,
+        });
+        die $error->{error} if $error;
+
         $client->user->update_trading_password($trading_password);
         return undef;
     }

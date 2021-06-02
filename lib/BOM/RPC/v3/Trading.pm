@@ -95,14 +95,30 @@ Create new account.
 
 rpc trading_platform_new_account => sub {
     my $params = shift;
+    my $client = $params->{client};
 
     try {
         my $error = BOM::RPC::v3::Utility::set_trading_password_new_account($params->{client}, $params->{args}{password});
         die +{error_code => $error} if $error;
         my $platform = BOM::TradingPlatform->new(
             platform => $params->{args}{platform},
-            client   => $params->{client});
-        return $platform->new_account($params->{args}->%*);
+            client   => $client
+        );
+
+        my $account = $platform->new_account($params->{args}->%*);
+
+        BOM::Platform::Event::Emitter::emit(
+            'trading_platform_account_created',
+            {
+                loginid    => $client->loginid,
+                properties => {
+                    first_name   => $client->first_name,
+                    login        => $account->{login},
+                    account_id   => $account->{account_id},
+                    account_type => $account->{account_type},
+                    market_type  => $account->{market_type},
+                }});
+        return $account;
     } catch ($e) {
         handle_error($e);
     }
@@ -161,14 +177,10 @@ Returns a L<Future> which resolves to C<1> on success.
 =cut
 
 async_rpc trading_platform_password_change => sub {
-    my $params      = shift;
-    my $client      = $params->{client};
-    my $brand       = request()->brand;
-    my $contact_url = $brand->contact_url({
-            source   => $params->{source},
-            language => $params->{language}});
+    my $params = shift;
 
-    my $user = $client->user;
+    my $client = $params->{client};
+    my $user   = $client->user;
 
     try {
         die +{
@@ -193,6 +205,7 @@ async_rpc trading_platform_password_change => sub {
                 user_pass    => $current_password,
             });
             die $error->{error} if $error;
+
         } else {
             die +{error_code => 'NoOldPassword'} if $old_password;
 
@@ -203,9 +216,7 @@ async_rpc trading_platform_password_change => sub {
             die $error->{error} if $error;
         }
 
-        change_platform_passwords($client, $new_password, $contact_url, $brand)->get;
-        $user->update_trading_password($new_password);
-
+        change_platform_passwords($new_password, 'change', $params);
         return Future->done(1);
     } catch ($e) {
         return Future->fail(handle_error($e));
@@ -224,11 +235,7 @@ Returns a L<Future> which resolves to C<1> on success.
 
 async_rpc trading_platform_password_reset => auth => [],
     sub {
-    my $params      = shift;
-    my $brand       = request()->brand;
-    my $contact_url = $brand->contact_url({
-            source   => $params->{source},
-            language => $params->{language}});
+    my $params = shift;
 
     try {
         my $password = delete $params->{args}{new_password};
@@ -247,6 +254,7 @@ async_rpc trading_platform_password_reset => auth => [],
         die $error->{error} if $error;
 
         my $user = BOM::User->new(email => $email);
+        $params->{client} = $user->get_default_client();
 
         die +{
             error_code        => 'PlatformPasswordChangeSuspended',
@@ -254,10 +262,7 @@ async_rpc trading_platform_password_reset => auth => [],
             }
             if $user->dxtrade_loginids and BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend->all;
 
-        change_platform_passwords($user->get_default_client(), $password, $contact_url, $brand)->get;
-
-        $user->update_trading_password($password);
-
+        change_platform_passwords($password, 'reset', $params);
         return Future->done(1);
     } catch ($e) {
         return Future->fail(handle_error($e));
@@ -290,23 +295,7 @@ async_rpc trading_platform_investor_password_change => sub {
         });
         die +{code => $error} if $error;
 
-        my $platform = BOM::TradingPlatform->new(
-            platform => $params->{args}{platform},
-            client   => $client
-        );
-
-        $platform->change_investor_password(
-            old_password => $old_password,
-            new_password => $new_password,
-            account_id   => $account_id
-        )->get;
-
-        BOM::Platform::Event::Emitter::emit(
-            'mt5_password_changed',
-            {
-                loginid     => $client->loginid,
-                mt5_loginid => $account_id
-            });
+        change_investor_password($client, $account_id, $old_password, $new_password, 'change', $params);
 
         return Future->done(1);
     } catch ($e) {
@@ -347,40 +336,7 @@ async_rpc trading_platform_investor_password_reset => auth => [],
         });
         die +{code => $error} if $error;
 
-        my $platform = BOM::TradingPlatform->new(
-            platform => $params->{args}{platform},
-            client   => $client
-        );
-
-        $platform->change_investor_password(
-            new_password => $password,
-            account_id   => $account_id
-        )->get;
-
-        my $brand        = request()->brand;
-        my $contact_url  = $brand->contact_url($params);
-        my $account_info = $platform->get_account_info($account_id)->get;
-
-        send_email({
-                from    => Brands->new(name => $brand)->emails('support'),
-                to      => $email,
-                subject => $brand->name eq 'deriv'
-                ? localize('Your new DMT5 account investor password')
-                : localize('Your MT5 investor password has been reset.'),
-                template_name => 'mt5_password_reset_notification',
-                template_args => {
-                    name                 => $client->first_name,
-                    title                => localize("You've got a new password"),
-                    loginid              => $account_id,
-                    email                => $email,
-                    contact_url          => $contact_url,
-                    is_investor_password => 1
-                },
-                use_event             => 1,
-                use_email_template    => 1,
-                email_content_is_html => 1,
-                template_loginid      => ucfirst $account_info->{account_type} . ' ' . $account_id =~ s/${\BOM::User->MT5_REGEX}//r,
-            });
+        change_investor_password($client, $account_id, undef, $password, 'reset', $params);
 
         return Future->done(1);
     } catch ($e) {
@@ -511,99 +467,236 @@ Changes trading password on all MT5 & DXtrader accounts.
 
 =over 4
 
-=item * C<client> (required). a user C<BOM::User::Client> instance.
+=item * C<password> (required): the new password
 
-=item * C<password> (required). the new password.
+=item * C<type> (required): change or reset
 
-=item * C<contact_url> (required). the Brand contact_url to pass to email template.
-
-=item * C<brand> (required). the Brand name to pass to email template.
+=item * C<params> (required): RPC params
 
 =back
 
-Returns Future on success, dies on error.
+Returns undef on success, dies on error.
 
 =cut
 
 sub change_platform_passwords {
-    my ($client, $password, $contact_url, $brand) = @_;
+    my ($password, $type, $params) = @_;
+
+    my $client      = $params->{client};
+    my $brand       = request()->brand;
+    my $contact_url = $brand->contact_url({
+            source   => $params->{source},
+            language => $params->{language}});
 
     my $mt5 = BOM::TradingPlatform->new(
         platform => 'mt5',
         client   => $client
     );
+
     my $dxtrade = BOM::TradingPlatform->new(
         platform => 'dxtrade',
         client   => $client
     );
 
-    return Future->needs_all($mt5->change_password(password => $password), Future->done($dxtrade->change_password(password => $password)))->else(
+    my ($updated_logins, $error_message);
+
+    Future->wait_all($mt5->change_password(password => $password), $dxtrade->change_password(password => $password),)->then(
         sub {
-            my @results = @_;
-
-            my ($failed_logins, $logins);
-            push @{$_->is_failed ? $failed_logins : $logins}, $_->is_failed ? $_->failure->{login} : $_->result->{login} for @results;
-
-            if ($failed_logins) {
-                my $failed_logins_str = join(', ', @{$failed_logins});
-                my $message_to_client =
-                    scalar(@{$failed_logins}) > 1
-                    ? localize(
-                    "Due to a network issue, we're unable to update your trading password for the following accounts: [_1]. Please wait for a few minutes before attempting to change your trading password for the above accounts.",
-                    $failed_logins_str
-                    )
-                    : localize(
-                    "Due to a network issue, we're unable to update your trading password for the following account: [_1]. Please wait for a few minutes before attempting to change your trading password for the above account.",
-                    $failed_logins_str
-                    );
-
-                send_email({
-                        to            => $client->email,
-                        subject       => localize('Unsuccessful trading password change'),
-                        template_name => 'reset_password_confirm',
-                        template_args => {
-                            email                             => $client->email,
-                            name                              => $client->first_name,
-                            title                             => localize("There was an issue with changing your trading password"),
-                            contact_url                       => $contact_url,
-                            is_trading_password_change_failed => 1,
-                            logins                            => $logins,
-                            failed_logins                     => $failed_logins
-                        },
-                        use_email_template => 1,
-                        template_loginid   => $client->loginid,
-                        use_event          => 1,
-                    });
-
-                die +{
-                    code              => 'PlatformPasswordChangeError',
-                    message_to_client => $message_to_client,
-                };
+            my $data;
+            for my $f (@_) {
+                my $result = $f->result or next;
+                push $updated_logins->{$_}->@*, $result->{$_}->@* for keys $result->%*;
             }
-        }
-    )->then(
-        sub {
-            my @results = @_;
-            my @logins  = map { $_->{login} } grep { ref $_ eq 'HASH' } @results;
+            Future->done($data);
+        })->get;
 
-            # TODO: replace send_email with bom-events
-            send_email({
-                    to            => $client->email,
-                    subject       => localize('Your [_1] trading password has been set', ucfirst($brand->name)),
-                    template_name => 'reset_password_confirm',
-                    template_args => {
-                        email               => $client->email,
-                        name                => $client->first_name,
-                        title               => localize("You've got a new trading password"),
-                        contact_url         => $contact_url,
-                        is_trading_password => 1,
-                        logins              => \@logins,
-                    },
-                    use_email_template => 1,
-                    template_loginid   => $client->loginid,
-                    use_event          => 1,
-                });
+    my ($success_mt5, $success_dx, $failed_mt5, $failed_dx) =
+        $updated_logins->@{qw/successful_mt5_logins successful_dx_logins failed_mt5_logins failed_dx_logins/};
+
+    if ($failed_mt5 or $failed_dx) {
+
+        $error_message = localize(
+            "Due to a network issue, we couldn't update the trading password for some of your accounts. Please check your email for more details.");
+
+        send_email({
+                to            => $client->email,
+                subject       => localize('Unsuccessful trading password change'),
+                template_name => 'reset_password_confirm',
+                template_args => {
+                    email                             => $client->email,
+                    name                              => $client->first_name,
+                    title                             => localize("There was an issue with changing your trading password"),
+                    contact_url                       => $contact_url,
+                    is_trading_password_change_failed => 1,
+                    successful_mt5_logins             => $success_mt5,
+                    successful_dx_logins              => $success_dx,
+                    failed_mt5_logins                 => $failed_mt5,
+                    failed_dx_logins                  => $failed_dx,
+                },
+                use_email_template => 1,
+                template_loginid   => $client->loginid,
+                use_event          => 1,
+            });
+
+        BOM::Platform::Event::Emitter::emit(
+            'trading_platform_password_change_failed',
+            {
+                loginid    => $client->loginid,
+                properties => {
+                    first_name            => $client->first_name,
+                    contact_url           => $contact_url,
+                    type                  => $type,
+                    successful_mt5_logins => $success_mt5,
+                    successful_dx_logins  => $success_dx,
+                    failed_mt5_logins     => $failed_mt5,
+                    failed_dx_logins      => $failed_dx,
+                }});
+    } else {
+        my $successful_logins = ($success_mt5 or $success_dx);
+
+        send_email({
+                to      => $client->email,
+                subject => $brand->name eq 'deriv'
+                ? ($successful_logins ? localize('Your new trading password') : localize('Your trading password has been set'))
+                : localize('Your Binary trading password has been set'),
+                template_name => 'reset_password_confirm',
+                template_args => {
+                    email               => $client->email,
+                    name                => $client->first_name,
+                    title               => $successful_logins ? localize("You've got a new password") : localize("You've got a new trading password"),
+                    contact_url         => $contact_url,
+                    is_trading_password => 1,
+                    mt5_logins          => $success_mt5,
+                    dx_logins           => $success_dx,
+                },
+                use_email_template => 1,
+                template_loginid   => $client->loginid,
+                use_event          => 1,
+            });
+
+        BOM::Platform::Event::Emitter::emit(
+            'trading_platform_password_changed',
+            {
+                loginid    => $client->loginid,
+                properties => {
+                    first_name  => $client->first_name,
+                    contact_url => $contact_url,
+                    type        => $type,
+                    mt5_logins  => $success_mt5,
+                    dx_logins   => $success_dx,
+                }});
+    }
+
+    # If all accounts failed, we we won't update password on our side
+    $client->user->update_trading_password($password) unless ($failed_mt5 or $failed_dx) and not($success_mt5 or $success_dx);
+
+    die +{
+        code              => 'PlatformPasswordChangeError',
+        message_to_client => $error_message,
+    } if $error_message;
+
+    return;
+}
+
+=head2 change_investor_password
+
+Common code to handle MT5 investor password change.
+
+=over 4
+
+=item * C<client> (required): Client instance
+
+=item * C<account_id> (required): MT5 account id
+
+=item * C<old_password> (required): the old password
+
+=item * C<new_password> (required): the new password
+
+=item * C<type> (required): change or reset
+
+=item * C<params> (required): RPC params
+
+=back
+
+Returns undef on success, dies on error.
+
+=cut
+
+sub change_investor_password {
+    my ($client, $account_id, $old_password, $new_password, $type, $params) = @_;
+
+    my $brand       = request()->brand;
+    my $contact_url = $brand->contact_url({
+            source   => $params->{source},
+            language => $params->{language}});
+
+    my $platform = BOM::TradingPlatform->new(
+        platform => 'mt5',
+        client   => $client
+    );
+
+    $platform->change_investor_password(
+        old_password => $old_password,
+        new_password => $new_password,
+        account_id   => $account_id
+    )->else(
+        sub {
+
+            BOM::Platform::Event::Emitter::emit(
+                'trading_platform_investor_password_change_failed',
+                {
+                    loginid    => $client->loginid,
+                    properties => {
+                        first_name  => $client->first_name,
+                        contact_url => $contact_url,
+                        type        => $type,
+                        login       => $account_id,
+                    }});
+
+            die +{
+                code              => 'PlatformInvestorPasswordChangeError',
+                message_to_client => localize(
+                    "Due to a network issue, we're unable to update your investor password for the following account: [_1]. Please wait for a few minutes before attempting to change your investor password for the above account.",
+                    $account_id
+                )};
+        })->get;
+
+    my $account_info = $platform->get_account_info($account_id)->get;
+    my $email        = $client->email;
+
+    send_email({
+            from    => $brand->emails('support'),
+            to      => $email,
+            subject => $brand->name eq 'deriv'
+            ? localize('Your new DMT5 account investor password')
+            : ($type eq 'change' ? localize('Your MT5 investor password has been changed.') : localize('Your MT5 investor password has been reset.')),
+            template_name => 'mt5_password_reset_notification',
+            template_args => {
+                name                 => $client->first_name,
+                title                => localize("You've got a new password"),
+                loginid              => $account_id,
+                email                => $email,
+                contact_url          => $contact_url,
+                is_investor_password => 1
+            },
+            use_event             => 1,
+            use_email_template    => 1,
+            email_content_is_html => 1,
+            template_loginid      => ucfirst $account_info->{account_type} . ' ' . $account_id =~ s/${\BOM::User->MT5_REGEX}//r,
         });
+
+    BOM::Platform::Event::Emitter::emit(
+        'trading_platform_investor_password_changed',
+        {
+            loginid    => $client->loginid,
+            properties => {
+                first_name  => $client->first_name,
+                contact_url => $contact_url,
+                type        => $type,
+                login       => $account_id,
+            }});
+
+    return;
 }
 
 1;

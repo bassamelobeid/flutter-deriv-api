@@ -18,6 +18,10 @@ BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend->all(0);
 
 my $c = BOM::Test::RPC::QueueClient->new();
 
+my $last_event;
+my $mock_events = Test::MockModule->new('BOM::Platform::Event::Emitter');
+$mock_events->mock('emit', sub { $last_event = \@_ });
+
 subtest 'dxtrader accounts' => sub {
     my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR'});
 
@@ -37,7 +41,7 @@ subtest 'dxtrader accounts' => sub {
 
     $params->{args} = {
         platform => 'xxx',
-        password => 'test',
+        password => 'Abcd1234',
     };
     $c->call_ok('trading_platform_new_account', $params)->has_no_system_error->has_error->error_code_is('TradingPlatformError', 'bad params');
 
@@ -53,12 +57,30 @@ subtest 'dxtrader accounts' => sub {
         platform     => 'dxtrade',
         account_type => 'demo',
         market_type  => 'financial',
-        password     => 'test',
+        password     => 'Abcd1234',
         currency     => 'USD',
     };
 
     my $acc = $c->call_ok('trading_platform_new_account', $params)->has_no_system_error->has_no_error->result;
-    ok BOM::User::Password::checkpw('test', $client->user->trading_password), 'trading password was set';
+
+    cmp_deeply(
+        $last_event,
+        [
+            'trading_platform_account_created',
+            {
+                loginid    => $client->loginid,
+                properties => {
+                    account_type => 'demo',
+                    market_type  => 'financial',
+                    account_id   => $acc->{account_id},
+                    login        => $acc->{login},
+                    first_name   => $client->first_name,
+                }}
+        ],
+        'new account event emitted'
+    );
+
+    ok BOM::User::Password::checkpw('Abcd1234', $client->user->trading_password), 'trading password was set';
 
     BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend->all(1);
 
@@ -86,7 +108,7 @@ subtest 'dxtrader accounts' => sub {
         platform     => 'dxtrade',
         account_type => 'real',
         market_type  => 'financial',
-        password     => 'test',
+        password     => 'Abcd1234',
     };
     my $acc2 = $c->call_ok('trading_platform_new_account', $params)->has_no_system_error->has_no_error('create 2nd account')->result;
 
@@ -307,7 +329,7 @@ subtest 'new account rules failure scenarios' => sub {
             platform     => 'dxtrade',
             account_type => 'real',
             market_type  => 'financial',
-            password     => 'test',
+            password     => 'Abcd1234',
             currency     => 'USD',
         },
     };

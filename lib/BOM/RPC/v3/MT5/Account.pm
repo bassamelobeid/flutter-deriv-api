@@ -1042,7 +1042,9 @@ async_rpc "mt5_new_account",
                                 if ref $group_details eq 'HASH' and $group_details->{error};
 
                             unless ($client->user->trading_password) {
+                                # Save new trading password once we have successfully created a new account
                                 $client->user->update_trading_password($trading_password);
+
                                 BOM::Platform::Email::send_email({
                                         to            => $client->email,
                                         subject       => localize('Your [_1] trading password has been set', ucfirst($brand->name)),
@@ -1053,7 +1055,7 @@ async_rpc "mt5_new_account",
                                             title               => localize("You've got a new trading password"),
                                             contact_url         => $contact_url,
                                             is_trading_password => 1,
-                                            logins              => [$mt5_login],
+                                            mt5_logins          => [$mt5_login],
                                         },
                                         use_email_template => 1,
                                         template_loginid   => $client->loginid,

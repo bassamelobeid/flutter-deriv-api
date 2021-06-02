@@ -178,21 +178,33 @@ rpc "verify_email",
         }
         request_email($email, $verification->{payment_withdraw}->());
     } elsif ($existing_user and $type eq 'trading_platform_password_reset') {
-        # TODO: replace with bom-events
-        request_email($email, $verification->{trading_platform_password_reset}->());
+        my $verification = $verification->{trading_platform_password_reset}->();
+        request_email($email, $verification);
 
-        # my $data = $verification->{trading_platform_password_reset}->();
-        # BOM::Platform::Event::Emitter::emit(
-        #     'trading_platform_password_reset_request',
-        #     {
-        #         loginid          => $existing_user->get_default_client->loginid,
-        #         verification_url => $data->{verification_url} // '',
-        #         first_name       => $existing_user->get_default_client->first_name,
-        #         email            => $email,
-        #         language         => $params->{language},
-        #     });
+        BOM::Platform::Event::Emitter::emit(
+            'trading_platform_password_reset_request',
+            {
+                loginid    => $existing_user->get_default_client->loginid,
+                properties => {
+                    first_name       => $existing_user->get_default_client->first_name,
+                    verification_url => $verification->{template_args}{verification_url},
+                    code             => $verification->{template_args}{code},
+                },
+            });
     } elsif ($existing_user and $type eq 'trading_platform_investor_password_reset') {
-        request_email($email, $verification->{trading_platform_investor_password_reset}->());
+        my $verification = $verification->{trading_platform_investor_password_reset}->();
+        request_email($email, $verification);
+
+        BOM::Platform::Event::Emitter::emit(
+            'trading_platform_investor_password_reset_request',
+            {
+                loginid    => $existing_user->get_default_client->loginid,
+                properties => {
+                    first_name       => $existing_user->get_default_client->first_name,
+                    verification_url => $verification->{template_args}{verification_url},
+                    code             => $verification->{template_args}{code},
+                },
+            });
     }
 
     # always return 1, so not to leak client's email

@@ -219,11 +219,11 @@ sub email_verification {
         },
         trading_platform_password_reset => sub {
             return {
-                subject       => localize('Get a new trading account password'),
+                subject       => localize('Your new trading password request'),
                 template_name => 'reset_password_request',
                 template_args => {
                     name          => $name,
-                    title         => localize("Forgot your trading password? Let's get you a new one."),
+                    title         => localize("Forgot your trading password?[_1]Let's get you a new one.", '<br>'),
                     title_padding => 50,
                     brand_name    => ucfirst $brand->name,
                     (
@@ -238,16 +238,16 @@ sub email_verification {
         },
         trading_platform_investor_password_reset => sub {
             return {
-                subject       => localize('Get a new trading account investor password'),
+                subject => $brand->name eq 'deriv' ? localize('Your new DMT5 investor password request')
+                : localize('Your new MT5 investor password request'),
                 template_name => 'reset_password_request',
                 template_args => {
                     name          => $name,
-                    title         => localize("Forgot your investor password? Let's get you a new one."),
+                    title         => localize("Forgot your investor password?[_1]Let's get you a new one.", '<br>'),
                     title_padding => 50,
                     brand_name    => ucfirst $brand->name,
                     (
-                        $verification_uri
-                        ? (verification_url => _build_verification_url('trading_platform_investor_password_reset', $args))
+                        $verification_uri ? (verification_url => _build_verification_url('trading_platform_investor_password_reset', $args))
                         : ()
                     ),
                     is_investor_password => 1,

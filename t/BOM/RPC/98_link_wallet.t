@@ -101,7 +101,6 @@ subtest 'link_wallet' => sub {
         };
 
         my $result = $c->tcall('trading_platform_new_account', $params);
-
         $params->{args}->{wallet_id} = $vr_wallet->loginid;
         $params->{args}->{client_id} = $result->{account_id};
 

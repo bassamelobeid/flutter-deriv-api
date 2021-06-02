@@ -57,7 +57,7 @@ subtest 'platform deposit and withdrawal' => sub {
         platform     => 'dxtrade',
         account_type => 'demo',
         market_type  => 'financial',
-        password     => 'test',
+        password     => 'Abcd1234',
         currency     => 'USD',
     };
     $dx_demo = $c->call_ok('trading_platform_new_account', $params)->result;
@@ -66,7 +66,7 @@ subtest 'platform deposit and withdrawal' => sub {
         platform     => 'dxtrade',
         account_type => 'real',
         market_type  => 'financial',
-        password     => 'test',
+        password     => 'Abcd1234',
         currency     => 'USD',
     };
     $dx_real = $c->call_ok('trading_platform_new_account', $params)->result;
@@ -75,7 +75,7 @@ subtest 'platform deposit and withdrawal' => sub {
         platform     => 'dxtrade',
         account_type => 'real',
         market_type  => 'gaming',
-        password     => 'test',
+        password     => 'Abcd1234',
         currency     => 'USD',
     };
     $dx_synthetic = $c->call_ok('trading_platform_new_account', $params)->result;
