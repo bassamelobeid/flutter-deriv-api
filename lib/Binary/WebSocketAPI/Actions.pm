@@ -237,14 +237,21 @@ sub actions_config {
                 msg_group => 'mt5_hybrid',
             }
         ],
-        ['paymentagent_list', {stash_params => [qw/ token /]}],
-        ['payment_methods',   {stash_params => [qw/ token /]}],
+        [
+            'paymentagent_list',
+            {
+                stash_params => [qw/ token /],
+                msg_group    => 'payment',
+            }
+        ],
+        ['payment_methods', {stash_params => [qw/ token /]}],
         [
             'paymentagent_withdraw',
             {
                 error        => \&Binary::WebSocketAPI::v3::Wrapper::Cashier::log_paymentagent_error,
                 response     => Binary::WebSocketAPI::v3::Wrapper::Cashier::get_response_handler('paymentagent_withdraw'),
                 stash_params => [qw/ server_name /],
+                msg_group    => 'payment',
             }
         ],
         [
@@ -253,6 +260,7 @@ sub actions_config {
                 error        => \&Binary::WebSocketAPI::v3::Wrapper::Cashier::log_paymentagent_error,
                 response     => Binary::WebSocketAPI::v3::Wrapper::Cashier::get_response_handler('paymentagent_transfer'),
                 stash_params => [qw/ server_name /],
+                msg_group    => 'payment',
             }
         ],
         [
@@ -264,12 +272,23 @@ sub actions_config {
                 msg_group    => 'mt5_hybrid',
             }
         ],
-        ['paymentagent_details'],
-        ['paymentagent_create'],
+        [
+            'paymentagent_details',
+            {
+                msg_group => 'payment',
+            },
+        ],
+        [
+            'paymentagent_create',
+            {
+                msg_group => 'payment',
+            },
+        ],
         [
             'cashier',
             {
                 stash_params => [qw/ server_name domain /],
+                msg_group    => 'payment',
             }
         ],
         [
