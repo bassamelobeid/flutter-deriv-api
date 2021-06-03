@@ -674,7 +674,7 @@ sub _build_current_spot {
 sub _build_current_tick {
     my $self = shift;
 
-    return $self->underlying->spot_tick;
+    return $self->_tick_accessor->spot_tick;
 }
 
 sub _build_opposite_contract_for_sale {
