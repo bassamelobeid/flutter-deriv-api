@@ -3,6 +3,8 @@ use warnings;
 
 use Test::Deep;
 use Test::More;
+use Log::Any::Test;
+use Log::Any qw($log);
 use Test::MockModule;
 use Test::Warnings qw/warnings/;
 use Future;
@@ -16,6 +18,9 @@ use BOM::Config::Redis;
 use JSON::MaybeUTF8 qw(encode_json_utf8);
 use BOM::Event::Actions::Client;
 use Locale::Country qw/code2country/;
+use Ryu::Source;
+use HTTP::Response;
+use WebService::Async::Onfido::Applicant;
 
 my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'CR',
@@ -308,6 +313,162 @@ subtest 'Unsupported country email' => sub {
         }
     }
 };
+
+subtest 'Applicant Check' => sub {
+    my $ryu_mock = Test::MockModule->new('Ryu::Source');
+
+    $onfido_mocker->mock(
+        'photo_list',
+        sub {
+            return Ryu::Source->new;
+        });
+
+    $ryu_mock->mock(
+        'as_list',
+        sub {
+            return Future->done();
+        });
+
+    $event_mocker->mock(
+        '_update_onfido_check_count',
+        sub {
+            return Future->done();
+        });
+
+    $event_mocker->mock(
+        '_update_onfido_user_check_count',
+        sub {
+            return Future->done();
+        });
+
+    $log->clear();
+    BOM::Event::Actions::Client::_check_applicant(undef, BOM::Event::Actions::Client::_onfido(),
+        'mocked-applicant-id', undef, $test_client->loginid, undef, undef, $test_client)->get;
+    $log->contains_ok(qr/applicant mocked-applicant-id does not have live photos/, 'expected log found');
+
+    my %request;
+    $onfido_mocker->mock(
+        'applicant_check',
+        sub {
+            (undef, %request) = @_;
+            my $res = HTTP::Response->new(422);
+            $res->content('{"error":"awful result"}');
+            return Future->fail('something awful', undef, $res);
+        });
+
+    $ryu_mock->mock(
+        'as_list',
+        sub {
+            return Future->done(1, 2, 3);
+        });
+
+    $log->clear();
+    BOM::Event::Actions::Client::_check_applicant(undef, BOM::Event::Actions::Client::_onfido(),
+        'mocked-applicant-id', 'CR', $test_client->loginid, 'BRA', undef, $test_client)->get;
+    $log->contains_ok(qr/An error occurred while processing Onfido verification for/, 'expected log found');
+
+    cmp_deeply \%request,
+        {
+        suppress_form_emails => 1,
+        type                 => 'express',
+        tags                 => ['automated', 'CR', $test_client->loginid, 'BRA', 'brand:deriv'],
+        async                => 1,
+        applicant_id         => 'mocked-applicant-id',
+        reports              => [{
+                name => 'document',
+            },
+            {
+                name    => 'facial_similarity',
+                variant => 'standard'
+            }]
+        },
+        'Expected request for applicant check';
+
+    $event_mocker->unmock('_update_onfido_check_count');
+    $event_mocker->unmock('_update_onfido_user_check_count');
+    $onfido_mocker->unmock('applicant_check');
+    $onfido_mocker->unmock('photo_list');
+    $ryu_mock->unmock_all;
+};
+
+subtest 'Upload document' => sub {
+    my %request;
+    $event_mocker->mock(
+        '_get_applicant_and_file',
+        sub {
+            return Future->done(
+                WebService::Async::Onfido::Applicant->new(
+                    id => 'appl',
+                ),
+                'big blob'
+            );
+        });
+    $onfido_mocker->mock(
+        'live_photo_upload',
+        sub {
+            (undef, %request) = @_;
+            my $res = HTTP::Response->new(422);
+            $res->content('{"error":"awful result"}');
+            return Future->fail('test1', 'test2', $res);
+        });
+    $onfido_mocker->mock(
+        'document_upload',
+        sub {
+            (undef, %request) = @_;
+            my $res = HTTP::Response->new(422);
+            $res->content('{"error":"awful result"}');
+            return Future->fail('test1', 'test2', $res);
+        });
+
+    my $args = {
+        onfido         => BOM::Event::Actions::Client::_onfido(),
+        client         => $test_client,
+        document_entry => {file_name => '124112412.passport.front.png'},
+        file_data      => {
+
+        },
+    };
+
+    $log->clear();
+    BOM::Event::Actions::Client::_upload_documents($args->%*)->get;
+
+    $log->contains_ok(qr/An error occurred while uploading document to Onfido for/, 'expected log found');
+    cmp_deeply \%request,
+        {
+        data            => 'big blob',
+        type            => 'passport',
+        filename        => '124112412.passport.front.png',
+        side            => 'front',
+        issuing_country => 'ATA',
+        applicant_id    => 'appl',
+        },
+        'Expected request for document';
+
+    $args = {
+        onfido         => BOM::Event::Actions::Client::_onfido(),
+        client         => $test_client,
+        document_entry => {file_name => '124112412.selfie_with_id.photo.png'},
+        file_data      => {
+
+        },
+    };
+    $log->clear();
+    BOM::Event::Actions::Client::_upload_documents($args->%*)->get;
+
+    $log->contains_ok(qr/An error occurred while uploading document to Onfido for/, 'expected log found');
+    cmp_deeply \%request,
+        {
+        data         => 'big blob',
+        filename     => '124112412.selfie_with_id.photo.png',
+        applicant_id => 'appl',
+        },
+        'Expected request for selfie';
+
+    $event_mocker->unmock('_get_applicant_and_file');
+    $onfido_mocker->unmock('document_upload');
+    $onfido_mocker->unmock('live_photo_upload');
+};
+
 $s3_mocker->unmock_all;
 
 done_testing();

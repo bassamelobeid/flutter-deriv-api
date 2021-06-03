@@ -203,6 +203,20 @@ subtest 'upload document' => sub {
 
 my $check;
 subtest "ready for run authentication" => sub {
+    my $ryu_mock      = Test::MockModule->new('Ryu::Source');
+    my $onfido_mocker = Test::MockModule->new('WebService::Async::Onfido');
+
+    $onfido_mocker->mock(
+        'photo_list',
+        sub {
+            return Ryu::Source->new;
+        });
+
+    $ryu_mock->mock(
+        'as_list',
+        sub {
+            return Future->done(1, 2, 3);
+        });
     $test_client->status->clear_age_verification;
     $loop->add(my $services = BOM::Event::Services->new);
     my $redis        = $services->redis_events_write();
@@ -229,6 +243,8 @@ subtest "ready for run authentication" => sub {
 
     my $applicant_context = $redis_r_read->exists(BOM::Event::Actions::Client::ONFIDO_APPLICANT_CONTEXT_HOLDER_KEY . $applicant_id);
     ok $applicant_context, 'request context of applicant is present in redis';
+    $onfido_mocker->unmock_all;
+    $ryu_mock->unmock_all;
 };
 
 my $services;

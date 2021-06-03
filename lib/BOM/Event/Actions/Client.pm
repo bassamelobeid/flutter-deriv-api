@@ -1912,17 +1912,20 @@ async sub _upload_documents {
         $type = 'live_photo' if $side eq 'photo';
 
         my $future_upload_item;
+        my %request;
 
         if ($type eq 'live_photo') {
-            $future_upload_item = $onfido->live_photo_upload(
+            %request = (
                 applicant_id => $applicant->id,
                 data         => $file_data,
                 filename     => $document_entry->{file_name},
             );
+
+            $future_upload_item = $onfido->live_photo_upload(%request);
         } else {
             # We already checked country when _get_applicant_and_file
             my $country = country_code2code($client->place_of_birth || $client->residence, 'alpha-2', 'alpha-3') // '';
-            $future_upload_item = $onfido->document_upload(
+            %request = (
                 applicant_id    => $applicant->id,
                 data            => $file_data,
                 filename        => $document_entry->{file_name},
@@ -1930,6 +1933,8 @@ async sub _upload_documents {
                 side            => $side,
                 type            => $type,
             );
+
+            $future_upload_item = $onfido->document_upload(%request);
         }
 
         $future_upload_item->on_fail(
@@ -1940,7 +1945,12 @@ async sub _upload_documents {
 
                 # details is in res, req form
                 my ($res) = @details;
-                local $log->context->{place_of_birth} = $client->place_of_birth // 'unknown';
+                local $log->context->{place_of_birth}             = $client->place_of_birth || $client->residence // 'unknown';
+                local $log->context->{uploaded_manually_by_staff} = $args{uploaded_manually_by_staff} ? 1 : 0;
+
+                delete $request{data};
+                local $log->context->{request} = encode_json_utf8(\%request);
+
                 $log->errorf('An error occurred while uploading document to Onfido for %s : %s with response %s ',
                     $client->loginid, $err, ($res ? $res->content : ''));
 
@@ -1975,10 +1985,15 @@ async sub _check_applicant {
     my ($args, $onfido, $applicant_id, $broker, $loginid, $residence, $redis_events_write, $client, $documents) = @_;
 
     try {
+        my @live_photos = await $onfido->photo_list(applicant_id => $applicant_id)->as_list;
+
+        # logs do often report 422 errors, this may be due to lack of live photo uploaded,
+        # if the client has live photos but we still hitting 422 in the logs, we can confirm
+        # our `applicant_check` call is buggy, otherwise we'll keep digging.
+        die "applicant $applicant_id does not have live photos" unless scalar @live_photos;
+
         my $error_type;
-
-        my $future_applicant_check = $onfido->applicant_check(
-
+        my %request = (
             applicant_id => $applicant_id,
             # We don't want Onfido to start emailing people
             suppress_form_emails => 1,
@@ -2009,7 +2024,9 @@ async sub _check_applicant {
             # The type is always "express" since we are sending data via API.
             # https://documentation.onfido.com/#check-types
             type => 'express',
-        )->on_fail(
+        );
+
+        my $future_applicant_check = $onfido->applicant_check(%request)->on_fail(
             sub {
                 my (undef, undef, $response) = @_;
 
@@ -2020,6 +2037,7 @@ async sub _check_applicant {
                         $loginid);
                     $args->{is_pending} = 1;
                 } else {
+                    local $log->context->{request} = encode_json_utf8(\%request);
                     $log->errorf('An error occurred while processing Onfido verification for %s : %s', $loginid, join(' ', @_));
                 }
             }
