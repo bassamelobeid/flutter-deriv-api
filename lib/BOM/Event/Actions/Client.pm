@@ -1087,8 +1087,8 @@ async sub _address_verification {
     my %details = (
         freeform => $freeform,
         country  => uc(country_code2code($client->residence, 'alpha-2', 'alpha-3')),
-        # Need to pass this if you want to do verification
-        geocode => 'true',
+        # We'll pick the proper license per client residence
+        license => _smarty_license($client),
     );
     $log->debugf('Address details %s', \%details);
 
@@ -1145,6 +1145,37 @@ async sub _address_verification {
     DataDog::DogStatsd::Helper::stats_inc('event.address_verification.recorded.redis');
 
     return;
+}
+
+=head2 _smarty_license
+
+Determines the license for the given client.
+
+This computation depends on the residence of the client.
+
+It takes the following params:
+
+=over 4
+
+=item * C<$client> - the L<BOM::User::Client> instance.
+
+=back
+
+Returns the proper license as string.
+
+=cut
+
+sub _smarty_license {
+    my ($client)  = @_;
+    my $residence = lc($client->residence // '');
+    my $config    = BOM::Config::third_party()->{smartystreets};
+    my ($licenses, $countries) = @{$config}{qw/licenses countries/};
+
+    for my $license (keys $countries->%*) {
+        return $licenses->{$license} if any { $_ eq $residence } $countries->{$license}->@*;
+    }
+
+    return $licenses->{basic};
 }
 
 async sub _get_onfido_applicant {

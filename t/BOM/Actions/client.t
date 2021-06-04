@@ -5,6 +5,7 @@ use Future;
 use Test::More;
 use Test::Exception;
 use Test::MockModule;
+use Test::Fatal;
 use Test::Deep;
 use Guard;
 use Log::Any::Test;
@@ -21,6 +22,10 @@ use BOM::Platform::Context qw(request);
 use WebService::Async::Onfido;
 use BOM::Event::Actions::Client;
 use BOM::Event::Process;
+
+use WebService::Async::SmartyStreets::Address;
+use Encode qw(encode_utf8);
+use Locale::Codes::Country qw(country_code2code);
 
 my $brand = Brands->new(name => 'deriv');
 my ($app_id) = $brand->whitelist_apps->%*;
@@ -1792,6 +1797,334 @@ subtest 'POA email notification' => sub {
 
     $msg = mailbox_search(subject => qr/New uploaded POA document for/);
     ok $msg, 'Second email sent';
+};
+
+subtest 'verify address' => sub {
+    my $client_mock = Test::MockModule->new('BOM::User::Client');
+    my $residence;
+
+    $client_mock->mock(
+        'residence',
+        sub {
+            return $residence;
+        });
+
+    my $licenses = {
+        au   => 'international-global-plus-cloud',
+        jp   => 'international-global-plus-cloud',
+        de   => 'international-global-plus-cloud',
+        in   => 'international-global-plus-cloud',
+        gb   => 'international-global-plus-cloud',
+        ''   => 'international-select-basic-cloud',
+        'py' => 'international-select-basic-cloud',
+        'us' => 'international-select-basic-cloud',
+        'tz' => 'international-select-basic-cloud',
+        'zw' => 'international-select-basic-cloud',
+        'za' => 'international-select-basic-cloud',
+    };
+
+    subtest 'licenses' => sub {
+        for my $country_code (keys $licenses->%*) {
+            $residence = $country_code;
+
+            is BOM::Event::Actions::Client::_smarty_license($test_client), $licenses->{$residence}, "Expected license for '$country_code'";
+        }
+
+        # undef should yield the cheaper license
+        $residence = undef;
+        is BOM::Event::Actions::Client::_smarty_license($test_client), $licenses->{''}, "Expected license for 'undef'";
+    };
+
+    $residence = 'br';
+    my $events_mock  = Test::MockModule->new('BOM::Event::Actions::Client');
+    my $dd_mock      = Test::MockModule->new('DataDog::DogStatsd::Helper');
+    my $redis_mock   = Test::MockModule->new('Net::Async::Redis');
+    my $smarty_mock  = Test::MockModule->new('WebService::Async::SmartyStreets');
+    my $address_mock = Test::MockModule->new('WebService::Async::SmartyStreets::Address');
+
+    my $address_verification_future;
+    my $fully_authenticated;
+    my $has_deposits;
+    my $dd_bag;
+    my $check_already_performed;
+    my $verify_details;
+    my $verify_future;
+    my $address_status;
+    my $address_accuracy_at_least;
+    my $redis_hset_data;
+
+    $address_mock->mock(
+        'address_precision',
+        sub {
+            return 'awful';
+        });
+
+    $address_mock->mock(
+        'accuracy_at_least',
+        sub {
+            return $address_accuracy_at_least;
+        });
+
+    $address_mock->mock(
+        'status',
+        sub {
+            return $address_status;
+        });
+
+    $smarty_mock->mock(
+        'verify',
+        sub {
+            my (undef, %args) = @_;
+            $verify_details = {%args};
+            return $verify_future;
+        });
+
+    $redis_mock->mock(
+        'hget',
+        sub {
+            return Future->done($check_already_performed);
+        });
+
+    $redis_mock->mock(
+        'hset',
+        sub {
+            my (undef, $hash, $key, $val) = @_;
+            $redis_hset_data->{$hash}->{$key} = $val;
+            return Future->done();
+        });
+
+    $dd_mock->mock(
+        'stats_inc',
+        sub {
+            my ($event, $args) = @_;
+            $dd_bag->{$event} = $args;
+            return;
+        });
+
+    $client_mock->mock(
+        'has_deposits',
+        sub {
+            return $has_deposits;
+        });
+
+    $client_mock->mock(
+        'fully_authenticated',
+        sub {
+            return $fully_authenticated;
+        });
+
+    $events_mock->mock(
+        '_address_verification',
+        sub {
+            return $address_verification_future // $events_mock->original('_address_verification')->(@_);
+        });
+
+    my $handler   = BOM::Event::Process::get_action_mappings()->{verify_address};
+    my $call_args = {};
+
+    like exception { $handler->($call_args)->get }, qr/No client login ID supplied\?/, 'Expected exception for empty args';
+
+    $call_args->{loginid} = 'CR0';
+    like exception { $handler->($call_args)->get }, qr/Could not instantiate client for login ID CR0/,
+        'Expected exception when bogus loginid is given';
+
+    $call_args->{loginid} = $test_client->loginid;
+    $has_deposits         = 0;
+    $fully_authenticated  = 0;
+    $dd_bag               = {};
+
+    is exception { $handler->($call_args)->get }, undef, 'The event made it alive';
+    cmp_deeply $dd_bag,
+        {
+        'event.address_verification.request' => undef,
+        },
+        'Expected data for the data pooch';
+
+    $address_verification_future = Future->done;
+    $has_deposits                = 1;
+    $fully_authenticated         = 0;
+    $dd_bag                      = {};
+
+    is exception { $handler->($call_args)->get }, undef, 'The event made it alive';
+    cmp_deeply $dd_bag,
+        {
+        'event.address_verification.request'   => undef,
+        'event.address_verification.triggered' => {tags => ['verify_address:deposits']},
+        },
+        'Expected data for the data pooch';
+
+    $address_verification_future = Future->fail('testing it');
+    $has_deposits                = 1;
+    $fully_authenticated         = 0;
+    $dd_bag                      = {};
+
+    is exception { $handler->($call_args)->get }, undef, 'The event made it alive';
+    cmp_deeply $dd_bag,
+        {
+        'event.address_verification.request'   => undef,
+        'event.address_verification.triggered' => {tags => ['verify_address:deposits']},
+        'event.address_verification.exception' => {tags => ['verify_address:deposits']}
+        },
+        'Expected data for the data pooch';
+
+    $address_verification_future = Future->done;
+    $has_deposits                = 0;
+    $fully_authenticated         = 1;
+    $dd_bag                      = {};
+
+    is exception { $handler->($call_args)->get }, undef, 'The event made it alive';
+    cmp_deeply $dd_bag,
+        {
+        'event.address_verification.request'   => undef,
+        'event.address_verification.triggered' => {tags => ['verify_address:authenticated']}
+        },
+        'Expected data for the data pooch';
+
+    $address_verification_future = Future->fail('testing it');
+    $has_deposits                = 0;
+    $fully_authenticated         = 1;
+    $dd_bag                      = {};
+
+    is exception { $handler->($call_args)->get }, undef, 'The event made it alive';
+    cmp_deeply $dd_bag,
+        {
+        'event.address_verification.request'   => undef,
+        'event.address_verification.triggered' => {tags => ['verify_address:authenticated']},
+        'event.address_verification.exception' => {tags => ['verify_address:authenticated']}
+        },
+        'Expected data for the data pooch';
+
+    # From this point, the test coverage reaches to _address_verification
+    # so $address_verification_future = undef
+
+    $has_deposits                = 0;
+    $fully_authenticated         = 1;
+    $dd_bag                      = {};
+    $check_already_performed     = 1;
+    $address_verification_future = undef;
+
+    is exception { $handler->($call_args)->get }, undef, 'The event made it alive';
+    cmp_deeply $dd_bag,
+        {
+        'event.address_verification.request'        => undef,
+        'event.address_verification.triggered'      => {tags => ['verify_address:authenticated']},
+        'event.address_verification.already_exists' => undef,
+        },
+        'Expected data for the data pooch';
+
+    # We're about to hit smarty streets wrapper (mocked)
+
+    $has_deposits                = 0;
+    $fully_authenticated         = 1;
+    $dd_bag                      = {};
+    $check_already_performed     = 0;
+    $address_verification_future = undef;
+    $verify_future               = Future->fail('failure');
+
+    is exception { $handler->($call_args)->get }, undef, 'The event made it alive';
+    cmp_deeply $dd_bag,
+        {
+        'event.address_verification.request'   => undef,
+        'event.address_verification.triggered' => {tags => ['verify_address:authenticated']},
+        'smartystreet.verification.trigger'    => undef,
+        'smartystreet.lookup.failure'          => undef,
+        'event.address_verification.exception' => {tags => ['verify_address:authenticated']},
+        },
+        'Expected data for the data pooch';
+
+    # verify done but $address_accuracy_at_least = 0
+    # country = au, so we'd expect an expensive license
+
+    $residence                   = 'au';
+    $has_deposits                = 0;
+    $fully_authenticated         = 1;
+    $dd_bag                      = {};
+    $check_already_performed     = 0;
+    $address_verification_future = undef;
+    $verify_future               = Future->done(WebService::Async::SmartyStreets::Address->new);
+    $address_status              = 'test';
+    $address_accuracy_at_least   = 0;
+    $redis_hset_data             = {};
+    $verify_details              = {};
+
+    is exception { $handler->($call_args)->get }, undef, 'The event made it alive';
+    cmp_deeply $dd_bag,
+        {
+        'event.address_verification.request'        => undef,
+        'event.address_verification.triggered'      => {tags => ['verify_address:authenticated']},
+        'smartystreet.verification.trigger'         => undef,
+        'smartystreet.verification.failure'         => {tags => ['verify_address:test']},
+        'smartystreet.lookup.success'               => undef,
+        'event.address_verification.recorded.redis' => undef,
+        },
+        'Expected data for the data pooch';
+
+    my $freeform = join(' ',
+        grep { length } $test_client->address_line_1,
+        $test_client->address_line_2,
+        $test_client->address_city,
+        $test_client->address_state,
+        $test_client->address_postcode);
+
+    cmp_deeply $verify_details,
+        {
+        freeform => $freeform,
+        country  => uc(country_code2code($test_client->residence, 'alpha-2', 'alpha-3')),
+        license  => 'international-global-plus-cloud',
+        },
+        'Expected verify arguments';
+
+    cmp_deeply $redis_hset_data,
+        {'ADDRESS_VERIFICATION_RESULT'
+            . $test_client->binary_user_id => {encode_utf8(join(' ', ($freeform, ($test_client->residence // '')))) => 'test'}},
+        'Expected data recorded to Redis';
+
+    # verify done and $address_accuracy_at_least = 1
+    # country = br, so we'd expect a cheap license
+
+    $residence                   = 'br';
+    $has_deposits                = 0;
+    $fully_authenticated         = 1;
+    $dd_bag                      = {};
+    $check_already_performed     = 0;
+    $address_verification_future = undef;
+    $verify_future               = Future->done(WebService::Async::SmartyStreets::Address->new);
+    $address_status              = 'awesome';
+    $address_accuracy_at_least   = 1;
+    $redis_hset_data             = {};
+    $verify_details              = {};
+
+    is exception { $handler->($call_args)->get }, undef, 'The event made it alive';
+    cmp_deeply $dd_bag,
+        {
+        'event.address_verification.request'        => undef,
+        'event.address_verification.triggered'      => {tags => ['verify_address:authenticated']},
+        'smartystreet.verification.trigger'         => undef,
+        'smartystreet.verification.success'         => {tags => ['verify_address:awesome']},
+        'smartystreet.lookup.success'               => undef,
+        'event.address_verification.recorded.redis' => undef,
+        },
+        'Expected data for the data pooch';
+
+    cmp_deeply $verify_details,
+        {
+        freeform => $freeform,
+        country  => uc(country_code2code($test_client->residence, 'alpha-2', 'alpha-3')),
+        license  => 'international-select-basic-cloud',
+        },
+        'Expected verify arguments';
+
+    cmp_deeply $redis_hset_data,
+        {'ADDRESS_VERIFICATION_RESULT'
+            . $test_client->binary_user_id => {encode_utf8(join(' ', ($freeform, ($test_client->residence // '')))) => 'awesome'}},
+        'Expected data recorded to Redis';
+
+    $dd_mock->unmock_all;
+    $client_mock->unmock_all;
+    $events_mock->unmock_all;
+    $redis_mock->unmock_all;
+    $smarty_mock->unmock_all;
+    $address_mock->unmock_all;
 };
 
 subtest 'Deriv X events' => sub {
