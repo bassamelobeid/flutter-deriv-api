@@ -566,9 +566,11 @@ subtest $method => sub {
         'status'                   => 'open',
         expiry_time                => 1127287660,
     };
-
-    foreach my $key (keys %$expected_result) {
-        cmp_ok $res->{$key}, 'eq', $expected_result->{$key}, "$key are matching ";
+    SKIP: {
+        skip "skip running time sensitive tests for code coverage tests", 1 if $ENV{DEVEL_COVER_OPTIONS};
+        foreach my $key (keys %$expected_result) {
+            cmp_ok $res->{$key}, 'eq', $expected_result->{$key}, "$key are matching ";
+        }
     }
     done_testing();
 };
