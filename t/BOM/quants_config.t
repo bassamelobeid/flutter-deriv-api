@@ -146,26 +146,30 @@ subtest 'get_config with bias' => sub {
     ok !@$configs, 'no config for WLDUSD, no warnings as well';
 };
 
+SKIP: {
+    skip "skip running time sensitive tests for code coverage tests", 1 if $ENV{DEVEL_COVER_OPTIONS};
+
 # this test is time-dependant. So, try to eliminate false-negatives by adding one more second to 3600
-subtest '_cleanup' => sub {
-    clear_config();
-    my $hour_before = time - 3601;
-    my $args        = {
-        underlying_symbol => 'frxUSDJPY',
-        name              => 'test',
-        start_time        => $hour_before,
-        end_time          => $hour_before + 3599,
-        partitions        => [{cap_rate => 0.3}],
-    };
-    $qc->save_config('commission', $args);
-    my $configs = $qc->get_config(
-        'commission',
-        {
+    subtest '_cleanup' => sub {
+        clear_config();
+        my $hour_before = time - 3601;
+        my $args        = {
             underlying_symbol => 'frxUSDJPY',
-            contract_type     => 'CAlle'
-        });
-    ok !@$configs, 'it did not get saved';
-};
+            name              => 'test',
+            start_time        => $hour_before,
+            end_time          => $hour_before + 3599,
+            partitions        => [{cap_rate => 0.3}],
+        };
+        $qc->save_config('commission', $args);
+        my $configs = $qc->get_config(
+            'commission',
+            {
+                underlying_symbol => 'frxUSDJPY',
+                contract_type     => 'CAlle'
+            });
+        ok !@$configs, 'it did not get saved';
+    };
+}
 
 subtest 'multiplier_config' => sub {
     $qc = BOM::Config::QuantsConfig->new(
