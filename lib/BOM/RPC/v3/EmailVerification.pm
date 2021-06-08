@@ -82,8 +82,8 @@ sub email_verification {
     my ($code, $website_name, $verification_uri, $language, $source, $app_name, $type, $email) =
         @{$args}{qw/code website_name verification_uri language source app_name type email/};
 
-    my ($has_social_signup, $user_name, $name);
-    if (my $user = BOM::User->new(email => $email)) {
+    my ($user, $has_social_signup, $user_name, $name);
+    if ($user = BOM::User->new(email => $email)) {
         $has_social_signup = $user->{has_social_signup};
         $user_name         = ($user->clients)[0]->last_name  if $user->clients;
         $name              = ($user->clients)[0]->first_name if $user->clients;
@@ -232,6 +232,7 @@ sub email_verification {
                         : ()
                     ),
                     is_trading_password => 1,
+                    dxtrade_available   => $user->clients_for_landing_company('svg') ? 1 : 0,    # TODO: add some sort of LC entry for this
                     %common_args,
                 },
             };

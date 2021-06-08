@@ -82,11 +82,12 @@ subtest 'setting up new trading password' => sub {
         {
             loginid    => $client->loginid,
             properties => {
-                contact_url => ignore(),
-                first_name  => $client->first_name,
-                type        => 'change',
-                mt5_logins  => undef,
-                dx_logins   => undef,
+                contact_url       => ignore(),
+                first_name        => $client->first_name,
+                type              => 'change',
+                mt5_logins        => undef,
+                dx_logins         => undef,
+                dxtrade_available => 1,
             }
         },
         'password change event emitted'
@@ -198,11 +199,12 @@ subtest 'password change with mt5 accounts' => sub {
         {
             loginid    => $client->loginid,
             properties => {
-                contact_url => ignore(),
-                first_name  => $client->first_name,
-                type        => 'change',
-                mt5_logins  => bag($mt5_demo_loginid, $mt5_loginid),
-                dx_logins   => undef,
+                contact_url       => ignore(),
+                first_name        => $client->first_name,
+                type              => 'change',
+                mt5_logins        => bag($mt5_demo_loginid, $mt5_loginid),
+                dx_logins         => undef,
+                dxtrade_available => 1,
             }
         },
         'password change event emitted'
@@ -259,6 +261,7 @@ subtest 'password change with mt5 accounts' => sub {
                 failed_mt5_logins     => [$mt5_loginid],
                 successful_dx_logins  => undef,
                 failed_dx_logins      => undef,
+                dxtrade_available     => 1,
             }
         },
         'password change failed event emitted'
@@ -295,6 +298,7 @@ subtest 'password change with mt5 accounts' => sub {
                 failed_mt5_logins     => bag($mt5_demo_loginid, $mt5_loginid),
                 successful_dx_logins  => undef,
                 failed_dx_logins      => undef,
+                dxtrade_available     => 1,
             }
         },
         'password change failed event emitted'
@@ -365,9 +369,10 @@ subtest 'password reset with mt5 accounts' => sub {
         {
             loginid    => $client->loginid,
             properties => {
-                first_name       => $client->first_name,
-                code             => $verification_code,
-                verification_url => re($verification_code),
+                first_name        => $client->first_name,
+                code              => $verification_code,
+                verification_url  => re($verification_code),
+                dxtrade_available => 1,
             }
         },
         'password reset request event emitted'
@@ -388,11 +393,12 @@ subtest 'password reset with mt5 accounts' => sub {
         {
             loginid    => $client->loginid,
             properties => {
-                contact_url => ignore(),
-                first_name  => $client->first_name,
-                type        => 'reset',
-                mt5_logins  => bag($mt5_demo_loginid, $mt5_loginid),
-                dx_logins   => undef,
+                contact_url       => ignore(),
+                first_name        => $client->first_name,
+                type              => 'reset',
+                mt5_logins        => bag($mt5_demo_loginid, $mt5_loginid),
+                dx_logins         => undef,
+                dxtrade_available => 1,
             }
         },
         'password change event emitted'

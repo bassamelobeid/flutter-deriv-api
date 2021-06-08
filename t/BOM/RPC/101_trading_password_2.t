@@ -80,11 +80,12 @@ subtest 'dxtrade' => sub {
         {
             loginid    => $client->loginid,
             properties => {
-                contact_url => ignore(),
-                first_name  => $client->first_name,
-                type        => 'change',
-                dx_logins   => [$dx_login],
-                mt5_logins  => undef,
+                contact_url       => ignore(),
+                first_name        => $client->first_name,
+                type              => 'change',
+                dx_logins         => [$dx_login],
+                mt5_logins        => undef,
+                dxtrade_available => 1,
             }
         },
         'password change event emitted'
@@ -138,11 +139,12 @@ subtest 'mixed platforms' => sub {
         {
             loginid    => $client->loginid,
             properties => {
-                contact_url => ignore(),
-                first_name  => $client->first_name,
-                type        => 'change',
-                dx_logins   => [$dx_login],
-                mt5_logins  => [$mt5_login],
+                contact_url       => ignore(),
+                first_name        => $client->first_name,
+                type              => 'change',
+                dx_logins         => [$dx_login],
+                mt5_logins        => [$mt5_login],
+                dxtrade_available => 1,
             }
         },
         'password change event emitted'
@@ -177,6 +179,7 @@ subtest 'mixed platforms' => sub {
                 failed_dx_logins      => undef,
                 successful_mt5_logins => undef,
                 failed_mt5_logins     => [$mt5_login],
+                dxtrade_available     => 1,
             }
         },
         'password failed change event emitted'
@@ -208,6 +211,7 @@ subtest 'mixed platforms' => sub {
                 failed_dx_logins      => [$dx_login],
                 successful_mt5_logins => undef,
                 failed_mt5_logins     => [$mt5_login],
+                dxtrade_available     => 1,
             }
         },
         'password failed change event emitted'
@@ -242,16 +246,81 @@ subtest 'archived mt5 account' => sub {
         {
             loginid    => $client->loginid,
             properties => {
-                contact_url => ignore(),
-                first_name  => $client->first_name,
-                type        => 'change',
-                dx_logins   => [$dx_login],
-                mt5_logins  => undef,
+                contact_url       => ignore(),
+                first_name        => $client->first_name,
+                type              => 'change',
+                dx_logins         => [$dx_login],
+                mt5_logins        => undef,
+                dxtrade_available => 1,
             }
         },
         'password change event emitted'
     );
     undef $last_event;
+};
+
+subtest 'mlt client' => sub {
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'MLT',
+        email       => 'mlt@test.com'
+    });
+    BOM::User->create(
+        email    => $client->email,
+        password => 'test'
+    )->add_client($client);
+    $client->account('USD');
+    my $token = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token');
+
+    my $params = {
+        language => 'EN',
+        args     => {
+            verify_email => $client->email,
+            type         => 'trading_platform_password_reset',
+        }};
+
+    $c->call_ok('verify_email', $params)->has_no_error;
+
+    cmp_deeply(
+        $last_event->{trading_platform_password_reset_request},
+        {
+            loginid    => $client->loginid,
+            properties => {
+                first_name        => $client->first_name,
+                code              => ignore(),
+                verification_url  => ignore(),
+                dxtrade_available => 0,
+            }
+        },
+        'password reset request event emitted'
+    );
+    undef $last_event;
+
+    $params = {
+        token => $token,
+        args  => {
+            trading_platform_password_change => 1,
+            new_password                     => 'Abcd1234',
+        }};
+
+    $c->call_ok('trading_platform_password_change', $params)->has_no_error->result;
+
+    cmp_deeply(
+        $last_event->{trading_platform_password_changed},
+        {
+            loginid    => $client->loginid,
+            properties => {
+                contact_url       => ignore(),
+                first_name        => $client->first_name,
+                type              => 'change',
+                dx_logins         => undef,
+                mt5_logins        => undef,
+                dxtrade_available => 0,
+            }
+        },
+        'password change event emitted'
+    );
+    undef $last_event;
+
 };
 
 done_testing();

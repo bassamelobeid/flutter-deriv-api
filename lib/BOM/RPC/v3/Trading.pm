@@ -513,6 +513,8 @@ sub change_platform_passwords {
     my ($success_mt5, $success_dx, $failed_mt5, $failed_dx) =
         $updated_logins->@{qw/successful_mt5_logins successful_dx_logins failed_mt5_logins failed_dx_logins/};
 
+    my $dxtrade_available = $client->landing_company->short eq 'svg' ? 1 : 0;    # TODO: add some sort of LC entry for this.
+
     if ($failed_mt5 or $failed_dx) {
 
         $error_message = localize(
@@ -532,6 +534,7 @@ sub change_platform_passwords {
                     successful_dx_logins              => $success_dx,
                     failed_mt5_logins                 => $failed_mt5,
                     failed_dx_logins                  => $failed_dx,
+                    dxtrade_available                 => $dxtrade_available,
                 },
                 use_email_template => 1,
                 template_loginid   => $client->loginid,
@@ -550,6 +553,7 @@ sub change_platform_passwords {
                     successful_dx_logins  => $success_dx,
                     failed_mt5_logins     => $failed_mt5,
                     failed_dx_logins      => $failed_dx,
+                    dxtrade_available     => $dxtrade_available,
                 }});
     } else {
         my $successful_logins = ($success_mt5 or $success_dx);
@@ -568,6 +572,7 @@ sub change_platform_passwords {
                     is_trading_password => 1,
                     mt5_logins          => $success_mt5,
                     dx_logins           => $success_dx,
+                    dxtrade_available   => $dxtrade_available,
                 },
                 use_email_template => 1,
                 template_loginid   => $client->loginid,
@@ -579,11 +584,12 @@ sub change_platform_passwords {
             {
                 loginid    => $client->loginid,
                 properties => {
-                    first_name  => $client->first_name,
-                    contact_url => $contact_url,
-                    type        => $type,
-                    mt5_logins  => $success_mt5,
-                    dx_logins   => $success_dx,
+                    first_name        => $client->first_name,
+                    contact_url       => $contact_url,
+                    type              => $type,
+                    mt5_logins        => $success_mt5,
+                    dx_logins         => $success_dx,
+                    dxtrade_available => $dxtrade_available,
                 }});
     }
 

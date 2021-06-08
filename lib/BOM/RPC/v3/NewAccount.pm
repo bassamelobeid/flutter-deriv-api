@@ -186,9 +186,10 @@ rpc "verify_email",
             {
                 loginid    => $existing_user->get_default_client->loginid,
                 properties => {
-                    first_name       => $existing_user->get_default_client->first_name,
-                    verification_url => $verification->{template_args}{verification_url},
-                    code             => $verification->{template_args}{code},
+                    first_name        => $existing_user->get_default_client->first_name,
+                    verification_url  => $verification->{template_args}{verification_url},
+                    code              => $verification->{template_args}{code},
+                    dxtrade_available => $verification->{template_args}{dxtrade_available},
                 },
             });
     } elsif ($existing_user and $type eq 'trading_platform_investor_password_reset') {

@@ -1045,6 +1045,8 @@ async_rpc "mt5_new_account",
                                 # Save new trading password once we have successfully created a new account
                                 $client->user->update_trading_password($trading_password);
 
+                                my $dxtrade_available = $client->landing_company->short eq 'svg' ? 1 : 0;  # TODO: add some sort of LC entry for this.
+
                                 BOM::Platform::Email::send_email({
                                         to            => $client->email,
                                         subject       => localize('Your [_1] trading password has been set', ucfirst($brand->name)),
@@ -1056,11 +1058,25 @@ async_rpc "mt5_new_account",
                                             contact_url         => $contact_url,
                                             is_trading_password => 1,
                                             mt5_logins          => [$mt5_login],
+                                            dxtrade_available   => $dxtrade_available,
                                         },
                                         use_email_template => 1,
                                         template_loginid   => $client->loginid,
                                         use_event          => 1,
                                     });
+
+                                BOM::Platform::Event::Emitter::emit(
+                                    'trading_platform_password_changed',
+                                    {
+                                        loginid    => $client->loginid,
+                                        properties => {
+                                            first_name        => $client->first_name,
+                                            contact_url       => $contact_url,
+                                            type              => 'change',
+                                            mt5_logins        => [$mt5_login],
+                                            dxtrade_available => $dxtrade_available,
+                                        }});
+
                             }
 
                             return Future->done({
