@@ -150,7 +150,7 @@ cmp_deeply(
     'cannot create duplicate account'
 );
 
-cmp_deeply($dxtrader->get_accounts, [$account1, $account2], 'account list');
+cmp_deeply($dxtrader->get_accounts, bag($account1, $account2), 'account list');
 
 my $account3 = $dxtrader->new_account(
     account_type => 'real',

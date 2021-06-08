@@ -232,18 +232,18 @@ Gets all client accounts and returns list formatted for websocket response.
 sub get_accounts {
     my ($self) = @_;
 
+    my $logins    = $self->client->user->loginid_details;
+    my @dx_logins = grep { ($logins->{$_}{platform} // '') eq 'dxtrade' } keys %$logins;
+    return [] unless @dx_logins;
+
     my @accounts;
     for my $server ('demo', 'real') {
         my $dxclient = $self->dxclient_get($server);
         push @accounts, ($dxclient->{accounts} // [])->@*;
     }
-    return [] unless @accounts;
 
-    my $logins = $self->client->user->loginid_details;
     my @result;
-
-    for my $login (sort keys %$logins) {
-        next unless ($logins->{$login}{platform} // '') eq 'dxtrade';
+    for my $login (@dx_logins) {
         if (my $account = first { $_->{account_code} eq $logins->{$login}{attributes}{account_code} } @accounts) {
             $account->{account_id} = $login;
             $account->{login}      = $logins->{$login}{attributes}{login};
