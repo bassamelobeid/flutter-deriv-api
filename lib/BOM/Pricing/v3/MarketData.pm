@@ -20,6 +20,7 @@ use Time::Duration::Concise::Localize;
 use Syntax::Keyword::Try;
 use List::MoreUtils qw(uniq);
 
+use Brands;
 use BOM::User::Client;
 use BOM::Platform::Context qw (localize);
 use BOM::Config::Runtime;
@@ -178,7 +179,10 @@ sub asset_index {
     # Default to virtual, which returns the entire asset index, if no arg and not logged in
     $landing_company_name //= 'virtual';
 
-    return generate_asset_index($country_code, $landing_company_name, $language);
+    my $app_id        = $params->{valid_source} // $params->{source};
+    my $app_offerings = Brands->new(app_id => $app_id)->offerings_for_app();
+
+    return generate_asset_index($country_code, $landing_company_name, $language, $app_offerings);
 }
 
 sub trading_durations {
@@ -371,10 +375,10 @@ Returns an arrayref, where each array element contains the following values (in 
 =cut
 
 sub generate_asset_index {
-    my ($country_code, $landing_company_name, $language) = @_;
+    my ($country_code, $landing_company_name, $language, $app_offerings) = @_;
 
-    my $offerings = _get_offerings($country_code, $landing_company_name);
-    my $key       = join '_', ($offerings->name, 'asset_index', $language);
+    my $offerings = _get_offerings($country_code, $landing_company_name, $app_offerings);
+    my $key       = join '_', ($offerings->name, $app_offerings, 'asset_index', $language);
 
     if (my $cache = _get_cache($key)) {
         return $cache;
@@ -567,12 +571,11 @@ sub _get_info_from_token {
 }
 
 sub _get_offerings {
-    my ($country_code, $landing_company_name) = @_;
+    my ($country_code, $landing_company_name, $app_offerings) = @_;
 
     my $config          = BOM::Config::Runtime->instance->get_offerings_config;
     my $landing_company = LandingCompany::Registry::get($landing_company_name);
 
-    return $landing_company->basic_offerings_for_country($country_code, $config);
-
+    return $landing_company->basic_offerings_for_country($country_code, $config, $app_offerings);
 }
 1;

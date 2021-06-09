@@ -4,6 +4,7 @@ use strict;
 use warnings;
 no indirect;
 
+use Brands;
 use Scalar::Util qw(blessed);
 use Syntax::Keyword::Try;
 use List::MoreUtils qw(none);
@@ -560,7 +561,7 @@ sub contracts_for {
     my $get_invalid_symbol_error = sub {
         BOM::Pricing::v3::Utility::create_error({
                 code              => 'InvalidSymbol',
-                message_to_client => BOM::Platform::Context::localize('This contract is not offered in your country.')});
+                message_to_client => BOM::Platform::Context::localize('There\'s no contract available for this symbol.')});
     };
 
     return $get_invalid_symbol_error->() unless $product_type;
@@ -568,12 +569,16 @@ sub contracts_for {
     my $invalid_currency = BOM::Platform::Client::CashierValidation::invalid_currency_error($currency);
     return BOM::Pricing::v3::Utility::create_error($invalid_currency) if $invalid_currency;
 
+    my $app_id        = $params->{valid_source} // $params->{source};
+    my $app_offerings = Brands->new(app_id => $app_id)->offerings_for_app();
+
     my $finder = BOM::Product::ContractFinder->new;
 
     my $contracts_for = $finder->basic_contracts_for({
         symbol          => $symbol,
         landing_company => $landing_company,
         country_code    => $country_code,
+        app_offerings   => $app_offerings,
     });
 
     my $i = 0;

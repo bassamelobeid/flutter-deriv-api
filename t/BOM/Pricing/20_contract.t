@@ -169,6 +169,7 @@ subtest 'get_ask' => sub {
 
     my $tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
         epoch      => time,
+        quote      => 963.3054,
         underlying => 'R_50',
     });
 
