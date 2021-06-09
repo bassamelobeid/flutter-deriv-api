@@ -803,4 +803,26 @@ sub get_currency_external_sweep_address {
     return $currency_config->{sweep}->{address};
 }
 
+=head2 get_gas_limit_incremental_percentage
+
+To get the gas_limit incremental percentage.
+
+=over 4
+
+=item * C<currency> - Currency code
+
+=back
+
+Returns the C<gas_limit_incremental_percentage> for the currency.
+
+=cut
+
+sub get_gas_limit_incremental_percentage {
+    my $currency = shift;
+
+    my $gas_limit_incremental_percentage = JSON::MaybeUTF8::decode_json_utf8(app_config()->get('payments.crypto.gas_limit_incremental_percentage'));
+
+    return $gas_limit_incremental_percentage->{$currency};
+}
+
 1;

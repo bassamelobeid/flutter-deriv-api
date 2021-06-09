@@ -296,6 +296,11 @@ payments:
           isa: json_string
           default: '{"BTC": [{"amount": 0.1, "weight": 1}], "LTC": [{"amount": 0.1, "weight": 1}]}'
           global: 1
+        gas_limit_incremental_percentage:
+          description: "Configurations for gas_limit incremental percentage"
+          isa: json_string
+          default: '{"USDC":10}'
+          global: 1
     sweep:
       description: 'Sweep related limit configuration'
       isa: section
