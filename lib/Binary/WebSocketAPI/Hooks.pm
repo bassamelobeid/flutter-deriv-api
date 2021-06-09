@@ -124,7 +124,7 @@ sub log_call_timing {
     DataDog::DogStatsd::Helper::stats_timing(
         'bom_websocket_api.v_3.rpc.call.timing',
         1000 * Time::HiRes::tv_interval($req_storage->{tv}),
-        {tags => [map { join ':', $_ => $tags{$_} } grep {$tags{$_}} sort(keys %tags)]},
+        {tags => [map { join ':', $_ => $tags{$_} } grep { $tags{$_} } sort(keys %tags)]},
     );
     return;
 }

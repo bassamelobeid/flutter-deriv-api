@@ -67,6 +67,7 @@ sub actions_config {
         ],
 
         ['request_report'],
+        ['identity_verification_document_add'],
         ['account_statistics'],
         ['profit_table'],
 
