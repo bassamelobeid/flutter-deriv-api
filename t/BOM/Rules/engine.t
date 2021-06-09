@@ -15,13 +15,17 @@ my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
 });
 
 subtest 'Context initialization' => sub {
-    my $rule_engine = BOM::Rules::Engine->new(client => $client);
+    my $rule_engine = BOM::Rules::Engine->new(
+        client          => $client,
+        stop_on_failure => 0
+    );
     is_deeply $rule_engine->context,
         {
         client          => $client,
         loginid         => $client->loginid,
         landing_company => $client->landing_company->short,
-        residence       => $client->residence
+        residence       => $client->residence,
+        stop_on_failure => 0
         },
         'Context loginid and landing_company matches that of client';
 
@@ -31,7 +35,8 @@ subtest 'Context initialization' => sub {
         client          => $client,
         loginid         => $client->loginid,
         landing_company => $client->landing_company->short,
-        residence       => $client->residence
+        residence       => $client->residence,
+        stop_on_failure => 1
         },
         'Context client and landing_company matches that of loginid';
 
@@ -40,6 +45,7 @@ subtest 'Context initialization' => sub {
         loginid         => 'test_loginid',
         landing_company => 'test_lc',
         residence       => 'xyz',
+        stop_on_failure => 1
     );
     is_deeply $rule_engine->context,
         {
@@ -47,18 +53,20 @@ subtest 'Context initialization' => sub {
         loginid         => 'test_loginid',
         landing_company => 'test_lc',
         residence       => 'xyz',
+        stop_on_failure => 1,
         },
         'Context loginid, landing_company and residence are overriden by constructor args';
 };
 
 subtest 'Verify an action' => sub {
-    my $rule_engine = BOM::Rules::Engine->new(client => $client);
-    like exception { $rule_engine->verify_action() }, qr/Action name is required/;
-    like exception { $rule_engine->verify_action('invalid_name_for_testing') }, qr/Unknown action 'invalid_name_for_testing' cannot be verified/;
+    my $rule_engine_1 = BOM::Rules::Engine->new(client => $client);
+    like exception { $rule_engine_1->verify_action() }, qr/Action name is required/, 'exception thrown on verify without providing action';
+    like exception { $rule_engine_1->verify_action('invalid_name_for_testing') }, qr/Unknown action 'invalid_name_for_testing' cannot be verified/,
+        'exception thrown on invalid name for testing';
 
     my @action_verify_args;
     my $mock_action = Test::MockModule->new('BOM::Rules::Registry::Action');
-    $mock_action->redefine(verify => sub { @action_verify_args = @_; return 'Mock verification is called' });
+    $mock_action->redefine(verify => sub { @action_verify_args = @_; return $mock_action->original('verify')->(@_); });
 
     my $test_action = BOM::Rules::Registry::Action->new(
         name     => 'test_action',
@@ -66,26 +74,26 @@ subtest 'Verify an action' => sub {
     my $mock_registry = Test::MockModule->new('BOM::Rules::Registry');
     $mock_registry->redefine('get_action' => sub { return $test_action });
 
-    is $rule_engine->verify_action('test_action'), 'Mock verification is called';
+    ok $rule_engine_1->verify_action('test_action'), 'action result is as expected';
     is scalar @action_verify_args, 3, 'Number of args is correct';
     my ($action, $context, $args) = @action_verify_args;
     is $action, $test_action, 'Correct action is sought';
-    is $context, $rule_engine->context, 'Action verification is trggered with correct context';
+    is $context, $rule_engine_1->context, 'Action verification is trggered with correct context';
     is_deeply $args, {}, 'Action is verified with empty args';
 
     undef @action_verify_args;
-    is $rule_engine->verify_action(
+    isa_ok $rule_engine_1->verify_action(
         'test_action',
         {
             a => 1,
             b => 2,
         }
         ),
-        'Mock verification is called';
+        'BOM::Rules::Result', 'action result is as expected';
     is scalar @action_verify_args, 3, 'Number of args is correct';
     ($action, $context, $args) = @action_verify_args;
     is $action, $test_action, 'Correct action is sought';
-    is $context, $rule_engine->context, 'Action verification is trggered with correct context';
+    is $context, $rule_engine_1->context, 'Action verification is trggered with correct context';
     is_deeply $args,
         {
         a => 1,
@@ -98,36 +106,35 @@ subtest 'Verify an action' => sub {
 };
 
 subtest 'Applying rules' => sub {
-    my $rule_engine = BOM::Rules::Engine->new(client => $client);
-    like exception { $rule_engine->apply_rules() }, qr/Rule name cannot be empty/, 'Correct exception for empy rule name';
-    like exception { $rule_engine->apply_rules('invalid_name_for_testing') }, qr/Unknown rule 'invalid_name_for_testing' cannot be applied/,
+    my $rule_engine_1 = BOM::Rules::Engine->new(client => $client);
+    like exception { $rule_engine_1->apply_rules() }, qr/Rule name cannot be empty/, 'Correct exception for empty rule name';
+    like exception { $rule_engine_1->apply_rules('invalid_name_for_testing') }, qr/Unknown rule 'invalid_name_for_testing' cannot be applied/,
         'Correct error for invalid rule name';
-    is_deeply $rule_engine->apply_rules([]), {return 1}, 'Empty rule array is accepted';
+    ok $rule_engine_1->apply_rules([]), 'Empty rule array is accepted';
 
-    my $test_rule = rule(
-        name => 'test rule 1',
-        code => sub { return 'result 1' });
+    my $test_rule = rule 'test rule 1' => {
+        code => sub { return 'result 1' }
+    };
 
-    is_deeply $rule_engine->apply_rules('test rule 1'),   {return 1}, 'Rule is applied with default return value';
-    is_deeply $rule_engine->apply_rules(['test rule 1']), {return 1}, 'Rule array is applied with default return value';
+    ok $rule_engine_1->apply_rules('test rule 1'), 'Rule is applied with default return value';
+    ok $rule_engine_1->apply_rules(['test rule 1']), 'Rule array is applied with default return value';
 
     my @rule_args;
     my $mock_rule = Test::MockModule->new('BOM::Rules::Registry::Rule');
-    $mock_rule->redefine(apply => sub { @rule_args = @_; return 'Mock verification is called' });
+    $mock_rule->redefine(apply => sub { @rule_args = @_; return $mock_rule->original('apply')->(@_); });
 
-    is $rule_engine->apply_rules(
+    is $rule_engine_1->apply_rules(
         'test rule 1',
         {
             a => 1,
             b => 2,
         }
         ),
-        'Mock verification is called',
-        'Rule applied';
+        1, 'Rule applied';
     is scalar @rule_args, 3, 'Number of args is correct';
     my ($rule, $context, $args) = @rule_args;
     is $rule, $test_rule, 'Correct rule is found';
-    is $context, $rule_engine->context, 'Rule context is correct';
+    is $context, $rule_engine_1->context, 'Rule context is correct';
     is_deeply $args,
         {
         a => 1,

@@ -13,7 +13,10 @@ Represents a rule in rule-engine's registery.
 use strict;
 use warnings;
 
+use Syntax::Keyword::Try;
+
 use BOM::Platform::Context qw(localize);
+use BOM::Rules::Result;
 
 use Moo;
 
@@ -63,7 +66,19 @@ Applies the rule by running the object's L<code>. It takes the following argumen
 
 sub apply {
     my ($self, $context, $action_args) = @_;
-    return $self->code->($self, $context, $action_args);
+
+    my $result = BOM::Rules::Result->new();
+
+    try {
+        $self->code->($self, $context, $action_args);
+        $result->append_success($self->name);
+    } catch ($e) {
+        die $e if $context->stop_on_failure or ref $e ne 'HASH';
+
+        $result->append_failure($self->name, $e);
+    }
+
+    return $result;
 }
 
 1;

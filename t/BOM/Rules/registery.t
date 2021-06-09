@@ -22,7 +22,7 @@ subtest 'Rules registery' => sub {
     ok $test_rule, 'Rule is registered successfully';
     is $test_rule->name,        'test_rule', 'Rule name is correct';
     is $test_rule->description, 'test_rule', "Rule description is defaulted to it's name";
-    is $test_rule->apply(), 'test result', 'Rule code is correctly set';
+    isa_ok $test_rule->apply(), 'BOM::Rules::Result', 'Rule code is correctly set';
 
     like exception {
         rule(
@@ -39,7 +39,7 @@ subtest 'Rules registery' => sub {
     is $test_rule2->name,        'test_rule2',                    'Rule name is correct';
     is $test_rule2->description, 'This rule is for testing only', 'Rule description is correctly set';
     is $test_rule2->code,        \&test_sub, 'Rule code is correctly set';
-    is $test_rule2->apply(), 'result 2', 'Rule code is correctly invoked';
+    isa_ok $test_rule2->apply(), 'BOM::Rules::Result', 'Rule code is correctly invoked';
 
     subtest 'Get rule' => sub {
         like exception { get_rule() }, qr/Rule name cannot be empty/, 'Rule name is required';

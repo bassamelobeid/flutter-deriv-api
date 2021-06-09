@@ -41,6 +41,7 @@ use BOM::Rules::RuleRepository::Profile;
 use BOM::Rules::RuleRepository::Transfers;
 use BOM::Rules::RuleRepository::FinancialAssessment;
 use BOM::Rules::RuleRepository::SelfExclusion;
+use BOM::Rules::RuleRepository::IdentityVerification;
 use BOM::Rules::Registry qw(get_action);
 use BOM::Rules::Context;
 
@@ -128,9 +129,6 @@ sub apply_rules {
         die "Unknown rule '$rule_name' cannot be applied" unless $rule;
 
         $rule->apply($self->context, $args // {});
-        # TODO: in some contexts we will need to return all failures rather than the first one.
-        # In that case the output should be restructured like:
-        # failures => ['residence.market_type_is_available', 'residence.not_restricted']
     }
 
     return 1;

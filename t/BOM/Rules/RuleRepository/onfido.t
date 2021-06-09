@@ -4,15 +4,13 @@ use utf8;
 
 use Test::Most;
 use Test::Fatal;
-use Syntax::Keyword::Try;
 
 use JSON::MaybeUTF8 qw(:v1);
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Rules::Engine;
-use BOM::User;
-
 use BOM::Rules::RuleRepository::Onfido;
+use BOM::User;
 
 my $client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'CR',
@@ -25,106 +23,9 @@ my $user = BOM::User->create(
 );
 $user->add_client($client_cr);
 
-subtest 'word by word comparison' => sub {
-    my $cases = [{
-            a      => 'Felipe Martinez',
-            b      => 'Felipe Martínez',
-            result => 1,
-        },
-        {
-            a      => 'Felipe Martinez',
-            b      => 'Felipe Martinez',
-            result => 1,
-        },
-        {
-            a      => 'Felipe Martínez',
-            b      => 'Felipe Martínez',
-            result => 1,
-        },
-        {
-            a      => 'Çapybara Mágica',
-            b      => 'Magica Capybara',
-            result => 1,
-        },
-        {
-            a      => 'This is too easy',
-            b      => 'this is too Easy',
-            result => 1,
-        },
-        {
-            a      => 'this is a choppy test',
-            b      => 'this choppy is a test',
-            result => 1,
-        },
-        {
-            a      => 'Nguyen long',
-            b      => 'NGUYEN XUAN LONG',
-            result => 1,
-        },
-        {
-            a      => 'Ngyen long',
-            b      => 'NGUYEN XUAN LONG',
-            result => 0,
-        },
-        {
-            a      => 'aNguyen long',
-            b      => 'NGUYEN XUAN LONG',
-            result => 0,
-        },
-        {
-            a      => 'aNgyen long',
-            b      => 'NGUYEN XUAN LONG',
-            result => 0,
-        },
-        {
-            a      => 'nguyen juan long',
-            b      => 'NGUYEN XUAN LONG',
-            result => 0,
-        },
-        {
-            a      => 'nguyen xuan long',
-            b      => 'NGUYEN XUAN LONG',
-            result => 1,
-        },
-        {
-            a      => 'nguyen xuan loong',
-            b      => 'NGUYEN XUAN LONG',
-            result => 0,
-        },
-        {
-            a      => 'homero simpson',
-            b      => 'homer simpson',
-            result => 0,
-        },
-        {
-            a      => '',
-            b      => 'void',
-            result => 0,
-        },
-        {
-            a      => 'void',
-            b      => '',
-            result => 0,
-        },
-        {
-            a      => 'Иван',
-            b      => 'Ivan',
-            result => 1,
-        },
-        {
-            a      => 'χρονος',
-            b      => 'khronos',
-            result => 1,
-        }];
-
-    for my $case ($cases->@*) {
-        is BOM::Rules::RuleRepository::Onfido::word_by_word_comparison($case->{a}, $case->{b}), $case->{result}, "Expected result for test case";
-    }
-};
-
-subtest 'rule onfido.name_check_comparison' => sub {
+subtest 'rule onfido.check_name_comparison' => sub {
     my $check_id    = 'test';
-    my $rule_name   = 'onfido.name_check_comparison';
+    my $rule_name   = 'onfido.check_name_comparison';
     my $rule_engine = BOM::Rules::Engine->new(landing_company => 'svg');
     like exception { $rule_engine->apply_rules($rule_name) }, qr/Client is missing/, 'Client is required for this rule';
 

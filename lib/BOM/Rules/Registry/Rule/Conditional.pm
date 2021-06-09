@@ -84,9 +84,14 @@ sub apply {
 
     $selected_rule_set = [$selected_rule_set] if ref($selected_rule_set) ne 'ARRAY';
 
-    $_->apply($context, $action_args) for (@$selected_rule_set);
+    my $final_result = BOM::Rules::Result->new();
+    for my $rule (@$selected_rule_set) {
+        my $rule_result = $rule->apply($context, $action_args);
 
-    return 1;
+        $final_result->merge($rule_result);
+    }
+
+    return $final_result;
 }
 
 1;

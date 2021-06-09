@@ -48,6 +48,17 @@ The country of residence. It's usually the same as L<client>'s residence, but no
 
 has residence => (is => 'ro');
 
+=head2 stop_on_failure
+
+Prevents exit on the first failure and perform all actions
+
+=cut
+
+has stop_on_failure => (
+    is      => 'ro',
+    default => 1
+);
+
 =head2 landing_company_object
 
 The object representing context's L<landing_company>.

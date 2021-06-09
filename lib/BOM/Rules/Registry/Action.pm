@@ -16,6 +16,7 @@ use warnings;
 use Moo;
 
 use BOM::Rules::Registry qw(get_rule);
+use BOM::Rules::Result;
 
 =head2 name
 
@@ -64,9 +65,14 @@ Verifies the action, applyinng the rules in C<rule_set>.
 sub verify {
     my ($self, $context, $args) = @_;
 
-    $_->apply($context, $args) for ($self->rule_set->@*);
+    my $final_results = BOM::Rules::Result->new();
+    for my $rule ($self->rule_set->@*) {
+        my $rule_result = $rule->apply($context, $args);
 
-    return 1;
+        $final_results->merge($rule_result);
+    }
+
+    return $final_results;
 }
 
 1;
