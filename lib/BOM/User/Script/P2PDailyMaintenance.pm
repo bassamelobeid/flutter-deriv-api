@@ -9,6 +9,8 @@ use BOM::Config::Redis;
 use LandingCompany::Registry;
 use Log::Any qw($log);
 use Syntax::Keyword::Try;
+use Date::Utility;
+use BOM::Platform::Event::Emitter;
 
 use constant CRON_INTERVAL_DAYS => 1;
 use constant REDIS_KEY          => 'P2P::AD_ARCHIVAL_DATES';
@@ -55,7 +57,20 @@ sub run {
                         $_->selectall_arrayref('SELECT * FROM p2p.deactivate_old_ads(?)', {Slice => {}}, $archive_days);
                     });
 
-                $archival_dates{$_->{id}} = $_->{archive_date} for @$updates;
+                my $archived_ads = {};
+
+                for ($updates->@*) {
+                    my ($id, $advertiser_loginid, $archive_date, $is_archived) = @{$_}{qw/id advertiser_loginid archive_date is_archived/};
+                    $archival_dates{$id} = $archive_date;
+
+                    push $archived_ads->{$advertiser_loginid}->@*, $id if $is_archived;
+                }
+                BOM::Platform::Event::Emitter::emit(
+                    'p2p_archived_ad',
+                    {
+                        archived_ads       => $archived_ads->{$_},
+                        advertiser_loginid => $_,
+                    }) for keys $archived_ads->%*;
             }
 
             $db->run(
