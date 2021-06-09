@@ -177,7 +177,7 @@ subtest 'create account failed' => sub {
 
         my $res = $t->await::new_account_real({%details, date_of_birth => '2008-01-01'});
         is($res->{error}->{code},    'BelowMinimumAge', 'min age unmatch');
-        is($res->{new_account_real}, undef,       'NO account created');
+        is($res->{new_account_real}, undef,             'NO account created');
     };
 
     subtest 'insufficient info' => sub {
