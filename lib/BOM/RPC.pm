@@ -36,6 +36,7 @@ use BOM::RPC::v3::Static;
 use BOM::RPC::v3::TickStreamer;
 use BOM::RPC::v3::Trading;
 use BOM::RPC::v3::Transaction;
+use BOM::RPC::v3::IdentityVerification;
 use BOM::RPC::v3::Utility qw(log_exception);
 use BOM::Transaction::Validation;
 use BOM::User::Client;
