@@ -10,6 +10,10 @@ use BOM::Test::RPC::QueueClient;
 use BOM::Database::Model::OAuth;
 use Email::Stuffer::TestLinks;
 use Test::MockModule;
+use Brands;
+
+my $mocked_brands = Test::MockModule->new('Brands');
+$mocked_brands->mock('offerings_for_app', sub { return 'default' });
 
 my $mock = Test::MockModule->new('LandingCompany::Offerings');
 $mock->mock(is_asian_hours => sub { note 'mocked to non-asian hours'; return 0 });

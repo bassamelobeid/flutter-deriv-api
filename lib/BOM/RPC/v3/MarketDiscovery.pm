@@ -3,6 +3,7 @@ package BOM::RPC::v3::MarketDiscovery;
 use strict;
 use warnings;
 
+use Brands;
 use Date::Utility;
 use Cache::RedisDB;
 use Time::Duration::Concise::Localize;
@@ -42,18 +43,24 @@ rpc active_symbols => sub {
 
     $landing_company //= LandingCompany::Registry::get($landing_company_name);
     $product_type    //= $landing_company->default_product_type;
+    my $app_id = $params->{valid_source} // $params->{source};
+    # It seems a little weird here where you're passing in $app_id to contruct an object and again passing $app_id
+    # to a method to get offerings. This is because the most commonly used object creation method is by name instead of app_id
+    # and I want the method to work both ways.
+    my $app_offerings = Brands->new(app_id => $app_id)->offerings_for_app();
 
     my $active_symbols = [];    # API response expects an array eventhough it is empty
     return $active_symbols unless $product_type;
 
-    my $offerings_obj = $landing_company->basic_offerings_for_country($country_code, BOM::Config::Runtime->instance->get_offerings_config,);
+    my $offerings_obj =
+        $landing_company->basic_offerings_for_country($country_code, BOM::Config::Runtime->instance->get_offerings_config, $app_offerings);
 
     die 'Could not retrieve offerings for landing_company[' . $landing_company_name . '] product_type[' . $product_type . ']' unless ($offerings_obj);
 
     my $appconfig_revision = BOM::Config::Runtime->instance->app_config->loaded_revision;
     my ($namespace, $key) = (
-        'legal_allowed_markets', join('::', ($params->{args}->{active_symbols}, $language, $offerings_obj->name, $product_type, $appconfig_revision))
-    );
+        'legal_allowed_markets',
+        join('::', ($params->{args}->{active_symbols}, $language, $offerings_obj->name, $product_type, $appconfig_revision, $app_offerings)));
 
     if (my $cached_symbols = Cache::RedisDB->get($namespace, $key)) {
         $active_symbols = $cached_symbols;

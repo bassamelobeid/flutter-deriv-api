@@ -13,11 +13,12 @@ use Email::Stuffer::TestLinks;
 use LandingCompany::Registry;
 use BOM::Config::Runtime;
 use BOM::Config::Chronicle;
+use Brands;
 
 my $c = BOM::Test::RPC::QueueClient->new();
 
 my $method = 'active_symbols';
-subtest $method => sub {
+subtest "$method on binary_smarttrader" => sub {
     my $params = {
         language => 'EN',
         args     => {
@@ -40,18 +41,24 @@ subtest $method => sub {
     is_deeply([sort keys %$indices], [sort @$expected_keys], 'result has correct keys');
     is($indices->{market_display_name},    'Stock Indices', 'the market_display_name is translated');
     is($indices->{submarket_display_name}, 'Europe',        'the submarket_display_name is translated');
-    is(scalar @$result,                    83,              'the default landing company is "svg", the number of result should be ok');
+    # the full list of active symbols is 83. But, smart trader only offers 63, excluding:
+    # - cryptocurrenty
+    # - jump indices
+    # - crash/bomm indices
+    # - stpRNG
+    is(scalar @$result, 63, 'the default landing company is "svg", the number of result should be ok');
 };
 
 # unauthenticated call for `active_symbols` for landing company like `maltainvest` doesn't have an offering
 my $landing_company_name = 'maltainvest';
-subtest "active_symbols_for_" => sub {
+subtest "active_symbols for $landing_company_name" => sub {
     # check the selected landing comapny doesn't have offerings
     my $landing_company = LandingCompany::Registry::get($landing_company_name);
     my $offering        = $landing_company->default_product_type;
     ok $offering, "offerings for maltainvest";
 
     my $params = {
+        source   => 1,      # binary_smarttrader
         language => 'EN',
         args     => {
             active_symbols  => 'brief',
@@ -59,7 +66,11 @@ subtest "active_symbols_for_" => sub {
         }};
 
     my $result = $c->call_ok($method, $params)->has_no_error->result;
-    is scalar @$result, 14, '14 pairs';
+    is scalar @$result, 0, 'zero symbols for binary_smarttrader';
+
+    $params->{source} = 11780;                                                 # dervi_dtrader
+    $result = $c->call_ok($method, $params)->has_no_error->result;
+    is scalar @$result, 14, '14 major forex pairs';
 };
 
 subtest 'active_symbols for suspend_buy' => sub {
@@ -86,6 +97,60 @@ subtest 'active_symbols for suspend_buy' => sub {
     ok !grep { $_->{symbol} eq 'frxUSDJPY' } @$result;
     note('resetting app_config->quants->underlyings->suspend_buy');
     $app_config->set({'quants.underlyings.suspend_buy' => $prev_underlying_suspend_buy});
+};
+
+subtest 'active_symbols for whitelisted apps' => sub {
+    subtest 'deriv' => sub {
+        my $deriv  = Brands->new(name => 'deriv');
+        my $params = {
+            language => 'EN',
+            args     => {
+                active_symbols => 'brief',
+            }};
+        my %expected_symbol_count = (
+            11780 => 78,
+            1408  => 0,
+            16303 => 78,
+            16929 => 78,
+            19111 => 63,
+            19112 => 63,
+            22168 => 63,
+            23789 => 48,
+        );
+        my $app = $deriv->whitelist_apps;
+        foreach my $app_id (keys %$app) {
+            $params->{source} = $app_id;
+            my $result = $c->call_ok($method, $params)->has_no_system_error->result;
+            is scalar @$result, $expected_symbol_count{$app_id}, 'symbol count expected for ' . $app->{$app_id}{name} if ref $result eq 'ARRAY';
+        }
+    };
+
+    subtest 'binary' => sub {
+        my $deriv  = Brands->new(name => 'binary');
+        my $params = {
+            language => 'EN',
+            args     => {
+                active_symbols => 'brief',
+            }};
+        my %expected_symbol_count = (
+            1     => 63,
+            10    => 29,
+            11    => 63,
+            1169  => 63,
+            14473 => 63,
+            15284 => 63,
+            15437 => 63,
+            15438 => 63,
+            15481 => 63,
+            15488 => 29
+        );
+        my $app = $deriv->whitelist_apps;
+        foreach my $app_id (keys %$app) {
+            $params->{source} = $app_id;
+            my $result = $c->call_ok($method, $params)->has_no_system_error->result;
+            is scalar @$result, $expected_symbol_count{$app_id}, 'symbol count expected for ' . $app->{$app_id}{name} if ref $result eq 'ARRAY';
+        }
+    };
 };
 
 done_testing();
