@@ -30,6 +30,7 @@ sub _get_contracts {
     my $landing_company_short = $args->{landing_company};
     my $country_code          = $args->{country_code} // '';                               # might not be defined
     my $product_type          = $args->{product_type} // die 'product_type is required';
+    my $app_offerings         = $args->{app_offerings};
 
     my $date       = $self->for_date // Date::Utility->new;
     my $underlying = create_underlying($args->{symbol}, $self->for_date);
@@ -49,7 +50,7 @@ sub _get_contracts {
         landing_company_short => $landing_company_short,
     };
     if ($product_type eq 'basic') {
-        $deco_args->{offerings} = _get_basic_offerings($symbol, $landing_company_short, $country_code);
+        $deco_args->{offerings} = _get_basic_offerings($symbol, $landing_company_short, $country_code, $app_offerings);
         $offerings = BOM::Product::ContractFinder::Basic::decorate($deco_args);
     }
 
@@ -63,11 +64,12 @@ sub _get_contracts {
 }
 
 sub _get_basic_offerings {
-    my ($symbol, $landing_company_short, $country_code) = @_;
+    my ($symbol, $landing_company_short, $country_code, $app_offerings) = @_;
 
     $landing_company_short //= 'virtual';
     my $landing_company = LandingCompany::Registry::get($landing_company_short);
-    my $offerings_obj   = $landing_company->basic_offerings_for_country($country_code, BOM::Config::Runtime->instance->get_offerings_config);
+    my $offerings_obj =
+        $landing_company->basic_offerings_for_country($country_code, BOM::Config::Runtime->instance->get_offerings_config, $app_offerings);
 
     return [$offerings_obj->query({underlying_symbol => $symbol})];
 }
