@@ -359,6 +359,44 @@ sub chat_received {
         });
 }
 
+=head2 archived_ad
+
+Triggered when p2p maintenance scripts archives an advert.
+
+The side effects of this events are:
+
+=over 4
+
+=item * Send event to customer.io for email sending.
+
+=back
+
+It takes the following named params:
+
+=over 4
+
+=item * C<id> id of the archived ad.
+
+=back
+
+Returns C<1> on success, dies otherwise.
+
+=cut
+
+sub archived_ad {
+    my $data    = shift;
+    my $loginid = $data->{advertiser_loginid}                   || die 'Missing advertiser loginid';
+    my $client  = BOM::User::Client->new({loginid => $loginid}) || die 'Client not found';
+    my $ads     = $data->{archived_ads} // [];
+
+    die 'Empty ads' unless scalar $ads->@*;
+
+    return BOM::Event::Services::Track::p2p_archived_ad({
+        loginid => $loginid,
+        adverts => [map { $client->_p2p_adverts(id => $_, limit => 1)->@* } $ads->@*],
+    });
+}
+
 =head2 _track_p2p_order_event
 
 Emits p2p order events to Segment for tracking. It takes the following list of named arguments:

@@ -109,6 +109,7 @@ my $action_mapping = {
     trading_platform_password_change_failed          => \&BOM::Event::Actions::Client::trading_platform_password_change_failed,
     trading_platform_investor_password_changed       => \&BOM::Event::Actions::Client::trading_platform_investor_password_changed,
     trading_platform_investor_password_change_failed => \&BOM::Event::Actions::Client::trading_platform_investor_password_change_failed,
+    p2p_archived_ad                                  => \&BOM::Event::Actions::P2P::archived_ad,
 };
 
 =head1 METHODS

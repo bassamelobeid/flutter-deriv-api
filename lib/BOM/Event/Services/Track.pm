@@ -97,6 +97,7 @@ my %EVENT_PROPERTIES = (
     p2p_order_dispute_fraud_refund => [
         qw(dispute_reason disputer loginid user_role order_type order_id amount currency local_currency seller_user_id seller_nickname buyer_user_id buyer_nickname order_created_at brand)
     ],
+    p2p_archived_ad     => [qw(loginid adverts brand)],
     multiplier_hit_type => [qw(loginid contract_id hit_type profit sell_price currency)],
     payment_deposit     => [qw(loginid payment_processor transaction_id is_first_deposit trace_id amount payment_fee currency payment_method remark)],
     payment_withdrawal  => [qw(loginid transaction_id trace_id amount payment_fee currency payment_method)],
@@ -131,6 +132,7 @@ my @SKIP_BRAND_VALIDATION = qw(
     payment_withdrawal
     payment_withdrawal_reversal
     mt5_inactive_notification
+    p2p_archived_ad
 );
 
 my $loop = IO::Async::Loop->new;
@@ -788,6 +790,36 @@ sub p2p_order_timeout_refund {
     my %args = @_;
     my ($order, $parties) = @args{qw(order parties)};
     return _p2p_order_track($order, $parties, 'p2p_order_timeout_refund');
+}
+
+=head2 p2p_archived_ad
+
+Sends to rudderstack a tracking event when an ad is archived.
+
+It takes the following arguments:
+
+=over 4
+
+=item * C<advert> - a B<p2p.p2p_advert> record from database.
+
+=back
+
+Returns, a Future representing the track event request.
+
+=cut
+
+sub p2p_archived_ad {
+    my ($params) = @_;
+    my ($loginid, $adverts) = @{$params}{qw/loginid adverts/};
+
+    return track_event(
+        event      => 'p2p_archived_ad',
+        loginid    => $loginid,
+        properties => {
+            loginid => $loginid,
+            adverts => $adverts,
+        },
+    );
 }
 
 =head2 _p2p_dispute_resolution
