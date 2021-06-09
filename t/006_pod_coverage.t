@@ -13,6 +13,7 @@ my $allowed_naked_packages = {
     'BOM::Pricing::v3::Contract'   => 12,
     'BOM::Pricing::v3::MarketData' => 8,
     'BOM::Pricing::v3::Utility'    => 4,
+    'BOM::Pricing::v4::Error'      => 2,
 };
 
 Test::Pod::CoverageChange::pod_coverage_syntax_ok(allowed_naked_packages => $allowed_naked_packages);

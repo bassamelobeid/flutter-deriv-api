@@ -1,0 +1,58 @@
+{
+  "swagger" : "2.0",
+  "info" : {
+    "description" : "The pricer http api.",
+    "version" : "0.1.0",
+    "title" : "Pricing Endpoint"
+  },
+  "tags" : [ {
+    "name" : "v1",
+    "description" : "Retrieval of bid and ask price"
+  } ],
+  "schemes" : [ "https", "http" ],
+  "paths" : {
+    "/v1/{shortcode}/{currency}" : {
+      "get" : {
+        "tags" : [ "v1" ],
+        "summary" : "Price the contract",
+        "description" : "Price the contract",
+        "operationId" : "price",
+        "produces" : [ "application/json" ],
+        "parameters" : [ {
+          "name" : "shortcode",
+          "in" : "path",
+          "description" : "Shortcode generated from the request (e.g., DIGITMATCH_R_10_18.18_1517876791_5T_7_0)",
+          "required" : true,
+          "type" : "string"
+        }, {
+          "name" : "currency",
+          "in" : "path",
+          "description" : "Currency",
+          "required" : true,
+          "type" : "string"
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "successful operation",
+            "schema" : { }
+          },
+          "400" : {
+            "description" : "Invalid Request"
+          }
+        }
+      }
+    }
+  },
+  "definitions" : {
+    "price" : {
+      "type" : "object",
+      "properties" : {
+        "theo_probability" : {
+          "type" : "number",
+          "format" : "float",
+          "example" : 0.51
+        }
+      }
+    }
+  }
+}
