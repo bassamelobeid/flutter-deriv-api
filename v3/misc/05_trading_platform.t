@@ -92,7 +92,7 @@ subtest 'accounts' => sub {
     $t->await::authorize({authorize => $client1_token_read});
     my $list = $t->await::trading_platform_accounts($params);
     test_schema('trading_platform_accounts', $list);
-    cmp_deeply($list->{trading_platform_accounts}, [$dx_acc, $dx_syn], 'responses match');
+    cmp_deeply($list->{trading_platform_accounts}, bag($dx_acc, $dx_syn), 'responses match');
 
 };
 
