@@ -133,8 +133,11 @@ subtest 'active_symbols for whitelisted apps' => sub {
                 active_symbols => 'brief',
             }};
         my %expected_symbol_count = (
-            1     => 63,
-            10    => 29,
+            1  => 63,
+            10 => {
+                normal       => 29,
+                quiet_period => 16,
+            },
             11    => 63,
             1169  => 63,
             14473 => 63,
@@ -142,13 +145,25 @@ subtest 'active_symbols for whitelisted apps' => sub {
             15437 => 63,
             15438 => 63,
             15481 => 63,
-            15488 => 29
-        );
+            15488 => {
+                normal       => 29,
+                quiet_period => 16
+            });
+        my $o = LandingCompany::Registry::get('svg')->basic_offerings({
+            loaded_revision => 1,
+            action          => 'buy'
+        });
         my $app = $deriv->whitelist_apps;
         foreach my $app_id (keys %$app) {
             $params->{source} = $app_id;
             my $result = $c->call_ok($method, $params)->has_no_system_error->result;
-            is scalar @$result, $expected_symbol_count{$app_id}, 'symbol count expected for ' . $app->{$app_id}{name} if ref $result eq 'ARRAY';
+            if ($app_id == 10 or $app_id == 15488) {
+                is scalar @$result, $expected_symbol_count{$app_id}{($o->is_quiet_period ? 'quiet_period' : 'normal')},
+                    'symbol count expected for ' . $app->{$app_id}{name}
+                    if ref $result eq 'ARRAY';
+            } else {
+                is scalar @$result, $expected_symbol_count{$app_id}, 'symbol count expected for ' . $app->{$app_id}{name} if ref $result eq 'ARRAY';
+            }
         }
     };
 };
