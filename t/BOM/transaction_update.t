@@ -61,14 +61,6 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
         date   => $now,
     });
 
-my $current_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-    undeerlying => $underlying->symbol,
-    epoch       => $now->epoch,
-    quote       => 100,
-});
-my $mocked_u = Test::MockModule->new('Quant::Framework::Underlying');
-$mocked_u->mock('spot_tick', sub { return $current_tick });
-
 initialize_realtime_ticks_db();
 
 sub db {
@@ -193,6 +185,7 @@ my ($trx, $fmb, $chld, $qv1, $qv2);
 subtest 'update take profit', sub {
     my ($txn, $contract);
     subtest 'error check' => sub {
+        BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks([100.01, time - 1, $underlying->symbol], [100, time, $underlying->symbol]);
         # update without a relevant contract
         my $updater = BOM::Transaction::ContractUpdate->new(
             client        => $cl,
@@ -205,14 +198,13 @@ subtest 'update take profit', sub {
             'message_to_client - This contract was not found among your open positions.';
 
         my $args = {
-            underlying   => $underlying,
-            bet_type     => 'CALL',
-            currency     => 'USD',
-            barrier      => 'S0P',
-            duration     => '5m',
-            amount       => 100,
-            amount_type  => 'stake',
-            current_tick => $current_tick,
+            underlying  => $underlying,
+            bet_type    => 'CALL',
+            currency    => 'USD',
+            barrier     => 'S0P',
+            duration    => '5m',
+            amount      => 100,
+            amount_type => 'stake',
         };
         $contract = produce_contract($args);
 
@@ -479,6 +471,7 @@ subtest 'update take profit', sub {
 };
 
 subtest 'update stop loss with/without active deal cancellation' => sub {
+    BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks([100.01, time - 1, $underlying->symbol], [100, time, $underlying->symbol]);
     my $args = {
         underlying   => $underlying,
         bet_type     => 'MULTUP',
@@ -486,7 +479,6 @@ subtest 'update stop loss with/without active deal cancellation' => sub {
         multiplier   => 10,
         amount       => 100,
         amount_type  => 'stake',
-        current_tick => $current_tick,
         cancellation => '1h',
     };
     my $contract = produce_contract($args);
@@ -550,6 +542,7 @@ subtest 'update stop loss with/without active deal cancellation' => sub {
 };
 
 subtest 'update contract of another account' => sub {
+    BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks([100.01, time - 1, $underlying->symbol], [100, time, $underlying->symbol]);
     my $args = {
         underlying   => $underlying,
         bet_type     => 'MULTUP',
@@ -557,7 +550,6 @@ subtest 'update contract of another account' => sub {
         multiplier   => 10,
         amount       => 100,
         amount_type  => 'stake',
-        current_tick => $current_tick,
         cancellation => '1h',
     };
     my $contract = produce_contract($args);
@@ -591,14 +583,14 @@ subtest 'update contract of another account' => sub {
 };
 
 subtest 'too frequent updates' => sub {
+    BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks([100.01, time - 1, $underlying->symbol], [100, time, $underlying->symbol]);
     my $args = {
-        underlying   => $underlying,
-        bet_type     => 'MULTUP',
-        multiplier   => 10,
-        currency     => 'USD',
-        amount       => 100,
-        amount_type  => 'stake',
-        current_tick => $current_tick,
+        underlying  => $underlying,
+        bet_type    => 'MULTUP',
+        multiplier  => 10,
+        currency    => 'USD',
+        amount      => 100,
+        amount_type => 'stake',
     };
     my $contract = produce_contract($args);
 
