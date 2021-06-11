@@ -571,6 +571,7 @@ sub print_client_details {
         onfido_submissions_reset           => BOM::User::Onfido::submissions_reset_at($client),
         onfido_reported_properties         => BOM::User::Onfido::reported_properties($client),
         poi_name_mismatch                  => $client->status->poi_name_mismatch,
+        expired_poi_docs                   => $client->documents_expired(1),
     };
 
     return BOM::Backoffice::Request::template()->process('backoffice/client_edit.html.tt', $template_param, undef, {binmode => ':utf8'})

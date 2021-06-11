@@ -453,6 +453,12 @@ window.addEventListener('DOMContentLoaded', init_text_validations, false);
         <td class="bg-lightgrey" colspan="2">#Documents</td>
     </tr>
     <tr>
+        <td class="label">Expired POI documents</td>
+        <td>:
+            <b>[% IF expired_poi_docs %] Yes [% ELSE %] No [% END %]</b>
+        </td>
+    </tr>
+    <tr>
         <script>
             function resizeDocumentsWrapper() {
                 const main_title = document.getElementById('main_title');
