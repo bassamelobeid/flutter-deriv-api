@@ -604,9 +604,11 @@ subtest 'synthetic_age_verification_check' => sub {
     my $trading_calendar = Quant::Framework->new->trading_calendar(BOM::Config::Chronicle::get_chronicle_reader);
     my $exchange         = Finance::Exchange->create_exchange('FOREX');
     SKIP: {
-        skip 'no forex feed available over weekend/holiday', 1 unless $trading_calendar->is_open($exchange);
-
         $contract = produce_contract({%contract_params, underlying => 'frxUSDJPY'});
+
+        skip 'contract start or expiry is a holiday', 1
+            unless $trading_calendar->is_open_at($exchange, $contract->date_start)
+            and $trading_calendar->is_open_at($exchange, $contract->date_expiry);
 
         $tx = BOM::Transaction->new({
             client        => $client,
