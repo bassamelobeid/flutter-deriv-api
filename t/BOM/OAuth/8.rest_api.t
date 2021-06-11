@@ -99,6 +99,19 @@ my $post = sub {
     return $t->post_ok($url => json     => $payload);
 };
 
+# Mock event emitter
+my $events;
+
+my $emitter_mock = Test::MockModule->new('BOM::Platform::Event::Emitter');
+$emitter_mock->mock(
+    'emit',
+    sub {
+        my ($event, $event_args) = @_;
+        $events->{$event} = $event_args;
+
+        return $emitter_mock->original('emit')->(@_);
+    });
+
 my $challenge;
 my $expire;
 
@@ -408,6 +421,37 @@ subtest 'login' => sub {
             })->status_is(200)->json_has('/tokens');
     };
 
+    # Mocking OneAll Data
+    my $mocked_oneall = Test::MockModule->new('WWW::OneAll');
+    $mocked_oneall->mock(
+        new        => sub { bless +{}, 'WWW::OneAll' },
+        connection => sub {
+            return +{
+                response => {
+                    request => {
+                        status => {
+                            code => 200,
+                        },
+                    },
+                    result => {
+                        status => {
+                            code => 200,
+                            flag => '',
+                        },
+                        data => {
+                            user => {
+                                identity => {
+                                    emails                => [{value => $social_user_email}],
+                                    provider              => 'google',
+                                    provider_identity_uid => 'test_uid',
+                                }
+                            },
+                        },
+                    },
+                },
+            };
+        });
+
     subtest 'Login via social' => sub {
         my $login_type = 'social';
 
@@ -507,6 +551,25 @@ subtest 'login' => sub {
                 Authorization => "Bearer $jwt_token",
             })->status_is(200)->json_has('/tokens');
     };
+
+    subtest 'New social signup' => sub {
+        $social_user_email = 'newguy@test.com';
+        $events            = {};
+
+        $post->(
+            $login_url,
+            {
+                app_id           => $app_id,
+                type             => 'social',
+                connection_token => 'true'
+            },
+            {
+                Authorization => "Bearer $jwt_token",
+            })->status_is(200)->json_has('/tokens');
+
+        is $events->{signup}->{properties}->{type},    'trading', 'track args type=trading';
+        is $events->{signup}->{properties}->{subtype}, 'virtual', 'track args subtype=virtual';
+    }
 };
 
 $api_mock->unmock_all;

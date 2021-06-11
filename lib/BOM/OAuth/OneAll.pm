@@ -150,7 +150,8 @@ sub callback {
             {
                 loginid    => $account->{client}->loginid,
                 properties => {
-                    type     => 'virtual',
+                    type     => 'trading',
+                    subtype  => 'virtual',
                     utm_tags => $utm_tags,
                 }});
 

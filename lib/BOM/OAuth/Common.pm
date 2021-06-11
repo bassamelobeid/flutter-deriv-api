@@ -20,6 +20,7 @@ use BOM::Platform::Context qw( localize request );
 use BOM::Platform::Email qw( send_email );
 use BOM::User;
 use BOM::User::AuditLog;
+use BOM::Platform::Account::Virtual;
 
 # Time in seconds we'll start blocking someone for repeated bad logins from the same IP
 use constant BLOCK_MIN_DURATION => 5 * 60;

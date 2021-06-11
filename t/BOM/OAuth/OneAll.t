@@ -193,6 +193,11 @@ subtest "User sing up with social login, app_id is saved" => sub {
         sub {
             my ($type, $data) = @_;
             $emitted{$type}++;
+
+            if ($type eq 'signup') {
+                is $data->{properties}->{type},    'trading', 'track args type=trading';
+                is $data->{properties}->{subtype}, 'virtual', 'track args subtype=virtual';
+            }
         });
 
     $t->get_ok("/oneall/callback?app_id=$app_id&connection_token=1")->status_is(302);
