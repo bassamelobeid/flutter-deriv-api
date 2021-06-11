@@ -304,6 +304,15 @@ rpc new_account_real => sub {
     return $response if $response->{error};
 
     my $new_client = $response->{client};
+    BOM::Platform::Event::Emitter::emit(
+        'signup',
+        {
+            loginid    => $new_client->loginid,
+            properties => {
+                type    => 'trading',
+                subtype => 'real'
+            }});
+
     return {
         client_id                 => $new_client->loginid,
         landing_company           => $new_client->landing_company->name,
@@ -357,6 +366,16 @@ rpc new_account_maltainvest => sub {
         return BOM::RPC::v3::Utility::client_error();
 
     }
+
+    BOM::Platform::Event::Emitter::emit(
+        'signup',
+        {
+            loginid    => $new_client->loginid,
+            properties => {
+                type    => 'trading',
+                subtype => 'real'
+            }});
+
     # In case of having more than a tax residence, client residence will replaced.
     my $selected_tax_residence = $args->{tax_residence} =~ /\,/g ? $args->{residence} : $args->{tax_residence};
     my $tin_format             = $countries_instance->get_tin_format($selected_tax_residence);
@@ -576,7 +595,7 @@ sub create_virtual_account {
         {
             loginid    => $client->loginid,
             properties => {
-                type     => $args->{type},
+                type     => $args->{type} // 'trading',
                 subtype  => 'virtual',
                 utm_tags => $utm_tags
             }});

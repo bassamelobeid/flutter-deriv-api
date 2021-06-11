@@ -42,11 +42,13 @@ my $fixed_time = Date::Utility->new('2018-02-15');
 set_fixed_time($fixed_time->epoch);
 
 my %emitted;
+my $emit_data;
 my $mock_events = Test::MockModule->new('BOM::Platform::Event::Emitter');
 $mock_events->mock(
     'emit',
     sub {
         my ($type, $data) = @_;
+        $emit_data = $data;
         $emitted{$type . '_' . $data->{loginid}}++;
     });
 
@@ -59,6 +61,7 @@ $mock_datadog->mock(
         $datadog_args{$key} = $args;
     },
 );
+
 my $email = sprintf('Test%.5f@binary.com', rand(999));
 my $rpc_ct;
 my ($method, $params, $client_details);
@@ -98,6 +101,8 @@ subtest 'Initialization' => sub {
 
 $method = 'new_account';
 subtest $method => sub {
+    $emit_data = {};
+
     # new_account params requires subtype
     $params->{args}->{subtype}   = 'virtual';
     $params->{args}->{residence} = 'id';
@@ -171,6 +176,8 @@ subtest $method => sub {
     my $new_loginid = $rpc_ct->result->{client_loginid};
 
     ok $new_loginid =~ /^VRTC\d+/, 'new VR loginid';
+    is $emit_data->{properties}->{type},    'trading', 'type=trading';
+    is $emit_data->{properties}->{subtype}, 'virtual', 'subtype=virtual';
 
     my $token_db = BOM::Database::Model::AccessToken->new();
     my $tokens   = $token_db->get_all_tokens_by_loginid($new_loginid);
@@ -207,6 +214,7 @@ subtest $method => sub {
     };
 
     subtest 'virtual wallet client' => sub {
+        $emit_data = {};
         delete $params->{args}->{verification_code};
 
         $params->{token} = $oauth_token;
@@ -218,6 +226,8 @@ subtest $method => sub {
         my $new_loginid = $rpc_ct->result->{client_loginid};
 
         ok $new_loginid =~ /^VRDW\d+/, 'new VRDW loginid';
+        is $emit_data->{properties}->{type},    'wallet',  'type=wallet';
+        is $emit_data->{properties}->{subtype}, 'virtual', 'subtype=virtual';
 
         my $wallet_client = BOM::User::Client->get_client_instance($new_loginid);
         isa_ok($wallet_client, 'BOM::User::Wallet', 'get_client_instance returns instance of wallet');
@@ -444,6 +454,7 @@ subtest $method => sub {
     };
 
     subtest 'Create new account' => sub {
+        $emit_data = {};
         $params->{token} = BOM::Platform::Token::API->new->create_token($vclient->loginid, 'test token');
 
         my $result = $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->result;
@@ -485,6 +496,8 @@ subtest $method => sub {
 
         my $new_loginid = $rpc_ct->result->{client_id};
         ok $new_loginid =~ /^CR\d+$/, 'new CR loginid';
+        is $emit_data->{properties}->{type},    'trading', 'type=trading';
+        is $emit_data->{properties}->{subtype}, 'real',    'subtype=real';
 
         my $token_db = BOM::Database::Model::AccessToken->new();
         my $tokens   = $token_db->get_all_tokens_by_loginid($new_loginid);
@@ -1279,6 +1292,7 @@ subtest $method => sub {
     };
 
     subtest 'Create new wallet real' => sub {
+        $emit_data = {};
         $params->{token} = $auth_token;
         $user->update_email_fields(email_verified => 1);
 
@@ -1296,6 +1310,8 @@ subtest $method => sub {
 
         my $new_loginid = $rpc_ct->result->{client_id};
         ok $new_loginid =~ /^DW\d+/, 'new DW loginid';
+        is $emit_data->{properties}->{type},    'wallet', 'type=wallet';
+        is $emit_data->{properties}->{subtype}, 'real',   'subtype=real';
 
         my $wallet_client = BOM::User::Client->get_client_instance($new_loginid);
         isa_ok($wallet_client, 'BOM::User::Wallet', 'get_client_instance returns instance of wallet');
