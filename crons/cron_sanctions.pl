@@ -95,6 +95,18 @@ sub do_report {
 
         $csv_rows = get_matched_clients_info_by_broker($broker);
 
+        unless (scalar @$csv_rows) {
+            send_email({
+                from    => $brand->emails('support'),
+                to      => $brand->emails('compliance'),
+                subject => 'No sanctioned clients found for ' . $broker . ' at ' . $today_date
+            });
+
+            $log->infof('No sanctioned clients found. Finished %s at %s', $broker, scalar localtime);
+
+            next;
+        }
+
         $log->infof('Finished %s at %s', $broker, scalar localtime);
 
         # CSV creation starts here
