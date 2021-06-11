@@ -620,7 +620,9 @@ function createSectionLinks() {
 
     document.querySelectorAll('.card__label').forEach(el_title => {
         const text = el_title.textContent.toLowerCase();
-        const anchor_name = text.replace(/[^a-z0-9]/ig, '_');
+        const nav_link = el_title.getAttribute('data-nav-link');
+        // Set anchor_name to the section's data-nav-link value (if exists), otherwise default to section title
+        const anchor_name = nav_link ? nav_link.replace(/[^a-z0-9]/ig, '_') : text.replace(/[^a-z0-9]/ig, '_');
 
         const el_anchor = document.createElement('a');
         el_anchor.setAttribute('name', anchor_name);
@@ -629,7 +631,8 @@ function createSectionLinks() {
         const el_link = document.createElement('a');
         el_link.setAttribute('href', `#${anchor_name}`);
         el_link.setAttribute('class', 'link');
-        el_link.textContent = text;
+        // Set the link's textContent to the section's data-nav-link value (if exists), otherwise default to section title
+        el_link.textContent = nav_link ? nav_link : text;
         el_link.addEventListener('click', (e) => {
             e.preventDefault();
             smoothScroll(el_anchor, null, -top_margin);
@@ -751,7 +754,6 @@ $(function() {
     $(`.sidebar a[href*="${window.location.pathname}"]`).parent().addClass('active');
     initThemeSwitcher();
     initGMTClock();
-    $('.datepick').datepicker({dateFormat: "yy-mm-dd"});
 });
 
 

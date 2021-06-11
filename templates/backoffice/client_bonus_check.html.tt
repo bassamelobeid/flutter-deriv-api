@@ -17,7 +17,6 @@
 }
 </style>
 
-
 <div id="client_edit">
     <p class="row bg-lightgrey">#Client Details</p>
     [% in_dubious_country = bonus_dubious_countries.grep(country_residence) %]

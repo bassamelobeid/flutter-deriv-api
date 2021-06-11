@@ -38,7 +38,7 @@ sub BrokerPresentation {
     print '<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;700&display=swap" rel="stylesheet">';
 
     print '<link rel="stylesheet" type="text/css" href="' . request()->url_for('css/' . $_) . '"/>'
-        for ('style_new.css?v=2021-05-06', 'sell_popup.css', 'external/grid.css?v=2021-03-31', 'external/jquery-ui.custom.css?v=2021-05-06');
+        for ('style_new.css?v=2021-06-01', 'sell_popup.css', 'external/grid.css?v=2021-03-31', 'external/jquery-ui.custom.css?v=2021-05-06');
 
     foreach my $js_file (BOM::JavascriptConfig->instance->bo_js_files_for($0)) {
         print '<script type="text/javascript" src="' . $js_file . '"></script>';
@@ -96,6 +96,10 @@ Takes the following arguments:
 
 =item * C<is_content_centered> - (optional) A boolean value, set to 1 for aligning contents to center
 
+=item * C<collapsed> - (optional) A boolean value, set to 1 to collapse contents
+
+=item * C<nav_link> - (optional) A string value, set the top_bar navigation link's name and href
+
 =back
 
 =back
@@ -108,13 +112,15 @@ sub Bar {
     $title = uc($title // '');
     my $container_class = $options->{container_class} // 'card';
     my $title_class     = $options->{title_class}     // 'card__label toggle';
-    my $content_align   = $options->{is_content_centered} ? 'center' : '';
+    my $content_align   = $options->{is_content_centered} ? 'center'                                 : '';
+    my $collapsed       = $options->{collapsed}           ? 'collapsed'                              : '';
+    my $nav_link        = $options->{nav_link}            ? qq~data-nav-link="$options->{nav_link}"~ : '';
 
     BarEnd();    #see sub below
 
     print qq~
         <div class="$container_class">
-            <div class="$title_class">$title</div>
+            <div class="$title_class $collapsed" $nav_link>$title</div>
             <div class="card__content $content_align">~;
 
     $vk_BarIsDoneOnce = 'yes';

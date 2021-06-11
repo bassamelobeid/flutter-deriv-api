@@ -746,14 +746,14 @@ sub build_client_warning_message {
             push(
                 @output,
                 {
-                    clerk            => $disabled->{staff_name},
-                    reason           => $disabled->{reason},
-                    warning          => 'var(--color-red)',
-                    code             => $code,
-                    section          => $type->{comments},
-                    editlink         => $edit_client_with_status->($type->{linktype}),
-                    siblings_summary => $siblings_summary
-                });
+                    clerk              => $disabled->{staff_name},
+                    reason             => $disabled->{reason},
+                    warning            => 'var(--color-red)',
+                    code               => $code,
+                    section            => $type->{comments},
+                    editlink           => $edit_client_with_status->($type->{linktype}),
+                    siblings_summary   => $siblings_summary,
+                    last_modified_date => $disabled->{last_modified_date}});
         }
     }
 
@@ -763,12 +763,13 @@ sub build_client_warning_message {
     if (@output || scalar keys %client_status) {
         $output =
               '<form method="POST" class="row">'
-            . '<div class="row"><table class="collapsed hover alternate small"><thead><tr>'
+            . '<div class="row"><table class="collapsed hover alternate"><thead><tr>'
             . '<th>&nbsp;</th>'
             . '<th>Status</th>'
             . '<th>Reason/Info</th>'
             . '<th>Staff</th>'
             . '<th>Sync</th>'
+            . '<th>Last modified date</th>'
             . '</tr></thead><tbody>';
         my $trusted_section;
         foreach my $output_rows (@output) {
@@ -783,7 +784,7 @@ sub build_client_warning_message {
                 . '<input type="checkbox" name="status_checked" value="'
                 . $output_rows->{'code'} . '" />' . '</td>'
                 . '<td align="left">'
-                . '<strong style="color:'
+                . '<strong style="font-size: 1.3rem !important; color:'
                 . $output_rows->{'warning'} . '">'
                 . (uc $output_rows->{'section'})
                 . '</strong></td>'
@@ -795,6 +796,9 @@ sub build_client_warning_message {
                 . '</b></td>'
                 . '<td><b>'
                 . $output_rows->{'siblings_summary'}
+                . '</b></td>'
+                . '<td><b>'
+                . $output_rows->{'last_modified_date'}
                 . '</b></td></tr>';
         }
 

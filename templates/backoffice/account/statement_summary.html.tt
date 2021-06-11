@@ -13,7 +13,7 @@
         <input type="submit" class="btn btn--primary" value="View">
     </form>
 </div>
-<br/>
+
 <h3>Statement summary [% client_summary_ranges.from %] - [% client_summary_ranges.to %]</h3>
 <table>
     <tbody class="top">

@@ -128,9 +128,9 @@ if ($transaction_type eq 'Anonymize client') {
                 die "$bulk_upload: only csv files allowed\n" unless $bulk_upload =~ /\.csv$/i;
 
                 BOM::Platform::Event::Emitter::emit('bulk_anonymization', {data => $lines});
-                print '<p class="notify">' . " $bulk_upload is being processed. An email will be sent to compliance when the job completes.</p>";
+                print '<p class="success">' . " $bulk_upload is being processed. An email will be sent to compliance when the job completes.</p>";
             } catch ($e) {
-                print '<p class="notify notify--warning">ERROR: ' . $e . '</p>' if $e;
+                print '<p class="error">ERROR: ' . $e . '</p>' if $e;
             }
         }
     }

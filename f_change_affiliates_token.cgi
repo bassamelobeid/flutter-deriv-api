@@ -97,7 +97,7 @@ if ($input->{EditAffiliatesToken}) {
             code_exit_BO("<p class=\"error\">ERROR : Could not update client details for client $ClientLoginid</p></p>");
         }
 
-        print "<p class=\"notify\">Client " . $cli->loginid . " saved</p>";
+        print "<p class=\"success\">Client " . $cli->loginid . " saved</p>";
     }
 
     my $msg =

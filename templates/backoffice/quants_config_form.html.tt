@@ -96,7 +96,7 @@ underlying symbol, example frxUSDJPY -> If limit applies to a particular symbol 
                     <span class="tooltip-blue">?</span>
                 </span> <br/>
 
-                <input type="text" name="start_time" class="datepick" size="15" maxlength="19"
+                <input type="text" name="start_time" class="datepick" size="18" maxlength="19"
                     pattern="^\d{4}-\d{2}-\d{2}( \d{2}:\d{2}:\d{2})?\$" data-lpignore="true" />
 
                 <br /><span class="hint" style="font-size:10px">Format: yyyy-mm-dd (HH:mm:ss)</span>
@@ -104,7 +104,7 @@ underlying symbol, example frxUSDJPY -> If limit applies to a particular symbol 
             <hr/>
             <div>
                 <b>End time</b><br/>
-                <input type="text" name="end_time" class="datepick" size="15" maxlength="19"
+                <input type="text" name="end_time" class="datepick" size="18" maxlength="19"
                     pattern="^\d{4}-\d{2}-\d{2}( \d{2}:\d{2}:\d{2})?\$" data-lpignore="true" />
 
                 <br /><span class="hint" style="font-size:10px">Format: yyyy-mm-dd (HH:mm:ss)</span>

@@ -187,29 +187,29 @@ if ($input{document_list}) {
         }
 
         if (!$client) {
-            $full_msg .= "<p style=\"color:red; font-weight:bold;\">ERROR: with client login $loginid</p>";
+            $full_msg .= "<div class=\"notify notify--warning\"><b>ERROR:</b> with client login <b>$loginid</b></div>";
             next;
         }
 
         $client->set_db('write');
         my ($doc) = $client->find_client_authentication_document(query => [id => $doc_id]);    # Rose
         if (!$doc) {
-            $full_msg .= "<p style=\"color:red; font-weight:bold;\">ERROR: could not find $file_name record in db</p>";
+            $full_msg .= "<div class=\"notify notify--warning\">ERROR: could not find $file_name record in db</div>";
             next;
         }
 
         if ($new_doc_status eq 'delete') {
             if ($doc->delete) {
-                $full_msg .= "<p class=\"notify\">SUCCESS - $file_name is deleted!</p>";
+                $full_msg .= "<div class=\"notify\"><b>SUCCESS</b> - $file_name is <b>deleted</b>!</div>";
             } else {
-                $full_msg .= "<p class=\"notify notify--warning\">ERROR: did not remove $file_name record from db</p>";
+                $full_msg .= "<div class=\"notify notify--warning\"><b>ERROR:</b> did not remove <b>$file_name</b> record from db</div>";
             }
         } else {
             $doc->status($new_doc_status);
             $full_msg .= (
                 $doc->save
-                ? "<p style=\"color:#eeee00; font-weight:bold;\">SUCCESS - $file_name has been $new_doc_status!</p>"
-                : "<p style=\"color:red; font-weight:bold;\">ERROR: did not update $file_name record from db</p>"
+                ? "<div class=\"notify\"><b>SUCCESS</b> - $file_name has been <b>$new_doc_status</b>!</div>"
+                : "<div class=\"notify notify--warning\"><b>ERROR:</b> did not update <b>$file_name</b> record from db</div>"
             );
         }
     }
@@ -968,8 +968,8 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
             $sync_error = sync_to_doughflow($cli, $clerk);
         }
 
-        print "<p class=\"notify\">Client " . $cli->loginid . " saved</p>";
-        print "<p class=\"notify notify--warning\">$sync_error</p>" if $sync_error;
+        print "<p class=\"success\">Client " . $cli->loginid . " saved</p>";
+        print "<p class=\"error\">$sync_error</p>" if $sync_error;
 
         BOM::Platform::Event::Emitter::emit('sync_user_to_MT5', {loginid => $cli->loginid})
             if ($cli->loginid eq $loginid);
@@ -1077,7 +1077,7 @@ if (@client_comments) {
     print qq~<br><a class="link" href="$comments_url">Add a new comment / View full list</a>~;
 }
 
-Bar("$loginid STATUSES");
+Bar("$loginid STATUSES", {nav_link => "STATUSES"});
 if (my $statuses = build_client_warning_message($loginid)) {
     print $statuses;
 }
@@ -1095,7 +1095,7 @@ BOM::Backoffice::Request::template()->process(
     }) || die BOM::Backoffice::Request::template()->error(), "\n";
 
 # Show Self-Exclusion link
-Bar("$loginid SELF-EXCLUSION SETTINGS");
+Bar("$loginid SELF-EXCLUSION SETTINGS", {nav_link => "SELF-EXCLUSION SETTINGS"});
 print "<p><a id='self-exclusion' class=\"btn btn--primary\" href=\""
     . request()->url_for(
     'backoffice/f_setting_selfexclusion.cgi',
@@ -1115,7 +1115,7 @@ if (BOM::Backoffice::Auth0::has_authorisation(['Compliance']) and $client->landi
         }) . '">Configure restricted self-exlcusion settings</a>';
 }
 
-Bar("$loginid PAYMENT AGENT DETAILS");
+Bar("$loginid PAYMENT AGENT DETAILS", {nav_link => "PAYMENT AGENT DETAILS"});
 
 # Show Payment-Agent details if this client is also a Payment Agent.
 my $payment_agent = $client->get_payment_agent;
@@ -1157,7 +1157,7 @@ my $name     = $client->first_name;
 $name .= ' ' if $name;
 $name .= $client->last_name;
 my $client_info = sprintf "%s %s%s", $client->loginid, ($name || '?'), ($statuses ? " [$statuses]" : '');
-Bar("CLIENT " . $client_info);
+Bar("CLIENT " . $client_info, {nav_link => "Client details"});
 
 my ($link_acc_msg, $link_loginid);
 if ($client->comment =~ /move UK clients to \w+ \(from (\w+)\)/) {
@@ -1210,11 +1210,12 @@ foreach my $lid ($user_clients->@*) {
             loginID => $lid->loginid,
         });
 
-    print "<li><a href='$link_href'"
+    print "<li><strong><a href='$link_href'"
         . ($client->status->disabled ? ' class="link link--disabled"' : ' class="link"') . ">"
         . encode_entities($lid->loginid) . " ("
         . $currency
-        . ") </a><span class='error'> "
+        . ") </a></strong>&nbsp;<span"
+        . ($client->status->disabled ? ' class="text-muted"' : ' class="error"') . ">"
         . $formatted_balance
         . "</span></li>";
 }
@@ -1305,7 +1306,8 @@ print qq[
     <input type=submit class="btn btn--primary" value="Save client details"></form>
     <style>
         .data-changed {
-            background: pink;
+            background: var(--color-pink);
+            color: var(--grey-500);
         }
     </style>
     <script>
@@ -1476,7 +1478,7 @@ sub dropdown {
 }
 
 if (not $client->is_virtual) {
-    Bar("Sync Client Authentication Status to Doughflow");
+    Bar("Sync Client Authentication Status to Doughflow", {nav_link => "Sync to Doughflow"});
     print qq{
         <p>Click to sync client authentication status to Doughflow: </p>
         <form action="$self_post" method="get">
@@ -1486,7 +1488,7 @@ if (not $client->is_virtual) {
             <input type="submit" class="btn btn--primary" value="Sync now !!">
         </form>
     };
-    Bar("Sync Client Information to MT5");
+    Bar("Sync Client Information to MT5", {nav_link => "Sync to MT5"});
     print qq{
         <p>Click to sync client information to MT5: </p>
         <form action="$self_post" method="get">
@@ -1497,7 +1499,7 @@ if (not $client->is_virtual) {
     };
 }
 
-Bar("Two-Factor Authentication");
+Bar("Two-Factor Authentication", {nav_link => "2FA"});
 print 'Enabled : <b>' . ($user->is_totp_enabled ? 'Yes' : 'No') . '</b>';
 print qq{
     <br/><br/>
@@ -1505,12 +1507,33 @@ print qq{
         <input type="hidden" name="whattodo" value="disable_2fa">
         <input type="hidden" name="broker" value="$encoded_broker">
         <input type="hidden" name="loginID" value="$encoded_loginid">
-        <input type="submit" value = "Disable 2FA"/>
+        <input type="submit" class="btn btn--primary" value="Disable 2FA"/>
         <span class="error">This will disable the 2FA feature. Only user can enable then.</span>
     </form>
 } if $user->is_totp_enabled;
 
-Bar("$loginid Tokens");
+if (not $client->is_virtual) {
+    # Upload new ID doc
+    Bar("Upload new ID document", {nav_link => "Upload ID doc"});
+    BOM::Backoffice::Request::template()->process(
+        'backoffice/client_edit_upload_doc.html.tt',
+        {
+            self_post          => $self_post,
+            broker             => $encoded_broker,
+            loginid            => $encoded_loginid,
+            countries          => request()->brand->countries_instance->countries,
+            poi_doctypes       => join('|', @poi_doctypes),
+            expirable_doctypes => join('|', @expirable_doctypes),
+            no_date_doctypes   => join('|', @no_date_doctypes),
+        });
+}
+
+Bar(
+    "$loginid Tokens",
+    {
+        collapsed => 1,
+        nav_link  => "Tokens"
+    });
 my $token_db = BOM::Database::Model::AccessToken->new();
 my (@all_tokens, @deleted_tokens);
 
@@ -1536,7 +1559,7 @@ BOM::Backoffice::Request::template()->process(
         deleted => \@deleted_tokens
     }) || die BOM::Backoffice::Request::template()->error(), "\n";
 
-Bar("$loginid Copiers/Traders");
+Bar("$loginid Copiers/Traders", {nav_link => "Copiers/Traders"});
 my $copiers_data_mapper = BOM::Database::DataMapper::Copier->new({
     db             => $client->db,
     client_loginid => $loginid
@@ -1555,7 +1578,7 @@ BOM::Backoffice::Request::template()->process(
         self_post => $self_post
     }) || die BOM::Backoffice::Request::template()->error(), "\n";
 
-Bar('Send Client Statement');
+Bar('Send Client Statement', {nav_link => "Send statement"});
 BOM::Backoffice::Request::template()->process(
     'backoffice/send_client_statement.tt',
     {
@@ -1570,21 +1593,6 @@ Bar("Email Consent");
 print 'Email consent for marketing: ' . ($user->{email_consent} ? '<b>Yes</b>' : '<b>No</b>');
 
 if (not $client->is_virtual) {
-
-    #upload new ID doc
-    Bar("Upload new ID document");
-    BOM::Backoffice::Request::template()->process(
-        'backoffice/client_edit_upload_doc.html.tt',
-        {
-            self_post          => $self_post,
-            broker             => $encoded_broker,
-            loginid            => $encoded_loginid,
-            countries          => request()->brand->countries_instance->countries,
-            poi_doctypes       => join('|', @poi_doctypes),
-            expirable_doctypes => join('|', @expirable_doctypes),
-            no_date_doctypes   => join('|', @no_date_doctypes),
-        });
-
     Bar('P2P Advertiser');
 
     print '<a class="btn btn--primary" href="'
@@ -1622,7 +1630,7 @@ if (not $client->is_virtual) {
         });
 }
 
-Bar($user->{email} . " Login history");
+Bar($user->{email} . " Login history", {nav_link => "Login History"});
 my $limit         = 200;
 my $login_history = $user->login_history(
     order                    => 'desc',

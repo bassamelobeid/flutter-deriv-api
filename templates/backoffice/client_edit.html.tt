@@ -436,20 +436,6 @@ window.addEventListener('DOMContentLoaded', init_text_validations, false);
         <td>:<input type="checkbox"  style="vertical-align:middle" name="kyc_email_checkbox" value="1" /> </td>
     </tr>
     <tr>
-        <td class="label">Account Opening Reason</td>
-        <td>:
-            [% IF client.is_virtual %]
-                [% client.account_opening_reason %]
-            [% ELSE %]
-                <select name="account_opening_reason">
-                    [% FOREACH reason IN account_opening_reasons %]
-                        <option value="[% reason %]" [% IF reason == client.account_opening_reason %]selected="selected"[% END %]>[% reason %]</option>
-                    [% END %]
-                </select>
-            [% END %]
-        </td>
-    </tr>
-    <tr>
         <td class="bg-lightgrey" colspan="2">#Documents</td>
     </tr>
     <tr>
@@ -470,8 +456,8 @@ window.addEventListener('DOMContentLoaded', init_text_validations, false);
                 document.addEventListener("DOMContentLoaded", resizeDocumentsWrapper);
             })();
         </script>
-        <td style="padding: 16px;" colspan="2">
-            <p style="overflow-x: scroll;" id="documents_wrapper">
+        <td colspan="2">
+            <p style="overflow-x: scroll; padding-bottom: 16px" id="documents_wrapper">
             [%
                 IF show_uploaded_documents;
                 THEN;
@@ -532,6 +518,20 @@ window.addEventListener('DOMContentLoaded', init_text_validations, false);
                 END %]
             [% # client.residence == 'gb'
             END %]
+        </td>
+    </tr>
+    <tr>
+        <td class="label">Account Opening Reason</td>
+        <td>:
+            [% IF client.is_virtual %]
+                [% client.account_opening_reason %]
+            [% ELSE %]
+                <select name="account_opening_reason">
+                    [% FOREACH reason IN account_opening_reasons %]
+                        <option value="[% reason %]" [% IF reason == client.account_opening_reason %]selected="selected"[% END %]>[% reason %]</option>
+                    [% END %]
+                </select>
+            [% END %]
         </td>
     </tr>
     <tr>

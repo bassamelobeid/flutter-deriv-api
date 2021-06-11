@@ -7,7 +7,7 @@
             <form method="POST" action="[%request.url_for('backoffice/f_viewloginhistory.cgi') | none %]" style="display:inline">
             <input name="email" value="[%user.email%]" type="hidden">
             <input name="limit" value="0" type="hidden">
-            <input type="submit" value="view all">
+            <input type="submit" class="btn btn--primary" value="View all">
             </form>
             </p>
         [% END %]
