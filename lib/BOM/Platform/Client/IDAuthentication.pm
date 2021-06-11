@@ -277,6 +277,7 @@ sub _request_id_authentication {
         title_padding        => 30,
         title_bottom_padding => 0,
         authentication_url   => $brand->authentication_url,
+        live_chat_url        => $brand->live_chat_url,
     };
 
     return send_email({
