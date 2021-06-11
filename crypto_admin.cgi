@@ -222,13 +222,9 @@ sub _get_function_map {
         list_receivedby_address  => sub { $currency_wrapper->list_receivedby_address($confirmations, $address) },
         get_block_count          => sub { $currency_wrapper->last_block() },
         get_blockchain_info      => sub { $currency_wrapper->get_info() },
-        calculate_withdrawal_fee => sub {
-            die "Missing parameters entered for calculate withdrawal fee"
-                unless $address && $amount;
-            $currency_wrapper->get_withdrawal_daemon()->calculate_transaction_fee($address, $amount);
-        },
-        import_address => $import_address,
-    } if ($currency =~ /^(BTC|LTC)$/);
+        import_address           => $import_address,
+        }
+        if ($currency =~ /^(BTC|LTC)$/);
 
     return +{
         list_unspent_utxo        => sub { $currency_wrapper->get_unspent_transactions($address ? [$address] : [], $confirmations) },

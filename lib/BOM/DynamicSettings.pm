@@ -299,6 +299,11 @@ sub get_settings_by_group {
                 system.stop.cryptocurrencies_deposit
                 system.stop.cryptocurrencies_withdrawal
                 system.suspend.experimental_currencies
+                payments.crypto.batch_withdrawal.min_transfer
+                payments.crypto.batch_withdrawal.fee_config.min_limit
+                payments.crypto.batch_withdrawal.fee_config.max_limit
+                payments.crypto.batch_withdrawal.fee_config.requests_count_to_increase
+                payments.crypto.batch_withdrawal.fee_config.increase_value_per_requests_count
                 payments.crypto.deposit_required_confirmations
                 payments.crypto.fee_bump_wait_time
                 payments.crypto.fee_limit_usd

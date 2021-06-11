@@ -16,13 +16,6 @@
         ETH => ['get_block_count', 'get_main_address_balance', 'get_wallet_balance', 'get_accounts',        'get_gas_price',         'get_syncing'],
     };
     all_forms = {
-        calculate_withdrawal_fee => {
-            title    => 'Calculate withdrawal fee',
-            elements => [
-                { label => 'Withdraw_to address', name => 'address', required => 1, size => 50 },
-                { label => 'Amount',              name => 'amount',  required => 1, type => 'number' },
-            ],
-        },
         get_address_balance => {
             title    => 'Get address balance',
             elements => [
@@ -81,7 +74,7 @@
         },
     };
     currency_forms = {
-        BTC => ['get_address_balance', 'get_transaction', 'import_address',   'list_unspent_utxo', 'list_receivedby_address', 'calculate_withdrawal_fee'],
+        BTC => ['get_address_balance', 'get_transaction', 'import_address',   'list_unspent_utxo', 'list_receivedby_address'],
         UST => ['get_address_balance', 'get_transaction', 'import_address',   'list_unspent_utxo', 'list_receivedby_address', 'list_transactions'],
         ETH => ['get_address_balance', 'get_transaction', 'get_estimatedgas', 'get_transaction_receipt'],
     };

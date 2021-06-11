@@ -137,13 +137,6 @@
             [% CASE 'get_block_count' %]
                 <p>[% currency %] Last Block: <b>[% response %]</b></p>
 
-            [% CASE 'calculate_withdrawal_fee' %]
-                [% IF response.error %]
-                    <p class='error'>Error; [% response %]</p>
-                [% ELSE %]
-                    <p>Withdrawal fee: <b>[% response.fee %] [% currency %]</b></p>
-                [% END %]
-
             [% CASE 'get_blockchain_info' %]
                 <table class="border">
                     <tr>
