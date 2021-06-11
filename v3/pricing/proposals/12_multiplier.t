@@ -68,6 +68,16 @@ is $res->{error}->{message}, 'Multiplier is not in acceptable range. Accepts 20,
     'message \'Multiplier is not in acceptable range. Accepts 20,40,60,100,200.\'';
 
 $req->{multiplier} = 20;
+ 
+$req->{cancellation} = "";
+
+$res = $t->await::proposal($req);
+ok $res->{error}, 'proposal error';
+is $res->{error}->{code}, 'InputValidationFailed', 'Empty string is not accepted';
+is $res->{error}->{message}, 'Input validation failed: cancellation';
+
+delete $req->{cancellation};
+
 $res = $t->await::proposal($req);
 
 if (my $proposal = $res->{proposal}) {
