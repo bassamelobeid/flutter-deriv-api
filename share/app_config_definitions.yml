@@ -296,6 +296,39 @@ payments:
           isa: json_string
           default: '{"BTC": [{"amount": 0.1, "weight": 1}], "LTC": [{"amount": 0.1, "weight": 1}]}'
           global: 1
+        batch_withdrawal:
+          description: 'Batch withdrawal limit configuration'
+          isa: section
+          contains:
+            min_transfer:
+              isa: json_string
+              description: "The minimum amount to transfer"
+              default: '{"BTC":0.5,"LTC":0.5}'
+              global: 1
+            fee_config:
+              description: "The fee limits configuration."
+              isa: section
+              contains:
+                min_limit:
+                  isa: json_string
+                  description: "The lowest threshold of the acceptable fee. The value is a percent of the transfer amount"
+                  default: '{"BTC":1,"LTC":1}'
+                  global: 1
+                max_limit:
+                  isa: json_string
+                  description: "The highest threshold of the acceptable fee. The value is a percent of the transfer amount"
+                  default: '{"BTC":10,"LTC":10}'
+                  global: 1
+                requests_count_to_increase:
+                  isa: json_string
+                  description: "Count of the requests to increase the fee limit"
+                  default: '{"BTC":1,"LTC":1}'
+                  global: 1
+                increase_value_per_requests_count:
+                  isa: json_string
+                  description: "An additional value to the lowest fee threshold for each bunch of requests. The value is a percent of the transfer amount"
+                  default: '{"BTC":0.003,"LTC":0.003}'
+                  global: 1
         gas_limit_incremental_percentage:
           description: "Configurations for gas_limit incremental percentage"
           isa: json_string

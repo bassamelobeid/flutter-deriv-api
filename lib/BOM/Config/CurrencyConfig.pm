@@ -825,4 +825,63 @@ sub get_gas_limit_incremental_percentage {
     return $gas_limit_incremental_percentage->{$currency};
 }
 
+=head2 get_crypto_batch_withdrawal_min_transfer
+
+We are perfoming the withdrawal requests in batchs for BTC and LTC
+So this function returns the minimum amount to perform the transaction
+
+=over 4
+
+=item * C<currency> - Currency code
+
+=back
+
+=cut
+
+sub get_crypto_batch_withdrawal_min_transfer {
+    my $currency = shift;
+
+    my $min_transfer = JSON::MaybeUTF8::decode_json_utf8(app_config()->get('payments.crypto.batch_withdrawal.min_transfer'));
+
+    return $min_transfer->{$currency};
+}
+
+=head2 get_crypto_batch_withdrawal_fee_config
+
+We are perfoming the withdrawal requests in batchs for BTC and LTC
+And the fee limit will be a percentage value from the total withdrawal amount
+like 1% of the total amount
+And the fee limit value will be incresed based on the count of the withdrawal requests
+like 0.1% for each 75 withdrawal requests
+
+=over 4
+
+=item * C<currency> - Currency code
+
+=back
+
+Returns the fee config as hash reference
+
+=cut
+
+sub get_crypto_batch_withdrawal_fee_config {
+    my $currency = shift;
+
+    my $fee_config = {
+        min_limit                  => JSON::MaybeUTF8::decode_json_utf8(app_config()->get('payments.crypto.batch_withdrawal.fee_config.min_limit')),
+        max_limit                  => JSON::MaybeUTF8::decode_json_utf8(app_config()->get('payments.crypto.batch_withdrawal.fee_config.max_limit')),
+        requests_count_to_increase =>
+            JSON::MaybeUTF8::decode_json_utf8(app_config()->get('payments.crypto.batch_withdrawal.fee_config.requests_count_to_increase')),
+        increase_value_per_requests_count =>
+            JSON::MaybeUTF8::decode_json_utf8(app_config()->get('payments.crypto.batch_withdrawal.fee_config.increase_value_per_requests_count')),
+    };
+
+    return {
+        min_fee_limit                     => $fee_config->{min_limit}->{$currency} / 100,
+        max_fee_limit                     => $fee_config->{max_limit}->{$currency} / 100,
+        requests_count_to_increase        => $fee_config->{requests_count_to_increase}->{$currency},
+        increase_value_per_requests_count => $fee_config->{increase_value_per_requests_count}->{$currency} / 100,
+    };
+}
+
 1;
