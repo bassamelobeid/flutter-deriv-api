@@ -11,6 +11,7 @@ use Log::Any qw($log);
 use Date::Utility;
 use Syntax::Keyword::Try;
 use BOM::Platform::Context qw(request);
+use Format::Util::Numbers qw(formatnumber);
 
 =head1 NAME 
 
@@ -315,7 +316,7 @@ sub sendmail {
 
     for my $loginid (keys $self->summary->%*) {
         my $currency = $self->summary->{$loginid}->{currency};
-        my $amount   = $self->summary->{$loginid}->{amount};
+        my $amount   = formatnumber('amount', $currency, $self->summary->{$loginid}->{amount});
         push $messages->@*, "<tr><td>$loginid</td><td>$currency</td><td>$amount</td></tr>";
     }
 

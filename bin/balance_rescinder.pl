@@ -29,7 +29,9 @@ For more details look at L<BOM::User::Script::BalanceRescinder>.
 
 my $registry = LandingCompany::Registry->new;
 
-# DC throws an exception
-my @broker_codes = grep { $_ ne 'DC' } $registry->all_real_broker_codes();
+my @broker_codes = $registry->all_real_broker_codes();
 
-BOM::User::Script::BalanceRescinder->new(broker_code => $_)->run for (@broker_codes);
+for my $broker_code (@broker_codes) {
+    my $script = BOM::User::Script::BalanceRescinder->new(broker_code => $broker_code);
+    $script->run;
+}
