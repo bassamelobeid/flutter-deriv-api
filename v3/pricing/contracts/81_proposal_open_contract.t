@@ -129,8 +129,10 @@ subtest 'passthrough' => sub {
     ok $data->{error}, 'Has an error';
     is $data->{error}->{code}, 'AlreadySubscribed', 'Correct error message';
 };
-
 subtest 'expiryd should sell the contract' => sub {
+
+SKIP: {
+    skip "this test fails intermittently https://redmine.deriv.cloud/issues/24841#expiryd_test_failures ";
     my $try = 0;
     my $poc;
     do {
@@ -142,6 +144,7 @@ subtest 'expiryd should sell the contract' => sub {
 
     is $poc->{is_sold}, 1, 'got the sell poc response';
     is $poc->{contract_id}, $contract_id, 'contract id is correct';
+}
 };
 subtest 'forget' => sub {
     my $data = $t->await::forget_all({forget_all => 'proposal_open_contract'});
