@@ -6,7 +6,7 @@ use Test::Fatal;
 use Test::MockModule;
 use Test::FailWarnings;
 use Test::Exception;
-use Test::MockTime qw(restore_time set_absolute_time);
+use Test::MockTime qw(restore_time set_fixed_time);
 use Test::Deep;
 use BOM::User::Client::PaymentAgent;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
@@ -319,7 +319,7 @@ subtest 'validate payment agent details' => sub {
 
     my $min_max = BOM::Config::PaymentAgent::get_transfer_min_max('USD');
 
-    set_absolute_time(1000);
+    set_fixed_time(1000);
     my $result = $pa->validate_payment_agent_details(%args);
     is_deeply $result,
         {
