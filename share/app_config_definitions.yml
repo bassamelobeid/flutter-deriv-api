@@ -291,11 +291,25 @@ payments:
           isa: json_string
           default: '{"default":50,"BTC":0.003,"LTC":1,"ETH":0.1,"IDK":700}'
           global: 1
-        internal_sweeps_config:
-          description: "Configurations for internal sweep batches (utxos)"
-          isa: json_string
-          default: '{"BTC": [{"amount": 0.1, "weight": 1}], "LTC": [{"amount": 0.1, "weight": 1}]}'
-          global: 1
+        internal_sweep:
+          description: 'Internal sweep related config'
+          isa: section
+          contains:
+            amounts:
+              description: "The amounts we are trying gathering to send it in a single transaction to our main address"
+              isa: json_string
+              default: '{"BTC":[1,0.5,0.1],"LTC":[50,20,10,5,1]}'
+              global: 1
+            fee_rate_percent:
+              description: "A percent value of the current fee rate"
+              isa: json_string
+              default: '{"BTC":95,"LTC":100}'
+              global: 1
+            fee_limit_percent:
+              description: "The maximum fee limit, it's a percent value of the transfer amount"
+              isa: json_string
+              default: '{"BTC":2,"LTC":1}'
+              global: 1
         batch_withdrawal:
           description: 'Batch withdrawal limit configuration'
           isa: section

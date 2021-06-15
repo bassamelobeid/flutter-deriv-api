@@ -501,6 +501,41 @@ subtest 'currency config' => sub {
         'correct empty address as no external sweep address set for eUSDT';
 };
 
+subtest 'get_currency_internal_sweep_config' => sub {
+    my $app_config                 = BOM::Config::Runtime->instance->app_config();
+    my $amounts_original           = $app_config->payments->crypto->internal_sweep->amounts();
+    my $fee_rate_percent_original  = $app_config->payments->crypto->internal_sweep->fee_rate_percent();
+    my $fee_limit_percent_original = $app_config->payments->crypto->internal_sweep->fee_limit_percent();
+
+    # Change the config
+    $app_config->set({
+        'payments.crypto.internal_sweep.amounts'           => '{"LTC":[1]}',
+        'payments.crypto.internal_sweep.fee_rate_percent'  => '{"LTC":80}',
+        'payments.crypto.internal_sweep.fee_limit_percent' => '{"LTC":2}',
+    });
+
+    my $expected_btc_config = {
+        amounts           => [],
+        fee_rate_percent  => 100,
+        fee_limit_percent => 1
+    };
+    my $expected_ltc_config = {
+        amounts           => [1],
+        fee_rate_percent  => 80,
+        fee_limit_percent => 2
+    };
+
+    is_deeply BOM::Config::CurrencyConfig::get_currency_internal_sweep_config('BTC'), $expected_btc_config, 'Correct default config';
+    is_deeply BOM::Config::CurrencyConfig::get_currency_internal_sweep_config('LTC'), $expected_ltc_config, 'Correct currecny config';
+
+    # Revert the chages
+    $app_config->set({
+        'payments.crypto.internal_sweep.amounts'           => $amounts_original,
+        'payments.crypto.internal_sweep.fee_rate_percent'  => $fee_rate_percent_original,
+        'payments.crypto.internal_sweep.fee_limit_percent' => $fee_limit_percent_original,
+    });
+};
+
 $mock_app_config->unmock_all();
 
 done_testing();

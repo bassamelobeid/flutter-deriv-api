@@ -774,9 +774,17 @@ Returns hashref containing sweep configs for the currency
 sub get_currency_internal_sweep_config {
     my $currency = shift;
 
-    my $currency_sweeps_config = JSON::MaybeUTF8::decode_json_utf8(app_config()->get('payments.crypto.internal_sweeps_config'));
+    my $internal_sweep_config = {
+        amounts           => JSON::MaybeUTF8::decode_json_utf8(app_config()->get('payments.crypto.internal_sweep.amounts')),
+        fee_rate_percent  => JSON::MaybeUTF8::decode_json_utf8(app_config()->get('payments.crypto.internal_sweep.fee_rate_percent')),
+        fee_limit_percent => JSON::MaybeUTF8::decode_json_utf8(app_config()->get('payments.crypto.internal_sweep.fee_limit_percent')),
+    };
 
-    return $currency_sweeps_config->{$currency};
+    return {
+        amounts           => $internal_sweep_config->{amounts}->{$currency}           // [],
+        fee_rate_percent  => $internal_sweep_config->{fee_rate_percent}->{$currency}  // 100,    # 100%
+        fee_limit_percent => $internal_sweep_config->{fee_limit_percent}->{$currency} // 1,      # 1%
+    };
 
 }
 
