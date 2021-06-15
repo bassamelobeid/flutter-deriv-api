@@ -47,6 +47,9 @@ my $expiryq = ExpiryQueue->new(redis => BOM::Config::Redis::redis_expiryq_write)
 $expiryq->queue_flush();
 Crypt::NamedKeys::keyfile '/etc/rmg/aes_keys.yml';
 
+my $mocked_contract = Test::MockModule->new('BOM::Product::Contract::Multup');
+$mocked_contract->mock('maximum_feed_delay_seconds', sub { return 300 });
+
 my $mock_validation = Test::MockModule->new('BOM::Transaction::Validation');
 
 $mock_validation->mock(validate_tnc => sub { note "mocked Transaction::Validation->validate_tnc returning nothing"; undef });
