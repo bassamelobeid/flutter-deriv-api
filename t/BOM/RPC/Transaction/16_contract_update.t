@@ -63,8 +63,9 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
                 event_name   => 'FOMC',
             }]});
 
-my $mocked = Test::MockModule->new('Quant::Framework::Underlying');
-$mocked->mock('spot_tick', sub { return $current_tick });
+my $mocked = Test::MockModule->new('BOM::Product::Contract::Multup');
+$mocked->mock('current_tick',               sub { return $current_tick });
+$mocked->mock('maximum_feed_delay_seconds', sub { return 300 });
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
