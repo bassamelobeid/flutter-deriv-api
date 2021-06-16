@@ -117,7 +117,7 @@ UST:
     protocol_cost: 0.00000546
     decimal_places: 8
     sweep:
-        address: Dummy
+        address: 13SnSWNTxLs5JjNoFjxc6n5YDagyYo8ptF
 eUSDT:
     withdrawal:
         timeout: "3d"
