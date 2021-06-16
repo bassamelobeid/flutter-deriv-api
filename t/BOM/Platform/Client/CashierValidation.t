@@ -33,6 +33,7 @@ subtest prepare => sub {
         broker_code => 'VRTC',
         email       => $new_email,
     });
+    $vr_client->set_default_account('USD');
 
     $cr_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code    => 'CR',
@@ -76,14 +77,17 @@ subtest 'basic tests' => sub {
     is $res->{error}->{code}, $generic_err_code, 'Correct error code';
     is $res->{error}->{message_to_client}, 'This is a virtual-money account. Please switch to a real-money account to access cashier.',
         'Correct error message';
+    is $res->{status}, undef, 'no status';
 
     $res = BOM::Platform::Client::CashierValidation::validate($cr_client->loginid, 'deposit');
     is $res->{error}->{code},              'ASK_CURRENCY',             'Correct error code for account currency not set';
     is $res->{error}->{message_to_client}, 'Please set the currency.', 'Correct error message for account currency not set';
+    cmp_deeply $res->{status}, ['ASK_CURRENCY'], 'correct status';
 
     $res = BOM::Platform::Client::CashierValidation::validate('CR332112', 'deposit');
     is $res->{error}->{code}, $generic_err_code, 'Correct error code for invalid loginid';
     is $res->{error}->{message_to_client}, 'Invalid account.', 'Correct error message for invalid loginid';
+    cmp_deeply $res->{status}, undef, 'correct status';
 };
 
 subtest 'System suspend' => sub {
@@ -96,11 +100,13 @@ subtest 'System suspend' => sub {
     is $res->{error}->{code}, $generic_err_code, 'Correct error code';
     is $res->{error}->{message_to_client}, 'Sorry, cashier is temporarily unavailable due to system maintenance.',
         'Payments suspended error for fiat client';
+    cmp_deeply $res->{status}, set('system_maintenance'), 'correct status';
 
     $res = BOM::Platform::Client::CashierValidation::base_validation($cr_client_2);
     is $res->{error}->{code}, $generic_err_code, 'Correct error code';
-    is $res->{error}->{message_to_client}, 'Sorry, crypto cashier is temporarily unavailable due to system maintenance.',
+    is $res->{error}->{message_to_client}, 'Sorry, cashier is temporarily unavailable due to system maintenance.',
         'Payments suspended error for crypto client';
+    cmp_deeply $res->{status}, set('system_maintenance'), 'correct status';
 
     $app_config->system->suspend->payments(0);
 
@@ -110,9 +116,10 @@ subtest 'System suspend' => sub {
     is $res->{error}->{code}, $generic_err_code, 'Correct error code';
     is $res->{error}->{message_to_client}, 'Sorry, cashier is temporarily unavailable due to system maintenance.',
         'Cashier suspended error for fiat client';
+    cmp_deeply $res->{status}, set('system_maintenance'), 'correct status';
 
     $res = BOM::Platform::Client::CashierValidation::base_validation($cr_client_2);
-    unlike $res->{message_to_client} // '', '/cashier is temporarily unavailable/', 'crypto client is unaffected';
+    unlike $res->{error}->{message_to_client} // '', '/cashier is temporarily unavailable/', 'crypto client is unaffected';
 
     $app_config->system->suspend->cashier(0);
 
@@ -122,9 +129,10 @@ subtest 'System suspend' => sub {
     is $res->{error}->{code}, $generic_err_code, 'Correct error code';
     is $res->{error}->{message_to_client}, 'Sorry, crypto cashier is temporarily unavailable due to system maintenance.',
         'Cashier suspended error for crypto client';
+    cmp_deeply $res->{status}, set('system_maintenance'), 'correct status';
 
     $res = BOM::Platform::Client::CashierValidation::base_validation($cr_client);
-    unlike $res->{message_to_client} // '', '/cashier is temporarily unavailable/', 'fiat client is unaffected';
+    unlike $res->{error}->{message_to_client} // '', '/cashier is temporarily unavailable/', 'fiat client is unaffected';
 
     $app_config->system->suspend->cryptocashier(0);
 
@@ -143,6 +151,7 @@ subtest 'Cashier validation common' => sub {
     my $res = BOM::Platform::Client::CashierValidation::validate($cr_client->loginid, 'withdraw');
     is $res->{error}->{code}, $generic_err_code, 'Correct error code for no residence';
     is $res->{error}->{message_to_client}, 'Please set your country of residence.', 'Correct error message for no residence';
+    cmp_deeply $res->{status}, set('no_residence'), 'correct status';
 
     $cr_client->residence($country);
 
@@ -152,6 +161,7 @@ subtest 'Cashier validation common' => sub {
     $res = BOM::Platform::Client::CashierValidation::validate($cr_client->loginid, 'deposit');
     is $res->{error}->{code}, $generic_err_code, 'Correct error code if client is cashier locked';
     is $res->{error}->{message_to_client}, 'Your cashier is locked.', 'Correct error message if client is cashier locked';
+    cmp_deeply $res->{status}, set('cashier_locked_status'), 'correct status';
 
     $cr_client->status->clear_cashier_locked;
     $cr_client->status->set('disabled', 'system', 'pending investigations');
@@ -159,10 +169,21 @@ subtest 'Cashier validation common' => sub {
     $res = BOM::Platform::Client::CashierValidation::validate($cr_client->loginid, 'deposit');
     is $res->{error}->{code}, $generic_err_code, 'Correct error code as its disabled';
     is $res->{error}->{message_to_client}, 'Your account is disabled.', 'Correct error message as its disabled';
+    cmp_deeply $res->{status}, set('disabled_status'), 'correct status';
 
     $cr_client->status->clear_disabled;
 
+    my $mock_client = Test::MockModule->new('BOM::User::Client');
+    $mock_client->mock(is_financial_assessment_complete => 0);
+    $res = BOM::Platform::Client::CashierValidation::validate($cr_client->loginid, 'deposit');
+    is $res->{error}->{code}, $generic_err_code, 'Correct error code for financial assessment not complete';
+    is $res->{error}->{message_to_client}, 'Please complete the financial assessment form to lift your withdrawal and trading limits.',
+        'Correct error message for incomplete FA';
+    cmp_deeply $res->{status}, set('FinancialAssessmentRequired'), 'correct status';
+    $mock_client->unmock_all();
+
     ok !$cr_client->documents->expired, "No documents so nothing to expire";
+
     my ($doc) = $cr_client->add_client_authentication_document({
         document_type              => "passport",
         file_name                  => 'test.pdf',
@@ -178,7 +199,6 @@ subtest 'Cashier validation common' => sub {
     $res = BOM::Platform::Client::CashierValidation::validate($cr_client->loginid, 'deposit');
     is $res->{error}->{code}, undef, 'Correct error code for expired documents but expired check not required';
 
-    my $mock_client = Test::MockModule->new('BOM::User::Client');
     $mock_client->mock(is_document_expiry_check_required => sub { note "mocked Client->is_document_expiry_check_required returning true"; 1 });
 
     $res = BOM::Platform::Client::CashierValidation::validate($cr_client->loginid, 'deposit');
@@ -186,6 +206,7 @@ subtest 'Cashier validation common' => sub {
     is $res->{error}->{message_to_client},
         'Your identity documents have expired. Visit your account profile to submit your valid documents and unlock your cashier.',
         'Correct error message for expired documents with expired check required';
+    cmp_deeply $res->{status}, set('documents_expired'), 'correct status';
     $mock_client->unmock_all();
 
     my $new_expiration_date = Date::Utility->new()->plus_time_interval('1d')->date;
@@ -205,9 +226,17 @@ subtest 'Cashier validation common' => sub {
 
     $res = BOM::Platform::Client::CashierValidation::validate($cr_client->loginid, 'withdraw');
     is_deeply($res->{error}, $expected, 'lc withdrawal requirements validated');
+    cmp_deeply $res->{status}, set('ASK_FIX_DETAILS'), 'correct status';
+    cmp_deeply $res->{missing_fields}, ['address_city'], 'missing fields for withdrawal returned';
 
     $cr_client->address_city($address_city);
     $cr_client->save;
+
+    $mock_client->mock(missing_requirements => 'first_name');
+    $res = BOM::Platform::Client::CashierValidation::validate($cr_client->loginid, 'deposit');
+    cmp_deeply $res->{missing_fields}, ['first_name'], 'missing fields for deposit returned';
+    $mock_client->unmock_all();
+
 };
 
 subtest 'Cashier validation deposit' => sub {
@@ -216,21 +245,25 @@ subtest 'Cashier validation deposit' => sub {
     my $res = BOM::Platform::Client::CashierValidation::validate($cr_client->loginid, 'deposit');
     is $res->{error}->{code}, $generic_err_code, 'Correct error code for unwelcome client';
     is $res->{error}->{message_to_client}, 'Your account is restricted to withdrawals only.', 'Correct error message for unwelcome client';
+    cmp_deeply $res->{status}, set('unwelcome_status'), 'correct status';
 
     $cr_client->status->clear_unwelcome;
 
     $app_config->system->suspend->cryptocurrencies_deposit(['BTC']);
     $res = BOM::Platform::Client::CashierValidation::validate($cr_client_2->loginid, 'deposit');
     is $res->{error}{message_to_client}, 'Deposits are temporarily unavailable for BTC. Please try later.', 'crypto currency deposit suspended';
+    cmp_deeply $res->{status}, set('system_maintenance'), 'correct status';
     $app_config->system->suspend->cryptocurrencies_deposit([]);
+
 };
 
 subtest 'Cashier validation withdraw' => sub {
     $cr_client->status->set('no_withdrawal_or_trading', 'system', 'pending investigations');
 
     my $res = BOM::Platform::Client::CashierValidation::validate($cr_client->loginid, 'withdraw');
-    is $res->{error}->{code}, $generic_err_code, 'Correct error code for to_be_decided';
-    is $res->{error}->{message_to_client}, 'Your account is restricted to deposits only.', 'Correct error message for to_be_decided';
+    is $res->{error}->{code}, $generic_err_code, 'Correct error code for no_withdrawal_or_trading';
+    is $res->{error}->{message_to_client}, 'Your account is restricted to deposits only.', 'Correct error message for no_withdrawal_or_trading';
+    cmp_deeply $res->{status}, set('no_withdrawal_or_trading_status'), 'correct status';
 
     $cr_client->status->clear_no_withdrawal_or_trading;
 
@@ -239,20 +272,49 @@ subtest 'Cashier validation withdraw' => sub {
     $res = BOM::Platform::Client::CashierValidation::validate($cr_client->loginid, 'withdraw');
     is $res->{error}->{code}, $generic_err_code, 'Correct error code for withdrawal locked';
     is $res->{error}->{message_to_client}, 'Your account is locked for withdrawals.', 'Correct error message for withdrawal locked';
+    cmp_deeply $res->{status}, set('withdrawal_locked_status'), 'correct status';
 
     $cr_client->status->clear_withdrawal_locked;
 
     $app_config->system->suspend->cryptocurrencies_withdrawal(['BTC']);
     $res = BOM::Platform::Client::CashierValidation::validate($cr_client_2->loginid, 'withdraw');
     is $res->{error}{message_to_client}, 'Withdrawals are temporarily unavailable for BTC. Please try later.', 'crypto currency withdrawal suspended';
+    cmp_deeply $res->{status}, set('system_maintenance'), 'correct status';
     $app_config->system->suspend->cryptocurrencies_withdrawal([]);
+
+    my $mock_client = Test::MockModule->new('BOM::User::Client');
+    $mock_client->mock(is_financial_assessment_complete => 1);
+    $cr_client_2->aml_risk_classification('high');
+    $cr_client_2->save;
+    $res = BOM::Platform::Client::CashierValidation::validate($cr_client_2->loginid, 'withdraw');
+
+    cmp_deeply(
+        $res,
+        {
+            error => {
+                code              => 'ASK_AUTHENTICATE',
+                message_to_client => 'Please authenticate your account.'
+            },
+            status => ['ASK_AUTHENTICATE']
+        },
+        'high risk client must be authenticated'
+    );
+
+    $cr_client_2->aml_risk_classification('low');
+    $cr_client_2->save;
+    $mock_client->unmock_all();
 };
 
 subtest 'Cashier validation landing company and country specific' => sub {
     subtest 'maltainvest' => sub {
+
+        my $mock_client = Test::MockModule->new('BOM::User::Client');
+        $mock_client->mock(is_financial_assessment_complete => 1);
+
         my $res = BOM::Platform::Client::CashierValidation::validate($mf_client->loginid, 'deposit');
         is $res->{error}->{code},              'ASK_CURRENCY',             'Correct error code for account currency not set';
         is $res->{error}->{message_to_client}, 'Please set the currency.', 'Correct error message for account currency not set';
+        cmp_deeply $res->{status}, set('ASK_CURRENCY', 'ASK_AUTHENTICATE', 'ASK_FINANCIAL_RISK_APPROVAL', 'ASK_TIN_INFORMATION'), 'correct status';
 
         $mf_client->set_default_account('EUR');
         $mf_client->save;
@@ -260,13 +322,14 @@ subtest 'Cashier validation landing company and country specific' => sub {
         $res = BOM::Platform::Client::CashierValidation::validate($mf_client->loginid, 'deposit');
         is $res->{error}->{code},              'ASK_AUTHENTICATE',                  'Correct error code for not authenticated';
         is $res->{error}->{message_to_client}, 'Please authenticate your account.', 'Correct error message for not authenticated';
+        cmp_deeply $res->{status}, set('ASK_AUTHENTICATE', 'ASK_FINANCIAL_RISK_APPROVAL', 'ASK_TIN_INFORMATION'), 'correct status';
 
-        my $mock_client = Test::MockModule->new('BOM::User::Client');
         $mock_client->mock(fully_authenticated => sub { note "mocked Client->fully_authenticated returning true"; 1 });
 
         $res = BOM::Platform::Client::CashierValidation::validate($mf_client->loginid, 'deposit');
         is $res->{error}->{code},              'ASK_FINANCIAL_RISK_APPROVAL',          'Correct error code';
         is $res->{error}->{message_to_client}, 'Financial Risk approval is required.', 'Correct error message';
+        cmp_deeply $res->{status}, set('ASK_FINANCIAL_RISK_APPROVAL', 'ASK_TIN_INFORMATION'), 'correct status';
 
         $mf_client->status->set('financial_risk_approval', 'system', 'Accepted approval');
 
@@ -275,6 +338,7 @@ subtest 'Cashier validation landing company and country specific' => sub {
         is $res->{error}->{message_to_client},
             'Tax-related information is mandatory for legal and regulatory requirements. Please provide your latest tax information.',
             'Correct error message';
+        cmp_deeply $res->{status}, set('ASK_TIN_INFORMATION'), 'correct status';
 
         $mf_client->tax_residence($mf_client->residence);
         $mf_client->save;
@@ -282,6 +346,7 @@ subtest 'Cashier validation landing company and country specific' => sub {
         $res = BOM::Platform::Client::CashierValidation::validate($mf_client->loginid, 'deposit');
         is $res->{error}->{code}, 'ASK_TIN_INFORMATION',
             'Correct error code as tax identification number is also needed for database trigger to set status';
+        cmp_deeply $res->{status}, set('ASK_TIN_INFORMATION'), 'correct status';
 
         $mf_client->tax_identification_number('111-222-333');
         $mf_client->save;
@@ -314,6 +379,7 @@ subtest 'Cashier validation landing company and country specific' => sub {
         is $res->{error}->{code}, 'ASK_SELF_EXCLUSION_MAX_TURNOVER_SET', 'Correct error code';
         is $res->{error}->{message_to_client}, 'Please set your 30-day turnover limit in our self-exclusion facilities to access the cashier.',
             'Correct error message';
+        cmp_deeply $res->{status}, set('ASK_SELF_EXCLUSION_MAX_TURNOVER_SET'), 'correct status';
 
         $mlt_client->status->clear_max_turnover_limit_not_set;
 
@@ -322,6 +388,7 @@ subtest 'Cashier validation landing company and country specific' => sub {
         my $res = BOM::Platform::Client::CashierValidation::validate($mx_client->loginid, 'deposit');
         is $res->{error}->{code},              'ASK_CURRENCY',             'Correct error code for account currency not set';
         is $res->{error}->{message_to_client}, 'Please set the currency.', 'Correct error message for account currency not set';
+        cmp_deeply $res->{status}, set('ASK_CURRENCY'), 'correct status';
 
         $mx_client->set_default_account('GBP');
         $mx_client->residence('gb');
@@ -330,6 +397,7 @@ subtest 'Cashier validation landing company and country specific' => sub {
         $res = BOM::Platform::Client::CashierValidation::validate($mx_client->loginid, 'deposit');
         is $res->{error}->{code},              'ASK_UK_FUNDS_PROTECTION',         'Correct error code';
         is $res->{error}->{message_to_client}, 'Please accept Funds Protection.', 'Correct error message';
+        cmp_deeply $res->{status}, set('ASK_UK_FUNDS_PROTECTION'), 'correct status';
 
         $mx_client->status->set('ukgc_funds_protection',      'system', '1');
         $mx_client->status->set('max_turnover_limit_not_set', 'system', '1');
@@ -338,6 +406,7 @@ subtest 'Cashier validation landing company and country specific' => sub {
         is $res->{error}->{code}, 'ASK_SELF_EXCLUSION_MAX_TURNOVER_SET', 'Correct error code';
         is $res->{error}->{message_to_client}, 'Please set your 30-day turnover limit in our self-exclusion facilities to access the cashier.',
             'Correct error message';
+        cmp_deeply $res->{status}, set('ASK_SELF_EXCLUSION_MAX_TURNOVER_SET'), 'correct status';
 
         $mx_client->status->clear_max_turnover_limit_not_set;
 
