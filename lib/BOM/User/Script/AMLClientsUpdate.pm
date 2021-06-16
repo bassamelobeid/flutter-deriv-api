@@ -50,7 +50,7 @@ sub update_aml_high_risk_clients_status {
             my $client = BOM::User::Client->new({loginid => $client_loginid});
 
             # filter out authenticated and FA-completed clients
-            next if $client->fully_authenticated && $client->is_financial_assessment_complete && !$client->documents_expired;
+            next if $client->fully_authenticated && $client->is_financial_assessment_complete && !$client->documents->expired;
             # filter out clients with risk classification = High Risk Override
             next if $client->aml_risk_classification ne 'high';
 

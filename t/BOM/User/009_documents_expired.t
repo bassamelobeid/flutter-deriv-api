@@ -41,6 +41,16 @@ my %clients_document_expiry = (
     $client_mlt->loginid => 1,
 );
 
+my $documents_mock = Test::MockModule->new('BOM::User::Client::AuthenticationDocuments');
+
+$documents_mock->mock(
+    'uploaded',
+    sub {
+        my ($self) = @_;
+        $self->_clear_uploaded;
+        return $documents_mock->original('uploaded')->(@_);
+    });
+
 subtest 'client documents expiry' => sub {
     foreach my $loginid (sort keys %clients_document_expiry) {
         my ($test, $SQL, $sth_doc_new, $id1, $id2, $sth_doc_info, $sth_doc_finish, $sth_doc_update, $actual, $expected);
@@ -50,9 +60,9 @@ subtest 'client documents expiry' => sub {
 
         my $dbh = $client->db->dbic->dbh;
 
-        subtest 'check for documents_expired' => sub {
-            $test = 'BOM::User::Client->documents_expired returns 0 if there are no documents';
-            is($client->documents_expired(), 0, $test);
+        subtest 'check for documents->expired' => sub {
+            $test = 'BOM::User::Client->documents->expired returns 0 if there are no documents';
+            is($client->documents->expired(), 0, $test);
 
             $SQL         = 'SELECT * FROM betonmarkets.start_document_upload(?,?,?,?,?,?,?,?)';
             $sth_doc_new = $dbh->prepare($SQL);
@@ -72,11 +82,11 @@ subtest 'client documents expiry' => sub {
             $test = q{After call to start_document_upload, client has a single document, with an 'uploading' status};
             cmp_deeply($actual, $expected, $test);
 
-            $test = q{BOM::User::Client->documents_expired returns 0 if all documents are in 'uploading' status};
+            $test = q{BOM::User::Client->documents->expired returns 0 if all documents are in 'uploading' status};
             # This is neeeded to force $client to reload this relationship
             # This will not work: $client->load( with => ['client_authentication_document']);
             $client->client_authentication_document(undef);
-            is($client->documents_expired(), 0, $test);
+            is($client->documents->expired(), 0, $test);
 
             $test           = q{After call to finish_document_upload, document status changed to 'verified'};
             $SQL            = 'SELECT * FROM betonmarkets.finish_document_upload(?, \'verified\'::status_type)';
@@ -87,39 +97,39 @@ subtest 'client documents expiry' => sub {
             $expected->[0]{status} = 'verified';
             cmp_deeply($actual, $expected, $test);
 
-            $test           = q{BOM::User::Client->documents_expired returns 0 if document in 'verified' status and no expiration date};
+            $test           = q{BOM::User::Client->documents->expired returns 0 if document in 'verified' status and no expiration date};
             $SQL            = 'UPDATE betonmarkets.client_authentication_document SET expiration_date = ? WHERE id = ?';
             $sth_doc_update = $dbh->prepare($SQL);
             $sth_doc_update->execute(undef, $id1);
             $client->client_authentication_document(undef);
-            is($client->documents_expired(), 0, $test);
+            is($client->documents->expired(), 0, $test);
 
-            $test = q{BOM::User::Client->documents_expired returns 0 if document has future expiration date};
+            $test = q{BOM::User::Client->documents->expired returns 0 if document has future expiration date};
             $sth_doc_update->execute('tomorrow', $id1);
-            is($client->documents_expired(), 0, $test);
+            is($client->documents->expired(), 0, $test);
 
-            $test = qq{BOM::User::Client->documents_expired returns $document_expiry if document has an expiration date of today};
+            $test = qq{BOM::User::Client->documents->expired returns $document_expiry if document has an expiration date of today};
             $sth_doc_update->execute('today', $id1);
             $client->client_authentication_document(undef);
-            is($client->documents_expired(), $document_expiry, $test);
+            is($client->documents->expired(), $document_expiry, $test);
 
             $test =
-                qq{BOM::User::Client->documents_expired returns $document_expiry depending if expiration date check is required for document that has an expiration date of yesterday};
+                qq{BOM::User::Client->documents->expired returns $document_expiry depending if expiration date check is required for document that has an expiration date of yesterday};
             $sth_doc_update->execute('yesterday', $id1);
             $client->client_authentication_document(undef);
-            is($client->documents_expired(), $document_expiry, $test);
+            is($client->documents->expired(), $document_expiry, $test);
 
-            $test = q{BOM::User::Client->documents_expired returns 0 if document has an expiration date of the far future};
+            $test = q{BOM::User::Client->documents->expired returns 0 if document has an expiration date of the far future};
             $sth_doc_update->execute('2999-01-01', $id1);
             $client->client_authentication_document(undef);
-            is($client->documents_expired(), 0, $test);
+            is($client->documents->expired(), 0, $test);
 
-            $test = q{BOM::User::Client->documents_expired returns 0 because there is at least one non-expired document};
+            $test = q{BOM::User::Client->documents->expired returns 0 because there is at least one non-expired document};
             $sth_doc_update->execute('epoch', $id1);
             $client->client_authentication_document(undef);
-            is($client->documents_expired(), 0, $test);
+            is($client->documents->expired(), 0, $test);
 
-            $test = q{BOM::User::Client->documents_expired returns 0 if all documents have no expiration date};
+            $test = q{BOM::User::Client->documents->expired returns 0 if all documents have no expiration date};
 ## Create a second document
             $sth_doc_new->execute($client->loginid, 'passport', 'PNG', undef, 66666, '204a5098dac0dc176c88e4ab5312dbd5', 'none', 'front');
             $id2 = $sth_doc_new->fetch()->[0];
@@ -135,19 +145,19 @@ subtest 'client documents expiry' => sub {
             $SQL = 'UPDATE betonmarkets.client_authentication_document SET expiration_date = null WHERE client_loginid = ?';
             $dbh->do($SQL, undef, $client->loginid);
             $client->client_authentication_document(undef);
-            is($client->documents_expired(), 0, $test);
+            is($client->documents->expired(), 0, $test);
 
             $test =
-                qq{BOM::User::Client->documents_expired returns $document_expiry depending if expiration check is required and if only some document are expired};
+                qq{BOM::User::Client->documents->expired returns $document_expiry depending if expiration check is required and if only some document are expired};
             $sth_doc_update->execute('yesterday', $id2);
             $client->client_authentication_document(undef);
-            is($client->documents_expired(), $document_expiry, $test);
+            is($client->documents->expired(), $document_expiry, $test);
 
-            $test = q{BOM::User::Client->documents_expired returns 0 if only all documents expire in the future};
+            $test = q{BOM::User::Client->documents->expired returns 0 if only all documents expire in the future};
             $sth_doc_update->execute('tomorrow', $id1);
             $sth_doc_update->execute('tomorrow', $id2);
             $client->client_authentication_document(undef);
-            is($client->documents_expired(), 0, $test);
+            is($client->documents->expired(), 0, $test);
 
             $SQL         = 'SELECT * FROM betonmarkets.start_document_upload(?,?,?,?,?,?,?,?)';
             $sth_doc_new = $dbh->prepare($SQL);
@@ -186,22 +196,22 @@ subtest 'client documents expiry' => sub {
         $doc->status('verified');
         $mf_client_2->save;
         $mf_client_2->load;
-        ok !$mf_client_2->documents_expired, "Documents with status of 'verified' are valid";
+        ok !$mf_client_2->documents->expired, "Documents with status of 'uploaded' are valid";
         $mf_client_2->status->set('duplicate_account');
         ok $mf_client_2->status->duplicate_account, "MF2 Account is set as duplicate_account";
         $mf_client->status->clear_duplicate_account;
         ok !$mf_client->status->duplicate_account, "MF Account is enabled now.";
 
-        ok !$mf_client->documents_expired, "Documents with status of 'verified' are valid";
+        ok !$mf_client->documents->expired, "Documents with status of 'uploaded' are valid";
         $doc->expiration_date('2010-10-10');
         $doc->save;
         $doc->load;
-        ok $mf_client->documents_expired, "If Duplicate account's document expires, documents are not valid anymore for sibling too.";
+        ok $mf_client->documents->expired, "If Duplicate account's document expires, documents are not valid anymore for sibling too.";
     };
 };
 
 subtest 'documents uploaded' => sub {
-    my $documents_mlt = $client_mlt->documents_uploaded();
+    my $documents_mlt = $client_mlt->documents->uploaded();
 
     my $document_hash_mlt = {
         proof_of_address => {
@@ -245,7 +255,7 @@ subtest 'documents uploaded' => sub {
     };
 
     cmp_deeply($documents_mlt, $document_hash_mlt, 'correct structure for client documents');
-    my $documents_cr = $client_cr->documents_uploaded();
+    my $documents_cr = $client_cr->documents->uploaded();
 
     my $document_hash_cr = {
         proof_of_address => {
@@ -294,7 +304,7 @@ subtest 'documents uploaded' => sub {
     my $module        = Test::MockModule->new('BOM::User::Client');
     $module->mock('authentication_status', sub { 'needs_action' });
 
-    my $documents = $client->documents_uploaded();
+    my $documents = $client->documents->uploaded();
     delete $document_hash->{proof_of_address}{is_pending};
     $document_hash->{proof_of_address}{is_rejected} = 1;
     cmp_deeply($documents, $document_hash, 'correct structure for client documents with authentication status as needs_action');
@@ -304,7 +314,7 @@ subtest 'documents uploaded' => sub {
     delete $document_hash->{proof_of_address}{is_rejected};
     $document_hash->{proof_of_address}{is_pending} = 1;
 
-    $documents = $client->documents_uploaded();
+    $documents = $client->documents->uploaded();
     cmp_deeply($documents, $document_hash, 'correct structure for client documents with authentication status as under_review');
 
     subtest 'Experian validated should not sync expired docs from siblings' => sub {
@@ -351,8 +361,8 @@ subtest 'documents uploaded' => sub {
 
         my $client_mx = create_client('MX');
         $user->add_client($client_mx);
-        my $test = 'BOM::User::Client->documents_expired returns 0 for an Experian validated account';
-        is($client_mx->documents_expired(), 0, $test);
+        my $test = 'BOM::User::Client->documents->expired returns 0 for an Experian validated account';
+        is($client_mx->documents->expired(), 0, $test);
         $client_mock->unmock_all;
         $status_mock->unmock_all;
     };
@@ -401,26 +411,88 @@ subtest 'documents uploaded' => sub {
 
         my $client_mx = create_client('MX');
         $user->add_client($client_mx);
-        my $test = 'BOM::User::Client->documents_expired returns 1 for a Non Experian validated account';
-        is($client_mx->documents_expired(), 1, $test);
+        my $test = 'BOM::User::Client->documents->expired returns 1 for a Non Experian validated account';
+        is($client_mx->documents->expired(), 1, $test);
         $client_mock->unmock_all;
         $status_mock->unmock_all;
     };
 
-    subtest 'for multiple poi documents the latest expiration date is taken into account to flag poi expired' => sub {
+    subtest 'max expiration strategy for multiple docs' => sub {
         # Set the expiration_date to tomorrow for a specific document_id
         my $dbh            = $client->db->dbic->dbh;
         my $SQL            = 'UPDATE betonmarkets.client_authentication_document SET expiration_date = ? WHERE document_id = ?';
         my $sth_doc_update = $dbh->prepare($SQL);
-        $sth_doc_update->execute('tomorrow', '66666');
+        $sth_doc_update->execute('yesterday', '55555');
+
+        $SQL            = 'UPDATE betonmarkets.client_authentication_document SET expiration_date = ? WHERE document_id = ?';
+        $sth_doc_update = $dbh->prepare($SQL);
+        $sth_doc_update->execute('yesterday', '66666');
+
+        $documents = $client->documents->uploaded();
+        is($documents->{proof_of_identity}->{is_expired}, 1, 'POI is expired as both docs are expired');
 
         # Ensure the remainding documents are expired
         my $SQL2            = 'UPDATE betonmarkets.client_authentication_document SET expiration_date = ? WHERE document_id != ?';
         my $sth_doc_update2 = $dbh->prepare($SQL2);
-        $sth_doc_update2->execute('yesterday', '66666');
+        $sth_doc_update2->execute('tomorrow', '66666');
 
-        $documents = $client->documents_uploaded();
-        is($documents->{proof_of_identity}->{is_expired}, 0, 'POI is not expired');
+        $documents = $client->documents->uploaded();
+        is($documents->{proof_of_identity}->{is_expired}, 0, 'POI is not expired as one of the documents is OK');
+    };
+
+    subtest 'min expiration strategy for multiple docs' => sub {
+        $documents_mock->mock(
+            'categories',
+            sub {
+                my ($self) = @_;
+                $self->_clear_categories;
+
+                my $categories = $documents_mock->original('categories')->(@_);
+
+                # Will push a ficticious doc type `other_kind` for testing purposes and we gonna set it as expirable
+                $categories->{Others}->{types}->{other_kind} = {
+                    preferred => 1,
+                    date      => 'expiration'
+                };
+
+                return $categories;
+            });
+
+        # We need to push one more poa doc
+        my $dbh         = $client->db->dbic->dbh;
+        my $SQL         = 'SELECT * FROM betonmarkets.start_document_upload(?,?,?,?,?,?,?,?)';
+        my $sth_doc_new = $dbh->prepare($SQL);
+        $sth_doc_new->execute($client->loginid, 'other_kind', 'PNG', 'yesterday', 1618, '15bada1e034d13b417083507db47ee4b', 'none', 'front');
+        my $id1 = $sth_doc_new->fetch()->[0];
+        $SQL = 'SELECT * FROM betonmarkets.finish_document_upload(?, \'verified\'::status_type)';
+        my $sth_doc_finish = $dbh->prepare($SQL);
+        $sth_doc_finish->execute($id1);
+
+        $sth_doc_new->execute($client->loginid, 'other_kind', 'PNG', 'yesterday', 2618, '14bada1e034d13b417083507db47ee4b', 'none', 'front');
+        my $id2 = $sth_doc_new->fetch()->[0];
+        $SQL            = 'SELECT * FROM betonmarkets.finish_document_upload(?, \'verified\'::status_type)';
+        $sth_doc_finish = $dbh->prepare($SQL);
+        $sth_doc_finish->execute($id2);
+
+        $SQL = 'UPDATE betonmarkets.client_authentication_document SET expiration_date = ? WHERE document_id = ?';
+        my $sth_doc_update = $dbh->prepare($SQL);
+        $sth_doc_update->execute('tomorrow', '2618');
+
+        $SQL            = 'UPDATE betonmarkets.client_authentication_document SET expiration_date = ? WHERE document_id = ?';
+        $sth_doc_update = $dbh->prepare($SQL);
+        $sth_doc_update->execute('tomorrow', '1618');
+
+        $documents = $client->documents->uploaded();
+        is($documents->{other}->{is_expired}, 0, 'other category is not expired as none of the documents are expired');
+
+        $SQL            = 'UPDATE betonmarkets.client_authentication_document SET expiration_date = ? WHERE document_id = ?';
+        $sth_doc_update = $dbh->prepare($SQL);
+        $sth_doc_update->execute('yesterday', '1618');
+
+        $documents = $client->documents->uploaded();
+        is($documents->{other}->{is_expired}, 1, 'other category is not expired as one of the documents is expired');
+
+        $documents_mock->unmock('categories');
     };
 
     $module->unmock_all();
@@ -428,6 +500,14 @@ subtest 'documents uploaded' => sub {
 
 subtest 'has valid documents' => sub {
     my $mock_client = Test::MockModule->new('BOM::User::Client');
+    my $docs;
+
+    $documents_mock->mock(
+        'uploaded',
+        sub {
+            my ($self) = @_;
+            return $docs;
+        });
 
     subtest 'expiry check required' => sub {
         $mock_client->mock(
@@ -436,8 +516,8 @@ subtest 'has valid documents' => sub {
                 return 1;
             });
 
-        my $docs = {};
-        ok !$client_cr->has_valid_documents($docs), 'Empty documents are not valid documents';
+        $docs = {};
+        ok !$client_cr->documents->valid(), 'Empty documents are not valid documents';
 
         $docs = {
             'other' => {
@@ -449,7 +529,7 @@ subtest 'has valid documents' => sub {
                 'documents'  => {},
             }};
 
-        ok !$client_cr->has_valid_documents($docs), 'Invalid due to expired documents';
+        ok !$client_cr->documents->valid(), 'Invalid due to expired documents';
 
         $docs = {
             'other' => {
@@ -461,8 +541,8 @@ subtest 'has valid documents' => sub {
                 'documents'  => {},
             }};
 
-        ok !$client_cr->has_valid_documents($docs, 'proof_of_identity'), 'Invalid due to expired POI';
-        ok $client_cr->has_valid_documents($docs,  'other'),             'Valid due to non expired Other';
+        ok !$client_cr->documents->valid('proof_of_identity'), 'Invalid due to expired POI';
+        ok $client_cr->documents->valid('other'), 'Valid due to non expired Other';
 
         $docs = {
             'other' => {
@@ -474,8 +554,8 @@ subtest 'has valid documents' => sub {
                 'documents'  => {},
             }};
 
-        ok $client_cr->has_valid_documents($docs,  'proof_of_identity'), 'Valid due to non expired POI';
-        ok !$client_cr->has_valid_documents($docs, 'other'),             'Invalid due to expired Other';
+        ok $client_cr->documents->valid('proof_of_identity'), 'Valid due to non expired POI';
+        ok !$client_cr->documents->valid('other'), 'Invalid due to expired Other';
     };
 
     subtest 'expiry check not required' => sub {
@@ -485,8 +565,8 @@ subtest 'has valid documents' => sub {
                 return 0;
             });
 
-        my $docs = {};
-        ok !$client_cr->has_valid_documents($docs), 'Empty documents are not valid documents';
+        $docs = {};
+        ok !$client_cr->documents->valid(), 'Empty documents are not valid documents';
 
         $docs = {
             'other' => {
@@ -498,7 +578,7 @@ subtest 'has valid documents' => sub {
                 'documents'  => {},
             }};
 
-        ok $client_cr->has_valid_documents($docs), 'Expire check not required';
+        ok $client_cr->documents->valid(), 'Expire check not required';
 
         $docs = {
             'other' => {
@@ -510,8 +590,8 @@ subtest 'has valid documents' => sub {
                 'documents'  => {},
             }};
 
-        ok $client_cr->has_valid_documents($docs, 'proof_of_identity'), 'Expire check not required';
-        ok $client_cr->has_valid_documents($docs, 'other'),             'Expire check not required';
+        ok $client_cr->documents->valid('proof_of_identity'), 'Expire check not required';
+        ok $client_cr->documents->valid('other'),             'Expire check not required';
 
         $docs = {
             'other' => {
@@ -523,16 +603,18 @@ subtest 'has valid documents' => sub {
                 'documents'  => {},
             }};
 
-        ok $client_cr->has_valid_documents($docs, 'proof_of_identity'), 'Expire check not required';
-        ok $client_cr->has_valid_documents($docs, 'other'),             'Expire check not required';
+        ok $client_cr->documents->valid('proof_of_identity'), 'Expire check not required';
+        ok $client_cr->documents->valid('other'),             'Expire check not required';
 
         subtest 'Enforce' => sub {
-            my $client_mock = Test::MockModule->new('BOM::User::Client');
-            $client_mock->mock(
-                'documents_uploaded',
-                sub {
-                    return $docs;
-                });
+            $docs = {
+                'proof_of_identity' => {
+                    'is_expired' => 1,
+                    'documents'  => {},
+                }};
+
+            ok $client_cr->documents->valid('proof_of_identity'), 'Expire check not enforced';
+            ok !$client_cr->documents->expired(), 'Expire check not enforced';
 
             $docs = {
                 'proof_of_identity' => {
@@ -540,19 +622,8 @@ subtest 'has valid documents' => sub {
                     'documents'  => {},
                 }};
 
-            ok $client_cr->has_valid_documents($docs, 'proof_of_identity'), 'Expire check not enforced';
-            ok !$client_cr->documents_expired(), 'Expire check not enforced';
-
-            $docs = {
-                'proof_of_identity' => {
-                    'is_expired' => 1,
-                    'documents'  => {},
-                }};
-
-            ok !$client_cr->has_valid_documents($docs, 'proof_of_identity', 1), 'Expire check was enforced';
-            ok $client_cr->documents_expired(1), 'Expire check was enforced';
-
-            $client_mock->unmock('documents_uploaded');
+            ok !$client_cr->documents->valid($docs, 'proof_of_identity', 1), 'Expire check was enforced';
+            ok $client_cr->documents->expired(1), 'Expire check was enforced';
         };
     };
 
@@ -566,24 +637,35 @@ subtest 'Empty POI but has a POA' => sub {
             'documents'  => {},
         }};
 
-    my $mock_client = Test::MockModule->new('BOM::User::Client');
+    my $mock_documents = Test::MockModule->new('BOM::User::Client::AuthenticationDocuments');
 
-    $mock_client->mock(
-        'documents_uploaded',
+    $mock_documents->mock(
+        'uploaded',
         sub {
+            my ($self) = @_;
+            $self->_clear_uploaded;
             return $docs;
         });
 
-    ok !$client_cr->documents_expired, 'The client does not have any POI document therefore cannot be expired';
+    ok !$client_cr->documents->expired, 'The client does not have any POI document therefore cannot be expired';
 
-    $mock_client->unmock_all;
+    $mock_documents->unmock_all;
 };
 
 subtest 'rejected and uploaded' => sub {
+    my $mock_documents = Test::MockModule->new('BOM::User::Client::AuthenticationDocuments');
+
+    $mock_documents->mock(
+        'uploaded',
+        sub {
+            my ($self) = @_;
+            $self->_clear_uploaded;
+            return $mock_documents->original('uploaded')->(@_);
+        });
 
     # Event though the tests above indirectly are proving this.
     # We gotta test that `rejected` or `uploaded` documents should not
-    # be taken in consideration by the documents_uploaded sub.
+    # be taken in consideration by the documents->uploaded sub.
 
     my $user = BOM::User->create(
         email          => 'fib@binary.com',
@@ -621,20 +703,22 @@ subtest 'rejected and uploaded' => sub {
     $sth_doc_new = $dbh->prepare($SQL);
     $sth_doc_new->execute($id2);
 
+    my $doc_mapping = +{map { ($_->document_id => $_->file_name) } $client->client_authentication_document->@*};
+
     my $expected = {
         'proof_of_identity' => {
             'documents' => {
-                'CR10001.passport.270744961_front.PNG' => {
+                $doc_mapping->{'54321'} => {
                     'id'          => '54321',
                     'type'        => 'passport',
                     'format'      => 'PNG',
                     'expiry_date' => re('\d+'),
                     'status'      => 'uploaded'
                 },
-                'CR10001.passport.270744941_front.PNG' => {
-                    'type'        => 'passport',
-                    'id'          => '12345',
+                $doc_mapping->{'12345'} => {
                     'format'      => 'PNG',
+                    'id'          => '12345',
+                    'type'        => 'passport',
                     'expiry_date' => re('\d+'),
                     'status'      => 'rejected'
                 }
@@ -645,7 +729,7 @@ subtest 'rejected and uploaded' => sub {
     # Note the documents above are expired but they aren't being taken into consideration
     # for the expiration checkup since they aren't `verified`.
 
-    cmp_deeply $client->documents_uploaded(), $expected, 'We got the expected result from documents uploaded';
+    cmp_deeply $client->documents->uploaded(), $expected, 'We got the expected result from documents uploaded';
 
     $SQL         = 'SELECT * FROM betonmarkets.finish_document_upload(?, \'verified\'::status_type)';
     $sth_doc_new = $dbh->prepare($SQL);
@@ -659,16 +743,15 @@ subtest 'rejected and uploaded' => sub {
 
     $expected = {
         'proof_of_identity' => {
-            'is_expired' => 1,
-            'documents'  => {
-                'CR10001.passport.270744961_front.PNG' => {
+            'documents' => {
+                $doc_mapping->{'54321'} => {
                     'format'      => 'PNG',
                     'type'        => 'passport',
                     'status'      => 'verified',
                     'expiry_date' => re('\d+'),
                     'id'          => '54321'
                 },
-                'CR10001.passport.270744941_front.PNG' => {
+                $doc_mapping->{'12345'} => {
                     'format'      => 'PNG',
                     'id'          => '12345',
                     'type'        => 'passport',
@@ -677,10 +760,11 @@ subtest 'rejected and uploaded' => sub {
                 }
             },
             'expiry_date' => re('\d+'),
-            'is_pending'  => 1
+            'is_pending'  => 1,
+            'is_expired'  => 1,
         }};
 
-    cmp_deeply $client->documents_uploaded(), $expected, 'We got the expected result from documents uploaded when docs are verified';
+    cmp_deeply $client->documents->uploaded(), $expected, 'We got the expected result from documents uploaded when docs are verified';
 
     # Now the client is age_verification so `is_pending` will be gone
 
@@ -690,14 +774,14 @@ subtest 'rejected and uploaded' => sub {
         'proof_of_identity' => {
             'is_expired' => 1,
             'documents'  => {
-                'CR10001.passport.270744961_front.PNG' => {
+                $doc_mapping->{'54321'} => {
                     'format'      => 'PNG',
                     'type'        => 'passport',
                     'status'      => 'verified',
                     'expiry_date' => re('\d+'),
                     'id'          => '54321'
                 },
-                'CR10001.passport.270744941_front.PNG' => {
+                $doc_mapping->{'12345'} => {
                     'format'      => 'PNG',
                     'id'          => '12345',
                     'type'        => 'passport',
@@ -708,7 +792,7 @@ subtest 'rejected and uploaded' => sub {
             'expiry_date' => re('\d+'),
         }};
 
-    cmp_deeply $client->documents_uploaded(), $expected, 'We got the expected result from documents uploaded when docs are verified';
+    cmp_deeply $client->documents->uploaded(), $expected, 'We got the expected result from documents uploaded when docs are verified';
 
     # Now the client uploads fresh document
     # When age_verification is true and we have fresh docs the status should be pending again
@@ -722,26 +806,29 @@ subtest 'rejected and uploaded' => sub {
     $sth_doc_new = $dbh->prepare($SQL);
     $sth_doc_new->execute($id);
 
+    $client      = BOM::User::Client->new({loginid => $client->loginid});
+    $doc_mapping = +{map { ($_->document_id => $_->file_name) } $client->client_authentication_document->@*};
+
     $expected = {
         'proof_of_identity' => {
             'is_expired' => 1,
             'is_pending' => 1,
             'documents'  => {
-                'CR10001.passport.270744961_front.PNG' => {
+                $doc_mapping->{'54321'} => {
                     'format'      => 'PNG',
                     'type'        => 'passport',
                     'status'      => 'verified',
                     'expiry_date' => re('\d+'),
                     'id'          => '54321'
                 },
-                'CR10001.passport.270744941_front.PNG' => {
+                $doc_mapping->{'12345'} => {
                     'format'      => 'PNG',
                     'id'          => '12345',
                     'type'        => 'passport',
                     'expiry_date' => re('\d+'),
                     'status'      => 'verified'
                 },
-                'CR10001.passport.270745001_front.PNG' => {
+                $doc_mapping->{'618900'} => {
                     'expiry_date' => re('\d+'),
                     'format'      => 'PNG',
                     'status'      => 'uploaded',
@@ -752,7 +839,7 @@ subtest 'rejected and uploaded' => sub {
             'expiry_date' => re('\d+'),
         }};
 
-    cmp_deeply $client->documents_uploaded(), $expected, 'Fresh documents in needs review make the is_pending flag appear again';
+    cmp_deeply $client->documents->uploaded(), $expected, 'Fresh documents in needs review make the is_pending flag appear again';
 
     # The documents are verified
 
@@ -765,21 +852,21 @@ subtest 'rejected and uploaded' => sub {
             'expiry_date' => re('\d+'),
             'is_expired'  => 0,
             'documents'   => {
-                'CR10001.passport.270744961_front.PNG' => {
+                $doc_mapping->{'54321'} => {
                     'format'      => 'PNG',
                     'type'        => 'passport',
                     'status'      => 'verified',
                     'expiry_date' => re('\d+'),
                     'id'          => '54321'
                 },
-                'CR10001.passport.270744941_front.PNG' => {
+                $doc_mapping->{'12345'} => {
                     'format'      => 'PNG',
                     'id'          => '12345',
                     'type'        => 'passport',
                     'expiry_date' => re('\d+'),
                     'status'      => 'verified'
                 },
-                'CR10001.passport.270745001_front.PNG' => {
+                $doc_mapping->{'618900'} => {
                     'expiry_date' => re('\d+'),
                     'format'      => 'PNG',
                     'status'      => 'verified',
@@ -789,7 +876,7 @@ subtest 'rejected and uploaded' => sub {
             },
         }};
 
-    cmp_deeply $client->documents_uploaded(), $expected, 'Fresh verified documents make the account verified';
+    cmp_deeply $client->documents->uploaded(), $expected, 'Fresh verified documents make the account verified';
 
     # Somebody rejected the doc (from BO)
 
@@ -802,21 +889,21 @@ subtest 'rejected and uploaded' => sub {
             'expiry_date' => re('\d+'),
             'is_expired'  => 1,
             'documents'   => {
-                'CR10001.passport.270744961_front.PNG' => {
+                $doc_mapping->{'54321'} => {
                     'format'      => 'PNG',
                     'type'        => 'passport',
                     'status'      => 'verified',
                     'expiry_date' => re('\d+'),
                     'id'          => '54321'
                 },
-                'CR10001.passport.270744941_front.PNG' => {
+                $doc_mapping->{'12345'} => {
                     'format'      => 'PNG',
                     'id'          => '12345',
                     'type'        => 'passport',
                     'expiry_date' => re('\d+'),
                     'status'      => 'verified'
                 },
-                'CR10001.passport.270745001_front.PNG' => {
+                $doc_mapping->{'618900'} => {
                     'expiry_date' => re('\d+'),
                     'format'      => 'PNG',
                     'status'      => 'rejected',
@@ -826,7 +913,9 @@ subtest 'rejected and uploaded' => sub {
             },
         }};
 
-    cmp_deeply $client->documents_uploaded(), $expected, 'Rejected documents make the account expired';
+    cmp_deeply $client->documents->uploaded(), $expected, 'Rejected documents make the account expired';
+
+    $mock_documents->unmock_all;
 };
 
 subtest 'rejected an accepted' => sub {
@@ -871,17 +960,19 @@ subtest 'rejected an accepted' => sub {
     $sth_doc_new = $dbh->prepare($SQL);
     $sth_doc_new->execute($id2);
 
+    my $doc_mapping = +{map { ($_->document_id => $_->file_name) } $client->client_authentication_document->@*};
+
     my $expected = {
         'proof_of_identity' => {
             'documents' => {
-                'CR10002.passport.270745021_front.PNG' => {
+                $doc_mapping->{'12345'} => {
                     'id'          => '12345',
                     'type'        => 'passport',
                     'format'      => 'PNG',
                     'expiry_date' => re('\d+'),
                     'status'      => 'uploaded'
                 },
-                'CR10002.passport.270745041_front.PNG' => {
+                $doc_mapping->{'54321'} => {
                     'type'        => 'passport',
                     'id'          => '54321',
                     'format'      => 'PNG',
@@ -894,7 +985,7 @@ subtest 'rejected an accepted' => sub {
 
     # The documents are left in `uploaded` just like an Onfido consider
 
-    cmp_deeply $client->documents_uploaded(), $expected, 'We got the expected result from documents uploaded';
+    cmp_deeply $client->documents->uploaded(), $expected, 'We got the expected result from documents uploaded';
 
     # New doc comes in, time valid verification kicks in
 
@@ -907,25 +998,28 @@ subtest 'rejected an accepted' => sub {
     $sth_doc_new = $dbh->prepare($SQL);
     $sth_doc_new->execute($id2);
 
+    $client      = BOM::User::Client->new({loginid => $client->loginid});
+    $doc_mapping = +{map { ($_->document_id => $_->file_name) } $client->client_authentication_document->@*};
+
     $client->status->setnx('age_verification', 'test', 'test');
     $expected = {
         'proof_of_identity' => {
             'documents' => {
-                'CR10002.passport.270745021_front.PNG' => {
+                $doc_mapping->{'12345'} => {
                     'id'          => '12345',
                     'type'        => 'passport',
                     'format'      => 'PNG',
                     'expiry_date' => re('\d+'),
                     'status'      => 'uploaded'
                 },
-                'CR10002.passport.270745041_front.PNG' => {
+                $doc_mapping->{'54321'} => {
                     'type'        => 'passport',
                     'id'          => '54321',
                     'format'      => 'PNG',
                     'expiry_date' => re('\d+'),
                     'status'      => 'uploaded'
                 },
-                'CR10002.passport.270745061_front.PNG' => {
+                $doc_mapping->{'789'} => {
                     'type'        => 'passport',
                     'id'          => '789',
                     'format'      => 'PNG',
@@ -938,7 +1032,7 @@ subtest 'rejected an accepted' => sub {
             'is_expired'  => 0,
 
         }};
-    cmp_deeply $client->documents_uploaded(), $expected, 'We got the expected result after Onfido verification';
+    cmp_deeply $client->documents->uploaded(), $expected, 'We got the expected result after Onfido verification';
 };
 
 subtest 'Payment Agent has expired documents' => sub {
@@ -984,9 +1078,11 @@ subtest 'Payment Agent has expired documents' => sub {
     subtest 'Documents' => sub {
         my $docs;
 
-        $mock_client->mock(
-            'documents_uploaded',
+        $documents_mock->mock(
+            'uploaded',
             sub {
+                my ($self) = @_;
+                $self->_clear_uploaded;
                 return $docs;
             });
 
@@ -997,14 +1093,22 @@ subtest 'Payment Agent has expired documents' => sub {
 
         $risk = 'low';
         $pa   = 0;
-        ok $client_cr->has_valid_documents($docs), 'Expire check not required';
+        ok $client_cr->documents->valid(), 'Expire check not required';
 
         $risk = 'low';
         $pa   = 1;
-        ok !$client_cr->has_valid_documents($docs), 'Invalid documents';
+        ok !$client_cr->documents->valid(), 'Invalid documents';
 
         $mock_client->unmock_all;
-    }
+    };
+
+    $documents_mock->mock(
+        'uploaded',
+        sub {
+            my ($self) = @_;
+            $self->_clear_uploaded;
+            return $documents_mock->original('uploaded')->(@_);
+        });
 };
 
 subtest 'Lifetime Valid Documents' => sub {
@@ -1039,9 +1143,10 @@ subtest 'Lifetime Valid Documents' => sub {
         ),
         'Expired document uploaded';
 
-    ok $client->documents_expired(), 'Client has expired docs';
-    ok !$client->has_valid_documents(), 'Client does not have valid docs';
+    ok $client->documents->expired(), 'Client has expired docs';
+    ok !$client->documents->valid(), 'Client does not have valid docs';
 
+    my $documents_uploaded = $client->documents->uploaded();
     ok upload_new_doc(
         $client,
         {
@@ -1059,10 +1164,9 @@ subtest 'Lifetime Valid Documents' => sub {
         ),
         'Expired document uploaded';
 
-    ok $client->documents_expired(), 'Client has expired docs still';
-    ok !$client->has_valid_documents(), 'Client does not have valid docs still';
+    ok $client->documents->expired(), 'Client has expired docs still';
+    ok !$client->documents->valid(), 'Client does not have valid docs still';
 
-    my $documents_uploaded = $client->documents_uploaded();
     ok $documents_uploaded->{proof_of_identity}->{expiry_date}, 'POI has expiry_date reported';
     ok $documents_uploaded->{proof_of_identity}->{is_expired},  'POI has is_expired reported';
 
@@ -1082,10 +1186,10 @@ subtest 'Lifetime Valid Documents' => sub {
         ),
         'Lifetime valid document uploaded';
 
-    ok !$client->documents_expired(), 'Client has lifetime valid docs';
-    ok $client->has_valid_documents(), 'Client has valid docs';
+    ok !$client->documents->expired(), 'Client has lifetime valid docs';
+    ok $client->documents->valid(), 'Client has valid docs';
 
-    $documents_uploaded = $client->documents_uploaded();
+    $documents_uploaded = $client->documents->uploaded();
     ok !$documents_uploaded->{proof_of_identity}->{expiry_date}, 'POI does not have expiry_date reported';
     ok !$documents_uploaded->{proof_of_identity}->{is_expired},  'POI does not have is_expired reported';
 

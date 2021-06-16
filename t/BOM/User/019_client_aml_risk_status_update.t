@@ -195,18 +195,19 @@ subtest 'filter by authentication and financial_assessment' => sub {
 
     $client_cr->status->clear_withdrawal_locked();
 
-    my $mocked_client = Test::MockModule->new('BOM::User::Client');
-    $mocked_client->mock('documents_expired' => sub { return 1 });
+    my $mocked_documents = Test::MockModule->new('BOM::User::Client::AuthenticationDocuments');
+    $mocked_documents->mock('expired' => sub { return 1 });
     $result = $c->update_aml_high_risk_clients_status($landing_company);
     is @$result, @$expected_db_rows, 'Correct number of affected users';
     is_deeply $result, $expected_db_rows, 'No client is filtered if documents are expired';
-    $mocked_client->unmock_all;
+    $mocked_documents->unmock_all;
 
     clear_clients($client_cr, $client_cr2);
 };
 
 subtest 'withdrawal lock auto removal after authentication and FA' => sub {
-    my $mocked_client = Test::MockModule->new('BOM::User::Client');
+    my $mocked_client    = Test::MockModule->new('BOM::User::Client');
+    my $mocked_documents = Test::MockModule->new('BOM::User::Client::AuthenticationDocuments');
     my @called_for_clients;
     $mocked_client->mock(
         update_status_after_auth_fa => sub {
@@ -281,7 +282,7 @@ subtest 'withdrawal lock auto removal after authentication and FA' => sub {
     undef @called_for_clients;
 
     # financial assessment incomplete, authenticated, correct reason, expired documents
-    $mocked_client->mock('documents_expired' => sub { return 1 });
+    $mocked_documents->mock('expired' => sub { return 1 });
     $client_cr->status->set('withdrawal_locked', 'system', 'Pending authentication or FA');
     update_financial_assessment($user, $data);
     is @called_for_clients, 1, 'update_status_after_auth_fa called automatically by financial assessment';
@@ -308,6 +309,7 @@ subtest 'withdrawal lock auto removal after authentication and FA' => sub {
     undef @called_for_clients;
 
     $mocked_client->unmock_all;
+    $mocked_documents->unmock_all;
 };
 
 sub test_event {

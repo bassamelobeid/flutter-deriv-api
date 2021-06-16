@@ -1,0 +1,304 @@
+POI:
+  description: POI (Proof of Identity)
+  category: proof_of_identity
+  expiration_strategy: max
+  priority: 1
+  side_required: 1
+  document_id_required: 1
+  types:
+    passport:
+      preferred: 1
+      description: Passport
+      date: expiration
+      priority: 1
+      sides: &two_sided
+        front: Front Side
+        back: Back Side
+    driving_licence:
+      preferred: 1
+      description: Driving License
+      date: expiration
+      priority: 2
+      sides: *two_sided
+    voter_card:
+      preferred: 1
+      description: Voter Card
+      date: expiration
+      priority: 3
+      sides: *two_sided
+    national_identity_card:
+      preferred: 1
+      description: National ID
+      date: expiration
+      priority: 4
+      sides: *two_sided
+    student_card:
+      preferred: 1
+      description: Student Card
+      date: expiration
+      priority: 5
+      sides: *two_sided
+    nimc_slip:
+      preferred: 1
+      description: NIMC Slip
+      date: expiration
+      priority: 6
+      sides: *two_sided
+    birth_certificate:
+      preferred: 0
+      description: Birth Certificate
+      date: none
+      priority: 7
+      numberless: 1
+      sides: &photo
+        photo: Photo
+    pan_card:
+      preferred: 1
+      description: PAN Card
+      date: none
+      priority: 8
+      sides: *two_sided
+    tax_photo_id:
+      preferred: 1
+      description: Tax Photo ID
+      date: expiration
+      priority: 9
+      sides: *two_sided
+    poi_others:
+      preferred: 1
+      description: Others
+      date: none
+      sides: *two_sided
+      priority: 10
+    proofid:
+      preferred: 1
+      deprecated: 1
+      date: expiration
+    vf_face_id:
+      deprecated: 1
+      date: none
+    photo:
+      deprecated: 1
+      date: none
+    live_photo:
+      deprecated: 1
+      date: none
+    selfie_with_id:
+      deprecated: 1
+      date: none
+      sides: *photo
+    driverslicense:
+      preferred: 1
+      deprecated: 1
+      date: expiration
+POA:
+  description: POA (Proof of Address)
+  category: proof_of_address
+  expiration_strategy: min
+  side_required: 0
+  document_id_required: 0
+  priority: 2
+  types:
+    utility_bill:
+      preferred: 1
+      description: Utility Bill
+      date: issuance
+      priority: 1
+      sides: *two_sided
+    bank_statement:
+      preferred: 1
+      description: Bank Statement
+      date: issuance
+      priority: 2
+      sides: *two_sided
+    tax_receipt:
+      preferred: 1
+      description: Tax receipt
+      date: issuance
+      priority: 3
+      sides: *two_sided
+    insurance_bill:
+      preferred: 1
+      description: Insurance bill
+      date: issuance
+      priority: 4
+      sides: *two_sided
+    phone_bill:
+      preferred: 1
+      description: Phone bill (only for ROW)
+      date: issuance
+      priority: 5
+      sides: *two_sided
+    poa_others:
+      preferred: 1
+      description: Others
+      date: none
+      priority: 6
+      sides: *two_sided
+    proofaddress:
+      preferred: 1
+      deprecated: 1
+      date: issuance
+    payslip:
+      preferred: 1
+      deprecated: 1
+      date: issuance
+    bankstatement:
+      preferred: 1
+      deprecated: 1
+      date: issuance
+    cardstatement:
+      preferred: 1
+      deprecated: 1
+      date: issuance
+    vf_poa:
+      preferred: 1
+      deprecated: 1
+      date: issuance
+EDD:
+  description: EDD
+  expiration_strategy: min
+  side_required: 0
+  document_id_required: 0
+  priority: 3
+  types:
+    tax_return:
+      preferred: 1
+      description: Tax return
+      date: issuance
+      priority: 1
+      sides: *two_sided
+    employment_contract:
+      preferred: 1
+      description: Employment Contract
+      date: issuance
+      priority: 2
+      sides: *two_sided
+    payslip:
+      description: Payslip
+      date: issuance
+      priority: 3
+      sides: *two_sided
+    edd_others:
+      preferred: 1
+      description: Others
+      date: none
+      priority: 4
+      sides: *two_sided
+Verification - ID:
+  description: Verification - ID
+  expiration_strategy: min
+  side_required: 0
+  document_id_required: 0
+  priority: 4
+  types:
+    selfie:
+      preferred: 1
+      description: Selfie
+      date: none
+      priority: 1
+      sides: *photo
+    video_verification:
+      preferred: 1
+      description: Video verification
+      date: issuance
+      priority: 2
+    doc_verification:
+      preferred: 1
+      description: Doc Verification (Autodoc)
+      date: issuance
+      priority: 3
+      sides: *two_sided
+Business documents:
+  description: Business documents
+  expiration_strategy: min
+  side_required: 0
+  document_id_required: 0
+  priority: 5
+  types:
+    coi:
+      preferred: 1
+      description: COI
+      date: issuance
+      priority: 1
+      sides: *two_sided
+    business_poa:
+      preferred: 1
+      description: Business POA
+      date: issuance
+      priority: 2
+      sides: *two_sided
+    article_of_association:
+      preferred: 1
+      description: Article of association
+      date: issuance
+      priority: 3
+      sides: *two_sided
+    memorandum:
+      preferred: 1
+      description: Memorandum
+      date: issuance
+      priority: 4
+      sides: *two_sided
+    authorisation_letter:
+      preferred: 1
+      description: Authorisation letter
+      date: issuance
+      priority: 5
+      sides: *two_sided
+    declarations:
+      preferred: 1
+      description: Declarations
+      date: issuance
+      priority: 6
+      sides: *two_sided
+    business_documents_others:
+      preferred: 1
+      description: Others
+      date: none
+      priority: 7
+      sides: *two_sided
+Others:
+  description: Others
+  expiration_strategy: min
+  side_required: 0
+  document_id_required: 0
+  priority: 6
+  types:
+    power_of_attorney:
+      preferred: 1
+      description: Power of attorney
+      date: issuance
+      priority: 1
+      sides: *two_sided
+    code_of_conduct:
+      preferred: 1
+      description: Code of Conduct
+      date: issuance
+      priority: 2
+      sides: *two_sided
+    ip_mismatch_confirmation:
+      preferred: 1
+      description: IP mismatch confirmation
+      date: issuance
+      priority: 3
+      sides: *two_sided
+    others:
+      preferred: 1
+      description: Others
+      date: none
+      priority: 4
+      sides: *two_sided
+AML Global Check:
+  description: AML Global Check
+  expiration_strategy: min
+  side_required: 0
+  document_id_required: 0
+  priority: 7
+  types:
+    amlglobalcheck:
+      preferred: 1
+      description: AML Global Check
+      date: issuance
+      priority: 1
+      sides: *two_sided

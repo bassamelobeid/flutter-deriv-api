@@ -41,6 +41,7 @@ use BOM::Platform::Event::Emitter;
 use BOM::Platform::Utility;
 use BOM::User::Client::PaymentAgent;
 use BOM::User::Client::Status;
+use BOM::User::Client::AuthenticationDocuments;
 use BOM::User::Client::Account;
 use BOM::User::FinancialAssessment;
 use BOM::User::Utility;
@@ -63,31 +64,6 @@ use BOM::User::Client::PaymentTransaction::Doughflow;
 use Carp qw(croak confess);
 
 use Log::Any qw($log);
-
-sub DOCUMENT_TYPE_CATEGORIES {
-    my %document_type_categories = (
-        POI => {
-            doc_types =>
-                [qw(passport proofid driverslicense driving_licence national_identity_card vf_face_id vf_id photo live_photo selfie_with_id)],
-            doc_types_appreciated => [qw(passport national_identity_card driving_licence proofid driverslicense)],
-        },
-        POA => {
-            doc_types => [qw(vf_poa proofaddress utility_bill bankstatement bank_statement cardstatement)],
-        },
-        Funds => {
-            doc_types => [qw(payslip tax_receipt employment_contract)],
-        },
-        Checks => {
-            doc_types => [qw(amlglobalcheck docverification)],
-        },
-        Declarations => {
-            doc_types => [qw(power_of_attorney code_of_conduct)],
-        },
-        Other => {
-            doc_types => [qw(other professional_eu_qualified_investor professional_uk_high_net_worth professional_uk_self_certified_sophisticated)],
-        });
-    return %document_type_categories;
-}
 
 use constant {
     P2P_TOKEN_MIN_EXPIRY => 2 * 60 * 60,    # 2 hours
@@ -635,217 +611,6 @@ sub get_financial_assessment {
     }
 
     return $value;
-}
-
-=head2 documents_expired
-
-documents_expired returns a boolean indicating if this client has all his
-POI documents expired (note at least one non expired document make this method return 0).
-It also returns 0 if there are no documents in sight.
-
-It may take the following arguments:
-
-=over 4
-
-=item * enforce, (optional) activate this flag to always check for expired docs no matter the context
-
-=back
-
-=cut
-
-sub documents_expired {
-    my ($self, $enforce) = @_;
-
-    my $documents = $self->documents_uploaded();
-
-    # no POI documents
-    return 0 unless defined $documents->{proof_of_identity}{documents};
-    return $self->has_valid_documents($documents, 'proof_of_identity', $enforce) ? 0 : 1;
-}
-
-=head2 documents_uploaded
-
-Return all the uploaded documents for the current client.
-Ignores that are in uploading state
-
-Returns
-
-=over 4
-
-=item * A hashref containing list of different document types
-
-    {
-        proof_of_identity => {
-            documents => {
-                file_name1 => {},
-                file_name2 => {},
-            },
-            is_expired => 0,
-            expiry_date => epoch,
-        },
-        proof_of_address => {
-            documents => {
-                file_name1 => {},
-                file_name2 => {},
-            },
-            is_expired => 0,
-            expiry_date => epoch,
-        },
-        others => {
-            documents => {
-                file_name1 => {},
-                file_name2 => {},
-            },
-            is_expired => 0,
-            expiry_date => epoch,
-        },
-    }
-
-=back
-
-=cut
-
-sub documents_uploaded {
-    my $self = shift;
-
-    my $doc_structure = sub {
-        my $doc = shift;
-
-        return {
-            expiry_date => $doc->expiration_date ? $doc->expiration_date->epoch : undef,
-            type        => $doc->document_type,
-            format      => $doc->document_format,
-            id          => $doc->document_id,
-            status      => $doc->status,
-        };
-    };
-
-    my $has_lifetime_valid  = {};
-    my %doc_type_categories = DOCUMENT_TYPE_CATEGORIES();
-    my %documents           = ();
-
-    my @siblings = $self->user->clients(
-        include_disabled   => 1,
-        include_duplicated => 1
-    );
-
-    for my $each_sibling (@siblings) {
-        next if $each_sibling->is_virtual;
-
-        foreach my $single_document ($each_sibling->client_authentication_document) {
-            my $doc_status = $single_document->status // '';
-
-            # consider only uploaded documents
-            next if $doc_status eq 'uploading';
-
-            my $type = 'other';
-            $type = 'proof_of_identity' if (first { $_ eq $single_document->document_type } @{$doc_type_categories{POI}{doc_types_appreciated}});
-            $type = 'proof_of_address'
-                if (first { $_ eq $single_document->document_type } qw(proofaddress payslip utility_bill bankstatement cardstatement));
-
-            $documents{$type}{documents}{$single_document->file_name} = $doc_structure->($single_document);
-
-            # there should be no expiration date for POA
-            next if $type eq 'proof_of_address';
-
-            # If doc is in Needs Review and age_verification is true, then flag the category as pending
-            # note that this is a `maybe pending` and can be cancelled some lines below outside the looping
-            $documents{proof_of_identity}{is_pending} = 1
-                if $doc_status eq 'uploaded' && $type eq 'proof_of_identity' && $self->status->age_verification;
-
-            # only verified documents pass for expiration analysis
-            next if $doc_status ne 'verified';
-
-            # Populate the lifetime valid hashref per category
-            $has_lifetime_valid->{$type} = 1 if $single_document->lifetime_valid;
-            next                             if $has_lifetime_valid->{$type};
-
-            my $expires = $documents{$type}{documents}{$single_document->file_name}{expiry_date};
-            next unless $expires;
-
-            # Dont propagate expiry if is age verified by Experian
-            next if $self->status->is_experian_validated and $type eq 'proof_of_identity';
-
-            my $existing_expiry_date_epoch = $documents{$type}{expiry_date} // $expires;
-            my $expiry_date;
-            $expiry_date = max($expires, $existing_expiry_date_epoch) if $type eq 'proof_of_identity';
-            # This line may need a bit of clarification, why do we use `min`?
-            $expiry_date = min($expires, $existing_expiry_date_epoch) if $type ne 'proof_of_identity';
-
-            $documents{$type}{expiry_date} = $expiry_date;
-            $documents{$type}{is_expired}  = Date::Utility->new->epoch > $expiry_date ? 1 : 0;
-        }
-    }
-
-    # Remove expiration from category if lifetime valid doc was observed
-    for my $type (keys $has_lifetime_valid->%*) {
-        delete $documents{$type}->{expiry_date};
-        delete $documents{$type}->{is_expired};
-    }
-
-    if (scalar(keys %documents) and exists $documents{proof_of_identity}) {
-        $documents{proof_of_identity}{is_pending} = 1 unless $self->status->age_verification;
-    }
-
-    # Cancel the is_pending for an age_verified account that does not have verified expired docs
-    if ($documents{proof_of_identity}{is_pending}) {
-        $documents{proof_of_identity}{is_pending} = 0 if $self->status->age_verification and not $documents{proof_of_identity}{is_expired};
-    }
-
-    # set document status for authentication
-    # status - needs_action and under_review
-
-    if (scalar(keys %documents) and exists $documents{proof_of_address}) {
-        if (($self->authentication_status // '') eq 'needs_action') {
-            $documents{proof_of_address}{is_rejected} = 1;
-        } elsif (not $self->fully_authenticated or $self->ignore_address_verification) {
-            $documents{proof_of_address}{is_pending} = 1;
-        }
-    }
-
-    return \%documents;
-}
-
-=head2 has_valid_documents
-
-Check the client documents by type and indicate whether all of them are non-expired.
-Note it returns 0 if there are no documents.
-
-It may take the following arguments:
-
-=over 4
-
-=item * documents, (optional) you can pass the documents to avoid hitting the db
-
-=item * type, (optional) the type of document we are checking, check them all if not specified
-
-=item * enforce, (optional) activate this flag to always check for expired docs no matter the context
-
-=back
-
-Returns
-    boolean indicating that all the document types checked are non-expired
-
-=cut
-
-sub has_valid_documents {
-    my ($self, $documents, $type, $enforce) = @_;
-    $documents //= $self->documents_uploaded();
-
-    my $is_document_expiry_check_required = $enforce // $self->is_document_expiry_check_required();
-
-    # If type is specified disregard the other types
-    # and ensure there is a `documents` section defined
-    my @types = grep { exists $documents->{$_}{documents} } $type ? ($type) : (keys %$documents);
-
-    # no documents
-    return 0 unless @types;
-
-    # Note `is_expired` is calculated from the max expiration timestamp found for POI
-    # Other type of documents take the min expiration timestamp found
-    return 0 if any { $documents->{$_}{is_expired} and $is_document_expiry_check_required } @types;
-
-    return 1;
 }
 
 =head2 fully_authenticated
@@ -1624,6 +1389,17 @@ sub status {
     }
 
     return $self->{status};
+}
+
+sub documents {
+    my $self = shift;
+
+    return $self->{documents} //= do {
+        $self->set_db('write') unless $self->get_db eq 'write';
+        $self->{documents} = BOM::User::Client::AuthenticationDocuments->new({
+            client => $self,
+        });
+    };
 }
 
 sub is_pa_and_authenticated {
@@ -5653,7 +5429,7 @@ sub update_status_after_auth_fa {
             $sibling->status->clear_withdrawal_locked
                 if ($sibling->status->reason('withdrawal_locked') // '') =~ 'FA needs to be completed';
 
-            if ($sibling->fully_authenticated && !$sibling->documents_expired) {
+            if ($sibling->fully_authenticated && !$sibling->documents->expired) {
                 $sibling->status->clear_withdrawal_locked
                     if ($sibling->status->reason('withdrawal_locked') // '') =~ 'Pending authentication or FA';
 
@@ -5960,10 +5736,10 @@ Returns,
 sub get_poa_status {
     my ($self, $documents) = @_;
     # Note optional arguments will be resolved if not provided
-    $documents //= $self->documents_uploaded();
+    $documents //= $self->documents->uploaded();
 
-    my ($is_poa_already_expired, $is_poa_pending, $is_rejected) =
-        @{$documents->{proof_of_address}}{qw/is_expired is_pending is_rejected/};
+    my ($is_poa_pending, $is_rejected) =
+        @{$documents->{proof_of_address}}{qw/is_pending is_rejected/};
 
     return 'pending' if $is_poa_pending;
 
@@ -5995,7 +5771,8 @@ Returns,
 sub get_poi_status {
     my ($self, $documents) = @_;
     # Note optional arguments will be resolved if not provided
-    $documents //= $self->documents_uploaded();
+    $documents //= $self->documents->uploaded();
+
     my ($is_poi_already_expired, $is_poi_pending) =
         @{$documents->{proof_of_identity}}{qw/is_expired is_pending/};
 
@@ -6059,7 +5836,7 @@ Returns,
 sub needs_poa_verification {
     my ($self, $documents, $status, $is_required_auth) = @_;
     # Note optional arguments will be resolved if not provided
-    $documents //= $self->documents_uploaded();
+    $documents //= $self->documents->uploaded();
     $status    //= $self->get_poa_status($documents);
 
     # From POA status
@@ -6106,7 +5883,7 @@ Returns,
 sub needs_poi_verification {
     my ($self, $documents, $status, $is_required_auth) = @_;
     # Note optional arguments will be resolved if not provided
-    $documents //= $self->documents_uploaded();
+    $documents //= $self->documents->uploaded();
     $status    //= $self->get_poi_status($documents);
 
     # Resubmissions
