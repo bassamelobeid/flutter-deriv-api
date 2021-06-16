@@ -1022,4 +1022,21 @@ subtest 'update user password' => sub {
     is $user->update_user_password($hash_pw), 1, 'user password changed is OK';
 };
 
+subtest 'feature flag' => sub {
+    my $user_flags = $user->get_feature_flag();
+
+    foreach my $flag (keys %$user_flags) {
+        is $user_flags->{$flag}, 0, 'default values returned correctly';
+    }
+
+    my $feature_flag = {wallet => 1};
+    lives_ok { $user->set_feature_flag($feature_flag) } 'feature flags are being set';
+
+    $user_flags = $user->get_feature_flag();
+
+    foreach my $flag (keys %$feature_flag) {
+        is $feature_flag->{$flag}, $user_flags->{$flag}, "flag $flag has been set correctly";
+    }
+};
+
 done_testing();

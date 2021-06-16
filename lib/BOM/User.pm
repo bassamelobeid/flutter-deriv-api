@@ -1407,4 +1407,64 @@ sub get_trading_platform_loginids {
 
     return grep { $_ =~ qr/$regex/ } $self->loginids;
 }
+
+=head2 set_feature_flag
+
+Sets the state of feature flag for the user as C<enabled> with current timestamp as C<stamp>
+
+It takes the following named arguments
+
+=over 1
+
+=item * C<feature_flag> - hashref that contains key/value pair that represents feature_name/enabled
+
+=back
+
+Returns undef as we retreive those flags from C<get_feature_flag> subroutine
+
+=cut
+
+sub set_feature_flag {
+    my ($self, $feature_flag) = @_;
+
+    foreach my $feature_name (keys $feature_flag->%*) {
+        $self->dbic->run(
+            fixup => sub {
+                $_->do('SELECT users.set_feature_flag(?, ?, ?)', undef, $self->{id}, $feature_name, $feature_flag->{$feature_name});
+            });
+    }
+
+    return undef;
+}
+
+=head2 _get_default_flags
+
+Returns hashref contains feature flags default value
+
+=cut
+
+sub _get_default_flags {
+    my @flags = qw( wallet );
+
+    return +{map { $_ => 0 } @flags};
+}
+
+=head2 get_feature_flag
+
+Returns hashref that contains all feature flags details.
+Retreive flag value from db. Otherwise default value is returned.
+
+=cut
+
+sub get_feature_flag {
+    my ($self) = @_;
+
+    my $result = $self->dbic->run(
+        fixup => sub {
+            $_->selectall_arrayref('SELECT * FROM users.get_feature_flag(?)', {Slice => {}}, $self->{id});
+        });
+
+    return +{_get_default_flags->%*, map { $_->{name} => $_->{enabled} } $result->@*};
+}
+
 1;
