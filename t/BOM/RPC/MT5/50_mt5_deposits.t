@@ -634,7 +634,11 @@ subtest 'mf_withdrawal' => sub {
     $c->call_ok($method, $params_mf)->has_error('Withdrawal request failed.')
         ->error_code_is('MT5WithdrawalError', 'error code is MT5WithdrawalError')->error_message_like(qr/authenticate/);
 
+    my $mocked_client = Test::MockModule->new(ref($test_mf_client));
+    $mocked_client->mock(is_financial_assessment_complete => 1);
+
     $has_valid_documents = 1;
+
     $test_mf_client->set_authentication('ID_DOCUMENT', {status => 'pass'});
 
     BOM::RPC::v3::MT5::Account::reset_throttler($test_mf_client->loginid);
@@ -678,6 +682,9 @@ subtest 'mf_deposit' => sub {
     $test_mf_client->set_authentication('ID_DOCUMENT', {status => 'pending'});
     $c->call_ok($method, $params_mf)->has_error('Deposit request failed.')->error_code_is('MT5DepositError', 'error code is MT5DepositError')
         ->error_message_like(qr/authenticate/);
+
+    my $mocked_client = Test::MockModule->new(ref($test_mf_client));
+    $mocked_client->mock(is_financial_assessment_complete => 1);
 
     $has_valid_documents = 1;
 

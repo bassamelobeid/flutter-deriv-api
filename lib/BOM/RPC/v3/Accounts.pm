@@ -979,13 +979,15 @@ rpc get_account_status => sub {
     my $deposit_validation  = BOM::Platform::Client::CashierValidation::deposit_validation($client);
     my $withdraw_validation = BOM::Platform::Client::CashierValidation::withdraw_validation($client);
 
-    my @cashier_validation = map { ($_->{status} // [])->@* } $base_validation, $deposit_validation, $withdraw_validation;
+    my @cashier_validation     = map { ($_->{status} // [])->@* } $base_validation, $deposit_validation, $withdraw_validation;
+    my @cashier_missing_fields = map { ($_->{missing_fields} // [])->@* } $deposit_validation, $withdraw_validation;
 
-    if ($base_validation->{error}) {
+    if ($base_validation->{error} or ($deposit_validation->{error} and $withdraw_validation->{error})) {
         push @$status, 'cashier_locked';
-    } else {
-        push @$status, 'deposit_locked'    if $deposit_validation->{error};
-        push @$status, 'withdrawal_locked' if $withdraw_validation->{error};
+    } elsif ($deposit_validation->{error}) {
+        push @$status, 'deposit_locked';
+    } elsif ($withdraw_validation->{error}) {
+        push @$status, 'withdrawal_locked';
     }
 
     if (!BOM::Config::Runtime->instance->app_config->system->suspend->universal_password) {
@@ -1026,8 +1028,9 @@ rpc get_account_status => sub {
         prompt_client_to_authenticate => $is_verification_required,
         authentication                => $authentication,
         currency_config               => \%currency_config,
-        @cashier_validation ? (cashier_validation       => [sort(uniq(@cashier_validation))]) : (),
-        $provider           ? (social_identity_provider => $provider)                         : (),
+        @cashier_validation     ? (cashier_validation       => [sort(uniq(@cashier_validation))])     : (),
+        @cashier_missing_fields ? (cashier_missing_fields   => [sort(uniq(@cashier_missing_fields))]) : (),
+        $provider               ? (social_identity_provider => $provider)                             : (),
     };
 };
 

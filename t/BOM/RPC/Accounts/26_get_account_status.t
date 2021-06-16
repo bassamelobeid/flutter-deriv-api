@@ -225,6 +225,14 @@ subtest 'get account status' => sub {
                 "deposit is not locked correctly"
             );
 
+            $mocked_cashier_validation->mock('deposit_validation', {error => 1}, 'withdraw_validation', {error => 1});
+            $result = $c->tcall('get_account_status', {token => $token_cr});
+            cmp_deeply(
+                $result->{status},
+                ['cashier_locked', 'financial_information_not_complete', 'trading_experience_not_complete', 'trading_password_required'],
+                "cashier_locked when both deposit and withdrawal are locked"
+            );
+
             $mocked_cashier_validation->unmock_all();
         };
 
@@ -379,7 +387,8 @@ subtest 'get account status' => sub {
                         },
                         needs_verification => ["document", "identity"],
                     },
-                    cashier_validation => ['ASK_AUTHENTICATE', 'ASK_CURRENCY', 'ASK_FINANCIAL_RISK_APPROVAL', 'ASK_TIN_INFORMATION'],
+                    cashier_validation =>
+                        ['ASK_AUTHENTICATE', 'ASK_CURRENCY', 'ASK_FINANCIAL_RISK_APPROVAL', 'ASK_TIN_INFORMATION', 'FinancialAssessmentRequired'],
                 },
                 'prompt for non authenticated MF client'
             );
@@ -424,7 +433,7 @@ subtest 'get account status' => sub {
                         },
                         needs_verification => [],
                     },
-                    cashier_validation => ['ASK_CURRENCY', 'ASK_FINANCIAL_RISK_APPROVAL', 'ASK_TIN_INFORMATION'],
+                    cashier_validation => ['ASK_CURRENCY', 'ASK_FINANCIAL_RISK_APPROVAL', 'ASK_TIN_INFORMATION', 'FinancialAssessmentRequired'],
                 },
                 'authenticated, no deposits so it will not prompt for authentication'
             );
@@ -467,7 +476,7 @@ subtest 'get account status' => sub {
                         },
                         needs_verification => ['identity'],
                     },
-                    cashier_validation => ['ASK_CURRENCY', 'ASK_FINANCIAL_RISK_APPROVAL', 'ASK_TIN_INFORMATION'],
+                    cashier_validation => ['ASK_CURRENCY', 'ASK_FINANCIAL_RISK_APPROVAL', 'ASK_TIN_INFORMATION', 'FinancialAssessmentRequired'],
                 },
                 'correct account status returned for document expired, please note that this test for status key, authentication expiry structure is tested later'
             );
@@ -527,7 +536,7 @@ subtest 'get account status' => sub {
                         },
                         needs_verification => [],
                     },
-                    cashier_validation => ['ASK_CURRENCY', 'ASK_FINANCIAL_RISK_APPROVAL', 'ASK_TIN_INFORMATION'],
+                    cashier_validation => ['ASK_CURRENCY', 'ASK_FINANCIAL_RISK_APPROVAL', 'ASK_TIN_INFORMATION', 'FinancialAssessmentRequired'],
                 },
                 'correct account status returned for document expiring in next month'
             );
@@ -613,7 +622,7 @@ subtest 'get account status' => sub {
                             },
                             needs_verification => superbagof(qw(identity)),
                         },
-                        cashier_validation => ['ASK_CURRENCY', 'ASK_UK_FUNDS_PROTECTION'],
+                        cashier_validation => ['ASK_CURRENCY', 'ASK_UK_FUNDS_PROTECTION', 'documents_expired'],
                     },
                     "authentication object is correct"
                 );
@@ -667,6 +676,7 @@ subtest 'get account status' => sub {
 
             $test_client_cr->status->set('withdrawal_locked', 'system', 'For test purposes');
             $result = $c->tcall($method, {token => $token_cr});
+
             cmp_deeply(
                 $result,
                 {
@@ -701,7 +711,8 @@ subtest 'get account status' => sub {
                                 }}
                         },
                         needs_verification => [],
-                    }
+                    },
+                    cashier_validation => ['withdrawal_locked_status'],
                 },
                 'allow_document_upload is automatically added along with withdrawal_locked'
             );
@@ -880,7 +891,8 @@ subtest 'get account status' => sub {
                                     }}
                             },
                             needs_verification => ['identity'],
-                        }
+                        },
+                        cashier_validation => ['documents_expired'],
                     },
                     "authentication object is correct"
                 );
@@ -968,7 +980,8 @@ subtest 'get account status' => sub {
                                     }}
                             },
                             needs_verification => ['identity'],
-                        }
+                        },
+                        cashier_validation => ['documents_expired'],
                     },
                     "authentication object is correct"
                 );
@@ -1019,6 +1032,7 @@ subtest 'get account status' => sub {
                         },
                         needs_verification => ["document", "identity"],
                     },
+                    cashier_validation => ['ASK_AUTHENTICATE', 'FinancialAssessmentRequired'],
                 },
                 'ask for documents for unauthenticated client marked as high risk'
             );
@@ -1298,6 +1312,7 @@ subtest 'get account status' => sub {
                         },
                         needs_verification => ["document", "identity"],
                     },
+                    cashier_validation => ['ASK_AUTHENTICATE', 'FinancialAssessmentRequired']
                 },
                 'ask for documents for client marked as high risk'
             );
@@ -1458,7 +1473,8 @@ subtest 'get account status' => sub {
                                     }}
                             },
                             needs_verification => superbagof(qw(identity)),
-                        }
+                        },
+                        cashier_validation => ['documents_expired'],
                     },
                     "authentication object is correct"
                 );
@@ -1672,6 +1688,7 @@ subtest 'get account status' => sub {
                 ok $test_client_mx->status->age_verification, 'Age verified';
                 ok $is_poi_already_expired, 'POI expired';
                 $result = $c->tcall($method, {token => $token_mx});
+
                 cmp_deeply(
                     $result,
                     {
@@ -1717,7 +1734,7 @@ subtest 'get account status' => sub {
                             },
                             needs_verification => superbagof(qw(identity)),
                         },
-                        cashier_validation => ignore(),
+                        cashier_validation => ['ASK_CURRENCY', 'ASK_UK_FUNDS_PROTECTION', 'documents_expired'],
                     },
                     "authentication object is correct"
                 );
@@ -2136,6 +2153,7 @@ subtest 'get account status' => sub {
                         },
                         needs_verification => ["identity"],
                     },
+                    cashier_validation => ['cashier_locked_status'],
                 },
                 'correct authenication object for shared_payment_method client'
             );
