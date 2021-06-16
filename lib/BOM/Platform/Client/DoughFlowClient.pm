@@ -229,7 +229,7 @@ sub Profile {
     my $self = shift;
 
     return 0 if $self->status->disabled;
-    if ($self->status->age_verification || $self->has_valid_documents) {
+    if ($self->status->age_verification || $self->documents->valid) {
         if ($self->fully_authenticated) {
             if ($self->_days_since_joined > 180) {
                 return 4;

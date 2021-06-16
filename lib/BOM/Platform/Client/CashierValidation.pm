@@ -110,7 +110,7 @@ sub base_validation {
 
     _add_error($errors,
         localize('Your identity documents have expired. Visit your account profile to submit your valid documents and unlock your cashier.'))
-        if $client->documents_expired;
+        if ($client->documents->expired);
 
     # landing company or country specific validations
     if ($landing_company->short eq 'maltainvest') {
