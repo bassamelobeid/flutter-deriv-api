@@ -340,7 +340,12 @@ sub actions_config {
                 msg_group    => 'mt5',
             }
         ],
-        ['trading_servers'],
+        [
+            'trading_servers',
+            {
+                msg_group    => 'mt5_hybrid',
+            }
+        ],
         [
             'document_upload',
             {
