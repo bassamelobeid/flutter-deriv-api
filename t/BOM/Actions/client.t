@@ -10,6 +10,7 @@ use Test::Deep;
 use Guard;
 use Log::Any::Test;
 use Log::Any qw($log);
+use Array::Utils qw(intersect);
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 
 use BOM::Test::Email;
@@ -1534,8 +1535,7 @@ subtest 'POI flag removal' => sub {
                 expected_checksum => '12345_' . $_,
                 page_type         => undef,
             }
-        } qw/passport national_identity_card driving_licence proofid driverslicense/
-    ];
+        } intersect($test_client->documents->poi_types->@*, $test_client->documents->preferred_types->@*)];
 
     $test_client->status->clear_allow_poi_resubmission;
     $test_client->status->clear_allow_poa_resubmission;
@@ -1582,7 +1582,7 @@ subtest 'POA flag removal' => sub {
                 expected_checksum => '12345_' . $_,
                 page_type         => undef,
             }
-        } qw/vf_poa proofaddress utility_bill bankstatement bank_statement cardstatement/
+        } $test_client->documents->poa_types->@*
     ];
 
     $test_client->status->clear_allow_poi_resubmission;
@@ -1711,15 +1711,24 @@ subtest 'account_reactivated' => sub {
 };
 
 subtest 'withdrawal_limit_reached' => sub {
-    my $client_mock = Test::MockModule->new('BOM::User::Client');
+    my $documents_mock = Test::MockModule->new('BOM::User::Client::AuthenticationDocuments');
     my $is_poa_pending;
-    my $fully_authenticated;
-
-    $client_mock->mock(
-        'documents_uploaded',
+    $documents_mock->mock(
+        'uploaded',
         sub {
-            return {proof_of_address => {is_pending => $is_poa_pending}};
+            my ($self) = @_;
+
+            $self->_clear_uploaded;
+
+            return {
+                proof_of_address => {
+                    is_pending => $is_poa_pending,
+                    documents  => {},
+                }};
         });
+
+    my $client_mock = Test::MockModule->new('BOM::User::Client');
+    my $fully_authenticated;
 
     $client_mock->mock(
         'fully_authenticated',
@@ -1777,6 +1786,7 @@ subtest 'withdrawal_limit_reached' => sub {
     is $test_client->status->reason('allow_document_upload'), 'WITHDRAWAL_LIMIT_REACHED', 'Allow Document upload with custom reason set';
 
     $client_mock->unmock_all;
+    $documents_mock->unmock_all;
 };
 
 subtest 'POA email notification' => sub {

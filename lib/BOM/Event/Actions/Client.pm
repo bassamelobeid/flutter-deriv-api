@@ -34,6 +34,7 @@ use POSIX qw(strftime);
 use Syntax::Keyword::Try;
 use Template::AutoFilter;
 use Time::HiRes;
+use Array::Utils qw(intersect);
 
 use BOM::Config;
 use BOM::Config::Onfido;
@@ -289,9 +290,9 @@ async sub document_upload {
         }
 
         $client->propagate_clear_status('allow_poi_resubmission')
-            if any { $_ eq $document_entry->{document_type} } +{BOM::User::Client::DOCUMENT_TYPE_CATEGORIES()}->{POI}{doc_types_appreciated}->@*;
+            if any { $_ eq $document_entry->{document_type} } intersect($client->documents->poi_types->@*, $client->documents->preferred_types->@*);
         $client->propagate_clear_status('allow_poa_resubmission')
-            if any { $_ eq $document_entry->{document_type} } +{BOM::User::Client::DOCUMENT_TYPE_CATEGORIES()}->{POA}{doc_types}->@*;
+            if any { $_ eq $document_entry->{document_type} } $client->documents->poa_types->@*;
 
         await BOM::Event::Services::Track::document_upload({
                 loginid    => $loginid,
@@ -927,12 +928,11 @@ async sub onfido_doc_ready_for_upload {
     return                                unless $acquire_lock;
 
     try {
-        my $lifetime_valid      = $expiration_date ? 0 : 1;
-        my %doc_type_categories = BOM::User::Client::DOCUMENT_TYPE_CATEGORIES();
-        my @poi_doctypes        = @{$doc_type_categories{POI}{doc_types_appreciated}};
+        my $lifetime_valid = $expiration_date ? 0 : 1;
+        my @maybe_lifetime = $client->documents->maybe_lifetime_types->@*;
 
         # lifetime only applies to favored POI types
-        $lifetime_valid = 0 if none { $_ eq $doc_type } @poi_doctypes;
+        $lifetime_valid = 0 if none { $_ eq $doc_type } @maybe_lifetime;
 
         $upload_info = $client->db->dbic->run(
             ping => sub {
@@ -2389,7 +2389,7 @@ sub withdrawal_limit_reached {
     return if $client->fully_authenticated();
 
     # check if POA is pending:
-    my $documents = $client->documents_uploaded();
+    my $documents = $client->documents->uploaded();
     return if $documents->{proof_of_address}->{is_pending};
 
     # set client as needs_action if only the status is not set yet
