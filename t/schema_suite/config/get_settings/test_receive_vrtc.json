@@ -30,6 +30,18 @@
       "email" : {
          "type" : "string"
       },
+      "feature_flag" : {
+         "type" : "object",
+         "properties": {
+            "wallet": {
+               "type": "integer",
+               "enum": [
+                  0,
+                  1
+               ]
+            }
+         }
+      },
       "country_code" : {
          "type" : "string",
          "pattern" : "^[_2]$"

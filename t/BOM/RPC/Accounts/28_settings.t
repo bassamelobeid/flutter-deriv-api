@@ -274,7 +274,7 @@ subtest 'get settings' => sub {
             'non_pep_declaration'            => 1,
             'immutable_fields'               => ['residence', 'secret_answer', 'secret_question'],
             'preferred_language'             => 'FA',
-        });
+            'feature_flag'                   => {wallet => 0}});
 
     $user_X->update_preferred_language('AZ');
     $params->{token} = $token_X_mf;
@@ -296,7 +296,8 @@ subtest 'get settings' => sub {
             'email_consent'      => '0',
             'user_hash'          => hmac_sha256_hex($user_Q->email, BOM::Config::third_party()->{elevio}->{account_secret}),
             'immutable_fields'   => ['residence'],
-            'preferred_language' => 'EN'
+            'preferred_language' => 'EN',
+            'feature_flag'       => {wallet => 0},
         },
         'vr client return less messages when it does not have real sibling'
     );
@@ -334,7 +335,8 @@ subtest 'get settings' => sub {
             'has_secret_answer'              => 1,
             'non_pep_declaration'            => 0,
             'immutable_fields'               => ['residence'],
-            'preferred_language'             => 'AZ'
+            'preferred_language'             => 'AZ',
+            'feature_flag'                   => {wallet => 0}
         },
         'vr client return real account information when it has sibling'
     );
@@ -374,6 +376,7 @@ subtest 'get settings' => sub {
         'non_pep_declaration'            => 1,
         'immutable_fields'               => ['residence', 'secret_answer', 'secret_question'],
         'preferred_language'             => 'FA',
+        'feature_flag'                   => {wallet => 0},
     };
     is_deeply($result, $expected, 'return 1 for authenticated payment agent');
 
@@ -936,6 +939,30 @@ subtest 'set_setting with empty phone' => sub {
         args       => {email_consent => '0'}};
 
     is($c->tcall('set_settings', $params)->{status}, 1, 'Set settings with empty phone changed successfully');
+};
+
+subtest 'set_setting with feature flag' => sub {
+    my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+        phone       => ''
+    });
+
+    my $user = BOM::User->create(
+        email    => 'a001+feature-flag@example.com',
+        password => $hash_pwd,
+    );
+    $user->add_client($test_client);
+
+    my $m      = BOM::Platform::Token::API->new;
+    my $token  = $m->create_token($test_client->loginid, 'test token');
+    my $params = {
+        language   => 'EN',
+        token      => $token,
+        client_ip  => '127.0.0.1',
+        user_agent => 'agent',
+        args       => {feature_flag => {wallet => 1}}};
+
+    is($c->tcall('set_settings', $params)->{status}, 1, 'Set settings with feature flag has been set successfully');
 };
 
 done_testing();
