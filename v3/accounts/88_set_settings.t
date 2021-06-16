@@ -128,6 +128,60 @@ subtest 'Tax residence on restricted country' => sub {
         'Successfully called /set_settings under restricted country in tax residence scenario';
 };
 
+subtest 'feature flag test' => sub {
+    # Set feature flag from virtual account
+    # get feature flag from real account
+    # compare the results to make sure it has been set on user level
+
+    my ($vr_client, $user) = create_vr_account({
+        email           => 'a001+feature-flag@binary.com',
+        client_password => 'abc123',
+        residence       => 'br',
+    });
+
+    my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $vr_client->loginid);
+    $t->await::authorize({authorize => $token});
+
+    my $feature_flag = {wallet => 1};
+
+    my $set_settings_params = {
+        set_settings => 1,
+        feature_flag => $feature_flag
+    };
+
+    my $res = $t->await::set_settings($set_settings_params);
+    test_schema('set_settings', $res);
+    my $cli_details = {
+        %client_details,
+        residence     => 'br',
+        first_name    => 'Feature',
+        last_name     => 'Flag',
+        date_of_birth => '1998-12-11',
+    };
+
+    $res = $t->await::new_account_real($cli_details);
+    test_schema('new_account_real', $res);
+
+    my $loginid = $res->{new_account_real}->{client_id};
+    ok $loginid, 'We got a client loginid';
+
+    my ($cr_token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $loginid);
+    $t->await::authorize({authorize => $cr_token});
+
+    my $get_settings_params = {
+        get_settings => 1,
+    };
+
+    $res = $t->await::get_settings($get_settings_params);
+    test_schema('get_settings', $res);
+
+    my $feature_flag_res = $res->{get_settings}->{feature_flag};
+
+    foreach my $flag (keys $feature_flag->%*) {
+        is $feature_flag->{$flag}, $feature_flag_res->{$flag}, "flag $flag has been set correctly";
+    }
+};
+
 sub create_vr_account {
     my $args = shift;
     my $acc  = BOM::Platform::Account::Virtual::create_account({

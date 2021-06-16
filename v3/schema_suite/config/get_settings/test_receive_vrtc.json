@@ -53,6 +53,18 @@
             "preferred_language" : {
                "type" : "string",
                "pattern" : "^[A-Z]{0,2}$|^[A-Z]{2}_[A-Z]{2}$"
+            },
+            "feature_flag" : {
+               "type" : "object",
+               "properties": {
+                  "wallet": {
+                     "type": "integer",
+                     "enum": [
+                        0,
+                        1
+                     ]
+                  }
+               }
             }
          }
       },
