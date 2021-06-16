@@ -4591,7 +4591,8 @@ sub validate_payment {
     my $absamt      = abs($amount);
 
     # validate expects 'deposit'/'withdraw' so if action_type is 'withdrawal' should be replaced to 'withdraw'
-    my $validation = BOM::Platform::Client::CashierValidation::validate($self->loginid, $action_type =~ s/withdrawal/withdraw/r);
+    my $validation =
+        BOM::Platform::Client::CashierValidation::validate($self->loginid, $action_type =~ s/withdrawal/withdraw/r, $args{internal_transfer});
     die "$validation->{error}->{message_to_client}\n" if exists $validation->{error};
 
     die "Payment currency [$currency] not client currency [$acccur].\n"
