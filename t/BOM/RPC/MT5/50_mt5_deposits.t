@@ -31,6 +31,17 @@ $runtime_payment->transfer_between_accounts->limits->MT5(999);
 
 scope_guard { restore_time() };
 
+my $documents_mock = Test::MockModule->new('BOM::User::Client::AuthenticationDocuments');
+my $has_valid_documents;
+$documents_mock->mock(
+    'valid',
+    sub {
+        my ($self) = @_;
+
+        return $has_valid_documents if defined $has_valid_documents;
+        return $documents_mock->original('valid')->(@_);
+    });
+
 my $manager_module = Test::MockModule->new('BOM::MT5::User::Async');
 $manager_module->mock(
     'deposit',
@@ -548,8 +559,7 @@ subtest 'labuan withdrawal' => sub {
 
     BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
 
-    my $mocked_client = Test::MockModule->new(ref($test_client));
-    $mocked_client->mock('has_valid_documents', sub { 1 });
+    $has_valid_documents = 1;
 
     BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
 
@@ -587,7 +597,7 @@ subtest 'labuan withdrawal' => sub {
     BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
     $c->call_ok($method, $params)->has_no_error('Withdrawal unlocked for labuan mt5 after financial assessment');
     cmp_ok $test_client->default_account->balance, '==', 820 + 150 + 100, "Correct balance after withdrawal";
-
+    $has_valid_documents = undef;
     BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
 };
 
@@ -624,8 +634,7 @@ subtest 'mf_withdrawal' => sub {
     $c->call_ok($method, $params_mf)->has_error('Withdrawal request failed.')
         ->error_code_is('MT5WithdrawalError', 'error code is MT5WithdrawalError')->error_message_like(qr/authenticate/);
 
-    my $mocked_client = Test::MockModule->new(ref($test_mf_client));
-    $mocked_client->mock('has_valid_documents', sub { 1 });
+    $has_valid_documents = 1;
     $test_mf_client->set_authentication('ID_DOCUMENT', {status => 'pass'});
 
     BOM::RPC::v3::MT5::Account::reset_throttler($test_mf_client->loginid);
@@ -634,7 +643,7 @@ subtest 'mf_withdrawal' => sub {
 
     cmp_ok $test_mf_client->default_account->balance, '==', 350, "Correct balance after withdrawal";
 
-    $mocked_client->unmock_all;
+    $has_valid_documents = undef;
     $demo_account_mock->unmock;
 };
 
@@ -670,8 +679,7 @@ subtest 'mf_deposit' => sub {
     $c->call_ok($method, $params_mf)->has_error('Deposit request failed.')->error_code_is('MT5DepositError', 'error code is MT5DepositError')
         ->error_message_like(qr/authenticate/);
 
-    my $mocked_client = Test::MockModule->new(ref($test_mf_client));
-    $mocked_client->mock('has_valid_documents', sub { 1 });
+    $has_valid_documents = 1;
 
     $test_mf_client->set_authentication('ID_DOCUMENT', {status => 'pass'});
 
@@ -688,8 +696,7 @@ subtest 'mf_deposit' => sub {
     $c->call_ok($method, $params_mf)->has_no_error('no error for mt5_deposit');
 
     cmp_ok $test_mf_client->default_account->balance, '==', 650, "Correct balance after deposit";
-
-    $mocked_client->unmock_all;
+    $has_valid_documents = undef;
     $demo_account_mock->unmock;
 };
 subtest 'labuan deposit' => sub {
@@ -715,8 +722,7 @@ subtest 'labuan deposit' => sub {
     $account_mock->mock('_fetch_mt5_lc', sub { return LandingCompany::Registry::get('labuan'); });
 
     BOM::RPC::v3::MT5::Account::reset_throttler($loginid);
-    my $mocked_client = Test::MockModule->new(ref($test_client));
-    $mocked_client->mock('has_valid_documents', sub { 1 });
+    $has_valid_documents = 1;
     $c->call_ok($method, $params)->has_no_error('Deposit allowed to enable labuan mt5 account');
     cmp_ok $test_client->default_account->balance, '==', 1050, "Correct balance after deposit";
 
@@ -753,8 +759,10 @@ subtest 'labuan deposit' => sub {
     # Using enable rights 482 should enable transfer.
     $c->call_ok($method, $params)->has_no_error('Deposit allowed when mt5 account gets enabled');
     cmp_ok $test_client->default_account->balance, '==', 1030, "Correct balance after deposit";
-
+    $has_valid_documents = undef;
 };
+
+$documents_mock->unmock_all;
 
 done_testing();
 

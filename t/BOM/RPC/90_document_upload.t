@@ -9,6 +9,7 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Database::Model::OAuth;
 use List::Util qw( all any );
 use BOM::RPC::v3::DocumentUpload qw(MAX_FILE_SIZE);
+use Array::Utils qw(array_minus);
 use Test::MockModule;
 use BOM::Test::RPC::QueueClient;
 
@@ -626,9 +627,8 @@ sub finish_successful_upload {
     ok $doc->file_name, 'Filename should not be empty';
     is $doc->checksum, $checksum, 'Checksum should be added correctly';
 
-    my %doc_type_categories = BOM::User::Client::DOCUMENT_TYPE_CATEGORIES();
-    my @poa_doctypes        = @{$doc_type_categories{POA}{doc_types}};
-    my $is_poa              = any { $_ eq $doc->document_type } @poa_doctypes;
+    my @poa_doctypes = $client->documents->poa_types->@*;
+    my $is_poa       = any { $_ eq $doc->document_type } @poa_doctypes;
 
     # Check client status is correct
     ok($client->authentication_status eq 'under_review', 'Document should be under_review') if $is_poa and !$client->fully_authenticated;
@@ -660,5 +660,48 @@ sub customise_params {
         }
     }
 }
+
+subtest 'validate exp date and id' => sub {
+    my @expirable     = $real_client->documents->expirable_types->@*;
+    my @not_expirable = $real_client->documents->dateless_types->@*;
+
+    for my $type (@expirable) {
+        ok !BOM::RPC::v3::DocumentUpload::validate_id_and_exp_date({
+                document_type   => $type,
+                expiration_date => '2020-10-10',
+                document_id     => '000X',
+                client          => $real_client,
+            }
+            ),
+            "$type is valid with required data passed";
+
+        is 'missing_exp_date',
+            BOM::RPC::v3::DocumentUpload::validate_id_and_exp_date({
+                document_type => $type,
+                document_id   => '000X',
+                client        => $real_client,
+            }
+            ),
+            "$type is invalid due to missing exp date";
+
+        is 'missing_doc_id',
+            BOM::RPC::v3::DocumentUpload::validate_id_and_exp_date({
+                document_type   => $type,
+                expiration_date => '2020-10-10',
+                client          => $real_client,
+            }
+            ),
+            "$type is invalid due to missing doc id";
+    }
+
+    for my $type (@not_expirable) {
+        ok !BOM::RPC::v3::DocumentUpload::validate_id_and_exp_date({
+                document_type => $type,
+                client        => $real_client,
+            }
+            ),
+            "$type is valid no matter what";
+    }
+};
 
 done_testing();

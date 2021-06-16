@@ -57,10 +57,9 @@ sub start_document_upload {
 
     my $upload_info;
     try {
-        my $expiration_date     = $args->{expiration_date} || undef;
-        my $lifetime_valid      = $args->{lifetime_valid} ? 1 : 0;
-        my %doc_type_categories = BOM::User::Client::DOCUMENT_TYPE_CATEGORIES();
-        my @poi_doctypes        = @{$doc_type_categories{POI}{doc_types_appreciated}};
+        my $expiration_date = $args->{expiration_date} || undef;
+        my $lifetime_valid  = $args->{lifetime_valid} ? 1 : 0;
+        my @poi_doctypes    = $client->documents->poi_types->@*;
 
         # lifetime only applies to favored POI types
         $lifetime_valid = 0 if none { $_ eq $document_type } @poi_doctypes;
@@ -118,10 +117,9 @@ sub successful_upload {
 
         if (!$client->fully_authenticated && $client_status ne 'under_review') {
             # Onfido unsupported countries can upload POI here as well, so narrow down it a bit
-            my %doc_type_categories = BOM::User::Client::DOCUMENT_TYPE_CATEGORIES();
-            my @poa_doctypes        = @{$doc_type_categories{POA}{doc_types}};
-            my ($doc)               = $client->find_client_authentication_document(query => [id => $params->{args}->{file_id}]);
-            my $document_type       = $doc->document_type;
+            my @poa_doctypes  = $client->documents->poa_types->@*;
+            my ($doc)         = $client->find_client_authentication_document(query => [id => $params->{args}->{file_id}]);
+            my $document_type = $doc->document_type;
 
             if (any { $_ eq $document_type } @poa_doctypes) {
                 $client->set_authentication('ID_DOCUMENT', {status => 'under_review'});
@@ -157,11 +155,12 @@ sub validate_input {
     my $invalid_date = validate_expiration_date($args->{expiration_date});
     return $invalid_date if $invalid_date;
 
-    return validate_id_and_exp_date($args);
+    return validate_id_and_exp_date({$args->%*, client => $client});
 }
 
 sub validate_id_and_exp_date {
     my $args          = shift;
+    my $client        = $args->{client};
     my $document_type = $args->{document_type};
 
     return if not $document_type;
@@ -169,9 +168,7 @@ sub validate_id_and_exp_date {
 
     # The fields expiration_date and document_id are only required for certain
     #   document types, so only do this check in these cases.
-    my %doc_type_categories = BOM::User::Client::DOCUMENT_TYPE_CATEGORIES();
-    my @poi_doctypes        = @{$doc_type_categories{POI}{doc_types_appreciated}};
-    return if none { $_ eq $document_type } @poi_doctypes;
+    return if none { $_ eq $document_type } $client->documents->expirable_types->@*;
 
     return 'missing_exp_date' if not $args->{expiration_date};
     return 'missing_doc_id'   if not $args->{document_id};

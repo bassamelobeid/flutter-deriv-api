@@ -556,9 +556,10 @@ for my $transfer_currency (@fiat_currencies, @crypto_currencies) {
         $Bob->status->clear_disabled;
         $Bob->save;
 
-        my $client_mock = Test::MockModule->new('BOM::User::Client');
-        $client_mock->mock(
-            'documents_uploaded',
+        my $documents_mock = Test::MockModule->new('BOM::User::Client::AuthenticationDocuments');
+        my $client_mock    = Test::MockModule->new('BOM::User::Client');
+        $documents_mock->mock(
+            'uploaded',
             sub {
                 return {
                     proof_of_identity => {
@@ -586,7 +587,7 @@ for my $transfer_currency (@fiat_currencies, @crypto_currencies) {
         $Bob->save;
 
         # Left the mock as it was before this test
-        $client_mock->unmock('documents_uploaded');
+        $documents_mock->unmock('uploaded');
         $client_mock->unmock('is_document_expiry_check_required');
 
         $test = 'Transfer fails if transfer_to client status = unwelcome';

@@ -21,6 +21,17 @@ use BOM::MT5::User::Async;
 
 my $redis = BOM::Config::Redis::redis_exchangerates_write();
 
+my $documents_mock = Test::MockModule->new('BOM::User::Client::AuthenticationDocuments');
+my $has_valid_documents;
+$documents_mock->mock(
+    'valid',
+    sub {
+        my ($self) = @_;
+
+        return $has_valid_documents if defined $has_valid_documents;
+        return $documents_mock->original('valid')->(@_);
+    });
+
 sub _offer_to_clients {
     my $from_currency = shift;
     my $to_currency   = shift // 'USD';
@@ -163,9 +174,8 @@ subtest 'mt5' => sub {
         _is_financial_assessment_complete => sub { return 1 },
         _throttle                         => sub { return 0 });
     my $mock_client = Test::MockModule->new('BOM::User::Client');
-    $mock_client->mock(
-        fully_authenticated => sub { return 1 },
-        has_valid_documents => sub { return 1 });
+    $mock_client->mock(fully_authenticated => sub { return 1 });
+    $has_valid_documents = 1;
 
     my $mock_fees = Test::MockModule->new('BOM::Config::CurrencyConfig');
     $mock_fees->mock(transfer_between_accounts_fees => sub { return {ETH => {USD => 0}, USD => {ETH => 0}} });
@@ -343,5 +353,7 @@ subtest 'mt5' => sub {
         $c->call_ok('transfer_between_accounts', $params)->has_no_system_error->has_no_error('third transfer ok with updated limit');
     };
 };
+
+$documents_mock->unmock_all;
 
 done_testing;

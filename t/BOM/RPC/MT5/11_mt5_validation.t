@@ -95,13 +95,13 @@ $mocked_mt5->mock(
     },
 );
 
-my $mock_client = Test::MockModule->new('BOM::User::Client');
+my $mock_auth_docs = Test::MockModule->new('BOM::User::Client::AuthenticationDocuments');
 my $documents_expired;
 
-$mock_client->mock(
-    'documents_expired',
+$mock_auth_docs->mock(
+    'expired',
     sub {
-        return $documents_expired // $mock_client->original('documents_expired')->(@_);
+        return $documents_expired // $mock_auth_docs->original('expired')->(@_);
     });
 
 my $c = BOM::Test::RPC::QueueClient->new();

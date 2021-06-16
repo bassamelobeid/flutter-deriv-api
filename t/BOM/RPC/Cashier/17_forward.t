@@ -31,6 +31,18 @@ my @can_affect_cashier = (
     'financial_risk_approval', 'ukgc_funds_protection', 'max_turnover_limit_not_set', 'unwelcome',
     'withdrawal_locked'
 );
+
+my $documents_mock = Test::MockModule->new('BOM::User::Client::AuthenticationDocuments');
+my $documents_expired;
+$documents_mock->mock(
+    'expired',
+    sub {
+        my ($self) = @_;
+
+        return $documents_expired if defined $documents_expired;
+        return $documents_mock->original('expired')->(@_);
+    });
+
 my %seen;
 
 foreach my $status (@can_affect_cashier) {
@@ -165,13 +177,13 @@ subtest 'common' => sub {
     $client_cr->set_default_account('USD');
     $client_cr->save;
 
-    $client_mocked->mock('documents_expired', sub { return 1 });
+    $documents_expired = 1;
 
     $rpc_ct->call_ok('cashier', $params)->has_no_system_error->has_error->error_code_is('CashierForwardError', 'Client documents have expired')
         ->error_message_is('Your identity documents have expired. Visit your account profile to submit your valid documents and unlock your cashier.',
         'Correct error message for documents expired');
 
-    $client_mocked->unmock('documents_expired');
+    $documents_expired = undef;
     $client_cr->status->set('cashier_locked', 'system');
 
     $rpc_ct->call_ok('cashier', $params)->has_no_system_error->has_error->error_code_is('CashierForwardError', 'Client has cashier lock')

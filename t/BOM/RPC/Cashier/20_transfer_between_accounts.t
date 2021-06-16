@@ -52,6 +52,26 @@ scope_guard { restore_time() };
 BOM::Config::Runtime->instance->app_config->payments->transfer_between_accounts->limits->between_accounts(999);
 BOM::Config::Runtime->instance->app_config->payments->transfer_between_accounts->limits->MT5(999);
 
+my $documents_mock = Test::MockModule->new('BOM::User::Client::AuthenticationDocuments');
+my $has_valid_documents;
+my $expired_documents;
+$documents_mock->mock(
+    'valid',
+    sub {
+        my ($self) = @_;
+
+        return $has_valid_documents if defined $has_valid_documents;
+        return $documents_mock->original('valid')->(@_);
+    });
+$documents_mock->mock(
+    'expired',
+    sub {
+        my ($self) = @_;
+
+        return $expired_documents if defined $expired_documents;
+        return $documents_mock->original('expired')->(@_);
+    });
+
 my $emit_data;
 my $mock_events = Test::MockModule->new('BOM::Platform::Event::Emitter');
 $mock_events->mock(
@@ -1520,7 +1540,7 @@ subtest 'MT5' => sub {
         qr/Your identity documents have expired. Visit your account profile to submit your valid documents and unlock your cashier./,
         'Error message returned from inner MT5 sub when regulated account has expired documents');
 
-    $mock_client->mock(documents_expired => sub { return 0 });
+    $expired_documents = 0;
 
     $rpc_ct->call_ok('transfer_between_accounts', $params)
         ->has_no_system_error->has_error->error_code_is('TransferBetweenAccountsError', 'Correct error code')->error_message_like(
@@ -1528,7 +1548,7 @@ subtest 'MT5' => sub {
         'Error message returned from inner MT5 sub when regulated binary has no expired documents but does not have valid documents'
         );
 
-    $mock_client->mock(has_valid_documents => sub { return 1 });
+    $has_valid_documents = 1;
     $mock_client->mock(fully_authenticated => sub { return 1 });
 
     $params->{args}{account_from} = $test_client->loginid;
@@ -1873,6 +1893,8 @@ subtest 'fiat to crypto limits' => sub {
     $mock_status->unmock_all;
     $mock_client->unmock_all;
 };
+
+$documents_mock->unmock_all;
 
 done_testing();
 

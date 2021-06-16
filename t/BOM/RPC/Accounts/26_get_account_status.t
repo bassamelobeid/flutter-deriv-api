@@ -138,6 +138,30 @@ my $token_mlt      = $m->create_token($test_client_mlt->loginid,      'test toke
 
 my $c = Test::BOM::RPC::QueueClient->new();
 
+my $documents_expired;
+my $documents_uploaded;
+
+my $documents_mock = Test::MockModule->new('BOM::User::Client::AuthenticationDocuments');
+$documents_mock->mock(
+    'expired',
+    sub {
+        my ($self) = @_;
+
+        return $documents_expired if defined $documents_expired;
+        return $documents_mock->original('expired')->(@_);
+    });
+
+$documents_mock->mock(
+    'uploaded',
+    sub {
+        my ($self) = @_;
+
+        $self->_clear_uploaded;
+
+        return $documents_uploaded if defined $documents_uploaded;
+        return $documents_mock->original('uploaded')->(@_);
+    });
+
 my $method = 'get_account_status';
 subtest 'get account status' => sub {
     subtest "account generic" => sub {
@@ -449,26 +473,23 @@ subtest 'get account status' => sub {
             );
 
             $mocked_client->mock('get_poi_status', sub { return 'verified' });
-            $mocked_client->mock(
-                'documents_uploaded',
-                sub {
-                    return {
-                        proof_of_identity => {
-                            documents => {
-                                $test_client->loginid
-                                    . '_passport' => {
-                                    expiry_date => Date::Utility->new->minus_time_interval('10d')->epoch,
-                                    type        => 'passport',
-                                    format      => 'pdf',
-                                    id          => 2,
-                                    status      => 'verified'
-                                    },
+            $documents_uploaded = {
+                proof_of_identity => {
+                    documents => {
+                        $test_client->loginid
+                            . '_passport' => {
+                            expiry_date => Date::Utility->new->minus_time_interval('10d')->epoch,
+                            type        => 'passport',
+                            format      => 'pdf',
+                            id          => 2,
+                            status      => 'uploaded'
                             },
-                            expiry_date => Date::Utility->new->plus_time_interval('1d')->epoch,
-                            is_expired  => 0,
-                        },
-                    };
-                });
+                    },
+                    expiry_date => Date::Utility->new->plus_time_interval('1d')->epoch,
+                    is_expired  => 0,
+                },
+            };
+
             $result = $c->tcall($method, {token => $token});
             cmp_deeply(
                 $result,
@@ -488,7 +509,7 @@ subtest 'get account status' => sub {
                         },
                         identity => {
                             status      => "verified",
-                            expiry_date => Date::Utility->new->plus_time_interval('1d')->epoch,
+                            expiry_date => $documents_uploaded->{proof_of_identity}->{expiry_date},
                             services    => {
                                 onfido => {
                                     submissions_left     => $onfido_limit,
@@ -511,8 +532,8 @@ subtest 'get account status' => sub {
                 'correct account status returned for document expiring in next month'
             );
 
+            $documents_uploaded = undef;
             $mocked_client->unmock('get_poi_status');
-            $mocked_client->unmock('documents_uploaded');
 
             subtest "Age verified client, check for expiry of documents" => sub {
                 # For age verified clients
@@ -523,28 +544,24 @@ subtest 'get account status' => sub {
 
                 my $mocked_status = Test::MockModule->new(ref($test_client->status));
                 $mocked_status->mock('age_verification', sub { return 1 });
-                $mocked_client->mock(
-                    'documents_uploaded',
-                    sub {
-                        return {
-                            proof_of_identity => {
-                                documents => {
-                                    $test_client->loginid
-                                        . '_passport' => {
-                                        expiry_date => Date::Utility->new->minus_time_interval('10d')->epoch,
-                                        type        => 'passport',
-                                        format      => 'pdf',
-                                        id          => 2,
-                                        status      => 'verified'
-                                        },
+                $documents_uploaded = {
+                    proof_of_identity => {
+                        documents => {
+                            $test_client->loginid
+                                . '_passport' => {
+                                expiry_date => Date::Utility->new->minus_time_interval('10d')->epoch,
+                                type        => 'passport',
+                                format      => 'pdf',
+                                id          => 2,
+                                status      => 'uploaded'
                                 },
-                                expiry_date => Date::Utility->new->minus_time_interval('1d')->epoch,
-                                is_expired  => 1,
-                            },
-                        };
-                    });
+                        },
+                        expiry_date => Date::Utility->new->minus_time_interval('1d')->epoch,
+                        is_expired  => 1,
+                    },
+                };
 
-                my $documents              = $test_client->documents_uploaded();
+                my $documents              = $test_client->documents->uploaded();
                 my $is_poi_already_expired = $documents->{proof_of_identity}->{is_expired};
                 ok !$test_client->fully_authenticated, 'Not fully authenticated';
                 ok $test_client->status->age_verification, 'Age verified';
@@ -601,6 +618,7 @@ subtest 'get account status' => sub {
                     "authentication object is correct"
                 );
 
+                $documents_uploaded = undef;
                 $mocked_client->unmock_all();
                 $mocked_status->unmock_all();
             };
@@ -800,31 +818,27 @@ subtest 'get account status' => sub {
 
                 my $mocked_client = Test::MockModule->new(ref($test_client_cr));
                 $mocked_status->mock('age_verification', sub { return 1 });
-                $mocked_client->mock(
-                    'documents_uploaded',
-                    sub {
-                        return {
-                            proof_of_identity => {
-                                documents => {
-                                    $test_client_cr->loginid
-                                        . '_passport' => {
-                                        expiry_date => Date::Utility->new->minus_time_interval('1d')->epoch,
-                                        type        => 'passport',
-                                        format      => 'pdf',
-                                        id          => 2,
-                                        status      => 'verified'
-                                        },
-                                },
+                $documents_uploaded = {
+                    proof_of_identity => {
+                        documents => {
+                            $test_client_cr->loginid
+                                . '_passport' => {
                                 expiry_date => Date::Utility->new->minus_time_interval('1d')->epoch,
-                                is_expired  => 1,
-                            },
-                        };
-                    });
+                                type        => 'passport',
+                                format      => 'pdf',
+                                id          => 2,
+                                status      => 'uploaded'
+                                },
+                        },
+                        expiry_date => Date::Utility->new->minus_time_interval('1d')->epoch,
+                        is_expired  => 1,
+                    },
+                };
 
-                $mocked_client->mock('documents_expired', sub { return 1 });
+                $documents_expired = 1;
                 $test_client_cr->set_authentication('ID_DOCUMENT', {status => 'pending'});
                 $test_client_cr->save;
-                my $documents              = $test_client_cr->documents_uploaded();
+                my $documents              = $test_client_cr->documents->uploaded();
                 my $is_poi_already_expired = $documents->{proof_of_identity}->{is_expired};
                 ok !$test_client_cr->fully_authenticated, 'Not fully authenticated';
                 ok $test_client_cr->status->age_verification, 'Age verified';
@@ -871,6 +885,8 @@ subtest 'get account status' => sub {
                     "authentication object is correct"
                 );
 
+                $documents_uploaded = undef;
+                $documents_expired  = undef;
                 $mocked_client->unmock_all();
                 $mocked_status->unmock_all();
             };
@@ -879,43 +895,41 @@ subtest 'get account status' => sub {
                 my $mocked_client = Test::MockModule->new(ref($test_client_cr));
                 $mocked_client->mock('fully_authenticated', sub { return 1 });
                 $mocked_status->mock('age_verification',    sub { return 1 });
-                $mocked_client->mock('documents_expired',   sub { return 1 });
-                $mocked_client->mock(
-                    'documents_uploaded',
-                    sub {
-                        return {
-                            proof_of_address => {
-                                documents => {
-                                    $test_client_cr->loginid
-                                        . '_bankstatement' => {
-                                        expiry_date => Date::Utility->new->minus_time_interval('1d')->epoch,
-                                        type        => 'bankstatement',
-                                        format      => 'pdf',
-                                        id          => 1,
-                                        status      => 'verified'
-                                        },
-                                },
+                $documents_expired  = 1;
+                $documents_uploaded = {
+                    proof_of_address => {
+                        documents => {
+                            $test_client_cr->loginid
+                                . '_bankstatement' => {
                                 expiry_date => Date::Utility->new->minus_time_interval('1d')->epoch,
-                                is_expired  => 1,
-                            },
-                            proof_of_identity => {
-                                documents => {
-                                    $test_client_cr->loginid
-                                        . '_passport' => {
-                                        expiry_date => Date::Utility->new->minus_time_interval('1d')->epoch,
-                                        type        => 'passport',
-                                        format      => 'pdf',
-                                        id          => 2,
-                                        status      => 'verified'
-                                        },
+                                type        => 'bankstatement',
+                                format      => 'pdf',
+                                id          => 1,
+                                status      => 'uploaded'
                                 },
+                        },
+                        expiry_date => Date::Utility->new->minus_time_interval('1d')->epoch,
+                        is_expired  => 1,
+                    },
+                    proof_of_identity => {
+                        documents => {
+                            $test_client_cr->loginid
+                                . '_passport' => {
                                 expiry_date => Date::Utility->new->minus_time_interval('1d')->epoch,
-                                is_expired  => 1,
-                            },
-                        };
-                    });
+                                type        => 'passport',
+                                format      => 'pdf',
+                                id          => 2,
+                                status      => 'uploaded'
+                                },
+                        },
+                        expiry_date => Date::Utility->new->minus_time_interval('1d')->epoch,
+                        is_expired  => 1,
+                    },
+                };
 
-                ok $test_client_cr->documents_expired(), 'Client expiry is required';
+                # This test would be useless if this company authentication is mandatory
+                ok !$test_client_cr->landing_company->is_authentication_mandatory, 'Authentication is not mandatory';
+                ok $test_client_cr->documents->expired(), 'Client expiry is required';
                 ok $test_client_cr->fully_authenticated, 'Account is fully authenticated';
                 $result = $c->tcall($method, {token => $token_cr});
 
@@ -958,6 +972,9 @@ subtest 'get account status' => sub {
                     },
                     "authentication object is correct"
                 );
+
+                $documents_uploaded = undef;
+                $documents_expired  = undef;
                 $mocked_client->unmock_all;
                 $mocked_status->unmock_all;
             };
@@ -1380,31 +1397,27 @@ subtest 'get account status' => sub {
                 $test_client_mlt->save;
 
                 my $mocked_status = Test::MockModule->new(ref($test_client_mlt->status));
-                $mocked_status->mock('age_verification',  sub { return 1 });
-                $mocked_client->mock('documents_expired', sub { return 1 });
-                $mocked_client->mock('has_deposits',      sub { return 1 });
-                $mocked_client->mock(
-                    'documents_uploaded',
-                    sub {
-                        return {
-                            proof_of_identity => {
-                                documents => {
-                                    $test_client_mlt->loginid
-                                        . '_passport' => {
-                                        expiry_date => Date::Utility->new->minus_time_interval('10d')->epoch,
-                                        type        => 'passport',
-                                        format      => 'pdf',
-                                        id          => 2,
-                                        status      => 'verified'
-                                        },
+                $mocked_status->mock('age_verification', sub { return 1 });
+                $documents_expired = 1;
+                $mocked_client->mock('has_deposits', sub { return 1 });
+                $documents_uploaded = {
+                    proof_of_identity => {
+                        documents => {
+                            $test_client_mlt->loginid
+                                . '_passport' => {
+                                expiry_date => Date::Utility->new->minus_time_interval('10d')->epoch,
+                                type        => 'passport',
+                                format      => 'pdf',
+                                id          => 2,
+                                status      => 'uploaded'
                                 },
-                                expiry_date => Date::Utility->new->minus_time_interval('1d')->epoch,
-                                is_expired  => 1,
-                            },
-                        };
-                    });
+                        },
+                        expiry_date => Date::Utility->new->minus_time_interval('1d')->epoch,
+                        is_expired  => 1,
+                    },
+                };
 
-                my $documents              = $test_client_mlt->documents_uploaded();
+                my $documents              = $test_client_mlt->documents->uploaded();
                 my $is_poi_already_expired = $documents->{proof_of_identity}->{is_expired};
                 ok !$test_client_mlt->fully_authenticated, 'Not fully authenticated';
                 ok $test_client_mlt->status->age_verification, 'Age verified';
@@ -1450,6 +1463,8 @@ subtest 'get account status' => sub {
                     "authentication object is correct"
                 );
 
+                $documents_uploaded = undef;
+                $documents_expired  = undef;
                 $mocked_client->unmock_all();
                 $mocked_status->unmock_all();
             };
@@ -1632,30 +1647,26 @@ subtest 'get account status' => sub {
 
                 $test_client_mx->set_authentication('ID_DOCUMENT', {status => 'pending'});
                 $test_client_mx->save;
-                $mocked_status->mock('age_verification',  sub { return 1 });
-                $mocked_client->mock('documents_expired', sub { return 1 });
-                $mocked_client->mock(
-                    'documents_uploaded',
-                    sub {
-                        return {
-                            proof_of_identity => {
-                                documents => {
-                                    $test_client_mx->loginid
-                                        . '_passport' => {
-                                        expiry_date => Date::Utility->new->minus_time_interval('10d')->epoch,
-                                        type        => 'passport',
-                                        format      => 'pdf',
-                                        id          => 2,
-                                        status      => 'verified'
-                                        },
+                $mocked_status->mock('age_verification', sub { return 1 });
+                $documents_expired  = 1;
+                $documents_uploaded = {
+                    proof_of_identity => {
+                        documents => {
+                            $test_client_mx->loginid
+                                . '_passport' => {
+                                expiry_date => Date::Utility->new->minus_time_interval('10d')->epoch,
+                                type        => 'passport',
+                                format      => 'pdf',
+                                id          => 2,
+                                status      => 'uploaded'
                                 },
-                                expiry_date => Date::Utility->new->minus_time_interval('1d')->epoch,
-                                is_expired  => 1,
-                            },
-                        };
-                    });
+                        },
+                        expiry_date => Date::Utility->new->minus_time_interval('1d')->epoch,
+                        is_expired  => 1,
+                    },
+                };
 
-                my $documents              = $test_client_mx->documents_uploaded();
+                my $documents              = $test_client_mx->documents->uploaded();
                 my $is_poi_already_expired = $documents->{proof_of_identity}->{is_expired};
                 ok !$test_client_mx->fully_authenticated, 'Not fully authenticated';
                 ok $test_client_mx->status->age_verification, 'Age verified';
@@ -1711,6 +1722,8 @@ subtest 'get account status' => sub {
                     "authentication object is correct"
                 );
 
+                $documents_uploaded = undef;
+                $documents_expired  = undef;
                 $mocked_client->unmock_all();
                 $mocked_status->unmock_all();
             };
@@ -1773,40 +1786,36 @@ subtest 'get account status' => sub {
             };
 
             subtest "with expired documents" => sub {
-                $mocked_client->mock(
-                    'documents_uploaded',
-                    sub {
-                        return {
-                            proof_of_address => {
-                                documents => {
-                                    $test_client->loginid
-                                        . '_bankstatement' => {
-                                        expiry_date => Date::Utility->new->minus_time_interval('1d')->epoch,
-                                        type        => 'bankstatement',
-                                        format      => 'pdf',
-                                        id          => 1,
-                                        status      => 'verified'
-                                        },
-                                },
+                $documents_uploaded = {
+                    proof_of_address => {
+                        documents => {
+                            $test_client->loginid
+                                . '_bankstatement' => {
                                 expiry_date => Date::Utility->new->minus_time_interval('1d')->epoch,
-                                is_expired  => 1,
-                            },
-                            proof_of_identity => {
-                                documents => {
-                                    $test_client->loginid
-                                        . '_passport' => {
-                                        expiry_date => Date::Utility->new->minus_time_interval('1d')->epoch,
-                                        type        => 'passport',
-                                        format      => 'pdf',
-                                        id          => 2,
-                                        status      => 'verified'
-                                        },
+                                type        => 'bankstatement',
+                                format      => 'pdf',
+                                id          => 1,
+                                status      => 'uploaded'
                                 },
+                        },
+                        expiry_date => Date::Utility->new->minus_time_interval('1d')->epoch,
+                        is_expired  => 1,
+                    },
+                    proof_of_identity => {
+                        documents => {
+                            $test_client->loginid
+                                . '_passport' => {
                                 expiry_date => Date::Utility->new->minus_time_interval('1d')->epoch,
-                                is_expired  => 1,
-                            },
-                        };
-                    });
+                                type        => 'passport',
+                                format      => 'pdf',
+                                id          => 2,
+                                status      => 'uploaded'
+                                },
+                        },
+                        expiry_date => Date::Utility->new->minus_time_interval('1d')->epoch,
+                        is_expired  => 1,
+                    },
+                };
 
                 my $result = $c->tcall($method, {token => $token});
                 cmp_deeply(
@@ -1850,43 +1859,40 @@ subtest 'get account status' => sub {
                     'correct authentication object for authenticated client with expired documents'
                 );
 
+                $documents_uploaded = undef;
             };
 
             subtest "check for expired documents if landing company required that" => sub {
-                $mocked_client->mock(
-                    'documents_uploaded',
-                    sub {
-                        return {
-                            proof_of_address => {
-                                documents => {
-                                    $test_client->loginid
-                                        . '_bankstatement' => {
-                                        expiry_date => Date::Utility->new->minus_time_interval('1d')->epoch,
-                                        type        => 'bankstatement',
-                                        format      => 'pdf',
-                                        id          => 1,
-                                        status      => 'verified'
-                                        },
-                                },
+                $documents_uploaded = {
+                    proof_of_address => {
+                        documents => {
+                            $test_client->loginid
+                                . '_bankstatement' => {
                                 expiry_date => Date::Utility->new->minus_time_interval('1d')->epoch,
-                                is_expired  => 1,
-                            },
-                            proof_of_identity => {
-                                documents => {
-                                    $test_client->loginid
-                                        . '_passport' => {
-                                        expiry_date => Date::Utility->new->minus_time_interval('1d')->epoch,
-                                        type        => 'passport',
-                                        format      => 'pdf',
-                                        id          => 2,
-                                        status      => 'verified'
-                                        },
+                                type        => 'bankstatement',
+                                format      => 'pdf',
+                                id          => 1,
+                                status      => 'uploaded'
                                 },
+                        },
+                        expiry_date => Date::Utility->new->minus_time_interval('1d')->epoch,
+                        is_expired  => 1,
+                    },
+                    proof_of_identity => {
+                        documents => {
+                            $test_client->loginid
+                                . '_passport' => {
                                 expiry_date => Date::Utility->new->minus_time_interval('1d')->epoch,
-                                is_expired  => 1,
-                            },
-                        };
-                    });
+                                type        => 'passport',
+                                format      => 'pdf',
+                                id          => 2,
+                                status      => 'uploaded'
+                                },
+                        },
+                        expiry_date => Date::Utility->new->minus_time_interval('1d')->epoch,
+                        is_expired  => 1,
+                    },
+                };
 
                 my $method_response = $c->tcall($method, {token => $token});
                 my $expected_result = {
@@ -1917,7 +1923,9 @@ subtest 'get account status' => sub {
 
                 my $result = $method_response->{authentication};
                 cmp_deeply($result, $expected_result, "correct authenication object for authenticated client with expired documents");
+                $documents_uploaded = undef;
             };
+
             $mocked_status->unmock_all;
             $mocked_client->unmock_all;
         };
@@ -1974,26 +1982,22 @@ subtest 'get account status' => sub {
             };
 
             subtest "with expired documents" => sub {
-                $mocked_client->mock(
-                    'documents_uploaded',
-                    sub {
-                        return {
-                            proof_of_identity => {
-                                documents => {
-                                    $test_client->loginid
-                                        . '_passport' => {
-                                        expiry_date => Date::Utility->new->minus_time_interval('1d')->epoch,
-                                        type        => 'passport',
-                                        format      => 'pdf',
-                                        id          => 1,
-                                        status      => 'verified'
-                                        },
-                                },
+                $documents_uploaded = {
+                    proof_of_identity => {
+                        documents => {
+                            $test_client->loginid
+                                . '_passport' => {
                                 expiry_date => Date::Utility->new->minus_time_interval('1d')->epoch,
-                                is_expired  => 1,
-                            },
-                        };
-                    });
+                                type        => 'passport',
+                                format      => 'pdf',
+                                id          => 1,
+                                status      => 'verified'
+                                },
+                        },
+                        expiry_date => Date::Utility->new->minus_time_interval('1d')->epoch,
+                        is_expired  => 1,
+                    },
+                };
 
                 my $result = $c->tcall($method, {token => $token});
                 cmp_deeply(
@@ -2043,6 +2047,7 @@ subtest 'get account status' => sub {
         };
 
         subtest 'unauthorize' => sub {
+            $documents_uploaded = undef;
             $test_client->status->clear_age_verification;
             $test_client->get_authentication('ID_DOCUMENT')->delete;
             $test_client->save;
@@ -2090,6 +2095,7 @@ subtest 'get account status' => sub {
         };
 
         subtest 'shared payment method' => sub {
+            $documents_uploaded = undef;
             $test_client_cr->status->clear_age_verification;
             $test_client_cr->status->set('shared_payment_method');
             $test_client_cr->status->set('cashier_locked');
@@ -2388,14 +2394,11 @@ subtest 'Experian validated account' => sub {
         );
 
         subtest 'Client uploaded POA' => sub {
-            $mocked_client->mock(
-                'documents_uploaded',
-                sub {
-                    return {
-                        proof_of_address => {
-                            is_pending => 1,
-                        }};
-                });
+            $documents_uploaded = {
+                proof_of_address => {
+                    is_pending => 1,
+                    documents  => {},
+                }};
 
             my $result = $c->tcall($method, {token => $token_client_experian});
             cmp_deeply(
@@ -2454,14 +2457,11 @@ subtest 'Experian validated account' => sub {
                 $_->delete for @{$test_client_experian->client_authentication_method};
                 $test_client_experian->set_authentication('ID_DOCUMENT', {status => 'pass'});
 
-                $mocked_client->mock(
-                    'documents_uploaded',
-                    sub {
-                        return {
-                            proof_of_address => {
-                                is_pending => 0,
-                            }};
-                    });
+                $documents_uploaded = {
+                    proof_of_address => {
+                        is_pending => 0,
+                        documents  => {},
+                    }};
 
                 my $result = $c->tcall($method, {token => $token_client_experian});
                 cmp_deeply(
@@ -2644,26 +2644,22 @@ subtest 'Experian validated account' => sub {
 
             subtest 'Onfido docs expired' => sub {
                 my $mocked_client = Test::MockModule->new(ref($test_client_experian));
-                $mocked_client->mock(
-                    'documents_uploaded',
-                    sub {
-                        return {
-                            proof_of_identity => {
-                                documents => {
-                                    $test_client_experian->loginid
-                                        . '_passport' => {
-                                        expiry_date => Date::Utility->new->minus_time_interval('1d')->epoch,
-                                        type        => 'passport',
-                                        format      => 'pdf',
-                                        id          => 1,
-                                        status      => 'uploaded'
-                                        },
-                                },
+                $documents_uploaded = {
+                    proof_of_identity => {
+                        documents => {
+                            $test_client_experian->loginid
+                                . '_passport' => {
                                 expiry_date => Date::Utility->new->minus_time_interval('1d')->epoch,
-                                is_expired  => 1,
-                            },
-                        };
-                    });
+                                type        => 'passport',
+                                format      => 'pdf',
+                                id          => 1,
+                                status      => 'uploaded'
+                                },
+                        },
+                        expiry_date => Date::Utility->new->minus_time_interval('1d')->epoch,
+                        is_expired  => 1,
+                    },
+                };
 
                 my $result = $c->tcall($method, {token => $token_client_experian});
                 cmp_deeply(
@@ -2936,7 +2932,7 @@ subtest 'Reported properties' => sub {
 };
 
 subtest 'Social identity provider' => sub {
-
+    $documents_uploaded = undef;
     my $email = 'social' . rand(999) . '@binary.com';
 
     BOM::Platform::Account::Virtual::create_account({
@@ -3043,4 +3039,5 @@ subtest 'Empty country code scenario' => sub {
     is $result->{authentication}->{identity}->{services}->{onfido}->{country_code}, 'BRA', 'Expected country code found';
 };
 
+$documents_mock->unmock_all;
 done_testing();

@@ -999,7 +999,7 @@ rpc paymentagent_withdraw => sub {
 
     return $error_sub->(
         localize("You cannot perform withdrawal to account [_1], as payment agent's verification documents have expired.", $pa_client->loginid))
-        if $pa_client->documents_expired;
+        if $pa_client->documents->expired;
 
     #lets make sure that client is withdrawing to payment agent having allowed countries.
     my $pa_target_countries = $paymentagent->get_countries;

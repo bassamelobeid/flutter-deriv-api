@@ -1114,7 +1114,7 @@ sub _get_authentication {
     return $authentication_object if $client->is_virtual;
     # Each key from the authentication object will be filled up independently by an assembler method.
     # The `needs_verification` array can be filled with `identity` and/or `document`, there is a method for each one.
-    my $documents = $client->documents_uploaded();
+    my $documents = $client->documents->uploaded();
     my $args      = {
         client    => $client,
         documents => $documents,

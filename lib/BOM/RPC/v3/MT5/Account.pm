@@ -814,7 +814,7 @@ async_rpc "mt5_new_account",
     my %mt5_compliance_requirements = map { ($_ => 1) } $compliance_requirements->{mt5}->@*;
     if ($account_type ne 'demo' && $mt5_compliance_requirements{fully_authenticated}) {
         if ($client->fully_authenticated) {
-            if ($mt5_compliance_requirements{expiration_check} && $client->documents_expired(1)) {
+            if ($mt5_compliance_requirements{expiration_check} && $client->documents->expired(1)) {
                 $client->status->setnx('allow_document_upload', 'system', 'MT5_ACCOUNT_IS_CREATED');
                 return create_error_future('ExpiredDocumentsMT5', {params => $client->loginid});
             }
@@ -2457,17 +2457,17 @@ sub _validate_client {
         if ($client_obj->status->cashier_locked);
 
     # check if binary client expired documents
-    # documents_expired check internaly if landing company
+    # documents->expired check internaly if landing company
     # needs expired documents check or not
-    return ('ExpiredDocuments', request()->brand->emails('support')) if ($client_obj->documents_expired());
+    return ('ExpiredDocuments', request()->brand->emails('support')) if ($client_obj->documents->expired());
 
     # if mt5 financial accounts is used for deposit or withdraw
     # then check if client has valid documents or not
     # valid documents don't have additional landing companies check
-    # that we have in documents_expired
+    # that we have in documents->expired
     # TODO: Remove this once we have async mt5 in place
     return ('ExpiredDocuments', request()->brand->emails('support'))
-        if ($mt5_lc->documents_expiration_check_required() and not $client_obj->has_valid_documents());
+        if ($mt5_lc->documents_expiration_check_required() and not $client_obj->documents->valid());
 
     my $client_currency = $client_obj->account ? $client_obj->account->currency_code() : undef;
     return ('SetExistingAccountCurrency', $loginid) unless $client_currency;
