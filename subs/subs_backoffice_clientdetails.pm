@@ -48,11 +48,6 @@ A spot to place subroutines that might be useful for various client related oper
 use constant ONFIDO_RESUBMISSION_COUNTER_KEY_PREFIX => 'ONFIDO::RESUBMISSION_COUNTER::ID::';
 use constant ACCOUNT_OPENING_REASONS                => ['Speculative', 'Income Earning', 'Hedging', 'Peer-to-peer exchange'];
 
-my %doc_type_categories = BOM::User::Client::DOCUMENT_TYPE_CATEGORIES();
-my @poi_doctypes        = @{$doc_type_categories{POI}{doc_types_appreciated}};
-my @no_date_doctypes    = qw(other photo selfie_with_id);
-my @expirable_doctypes  = grep { $_ !~ /^(photo|selfie_with_id)$/ } @{$doc_type_categories{POI}{doc_types}};
-
 my $POI_REASONS = {
     cropped => {
         reason => 'cropped',
@@ -202,27 +197,17 @@ my $UNTRUSTED_STATUS = [{
 ];
 
 sub get_document_type_category_mapping {
+    my $client = shift;
     my %type_category_mapping;
-    foreach my $category (keys %doc_type_categories) {
-        my $category_index = 100;
-        my $category_title = "Other";
-        if ($category eq "POI") {
-            $category_index = 1;
-            $category_title = "POI (Proof of Identity)";
-        } elsif ($category eq "POA") {
-            $category_index = 2;
-            $category_title = "POA (Proof of Address)";
-        } elsif ($category eq "Funds") {
-            $category_index = 3;
-            $category_title = "Source of Funds / Wealth";
-        } elsif ($category eq "Checks") {
-            $category_index = 4;
-            $category_title = "Checks";
-        } elsif ($category eq "Declarations") {
-            $category_index = 5;
-            $category_title = "Declarations";
-        }
-        foreach my $doc_type (@{$doc_type_categories{$category}{doc_types}}) {
+
+    foreach my $category (keys $client->documents->categories->%*) {
+        my $category_index = $client->documents->categories->{$category}->{priority}    // 100;
+        my $category_title = $client->documents->categories->{$category}->{description} // 'Others';
+
+        foreach my $doc_type (keys $client->documents->categories->{$category}->{types}->%*) {
+            # payslip is a special case
+            next if $doc_type eq 'payslip' and $category ne 'EDD';
+
             $type_category_mapping{$doc_type} = {
                 index => $category_index,
                 title => $category_title,
@@ -396,21 +381,52 @@ sub print_client_details {
         }
     }
 
+    my $docs = [];
     unless ($client->is_virtual) {
-        my @siblings = $user->loginids;
+        for my $sibling_loginid ($user->loginids) {
+            next if $sibling_loginid =~ /^(MT|DX)[DR]?/;
 
-        $show_uploaded_documents .= show_client_id_docs($_, show_delete => 1) for @siblings;
-        $show_uploaded_documents = "<table class='full-width' style='margin-bottom: 10px;'>$show_uploaded_documents</table>";
+            my $dbic = BOM::Database::ClientDB->new({
+                    client_loginid => $sibling_loginid,
+                    operation      => 'backoffice_replica',
+                }
+                )->db->dbic
+                or die "[$0] cannot create connection";
 
-        if ($show_uploaded_documents) {
-            my $confirm_box = qq{javascript:return get_checked_files()};
-            $show_uploaded_documents .=
-                qq{<button name="delete_checked_documents" value = "1" onclick="$confirm_box" class="btn btn--primary">Delete Checked Files</button>};
-            $show_uploaded_documents .=
-                qq{<button name="verify_checked_documents" value = "1" onclick="javascript:return get_to_verify_files()" class="btn btn--primary">Verify Checked Files</button>};
-            $show_uploaded_documents .=
-                qq{<button name="reject_checked_documents" value = "1" onclick="javascript:return get_to_reject_files()" class="btn btn--secondary">Reject Checked Files</button>};
+            push $docs->@*, $dbic->run(
+                fixup => sub {
+                    $_->selectall_arrayref( <<'SQL', {Slice => {}}, $sibling_loginid);
+SELECT id,
+    file_name,
+    document_type,
+    issue_date,
+    expiration_date,
+    comments,
+    document_id,
+    upload_date,
+    age(date_trunc('day', now()), date_trunc('day', upload_date)) AS age,
+    status,
+    lifetime_valid,
+    client_loginid
+FROM betonmarkets.client_authentication_document
+WHERE client_loginid = ? AND status != 'uploading'
+SQL
+                })->@*;
+
         }
+    }
+
+    $show_uploaded_documents .= show_client_id_docs($docs, $client, show_delete => 1);
+    $show_uploaded_documents = "<table class='full-width' style='margin-bottom: 10px;'>$show_uploaded_documents</table>";
+
+    if ($show_uploaded_documents) {
+        my $confirm_box = qq{javascript:return get_checked_files()};
+        $show_uploaded_documents .=
+            qq{<button name="delete_checked_documents" value = "1" onclick="$confirm_box" class="btn btn--primary">Delete Checked Files</button>};
+        $show_uploaded_documents .=
+            qq{<button name="verify_checked_documents" value = "1" onclick="javascript:return get_to_verify_files()" class="btn btn--primary">Verify Checked Files</button>};
+        $show_uploaded_documents .=
+            qq{<button name="reject_checked_documents" value = "1" onclick="javascript:return get_to_reject_files()" class="btn btn--secondary">Reject Checked Files</button>};
     }
 
     # Get matching countries (country abbreviations) from client's phone
@@ -571,7 +587,7 @@ sub print_client_details {
         onfido_submissions_reset           => BOM::User::Onfido::submissions_reset_at($client),
         onfido_reported_properties         => BOM::User::Onfido::reported_properties($client),
         poi_name_mismatch                  => $client->status->poi_name_mismatch,
-        expired_poi_docs                   => $client->documents_expired(1),
+        expired_poi_docs                   => $client->documents->expired(1),
     };
 
     return BOM::Backoffice::Request::template()->process('backoffice/client_edit.html.tt', $template_param, undef, {binmode => ':utf8'})
@@ -1017,42 +1033,16 @@ sub date_html {
 # Relocated to here from Client module.
 ##############################################################
 sub show_client_id_docs {
-    my ($loginid, %args) = @_;
+    my ($docs, $client, %args) = @_;
     my $show_delete = $args{show_delete};
     my $extra       = $args{no_edit} ? 'disabled' : '';
     my $links       = '';
 
-    return unless $loginid;
-
-    return '' if $loginid =~ /^(MT|DX)[DR]?/;
-
-    my %doc_types_categories = get_document_type_category_mapping();
-
-    my $dbic = BOM::Database::ClientDB->new({
-            client_loginid => $loginid,
-            operation      => 'backoffice_replica',
-        }
-        )->db->dbic
-        or die "[$0] cannot create connection";
-
-    my $docs = $dbic->run(
-        fixup => sub {
-            $_->selectall_arrayref( <<'SQL', {Slice => {}}, $loginid);
-SELECT id,
-       file_name,
-       document_type,
-       issue_date,
-       expiration_date,
-       comments,
-       document_id,
-       upload_date,
-       age(date_trunc('day', now()), date_trunc('day', upload_date)) AS age,
-       status,
-       lifetime_valid
-  FROM betonmarkets.client_authentication_document
- WHERE client_loginid = ? AND status != 'uploading'
-SQL
-        });
+    my %doc_types_categories = get_document_type_category_mapping($client);
+    my @poi_doctypes         = $client->documents->poi_types->@*;
+    my @dateless_doctypes    = $client->documents->dateless_types->@*;
+    my @expirable_doctypes   = $client->documents->expirable_types->@*;
+    my @numberless_doctypes  = $client->documents->numberless->@*;
 
     foreach my $doc (@$docs) {
         # add category index to each doc
@@ -1072,11 +1062,12 @@ SQL
     my $last_category_idx = -1;
     foreach my $doc (@$docs) {
         my (
-            $id,          $file_name,   $document_type, $issue_date,   $expiration_date, $comments,
-            $document_id, $upload_date, $age,           $category_idx, $status,          $lifetime_valid
+            $id,          $file_name, $document_type, $issue_date, $expiration_date, $comments, $document_id,
+            $upload_date, $age,       $category_idx,  $status,     $lifetime_valid,  $loginid
             )
             = $doc->@{
-            qw/id file_name document_type issue_date expiration_date comments document_id upload_date age category_idx status lifetime_valid/};
+            qw/id file_name document_type issue_date expiration_date comments document_id upload_date age category_idx status lifetime_valid client_loginid/
+            };
 
         if ($category_idx != $last_category_idx) {
             my $category_title = (
@@ -1103,7 +1094,8 @@ SQL
 
         my $poi_doc       = any { $_ eq $document_type } @poi_doctypes;
         my $expirable_doc = any { $_ eq $document_type } @expirable_doctypes;
-        my $no_date_doc   = any { $_ eq $document_type } @no_date_doctypes;
+        my $dateless_doc  = any { $_ eq $document_type } @dateless_doctypes;
+        my $numberless    = any { $_ eq $document_type } @numberless_doctypes;
 
         my $expiration = 'not_applicable';
         $expiration = 'expiration_date' if $expiration_date;
@@ -1111,12 +1103,13 @@ SQL
 
         my @issue_date_chunks = split(' ', $issue_date // '');
         my $input             = '';
+
         BOM::Backoffice::Request::template()->process(
             'backoffice/client_edit_document_dates.html.tt',
             {
                 poi_doc         => $poi_doc,
                 expirable_doc   => $expirable_doc,
-                no_date_doc     => $no_date_doc,
+                dateless_doc    => $dateless_doc,
                 lifetime_valid  => $lifetime_valid,
                 expiration_date => $expiration_date,
                 expiration      => $expiration,
@@ -1127,8 +1120,14 @@ SQL
         );
 
         my $required_mark = $poi_doc ? '*' : ' ';
-        $input .=
-            qq{<td align="left"><label>Document ID:</label>$required_mark<br/><input type="text" maxlength="30" name="document_id_$id" value="$document_id" data-lpignore="true" $extra> </td>};
+
+        if ($numberless) {
+            $input .= '<td></td>';
+        } else {
+            $input .=
+                qq{<td align="left"><label>Document ID:</label>$required_mark<br/><input type="text" maxlength="30" name="document_id_$id" value="$document_id" data-lpignore="true" $extra> </td>};
+        }
+
         $input .=
             qq{<td><label>Comments:</label><br/><input type="text" maxlength="255" name="comments_$id" value="$comments" data-lpignore="true" $extra> </td>};
 

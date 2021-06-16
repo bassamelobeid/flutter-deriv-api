@@ -14,34 +14,17 @@
 <tr>
   <td>File [% n %]:</td>
   <td><select name="doctype_[% n %]" id="doctype_[% n %]" onchange="doc_type_changed([% n %])")">
-    <option value="passport">Passport</option>
-    <option value="national_identity_card">National ID</option>
-    <option value="driving_licence">Driving License</option>
-    <option value="utility_bill">Utility Bill</option>
-    <option value="bankstatement">Bank statement</option>
-    <option value="power_of_attorney">Power of attorney</option>
-    <option value="amlglobalcheck">AML Global Check</option>
-    <option value="docverification">Doc Verification (Autodoc)</option>
-    <option value="vf_face_id">Video Verification Screenshot - Face & ID</option>
-    <option value="vf_id">Video Verification Screenshot - ID</option>
-    <option value="vf_poa">Video Verification Screenshot - POA</option>
-    <option value="professional_eu_qualified_investor">EU qualified investor</option>
-    <option value="professional_uk_high_net_worth">UK high net worth</option>
-    <option value="professional_uk_self_certified_sophisticated">UK self-certified sophisticated</option>
-    <option value="selfie_with_id">Selfie with ID</option>
-    <option value="payslip">Payslip</option>
-    <option value="tax_receipt">Tax Receipt</option>
-    <option value="employment_contract">Employment Contract</option>
-    <option value="code_of_conduct">Code of Conduct</option>
-    <option value="other">Other</option>
+    [% FOR category IN doctypes %]
+      <optgroup label="[% category.description %]">
+        [% FOR type IN category.types %]
+          <option data-side-required="[% category.side_required %]" data-id-required="[% category.document_id_required %]" value="[% type.type %]">[% type.description %]</option>
+        [% END %]
+      </optgroup>
+    [% END %]
   </select></td>
   <td align="right">
   <label name="doc_field_required_[% n %]">*</label>
     <select name="page_type_[% n %]" id="page_type_[% n %]">
-      <option value="" selected>Page Type</option>
-      <option value="front">Front Side</option>
-      <option value="back">Back Side</option>
-      <option value="photo" disabled>Photo</option>
     </select>
   <td>
   <td>*<input type="FILE" name="FILE_[% n %]" onchange="file_size_validation(this)"></td>
@@ -62,8 +45,8 @@
       <label name="doc_field_required_[% n %]">*</label>
     </div>
   </td>
-  <td align="right">
-    Document ID:
+  <td align="right" class="doc_id_[% n %]">
+    <label>Document ID:</label>
     <label name="doc_field_required_[% n %]">*</label>
     <input type="text" size=11 maxlength="30" name="document_id_[% n %]" placeholder="Document ID" data-lpignore="true" />
   </td>
@@ -86,9 +69,22 @@
 
 var regex_poi = /([% poi_doctypes %])/i;
 var regex_expirable =  /([% expirable_doctypes %])/i;
-var regex_non_expirable =  /(photo|other|selfie_with_id)/i;
-var regex_no_date = /[% no_date_doctypes %]/i;
+var regex_dateless = /[% dateless_doctypes %]/i;
 var regex_selfie_with_id = /selfie_with_id/i;
+var regex_numberless = /[% numberless_doctypes %]/;
+var docsides = [% docsides | none %];
+var sides = [% sides | none %];
+var type_sides = {};
+
+for(const side in docsides) {
+  docsides[side].forEach(type => {
+    if(typeof type_sides[type] === 'undefined') {
+      type_sides[type] = [];
+    }
+
+    type_sides[type].push(side);
+  });  
+}
 
 function expiration_changed(i) {
   const expiration = document.getElementsByName('expiration_' + i)[0].value;
@@ -107,32 +103,64 @@ function expiration_changed(i) {
 }
 
 function doc_type_changed(i){
-  let doc_type = document.getElementById('doctype_'+i).value;
-  let is_expirable_doc = doc_type.match(regex_expirable) && !doc_type.match(regex_non_expirable);
-  let is_no_date_doc = doc_type.match(regex_no_date);
+  let dropdown = document.getElementById('doctype_'+i);
+  
+  if (!dropdown) return;
+
+  let doc_type = dropdown.value;
+  let is_expirable_doc = doc_type.match(regex_expirable);
+  let is_dateless_doc = doc_type.match(regex_dateless);
   let is_poi_doc = doc_type.match(regex_poi);
   let is_selfie_with_id = doc_type.match(regex_selfie_with_id);
   document.getElementById('page_type_' +i).value = '';
 
   let enabled_options = [];
-  if(is_poi_doc || is_selfie_with_id) {
-    enabled_options = (is_poi_doc)?['front','back']:['photo'];
+
+  if (typeof type_sides[doc_type] !== 'undefined') {
+    enabled_options = type_sides[doc_type];
   }
+
   handle_page_type_control(i, enabled_options);
-  if(is_selfie_with_id) {
-    document.getElementById('page_type_' +i).value = 'photo';
+
+  if (enabled_options.length === 1) {
+    document.getElementById('page_type_' +i).value = enabled_options[0];
   }
+
   document.getElementById('expiration_date_div_'+i).style.display = 'none';
   document.getElementById('issue_date_div_'+i).style.display = 'none';
 
-  if (is_expirable_doc)
+  if (is_expirable_doc) {
     document.getElementById('expiration_date_div_'+i).style.display = 'inline';
-  else if (!is_no_date_doc)
-    document.getElementById('issue_date_div_'+i).style.display = 'inline';
+    document.getElementsByName('expiration_' + i)[0].value = 'expiration_date';
+    expiration_changed(i);
+  }
+  else {   
+    document.getElementsByName('expiration_' + i)[0].value = 'not_appplicable';
+    expiration_changed(i);
+    
+    if (!is_dateless_doc) {
+      document.getElementById('issue_date_div_'+i).style.display = 'inline';
+    }
+  }
 
   let req_elements = document.getElementsByName('doc_field_required_'+i);
-  for (let i = 0; i < req_elements.length; i++)
-      req_elements[i].style.display = is_poi_doc ? 'inline': 'none';
+  let doc_type_select = document.getElementsByName('doctype_' + i)[0];
+  let option = doc_type_select.options[doc_type_select.selectedIndex];
+  let id_required = parseInt(option.getAttribute('data-id-required'));
+  let side_required = parseInt(option.getAttribute('data-side-required'));
+
+  req_elements[0].style.display = side_required ? 'inline': 'none';
+  req_elements[1].style.display = is_poi_doc ? 'inline': 'none';
+  req_elements[2].style.display = is_poi_doc ? 'inline': 'none';
+    
+  const td = document.getElementsByClassName('doc_id_' + i)[0];
+
+  for(const child of td.getElementsByTagName('*')){
+    child.style.display = doc_type.match(regex_numberless) ? 'none' : 'inline';
+    child.disabled = doc_type.match(regex_numberless) ? 'disabled' : '';
+  }
+  
+  req_elements[3].style.display = id_required && !doc_type.match(regex_numberless) ? 'inline': 'none';
 }
 
 function file_size_validation(file) {
@@ -170,6 +198,11 @@ function validate_document_info() {
     let file_comments_errors = "";
 
     let doc_type = get_value('doctype_' + i);
+    let doc_type_select = document.getElementsByName('doctype_' + i)[0];
+    let option = doc_type_select.options[doc_type_select.selectedIndex];
+    let id_required = parseInt(option.getAttribute('data-id-required'));
+    let side_required = parseInt(option.getAttribute('data-side-required'));
+
     let issue_date = get_value('issue_date_' + i);
     let expiry_date = get_value('expiration_date_' + i);
     let comments = get_value('comments_' + i);
@@ -178,9 +211,9 @@ function validate_document_info() {
 
     let is_poi_doc = doc_type.match(regex_poi);
     let is_expirable_doc = doc_type.match(regex_expirable);
-    let is_no_date_doc = doc_type.match(regex_no_date);
-    let expiration = document.getElementsByName('expiration_' + i)[0].value;
-
+    let is_dateless_doc = doc_type.match(regex_dateless);
+    let expiration = document.getElementsByName('expiration_' +i)[0].value;
+    
     // Check if file uploaded (if not, proceed to next file)
     if(!get_value('FILE_' + i)) {
 
@@ -194,18 +227,23 @@ function validate_document_info() {
 
     is_file_uploaded = true;
 
+    if (side_required) {
+      if(!page_type && typeof type_sides[doc_type] !== 'undefined') {
+        file_comments_errors += "Page type is not selected.\n";
+      }
+    }
+
+    if (id_required) {
+      if(!doc_id && !doc_type.match(regex_numberless)) {
+        file_comments_errors += "Document ID is required.\n";
+      }
+    }
+
     // POI validation
+
     if(is_poi_doc) {
       if(!nationality) {
         file_comments_errors += "Nationality is required.\n";
-      }
-
-      if(!page_type) {
-        file_comments_errors += "Page type is not selected.\n";
-      }
-
-      if(!doc_id) {
-        file_comments_errors += "Document ID is required.\n";
       }
 
       if (!expiry_date && expiration === 'expiration_date')
@@ -216,7 +254,7 @@ function validate_document_info() {
     else if (is_expirable_doc && expiry_date){
       file_comments_errors += validate_expiry_date(expiry_date);
     }
-    else if (!is_no_date_doc && issue_date) {
+    else if (!is_dateless_doc && issue_date) {
       issue_date = new Date(issue_date);
       if(issue_date == 'Invalid Date'){
           file_comments_errors += "Invalid issue date. Please match the requested format.\n"
@@ -252,10 +290,35 @@ function validate_document_info() {
 }
 
 function handle_page_type_control(i, enabled_options) {
-  let options = document.getElementById('page_type_' +i ).getElementsByTagName("option");
-  for (var index = 1; index < options.length; index++) {
-          options[index].disabled = (enabled_options.indexOf(options[index].value) !== -1)?false:true ;
+  let select = document.getElementById('page_type_' +i );
+  select.innerHTML = '';
+
+  enabled_options = enabled_options.sort((a,b) => {
+    return a > b;
+  });
+
+  if (enabled_options.length > 0) {
+    const pagetype = document.createElement("option");
+    pagetype.value = '';
+    pagetype.innerHTML = 'Page Type';
+    select.appendChild(pagetype);
+
+    for(const op of enabled_options) {
+      const option = document.createElement("option");
+      option.value = op;
+      option.innerHTML = sides[op];
+      select.appendChild(option);
     }
+      select.style.display = 'inline';
+  } else {
+      var option = document.createElement("option");
+      option.value = '';
+      option.disabled = 1;
+      option.selected = 1;
+      option.innerHTML = 'Sideless'
+      select.appendChild(option);
+      select.style.display = 'none';
+  }
 }
 
 \$(document).ready(function() {
@@ -265,6 +328,7 @@ function handle_page_type_control(i, enabled_options) {
       const dropdowns = document.getElementsByClassName('expiration_dropdown');
       for(const elem of dropdowns) {
         const id = elem.name.replace('expiration_', '');
+        doc_type_changed(id);
         expiration_changed(id);
       }
 });

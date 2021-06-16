@@ -15,7 +15,7 @@
         <label id="required_star_[% id %]">Exp Date: *</label><br/></span>
         <input type="text" value="[% expiration_date %]" size=11 name="expiration_date_[% id %]" placeholder="YYYY-MM-DD" pattern="\d{4}-\d{2}-\d{2}" class="expiration_input_[% id %] datepick" data-lpignore="true" />
     [% ELSE %]
-        [% UNLESS no_date_doc %]
+        [% UNLESS dateless_doc %]
             <span><label id="required_star_[% id %]">Issued on: *</label><br/></span>
             <input type="text" value="[% issue_date %]" size=11 name="issue_date_[% id %]" placeholder="YYYY-MM-DD" pattern="\d{4}-\d{2}-\d{2}" class="datepick" data-lpignore="true" />
         [% END %]

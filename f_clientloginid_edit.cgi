@@ -47,7 +47,7 @@ use BOM::Platform::S3Client;
 use BOM::User::Onfido;
 use BOM::User::Phone;
 use Log::Any qw($log);
-
+use JSON::MaybeUTF8 qw(encode_json_utf8);
 use constant ONFIDO_REQUEST_PER_USER_PREFIX => 'ONFIDO::REQUEST::PER::USER::';
 
 BOM::Backoffice::Sysinit::init();
@@ -75,11 +75,7 @@ if (open my $mime_defs, '<', '/etc/mime.types') {
 }
 my $dbloc = BOM::Config::Runtime->instance->app_config->system->directory->db;
 
-my %details              = get_client_details(\%input, 'backoffice/f_clientloginid_edit.cgi');
-my %doc_types_categories = BOM::User::Client::DOCUMENT_TYPE_CATEGORIES();
-my @expirable_doctypes   = @{$doc_types_categories{POI}{doc_types}};
-my @poi_doctypes         = @{$doc_types_categories{POI}{doc_types_appreciated}};
-my @no_date_doctypes     = qw(other photo selfie_with_id);
+my %details = get_client_details(\%input, 'backoffice/f_clientloginid_edit.cgi');
 
 my $client          = $details{client};
 my $user            = $details{user};
@@ -96,6 +92,14 @@ my $loginid         = $client->loginid;
 my $aff_mt_accounts = $details{affiliate_mt5_accounts};
 my $dx_logins       = $details{dx_logins};
 my $loginid_details = $details{loginid_details};
+
+my %doc_types_categories = $client->documents->categories->%*;
+my @poi_doctypes         = $client->documents->poi_types->@*;
+my @dateless_doctypes    = $client->documents->dateless_types->@*;
+my @expirable_doctypes   = $client->documents->expirable_types->@*;
+my %document_type_sides  = $client->documents->sided_types->%*;
+my %document_sides       = $client->documents->sides->%*;
+my @numberless_doctypes  = $client->documents->numberless->@*;
 
 # Enabling onfido resubmission
 my $redis             = BOM::Config::Redis::redis_replicated_write();
@@ -335,18 +339,17 @@ if ($input{whattodo} eq 'uploadID') {
         my $doctype      = $cgi->param('doctype_' . $i);
         my $is_poi       = any { $_ eq $doctype } @poi_doctypes;
         my $is_expirable = any { $_ eq $doctype } @expirable_doctypes;
-        my $no_date_doc  = any { $_ eq $doctype } @no_date_doctypes;
+        my $dateless_doc = any { $_ eq $doctype } @dateless_doctypes;
 
         my $filetoupload    = $cgi->upload('FILE_' . $i);
         my $page_type       = $cgi->param('page_type_' . $i);
-        my $issue_date      = $is_expirable  || $no_date_doc ? undef : $cgi->param('issue_date_' . $i);
-        my $expiration_date = !$is_expirable || $no_date_doc ? undef : $cgi->param('expiration_date_' . $i);
+        my $issue_date      = $is_expirable  || $dateless_doc ? undef : $cgi->param('issue_date_' . $i);
+        my $expiration_date = !$is_expirable || $dateless_doc ? undef : $cgi->param('expiration_date_' . $i);
         my $document_id     = $input{'document_id_' . $i}     // '';
         my $comments        = $input{'comments_' . $i}        // '';
         my $expiration      = $cgi->param('expiration_' . $i) // '';
         my $lifetime_valid  = $expiration eq 'lifetime_valid' ? 1 : 0;
         $expiration_date = undef unless $expiration eq 'expiration_date';
-
         next unless $filetoupload;
 
         if (   $expiration_date
@@ -1512,22 +1515,6 @@ print qq{
     </form>
 } if $user->is_totp_enabled;
 
-if (not $client->is_virtual) {
-    # Upload new ID doc
-    Bar("Upload new ID document", {nav_link => "Upload ID doc"});
-    BOM::Backoffice::Request::template()->process(
-        'backoffice/client_edit_upload_doc.html.tt',
-        {
-            self_post          => $self_post,
-            broker             => $encoded_broker,
-            loginid            => $encoded_loginid,
-            countries          => request()->brand->countries_instance->countries,
-            poi_doctypes       => join('|', @poi_doctypes),
-            expirable_doctypes => join('|', @expirable_doctypes),
-            no_date_doctypes   => join('|', @no_date_doctypes),
-        });
-}
-
 Bar(
     "$loginid Tokens",
     {
@@ -1593,6 +1580,46 @@ Bar("Email Consent");
 print 'Email consent for marketing: ' . ($user->{email_consent} ? '<b>Yes</b>' : '<b>No</b>');
 
 if (not $client->is_virtual) {
+    # This will feed the doctype dropdowns
+    # The idea is to show nested <optgroup> (categories) filled with the corresponding <option> (doctypes)
+    my $doctypes = [];
+
+    for my $category (values %doc_types_categories) {
+        my $doctype = {
+            priority             => $category->{priority},
+            description          => $category->{description},
+            document_id_required => $category->{document_id_required},
+            side_required        => $category->{side_required},
+            types                => [
+                sort     { $a->{priority} <=> $b->{priority} }
+                    grep { not $_->{deprecated} }
+                    map  { +{$category->{types}->{$_}->%*, type => $_} }
+                    keys $category->{types}->%*
+            ],
+        };
+
+        push $doctypes->@*, $doctype;
+    }
+
+    #upload new ID doc
+    Bar("Upload new ID document");
+    BOM::Backoffice::Request::template()->process(
+        'backoffice/client_edit_upload_doc.html.tt',
+        {
+            self_post           => $self_post,
+            broker              => $encoded_broker,
+            loginid             => $encoded_loginid,
+            countries           => request()->brand->countries_instance->countries,
+            poi_doctypes        => join('|', @poi_doctypes),
+            expirable_doctypes  => join('|', @expirable_doctypes),
+            dateless_doctypes   => join('|', @dateless_doctypes),
+            doctypes            => [sort { $a->{priority} <=> $b->{priority} } $doctypes->@*],
+            docsides            => encode_json_utf8(\%document_type_sides),
+            sides               => encode_json_utf8(\%document_sides),
+            numberless_doctypes => join('|', @numberless_doctypes),
+
+        });
+
     Bar('P2P Advertiser');
 
     print '<a class="btn btn--primary" href="'

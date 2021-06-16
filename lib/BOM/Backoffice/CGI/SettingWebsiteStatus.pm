@@ -13,7 +13,6 @@ A helper package for f_setting_website_status.cgi
 
 =cut
 
-use f_brokerincludeall;
 use BOM::Backoffice::Request qw(request);
 use Exporter 'import';
 our @EXPORT_OK = qw(get_redis_keys return_bo_error get_statuses get_messages);
