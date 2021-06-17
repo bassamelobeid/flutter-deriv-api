@@ -99,12 +99,8 @@ subtest 'Initialization' => sub {
     'Initial RPC server and client connection';
 };
 
-$method = 'new_account';
+$method = 'new_account_virtual';
 subtest $method => sub {
-    $emit_data = {};
-
-    # new_account params requires subtype
-    $params->{args}->{subtype}   = 'virtual';
     $params->{args}->{residence} = 'id';
 
     my @invalid_passwords = ('82341231258', '123abcasdda', '123ABC!@ASD', '1@3Abad', 'ABCdefdd');
@@ -173,7 +169,7 @@ subtest $method => sub {
     $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error('If verification code is ok - account created successfully')
         ->result_value_is(sub { shift->{currency} },     'USD', 'It should return new account data')
         ->result_value_is(sub { ceil shift->{balance} }, 10000, 'It should return new account data');
-    my $new_loginid = $rpc_ct->result->{client_loginid};
+    my $new_loginid = $rpc_ct->result->{client_id};
 
     ok $new_loginid =~ /^VRTC\d+/, 'new VR loginid';
     is $emit_data->{properties}->{type},    'trading', 'type=trading';
@@ -213,57 +209,6 @@ subtest $method => sub {
         );
     };
 
-    subtest 'virtual wallet client' => sub {
-        $emit_data = {};
-        delete $params->{args}->{verification_code};
-
-        $params->{token} = $oauth_token;
-        $params->{args}->{type} = 'wallet';
-
-        $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error('If verification code is ok - account created successfully')
-            ->result_value_is(sub { shift->{currency} },     'USD', 'It should return new account data')
-            ->result_value_is(sub { ceil shift->{balance} }, 10000, 'It should return new account data');
-        my $new_loginid = $rpc_ct->result->{client_loginid};
-
-        ok $new_loginid =~ /^VRDW\d+/, 'new VRDW loginid';
-        is $emit_data->{properties}->{type},    'wallet',  'type=wallet';
-        is $emit_data->{properties}->{subtype}, 'virtual', 'subtype=virtual';
-
-        my $wallet_client = BOM::User::Client->get_client_instance($new_loginid);
-        isa_ok($wallet_client, 'BOM::User::Wallet', 'get_client_instance returns instance of wallet');
-        ok($wallet_client->is_wallet,  'wallet client is_wallet is true');
-        ok(!$wallet_client->can_trade, 'wallet client can_trade is false');
-
-        subtest 'duplicate virtual wallet client' => sub {
-            $params->{args}->{verification_code} = BOM::Platform::Token->new(
-                email       => $email,
-                created_for => 'account_opening'
-            )->token;
-
-            $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('DuplicateVirtualWallet', 'Correct error code')
-                ->error_message_is('Sorry, a virtual wallet account already exists. Only one virtual wallet account is allowed.',
-                'Correct error message');
-        };
-
-        subtest 'can create virtual wallet client without virtual trading client' => sub {
-            delete $params->{token};
-
-            $params->{args}->{verification_code} = BOM::Platform::Token->new(
-                email       => 'new_wallet_user@wallet.com',
-                created_for => 'account_opening'
-            )->token;
-
-            $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error('If verification code is ok - account created successfully')
-                ->result_value_is(sub { shift->{currency} },     'USD', 'It should return new account data')
-                ->result_value_is(sub { ceil shift->{balance} }, 10000, 'It should return new account data');
-            my $new_loginid = $rpc_ct->result->{client_loginid};
-
-            ok $new_loginid =~ /^VRDW\d+/, 'new VRDW loginid';
-        };
-
-        $params->{args}->{type} = 'trading';
-    };
-
     subtest 'European client - de' => sub {
         my $vr_email = 'new_email' . rand(999) . '@binary.com';
         $params->{args}->{verification_code} = BOM::Platform::Token->new(
@@ -276,7 +221,7 @@ subtest $method => sub {
             ->result_value_is(sub { shift->{currency} },     'USD', 'It should return new account data')
             ->result_value_is(sub { ceil shift->{balance} }, 10000, 'It should return new account data');
 
-        ok $emitted{'signup_' . $rpc_ct->result->{client_loginid}}, "signup event emitted";
+        ok $emitted{'signup_' . $rpc_ct->result->{client_id}}, "signup event emitted";
 
         $user = BOM::User->new(
             email => $vr_email,
@@ -297,7 +242,7 @@ subtest $method => sub {
             ->result_value_is(sub { shift->{currency} },     'USD', 'It should return new account data')
             ->result_value_is(sub { ceil shift->{balance} }, 10000, 'It should return new account data');
 
-        ok $emitted{'signup_' . $rpc_ct->result->{client_loginid}}, "signup event emitted";
+        ok $emitted{'signup_' . $rpc_ct->result->{client_id}}, "signup event emitted";
 
         $user = BOM::User->new(
             email => $vr_email,
@@ -315,7 +260,7 @@ subtest $method => sub {
 
         delete $params->{args}->{non_pep_declaration};
         $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error('virtual account created without checking non-pep declaration');
-        my $client = BOM::User::Client->new({loginid => $rpc_ct->result->{client_loginid}});
+        my $client = BOM::User::Client->new({loginid => $rpc_ct->result->{client_id}});
         is $client->non_pep_declaration_time, undef, 'non_pep_declaration_time is empty for virtual account';
 
         # with non-pep declaration
@@ -325,7 +270,7 @@ subtest $method => sub {
         )->token;
         $params->{args}->{non_pep_declaration} = 1;
         $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error('virtual account created with checking non-pep declaration');
-        $client = BOM::User::Client->new({loginid => $rpc_ct->result->{client_loginid}});
+        $client = BOM::User::Client->new({loginid => $rpc_ct->result->{client_id}});
         is $client->non_pep_declaration_time, undef,
             'non_pep_self_declaration_time is empty for virtual accounts even when rpc is called with param set to 1';
     };
@@ -343,7 +288,7 @@ subtest $method => sub {
             ->result_value_is(sub { shift->{currency} },     'USD', 'It should return new account data')
             ->result_value_is(sub { ceil shift->{balance} }, 10000, 'It should return new account data');
 
-        ok $emitted{'signup_' . $rpc_ct->result->{client_loginid}}, "signup event emitted";
+        ok $emitted{'signup_' . $rpc_ct->result->{client_id}}, "signup event emitted";
 
         $user = BOM::User->new(
             email => $vr_email,
@@ -364,7 +309,7 @@ subtest $method => sub {
             ->result_value_is(sub { shift->{currency} },     'USD', 'It should return new account data')
             ->result_value_is(sub { ceil shift->{balance} }, 10000, 'It should return new account data');
 
-        ok $emitted{'signup_' . $rpc_ct->result->{client_loginid}}, "signup event emitted";
+        ok $emitted{'signup_' . $rpc_ct->result->{client_id}}, "signup event emitted";
 
         $user = BOM::User->new(
             email => $vr_email,
@@ -386,7 +331,7 @@ subtest $method => sub {
             ->result_value_is(sub { shift->{currency} },     'USD', 'It should return new account data')
             ->result_value_is(sub { ceil shift->{balance} }, 10000, 'It should return new account data');
 
-        ok $emitted{'signup_' . $rpc_ct->result->{client_loginid}}, "signup event emitted";
+        ok $emitted{'signup_' . $rpc_ct->result->{client_id}}, "signup event emitted";
 
         $user = BOM::User->new(
             email => $vr_email,
@@ -540,9 +485,12 @@ subtest $method => sub {
 
         $new_client->set_default_account("USD");
     };
+
     subtest 'Create multiple accounts in CR' => sub {
         $email = 'new_email' . rand(999) . '@binary.com';
 
+        delete $params->{token};
+        $params->{args}->{email}           = $email;
         $params->{args}->{client_password} = 'verylongDDD1!';
 
         $params->{args}->{residence}    = 'id';
@@ -1181,6 +1129,7 @@ subtest $method => sub {
 $method = 'new_account_real';
 
 subtest 'Duplicate accounts are not created in race condition' => sub {
+    my $params = {};
 
     $email                               = 'new_email' . rand(999) . '@binary.com';
     $params->{args}->{client_password}   = 'Abcd333@!';
@@ -1329,7 +1278,6 @@ subtest 'Empty phone number' => sub {
     $params->{country}                   = 'br';
     $params->{args}->{residence}         = 'br';
     $params->{args}->{client_password}   = '123Abas!';
-    $params->{args}->{subtype}           = 'virtual';
     $params->{args}->{phone}             = '';
     $params->{args}->{first_name}        = 'i dont have';
     $params->{args}->{last_name}         = 'a phone number';
@@ -1342,8 +1290,8 @@ subtest 'Empty phone number' => sub {
 
     delete $params->{token};
 
-    $rpc_ct->call_ok('new_account', $params)->has_no_system_error->has_no_error('vr account created successfully');
-    my $vr_loginid = $rpc_ct->result->{client_loginid};
+    $rpc_ct->call_ok('new_account_virtual', $params)->has_no_system_error->has_no_error('vr account created successfully');
+    my $vr_loginid = $rpc_ct->result->{client_id};
 
     $params->{token} = BOM::Platform::Token::API->new->create_token($vr_loginid, 'test token');
     $rpc_ct->call_ok('new_account_real', $params)->has_no_system_error->has_no_error('real account created successfully');
@@ -1358,7 +1306,6 @@ subtest 'Missing phone number' => sub {
     $params->{country}                 = 'br';
     $params->{args}->{residence}       = 'br';
     $params->{args}->{client_password} = '123Abas!';
-    $params->{args}->{subtype}         = 'virtual';
     $params->{args}->{first_name}      = 'i miss';
     $params->{args}->{last_name}       = 'my phone number';
     $params->{args}->{date_of_birth}   = '1999-01-02';
@@ -1371,8 +1318,8 @@ subtest 'Missing phone number' => sub {
 
     delete $params->{token};
 
-    $rpc_ct->call_ok('new_account', $params)->has_no_system_error->has_no_error('vr account created successfully');
-    my $vr_loginid = $rpc_ct->result->{client_loginid};
+    $rpc_ct->call_ok('new_account_virtual', $params)->has_no_system_error->has_no_error('vr account created successfully');
+    my $vr_loginid = $rpc_ct->result->{client_id};
 
     $params->{token} = BOM::Platform::Token::API->new->create_token($vr_loginid, 'test token');
     $rpc_ct->call_ok('new_account_real', $params)->has_no_system_error->has_no_error('real account created successfully');
@@ -1387,7 +1334,6 @@ subtest 'Repeating phone number' => sub {
     $params->{country}                   = 'br';
     $params->{args}->{residence}         = 'br';
     $params->{args}->{client_password}   = '123Abas!';
-    $params->{args}->{subtype}           = 'virtual';
     $params->{args}->{first_name}        = 'i repeat';
     $params->{args}->{last_name}         = 'my phone number';
     $params->{args}->{date_of_birth}     = '1999-01-02';
@@ -1400,8 +1346,8 @@ subtest 'Repeating phone number' => sub {
 
     delete $params->{token};
 
-    $rpc_ct->call_ok('new_account', $params)->has_no_system_error->has_no_error('vr account created successfully');
-    my $vr_loginid = $rpc_ct->result->{client_loginid};
+    $rpc_ct->call_ok('new_account_virtual', $params)->has_no_system_error->has_no_error('vr account created successfully');
+    my $vr_loginid = $rpc_ct->result->{client_id};
 
     $params->{token} = BOM::Platform::Token::API->new->create_token($vr_loginid, 'test token');
     $rpc_ct->call_ok('new_account_real', $params)->has_no_system_error->has_error->error_code_is('InvalidPhone', 'Repeating digits are not valid')

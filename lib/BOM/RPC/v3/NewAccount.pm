@@ -42,45 +42,6 @@ sub _create_oauth_token {
     return $access_token;
 }
 
-rpc "new_account_virtual",
-    auth => [],    # unauthenticated
-    sub {
-    my $params = shift;
-    my $args   = $params->{args};
-
-    try {
-        my ($client, $account);
-
-        $args->{ip}          = $params->{client_ip} // '';
-        $args->{country}     = uc($params->{country_code} // '');
-        $args->{environment} = request()->login_env($params);
-        $args->{source}      = $params->{source};
-
-        $client  = create_virtual_account($args);
-        $account = $client->default_account;
-
-        return {
-            client_id   => $client->loginid,
-            email       => $client->email,
-            currency    => $account->currency_code(),
-            balance     => formatnumber('amount', $account->currency_code(), $account->balance),
-            oauth_token => _create_oauth_token($params->{source}, $client->loginid),
-        };
-    } catch ($e) {
-        my $error_map = BOM::RPC::v3::Utility::error_map();
-        my $error->{code} = $e;
-        $error = $e->{error} // $e if (ref $e eq 'HASH');
-        $error->{message_to_client} = $error->{message_to_client} // $error_map->{$error->{code}};
-
-        return BOM::RPC::v3::Utility::client_error() unless ($error->{message_to_client});
-
-        return BOM::RPC::v3::Utility::create_error({
-                code              => $error->{code},
-                message_to_client => $error->{message_to_client},
-                details           => $error->{details}});
-    }
-    };
-
 sub request_email {
     my ($email, $args) = @_;
 
@@ -393,43 +354,47 @@ rpc new_account_maltainvest => sub {
     };
 };
 
-rpc 'new_account',
+rpc "new_account_virtual",
     auth => [],
     sub {
     my $params = shift;
     my $args   = $params->{args};
 
-    $args->{type} = $args->{type} // 'trading';    # default to 'trading'
+    $args->{token_details} = delete $params->{token_details};
+    $args->{type}          = $args->{type} // 'trading';        # default to 'trading'
 
-    my $subtype = $args->{subtype};
-    return BOM::RPC::v3::Utility::create_error({
-            code              => 'MissingSubtype',
-            message_to_client => localize('Please specify the account subtype: "real" or "virtual"'),
-        }) unless ($subtype);
+    if ($args->{type} eq 'wallet' and BOM::Config::Runtime->instance->app_config->system->suspend->wallets) {
+        return BOM::RPC::v3::Utility::create_error({
+            code              => 'PermissionDenied',
+            message_to_client => localize("Wallet account creation is currently suspended."),
+        });
+    }
+
+    if ($args->{token_details} and not $args->{verification_code}) {
+        my $scopes = $args->{token_details}->{scopes};
+        return BOM::RPC::v3::Utility::create_error({
+                code              => 'InvalidToken',
+                message_to_client => localize("The token is invalid, requires 'admin' scope.")}) unless (any { $_ eq 'admin' } @$scopes);
+    }
 
     try {
         my ($client, $account);
 
-        $args->{ip}            = $params->{client_ip} // '';
-        $args->{country}       = uc($params->{country_code} // '');
-        $args->{environment}   = request()->login_env($params);
-        $args->{source}        = $params->{source};
-        $args->{token_details} = $params->{token_details};
+        $args->{ip}          = $params->{client_ip} // '';
+        $args->{country}     = uc($params->{country_code} // '');
+        $args->{environment} = request()->login_env($params);
+        $args->{source}      = $params->{source};
 
-        # create virtual account
-        if ($subtype eq 'virtual') {
-            $client = create_virtual_account($args);
-        } else {
-            die 'Unsupported account subtype';
-        }
+        $client  = create_virtual_account($args);
         $account = $client->default_account;
 
         return {
-            client_loginid => $client->loginid,
-            email          => $client->email,
-            currency       => $account->currency_code(),
-            balance        => formatnumber('amount', $account->currency_code(), $account->balance),
-            oauth_token    => _create_oauth_token($params->{source}, $client->loginid),
+            client_id   => $client->loginid,
+            email       => $client->email,
+            currency    => $account->currency_code(),
+            balance     => formatnumber('amount', $account->currency_code(), $account->balance),
+            oauth_token => _create_oauth_token($params->{source}, $client->loginid),
+            type        => $args->{type},
         };
     } catch ($e) {
         my $error_map = BOM::RPC::v3::Utility::error_map();
@@ -506,16 +471,22 @@ sub create_virtual_account {
 
     my ($error);
 
-    if ($args->{token_details}) {
-        # authenticated (existing user) - check for auth token
+    if ($args->{token_details} and not $args->{verification_code}) {
+        # To create a second virtual account, check for token
+        for my $field (qw( client_password residence )) {
+            die +{
+                code              => 'InvalidRequestParams',
+                message_to_client => localize('Invalid request parameters.'),
+                details           => {field => $field}}
+                if ($args->{$field});
+        }
         my $user = BOM::User->new(loginid => $args->{token_details}->{loginid});
         $args->{email} = $user->{email};
     } else {
-        # unauthenticated (new user) - check for verification_code
-
-        # These required fields are excluded from JSON schema, we need to handle it here
+        # To create a new user, check for client_password, residence and verification_code
+        # These required fields were excluded from JSON schema, we need to handle it here
         for my $field (qw( client_password residence verification_code )) {
-            die {
+            die +{
                 code    => 'InputValidationFailed',
                 details => {field => $field}} unless ($args->{$field});
         }

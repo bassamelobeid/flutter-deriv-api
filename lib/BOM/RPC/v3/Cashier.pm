@@ -52,7 +52,7 @@ use BOM::Database::ClientDB;
 use BOM::Platform::Event::Emitter;
 use BOM::TradingPlatform;
 
-requires_auth('wallet');
+requires_auth('trading', 'wallet');
 
 use Log::Any qw($log);
 
