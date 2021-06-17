@@ -8,7 +8,10 @@ use BOM::Test::Helper qw/test_schema build_wsapi_test call_mocked_consumer_group
 use BOM::Platform::Token;
 use BOM::Config::Redis;
 use List::Util qw(first);
+use BOM::Config::Runtime;
+use BOM::Config::Chronicle;
 
+use Guard;
 use await;
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
@@ -24,6 +27,21 @@ $client_mocked->mock('add_note', sub { return 1 });
 
 my $t     = build_wsapi_test();
 my $email = 'test1@binary.com';
+
+my $app_config = BOM::Config::Runtime->instance->app_config;
+$app_config->chronicle_writer(BOM::Config::Chronicle::get_chronicle_writer());
+
+my %init_config_values = (
+    'system.suspend.wallets' => $app_config->system->suspend->wallets,
+);
+
+scope_guard {
+    for my $key (keys %init_config_values) {
+        $app_config->set({$key => $init_config_values{$key}});
+    }
+};
+
+$app_config->set({'system.suspend.wallets' => 0});
 
 subtest 'verify_email' => sub {
     my $res = $t->await::verify_email({
@@ -191,6 +209,27 @@ subtest 'NO duplicate email' => sub {
 
     is($res->{error}->{code},       'duplicate email', 'duplicate email err code');
     is($res->{new_account_virtual}, undef,             'NO account created');
+};
+
+subtest 'create virtual wallet' => sub {
+    my $res = $t->await::verify_email({
+        verify_email => $email,
+        type         => 'account_opening'
+    });
+    is($res->{verify_email}, 1, 'verify_email OK');
+    test_schema('verify_email', $res);
+
+    $create_vr->{verification_code} = _get_token($email);
+    $create_vr->{type} = 'wallet';
+    $res = $t->await::new_account_virtual($create_vr);
+
+    is($res->{msg_type}, 'new_account_virtual');
+    ok($res->{new_account_virtual});
+    test_schema('new_account_virtual', $res);
+
+    like($res->{new_account_virtual}->{client_id}, qr/^VRDW/, 'got VRDW client');
+    is($res->{new_account_virtual}->{currency}, 'USD', 'got currency');
+    cmp_ok($res->{new_account_virtual}->{balance}, '==', '10000', 'got balance');
 };
 
 subtest 'insufficient data' => sub {

@@ -11,6 +11,14 @@
    "properties" : {
       "new_account_virtual" : {
          "properties" : {
+            "type" : {
+               "type" : "string",
+               "default": "trading",
+               "enum" : [
+                  "trading",
+                  "wallet"
+               ]
+            },
             "currency" : {
                "type" : "string",
                "pattern" : "^USD$"
