@@ -51,6 +51,7 @@ subtest 'commission for underlying' => sub {
         WLDUSD      => [50,  0.00015],
         WLDGBP      => [30,  0.00020],
         WLDAUD      => [20,  0.00025],
+        WLDXAU      => [15,  0.0003],
         cryBTCUSD   => [10,  0.001],
         cryETHUSD   => [10,  0.001],
         cryBNBUSD   => [10,  0.0015],

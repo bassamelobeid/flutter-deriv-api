@@ -1305,6 +1305,28 @@ Economic event multiplier
 
 =cut
 
+my $forex_source = {
+    EUR => 1,
+    USD => 1,
+    GBP => 1,
+    CAD => 1,
+    AUD => 1,
+    JPY => 1,
+};
+my %smart_source_currency = (
+    WLDUSD => $forex_source,
+    WLDAUD => $forex_source,
+    WLDEUR => $forex_source,
+    WLDGBP => $forex_source,
+    WLDXAU => {
+        EUR => 1,
+        USD => 1,
+        GBP => 1,
+        AUD => 1,
+        JPY => 1,
+    },
+);
+
 sub _get_economic_event_commission_multiplier {
     my $self = shift;
 
@@ -1322,19 +1344,14 @@ sub _get_economic_event_commission_multiplier {
 
     my $ee_multiplier = 0;
     if (@high_impact_events) {
-        my $currencies = {
-            USD                                       => 1,
-            $self->underlying->asset_symbol           => 1,
-            $self->underlying->quoted_currency_symbol => 1
-        };
-        # use all major currencies if it is smart_fx
+        my $currencies;
         if ($self->underlying->submarket->name eq 'smart_fx') {
+            $currencies = $smart_source_currency{$self->underlying->symbol};
+        } else {
             $currencies = {
-                USD => 1,
-                GBP => 1,
-                EUR => 1,
-                CAD => 1,
-                JPY => 1
+                USD                                       => 1,
+                $self->underlying->asset_symbol           => 1,
+                $self->underlying->quoted_currency_symbol => 1
             };
         }
 

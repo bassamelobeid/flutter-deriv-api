@@ -425,6 +425,8 @@
       name: WLDGBP
     - display_name: USD Index
       name: WLDUSD
+    - display_name: Gold Index
+      name: WLDXAU
     trade_durations:
     - durations:
       - display_name: Ticks

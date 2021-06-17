@@ -51,6 +51,7 @@ subtest 'multiplier range' => sub {
         WLDUSD      => [50,  100,  150,  250,  500],
         WLDGBP      => [30,  50,   100,  150,  300],
         WLDAUD      => [20,  30,   50,   100,  200],
+        WLDXAU      => [15,  30,   50,   75,   150],
         cryBTCUSD   => [10,  20,   30,   40,   50],
         cryETHUSD   => [10,  20,   30,   40,   50],
         cryBNBUSD   => [10,  20,   30],
