@@ -151,7 +151,7 @@ sub actions_config {
         ['get_financial_assessment'],
         ['reality_check'],
         ['verify_email',        {stash_params => [qw/ server_name token /]}],
-        ['new_account_virtual', {stash_params => [qw/ server_name client_ip user_agent /]}],
+        ['new_account_virtual', {stash_params => [qw/ token server_name client_ip user_agent /]}],
         ['reset_password'],
 
         # authenticated calls
@@ -506,7 +506,6 @@ sub actions_config {
             }
         ],
 
-        ['new_account',        {stash_params => [qw/ token server_name client_ip user_agent /]}],
         ['new_account_wallet', {stash_params => [qw/ server_name client_ip user_agent /]}],
         ['link_wallet'],
     ];
