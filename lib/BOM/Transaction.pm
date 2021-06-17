@@ -821,38 +821,10 @@ sub buy {
         $company_limits->add_buys($client);
         my $expiry_epoch = $self->contract->date_expiry->epoch;
 
-        # TODO: CLEAN THIS UP IN THE FOLLWUP TO THIS CARD: https://trello.com/c/WXwNcAg4
-        ############# <BEGIN DELETE>
-        # To avoid race condition between transaction stream and setting poc parameters,
-        # we will set contract parameters before buy.
-        my $poc_parameters = {
-            short_code      => $self->contract->shortcode,
-            contract_id     => $fmbid,
-            currency        => $client->currency,
-            is_sold         => 0,
-            is_expired      => 0,
-            buy_price       => $self->price,
-            landing_company => $client->landing_company->short,
-            account_id      => $client->account->id,
-            purchase_time   => $self->purchase_date->epoch,
-            sell_time       => undef,
-        };
-        # country code is required for china because we have special offerings conditions.
-        if ($client->residence eq 'cn') {
-            $poc_parameters->{country_code} = $client->residence;
-        }
-        if ($self->contract->can('available_orders')) {
-            $poc_parameters->{limit_order} = $self->contract->available_orders;
-        }
-        # set contract parameter before buy to avoid race condition between
-        # pg-notify and other services that depend on contract parameters
-        BOM::Transaction::Utility::set_poc_parameters($poc_parameters, $expiry_epoch);
-        ############# <END DELETE>
-
         ($fmb, $txn) = $fmb_helper->buy_bet;
 
         # set contract parameters for the new contract
-        $poc_parameters = BOM::Transaction::Utility::build_poc_parameters($client, {%$fmb, buy_transaction_id => $txn->{id}});
+        my $poc_parameters = BOM::Transaction::Utility::build_poc_parameters($client, {%$fmb, buy_transaction_id => $txn->{id}});
         if ($self->contract->can('available_orders')) {
             $poc_parameters->{limit_order} = $self->contract->available_orders;
         }
@@ -970,22 +942,6 @@ sub batch_buy {
     my %stat = map { $_ => {attempt => 0 + @{$per_broker{$_}}} } keys %per_broker;
 
     my $expiry_epoch = $self->contract->date_expiry->epoch;
-    # TODO: CLEAN IT UP IN THE FOLLWUP TO THIS CARD: https://trello.com/c/WXwNcAg4
-    ############# <BEGIN DELETE>
-    my $poc_parameters = {
-        short_code    => $self->contract->shortcode,
-        currency      => $self->contract->currency,
-        is_sold       => 0,
-        is_expired    => 0,
-        buy_price     => $self->price,
-        purchase_time => $self->purchase_date->epoch,
-        sell_price    => undef,
-        sell_time     => undef,
-    };
-    if ($self->contract->can('available_orders')) {
-        $poc_parameters->{limit_order} = $self->contract->available_orders;
-    }
-    ############# <END DELETE>
 
     for my $broker (keys %per_broker) {
         my $list = $per_broker{$broker};
@@ -1002,18 +958,7 @@ sub batch_buy {
 
             my $clientdb = BOM::Database::ClientDB->new({broker_code => $broker});
             my @fmb_ids  = map {
-                ############# <BEGIN DELETE>
-                my $client = $_->{client};
                 my $fmb_id = $clientdb->get_next_fmbid();
-                $poc_parameters->{contract_id}     = $fmb_id;
-                $poc_parameters->{landing_company} = $client->landing_company->short;
-                $poc_parameters->{account_id}      = $client->account->id;
-                if ($client->residence eq 'cn') {
-                    $poc_parameters->{country_code} = $client->residence;
-                }
-                BOM::Transaction::Utility::set_poc_parameters($poc_parameters, $expiry_epoch);
-                ############# <END DELETE>
-
                 $fmb_id;
             } @$list;
 
