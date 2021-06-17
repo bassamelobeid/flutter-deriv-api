@@ -239,11 +239,11 @@ subtest 'forex major pair - frxAUDJPY [VRTC]' => sub {
             contract_update => 1,
             limit_order     => {
                 take_profit => 10,
-                stop_loss   => 5
+                stop_loss   => 15
             },
         }};
     my $update_res = $c->call_ok('contract_update', $update_params)->has_no_error->result;
-    is $update_res->{stop_loss}->{order_amount}, -5;
+    is $update_res->{stop_loss}->{order_amount}, -15;
     ok $update_res->{stop_loss}->{value};
     is $update_res->{take_profit}->{order_amount}, 10;
     ok $update_res->{take_profit}->{value};
@@ -289,11 +289,11 @@ subtest 'multiplier on MX' => sub {
             contract_update => 1,
             limit_order     => {
                 take_profit => 10,
-                stop_loss   => 5
+                stop_loss   => 15
             },
         }};
     my $update_res = $c->call_ok('contract_update', $update_params)->has_no_error->result;
-    is $update_res->{stop_loss}->{order_amount}, -5;
+    is $update_res->{stop_loss}->{order_amount}, -15;
     ok $update_res->{stop_loss}->{value};
     is $update_res->{take_profit}->{order_amount}, 10;
     ok $update_res->{take_profit}->{value};
