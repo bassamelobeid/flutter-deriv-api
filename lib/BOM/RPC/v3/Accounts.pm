@@ -1101,11 +1101,16 @@ sub _get_authentication {
                     documents_supported  => [],
                     last_rejected        => [],
                     reported_properties  => {},
+                    status               => 'none',
                 },
                 idv => {
                     submissions_left    => 0,
                     last_rejected       => [],
                     reported_properties => {},
+                    status              => 'none',
+                },
+                manual => {
+                    status => 'none',
                 }
             },
         },
@@ -1173,6 +1178,7 @@ sub _get_authentication_poi {
     my $idv = BOM::User::IdentityVerification->new(user_id => $client->binary_user_id);
 
     my $country_code_triplet = uc(Locale::Country::country_code2code($country_code, LOCALE_CODE_ALPHA_2, LOCALE_CODE_ALPHA_3) // "");
+
     # Return the identity structure
     return {
         status   => $poi_status,
@@ -1181,14 +1187,19 @@ sub _get_authentication_poi {
                 submissions_left     => BOM::User::Onfido::submissions_left($client),
                 is_country_supported => BOM::Config::Onfido::is_country_supported($country_code),
                 documents_supported  => BOM::Config::Onfido::supported_documents_for_country($country_code),
-                $country_code_triplet ? (country_code => $country_code_triplet) : (),
                 last_rejected => [uniq map { defined $RejectedOnfidoReasons{$_} ? localize($RejectedOnfidoReasons{$_}) : () } $last_rejected->@*],
                 reported_properties => BOM::User::Onfido::reported_properties($client),
+                status              => $client->get_onfido_status($documents),
+                $country_code_triplet ? (country_code => $country_code_triplet) : (),
             },
             idv => {
                 submissions_left    => $idv->submissions_left,
                 last_rejected       => $idv->get_rejected_reasons,
                 reported_properties => $idv->reported_properties,
+                status              => $idv->status,
+            },
+            manual => {
+                status => $client->get_manual_poi_status($documents),
             },
         },
         defined $expiry_date ? (expiry_date => $expiry_date) : (),

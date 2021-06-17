@@ -30,6 +30,7 @@ subtest 'residence_list' => sub {
                 services => {
                     idv => {
                         is_country_supported => 0,
+                        has_visual_sample    => 0,
                         documents_supported  => {},
                     },
                     onfido => {
@@ -56,6 +57,7 @@ subtest 'residence_list' => sub {
                 services => {
                     idv => {
                         is_country_supported => 1,
+                        has_visual_sample    => 1,
                         documents_supported  => {
                             bvn => {
                                 display_name => 'BVN',

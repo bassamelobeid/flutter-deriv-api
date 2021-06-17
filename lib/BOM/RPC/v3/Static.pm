@@ -76,6 +76,7 @@ rpc residence_list => sub {
         my $tin_format         = $countries_instance->get_tin_format($country_code);
         my $idv_config         = $countries_instance->get_idv_config($country_code) // {};
         my $idv_docs_supported = $idv_config->{document_types}                      // {};
+        my $has_visual_sample  = $idv_config->{has_visual_sample}                   // 0;
 
         my $option = {
             value => $country_code,
@@ -94,6 +95,7 @@ rpc residence_list => sub {
                             } keys $idv_docs_supported->%*
                         },
                         is_country_supported => $countries_instance->is_idv_supported($country_code) // 0,
+                        has_visual_sample    => $has_visual_sample
                     },
                     onfido => {
                         documents_supported =>

@@ -332,11 +332,18 @@ subtest 'get account status' => sub {
                                     documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport'],
                                     country_code         => 'IDN',
                                     reported_properties  => {},
+                                    status               => 'none',
+                                    status               => 'none',
                                 },
                                 idv => {
                                     submissions_left    => $idv_limit,
                                     last_rejected       => [],
                                     reported_properties => {},
+                                    status              => 'none',
+                                    status              => 'none',
+                                },
+                                manual => {
+                                    status => 'none',
                                 }}
                         },
                         needs_verification => [],
@@ -378,11 +385,17 @@ subtest 'get account status' => sub {
                                     documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport'],
                                     country_code         => 'IDN',
                                     reported_properties  => {},
+                                    status               => 'none',
+                                    status               => 'none',
                                 },
                                 idv => {
                                     submissions_left    => $idv_limit,
                                     last_rejected       => [],
                                     reported_properties => {},
+                                    status              => 'none',
+                                },
+                                manual => {
+                                    status => 'none',
                                 }}
                         },
                         needs_verification => ["document", "identity"],
@@ -424,11 +437,18 @@ subtest 'get account status' => sub {
                                     documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport'],
                                     country_code         => 'IDN',
                                     reported_properties  => {},
+                                    status               => 'none',
+                                    status               => 'none',
                                 },
                                 idv => {
                                     submissions_left    => $idv_limit,
                                     last_rejected       => [],
                                     reported_properties => {},
+                                    status              => 'none',
+                                    status              => 'none',
+                                },
+                                manual => {
+                                    status => 'none',
                                 }}
                         },
                         needs_verification => [],
@@ -467,11 +487,16 @@ subtest 'get account status' => sub {
                                     documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport'],
                                     country_code         => 'IDN',
                                     reported_properties  => {},
+                                    status               => 'none',
                                 },
                                 idv => {
                                     submissions_left    => $idv_limit,
                                     last_rejected       => [],
                                     reported_properties => {},
+                                    status              => 'none',
+                                },
+                                manual => {
+                                    status => 'none',
                                 }}
                         },
                         needs_verification => ['identity'],
@@ -527,11 +552,16 @@ subtest 'get account status' => sub {
                                     documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport'],
                                     country_code         => 'IDN',
                                     reported_properties  => {},
+                                    status               => 'none',
                                 },
                                 idv => {
                                     submissions_left    => $idv_limit,
                                     last_rejected       => [],
                                     reported_properties => {},
+                                    status              => 'none',
+                                },
+                                manual => {
+                                    status => 'none',
                                 }}
                         },
                         needs_verification => [],
@@ -613,11 +643,16 @@ subtest 'get account status' => sub {
                                         ],
                                         country_code        => 'GBR',
                                         reported_properties => {},
+                                        status              => 'none',
                                     },
                                     idv => {
                                         submissions_left    => $idv_limit,
                                         last_rejected       => [],
                                         reported_properties => {},
+                                        status              => 'none',
+                                    },
+                                    manual => {
+                                        status => 'none',
                                     }}
                             },
                             needs_verification => superbagof(qw(identity)),
@@ -661,11 +696,16 @@ subtest 'get account status' => sub {
                                     documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport'],
                                     country_code         => 'IDN',
                                     reported_properties  => {},
+                                    status               => 'none',
                                 },
                                 idv => {
                                     submissions_left    => $idv_limit,
                                     last_rejected       => [],
                                     reported_properties => {},
+                                    status              => 'none',
+                                },
+                                manual => {
+                                    status => 'none',
                                 }}
                         },
                         needs_verification => [],
@@ -703,11 +743,16 @@ subtest 'get account status' => sub {
                                     documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport'],
                                     country_code         => 'IDN',
                                     reported_properties  => {},
+                                    status               => 'none',
                                 },
                                 idv => {
                                     submissions_left    => $idv_limit,
                                     last_rejected       => [],
                                     reported_properties => {},
+                                    status              => 'none',
+                                },
+                                manual => {
+                                    status => 'none',
                                 }}
                         },
                         needs_verification => [],
@@ -767,11 +812,16 @@ subtest 'get account status' => sub {
                                     documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport'],
                                     country_code         => 'IDN',
                                     reported_properties  => {},
+                                    status               => 'none',
                                 },
                                 idv => {
                                     submissions_left    => $idv_limit,
                                     last_rejected       => [],
                                     reported_properties => {},
+                                    status              => 'none',
+                                },
+                                manual => {
+                                    status => 'none',
                                 }}
                         },
                         needs_verification => ["document", "identity"],
@@ -809,11 +859,16 @@ subtest 'get account status' => sub {
                                     documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport'],
                                     country_code         => 'IDN',
                                     reported_properties  => {},
+                                    status               => 'none',
                                 },
                                 idv => {
                                     submissions_left    => $idv_limit,
                                     last_rejected       => [],
                                     reported_properties => {},
+                                    status              => 'none',
+                                },
+                                manual => {
+                                    status => 'none',
                                 }}
                         },
                         needs_verification => ["document"],
@@ -883,11 +938,16 @@ subtest 'get account status' => sub {
                                         documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport'],
                                         country_code         => 'IDN',
                                         reported_properties  => {},
+                                        status               => 'none',
                                     },
                                     idv => {
                                         submissions_left    => $idv_limit,
                                         last_rejected       => [],
                                         reported_properties => {},
+                                        status              => 'none',
+                                    },
+                                    manual => {
+                                        status => 'none',
                                     }}
                             },
                             needs_verification => ['identity'],
@@ -972,11 +1032,16 @@ subtest 'get account status' => sub {
                                         documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport'],
                                         country_code         => 'IDN',
                                         reported_properties  => {},
+                                        status               => 'none',
                                     },
                                     idv => {
                                         submissions_left    => $idv_limit,
                                         last_rejected       => [],
                                         reported_properties => {},
+                                        status              => 'none',
+                                    },
+                                    manual => {
+                                        status => 'none',
                                     }}
                             },
                             needs_verification => ['identity'],
@@ -1023,11 +1088,16 @@ subtest 'get account status' => sub {
                                     documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport'],
                                     country_code         => 'IDN',
                                     reported_properties  => {},
+                                    status               => 'none',
                                 },
                                 idv => {
                                     submissions_left    => $idv_limit,
                                     last_rejected       => [],
                                     reported_properties => {},
+                                    status              => 'none',
+                                },
+                                manual => {
+                                    status => 'none',
                                 }}
                         },
                         needs_verification => ["document", "identity"],
@@ -1071,11 +1141,16 @@ subtest 'get account status' => sub {
                                     documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport'],
                                     country_code         => 'IDN',
                                     reported_properties  => {},
+                                    status               => 'none',
                                 },
                                 idv => {
                                     submissions_left    => $idv_limit,
                                     last_rejected       => [],
                                     reported_properties => {},
+                                    status              => 'none',
+                                },
+                                manual => {
+                                    status => 'none',
                                 }}
                         },
                         needs_verification => [],
@@ -1114,11 +1189,16 @@ subtest 'get account status' => sub {
                                     documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport'],
                                     country_code         => 'IDN',
                                     reported_properties  => {},
+                                    status               => 'none',
                                 },
                                 idv => {
                                     submissions_left    => $idv_limit,
                                     last_rejected       => [],
                                     reported_properties => {},
+                                    status              => 'none',
+                                },
+                                manual => {
+                                    status => 'none',
                                 }}
                         },
                         needs_verification => [],
@@ -1161,11 +1241,16 @@ subtest 'get account status' => sub {
                                     documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport'],
                                     country_code         => 'IDN',
                                     reported_properties  => {},
+                                    status               => 'none',
                                 },
                                 idv => {
                                     submissions_left    => $idv_limit,
                                     last_rejected       => [],
                                     reported_properties => {},
+                                    status              => 'none',
+                                },
+                                manual => {
+                                    status => 'none',
                                 }}
                         },
                         needs_verification => [],
@@ -1210,11 +1295,16 @@ subtest 'get account status' => sub {
                                         documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport'],
                                         country_code         => 'IDN',
                                         reported_properties  => {},
+                                        status               => 'none',
                                     },
                                     idv => {
                                         submissions_left    => $idv_limit,
                                         last_rejected       => [],
                                         reported_properties => {},
+                                        status              => 'none',
+                                    },
+                                    manual => {
+                                        status => 'none',
                                     }}
                             },
                             needs_verification => superbagof(qw(identity)),
@@ -1255,11 +1345,16 @@ subtest 'get account status' => sub {
                                         documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport'],
                                         country_code         => 'IDN',
                                         reported_properties  => {},
+                                        status               => 'none',
                                     },
                                     idv => {
                                         submissions_left    => $idv_limit,
                                         last_rejected       => [],
                                         reported_properties => {},
+                                        status              => 'none',
+                                    },
+                                    manual => {
+                                        status => 'none',
                                     }}
                             },
                             needs_verification => superbagof(qw(document))}
@@ -1303,11 +1398,16 @@ subtest 'get account status' => sub {
                                     documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport', 'Residence Permit', 'Visa'],
                                     country_code         => 'AUT',
                                     reported_properties  => {},
+                                    status               => 'none',
                                 },
                                 idv => {
                                     submissions_left    => $idv_limit,
                                     last_rejected       => [],
                                     reported_properties => {},
+                                    status              => 'none',
+                                },
+                                manual => {
+                                    status => 'none',
                                 }}
                         },
                         needs_verification => ["document", "identity"],
@@ -1347,11 +1447,16 @@ subtest 'get account status' => sub {
                                     documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport', 'Residence Permit', 'Visa'],
                                     country_code         => 'AUT',
                                     reported_properties  => {},
+                                    status               => 'none',
                                 },
                                 idv => {
                                     submissions_left    => $idv_limit,
                                     last_rejected       => [],
                                     reported_properties => {},
+                                    status              => 'none',
+                                },
+                                manual => {
+                                    status => 'none',
                                 }}
                         },
                         needs_verification => [],
@@ -1390,11 +1495,16 @@ subtest 'get account status' => sub {
                                     documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport', 'Residence Permit', 'Visa'],
                                     country_code         => 'AUT',
                                     reported_properties  => {},
+                                    status               => 'none',
                                 },
                                 idv => {
                                     submissions_left    => $idv_limit,
                                     last_rejected       => [],
                                     reported_properties => {},
+                                    status              => 'none',
+                                },
+                                manual => {
+                                    status => 'none',
                                 }}
                         },
                         needs_verification => ["document", "identity"],
@@ -1465,11 +1575,16 @@ subtest 'get account status' => sub {
                                         documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport', 'Residence Permit', 'Visa'],
                                         country_code         => 'AUT',
                                         reported_properties  => {},
+                                        status               => 'none',
                                     },
                                     idv => {
                                         submissions_left    => $idv_limit,
                                         last_rejected       => [],
                                         reported_properties => {},
+                                        status              => 'none',
+                                    },
+                                    manual => {
+                                        status => 'none',
                                     }}
                             },
                             needs_verification => superbagof(qw(identity)),
@@ -1526,11 +1641,16 @@ subtest 'get account status' => sub {
                                     ],
                                     country_code        => 'GBR',
                                     reported_properties => {},
+                                    status              => 'none',
                                 },
                                 idv => {
                                     submissions_left    => $idv_limit,
                                     last_rejected       => [],
                                     reported_properties => {},
+                                    status              => 'none',
+                                },
+                                manual => {
+                                    status => 'none',
                                 }}
                         },
                         needs_verification => ["document", "identity"],
@@ -1586,11 +1706,16 @@ subtest 'get account status' => sub {
                                     ],
                                     country_code        => 'GBR',
                                     reported_properties => {},
+                                    status              => 'none',
                                 },
                                 idv => {
                                     submissions_left    => $idv_limit,
                                     last_rejected       => [],
                                     reported_properties => {},
+                                    status              => 'none',
+                                },
+                                manual => {
+                                    status => 'none',
                                 }}
                         },
                         needs_verification => ["document"],
@@ -1639,11 +1764,16 @@ subtest 'get account status' => sub {
                                     ],
                                     country_code        => 'GBR',
                                     reported_properties => {},
+                                    status              => 'none',
                                 },
                                 idv => {
                                     submissions_left    => $idv_limit,
                                     last_rejected       => [],
                                     reported_properties => {},
+                                    status              => 'none',
+                                },
+                                manual => {
+                                    status => 'none',
                                 }}
                         },
                         needs_verification => ["document"],
@@ -1725,11 +1855,16 @@ subtest 'get account status' => sub {
                                         ],
                                         country_code        => 'GBR',
                                         reported_properties => {},
+                                        status              => 'none',
                                     },
                                     idv => {
                                         submissions_left    => $idv_limit,
                                         last_rejected       => [],
                                         reported_properties => {},
+                                        status              => 'none',
+                                    },
+                                    manual => {
+                                        status => 'none',
                                     }}
                             },
                             needs_verification => superbagof(qw(identity)),
@@ -1787,11 +1922,16 @@ subtest 'get account status' => sub {
                                         documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport'],
                                         country_code         => 'IDN',
                                         reported_properties  => {},
+                                        status               => 'none',
                                     },
                                     idv => {
                                         submissions_left    => $idv_limit,
                                         last_rejected       => [],
                                         reported_properties => {},
+                                        status              => 'none',
+                                    },
+                                    manual => {
+                                        status => 'none',
                                     }}
                             },
                             needs_verification => [],
@@ -1862,11 +2002,16 @@ subtest 'get account status' => sub {
                                         documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport'],
                                         country_code         => 'IDN',
                                         reported_properties  => {},
+                                        status               => 'none',
                                     },
                                     idv => {
                                         submissions_left    => $idv_limit,
                                         last_rejected       => [],
                                         reported_properties => {},
+                                        status              => 'none',
+                                    },
+                                    manual => {
+                                        status => 'none',
                                     }}
                             },
                             needs_verification => ["identity"],
@@ -1927,11 +2072,16 @@ subtest 'get account status' => sub {
                                 is_country_supported => 1,
                                 country_code         => 'IDN',
                                 reported_properties  => {},
+                                status               => 'none',
                             },
                             idv => {
                                 submissions_left    => $idv_limit,
                                 last_rejected       => [],
                                 reported_properties => {},
+                                status              => 'none',
+                            },
+                            manual => {
+                                status => 'none',
                             }
                         },
                     },
@@ -1983,11 +2133,16 @@ subtest 'get account status' => sub {
                                         documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport'],
                                         country_code         => 'IDN',
                                         reported_properties  => {},
+                                        status               => 'none',
                                     },
                                     idv => {
                                         submissions_left    => $idv_limit,
                                         last_rejected       => [],
                                         reported_properties => {},
+                                        status              => 'none',
+                                    },
+                                    manual => {
+                                        status => 'none',
                                     }}
                             },
                             needs_verification => ["document"],
@@ -2041,11 +2196,16 @@ subtest 'get account status' => sub {
                                         documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport'],
                                         country_code         => 'IDN',
                                         reported_properties  => {},
+                                        status               => 'none',
                                     },
                                     idv => {
                                         submissions_left    => $idv_limit,
                                         last_rejected       => [],
                                         reported_properties => {},
+                                        status              => 'none',
+                                    },
+                                    manual => {
+                                        status => 'none',
                                     }}
                             },
                             document => {
@@ -2096,11 +2256,16 @@ subtest 'get account status' => sub {
                                     documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport'],
                                     country_code         => 'IDN',
                                     reported_properties  => {},
+                                    status               => 'none',
                                 },
                                 idv => {
                                     submissions_left    => $idv_limit,
                                     last_rejected       => [],
                                     reported_properties => {},
+                                    status              => 'none',
+                                },
+                                manual => {
+                                    status => 'none',
                                 }}
                         },
                         needs_verification => ["document", "identity"],
@@ -2144,11 +2309,16 @@ subtest 'get account status' => sub {
                                     documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport'],
                                     country_code         => 'IDN',
                                     reported_properties  => {},
+                                    status               => 'none',
                                 },
                                 idv => {
                                     submissions_left    => $idv_limit,
                                     last_rejected       => [],
                                     reported_properties => {},
+                                    status              => 'none',
+                                },
+                                manual => {
+                                    status => 'none',
                                 }}
                         },
                         needs_verification => ["identity"],
@@ -2223,11 +2393,16 @@ subtest "Test onfido is_country_supported" => sub {
                             documents_supported  => [],
                             country_code         => 'ATA',
                             reported_properties  => {},
+                            status               => 'none',
                         },
                         idv => {
                             submissions_left    => $idv_limit,
                             last_rejected       => [],
                             reported_properties => {},
+                            status              => 'none',
+                        },
+                        manual => {
+                            status => 'none',
                         }}
                 },
                 needs_verification => [],
@@ -2263,11 +2438,16 @@ subtest "Test onfido is_country_supported" => sub {
                             documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport'],
                             country_code         => 'IDN',
                             reported_properties  => {},
+                            status               => 'none',
                         },
                         idv => {
                             submissions_left    => $idv_limit,
                             last_rejected       => [],
                             reported_properties => {},
+                            status              => 'none',
+                        },
+                        manual => {
+                            status => 'none',
                         }}
                 },
                 needs_verification => [],
@@ -2340,11 +2520,16 @@ subtest 'Experian validated account' => sub {
                                 ],
                                 country_code        => 'GBR',
                                 reported_properties => {},
+                                status              => 'none',
                             },
                             idv => {
                                 submissions_left    => $idv_limit,
                                 last_rejected       => [],
                                 reported_properties => {},
+                                status              => 'none',
+                            },
+                            manual => {
+                                status => 'none',
                             }}
                     },
                     needs_verification => []
@@ -2397,11 +2582,16 @@ subtest 'Experian validated account' => sub {
                                 ],
                                 country_code        => 'GBR',
                                 reported_properties => {},
+                                status              => 'none',
                             },
                             idv => {
                                 submissions_left    => $idv_limit,
                                 last_rejected       => [],
                                 reported_properties => {},
+                                status              => 'none',
+                            },
+                            manual => {
+                                status => 'none',
                             }}
                     },
                     needs_verification => supersetof('identity', 'document'),
@@ -2456,11 +2646,16 @@ subtest 'Experian validated account' => sub {
                                     ],
                                     country_code        => 'GBR',
                                     reported_properties => {},
+                                    status              => 'none',
                                 },
                                 idv => {
                                     submissions_left    => $idv_limit,
                                     last_rejected       => [],
                                     reported_properties => {},
+                                    status              => 'none',
+                                },
+                                manual => {
+                                    status => 'none',
                                 }}
                         },
                         needs_verification => ['identity']
@@ -2519,11 +2714,16 @@ subtest 'Experian validated account' => sub {
                                         ],
                                         country_code        => 'GBR',
                                         reported_properties => {},
+                                        status              => 'none',
                                     },
                                     idv => {
                                         submissions_left    => $idv_limit,
                                         last_rejected       => [],
                                         reported_properties => {},
+                                        status              => 'none',
+                                    },
+                                    manual => {
+                                        status => 'none',
                                     }}
                             },
                             needs_verification => [],
@@ -2588,11 +2788,16 @@ subtest 'Experian validated account' => sub {
                                     ],
                                     country_code        => 'GBR',
                                     reported_properties => {},
+                                    status              => 'pending',
                                 },
                                 idv => {
                                     submissions_left    => $idv_limit,
                                     last_rejected       => [],
                                     reported_properties => {},
+                                    status              => 'none',
+                                },
+                                manual => {
+                                    status => 'none',
                                 }}
                         },
                         needs_verification => [],
@@ -2605,6 +2810,21 @@ subtest 'Experian validated account' => sub {
             $mocked_onfido->unmock_all;
 
             subtest 'Onfido docs are accepted' => sub {
+                my $mocked_onfido = Test::MockModule->new('BOM::User::Onfido');
+                my $onfido_document_status;
+
+                $mocked_onfido->mock(
+                    'get_latest_check',
+                    sub {
+                        return {
+                            report_document_status     => $onfido_document_status,
+                            report_document_sub_result => undef,
+                            user_check                 => {
+                                result => 'clear',
+                            }};
+                    });
+
+                $onfido_document_status = 'complete';
                 $test_client_experian->status->upsert('age_verification', 'system', 'Onfido - age verified');
 
                 my $result = $c->tcall($method, {token => $token_client_experian});
@@ -2645,11 +2865,16 @@ subtest 'Experian validated account' => sub {
                                         ],
                                         country_code        => 'GBR',
                                         reported_properties => {},
+                                        status              => 'verified',
                                     },
                                     idv => {
                                         submissions_left    => $idv_limit,
                                         last_rejected       => [],
                                         reported_properties => {},
+                                        status              => 'none',
+                                    },
+                                    manual => {
+                                        status => 'none',
                                     }}
                             },
                             needs_verification => []
@@ -2660,7 +2885,22 @@ subtest 'Experian validated account' => sub {
                 );
             };
 
+            $mocked_onfido->unmock_all;
+
             subtest 'Onfido docs expired' => sub {
+                my $onfido_document_status;
+                $mocked_onfido->mock(
+                    'get_latest_check',
+                    sub {
+                        return {
+                            report_document_status     => $onfido_document_status,
+                            report_document_sub_result => undef,
+                            user_check                 => {
+                                result => 'clear',
+                            }};
+                    });
+
+                $onfido_document_status = 'complete';
                 my $mocked_client = Test::MockModule->new(ref($test_client_experian));
                 $documents_uploaded = {
                     proof_of_identity => {
@@ -2718,11 +2958,16 @@ subtest 'Experian validated account' => sub {
                                         ],
                                         country_code        => 'GBR',
                                         reported_properties => {},
+                                        status              => 'expired',
                                     },
                                     idv => {
                                         submissions_left    => $idv_limit,
                                         last_rejected       => [],
                                         reported_properties => {},
+                                        status              => 'none',
+                                    },
+                                    manual => {
+                                        status => 'none',
                                     }}
                             },
                             needs_verification => ['identity'],
@@ -2731,9 +2976,10 @@ subtest 'Experian validated account' => sub {
                     },
                     'Former Experian validated high risk account has expired status after Onfido upload and docs expired'
                 );
-
                 $mocked_client->unmock_all;
             };
+
+            $mocked_onfido->unmock_all;
         };
     };
 };
@@ -2759,7 +3005,22 @@ subtest 'Rejected reasons' => sub {
     my $onfido_mock = Test::MockModule->new('BOM::User::Onfido');
     my $poi_status  = 'rejected';
     my $poi_name_mismatch;
-    my $reasons = [];
+    my $reasons       = [];
+    my $mocked_onfido = Test::MockModule->new('BOM::User::Onfido');
+    my $onfido_document_sub_result;
+    my $onfido_check_result;
+
+    $onfido_mock->mock(
+        'get_latest_check',
+        sub {
+            return {
+                report_document_status     => 'complete',
+                report_document_sub_result => $onfido_document_sub_result,
+                user_check                 => {
+                    result => $onfido_check_result,
+                },
+            };
+        });
 
     $onfido_mock->mock(
         'get_consider_reasons',
@@ -2770,6 +3031,11 @@ subtest 'Rejected reasons' => sub {
     my $client_mock = Test::MockModule->new('BOM::User::Client');
     $client_mock->mock(
         'get_poi_status',
+        sub {
+            return $poi_status;
+        });
+    $client_mock->mock(
+        'get_onfido_status',
         sub {
             return $poi_status;
         });
@@ -2845,7 +3111,7 @@ subtest 'Rejected reasons' => sub {
         reasons           => [],
         expected          => [],
         test              => 'From our rules (poi_name_mismatch => undef)',
-        poi_status        => 'verified',
+        poi_status        => 'expired',
         poi_name_mismatch => undef,
         };
 
@@ -2854,8 +3120,20 @@ subtest 'Rejected reasons' => sub {
         $poi_status        = $test->{poi_status};
         $poi_name_mismatch = $test->{poi_name_mismatch};
 
+        if ($poi_status eq 'rejected') {
+            $onfido_document_sub_result = 'rejected';
+            $onfido_check_result        = 'consider';
+        } elsif ($poi_status eq 'suspected') {
+            $onfido_document_sub_result = 'suspected';
+            $onfido_check_result        = 'consider';
+        } elsif ($poi_status eq 'verified') {
+            $onfido_document_sub_result = undef;
+            $onfido_check_result        = 'clear';
+        }
+
         my $result        = $c->tcall($method, {token => $token_rejected});
         my $last_rejected = $result->{authentication}->{identity}->{services}->{onfido}->{last_rejected};
+        is $result->{authentication}->{identity}->{services}->{onfido}->{status}, $poi_status, "Got expected onfido status=$poi_status";
         cmp_deeply($last_rejected, $test->{expected}, $test->{test});
     }
 
@@ -3017,11 +3295,16 @@ subtest 'Social identity provider' => sub {
                             documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport'],
                             country_code         => 'IDN',
                             reported_properties  => {},
+                            status               => 'none',
                         },
                         idv => {
                             submissions_left    => $idv_limit,
                             last_rejected       => [],
                             reported_properties => {},
+                            status              => 'none',
+                        },
+                        manual => {
+                            status => 'none',
                         }
                     },
                     status => 'none'
