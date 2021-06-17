@@ -458,6 +458,17 @@ common:
       50: 0
       100: 0
       200: 0
+  WLDXAU:
+    multiplier_range: [15, 30, 50, 75, 150]
+    commission: 0.0003
+    cancellation_commission: 0.05
+    cancellation_duration_range: []
+    stop_out_level:
+      15: 0
+      30: 0
+      50: 0
+      75: 0
+      150: 0
   cryBTCUSD: &crypto_large_cap
     multiplier_range: [10, 20, 30, 40, 50]
     commission: 0.001
