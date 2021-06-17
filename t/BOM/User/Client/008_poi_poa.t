@@ -1534,4 +1534,199 @@ subtest 'Ignore address verification' => sub {
     $mocked_status->unmock_all;
 };
 
+subtest 'Onfido status' => sub {
+    my $test_client = BOM::User::Client->rnew(
+        broker_code => 'CR',
+        residence   => 'br',
+        citizen     => 'br',
+        email       => 'onfido-status@email.com',
+        loginid     => 'CR1317189'
+    );
+
+    my $mocked_onfido = Test::MockModule->new('BOM::User::Onfido');
+    my $mocked_config = Test::MockModule->new('BOM::Config::Onfido');
+    my $mocked_client = Test::MockModule->new('BOM::User::Client');
+
+    my $is_supported_country;
+    $mocked_config->mock(
+        'is_country_supported',
+        sub {
+            return $is_supported_country;
+        });
+
+    my ($onfido_document_status, $onfido_sub_result, $onfido_check_result);
+    $mocked_onfido->mock(
+        'get_latest_check',
+        sub {
+            return {
+                report_document_status     => $onfido_document_status,
+                report_document_sub_result => $onfido_sub_result,
+                user_check                 => {
+                    result => $onfido_check_result,
+                },
+            };
+        });
+
+    my $docs;
+    $mocked_client->mock(
+        'documents_uploaded',
+        sub {
+            return {proof_of_identity => $docs};
+        });
+
+    my $tests = [{
+            is_supported_country => 0,
+            status               => 'none'
+        },
+        {
+            # note this beautiful status equivalence when all variables are nullified
+            is_supported_country => 1,
+            status               => 'none'
+        },
+        {
+            is_supported_country   => 1,
+            onfido_document_status => 'in_progress',
+            status                 => 'pending'
+        },
+        {
+            is_supported_country   => 1,
+            onfido_document_status => 'awaiting_applicant',
+            status                 => 'pending'
+        },
+        {
+            is_supported_country   => 1,
+            onfido_document_status => 'complete',
+            onfido_check_result    => 'clear',
+            docs                   => {
+                is_expired => 1,
+            },
+            status => 'expired'
+        },
+        {
+            is_supported_country   => 1,
+            onfido_document_status => 'complete',
+            onfido_check_result    => 'clear',
+            docs                   => {
+                is_expired => 0,
+            },
+            status => 'verified'
+        },
+        {
+            is_supported_country   => 1,
+            onfido_document_status => 'complete',
+            onfido_check_result    => 'consider',
+            onfido_sub_result      => 'suspected',
+            status                 => 'suspected'
+        },
+        {
+            is_supported_country   => 1,
+            onfido_document_status => 'complete',
+            onfido_check_result    => 'consider',
+            onfido_sub_result      => 'suspected',
+            status                 => 'suspected'
+        },
+        {
+            is_supported_country   => 1,
+            onfido_document_status => 'complete',
+            onfido_check_result    => 'consider',
+            onfido_sub_result      => 'rejected',
+            status                 => 'rejected'
+        },
+        {
+            is_supported_country   => 1,
+            onfido_document_status => 'complete',
+            onfido_check_result    => 'consider',
+            onfido_sub_result      => 'caution',
+            status                 => 'rejected'
+        }];
+
+    for my $test ($tests->@*) {
+        my $status;
+
+        ($is_supported_country, $onfido_document_status, $onfido_check_result, $onfido_sub_result, $docs, $status) =
+            @{$test}{qw/is_supported_country onfido_document_status onfido_check_result onfido_sub_result docs status/};
+
+        is $test_client->get_onfido_status, $status, "Got the expected status=$status";
+    }
+
+    $mocked_onfido->unmock_all;
+    $mocked_config->unmock_all;
+    $mocked_client->unmock_all;
+};
+
+subtest 'Manual POI status' => sub {
+    my $test_client = BOM::User::Client->rnew(
+        broker_code => 'CR',
+        residence   => 'br',
+        citizen     => 'br',
+        email       => 'manual-poi-status@email.com',
+        loginid     => 'CR1317184'
+    );
+
+    my $mocked_config = Test::MockModule->new('BOM::Config::Onfido');
+    my $mocked_client = Test::MockModule->new('BOM::User::Client');
+    my $mocked_status = Test::MockModule->new('BOM::User::Client::Status');
+
+    my $age_verification;
+    $mocked_status->mock(
+        'age_verification',
+        sub {
+            return $age_verification;
+        });
+
+    my $is_supported_country;
+    $mocked_config->mock(
+        'is_country_supported',
+        sub {
+            return $is_supported_country;
+        });
+
+    my ($is_expired, $is_pending);
+    $mocked_client->mock(
+        'documents_uploaded',
+        sub {
+            return {
+                proof_of_identity => {
+                    is_expired => $is_expired,
+                    is_pending => $is_pending,
+                },
+            };
+        });
+
+    my $tests = [{
+            is_country_supported => 1,
+            status               => 'none',
+        },
+        {
+            is_pending => 1,
+            status     => 'pending',
+        },
+        {
+            is_expired => 1,
+            status     => 'expired',
+        },
+        {
+            age_verification => 1,
+            status           => 'verified',
+        },
+        {
+            # it keeps happening
+            is_country_supported => 0,
+            status               => 'none',
+        }];
+
+    for my $test ($tests->@*) {
+        my $status;
+
+        ($is_expired, $is_pending, $is_supported_country, $age_verification, $status) =
+            @{$test}{qw/is_expired is_pending is_supported_country age_verification status/};
+
+        is $test_client->get_manual_poi_status, $status, "Got the expected status=$status";
+    }
+
+    $mocked_status->unmock_all;
+    $mocked_config->unmock_all;
+    $mocked_client->unmock_all;
+};
+
 done_testing();

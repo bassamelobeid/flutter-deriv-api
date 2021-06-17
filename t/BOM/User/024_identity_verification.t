@@ -29,4 +29,8 @@ subtest 'Reported properties' => sub {
     cmp_deeply $idv->reported_properties, {}, 'Expected reported properties';
 };
 
+subtest 'Status' => sub {
+    cmp_deeply $idv->status, 'none', 'Expected status';
+};
+
 done_testing();

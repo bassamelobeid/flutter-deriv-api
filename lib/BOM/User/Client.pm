@@ -5765,7 +5765,7 @@ It takes the following params:
 =back
 
 Returns,
-    string for the current POA status, it can be: none, expired, pending, rejected, suspected, verified.
+    string for the current POI status, it can be: none, expired, pending, rejected, suspected, verified.
 
 =cut
 
@@ -5809,6 +5809,92 @@ sub get_poi_status {
     return 'pending' if $is_poi_pending;
 
     return 'expired' if $is_poi_already_expired;
+
+    return 'none';
+}
+
+=head2 get_onfido_status
+
+Gets the current Onfido status of the client. This is an Onfido-only analysis, may vary from
+the actual POI status of the client.
+
+=over 4
+
+=item * C<documents> hashref containing the client documents by type (optional)
+
+=back
+
+Returns,
+    string for the current Onfido status, it can be: none, expired, pending, rejected, suspected, verified.
+
+=cut
+
+sub get_onfido_status {
+    my ($self, $documents) = @_;
+    my $country_code = uc($self->place_of_birth || $self->residence // '');
+    return 'none' unless BOM::Config::Onfido::is_country_supported($country_code);
+
+    my $onfido = BOM::User::Onfido::get_latest_check($self);
+    my ($check, $report_document_status, $report_document_sub_result) = @{$onfido}{qw/user_check report_document_status report_document_sub_result/};
+    my $check_result = $check->{result} // '';
+    $report_document_status     //= '';
+    $report_document_sub_result //= '';
+
+    return 'pending' if any { $_ eq $report_document_status } qw/in_progress awaiting_applicant/;
+
+    # Note that `expired` would be indistinguishable from the manual `expired` status
+    # but we will do some cheeky stuff to get a more accurate result. Basically,
+    # we are gonna flag `expired` if the documents are expired + we got a clear Onfido result
+    # (it would yield verified otherwise). Far from perfect but better than null.
+
+    if ($check_result eq 'clear') {
+        $documents //= $self->documents_uploaded();
+
+        my $is_poi_already_expired = $documents->{proof_of_identity}->{is_expired};
+
+        return 'expired' if $is_poi_already_expired;
+
+        return 'verified' if $check_result eq 'clear';
+    }
+
+    return 'suspected' if $report_document_sub_result eq 'suspected';
+
+    return 'rejected' if any { $_ eq $report_document_sub_result } qw/rejected caution/;
+
+    return 'none';
+}
+
+=head2 get_manual_poi_status
+
+Gets the current manual POI status of the client. This would only apply to Onfido unsupported
+countries, although due to the monolithic implementation we may share some status across both.
+This may vary from the actual client POI status.
+
+=over 4
+
+=item * C<documents> hashref containing the client documents by type (optional)
+
+=back
+
+Returns,
+    string for the current manual POI status, it can be: none, expired, pending, verified.
+
+=cut
+
+sub get_manual_poi_status {
+    my ($self, $documents) = @_;
+    my $country_code = uc($self->place_of_birth || $self->residence // '');
+    return 'none' if BOM::Config::Onfido::is_country_supported($country_code);
+    $documents //= $self->documents_uploaded();
+
+    my ($is_poi_already_expired, $is_poi_pending) =
+        $documents->{proof_of_identity}->@{qw/is_expired is_pending/};
+
+    return 'pending' if $is_poi_pending;
+
+    return 'expired' if $is_poi_already_expired;
+
+    return 'verified' if $self->status->age_verification;
 
     return 'none';
 }

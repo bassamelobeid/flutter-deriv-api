@@ -85,4 +85,17 @@ sub reported_properties {
     return {};    # TODO: proper implementation
 }
 
+=head2 status
+
+Computes the current IDV status, to avoid API inconsistency we should map whatever
+status we are storing in the database to: none, expired, pending, rejected, suspected, verified.
+
+Returns the mapped status. 
+
+=cut
+
+sub status {
+    return 'none';    # TODO: proper implementation
+}
+
 1;
