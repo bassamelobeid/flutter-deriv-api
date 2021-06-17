@@ -64,6 +64,7 @@ is_deeply $res->{residence_list}->[104], {
 
                 },
                 is_country_supported => 0,
+                has_visual_sample    => 0,
             },
             onfido => {
                 documents_supported  => {passport => {display_name => 'Passport'}},
