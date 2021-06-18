@@ -2787,12 +2787,12 @@ async sub shared_payment_method_found {
     $client->status->setnx('cashier_locked', $args->{staff}, 'Shared payment method found');
     $client->status->upsert('shared_payment_method', $args->{staff}, _shared_payment_reason($client, $shared_loginid));
     # This may be dropped when POI/POA refactoring is done
-    $client->status->setnx('allow_document_upload', $args->{staff}, 'Shared payment method found') unless $client->status->age_verification;
+    $client->status->upsert('allow_document_upload', $args->{staff}, 'Shared payment method found') unless $client->status->age_verification;
 
     $shared->status->setnx('cashier_locked', $args->{staff}, 'Shared payment method found');
     $shared->status->upsert('shared_payment_method', $args->{staff}, _shared_payment_reason($shared, $client_loginid));
     # This may be dropped when POI/POA refactoring is done
-    $shared->status->setnx('allow_document_upload', $args->{staff}, 'Shared payment method found') unless $shared->status->age_verification;
+    $shared->status->upsert('allow_document_upload', $args->{staff}, 'Shared payment method found') unless $shared->status->age_verification;
 
     # Send email to both clients
     _send_shared_payment_method_email($client);
