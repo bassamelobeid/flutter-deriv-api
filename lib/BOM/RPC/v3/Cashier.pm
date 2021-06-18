@@ -1932,7 +1932,7 @@ sub _validate_transfer_between_accounts {
 
         if ($is_over_transfer_limit) {
 
-            $current_client->status->setnx('allow_document_upload', 'system', 'FIAT_TO_CRYPTO_TRANSFER_OVERLIMIT');
+            $current_client->status->upsert('allow_document_upload', 'system', 'FIAT_TO_CRYPTO_TRANSFER_OVERLIMIT');
 
             my $message_to_client = localize(
                 'You have exceeded [_1] [_2] in cumulative transactions. To continue, you will need to verify your identity.',

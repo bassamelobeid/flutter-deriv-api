@@ -815,11 +815,11 @@ async_rpc "mt5_new_account",
     if ($account_type ne 'demo' && $mt5_compliance_requirements{fully_authenticated}) {
         if ($client->fully_authenticated) {
             if ($mt5_compliance_requirements{expiration_check} && $client->documents->expired(1)) {
-                $client->status->setnx('allow_document_upload', 'system', 'MT5_ACCOUNT_IS_CREATED');
+                $client->status->upsert('allow_document_upload', 'system', 'MT5_ACCOUNT_IS_CREATED');
                 return create_error_future('ExpiredDocumentsMT5', {params => $client->loginid});
             }
         } else {
-            $client->status->setnx('allow_document_upload', 'system', 'MT5_ACCOUNT_IS_CREATED');
+            $client->status->upsert('allow_document_upload', 'system', 'MT5_ACCOUNT_IS_CREATED');
             return create_error_future('AuthenticateAccount', {params => $client->loginid});
         }
     }
