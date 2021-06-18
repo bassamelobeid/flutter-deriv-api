@@ -374,7 +374,8 @@ get clients given special landing company short name.
 sub clients_for_landing_company {
     my $self      = shift;
     my $lc_short  = shift // die 'need landing_company';
-    my @login_ids = $self->bom_loginids;
+    my @login_ids = grep { LandingCompany::Registry->check_valid_broker_short_code($self->broker_code_from_loginid($_)) } $self->bom_loginids;
+
     return map { $self->get_client_using_replica($_) }
         grep { LandingCompany::Registry->get_by_loginid($_)->short eq $lc_short } @login_ids;
 }
@@ -576,6 +577,12 @@ sub accounts_by_category {
 
     my (@enabled_accounts_fiat, @enabled_accounts_crypto, @virtual_accounts, @self_excluded_accounts, @disabled_accounts, @duplicated_accounts);
     foreach my $loginid (sort @$loginid_list) {
+        # deleted broker code/not existing broker code then skip it to avoid couldn't init_db issue
+        unless (LandingCompany::Registry->check_valid_broker_short_code($self->broker_code_from_loginid($loginid))) {
+            $log->warnf("Invalid login id $loginid");
+            next;
+        }
+
         my $cl = $self->get_client_using_replica($loginid);
         next unless $cl;
 
@@ -1336,6 +1343,32 @@ sub get_account_by_loginid {
         display_balance => $account            ? formatnumber('amount', $account->currency_code, $account->balance) : '0.00',
         platform        => 'deriv',
     };
+}
+
+=head2 broker_code_from_loginid
+
+    $user->broker_code_from_loginid($loginid);
+
+Get the broker short code from login id
+
+Takes the following parameter
+
+=over 4
+
+=item * C<loginid>
+
+=back
+
+Returns broker code
+
+=cut
+
+sub broker_code_from_loginid {
+    my ($self, $loginid) = @_;
+
+    my ($broker_code) = $loginid =~ /^([A-Z]+)[0-9]+$/;
+
+    return $broker_code;
 }
 
 =head2 linked_wallet
