@@ -1369,6 +1369,150 @@ subtest 'Forward starting contract with old entry tick' => sub {
     };
 };
 
+subtest 'a path dependent contract for AUD, NZD and JPY forex pairs cannot be purchase during DST rollover time' => sub {
+    my $datetime   = Date::Utility->new('2013-03-27 21:00:34');
+    my $underlying = create_underlying('frxAUDUSD');
+    my $starting   = $datetime->epoch;
+
+    my $tick_params = {
+        symbol => 'frxAUDUSD',
+        epoch  => $datetime->epoch,
+        quote  => 100
+    };
+    my $tick2 = Postgres::FeedDB::Spot::Tick->new($tick_params);
+
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+        'volsurface_delta',
+        {
+            symbol        => 'frxAUDUSD',
+            recorded_date => $datetime,
+        });
+
+    my $bet_params = {
+        underlying   => $underlying,
+        bet_type     => 'ONETOUCH',
+        currency     => 'USD',
+        payout       => 100,
+        date_start   => $datetime->epoch,
+        date_pricing => $datetime->epoch,
+        duration     => '6h',
+        barrier      => '110',
+        current_tick => $tick2,
+    };
+
+    my $bet              = produce_contract($bet_params);
+    my $expected_reasons = [qr/Trading not available for rollover time/];
+
+    test_error_list('buy', $bet, $expected_reasons);
+};
+
+subtest 'a path dependent contract for AUD, NZD and JPY forex pairs cannot be purchase during non-DST rollover time' => sub {
+    my $datetime   = Date::Utility->new('2013-02-11 22:00:34');
+    my $underlying = create_underlying('frxAUDUSD');
+    my $starting   = $datetime->epoch;
+
+    my $tick_params = {
+        symbol => 'frxAUDUSD',
+        epoch  => $datetime->epoch,
+        quote  => 100
+    };
+    my $tick2 = Postgres::FeedDB::Spot::Tick->new($tick_params);
+
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+        'volsurface_delta',
+        {
+            symbol        => 'frxAUDUSD',
+            recorded_date => $datetime,
+        });
+
+    my $bet_params = {
+        underlying   => $underlying,
+        bet_type     => 'ONETOUCH',
+        currency     => 'USD',
+        payout       => 100,
+        date_start   => $datetime->epoch,
+        date_pricing => $datetime->epoch,
+        duration     => '6h',
+        barrier      => '110',
+        current_tick => $tick2,
+    };
+
+    my $bet              = produce_contract($bet_params);
+    my $expected_reasons = [qr/Trading not available for rollover time/];
+
+    test_error_list('buy', $bet, $expected_reasons);
+};
+
+subtest 'a path dependent contract EXCEPT for AUD, NZD and JPY forex pairs can be purchase during DST rollover time' => sub {
+    my $datetime   = Date::Utility->new('2013-03-27 21:00:34');
+    my $underlying = create_underlying('frxEURUSD');
+    my $starting   = $datetime->epoch;
+
+    my $tick_params = {
+        symbol => 'frxEURUSD',
+        epoch  => $datetime->epoch,
+        quote  => 100
+    };
+    my $tick2 = Postgres::FeedDB::Spot::Tick->new($tick_params);
+
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+        'volsurface_delta',
+        {
+            symbol        => 'frxEURUSD',
+            recorded_date => $datetime,
+        });
+
+    my $bet_params = {
+        underlying   => $underlying,
+        bet_type     => 'ONETOUCH',
+        currency     => 'USD',
+        payout       => 100,
+        date_start   => $datetime->epoch,
+        date_pricing => $datetime->epoch,
+        duration     => '6h',
+        barrier      => '110',
+        current_tick => $tick2,
+    };
+
+    my $bet = produce_contract($bet_params);
+    ok($bet->is_valid_to_buy, 'Valid for purchase');
+};
+
+subtest 'a path dependent contract EXCEPT for AUD, NZD and JPY forex pairs can be purchase during non-DST rollover time' => sub {
+    my $datetime   = Date::Utility->new('2013-02-11 22:00:34');
+    my $underlying = create_underlying('frxEURUSD');
+    my $starting   = $datetime->epoch;
+
+    my $tick_params = {
+        symbol => 'frxEURUSD',
+        epoch  => $datetime->epoch,
+        quote  => 100
+    };
+    my $tick2 = Postgres::FeedDB::Spot::Tick->new($tick_params);
+
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+        'volsurface_delta',
+        {
+            symbol        => 'frxEURUSD',
+            recorded_date => $datetime,
+        });
+
+    my $bet_params = {
+        underlying   => $underlying,
+        bet_type     => 'ONETOUCH',
+        currency     => 'USD',
+        payout       => 100,
+        date_start   => $datetime->epoch,
+        date_pricing => $datetime->epoch,
+        duration     => '6h',
+        barrier      => '110',
+        current_tick => $tick2,
+    };
+
+    my $bet = produce_contract($bet_params);
+    ok($bet->is_valid_to_buy, 'Valid for purchase');
+};
+
 my $counter = 0;
 
 sub test_error_list {

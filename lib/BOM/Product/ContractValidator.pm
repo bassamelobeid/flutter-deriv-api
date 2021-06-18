@@ -5,6 +5,7 @@ use warnings;
 
 use Time::HiRes;
 use Date::Utility;
+use Quant::Framework::VolSurface::Utils qw(is_within_rollover_period);
 use List::Util qw(any first uniq);
 
 use LandingCompany::Registry;
@@ -752,6 +753,20 @@ sub _validate_start_and_expiry_date {
 # we are blocking sellback on non-atm forex from volsurface rollover to midnight
 sub _validate_rollover_blackout {
     my $self = shift;
+
+    # This is for disabling trading on path dependent contracts for AUD, NZD and JPY forex pairs during rollover time
+    if (   $self->underlying->market->name eq 'forex'
+        && $self->is_path_dependent
+        && $self->underlying->symbol =~ /AUD|NZD|JPY/)
+    {
+        if (is_within_rollover_period($self->date_pricing)) {
+            return {
+                message           => "Trading not available for rollover time",
+                message_to_client => [$ERROR_MAPPING->{TradeTemporarilyUnavailable}],
+                details           => {field => ''},
+            };
+        }
+    }
 
     return if $self->underlying->market->name ne 'forex' || $self->is_atm_bet;
     return if not $self->for_sale;
