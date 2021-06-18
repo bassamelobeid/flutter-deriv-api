@@ -383,7 +383,8 @@ sub print_client_details {
 
     my $docs = [];
     unless ($client->is_virtual) {
-        for my $sibling_loginid ($user->loginids) {
+        my @siblings = grep { LandingCompany::Registry->check_valid_broker_short_code($user->broker_code_from_loginid($_)) } $user->loginids;
+        for my $sibling_loginid (@siblings) {
             next if $sibling_loginid =~ /^(MT|DX)[DR]?/;
 
             my $dbic = BOM::Database::ClientDB->new({
@@ -1679,11 +1680,12 @@ sub get_client_details {
 
     my $user = $client->user;
     my @user_clients;
+    my $broker_code;
     push @user_clients, $client;
     foreach my $login_id ($user->bom_loginids) {
         next if ($login_id eq $client->loginid);
-
-        push @user_clients, BOM::User::Client->new({loginid => $login_id});
+        $broker_code = $user->broker_code_from_loginid($login_id);
+        push @user_clients, BOM::User::Client->new({loginid => $login_id}) if (LandingCompany::Registry->check_valid_broker_short_code($broker_code));
     }
 
     my $loginid_details = $user->loginid_details;

@@ -25,6 +25,7 @@ use BOM::Database::ClientDB;
 use BOM::Database::UserDB;
 use BOM::DualControl;
 use BOM::User::AuditLog;
+use Log::Any qw($log);
 
 BOM::Backoffice::Sysinit::init();
 
@@ -76,9 +77,13 @@ my @bom_login_ids = $user->bom_loginids();
 my @dx_logins_ids = $user->get_trading_platform_loginids('dxtrader');
 my @bom_logins;
 
-foreach my $lid (sort @bom_login_ids) {
-    my $client = BOM::User::Client->new({loginid => $lid});
+foreach my $login_id (sort @bom_login_ids) {
+    unless (LandingCompany::Registry->check_valid_broker_short_code($user->broker_code_from_loginid($login_id))) {
+        $log->warnf("Invalid login id $login_id");
+        next;
+    }
 
+    my $client = BOM::User::Client->new({loginid => $login_id});
     my $formatted_balance;
     unless ($client->default_account) {
         $formatted_balance = '--- no currency selected';
@@ -92,7 +97,7 @@ foreach my $lid (sort @bom_login_ids) {
 
     push @bom_logins,
         {
-        text     => encode_entities($lid),
+        text     => encode_entities($login_id),
         balance  => $formatted_balance,
         currency => ' (' . ($client->default_account ? $client->default_account->currency_code : 'No currency selected') . ')',
         style    => ($client->status->disabled ? ' class="error"' : '')};
@@ -147,8 +152,13 @@ if ($email ne $new_email) {
 
         $user->update_email_fields(email => $new_email);
 
-        foreach my $lid ($user->bom_loginids) {
-            my $client_obj = BOM::User::Client->new({loginid => $lid});
+        foreach my $login_id ($user->bom_loginids) {
+            unless (LandingCompany::Registry->check_valid_broker_short_code($user->broker_code_from_loginid($login_id))) {
+                $log->warnf("Invalid login id $login_id");
+                next;
+            }
+
+            my $client_obj = BOM::User::Client->new({loginid => $login_id});
             $client_obj->email($new_email);
             $client_obj->save;
         }
