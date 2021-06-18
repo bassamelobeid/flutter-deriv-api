@@ -1049,7 +1049,7 @@ sub show_client_id_docs {
         $doc->{category_idx} =
             ($doc->{document_type} && $doc_types_categories{$doc->{document_type}})
             ? $doc_types_categories{$doc->{document_type}}{index}
-            : $doc_types_categories{other}{index};
+            : $doc_types_categories{others}{index};
     }
 
     # sort by category then by issue date and expiration date descending
@@ -1073,7 +1073,7 @@ sub show_client_id_docs {
             my $category_title = (
                 ($doc_types_categories{$document_type} && $doc_types_categories{$document_type}{title})
                 ? $doc_types_categories{$document_type}{title}
-                : $doc_types_categories{other}{title}) . ":";
+                : $doc_types_categories{others}{title}) . ":";
             $links .= qq(<tr><th colspan='9' class='left'>$category_title</th></tr>);
         }
         $last_category_idx = $category_idx;
