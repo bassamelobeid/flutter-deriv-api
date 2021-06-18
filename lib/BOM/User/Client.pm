@@ -420,7 +420,7 @@ sub set_authentication {
                     and $cli->landing_company->short eq 'iom'
                     and $cli->status->unwelcome);
             } elsif ($status eq 'needs_action' and not $cli->status->allow_document_upload) {
-                $cli->status->set('allow_document_upload', 'system', 'Allow client to document upload');
+                $cli->status->upsert('allow_document_upload', 'system', 'MARKED_AS_NEEDS_ACTION');
             }
             $cli->save;
         }
@@ -472,7 +472,7 @@ sub sync_authentication_from_siblings {
                             and $self->landing_company->short eq 'iom'
                             and $self->status->unwelcome);
                     } elsif ($status eq 'needs_action') {
-                        $self->status->set('allow_document_upload', 'system', 'Allow client to document upload')
+                        $self->status->upsert('allow_document_upload', 'system', 'MARKED_AS_NEEDS_ACTION')
                             if not $cli->status->allow_document_upload;
                     }
                     $self->save;
@@ -2070,7 +2070,7 @@ sub p2p_advertiser_create {
         });
 
     unless ($self->status->age_verification or $self->status->allow_document_upload) {
-        $self->status->set('allow_document_upload', 'system', 'P2P_ADVERTISER_CREATED');
+        $self->status->upsert('allow_document_upload', 'system', 'P2P_ADVERTISER_CREATED');
     }
 
     my $details = $self->_advertiser_details($advertiser);
