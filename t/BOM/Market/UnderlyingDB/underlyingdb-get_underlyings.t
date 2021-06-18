@@ -94,7 +94,7 @@ eq_or_diff [
     "Correct list of endsinout for forex+indices on real accounts";
 
 my @ul_forex_active = sort qw(
-    WLDAUD    WLDEUR    WLDGBP    WLDUSD
+    WLDAUD    WLDEUR    WLDGBP    WLDUSD WLDXAU
     frxAUDJPY frxAUDUSD frxEURAUD frxEURCAD frxEURCHF frxEURGBP frxEURJPY
     frxEURUSD frxGBPAUD frxGBPCAD frxGBPCHF frxGBPJPY frxGBPNOK frxGBPPLN
     frxGBPUSD frxNZDUSD frxUSDCAD frxUSDCHF frxUSDJPY frxUSDNOK
