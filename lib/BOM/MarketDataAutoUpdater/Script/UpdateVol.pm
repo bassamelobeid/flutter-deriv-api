@@ -17,13 +17,15 @@ use BOM::MarketDataAutoUpdater::Forex;
 use BOM::MarketDataAutoUpdater::Indices;
 use BOM::MarketDataAutoUpdater::Flat;
 use Getopt::Long qw(GetOptions :config no_auto_abbrev no_ignore_case);
+use Quant::Framework::VolSurface::Utils qw(is_within_rollover_period);
 
 sub documentation {
     return 'updates volatility surfaces.';
 }
 
 sub script_run {
-    my $self = shift;
+    my $self     = shift;
+    my $datetime = Date::Utility->new();
 
     # su nobody
     unless ($>) {
@@ -42,7 +44,12 @@ sub script_run {
 
     my ($class);
     if ($opt eq 'forex') {
-        $class = 'BOM::MarketDataAutoUpdater::Forex';
+        if (is_within_rollover_period($datetime)) {
+            die "Forex vol surface is currently not being updated";
+
+        } else {
+            $class = 'BOM::MarketDataAutoUpdater::Forex';
+        }
     } elsif ($opt eq 'indices') {
         $class = 'BOM::MarketDataAutoUpdater::Indices';
     } elsif ($opt eq 'flat') {
