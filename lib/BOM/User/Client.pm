@@ -2458,6 +2458,8 @@ sub p2p_order_create {
 
     my $advertiser_info = $self->_p2p_advertisers(id => $advert_info->{advertiser_id})->[0];
 
+    $amount = financialrounding('amount', $self->currency, $amount);
+
     my $limit_remaining = $advertiser_info->{'daily_' . $advert_type . '_limit'} - $advertiser_info->{'daily_' . $advert_type};
     die +{
         error_code     => 'OrderMaximumTempExceeded',

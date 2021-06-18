@@ -875,4 +875,22 @@ subtest 'payment validation' => sub {
     BOM::Test::Helper::P2P::reset_escrow();
 };
 
+subtest 'amount rounding' => sub {
+    BOM::Test::Helper::P2P::create_escrow();
+    my ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert(type => 'sell');
+    my $client = BOM::Test::Helper::P2P::create_advertiser(balance => 1000);
+    my $order;
+
+    is exception {
+        $order = $client->p2p_order_create(
+            advert_id => $advert->{id},
+            amount    => 10.123,
+        )
+    }, undef, 'can create an order with amount of excessive precision';
+
+    is $order->{amount}, '10.12', 'amount was rounded';
+
+    BOM::Test::Helper::P2P::reset_escrow();
+};
+
 done_testing();
