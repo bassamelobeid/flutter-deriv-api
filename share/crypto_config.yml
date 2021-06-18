@@ -18,6 +18,7 @@ BTC:
             url: https://api.blockcypher.com/v1/btc/main
             methods:
                 fee: /
+                tx: /txs/
 LTC:
     withdrawal:
         timeout: "3d"
@@ -38,6 +39,7 @@ LTC:
             url: https://api.blockcypher.com/v1/ltc/main
             methods:
                 fee: /
+                txs: /txs/
 ETH:
     withdrawal:
         timeout: "5d"
