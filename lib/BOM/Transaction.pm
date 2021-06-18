@@ -21,6 +21,7 @@ use Finance::Asset::Market::Types;
 use Finance::Contract::Category;
 use Format::Util::Numbers qw/formatnumber financialrounding/;
 use List::Util qw(min first);
+use Quant::Framework::VolSurface::Utils qw(is_within_rollover_period);
 
 use BOM::Config;
 use BOM::Config::Runtime;
@@ -1211,7 +1212,27 @@ sub sell {
         db => BOM::Database::ClientDB->new({broker_code => $client->broker_code})->db,
     );
 
-    my $error = 1;
+    my $error    = 1;
+    my $datetime = Date::Utility->new();
+
+    # This is for disabling resale on path dependent contracts for AUD, NZD and JPY forex pairs during rollover time
+    if (   $self->contract->underlying->market->name eq 'forex'
+        && $self->contract->is_path_dependent
+        && $self->action_type eq 'sell'
+        && $self->contract->underlying->symbol =~ /AUD|NZD|JPY/)
+    {
+        if (is_within_rollover_period($datetime)) {
+            return $self->stats_stop(
+                $stats_data,
+                Error::Base->cuss(
+                    -quiet             => 1,
+                    -type              => 'GeneralError',
+                    -mesg              => 'Resale of this contract is not offered',
+                    -message_to_client => BOM::Platform::Context::localize('Resale not available during rollover time.'),
+                ));
+        }
+    }
+
     my ($fmb, $txn, $buy_txn_id);
     try {
         ($fmb, $txn, $buy_txn_id) = $fmb_helper->sell_bet;
