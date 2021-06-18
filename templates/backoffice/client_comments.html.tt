@@ -16,7 +16,7 @@
         <input type="hidden" name="checksum" value="[% result.checksum %]" />
         <label>Comment:</label>
         <div class="row">
-            <textarea rows="10" cols="100" name="comment" maxlength="1000" minlength="1" autofocus>[% input.comment || result.comment %]</textarea>
+            <textarea rows="10" cols="100" name="comment" maxlength=[% limit %] minlength="1" autofocus>[% input.comment || result.comment %]</textarea>
         </div>
         <input type="submit" class="btn btn--primary" value="Save changes">
         <a class="btn btn--secondary" href="[% request.url_for('backoffice/f_client_comments.cgi', { loginid => input.loginid }) | url %]">Cancel</a>
@@ -30,7 +30,7 @@
         <input type="hidden" name="csrf" value="[% csrf %]" />
         <label>Comment:</label>
         <div class="row">
-            <textarea rows="10" cols="100" name="comment" maxlength="1000" minlength="1" autofocus placeholder="Enter new comment here" >[% error ?  input.comment : '' %]</textarea>
+            <textarea rows="10" cols="100" name="comment" maxlength=[% limit %] minlength="1" autofocus placeholder="Enter new comment here" >[% error ?  input.comment : '' %]</textarea>
         </div>
         <input type="submit" class="btn btn--primary" value="Add new comment">
     </form>

@@ -14,7 +14,7 @@ use BOM::User::AuditLog;
 use BOM::User::Client;
 use Syntax::Keyword::Try;
 
-use constant COMMENT_LIMIT => 1000;
+use constant COMMENT_LIMIT => 1000000;
 
 BOM::Backoffice::Sysinit::init();
 
@@ -92,6 +92,7 @@ BOM::Backoffice::Request::template()->process(
         result   => $result,
         csrf     => BOM::Backoffice::Form::get_csrf_token(),
         error    => $error_msg,
+        limit    => COMMENT_LIMIT,
     });
 
 code_exit_BO();

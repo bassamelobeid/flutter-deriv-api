@@ -11,9 +11,9 @@
         [% FOREACH record IN comments %]
         <tr>
             <td style="max-width: 800px;">[% record.comment | html | html_line_break %]</td>
-            <td>[% record.author %]</td>
-            <td>[% record.creation_datetime %]</td>
-            <td>
+            <td style="vertical-align:top">[% record.author %]</td>
+            <td style="vertical-align:top">[% record.creation_datetime %]</td>
+            <td style="vertical-align:top">
                 <form method="post" action="[% request.url_for('backoffice/f_client_comments.cgi', { loginid => loginid }) | url %]">
                     <input type="hidden" name="loginid" value="[% loginid %]" />
                     <input type="hidden" name="action" value="show_edit_form" />
@@ -22,7 +22,7 @@
                     <input class="btn btn--primary" type="submit" value="Edit">
                 </form>
             </td>
-            <td>
+            <td style="vertical-align:top">
                 <form method="post" action="[% request.url_for('backoffice/f_client_comments.cgi', { loginid => loginid }) | url %]" onSubmit="return confirm('Are you sure you want to delete the comment?');">
                     <input type="hidden" name="loginid" value="[% loginid %]" />
                     <input type="hidden" name="action" value="delete_comment" />
