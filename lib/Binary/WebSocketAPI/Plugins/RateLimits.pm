@@ -40,6 +40,8 @@ sub register {
 
     $app->{_binary}{rates_config} = \%rates_config;
 
+    $app->{_binary}{rate_limits_storage} = Cache::LRU->new(size => 10000);
+
     # Returns a Future which will resolve as 'done' if services usage limit wasn't hit,
     # and 'fail' otherwise
     $app->helper(check_limits => \&_check_limits);
@@ -49,14 +51,11 @@ sub register {
 
 sub _update_redis {
     my ($c, $name, $ttl) = @_;
+    my $local_storage = $c->stash->{rate_limits} //= {};
+    my $diff = $local_storage->{$name}{pending};
 
-    my $diff = _limits_cache($c, $name)->{pending};
-    # update_in_progress blocks other updates from starting
-    _limits_cache(
-        $c, $name,
-        pending            => 0,
-        update_in_progress => 1
-    );
+    $local_storage->{$name}{pending}            = 0;
+    $local_storage->{$name}{update_in_progress} = $diff;
 
     my $client_id = $c->rate_limitations_key;
     my $redis     = $c->app->ws_redis_master;
@@ -74,19 +73,16 @@ sub _update_redis {
                 $log->warn("Redis error: $error");
                 return $f->fail($error);
             }
-            # overwrite by force speculatively calculated value
-            _limits_cache(
-                $c, $name,
-                value              => $count,
-                update_in_progress => 0
-            );
+            # sync redis value to cache
+            _limits_cache($c, $name, value => $count);
+            $local_storage->{$name}{update_in_progress} = 0;
             # print "[debug] update from redis $name => $count\n";
 
             # Count should always go up, or expire. If we had no key or expired,
             # then our returned value should match the increment value... so we'd
             # want to set expiry in that case.
             if ($count == $diff) {
-                _set_key_expiry($c, $redis_key, $ttl, $f);
+                _set_key_expiry($c, $redis_key, $ttl, $f, $name);
             } else {
                 $redis->ttl(
                     $redis_key,
@@ -96,13 +92,17 @@ sub _update_redis {
                             $log->warn("Redis error: $error");
                             return $f->fail($error);
                         }
-                        # If ttl == -2 the key has just expired and we don't need a warning here.
-                        _set_key_expiry($c, $redis_key, $ttl) if $redis_ttl == -1;
+                        # ttl -2: key doesn't exist - remove from cache
+                        _limits_cache($c, $name, expired => 1) if $redis_ttl == -2;
+                        # ttl -1: no ttl set yet
+                        _set_key_expiry($c, $redis_key, $ttl, undef, $name) if $redis_ttl == -1;
+                        # sync redis ttl to cache
+                        _limits_cache($c, $name, ttl => $redis_ttl) if $redis_ttl > 0;
                     });
                 $f->done;
             }
             # retrigger scheduled updates
-            if (_limits_cache($c, $name)->{pending}) {
+            if ($local_storage->{$name}{pending}) {
                 _update_redis($c, $name, $ttl);
             }
         });
@@ -110,7 +110,7 @@ sub _update_redis {
 }
 
 sub _set_key_expiry {
-    my ($c, $redis_key, $ttl, $f) = @_;
+    my ($c, $redis_key, $ttl, $f, $name) = @_;
     my $redis  = $c->app->ws_redis_master;
     my @caller = caller;
     $redis->expire(
@@ -126,24 +126,26 @@ sub _set_key_expiry {
                 unless $confirmation;
             $f->done if $f;
         });
+    # sync redis ttl to cache
+    _limits_cache($c, $name, ttl => $ttl);
     return;
 }
 
 sub _check_single_limit {
     my ($c, $limit_descriptor) = @_;
     my $name = $limit_descriptor->{name};
+    my $local_storage = $c->stash->{rate_limits} //= {};
+    
     # update value speculatively (i.e. before getting real values from redis)
-    my $local_storage = _limits_cache($c, $name);
-    _limits_cache(
-        $c, $name,
-        pending => ++$local_storage->{pending},
-        value   => ++$local_storage->{value});
-    my $value  = $local_storage->{value};
+    my $value = _limits_cache($c, $name)->{value};
+    $value += ++$local_storage->{$name}{pending};
+    $value += $local_storage->{$name}{update_in_progress} // 0;
+
     my $result = $value <= $limit_descriptor->{limit};
     # print "[debug] $name check => $result (value: $value)\n";
 
     my $f =
-        _limits_cache($c, $name)->{update_in_progress}
+        $local_storage->{$name}{update_in_progress}
         ? Future->done
         : _update_redis($c, $name, $limit_descriptor->{ttl});
     return ($result, $f);
@@ -196,7 +198,7 @@ sub _app_rate_limit_is_disabled {
 
 =head2 _limits_cache
 
-Creates an application level LRU cache if it doesn't exist.
+Provdes application level LRU cache of client limits.
 This will persist limit info on this worker after reconnect if the IP and user agent are the same.
 
 =over 4
@@ -205,7 +207,15 @@ This will persist limit info on this worker after reconnect if the IP and user a
 
 =item * C<$name> - limit name
 
-=item * C<%updates> - optional key/value pairs to update
+=item * C<%updates> - optional key/value pairs to update:
+
+=over 8
+
+=item * C<ttl> - expiry in seconds
+
+=item * C<value> - limit value
+
+=back
 
 =back
 
@@ -215,14 +225,18 @@ Returns hashref of cached values for the provided $name.
 
 sub _limits_cache {
     my ($c, $name, %updates) = @_;
-    my $cache       = $c->app->{_binary}{rate_limits} //= Cache::LRU->new(size => 10000);
+    my $cache       = $c->app->{_binary}{rate_limits_storage};
     my $client_id   = $c->rate_limitations_key;
     my $cache_entry = $cache->get($client_id) // {};
-    if (%updates) {
-        $cache_entry->{$name}{$_} = $updates{$_} for keys %updates;
-        $cache->set($client_id, $cache_entry);
-    }
-    return $cache_entry->{$name} // {};
+
+    $updates{expired} = 1        if $cache_entry->{$name}{expiry_ts} and time > $cache_entry->{$name}{expiry_ts};
+    delete $cache_entry->{$name} if $updates{expired};
+
+    $cache_entry->{$name}{expiry_ts} = time + $updates{ttl} if $updates{ttl};
+    $cache_entry->{$name}{value}     = $updates{value}      if $updates{value};
+    $cache->set($client_id, $cache_entry) if %updates;
+
+    return $cache_entry->{$name} // {value => 0};
 }
 
 1;
