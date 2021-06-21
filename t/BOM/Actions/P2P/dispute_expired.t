@@ -64,7 +64,7 @@ subtest 'Event processing return value' => sub {
         my $dispute_reason = 'seller_not_released';
         my $order_id       = $order->{id};
         my $order_currency = $order->{local_currency};
-        my $order_amount   = 0 + $order->{amount};
+        my $order_amount   = $order->{amount};
         my $timestamp      = 1600000000;
         my $disputed_at    = Date::Utility->new($timestamp)->datetime_ddmmmyy_hhmmss_TZ;
 
