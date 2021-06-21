@@ -249,7 +249,7 @@ sub login {
     if ($too_many_attempts) {
         $error = 'LoginTooManyAttempts';
     } elsif (!$is_social_login && !BOM::User::Password::checkpw($password, $self->{password})) {
-        $error = 'IncorrectEmailPassword';
+        $error = 'INVALID_CREDENTIALS';
     } elsif (!(@clients = $self->clients)) {
         $error = $self->clients(include_self_closed => 1) ? 'AccountSelfClosed' : 'AccountUnavailable';
     }
@@ -297,11 +297,11 @@ sub after_login {
     my $log_as_failed = ($error // '' eq 'LoginTooManyAttempts') ? 1 : 0;
 
     state $error_log_msgs = {
-        LoginTooManyAttempts   => "failed login > " . MAX_FAIL_TIMES . " times",
-        IncorrectEmailPassword => 'incorrect email or password',
-        AccountUnavailable     => 'Account disabled',
-        Success                => 'successful login',
-        AccountSelfClosed      => 'Account is self-closed',
+        LoginTooManyAttempts => "failed login > " . MAX_FAIL_TIMES . " times",
+        INVALID_CREDENTIALS  => 'incorrect email or password',
+        AccountUnavailable   => 'Account disabled',
+        Success              => 'successful login',
+        AccountSelfClosed    => 'Account is self-closed',
     };
     my $result = $error || 'Success';
     BOM::User::AuditLog::log($error_log_msgs->{$result}, $self->{email});

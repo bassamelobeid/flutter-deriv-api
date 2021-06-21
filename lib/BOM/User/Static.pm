@@ -19,7 +19,7 @@ use constant CONFIG => {
         # it will be consistent in case in future we want to send
         # these as error codes to RPC
         LoginTooManyAttempts                => 'Sorry, you have already had too many unsuccessful attempts. Please try again in 5 minutes.',
-        IncorrectEmailPassword              => 'Your email and/or password is incorrect. Perhaps you signed up with a social account?',
+        INVALID_CREDENTIALS                 => 'Your email and/or password is incorrect. Perhaps you signed up with a social account?',
         AccountUnavailable                  => 'Your account is deactivated. Please contact us via live chat.',
         AccountSelfClosed                   => 'Your account is deactivated. Please contact us via live chat.',
         LoginDisabledDuoToSystemMaintenance =>
