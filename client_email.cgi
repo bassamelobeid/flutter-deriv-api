@@ -123,13 +123,6 @@ unless ($input{transtype}) {
     print "Please select transaction type";
     code_exit_BO();
 }
-my $error = BOM::DualControl->new({
-        staff           => $clerk,
-        transactiontype => $input{transtype}})->validate_client_control_code($input{DCcode}, $new_email, $user->{id});
-if ($error) {
-    print $error->get_mesg();
-    code_exit_BO();
-}
 
 if ($email ne $new_email) {
     if (BOM::User->new(email => $new_email)) {
@@ -168,13 +161,7 @@ if ($email ne $new_email) {
     }
 
     my $msg =
-          $now->datetime . " "
-        . $input{transtype}
-        . " updated user $email "
-        . $had_social_signup
-        . " to $new_email by clerk=$clerk (DCcode="
-        . $input{DCcode}
-        . ") $ENV{REMOTE_ADDR}";
+        $now->datetime . " " . $input{transtype} . " updated user $email " . $had_social_signup . " to $new_email by clerk=$clerk $ENV{REMOTE_ADDR}";
     BOM::User::AuditLog::log($msg, $new_email, $clerk);
     #CS: for every email address change request, we will disable the client's
     #    account and once receiving a confirmation from his new email address, we will change it and enable the account.
