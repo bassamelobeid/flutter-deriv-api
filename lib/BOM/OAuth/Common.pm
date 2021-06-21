@@ -75,12 +75,12 @@ sub validate_login {
 
         $user = BOM::User->new(email => $email);
 
-        return $err_var->("LOGIN_ERROR") unless $user;
+        return $err_var->("INVALID_CREDENTIALS") unless $user;
         # Prevent login if social signup flag is found.
         # As the main purpose of this controller is to serve
         # clients with email/password only.
 
-        return $err_var->("LOGIN_ERROR") if $user->{has_social_signup};
+        return $err_var->("INVALID_CREDENTIALS") if $user->{has_social_signup};
     }
 
     if (BOM::Config::Runtime->instance->app_config->system->suspend->all_logins) {
