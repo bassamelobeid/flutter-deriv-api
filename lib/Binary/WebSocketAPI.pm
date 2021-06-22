@@ -193,7 +193,7 @@ sub backend_setup {
                     for my $method (keys %$backends) {
                         my $backend = $backends->{$method} // 'default';
                         $backend = 'default' if $backend eq 'rpc_redis';
-                        if (exists $WS_ACTIONS->{$method} and ($backend eq 'default' or $backend eq 'http' or exists $WS_BACKENDS->{$backend})) {
+                        if (exists $WS_ACTIONS->{$method} and ($backend eq 'default' or exists $WS_BACKENDS->{$backend})) {
                             $WS_ACTIONS->{$method}->{backend} = $backend;
                         } else {
                             $log->warn("Invalid  backend setting ignored: <$method $backend>");
@@ -409,10 +409,9 @@ sub startup {
             binary_frame => \&Binary::WebSocketAPI::v3::Wrapper::DocumentUpload::document_upload,
             # action hooks
             before_forward => [
-                \&Binary::WebSocketAPI::Hooks::start_timing,                 \&Binary::WebSocketAPI::Hooks::before_forward,
-                \&Binary::WebSocketAPI::Hooks::ignore_queue_separations,     \&Binary::WebSocketAPI::Hooks::assign_rpc_url,
-                \&Binary::WebSocketAPI::Hooks::introspection_before_forward, \&Binary::WebSocketAPI::Hooks::assign_ws_backend,
-                \&Binary::WebSocketAPI::Hooks::check_app_id
+                \&Binary::WebSocketAPI::Hooks::start_timing,             \&Binary::WebSocketAPI::Hooks::before_forward,
+                \&Binary::WebSocketAPI::Hooks::ignore_queue_separations, \&Binary::WebSocketAPI::Hooks::introspection_before_forward,
+                \&Binary::WebSocketAPI::Hooks::assign_ws_backend,        \&Binary::WebSocketAPI::Hooks::check_app_id
             ],
             before_call => [
                 \&Binary::WebSocketAPI::Hooks::log_call_timing_before_forward, \&Binary::WebSocketAPI::Hooks::add_app_id,
@@ -438,7 +437,6 @@ sub startup {
             before_shutdown   => \&Binary::WebSocketAPI::v3::Wrapper::Streamer::send_deploy_notification,
 
             # helper config
-            url             => \&Binary::WebSocketAPI::Hooks::assign_rpc_url,           # make url for manually called actions
             actions         => $actions,
             backends        => $WS_BACKENDS,
             default_backend => $app->config->{default_backend},

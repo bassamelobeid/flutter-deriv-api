@@ -347,7 +347,7 @@ command backend => sub {
     my $ws_actions  = $Binary::WebSocketAPI::WS_ACTIONS;
     my $ws_backends = $Binary::WebSocketAPI::WS_BACKENDS;
 
-    my $backend_list = 'http, ' . join(', ', keys %$ws_backends);
+    my $backend_list = join(', ', keys %$ws_backends);
 
     return Future->fail('Websocket actions are not initialized yet. Please try later') unless $ws_actions;
 
@@ -363,7 +363,7 @@ command backend => sub {
         return Future->fail("Backend is already set to '$backend' for method '$method'. Nothing is changed.");
     }
 
-    unless ($backend eq 'default' or $backend eq 'http' or exists $ws_backends->{$backend}) {
+    unless ($backend eq 'default' or exists $ws_backends->{$backend}) {
         my $msg = "Backend '$backend' was not found. Available backends: $backend_list";
         return Future->fail($msg);
     }

@@ -380,24 +380,8 @@ sub _rpc_suffix {
     my $processor    = join q{_} => (grep { $_ } ($group_suffix, $app_suffix));
 
     my $suffix = $processor ? '_' . $processor : '';
-    unless (exists $c->app->config->{"rpc_url" . $suffix}) {
-        $log->warn("Suffix $suffix not found in config for app ID $app_id\n");
-        $suffix = '';
-    }
+
     return $suffix;
-}
-
-sub get_rpc_url {
-    my ($c, $req_storage) = @_;
-
-    my $suffix = _rpc_suffix($c, $req_storage);
-    return $ENV{RPC_URL} || $c->app->config->{"rpc_url" . $suffix};
-}
-
-sub assign_rpc_url {
-    my ($c, $req_storage) = @_;
-    $req_storage->{url} = get_rpc_url($c, $req_storage);
-    return;
 }
 
 =head2 assign_ws_backend

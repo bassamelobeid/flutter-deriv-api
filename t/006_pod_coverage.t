@@ -10,7 +10,7 @@ use Test::Pod::CoverageChange;
 
 my $allowed_naked_packages = {
     'Binary::WebSocketAPI'                                                 => 2,
-    'Binary::WebSocketAPI::Hooks'                                          => 27,
+    'Binary::WebSocketAPI::Hooks'                                          => 25,
     'Binary::WebSocketAPI::BalanceConnections'                             => 2,
     'Binary::WebSocketAPI::Actions'                                        => 1,
     'Binary::WebSocketAPI::Plugins::Introspection'                         => 3,
