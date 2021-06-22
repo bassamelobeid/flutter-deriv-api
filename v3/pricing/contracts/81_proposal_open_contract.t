@@ -131,20 +131,20 @@ subtest 'passthrough' => sub {
 };
 subtest 'expiryd should sell the contract' => sub {
 
-SKIP: {
-    skip "this test fails intermittently https://redmine.deriv.cloud/issues/24841#expiryd_test_failures ";
-    my $try = 0;
-    my $poc;
-    do {
-        create_tick();
-        my $data = $t->await::proposal_open_contract();
-        $poc = $data->{proposal_open_contract};
-        ++$try;
-    } while ($try < 10 && $poc->{is_sold} == 0);
+    SKIP: {
+        skip "this test fails intermittently https://redmine.deriv.cloud/issues/24841#expiryd_test_failures ";
+        my $try = 0;
+        my $poc;
+        do {
+            create_tick();
+            my $data = $t->await::proposal_open_contract();
+            $poc = $data->{proposal_open_contract};
+            ++$try;
+        } while ($try < 10 && $poc->{is_sold} == 0);
 
-    is $poc->{is_sold}, 1, 'got the sell poc response';
-    is $poc->{contract_id}, $contract_id, 'contract id is correct';
-}
+        is $poc->{is_sold}, 1, 'got the sell poc response';
+        is $poc->{contract_id}, $contract_id, 'contract id is correct';
+    }
 };
 subtest 'forget' => sub {
     my $data = $t->await::forget_all({forget_all => 'proposal_open_contract'});

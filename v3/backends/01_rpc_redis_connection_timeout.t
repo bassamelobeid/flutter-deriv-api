@@ -93,11 +93,8 @@ subtest 'Consumer service unavailability' => sub {
     Mojo::IOLoop->one_tick while !($timeout or scalar($api->{messages}->@*));
     ok scalar($api->{messages}->@*), 'Message is received for not expired request immedietly after running Cosnumer';
 
-    my $expected_result = {
-        states_list => 'http',
-        id          => 1
-    };
-    is_deeply call_instrospection('backend', ['states_list', 'http']), $expected_result, 'Backend swithed back to http';
+    is_deeply call_instrospection('backend', ['states_list', 'http'])->{error}, "Backend 'http' was not found. Available backends: rpc_redis",
+        'Backend swithed back to http';
 
     $rpc_redis->stop_script();
     ok !kill(0, $pid), 'Consumer worker process killed successfully';
@@ -107,12 +104,7 @@ subtest 'Consumer service unavailability' => sub {
 
 subtest 'redis connnection loss' => sub {
     # switch to rpc redis backend
-    my $rpc_redis       = BOM::Test::Script::RpcRedis->new();
-    my $expected_result = {
-        states_list => 'default',
-        id          => 1
-    };
-    is_deeply call_instrospection('backend', ['states_list', 'default']), $expected_result, 'Backend switched successfully';
+    my $rpc_redis = BOM::Test::Script::RpcRedis->new();
 
     my $request = {states_list => 'be'};
     ok my $response = send_request($request, 'states_list'), 'Response is recieved after switching to consumer groups';

@@ -68,7 +68,7 @@ is $res->{error}->{message}, 'Multiplier is not in acceptable range. Accepts 20,
     'message \'Multiplier is not in acceptable range. Accepts 20,40,60,100,200.\'';
 
 $req->{multiplier} = 20;
- 
+
 $req->{cancellation} = "";
 
 $res = $t->await::proposal($req);
