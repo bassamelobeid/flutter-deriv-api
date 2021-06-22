@@ -189,6 +189,13 @@ my $render_crypto_transactions = sub {
         range    => ($offset + !!@trxns) . ' - ' . ($offset + @trxns),
     };
 
+    my %min_withdrawal_info;
+    if ($txn_type eq 'withdrawal') {
+        %min_withdrawal_info = (
+            minimum_withdrawal_limit => BOM::CTC::Currency->new(currency_code => $client_currency)->get_minimum_withdrawal,
+        );
+    }
+
     $tt->process(
         'backoffice/crypto_cashier/manage_crypto_transactions_cs.tt',
         {
@@ -204,6 +211,7 @@ my $render_crypto_transactions = sub {
             get_crypto_statement_url => $get_crypto_statement_url,
             get_profit_url           => $get_profit_url,
             %client_details,
+            %min_withdrawal_info,
         }) || die $tt->error() . "\n";
 };
 

@@ -709,7 +709,7 @@ function initCopyText() {
 function initCardToggle() {
     document.querySelectorAll('div.card__label.toggle').forEach(el_label => {
         el_label.addEventListener('click', e => {
-            e.target.classList[e.target.classList.contains('collapsed') ? 'remove' : 'add']('collapsed');
+            el_label.classList[el_label.classList.contains('collapsed') ? 'remove' : 'add']('collapsed');
         });
     });
 }

@@ -852,6 +852,11 @@ a {
     margin-bottom: 0;
 }
 
+.card__label.toggle span.card_span_red{
+    font-size: 1.2rem;
+    color: var(--color-red);
+}
+
 
 /* Button */
 
