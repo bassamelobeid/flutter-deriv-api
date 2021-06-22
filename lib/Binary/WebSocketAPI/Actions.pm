@@ -20,6 +20,7 @@ sub actions_config {
             {
                 stash_params => [qw/ ua_fingerprint client_ip user_agent /],
                 success      => \&Binary::WebSocketAPI::v3::Wrapper::Authorize::login_success,
+                msg_group    => 'account',
             }
         ],
         [
@@ -27,6 +28,7 @@ sub actions_config {
             {
                 stash_params => [qw/ token token_type email client_ip user_agent /],
                 success      => \&Binary::WebSocketAPI::v3::Wrapper::Authorize::logout_success,
+                msg_group    => 'account',
             },
         ],
         ['trading_times'],
@@ -67,8 +69,13 @@ sub actions_config {
         ],
 
         ['request_report'],
+        [
+            'account_statistics',
+            {
+                msg_group => 'account',
+            }
+        ],
         ['identity_verification_document_add'],
-        ['account_statistics'],
         ['profit_table'],
 
         [
@@ -82,9 +89,15 @@ sub actions_config {
             'change_password',
             {
                 stash_params => [qw/ token_type client_ip /],
+                msg_group    => 'account',
             }
         ],
-        ['get_settings'],
+        [
+            'get_settings',
+            {
+                msg_group => 'account',
+            }
+        ],
         [
             'mt5_get_settings',
             {
@@ -95,6 +108,7 @@ sub actions_config {
             'set_settings',
             {
                 stash_params => [qw/ server_name client_ip user_agent /],
+                msg_group    => 'account',
             }
         ],
         [
@@ -118,7 +132,12 @@ sub actions_config {
                 msg_group    => 'mt5',
             }
         ],
-        ['get_self_exclusion'],
+        [
+            'get_self_exclusion',
+            {
+                msg_group => 'account',
+            }
+        ],
 
         [
             'set_self_exclusion',
@@ -132,27 +151,61 @@ sub actions_config {
             'api_token',
             {
                 stash_params => [qw/ account_id client_ip /],
+                msg_group    => 'account',
             }
         ],
-        ['tnc_approval'],
+        [
+            'tnc_approval',
+            {
+                msg_group => 'account',
+            }
+        ],
         [
             'login_history',
             {
-                response => \&Binary::WebSocketAPI::v3::Wrapper::Accounts::login_history_response_handler,
+                response  => \&Binary::WebSocketAPI::v3::Wrapper::Accounts::login_history_response_handler,
+                msg_group => 'account',
             }
         ],
         [
             'set_account_currency',
             {
                 before_forward => \&Binary::WebSocketAPI::v3::Wrapper::Accounts::set_account_currency_params_handler,
+                msg_group      => 'account',
             }
         ],
-        ['set_financial_assessment'],
-        ['get_financial_assessment'],
-        ['reality_check'],
-        ['verify_email',        {stash_params => [qw/ server_name token /]}],
-        ['new_account_virtual', {stash_params => [qw/ token server_name client_ip user_agent /]}],
-        ['reset_password'],
+        [
+            'set_financial_assessment',
+            {
+                msg_group => 'account',
+            }
+        ],
+        [
+            'get_financial_assessment',
+            {
+                msg_group => 'account',
+            }
+        ],
+        [
+            'reality_check',
+            {
+                msg_group => 'account',
+            }
+        ],
+        [
+            'verify_email',
+            {
+                stash_params => [qw/ server_name token /],
+                msg_group    => 'account',
+            }
+        ],
+        ['new_account_virtual', {stash_params => [qw/ server_name client_ip user_agent /]}],
+        [
+            'reset_password',
+            {
+                msg_group => 'account',
+            }
+        ],
 
         # authenticated calls
         [
@@ -231,7 +284,12 @@ sub actions_config {
         ['oauth_apps'],
         ['revoke_oauth_app'],
 
-        ['topup_virtual'],
+        [
+            'topup_virtual',
+            {
+                msg_group => 'account',
+            }
+        ],
         [
             'get_limits',
             {
@@ -351,6 +409,7 @@ sub actions_config {
             {
                 stash_params    => [qw/ token /],
                 rpc_response_cb => \&Binary::WebSocketAPI::v3::Wrapper::DocumentUpload::add_upload_info,
+                msg_group       => 'account',
             }
         ],
 
@@ -360,7 +419,12 @@ sub actions_config {
         ['copy_stop'],
 
         ['app_markup_details'],
-        ['account_security'],
+        [
+            'account_security',
+            {
+                msg_group => 'account',
+            }
+        ],
         ['notification_event'],
         [
             'service_token',
