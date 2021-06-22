@@ -1257,7 +1257,8 @@ foreach my $dx_ac ($dx_logins->@*) {
     print encode_entities($dx_ac);
 
     if (my $details = $loginid_details->{$dx_ac}) {
-        my $extra = join '\\', grep { $_ } $details->{account_type}, @{$details->{attributes}}{qw/market_type/};
+        my $extra = join '\\', $details->{currency}, grep { $_ } $details->{account_type}, $details->{attributes}->{market_type},
+            "dxlogin=" . $details->{attributes}->{login};
         print " (" . encode_entities($extra) . ")" if $extra;
     }
 

@@ -16,6 +16,7 @@ use Syntax::Keyword::Try;
 use LandingCompany::Registry;
 use List::MoreUtils qw(any);
 use BOM::Config::Onfido;
+use Log::Any qw($log);
 
 use BOM::Transaction::Utility;
 use BOM::Config;
@@ -1650,11 +1651,37 @@ sub get_client_details {
         );
     }
     $loginid = trim(uc $loginid);
+
     my $encoded_loginid = encode_entities($loginid);
+
+    try { BrokerPresentation("$encoded_loginid CLIENT DETAILS") } catch { }
+
+    # If the loginid correspond to a trading platform
+    # show a loginid picker page.
+    if ($loginid =~ /^(MT|DX)[DR]?/) {
+        if (my $user = BOM::User->new(loginid => $loginid)) {
+            my $logins        = loginids($user);
+            my $mt_logins_ids = $logins->{mt5};
+            my $bom_logins    = $logins->{bom};
+            my $dx_logins_ids = $logins->{dx};
+
+            Bar("$encoded_loginid LOGINIDS");
+
+            BOM::Backoffice::Request::template()->process(
+                'backoffice/client_loginids.html.tt',
+                {
+                    bom_logins   => $bom_logins,
+                    mt5_loginids => $mt_logins_ids,
+                    dx_loginids  => $dx_logins_ids,
+                },
+            ) || die BOM::Backoffice::Request::template()->error(), "\n";
+
+            code_exit_BO();
+        }
+    }
 
 # given a bad-enough loginID, BrokerPresentation can die, leaving an unformatted screen..
 # let the client-check offer a chance to retry.
-    try { BrokerPresentation("$encoded_loginid CLIENT DETAILS") } catch { }
 
     my $well_formatted = $loginid =~ m/^[A-Z]{2,4}[\d]{4,10}$/;
     my $client;
@@ -1719,6 +1746,90 @@ sub get_client_details {
         dx_logins              => \@dx_logins,
         loginid_details        => $loginid_details,
     );
+}
+
+=head2 loginids
+
+Gets a hashref of user loginids per trading platform (mt5/dx) and also
+our system loginids (bom_loginids).
+
+It takes the following params:
+
+=over 4
+
+=item * C<$user> - a L<BOM::User> instance.
+
+=back
+
+Returns a hashref.
+
+=cut
+
+sub loginids {
+    my ($user) = @_;
+
+    my $details   = $user->loginid_details;
+    my @mt_logins = $user->get_mt5_loginids;
+    my @bom_logins;
+    my @dx_logins;
+
+    foreach my $lid (sort $user->bom_loginids()) {
+        unless (LandingCompany::Registry->check_valid_broker_short_code($user->broker_code_from_loginid($lid))) {
+            $log->warnf("Invalid login id $lid");
+            next;
+        }
+
+        my $client = BOM::User::Client->new({loginid => $lid});
+
+        my $formatted_balance;
+        unless ($client->default_account) {
+            $formatted_balance = '--- no currency selected';
+        } else {
+            my $balance = client_balance($client);
+            $formatted_balance =
+                $balance
+                ? formatnumber('amount', $client->default_account->currency_code, $balance)
+                : 'ZERO';
+        }
+
+        push @bom_logins,
+            {
+            text        => encode_entities($lid),
+            balance     => $formatted_balance,
+            currency    => ' (' . ($client->default_account ? $client->default_account->currency_code : 'No currency selected') . ')',
+            is_disabled => $client->status->disabled
+            };
+    }
+
+    foreach my $lid ($user->get_trading_platform_loginids('dxtrader')) {
+        my $currency;
+        my $market_type;
+        my $account_type;
+        my $login;
+
+        if (my $details = $details->{$lid}) {
+            ($currency, $account_type) = @{$details}{qw/currency account_type/};
+
+            if (my $attributes = $details->{attributes}) {
+                ($market_type, $login) = @{$attributes}{qw/market_type login/};
+            }
+        }
+
+        push @dx_logins,
+            +{
+            loginid      => encode_entities($lid),
+            market_type  => $market_type  // 'missing market type',
+            account_type => $account_type // 'missing account type',
+            currency     => $currency     // 'missing currency',
+            dxlogin      => $login        // 'missing dxlogin',
+            };
+    }
+
+    return {
+        mt5 => \@mt_logins,
+        dx  => \@dx_logins,
+        bom => \@bom_logins,
+    };
 }
 
 =head2 client_search_and_navigation

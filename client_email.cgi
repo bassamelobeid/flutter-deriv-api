@@ -72,36 +72,10 @@ if (not $user) {
 
 Bar($title);
 
-my @mt_logins_ids = $user->get_mt5_loginids;
-my @bom_login_ids = $user->bom_loginids();
-my @dx_logins_ids = $user->get_trading_platform_loginids('dxtrader');
-my @bom_logins;
-
-foreach my $login_id (sort @bom_login_ids) {
-    unless (LandingCompany::Registry->check_valid_broker_short_code($user->broker_code_from_loginid($login_id))) {
-        $log->warnf("Invalid login id $login_id");
-        next;
-    }
-
-    my $client = BOM::User::Client->new({loginid => $login_id});
-    my $formatted_balance;
-    unless ($client->default_account) {
-        $formatted_balance = '--- no currency selected';
-    } else {
-        my $balance = client_balance($client);
-        $formatted_balance =
-            $balance
-            ? formatnumber('amount', $client->default_account->currency_code, $balance)
-            : 'ZERO';
-    }
-
-    push @bom_logins,
-        {
-        text     => encode_entities($login_id),
-        balance  => $formatted_balance,
-        currency => ' (' . ($client->default_account ? $client->default_account->currency_code : 'No currency selected') . ')',
-        style    => ($client->status->disabled ? ' class="error"' : '')};
-}
+my $logins        = loginids($user);
+my $mt_logins_ids = $logins->{mt5};
+my $bom_logins    = $logins->{bom};
+my $dx_logins_ids = $logins->{dx};
 
 if (not $input{email_edit}) {
     # list loginids with email
@@ -110,9 +84,9 @@ if (not $input{email_edit}) {
         {
             list         => 1,
             email        => $email,
-            bom_logins   => [@bom_logins],
-            mt5_loginids => [@mt_logins_ids],
-            dx_loginids  => [@dx_logins_ids],
+            bom_logins   => $bom_logins,
+            mt5_loginids => $mt_logins_ids,
+            dx_loginids  => $dx_logins_ids,
         },
     ) || die BOM::Backoffice::Request::template()->error(), "\n";
 
@@ -178,9 +152,9 @@ if ($email ne $new_email) {
             updated      => 1,
             old_email    => $email,
             new_email    => $new_email,
-            bom_logins   => [@bom_logins],
-            mt5_loginids => [@mt_logins_ids],
-            dx_loginids  => [@dx_logins_ids],
+            bom_logins   => $bom_logins,
+            mt5_loginids => $mt_logins_ids,
+            dx_loginids  => $dx_logins_ids,
         },
     ) || die BOM::Backoffice::Request::template()->error(), "\n";
 } else {
