@@ -12,7 +12,7 @@ use LandingCompany::Registry;
 
 my $suite = start(
     title             => "suite01.t",
-    test_app          => 'BOM::RPC::Transport::HTTP',
+    test_app          => 'BOM::RPC::Transport::Redis',
     suite_schema_path => __DIR__ . '/config/',
 );
 sub _get_token   { return $suite->get_token(@_); }
