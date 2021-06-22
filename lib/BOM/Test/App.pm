@@ -14,7 +14,7 @@ sub BUILD {
     my ($self, $args) = @_;
 
     my $role_name =
-          $args->{app} =~ /RPC/        ? 'HTTP'
+          $args->{app} =~ /RPC/        ? 'RPC'
         : $args->{app} =~ /websocket/i ? 'WebSocket'
         :                                '';
 

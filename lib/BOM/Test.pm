@@ -72,7 +72,6 @@ check the current environment is ci environment
     # set a env variable to represent we are in testing mode
     $ENV{BOM_TEST}                = 1;
     $ENV{WEBSOCKET_API_REPO_PATH} = '/home/git/regentmarkets/binary-websocket-api';
-    $ENV{RPC_URL}                 = 'http://127.0.0.1:15005/';
     $ENV{PRICING_RPC_URL}         = 'http://127.0.0.1:15006/';
 
     # Redirect all rpc request to the default stream `general`

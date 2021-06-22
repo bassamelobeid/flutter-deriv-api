@@ -1,21 +1,33 @@
-package BOM::Test::App::HTTP;
+package BOM::Test::App::RPC;
 
 use strict;
 use warnings;
 
 use Role::Tiny;
-use BOM::Test::Helper qw/build_mojo_test/;
-use BOM::Test::RPC::Client;
+use BOM::RPC::Transport::Redis;
+use BOM::Test::RPC::QueueClient;
 
 sub build_test_app {
     my ($self, $args) = @_;
-    return build_mojo_test($args->{app});
+
+    my $redis_cfg = BOM::Config::Redis::redis_config('rpc', 'write');
+    my $consumer  = BOM::RPC::Transport::Redis->new(
+        worker_index => 1,
+        redis_uri    => $redis_cfg->{uri},
+    );
+
+    local $SIG{HUP} = sub {
+        $consumer->stop;
+        exit;
+    };
+
+    return $consumer;
 }
 
 sub test_schema {
     my ($self, $req_params, $expected_json_schema, $descr, $should_be_failed) = @_;
 
-    my $c      = BOM::Test::RPC::Client->new(ua => $self->{t}->app->ua);
+    my $c      = BOM::Test::RPC::QueueClient->new();
     my $result = $c->call_ok(@$req_params)->result;
 
     return $self->_test_schema($result, $expected_json_schema, $descr, $should_be_failed);
