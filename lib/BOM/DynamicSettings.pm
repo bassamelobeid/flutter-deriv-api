@@ -433,7 +433,12 @@ sub parse_and_refine_setting {
         }
     } elsif ($type eq 'Num') {
         die "Value '$input_value' is not a valid number." unless Scalar::Util::looks_like_number($input_value);
+    } elsif ($type eq 'Int') {
+        die "Value '$input_value' is not a valid integer." unless Scalar::Util::looks_like_number($input_value) && $input_value =~ /^[0-9]+$/;
     }
+
+    $display_value = $input_value /= 1 if $type eq 'Num' || $type eq 'Int';    # cast string into a num scalar.
+
     return ($input_value, $display_value);
 }
 

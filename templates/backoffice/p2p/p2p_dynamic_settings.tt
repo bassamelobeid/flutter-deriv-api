@@ -26,7 +26,7 @@
             [% END %]
         </td></tr></table>
         [% ELSE %]
-        <input type="text" name="$setting" style="width: [% IF settings.$setting.type == 'Num' %]70px;[% ELSE %]300px;[% END %]" value="[% settings.$setting.value %]">
+        <input type="text" name="$setting" style="width: [% IF settings.$setting.type == 'Num' || settings.$setting.type == 'Int' %]70px;[% ELSE %]300px;[% END %]" [% IF settings.$setting.type == 'Int' %] pattern="[0-9]+" [% END %] value="[% settings.$setting.value %]">
         &nbsp;&nbsp;current: [% IF settings.$setting.value.length %][% settings.$setting.value %][% ELSE %]none[% END %]
         [% END %]
     [% END %]

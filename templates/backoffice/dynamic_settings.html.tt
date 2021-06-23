@@ -135,6 +135,8 @@
                 <input id="[% item.name %]" type="checkbox" name="[% item.name %]" [% IF item.disabled %] disabled [% END %] [% IF item.value %] checked [% END %] />
             [% ELSIF item.type == 'json_string' or item.type == 'LongStr' %]
                 <textarea id="[% item.name %]" rows="3" cols="30" name="[% item.name %]" placeholder="[% item.default_value %]" [% IF item.disabled %] disabled [% END %]>[% item.value %]</textarea>
+            [% ELSIF item.type == 'Int' %]
+                <input id="[% item.name %]" type="text" name="[% item.name %]" pattern="[0-9]+" value="[% item.value %]" size="40" placeholder="[% item.default_value %]" data-lpignore="true" [% IF item.disabled %] disabled [% END %]>
             [% ELSE %]
                 <input id="[% item.name %]" type="text" name="[% item.name %]" value="[% item.value %]" size="40" placeholder="[% item.default_value %]" data-lpignore="true" [% IF item.disabled %] disabled [% END %]>
             [% END %]
