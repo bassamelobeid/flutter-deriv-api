@@ -25,6 +25,7 @@ use Format::Util::Numbers qw/financialrounding/;
 use DataDog::DogStatsd::Helper qw(stats_timing stats_gauge);
 use Unicode::UTF8 qw(decode_utf8);
 use JSON::MaybeXS qw(decode_json);
+use POSIX qw( floor );
 
 use BOM::RPC::Registry '-dsl';
 
@@ -280,7 +281,7 @@ rpc website_status => sub {
         crypto_config            => _crypto_config(),
         p2p_config               => {
             $p2p_config->archive_ads_days ? (adverts_archive_period => $p2p_config->archive_ads_days) : (),
-            order_payment_period        => $p2p_config->order_timeout / 60,
+            order_payment_period        => floor($p2p_config->order_timeout / 60),
             cancellation_block_duration => $p2p_config->cancellation_barring->bar_time,
             cancellation_grace_period   => $p2p_config->cancellation_grace_period,
             cancellation_limit          => $p2p_config->cancellation_barring->count,
