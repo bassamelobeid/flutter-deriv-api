@@ -127,7 +127,7 @@ payments:
           default: 0
         order_timeout:
           description: 'Number of seconds to order expiry after creation time'
-          isa: Num
+          isa: Int
           global: 1
           default: 7200
         refund_timeout:
@@ -175,7 +175,7 @@ payments:
           isa: section
           contains:
             count_per_day_per_client:
-              isa: Num
+              isa: Int
               description: 'Limits the numbers of daily purchases per day'
               default: 3
               global: 1
@@ -190,12 +190,12 @@ payments:
               default: 100
               global: 1
             maximum_ads_per_type:
-              isa: Num
+              isa: Int
               description: 'Maximum number of active orders an advertiser may have for each type and currency pair combination.'
               default: 3
               global: 1
         cancellation_grace_period:
-          isa: Num
+          isa: Int
           description: 'A buyer may cancel an order within this number of minutes without negative consequences'
           default: 10
           global: 1         
@@ -204,17 +204,17 @@ payments:
           isa: section
           contains:
             count:
-              isa: Num
+              isa: Int
               description: 'Advertiser will be temporarily barred after marking this number of cancellations within the period'
               default: 3
               global: 1
             period:
-              isa: Num
+              isa: Int
               description: 'Number of hours within which to count cancellations'
               default: 24
               global: 1
             bar_time:
-              isa: Num
+              isa: Int
               description: 'Number of hours to bar advertiser'
               default: 72
               global: 1
@@ -249,7 +249,7 @@ payments:
           global: 1
         archive_ads_days:
           description: 'Number of days after which dormant ads are set inactive. Process is disabled when value is 0.'
-          isa: Num
+          isa: Int
           global: 1
           default: 0
     crypto:
