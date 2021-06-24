@@ -55,8 +55,23 @@ has 'quants_bet_variables' => (
     default => undef,
 );
 
-my $json       = JSON::MaybeXS->new;
-my $app_config = BOM::Config::Runtime->instance->app_config;
+my $json = JSON::MaybeXS->new;
+
+has 'app_config' => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+=head2 _build_app_config
+
+    lazy build function of the attribute app_config
+    return: L<App::Config::Chronicle> object
+
+=cut
+
+sub _build_app_config {
+    return BOM::Config::Runtime->instance->app_config;
+}
 
 sub _build_bet_data {
     my $self = shift;
@@ -142,7 +157,7 @@ sub buy_bet {
 
         # limits
         $limits ? Encode::encode_utf8($json->encode($limits)) : undef,
-        $app_config->quants->ultra_short_duration + 0 || 300,
+        $self->app_config->quants->ultra_short_duration + 0 || 300,
     );
     my $dbic_code = sub {
 
@@ -264,7 +279,7 @@ SELECT acc.loginid, b.r_ecode, b.r_edescription, (b.r_fmb).*, (b.r_trans).*
                 . ((@acclim / 3 - 1) * 3 + 27) . '::INT) b
  ORDER BY acc.fmbid');
 
-        $stmt->execute(@param, @acclim, ($app_config->quants->ultra_short_duration + 0) || 300);
+        $stmt->execute(@param, @acclim, ($self->app_config->quants->ultra_short_duration + 0) || 300);
         return $stmt->fetchall_arrayref;
     };
     my $all_rows = $self->db->dbic->run(ping => $dbic_code);
@@ -330,7 +345,7 @@ sub sell_bet {
 
         # data_collection.quants_bet_variables
         $qv ? Encode::encode_utf8($json->encode(+{map { my $v = $qv->$_; defined $v ? ($_ => "$v") : () } @qv_col})) : undef,
-        ($app_config->quants->ultra_short_duration + 0) || 300,
+        ($self->app_config->quants->ultra_short_duration + 0) || 300,
 
         # for contracts where we need to verify if child table is updated. Currently, we have multiplier contract that
         # requires this functionality
@@ -431,7 +446,7 @@ LEFT JOIN transaction.transaction t ON t.financial_market_bet_id=(b.v_fmb).id AN
             $transdata->{source},                                                                                                    # -- 11
             $self->bet_data->{quantity} // 1,
             $qv ? Encode::encode_utf8($json->encode(+{map { my $v = $qv->$_; defined $v ? ($_ => "$v") : () } @qv_col})) : undef,    # -- 12
-            ($app_config->quants->ultra_short_duration + 0) || 300,                                                                  # --13
+            ($self->app_config->quants->ultra_short_duration + 0) || 300,                                                            # --13
             (map { $_->{client_loginid} } @{$self->account_data}),                                                                   # --14
         );
         my $all_rows = $stmt->fetchall_arrayref;
@@ -561,7 +576,7 @@ SELECT (s.v_fmb).*, (s.v_trans).*, t.id
  ORDER BY (s.v_trans).id DESC';
 
     my @param = @{$self->account_data}{qw/client_loginid currency_code/};
-    push @param, ($app_config->quants->ultra_short_duration + 0) || 300;
+    push @param, ($self->app_config->quants->ultra_short_duration + 0) || 300;
 
     for (my $i = 0; $i < @$bets; $i++) {
         my $bet       = $bets->[$i];
