@@ -20,7 +20,9 @@ $app_config->chronicle_writer(BOM::Config::Chronicle::get_chronicle_writer());
 
 # We need to restore previous values when tests is done
 my %init_config_values = (
-    'system.dxtrade.suspend.all' => $app_config->system->dxtrade->suspend->all,
+    'system.dxtrade.suspend.all'  => $app_config->system->dxtrade->suspend->all,
+    'system.dxtrade.suspend.real' => $app_config->system->dxtrade->suspend->real,
+    'system.dxtrade.suspend.demo' => $app_config->system->dxtrade->suspend->demo,
 );
 
 scope_guard {
@@ -29,7 +31,11 @@ scope_guard {
     }
 };
 
-$app_config->set({'system.dxtrade.suspend.all' => 0});
+$app_config->set({
+    'system.dxtrade.suspend.all'  => 0,
+    'system.dxtrade.suspend.real' => 0,
+    'system.dxtrade.suspend.demo' => 0
+});
 
 my $t = build_wsapi_test();
 
