@@ -916,9 +916,9 @@ sub rule_engine_error {
     my $error = shift;
 
     # For scalar errors (without error code, etc) let it be caught and logged by default RPC error handling.
-    die $error unless (ref $error and $error->{code});
+    die $error unless (ref $error and ($error->{code} || $error->{error_code}));    # refactor this later to accept error_code only.
 
-    return create_error_by_code($error->{code}, %$error);
+    return create_error_by_code($error->{code} // $error->{error_code}, %$error);
 }
 
 =head2 create_error_by_code
