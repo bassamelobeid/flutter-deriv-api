@@ -14,6 +14,7 @@ subtest 'rule trading_account.should_match_landing_company' => sub {
     subtest 'CR' => sub {
         my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
             broker_code => 'VRTC',
+            residence   => 'au',
         });
         my $user = BOM::User->create(
             email    => 'test+cr@test.deriv',
@@ -30,6 +31,16 @@ subtest 'rule trading_account.should_match_landing_company' => sub {
             password                     => 'C0rrect_p4ssword',
             platform                     => 'dxtrade',
         };
+
+        is_deeply exception { $rule_engine->apply_rules($rule_name, $params) },
+            {
+            error_code     => 'TradingAccountNotAllowed',
+            message_params => ['Deriv X']
+            },
+            'Australia not allowed';
+
+        $client->residence('id');
+        $rule_engine = BOM::Rules::Engine->new(client => $client);
 
         ok $rule_engine->apply_rules($rule_name, $params), 'The test passes';
 
@@ -51,13 +62,18 @@ subtest 'rule trading_account.should_match_landing_company' => sub {
         $user->add_client($real);
         ok $rule_engine->apply_rules($rule_name, $params), 'The test passes';
 
-        # Complete gaming permutations
-        $params->{market_type} = 'gaming';
-        ok $rule_engine->apply_rules($rule_name, $params), 'The test passes';
+        $client->residence('jp');
+        $rule_engine = BOM::Rules::Engine->new(client => $client);
 
-        $params->{account_type} = 'demo';
-        $params->{market_type}  = 'gaming';
-        ok $rule_engine->apply_rules($rule_name, $params), 'The test passes';
+        is_deeply exception { $rule_engine->apply_rules($rule_name, $params) },
+            {
+            error_code     => 'TradingAccountNotAllowed',
+            message_params => ['Deriv X']
+            },
+            'Japan cannot open financial demo';
+
+        $params->{market_type} = 'synthetic';
+        ok $rule_engine->apply_rules($rule_name, $params), 'Japan can open synthetic demo';
 
         # Make the real client disabled and try to open a real account
         $params->{account_type} = 'real';
@@ -85,6 +101,15 @@ subtest 'rule trading_account.should_match_landing_company' => sub {
 
         $real->status->clear_duplicate_account;
         ok $rule_engine->apply_rules($rule_name, $params), 'The test passes again';
+
+        $params->{market_type} = 'financial';
+        is_deeply exception { $rule_engine->apply_rules($rule_name, $params) },
+            {
+            error_code     => 'TradingAccountNotAllowed',
+            message_params => ['Deriv X']
+            },
+            'Japan cannot open financial real';
+
     };
 
     subtest 'MX/MF' => sub {
@@ -106,7 +131,7 @@ subtest 'rule trading_account.should_match_landing_company' => sub {
         my $params = {
             trading_platform_new_account => 1,
             account_type                 => 'demo',
-            market_type                  => 'gaming',
+            market_type                  => 'synthetic',
             password                     => 'C0rrect_p4ssword',
             platform                     => 'dxtrade',
         };
@@ -155,7 +180,7 @@ subtest 'rule trading_account.should_match_landing_company' => sub {
         my $params = {
             trading_platform_new_account => 1,
             account_type                 => 'demo',
-            market_type                  => 'gaming',
+            market_type                  => 'synthetic',
             password                     => 'C0rrect_p4ssword',
             platform                     => 'dxtrade',
         };
@@ -278,7 +303,7 @@ subtest 'rule trading_account.should_complete_financial_assessment' => sub {
     my $params = {
         trading_platform_new_account => 1,
         account_type                 => 'real',
-        market_type                  => 'gaming',
+        market_type                  => 'synthetic',
         password                     => 'C0rrect_p4ssword',
         platform                     => 'dxtrade',
     };
@@ -311,7 +336,7 @@ subtest 'rule trading_account.should_provide_tax_details' => sub {
     my $params = {
         trading_platform_new_account => 1,
         account_type                 => 'real',
-        market_type                  => 'gaming',
+        market_type                  => 'synthetic',
         password                     => 'C0rrect_p4ssword',
         platform                     => 'dxtrade',
     };

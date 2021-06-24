@@ -22,26 +22,27 @@ rule 'trading_account.should_match_landing_company' => {
     code        => sub {
         my ($self, $context, $args) = @_;
 
-        # For now only svg and virtual are allowed
-        my $client              = $context->client;
-        my $market_type         = $args->{market_type} // '';
-        my $user                = $client->user;
-        my $residence           = $context->residence;
-        my $countries_instance  = request()->brand->countries_instance;
-        my $countries_list      = $countries_instance->countries_list;
-        my $lc_type             = $market_type eq 'synthetic' ? 'gaming' : $market_type;
-        my $binary_company_name = $countries_list->{$residence}->{"${lc_type}_company"} // '';
+        my $client             = $context->client;
+        my $market_type        = $args->{market_type} // '';
+        my $user               = $client->user;
+        my $residence          = $context->residence;
+        my $countries_instance = request()->brand->countries_instance;
+        my $countries_list     = $countries_instance->countries_list;
+        my $lc_type            = $market_type eq 'synthetic' ? 'gaming' : $market_type;
 
-        # TODO: add some sort of LC entry for this.
-        die_with_params(+{error_code => 'TradingAccountNotAllowed'}, $args) if $binary_company_name ne 'svg';
+        my $dx_company = $countries_instance->dx_company_for_country(
+            country      => $residence,
+            account_type => $lc_type
+        );
+
+        die_with_params(+{error_code => 'TradingAccountNotAllowed'}, $args) if $dx_company eq 'none';
 
         my $account_type = $args->{account_type} // '';
         return 1 if $account_type eq 'demo';
 
-        if ($client->landing_company->short ne $binary_company_name) {
-            my @clients = $user->clients_for_landing_company($binary_company_name);
-            @clients = grep { !$_->status->disabled && !$_->status->duplicate_account } @clients;
-            $client  = (@clients > 0) ? $clients[0] : undef;
+        if ($client->landing_company->short ne $dx_company) {
+            my @clients = $user->clients_for_landing_company($dx_company);
+            ($client) = grep { !$_->status->disabled && !$_->status->duplicate_account } @clients;
         }
 
         unless ($client) {
