@@ -43,7 +43,7 @@ Execute db functions.
 
 sub run {
     my $self = shift;
-
+    $log->debug("P2PDailyMaintenance running");
     my $archive_days = BOM::Config::Runtime->instance->app_config->payments->p2p->archive_ads_days;
     my %archival_dates;
 

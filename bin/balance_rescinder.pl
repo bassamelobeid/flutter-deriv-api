@@ -7,13 +7,17 @@ use warnings;
 use Getopt::Long;
 use BOM::User::Script::BalanceRescinder;
 use LandingCompany::Registry;
+use Log::Any::Adapter;
 
 binmode STDOUT, ':encoding(UTF-8)';
 binmode STDERR, ':encoding(UTF-8)';
 
 my $log_level = 'info';
 GetOptions('l|log=s' => \$log_level);
-Log::Any::Adapter->import(qw(Stderr), log_level => $log_level);
+Log::Any::Adapter->import(
+    qw(DERIV),
+    log_level => $log_level,
+);
 
 =head1 NAME
 
