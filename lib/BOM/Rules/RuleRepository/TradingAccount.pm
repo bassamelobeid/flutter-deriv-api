@@ -33,7 +33,7 @@ rule 'trading_account.should_match_landing_company' => {
         my $binary_company_name = $countries_list->{$residence}->{"${lc_type}_company"} // '';
 
         # TODO: add some sort of LC entry for this.
-        die_with_params(+{code => 'TradingAccountNotAllowed'}, $args) if $binary_company_name ne 'svg';
+        die_with_params(+{error_code => 'TradingAccountNotAllowed'}, $args) if $binary_company_name ne 'svg';
 
         my $account_type = $args->{account_type} // '';
         return 1 if $account_type eq 'demo';
@@ -45,10 +45,10 @@ rule 'trading_account.should_match_landing_company' => {
         }
 
         unless ($client) {
-            die_with_params(+{code => 'RealAccountMissing'}, $args)
+            die_with_params(+{error_code => 'RealAccountMissing'}, $args)
                 if (scalar($user->clients) == 1 and $context->client->is_virtual());
-            die_with_params(+{code => 'FinancialAccountMissing'}, $args) if $market_type eq 'financial';
-            die_with_params(+{code => 'GamingAccountMissing'},    $args);
+            die_with_params(+{error_code => 'FinancialAccountMissing'}, $args) if $market_type eq 'financial';
+            die_with_params(+{error_code => 'GamingAccountMissing'},    $args);
         }
 
         return 1;
@@ -66,8 +66,8 @@ rule 'trading_account.should_be_age_verified' => {
 
         if ($config->{trading_age_verification} and not $context->client->status->age_verification) {
             return ($context->client->is_virtual() and $context->client->user->clients == 1)
-                ? die_with_params(+{code => 'RealAccountMissing'}, $args)
-                : die_with_params(+{code => 'NoAgeVerification'},  $args);
+                ? die_with_params(+{error_code => 'RealAccountMissing'}, $args)
+                : die_with_params(+{error_code => 'NoAgeVerification'},  $args);
         }
 
         return 1;
@@ -79,7 +79,7 @@ rule 'trading_account.should_complete_financial_assessment' => {
     code        => sub {
         my ($self, $context, $args) = @_;
 
-        die_with_params(+{code => 'FinancialAssessmentMandatory'}, $args) unless $context->client->is_financial_assessment_complete();
+        die_with_params(+{error_code => 'FinancialAssessmentMandatory'}, $args) unless $context->client->is_financial_assessment_complete();
 
         return 1;
     },
@@ -98,7 +98,7 @@ rule 'trading_account.should_provide_tax_details' => {
         my $requirements            = LandingCompany::Registry->new->get($company_name)->requirements;
         my $compliance_requirements = $requirements->{compliance} // {};
 
-        die_with_params(+{code => 'TINDetailsMandatory'}, $args)
+        die_with_params(+{error_code => 'TINDetailsMandatory'}, $args)
             if ($compliance_requirements->{tax_information}
             and $countries_instance->is_tax_detail_mandatory($context->residence)
             and not $context->client->status->crs_tin_information);
@@ -112,7 +112,7 @@ rule 'trading_account.client_should_be_real' => {
     code        => sub {
         my ($self, $context, $args) = @_;
 
-        die_with_params(+{code => 'AccountShouldBeReal'}, $args) if $context->client->is_virtual();
+        die_with_params(+{error_code => 'AccountShouldBeReal'}, $args) if $context->client->is_virtual();
 
         return 1;
     },
@@ -129,7 +129,7 @@ rule 'trading_account.allowed_currency' => {
         my $available_platforms = $context->client->landing_company->available_trading_platform_currency_group() // {};
         my $allowed_currencies  = $available_platforms->{$trading_platform}                                      // [];
 
-        die_with_params(+{code => 'TradingAccountCurrencyNotAllowed'}, $args) if none { $_ eq $currency } $allowed_currencies->@*;
+        die_with_params(+{error_code => 'TradingAccountCurrencyNotAllowed'}, $args) if none { $_ eq $currency } $allowed_currencies->@*;
 
         return 1;
     },

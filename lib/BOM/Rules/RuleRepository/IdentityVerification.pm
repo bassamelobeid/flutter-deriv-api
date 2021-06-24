@@ -30,7 +30,7 @@ rule 'idv.check_name_comparison' => {
         my $actual_full_name   = join ' ', map { $context->client->$_ // '' } @fields;
         my $expected_full_name = $result->{full_name} // join ' ', map { $result->{$_} // '' } @fields;
 
-        die +{code => 'NameMismatch'} unless BOM::Rules::Comparator::Text::check_words_similarity($actual_full_name, $expected_full_name);
+        die +{error_code => 'NameMismatch'} unless BOM::Rules::Comparator::Text::check_words_similarity($actual_full_name, $expected_full_name);
 
         return undef;
     },
@@ -50,7 +50,7 @@ rule 'idv.check_age_legality' => {
         my $countries_config = Brands::Countries->new();
         my $min_legal_age    = $countries_config->minimum_age_for_country($client->residence);
 
-        die +{code => 'UnderAge'} unless Date::Utility->new($date_of_birth)->is_before(Date::Utility->new->_minus_years($min_legal_age));
+        die +{error_code => 'UnderAge'} unless Date::Utility->new($date_of_birth)->is_before(Date::Utility->new->_minus_years($min_legal_age));
 
         return undef;
     }

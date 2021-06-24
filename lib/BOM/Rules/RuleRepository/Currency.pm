@@ -42,8 +42,8 @@ rule 'currency.is_currency_suspended' => {
         };
 
         die +{
-            code   => $error,
-            params => $currency,
+            error_code => $error,
+            params     => $currency,
         } if $error;
 
         return 1;
@@ -60,7 +60,7 @@ rule 'currency.experimental_currency' => {
         if (BOM::Config::CurrencyConfig::is_experimental_currency($args->{currency})) {
             my $allowed_emails = BOM::Config::Runtime->instance->app_config->payments->experimental_currencies_allowed;
             my $client_email   = $context->client->email;
-            die +{code => 'ExperimentalCurrency'} if not any { $_ eq $client_email } @$allowed_emails;
+            die +{error_code => 'ExperimentalCurrency'} if not any { $_ eq $client_email } @$allowed_emails;
         }
 
         return 1;

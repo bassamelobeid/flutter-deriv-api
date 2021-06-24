@@ -16,21 +16,22 @@ subtest 'rule profile.date_of_birth_complies_minimum_age' => sub {
     my $mock_countries = Test::MockModule->new('Brands::Countries');
     $mock_countries->redefine(minimum_age_for_country => sub { return $minimum_age });
 
-    is_deeply exception { $rule_engine->apply_rules($rule_name) }, {code => 'InvalidDateOfBirth'},
+    is_deeply exception { $rule_engine->apply_rules($rule_name) }, {error_code => 'InvalidDateOfBirth'},
         'correct error when there is no date of birth in args';
 
     my $args = {date_of_birth => 'abcd'};
-    is_deeply exception { $rule_engine->apply_rules($rule_name, $args) }, {code => 'InvalidDateOfBirth'}, 'correct error for invalid date of birth';
+    is_deeply exception { $rule_engine->apply_rules($rule_name, $args) }, {error_code => 'InvalidDateOfBirth'},
+        'correct error for invalid date of birth';
 
     $args = {date_of_birth => Date::Utility->new(time)->minus_time_interval('10y')};
-    is_deeply exception { $rule_engine->apply_rules($rule_name, $args) }, {code => 'InvalidResidence'},
+    is_deeply exception { $rule_engine->apply_rules($rule_name, $args) }, {error_code => 'InvalidResidence'},
         'correct error when there is no minimum age configured';
 
     $minimum_age = 10;
     lives_ok { $rule_engine->apply_rules($rule_name, $args) } 'rule apples if date of birth matches the allowed minimum age';
 
     $args->{date_of_birth} = $args->{date_of_birth}->plus_time_interval('1d');
-    is_deeply exception { $rule_engine->apply_rules($rule_name, $args) }, {code => 'BelowMinimumAge'},
+    is_deeply exception { $rule_engine->apply_rules($rule_name, $args) }, {error_code => 'BelowMinimumAge'},
         'correct error when client is younger than minimum age';
 
     $mock_countries->unmock_all;
@@ -44,7 +45,7 @@ subtest 'rule profile.secret_question_with_answer' => sub {
     lives_ok { $rule_engine->apply_rules($rule_name, {secret_answer => 'dummy'}) } 'rule apples with secret answer alone.';
 
     is_deeply exception { $rule_engine->apply_rules($rule_name, {secret_question => 'dummy'}) },
-        {code => 'NeedBothSecret'}, 'Secret question without answer will fail.';
+        {error_code => 'NeedBothSecret'}, 'Secret question without answer will fail.';
 };
 
 subtest 'rule profile.valid_profile_countries' => sub {
@@ -61,7 +62,7 @@ subtest 'rule profile.valid_profile_countries' => sub {
         lives_ok { $rule_engine->apply_rules($rule_name, {$field => 'id'}) } "Rule apples with a valid $field";
 
         is_deeply exception { $rule_engine->apply_rules($rule_name, {$field => 'xyz'}) },
-            {code => $errors{$field}}, "Rule fails with an invalid $field";
+            {error_code => $errors{$field}}, "Rule fails with an invalid $field";
     }
 };
 
@@ -79,21 +80,22 @@ subtest 'rule profile.valid_promo_code' => sub {
     'rule apples if both promo code and status provided.';
 
     is_deeply exception { $rule_engine->apply_rules($rule_name, {promo_code_status => 1}) },
-        {code => 'No promotion code was provided'}, 'rule fails if promo status is true, but promo code is missing.';
+        {error_code => 'No promotion code was provided'}, 'rule fails if promo status is true, but promo code is missing.';
 
 };
 
 subtest 'rule profile.valid_non_pep_declaration_time' => sub {
     my $rule_name = 'profile.valid_non_pep_declaration_time';
 
-    is_deeply exception { $rule_engine->apply_rules($rule_name) }, {code => 'InvalidNonPepTime'}, 'rule fails if non-pep declaraion is missing.';
+    is_deeply exception { $rule_engine->apply_rules($rule_name) }, {error_code => 'InvalidNonPepTime'},
+        'rule fails if non-pep declaraion is missing.';
 
     is_deeply exception { $rule_engine->apply_rules($rule_name, {non_pep_declaration_time => ''}) },
-        {code => 'InvalidNonPepTime'}, 'rule fails if non-pep declaraion is false.';
+        {error_code => 'InvalidNonPepTime'}, 'rule fails if non-pep declaraion is false.';
 
     lives_ok { $rule_engine->apply_rules($rule_name, {non_pep_declaration_time => time}) } 'rule apples if declaration time equals to now.';
     is_deeply exception { $rule_engine->apply_rules($rule_name, {non_pep_declaration_time => time + 2}) },
-        {code => 'TooLateNonPepTime'}, 'rule fails if non-pep declaraion is a future time.';
+        {error_code => 'TooLateNonPepTime'}, 'rule fails if non-pep declaraion is a future time.';
 };
 
 done_testing;

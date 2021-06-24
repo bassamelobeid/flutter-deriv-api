@@ -23,8 +23,8 @@ subtest "rule $rule_name" => sub {
     $mock_client->redefine('get_self_exclusion_until_date' => sub { return $excluded_until });
     is_deeply exception { $rule_engine->apply_rules($rule_name) },
         {
-        code   => 'SelfExclusion',
-        params => $excluded_until,
+        error_code => 'SelfExclusion',
+        params     => $excluded_until,
         },
         'Client is already self-excluded';
 
@@ -56,8 +56,8 @@ subtest "rule $rule_name" => sub {
         $deposit_limit_allowed = 0;
         is_deeply exception { $rule_engine->apply_rules($rule_name, $args) },
             {
-            code    => 'SetSelfExclusionError',
-            details => $limit,
+            error_code => 'SetSelfExclusionError',
+            details    => $limit,
             },
             "Fails with depist limit: $limit";
 

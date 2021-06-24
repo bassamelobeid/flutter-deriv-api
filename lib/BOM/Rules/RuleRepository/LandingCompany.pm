@@ -35,8 +35,8 @@ rule 'landing_company.accounts_limit_not_reached' => {
 
         return 1 unless scalar @clients;
 
-        die +{code => 'FinancialAccountExists'} if $context->landing_company eq 'maltainvest';
-        die +{code => 'NewAccountLimitReached'};
+        die +{error_code => 'FinancialAccountExists'} if $context->landing_company eq 'maltainvest';
+        die +{error_code => 'NewAccountLimitReached'};
     },
 };
 
@@ -57,8 +57,8 @@ rule 'landing_company.required_fields_are_non_empty' => {
         }
 
         die +{
-            code    => 'InsufficientAccountDetails',
-            details => {missing => [@missing]},
+            error_code => 'InsufficientAccountDetails',
+            details    => {missing => [@missing]},
         } if @missing;
 
         return 1;
@@ -84,8 +84,8 @@ rule 'landing_company.currency_is_allowed' => {
         }
 
         die +{
-            code   => 'CurrencyNotAllowed',
-            params => $args->{currency},
+            error_code => 'CurrencyNotAllowed',
+            params     => $args->{currency},
             }
             unless $landing_company_object->is_currency_legal($args->{currency});
 
@@ -100,7 +100,8 @@ rule 'landing_company.p2p_availability' => {
 
         return 1 unless $args->{account_opening_reason};
 
-        die +{code => 'P2PRestrictedCountry'} if !$context->landing_company_object->p2p_available && ($args->{account_opening_reason} =~ qr/p2p/i);
+        die +{error_code => 'P2PRestrictedCountry'}
+            if !$context->landing_company_object->p2p_available && ($args->{account_opening_reason} =~ qr/p2p/i);
 
         return 1;
     },

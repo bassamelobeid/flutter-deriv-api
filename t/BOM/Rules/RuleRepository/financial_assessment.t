@@ -58,14 +58,17 @@ subtest 'rule financial_assessment.required_sections_are_complete' => sub {
 
     my %engines = map { $_ => BOM::Rules::Engine->new(landing_company => $_) } (qw/svg malta iom maltainvest/);
 
-    is_deeply(exception { $engines{$_}->apply_rules($rule_name) }, {code => 'IncompleteFinancialAssessment'}, "Correct error for empty args - $_")
-        for keys %engines;
+    is_deeply(
+        exception { $engines{$_}->apply_rules($rule_name) },
+        {error_code => 'IncompleteFinancialAssessment'},
+        "Correct error for empty args - $_"
+    ) for keys %engines;
 
     my @keys = $assessment_keys->{trading_experience}->@*;
     my %args = {%financial_data}->%{@keys};
     is_deeply(
         exception { $engines{$_}->apply_rules($rule_name, \%args) },
-        {code => 'IncompleteFinancialAssessment'},
+        {error_code => 'IncompleteFinancialAssessment'},
         "Correct error for trading experience only - $_"
     ) for keys %engines;
 
@@ -74,7 +77,7 @@ subtest 'rule financial_assessment.required_sections_are_complete' => sub {
     is($engines{$_}->apply_rules($rule_name, \%args), 1, "Financial assessment is complete with financial info only - $_") for (qw/svg malta iom/);
     is_deeply(
         exception { $engines{maltainvest}->apply_rules($rule_name, \%args) },
-        {code => 'IncompleteFinancialAssessment'},
+        {error_code => 'IncompleteFinancialAssessment'},
         "Correct error for financial info only - maltainvest"
     );
 

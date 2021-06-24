@@ -36,7 +36,7 @@ subtest 'rule landing_company.accounts_limit_not_reached' => sub {
         broker_code => 'MLT',
     });
     $user->add_client($client_mlt);
-    is_deeply exception { $rule_engine->apply_rules($rule_name) }, {code => 'NewAccountLimitReached'}, 'Number of MLT accounts is limited';
+    is_deeply exception { $rule_engine->apply_rules($rule_name) }, {error_code => 'NewAccountLimitReached'}, 'Number of MLT accounts is limited';
 
     $rule_engine = BOM::Rules::Engine->new(
         client          => $client,
@@ -48,7 +48,7 @@ subtest 'rule landing_company.accounts_limit_not_reached' => sub {
         broker_code => 'MF',
     });
     $user->add_client($client_mf);
-    is_deeply exception { $rule_engine->apply_rules($rule_name) }, {code => 'FinancialAccountExists'}, 'Number of MF accounts is limited';
+    is_deeply exception { $rule_engine->apply_rules($rule_name) }, {error_code => 'FinancialAccountExists'}, 'Number of MF accounts is limited';
 
     lives_ok { $rule_engine->apply_rules($rule_name, {account_type => 'wallet'}) } 'Wallet accounts is not restricted by trading accounts';
 
@@ -75,8 +75,8 @@ subtest 'rule landing_company.required_fields_are_non_empty' => sub {
 
     is_deeply exception { $rule_engine->apply_rules($rule_name, $args) },
         {
-        code    => 'InsufficientAccountDetails',
-        details => {missing => [qw(first_name last_name)]}
+        error_code => 'InsufficientAccountDetails',
+        details    => {missing => [qw(first_name last_name)]}
         },
         'Error with missing client data';
 
@@ -98,8 +98,8 @@ subtest 'rule landing_company.currency_is_allowed' => sub {
     lives_ok { $rule_engine->apply_rules($rule_name) } 'Empty currency is accepted';
     is_deeply exception { $rule_engine->apply_rules($rule_name, {currency => 'USD'}) },
         {
-        code   => 'CurrencyNotAllowed',
-        params => 'USD'
+        error_code => 'CurrencyNotAllowed',
+        params     => 'USD'
         },
         'Error for illegal currency';
 
@@ -122,7 +122,7 @@ subtest 'rule landing_company.p2p_availability' => sub {
     $mock_lc->redefine(p2p_available => sub { return 0 });
     lives_ok { $rule_engine->apply_rules($rule_name, {account_opening_reason => 'dummy'}) } 'any p2p unrelated reason is fine';
 
-    is_deeply exception { $rule_engine->apply_rules($rule_name, {account_opening_reason => 'p2p'}) }, {code => 'P2PRestrictedCountry'},
+    is_deeply exception { $rule_engine->apply_rules($rule_name, {account_opening_reason => 'p2p'}) }, {error_code => 'P2PRestrictedCountry'},
         'It fails for a p2p related reason in args';
 
     $mock_lc->unmock_all;

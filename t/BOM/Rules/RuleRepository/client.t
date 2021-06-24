@@ -21,7 +21,7 @@ subtest 'rule profile.address_postcode_mandatory' => sub {
     my $rule_name = 'profile.address_postcode_mandatory';
     $client->address_postcode('');
 
-    is_deeply exception { $rule_engine->apply_rules($rule_name) }, {code => 'PostcodeRequired'}, 'correct error when postcode is missing';
+    is_deeply exception { $rule_engine->apply_rules($rule_name) }, {error_code => 'PostcodeRequired'}, 'correct error when postcode is missing';
 
     ok $rule_engine->apply_rules($rule_name, {address_postcode => '123'}), 'Test passes with a postcode in args';
 
@@ -34,7 +34,7 @@ subtest 'rule profile.no_pobox_in_address' => sub {
 
     for my $arg (qw/address_line_1 address_line_2/) {
         for my $value ('p.o. box', 'p o. box', 'p o box', 'P.O Box', 'Po. BOX') {
-            is_deeply exception { $rule_engine->apply_rules($rule_name, {$arg => $value}) }, {code => 'PoBoxInAddress'}, "$value is rejected";
+            is_deeply exception { $rule_engine->apply_rules($rule_name, {$arg => $value}) }, {error_code => 'PoBoxInAddress'}, "$value is rejected";
         }
     }
 
@@ -47,7 +47,7 @@ subtest 'rule client.check_duplicate_account' => sub {
     my $mock_client = Test::MockModule->new('BOM::User::Client');
     $mock_client->redefine(check_duplicate_account => sub { return 1 });
 
-    is_deeply exception { $rule_engine->apply_rules($rule_name) }, {code => 'DuplicateAccount'}, "Duplicate accounnt is rejected";
+    is_deeply exception { $rule_engine->apply_rules($rule_name) }, {error_code => 'DuplicateAccount'}, "Duplicate accounnt is rejected";
     $mock_client->redefine(check_duplicate_account => sub { return 0 });
     ok $rule_engine->apply_rules($rule_name), 'Non-duplicate account is accepted';
 
@@ -57,7 +57,8 @@ subtest 'rule client.check_duplicate_account' => sub {
 subtest 'rule client.has_currency_set' => sub {
     my $rule_name = 'client.has_currency_set';
 
-    is_deeply exception { $rule_engine->apply_rules($rule_name) }, {code => 'SetExistingAccountCurrency'}, 'correct error when currency is missing';
+    is_deeply exception { $rule_engine->apply_rules($rule_name) }, {error_code => 'SetExistingAccountCurrency'},
+        'correct error when currency is missing';
 
     $client->set_default_account('USD');
 
@@ -74,7 +75,7 @@ subtest 'rule client.residence_is_not_empty' => sub {
     lives_ok { $rule_engine->apply_rules($rule_name) } 'Rule applies when residence is set.';
 
     $residence = undef;
-    is_deeply exception { $rule_engine->apply_rules($rule_name) }, {code => 'NoResidence'}, 'Rule fails when residence is empty';
+    is_deeply exception { $rule_engine->apply_rules($rule_name) }, {error_code => 'NoResidence'}, 'Rule fails when residence is empty';
 
     $mock_client->unmock_all;
 };
@@ -86,7 +87,7 @@ subtest 'rule client.residence_not_changed' => sub {
 
     lives_ok { $rule_engine->apply_rules($rule_name, {residence => $client->residence}) } 'Rule applies if residence is the same.';
 
-    is_deeply exception { $rule_engine->apply_rules($rule_name, {residence => 'xyz'}) }, {code => 'InvalidResidence'},
+    is_deeply exception { $rule_engine->apply_rules($rule_name, {residence => 'xyz'}) }, {error_code => 'InvalidResidence'},
         'Rule fails when residence is different';
 
 };
@@ -105,8 +106,8 @@ subtest 'rule client.signup_immitable_fields_not_changed' => sub {
         $client->save;
         is_deeply exception { $rule_engine->apply_rules($rule_name, {$field => 'xyz'}) },
             {
-            code    => 'CannotChangeAccountDetails',
-            details => {changed => [$field]}
+            error_code => 'CannotChangeAccountDetails',
+            details    => {changed => [$field]}
             },
             "Rule fails when non-empty immutalbe fiel $field is different";
     }
@@ -120,7 +121,7 @@ subtest 'rule client.is_not_virtual' => sub {
     lives_ok { $rule_engine->apply_rules($rule_name) } 'Test passes for real client';
 
     $rule_engine = BOM::Rules::Engine->new(client => $client_vr);
-    is_deeply exception { $rule_engine->apply_rules($rule_name) }, {code => 'PermissionDenied'}, 'Error with a virtual client';
+    is_deeply exception { $rule_engine->apply_rules($rule_name) }, {error_code => 'PermissionDenied'}, 'Error with a virtual client';
 };
 
 done_testing();

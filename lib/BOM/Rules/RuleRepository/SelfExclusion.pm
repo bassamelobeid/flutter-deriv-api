@@ -26,8 +26,8 @@ rule 'self_exclusion.not_self_excluded' => {
 
         my $excluded_until = $context->client->get_self_exclusion_until_date;
         die {
-            code   => 'SelfExclusion',
-            params => $excluded_until,
+            error_code => 'SelfExclusion',
+            params     => $excluded_until,
         } if $excluded_until;
 
         return 1;
@@ -43,8 +43,8 @@ rule 'self_exclusion.deposit_limits_allowed' => {
 
         for my $max_deposit_field (qw/max_deposit max_7day_deposit max_30day_deposit/) {
             die +{
-                code    => 'SetSelfExclusionError',
-                details => $max_deposit_field
+                error_code => 'SetSelfExclusionError',
+                details    => $max_deposit_field
                 }
                 if $args->{$max_deposit_field};
         }

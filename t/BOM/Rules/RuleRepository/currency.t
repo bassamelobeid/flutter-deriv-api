@@ -30,8 +30,8 @@ subtest 'rule currency.is_currency_suspended' => sub {
     lives_ok { $rule_engine->apply_rules($rule_name, {currency => 'GBP'}) } 'Rule applies with a fiat currency when cyrpto is suspended.';
     is_deeply exception { $rule_engine->apply_rules($rule_name, {currency => 'BTC'}) },
         {
-        code   => 'CurrencySuspended',
-        params => 'BTC'
+        error_code => 'CurrencySuspended',
+        params     => 'BTC'
         },
         'Rule fails to apply on a suspended crypto currency.';
 
@@ -39,8 +39,8 @@ subtest 'rule currency.is_currency_suspended' => sub {
     lives_ok { $rule_engine->apply_rules($rule_name, {currency => 'GBP'}) } 'Rule applies with a fiat currency even crypto check dies.';
     is_deeply exception { $rule_engine->apply_rules($rule_name, {currency => 'BTC'}) },
         {
-        code   => 'InvalidCryptoCurrency',
-        params => 'BTC'
+        error_code => 'InvalidCryptoCurrency',
+        params     => 'BTC'
         },
         'Rule fails to apply on a failing crypto currency.';
 
@@ -82,7 +82,7 @@ subtest 'rule currency.experimental_currency' => sub {
         if ($case->{error}) {
             is_deeply exception { $rule_engine->apply_rules($rule_name, {currency => 'BTC'}) },
                 {
-                code => $case->{error},
+                error_code => $case->{error},
                 },
                 $case->{description};
         } else {

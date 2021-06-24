@@ -34,8 +34,8 @@ rule 'user.has_no_real_clients_without_currency' => {
 
         if (my ($loginid_no_curr) = grep { not $siblings->{$_}->{currency} } keys %$siblings) {
             die +{
-                code   => 'SetExistingAccountCurrency',
-                params => $loginid_no_curr
+                error_code => 'SetExistingAccountCurrency',
+                params     => $loginid_no_curr
             };
         }
 
@@ -71,15 +71,15 @@ rule 'user.currency_is_available' => {
             # Only one fiat trading account is allowed
             if ($account_type eq 'trading' && $currency_type eq 'fiat') {
                 my $sibling_currency_type = LandingCompany::Registry::get_currency_type($sibling->{currency});
-                die +{code => 'CurrencyTypeNotAllowed'} if $sibling_currency_type eq 'fiat';
+                die +{error_code => 'CurrencyTypeNotAllowed'} if $sibling_currency_type eq 'fiat';
             }
 
             my $error_code = $sibling->{account_type} eq 'trading' ? 'DuplicateCurrency' : 'DuplicateWallet';
             # Account type, currency and payment method should match
             my $sibling_payment_method = $sibling->{payment_method} // '';
             die +{
-                code   => $error_code,
-                params => $currency
+                error_code => $error_code,
+                params     => $currency
                 }
                 if $account_type eq $sibling->{account_type}
                 and $currency eq ($sibling->{currency} // '')
@@ -96,7 +96,7 @@ rule 'user.email_is_verified' => {
         my ($self, $context, $args) = @_;
 
         die +{
-            code => 'email unverified',
+            error_code => 'email unverified',
             }
             unless $context->client->user->email_verified;
 

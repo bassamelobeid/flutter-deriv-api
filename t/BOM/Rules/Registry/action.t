@@ -20,12 +20,12 @@ my $rule2 = rule(
 
 my $failing_rule1 = rule(
     'failing_rule1' => {
-        code => sub { push @rule_args, @_; die +{code => 'Something went wrong on rule 1'} }
+        code => sub { push @rule_args, @_; die +{error_code => 'Something went wrong on rule 1'} }
     });
 
 my $failing_rule2 = rule(
     'failing_rule2' => {
-        code => sub { push @rule_args, @_; die +{code => 'Something went wrong on rule 2'} }
+        code => sub { push @rule_args, @_; die +{error_code => 'Something went wrong on rule 2'} }
     });
 
 my %args = (
@@ -82,8 +82,8 @@ subtest 'Verification' => sub {
         'Context and args are correctly passed to rule codes';
     is_deeply $result->failed_rules,
         {
-        'failing_rule1' => +{code => "Something went wrong on rule 1"},
-        'failing_rule2' => +{code => "Something went wrong on rule 2"},
+        'failing_rule1' => +{error_code => "Something went wrong on rule 1"},
+        'failing_rule2' => +{error_code => "Something went wrong on rule 2"},
         },
         'failed rules are as expectation';
     is_deeply $result->passed_rules, ['rule1', 'rule2'], 'passed rules are as expectation';

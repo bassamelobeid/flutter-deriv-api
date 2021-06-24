@@ -37,14 +37,14 @@ subtest 'rule transfers.currency_should_match' => sub {
     $params->{currency} = 'USD';
     is_deeply exception { $rule_engine->apply_rules($rule_name, $params) },
         {
-        code => 'InvalidAction',
+        error_code => 'InvalidAction',
         },
         'invalid action reported';
 
     $params->{action} = 'deposit';
     is_deeply exception { $rule_engine->apply_rules($rule_name, $params) },
         {
-        code => 'CurrencyShouldMatch',
+        error_code => 'CurrencyShouldMatch',
         },
         'expected error when currency mismatch';
 
@@ -54,7 +54,7 @@ subtest 'rule transfers.currency_should_match' => sub {
     $params->{action} = 'withdrawal';
     is_deeply exception { $rule_engine->apply_rules($rule_name, $params) },
         {
-        code => 'CurrencyShouldMatch',
+        error_code => 'CurrencyShouldMatch',
         },
         'expected error when currency mismatch';
 
@@ -83,7 +83,7 @@ subtest 'rule transfers.daily_limit' => sub {
 
     is_deeply exception { $rule_engine->apply_rules($rule_name, $params) },
         {
-        code           => 'MaximumTransfers',
+        error_code     => 'MaximumTransfers',
         message_params => [1],
         },
         'expected error when limit is hit';
@@ -113,7 +113,7 @@ subtest 'rule transfers.limits' => sub {
 
     is_deeply exception { $rule_engine->apply_rules($rule_name, $params) },
         {
-        code => 'InvalidAction',
+        error_code => 'InvalidAction',
         },
         'expected error when no action given';
 
@@ -121,7 +121,7 @@ subtest 'rule transfers.limits' => sub {
 
     is_deeply exception { $rule_engine->apply_rules($rule_name, $params) },
         {
-        code => 'InvalidAction',
+        error_code => 'InvalidAction',
         },
         'expected error when invalid action given';
 
@@ -135,7 +135,7 @@ subtest 'rule transfers.limits' => sub {
         $params->{amount} = 1;
         is_deeply exception { $rule_engine->apply_rules($rule_name, $params) },
             {
-            code           => 'InvalidMinAmount',
+            error_code     => 'InvalidMinAmount',
             message_params => [formatnumber('amount', 'USD', 10), 'USD']
             },
             'expected error when amount is less than minimum';
@@ -146,7 +146,7 @@ subtest 'rule transfers.limits' => sub {
         $params->{amount} = 30;
         is_deeply exception { $rule_engine->apply_rules($rule_name, $params) },
             {
-            code           => 'InvalidMaxAmount',
+            error_code     => 'InvalidMaxAmount',
             message_params => [formatnumber('amount', 'USD', 20), 'USD']
             },
             'expected error when amount is larger than maximum';
@@ -170,7 +170,7 @@ subtest 'rule transfers.limits' => sub {
 
             is_deeply exception { $rule_engine->apply_rules($rule_name, $params); },
                 {
-                code           => 'InvalidMinAmount',
+                error_code     => 'InvalidMinAmount',
                 message_params => [formatnumber('amount', 'BTC', 0.01), 'BTC']
                 },
                 'min limit hit';
@@ -178,7 +178,7 @@ subtest 'rule transfers.limits' => sub {
             $params->{amount} = 2;
             is_deeply exception { $rule_engine->apply_rules($rule_name, $params); },
                 {
-                code           => 'InvalidMaxAmount',
+                error_code     => 'InvalidMaxAmount',
                 message_params => [formatnumber('amount', 'BTC', 1), 'BTC']
                 },
                 'max limit hit';
@@ -198,7 +198,7 @@ subtest 'rule transfers.limits' => sub {
         $params->{amount} = 1;
         is_deeply exception { $rule_engine->apply_rules($rule_name, $params) },
             {
-            code           => 'InvalidMinAmount',
+            error_code     => 'InvalidMinAmount',
             message_params => [formatnumber('amount', 'USD', 10), 'USD']
             },
             'expected error when amount is less than minimum';
@@ -209,7 +209,7 @@ subtest 'rule transfers.limits' => sub {
         $params->{amount} = 30;
         is_deeply exception { $rule_engine->apply_rules($rule_name, $params) },
             {
-            code           => 'InvalidMaxAmount',
+            error_code     => 'InvalidMaxAmount',
             message_params => [formatnumber('amount', 'USD', 20), 'USD']
             },
             'expected error when amount is larger than maximum';
@@ -262,14 +262,14 @@ subtest 'rule transfers.experimental_currency_email_whitelisted' => sub {
 
     is_deeply exception { $rule_engine->apply_rules($rule_name, $params) },
         {
-        code => 'CurrencyTypeNotAllowed',
+        error_code => 'CurrencyTypeNotAllowed',
         },
         'Expected error when platform account currency is experimental and email is not whitelisted';
 
     $experimental_currency = 'BTC';
     is_deeply exception { $rule_engine->apply_rules($rule_name, $params) },
         {
-        code => 'CurrencyTypeNotAllowed',
+        error_code => 'CurrencyTypeNotAllowed',
         },
         'Expected error when local account currency is experimental and email is not whitelisted';
 

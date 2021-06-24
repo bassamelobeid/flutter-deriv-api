@@ -37,12 +37,12 @@ rule 'transfers.currency_should_match' => {
             $account_currency = $action_args->{platform_currency};
         } else {
             die +{
-                code => 'InvalidAction',
+                error_code => 'InvalidAction',
             };
         }
 
         die +{
-            code => 'CurrencyShouldMatch',
+            error_code => 'CurrencyShouldMatch',
         } unless ($account_currency // '') eq $currency;
 
         return 1;
@@ -58,7 +58,7 @@ rule 'transfers.daily_limit' => {
         my $user_daily_transfer_count = $context->client->user->daily_transfer_count($platform);
 
         die +{
-            code           => 'MaximumTransfers',
+            error_code     => 'MaximumTransfers',
             message_params => [$daily_transfer_limit]} unless $user_daily_transfer_count < $daily_transfer_limit;
 
         return 1;
@@ -82,19 +82,19 @@ rule 'transfers.limits' => {
         } elsif ($action eq 'withdrawal') {
             $source_currency = $action_args->{platform_currency};
         } else {
-            die +{code => 'InvalidAction'};
+            die +{error_code => 'InvalidAction'};
         }
 
         my $min = $transfer_limits->{$source_currency}->{min};
         my $max = $transfer_limits->{$source_currency}->{max};
 
         die +{
-            code           => 'InvalidMinAmount',
+            error_code     => 'InvalidMinAmount',
             message_params => [formatnumber('amount', $source_currency, $min), $source_currency]}
             if $amount < financialrounding('amount', $source_currency, $min);
 
         die +{
-            code           => 'InvalidMaxAmount',
+            error_code     => 'InvalidMaxAmount',
             message_params => [formatnumber('amount', $source_currency, $max), $source_currency]}
             if $amount > financialrounding('amount', $source_currency, $max);
 
@@ -114,7 +114,7 @@ rule 'transfers.experimental_currency_email_whitelisted' => {
             my $allowed_emails = BOM::Config::Runtime->instance->app_config->payments->experimental_currencies_allowed;
 
             die +{
-                code => 'CurrencyTypeNotAllowed',
+                error_code => 'CurrencyTypeNotAllowed',
             } if not any { $_ eq $client->email } @$allowed_emails;
         }
 

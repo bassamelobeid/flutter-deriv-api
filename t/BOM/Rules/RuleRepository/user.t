@@ -28,8 +28,8 @@ subtest 'rule user.has_no_enabled_clients_without_currency' => sub {
     $rule_engine = BOM::Rules::Engine->new(client => $client_cr);
     is_deeply exception { $rule_engine->apply_rules($rule_name) },
         {
-        code   => 'SetExistingAccountCurrency',
-        params => $client_cr->loginid
+        error_code => 'SetExistingAccountCurrency',
+        params     => $client_cr->loginid
         },
         'Correct error when currency is not set';
 
@@ -40,8 +40,8 @@ subtest 'rule user.has_no_enabled_clients_without_currency' => sub {
     $user->add_client($client_cr2);
     is_deeply exception { $rule_engine->apply_rules($rule_name) },
         {
-        code   => 'SetExistingAccountCurrency',
-        params => $client_cr2->loginid
+        error_code => 'SetExistingAccountCurrency',
+        params     => $client_cr2->loginid
         },
         'Sibling account has not currency';
     $client_cr2->status->set('disabled', 'test', 'test');
@@ -58,7 +58,8 @@ subtest 'rule user.currency_is_available' => sub {
             currency     => 'EUR',
             account_type => 'trading'
         };
-        is_deeply exception { $rule_engine->apply_rules($rule_name, $args) }, {code => 'CurrencyTypeNotAllowed'}, 'Only one fiat account is allowed';
+        is_deeply exception { $rule_engine->apply_rules($rule_name, $args) }, {error_code => 'CurrencyTypeNotAllowed'},
+            'Only one fiat account is allowed';
 
         my $mock_account = Test::MockModule->new('BOM::User::Client::Account');
         $mock_account->redefine(currency_code => sub { return 'BTC' });
@@ -67,8 +68,8 @@ subtest 'rule user.currency_is_available' => sub {
         $args->{currency} = 'BTC';
         is_deeply exception { $rule_engine->apply_rules($rule_name, $args) },
             {
-            code   => 'DuplicateCurrency',
-            params => 'BTC'
+            error_code => 'DuplicateCurrency',
+            params     => 'BTC'
             },
             'The same currency cannot be used again';
 
@@ -104,8 +105,8 @@ subtest 'rule user.currency_is_available' => sub {
         $args->{currecy} = $client_cr->account->currency_code;
         is_deeply exception { $rule_engine->apply_rules($rule_name, $args) },
             {
-            code   => 'DuplicateWallet',
-            params => 'USD'
+            error_code => 'DuplicateWallet',
+            params     => 'USD'
             },
             'Duplicate wallet is detected';
 
@@ -131,7 +132,7 @@ subtest 'user.email_is_verified' => sub {
     lives_ok { $rule_engine->apply_rules($rule_name) } 'Rule applies when email is verified';
 
     $email_verified = 0;
-    is_deeply exception { $rule_engine->apply_rules($rule_name) }, {code => 'email unverified'}, 'Rule fails when email is verified';
+    is_deeply exception { $rule_engine->apply_rules($rule_name) }, {error_code => 'email unverified'}, 'Rule fails when email is verified';
 
     $mock_user->unmock_all;
 };

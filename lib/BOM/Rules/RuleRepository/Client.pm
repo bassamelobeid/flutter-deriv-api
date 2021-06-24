@@ -25,7 +25,7 @@ rule 'client.check_duplicate_account' => {
     code        => sub {
         my ($self, $context, $args) = @_;
 
-        die +{code => 'DuplicateAccount'} if $context->client->check_duplicate_account($args);
+        die +{error_code => 'DuplicateAccount'} if $context->client->check_duplicate_account($args);
 
         return 1;
     },
@@ -41,7 +41,7 @@ rule 'client.has_currency_set' => {
 
         $currency_code = $account->currency_code if $account;
 
-        die +{code => 'SetExistingAccountCurrency'} unless $currency_code;
+        die +{error_code => 'SetExistingAccountCurrency'} unless $currency_code;
 
         return 1;
     },
@@ -53,7 +53,7 @@ rule 'client.residence_not_changed' => {
         my ($self, $context, $args) = @_;
 
         die +{
-            code => 'InvalidResidence',
+            error_code => 'InvalidResidence',
         } if ($args->{residence} and $args->{residence} ne $context->client->residence);
 
         return 1;
@@ -66,7 +66,7 @@ rule 'client.residence_is_not_empty' => {
         my ($self, $context, $args) = @_;
 
         die +{
-            code => 'NoResidence',
+            error_code => 'NoResidence',
         } unless $context->client->residence;
 
         return 1;
@@ -91,8 +91,8 @@ rule 'client.signup_immitable_fields_not_changed' => {
         }
 
         die +{
-            code    => 'CannotChangeAccountDetails',
-            details => {changed => [@changed]},
+            error_code => 'CannotChangeAccountDetails',
+            details    => {changed => [@changed]},
         } if @changed;
 
         return 1;
@@ -104,7 +104,7 @@ rule 'client.is_not_virtual' => {
     code        => sub {
         my ($self, $context) = @_;
 
-        die {code => 'PermissionDenied'} if $context->client->is_virtual;
+        die {error_code => 'PermissionDenied'} if $context->client->is_virtual;
 
         return 1;
     }

@@ -38,7 +38,7 @@ subtest 'rule trading_account.should_match_landing_company' => sub {
 
         is_deeply exception { $rule_engine->apply_rules($rule_name, $params) },
             {
-            code           => 'RealAccountMissing',
+            error_code     => 'RealAccountMissing',
             message_params => ['Deriv X']
             },
             'Real account missing';
@@ -65,7 +65,7 @@ subtest 'rule trading_account.should_match_landing_company' => sub {
 
         is_deeply exception { $rule_engine->apply_rules($rule_name, $params) },
             {
-            code           => 'RealAccountMissing',
+            error_code     => 'RealAccountMissing',
             message_params => ['Deriv X']
             },
             'Real account missing again';
@@ -78,7 +78,7 @@ subtest 'rule trading_account.should_match_landing_company' => sub {
 
         is_deeply exception { $rule_engine->apply_rules($rule_name, $params) },
             {
-            code           => 'RealAccountMissing',
+            error_code     => 'RealAccountMissing',
             message_params => ['Deriv X']
             },
             'Real account missing again';
@@ -113,7 +113,7 @@ subtest 'rule trading_account.should_match_landing_company' => sub {
 
         is_deeply exception { $rule_engine->apply_rules($rule_name, $params) },
             {
-            code           => 'TradingAccountNotAllowed',
+            error_code     => 'TradingAccountNotAllowed',
             message_params => ['Deriv X']
             },
             'not available for MX';
@@ -130,7 +130,7 @@ subtest 'rule trading_account.should_match_landing_company' => sub {
 
         is_deeply exception { $rule_engine->apply_rules($rule_name, $params) },
             {
-            code           => 'TradingAccountNotAllowed',
+            error_code     => 'TradingAccountNotAllowed',
             message_params => ['Deriv X']
             },
             'not available for MF';
@@ -162,7 +162,7 @@ subtest 'rule trading_account.should_match_landing_company' => sub {
 
         is_deeply exception { $rule_engine->apply_rules($rule_name, $params) },
             {
-            code           => 'TradingAccountNotAllowed',
+            error_code     => 'TradingAccountNotAllowed',
             message_params => ['Deriv X']
             },
             'not available for MLT';
@@ -179,7 +179,7 @@ subtest 'rule trading_account.should_match_landing_company' => sub {
 
         is_deeply exception { $rule_engine->apply_rules($rule_name, $params) },
             {
-            code           => 'TradingAccountNotAllowed',
+            error_code     => 'TradingAccountNotAllowed',
             message_params => ['Deriv X']
             },
             'not available for MF';
@@ -219,7 +219,7 @@ subtest 'rule trading_account.should_be_age_verified' => sub {
 
     $rule_engine = BOM::Rules::Engine->new(client => $client);
 
-    is_deeply exception { $rule_engine->apply_rules($rule_name) }, {code => 'NoAgeVerification'}, 'Age verification required';
+    is_deeply exception { $rule_engine->apply_rules($rule_name) }, {error_code => 'NoAgeVerification'}, 'Age verification required';
 
     $client->status->set('age_verification', 'test', 'test');
 
@@ -238,7 +238,7 @@ subtest 'rule trading_account.should_be_age_verified' => sub {
 
     $rule_engine = BOM::Rules::Engine->new(client => $client);
 
-    is_deeply exception { $rule_engine->apply_rules($rule_name) }, {code => 'RealAccountMissing'}, 'Real account missing';
+    is_deeply exception { $rule_engine->apply_rules($rule_name) }, {error_code => 'RealAccountMissing'}, 'Real account missing';
 
     # Give real account
     $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
@@ -249,7 +249,7 @@ subtest 'rule trading_account.should_be_age_verified' => sub {
 
     $rule_engine = BOM::Rules::Engine->new(client => $client);
 
-    is_deeply exception { $rule_engine->apply_rules($rule_name) }, {code => 'NoAgeVerification'}, 'Age verification required';
+    is_deeply exception { $rule_engine->apply_rules($rule_name) }, {error_code => 'NoAgeVerification'}, 'Age verification required';
 
     $client->status->set('age_verification', 'test', 'test');
 
@@ -287,7 +287,7 @@ subtest 'rule trading_account.should_complete_financial_assessment' => sub {
     $fa_complete = 0;
     is_deeply exception { $rule_engine->apply_rules($rule_name, $params) },
         {
-        code           => 'FinancialAssessmentMandatory',
+        error_code     => 'FinancialAssessmentMandatory',
         message_params => ['Deriv X']
         },
         'Financial Assesment mandatory';
@@ -396,7 +396,7 @@ subtest 'rule trading_account.should_provide_tax_details' => sub {
         } else {
             is_deeply exception { $rule_engine->apply_rules($rule_name, $params) },
                 {
-                code           => 'TINDetailsMandatory',
+                error_code     => 'TINDetailsMandatory',
                 message_params => ['Deriv X']
                 },
                 'Tax details are mandatory';
@@ -418,7 +418,7 @@ subtest 'rule trading_account.client_should_be_real' => sub {
     my $rule_engine = BOM::Rules::Engine->new(client => $vrtc);
     is_deeply exception { $rule_engine->apply_rules($rule_name, {platform => 'dxtrade'}) },
         {
-        code           => 'AccountShouldBeReal',
+        error_code     => 'AccountShouldBeReal',
         message_params => ['Deriv X']
         },
         'expected error when passing virtual account';
@@ -454,14 +454,14 @@ subtest 'rule trading_account.allowed_currency' => sub {
     my $rule_engine = BOM::Rules::Engine->new(client => $vrtc);
     is_deeply exception { $rule_engine->apply_rules($rule_name, {platform => 'dxtrade', 'currency' => 'EUR'}) },
         {
-        code           => 'TradingAccountCurrencyNotAllowed',
+        error_code     => 'TradingAccountCurrencyNotAllowed',
         message_params => ['Deriv X']
         },
         'EUR is not allowed';
 
     is_deeply exception { $rule_engine->apply_rules($rule_name, {platform => 'dxtrade', 'currency' => 'USD'}) },
         {
-        code           => 'TradingAccountCurrencyNotAllowed',
+        error_code     => 'TradingAccountCurrencyNotAllowed',
         message_params => ['Deriv X']
         },
         'USD is not allowed (vrtc account)';

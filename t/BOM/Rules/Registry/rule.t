@@ -16,7 +16,7 @@ my %args = (
 my %failing_args = (
     name        => 'test_rule_failing',
     description => 'A rule for testing',
-    code        => sub { die +{code => "test failed"} });
+    code        => sub { die +{error_code => "test failed"} });
 
 subtest 'Rule object behaviour when context is not provided' => sub {
     my $rule = BOM::Rules::Registry::Rule->new(%args);

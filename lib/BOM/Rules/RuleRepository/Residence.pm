@@ -33,9 +33,9 @@ rule 'residence.market_type_is_available' => {
         };
 
         if ($account_type eq 'wallet') {
-            die {code => 'InvalidAccount'} unless List::Util::any { $_ } values %$companies;
+            die {error_code => 'InvalidAccount'} unless List::Util::any { $_ } values %$companies;
         } else {
-            die {code => 'InvalidAccount'} if $context->landing_company ne ($companies->{$market_type} // '');
+            die {error_code => 'InvalidAccount'} if $context->landing_company ne ($companies->{$market_type} // '');
         }
 
         return 1;
@@ -49,7 +49,7 @@ rule 'residence.is_signup_allowed' => {
 
         my $countries_instance = Brands->new->countries_instance;
 
-        die {code => 'InvalidAccount'} unless $countries_instance->is_signup_allowed($context->residence);
+        die {error_code => 'InvalidAccount'} unless $countries_instance->is_signup_allowed($context->residence);
 
         return 1;
     },
@@ -61,7 +61,7 @@ rule 'residence.not_restricted' => {
         my ($self, $context) = @_;
 
         my $countries_instance = Brands->new->countries_instance;
-        die +{code => 'InvalidResidence'} if $countries_instance->restricted_country($context->residence);
+        die +{error_code => 'InvalidResidence'} if $countries_instance->restricted_country($context->residence);
         return 1;
     },
 };

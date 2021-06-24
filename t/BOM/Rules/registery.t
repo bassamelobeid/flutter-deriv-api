@@ -12,9 +12,9 @@ use BOM::Rules::Registry qw(rule get_rule get_action);
 subtest 'Rules registery' => sub {
     like exception { rule() }, qr/Rule name is required but missing/, 'Rule name is required';
     like exception { rule('test_rule') }, qr/No code associated with rule 'test_rule'/, 'Rule code is required';
-    like exception { rule('test_rule' => {code => 'scalar value'}) }, qr/No code associated with rule 'test_rule'/,
+    like exception { rule('test_rule' => {error_code => 'scalar value'}) }, qr/No code associated with rule 'test_rule'/,
         'Rule code should be of correct type';
-    like exception { rule('test_rule' => {code => {}}) }, qr/No code associated with rule 'test_rule'/, 'Rule code should be of correct type';
+    like exception { rule('test_rule' => {error_code => {}}) }, qr/No code associated with rule 'test_rule'/, 'Rule code should be of correct type';
     my $test_rule = rule(
         'test_rule' => {
             code => sub { return 'test result' }

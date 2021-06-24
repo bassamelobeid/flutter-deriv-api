@@ -115,7 +115,7 @@ subtest 'rule idv.check_name_comparison' => sub {
         if (my $error = $case->{error}) {
             is_deeply exception { $rule_engine->apply_rules($rule_name, $args) },
                 {
-                code => $error,
+                error_code => $error,
                 },
                 "Broken rules: $error";
         } else {
@@ -217,7 +217,7 @@ subtest 'rule idv.check_age_legality' => sub {
         my $args = {result => $case->{result}};
 
         if (my $error = $case->{error}) {
-            is_deeply exception { $rule_engine->apply_rules($rule_name, $args) }, +{code => $error}, "Broken rules: $error";
+            is_deeply exception { $rule_engine->apply_rules($rule_name, $args) }, +{error_code => $error}, "Broken rules: $error";
         } else {
             lives_ok { $rule_engine->apply_rules($rule_name, $args) } 'Rules are honored';
         }

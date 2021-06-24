@@ -25,7 +25,7 @@ rule 'financial_assessment.required_sections_are_complete' => {
         my $is_TE_complete = is_section_complete($args, "trading_experience");
 
         die +{
-            code => 'IncompleteFinancialAssessment',
+            error_code => 'IncompleteFinancialAssessment',
             }
             unless ($context->landing_company eq "maltainvest" ? $is_TE_complete && $is_FI_complete : $is_FI_complete);
 
