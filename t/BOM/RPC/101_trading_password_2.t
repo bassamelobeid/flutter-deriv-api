@@ -23,6 +23,8 @@ my $mock_events = Test::MockModule->new('BOM::Platform::Event::Emitter');
 $mock_events->mock('emit', sub { $last_event->{$_[0]} = $_[1] });
 
 BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend->all(0);
+BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend->demo(0);
+BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend->real(0);
 BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real->p01_ts03->all(0);
 BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real->p02_ts02->all(0);
 

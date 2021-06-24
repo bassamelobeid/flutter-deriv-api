@@ -10,7 +10,6 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Platform::Token::API;
 use BOM::Test::RPC::QueueClient;
 use BOM::Test::Helper::Client qw(create_client);
-use BOM::Test::Script::DevExperts;
 
 use Test::BOM::RPC::Accounts;
 
@@ -22,6 +21,11 @@ $mock_events->mock('emit', sub { $last_event->{$_[0]} = $_[1] });
 
 BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real->p01_ts03->all(0);
 BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real->p02_ts02->all(0);
+# no dxtrade accounts are used in this test, we want to make sure everything
+# works with dxtrade fully suspended
+BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend->all(1);
+BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend->demo(1);
+BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend->real(1);
 
 my $method = 'trading_platform_password_change';
 subtest 'setting up new trading password' => sub {

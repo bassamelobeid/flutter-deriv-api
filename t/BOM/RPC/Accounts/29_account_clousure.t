@@ -6,6 +6,7 @@ use Test::Deep;
 use Test::Mojo;
 use Test::MockModule;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use BOM::Test::Helper::Client;
 use BOM::Platform::Token::API;
 use BOM::User::Password;
 use BOM::User;
@@ -408,6 +409,8 @@ subtest 'account_closure with mt5 API disabled' => sub {
 
 subtest 'Account closure DXTrader' => sub {
     BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend->all(0);
+    BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend->demo(0);
+    BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend->real(0);
 
     my $email       = 'dxtrader@binary.com';
     my $password    = 'dxTest0909099';
@@ -430,77 +433,47 @@ subtest 'Account closure DXTrader' => sub {
     $test_client->set_default_account('USD');
     $test_client->save;
 
-    # create the dxtrader account
+    BOM::Test::Helper::Client::top_up($test_client, $test_client->currency, 10);
+
     my $params = {
         language => 'EN',
         token    => $token,
         args     => {
             market_type  => 'financial',
-            account_type => 'real',
+            account_type => 'demo',
             password     => 'Abcd1234',
             platform     => 'dxtrade',
         },
     };
-    my $dxtrader_account = $c->tcall('trading_platform_new_account', $params);
-    my $account_id       = $dxtrader_account->{account_id};
 
-    cmp_deeply $dxtrader_account,
-        {
-        account_type          => 'real',
-        display_balance       => '0.00',
-        landing_company_short => 'svg',
-        currency              => 'USD',
-        account_id            => re('.*'),
-        balance               => '0.00',
-        market_type           => 'financial',
-        login                 => re('.*'),
-        platform              => 'dxtrade'
-        },
-        'Dxtrader account created';
+    my $demo_account = $c->tcall('trading_platform_new_account', $params);
+    ok $demo_account->{balance} + 0 > 0, 'demo account has balance';
 
-    $params = {
-        language => 'EN',
-        token    => $token,
-        args     => {
-            reason => 'Financial concerns',
-        },
+    $params->{args}{account_type} = 'real';
+    my $real_account    = $c->tcall('trading_platform_new_account', $params);
+    my $real_account_id = $real_account->{account_id};
+
+    $params->{args} = {
+        platform     => 'dxtrade',
+        amount       => 10,
+        from_account => $test_client->loginid,
+        to_account   => $real_account_id,
     };
 
-    # TODO: give funds with proper dxtrader call (perhaps?)
-    # for now we gotta mock
+    $c->tcall('trading_platform_deposit', $params);
 
-    my $mock         = Test::MockModule->new('BOM::TradingPlatform::DXTrader');
-    my $demo_balance = 100;
-    my $balance      = 10;
-
-    $mock->mock(
-        'get_accounts',
-        sub {
-            my $accounts = [
-                map {
-                    if ($_->{account_type} eq 'real') {
-                        $_->{display_balance} = $balance;
-                        $_->{balance}         = $balance;
-                    } else {
-                        $_->{display_balance} = $demo_balance;
-                        $_->{balance}         = $demo_balance;
-                    }
-
-                    $_
-                } $mock->original('get_accounts')->(@_)->@*
-            ];
-
-            return $accounts;
-        });
+    $params->{args} = {
+        reason => 'Financial concerns',
+    };
 
     my $account_closure = $c->tcall('account_closure', $params);
     cmp_deeply $account_closure,
         {
         error => {
-            message_to_client => "Please close open positions and withdraw all funds from your $account_id account(s) before proceeding.",
+            message_to_client => "Please close open positions and withdraw all funds from your $real_account_id account(s) before proceeding.",
             details           => {
                 balance => {
-                    $account_id => {
+                    $real_account_id => {
                         'currency' => 'USD',
                         'balance'  => '10.00'
                     }}
@@ -510,20 +483,24 @@ subtest 'Account closure DXTrader' => sub {
         },
         'Cannot close account with dxtrader balance > 0';
 
-    # demo balance is not relevant
-    $demo_balance = 0;
-    my $account_closure_demo = $c->tcall('account_closure', $params);
-    cmp_deeply $account_closure_demo, $account_closure, 'Demo balance not relevant';
+    $params->{args} = {
+        platform     => 'dxtrade',
+        amount       => 10,
+        to_account   => $test_client->loginid,
+        from_account => $real_account_id,
+    };
 
-    # TODO: remove funds with proper dxtrader call (perhaps?)
-    # for now we gotta mock
+    $c->tcall('trading_platform_withdrawal', $params);
 
-    $demo_balance    = 1000;
-    $balance         = 0;
+    $params->{args} = {
+        reason => 'Financial concerns',
+    };
+
+    BOM::Test::Helper::Client::top_up($test_client, $test_client->currency, -10);
+
     $account_closure = $c->tcall('account_closure', $params);
     ok $account_closure->{status}, 'Account closure status 1';
     ok($test_client->status->disabled, 'Account disabled');
-    $mock->unmock_all;
 };
 
 done_testing();

@@ -15,6 +15,8 @@ use BOM::Config::Runtime;
 use Brands::Countries;
 
 BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend->all(0);
+BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend->demo(0);
+BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend->real(0);
 
 my $c = BOM::Test::RPC::QueueClient->new();
 
@@ -102,7 +104,17 @@ subtest 'dxtrader accounts' => sub {
     delete $acc->{stash};
     cmp_deeply($list, [$acc], 'account list returns created account',);
 
-    cmp_deeply($list, [$acc], 'account list returns created account',);
+    BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend->demo(1);
+    $c->call_ok('trading_platform_accounts', $params)->has_no_system_error->has_error->error_code_is('DXServerSuspended', 'server suspended');
+    BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend->demo(0);
+
+    BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend->all(1);
+    $c->call_ok('trading_platform_accounts', $params)->has_no_system_error->has_error->error_code_is('DXSuspended', 'all suspended');
+    BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend->all(0);
+
+    BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend->real(1);
+    $c->call_ok('trading_platform_accounts', $params)->has_no_system_error->has_no_error('real suspended has no effect');
+    BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend->real(0);
 
     $params->{args} = {
         platform     => 'dxtrade',
@@ -111,6 +123,65 @@ subtest 'dxtrader accounts' => sub {
         password     => 'Abcd1234',
     };
     my $acc2 = $c->call_ok('trading_platform_new_account', $params)->has_no_system_error->has_no_error('create 2nd account')->result;
+
+    my $tba_acc = {
+        account_type => 'dxtrade',
+        balance      => $acc2->{balance},
+        currency     => $acc2->{currency},
+        demo_account => 0,
+        loginid      => $acc2->{account_id},
+        market_type  => $acc2->{market_type},
+    };
+
+    cmp_deeply(
+        $c->call_ok(
+            'transfer_between_accounts',
+            {
+                token => $token,
+                args  => {accounts => 'all'}}
+        )->has_no_error->result->{accounts},
+        supersetof($tba_acc),
+        'transfer_between_accounts returns the real account'
+    );
+
+    BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend->all(1);
+    cmp_deeply(
+        $c->call_ok(
+            'transfer_between_accounts',
+            {
+                token => $token,
+                args  => {accounts => 'all'}}
+        )->has_no_error->result->{accounts},
+        none($tba_acc),
+        'transfer_between_accounts hides real account when all suspended'
+    );
+    BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend->all(0);
+
+    BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend->real(1);
+    cmp_deeply(
+        $c->call_ok(
+            'transfer_between_accounts',
+            {
+                token => $token,
+                args  => {accounts => 'all'}}
+        )->has_no_error->result->{accounts},
+        none($tba_acc),
+        'transfer_between_accounts hides real account when real suspended'
+    );
+    BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend->real(0);
+
+    BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend->demo(1);
+    cmp_deeply(
+        $c->call_ok(
+            'transfer_between_accounts',
+            {
+                token => $token,
+                args  => {accounts => 'all'}}
+        )->has_no_error->result->{accounts},
+        supersetof($tba_acc),
+        'transfer_between_accounts returns the real account when demo is suspended'
+    );
+    BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend->demo(0);
 
     $params->{args}{password} = 'wrong';
     for my $attempt (1 .. 6) {
@@ -191,20 +262,19 @@ subtest 'dxtrade password change' => sub {
             old_password => 'C0rrect0',
         }};
 
+    BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend->demo(1);
+    $c->call_ok('trading_platform_password_change', $params)
+        ->has_no_system_error->has_error->error_code_is('PlatformPasswordChangeError', 'server suspended');
+    BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend->demo(0);
+
     BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend->all(1);
-
-    cmp_deeply(
-        $c->call_ok('trading_platform_password_change', $params)->has_no_system_error->has_error->result->{error},
-        {
-            code              => 'PlatformPasswordChangeSuspended',
-            message_to_client => "We're unable to change your trading password due to system maintenance. Please try again later."
-        },
-        'dxtrade suspended'
-    );
-
+    $c->call_ok('trading_platform_password_change', $params)
+        ->has_no_system_error->has_error->error_code_is('PlatformPasswordChangeSuspended', 'all suspended');
     BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend->all(0);
 
-    $c->call_ok('trading_platform_password_change', $params)->has_no_system_error->has_no_error->result_is_deeply(1, 'Password successfully changed');
+    BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend->real(1);
+    $c->call_ok('trading_platform_password_change', $params)->has_no_system_error->has_no_error('real suspended has no effect');
+    BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend->real(0);
 
     for my $attempt (1 .. 6) {
         my $res = $c->call_ok('trading_platform_password_change', $params);
@@ -293,15 +363,9 @@ subtest 'dxtrade password reset' => sub {
             verification_code => $verification_code,
         }};
 
-    cmp_deeply(
-        $c->call_ok('trading_platform_password_reset', $params)->has_no_system_error->has_error->result->{error},
-        {
-            code              => 'PlatformPasswordChangeSuspended',
-            message_to_client => "We're unable to reset your trading password due to system maintenance. Please try again later."
-        },
-        'dxtrade suspended'
-    );
-
+    BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend->all(1);
+    $c->call_ok('trading_platform_password_reset', $params)
+        ->has_no_system_error->has_error->error_code_is('PlatformPasswordChangeSuspended', 'all suspended');
     BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend->all(0);
 
     $mock_token->unmock_all;

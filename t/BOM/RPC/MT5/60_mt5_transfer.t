@@ -694,6 +694,7 @@ subtest 'offer_to_clients' => sub {
 
 subtest 'Transfers in between MT5 and Deriv X' => sub {
     BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend->all(0);
+    BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend->real(0);
 
     my $params = {language => 'EN'};
     $params->{token} = $token;

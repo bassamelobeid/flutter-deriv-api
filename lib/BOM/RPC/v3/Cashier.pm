@@ -1286,29 +1286,22 @@ rpc transfer_between_accounts => sub {
             }
         }
 
-        unless (BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend->all) {
-            my $dxtrade = BOM::TradingPlatform->new(
-                platform => 'dxtrade',
-                client   => $client,
-            );
-            for my $dxtrade_account ($dxtrade->get_accounts->@*) {
-                my $is_demo = ($dxtrade_account->{account_type} eq 'demo') ? 1 : 0;
-                next unless $client->is_virtual == $is_demo;
+        my $dxtrade = BOM::TradingPlatform->new(
+            platform => 'dxtrade',
+            client   => $client,
+        );
 
-                # This endpoint schema expects synthetic or financial (not gaming)
-                my $market_type = $dxtrade_account->{market_type};
-                $market_type = 'synthetic' if $market_type eq 'gaming';
-
-                push @available_siblings_for_transfer,
-                    {
-                    loginid      => $dxtrade_account->{account_id},
-                    balance      => $dxtrade_account->{display_balance},
-                    account_type => 'dxtrade',
-                    market_type  => $market_type,
-                    currency     => $dxtrade_account->{currency},
-                    demo_account => ($dxtrade_account->{account_type} eq 'demo') ? 1 : 0,
-                    };
-            }
+        my @dxtrade_accounts = $dxtrade->get_accounts(type => $client->is_virtual ? 'demo' : 'real')->@*;
+        for my $dxtrade_account (@dxtrade_accounts) {
+            push @available_siblings_for_transfer,
+                {
+                loginid      => $dxtrade_account->{account_id},
+                balance      => $dxtrade_account->{display_balance},
+                account_type => 'dxtrade',
+                market_type  => $dxtrade_account->{market_type},
+                currency     => $dxtrade_account->{currency},
+                demo_account => ($dxtrade_account->{account_type} eq 'demo') ? 1 : 0,
+                };
         }
 
         return {

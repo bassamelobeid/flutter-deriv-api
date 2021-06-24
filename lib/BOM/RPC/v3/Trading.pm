@@ -32,6 +32,7 @@ my %ERROR_MAP = do {
     local *localize = sub { die 'you probably wanted an arrayref for this localize() call' if @_ > 1; shift };
     (
         DXSuspended           => localize('Deriv X account management is currently suspended.'),
+        DXServerSuspended     => localize('This feature is suspended for system maintenance. Please try later.'),
         DXtradeNoCurrency     => localize('Please provide a currency for the Deriv X account.'),
         DXExistingAccount     => localize('You already have Deriv X account of this type (account ID [_1]).'),
         DXInvalidAccount      => localize('An invalid Deriv X account ID was provided.'),
@@ -84,6 +85,7 @@ my %ERROR_MAP = do {
         InvalidMinAmount                 => localize('The minimum amount for transfers is [_1] [_2]. Please adjust your amount.'),
         InvalidMaxAmount                 => localize('The maximum amount for deposits is [_1] [_2]. Please adjust your amount.'),
         CurrencyTypeNotAllowed           => localize('This currency is temporarily suspended. Please select another currency to proceed.'),
+        PlatformPasswordChangeSuspended => localize("We're unable to reset your trading password due to system maintenance. Please try again later."),
     );
 };
 
@@ -136,7 +138,9 @@ rpc trading_platform_accounts => sub {
         my $platform = BOM::TradingPlatform->new(
             platform => $params->{args}{platform},
             client   => $params->{client});
-        return $platform->get_accounts($params->{args}->%*);
+
+        # force param will raise an error if any accounts are inaccessible
+        return $platform->get_accounts(force => 1);
     } catch ($e) {
         handle_error($e);
     }
@@ -183,12 +187,6 @@ async_rpc trading_platform_password_change => sub {
     my $user   = $client->user;
 
     try {
-        die +{
-            error_code        => 'PlatformPasswordChangeSuspended',
-            message_to_client => localize("We're unable to change your trading password due to system maintenance. Please try again later."),
-            }
-            if $client->user->dxtrade_loginids and BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend->all;
-
         my $new_password = $params->{args}{new_password} or die +{error_code => 'PasswordRequired'};
         my $old_password = $params->{args}{old_password};
 
@@ -255,12 +253,6 @@ async_rpc trading_platform_password_reset => auth => [],
 
         my $user = BOM::User->new(email => $email);
         $params->{client} = $user->get_default_client();
-
-        die +{
-            error_code        => 'PlatformPasswordChangeSuspended',
-            message_to_client => localize("We're unable to reset your trading password due to system maintenance. Please try again later."),
-            }
-            if $user->dxtrade_loginids and BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend->all;
 
         change_platform_passwords($password, 'reset', $params);
         return Future->done(1);
@@ -497,6 +489,9 @@ sub change_platform_passwords {
         platform => 'dxtrade',
         client   => $client
     );
+
+    die +{error_code => 'PlatformPasswordChangeSuspended'}
+        if $dxtrade->local_accounts and BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend->all;
 
     my ($updated_logins, $error_message);
 

@@ -13,6 +13,8 @@ use BOM::Test::Helper::Client;
 use BOM::Config::Runtime;
 
 BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend->all(0);
+BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend->demo(0);
+BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend->real(0);
 BOM::Config::Runtime->instance->app_config->system->suspend->wallets(1);
 
 my $c = BOM::Test::RPC::QueueClient->new();
