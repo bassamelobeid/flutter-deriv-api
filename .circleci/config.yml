@@ -336,11 +336,6 @@ jobs:
           <<: *tests
           name: code coverage tests
           command: make cover
-      - run:
-          name: upload coverage report
-          command: cover -report coveralls
-          when: on_fail
-
 workflows:
   version: 2
   build-workflow:
