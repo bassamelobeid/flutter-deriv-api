@@ -124,10 +124,6 @@ jobs:
         <<: *5
         command: make cover
         name: code coverage tests
-    - run:
-        name: upload coverage report
-        command: cover -report coveralls
-        when: on_fail
 version: 2
 workflows:
   build-workflow:
