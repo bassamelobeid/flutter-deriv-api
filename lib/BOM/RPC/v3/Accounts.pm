@@ -357,6 +357,16 @@ rpc "landing_company",
         }
     }
 
+    my $dx_details = delete $landing_company{dx};
+
+    foreach my $dx_market_type (keys %$dx_details) {
+        foreach my $dx_sub_type (keys $dx_details->{$dx_market_type}->%*) {
+            my $dx_lc = $dx_details->{$dx_market_type}{$dx_sub_type};
+            next if $dx_lc eq 'none';
+            $landing_company{"dxtrade_${dx_market_type}_company"}{$dx_sub_type} = __build_landing_company($registry->get($dx_lc), $country);
+        }
+    }
+
     return \%landing_company;
     };
 

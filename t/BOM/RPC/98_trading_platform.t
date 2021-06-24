@@ -580,4 +580,24 @@ subtest 'new account rules failure scenarios' => sub {
     $mock_client->unmock_all;
 };
 
+subtest 'landing_company call' => sub {
+    my %tests = (
+        au => {},
+        mt => {},
+        jp => {gaming => 1},
+        id => {
+            gaming    => 1,
+            financial => 1
+        },
+    );
+
+    for my $test (sort keys %tests) {
+        my $result = $c->call_ok('landing_company', {args => {landing_company => $test}})->result;
+
+        for my $type ('gaming', 'financial') {
+            is exists $result->{"dxtrade_${type}_company"}, exists $tests{$test}->{$type}, "$type availability for $test";
+        }
+    }
+};
+
 done_testing();
