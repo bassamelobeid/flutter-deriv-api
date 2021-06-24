@@ -82,13 +82,8 @@ jobs:
     - *4
     - run:
         <<: *5
-        command: |
-          make cover
+        command: make cover
         name: code coverage tests
-    - run:
-        name: upload coverage report
-        command: cover -report coveralls
-        when: on_fail
   unit:
     <<: *6
     steps:
