@@ -1030,8 +1030,18 @@ system:
             all:
               description: "Suspend all DXTrade API calls"
               isa: Bool
-              default: 1
+              default: 0
               global: 1
+            demo:
+              description: "Suspend DXTrade demo accounts"
+              isa: Bool
+              default: 0
+              global: 1
+            real:
+              description: "Suspend DXTrade real accounts"
+              isa: Bool
+              default: 1
+              global: 1              
 marketing:
     description:  "Marketing Bonus Settings"
     isa: section
