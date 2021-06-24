@@ -238,7 +238,7 @@ subtest 'deposit' => sub {
             )
         },
         {
-            code           => 'InvalidMinAmount',
+            error_code     => 'InvalidMinAmount',
             message_params => ['100.00', 'USD'],
         },
         'Minimum limit reached'
@@ -257,7 +257,7 @@ subtest 'deposit' => sub {
             )
         },
         {
-            code           => 'InvalidMaxAmount',
+            error_code     => 'InvalidMaxAmount',
             message_params => ['5.00', 'USD'],
         },
         'Maximum limit reached'
