@@ -825,6 +825,8 @@ subtest 'get_wallet_by_loginid' => sub {
 my ($dxtrade_account, $dxtrader);
 subtest 'get_account_by_loginid' => sub {
     BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend->all(0);
+    BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend->real(0);
+    BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend->demo(0);
     # try default account (binary/deriv)
     ok $user->get_account_by_loginid($client_vr->{loginid}), 'can find trading account';
 
@@ -859,6 +861,7 @@ subtest 'get_account_by_loginid' => sub {
 };
 
 subtest 'link_wallet' => sub {
+
     my $args = {
         wallet_id => $wallet->loginid,
         client_id => $client_vr->loginid

@@ -2,14 +2,18 @@ use strict;
 use warnings;
 use Test::More;
 use Test::Fatal;
+use Test::Deep;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Script::DevExperts;
 use BOM::Test::Helper::Client;
 use BOM::TradingPlatform;
 use BOM::Config::Runtime;
 
-BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend->all(0);
-BOM::Config::Runtime->instance->app_config->system->suspend->wallets(1);
+my $app_config = BOM::Config::Runtime->instance->app_config->system;
+$app_config->suspend->wallets(1);
+$app_config->dxtrade->suspend->all(0);
+$app_config->dxtrade->suspend->demo(0);
+$app_config->dxtrade->suspend->real(0);
 
 my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'VRTC'});
 
@@ -49,9 +53,18 @@ $dxtrader->call_api(
     currency      => $account->{currency},
 );
 
+$app_config->dxtrade->suspend->all(1);
+cmp_deeply(exception { $dxtrader->deposit(to_account => $account->{account_id}) }, {error_code => 'DXSuspended'}, 'error when all suspended');
+$app_config->dxtrade->suspend->all(0);
+
+$app_config->dxtrade->suspend->demo(1);
+cmp_deeply(exception { $dxtrader->deposit(to_account => $account->{account_id}) }, {error_code => 'DXServerSuspended'}, 'error when demo suspended');
+$app_config->dxtrade->suspend->demo(0);
+$app_config->dxtrade->suspend->real(1);
+
 is exception {
     $dxtrader->deposit(to_account => $account->{account_id});
-}, undef, 'can top up at 1000';
+}, undef, 'can top up at 1000 and real is suspended';
 
 my $resp = $dxtrader->call_api(
     $account->{account_type},

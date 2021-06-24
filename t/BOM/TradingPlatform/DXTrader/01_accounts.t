@@ -9,7 +9,10 @@ use BOM::TradingPlatform;
 use BOM::Config::Runtime;
 use Test::MockModule;
 
-BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend->all(0);
+my $dxconfig = BOM::Config::Runtime->instance->app_config->system->dxtrade;
+$dxconfig->suspend->all(0);
+$dxconfig->suspend->demo(0);
+$dxconfig->suspend->real(0);
 
 my $dxtrader_mock                 = Test::MockModule->new('BOM::TradingPlatform::DXTrader');
 my $real_account_ids_offset       = undef;
@@ -42,12 +45,26 @@ my $dxtrader = BOM::TradingPlatform->new(
 isa_ok($dxtrader, 'BOM::TradingPlatform::DXTrader');
 
 $real_account_ids_login_prefix = 'TEST';
-my $account1 = $dxtrader->new_account(
+
+my %params = (
     account_type => 'demo',
     password     => 'test',
     market_type  => 'synthetic',
-    currency     => 'USD',
+    currency     => 'USD'
 );
+
+$dxconfig->suspend->demo(1);
+cmp_deeply(exception { $dxtrader->new_account(%params) }, {error_code => 'DXServerSuspended'}, 'cannot create demo account when demo suspended');
+$dxconfig->suspend->demo(0);
+
+$dxconfig->suspend->all(1);
+cmp_deeply(exception { $dxtrader->new_account(%params) }, {error_code => 'DXSuspended'}, 'cannot create demo account when all suspended');
+$dxconfig->suspend->all(0);
+
+$dxconfig->suspend->real(1);
+
+my $account1;
+is(exception { $account1 = $dxtrader->new_account(%params) }, undef, 'can create demo account when real suspended');
 
 cmp_deeply(
     $account1,
@@ -74,6 +91,7 @@ cmp_deeply([$client->user->get_trading_platform_loginids('dxtrader', 'real')], b
 cmp_deeply(
     $client->user->loginid_details->{$account1->{account_id}},
     {
+        loginid      => $account1->{account_id},
         platform     => 'dxtrade',
         currency     => 'USD',
         account_type => $account1->{account_type},
@@ -88,12 +106,21 @@ cmp_deeply(
     'user attributes of first account'
 );
 
-my $account2 = $dxtrader->new_account(
+%params = (
     account_type => 'real',
     password     => 'test',
     market_type  => 'synthetic',
     currency     => 'USD',
 );
+
+cmp_deeply(exception { $dxtrader->new_account(%params) }, {error_code => 'DXServerSuspended'}, 'cannot create real account when real suspended');
+
+cmp_deeply($dxtrader->get_accounts(force => 1), [$account1], 'can get accounts with force param while real is suspended');
+
+$dxconfig->suspend->real(0);
+
+my $account2;
+is(exception { $account2 = $dxtrader->new_account(%params) }, undef, 'create real account ok');
 
 cmp_deeply(
     $account2,
@@ -120,6 +147,7 @@ cmp_deeply([$client->user->get_trading_platform_loginids('dxtrader', 'real')], b
 cmp_deeply(
     $client->user->loginid_details->{$account2->{account_id}},
     {
+        loginid      => $account2->{account_id},
         platform     => 'dxtrade',
         currency     => 'USD',
         account_type => $account2->{account_type},
@@ -151,6 +179,24 @@ cmp_deeply(
 );
 
 cmp_deeply($dxtrader->get_accounts, bag($account1, $account2), 'account list');
+
+$dxconfig->suspend->all(1);
+cmp_deeply($dxtrader->get_accounts,                           [],                            'no accounts returned when dx all suspended');
+cmp_deeply(exception { $dxtrader->get_accounts(force => 1) }, {error_code => 'DXSuspended'}, 'correct error with force param');
+$dxconfig->suspend->all(0);
+
+$dxconfig->suspend->demo(1);
+cmp_deeply($dxtrader->get_accounts, [$account2], 'only real account returned when dx demo suspended');
+cmp_deeply(exception { $dxtrader->get_accounts(force => 1) }, {error_code => 'DXServerSuspended'}, 'correct error with force param');
+$dxconfig->suspend->demo(0);
+
+$dxconfig->suspend->real(1);
+cmp_deeply($dxtrader->get_accounts, [$account1], 'only demo account returned when dx real suspended');
+cmp_deeply(exception { $dxtrader->get_accounts(force => 1) }, {error_code => 'DXServerSuspended'}, 'correct error with force param');
+$dxconfig->suspend->real(0);
+
+cmp_deeply($dxtrader->get_accounts(type => 'demo'), [$account1], 'only demo account returned for type=demo');
+cmp_deeply($dxtrader->get_accounts(type => 'real'), [$account2], 'only real account returned for type=real');
 
 my $account3 = $dxtrader->new_account(
     account_type => 'real',

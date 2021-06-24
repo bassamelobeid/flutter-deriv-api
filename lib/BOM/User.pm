@@ -152,8 +152,8 @@ sub loginid_details {
         });
     $self->{loginid_details} = {};
     for my $login (@$loginids) {
-        $login->{attributes} = decode_json($login->{attributes}) if $login->{attributes};
-        $self->{loginid_details}{delete $login->{loginid}} = $login;
+        $login->{attributes} = decode_json($login->{attributes} // '{}');
+        $self->{loginid_details}{$login->{loginid}} = $login;
     }
     return $self->{loginid_details};
 }

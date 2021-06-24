@@ -113,11 +113,9 @@ subtest 'Instantiate the platform without factory' => sub {
     isa_ok(BOM::TradingPlatform->new_base(), 'BOM::TradingPlatform');
 };
 
-my $user;
-subtest 'DXtrade suspend' => sub {
-    BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend->all(1);
+subtest 'MT5 suspend' => sub {
 
-    $user = BOM::User->create(
+    my $user = BOM::User->create(
         email    => 'dsds@binary.com',
         password => 'Abcd1234'
     );
@@ -127,12 +125,6 @@ subtest 'DXtrade suspend' => sub {
     $user->add_client($client);
     $user->add_loginid('DXD1000');
 
-    cmp_deeply(exception { BOM::TradingPlatform->new(platform => 'dxtrade', client => $client) }, {error_code => 'DXSuspended'}, 'use factory');
-    is exception { BOM::TradingPlatform::DXTrader->new }, undef, 'use direct';
-    is exception { BOM::TradingPlatform->new(platform => 'mt5') }, undef, 'mt5 unaffected';
-};
-
-subtest 'MT5 suspend' => sub {
     $user->add_loginid('MTR1000');
 
     BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real->p01_ts03->all(1);

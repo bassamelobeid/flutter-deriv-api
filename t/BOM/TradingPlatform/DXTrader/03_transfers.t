@@ -12,7 +12,10 @@ use BOM::Test::Helper::ExchangeRates qw(populate_exchange_rates);
 use JSON::MaybeUTF8;
 use BOM::Config::Runtime;
 
-BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend->all(0);
+my $dxconfig = BOM::Config::Runtime->instance->app_config->system->dxtrade;
+$dxconfig->suspend->all(0);
+$dxconfig->suspend->demo(0);
+$dxconfig->suspend->real(0);
 
 my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR'});
 
@@ -56,11 +59,23 @@ subtest 'deposits' => sub {
         'invalid currency'
     );
 
-    my $dep = $dxtrader->deposit(
+    my %params = (
         to_account => $account->{account_id},
         amount     => 10,
         currency   => 'AUD',
     );
+
+    $dxconfig->suspend->all(1);
+    cmp_deeply(exception { $dxtrader->deposit(%params) }, {error_code => 'DXSuspended'}, 'error when all suspended');
+    $dxconfig->suspend->all(0);
+
+    $dxconfig->suspend->real(1);
+    cmp_deeply(exception { $dxtrader->deposit(%params) }, {error_code => 'DXServerSuspended'}, 'error when real suspended');
+    $dxconfig->suspend->real(0);
+    $dxconfig->suspend->demo(1);
+
+    my $dep;
+    is(exception { $dep = $dxtrader->deposit(%params) }, undef, 'no error when demo suspended');
 
     is $client->user->daily_transfer_count('dxtrade'), 1, 'Daily transfer counter increased';
 
@@ -127,10 +142,22 @@ subtest 'withdrawals' => sub {
         'excessive amount'
     );
 
-    my $wd = $dxtrader->withdraw(
+    my %params = (
         from_account => $account->{account_id},
-        amount       => $dxbal
+        amount       => $dxbal,
     );
+
+    $dxconfig->suspend->all(1);
+    cmp_deeply(exception { $dxtrader->withdraw(%params) }, {error_code => 'DXSuspended'}, 'error when all suspended');
+    $dxconfig->suspend->all(0);
+
+    $dxconfig->suspend->real(1);
+    cmp_deeply(exception { $dxtrader->withdraw(%params) }, {error_code => 'DXServerSuspended'}, 'error when real suspended');
+    $dxconfig->suspend->real(0);
+    $dxconfig->suspend->demo(1);
+
+    my $wd;
+    is(exception { $wd = $dxtrader->withdraw(%params) }, undef, 'can withdraw when demo server is suspended');
 
     my $fee      = $dxbal * 0.1;
     my $localbal = sprintf("%.2f", ($dxbal - $fee) * (1 / 0.75));

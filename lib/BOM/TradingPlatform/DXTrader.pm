@@ -8,7 +8,8 @@ use Syntax::Keyword::Try;
 use YAML::XS;
 use HTTP::Tiny;
 use JSON::MaybeUTF8 qw(:v1);
-use List::Util qw(first any);
+use List::Util qw(first any uniq);
+use Array::Utils qw(array_minus);
 use Format::Util::Numbers qw(financialrounding formatnumber);
 use Digest::SHA1 qw(sha1_hex);
 use BOM::Platform::Context qw(request);
@@ -52,11 +53,58 @@ Creates and returns a new L<BOM::TradingPlatform::DXTrader> instance.
 
 sub new {
     my ($class, %args) = @_;
-    die +{error_code => 'DXSuspended'}
-        if BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend->all
-        and $args{client}
-        and $args{client}->user->dxtrade_loginids;
     return bless {client => $args{client}}, $class;
+}
+
+=head2 active_servers
+
+Returns servers that are not suspended.
+
+=cut
+
+sub active_servers {
+    return () if BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend->all;
+    my @servers = grep { !BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend->$_ } qw(real demo);
+    return @servers;
+}
+
+=head2 account_servers
+
+Returns all servers used by existing dxtrade accounts.
+
+=cut
+
+sub account_servers {
+    my ($self) = @_;
+    my @servers = uniq(map { $_->{account_type} } $self->local_accounts);
+    return @servers;
+}
+
+=head2 server_check
+
+Throw appropriate errors if any @servers are not available.
+In some cases we need to call this before calling the api, e.g. deposit.
+
+=cut
+
+sub server_check {
+    my ($self, @servers) = @_;
+    die +{error_code => 'DXSuspended'} if BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend->all;
+    my @active_servers = $self->active_servers;
+    die +{error_code => 'DXServerSuspended'} if array_minus(@servers, @active_servers);
+}
+
+=head2 local_accounts
+
+Returns dxtrade account info from our db.
+
+=cut
+
+sub local_accounts {
+    my ($self)        = @_;
+    my $login_details = $self->client->user->loginid_details;
+    my @accounts      = sort grep { ($_->{platform} // '') eq 'dxtrade' } values %$login_details;
+    return @accounts;
 }
 
 =head1 RPC methods
@@ -91,7 +139,8 @@ sub new_account {
     my $rule_engine = BOM::Rules::Engine->new(client => $self->client);
     $rule_engine->verify_action('new_trading_account', \%args);
 
-    my $server           = $args{account_type};    # account_type means a different thing for dxtrade
+    my $server = $args{account_type};    # account_type means a different thing for dxtrade
+
     my $account_type     = $args{account_type} eq 'real'     ? 'LIVE'            : 'DEMO';
     my $trading_category = $args{market_type} eq 'financial' ? 'Financials Only' : 'Synthetics Only';
 
@@ -103,7 +152,7 @@ sub new_account {
     } else {
         $password = $self->client->user->password;
     }
-
+    $self->server_check($server);
     my $dxclient = $self->dxclient_get($server);
 
     if ($dxclient) {
@@ -225,28 +274,44 @@ sub get_new_account_currency {
 
 =head2 get_accounts
 
-Gets all client accounts and returns list formatted for websocket response.
+Gets all available client accounts and returns list formatted for websocket response.
+
+Takes the following arguments as named parameters:
+
+=over 4
+
+=item * C<force>. If true, an error will be raised if any accounts are inaccessible.
+
+=item * C<type>. Filter accounts to real or demo.
+
+=back
 
 =cut
 
 sub get_accounts {
-    my ($self) = @_;
+    my ($self, %args) = @_;
 
-    my $logins    = $self->client->user->loginid_details;
-    my @dx_logins = grep { ($logins->{$_}{platform} // '') eq 'dxtrade' } keys %$logins;
-    return [] unless @dx_logins;
+    my @local_accounts  = $self->local_accounts or return [];
+    my @account_servers = $self->account_servers;
+    $self->server_check(@account_servers) if $args{force};
 
     my @accounts;
-    for my $server ('demo', 'real') {
-        my $dxclient = $self->dxclient_get($server);
-        push @accounts, ($dxclient->{accounts} // [])->@*;
+    for my $server (@account_servers) {
+        next unless any { $server eq $_ } $self->active_servers;
+        next if $args{type} and $args{type} ne $server;
+        try {
+            my $dxclient = $self->dxclient_get($server);
+            push @accounts, ($dxclient->{accounts} // [])->@*;
+        } catch ($e) {
+            die $e if $args{force};
+        }
     }
 
     my @result;
-    for my $login (@dx_logins) {
-        if (my $account = first { $_->{account_code} eq $logins->{$login}{attributes}{account_code} } @accounts) {
-            $account->{account_id} = $login;
-            $account->{login}      = $logins->{$login}{attributes}{login};
+    for my $local_account (@local_accounts) {
+        if (my $account = first { $_->{account_code} eq $local_account->{attributes}{account_code} } @accounts) {
+            $account->{account_id} = $local_account->{loginid};
+            $account->{login}      = $local_account->{attributes}{login};
             push @result, $self->account_details($account);
         }
     }
@@ -275,9 +340,10 @@ sub change_password {
     my $password = $args{password} or die +{error_code => 'PasswordRequired'};
     my $pwd_changed;
 
-    for my $server ('demo', 'real') {
+    for my $server ($self->account_servers) {
         my $dxclient;
         try {
+            $self->server_check($server);
             $dxclient = $self->dxclient_get($server) or next;
 
             my $resp = $self->call_api(
@@ -329,10 +395,11 @@ Returns transaction id in hashref.
 sub deposit {
     my ($self, %args) = @_;
 
-    my $account = $self->client->user->loginid_details->{$args{to_account}}
+    my $account = first { $_->{loginid} eq $args{to_account} } $self->local_accounts
         or die +{error_code => 'DXInvalidAccount'};
 
     return $self->demo_top_up($account) if $account->{account_type} eq 'demo';
+    $self->server_check('real');    # try to avoid debiting deriv if server is not available
 
     # Sequence:
     # 1. Validation
@@ -424,7 +491,7 @@ Returns transaction id in hashref.
 sub withdraw {
     my ($self, %args) = @_;
 
-    my $account = $self->client->user->loginid_details->{$args{from_account}}
+    my $account = first { $_->{loginid} eq $args{from_account} } $self->local_accounts
         or die +{error_code => 'DXInvalidAccount'};
 
     # Sequence:
@@ -641,6 +708,8 @@ Takes the following arguments:
 sub call_api {
     my ($self, $server, $method, %args) = @_;
 
+    $self->server_check($server);
+
     my $payload = encode_json_utf8({
         server => $server,
         method => $method,
@@ -673,8 +742,6 @@ Gets the devexperts client information of $self->client, if it exists.
 
 sub dxclient_get {
     my ($self, $server) = @_;
-
-    return undef if BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend->all;
 
     my $login = $self->dxtrade_login;
 
