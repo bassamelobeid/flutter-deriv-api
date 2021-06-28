@@ -813,7 +813,7 @@ async sub check_onfido_rules {
                 _set_age_verification($client) if $poi_name_mismatch && $report_result eq 'clear' && $check_result eq 'clear' && scalar @reasons == 0;
             } catch ($e) {
                 my $error_code = '';
-                $error_code = $e->{code} // '' if ref($e) eq 'HASH';
+                $error_code = $e->{error_code} // '' if ref($e) eq 'HASH';
                 $client->status->setnx('poi_name_mismatch', 'system', "Name in client details and Onfido report don't match")
                     if $error_code eq 'NameMismatch';
             }
