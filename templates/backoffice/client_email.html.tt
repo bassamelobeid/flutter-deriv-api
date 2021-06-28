@@ -24,6 +24,10 @@
         <hr>
         <h3>Change client's email for all loginids listed above:</h3>
         <form action="[% request.url_for('backoffice/client_email.cgi') | none %]" method="post" class="row">
+            [% IF is_client_only_cr == 0 %]
+                <label>Dual Control Code:</label>
+                <input type="text" name="DCcode" placeholder="required" data-lpignore="true" />
+            [% END %]
             <input type="hidden" value="UPDATECLIENTDETAILS" name="transtype"/>
             <label>New email: </label>
             <input type="text" name="new_email" placeholder="required" data-lpignore="true" />

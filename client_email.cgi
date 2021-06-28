@@ -72,21 +72,34 @@ if (not $user) {
 
 Bar($title);
 
-my $logins        = loginids($user);
-my $mt_logins_ids = $logins->{mt5};
-my $bom_logins    = $logins->{bom};
-my $dx_logins_ids = $logins->{dx};
+my $logins            = loginids($user);
+my $mt_logins_ids     = $logins->{mt5};
+my $bom_logins        = $logins->{bom};
+my $dx_logins_ids     = $logins->{dx};
+my $is_client_only_cr = 0;
+my $dcc_code;
+
+if (@$mt_logins_ids == 0 && @$dx_logins_ids == 0) {
+    $is_client_only_cr = 1;
+    foreach my $login_id ($user->bom_real_loginids) {
+        if ($user->broker_code_from_loginid($login_id) ne 'CR') {
+            $is_client_only_cr = 0;
+            last;
+        }
+    }
+}
 
 if (not $input{email_edit}) {
     # list loginids with email
     BOM::Backoffice::Request::template()->process(
         'backoffice/client_email.html.tt',
         {
-            list         => 1,
-            email        => $email,
-            bom_logins   => $bom_logins,
-            mt5_loginids => $mt_logins_ids,
-            dx_loginids  => $dx_logins_ids,
+            list              => 1,
+            email             => $email,
+            bom_logins        => $bom_logins,
+            mt5_loginids      => $mt_logins_ids,
+            dx_loginids       => $dx_logins_ids,
+            is_client_only_cr => $is_client_only_cr,
         },
     ) || die BOM::Backoffice::Request::template()->error(), "\n";
 
@@ -96,6 +109,19 @@ if (not $input{email_edit}) {
 unless ($input{transtype}) {
     print "Please select transaction type";
     code_exit_BO();
+}
+
+if (!$is_client_only_cr) {
+    $dcc_code = $input{DCcode};
+    my $error = BOM::DualControl->new({
+            staff           => $clerk,
+            transactiontype => $input{transtype}})->validate_client_control_code($dcc_code, $new_email, $user->{id});
+    if ($error) {
+        print $error->get_mesg();
+        code_exit_BO();
+    }
+} else {
+    $dcc_code = "N/A";
 }
 
 if ($email ne $new_email) {
@@ -135,7 +161,14 @@ if ($email ne $new_email) {
     }
 
     my $msg =
-        $now->datetime . " " . $input{transtype} . " updated user $email " . $had_social_signup . " to $new_email by clerk=$clerk $ENV{REMOTE_ADDR}";
+          $now->datetime . " "
+        . $input{transtype}
+        . " updated user $email "
+        . $had_social_signup
+        . " to $new_email by clerk=$clerk (DCcode="
+        . $dcc_code
+        . ") $ENV{REMOTE_ADDR}";
+
     BOM::User::AuditLog::log($msg, $new_email, $clerk);
     #CS: for every email address change request, we will disable the client's
     #    account and once receiving a confirmation from his new email address, we will change it and enable the account.
@@ -149,12 +182,13 @@ if ($email ne $new_email) {
     BOM::Backoffice::Request::template()->process(
         'backoffice/client_email.html.tt',
         {
-            updated      => 1,
-            old_email    => $email,
-            new_email    => $new_email,
-            bom_logins   => $bom_logins,
-            mt5_loginids => $mt_logins_ids,
-            dx_loginids  => $dx_logins_ids,
+            updated           => 1,
+            old_email         => $email,
+            new_email         => $new_email,
+            bom_logins        => $bom_logins,
+            mt5_loginids      => $mt_logins_ids,
+            dx_loginids       => $dx_logins_ids,
+            is_client_only_cr => $is_client_only_cr,
         },
     ) || die BOM::Backoffice::Request::template()->error(), "\n";
 } else {
