@@ -483,4 +483,45 @@ subtest 'mt5 inactive notification' => sub {
 
 };
 
+subtest 'mt5 inactive account closed' => sub {
+    my $req = BOM::Platform::Context::Request->new(
+        brand_name => 'deriv',
+    );
+    request($req);
+    my $args = {
+        email        => '',
+        transferred  => 'CR12345',
+        mt5_accounts => [{
+                login => 'MT900000',
+                type  => 'demo financial'
+            },
+            {
+                login => 'MT900002',
+                type  => 'real financial'
+            }
+        ],
+    };
+
+    mailbox_clear();
+
+    my $action_handler = BOM::Event::Process::get_action_mappings()->{mt5_inactive_account_closed};
+
+    like exception { $action_handler->($args) }, qr/invalid email address/i, 'correct exception when mt5 loginid is missing';
+
+    $args->{email} = $test_client->{email};
+    my $result = $action_handler->($args);
+    ok $result, 'Success event result';
+
+    my $email = mailbox_search(
+        email   => $test_client->email,
+        subject => qr/Your MT5 account\(s\) have been closed/
+    );
+    ok $email, 'Account close email is sent';
+    like $email->{body}, qr/MT5 demo financial .* MT900000/, 'Archived account 1 is included in the emial body.';
+    like $email->{body}, qr/MT5 real financial .* MT900002/, 'Archived account 2 is included in the emial body.';
+    like $email->{body},
+        qr/Any available balance in your real account\(s\) has been transferred to your Deriv\/Binary.com trading account.\s*\(CR12345\)/,
+        'Transferred account appears in the email body';
+};
+
 done_testing();

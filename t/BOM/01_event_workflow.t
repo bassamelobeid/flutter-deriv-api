@@ -121,7 +121,7 @@ subtest 'process' => sub {
                 api_token_created api_token_deleted
                 app_registered app_updated app_deleted self_exclude set_financial_assessment crypto_withdrawal aml_client_status_update
                 client_promo_codes_upload new_crypto_address onfido_doc_ready_for_upload shared_payment_method_found multiplier_hit_type
-                dispute_notification account_reactivated verify_false_profile_info check_onfido_rules mt5_inactive_notification
+                dispute_notification account_reactivated verify_false_profile_info check_onfido_rules mt5_inactive_notification mt5_inactive_account_closed
                 identity_verification_requested trading_platform_account_created trading_platform_password_reset_request
                 trading_platform_investor_password_reset_request trading_platform_password_changed trading_platform_password_change_failed
                 trading_platform_investor_password_changed trading_platform_investor_password_change_failed/

@@ -52,6 +52,7 @@ my $action_mapping = {
     new_mt5_signup                                   => \&BOM::Event::Actions::MT5::new_mt5_signup,
     mt5_password_changed                             => \&BOM::Event::Actions::MT5::mt5_password_changed,
     mt5_inactive_notification                        => \&BOM::Event::Actions::MT5::mt5_inactive_notification,
+    mt5_inactive_account_closed                      => \&BOM::Event::Actions::MT5::mt5_inactive_account_closed,
     anonymize_client                                 => \&BOM::Event::Actions::Anonymization::anonymize_client,
     bulk_anonymization                               => \&BOM::Event::Actions::Anonymization::bulk_anonymization,
     document_upload                                  => \&BOM::Event::Actions::Client::document_upload,
