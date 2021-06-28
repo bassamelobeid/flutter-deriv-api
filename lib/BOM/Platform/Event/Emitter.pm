@@ -51,6 +51,10 @@ my %event_queue_mapping = (
     anonymize_client                => 'ANONYMIZATION_QUEUE',
     bulk_anonymization              => 'ANONYMIZATION_QUEUE',
     multiplier_hit_type             => 'CONTRACT_QUEUE',
+    # We want to move these events out of general queue, without creating a new service.
+    # ANONYMIZATION_QUEUE can be renamed to avoid confusion.
+    mt5_inactive_account_closed => 'ANONYMIZATION_QUEUE',
+    mt5_inactive_notification   => 'ANONYMIZATION_QUEUE',
 );
 
 my $config = LoadFile('/etc/rmg/redis-events.yml');
@@ -111,6 +115,10 @@ sub emit {
         my $queue_name = _queue_name($type);
         my $queue_size = _write_connection()->lpush($queue_name, $event_data);
         stats_gauge(lc "$queue_name.size", $queue_size) if $queue_size;
+
+        # Metrics to log emitted events tagged by event type and queue name
+        stats_inc(lc "event_emitter.sent", {tags => ["type:$type", "queue:$queue_name"]});
+
         return $queue_size;
     }
 
