@@ -878,6 +878,48 @@ system:
       description: "Configuration for MT5"
       isa: section
       contains:
+        http_proxy:
+          description: "HTTP Proxy API swith config for MT5"
+          isa: section
+          contains:
+            demo:
+              description: "Demo HTTP Proxy API swith config for MT5"
+              isa: section
+              contains:
+                p01_ts01:
+                  description: "Demo p01_ts01 HTTP Proxy API swith config for MT5"
+                  isa: Bool
+                  default: 0
+                  global: 1
+            real:
+              description: "Real HTTP Proxy API swith config for MT5"
+              isa: section
+              contains:
+                p01_ts01:
+                  description: "Real p01_ts01 HTTP Proxy API swith config for MT5"
+                  isa: Bool
+                  default: 0
+                  global: 1
+                p01_ts02:
+                  description: "Real p01_ts02 HTTP Proxy API swith config for MT5"
+                  isa: Bool
+                  default: 0
+                  global: 1
+                p01_ts03:
+                  description: "Real p01_ts03 HTTP Proxy API swith config for MT5"
+                  isa: Bool
+                  default: 0
+                  global: 1
+                p01_ts04:
+                  description: "Real p01_ts04 HTTP Proxy API swith config for MT5"
+                  isa: Bool
+                  default: 0
+                  global: 1
+                p02_ts02:
+                  description: "Real p02_ts02 HTTP Proxy API swith config for MT5"
+                  isa: Bool
+                  default: 0
+                  global: 1
         suspend:
           description: "Configuration for MT5 suspend"
           isa: section
