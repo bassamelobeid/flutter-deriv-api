@@ -377,6 +377,10 @@ sub _perform_social_login {
             utm_campaign       => $c->req->json->{utm_campaign},
             source             => $app->{id},
         };
+        my $regex_validation_keys = {qr{^utm_.+} => qr{^[\w\s\.\-_]{1,100}$}};
+        my @tags_list             = keys $user_details->%*;
+
+        $user_details = BOM::Platform::Utility::extract_valid_params(\@tags_list, $user_details, $regex_validation_keys);
 
         my $utm_data = {
             utm_ad_id        => $c->req->json->{utm_ad_id},
@@ -389,6 +393,9 @@ sub _perform_social_login {
             utm_msclk_id     => $c->req->json->{utm_msclk_id},
             utm_term         => $c->req->json->{utm_term},
         };
+        @tags_list = keys $utm_data->%*;
+
+        $utm_data = BOM::Platform::Utility::extract_valid_params(\@tags_list, $utm_data, $regex_validation_keys);
 
         # Create virtual client if user not found
         my $account = BOM::OAuth::Common::create_virtual_account($user_details, $utm_data);
@@ -412,10 +419,12 @@ sub _perform_social_login {
 
         # track social signup on Segment
         my $utm_tags = {};
+        @tags_list = qw(utm_source utm_medium utm_campaign gclid_url date_first_contact signup_device utm_content utm_term);
 
-        foreach my $tag (qw( utm_source utm_medium utm_campaign gclid_url date_first_contact signup_device utm_content utm_term)) {
+        foreach my $tag (@tags_list) {
             $utm_tags->{$tag} = $c->req->json->{$tag} if $c->req->json->{$tag};
         }
+
         BOM::Platform::Event::Emitter::emit(
             'signup',
             {
@@ -423,7 +432,7 @@ sub _perform_social_login {
                 properties => {
                     type     => 'trading',
                     subtype  => 'virtual',
-                    utm_tags => $utm_tags,
+                    utm_tags => BOM::Platform::Utility::extract_valid_params(\@tags_list, $utm_tags, $regex_validation_keys),
                 }});
 
         # initialize user_id and link account to social login.

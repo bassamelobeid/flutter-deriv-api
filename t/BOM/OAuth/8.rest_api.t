@@ -13,6 +13,7 @@ use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use Digest::SHA qw(hmac_sha256_hex);
 use JSON::WebToken;
+use JSON::MaybeUTF8 qw(decode_json_utf8);
 
 my $redis = BOM::Config::Redis::redis_auth_write();
 my $t     = Test::Mojo->new('BOM::OAuth');
@@ -561,7 +562,7 @@ subtest 'login' => sub {
             {
                 app_id           => $app_id,
                 type             => 'social',
-                connection_token => 'true'
+                connection_token => 'true',
             },
             {
                 Authorization => "Bearer $jwt_token",
@@ -569,7 +570,53 @@ subtest 'login' => sub {
 
         is $events->{signup}->{properties}->{type},    'trading', 'track args type=trading';
         is $events->{signup}->{properties}->{subtype}, 'virtual', 'track args subtype=virtual';
-    }
+    };
+
+    subtest 'Skip invalid utm data during social signup' => sub {
+        $social_user_email = 'invalid_utm_data@test.com';
+        $events            = {};
+
+        my $utm_fields = {
+            utm_content      => '$content',
+            utm_campaign     => 'campaign$',
+            utm_term         => 'te$rm',
+            utm_campaign_id  => 111017190001,
+            utm_ad_id        => 'f521708e-db6e-478b-9731-8243a692c2d5',
+            utm_adgroup_id   => 45637,
+            utm_gl_client_id => 3541,
+            utm_msclk_id     => 5,
+            utm_fbcl_id      => 6,
+            utm_adrollclk_id => 7,
+        };
+
+        $post->(
+            $login_url,
+            {
+                app_id           => $app_id,
+                type             => 'social',
+                connection_token => 'true',
+                $utm_fields->%*
+            },
+            {
+                Authorization => "Bearer $jwt_token",
+            })->status_is(200)->json_has('/tokens');
+
+        is $events->{signup}->{properties}->{type},    'trading', 'track args type=trading';
+        is $events->{signup}->{properties}->{subtype}, 'virtual', 'track args subtype=virtual';
+
+        my $user = BOM::User->new(
+            email => $social_user_email,
+        );
+
+        my $utm_data = decode_json_utf8($user->{utm_data});
+        foreach my $key (keys $utm_data->%*) {
+            if ($utm_fields->{$key} !~ /^[\w\s\.\-_]{1,100}$/) {
+                is $utm_data->{$key}, undef, "$key is skipped as expected";
+            } else {
+                is $utm_data->{$key}, $utm_fields->{$key}, "$key has been set correctly";
+            }
+        }
+    };
 };
 
 $api_mock->unmock_all;
