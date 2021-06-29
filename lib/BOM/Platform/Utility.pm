@@ -88,4 +88,40 @@ sub _hash_to_array_helper {
     return _hash_to_array_helper($array, $temp_stack);
 }
 
+=head2 extract_valid_params
+
+Extract valid params by testing againest regex
+
+=over 4
+
+=item * C<params> fields to be filtered
+=item * C<args> values of C<params>
+=item * C<regex_validation_keys> hash contains key and value regex as key/value pair.
+
+=back
+
+Returns valid params
+
+=cut
+
+sub extract_valid_params {
+    my ($params, $args, $regex_validation_keys) = @_;
+
+    my %filtered_params;
+    my @remaining_params = $params->@*;
+
+    foreach my $key_regex (keys $regex_validation_keys->%*) {
+        my $value_regex = $regex_validation_keys->{$key_regex};
+
+        %filtered_params = (
+            %filtered_params, map { $_ => $args->{$_} }
+                grep { defined $args->{$_} && $_ =~ $key_regex && $args->{$_} =~ $value_regex } @remaining_params
+        );
+        @remaining_params = grep { $_ !~ $key_regex } @remaining_params;
+    }
+
+    %filtered_params = (%filtered_params, map { $_ => $args->{$_} } @remaining_params);
+    return \%filtered_params;
+}
+
 1;
