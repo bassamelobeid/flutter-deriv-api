@@ -934,7 +934,15 @@ sub valid_to_anonymize {
             $_->selectrow_hashref('SELECT users.ck_user_valid_to_anonymize(?)', undef, $self->id);
         });
 
-    return $result->{ck_user_valid_to_anonymize};
+    my @clients = $self->clients(
+        include_disabled   => 1,
+        include_duplicated => 1,
+    );
+
+    # filter out virtual clients
+    # The standard anonymization rules don't apply for clients with no real money accounts. They can be anonymized at any time.
+    my $real_clients = first { not $_->is_virtual } @clients;
+    $real_clients ? return $result->{ck_user_valid_to_anonymize} : return 1;
 }
 
 =head2 get_client_using_replica
