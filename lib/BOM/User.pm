@@ -39,9 +39,10 @@ use constant CLIENT_LOGIN_HISTORY_KEY_PREFIX => "CLIENT_LOGIN_HISTORY::";
 use constant DAILY_TRANSFER_COUNT_KEY_PREFIX => "USER_TRANSFERS_DAILY::";
 
 sub dbic {
+    my (undef, %params) = @_;
     #not caching this as the handle is cached at a lower level and
     #if it does cache a bad handle here it will not recover.
-    return BOM::Database::UserDB::rose_db()->dbic;
+    return BOM::Database::UserDB::rose_db(%params)->dbic;
 }
 
 =head2 create
@@ -677,7 +678,7 @@ sub login_history {
     $args{order} //= 'desc';
     my $limit = looks_like_number($args{limit}) ? "limit $args{limit}" : '';
     my $sql   = "select * from users.get_login_history(?,?,?) $limit";
-    return $self->dbic->run(
+    return $self->dbic(operation => 'replica')->run(
         fixup => sub {
             $_->selectall_arrayref($sql, {Slice => {}}, $self->{id}, $args{order}, $args{show_impersonate_records} // 0);
         });
