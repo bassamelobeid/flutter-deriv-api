@@ -1255,7 +1255,7 @@ subtest $method => sub {
 
         $rpc_ct->call_ok($method, $params)
             ->has_no_system_error->has_no_error('If passed argumets are ok a new real wallet will be created successfully');
-        $rpc_ct->result_value_is(sub { shift->{landing_company_shortcode} }, 'samoa', 'It should return wallet landing company');
+        $rpc_ct->result_value_is(sub { shift->{landing_company_shortcode} }, 'svg', 'It should return wallet landing company');
 
         my $new_loginid = $rpc_ct->result->{client_id};
         ok $new_loginid =~ /^DW\d+/, 'new DW loginid';

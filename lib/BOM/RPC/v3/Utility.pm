@@ -489,6 +489,7 @@ sub error_map {
         'InvalidPhone'               => localize('Please enter a valid phone number, including the country code (e.g. +15417541234).'),
         'NeedBothSecret'             => localize('Need both secret question and secret answer.'),
         'DuplicateAccount' => localize('Sorry, an account already exists with those details. Only one real money account is allowed per client.'),
+        'DuplicateWallet'  => localize('Sorry, a wallet already exists with those details.'),
         'BelowMinimumAge'  => localize('Value of date of birth is below the minimum age required.'),
         'FinancialAccountExists'     => localize('You already have a financial money account. Please switch accounts to trade financial products.'),
         'NewAccountLimitReached'     => localize('You have created all accounts available to you.'),

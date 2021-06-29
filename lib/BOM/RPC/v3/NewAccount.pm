@@ -33,6 +33,7 @@ use BOM::User::Client;
 use BOM::User::FinancialAssessment qw(update_financial_assessment decode_fa);
 use BOM::User;
 use BOM::Rules::Engine;
+use LandingCompany::Wallet;
 
 requires_auth('trading', 'wallet');
 
@@ -418,9 +419,7 @@ rpc new_account_wallet => sub {
 
     my $broker = 'DW';
 
-    # TODO: Rule engine's landing company is better to be set dynamically.
-    # But it's hard-coded as of now in order to avoid conflicts with the samoa to svg migaration task.
-    my $company = 'svg';
+    my $company = LandingCompany::Wallet::get_wallet_for_broker($broker)->{landing_company};
 
     $args->{residence} = $from_client->residence;
 
