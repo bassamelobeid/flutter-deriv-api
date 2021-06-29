@@ -34,6 +34,8 @@ sub create_account {
             $client = $user->create_client(%$details);
         }
     } catch ($e) {
+        return $e if ref $e eq 'HASH' && $e->{error};
+
         warn "Real account creation exception [$e]";
         return {error => 'invalid'};
     }

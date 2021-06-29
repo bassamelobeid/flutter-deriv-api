@@ -271,8 +271,8 @@ subtest 'create account' => sub {
         }
 
         my %expected_wallet_company = (
-            binary => 'samoa-virtual',
-            deriv  => 'samoa-virtual',
+            binary => 'virtual',
+            deriv  => 'virtual',
         );
 
         for my $brand_name (sort keys %expected_wallet_company) {

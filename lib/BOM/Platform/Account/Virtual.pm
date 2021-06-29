@@ -101,7 +101,7 @@ sub create_account {
 
         if ($type eq 'wallet') {
             $landing_company = $virtual_company_for_brand->short;
-            $broker_code     = LandingCompany::Wallet::get($landing_company)->{broker_codes}->[0];
+            $broker_code     = LandingCompany::Wallet::get_for_landing_company($landing_company)->{broker_codes}->[0];
         }
 
         my %args = (
@@ -162,9 +162,11 @@ sub _virtual_company_for_brand {
         $_->allowed_for_brands->@*
     } LandingCompany::Registry::all();
 
+    # TODO: This logic should be moved to perl-Brand
     if ($type eq 'wallet') {
-        return first { $_->short eq 'samoa-virtual' } @lc;
+        return first { LandingCompany::Wallet::get_for_landing_company($_->short) } @lc;
     }
+
     return first { $_->short ne 'samoa-virtual' } @lc;
 }
 
