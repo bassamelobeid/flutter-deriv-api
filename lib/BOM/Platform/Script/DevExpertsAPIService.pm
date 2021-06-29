@@ -8,14 +8,20 @@ use parent qw(IO::Async::Notifier);
 use Future::AsyncAwait;
 use Syntax::Keyword::Try;
 use Net::Async::HTTP::Server;
+use IO::Async::Timer::Periodic;
 use WebService::Async::DevExperts::Client;
 use WebService::Async::DevExperts::Model::Common;
 use HTTP::Response;
 use JSON::MaybeUTF8 qw(:v1);
 use Unicode::UTF8;
 use Scalar::Util qw(refaddr blessed);
+use DataDog::DogStatsd::Helper qw(stats_inc stats_timing);
+use curry::weak;
 
 use Log::Any qw($log);
+
+# seconds between heartbeat requests
+use constant HEARTBEAT_INVERVAL => 60;
 
 =head1 NAME
 
@@ -110,6 +116,13 @@ sub _add_to_loop {
             pass => $self->{real_pass},
         ));
 
+    $self->add_child(
+        $self->{heartbeat} = IO::Async::Timer::Periodic->new(
+            interval => HEARTBEAT_INVERVAL,
+            on_tick  => $self->$curry::weak(sub { shift->do_heartbeat->retain }),
+        ));
+    $self->{heartbeat}->start;
+
     return undef;
 }
 
@@ -130,6 +143,8 @@ Takes the following parameter:
 async sub handle_http_request {
     my ($self, $req) = @_;
 
+    my $dd_tags = [];
+
     try {
         die "Only POST is allowed\n" unless $req->method eq 'POST';
         my $params = decode_json_utf8($req->body || '{}');
@@ -137,7 +152,13 @@ async sub handle_http_request {
         die "Invalid server: $server\n" unless exists $self->{clients}{$server};
         my $method = delete $params->{method} || die "Method not provided\n";
         $log->debugf('Got request for method %s with params %s', $method, $params);
-        my $data     = await $self->{clients}{$server}->$method($params->%*);
+        $dd_tags = ["server:$server", "method:$method"];
+        stats_inc('devexperts.api_service.request', {tags => $dd_tags});
+
+        my $start_time = [Time::HiRes::gettimeofday];
+        my $data       = await $self->{clients}{$server}->$method($params->%*);
+        stats_timing('devexperts.api_service.timing', 1000 * Time::HiRes::tv_interval($start_time), {tags => $dd_tags},);
+
         my $response = HTTP::Response->new(200);
         my $response_content;
 
@@ -154,6 +175,7 @@ async sub handle_http_request {
         $req->respond($response);
     } catch ($e) {
         $log->debugf('Failed processing request: %s', $e);
+
         try {
             if (blessed($e) and $e->isa('WebService::Async::DevExperts::Model::Error')) {
                 my $response      = HTTP::Response->new($e->http_code);
@@ -169,6 +191,7 @@ async sub handle_http_request {
                 $response->add_content(ref $e ? encode_json_utf8($e) : Unicode::UTF8::encode_utf8("$e"));
                 $response->content_length(length $response->content);
                 $req->respond($response);
+                stats_inc('devexperts.api_service.unexpected_error', {tags => $dd_tags});
             }
         } catch ($e2) {
             $log->errorf('Failed when trying to send failure response - %s', $e2);
@@ -195,6 +218,25 @@ async sub start {
 
     $log->tracef('DevExperts API service is listening on port %s', $port);
     return $port;
+}
+
+=head2 do_heartbeat
+
+Sends a simple server request and reports success to Datadog.
+
+=cut
+
+async sub do_heartbeat {
+    my ($self) = @_;
+    for my $server ('real', 'demo') {
+        try {
+            $log->debugf('sending heartbeat request for %s', $server);
+            await $self->{clients}{$server}->broker_get(broker_code => 'root_broker');
+            stats_inc('devexperts.api_service.heartbeat', {tags => ["server:$server"]});
+        } catch {
+            $log->debugf('heartbeat failed for %s', $server);
+        }
+    }
 }
 
 1;
