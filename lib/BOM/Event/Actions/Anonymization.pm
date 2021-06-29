@@ -75,6 +75,7 @@ sub bulk_anonymization {
         my $result = _anonymize($loginid);
         $result eq 'successful' ? $success->{$loginid} = $result : $error->{$loginid} = ERROR_MESSAGE_MAPPING->{$result};
     }
+    $error->{'There is no login ID in file'} = "File corrupted" if @loginids == 0;
     _send_anonymization_report($error, $success);
     return 1;
 }

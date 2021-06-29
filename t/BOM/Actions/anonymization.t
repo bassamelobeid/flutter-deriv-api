@@ -58,6 +58,71 @@ subtest client_anonymization => sub {
     cmp_deeply($msg->{to}, [$BRANDS->emails('compliance')], qq/Email should send to the compliance team./);
 };
 
+subtest client_anonymization_vrtc_without_siblings => sub {
+    my $BRANDS = BOM::Platform::Context::request()->brand();
+
+    my $user = BOM::User->create(
+        email    => random_email_address,
+        password => BOM::User::Password::hashpw('password'));
+
+    # Add a VRTC client to the user
+    my $vrtc_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'VRTC',
+        date_joined => Date::Utility->new()->_minus_months(1)->datetime_yyyymmdd_hhmmss,
+    });
+    $user->add_client($vrtc_client);
+
+    # Mock BOM::Event::Actions::Anonymization module
+    my $mock_anonymization = Test::MockModule->new('BOM::Event::Actions::Anonymization');
+    $mock_anonymization->mock('_send_anonymization_report', sub { return 1 });
+
+    my $result = BOM::Event::Actions::Anonymization::anonymize_client({'loginid' => $vrtc_client->loginid});
+    ok($result, 'Returns 1 after user anonymized.');
+
+    # Retrieve anonymized user from database by id
+    my @anonymized_clients = $user->clients(include_disabled => 1);
+
+    is $_->email, lc($_->loginid . '@deleted.binary.user'), 'Email was anonymized' for @anonymized_clients;
+
+    ok((grep { $_->broker_code eq 'VRTC' } @anonymized_clients), 'VRTC client was anonymized');
+
+};
+
+subtest client_anonymization_vrtc_with_siblings => sub {
+    my $BRANDS = BOM::Platform::Context::request()->brand();
+
+    my $user = BOM::User->create(
+        email    => random_email_address,
+        password => BOM::User::Password::hashpw('password'));
+
+    # Add a VRTC client to the user
+    my $vrtc_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'VRTC',
+        date_joined => Date::Utility->new()->_minus_months(1)->datetime_yyyymmdd_hhmmss,
+    });
+    $user->add_client($vrtc_client);
+
+    # Add a CR client to the user
+    my $cr_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+        date_joined => Date::Utility->new()->_minus_years(11)->datetime_yyyymmdd_hhmmss,
+    });
+    $user->add_client($cr_client);
+
+    # Mock BOM::Event::Actions::Anonymization module
+    my $mock_anonymization = Test::MockModule->new('BOM::Event::Actions::Anonymization');
+    $mock_anonymization->mock('_send_anonymization_report', sub { return 1 });
+
+    my $result = BOM::Event::Actions::Anonymization::anonymize_client({'loginid' => $vrtc_client->loginid});
+    ok($result, 'Returns 1 after user anonymized.');
+
+    # Retrieve anonymized user from database by id
+    my @anonymized_clients = $user->clients(include_disabled => 1);
+
+    isnt $_->email, lc($_->loginid . '@deleted.binary.user'), 'Email was NOT anonymized' for @anonymized_clients;
+
+};
+
 subtest bulk_anonymization => sub {
     my $BRANDS = BOM::Platform::Context::request()->brand();
     my (@lines, @clients, @users);
