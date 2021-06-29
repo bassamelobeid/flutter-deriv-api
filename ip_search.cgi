@@ -26,13 +26,15 @@ my $title = 'IP Search';
 my $last_login_age = request()->param('lastndays') || 10;
 my $logins;
 my $suspected_logins;
+my $user_db = BOM::User->dbic(operation => 'replica');
+
 # IP search from users.login_history table
 if ($search_type eq 'ip') {
     my $encoded_ip = encode_entities($ip);
     if ($ip !~ /^\d+\.\d+\.\d+\.\d+$/) {
         code_exit_BO("Invalid IP $encoded_ip", $title);
     }
-    $logins = BOM::User->dbic->run(
+    $logins = $user_db->run(
         sub {
             $_->selectall_arrayref(
                 "SELECT history_date, action, email FROM users.login_history_by_ip(?::INET, 'today'::TIMESTAMP - ?::INTERVAL)",
@@ -50,7 +52,7 @@ if ($search_type eq 'ip') {
     }
 
     # for some reason we have historically passed in an email address on 'loginid'... but now we will consider either one
-    $suspected_logins = BOM::User->dbic->run(
+    $suspected_logins = $user_db->run(
         sub {
             $_->selectall_arrayref('
                 SELECT history_date, logins
