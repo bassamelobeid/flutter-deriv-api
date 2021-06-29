@@ -252,7 +252,7 @@ subtest 'type and description' => sub {
         # There would be thousands of messages since we're recursively test the
         # properties. Hence, going with this approach to suppress ok messages
         # and report only the errors.
-        push $errors->{$path}->@*, "$path has type."        unless $node->{type} // $node->{oneOf};
+        push $errors->{$path}->@*, "$path has type."        unless $node->{type} // $node->{oneOf} // $node->{anyOf};
         push $errors->{$path}->@*, "$path has description." unless $node->{description};
         push $errors->{$path}->@*, "$path description starts with capital letter."
             unless $node->{description} =~ /^((\[|\()[A-Z].*(\]|\)) |)[A-Z0-9`]/;
