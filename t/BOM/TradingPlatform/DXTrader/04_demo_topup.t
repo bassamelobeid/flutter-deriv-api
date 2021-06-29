@@ -44,8 +44,8 @@ is exception {
 my $meta = $client->user->loginid_details->{$account->{account_id}};
 
 $dxtrader->call_api(
-    $account->{account_type},
-    'account_withdrawal',
+    server        => $account->{account_type},
+    method        => 'account_withdrawal',
     account_code  => $meta->{attributes}{account_code},
     clearing_code => $meta->{attributes}{clearing_code},
     id            => $dxtrader->unique_id,
@@ -67,8 +67,8 @@ is exception {
 }, undef, 'can top up at 1000 and real is suspended';
 
 my $resp = $dxtrader->call_api(
-    $account->{account_type},
-    'account_get',
+    server        => $account->{account_type},
+    method        => 'account_get',
     account_code  => $meta->{attributes}{account_code},
     clearing_code => $meta->{attributes}{clearing_code},
 );

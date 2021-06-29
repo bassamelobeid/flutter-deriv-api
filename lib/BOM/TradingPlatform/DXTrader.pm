@@ -14,6 +14,13 @@ use Format::Util::Numbers qw(financialrounding formatnumber);
 use Digest::SHA1 qw(sha1_hex);
 use BOM::Platform::Context qw(request);
 use BOM::Rules::Engine;
+use DataDog::DogStatsd::Helper qw(stats_inc);
+
+use Log::Any '$dxapi_log',
+    category  => 'dxapi_log',
+    log_level => 'info';
+use Log::Any::Adapter;
+Log::Any::Adapter->set({category => 'dxapi_log'}, 'File', '/var/lib/binary/devexperts_api_errors.log');
 
 =head1 NAME 
 
@@ -145,14 +152,8 @@ sub new_account {
     my $trading_category = $args{market_type} eq 'financial' ? 'Financials Only' : 'Synthetics Only';
 
     my $currency = $args{currency};
+    my $password = $args{password} or die 'password required';
 
-    my $password = $args{password};
-    if (BOM::Config::Runtime->instance->app_config->system->suspend->universal_password) {
-        die 'password required' unless $password;
-    } else {
-        $password = $self->client->user->password;
-    }
-    $self->server_check($server);
     my $dxclient = $self->dxclient_get($server);
 
     if ($dxclient) {
@@ -171,16 +172,15 @@ sub new_account {
 
     } else {
         # no existing client, try to create one
-        die 'password required' unless $password;
         my $login       = $self->dxtrade_login;
         my $client_resp = $self->call_api(
-            $server,
-            'client_create',
+            server   => $server,
+            method   => 'client_create',
             domain   => DX_DOMAIN,
             login    => $login,
             password => $password,
         );
-        die 'Failed to create DevExperts client' unless $client_resp->{success};
+
         $dxclient = $client_resp->{content};
         die 'Created client does not have requested login' unless $dxclient->{login} eq $login;
     }
@@ -198,8 +198,8 @@ sub new_account {
     my $account_id   = $prefix . $seq_num;                                                      # our loginid
     my $balance      = $args{account_type} eq 'demo' ? DEMO_TOPUP_AMOUNT : 0;
     my $account_resp = $self->call_api(
-        $server,
-        'client_account_create',
+        server        => $server,
+        method        => 'client_account_create',
         login         => $dxclient->{login},
         domain        => $dxclient->{domain},
         account_code  => $account_code,
@@ -238,7 +238,6 @@ sub new_account {
         ],
     );
 
-    die 'Failed to create DevExperts account' unless exists $account_resp->{success};
     my $account = $account_resp->{content};
     die 'Created account does not have requested account code' unless $account->{account_code} eq $account_code;
 
@@ -343,17 +342,15 @@ sub change_password {
     for my $server ($self->account_servers) {
         my $dxclient;
         try {
-            $self->server_check($server);
             $dxclient = $self->dxclient_get($server) or next;
 
-            my $resp = $self->call_api(
-                $server,
-                'client_update',
+            $self->call_api(
+                server   => $server,
+                method   => 'client_update',
                 login    => $dxclient->{login},
                 domain   => $dxclient->{domain},
                 password => $password,
             );
-            die unless $resp->{success};
             $pwd_changed = 1;
         } catch {
             return Future->done({failed_dx_logins => [$self->dxtrade_login]});
@@ -361,8 +358,8 @@ sub change_password {
 
         try {
             $self->call_api(
-                $server,
-                'logout_user_by_login',
+                server => $server,
+                method => 'logout_user_by_login',
                 login  => $dxclient->{login},
                 domain => $dxclient->{domain},
             );
@@ -440,28 +437,36 @@ sub deposit {
         die +{error_code => 'DXDepositFailed'};
     }
 
-    my $resp = $self->call_api(
-        $account->{account_type},
-        'account_deposit',
-        account_code  => $account->{attributes}{account_code},
-        clearing_code => $account->{attributes}{clearing_code},
-        id            => $self->unique_id,                        # must be unique for deposits on this login
-        amount        => $tx_amounts->{recv_amount},
-        currency      => $account->{currency},
-    );
-    die +{error_code => 'DXDepositIncomplete'} unless $resp->{success};
+    try {
+        $self->call_api(
+            server        => $account->{account_type},
+            method        => 'account_deposit',
+            account_code  => $account->{attributes}{account_code},
+            clearing_code => $account->{attributes}{clearing_code},
+            id            => $self->unique_id,                        # must be unique for deposits on this login
+            amount        => $tx_amounts->{recv_amount},
+            currency      => $account->{currency},
+        );
+    } catch {
+        die +{error_code => 'DXDepositIncomplete'};
+    }
 
     $self->insert_payment_details($txn->payment_id, $args{to_account}, $tx_amounts->{recv_amount});
-
-    my $update = $self->call_api(
-        $account->{account_type},
-        'account_get',
-        account_code  => $account->{attributes}{account_code},
-        clearing_code => $account->{attributes}{clearing_code},
-    );
-    die +{error_code => 'DXTransferCompleteError'} unless $update->{success};
-
     $self->client->user->daily_transfer_incr('dxtrade');
+
+    # get updated balance
+    my $update;
+    try {
+        $update = $self->call_api(
+            server        => $account->{account_type},
+            method        => 'account_get',
+            account_code  => $account->{attributes}{account_code},
+            clearing_code => $account->{attributes}{clearing_code},
+        );
+    } catch {
+        die +{error_code => 'DXTransferCompleteError'};
+    }
+
     return {
         $self->account_details($update->{content})->%*,
         transaction_id => $txn->id,
@@ -494,6 +499,8 @@ sub withdraw {
     my $account = first { $_->{loginid} eq $args{from_account} } $self->local_accounts
         or die +{error_code => 'DXInvalidAccount'};
 
+    my $server = $account->{account_type};
+
     # Sequence:
     # 1. Validation
     # 2. Withdraw from dxtrade
@@ -508,8 +515,9 @@ sub withdraw {
     );
 
     my $resp = $self->call_api(
-        $account->{account_type},
-        'account_withdrawal',
+        server        => $server,
+        method        => 'account_withdrawal',
+        quiet         => 1,
         account_code  => $account->{attributes}{account_code},
         clearing_code => $account->{attributes}{clearing_code},
         id            => $self->unique_id,                        # must be unique for withdrawals on this login
@@ -522,7 +530,9 @@ sub withdraw {
         and $resp->{content}{error_code} eq '30005'
         and $resp->{status} eq '422';
 
-    die +{error_code => 'DXWithdrawalFailed'} unless $resp->{success};
+    unless ($resp->{success}) {
+        $self->handle_api_error($resp, 'DXWithdrawalFailed');
+    }
 
     my %txn_details = (
         dxtrade_account_id        => $args{from_account},
@@ -553,16 +563,21 @@ sub withdraw {
     }
 
     $self->insert_payment_details($txn->payment_id, $args{from_account}, -$args{amount});
-
-    my $update = $self->call_api(
-        $account->{account_type},
-        'account_get',
-        account_code  => $account->{attributes}{account_code},
-        clearing_code => $account->{attributes}{clearing_code},
-    );
-    die +{error_code => 'DXTransferCompleteError'} unless $update->{success};
-
     $self->client->user->daily_transfer_incr('dxtrade');
+
+    # get updated balance
+    my $update;
+    try {
+        $update = $self->call_api(
+            server        => $server,
+            method        => 'account_get',
+            account_code  => $account->{attributes}{account_code},
+            clearing_code => $account->{attributes}{clearing_code},
+        );
+    } catch {
+        die +{error_code => 'DXTransferCompleteError'};
+    }
+
     return {
         $self->account_details($update->{content})->%*,
         transaction_id => $txn->id,
@@ -581,8 +596,8 @@ sub demo_top_up {
     my ($self, $account) = @_;
 
     my $check = $self->call_api(
-        $account->{account_type},
-        'account_get',
+        server        => $account->{account_type},
+        method        => 'account_get',
         account_code  => $account->{attributes}{account_code},
         clearing_code => $account->{attributes}{clearing_code},
     );
@@ -592,16 +607,19 @@ sub demo_top_up {
         message_params => [formatnumber('amount', 'USD', DEMO_TOPUP_MINIMUM_BALANCE), 'USD']}
         unless $check->{content}{balance} <= DEMO_TOPUP_MINIMUM_BALANCE;
 
-    my $resp = $self->call_api(
-        $account->{account_type},
-        'account_deposit',
-        account_code  => $account->{attributes}{account_code},
-        clearing_code => $account->{attributes}{clearing_code},
-        id            => $self->unique_id,                        # must be unique for deposits on this login
-        amount        => DEMO_TOPUP_AMOUNT,
-        currency      => $account->{currency},
-    );
-    die +{error_code => 'DXDemoTopFailed'} unless $resp->{success};
+    try {
+        $self->call_api(
+            server        => $account->{account_type},
+            method        => 'account_deposit',
+            account_code  => $account->{attributes}{account_code},
+            clearing_code => $account->{attributes}{clearing_code},
+            id            => $self->unique_id,                        # must be unique for deposits on this login
+            amount        => DEMO_TOPUP_AMOUNT,
+            currency      => $account->{currency},
+        );
+    } catch {
+        die +{error_code => 'DXDemoTopFailed'};
+    }
 
     return;
 }
@@ -691,37 +709,54 @@ sub config {
 
 =head2 call_api
 
-Calls API service with given $method and %parmams.
+Calls API service with given params.
 
-Takes the following arguments:
+Takes the following named arguments, plus others according to the method.
 
 =over 4
 
-=item * C<method> (required).
+=item * C<method>. Required.
 
-=item * C<args>. Arguments to method.
+=item * C<server>. Required.
+
+=item * C<quiet>. Don't die or log datadog stats when api returns error.
 
 =back
 
 =cut
 
 sub call_api {
-    my ($self, $server, $method, %args) = @_;
+    my ($self, %args) = @_;
 
-    $self->server_check($server);
+    $self->server_check($args{server});
 
-    my $payload = encode_json_utf8({
-        server => $server,
-        method => $method,
-        %args
-    });
+    my $quiet   = delete $args{quiet};
+    my $payload = encode_json_utf8(\%args);
+    $dxapi_log->context->{request} = \%args;
+    my $resp;
+
     try {
-        my $resp = $self->http->post($self->config->{service_url}, {content => $payload});
+        $resp = $self->http->post($self->config->{service_url}, {content => $payload});
         $resp->{content} = decode_json_utf8($resp->{content} || '{}');
+        die unless $resp->{success} or $quiet;    # we expect some calls to fail, eg. client_get
         return $resp;
     } catch ($e) {
-        return {};
+        $self->handle_api_error($resp);
     }
+}
+
+=head2 handle_api_error
+
+Called when an unexpcted Devexperts API error occurs. Dies with generic error code unless one is provided.
+
+=cut
+
+sub handle_api_error {
+    my ($self, $resp, $error_code) = @_;
+
+    stats_inc('devexperts.rpc.api_call_fail', {tags => [map { "$_:" . $dxapi_log->context->{request}{$_} } qw/method server/]});
+    $dxapi_log->info($resp->{content} // sprintf('No content, HTTP code %s, reason %s', $resp->{status}, $resp->{reason}));
+    die +{error_code => $error_code // 'DXGeneral'};
 }
 
 =head2 http
@@ -745,21 +780,20 @@ sub dxclient_get {
 
     my $login = $self->dxtrade_login;
 
-    my $api_resp = $self->call_api(
-        $server,
-        'client_get',
+    my $resp = $self->call_api(
+        server => $server,
+        method => 'client_get',
+        quiet  => 1,
         login  => $login,
         domain => DX_DOMAIN,
     );
 
-    if ($api_resp->{content}{error_code} and $api_resp->{content}{error_code} eq '30002' and $api_resp->{status} eq '404') {
-        # expected response for not found
-        return undef;
-    } elsif (!(exists $api_resp->{content}{login} and $api_resp->{content}{login} eq $login)) {
-        die 'Failed to retrieve DevExperts client';
-    } else {
-        return $api_resp->{content};
-    }
+    return $resp->{content} if $resp->{success};
+
+    # expected response for not found
+    return undef if ($resp->{content}{error_code} and $resp->{content}{error_code} eq '30002' and $resp->{status} eq '404');
+
+    $self->handle_api_error($resp);
 }
 
 =head2 dxtrade_login
