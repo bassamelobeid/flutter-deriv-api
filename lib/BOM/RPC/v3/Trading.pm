@@ -32,6 +32,7 @@ my %ERROR_MAP = do {
     local *localize = sub { die 'you probably wanted an arrayref for this localize() call' if @_ > 1; shift };
     (
         DXSuspended           => localize('Deriv X account management is currently suspended.'),
+        DXGeneral             => localize('This service is currently unavailable. Please try again later.'),
         DXServerSuspended     => localize('This feature is suspended for system maintenance. Please try later.'),
         DXtradeNoCurrency     => localize('Please provide a currency for the Deriv X account.'),
         DXExistingAccount     => localize('You already have Deriv X account of this type (account ID [_1]).'),

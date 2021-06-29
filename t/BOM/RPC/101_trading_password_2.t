@@ -95,7 +95,7 @@ subtest 'dxtrade' => sub {
     undef $last_event;
 
     my $mock_dx = Test::MockModule->new('BOM::TradingPlatform::DXTrader');
-    $mock_dx->mock('call_api', sub { return undef if $_[1] eq 'demo' and $_[2] eq 'client_update'; $mock_dx->original('call_api')->(@_) });
+    $mock_dx->mock('call_api', sub { die if $_[1]{server} eq 'demo' and $_[1]{method} eq 'client_update'; $mock_dx->original('call_api')->(@_) });
 
     $params->{args}{old_password} = '1234Abcd';
     $params->{args}{new_password} = 'Abcd1234';
@@ -189,7 +189,7 @@ subtest 'mixed platforms' => sub {
     undef $last_event;
 
     my $mock_dx = Test::MockModule->new('BOM::TradingPlatform::DXTrader');
-    $mock_dx->mock('call_api', sub { return undef if $_[2] eq 'client_update'; $mock_dx->original('call_api')->(@_) });
+    $mock_dx->mock('call_api', sub { die if $_[1]{method} eq 'client_update'; $mock_dx->original('call_api')->(@_) });
 
     $params->{args}{old_password} = 'Abcd1234';
     $params->{args}{new_password} = '1234Abcd';
