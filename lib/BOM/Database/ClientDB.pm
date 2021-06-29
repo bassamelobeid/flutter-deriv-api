@@ -6,6 +6,7 @@ use File::ShareDir;
 use JSON::MaybeXS;
 use Text::Trim qw(trim);
 use LandingCompany::Registry;
+use LandingCompany::Wallet;
 use Syntax::Keyword::Try;
 use YAML::XS qw(LoadFile);
 use BOM::Config;
@@ -68,6 +69,12 @@ my $environment;
 BEGIN {
     my $loaded_landing_companies = LandingCompany::Registry::get_loaded_landing_companies();
     for my $v (values %$loaded_landing_companies) {
+        $environment->{$_} = $v->{short} for @{$v->{broker_codes}};
+    }
+
+    # loading wallets configuration
+    my $loaded_wallets = LandingCompany::Wallet::available_wallets();
+    for my $v (values %$loaded_wallets) {
         $environment->{$_} = $v->{short} for @{$v->{broker_codes}};
     }
 }
