@@ -240,6 +240,8 @@ sub get_settings_by_group {
                 system.suspend.doughflow_deriv_sportsbooks
                 system.suspend.universal_password
                 system.dxtrade.suspend.all
+                system.dxtrade.http_proxy.demo
+                system.dxtrade.http_proxy.real
                 system.dxtrade.suspend.demo
                 system.dxtrade.suspend.real
                 )
