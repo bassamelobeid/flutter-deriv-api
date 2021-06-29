@@ -189,21 +189,31 @@ subtest 'Payment Withdraw Verification' => sub {
 
 subtest 'Build Verification  URL' => sub {
 
+    my $construct_expected_url = sub {
+        my ($args, $extra_params, $action) = @_;
+        my $expected_url = "$args->{verification_uri}?action=$action&lang=$args->{language}&code=$args->{code}"
+            . (
+            defined $extra_params
+            ? '&' . join '&', map { "$_=$extra_params->{$_}" } sort keys $extra_params->%*
+            : ''
+            );
+
+        return $expected_url;
+    };
+
     ## no utm params supplied
     my $args = {
         verification_uri => "http://www.fred.com",
         language         => 'Eng',
         code             => "Thisisthecode"
     };
-    my $result = BOM::RPC::v3::EmailVerification::_build_verification_url('action_test', $args);
-    is($result, 'http://www.fred.com?action=action_test&lang=Eng&code=Thisisthecode', "url creation with no UTM params set correct");
+    my $expected_url = $construct_expected_url->($args, undef, 'action_test');
+    my $result       = BOM::RPC::v3::EmailVerification::_build_verification_url('action_test', $args);
+
+    is($result, $expected_url, "url creation with no UTM params set correct");
 
     ## with utm params
-
-    $args = {
-        verification_uri   => "http://www.fred.com",
-        language           => 'Eng',
-        code               => "Thisisthecode",
+    my $extra_params = {
         utm_source         => "google",
         utm_medium         => 'email',
         utm_campaign       => 'Grand_Opening',
@@ -212,23 +222,16 @@ subtest 'Build Verification  URL' => sub {
         date_first_contact => '20150301',
         affiliate_token    => 'asdasd123',
     };
-    $result = BOM::RPC::v3::EmailVerification::_build_verification_url('action_test', $args);
-    is(
-        $result,
-        'http://www.fred.com?action=action_test&lang=Eng&code=Thisisthecode&utm_source=google&utm_campaign=Grand_Opening&utm_medium=email&signup_device=mobile&gclid_url=adasd.sd&date_first_contact=20150301&affiliate_token=asdasd123',
-        "url creation with UTM params set correct"
-    );
+    $expected_url = $construct_expected_url->($args, $extra_params, 'action_test');
+    $result       = BOM::RPC::v3::EmailVerification::_build_verification_url('action_test', {$args->%*, $extra_params->%*});
+
+    is($result, $expected_url, "url creation with UTM params set correct");
 
     ## with extra utm params
-
-    $args = {
-        verification_uri => "https://www.rover.com/search",
-        language         => 'Eng',
-        code             => "Thisisthecode",
+    $extra_params = {
         utm_source       => "google",
         utm_medium       => 'email',
         utm_campaign     => 'summer-sale',
-
         utm_campaign_id  => 111017190001,
         utm_content      => '2017_11_09_O_TGiving_NoSt_SDTest_NoCoup_2',
         utm_term         => 'MyLink123',
@@ -239,31 +242,60 @@ subtest 'Build Verification  URL' => sub {
         utm_fbcl_id      => 6,
         utm_adrollclk_id => 7,
     };
-    $result = BOM::RPC::v3::EmailVerification::_build_verification_url('action_test', $args);
-
-    is($result,
-        'https://www.rover.com/search?action=action_test&lang=Eng&code=Thisisthecode&utm_source=google&utm_campaign=summer-sale&utm_medium=email&utm_content=2017_11_09_O_TGiving_NoSt_SDTest_NoCoup_2&utm_term=MyLink123&utm_campaign_id=111017190001&utm_adgroup_id=45637&utm_ad_id=f521708e-db6e-478b-9731-8243a692c2d5&utm_gl_client_id=3541&utm_msclk_id=5&utm_fbcl_id=6&utm_adrollclk_id=7'
-    );
-
-    ## with extra payment_agent params
-
     $args = {
-        verification_uri => "https://www.rover.com/search",
         language         => 'Eng',
         code             => "Thisisthecode",
+        verification_uri => "https://www.rover.com/search",
+    };
+    $expected_url = $construct_expected_url->($args, $extra_params, 'action_test');
+    $result       = BOM::RPC::v3::EmailVerification::_build_verification_url('action_test', {$args->%*, $extra_params->%*});
 
+    is($result, $expected_url, "url creation with extra UTM params set correctly");
+
+    ## with extra payment_agent params
+    $extra_params = {
         pa_amount   => 100,
         pa_loginid  => 'CR90000001',
         pa_currency => 'USD',
         pa_remarks  => 'Remarks'
     };
-    $result = BOM::RPC::v3::EmailVerification::_build_verification_url('payment_agent_withdraw', $args);
+    $expected_url = $construct_expected_url->($args, $extra_params, 'payment_agent_withdraw');
+    $result       = BOM::RPC::v3::EmailVerification::_build_verification_url('payment_agent_withdraw', {$args->%*, $extra_params->%*});
 
-    is(
-        $result,
-        'https://www.rover.com/search?action=payment_agent_withdraw&lang=Eng&code=Thisisthecode&pa_loginid=CR90000001&pa_amount=100&pa_currency=USD&pa_remarks=Remarks',
-        'populates parameters correctly'
-    );
+    is($result, $expected_url, "url creation with payment_agent params set correctly");
+
+    # with invalid utm_params
+    $extra_params = {
+        utm_source       => "google",
+        utm_medium       => '&email',
+        utm_campaign     => 'summer-sale',
+        utm_campaign_id  => 111017190001,
+        utm_content      => '2017_11_09_O_TGiving_NoSt_SDTest_NoCoup_2',
+        utm_term         => '^$%#MyLink123',
+        utm_ad_id        => 'f521708e-db6e-478b-9731-8243a692c2d5',
+        utm_adgroup_id   => 45637,
+        utm_gl_client_id => 3541,
+        utm_msclk_id     => 5,
+        utm_fbcl_id      => 6,
+        utm_adrollclk_id => 7,
+    };
+
+    my $valid_extra_params = {
+        utm_source       => "google",
+        utm_campaign     => 'summer-sale',
+        utm_campaign_id  => 111017190001,
+        utm_content      => '2017_11_09_O_TGiving_NoSt_SDTest_NoCoup_2',
+        utm_ad_id        => 'f521708e-db6e-478b-9731-8243a692c2d5',
+        utm_adgroup_id   => 45637,
+        utm_gl_client_id => 3541,
+        utm_msclk_id     => 5,
+        utm_fbcl_id      => 6,
+        utm_adrollclk_id => 7,
+    };
+    $expected_url = $construct_expected_url->($args, $valid_extra_params, 'invalid_utm_data');
+    $result       = BOM::RPC::v3::EmailVerification::_build_verification_url('invalid_utm_data', {$args->%*, $extra_params->%*});
+
+    is($result, $expected_url, "invalid UTM params are being skipped correctly");
 };
 
 done_testing();

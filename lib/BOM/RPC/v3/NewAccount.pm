@@ -519,11 +519,21 @@ sub create_virtual_account {
 
     $account_args->{details}->{myaffiliates_token} = $args->{affiliate_token} if $args->{affiliate_token};
 
-    foreach my $k (qw( date_first_contact gclid_url signup_device utm_campaign utm_medium utm_source )) {
+    my $regex_validation = {qr{^utm_.+} => qr{^[\w\s\.\-_]{1,100}$}};
+    my @tags_list        = qw(date_first_contact gclid_url signup_device utm_campaign utm_medium utm_source);
+
+    my $filtered_url_parameters = BOM::Platform::Utility::extract_valid_params(\@tags_list, $args, $regex_validation);
+    foreach my $k (keys $filtered_url_parameters->%*) {
         $account_args->{details}->{$k} = $args->{$k} if $args->{$k};
     }
 
-    foreach my $k (qw( utm_ad_id utm_adgroup_id utm_adrollclk_id utm_campaign_id utm_content utm_fbcl_id utm_gl_client_id utm_msclk_id utm_term )) {
+    @tags_list = qw(
+        utm_ad_id        utm_adgroup_id utm_adrollclk_id utm_campaign_id utm_content utm_fbcl_id
+        utm_gl_client_id utm_msclk_id   utm_term
+    );
+
+    $filtered_url_parameters = BOM::Platform::Utility::extract_valid_params(\@tags_list, $args, $regex_validation);
+    foreach my $k (keys $filtered_url_parameters->%*) {
         $account_args->{utm_data}->{$k} = $args->{$k} if $args->{$k};
     }
 
@@ -556,7 +566,8 @@ sub create_virtual_account {
     );
 
     my $utm_tags = {};
-    foreach my $tag (qw( date_first_contact gclid_url signup_device utm_campaign utm_content utm_medium utm_source utm_term )) {
+    @tags_list = qw(date_first_contact gclid_url signup_device utm_campaign utm_content utm_medium utm_source utm_term);
+    foreach my $tag (@tags_list) {
         $utm_tags->{$tag} = $args->{$tag} if $args->{$tag};
     }
 
@@ -567,8 +578,7 @@ sub create_virtual_account {
             properties => {
                 type     => $args->{type} // 'trading',
                 subtype  => 'virtual',
-                utm_tags => $utm_tags
-            }});
+                utm_tags => BOM::Platform::Utility::extract_valid_params(\@tags_list, $utm_tags, $regex_validation)}});
 
     return $client;
 }

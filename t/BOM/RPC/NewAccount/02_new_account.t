@@ -338,6 +338,37 @@ subtest $method => sub {
         );
         is $user->{email_consent}, 0, 'email consent not given';
     };
+
+    subtest 'invalid utm data' => sub {
+        my $vr_email = 'invalid_utm_data' . rand(999) . '@binary.com';
+        $params->{args}->{verification_code} = BOM::Platform::Token->new(
+            email       => $vr_email,
+            created_for => 'account_opening'
+        )->token;
+
+        $params->{args}->{utm_content}  = '$content';
+        $params->{args}->{utm_term}     = 'term2$';
+        $params->{args}->{utm_campaign} = 'camp$ign2';
+
+        $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error('If verification code is ok - account created successfully')
+            ->result_value_is(sub { shift->{currency} },     'USD', 'It should return new account data')
+            ->result_value_is(sub { ceil shift->{balance} }, 10000, 'It should return new account data');
+
+        ok $emitted{'signup_' . $rpc_ct->result->{client_id}}, "signup event emitted";
+
+        $user = BOM::User->new(
+            email => $vr_email,
+        );
+
+        my $utm_data = decode_json_utf8($user->{utm_data});
+        foreach my $key (keys $utm_data->%*) {
+            if ($params->{args}->{$key} !~ /^[\w\s\.\-_]{1,100}$/) {
+                is $utm_data->{$key}, undef, "$key is skipped as expected";
+            } else {
+                is $utm_data->{$key}, $params->{args}->{$key}, "$key has been set correctly";
+            }
+        }
+    };
 };
 
 $method = 'new_account_real';

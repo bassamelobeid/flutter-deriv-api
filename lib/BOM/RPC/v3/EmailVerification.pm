@@ -278,11 +278,18 @@ Returns   string representation of the URL.
 
 sub _build_verification_url {
     my ($action, $args) = @_;
-    my @extra_params =
-        qw( utm_source utm_campaign utm_medium signup_device gclid_url date_first_contact affiliate_token utm_content utm_term utm_campaign_id utm_adgroup_id utm_ad_id utm_gl_client_id  utm_msclk_id utm_fbcl_id utm_adrollclk_id );
 
+    my $regex_validation = {qr{^utm_.+} => qr{^[\w\s\.\-_]{1,100}$}};
+    my @tags_list        = qw(
+        utm_source       utm_campaign utm_medium  signup_device   gclid_url      date_first_contact
+        affiliate_token  utm_content  utm_term    utm_campaign_id utm_adgroup_id utm_ad_id
+        utm_gl_client_id utm_msclk_id utm_fbcl_id utm_adrollclk_id
+    );
+    my $extra_params_filtered = BOM::Platform::Utility::extract_valid_params(\@tags_list, $args, $regex_validation);
+
+    my @extra_params = keys $extra_params_filtered->%*;
     push @extra_params, qw ( pa_loginid pa_amount pa_currency pa_remarks ) if ($action eq 'payment_agent_withdraw');
-    @extra_params = map { defined $args->{$_} ? join('=', $_, $args->{$_}) : () } @extra_params;
+    @extra_params = map { defined $args->{$_} ? join('=', $_, $args->{$_}) : () } sort @extra_params;
     my $extra_params_string = @extra_params ? '&' . join('&', @extra_params) : '';
 
     return "$args->{verification_uri}?action=$action&lang=$args->{language}&code=$args->{code}$extra_params_string";
