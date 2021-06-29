@@ -26,6 +26,7 @@ use BOM::User::Onfido;
 use BOM::TradingPlatform;
 use BOM::Config::Runtime;
 use ExchangeRates::CurrencyConverter qw(in_usd);
+use BOM::Platform::Redis;
 use LandingCompany::Registry;
 use BOM::Platform::Context qw(request);
 use Exporter qw( import );
@@ -211,13 +212,30 @@ Creates a new wallet
 sub create_wallet {
     my ($self, %args) = @_;
     $args{binary_user_id} = $self->{id};
-    my $currency_code = delete $args{currency};
-    my $wallet        = BOM::User::Wallet->register_and_return_new_client(\%args);
-    $wallet->set_default_account($currency_code);
 
-    # in current back-end perspective wallet is a client
-    $self->add_client($wallet);
-    return $wallet;
+    my $lock_name = 'WALLET::CREATION' . $self->{id};
+    die "User $self->{id} is trying to create 2 wallets at the same time" unless BOM::Platform::Redis::acquire_lock($lock_name, 30);
+    try {
+        #Check for dublicates
+        for my $client ($self->clients(include_disabled => 0)) {
+            next unless $client->is_wallet;
+            next unless ($client->payment_method         // '') eq ($args{payment_method} // '');
+            next unless ($client->account->currency_code // '') eq ($args{currency}       // '');
+
+            die +{error => 'DuplicateWallet'};
+        }
+
+        my $currency_code = delete $args{currency};
+        my $wallet        = BOM::User::Wallet->register_and_return_new_client(\%args);
+        $wallet->set_default_account($currency_code);
+
+        # in current back-end perspective wallet is a client
+        $self->add_client($wallet);
+
+        return $wallet;
+    } finally {
+        BOM::Platform::Redis::release_lock($lock_name);
+    }
 }
 
 =head2 login

@@ -7,6 +7,8 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::User;
 use BOM::User::Password;
 use BOM::User::Wallet;
+use Test::MockModule;
+use Test::Fatal;
 
 my $password = 'jskjd8292922';
 my $email    = 'test' . rand(999) . '@deriv.com';
@@ -43,6 +45,17 @@ my $details = {
 
 };
 
+subtest 'Lock check' => sub {
+    # Simulate situation when lock already aquired
+    my $mock = Test::MockModule->new('BOM::Platform::Redis');
+    $mock->mock(acquire_lock => 0);
+
+    my $err = exception { $user->create_wallet(%$details) };
+
+    ok $err, 'Got an error';
+    like $err, qr{User \d+ is trying to create 2 wallets at the same time}, 'Got valid error message';
+};
+
 subtest 'create a real wallet' => sub {
     my $wallet = $user->create_wallet(%$details);
 
@@ -51,6 +64,14 @@ subtest 'create a real wallet' => sub {
     is($wallet->payment_method, 'Skrill', 'Wallet Payment Method: ' . $wallet->payment_method);
 
     is($wallet->currency, 'USD', 'Wallet Currecny Code: USD');
-
 };
 
+subtest 'Dublicate check' => sub {
+    my $err = exception { $user->create_wallet(%$details) };
+
+    ok $err, 'Got error in case of creating dublicate wallet account';
+    is ref $err, 'HASH', 'Error is a hash';
+    is $err->{error}, 'DuplicateWallet', 'Error contains valid error code';
+};
+
+done_testing();
