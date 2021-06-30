@@ -521,6 +521,18 @@ subtest 'dxtrader' => sub {
     is $res[0], 'Transfer to Deriv X account DXD004. Includes transfer fee of 0.90 USD (1.5%).', 'deposit with fee';
 };
 
+subtest 'get remarks by payment_type_code' => sub {
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'VRTC',
+        email       => 'payment_type_code@binary.com'
+    });
+
+    $client->deposit_virtual_funds();
+
+    my @res = get_remarks($client);
+    is $res[0], 'Reset to default demo account balance.';
+};
+
 sub get_remarks {
     return map { $_->{payment_remark} } get_transaction_history({client => shift})->@*;
 }

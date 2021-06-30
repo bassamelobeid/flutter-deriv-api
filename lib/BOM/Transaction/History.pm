@@ -101,7 +101,7 @@ sub get_transaction_history {
         $txn->{details} = $json->decode($txn->{details}) if $txn->{details};
 
         # Get localized user-friendly payment remark
-        $txn->{payment_remark} = _get_txn_remark($txn, $client) // $txn->{payment_remark};
+        $txn->{payment_remark} = _get_txn_remark($txn, $client) // _get_txn_type_remark($txn) // $txn->{payment_remark};
 
         my $txn_account_transfer_details = get_account_transfer_details($txn, $client);
 
@@ -275,6 +275,32 @@ sub _get_txn_remark {
             }
             return localize('Transfer from Deriv X account [_1]', $dxtrade_account);
         }
+    }
+
+    return undef;
+}
+
+=head2 _get_txn_type_remark
+
+Produces a localized remark for a transaction item based on <payment_type_code>.
+
+=over 4
+
+=item * C<txn> - transaction hashref
+
+=back
+
+Returns the remark as string.
+
+=cut
+
+sub _get_txn_type_remark {
+    my $txn = shift;
+
+    my $type_code = $txn->{payment_type_code} // return;
+
+    if ($type_code eq 'virtual_credit') {
+        return localize('Reset to default demo account balance.');
     }
 
     return undef;
