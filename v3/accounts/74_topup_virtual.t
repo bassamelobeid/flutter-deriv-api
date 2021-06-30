@@ -57,7 +57,7 @@ my ($res, $call_params) = call_mocked_consumer_groups_request($t, {topup_virtual
 is $call_params->{language}, 'EN';
 ok exists $call_params->{token};
 is $res->{msg_type}, 'topup_virtual';
-ok $res->{error}->{message} =~ /virtual accounts only/, 'virtual accounts only';
+ok $res->{error}->{message} =~ /demo accounts only/, 'demo accounts only';
 
 # virtual is ok
 $client_vr = BOM::User::Client->new({loginid => $client_vr->loginid});

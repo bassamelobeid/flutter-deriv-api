@@ -15,7 +15,7 @@
          "properties" : {
             "code" : {
                "type" : "string",
-               "pattern" : "^TopupVirtualError$"
+               "pattern" : "^TopupDemoError$"
             },
             "message" : {
                "type" : "string"
