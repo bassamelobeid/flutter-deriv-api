@@ -740,9 +740,12 @@ subtest 'test (binary) sell slippage' => sub {
 
     my $error = $txn->sell;
     is $error->{-type}, 'PriceMoved', 'error type - PriceMoved';
-    is $error->{-message_to_client},
-        'The underlying market has moved too much since you priced the contract. The contract sell price has changed from 49.37 USD to 48.76 USD.',
-        'error message_to_client - The underlying market has moved too much since you priced the contract. The contract sell price has changed from 49.37 USD to 48.76 USD.';
+    SKIP: {
+        skip "skip running time sensitive tests for code coverage tests", 1 if $ENV{DEVEL_COVER_OPTIONS};
+        is $error->{-message_to_client},
+            'The underlying market has moved too much since you priced the contract. The contract sell price has changed from 49.37 USD to 48.76 USD.',
+            'error message_to_client - The underlying market has moved too much since you priced the contract. The contract sell price has changed from 49.37 USD to 48.76 USD.';
+    }
 };
 
 done_testing();

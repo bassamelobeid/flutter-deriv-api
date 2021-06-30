@@ -638,35 +638,38 @@ subtest 'sell failure due to update' => sub {
     is $error->{-mesg}, 'Contract is updated while attempting to sell', 'error mesg Contract is updated while attempting to sell';
     is $error->{-type}, 'SellFailureDueToUpdate',                       'error type SellFailureDueToUpdate';
 
-    subtest 'sell_expired_contract with contract id' => sub {
-        # expiring the contract by setting current tick to 101.15 (the value of take profit)
-        BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-            underlying => $underlying->symbol,
-            epoch      => $now->epoch + 1,
-            quote      => 101.15,
-        });
-        sleep 1;
-        my $out = BOM::Transaction::sell_expired_contracts({
-                client       => $cl,
-                source       => 23,
-                contract_ids => [$fmb->{id}]});
-        ok $out->{number_of_sold_bets} == 1, 'sold one contract';
-    };
+    SKIP: {
+        skip "skip running time sensitive tests for code coverage tests", 2 if $ENV{DEVEL_COVER_OPTIONS};
+        subtest 'sell_expired_contract with contract id' => sub {
+            # expiring the contract by setting current tick to 101.15 (the value of take profit)
+            BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+                underlying => $underlying->symbol,
+                epoch      => $now->epoch + 1,
+                quote      => 101.15,
+            });
+            sleep 1;
+            my $out = BOM::Transaction::sell_expired_contracts({
+                    client       => $cl,
+                    source       => 23,
+                    contract_ids => [$fmb->{id}]});
+            ok $out->{number_of_sold_bets} == 1, 'sold one contract';
+        };
 
-    subtest 'sell_expired_contract without contract id' => sub {
-        BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-            underlying => $underlying->symbol,
-            epoch      => $now->epoch + 2,
-            quote      => 0,
-        });
-        sleep 1;
-        my $out = BOM::Transaction::sell_expired_contracts({
-            client => $cl,
-            source => 23,
-        });
-        # sold the remaining two contracts
-        ok $out->{number_of_sold_bets} == 2, 'sold two contracts';
-    };
+        subtest 'sell_expired_contract without contract id' => sub {
+            BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+                underlying => $underlying->symbol,
+                epoch      => $now->epoch + 2,
+                quote      => 0,
+            });
+            sleep 1;
+            my $out = BOM::Transaction::sell_expired_contracts({
+                client => $cl,
+                source => 23,
+            });
+            # sold the remaining two contracts
+            ok $out->{number_of_sold_bets} == 2, 'sold two contracts';
+        };
+    }
 };
 
 # because the market of forex will be closed after Friday 20:55, we move back 3 days for safe
