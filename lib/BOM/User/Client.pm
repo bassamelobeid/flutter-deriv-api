@@ -67,8 +67,9 @@ use Log::Any qw($log);
 
 use constant {
     P2P_TOKEN_MIN_EXPIRY => 2 * 60 * 60,    # 2 hours
-                                            # Statuses here should match the DB function p2p.is_status_final.
-    P2P_ORDER_STATUS     => {
+
+    # Statuses here should match the DB function p2p.is_status_final.
+    P2P_ORDER_STATUS => {
         active => [qw(pending buyer-confirmed timed-out disputed)],
         final  => [qw(completed cancelled refunded dispute-refunded dispute-completed)],
     },
@@ -2163,6 +2164,55 @@ sub p2p_advertiser_update {
     return $self->_advertiser_details($update);
 }
 
+=head2 p2p_advertiser_relations
+
+Updates and returns favourite and blocked advertisers
+
+=cut
+
+sub p2p_advertiser_relations {
+    my ($self, %param) = @_;
+
+    my $advertiser_info = $self->_p2p_advertiser_cached;
+    die +{error_code => 'AdvertiserNotRegistered'} unless $advertiser_info;
+
+    if (%param) {
+        $param{$_} //= [] for qw/add_favourites add_blocked remove_favourites remove_blocked/;
+
+        die +{error_code => 'AdvertiserRelationSelf'} if any { $_ == $advertiser_info->{id} } ($param{add_favourites}->@*, $param{add_blocked}->@*);
+
+        my $advertisers = $self->db->dbic->run(
+            fixup => sub {
+                $_->selectall_hashref('SELECT * FROM p2p.advertiser_id_check(?)',
+                    'id', undef, [$param{add_favourites}->@*, $param{add_blocked}->@*, $param{remove_favourites}->@*, $param{remove_blocked}->@*]);
+            });
+
+        # we won't complain if they try to delete an invalid advertiser
+        die +{error_code => 'InvalidAdvertiserID'} unless all { exists $advertisers->{$_} } ($param{add_favourites}->@*, $param{add_blocked}->@*);
+
+        $self->db->dbic->run(
+            fixup => sub {
+                $_->do(
+                    'SELECT p2p.advertiser_relation_update(?, ?, ?, ?, ?)',
+                    undef,
+                    $advertiser_info->{id},
+                    @param{qw/add_favourites add_blocked remove_favourites remove_blocked/});
+            });
+
+        # notify advertisers whose 'favourited' value changed
+        my @favourites =
+            map { $advertisers->{$_}{loginid} } grep { exists $advertisers->{$_} } ($param{add_favourites}->@*, $param{remove_favourites}->@*);
+
+        BOM::Platform::Event::Emitter::emit(
+            p2p_advertiser_updated => {
+                client_loginid => $_,
+            },
+        ) for @favourites;
+    }
+
+    return $self->_p2p_advertiser_relation_lists;
+}
+
 =head2 p2p_advertiser_adverts
 
 Returns a list of adverts belonging to current client
@@ -2276,7 +2326,7 @@ Get a single advert by id.
 sub p2p_advert_info {
     my ($self, %param) = @_;
     return unless $param{id};
-    $param{client_loginid} = $self->loginid if $param{use_client_limits};
+    $param{client_loginid} = $self->loginid;
     my $list = $self->_p2p_adverts(%param);
     return $self->_advert_details($list, undef, 1)->[0];
 }
@@ -2295,16 +2345,16 @@ sub p2p_advert_list {
         $param{type} = P2P_COUNTERYPARTY_TYPE_MAPPING->{$param{counterparty_type}};
     }
 
-    $param{client_loginid} = $self->loginid if $param{use_client_limits};
-
     my $list = $self->_p2p_adverts(
         %param,
         is_active              => 1,
         can_order              => 1,
         advertiser_is_approved => 1,
         advertiser_is_listed   => 1,
+        client_loginid         => $self->loginid,
         country                => $self->residence,
         account_currency       => $self->currency,
+        hide_blocked           => 1,
     );
     return $self->_advert_details($list, $param{amount}, 1);
 }
@@ -2449,10 +2499,13 @@ sub p2p_order_create {
         advertiser_is_listed   => 1,
         country                => $self->residence,
         account_currency       => $self->currency,
+        client_loginid         => $self->loginid,
     )->[0];
 
     die +{error_code => 'AdvertNotFound'} unless $advert_info;
-    die +{error_code => 'InvalidAdvertOwn'} if $advert_info->{advertiser_loginid} eq $self->loginid;
+    die +{error_code => 'InvalidAdvertOwn'}      if $advert_info->{advertiser_loginid} eq $self->loginid;
+    die +{error_code => 'AdvertiserBlocked'}     if $advert_info->{advertiser_blocked};
+    die +{error_code => 'InvalidAdvertForOrder'} if $advert_info->{client_blocked};
 
     my $advert_type = $advert_info->{type};
 
@@ -3245,11 +3298,11 @@ sub _p2p_adverts {
     $self->db->dbic->run(
         fixup => sub {
             $_->selectall_arrayref(
-                'SELECT * FROM p2p.advert_list(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                'SELECT * FROM p2p.advert_list(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
                 {Slice => {}},
                 @param{
                     qw/id account_currency advertiser_id is_active type country can_order max_order advertiser_is_listed advertiser_is_approved
-                        client_loginid limit offset show_deleted sort_by advertiser_name reversible_limit reversible_lookback payment_method/
+                        client_loginid limit offset show_deleted sort_by advertiser_name reversible_limit reversible_lookback payment_method use_client_limits favourites_only hide_blocked/
                 });
         }) // [];
 }
@@ -3576,6 +3629,7 @@ sub _advertiser_details {
         cancel_time_avg            => $stats{cancel_time_avg},
         basic_verification         => $stats{basic_verification},
         full_verification          => $stats{full_verification},
+        favourited                 => $advertiser->{favourited} // 0,
     };
 
     if ($advertiser->{show_name}) {
@@ -3612,6 +3666,10 @@ sub _advertiser_details {
         my $auth_client = BOM::User::Client->new({loginid => $loginid});
         $details->{basic_verification} = $auth_client->status->age_verification ? 1 : 0;
         $details->{full_verification}  = $auth_client->fully_authenticated      ? 1 : 0;
+
+        my $relations = $self->_p2p_advertiser_relation_lists;
+        $details->{is_favourite} = 1 if any { $_->{id} == $advertiser->{id} } $relations->{favourite_advertisers}->@*;
+        $details->{is_blocked}   = 1 if any { $_->{id} == $advertiser->{id} } $relations->{blocked_advertisers}->@*;
     }
 
     return $details;
@@ -3680,7 +3738,9 @@ sub _advert_details {
                     first_name => $advert->{advertiser_first_name},
                     last_name  => $advert->{advertiser_last_name},
                     )
-                : ()
+                : (),
+                $advert->{advertiser_favourite} ? (is_favourite => 1) : (),
+                $advert->{advertiser_blocked}   ? (is_blocked   => 1) : (),
             },
         };
 
@@ -4036,6 +4096,35 @@ sub _p2p_advertiser_stats {
     };
 
     return $stats;
+}
+
+=head2 _p2p_advertiser_relation_lists
+
+Get all P2P advertiser relations of current user.
+
+=cut
+
+sub _p2p_advertiser_relation_lists {
+    my ($self) = @_;
+
+    my $relations = $self->db->dbic->run(
+        fixup => sub {
+            $_->selectall_arrayref('SELECT * FROM p2p.advertiser_relation_list(?)', {Slice => {}}, $self->_p2p_advertiser_cached->{id});
+        });
+
+    my $lists;
+    for my $rel (@$relations) {
+        push $lists->{$rel->{relation_type}}->@*,
+            {
+            created_time => Date::Utility->new($rel->{created_time})->epoch,
+            id           => $rel->{relation_id},
+            name         => $rel->{relation_name},
+            };
+    }
+
+    return {
+        favourite_advertisers => $lists->{favourite} // [],
+        blocked_advertisers   => $lists->{block}     // []};
 }
 
 =head2 _p2p_order_completed

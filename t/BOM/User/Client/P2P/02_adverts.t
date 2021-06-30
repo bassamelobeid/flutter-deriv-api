@@ -99,6 +99,7 @@ subtest 'advertiser Registration' => sub {
         show_name             => 0,
         balance_available     => num(0),
         cancels_remaining     => 3,
+        favourited            => 0,
         %params
     };
 
