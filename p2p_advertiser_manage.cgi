@@ -156,6 +156,8 @@ if ($output{advertiser}) {
         $output{stats}{$_} = int($output{stats}{$_} / 60) . 'm ' . ($output{stats}{$_} % 60) . 's' if defined $output{stats}{$_};
     }
 
+    $output{relations} = $client->_p2p_advertiser_relation_lists;
+
     $output{advertiser}{total_completion_rate} =
         $output{advertiser}{completion_rate} ? sprintf("%.1f", $output{advertiser}{completion_rate} * 100) : undef;
 
@@ -195,6 +197,7 @@ if ($output{advertiser}) {
     $output{not_approved_statuses} = [qw/cashier_locked disabled unwelcome duplicate_account withdrawal_locked no_withdrawal_or_trading/];
     $output{not_approved_by} =
         [grep { $client->status->$_(); } $output{not_approved_statuses}->@*];
+
 } elsif ($input{loginID}) {
     try {
         local $SIG{__WARN__} = sub { };

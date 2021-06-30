@@ -166,7 +166,23 @@
         <tr>
             <td>30 day completion rate (buy + sell)</td>
             <td>[% IF advertiser.total_completion_rate.defined %][% advertiser.total_completion_rate %]%[% ELSE %]no data[% END %]</td>
-        </tr>  
+        </tr>
+        <tr>
+            <td>Favourite advertisers</td>
+            <td>[% relations.favourite_advertisers.size || 0 %]</td>
+        </tr>
+        <tr>
+            <td>Blocked advertisers</td>
+            <td>[% relations.blocked_advertisers.size || 0 %]</td>
+        </tr>
+        <tr>
+            <td>Favourited by others</td>
+            <td>[% advertiser.favourited %]</td>
+        </tr>
+        <tr>
+            <td>Blocked by others</td>
+            <td>[% advertiser.blocked %]</td>
+        </tr>        
     </table>
     <br/>
     
