@@ -1,7 +1,7 @@
 [% WRAPPER layout title='AFFILIATE IB STATUS' %]
     <p>
        <span style="margin-right: 10px"><b>Status</b>:</span>
-        [% IF mt5_login %]
+        [% IF affiliate_accounts || active_affiliate %]
            <span class="success">IB</span>
         [% ELSE %]
            <span class="error">NO IB</span>
@@ -9,40 +9,44 @@
     <p>
 [% END %]
 
-[% IF mt5_login %]
-    [% WRAPPER layout title='SYNC AFFILIATE TO MT5' %]
+[% IF active_affiliate %]
+    [% WRAPPER layout title='SYNCING AFFILIATE ' _ active_affiliate _ ' TO MT5' %]
         [% IF action == 'sync_to_mt5' && action_result == 'success' %]
             <p class="success">Sync proccess was started. Wait for email with result</p>
         [% ELSIF action == 'sync_to_mt5' && action == 'fail' %]
             <p class="error">Fail to start sync process. try again later</p>
-        [% ELSE %]
-            <p>
-                <span>Client Login ID:</span>
-                <span>[% loginid %]</span>
-            </p>
-            <p>
-                <span>Affiliate ID:</span>
-                <span>[% affiliate_id %]</span>
-            </p>
-            <p>
-                <span>MT5 login ID:</span>
-                <span>[% mt5_login %]</span>
-            </p>
-            <form action="[% request.url_for('backoffice/f_ib_affiliate.cgi') | url %]?loginid=[% loginid | url %]" method='post'>
-                <p>
-                    <label>Notify when done:</label>
-                    <input type='email' name='email' value='[% email %]'>
-                </p>
-                <input type='hidden' name='mt5_login' value='[% mt5_login %]'>
-                <input type='hidden' name='affiliate_id' value='[% affiliate_id %]'>
-                <input type='hidden' name='loginid' value='[% loginid %]'>
-                <input type='hidden' name='_csrf' value='[% csrf %]'>
-                <input type='hidden' name='action' value='sync_to_mt5'>
-                <input type='submit' class="btn btn--primary" value='Start sync process'>
-            </form>
         [% END %]
     [% END %]
-[% END%]
+[% END %]
+
+[% FOREACH sync_acc IN sync_accounts %]
+    [% WRAPPER layout title='SYNC AFFILIATE ' _ sync_acc.affiliate_id _ ' TO MT5' %]
+        <p>
+            <span>Client Login ID:</span>
+            <span>[% loginid %]</span>
+        </p>
+        <p>
+            <span>Affiliate ID:</span>
+            <span>[% sync_acc.affiliate_id %]</span>
+        </p>
+        <p>
+            <span>MT5 login ID:</span>
+            <span>[% sync_acc.mt5_login %]</span>
+        </p>
+        <form action="[% request.url_for('backoffice/f_ib_affiliate.cgi') | url %]?loginid=[% loginid | url %]" method='post'>
+            <p>
+                <label>Notify when done:</label>
+                <input type='email' name='email' value='[% email %]'>
+            </p>
+            <input type='hidden' name='mt5_login' value='[% sync_acc.mt5_login %]'>
+            <input type='hidden' name='affiliate_id' value='[% sync_acc.affiliate_id %]'>
+            <input type='hidden' name='loginid' value='[% loginid %]'>
+            <input type='hidden' name='_csrf' value='[% csrf %]'>
+            <input type='hidden' name='action' value='sync_to_mt5'>
+            <input type='submit' class="btn btn--primary" value='Start sync process'>
+        </form>
+    [% END %]
+[% END %]
 
 [% BLOCK layout %]
     <div class="card">

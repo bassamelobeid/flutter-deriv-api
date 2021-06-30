@@ -1236,7 +1236,10 @@ foreach my $mt_ac ($mt_logins->@*) {
     }
 
     if (defined $aff_mt_accounts->{$mt_ac} and $aff_mt_accounts->{$mt_ac}{mt5_account_type} eq 'main') {
-        print sprintf(" (Aff. %s main acc.)", $aff_mt_accounts->{$mt_ac}{mt5_myaffiliate_id});
+        print sprintf(
+            " (Aff. %s main acc. on %s)",
+            $aff_mt_accounts->{$mt_ac}{mt5_myaffiliate_id},
+            $aff_mt_accounts->{$mt_ac}{mt5_server_key} // $aff_mt_accounts->{$mt_ac}{mt5_server_id});
     }
     print "</li>";
 }
@@ -1247,8 +1250,10 @@ foreach my $mt_ac (keys %$aff_mt_accounts) {
 
     print sprintf(
         "<li style='color: #555'>%s (Aff. %s %s acc. on %s)</li>",
-        encode_entities($mt_ac),                      $aff_mt_accounts->{$mt_ac}{mt5_myaffiliate_id},
-        $aff_mt_accounts->{$mt_ac}{mt5_account_type}, $aff_mt_accounts->{$mt_ac}{mt5_server_id});
+        encode_entities($mt_ac),
+        $aff_mt_accounts->{$mt_ac}{mt5_myaffiliate_id},
+        $aff_mt_accounts->{$mt_ac}{mt5_account_type},
+        $aff_mt_accounts->{$mt_ac}{mt5_server_key} // $aff_mt_accounts->{$mt_ac}{mt5_server_id});
 }
 
 # Show DevExperts accounts.

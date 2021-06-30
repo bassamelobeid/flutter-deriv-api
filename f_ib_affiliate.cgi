@@ -34,17 +34,17 @@ my $loginid = $input->{loginid} // '';
 
 BrokerPresentation("AFFILIATE IB STATUS MANAGING");
 
-my ($affiliate_id, $mt5_login, $action, $action_result);
+my (@sync_accounts, $action, $action_result, $active_affiliate);
 if (request()->http_method eq 'POST') {
     code_exit_BO(_get_display_error_message('Invalid CSRF Token')) if $input->{_csrf} ne BOM::Backoffice::Form::get_csrf_token();
 
-    $affiliate_id = $input->{affiliate_id};
-    $mt5_login    = $input->{mt5_login};
-    $action       = $input->{action};
+    $active_affiliate = $input->{affiliate_id};
+    my $mt5_login = $input->{mt5_login};
+    $action = $input->{action};
     if ($action eq 'sync_to_mt5') {
         $action_result = BOM::Platform::Event::Emitter::emit(
             affiliate_sync_initiated => {
-                affiliate_id => $affiliate_id,
+                affiliate_id => $active_affiliate,
                 email        => $input->{email},
             },
         ) ? 'success' : 'fail';
@@ -65,37 +65,39 @@ if (request()->http_method eq 'POST') {
 
     code_exit_BO(_get_display_error_message('Client isn\'t an affiliate')) unless @affiliates;
 
-    my $mt5_account_id;
     for my $affiliate (@affiliates) {
-        $affiliate_id = $affiliate->{ID};
 
         my @user_variables =
             $affiliate->{USER_VARIABLES} && ref $affiliate->{USER_VARIABLES}{VARIABLE} eq 'ARRAY'
             ? @{$affiliate->{USER_VARIABLES}{VARIABLE}}
             : ();
+        my ($mt5_account_id) = map { $_->{VALUE} } grep { $_->{NAME} eq 'mt5_account' } @user_variables;
 
-        ($mt5_account_id) = map { $_->{VALUE} } grep { $_->{NAME} eq 'mt5_account' } @user_variables;
+        if ($mt5_account_id) {
+            my $client = BOM::User::Client->new({loginid => $loginid});
+            $mt5_account_id = $client->user->get_loginid_for_mt5_id($mt5_account_id);
 
-        last if $mt5_login;
-    }
-
-    if ($mt5_account_id) {
-        my $client = BOM::User::Client->new({loginid => $loginid});
-        $mt5_login = $client->user->get_loginid_for_mt5_id($mt5_account_id);
+            push @sync_accounts,
+                {
+                affiliate_id => $affiliate->{ID},
+                mt5_login    => $mt5_account_id
+                };
+        }
     }
 }
 
 BOM::Backoffice::Request::template()->process(
     'backoffice/ib_affiliate.html.tt',
     {
-        mt5_login     => $mt5_login,
-        clerk         => encode_entities($clerk),
-        affiliate_id  => $affiliate_id,
-        loginid       => $loginid,
-        csrf          => BOM::Backoffice::Form::get_csrf_token(),
-        action        => $action,
-        action_result => $action_result,
-        email         => $clerk . '@binary.com'
+        sync_accounts      => \@sync_accounts,
+        active_affiliate   => $active_affiliate,
+        affiliate_accounts => scalar @sync_accounts,
+        clerk              => encode_entities($clerk),
+        loginid            => $loginid,
+        csrf               => BOM::Backoffice::Form::get_csrf_token(),
+        action             => $action,
+        action_result      => $action_result,
+        email              => $clerk . '@binary.com'
     });
 
 code_exit_BO();
