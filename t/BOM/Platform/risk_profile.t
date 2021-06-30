@@ -14,6 +14,7 @@ use Quant::Framework::Underlying;
 use BOM::Platform::RiskProfile;
 use BOM::Config::Runtime;
 use BOM::Test::Helper::Client qw(create_client);
+use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 
 my $ul = Quant::Framework::Underlying->new('frxUSDJPY');
 
