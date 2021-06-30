@@ -13,7 +13,7 @@
          "additionalProperties" : false,
          "properties" : {
             "code" : {
-               "pattern" : "^TopupVirtualError$",
+               "pattern" : "^TopupDemoError$",
                "type" : "string"
             },
             "message_to_client" : {

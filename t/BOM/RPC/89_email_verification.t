@@ -45,9 +45,9 @@ my $messages = {
     },
     account_opening_new => {
         with_link =>
-            '<p style="font-weight: bold;">Thank you for signing up for a virtual account!</p><p>Click the following link to verify your account:</p>[_1]<p>If clicking the link above doesn\'t work, please copy and paste the URL in a new browser window instead.</p><p>Enjoy trading with us on [_2].</p><p style="color: #333333; font-size: 15px;">With regards,<br/>[_2]</p>',
+            '<p style="font-weight: bold;">Thank you for signing up for a demo account!</p><p>Click the following link to verify your account:</p>[_1]<p>If clicking the link above doesn\'t work, please copy and paste the URL in a new browser window instead.</p><p>Enjoy trading with us on [_2].</p><p style="color: #333333; font-size: 15px;">With regards,<br/>[_2]</p>',
         with_token =>
-            '<p style="font-weight: bold;">Thank you for signing up for a virtual account!</p><p>Enter the following verification token into the form to create an account:</p><p><span id="token" style="background: #f2f2f2; padding: 10px; line-height: 50px;">[_1]</span></p><p>Enjoy trading with us on [_2].</p><p style="color: #333333; font-size: 15px;">With regards,<br/>[_2]</p>',
+            '<p style="font-weight: bold;">Thank you for signing up for a demo account!</p><p>Enter the following verification token into the form to create an account:</p><p><span id="token" style="background: #f2f2f2; padding: 10px; line-height: 50px;">[_1]</span></p><p>Enjoy trading with us on [_2].</p><p style="color: #333333; font-size: 15px;">With regards,<br/>[_2]</p>',
     },
     payment_withdraw => {
         with_link =>

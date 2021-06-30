@@ -121,8 +121,8 @@ $c->call_ok('topup_virtual', $params)->has_error->error_code_is('DisabledClient'
     ->error_message_is('This account is unavailable.', 'account is unavailable');
 
 $test_client->status->clear_disabled;
-$c->call_ok('topup_virtual', $params)->has_error->error_code_is('TopupVirtualError')
-    ->error_message_is('Sorry, this feature is available to virtual accounts only', 'virtual accounts only');
+$c->call_ok('topup_virtual', $params)->has_error->error_code_is('TopupDemoError')
+    ->error_message_is('Sorry, this feature is available to demo accounts only', 'demo accounts only');
 
 $params->{token} = $token_vr;
 

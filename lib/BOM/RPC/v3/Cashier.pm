@@ -1724,7 +1724,7 @@ rpc topup_virtual => sub {
     my $error_sub = sub {
         my ($message_to_client, $message) = @_;
         BOM::RPC::v3::Utility::create_error({
-            code              => 'TopupVirtualError',
+            code              => 'TopupDemoError',
             message_to_client => $message_to_client,
             ($message) ? (message => $message) : (),
         });
@@ -1732,11 +1732,11 @@ rpc topup_virtual => sub {
 
     # ERROR CHECKS
     if (!$client->is_virtual) {
-        return $error_sub->(localize('Sorry, this feature is available to virtual accounts only'));
+        return $error_sub->(localize('Sorry, this feature is available to demo accounts only'));
     }
 
     # CREDIT HIM WITH THE MONEY
-    my ($curr, $amount) = $client->deposit_virtual_funds($source, localize('Reset to default virtual money account balance.'));
+    my ($curr, $amount) = $client->deposit_virtual_funds($source);
 
     return {
         amount   => $amount,
