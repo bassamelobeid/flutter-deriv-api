@@ -172,6 +172,10 @@ our %ERROR_MAP = do {
         PaymentMethodRemoveActiveOrders => localize('You must keep a [_1] payment method on this advert while it has active orders.'),
         PaymentMethodNotInAd            => localize('[_1] is not available as a payment method for this advert.'),
         PaymentMethodParam              => localize('Payment method can not be changed for sell ads.'),
+        AdvertiserRelationSelf          => localize('You may not assign your own Advertiser ID as favourite or blocked.'),
+        InvalidAdvertiserID             => localize('Invalid Advertiser ID provided.'),
+        AdvertiserBlocked               => localize('You cannot place an order on the advert, because you have blocked the advertiser.'),
+        InvalidAdvertForOrder           => localize('It is not possible to place an order on this advert. Please choose another advert.'),
     );
 };
 
@@ -434,6 +438,19 @@ p2p_rpc p2p_advertiser_payment_methods => sub {
 
     my $client = $args{client};
     return $client->p2p_advertiser_payment_methods($args{params}{args}->%*);
+};
+
+=head2 p2p_advertiser_relations
+
+Updates and returns favourite and blocked advertisers.
+
+=cut
+
+p2p_rpc p2p_advertiser_relations => sub {
+    my (%args) = @_;
+
+    my $client = $args{client};
+    return $client->p2p_advertiser_relations($args{params}{args}->%*);
 };
 
 =head2 p2p_advert_create
