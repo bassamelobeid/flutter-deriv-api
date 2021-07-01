@@ -362,4 +362,71 @@ subtest 'application tokens' => sub {
     }
 };
 
+subtest 'refresh_token' => sub {
+    my ($test_app, $test_app2) = (
+        $m->create_app({
+                name         => 'refresh_token',
+                scopes       => ['read', 'admin'],
+                user_id      => $test_user_id,
+                redirect_uri => 'https://www.example.com',
+                active       => 1
+            }
+        ),
+        $m->create_app({
+                name         => 'refresh_token2',
+                scopes       => ['read', 'admin'],
+                user_id      => $test_user_id,
+                redirect_uri => 'https://www.example2.com',
+                active       => 1
+            }));
+
+    my $tests = [{
+            token_length      => 28,
+            full_token_length => 31,
+            expiry_time       => 86400,
+        },
+        {
+            token_length      => 29,
+            full_token_length => 32,
+            expiry_time       => 86400,
+        }];
+
+    my @tokens;
+    foreach my $test ($tests->@*) {
+        my $token  = $m->generate_refresh_token($test->{token_length}, $test_user_id, $test->{expiry_time}, $test_app->{app_id});
+        my $token2 = $m->generate_refresh_token($test->{token_length}, $test_user_id, $test->{expiry_time}, $test_app2->{app_id});
+        push @tokens, $token, $token2;
+
+        is length $token, $test->{full_token_length}, 'token has been created correctly with the provided length';
+        ok $token =~ /^r1-[a-zA-Z0-9]+$/, 'token format is correct';
+
+        my $record = $m->get_user_app_details_by_refresh_token($token);
+        ok defined $record, 'returns a single defined record when the token is valid';
+    }
+
+    is $m->get_user_app_details_by_refresh_token("INVALID_TOKEN"), undef, 'returns an undef when invalid token is provided';
+
+    my ($token1, $token2) = @tokens;
+    my $token_info = $m->get_user_app_details_by_refresh_token($token1);
+    my ($user_id, $app_id) = ($token_info->{binary_user_id}, $token_info->{app_id});
+
+    my $retreived_token            = $m->get_refresh_tokens_by_user_app_id($user_id, $app_id);
+    my $retreived_token_by_user_id = $m->get_refresh_tokens_by_user_id($user_id);
+
+    is scalar $retreived_token->@*, scalar @tokens / 2, 'retreived both correctly';
+    is scalar $retreived_token_by_user_id->@*, @tokens, 'tokens retreived by user id correctly';
+
+    $m->revoke_refresh_tokens_by_user_app_id($user_id, $app_id);
+    $retreived_token = $m->get_refresh_tokens_by_user_app_id($user_id, $app_id);
+    is scalar $retreived_token->@*, 0, "refresh_tokens has been revoked for $app_id and $user_id correctly";
+
+    $retreived_token_by_user_id = $m->get_refresh_tokens_by_user_id($user_id);
+    is scalar $retreived_token_by_user_id->@*, 2, 'tokens retreived by user id correctly';
+
+    $m->revoke_refresh_tokens_by_user_id($user_id, $app_id);
+    $retreived_token_by_user_id = $m->get_refresh_tokens_by_user_id($user_id);
+    is scalar $retreived_token_by_user_id->@*, 0, 'tokens revoked by user id correctly';
+
+};
+
 done_testing();

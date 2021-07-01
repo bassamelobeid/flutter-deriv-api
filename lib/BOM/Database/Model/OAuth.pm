@@ -529,6 +529,150 @@ sub get_app_tokens {
     return $self->dbic->run(fixup => sub { $_->selectcol_arrayref("SELECT token FROM oauth.get_app_tokens(?)", undef, $app_id) });
 }
 
+=head2 generate_refresh_token
+
+Wrapper for the `oauth.create_refresh_token` function.
+
+It takes the following arguments:
+
+=over 4
+
+=item * C<$token_length> length of refresh token.
+=item * C<$binary_user_id> binary user id.
+=item * C<$expires_in_sec> expiry time required in seconds
+=item * C<$app_id> source app id.
+
+=back
+
+Returns a refresh token.
+
+=cut
+
+sub generate_refresh_token {
+    my ($self, $token_length, $binary_user_id, $expires_in_sec, $app_id) = @_;
+    return $self->dbic->run(
+        fixup => sub {
+            $_->selectrow_array("SELECT * FROM oauth.create_refresh_token(?::INT, ?::BIGINT, ?::INT, ?::BIGINT)",
+                undef, $token_length, $binary_user_id, $expires_in_sec, $app_id);
+        });
+}
+
+=head2 get_user_app_details_by_refresh_token
+
+select user and app info based on valid refresh_tokens
+It takes the following arguments:
+
+=over 4
+
+=item * C<$refresh_token> refresh token.
+
+=back
+
+Returns a record based on refresh_token provided.
+
+=cut
+
+sub get_user_app_details_by_refresh_token {
+    my ($self, $refresh_token) = @_;
+    return $self->dbic->run(fixup =>
+            sub { $_->selectrow_hashref("SELECT * FROM ONLY oauth.refresh_token WHERE token = ? AND expiry_time > NOW()", undef, $refresh_token) });
+}
+
+=head2 get_refresh_tokens_by_user_app_id
+
+select all refresh tokens accosiated with user_id and app_id
+It takes the following arguments:
+
+=over 4
+
+=item * C<$user_id> binary user id.
+=item * C<$app_id> app id to logout from.
+
+=back
+
+Returns list of refresh_tokens.
+
+=cut
+
+sub get_refresh_tokens_by_user_app_id {
+    my ($self, $user_id, $app_id) = @_;
+    return $self->dbic->run(
+        fixup => sub {
+            $_->selectall_arrayref("SELECT token FROM ONLY oauth.refresh_token WHERE binary_user_id = ? AND app_id = ? AND expiry_time > NOW()",
+                undef, $user_id, $app_id);
+        });
+}
+
+=head2 get_refresh_tokens_by_user_id
+
+select all refresh tokens accosiated with user_id.
+It takes the following arguments:
+
+=over 4
+
+=item * C<$user_id> binary user id.
+
+=back
+
+Returns list of refresh_tokens.
+
+=cut
+
+sub get_refresh_tokens_by_user_id {
+    my ($self, $user_id) = @_;
+    return $self->dbic->run(
+        fixup => sub {
+            $_->selectall_arrayref("SELECT token FROM ONLY oauth.refresh_token WHERE binary_user_id = ? AND expiry_time > NOW()", undef, $user_id);
+        });
+}
+
+=head2 revoke_refresh_tokens_by_user_id
+
+Deletes all valid refresh_token from oauth.refresh_token table for a specific user.
+It takes the following arguments:
+
+=over 4
+
+=item * C<$user_id> binary_user_id.
+
+=back
+
+=cut
+
+sub revoke_refresh_tokens_by_user_id {
+    my ($self, $user_id) = @_;
+
+    $self->dbic->run(
+        ping => sub {
+            $_->do("DELETE FROM oauth.refresh_token WHERE binary_user_id = ? AND expiry_time > NOW()", undef, $user_id);
+        });
+    return 1;
+}
+
+=head2 revoke_refresh_tokens_by_user_app_id
+
+Deletes valid refresh_token from oauth.refresh_token table based on binary user and app id.
+It takes the following arguments:
+
+=over 4
+
+=item * C<$user_id> binary_user_id.
+=item * C<$app_id> current app used.
+
+=back
+
+=cut
+
+sub revoke_refresh_tokens_by_user_app_id {
+    my ($self, $user_id, $app_id) = @_;
+
+    $self->dbic->run(
+        ping => sub {
+            $_->do("DELETE FROM oauth.refresh_token WHERE binary_user_id = ? AND app_id = ? AND expiry_time > NOW()", undef, $user_id, $app_id);
+        });
+    return 1;
+}
+
 no Moose;
 __PACKAGE__->meta->make_immutable;
 
