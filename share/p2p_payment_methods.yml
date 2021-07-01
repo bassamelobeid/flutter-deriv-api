@@ -5,22 +5,567 @@
 # 'display_name' is required for main key and field keys.
 # 'required' will default to 1 if missing.
 # 'type' will default to "text" if missing.
-# Supported types: text, memo.
-# Do not use 'is_enabled' is a field name.
+# Supported field types: text, memo.
+# 'is_enabled' in not allowed as a field name.
 
-bank_transfer:
-  display_name: "Bank Transfer"
+2checkout:
+  display_name: 2Checkout
   fields:
-    bank_name:
-       display_name: "Bank Name"
-    branch:
-      display_name: "Branch"
-      required: 0
     account:
-      display_name: "Account Number"
+      display_name: 2Checkout
+543konse:
+  display_name: 543 Konse Konse
+  fields:
+    account:
+      display_name: 543 Konse Konse
+access_money_wallet:
+  display_name: Access Money Wallet
+  fields:
+    account:
+      display_name: Access Money Wallet
+airtel:
+  display_name: Airtel
+  fields:
+    account:
+      display_name: Airtel
+atease:
+  display_name: '@ease wallet'
+  fields:
+    account:
+      display_name: '@ease wallet'
+azimo:
+  display_name: Azimo
+  fields:
+    account:
+      display_name: Azimo
+bank_transfer:
+  display_name: Bank Transfer
+  fields:
+    account:
+      display_name: Account Number
+    bank_name:
+      display_name: Bank Name
+    branch:
+      display_name: Branch
+      required: 0
+bitpay:
+  display_name: BitPay
+  fields:
+    account:
+      display_name: BitPay
+boss_revolution:
+  display_name: Boss Revolution
+  fields:
+    account:
+      display_name: Boss Revolution
+broadpay:
+  display_name: BroadPay
+  fields:
+    account:
+      display_name: BroadPay
+btc_smega:
+  display_name: BTC SMEGA
+  fields:
+    account:
+      display_name: BTC SMEGA
+buyonline:
+  display_name: Buyonline
+  fields:
+    account:
+      display_name: Buyonline
+carbon:
+  display_name: Carbon
+  fields:
+    account:
+      display_name: Carbon
+cashenvoy:
+  display_name: Cashenvoy
+  fields:
+    account:
+      display_name: Cashenvoy
+cassava_remit:
+  display_name: Cassava Remit
+  fields:
+    account:
+      display_name: Cassava Remit
+cellulant:
+  display_name: Cellulant
+  fields:
+    account:
+      display_name: Cellulant
+celpaid:
+  display_name: Celpaid
+  fields:
+    account:
+      display_name: Celpaid
+clicknpay_africa:
+  display_name: ClicknPay
+  fields:
+    account:
+      display_name: ClicknPay
+clickpesa:
+  display_name: ClickPesa
+  fields:
+    account:
+      display_name: ClickPesa
+dpo:
+  display_name: DPO
+  fields:
+    account:
+      display_name: DPO
+dusupay:
+  display_name: DusuPay
+  fields:
+    account:
+      display_name: DusuPay
+ecobank_mobilemoney:
+  display_name: Ecobank MobileMoney
+  fields:
+    account:
+      display_name: Ecobank MobileMoney
+ecocash:
+  display_name: EcoCash
+  fields:
+    account:
+      display_name: EcoCash
+equitel:
+  display_name: Equitel
+  fields:
+    account:
+      display_name: Equitel
+etranzact:
+  display_name: eTranzact
+  fields:
+    account:
+      display_name: eTranzact
+ewallet_services_tanzania:
+  display_name: eWallet Services Tanzania
+  fields:
+    account:
+      display_name: eWallet Services Tanzania
+exchange4free:
+  display_name: Exchange4free
+  fields:
+    account:
+      display_name: Exchange4free
+firstmonie:
+  display_name: Firstmonie Wallet
+  fields:
+    account:
+      display_name: Firstmonie Wallet
+flutterwave:
+  display_name: Flutterwave
+  fields:
+    account:
+      display_name: Flutterwave
+fnb:
+  display_name: FNB eWallet
+  fields:
+    account:
+      display_name: FNB eWallet
+fortis:
+  display_name: Fortis Mobile Money
+  fields:
+    account:
+      display_name: Fortis Mobile Money
+gcb:
+  display_name: GCB
+  fields:
+    account:
+      display_name: GCB
+glo:
+  display_name: Glo
+  fields:
+    account:
+      display_name: Glo
+gt_pay:
+  display_name: GTPay
+  fields:
+    account:
+      display_name: GTPay
+halotel:
+  display_name: Halotel HaloPesa
+  fields:
+    account:
+      display_name: Halotel HaloPesa
+hubtel:
+  display_name: Hubtel
+  fields:
+    account:
+      display_name: Hubtel
+instacash:
+  display_name: Instacash
+  fields:
+    account:
+      display_name: Instacash
+inter_pay:
+  display_name: Interpay
+  fields:
+    account:
+      display_name: Interpay
+ipay:
+  display_name: iPay
+  fields:
+    account:
+      display_name: iPay
+kazang:
+  display_name: Kazang
+  fields:
+    account:
+      display_name: Kazang
+konga:
+  display_name: Konga
+  fields:
+    account:
+      display_name: Konga
+mascom_my_zaka:
+  display_name: Mascom MyZaka
+  fields:
+    account:
+      display_name: Mascom MyZaka
+mlipa:
+  display_name: M-Lipa
+  fields:
+    account:
+      display_name: M-Lipa
+mnaira:
+  display_name: m-naira
+  fields:
+    account:
+      display_name: m-naira
+mobicash:
+  display_name: MobiCash
+  fields:
+    account:
+      display_name: MobiCash
+mobipay:
+  display_name: MobiPay
+  fields:
+    account:
+      display_name: MobiPay
+moov:
+  display_name: Moov Money
+  fields:
+    account:
+      display_name: Moov Money
+mpesa_tanzania:
+  display_name: M-Pesa Tanzania
+  fields:
+    account:
+      display_name: M-Pesa Tanzania
+mtn_momo:
+  display_name: MTN Mobile Money (MoMo)
+  fields:
+    account:
+      display_name: MTN Mobile Money (MoMo)
+myghpay:
+  display_name: Myghpay
+  fields:
+    account:
+      display_name: Myghpay
+netpay:
+  display_name: NetPay
+  fields:
+    account:
+      display_name: NetPay
+nettcash:
+  display_name: Nettcash
+  fields:
+    account:
+      display_name: Nettcash
+noqodi:
+  display_name: noqodi
+  fields:
+    account:
+      display_name: noqodi
+nownow:
+  display_name: NowNow
+  fields:
+    account:
+      display_name: NowNow
+onemoney:
+  display_name: OneMoney
+  fields:
+    account:
+      display_name: OneMoney
+opay:
+  display_name: OPay
+  fields:
+    account:
+      display_name: OPay
+orange_money:
+  display_name: Orange Money
+  fields:
+    account:
+      display_name: Orange Money
 other:
-  display_name: "Other"
+  display_name: Other
   fields:
     instructions:
-      display_name: "Instructions"
-      type: "memo"
+      display_name: Instructions
+      type: memo
+paga:
+  display_name: Paga
+  fields:
+    account:
+      display_name: Paga
+palmpay:
+  display_name: PalmPay
+  fields:
+    account:
+      display_name: PalmPay
+paxful:
+  display_name: Paxful
+  fields:
+    account:
+      display_name: Paxful
+payant:
+  display_name: Payant
+  fields:
+    account:
+      display_name: Payant
+paygate:
+  display_name: PayGate
+  fields:
+    account:
+      display_name: PayGate
+paynow:
+  display_name: PayNow
+  fields:
+    account:
+      display_name: PayNow
+payserv:
+  display_name: PayServ Africa
+  fields:
+    account:
+      display_name: PayServ Africa
+paystack:
+  display_name: Paystack
+  fields:
+    account:
+      display_name: Paystack
+paytoday:
+  display_name: Paytoday
+  fields:
+    account:
+      display_name: Paytoday
+pesapel:
+  display_name: Pesapel
+  fields:
+    account:
+      display_name: Pesapel
+pocketmoni:
+  display_name: PocketMoni
+  fields:
+    account:
+      display_name: PocketMoni
+posomoney:
+  display_name: PosoMoney
+  fields:
+    account:
+      display_name: PosoMoney
+postdotnet:
+  display_name: PostDotNet
+  fields:
+    account:
+      display_name: PostDotNet
+qash:
+  display_name: QASH
+  fields:
+    account:
+      display_name: QASH
+qless:
+  display_name: QLess
+  fields:
+    account:
+      display_name: QLess
+quickteller:
+  display_name: Quickteller
+  fields:
+    account:
+      display_name: Quickteller
+realpay:
+  display_name: RealPay
+  fields:
+    account:
+      display_name: RealPay
+rocket_remit:
+  display_name: Rocket Remit
+  fields:
+    account:
+      display_name: Rocket Remit
+safaricom_mpesa:
+  display_name: Safaricom M-PESA
+  fields:
+    account:
+      display_name: Safaricom M-PESA
+simplepay:
+  display_name: SimplePay
+  fields:
+    account:
+      display_name: SimplePay
+speedpay_mobile:
+  display_name: SpeedPay mobile
+  fields:
+    account:
+      display_name: SpeedPay mobile
+sticpay:
+  display_name: SticPay
+  fields:
+    account:
+      display_name: SticPay
+stripe:
+  display_name: Stripe
+  fields:
+    account:
+      display_name: Stripe
+talkremit:
+  display_name: TalkRemit
+  fields:
+    account:
+      display_name: TalkRemit
+tangaza_pesa:
+  display_name: Tangaza Pesa
+  fields:
+    account:
+      display_name: Tangaza Pesa
+teasy_mobile_money:
+  display_name: Teasy Mobile Money
+  fields:
+    account:
+      display_name: Teasy Mobile Money
+telecash:
+  display_name: TeleCash
+  fields:
+    account:
+      display_name: TeleCash
+terrapay:
+  display_name: TerraPay
+  fields:
+    account:
+      display_name: TerraPay
+tigo_pesa:
+  display_name: Tigo Pesa
+  fields:
+    account:
+      display_name: Tigo Pesa
+tilt_africa:
+  display_name: Tilt Africa
+  fields:
+    account:
+      display_name: Tilt Africa
+transferwise:
+  display_name: TransferWise
+  fields:
+    account:
+      display_name: TransferWise
+united_bank_of_zambia_ewallet:
+  display_name: United Bank of Zambia E-wallet
+  fields:
+    account:
+      display_name: United Bank of Zambia E-wallet
+unitylink:
+  display_name: Unitylink
+  fields:
+    account:
+      display_name: Unitylink
+vcash:
+  display_name: VCash
+  fields:
+    account:
+      display_name: VCash
+vodafone_cash:
+  display_name: Vodafone Cash
+  fields:
+    account:
+      display_name: Vodafone Cash
+voguepay:
+  display_name: Voguepay
+  fields:
+    account:
+      display_name: Voguepay
+wari:
+  display_name: Wari
+  fields:
+    account:
+      display_name: Wari
+wave_mobile_money:
+  display_name: Wave Mobile Money
+  fields:
+    account:
+      display_name: Wave Mobile Money
+xapit_zanaco:
+  display_name: Xapit (Zanaco bank mobile banking)
+  fields:
+    account:
+      display_name: Xapit (Zanaco bank mobile banking)
+xendpay:
+  display_name: XendPay
+  fields:
+    account:
+      display_name: XendPay
+xoom:
+  display_name: Xoom
+  fields:
+    account:
+      display_name: Xoom
+xpress_money:
+  display_name: Xpress Money
+  fields:
+    account:
+      display_name: Xpress Money
+yucash:
+  display_name: YuCash
+  fields:
+    account:
+      display_name: YuCash
+yup_africa:
+  display_name: YUP Africa
+  fields:
+    account:
+      display_name: YUP Africa
+zamlink:
+  display_name: ZamLink
+  fields:
+    account:
+      display_name: ZamLink
+zamtel:
+  display_name: ZamTel
+  fields:
+    account:
+      display_name: ZamTel
+zantel:
+  display_name: Zantel
+  fields:
+    account:
+      display_name: Zantel
+zazu:
+  display_name: Zazu
+  fields:
+    account:
+      display_name: Zazu
+zim_switch:
+  display_name: Zimswitch
+  fields:
+    account:
+      display_name: Zimswitch
+zimpayments:
+  display_name: ZimPayments
+  fields:
+    account:
+      display_name: ZimPayments
+zoona:
+  display_name: Zoona
+  fields:
+    account:
+      display_name: Zoona
+zotapay:
+  display_name: ZotaPay
+  fields:
+    account:
+      display_name: ZotaPay
+zympay:
+  display_name: ZymPay
+  fields:
+    account:
+      display_name: ZymPay
