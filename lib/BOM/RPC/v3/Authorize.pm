@@ -204,6 +204,9 @@ rpc logout => sub {
                     $oauth->revoke_tokens_by_loginid_app($c1->loginid, $app_id);
                 }
 
+                # revoke all refresh tokens per user_id and app.
+                $oauth->revoke_refresh_tokens_by_user_app_id($user->{id}, $app_id);
+
                 $user->add_login_history(
                     environment => request()->login_env($params),
                     successful  => 't',

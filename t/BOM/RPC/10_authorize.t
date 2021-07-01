@@ -970,6 +970,11 @@ subtest 'logout' => sub {
     ok $res->{new_token}, "Api token created successfully";
     my $logout_token = $res->{tokens}->[1]->{token};
 
+    my $oauth_model = BOM::Database::Model::OAuth->new;
+    my $app_id      = $oauth_model->get_app_id_by_token($token);
+
+    my ($refresh_token) = $oauth_model->generate_refresh_token(29, $user->{id}, 60 * 60 * 24, $app_id);
+
     my $params = {
         email        => $email,
         client_ip    => '1.1.1.1',
@@ -987,6 +992,13 @@ subtest 'logout' => sub {
                 valid_source               => 1,
                 source_bypass_verification => 0
             }});
+
+    # revoke refresh token
+    my $record = $oauth_model->get_user_app_details_by_refresh_token($refresh_token);
+    is $record, undef, 'refresh token was revoked successfully';
+
+    $record = $oauth_model->get_refresh_tokens_by_user_app_id($user->{id}, $app_id);
+    is scalar $record->@*, 0, 'all tokens for the user and app were revoked correctly';
 
     #check login history
     ($new_token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $test_client->loginid);
