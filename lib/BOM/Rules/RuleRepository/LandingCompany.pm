@@ -74,7 +74,7 @@ rule 'landing_company.currency_is_allowed' => {
         my $landing_company_object = $context->landing_company_object;
 
         my $account_type = $args->{account_type} // '';
-        # Allowed currencies for wallets should be figured out by country of residence rather than the context landing company (svg).
+        # Allowed currencies for wallet account opening should be figured out by country of residence rather than the context landing company (svg).
         if ($account_type eq 'wallet') {
             my $countries_instance = Brands->new->countries_instance;
             my $company            = $countries_instance->gaming_company_for_country($context->client->residence)
@@ -84,7 +84,7 @@ rule 'landing_company.currency_is_allowed' => {
         }
 
         die +{
-            error_code => 'CurrencyNotAllowed',
+            error_code => 'CurrencyNotApplicable',
             params     => $args->{currency},
             }
             unless $landing_company_object->is_currency_legal($args->{currency});

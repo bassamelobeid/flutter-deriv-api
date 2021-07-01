@@ -20,7 +20,7 @@ new_account:
     - profile.valid_profile_countries
     - profile.valid_promo_code
     - profile.valid_non_pep_declaration_time
-    - user.currency_is_available
+    - currency.is_available_for_new_account
     - client.check_duplicate_account
   context:
     landing_company:

@@ -9,4 +9,13 @@ set_self_exclusion:
     - client.is_not_virtual
     - self_exclusion.not_self_excluded
     - self_exclusion.deposit_limits_allowed
-
+set_account_currency:
+  description: Contains rules to be applied on setting account currency.
+  general:
+    - currency.no_deposit
+    - landing_company.currency_is_allowed
+    - currency.is_available_for_change
+    - currency.no_mt5_existing
+    - currency.account_is_not_crypto
+    - currency.is_currency_suspended
+    - currency.experimental_currency

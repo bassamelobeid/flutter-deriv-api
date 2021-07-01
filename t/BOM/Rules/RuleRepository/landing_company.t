@@ -98,7 +98,7 @@ subtest 'rule landing_company.currency_is_allowed' => sub {
     lives_ok { $rule_engine->apply_rules($rule_name) } 'Empty currency is accepted';
     is_deeply exception { $rule_engine->apply_rules($rule_name, {currency => 'USD'}) },
         {
-        error_code => 'CurrencyNotAllowed',
+        error_code => 'CurrencyNotApplicable',
         params     => 'USD'
         },
         'Error for illegal currency';
