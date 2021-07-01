@@ -283,7 +283,7 @@ subtest 'new_real_account with currency provided' => sub {
 
     $details{currency} = 'XXX';
     $res = $t->await::new_account_real(\%details);
-    is($res->{error}->{code}, 'CurrencyNotAllowed', 'Try to create account with incorrect currency');
+    is($res->{error}->{code}, 'CurrencyNotApplicable', 'Try to create account with incorrect currency');
 };
 
 subtest 'validate phone field' => sub {
