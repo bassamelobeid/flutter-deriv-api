@@ -18,6 +18,7 @@ use BOM::Config::Runtime;
 use Brands;
 use Time::Duration::Concise;
 use Syntax::Keyword::Try;
+use BOM::Backoffice::QuantsAuditEmail qw(send_trading_ops_email);
 
 BOM::Backoffice::Sysinit::init();
 my $json       = JSON::MaybeXS->new;
