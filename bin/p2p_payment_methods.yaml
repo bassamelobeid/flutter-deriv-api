@@ -1,0 +1,581 @@
+2checkout:
+    name: 2Checkout
+    exclude_countries: 0
+    country:
+        - 'zm'
+543konse:
+    name: 543 Konse Konse
+    exclude_countries: 0
+    country:
+        - 'zm'
+access_money_wallet:
+    name: Access Money Wallet
+    exclude_countries: 0
+    country:
+        - 'ng'
+airtel:
+    name: Airtel
+    exclude_countries: 0
+    country:
+        - 'gh'
+        - 'ke'
+        - 'ng'
+        - 'tz'
+        - 'zm'
+azimo:
+    name: Azimo
+    exclude_countries: 0
+    country:
+        - 'tz'
+bitpay:
+    name: BitPay
+    exclude_countries: 0
+    country:
+        - 'bj'
+boss_revolution:
+    name: Boss Revolution
+    exclude_countries: 0
+    country:
+        - 'bj'
+        - 'gh'
+        - 'ng'
+broadpay:
+    name: BroadPay
+    exclude_countries: 0
+    country:
+        - 'zm'
+btc_smega:
+    name: BTC SMEGA
+    exclude_countries: 0
+    country:
+        - 'bw'
+buyonline:
+    name: Buyonline
+    exclude_countries: 0
+    country:
+        - 'na'
+carbon:
+    name: Carbon
+    exclude_countries: 0
+    country:
+        - 'ng'
+cashenvoy:
+    name: Cashenvoy
+    exclude_countries: 0
+    country:
+        - 'ng'
+cassava_remit:
+    name: Cassava Remit
+    exclude_countries: 0
+    country:
+        - 'zw'
+cellulant:
+    name: Cellulant
+    exclude_countries: 0
+    country:
+        - 'bw'
+        - 'zw'
+celpaid:
+    name: Celpaid
+    exclude_countries: 0
+    country:
+        - 'ci'
+clicknpay_africa:
+    name: ClicknPay
+    exclude_countries: 0
+    country:
+        - 'zw'
+clickpesa:
+    name: ClickPesa
+    exclude_countries: 0
+    country:
+        - 'tz'
+dpo:
+    name: DPO
+    exclude_countries: 0
+    country:
+        - 'bw'
+        - 'na'
+        - 'zw'
+dusupay:
+    name: DusuPay
+    exclude_countries: 0
+    country:
+        - 'ng'
+        - 'tz'
+atease:
+    name: '@ease wallet'
+    exclude_countries: 0
+    country:
+        - 'ng'
+ecobank_mobilemoney:
+    name: Ecobank MobileMoney
+    exclude_countries: 0
+    country:
+        - 'ng'
+ecocash:
+    name: EcoCash
+    exclude_countries: 0
+    country:
+        - 'zw'
+equitel:
+    name: Equitel
+    exclude_countries: 0
+    country:
+        - 'ke'
+etranzact:
+    name: eTranzact
+    exclude_countries: 0
+    country:
+        - 'gh'
+        - 'ng'
+ewallet_services_tanzania:
+    name: eWallet Services Tanzania
+    exclude_countries: 0
+    country:
+        - 'tz'
+exchange4free:
+    name: Exchange4free
+    exclude_countries: 0
+    country:
+        - 'bf'
+        - 'bw'
+        - 'na'
+        - 'ng'
+        - 'zm'
+firstmonie:
+    name: Firstmonie Wallet
+    exclude_countries: 0
+    country:
+        - 'ng'
+flutterwave:
+    name: Flutterwave
+    exclude_countries: 0
+    country:
+        - 'gh'
+fnb:
+    name: FNB eWallet
+    exclude_countries: 0
+    country:
+        - 'na'
+        - 'zm'
+fortis:
+    name: Fortis Mobile Money
+    exclude_countries: 0
+    country:
+        - 'ng'
+gcb:
+    name: GCB
+    exclude_countries: 0
+    country:
+        - 'gh'
+glo:
+    name: Glo
+    exclude_countries: 0
+    country:
+        - 'gh'
+        - 'ng'
+gt_pay:
+    name: GTPay
+    exclude_countries: 0
+    country:
+        - 'gh'
+halotel:
+    name: Halotel HaloPesa
+    exclude_countries: 0
+    country:
+        - 'tz'
+hubtel:
+    name: Hubtel
+    exclude_countries: 0
+    country:
+        - 'gh'
+instacash:
+    name: Instacash
+    exclude_countries: 0
+    country:
+        - 'zw'
+inter_pay:
+    name: Interpay
+    exclude_countries: 0
+    country:
+        - 'gh'
+ipay:
+    name: iPay
+    exclude_countries: 0
+    country:
+        - 'tz'
+kazang:
+    name: Kazang
+    exclude_countries: 0
+    country:
+        - 'zm'
+konga:
+    name: Konga
+    exclude_countries: 0
+    country:
+        - 'ng'
+mascom_my_zaka:
+    name: Mascom MyZaka
+    exclude_countries: 0
+    country:
+        - 'bw'
+mlipa:
+    name: M-Lipa
+    exclude_countries: 0
+    country:
+        - 'tz'
+mnaira:
+    name: m-naira
+    exclude_countries: 0
+    country:
+        - 'ng'
+mobicash:
+    name: MobiCash
+    exclude_countries: 0
+    country:
+        - 'bf'
+        - 'ke'
+mobipay:
+    name: MobiPay
+    exclude_countries: 0
+    country:
+        - 'na'
+mtn_momo:
+    name: MTN Mobile Money (MoMo)
+    exclude_countries: 0
+    country:
+        - 'bj'
+        - 'ci'
+        - 'gh'
+        - 'ng'
+        - 'zm'        
+moov:
+    name: Moov Money
+    exclude_countries: 0
+    country:
+        - 'ci'
+mpesa_tanzania:
+    name: M-Pesa Tanzania
+    exclude_countries: 0
+    country:
+        - 'tz'
+myghpay:
+    name: Myghpay
+    exclude_countries: 0
+    country:
+        - 'gh'
+netpay:
+    name: NetPay
+    exclude_countries: 0
+    country:
+        - 'zw'
+nettcash:
+    name: Nettcash
+    exclude_countries: 0
+    country:
+        - 'zw'
+noqodi:
+    name: noqodi
+    exclude_countries: 0
+    country:
+        - 'ci'
+nownow:
+    name: NowNow
+    exclude_countries: 0
+    country:
+        - 'ng'
+onemoney:
+    name: OneMoney
+    exclude_countries: 0
+    country:
+        - 'zw'
+opay:
+    name: OPay
+    exclude_countries: 0
+    country:
+        - 'ng'
+orange_money:
+    name: Orange Money
+    exclude_countries: 0
+    country:
+        - 'bf'
+        - 'bw'
+        - 'ci'        
+paga:
+    name: Paga
+    exclude_countries: 0
+    country:
+        - 'ng'
+palmpay:
+    name: PalmPay
+    exclude_countries: 0
+    country:
+        - 'gh'
+        - 'ng'
+paxful:
+    name: Paxful
+    exclude_countries: 0
+    country:
+        - 'bf'
+payant:
+    name: Payant
+    exclude_countries: 0
+    country:
+        - 'ng'
+paygate:
+    name: PayGate
+    exclude_countries: 0
+    country:
+        - 'bw'
+paynow:
+    name: PayNow
+    exclude_countries: 0
+    country:
+        - 'zw'
+payserv:
+    name: PayServ Africa
+    exclude_countries: 0
+    country:
+        - 'zw'
+paystack:
+    name: Paystack
+    exclude_countries: 0
+    country:
+        - 'gh'
+        - 'ng'
+paytoday:
+    name: Paytoday
+    exclude_countries: 0
+    country:
+        - 'na'
+pesapel:
+    name: Pesapel
+    exclude_countries: 0
+    country:
+        - 'zm'
+pocketmoni:
+    name: PocketMoni
+    exclude_countries: 0
+    country:
+        - 'ng'
+posomoney:
+    name: PosoMoney
+    exclude_countries: 0
+    country:
+        - 'bw'
+postdotnet:
+    name: PostDotNet
+    exclude_countries: 0
+    country:
+        - 'zm'
+qash:
+    name: QASH
+    exclude_countries: 0
+    country:
+        - 'ci'
+qless:
+    name: QLess
+    exclude_countries: 0
+    country:
+        - 'zm'
+quickteller:
+    name: Quickteller
+    exclude_countries: 0
+    country:
+        - 'ng'
+realpay:
+    name: RealPay
+    exclude_countries: 0
+    country:
+        - 'bw'
+        - 'na'
+rocket_remit:
+    name: Rocket Remit
+    exclude_countries: 0
+    country:
+        - 'ci'
+        - 'zm'
+        - 'zw'
+safaricom_mpesa:
+    name: Safaricom M-PESA
+    exclude_countries: 0
+    country:
+        - 'ke'
+simplepay:
+    name: SimplePay
+    exclude_countries: 0
+    country:
+        - 'ng'
+speedpay_mobile:
+    name: SpeedPay mobile
+    exclude_countries: 0
+    country:
+        - 'zm'
+sticpay:
+    name: SticPay
+    exclude_countries: 0
+    country:
+        - 'bf'
+stripe:
+    name: Stripe
+    exclude_countries: 0
+    country:
+        - 'gh'
+talkremit:
+    name: TalkRemit
+    exclude_countries: 0
+    country:
+        - 'ng'
+tangaza_pesa:
+    name: Tangaza Pesa
+    exclude_countries: 0
+    country:
+        - 'ke'
+teasy_mobile_money:
+    name: Teasy Mobile Money
+    exclude_countries: 0
+    country:
+        - 'ng'
+telecash:
+    name: TeleCash
+    exclude_countries: 0
+    country:
+        - 'zw'
+terrapay:
+    name: TerraPay
+    exclude_countries: 0
+    country:
+        - 'tz'
+tigo_pesa:
+    name: Tigo Pesa
+    exclude_countries: 0
+    country:
+        - 'tz'
+tilt_africa:
+    name: Tilt Africa
+    exclude_countries: 0
+    country:
+        - 'zm'
+transferwise:
+    name: TransferWise
+    exclude_countries: 0
+    country:
+        - 'bj'
+united_bank_of_zambia_ewallet:
+    name: United Bank of Zambia E-wallet
+    exclude_countries: 0
+    country:
+        - 'zm'
+unitylink:
+    name: Unitylink
+    exclude_countries: 0
+    country:
+        - 'gh'
+vcash:
+    name: VCash
+    exclude_countries: 0
+    country:
+        - 'ng'
+vodafone_cash:
+    name: Vodafone Cash
+    exclude_countries: 0
+    country:
+        - 'gh'
+voguepay:
+    name: Voguepay
+    exclude_countries: 0
+    country:
+        - 'ng'
+wari:
+    name: Wari
+    exclude_countries: 0
+    country:
+        - 'ci'
+wave_mobile_money:
+    name: Wave Mobile Money
+    exclude_countries: 0
+    country:
+        - 'ci'
+xapit_zanaco:
+    name: Xapit (Zanaco bank mobile banking)
+    exclude_countries: 0
+    country:
+        - 'zm'
+xendpay:
+    name: XendPay
+    exclude_countries: 0
+    country:
+        - 'ng'
+xoom:
+    name: Xoom
+    exclude_countries: 0
+    country:
+        - 'ci'
+        - 'tz'
+        - 'zm'
+xpress_money:
+    name: Xpress Money
+    exclude_countries: 0
+    country:
+        - 'bj'
+        - 'gh'
+        - 'ke'
+        - 'ng'
+        - 'tz'
+yucash:
+    name: YuCash
+    exclude_countries: 0
+    country:
+        - 'ke'
+yup_africa:
+    name: YUP Africa
+    exclude_countries: 0
+    country:
+        - 'bf'
+        - 'ci'
+zamlink:
+    name: ZamLink
+    exclude_countries: 0
+    country:
+        - 'zm'
+zamtel:
+    name: ZamTel
+    exclude_countries: 0
+    country:
+        - 'zm'
+zantel:
+    name: Zantel
+    exclude_countries: 0
+    country:
+        - 'tz'
+zazu:
+    name: Zazu
+    exclude_countries: 0
+    country:
+        - 'zm'
+zim_switch:
+    name: Zimswitch
+    exclude_countries: 0
+    country:
+        - 'zw'
+zimpayments:
+    name: ZimPayments
+    exclude_countries: 0
+    country:
+        - 'zw'
+zoona:
+    name: Zoona
+    exclude_countries: 0
+    country:
+        - 'zm'
+zotapay:
+    name: ZotaPay
+    exclude_countries: 0
+    country:
+        - 'tz'
+zympay:
+    name: ZymPay
+    exclude_countries: 0
+    country:
+        - 'zw'
