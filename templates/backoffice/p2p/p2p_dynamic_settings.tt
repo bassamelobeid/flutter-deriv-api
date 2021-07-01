@@ -32,11 +32,12 @@
     [% END %]
     <hr/>
     <h3>Payment methods countries</h3>
-    <table border="0">
-        <tr><td><b>Method</b></td><td><b>Show in countries</b></td><td><b>Defined countries, comma delimited 2 digit country codes</b></td></tr>
+    <table class="small alternate">
+        <thead><tr><th>Name</th><th>ID</th></th><th>Show in countries</th><th>Defined countries, comma delimited 2 digit country codes</th></tr></thead>
     [% FOR pm IN payment_methods.keys.sort %]
         <tr>
-            <td>[% payment_methods.$pm.display_name %]<br/>([% pm %])</td>
+            <td>[% payment_methods.$pm.display_name %]</td>
+            <td>[% pm %]</td>
             <td valign="top">
                 <select name="pm-mode_[% pm %]">
                     <option value="include" [% payment_method_countries.$pm.mode == 'include' && 'selected' %]>Only in defined countries</option>
@@ -44,7 +45,7 @@
                 </select>
             </td>
             <td>
-                <textarea name="pm-countries_[% pm %]" cols="80" rows="2">[% payment_method_countries.$pm.countries.join(',') %]</textarea>
+                <input name="pm-countries_[% pm %]" value="[% payment_method_countries.$pm.countries.join(',') %]" style="width: 300px;">
             </td>            
         </tr>
     [% END %]
