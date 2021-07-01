@@ -1021,8 +1021,38 @@ subtest 'update trading password' => sub {
 };
 
 subtest 'update user password' => sub {
+    my $oauth   = BOM::Database::Model::OAuth->new;
+    my $user_id = $user->{id};
+    my @app_ids;
+
+    for (0 .. 2) {
+        my $app = $oauth->create_app({
+            name         => "Test App$_",
+            user_id      => $user_id,
+            scopes       => ['read', 'trade', 'admin'],
+            redirect_uri => "https://www.example$_.com/"
+        });
+
+        push @app_ids, $app->{app_id};
+    }
+
+    my $create_new_refresh_token = sub {
+        my ($user_id, $app_id) = @_;
+        $oauth->generate_refresh_token(29, $user_id, 60 * 60 * 24, $app_id);
+    };
+
+    foreach (@app_ids) {
+        $create_new_refresh_token->($user_id, $_);
+    }
+
+    my $refresh_tokens = $oauth->get_refresh_tokens_by_user_id($user_id);
+    is scalar $refresh_tokens->@*, scalar @app_ids, 'refresh tokens have been generated correctly';
+
     my $hash_pw = BOM::User::Password::hashpw('Ijkl6789');
     is $user->update_user_password($hash_pw), 1, 'user password changed is OK';
+
+    $refresh_tokens = $oauth->get_refresh_tokens_by_user_id($user_id);
+    is scalar $refresh_tokens->@*, 0, 'refresh tokens have been revoked correctly';
 };
 
 subtest 'feature flag' => sub {

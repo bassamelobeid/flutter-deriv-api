@@ -248,10 +248,11 @@ Returns hashref, {success => 1} if successfully authenticated user or {error => 
 sub login {
     my ($self, %args) = @_;
 
-    my $password        = $args{password}        || die "requires password argument";
-    my $environment     = $args{environment}     || '';
-    my $is_social_login = $args{is_social_login} || 0;
-    my $app_id          = $args{app_id}          || undef;
+    my $password               = $args{password}               || die "requires password argument";
+    my $environment            = $args{environment}            || '';
+    my $is_social_login        = $args{is_social_login}        || 0;
+    my $is_refresh_token_login = $args{is_refresh_token_login} || 0;
+    my $app_id                 = $args{app_id}                 || undef;
 
     use constant {
         MAX_FAIL_TIMES   => 5,
@@ -267,7 +268,7 @@ sub login {
 
     if ($too_many_attempts) {
         $error = 'LoginTooManyAttempts';
-    } elsif (!$is_social_login && !BOM::User::Password::checkpw($password, $self->{password})) {
+    } elsif (!$is_social_login && !$is_refresh_token_login && !BOM::User::Password::checkpw($password, $self->{password})) {
         $error = 'INVALID_CREDENTIALS';
     } elsif (!(@clients = $self->clients)) {
         $error = $self->clients(include_self_closed => 1) ? 'AccountSelfClosed' : 'AccountUnavailable';
@@ -1224,6 +1225,10 @@ sub update_user_password {
         $client->save;
         $oauth->revoke_tokens_by_loginid($client->loginid);
     }
+
+    # revoke refresh_token
+    my $user_id = $self->{id};
+    $oauth->revoke_refresh_tokens_by_user_id($user_id);
 
     $log = $is_reset_password ? 'your password has been reset' : 'your password has been changed';
     BOM::User::AuditLog::log($log, $self->email);
