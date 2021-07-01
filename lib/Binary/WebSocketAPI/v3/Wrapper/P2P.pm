@@ -37,7 +37,7 @@ sub subscribe_orders {
         defined $args->{req_id} ? (req_id => $args->{req_id}) : (),
     };
 
-    return $result unless $args->{subscribe} and $c->stash('loginid');
+    return $result unless $args->{subscribe} and $c->stash('loginid') and $c->stash('broker') and $c->stash('country') and $c->stash('currency');
 
     my $order_id =
           $msg_type eq 'p2p_order_info'   ? $args->{id}
