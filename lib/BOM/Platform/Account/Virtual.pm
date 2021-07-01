@@ -120,7 +120,7 @@ sub create_account {
             phone              => '',
             secret_question    => '',
             secret_answer      => '',
-            ($type eq 'wallet') ? (payment_method => 'VirtualMoney') : (),
+            ($type eq 'wallet') ? (payment_method => 'DemoWalletMoney') : (),
         );
 
         $client = $type eq 'wallet' ? $user->create_wallet(%args) : $user->create_client(%args);
@@ -162,11 +162,8 @@ sub _virtual_company_for_brand {
         $_->allowed_for_brands->@*
     } LandingCompany::Registry::all();
 
-    # TODO: This logic should be moved to perl-Brand
-    if ($type eq 'wallet') {
-        return first { LandingCompany::Wallet::get_for_landing_company($_->short) } @lc;
-    }
-
+    # virtual landing company for Wallet will be the same as Trading
+    # here we filter out the samoa-virtual landing company
     return first { $_->short ne 'samoa-virtual' } @lc;
 }
 

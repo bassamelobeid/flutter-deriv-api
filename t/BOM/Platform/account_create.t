@@ -238,7 +238,7 @@ subtest 'create account' => sub {
     }
     'create VR wallet account';
 
-    is($vr_wallet_client->payment_method, 'VirtualMoney', 'correct payment_method for virtual wallet');
+    is($vr_wallet_client->payment_method, 'DemoWalletMoney', 'correct payment_method for virtual wallet');
 
     my %t_details = (
         %real_client_details,
