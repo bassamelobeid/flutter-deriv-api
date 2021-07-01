@@ -512,8 +512,6 @@ sub error_map {
         'InvalidStringValue'         => localize('This field must contain at least one alphabetic character.'),
 
         'DuplicateCurrency'        => localize("Please note that you are limited to only one [_1] account."),
-        'CurrencyNotAllowed'       => localize("The provided currency [_1] is not selectable at the moment."),
-        'CurrencyTypeNotAllowed'   => localize('Please note that you are limited to one fiat currency account.'),
         'CannotChangeWallet'       => localize("Sorry, your trading account is already linked to a wallet."),
         'CurrencyMismatch'         => localize("Please ensure your trading account currency is the same as your wallet account currency."),
         'CannotLinkWallet'         => localize("Sorry, we couldn't link your trading account to this wallet."),
@@ -523,12 +521,18 @@ sub error_map {
         'InvalidTradingAccount'    => localize("Sorry, we couldn't find your trading account."),
         'CannotLinkVirtualAndReal' => localize("Please ensure your trading account type is the same as your wallet account type."),
 
-        'IncompleteFinancialAssessment' => localize("The financial assessment is not complete"),
+        'CurrencySuspended'      => localize("The provided currency [_1] is not selectable at the moment."),
+        'InvalidCryptoCurrency'  => localize("The provided currency [_1] is not a valid cryptocurrency."),
+        'ExperimentalCurrency'   => localize("This currency is temporarily suspended. Please select another currency to proceed."),
+        'DuplicateWallet'        => localize('Sorry, a wallet already exists with those details.'),
+        'MT5AccountExisting'     => localize('Change of currency is not allowed due to an existing MT5 account.'),
+        'AccountWithDeposit'     => localize('Change of currency is not allowed for an existing account with previous deposits.'),
+        'CryptoAccount'          => localize('Account currency is set to cryptocurrency. Any change is not allowed.'),
+        'CurrencyNotApplicable'  => localize('The provided currency [_1] is not applicable for this account.'),
+        'CurrencyNotAllowed'     => localize("The provided currency [_1] is not selectable at the moment."),
+        'CurrencyTypeNotAllowed' => localize('Please note that you are limited to one fiat currency account.'),
 
-        'CurrencySuspended'     => localize("The provided currency [_1] is not selectable at the moment."),
-        'InvalidCryptoCurrency' => localize("The provided currency [_1] is not a valid cryptocurrency."),
-        'ExperimentalCurrency'  => localize("This currency is temporarily suspended. Please select another currency to proceed."),
-        'DuplicateWallet'       => localize('Sorry, a wallet already exists with those details.'),
+        'IncompleteFinancialAssessment' => localize("The financial assessment is not complete"),
 
         'SelfExclusion' => localize(
             'Sorry, but you have self-excluded yourself from the website until [_1]. If you are unable to place a trade or deposit after your self-exclusion period, please contact the Customer Support team for assistance.'
@@ -584,109 +588,6 @@ sub get_available_currencies {
     } @available_currencies;
 
     return @available_currencies;
-}
-
-sub validate_set_currency {
-    my ($client, $currency) = @_;
-
-    return _currency_type_error('Change of currency is not allowed due to an existing MT5 account.')
-        if $client->account && $client->account->currency_code() && $client->user->mt5_logins();
-
-    return _currency_type_error('Change of currency is not allowed for an existing account with previous deposits.')
-        if $client->has_deposits();
-
-    return _currency_type_error('Account currency is set to cryptocurrency. Any change is not allowed.')
-        if $client->account
-        && LandingCompany::Registry::get_currency_type($client->account->currency_code() // '') eq 'crypto';
-
-    my $siblings = $client->real_account_siblings_information(include_self => 0);
-    $siblings = filter_siblings_by_landing_company($client->landing_company->short, $siblings);
-
-    my $is_currency_allowed = _is_currency_allowed($client, $siblings, $currency);
-    return _currency_type_error($is_currency_allowed->{message}) unless $is_currency_allowed->{allowed};
-
-    return undef;
-}
-
-sub _currency_type_error {
-    my $message = shift;
-    return create_error({
-            code              => 'CurrencyTypeNotAllowed',
-            message_to_client => localize($message)});
-}
-
-=pod
-
-=head2 _is_currency_allowed
-
-Checks if the client is allowed to take the requested currency (for itself or for a new account)
-
-=over 4
-
-=item * C<client> - the client object
-
-=item * C<siblings> - client's sibling accounts (including disabled accounts with currencies)
-
-=item * C<currency> - the requested currency
-
-=item * C<rule_engine> (optional) - a rule engine object. If rule engine is empty, the whole checks should be done here;
-   otherwise, sibling account verifications will be skipped (to be covered by the rule engine).
-   (TODO: will be deprecated as soon as rule engine is integrated into all account opening RPC calls).
-
-=back
-
-=cut
-
-sub _is_currency_allowed {
-    my ($client, $siblings, $currency) = @_;
-
-    my $type = LandingCompany::Registry::get_currency_type($currency);
-
-    my $result = {
-        allowed => 0,
-        message => localize("The provided currency [_1] is not applicable for this account.", $currency),
-    };
-
-    # bom-rules -> landing_company.currency_is_allowed
-    return $result if (!$client->landing_company->is_currency_legal($currency));
-
-    # bom-rules -> currency.is_currency_suspended
-    my $error;
-    try {
-        $error = localize("The provided currency [_1] is not selectable at the moment.", $currency)
-            if ($type eq 'crypto' and BOM::Config::CurrencyConfig::is_crypto_currency_suspended($currency));
-    } catch {
-        $error = localize("The provided currency [_1] is not a valid cryptocurrency.", $currency);
-    }
-
-    if ($error) {
-        $result->{message} = $error;
-        return $result;
-    }
-
-    #  bom-rules -> currency.experimental_currency
-    # if currency is experimental and client is not allowed to use such currencies we don't allow
-    $result->{message} = localize('This currency is temporarily suspended. Please select another currency to proceed.');
-    return $result if verify_experimental_email_whitelisted($client, $currency);
-
-    #that's enough for virtual accounts or empty siblings or when there's a rule engine
-    return {allowed => 1} if ($client->is_virtual or scalar(keys %$siblings) == 0);
-
-    # bom-rules -> user.currency_is_available
-    # if fiat then check if client has already any fiat, if yes then don't allow
-    $result->{message} = localize('Please note that you are limited to one fiat currency account.');
-    return $result
-        if ($type eq 'fiat'
-        and grep { (LandingCompany::Registry::get_currency_type($siblings->{$_}->{currency}) // '') eq 'fiat' } keys %$siblings);
-
-    # bom-rules -> user.currency_is_available
-    # if crypto check if client has same crypto, if yes then don't allow
-    $result->{message} = localize("Please note that you are limited to only one [_1] account.", $currency);
-    return $result if ($type eq 'crypto' and grep { $currency eq ($siblings->{$_}->{currency} // '') } keys %$siblings);
-
-    $result->{allowed} = 1;
-
-    return $result;
 }
 
 sub validate_uri {
@@ -907,6 +808,8 @@ Calls C<create_error> parasing a rule engine exception which can be either a sim
 
 =item * C<error> - an error caught from rule engine.
 
+=item * C<orverride_code> - the error code expected to appear in the output.
+
 =back
 
 Returns an error structured by C<create_error>
@@ -914,12 +817,12 @@ Returns an error structured by C<create_error>
 =cut
 
 sub rule_engine_error {
-    my $error = shift;
+    my ($error, $orverride_code) = @_;
 
     # For scalar errors (without error code, etc) let it be caught and logged by default RPC error handling.
     die $error unless (ref $error and ($error->{code} || $error->{error_code}));    # refactor this later to accept error_code only.
 
-    return create_error_by_code($error->{code} // $error->{error_code}, %$error);
+    return create_error_by_code($error->{code} // $error->{error_code}, %$error, override_code => $orverride_code);
 }
 
 =head2 create_error_by_code

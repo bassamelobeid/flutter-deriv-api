@@ -102,7 +102,7 @@ subtest 'Can change fiat -> fiat before first deposit' => sub {
 
 subtest 'Currency locks if an MT5 account is opened' => sub {
     my $mocked_user = Test::MockModule->new(ref($client->user));
-    $mocked_user->mock('mt5_logins', sub { return 'MT0001' });
+    $mocked_user->mock('get_mt5_loginids', sub { return 'MT0001' });
 
     subtest 'Changing currency on account with transactions should fail' => sub {
         $params->{currency} = 'EUR';
@@ -164,7 +164,7 @@ subtest 'Cannot change currency of crypto account' => sub {
     };
 
     subtest 'Cannot change crypto -> crypto' => sub {
-        $params->{currency} = 'EUR';
+        $params->{currency} = 'LTC';
         $c->call_ok($method, $params)->has_error->error_message_is('Account currency is set to cryptocurrency. Any change is not allowed.',
             'client can\'t change crypto currency account')->error_code_is('CurrencyTypeNotAllowed', 'error code is correct');
     };

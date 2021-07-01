@@ -2616,17 +2616,12 @@ rpc set_account_currency => sub {
 
     my ($client, $currency) = @{$params}{qw/client currency/};
 
-    # check if we are allowed to set currency
-    # i.e if we have exhausted available options
-    # - client can have single fiat currency
-    # - client can have multiple crypto currency
-    #   but only with single type of crypto currency
-    #   for example BTC => ETH is allowed but BTC => BTC is not
-    # - currency is not legal in the landing company
-    # - currency is crypto and crytocurrency is suspended in system config
-
-    my $error = BOM::RPC::v3::Utility::validate_set_currency($client, $currency);
-    return $error if $error;
+    my $rule_engine = BOM::Rules::Engine->new(client => $client);
+    try {
+        $rule_engine->verify_action(set_account_currency => {currency => $currency});
+    } catch ($error) {
+        return BOM::RPC::v3::Utility::rule_engine_error($error, 'CurrencyTypeNotAllowed');
+    };
 
     my $status  = 0;
     my $account = $client->account;
