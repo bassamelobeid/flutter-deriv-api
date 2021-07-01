@@ -101,6 +101,9 @@ sub startup {
     $r->post('/api/v1/authorize')->to('RestAPI#authorize');
     $r->post('/api/v1/verify')->to('RestAPI#verify');
     $r->post('/api/v1/login')->to('RestAPI#login');
+    $r->post('/api/v1/pta_login')->to('RestAPI#pta_login');
+
+    $r->get('/api/v1/pta_login/:one_time_token')->to('RestAPI#one_time_token');
 }
 
 1;

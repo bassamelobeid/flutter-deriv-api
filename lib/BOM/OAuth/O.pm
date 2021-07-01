@@ -234,37 +234,20 @@ sub authorize {
     ) unless $is_all_approved;
 
     # setting up client ip
-    my $client_ip = $c->client_ip;
-    if ($c->tx and $c->tx->req and $c->tx->req->headers->header('REMOTE_ADDR')) {
-        $client_ip = $c->tx->req->headers->header('REMOTE_ADDR');
-    }
-
-    my $ua_fingerprint = md5_hex($app_id . ($client_ip // '') . ($c->req->headers->header('User-Agent') // ''));
-
-    # create tokens for all loginids
-    my $i = 1;
-    my @params;
-    foreach my $c1 (@$clients) {
-        my ($access_token) = $oauth_model->store_access_token_only($app_id, $c1->loginid, $ua_fingerprint);
-        push @params,
-            (
-            'acct' . $i  => $c1->loginid,
-            'token' . $i => $access_token,
-            $c1->default_account ? ('cur' . $i => $c1->default_account->currency_code) : (),
-            );
-        $i++;
-    }
+    my $client_ip     = $c->client_ip;
+    my $client_params = {
+        clients => $clients,
+        ip      => $client_ip,
+        app_id  => $app_id,
+    };
+    my @params = BOM::OAuth::Common::generate_url_token_params($c, $client_params);
 
     push @params, (state => $state)
         if defined $state;
 
-    my $uri = Mojo::URL->new($redirect_uri);
-
     if (my $nonce = $c->session('_sso_nonce')) {
         push @params, (nonce => $nonce);
     }
-
-    $uri->query(\@params);
 
     stats_inc('login.authorizer.success', {tags => ["brand:$brand_name", "two_factor_auth:$is_verified"]});
 
@@ -276,7 +259,7 @@ sub authorize {
 
     $c->session(expires => 1);
 
-    $c->redirect_to($uri);
+    return BOM::OAuth::Common::redirect_to($c, $redirect_uri, \@params);
 }
 
 =head2 _handle_self_closed

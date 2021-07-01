@@ -12,9 +12,10 @@ use List::Util qw( first min none );
 use Log::Any qw($log);
 use Syntax::Keyword::Try;
 use Text::Trim;
+use Digest::MD5 qw( md5_hex );
 
-use BOM::Config::Runtime;
 use BOM::Database::Model::OAuth;
+use BOM::Config::Runtime;
 use BOM::OAuth::Static qw( get_message_mapping get_valid_device_types );
 use BOM::Platform::Context qw( localize request );
 use BOM::Platform::Email qw( send_email );
@@ -51,17 +52,26 @@ sub validate_login {
             defined $error_msg ? (error_msg => $error_msg) : ()};
     };
 
-    my $c              = delete $login_details->{c};
-    my $oneall_user_id = delete $login_details->{oneall_user_id};
-    my $app            = delete $login_details->{app};
-    my $email          = delete $login_details->{email};
-    my $password       = delete $login_details->{password};
+    my $c                     = delete $login_details->{c};
+    my $oneall_user_id        = delete $login_details->{oneall_user_id};
+    my $refresh_token_user_id = delete $login_details->{user_id};
+    my $refresh_token         = delete $login_details->{refresh_token};
+    my $app                   = delete $login_details->{app};
+    my $email                 = delete $login_details->{email};
+    my $password              = delete $login_details->{password};
 
     my $app_id = $app->{id};
 
     my $user;
 
-    if ($oneall_user_id) {
+    if ($refresh_token) {
+
+        $user = BOM::User->new(id => $refresh_token_user_id);
+        return $err_var->("INVALID_USER") unless $user;
+
+        $password = '**REFRESH-TOKEN-LOGIN**';
+
+    } elsif ($oneall_user_id) {
 
         $user = BOM::User->new(id => $oneall_user_id);
         return $err_var->("INVALID_USER") unless $user;
@@ -93,10 +103,11 @@ sub validate_login {
     my $unknown_location = !$user->logged_in_before_from_same_location($env);
 
     my $result = $user->login(
-        password        => $password,
-        environment     => $env,
-        is_social_login => $oneall_user_id ? 1 : 0,
-        app_id          => $app_id
+        password               => $password,
+        environment            => $env,
+        is_refresh_token_login => $refresh_token  ? 1 : 0,
+        is_social_login        => $oneall_user_id ? 1 : 0,
+        app_id                 => $app_id
     );
 
     # Self-closed error is treated like a success; we'll try to reactivate accounts.
@@ -313,6 +324,74 @@ sub create_virtual_account {
         details  => $details,
         utm_data => $utm_data
     });
+}
+
+=head2 generate_url_token_params
+
+Generates a url params with client loginid and token.
+
+=over 4
+
+=item * C<$args> contains list of clients - client ip and app_id
+
+=back
+
+=cut
+
+sub generate_url_token_params {
+    my ($c, $args) = @_;
+
+    my $clients     = $args->{clients};
+    my $client_ip   = $args->{ip};
+    my $app_id      = $args->{app_id};
+    my $oauth_model = BOM::Database::Model::OAuth->new;
+
+    if ($c->tx and $c->tx->req and $c->tx->req->headers->header('REMOTE_ADDR')) {
+        $client_ip = $c->tx->req->headers->header('REMOTE_ADDR');
+    }
+
+    my $ua_fingerprint = md5_hex($app_id . ($client_ip // '') . ($c->req->headers->header('User-Agent') // ''));
+
+    # create tokens for all loginids
+    my $i = 1;
+    my @params;
+    foreach my $c1 (@$clients) {
+        my ($access_token) = $oauth_model->store_access_token_only($app_id, $c1->loginid, $ua_fingerprint);
+        push @params,
+            (
+            'acct' . $i  => $c1->loginid,
+            'token' . $i => $access_token,
+            $c1->default_account ? ('cur' . $i => $c1->default_account->currency_code) : (),
+            );
+        $i++;
+    }
+
+    return @params;
+}
+
+=head2 redirect_to
+
+Redirects to provided C<$redirect_uri> with C<$url_params> appended if any
+
+=over 4
+
+=item C<$c> the current connection.
+
+=item C<$redirect_uri> the uri to redirect to
+
+=item C<$url_params> params to append to the C<$redirect_uri>
+
+=back
+
+=cut
+
+sub redirect_to {
+    my ($c, $redirect_uri, $url_params) = @_;
+
+    my $uri = Mojo::URL->new($redirect_uri);
+    $uri->query($url_params) if $url_params;
+
+    return $c->redirect_to($uri);
 }
 
 1;

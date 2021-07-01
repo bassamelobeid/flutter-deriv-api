@@ -11,6 +11,7 @@ use BOM::Database::Model::OAuth;
 use BOM::User::Password;
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use JSON::MaybeUTF8 qw(encode_json_utf8);
 use Digest::SHA qw(hmac_sha256_hex);
 use JSON::WebToken;
 use JSON::MaybeUTF8 qw(decode_json_utf8);
@@ -18,19 +19,24 @@ use JSON::MaybeUTF8 qw(decode_json_utf8);
 my $redis = BOM::Config::Redis::redis_auth_write();
 my $t     = Test::Mojo->new('BOM::OAuth');
 my $app;
-my $app_id = do {
+
+sub _generate_app_id {
+    my ($name, $redirect_uri, $scopes) = @_;
     my $oauth = BOM::Database::Model::OAuth->new;
     $oauth->dbic->dbh->do("DELETE FROM oauth.user_scope_confirm");
     $oauth->dbic->dbh->do("DELETE FROM oauth.access_token");
-    $oauth->dbic->dbh->do("DELETE FROM oauth.apps WHERE name='Test App'");
+    $oauth->dbic->dbh->do("DELETE FROM oauth.apps WHERE name='$name'");
     $app = $oauth->create_app({
-        name         => 'Test App',
+        name         => $name,
         user_id      => 1,
-        scopes       => ['read', 'trade', 'admin'],
-        redirect_uri => 'https://www.example.com/'
+        scopes       => $scopes,
+        redirect_uri => $redirect_uri
     });
     $app->{app_id};
-};
+}
+
+my $app_id = _generate_app_id('Test App', 'https://www.example.com/', ['read', 'trade', 'admin']);
+my $destination_app_id = _generate_app_id('Test App 2', 'https://www.example2.com/', ['read', 'trade']);
 
 # Create users
 my $password = 'jskjd8292922';
@@ -375,7 +381,7 @@ subtest 'login' => sub {
             },
             {
                 Authorization => "Bearer $jwt_token",
-            })->status_is(200)->json_has('/tokens');
+            })->status_is(200)->json_has('/tokens')->json_has('/refresh_token', 'Response has refresh_token');
 
         # Updating system_user to is_totp_enabled
         $sytem_user->update_totp_fields(is_totp_enabled => 1);
@@ -419,7 +425,7 @@ subtest 'login' => sub {
             },
             {
                 Authorization => "Bearer $jwt_token",
-            })->status_is(200)->json_has('/tokens');
+            })->status_is(200)->json_has('/tokens')->json_has('/refresh_token', 'Response has refresh_token');
     };
 
     # Mocking OneAll Data
@@ -509,7 +515,7 @@ subtest 'login' => sub {
             },
             {
                 Authorization => "Bearer $jwt_token",
-            })->status_is(200)->json_has('/tokens');
+            })->status_is(200)->json_has('/tokens')->json_has('/refresh_token', 'Response has refresh_token');
 
         # Updating social_user to is_totp_enabled
         $social_user->update_totp_fields(is_totp_enabled => 1);
@@ -550,7 +556,7 @@ subtest 'login' => sub {
             },
             {
                 Authorization => "Bearer $jwt_token",
-            })->status_is(200)->json_has('/tokens');
+            })->status_is(200)->json_has('/tokens')->json_has('/refresh_token', 'Response has refresh_token');
     };
 
     subtest 'New social signup' => sub {
@@ -617,6 +623,239 @@ subtest 'login' => sub {
             }
         }
     };
+};
+
+subtest 'pta_login' => sub {
+    my $authorize_url = '/api/v1/authorize';
+    my $solution      = hmac_sha256_hex($challenge, 'tok3n');
+
+    my $oauth = BOM::Database::Model::OAuth->new;
+    ok $oauth->create_app_token($app_id, 'tok3n'), 'App token has been created';
+
+    $app->{active} = 1;
+    $oauth->update_app($app_id, $app);
+
+    my $response = $post->(
+        $authorize_url,
+        {
+            app_id   => $app_id,
+            expire   => $expire,
+            solution => $solution
+        })->status_is(200)->json_has('/token', 'Response has a token')->tx->res->json;
+
+    my $jwt_token = $response->{token};
+    ok $jwt_token, 'Got the JWT token from the JSON response';
+
+    my $login_url = '/api/v1/login';
+    $response = $post->(
+        $login_url,
+        {
+            app_id            => $app_id,
+            type              => 'system',
+            email             => $system_user_email,
+            password          => $password,
+            one_time_password => $totp_value
+        },
+        {
+            Authorization => "Bearer $jwt_token",
+        })->status_is(200)->json_has('/tokens')->json_has('/refresh_token', 'Response has refresh_token')->tx->res->json;
+
+    my $refresh_token = $response->{refresh_token};
+    ok $refresh_token, 'Get refresh_token from JSON response';
+
+    my $pta_login_url = '/api/v1/pta_login';
+    my $mock_app_id   = _generate_app_id('Test App 3', 'https://www.example3.com/', ['payments', 'read', 'trade', 'admin']);
+
+    note "Non json request body";
+    warning_like {
+        $t->post_ok($pta_login_url => "string body")->status_is(400)->json_is('/error_code', 'NEED_JSON_BODY');
+    }
+    qr/domain/;
+
+    note "Wrong token";
+    $post->(
+        $pta_login_url,
+        {
+            app_id        => $mock_app_id,
+            refresh_token => $refresh_token
+        },
+        {
+            Authorization => "Bearer Wrong token",
+        })->status_is(401)->json_is('/error_code', 'INVALID_TOKEN');
+
+    note "Wrong refresh_token";
+    $post->(
+        $pta_login_url,
+        {
+            app_id        => $mock_app_id,
+            refresh_token => 'WRONG REFRESH TOKEN'
+        },
+        {
+            Authorization => "Bearer $jwt_token",
+        })->status_is(401)->json_is('/error_code', 'INVALID_REFRESH_TOKEN');
+
+    note "Invalid scope redirection";
+    $post->(
+        $pta_login_url,
+        {
+            app_id        => $mock_app_id,
+            refresh_token => $refresh_token,
+        },
+        {Authorization => "Bearer $jwt_token"})->status_is(401)->json_is('/error_code', 'INVALID_SCOPES');
+
+    note "Redirect to the same app";
+    $post->(
+        $pta_login_url,
+        {
+            app_id        => $app_id,
+            refresh_token => $refresh_token
+        },
+        {
+            Authorization => "Bearer $jwt_token",
+        })->status_is(400)->json_is('/error_code', 'INVALID_REDIRECTION');
+
+    note "Wrong destination app id";
+    $post->(
+        $pta_login_url,
+        {
+            app_id        => '11111',
+            refresh_token => $refresh_token
+        },
+        {
+            Authorization => "Bearer $jwt_token",
+        })->status_is(400)->json_is('/error_code', 'INVALID_APP_ID');
+
+    note "Unofficial app";
+    $is_official_app = 0;
+    my $client_ip = $post->(
+        $pta_login_url,
+        {
+            app_id        => $app_id,
+            refresh_token => $refresh_token
+        },
+        {
+            Authorization => "Bearer $jwt_token",
+        })->status_is(400)->json_is('/error_code', 'UNOFFICIAL_APP')->tx->original_remote_address;
+    $is_official_app = 1;
+
+    note "Blocked client ip";
+    my $block_redis_key = "oauth::blocked_by_ip::$client_ip";
+    $redis->set($block_redis_key, 1);
+    $post->(
+        $pta_login_url,
+        {
+            app_id        => $destination_app_id,
+            refresh_token => $refresh_token,
+            url_params    => {},
+        },
+        {
+            Authorization => "Bearer $jwt_token",
+        })->status_is(429)->json_is('/error_code', 'SUSPICIOUS_BLOCKED');
+    $redis->del($block_redis_key);
+
+    note 'too many url_params';
+    my $params = +{map { $_ => $_ } ('a' .. 'z')};
+    $post->(
+        $pta_login_url,
+        {
+            app_id        => $destination_app_id,
+            refresh_token => $refresh_token,
+            url_params    => $params
+        },
+        {
+            Authorization => "Bearer $jwt_token",
+        })->status_is(400)->json_is('/error_code', 'TOO_MANY_PARAMETERS');
+
+    note 'invalid url_params';
+    $post->(
+        $pta_login_url,
+        {
+            app_id        => $destination_app_id,
+            refresh_token => $refresh_token,
+            url_params    => {
+                xss => "<script>alert(1)</script>",
+                sql => "' OR 1 = 1 --"
+            }
+        },
+        {
+            Authorization => "Bearer $jwt_token",
+        })->status_is(400)->json_is('/error_code', 'INVALID_URL_PARAMS');
+
+    $post->(
+        $pta_login_url,
+        {
+            app_id        => $destination_app_id,
+            refresh_token => $refresh_token,
+            url_params    => {
+                "action"             => "open_cashier_page",
+                "alpha_numeric_only" => 'OK'
+            }
+        },
+        {
+            Authorization => "Bearer $jwt_token",
+        })->status_is(200)->json_has('/one_time_token', 'Response contains one_time_token');
+};
+
+subtest 'one_time_token' => sub {
+    my $authorize_url = '/api/v1/authorize';
+    my $solution      = hmac_sha256_hex($challenge, 'tok3n');
+
+    my $oauth = BOM::Database::Model::OAuth->new;
+    ok $oauth->create_app_token($app_id, 'tok3n'), 'App token has been created';
+
+    $app->{active} = 1;
+    $oauth->update_app($app_id, $app);
+
+    my $response = $post->(
+        $authorize_url,
+        {
+            app_id   => $app_id,
+            expire   => $expire,
+            solution => $solution
+        })->status_is(200)->json_has('/token', 'Response has a token')->tx->res->json;
+
+    my $jwt_token = $response->{token};
+    ok $jwt_token, 'Got the JWT token from the JSON response';
+
+    my $login_url = '/api/v1/login';
+    $response = $post->(
+        $login_url,
+        {
+            app_id            => $app_id,
+            type              => 'system',
+            email             => $system_user_email,
+            password          => $password,
+            one_time_password => $totp_value
+        },
+        {
+            Authorization => "Bearer $jwt_token",
+        })->status_is(200)->json_has('/tokens')->json_has('/refresh_token', 'Response has refresh_token')->tx->res->json;
+
+    my $refresh_token = $response->{refresh_token};
+    my $pta_login_url = '/api/v1/pta_login';
+
+    my $raw_response = $post->(
+        $pta_login_url,
+        {
+            app_id        => $destination_app_id,
+            refresh_token => $refresh_token,
+            url_params    => {},
+        },
+        {
+            Authorization => "Bearer $jwt_token",
+        })->status_is(200)->json_has('/one_time_token', 'Response contains one_time_token');
+
+    $response = $raw_response->tx->res->json;
+    my $one_time_token          = $response->{one_time_token};
+    my $one_time_token_endpoint = "$pta_login_url/$one_time_token";
+
+    my $client_ip = $raw_response->tx->original_remote_address;
+
+    warning_like {
+        $t->get_ok($one_time_token_endpoint)->status_is(302);
+    }
+    qr/domain/;
+
 };
 
 $api_mock->unmock_all;

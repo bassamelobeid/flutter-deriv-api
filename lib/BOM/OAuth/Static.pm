@@ -54,6 +54,7 @@ my $config = {
         INVALID_EMAIL              => "The provided email is invalid.",
         INVALID_PASSWORD           => "The provided password is invalid.",
         INVALID_TOKEN              => "The provided token is invalid.",
+        INVALID_REFRESH_TOKEN      => "The provided refresh token is invalid",
         INVALID_APP_ID             => "The provided app_id is invalid.",
         INVALID_EXPIRE_TIMESTAMP   => "The provided expire timestamp is invalid",
         INVALID_BRAND              => "The brand is unknown.",
@@ -79,6 +80,10 @@ my $config = {
         NO_APP_TOKEN_FOUND        => "There is no token defined for this application.",
         MISSING_ONE_TIME_PASSWORD => "Please provide an authentication code.",
         TFA_FAILURE               => "Invalid authentication code.",
+        INVALID_REDIRECTION       => "Destination app id can't be source app id.",
+        INVALID_SCOPES            => "Redirection failed to the requested app.",
+        INVALID_URL_PARAMS        => "The provided parameters are invalid.",
+        TOO_MANY_PARAMETERS       => "Too Many Parameters are provided."
     }};
 
 =head2 get_message_mapping
