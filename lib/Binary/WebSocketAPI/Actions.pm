@@ -199,7 +199,13 @@ sub actions_config {
                 msg_group    => 'account',
             }
         ],
-        ['new_account_virtual', {stash_params => [qw/ server_name client_ip user_agent /]}],
+        [
+            'new_account_virtual',
+            {
+                stash_params => [qw/ token server_name client_ip user_agent /],
+                msg_group => 'account',
+            }
+        ],
         [
             'reset_password',
             {
