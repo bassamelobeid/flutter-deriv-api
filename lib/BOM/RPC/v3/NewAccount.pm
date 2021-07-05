@@ -266,14 +266,6 @@ rpc new_account_real => sub {
     return $response if $response->{error};
 
     my $new_client = $response->{client};
-    BOM::Platform::Event::Emitter::emit(
-        'signup',
-        {
-            loginid    => $new_client->loginid,
-            properties => {
-                type    => 'trading',
-                subtype => 'real'
-            }});
 
     return {
         client_id                 => $new_client->loginid,
@@ -328,15 +320,6 @@ rpc new_account_maltainvest => sub {
         return BOM::RPC::v3::Utility::client_error();
 
     }
-
-    BOM::Platform::Event::Emitter::emit(
-        'signup',
-        {
-            loginid    => $new_client->loginid,
-            properties => {
-                type    => 'trading',
-                subtype => 'real'
-            }});
 
     # In case of having more than a tax residence, client residence will replaced.
     my $selected_tax_residence = $args->{tax_residence} =~ /\,/g ? $args->{residence} : $args->{tax_residence};

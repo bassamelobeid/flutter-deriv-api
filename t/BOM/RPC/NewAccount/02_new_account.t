@@ -48,8 +48,14 @@ $mock_events->mock(
     'emit',
     sub {
         my ($type, $data) = @_;
+
         $emit_data = $data;
-        $emitted{$type . '_' . $data->{loginid}}++;
+
+        my $loginid = $data->{loginid};
+
+        ok !$emitted{$type . '_' . $loginid}, "First (and hopefully unique) signup event for $loginid" if $type eq 'signup';
+
+        $emitted{$type . '_' . $loginid}++;
     });
 
 my %datadog_args;
