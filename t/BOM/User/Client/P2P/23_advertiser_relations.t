@@ -30,6 +30,9 @@ subtest 'favourites' => sub {
 
     cmp_deeply(exception { $client->p2p_advertiser_relations }, {error_code => 'AdvertiserNotRegistered'}, 'not an advertiser');
 
+    my $info = $client->p2p_advertiser_info(id => $me->_p2p_advertiser_cached->{id});
+    ok !exists $info->{is_favourite} & !exists $info->{is_blocked}, 'no flags for non advertiser viewing advertiser';
+
     cmp_deeply(
         $me->p2p_advertiser_relations,
         {
@@ -57,7 +60,7 @@ subtest 'favourites' => sub {
 
     is $me->p2p_advertiser_info->{favourited}, 0, 'nobody likes me';
 
-    my $info = $me->p2p_advertiser_info(id => $fav->_p2p_advertiser_cached->{id});
+    $info = $me->p2p_advertiser_info(id => $fav->_p2p_advertiser_cached->{id});
     ok $info->{is_favourite}, 'favourite flag in advertiser info';
     is $info->{favourited}, 1, 'favourited count';
 

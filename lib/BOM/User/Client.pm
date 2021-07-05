@@ -3667,9 +3667,10 @@ sub _advertiser_details {
         $details->{basic_verification} = $auth_client->status->age_verification ? 1 : 0;
         $details->{full_verification}  = $auth_client->fully_authenticated      ? 1 : 0;
 
-        my $relations = $self->_p2p_advertiser_relation_lists;
-        $details->{is_favourite} = 1 if any { $_->{id} == $advertiser->{id} } $relations->{favourite_advertisers}->@*;
-        $details->{is_blocked}   = 1 if any { $_->{id} == $advertiser->{id} } $relations->{blocked_advertisers}->@*;
+        if (my $relations = $self->_p2p_advertiser_relation_lists) {
+            $details->{is_favourite} = 1 if any { $_->{id} == $advertiser->{id} } $relations->{favourite_advertisers}->@*;
+            $details->{is_blocked}   = 1 if any { $_->{id} == $advertiser->{id} } $relations->{blocked_advertisers}->@*;
+        }
     }
 
     return $details;
@@ -4107,9 +4108,11 @@ Get all P2P advertiser relations of current user.
 sub _p2p_advertiser_relation_lists {
     my ($self) = @_;
 
+    my $advertiser = $self->_p2p_advertiser_cached or return;
+
     my $relations = $self->db->dbic->run(
         fixup => sub {
-            $_->selectall_arrayref('SELECT * FROM p2p.advertiser_relation_list(?)', {Slice => {}}, $self->_p2p_advertiser_cached->{id});
+            $_->selectall_arrayref('SELECT * FROM p2p.advertiser_relation_list(?)', {Slice => {}}, $advertiser->{id});
         });
 
     my $lists;
