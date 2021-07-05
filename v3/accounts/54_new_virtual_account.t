@@ -220,8 +220,8 @@ subtest 'create virtual wallet' => sub {
     test_schema('verify_email', $res);
 
     $create_vr->{verification_code} = _get_token($email);
-    $create_vr->{type} = 'wallet';
-    $res = $t->await::new_account_virtual($create_vr);
+    $create_vr->{type}              = 'wallet';
+    $res                            = $t->await::new_account_virtual($create_vr);
 
     is($res->{msg_type}, 'new_account_virtual');
     ok($res->{new_account_virtual});

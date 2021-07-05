@@ -218,6 +218,22 @@ subtest 'balance' => sub {
 
 my $profit_table = $t->await::profit_table({
     profit_table => 1,
+    limit        => 501
+});
+
+ok($profit_table->{error}->{details}->{limit});
+is $profit_table->{error}->{details}->{limit}, "501 > maximum(500)";
+
+$profit_table = $t->await::profit_table({
+    profit_table => 1,
+    limit        => 500
+});
+
+ok($profit_table->{profit_table});
+ok($profit_table->{profit_table}->{count});
+
+$profit_table = $t->await::profit_table({
+    profit_table => 1,
     limit        => 1
 });
 ok($profit_table->{profit_table});
