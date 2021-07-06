@@ -8,10 +8,12 @@ use URL::Encode;
 use Email::Stuffer;
 use Email::Valid;
 use Encode;
+use List::Util qw/any/;
 
 use BOM::Config;
 use BOM::Platform::Context qw(request localize);
 use BOM::Platform::Context::Request;
+use BOM::Platform::Locale;
 use BOM::Database::Model::OAuth;
 
 use parent 'Exporter';
@@ -60,13 +62,13 @@ Sends the email according to the given args.
 
 =item * C<to> - The recipient email address
 
-=item * C<subject> - Subject of the email
-
 =back
 
 =head3 Optional arguments:
 
 =over 4
+
+=item * C<subject> - (optional) The email subject, if not set, it gets the subject from template with the C<email_subject> callback
 
 =item * C<message> - An arrayref of messages that would be joined to send, will be ignored if C<template_name> is present
 
@@ -85,6 +87,8 @@ Sends the email according to the given args.
 =item * C<attachment> - Could be one attachment or an arrayref of attachments
 
 =item * C<template_loginid> - The client's loginid that used to display on top of the template
+
+=item * C<language> - A string value, to set the language of the current_request context
 
 =back
 
@@ -107,7 +111,7 @@ sub process_send_email {
     my $skip_text2html   = $args_ref->{'skip_text2html'};
     my $template_loginid = $args_ref->{template_loginid};
 
-    if (my @missing = grep { !$args_ref->{$_} } qw(from to subject)) {
+    if (my @missing = grep { !$args_ref->{$_} } qw(from to)) {
         warn("Failed to send the email due to missing fields: ", join ", ", @missing);
         return 0;
     }
@@ -125,13 +129,23 @@ sub process_send_email {
         }
     }
 
+    local $BOM::Platform::Context::current_request = request();
+    if (my $language = delete $args_ref->{language}) {
+        $BOM::Platform::Context::current_request = BOM::Platform::Context::Request->new({
+            request->%*,
+            language => $language,
+        });
+    }
+
     my $request = request();
     my $brand   = $request->brand;
     if (grep { $fromemail eq $_ } ($brand->emails('support'), $brand->emails('no-reply'))) {
         $fromemail = "\"" . $brand->website_name . "\" <$fromemail>";
     }
 
-    my $message      = join("\n", @message);
+    # Email subject, and title passed as args needs to be localized again
+    $subject = localize($subject);
+    my $message = join "\n", @message;
     my $mail_message = $message;
     if ($use_email_template) {
         $template_name .= '.html.tt' if $template_name !~ /\.html\.tt$/;
@@ -146,6 +160,11 @@ sub process_send_email {
             content_template      => $template_name,
             l                     => \&localize,
             $template_args->%*,
+            title => localize($template_args->{'title'}),
+
+            # If email subject weren't explicitly passed,
+            # try to get the email subject from email template
+            $subject ? () : (email_subject => sub { $subject = shift; return undef; }),
         };
 
         $vars->{text_email_template_loginid} = localize('Your Login ID: [_1]', $template_loginid)
@@ -160,6 +179,11 @@ sub process_send_email {
 
         BOM::Platform::Context::template()->process("layouts/$layout.html.tt", $vars, \$mail_message)
             || die BOM::Platform::Context::template()->error();
+    }
+
+    if ($subject eq '') {
+        warn("Failed to send the email due to missing fields: subject");
+        return 0;
     }
 
     my $email_stuffer = Email::Stuffer->from($fromemail)->to($email)->subject($subject);

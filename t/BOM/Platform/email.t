@@ -1,6 +1,7 @@
 use strict;
 use warnings;
 use Test::More;
+use Test::Deep;
 use Email::Sender::Transport::Test;
 use Test::MockModule;
 use Test::Warnings qw(warning);
@@ -114,6 +115,27 @@ subtest attachment => sub {
     is(scalar @attachments,       3);
     is($attachments[1]{filename}, basename($att1));
     is($attachments[2]{filename}, basename($att2));
+};
+
+subtest 'with language args' => sub {
+    $args->{language}               = 'ID';
+    $args->{subject}                = 'Email not given.';
+    $args->{template_args}->{title} = 'This account has been disabled.';
+    ok(send_email($args));
+    my @deliveries = $transport->deliveries;
+    my $email      = $deliveries[-1]{email};
+    like $email->get_header('Subject'), qr{Email belum diberikan.}s, 'email subject has localized language';
+    like $email->get_body, qr{https://deriv.com/id/help-centre/}s, 'email urls has localized language';
+    like $email->get_body, qr{Keamanan dan privasi}s,              'email content has localized language';
+    like $email->get_body, qr{Akun ini telah dibatalkan.}s,        'email title has localized language';
+
+    ok(send_email($args));
+    @deliveries = $transport->deliveries;
+    $email      = $deliveries[-1]{email};
+    like $email->get_header('Subject'), qr{Email not given.}s, 'email subject has default language';
+    like $email->get_body, qr{https://deriv.com/en/help-centre/}s, 'email urls has default language';
+    like $email->get_body, qr{Security and privacy}s,              'email content has default language';
+    like $email->get_body, qr{This account has been disabled.}s,   'email title has default language';
 };
 
 done_testing();

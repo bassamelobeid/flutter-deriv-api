@@ -25,7 +25,7 @@ use BOM::Platform::Context::Request;
 use Format::Util::Numbers;
 use BOM::Platform::Context::I18N;
 
-state $current_request;
+our $current_request;
 state $template_config = {};
 
 =head2 request
