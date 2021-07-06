@@ -372,22 +372,24 @@ if ($informclient) {
 
     my $brand = request()->brand;
 
-    my $email_body =
-          localize('Dear [_1] [_2] [_3],', BOM::Platform::Locale::translate_salutation($salutation), $first_name, $last_name) . "\n\n"
-        . localize('We would like to inform you that your [_1] has been processed.', $subject) . "\n\n"
-        . localize('Kind Regards') . "\n\n"
-        . $brand->website_name;
-
     try {
         send_email({
-            from                  => $brand->emails('support'),
-            to                    => $client->email,
-            subject               => $subject,
-            message               => [$email_body],
-            use_email_template    => 1,
-            template_loginid      => $loginID,
-            email_content_is_html => 1,
-        });
+                from          => $brand->emails('support'),
+                to            => $client->email,
+                subject       => $subject,
+                template_name => "process_payment_notification",
+                template_args => {
+                    salutation   => $salutation,
+                    first_name   => $first_name,
+                    last_name    => $last_name,
+                    subject      => $subject,
+                    website_name => $brand->website_name
+                },
+                use_email_template    => 1,
+                template_loginid      => $loginID,
+                email_content_is_html => 1,
+                language              => $client->user->preferred_language
+            });
     } catch ($e) {
         code_exit_BO("Transaction was performed, please check client statement but an error occured while sending email. Error details $e");
     }

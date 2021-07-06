@@ -109,7 +109,6 @@ sub process_bonus_claim {
 
     my $tac_url     = $brand->tnc_approval_url . '?anchor=free-bonus#legal-binary';
     my $client_name = ucfirst join(' ', (BOM::Platform::Locale::translate_salutation($client->salutation), $client->first_name, $client->last_name));
-    my $email_subject = localize("Your bonus request - [_1]", $client->loginid);
     my $email_content;
     my $template_name;
     my $loginid = $client->loginid;
@@ -173,13 +172,13 @@ sub process_bonus_claim {
         send_email({
             from                  => request()->brand->emails('support'),
             to                    => $client->email,
-            subject               => $email_subject,
             template_name         => $template_name,
             template_args         => $email_content,
             template_loginid      => $client->loginid,
             email_content_is_html => 1,
             use_email_template    => 1,
             use_event             => 1,
+            language              => $client->user->preferred_language
         });
     }
     return $result;

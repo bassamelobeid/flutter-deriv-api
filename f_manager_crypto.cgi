@@ -96,6 +96,7 @@ sub notify_crypto_withdrawal_rejected {
         email_content_is_html => 1,
         use_email_template    => 1,
         use_event             => 1,
+        language              => $client->user->preferred_language
     });
 }
 

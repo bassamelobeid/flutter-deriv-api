@@ -9,6 +9,7 @@ use HTML::Entities;
 use Syntax::Keyword::Try;
 use BOM::Platform::Token::API;
 use BOM::Platform::Event::Emitter;
+use BOM::Platform::Email qw(send_email);
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use f_brokerincludeall;
 use BOM::Backoffice::Sysinit ();
@@ -229,11 +230,11 @@ sub notify_submission_of_documents_for_pending_payout {
     );
     BOM::Platform::Context::request($req);
 
-    my $email_subject = 'Verify your identity and address for your Deriv or Binary account';
+    my $email_subject = localize('Verify your identity and address for your Deriv or Binary account');
     my $due_date      = Date::Utility->today->plus_time_interval('3d');
     my $email_data    = {
         name  => $client->first_name,
-        title => "Just one more step to withdraw your funds",
+        title => localize("Just one more step to withdraw your funds"),
         date  => join(' ', $due_date->day_of_month, $due_date->month_as_string, $due_date->year),
     };
     send_email({
@@ -245,6 +246,7 @@ sub notify_submission_of_documents_for_pending_payout {
         email_content_is_html => 1,
         use_email_template    => 1,
         use_event             => 1,
+        language              => $client->user->preferred_language
     });
 }
 

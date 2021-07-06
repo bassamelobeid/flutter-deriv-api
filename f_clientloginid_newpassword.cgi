@@ -7,7 +7,6 @@ use URL::Encode qw( url_encode );
 use HTML::Entities;
 
 use BOM::User::Client;
-
 use f_brokerincludeall;
 use BOM::Backoffice::Request qw(request localize);
 use BOM::Platform::Email qw(send_email);
@@ -46,7 +45,7 @@ my $token = BOM::Platform::Token->new({
     })->token;
 
 my $brand = request()->brand;
-my $lang  = request()->language;
+my $lang  = $client->user->preferred_language // request()->language;
 my $link  = $brand->default_url() . "/redirect?action=reset_password&lang=$lang&code=$token";
 
 print '<p class="success_message">Emailing change password link to ' . encode_entities($client_name) . ' at ' . encode_entities($email) . ' ...</p>';
@@ -54,7 +53,6 @@ print '<p class="success_message">Emailing change password link to ' . encode_en
 my $result = send_email({
         from          => $brand->emails('support'),
         to            => $email,
-        subject       => localize('Get a new [_1] account password', ucfirst $brand->name),
         template_name => $has_social_login ? "lost_password_has_social_login" : "lost_password",
         template_args => {
             name  => $client->first_name,
@@ -71,6 +69,7 @@ my $result = send_email({
         use_email_template    => 1,
         email_content_is_html => 1,
         use_event             => 1,
+        language              => $lang,
     });
 
 print '<p>New password issuance RESULT: ' . ($result) ? 'success' : 'fail' . '</p>';
