@@ -36,6 +36,7 @@ use BOM::User::AuditLog;
 
 sub authorize {
     my $c = shift;
+
     # APP_ID verification logic
     my ($app_id, $state) = map { defang($c->param($_)) // undef } qw/ app_id state /;
 
@@ -132,6 +133,7 @@ sub authorize {
     $c->session(utm_gl_client_id   => $c->param('utm_gl_client_id')) if ($c->param('utm_gl_client_id') // '') =~ /^[\w\s\.\-_]{1,100}$/;
     $c->session(utm_msclk_id       => $c->param('utm_msclk_id'))     if ($c->param('utm_msclk_id')     // '') =~ /^[\w\s\.\-_]{1,100}$/;
     $c->session(utm_term           => $c->param('utm_term'))         if ($c->param('utm_term')         // '') =~ /^[\w\s\.\-_]{1,100}$/;
+    $c->session(platform           => $c->param('platform'))         if ($c->param('platform')         // '') =~ /^[\w]{1,100}$/;
 
     # detect and validate social_login param if provided
     if (my $method = $c->param('social_signup')) {
@@ -247,6 +249,10 @@ sub authorize {
 
     if (my $nonce = $c->session('_sso_nonce')) {
         push @params, (nonce => $nonce);
+    }
+
+    if (my $platform = delete $c->session->{platform}) {
+        push @params, (platform => $platform);
     }
 
     stats_inc('login.authorizer.success', {tags => ["brand:$brand_name", "two_factor_auth:$is_verified"]});
