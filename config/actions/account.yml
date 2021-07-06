@@ -1,9 +1,9 @@
 new_account:
   description: Contains rules to be applied on real account opening
-  general:
+  ruleset:
     - user.email_is_verified
     - client.residence_is_not_empty
-    - client.residence_not_changed
+    - profile.residence_cannot_be_changed
     - residence.is_signup_allowed
     - residence.market_type_is_available
     - residence.not_restricted
@@ -22,17 +22,16 @@ new_account:
     - profile.valid_non_pep_declaration_time
     - currency.is_available_for_new_account
     - client.check_duplicate_account
-  context:
-    landing_company:
-      malta: &from_eu
-        - profile.no_pobox_in_address
-      maltainvest: *from_eu
-      iom: *from_eu
-      default:
-        - pass
-    residence:
-      gb:
-        - profile.address_postcode_mandatory
-      default:
-        - pass
-
+    - context:
+        landing_company:
+          malta: &from_eu
+            - profile.no_pobox_in_address
+          maltainvest: *from_eu
+          iom: *from_eu
+          default:
+            - pass
+        residence:
+          gb:
+            - profile.address_postcode_mandatory
+          default:
+            - pass

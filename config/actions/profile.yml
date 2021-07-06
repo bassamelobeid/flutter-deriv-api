@@ -1,17 +1,61 @@
 set_financial_assessment:
   description: "Rules applied when trying to set financial assessment."
-  general:
+  ruleset:
     - client.is_not_virtual
     - financial_assessment.required_sections_are_complete
+
 set_self_exclusion:
   description: "Rules applied when trying to set self-exclusion settings."
-  general:
+  ruleset:
     - client.is_not_virtual
     - self_exclusion.not_self_excluded
     - self_exclusion.deposit_limits_allowed
+
+set_settings:
+  description: "Rules applied on setting account settings"
+  ruleset:
+    - context:
+        client_type:
+          virtual:
+            - profile.fields_allowed_to_change
+            - profile.residence_cannot_be_changed
+            - residence.not_restricted
+            - profile.immutable_fields_cannot_change
+            - landing_company.required_fields_are_non_empty
+            - profile.copier_cannot_allow_copiers
+          real:
+            - profile.residence_cannot_be_changed
+            - residence.not_restricted
+            - profile.immutable_fields_cannot_change
+            - landing_company.required_fields_are_non_empty
+            - profile.valid_profile_countries
+            - profile.date_of_birth_complies_minimum_age
+            - profile.secret_question_with_answer
+            - profile.copier_cannot_allow_copiers
+            - profile.tax_information_is_not_cleared
+            - profile.professional_request_allowed
+            - profile.professional_request_is_not_resubmitted
+          default:
+            - fail
+    - context:
+        landing_company:
+          malta:
+            - profile.no_pobox_in_address
+          maltainvest:
+            - profile.no_pobox_in_address
+            - profile.tax_information_is_mandatory
+          iom:
+            - profile.no_pobox_in_address
+          default:
+            - pass
+        residence:
+          gb:
+            - profile.address_postcode_mandatory
+          default:
+            - pass
 set_account_currency:
   description: Contains rules to be applied on setting account currency.
-  general:
+  ruleset:
     - currency.no_deposit
     - landing_company.currency_is_allowed
     - currency.is_available_for_change

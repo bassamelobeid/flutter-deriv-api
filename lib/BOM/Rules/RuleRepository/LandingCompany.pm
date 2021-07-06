@@ -48,7 +48,8 @@ rule 'landing_company.required_fields_are_non_empty' => {
         my $client = $context->client_switched;
 
         my @required_fields = ($context->landing_company_object->requirements->{signup} // [])->@*;
-        my @missing = grep { not $args->{$_} // $client->$_ } uniq @required_fields;
+
+        my @missing = grep { not($args->{$_} // $client->$_) } uniq @required_fields;
 
         # TODO: better to be configured in landing company config
         if (($args->{account_type} // '') eq 'wallet') {

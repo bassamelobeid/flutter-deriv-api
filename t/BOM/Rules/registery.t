@@ -74,14 +74,17 @@ subtest 'Actions registery' => sub {
     like exception { BOM::Rules::Registry::register_actions() }, qr/Rule set of action 'action1' is not a hash/, 'Scalar rule set will fail';
 
     $mock_data = {'action1' => {dummy_key => []}};
-    like exception { BOM::Rules::Registry::register_actions() },
-        qr/Invalid condition type 'dummy_key' in action 'action1': only 'general', 'context' and 'args' are acceptable/, 'Scalar rule set will fail';
+    like exception { BOM::Rules::Registry::register_actions() }, qr/Rule 'action1' doesn't have any 'ruleset/, 'Scalar rule set will fail';
 
-    $mock_data = {'action1' => {general => [qw(test_rule invalid_rule)]}};
+    $mock_data = {'action1' => {ruleset => {dummy_key => []}}};
+    like exception { BOM::Rules::Registry::register_actions() },
+        qr/Invalid condition type 'dummy_key' in action 'action1': only 'context' and 'args' are acceptable/, 'Scalar rule set will fail';
+
+    $mock_data = {'action1' => {ruleset => [qw(test_rule invalid_rule)]}};
     like exception { BOM::Rules::Registry::register_actions() },
         qr/Rule 'invalid_rule' used in action 'action1' was not found/, 'Invalid rule names cannot be used';
 
-    $mock_data = {'action1' => {general => []}};
+    $mock_data = {'action1' => {ruleset => []}};
     $actions   = BOM::Rules::Registry::register_actions();
     is_deeply [keys %$actions], ['action1'], 'Only one action is registered';
     is ref $actions->{action1}, 'BOM::Rules::Registry::Action', 'Action type is correct';
@@ -99,46 +102,59 @@ subtest 'Actions registery' => sub {
     $mock_yml->redefine('LoadFile', sub { undef %BOM::Rules::Registry::action_registry; return $mock_data; });
 
     $mock_data = {
-        'action1' => {general => ['test_rule']},
-        'action2' => {general => ['test_rule2']},
+        'action1' => {ruleset => ['test_rule']},
+        'action2' => {ruleset => ['test_rule2']},
     };
     $actions = BOM::Rules::Registry::register_actions();
     cmp_bag [keys %$actions], [qw/action1 action2/], 'two actions are registered';
     is ref $actions->{$_}, 'BOM::Rules::Registry::Action', "Action $_ type is correct" for (qw/action1 action2/);
 
-    is_deeply $actions->{action1}->{rule_set}, [$rule1], 'Rule set is empty';
-    is_deeply $actions->{action2}->{rule_set}, [$rule2], 'Rule set is empty';
+    is_deeply $actions->{action1}->{rule_set}, [$rule1], 'Rule set is correct';
+    is_deeply $actions->{action2}->{rule_set}, [$rule2], 'Rule set is correct';
 
     subtest 'conditional rules' => sub {
-        $mock_data = {'action1' => {context => {invalid_key => 'test_rule'}}};
+        $mock_data = {'action1' => {ruleset => {context => {invalid_key => 'test_rule'}}}};
         like exception { BOM::Rules::Registry::register_actions() },
             qr/Invalid context key 'invalid_key' used for a conditional rule in action 'action1'/, 'Invalid context key will fail';
 
-        $mock_data = {'action1' => {context => {residence => 'test_rule'}}};
+        $mock_data->{action1}->{ruleset}->{context} = {residence => 'test_rule'};
         like exception { BOM::Rules::Registry::register_actions() },
             qr/Conditional structure of rule 'context->residence' in action 'action1' is not a hash/, 'Invalid conditional structure will fail';
 
-        $mock_data = {
-            'action1' => {
-                context => {
-                    residence => {
-                        id => ['test_rule'],
-                        de => ['rule_xyz']}
-                },
-            }};
+        $mock_data->{action1}->{ruleset}->{context} = {
+            residence => {
+                id => ['test_rule'],
+                de => ['rule_xyz']}};
 
         like exception { BOM::Rules::Registry::register_actions() },
             qr/Rule 'rule_xyz' used in action 'action1' was not found/, 'Invalid names cannot be used in coditional rules';
 
-        $mock_data = {
-            'action1' => {
-                general => ['test_rule', 'test_rule2'],
+        $mock_data->{action1}->{ruleset} = [
+            'test_rule',
+            'test_rule2',
+            {
                 context => {
                     residence => {
-                        id => ['test_rule'],
-                        de => ['test_rule2']}
+                        id      => ['test_rule'],
+                        de      => ['test_rule2'],
+                        default => 'test_rule'
+                    },
                 },
-            }};
+            },
+            {
+                context => {
+                    landing_company => {mf => 'test_rule'},
+                },
+            },
+            {
+                args => {
+                    name => {
+                        Ali     => 'test_rule2',
+                        default => 'test_rule'
+                    }
+                },
+            },
+        ];
         $actions = BOM::Rules::Registry::register_actions();
         cmp_bag [keys %$actions], [qw/action1/], 'a single action is registered';
         is ref $actions->{action1}, 'BOM::Rules::Registry::Action', "Action type is correct";
@@ -149,11 +165,24 @@ subtest 'Actions registery' => sub {
             {
                 'context_key'     => 'residence',
                 'rules_per_value' => {
-                    'id' => [$rule1],
-                    'de' => [$rule2],
+                    'id'      => [$rule1],
+                    'de'      => [$rule2],
+                    'default' => [$rule1],
                 },
             },
-            ];
+            {
+                'context_key'     => 'landing_company',
+                'rules_per_value' => {
+                    'mf' => [$rule1],
+                },
+            },
+            {
+                'args_key'        => 'name',
+                'rules_per_value' => {
+                    'Ali'     => [$rule2],
+                    'default' => [$rule1],
+                },
+            }];
 
     };
 

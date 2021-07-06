@@ -1,5 +1,5 @@
 identity_verification:
   description: A set of rules to be applied on IDV provider result
-  general:
+  ruleset:
     - idv.check_name_comparison
     - idv.check_age_legality

@@ -47,19 +47,6 @@ rule 'client.has_currency_set' => {
     },
 };
 
-rule 'client.residence_not_changed' => {
-    description => "Fails if the country of residence in the request args is different from the client's residence.",
-    code        => sub {
-        my ($self, $context, $args) = @_;
-
-        die +{
-            error_code => 'InvalidResidence',
-        } if ($args->{residence} and $args->{residence} ne $context->client->residence);
-
-        return 1;
-    },
-};
-
 rule 'client.residence_is_not_empty' => {
     description => "Fails if the context client's residence is not set yet.",
     code        => sub {

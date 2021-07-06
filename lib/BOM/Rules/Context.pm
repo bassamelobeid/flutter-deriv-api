@@ -92,4 +92,18 @@ sub client_switched {
     return $self->{client_switch};
 }
 
+=head2 client_type
+
+Returns the client type as a string with three values: virtual,real, none (no context client)
+
+=cut
+
+sub client_type {
+    my $self = shift;
+
+    return 'none' unless $self->client;
+
+    return $self->client->is_virtual ? 'virtual' : 'real';
+}
+
 1;

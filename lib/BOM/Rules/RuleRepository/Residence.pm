@@ -58,10 +58,11 @@ rule 'residence.is_signup_allowed' => {
 rule 'residence.not_restricted' => {
     description => 'Fails if the context residence is restricted; succeeds otherwise',
     code        => sub {
-        my ($self, $context) = @_;
-
+        my ($self, $context, $args) = @_;
         my $countries_instance = Brands->new->countries_instance;
-        die +{error_code => 'InvalidResidence'} if $countries_instance->restricted_country($context->residence);
+
+        die +{error_code => 'InvalidResidence'} if $countries_instance->restricted_country($args->{residence} || $context->residence);
+
         return 1;
     },
 };

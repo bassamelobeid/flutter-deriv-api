@@ -80,18 +80,6 @@ subtest 'rule client.residence_is_not_empty' => sub {
     $mock_client->unmock_all;
 };
 
-subtest 'rule client.residence_not_changed' => sub {
-    my $rule_name = 'client.residence_not_changed';
-
-    lives_ok { $rule_engine->apply_rules($rule_name) } 'Rule applies with empty args.';
-
-    lives_ok { $rule_engine->apply_rules($rule_name, {residence => $client->residence}) } 'Rule applies if residence is the same.';
-
-    is_deeply exception { $rule_engine->apply_rules($rule_name, {residence => 'xyz'}) }, {error_code => 'InvalidResidence'},
-        'Rule fails when residence is different';
-
-};
-
 subtest 'rule client.signup_immitable_fields_not_changed' => sub {
     my $rule_name = 'client.signup_immitable_fields_not_changed';
 

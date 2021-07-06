@@ -128,14 +128,16 @@ sub register_actions {
         for my $action_name (keys %$config) {
             die 'Action name is required but missing' unless $action_name;
 
-            my $rule_set = $config->{$action_name};
-            die "Rule set of action '$action_name' is not a hash" unless ref $rule_set eq 'HASH';
+            my $action_config = $config->{$action_name};
+            die "Rule set of action '$action_name' is not a hash" unless ref $action_config eq 'HASH';
+
+            die "Rule '$action_name' doesn't have any 'ruleset'" unless $action_config->{ruleset};
 
             _register_action(
                 $action_name,
                 category    => $category,
-                description => delete $rule_set->{description},
-                rule_set    => $rule_set
+                description => $action_config->{description},
+                rule_set    => $action_config->{ruleset},
             );
         }
     }
@@ -186,14 +188,14 @@ sub _register_action {
     $args{description} //= $name;
 
     # convert rule names to rule objects
-    $args{rule_set} = _extract_rule_set_from_config($name, $rule_set);
+    $args{rule_set} = _process_ruleset($name, $rule_set);
 
     $action_registry{$name} = BOM::Rules::Registry::Action->new(%args);
 
     return $action_registry{$name};
 }
 
-=head2 _extract_rule_set_from_config
+=head2 _process_ruleset
 
 Converts action rule-set from a collection of rule names into equivalent collection of rule objects, by taking these params:
 
@@ -207,23 +209,21 @@ Converts action rule-set from a collection of rule names into equivalent collect
 
 =cut
 
-sub _extract_rule_set_from_config {
+sub _process_ruleset {
     my ($action_name, $rule_set_config) = @_;
 
     unless (ref $rule_set_config) {
         my $rule = get_rule($rule_set_config);
         die "Rule '$rule_set_config' used in action '$action_name' was not found" unless $rule;
-        return $rule;
+        return [$rule];
     }
 
-    return [map { _extract_rule_set_from_config($action_name, $_) } @$rule_set_config] if ref $rule_set_config eq 'ARRAY';
+    return [map { _process_ruleset($action_name, $_)->@* } @$rule_set_config] if ref $rule_set_config eq 'ARRAY';
 
-    my $general_rules = delete $rule_set_config->{general} // [];
-
-    my @result = map { _extract_rule_set_from_config($action_name, $_) } @$general_rules;
-
+    my @result;
+    # The rule is a hash-ref at this point, interpreted as a conditional rule.
     for my $condition_type (keys %$rule_set_config) {
-        die "Invalid condition type '$condition_type' in action '$action_name': only 'general', 'context' and 'args' are acceptable"
+        die "Invalid condition type '$condition_type' in action '$action_name': only 'context' and 'args' are acceptable"
             unless $condition_type =~ qr /^context|args$/;
 
         # a conditional rule looks like a switch-case control structure in progrmming.
@@ -246,7 +246,7 @@ sub _extract_rule_set_from_config {
             # in the example above: @cases = (mlt, mf)
 
             my %rules_per_case =
-                map { $_ => _extract_rule_set_from_config($action_name, $config->{$_}) } @cases;
+                map { $_ => _process_ruleset($action_name, $config->{$_}) } @cases;
             # in the example above, we will get: %rules_per_case = (mlt => [rule1], mf => [rule2])
 
             push @result,

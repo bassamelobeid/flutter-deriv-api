@@ -24,4 +24,13 @@ rule 'pass' => {
     },
 };
 
+rule 'fail' => {
+    description => "A basic rule that always fails.",
+    code        => sub {
+        my $self = shift;
+
+        die {code => 'RuleEngineError'};
+    },
+};
+
 1;
