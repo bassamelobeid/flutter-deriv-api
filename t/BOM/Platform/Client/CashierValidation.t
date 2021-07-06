@@ -367,6 +367,14 @@ subtest 'Cashier validation landing company and country specific' => sub {
         $res = BOM::Platform::Client::CashierValidation::validate($mf_client->loginid, 'deposit');
         is $res, undef, 'Validation passed, making tax residence undef will not delete status';
 
+        my $mf_residence = $mf_client->residence;
+        $mf_client->residence('gb');
+        $mf_client->save;
+        is BOM::Platform::Client::CashierValidation::validate($mf_client->loginid, 'deposit'), undef,
+            'UK MF client does not need ukgc_funds_protection';
+        $mf_client->residence($mf_residence);
+        $mf_client->save;
+
         $mock_client->unmock('fully_authenticated');
     };
 

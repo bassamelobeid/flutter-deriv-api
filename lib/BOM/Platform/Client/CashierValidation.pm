@@ -146,12 +146,13 @@ sub base_validation {
 
     my $config = request()->brand->countries_instance->countries_list->{$client->residence};
 
-    _add_error($errors, localize('Please accept Funds Protection.'), 'ASK_UK_FUNDS_PROTECTION')
-        if $config->{ukgc_funds_protection} && !$client->status->ukgc_funds_protection;
-
     if ($client->landing_company->short ne 'maltainvest'
         && ($config->{need_set_max_turnover_limit} || $client->landing_company->check_max_turnover_limit_is_set))
     {
+        # MX only
+        _add_error($errors, localize('Please accept Funds Protection.'), 'ASK_UK_FUNDS_PROTECTION')
+            if $config->{ukgc_funds_protection} && !$client->status->ukgc_funds_protection;
+
         _add_error(
             $errors,
             localize('Please set your 30-day turnover limit in our self-exclusion facilities to access the cashier.'),
