@@ -84,8 +84,7 @@ use constant WITHDRAWAL_PROCESSING_TIMES => {
 # other RPC calls which retrieve lists of accounts.
 use constant MT5_BALANCE_CALL_ENABLED => 0;
 
-my $allowed_fields_for_virtual = qr/set_settings|email_consent|residence|allow_copiers|non_pep_declaration|preferred_language|feature_flag/;
-my $email_field_labels         = {
+my $email_field_labels = {
     exclude_until          => 'Exclude from website until',
     max_balance            => 'Maximum account cash balance',
     max_turnover           => 'Daily turnover limit',
@@ -106,25 +105,6 @@ my $max_deposit_key_mapping = {
     max_deposit       => 'max_deposit_daily',
     max_7day_deposit  => 'max_deposit_7day',
     max_30day_deposit => 'max_deposit_30day',
-};
-
-our %ImmutableFieldError = do {
-    ## no critic(TestingAndDebugging::ProhibitNoWarnings)
-    no warnings 'redefine';
-    local *localize = sub { die 'you probably wanted an arrayref for this localize() call' if @_ > 1; shift };
-    (
-        place_of_birth            => localize("Your place of birth cannot be changed."),
-        date_of_birth             => localize("Your date of birth cannot be changed."),
-        salutation                => localize("Your salutation cannot be changed."),
-        first_name                => localize("Your first name cannot be changed."),
-        last_name                 => localize("Your last name cannot be changed."),
-        citizen                   => localize("Your citizenship cannot be changed."),
-        account_opening_reason    => localize("Your account opening reason cannot be changed."),
-        secret_answer             => localize("Your secret answer cannot be changed."),
-        secret_question           => localize("Your secret question cannot be changed."),
-        tax_residence             => localize("Your tax residence cannot be changed."),
-        tax_identification_number => localize("Your tax identification number cannot be changed."),
-    );
 };
 
 our %RejectedOnfidoReasons = do {
@@ -1498,56 +1478,27 @@ rpc set_settings => sub {
     my $tax_residence             = $args->{'tax_residence'}             // $current_client->tax_residence             // '';
     my $tax_identification_number = $args->{'tax_identification_number'} // $current_client->tax_identification_number // '';
 
-    if ($current_client->is_virtual) {
-        # Virtual client can update
-        # - residence, if residence not set.
-        # - email_consent (common to real account as well)
-        if (not $current_client->residence and $residence) {
-
-            if ($countries_instance->restricted_country($residence)) {
-                return BOM::RPC::v3::Utility::create_error_by_code('InvalidResidence');
-            } else {
-                $current_client->residence($residence);
-                if (not $current_client->save()) {
-                    return BOM::RPC::v3::Utility::client_error();
-                }
-            }
-        } elsif (grep { !/$allowed_fields_for_virtual/ } keys %$args) {
-            # we only allow these keys in virtual set settings any other key will result in permission error
-            return BOM::RPC::v3::Utility::permission_error();
-        }
-    } else {
-        # real client is not allowed to update residence
-        return BOM::RPC::v3::Utility::permission_error() if $residence;
-
+    unless ($current_client->is_virtual) {
         my $error = $current_client->format_input_details($args);
         return BOM::RPC::v3::Utility::create_error_by_code($error->{error}) if $error;
-
-        for my $field ($current_client->immutable_fields) {
-            next unless defined($args->{$field});
-            next if $args->{$field} eq $current_client->$field;
-
-            return BOM::RPC::v3::Utility::create_error({
-                code              => 'PermissionDenied',
-                message_to_client => $ImmutableFieldError{$field} // localize('Permission denied.'),
-            });
-        }
-
-        $error = $current_client->validate_common_account_details($args) || $current_client->check_duplicate_account($args);
-        return BOM::RPC::v3::Utility::create_error_by_code($error->{error}, details => $error->{details}) if $error;
     }
 
-    if (
-        $allow_copiers
-        and @{BOM::Database::DataMapper::Copier->new(
-                broker_code => $current_client->broker_code,
-                operation   => 'replica'
-            )->get_traders({copier_id => $current_client->loginid})
-                || []})
-    {
-        return BOM::RPC::v3::Utility::create_error({
-                code              => 'AllowCopiersError',
-                message_to_client => localize("Copier can't be a trader.")});
+    my $required_fields = $current_client->landing_company->requirements->{signup} // [];
+    my %required_values = map { $_ => $current_client->$_ } @$required_fields;
+    my $rule_engine     = BOM::Rules::Engine->new(client => $current_client);
+    try {
+        $rule_engine->verify_action('set_settings', {%required_values, %$args});
+    } catch ($error) {
+        return BOM::RPC::v3::Utility::rule_engine_error($error);
+    };
+
+    # If a virtual account's residence is empty, it can accept a new value;
+    # But for real accounts it's not possbile to set residence at all.
+    if ($current_client->is_virtual and not $current_client->residence and $residence) {
+        $current_client->residence($residence);
+        if (not $current_client->save()) {
+            return BOM::RPC::v3::Utility::client_error();
+        }
     }
 
     # only allow current client to set allow_copiers
@@ -1566,26 +1517,6 @@ rpc set_settings => sub {
     if (defined $args->{email_consent}) {
         $user->update_email_fields(email_consent => $args->{email_consent});
     }
-
-    # according to compliance, tax_residence and tax_identification_number can be changed
-    # but cannot be removed once they have been set
-    foreach my $field (qw(tax_residence tax_identification_number)) {
-        if ($current_client->$field and exists $args->{$field} and not $args->{$field}) {
-            return BOM::RPC::v3::Utility::create_error({
-                    code              => 'PermissionDenied',
-                    message_to_client => localize('Tax information cannot be removed once it has been set.'),
-                    details           => {
-                        field => $field,
-                    },
-                });
-        }
-    }
-
-    return BOM::RPC::v3::Utility::create_error({
-            code              => 'TINDetailsMandatory',
-            message_to_client =>
-                localize('Tax-related information is mandatory for legal and regulatory requirements. Please provide your latest tax information.')}
-    ) if ($current_client->landing_company->short eq 'maltainvest' and (not $tax_residence or not $tax_identification_number));
 
     # Shold not allow client to change TIN number if we have TIN format for the country and it doesnt match
     # In case of having more than a tax residence, client residence will replaced.
@@ -1637,28 +1568,17 @@ rpc set_settings => sub {
 
     # set professional status for applicable countries
     if ($args->{request_professional_status}) {
-        if ($current_client->landing_company->support_professional_client) {
-            return BOM::RPC::v3::Utility::create_error({
-                    code              => 'PermissionDenied',
-                    message_to_client => localize("You already requested professional status.")}
-            ) if ($current_client->status->professional or $current_client->status->professional_requested);
-            $current_client->status->multi_set_clear({
-                set        => ['professional_requested'],
-                clear      => ['professional_rejected'],
-                staff_name => 'SYSTEM',
-                reason     => 'Professional account requested'
-            });
-            BOM::RPC::v3::Utility::send_professional_requested_email(
-                $current_client->loginid,
-                $current_client->residence,
-                $current_client->landing_company->short
-            );
-        } else {
-            # Return error if there is no applicable client because of landing company restriction
-            return BOM::RPC::v3::Utility::create_error({
-                    code              => 'PermissionDenied',
-                    message_to_client => localize("Professional status is not applicable to your account.")});
-        }
+        $current_client->status->multi_set_clear({
+            set        => ['professional_requested'],
+            clear      => ['professional_rejected'],
+            staff_name => 'SYSTEM',
+            reason     => 'Professional account requested'
+        });
+        BOM::RPC::v3::Utility::send_professional_requested_email(
+            $current_client->loginid,
+            $current_client->residence,
+            $current_client->landing_company->short
+        );
     }
 
     foreach my $loginid (@realclient_loginids) {

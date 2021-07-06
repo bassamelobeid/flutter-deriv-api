@@ -739,23 +739,24 @@ subtest $method => sub {
 
         $rpc_ct->call_ok($method, $params)
             ->has_no_system_error->has_error->error_code_is('InsufficientAccountDetails', 'It should return error if client does not accept risk')
-            ->error_message_is('Please provide complete details for account opening.', 'It should return error if client does not accept risk');
+            ->error_message_is('Please provide complete details for your account.', 'It should return error if client does not accept risk');
 
         @{$params->{args}}{keys %$client_details} = values %$client_details;
 
+        $params->{args}->{residence}  = 'de';
         $params->{args}->{first_name} = '';
-        $params->{args}->{residence}  = '';
         $rpc_ct->call_ok($method, $params)
             ->has_no_system_error->has_error->error_code_is('InsufficientAccountDetails', 'It should return error if missing any details')
-            ->error_message_is('Please provide complete details for account opening.', 'It should return error if missing any details')
-            ->error_details_is({missing => ["tax_residence", "tax_identification_number", "first_name", "residence"]});
-        $params->{args}->{first_name}  = $client_details->{first_name};
-        $params->{args}->{residence}   = 'de';
-        $params->{args}->{accept_risk} = 1;
+            ->error_message_is('Please provide complete details for your account.',
+            'It should return error if missing details: "tax_residence", "tax_identification_number", "first_name", "residence"')
+            ->error_details_is({missing => ["tax_residence", "tax_identification_number", "first_name"]});
 
+        $params->{args}->{first_name}  = $client_details->{first_name};
+        $params->{args}->{accept_risk} = 1;
         $rpc_ct->call_ok($method, $params)
             ->has_no_system_error->has_error->error_code_is('InsufficientAccountDetails', 'It should return error if missing any details')
-            ->error_message_is('Please provide complete details for account opening.', 'It should return error if missing any details')
+            ->error_message_is('Please provide complete details for your account.',
+            'It should return error if missing any details: "tax_residence", "tax_identification_number"')
             ->error_details_is({missing => ["tax_residence", "tax_identification_number"]});
 
         $params->{args}->{place_of_birth}            = "de";
@@ -766,17 +767,17 @@ subtest $method => sub {
 
         $rpc_ct->call_ok($method, $params)
             ->has_no_system_error->has_error->error_code_is('InsufficientAccountDetails', 'It should return error if missing any details')
-            ->error_message_is('Please provide complete details for account opening.', 'It should return error if missing any details')
+            ->error_message_is('Please provide complete details for your account.', 'It should return error if missing any details: citizen')
             ->error_details_is({missing => ["citizen"]});
         $params->{args}->{citizen} = 'at';
 
+        my $mocked_client = Test::MockModule->new('BOM::User::Client');
+        $mocked_client->redefine(residence => sub { return 'id' });
         $params->{args}->{residence} = 'id';
         $rpc_ct->call_ok($method, $params)
-            ->has_no_system_error->has_error->error_code_is('InvalidResidence', 'It should return error if residence does not fit with maltainvest')
-            ->error_message_is(
-            'Sorry, our service is not available for your country of residence.',
-            'It should return error if residence does not fit with maltainvest'
-            );
+            ->has_no_system_error->has_error->error_code_is('PermissionDenied', 'It should return error if residence does not fit with maltainvest')
+            ->error_message_is('Permission denied.', 'It should return error if residence does not fit with maltainvest');
+        $mocked_client->unmock_all;
 
         $params->{args}->{residence} = 'de';
 
@@ -1284,7 +1285,7 @@ subtest $method => sub {
 
         $rpc_ct->call_ok($method, $params)
             ->has_no_system_error->has_error->error_code_is('InsufficientAccountDetails', 'It should return error code if missing any details')
-            ->error_message_is('Please provide complete details for account opening.', 'It should return error message if missing any details')
+            ->error_message_is('Please provide complete details for your account.', 'It should return error message if missing any details')
             ->error_details_is({missing => ["currency", "payment_method"]});
 
         $params->{args}->{payment_method} = 'Skrill';

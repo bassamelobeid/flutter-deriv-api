@@ -464,6 +464,8 @@ subtest 'set settings' => sub {
     is($c->tcall($method, $params)->{error}{message_to_client}, 'Permission denied.', "vr client can only update residence");
     # here I mocked function 'save' to simulate the db failure.
     $mocked_client->mock('save', sub { return undef });
+
+    delete $params->{args}{address1};
     $params->{args}{residence} = 'zh';
     is(
         $c->tcall($method, $params)->{error}{message_to_client},
@@ -503,9 +505,13 @@ subtest 'set settings' => sub {
     $full_args{account_opening_reason} = 'Income Earning';
 
     $params->{args} = {%{$params->{args}}, %full_args};
-    is($c->tcall($method, $params)->{error}{message_to_client}, 'Permission denied.', 'real account cannot update residence');
-    $params->{args} = {%full_args};
+    is(
+        $c->tcall($method, $params)->{error}{message_to_client},
+        'Sorry, our service is not available for your country of residence.',
+        'real account cannot update residence'
+    );
 
+    $params->{args} = {%full_args};
     is(
         $c->tcall($method, $params)->{error}{message_to_client},
         'Your secret answer cannot be changed.',
@@ -523,11 +529,7 @@ subtest 'set settings' => sub {
     delete $full_args{secret_question};
     delete $full_args{secret_answer};
 
-    is(
-        $c->tcall($method, $params)->{error}{message_to_client},
-        'Tax-related information is mandatory for legal and regulatory requirements. Please provide your latest tax information.',
-        'Correct tax error message'
-    );
+    is($c->tcall($method, $params)->{error}{message_to_client}, 'Please provide complete details for your account.', 'Correct tax error message');
 
     $full_args{tax_residence}             = 'de';
     $full_args{tax_identification_number} = '111-222-333';
@@ -570,7 +572,7 @@ subtest 'set settings' => sub {
         };
 
         my $res = $c->tcall($method, $params);
-        is($res->{error}{code}, 'PermissionDenied', $tax_field . ' cannot be removed once it has been set');
+        is($res->{error}{code}, 'ImmutableFieldChanged', $tax_field . ' cannot be removed once it has been set');
     }
 
     $poi_status = 'none';
@@ -701,7 +703,11 @@ subtest 'set settings' => sub {
         subtest 'empty/unspecified' => sub {
             $params->{token} = $token_T_mx;
             $params->{args}  = {%full_args, citizen => ''};
-            is($c->tcall($method, $params)->{error}{message_to_client}, 'This field is required.', 'empty value for citizenship');
+            is(
+                $c->tcall($method, $params)->{error}{message_to_client},
+                'Please provide complete details for your account.',
+                'empty value for citizenship'
+            );
         };
 
         $params->{token} = $token_X_mf;

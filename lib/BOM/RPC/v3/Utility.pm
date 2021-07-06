@@ -441,6 +441,25 @@ sub validate_password_with_attempts {
     return;
 }
 
+our %ImmutableFieldError = do {
+    ## no critic(TestingAndDebugging::ProhibitNoWarnings)
+    no warnings 'redefine';
+    local *localize = sub { die 'you probably wanted an arrayref for this localize() call' if @_ > 1; shift };
+    (
+        place_of_birth            => localize("Your place of birth cannot be changed."),
+        date_of_birth             => localize("Your date of birth cannot be changed."),
+        salutation                => localize("Your salutation cannot be changed."),
+        first_name                => localize("Your first name cannot be changed."),
+        last_name                 => localize("Your last name cannot be changed."),
+        citizen                   => localize("Your citizenship cannot be changed."),
+        account_opening_reason    => localize("Your account opening reason cannot be changed."),
+        secret_answer             => localize("Your secret answer cannot be changed."),
+        secret_question           => localize("Your secret question cannot be changed."),
+        tax_residence             => localize("Your tax residence cannot be changed."),
+        tax_identification_number => localize("Your tax identification number cannot be changed."),
+    );
+};
+
 sub mask_app_id {
     my ($id, $time) = @_;
 
@@ -479,7 +498,7 @@ sub error_map {
         ),
         'InvalidDateOfBirth'         => localize('Date of birth is invalid.'),
         'InvalidPlaceOfBirth'        => localize('Please enter a valid place of birth.'),
-        'InsufficientAccountDetails' => localize('Please provide complete details for account opening.'),
+        'InsufficientAccountDetails' => localize('Please provide complete details for your account.'),
         'InvalidCitizenship'         => localize('Sorry, our service is not available for your country of citizenship.'),
         'InvalidResidence'           => localize('Sorry, our service is not available for your country of residence.'),
         'InvalidDateFirstContact'    => localize('Date first contact is invalid.'),
@@ -532,6 +551,16 @@ sub error_map {
         'CurrencyNotAllowed'     => localize("The provided currency [_1] is not selectable at the moment."),
         'CurrencyTypeNotAllowed' => localize('Please note that you are limited to one fiat currency account.'),
 
+        'CurrencySuspended'     => localize("The provided currency [_1] is not selectable at the moment."),
+        'InvalidCryptoCurrency' => localize("The provided currency [_1] is not a valid cryptocurrency."),
+        'ExperimentalCurrency'  => localize("This currency is temporarily suspended. Please select another currency to proceed."),
+        'DuplicateWallet'       => localize('Sorry, a wallet already exists with those details.'),
+        'AllowCopiersError'     => localize("Copier can't be a trader."),
+        'TaxInformationCleared' => localize('Tax information cannot be removed once it has been set.'),
+        'TINDetailsMandatory'   =>
+            localize('Tax-related information is mandatory for legal and regulatory requirements. Please provide your latest tax information.'),
+        'ProfessionalNotAllowed'        => localize('Professional status is not applicable to your account.'),
+        'ProfessionalAlreadySubmitted'  => localize('You already requested professional status.'),
         'IncompleteFinancialAssessment' => localize("The financial assessment is not complete"),
 
         'SelfExclusion' => localize(
@@ -820,14 +849,24 @@ sub rule_engine_error {
     my ($error, $orverride_code) = @_;
 
     # For scalar errors (without error code, etc) let it be caught and logged by default RPC error handling.
-    die $error unless (ref $error and ($error->{code} || $error->{error_code}));    # refactor this later to accept error_code only.
+    die $error unless (ref $error and ($error->{code} // $error->{error_code}));    # refactor this later to accept error_code only.
 
-    return create_error_by_code($error->{code} // $error->{error_code}, %$error, override_code => $orverride_code);
+    my $error_code = $error->{code} // $error->{error_code};
+
+    my $message;
+    $message = $ImmutableFieldError{$error->{details}->{field}} // ''
+        if $error_code eq 'ImmutableFieldChanged' && $error->{details}->{field};
+
+    return create_error_by_code(
+        $error_code, %$error,
+        message_to_client => $message,
+        override_code     => $orverride_code
+    );
 }
 
 =head2 create_error_by_code
 
-call the create_error with error_code and message from error_map.
+        call the create_error with error_code and message from error_map .
 
 =over 4
 
@@ -848,17 +887,17 @@ Returns error format of create_error
 sub create_error_by_code {
     my ($error_code, %options) = @_;
 
-    my $message = error_map()->{$error_code};
-    return BOM::RPC::v3::Utility::permission_error() unless $message;
+    my $message_to_client = $options{message_to_client} // error_map()->{$error_code};
+    return BOM::RPC::v3::Utility::permission_error() unless $message_to_client;
 
     if ($options{params}) {
         my @params = ref $options{params} eq 'ARRAY' ? @{$options{params}} : ($options{params});
-        $message = localize($message, @params);
+        $message_to_client = localize($message_to_client, @params);
     }
 
     return BOM::RPC::v3::Utility::create_error({
             code              => $options{override_code} ? $options{override_code} : $error_code,
-            message_to_client => $message,
+            message_to_client => $message_to_client,
             $options{message} ? (message => $options{message}) : (),
             $options{details} ? (details => $options{details}) : ()});
 
@@ -1151,7 +1190,8 @@ sub cashier_validation {
             unless $client->landing_company->allows_payment_agents;
 
         return $error_sub->(localize('You are not authorized for withdrawals via payment agents.'))
-            unless ($source_bypass_verification or BOM::Transaction::Validation->new({clients => [$client]})->allow_paymentagent_withdrawal($client));
+            unless ($source_bypass_verification
+            or BOM::Transaction::Validation->new({clients => [$client]})->allow_paymentagent_withdrawal($client));
     }
 
     my $validation_type = $type =~ /^(payment_withdraw|paymentagent_withdraw)$/ ? 'withdraw' : $type;
