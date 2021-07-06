@@ -20,7 +20,12 @@ use Log::Any '$dxapi_log',
     category  => 'dxapi_log',
     log_level => 'info';
 use Log::Any::Adapter;
-Log::Any::Adapter->set({category => 'dxapi_log'}, 'File', '/var/lib/binary/devexperts_api_errors.log');
+
+try {
+    Log::Any::Adapter->set({category => 'dxapi_log'}, 'File', '/var/lib/binary/devexperts_api_errors.log');
+} catch {
+    Log::Any::Adapter->set({category => 'dxapi_log'}, 'Null');
+}
 
 =head1 NAME 
 
