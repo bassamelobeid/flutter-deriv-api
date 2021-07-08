@@ -1,0 +1,50 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "Cashier Payments (request)",
+    "description": "List pending transactions. This can only be used for crypto transactions.",
+    "hidden": 1,
+    "type": "object",
+    "auth_required": 1,
+    "auth_scopes": [
+        "payments"
+    ],
+    "additionalProperties": false,
+    "required": [
+        "cashier_payments"
+    ],
+    "properties": {
+        "cashier_payments": {
+            "description": "Must be `1`",
+            "type": "number",
+            "enum": [
+                1
+            ]
+        },
+        "provider": {
+            "description": "[Optional] Cashier provider. `crypto` will be default option for crypto currency accounts.",
+            "type": "string",
+            "default": "crypto",
+            "enum": [
+                "crypto"
+            ]
+        },
+        "transaction_type": {
+            "description": "[Optional] Type of transactions to receive.",
+            "type": "string",
+            "default": "all",
+            "enum": [
+                "all",
+                "deposit",
+                "withdrawal"
+            ]
+        },
+        "passthrough": {
+            "description": "[Optional] Used to pass data through the websocket, which may be retrieved via the `echo_req` output field.",
+            "type": "object"
+        },
+        "req_id": {
+            "description": "[Optional] Used to map request to response.",
+            "type": "integer"
+        }
+    }
+}

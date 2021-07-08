@@ -357,6 +357,20 @@ sub actions_config {
             }
         ],
         [
+            'cashier_payments',
+            {
+                stash_params => [qw/ server_name domain /],
+                msg_group    => 'payment',
+            },
+        ],
+        [
+            'cashier_withdrawal_cancel',
+            {
+                stash_params => [qw/ server_name domain /],
+                msg_group    => 'payment',
+            },
+        ],
+        [
             'new_account_real',
             {
                 stash_params => [qw/ server_name client_ip user_agent /],

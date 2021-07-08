@@ -1,0 +1,37 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "Cashier Withdrawal Cancel (request)",
+    "description": "Request for cancelling a withdrawal. This can only be used for crypto transactions.",
+    "hidden": 1,
+    "type": "object",
+    "auth_required": 1,
+    "auth_scopes": [
+        "payments"
+    ],
+    "additionalProperties": false,
+    "required": [
+        "cashier_withdrawal_cancel",
+        "id"
+    ],
+    "properties": {
+        "cashier_withdrawal_cancel": {
+            "description": "Must be `1`",
+            "type": "number",
+            "enum": [
+                1
+            ]
+        },
+        "id": {
+            "description": "The unique identifier for the transaction.",
+            "type": "string"
+        },
+        "passthrough": {
+            "description": "[Optional] Used to pass data through the websocket, which may be retrieved via the `echo_req` output field.",
+            "type": "object"
+        },
+        "req_id": {
+            "description": "[Optional] Used to map request to response.",
+            "type": "integer"
+        }
+    }
+}

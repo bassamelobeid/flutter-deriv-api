@@ -1,0 +1,111 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "Cashier Payments (response)",
+    "description": "All transactions matching the requested criteria.",
+    "type": "object",
+    "required": [
+        "echo_req",
+        "msg_type"
+    ],
+    "properties": {
+        "cashier_payments": {
+            "title": "cashier_payments",
+            "description": "List of cashier transactions.",
+            "type": "object",
+            "properties": {
+                "crypto": {
+                    "description": "Response for provider `crypto'.",
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                            "address_hash",
+                            "address_url",
+                            "id",
+                            "status_code",
+                            "status_message",
+                            "transaction_type"
+                        ],
+                        "properties": {
+                            "address_hash": {
+                                "description": "The destination crypto address.",
+                                "type": "string"
+                            },
+                            "address_url": {
+                                "description": "The URL of the address on blockchain.",
+                                "type": "string"
+                            },
+                            "amount": {
+                                "description": "[Optional] The transaction amount. Not present when deposit transaction still unconfirmed.",
+                                "type": "number"
+                            },
+                            "id": {
+                                "description": "The unique identifier for the transaction.",
+                                "type": "string"
+                            },
+                            "is_valid_to_cancel": {
+                                "description": "[Optional] Boolean value: 1 or 0, indicating whether the transaction can be cancelled. Only applicable for `withdrawal` transactions.",
+                                "type": "integer",
+                                "enum": [
+                                    1,
+                                    0
+                                ]
+                            },
+                            "status_code": {
+                                "description": "The status code of the transaction. Possible values for **deposit:** `PENDING`, possible values for **withdrawal:** `LOCKED|VERIFIED|PROCESSING`.",
+                                "type": "string",
+                                "enum": [
+                                    "LOCKED",
+                                    "PENDING",
+                                    "PERFORMING_BLOCKCHAIN_TXN",
+                                    "PROCESSING",
+                                    "VERIFIED"
+                                ]
+                            },
+                            "status_message": {
+                                "description": "The status message of the transaction.",
+                                "type": "string"
+                            },
+                            "submit_date": {
+                                "description": "The epoch of the transaction date.",
+                                "type": "integer"
+                            },
+                            "transaction_hash": {
+                                "description": "[Optional] The transaction hash when available.",
+                                "type": "string"
+                            },
+                            "transaction_type": {
+                                "description": "The type of the transaction.",
+                                "type": "string",
+                                "enum": [
+                                    "deposit",
+                                    "withdrawal"
+                                ]
+                            },
+                            "transaction_url": {
+                                "description": "[Optional] The URL of the transaction on blockchain if `transaction_hash` is available.",
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "echo_req": {
+            "description": "Echo of the request made.",
+            "type": "object"
+        },
+        "msg_type": {
+            "description": "Action name of the request made.",
+            "type": "string",
+            "enum": [
+                "cashier_payments"
+            ]
+        },
+        "req_id": {
+            "description": "Optional field sent in request to map to response, present only when request contains `req_id`.",
+            "type": "integer"
+        }
+    }
+}
