@@ -68,6 +68,17 @@ sub crypto {
     return $config;
 }
 
+=head2 crypto_api
+
+Config for connecting to the Crypto API.
+
+=cut
+
+sub crypto_api {
+    state $config = YAML::XS::LoadFile('/etc/rmg/cryptocurrency_api.yml');
+    return $config;
+}
+
 sub domain {
     state $config = YAML::XS::LoadFile('/home/git/regentmarkets/bom-config/share/domain.yml');
     return $config;
