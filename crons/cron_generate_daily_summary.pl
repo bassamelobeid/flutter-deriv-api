@@ -88,7 +88,7 @@ my $brand = request()->brand;
 send_email({
     'from'       => $brand->emails('system'),
     'to'         => 'i-payments@binary.com',
-    'subject'    => 'Daily Outstanding Bets Profit / Lost [' . $for_date . ']',
+    'subject'    => 'Daily Outstanding Bets Profit / Lost (' . $for_date . ')',
     'attachment' => $filename,
 });
 
