@@ -103,12 +103,19 @@ subtest $prefix . 'payout approved' => sub {
 
     create_payout_ok;
     balance_is($starting_balance - $payout_info{amount}, 'client has been debited at create payout');
+    is $client->get_df_payouts_count, 1, 'The payout request is counted at creation';
 
     update_payout_ok({status => 'authorized'});
     balance_is($starting_balance - $payout_info{amount}, 'balance did not change at authorize payout');
+    is $client->get_df_payouts_count, 1, 'The payout request is not changed at authorized';
 
     update_payout_ok({status => 'inprogress'});
     balance_is($starting_balance - $payout_info{amount}, 'balance did not change at update payout to inprogress');
+    is $client->get_df_payouts_count, 1, 'The payout request is not changed at inprogress';
+
+    update_payout_ok({status => 'approved'});
+    balance_is($starting_balance - $payout_info{amount}, 'balance did not change at update payout to inprogress');
+    is $client->get_df_payouts_count, 0, 'The payout request is removed at approved';
 };
 
 subtest $prefix . 'payout cancelled' => sub {
@@ -117,9 +124,11 @@ subtest $prefix . 'payout cancelled' => sub {
 
     create_payout_ok;
     balance_is($starting_balance - $payout_info{amount}, 'client has been debited at create payout');
+    is $client->get_df_payouts_count, 1, 'The payout request is counted at creation';
 
     update_payout_ok({status => 'cancelled'});
     balance_is($starting_balance, 'client has been refunded at cancel payout');
+    is $client->get_df_payouts_count, 0, 'The payout request is removed at cancelled';
 };
 
 subtest $prefix . 'payout rejected' => sub {
@@ -128,9 +137,11 @@ subtest $prefix . 'payout rejected' => sub {
 
     create_payout_ok;
     balance_is($starting_balance - $payout_info{amount}, 'client has been debited at create payout');
+    is $client->get_df_payouts_count, 1, 'The payout request is counted at creation';
 
     update_payout_ok({status => 'rejected'});
     balance_is($starting_balance, 'client has been refunded at reject payout');
+    is $client->get_df_payouts_count, 0, 'The payout request is removed at rejected';
 };
 
 done_testing;

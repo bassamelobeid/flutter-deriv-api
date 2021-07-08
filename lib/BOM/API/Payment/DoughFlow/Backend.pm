@@ -191,6 +191,15 @@ sub write_transaction_line {
         currency_code  => $currency_code
     });
 
+    if ($c->type eq 'payout_approved') {
+        # Payout request with freezing funds is done
+        $client->decr_df_payouts_count($trace_id);
+
+        return {
+            status      => 0,
+            description => 'success'
+        };
+    }
     # this probably is not going to be necessary most of the time
     # but this check for each payout at this point is the safest way to do it
     if ($c->type eq 'payout_inprogress') {
@@ -203,6 +212,7 @@ sub write_transaction_line {
                     transaction_id   => $transaction_id,
                 }))
         {
+
             return {
                 status      => 0,
                 description => 'success'
@@ -308,6 +318,10 @@ sub write_transaction_line {
                 net_deposits => -$amount,
             }) if ($client->landing_company->social_responsibility_check_required);
 
+        # Payout request with freezing funds need to be counted
+        if ($client->is_payout_freezing_funds_enabled) {
+            $client->incr_df_payouts_count($trace_id);
+        }
         _handle_qualifying_payments($client, $amount, $c->type) if $client->landing_company->qualifying_payment_check_required;
     } elsif ($c->type =~ /^(payout_cancelled|payout_rejected)$/) {
         if ($bonus) {
@@ -315,6 +329,10 @@ sub write_transaction_line {
         }
         $payment_args{payment_fee} = -$fee;
         $trx = $client->payment_doughflow(%payment_args);
+
+        # Payout request with freezing funds is done
+        $client->decr_df_payouts_count($trace_id);
+
         BOM::Platform::Event::Emitter::emit('payment_withdrawal_reversal', {$event_args->%*, transaction_id => $trx->{id}}) if ($trx);
     }
 

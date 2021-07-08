@@ -133,6 +133,9 @@ sub update_payout_POST {
     return _doughflow_backend($c, 'payout_rejected')
         if ($c->request_parameters->{status} // '') eq 'rejected';
 
+    return _doughflow_backend($c, 'payout_approved')
+        if ($c->request_parameters->{status} // '') eq 'approved';
+
     return {
         status      => 0,
         description => 'success',
@@ -242,7 +245,8 @@ sub _doughflow_backend {
     return {
         status      => 0,
         description => 'success',
-    } if $type =~ /^(payout_created|payout_inprogress|payout_cancelled|payout_rejected)$/;
+        }
+        if $type =~ /^(payout_created|payout_inprogress|payout_cancelled|payout_rejected|payout_approved)$/;
 
     my $location = $c->req->base->clone;
     $location->path('/paymentapi/transaction/payment/doughflow/record/');
