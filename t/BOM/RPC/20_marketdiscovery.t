@@ -46,7 +46,7 @@ subtest "$method on binary_smarttrader" => sub {
     # - jump indices
     # - crash/bomm indices
     # - stpRNG
-    is(scalar @$result, 63, 'the default landing company is "svg", the number of result should be ok');
+    is(scalar @$result, 68, 'the default landing company is "svg", the number of result should be ok');
 };
 
 # unauthenticated call for `active_symbols` for landing company like `maltainvest` doesn't have an offering
@@ -112,9 +112,9 @@ subtest 'active_symbols for whitelisted apps' => sub {
             1408  => 0,
             16303 => 79,
             16929 => 79,
-            19111 => 63,
-            19112 => 63,
-            22168 => 63,
+            19111 => 68,
+            19112 => 68,
+            22168 => 68,
             23789 => 49,
         );
         my $app = $deriv->whitelist_apps;
@@ -133,21 +133,21 @@ subtest 'active_symbols for whitelisted apps' => sub {
                 active_symbols => 'brief',
             }};
         my %expected_symbol_count = (
-            1  => 63,
+            1  => 68,
             10 => {
-                normal       => 29,
-                quiet_period => 16,
+                normal       => 34,
+                quiet_period => 21,
             },
-            11    => 63,
-            1169  => 63,
-            14473 => 63,
-            15284 => 63,
-            15437 => 63,
-            15438 => 63,
-            15481 => 63,
+            11    => 68,
+            1169  => 68,
+            14473 => 68,
+            15284 => 68,
+            15437 => 68,
+            15438 => 68,
+            15481 => 68,
             15488 => {
-                normal       => 29,
-                quiet_period => 16
+                normal       => 34,
+                quiet_period => 21
             });
         my $o = LandingCompany::Registry::get('svg')->basic_offerings({
             loaded_revision => 1,
