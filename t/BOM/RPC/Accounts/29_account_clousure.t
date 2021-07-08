@@ -111,11 +111,11 @@ subtest 'account closure' => sub {
                 args  => $args
             });
 
-        is($res->{error}->{code}, 'AccountHasBalanceOrOpenPositions', 'Correct error code');
+        is($res->{error}->{code}, 'AccountHasPendingConditions', 'Correct error code');
         my $loginid = $test_client->loginid;
         is(
             $res->{error}->{message_to_client},
-            "Please close open positions and withdraw all funds from your $loginid account(s) before proceeding.",
+            "Please close open positions and withdraw all funds from your $loginid account(s). Also, notice if you have pending withdrawal requests, wait for those to be finalized first before proceeding.",
             "Correct error message"
         );
         is_deeply($res->{error}->{details}, {open_positions => {$loginid => 1}}, "Correct error details");
@@ -129,6 +129,31 @@ subtest 'account closure' => sub {
         $test_client->status->clear_disabled;
     };
 
+    subtest "Pending payouts" => sub {
+        $test_client->incr_df_payouts_count('test_trace_id');
+        $res = $c->tcall(
+            $method,
+            {
+                token => $token,
+                args  => $args
+            });
+
+        is($res->{error}->{code}, 'AccountHasPendingConditions', 'Correct error code');
+        my $loginid = $test_client->loginid;
+        is(
+            $res->{error}->{message_to_client},
+            "Please close open positions and withdraw all funds from your $loginid account(s). Also, notice if you have pending withdrawal requests, wait for those to be finalized first before proceeding.",
+            "Correct error message"
+        );
+        is_deeply($res->{error}->{details}, {pending_withdrawals => {$loginid => 1}}, "Correct error details");
+        ok(!$test_client->status->disabled,    'CR account is not disabled');
+        ok(!$test_client_vr->status->disabled, 'Virtual account is also not disabled');
+        ok(!$test_client_vr->status->closed,   'Virtual account has no self-closed status');
+        ok(!$test_client->status->closed,      'CR account has no self-closed status');
+
+        $test_client->decr_df_payouts_count('test_trace_id');
+    };
+
     $payment_handler->($test_client, 1);
 
     $res = $c->tcall(
@@ -139,7 +164,7 @@ subtest 'account closure' => sub {
         });
 
     # Test with single real account (balance)
-    is($res->{error}->{code}, 'AccountHasBalanceOrOpenPositions', 'Correct error code');
+    is($res->{error}->{code}, 'AccountHasPendingConditions', 'Correct error code');
     ok(!$test_client->status->disabled,    'CR account is not disabled');
     ok(!$test_client_vr->status->disabled, 'Virtual account is also not disabled');
     ok(!$test_client_vr->status->closed,   'Virtual account has no self-closed status');
@@ -158,10 +183,10 @@ subtest 'account closure' => sub {
 
     # Test with real siblings account (balance)
     my $loginid = $test_client_2->loginid;
-    is($res->{error}->{code}, 'AccountHasBalanceOrOpenPositions', 'Correct error code');
+    is($res->{error}->{code}, 'AccountHasPendingConditions', 'Correct error code');
     is(
         $res->{error}->{message_to_client},
-        "Please close open positions and withdraw all funds from your $loginid account(s) before proceeding.",
+        "Please close open positions and withdraw all funds from your $loginid account(s). Also, notice if you have pending withdrawal requests, wait for those to be finalized first before proceeding.",
         'Correct error message for sibling account'
     );
     is_deeply(
@@ -256,8 +281,9 @@ subtest 'Account closure MT5 balance' => sub {
                         currency => 'USD'
                     }}
             },
-            code              => 'AccountHasBalanceOrOpenPositions',
-            message_to_client => 'Please close open positions and withdraw all funds from your MTR1 account(s) before proceeding.'
+            code              => 'AccountHasPendingConditions',
+            message_to_client =>
+                'Please close open positions and withdraw all funds from your MTR1 account(s). Also, notice if you have pending withdrawal requests, wait for those to be finalized first before proceeding.'
         }};
     is_deeply($res, $expected, 'MT5 account has balance');
 
@@ -282,8 +308,9 @@ subtest 'Account closure MT5 balance' => sub {
     $expected = {
         error => {
             details           => {open_positions => {MTR1 => 1}},
-            code              => 'AccountHasBalanceOrOpenPositions',
-            message_to_client => 'Please close open positions and withdraw all funds from your MTR1 account(s) before proceeding.'
+            code              => 'AccountHasPendingConditions',
+            message_to_client =>
+                'Please close open positions and withdraw all funds from your MTR1 account(s). Also, notice if you have pending withdrawal requests, wait for those to be finalized first before proceeding.'
         }};
     is_deeply($res, $expected, 'MT5 account has open positions');
 
@@ -314,8 +341,9 @@ subtest 'Account closure MT5 balance' => sub {
                         currency => 'USD'
                     }}
             },
-            code              => 'AccountHasBalanceOrOpenPositions',
-            message_to_client => 'Please close open positions and withdraw all funds from your MTR1 account(s) before proceeding.'
+            code              => 'AccountHasPendingConditions',
+            message_to_client =>
+                'Please close open positions and withdraw all funds from your MTR1 account(s). Also, notice if you have pending withdrawal requests, wait for those to be finalized first before proceeding.'
         }};
     is_deeply($res, $expected, 'MT5 account has balance and open positions');
     $mock_mt5->unmock_all();
@@ -391,7 +419,7 @@ subtest 'account_closure with mt5 API disabled' => sub {
         });
 
     note('since this is mocked mt5 account data, I won\'t want to change it.');
-    is $res->{error}->{code}, 'AccountHasBalanceOrOpenPositions', 'account has balance error instead of server disabled.';
+    is $res->{error}->{code}, 'AccountHasPendingConditions', 'account has balance error instead of server disabled.';
 
     BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real->p01_ts03->deposits(0);
     BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real->p01_ts03->withdrawals(1);
@@ -404,7 +432,7 @@ subtest 'account_closure with mt5 API disabled' => sub {
         });
 
     note('since this is mocked mt5 account data, I won\'t want to change it.');
-    is $res->{error}->{code}, 'AccountHasBalanceOrOpenPositions', 'account has balance error instead of server disabled.';
+    is $res->{error}->{code}, 'AccountHasPendingConditions', 'account has balance error instead of server disabled.';
 };
 
 subtest 'Account closure DXTrader' => sub {
@@ -470,15 +498,16 @@ subtest 'Account closure DXTrader' => sub {
     cmp_deeply $account_closure,
         {
         error => {
-            message_to_client => "Please close open positions and withdraw all funds from your $real_account_id account(s) before proceeding.",
-            details           => {
+            message_to_client =>
+                "Please close open positions and withdraw all funds from your $real_account_id account(s). Also, notice if you have pending withdrawal requests, wait for those to be finalized first before proceeding.",
+            details => {
                 balance => {
                     $real_account_id => {
                         'currency' => 'USD',
                         'balance'  => '10.00'
                     }}
             },
-            code => 'AccountHasBalanceOrOpenPositions'
+            code => 'AccountHasPendingConditions'
         }
         },
         'Cannot close account with dxtrader balance > 0';

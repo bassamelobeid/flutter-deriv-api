@@ -2403,19 +2403,23 @@ rpc account_closure => sub {
             code              => 'ReasonNotSpecified',
             message_to_client => localize('Please specify the reasons for closing your accounts.')}) if $closing_reason =~ /^\s*$/;
 
-    # This for-loop is for balance validation and open positions checking
-    # No account is to be disabled if there is at least one real-account with balance
+    # This for-loop is for balance validation, open positions checking and pending withdrawals check
+    # No account is to be disabled if there is at least one real-account with balance or
+    # there is a pending DF payout
 
     my %accounts_with_positions;
     my %accounts_with_balance;
+    my %accounts_with_pending_df;
     foreach my $client (@accounts_to_disable) {
         next if ($client->is_virtual || !$client->account);
 
         my $number_open_contracts = scalar @{$client->get_open_contracts};
         my $balance               = $client->account->balance;
+        my $pending_payouts       = $client->get_df_payouts_count;
 
-        $accounts_with_positions{$client->loginid} = $number_open_contracts if $number_open_contracts;
-        $accounts_with_balance{$client->loginid}   = {
+        $accounts_with_pending_df{$client->loginid} = $pending_payouts       if $pending_payouts;
+        $accounts_with_positions{$client->loginid}  = $number_open_contracts if $number_open_contracts;
+        $accounts_with_balance{$client->loginid}    = {
             balance  => $balance,
             currency => $client->currency
         } if $balance > 0;
@@ -2465,17 +2469,18 @@ rpc account_closure => sub {
         }
     }
 
-    if (%accounts_with_positions || %accounts_with_balance) {
-        my @accounts_to_fix = uniq(keys %accounts_with_balance, keys %accounts_with_positions);
+    if (%accounts_with_positions || %accounts_with_balance || %accounts_with_pending_df) {
+        my @accounts_to_fix = uniq(keys %accounts_with_balance, keys %accounts_with_positions, keys %accounts_with_pending_df);
         return BOM::RPC::v3::Utility::create_error({
-                code              => 'AccountHasBalanceOrOpenPositions',
+                code              => 'AccountHasPendingConditions',
                 message_to_client => localize(
-                    'Please close open positions and withdraw all funds from your [_1] account(s) before proceeding.',
+                    'Please close open positions and withdraw all funds from your [_1] account(s). Also, notice if you have pending withdrawal requests, wait for those to be finalized first before proceeding.',
                     join(', ', @accounts_to_fix)
                 ),
                 details => +{
-                    %accounts_with_balance   ? (balance        => \%accounts_with_balance)   : (),
-                    %accounts_with_positions ? (open_positions => \%accounts_with_positions) : (),
+                    %accounts_with_balance    ? (balance             => \%accounts_with_balance)    : (),
+                    %accounts_with_positions  ? (open_positions      => \%accounts_with_positions)  : (),
+                    %accounts_with_pending_df ? (pending_withdrawals => \%accounts_with_pending_df) : (),
                 }});
     }
 
