@@ -17,6 +17,7 @@ use JSON::MaybeUTF8 qw(encode_json_utf8 decode_json_utf8);
 use Digest::SHA qw(hmac_sha256_hex);
 use Net::Async::HTTP;
 use BOM::Platform::Context qw(localize);
+use BOM::RPC::v3::Services::Crypto;
 use BOM::RPC::v3::Utility;
 use BOM::Config;
 use LandingCompany::Registry;
@@ -149,7 +150,7 @@ sub _banxa_order {
         return_url_on_success => $referrer,
         source                => "USD",
         target                => $client->currency,
-        wallet_address        => BOM::RPC::v3::Utility::client_crypto_deposit_address($client),
+        wallet_address        => _get_crypto_deposit_address($client->loginid),
     };
 
     my $content  = encode_json_utf8($data);
@@ -176,7 +177,6 @@ sub _banxa_order {
                 token => $response->{data}{order}{id},
             });
         });
-
 }
 
 =head2 _wyre_reservation
@@ -198,7 +198,7 @@ sub _wyre_reservation {
         destCurrency      => $client->currency,
         country           => $client->residence,
         referrerAccountId => $config->{api_account_id},
-        dest              => BOM::RPC::v3::Utility::client_crypto_deposit_address($client),
+        dest              => _get_crypto_deposit_address($client->loginid),
         lockFields        => ["destCurrency", "country"],
     };
 
@@ -219,6 +219,30 @@ sub _wyre_reservation {
                     token => $response->{reservation},
                     url   => $response->{url}});
         });
+}
+
+=head2 _get_crypto_deposit_address
+
+Get the deposit address for crypto.
+
+Takes the following parameter:
+
+=over 4
+
+=item * C<$loginid> - The client loginid
+
+=back
+
+Returns the deposit address or an empty string if there was an error.
+
+=cut
+
+sub _get_crypto_deposit_address {
+    my ($loginid) = @_;
+
+    my $crypto_service = BOM::RPC::v3::Services::Crypto->new();
+    my $deposit_result = $crypto_service->deposit($loginid);
+    return $deposit_result->{deposit}{address} // '';
 }
 
 1;

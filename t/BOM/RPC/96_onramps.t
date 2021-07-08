@@ -33,8 +33,11 @@ $user->add_client($client_fiat);
 $user->add_client($client_crypto);
 
 my $mock_config   = Test::MockModule->new('BOM::Config');
+my $mock_onramp   = Test::MockModule->new('BOM::RPC::v3::Services::Onramp');
 my $mock_http     = Test::MockModule->new('Net::Async::HTTP');
 my $fake_response = Test::MockObject->new();
+
+$mock_onramp->mock(_get_crypto_deposit_address => sub { '' });
 
 subtest general => sub {
     dies_ok { BOM::RPC::v3::Services::Onramp->new(service => 'bong') } 'invalid service name';
@@ -218,5 +221,7 @@ subtest wyre => sub {
     );
 
 };
+
+$mock_onramp->unmock_all;
 
 done_testing();

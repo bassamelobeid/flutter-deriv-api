@@ -41,6 +41,7 @@ use BOM::Platform::RiskProfile;
 use BOM::Platform::Client::CashierValidation;
 use BOM::User::Client::PaymentNotificationQueue;
 use BOM::RPC::v3::MT5::Account;
+use BOM::RPC::v3::Services::Crypto;
 use BOM::RPC::v3::Trading;
 use BOM::RPC::v3::Utility qw(log_exception);
 use BOM::Transaction::Validation;
@@ -82,7 +83,7 @@ rpc "cashier", sub {
 
     # this should come before all validation as verification
     # token is mandatory for withdrawal.
-    if ($action eq 'withdraw' && $type eq 'url') {
+    if ($action eq 'withdraw') {
         my $token = $args->{verification_code} // '';
 
         my $email = $client->email;
@@ -119,19 +120,19 @@ rpc "cashier", sub {
     }
 
     if ($type eq 'api') {
-        my %response;
-        unless ($provider eq 'crypto' && $action eq 'deposit') {
+        if ($provider ne 'crypto') {
             return BOM::RPC::v3::Utility::create_error({
                 code              => 'InvalidRequest',
                 message_to_client => localize("Cashier API doesn't support the selected provider or operation."),
             });
         }
 
-        return {
-            action  => 'deposit',
-            deposit => {
-                address => BOM::RPC::v3::Utility::client_crypto_deposit_address($client),
-            }};
+        my $crypto_service = BOM::RPC::v3::Services::Crypto->new($params);
+        if ($action eq 'deposit') {
+            return $crypto_service->deposit($client->loginid);
+        } elsif ($action eq 'withdraw') {
+            return $crypto_service->withdraw($client->loginid, $args->{address}, $args->{amount});
+        }
     }
 
     if ($provider eq 'crypto') {
@@ -2015,5 +2016,53 @@ sub _template_args {
         pa_last_name      => encode_entities($pa_client->last_name),
     };
 }
+
+rpc 'cashier_withdrawal_cancel', sub {
+    my $params = shift;
+
+    if (my $validation_error = BOM::RPC::v3::Utility::validation_checks($params->{client}, ['compliance_checks'])) {
+        return $validation_error;
+    }
+
+    my ($client, $args) = @{$params}{qw/client args/};
+
+    if (my $cashier_validation_error = BOM::RPC::v3::Utility::cashier_validation($client, 'withdraw')) {
+        return $cashier_validation_error;
+    }
+
+    my $currency = $client->default_account->currency_code();
+
+    if (LandingCompany::Registry::get_currency_type($currency) ne 'crypto') {
+        return BOM::RPC::v3::Utility::create_error({
+            code              => 'InvalidRequest',
+            message_to_client => localize('Crypto cashier is unavailable for fiat currencies.'),
+        });
+    }
+
+    my $crypto_service = BOM::RPC::v3::Services::Crypto->new($params);
+    return $crypto_service->withdrawal_cancel($client->loginid, $args->{id});
+};
+
+rpc 'cashier_payments', sub {
+    my $params = shift;
+
+    if (my $validation_error = BOM::RPC::v3::Utility::validation_checks($params->{client}, ['compliance_checks'])) {
+        return $validation_error;
+    }
+
+    my ($client, $args) = @{$params}{qw/client args/};
+
+    my $currency = $client->default_account->currency_code();
+
+    if (LandingCompany::Registry::get_currency_type($currency) ne 'crypto') {
+        return BOM::RPC::v3::Utility::create_error({
+            code              => 'InvalidRequest',
+            message_to_client => localize('Crypto cashier is unavailable for fiat currencies.'),
+        });
+    }
+
+    my $crypto_service = BOM::RPC::v3::Services::Crypto->new($params);
+    return $crypto_service->transactions($client->loginid, $args->{transaction_type});
+};
 
 1;

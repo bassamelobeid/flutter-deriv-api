@@ -5,12 +5,14 @@ use Test::More;
 use Test::Mojo;
 use Test::MockModule;
 use Email::Address::UseXS;
-use BOM::User;
+use JSON::MaybeUTF8 qw(encode_json_utf8);
 
 use BOM::Test::Email qw(:no_event);
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::CryptoTestDatabase qw(:init);
+use BOM::Test::Helper::Utility qw(random_email_address);
 use BOM::Test::RPC::QueueClient;
+use BOM::User;
 use LWP::UserAgent;
 require Test::NoWarnings;
 
@@ -27,9 +29,9 @@ subtest 'Initialization' => sub {
     'Initial RPC server and client connection';
 };
 
-my $email          = 'dummy' . rand(999) . '@binary.com';
+my $email          = random_email_address;
 my $user_client_cr = BOM::User->create(
-    email          => 'cr@binary.com',
+    email          => $email,
     password       => BOM::User::Password::hashpw('jskjd8292922'),
     email_verified => 1,
 );
@@ -82,61 +84,155 @@ subtest 'Doughflow' => sub {
 
     $rpc_ct->call_ok('cashier', $params)->has_no_system_error->has_error->error_internal_message_like(qr/abcdef/, 'Unknown Doughflow error')
         ->error_message_is('Sorry, an error occurred. Please try accessing our cashier again.', 'Correct Unknown Doughflow error message');
-
 };
 
-subtest 'Get deposit address' => sub {
-    my $params = {};
-    my $email  = 'dummy' . rand(999) . '@binary.com';
-
-    my $user = BOM::User->create(
-        email          => $email,
-        password       => BOM::User::Password::hashpw('jskjd8292922'),
+subtest 'Crypto cashier calls' => sub {
+    my $new_email = random_email_address;
+    my $user      = BOM::User->create(
+        email          => $new_email,
+        password       => BOM::User::Password::hashpw('somepasswd123'),
         email_verified => 1,
     );
-    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    my $client_info = {
         broker_code    => 'CR',
-        email          => $email,
+        email          => $new_email,
         place_of_birth => 'id',
-    });
+    };
 
-    $client->set_default_account('BTC');
+    my $client_fiat = BOM::Test::Data::Utility::UnitTestDatabase::create_client({$client_info->%*});
+    $client_fiat->set_default_account('USD');
+    $user->add_client($client_fiat);
 
-    $params->{args}->{cashier}  = 'deposit';
-    $params->{args}->{provider} = 'crypto';
-    $params->{args}->{type}     = 'api';
-    $params->{token}            = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token123');
-    $params->{domain}           = 'binary.com';
+    my $client_crypto = BOM::Test::Data::Utility::UnitTestDatabase::create_client({$client_info->%*});
+    $client_crypto->set_default_account('BTC');
+    $user->add_client($client_crypto);
 
-    my $expected_result = {
+    my $token_fiat   = BOM::Platform::Token::API->new->create_token($client_fiat->loginid,   'test token');
+    my $token_crypto = BOM::Platform::Token::API->new->create_token($client_crypto->loginid, 'test token');
+
+    my $common_expected_result = {
         stash => {
             valid_source               => 1,
             app_markup_percentage      => 0,
             source_bypass_verification => 0,
         },
-        deposit => {
-            address => '',
-        },
-        action => 'deposit',
     };
 
-    $rpc_ct->call_ok('cashier', $params)->has_no_system_error->has_no_error->result_is_deeply($expected_result, 'Empty Address');
-
-    my $address = 'test_deposit_address';
-
-    my $cryptodb = BOM::Database::CryptoDB::rose_db();
-    $cryptodb->dbic->run(
-        fixup => sub {
-            $_->selectrow_array('SELECT payment.ctc_insert_new_deposit_address(?, ?, ?)', undef, $address, $client->currency, $client->loginid);
+    my $calls = [{
+            call_name    => 'cashier',
+            call_display => 'cashier: deposit',
+            args         => {
+                cashier  => 'deposit',
+                provider => 'crypto',
+                type     => 'api',
+            },
+            api_response => {
+                deposit_address => 'test_deposit_address',
+            },
+            rpc_response => {
+                action  => 'deposit',
+                deposit => {
+                    address => 'test_deposit_address',
+                },
+            },
         },
-    );
+        {
+            call_name    => 'cashier',
+            call_display => 'cashier: withdraw',
+            args         => {
+                cashier           => 'withdraw',
+                provider          => 'crypto',
+                type              => 'api',
+                address           => 'withdrawal_address',
+                amount            => 1,
+                verification_code => 'verification_code',
+            },
+            api_response => {
+                id             => 1,
+                status_code    => 'LOCKED',
+                status_message => 'Sample status message',
+            },
+            rpc_response => {
+                action   => 'withdraw',
+                withdraw => {
+                    id             => 1,
+                    status_code    => 'LOCKED',
+                    status_message => 'Sample status message',
+                },
+            },
+        },
+        {
+            call_name => 'cashier_withdrawal_cancel',
+            args      => {
+                cashier_withdrawal_cancel => 1,
+                id                        => 2,
+            },
+            api_response => {
+                id          => 2,
+                status_code => 'CANCELLED',
+            },
+        },
+        {
+            call_name => 'cashier_payments',
+            args      => {
+                cashier_payments => 1,
+                provider         => 'crypto',
+                transaction_type => 'all',
+            },
+            api_response => {
+                crypto => [],
+            },
+        },
+    ];
 
-    $expected_result->{deposit}{address} = $address;
-    $rpc_ct->call_ok('cashier', $params)->has_no_system_error->has_no_error->result_is_deeply($expected_result, 'Correct address');
+    my $api_error_response = {
+        error => {
+            code    => 'CryptoSampleErrorCode',
+            message => 'Sample error message',
+        }};
+    my $fiat_error_response = {
+        error => {
+            code    => 'InvalidRequest',
+            message => 'Crypto cashier is unavailable for fiat currencies.',
+        }};
+
+    my $api_response  = {};
+    my $http_response = HTTP::Response->new(200);
+    $mocked_call->mock($_ => sub { $http_response->content(encode_json_utf8($api_response)); $http_response; }) for qw(get post);
+
+    my $mock_utility = Test::MockModule->new('BOM::RPC::v3::Utility');
+    $mock_utility->mock(is_verification_token_valid => sub { +{status => 1} });
+
+    for my $call_info ($calls->@*) {
+        $api_response = {$call_info->{api_response}->%*};
+        my $rpc_response = {($call_info->{rpc_response} // $api_response)->%*};
+        my $params       = {args => $call_info->{args}};
+        my $call_name    = $call_info->{call_name};
+        my $call_display = $call_info->{call_display} // $call_name;
+
+        $params->{token} = $token_fiat;
+        my $expected_result = {$common_expected_result->%*, $fiat_error_response->%*};
+        $rpc_ct->call_ok($call_name, $params)->has_no_system_error->has_error->error_code_is($fiat_error_response->{error}{code},
+            "Correct error code when fiat account used for $call_display")
+            ->error_message_is($fiat_error_response->{error}{message}, "Correct error message when fiat account used for $call_display");
+
+        $params->{token} = $token_crypto;
+        $expected_result = {$common_expected_result->%*, $rpc_response->%*};
+        $rpc_ct->call_ok($call_name, $params)
+            ->has_no_system_error->has_no_error->result_is_deeply($expected_result, "Correct response for $call_display");
+
+        $api_response    = $api_error_response;
+        $expected_result = {$common_expected_result->%*, $api_error_response->%*};
+        $rpc_ct->call_ok($call_name, $params)
+            ->has_no_system_error->has_error->error_code_is($api_error_response->{error}{code}, "Correct error code for $call_display")
+            ->error_message_is($api_error_response->{error}{message}, "Correct error message for $call_display");
+    }
+
+    $mock_utility->unmock_all;
+    $mocked_call->unmock_all;
 };
 
 subtest 'validate_amount' => sub {
-
     my $mocked_fun = Test::MockModule->new('Format::Util::Numbers');
     $mocked_fun->mock('get_precision_config', sub { return {amount => {'BBB' => 5}} });
     is(BOM::RPC::v3::Cashier::validate_amount(0.00001, 'BBB'), undef,             'Valid Amount');
@@ -153,4 +249,3 @@ subtest 'validate_amount' => sub {
 };
 
 done_testing();
-
