@@ -429,6 +429,30 @@ subtest 'Frozen bonus.' => sub {
     ok $client->validate_payment(%withdrawal, amount => -3.2), 'Can withdraw an unfrozen amount that may raise a decimal arithmetic error';
 };
 
+subtest 'Payout counter' => sub {
+    my $client = new_client('USD');
+
+    is $client->get_df_payouts_count, 0, 'No pending payouts for new client';
+
+    $client->incr_df_payouts_count('trace_id_1');
+    is $client->get_df_payouts_count, 1, 'One payout is pending';
+
+    $client->incr_df_payouts_count('trace_id_1');
+    is $client->get_df_payouts_count, 1, 'dublicates doesnt count';
+
+    $client->incr_df_payouts_count('trace_id_2');
+    is $client->get_df_payouts_count, 2, 'Counts only uniq payouts';
+
+    $client->decr_df_payouts_count('trace_id_1');
+    is $client->get_df_payouts_count, 1, 'First payout is finished';
+
+    $client->decr_df_payouts_count('trace_id_0');
+    is $client->get_df_payouts_count, 1, 'Uncounted payout requests do not decrement counter';
+
+    $client->decr_df_payouts_count('trace_id_2');
+    is $client->get_df_payouts_count, 0, 'Second payout is finished';
+};
+
 # Subroutine for applying a promo code
 sub _apply_promo_amount {
     my $client    = shift;

@@ -88,10 +88,16 @@ use constant {
     SR_30_DAYS_EXP => 86400 * 30,
 };
 
+# Redis key prefix for counting DoughFlow payouts
+use constant {
+    DF_PAYOUTS_COUNTER     => "DF_PAYOUTS_COUNT::",
+    DF_PAYOUTS_COUNTER_TTL => 60 * 60 * 24 * 7,       # 7 days
+};
+
 # this email address should not be added into brand as it is specific to internal system
 my $SUBJECT_RE = qr/(New Sign-Up|Update Address)/;
 
-my $META = __PACKAGE__->meta;    # rose::db::object::manager meta rules. Knows our db structure
+my $META = __PACKAGE__->meta;                         # rose::db::object::manager meta rules. Knows our db structure
 
 my $json = JSON::MaybeXS->new;
 
@@ -5415,6 +5421,87 @@ sub payment_arbitrary_markup {
     });
 
     return $trx;
+}
+
+=head2 incr_df_payouts_count
+
+For any new DoughFlow payout request increase the
+corresponding key by 1.
+Takes the following parameters:
+
+=over 4
+
+=item * C<client> - L<BOM::User::Client> object
+
+=back
+
+=cut
+
+sub incr_df_payouts_count {
+    my ($self, $trace_id) = @_;
+
+    return unless $trace_id;
+
+    my $redis     = BOM::Config::Redis::redis_replicated_write();
+    my $redis_key = DF_PAYOUTS_COUNTER . $self->loginid;
+
+    $redis->multi;
+    $redis->sadd($redis_key, $trace_id);
+    $redis->expire($redis_key, DF_PAYOUTS_COUNTER_TTL);
+    $redis->exec;
+
+    return;
+}
+
+=head2 decr_df_payouts_count
+
+For any new DoughFlow payout request update we receive we
+decrease the value of the key by 1.
+The df responses we can receive are: "inprogress", "rejected", "canceled"
+Takes the following parameters:
+
+=over 4
+
+=item * C<client> - L<BOM::User::Client> object
+
+=back
+
+=cut
+
+sub decr_df_payouts_count {
+    my ($self, $trace_id) = @_;
+
+    return unless $trace_id;
+
+    my $redis = BOM::Config::Redis::redis_replicated_write();
+
+    $redis->srem(DF_PAYOUTS_COUNTER . $self->loginid, $trace_id);
+
+    return;
+}
+
+=head2 get_df_payouts_count
+
+Returns the amount of active DoughFlow payout requests we have
+for each client
+Takes the following parameters:
+
+=over 4
+
+=item * C<client> - L<BOM::User::Client> object
+
+=back
+
+=cut
+
+sub get_df_payouts_count {
+    my $self = shift;
+
+    my $redis = BOM::Config::Redis::redis_replicated_write();
+
+    my $redis_value = $redis->scard(DF_PAYOUTS_COUNTER . $self->loginid) // 0;
+
+    return $redis_value;
 }
 
 =head2 copy_status_to_siblings

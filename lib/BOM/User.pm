@@ -291,13 +291,13 @@ sub login {
 =head2 after_login
 
 Finishes the processing of a login attempt by:
-    
+
 1- Saving the result in login history and redis
 
 2- setting gamstop self-exclusion if applicable
 
 It takes following args:
-    
+
 =over 4
 
 =item * C<$error> - The error code if there's any; B<undef> or 0 if login was successful.
@@ -351,7 +351,7 @@ sub after_login {
 =head2 clients
 
 Gets corresponding client objects in loginid order but with real and enabled accounts up first.
-Uses the replica db for speed. 
+Uses the replica db for speed.
 By default it returns only active (enabled) clients, but the result may include other clients base on the following named args:
 
 =over 4
