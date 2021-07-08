@@ -90,8 +90,6 @@ fail_test_sendrecv_params 'new_account_real/test_send.json', 'new_account_real/t
 fail_test_sendrecv_params 'set_account_currency/test_send.json', 'set_account_currency/test_receive.json', 'ETC';
 # ok to set BTC
 test_sendrecv_params 'set_account_currency/test_send.json', 'set_account_currency/test_receive.json', 'BTC';
-# CASHIER API TYPE(we need crypto account for this test).
-test_sendrecv_params 'cashier/test_send_deposit_api.json', 'cashier/test_receive_deposit_api.json';
 
 # not allowed to set currency again
 fail_test_sendrecv_params 'set_account_currency/test_send.json', 'set_account_currency/test_receive.json', 'USD';
