@@ -737,7 +737,8 @@ sub call_api {
 
     my $quiet   = delete $args{quiet};
     my $payload = encode_json_utf8(\%args);
-    $dxapi_log->context->{request} = \%args;
+
+    $dxapi_log->context->{request} = {map { $_ => $_ eq 'password' ? '<hidden>' : $args{$_} } keys %args};
     my $resp;
 
     try {
