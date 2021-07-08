@@ -2256,6 +2256,12 @@ sub notify_resubmission_of_poi_poa_documents {
     my $client = BOM::User::Client->new({loginid => $loginid});
     my $brand  = Brands->new(name => 'deriv');
 
+    my $req = BOM::Platform::Context::Request->new(
+        brand_name => $brand->name,
+        app_id     => $client->source,
+    );
+    BOM::Platform::Context::request($req);
+
     my $email_subject = localize("We couldn't verify your account");
     my $email_data    = {
         name           => $client->first_name,
