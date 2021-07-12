@@ -1812,11 +1812,17 @@ sub validate_common_account_details {
 
         # The follwing block contains business logic that should have been covered by rule engine (if there's any)
         unless ($rule_engine) {
+            my $postcode = $args->{address_postcode} // $self->address_postcode;
             ## If this is non-virtual United Kingdom account, it must have a postcode
             die "PostcodeRequired\n"
                 if (request()->brand->countries_instance->countries_list->{$self->residence}->{require_address_postcode}
                 and not $self->is_virtual
-                and not($args->{address_postcode} // $self->address_postcode));
+                and not($postcode));
+
+            ## If this is a United Kingdom account, the postcode should not belong to Jersey
+            my $forbidden_postcode_pattern = request()->brand->countries_instance->countries_list->{$self->residence}->{forbidden_postcode_pattern};
+            die "ForbiddenPostcode\n"
+                if (defined $forbidden_postcode_pattern && $postcode =~ /$forbidden_postcode_pattern/);
 
             # If not broker code is passed rely on current client landing company.
             # This is remarkably useful for new account calls.

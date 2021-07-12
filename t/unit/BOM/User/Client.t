@@ -175,6 +175,70 @@ subtest validate_common_account_details => sub {
 
         $mock_client->unmock_all();
     };
+
+    subtest 'forbidden post codes' => sub {
+        my $client = BOM::User::Client->rnew;
+        $client->broker('MX');
+        $client->is_virtual(0);
+        $client->residence('gb');
+
+        my $forbidden_postcode_pattern;
+
+        my $mock_country = Test::MockModule->new('Brands::Countries');
+        $mock_country->mock(
+            'countries_list',
+            sub {
+                return {
+                    'gb' => {
+                        forbidden_postcode_pattern => $forbidden_postcode_pattern,
+                    }};
+            });
+
+        my $tests = [{
+                postcode => 'JE10',
+                pattern  => qr/(.*)/,
+                error    => 'ForbiddenPostcode',
+            },
+            {
+                postcode => 'JE10',
+                pattern  => qr/^JE.*$/,
+                error    => 'ForbiddenPostcode',
+            },
+            {
+                postcode => 'JE10',
+                pattern  => undef,
+                error    => undef,
+            },
+            {
+                postcode => 'JE3',
+                pattern  => qr/^JE\d+$/,
+                error    => 'ForbiddenPostcode',
+            },
+            {
+                postcode => 'JE',
+                pattern  => qr/^JE\d+$/,
+                error    => undef,
+            },
+            {
+                postcode => 'JE',
+                pattern  => qr/^JE/,
+                error    => 'ForbiddenPostcode',
+            },
+        ];
+
+        my $args = {};
+
+        for my $test ($tests->@*) {
+            $args->{address_postcode} = $test->{postcode};
+            $forbidden_postcode_pattern = $test->{pattern};
+
+            if (my $error = $test->{error}) {
+                ok $client->validate_common_account_details($args)->{error} =~ /^$error/, "error: $error";
+            } else {
+                is $client->validate_common_account_details($args), undef, 'valid postcode';
+            }
+        }
+    };
 };
 
 done_testing;
