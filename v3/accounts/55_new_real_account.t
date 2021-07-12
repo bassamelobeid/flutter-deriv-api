@@ -398,6 +398,34 @@ subtest 'Address validation' => sub {
     is $cli->address_line_2, $cli_details->{address_line_2}, 'Expected address line 2';
 };
 
+subtest 'forbidden postcode' => sub {
+    my %details = %client_details;
+
+    my ($vr_client, $user) = create_vr_account({
+        email           => 'the-forbidden-one@binary.com',
+        client_password => 'abC123',
+        residence       => 'gb',
+    });
+
+    my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $vr_client->loginid);
+    $t->await::authorize({authorize => $token});
+
+    $details{currency}         = 'USD';
+    $details{residence}        = 'gb';
+    $details{citizen}          = 'gb';
+    $details{first_name}       = 'mister';
+    $details{last_name}        = 'familyman';
+    $details{phone}            = '+123423623523';
+    $details{address_postcode} = 'JE1';
+
+    my $res = $t->await::new_account_real(\%details);
+    is($res->{error}->{code}, 'ForbiddenPostcode', 'invalid jersey postcode');
+
+    $details{address_postcode} = 'EA1C';
+    $res = $t->await::new_account_real(\%details);
+    ok $res->{new_account_real}->{client_id}, 'Client created';
+};
+
 sub create_vr_account {
     my $args = shift;
     my $acc  = BOM::Platform::Account::Virtual::create_account({
