@@ -47,7 +47,7 @@ $runtime_config->payment_method_countries(
 
 subtest 'adverts' => sub {
 
-    my $client = BOM::Test::Helper::P2P::create_advertiser;
+    my $client = BOM::Test::Helper::P2P::create_advertiser(balance => 100);
 
     my %methods = $client->p2p_advertiser_payment_methods(
         create => [{
@@ -62,7 +62,7 @@ subtest 'adverts' => sub {
                 method => 'method2',
                 tag    => 'm3'
             }])->%*;
-    my %methods_by_tag = map { $methods{$_}->{fields}{tag} => $_ } keys %methods;
+    my %methods_by_tag = map { $methods{$_}->{fields}{tag}{value} => $_ } keys %methods;
 
     my $advert = $client->p2p_advert_create(
         type               => 'sell',
@@ -75,18 +75,29 @@ subtest 'adverts' => sub {
     );
 
     is $advert->{payment_method}, 'method1,method2', 'payment method names';
-    cmp_deeply $advert->{payment_method_ids}, bag(keys %methods), 'payment method ids';
+    cmp_deeply $advert->{payment_method_details}, \%methods, 'payment method details';
 
     is exception {
-        $client->p2p_advertiser_payment_methods(
+        %methods = $client->p2p_advertiser_payment_methods(
             update => {
                 $methods_by_tag{m1} => {is_enabled => 0},
-                $methods_by_tag{m2} => {is_enabled => 0}})
+                $methods_by_tag{m2} => {is_enabled => 0}}
+            )->%*
     }, undef, 'can disable methods';
 
     my $ad_info = $client->p2p_advert_info(id => $advert->{id});
     is $ad_info->{payment_method}, 'method2', 'disabled method not shown on ad info';
-    cmp_deeply $ad_info->{payment_method_ids}, bag(keys %methods), 'ad info payment method ids';
+    cmp_deeply $ad_info->{payment_method_details}, \%methods, 'payment method details';
+
+    cmp_deeply $client->p2p_advertiser_adverts->[0]{payment_method_names}, ['Method 2'], 'advertiser adverts shows method name only';
+
+    my $otherclient = BOM::Test::Helper::P2P::create_advertiser;
+    $ad_info = $otherclient->p2p_advert_info(id => $advert->{id});
+    ok !exists $ad_info->{payment_method_details}, 'payment_method_details not returned for other client from p2p_advert_info';
+    cmp_deeply $ad_info->{payment_method_names}, ['Method 2'], 'payment method names returned to other client from p2p_advert_info';
+
+    cmp_deeply $otherclient->p2p_advert_list(payment_method => ['method2'])->[0]{payment_method_names}, ['Method 2'],
+        'payment method names returned to other client from p2p_advert_list';
 
     cmp_deeply(
         exception { $client->p2p_advertiser_payment_methods(update => {$methods_by_tag{m3} => {is_enabled => 0}}) },
@@ -117,14 +128,22 @@ subtest 'adverts' => sub {
                 method => 'method1',
                 tag    => 'm5'
             }])->%*;
-    %methods_by_tag = map { $methods{$_}->{fields}{tag} => $_ } keys %methods;
+    %methods_by_tag = map { $methods{$_}->{fields}{tag}{value} => $_ } keys %methods;
 
     my $update = $client->p2p_advert_update(
         id                 => $advert->{id},
         payment_method_ids => [@methods_by_tag{qw/m4 m5/}]);
     is $update->{payment_method}, 'method1', 'update method name';
 
-    cmp_deeply $update->{payment_method_ids}, bag($methods_by_tag{m4}, $methods_by_tag{m5}), 'update method ids';
+    my $pm_details = {
+        $methods_by_tag{m4} => $methods{$methods_by_tag{m4}},
+        $methods_by_tag{m5} => $methods{$methods_by_tag{m5}},
+    };
+    cmp_deeply $update->{payment_method_details}, $pm_details, 'update payment method details';
+
+    $update = $client->p2p_advert_update(id => $advert->{id});
+    cmp_deeply $update->{payment_method_details}, $pm_details, 'empty update payment method details';
+
     is exception { $client->p2p_advertiser_payment_methods(delete => [$methods_by_tag{m3}]) }, undef, 'allowed to delete unused methods';
 
     $client->p2p_advert_update(
@@ -234,7 +253,7 @@ subtest 'sell orders' => sub {
                 method => 'method2',
                 tag    => 'm3'
             }])->%*;
-    my %methods_by_tag = map { $methods{$_}->{fields}{tag} => $_ } keys %methods;
+    my %methods_by_tag = map { $methods{$_}->{fields}{tag}{value} => $_ } keys %methods;
 
     cmp_deeply(
         exception { $client->p2p_order_create(advert_id => $advert->{id}, amount => 10, contact_info => 'x', payment_method_ids => [keys %methods]) },
@@ -251,26 +270,23 @@ subtest 'sell orders' => sub {
         contact_info       => 'x',
         payment_method_ids => [$methods_by_tag{m1}, $methods_by_tag{m2}]);
     is $order->{payment_method}, 'method1', 'order create payment_method';
-    cmp_deeply $order->{payment_method_ids}, bag($methods_by_tag{m1}, $methods_by_tag{m2}), 'order create payment method ids';
 
-    my $method_details = bag({
-            method => 'method1',
-            tag    => 'm1'
-        },
-        {
-            method => 'method1',
-            tag    => 'm2'
-        });
+    my $pm_details = {
+        $methods_by_tag{m1} => $methods{$methods_by_tag{m1}},
+        $methods_by_tag{m2} => $methods{$methods_by_tag{m2}},
+    };
 
-    cmp_deeply $order->{payment_method_details}, $method_details, 'payment_method_details returned from order_create';
+    cmp_deeply $order->{payment_method_details}, $pm_details, 'payment_method_details returned from order_create';
 
-    cmp_deeply $client->p2p_order_info(id => $order->{id})->{payment_method_details}, $method_details,
-        'payment_method_details returned from order_info for new order';
+    cmp_deeply $client->p2p_order_info(id => $order->{id})->{payment_method_details}, $pm_details,
+        'payment_method_details returned from order_info for pending order';
+
+    cmp_deeply $client->p2p_order_list->[0]{payment_method_names}, ['Method 1'], 'payment method names in order list';
 
     my $order_info = $advertiser->p2p_order_info(id => $order->{id});
-    ok !exists $order_info->{payment_method_ids}, 'counterparty cannot see payment_method_ids';
     is $order_info->{payment_method}, 'method1', 'counterparty gets payment_method';
-    cmp_deeply $order_info->{payment_method_details}, $method_details, 'counterparty gets payment_method_details';
+    cmp_deeply $order_info->{payment_method_details}, $pm_details, 'counterparty gets payment_method_details';
+    cmp_deeply $advertiser->p2p_order_list->[0]{payment_method_names}, ['Method 1'], 'counterparty payment method names in order list';
 
     cmp_deeply(
         exception { $client->p2p_advertiser_payment_methods(update => {$methods_by_tag{m1} => {is_enabled => 0}}) },
@@ -348,7 +364,7 @@ subtest 'buy orders' => sub {
                 method => 'method2',
                 tag    => 'm3'
             }])->%*;
-    my %methods_by_tag = map { $methods{$_}->{fields}{tag} => $_ } keys %methods;
+    my %methods_by_tag = map { $methods{$_}->{fields}{tag}{value} => $_ } keys %methods;
     $advertiser->p2p_advert_update(
         id                 => $advert->{id},
         payment_method_ids => [keys %methods]);
@@ -359,38 +375,32 @@ subtest 'buy orders' => sub {
         advert_id => $advert->{id},
         amount    => 10
     );
-    is $order->{payment_method_ids}, undef, 'undef payment_method_ids returned from order create';
-    is $order->{payment_method},     undef, 'undef payment_method returned from order create';
+    is $order->{payment_method},       undef, 'undef payment_method returned from order create';
+    is $order->{payment_method_names}, undef, 'undef payment_method_names returned from order create';
 
-    my $method_details = bag({
-            method => 'method1',
-            tag    => 'm1'
-        },
-        {
-            method => 'method1',
-            tag    => 'm2'
-        },
-        {
-            method => 'method2',
-            tag    => 'm3'
-        });
-    cmp_deeply $order->{payment_method_details}, $method_details, 'payment_method_details for order_create';
-    cmp_deeply $client->p2p_order_info(id => $order->{id})->{payment_method_details}, $method_details, 'payment_method_details for order_info';
+    my $pm_details = {
+        $methods_by_tag{m1} => $methods{$methods_by_tag{m1}},
+        $methods_by_tag{m2} => $methods{$methods_by_tag{m2}},
+        $methods_by_tag{m3} => $methods{$methods_by_tag{m3}},
+    };
+
+    cmp_deeply $order->{payment_method_details}, $pm_details, 'payment_method_details returned from order_create';
+
+    cmp_deeply $order->{payment_method_details}, $pm_details, 'payment_method_details for order_create';
+    cmp_deeply $client->p2p_order_info(id => $order->{id})->{payment_method_details}, $pm_details, 'payment_method_details for order_info';
 
     $client->p2p_order_confirm(id => $order->{id});
-    cmp_deeply $client->p2p_order_info(id => $order->{id})->{payment_method_details}, $method_details,
+    cmp_deeply $client->p2p_order_info(id => $order->{id})->{payment_method_details}, $pm_details,
         'payment_method_details returned when buyer-confirmed';
 
     BOM::Test::Helper::P2P::set_order_disputable($client, $order->{id});
-    cmp_deeply $client->p2p_order_info(id => $order->{id})->{payment_method_details}, $method_details,
-        'payment_method_details returned when timed-out';
+    cmp_deeply $client->p2p_order_info(id => $order->{id})->{payment_method_details}, $pm_details, 'payment_method_details returned when timed-out';
 
     $client->p2p_create_order_dispute(
         id             => $order->{id},
         dispute_reason => 'seller_not_released'
     );
-    cmp_deeply $client->p2p_order_info(id => $order->{id})->{payment_method_details}, $method_details,
-        'payment_method_details returned when disputed';
+    cmp_deeply $client->p2p_order_info(id => $order->{id})->{payment_method_details}, $pm_details, 'payment_method_details returned when disputed';
 
     cmp_deeply(exception { $advertiser->p2p_advertiser_payment_methods(update => {$methods_by_tag{m1} => {is_enabled => 0}}) },
         undef, 'advertiser can disable payment method of ad with active order');

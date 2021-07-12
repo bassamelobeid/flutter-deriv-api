@@ -2324,6 +2324,9 @@ sub p2p_advert_create {
                 });
         });
 
+    $advert->{payment_method_details} =
+        $self->_p2p_advertiser_payment_method_details($self->_p2p_advertiser_payment_methods(advert_id => $advert->{id}));
+
     my $response = $self->_advert_details([$advert])->[0];
     delete $response->{days_until_archive};    # guard against almost impossible race condition
     return $response;
@@ -2340,6 +2343,11 @@ sub p2p_advert_info {
     return unless $param{id};
     $param{client_loginid} = $self->loginid;
     my $list = $self->_p2p_adverts(%param);
+
+    $list->[0]{payment_method_details} =
+        $self->_p2p_advertiser_payment_method_details($self->_p2p_advertiser_payment_methods(advert_id => $param{id}))
+        if @$list and $self->loginid eq $list->[0]{advertiser_loginid};
+
     return $self->_advert_details($list, undef, 1)->[0];
 }
 
@@ -2368,6 +2376,7 @@ sub p2p_advert_list {
         account_currency       => $self->currency,
         hide_blocked           => 1,
     );
+
     return $self->_advert_details($list, $param{amount}, 1);
 }
 
@@ -2388,10 +2397,14 @@ sub p2p_advert_update {
     die +{error_code => 'PermissionDenied'}   if $advert_info->{advertiser_loginid} ne $self->loginid;
     die +{error_code => 'PaymentMethodParam'} if $param{payment_method} and $advert_info->{type} eq 'sell';
 
+    my $payment_method_details = $self->_p2p_advertiser_payment_method_details($self->_p2p_advertiser_payment_methods(advert_id => $id));
+
     # return current advert details if nothing changed
     unless ($param{delete} or $param{payment_method_ids} or grep { exists $advert_info->{$_} and $param{$_} ne $advert_info->{$_} } keys %param) {
         delete $advert_info->@{qw/max_order_amount_actual advertiser_completion/};    # not usually returned by this call
-        return $self->_advert_details([$advert_info])->[0];
+        my $response = $self->_advert_details([$advert_info])->[0];
+        $response->{payment_method_details} = $payment_method_details if %$payment_method_details;
+        return $response;
     }
 
     if ($param{is_active}) {
@@ -2464,7 +2477,12 @@ sub p2p_advert_update {
                 undef, $id, @param{qw/is_active delete description payment_method payment_info contact_info payment_method_ids/});
         });
 
-    return $self->_advert_details([$update])->[0];
+    $payment_method_details = $self->_p2p_advertiser_payment_method_details($self->_p2p_advertiser_payment_methods(advert_id => $id))
+        if defined $param{payment_method_ids};
+
+    my $response = $self->_advert_details([$update])->[0];
+    $response->{payment_method_details} = $payment_method_details if %$payment_method_details;
+    return $response;
 }
 
 =head2 p2p_order_create
@@ -3360,7 +3378,7 @@ sub _p2p_advertiser_payment_methods {
     my $result = $self->db->dbic->run(
         fixup => sub {
             $_->selectall_hashref(
-                'SELECT * FROM p2p.advertiser_payment_method_list(?, ?, ?, ?)',
+                'SELECT id, is_enabled, method, params FROM p2p.advertiser_payment_method_list(?, ?, ?, ?)',
                 'id',
                 {Slice => {}},
                 @param{qw/advertiser_id advert_id order_id is_enabled/});
@@ -3371,6 +3389,29 @@ sub _p2p_advertiser_payment_methods {
         $item->{fields} = $json->decode(delete $item->{params});
     }
     return $result;
+}
+
+=head2 _p2p_advertiser_payment_method_details
+
+Format advertiser payment methods for websocket response.
+
+=cut
+
+sub _p2p_advertiser_payment_method_details {
+    my ($self, $methods, $defs) = @_;
+
+    $defs //= $self->p2p_payment_methods;
+
+    for my $id (keys %$methods) {
+        my $method_def = $defs->{$methods->{$id}{method}};
+        $methods->{$id}{display_name} = $method_def->{display_name};
+        for my $field (keys $methods->{$id}{fields}->%*) {
+            my $field_def = $method_def->{fields}{$field};
+            $methods->{$id}{fields}{$field} = {value => $methods->{$id}{fields}{$field}};
+            $methods->{$id}{fields}{$field}{$_} = $field_def->{$_} for qw/display_name type required/;
+        }
+    }
+    return $methods;
 }
 
 =head2 _p2p_order_payment_method_details
@@ -3396,8 +3437,9 @@ sub _p2p_order_payment_method_details {
         is_enabled => 1
         );
 
-    return undef unless %$methods;
-    return [map { {method => $_->{method}, $_->{fields}->%*} } values %$methods];
+    return unless %$methods;
+
+    return $self->_p2p_advertiser_payment_method_details($methods);
 }
 
 =head2 _order_ownership_type
@@ -3697,7 +3739,7 @@ Takes and returns an arrayref of advert.
 
 sub _advert_details {
     my ($self, $list, $amount, $show_limits) = @_;
-    my @results;
+    my (@results, $payment_method_defs);
 
     for my $advert (@$list) {
 
@@ -3739,7 +3781,9 @@ sub _advert_details {
                     max_order_amount_display => formatnumber('amount', $advert->{account_currency}, $advert->{max_order_amount}),
                     remaining_amount         => financialrounding('amount', $advert->{account_currency}, $advert->{remaining}),
                     remaining_amount_display => formatnumber('amount', $advert->{account_currency}, $advert->{remaining}),
-                    payment_method_ids       => $advert->{payment_method_ids})
+                    ($advert->{payment_method_details} and $advert->{payment_method_details}->%*)
+                    ? (payment_method_details => $advert->{payment_method_details})
+                    : ())
                 : ()
             ),
             advertiser_details => {
@@ -3765,6 +3809,12 @@ sub _advert_details {
             }
         }
 
+        if (not($advert->{payment_method_details} and $advert->{payment_method_details}->%*) and $advert->{payment_method}) {
+            $payment_method_defs //= $self->p2p_payment_methods;
+            $result->{payment_method_names} =
+                [map { $payment_method_defs->{$_}{display_name} } grep { exists $payment_method_defs->{$_} } split ',', $advert->{payment_method}];
+        }
+
         push @results, $result;
     }
 
@@ -3780,7 +3830,7 @@ Takes and returns an arrayref of orders.
 
 sub _order_details {
     my ($self, $list) = @_;
-    my @results;
+    my (@results, $payment_method_defs);
 
     for my $order (@$list) {
         my $result = +{
@@ -3833,12 +3883,17 @@ sub _order_details {
                 dispute_reason   => $order->{dispute_reason},
                 disputer_loginid => $order->{disputer_loginid},
             },
-            (exists $order->{payment_method_ids} and $self->loginid eq $order->{client_loginid})
-            ? (payment_method_ids => $order->{payment_method_ids})
-            : (),    # only order creator can see this field
-            (exists $order->{payment_method})         ? (payment_method         => $order->{payment_method})         : (),
-            (exists $order->{payment_method_details}) ? (payment_method_details => $order->{payment_method_details}) : (),
+            ($order->{payment_method})                                                  ? (payment_method         => $order->{payment_method}) : (),
+            ($order->{payment_method_details} and $order->{payment_method_details}->%*) ? (payment_method_details => $order->{payment_method_details})
+            : (),
         };
+
+        if (not exists $order->{payment_method_details} and $order->{payment_method}) {
+            $payment_method_defs //= $self->p2p_payment_methods;
+            $result->{payment_method_names} =
+                [map { $payment_method_defs->{$_}{display_name} } grep { exists $payment_method_defs->{$_} } split ',', $order->{payment_method}];
+        }
+
         push @results, $result;
     }
 
@@ -4470,16 +4525,17 @@ sub p2p_advertiser_payment_methods {
     my $advertiser = $self->_p2p_advertiser_cached;
     die +{error_code => 'AdvertiserNotRegistered'} unless $advertiser;
 
-    my $existing = $self->_p2p_advertiser_payment_methods(advertiser_id => $advertiser->{id});
-    return $existing unless %param;
-
     my $method_defs = $self->p2p_payment_methods;
+
+    my $existing = $self->_p2p_advertiser_payment_methods(advertiser_id => $advertiser->{id});
+    return $self->_p2p_advertiser_payment_method_details($existing, $method_defs) unless %param;
 
     $existing = $self->_p2p_advertiser_payment_method_delete($existing, $param{delete})               if $param{delete};
     $existing = $self->_p2p_advertiser_payment_method_update($method_defs, $existing, $param{update}) if $param{update};
     $self->_p2p_advertiser_payment_method_create($method_defs, $existing, $param{create}) if $param{create};
 
-    return $self->_p2p_advertiser_payment_methods(advertiser_id => $advertiser->{id});
+    my $update = $self->_p2p_advertiser_payment_methods(advertiser_id => $advertiser->{id});
+    return $self->_p2p_advertiser_payment_method_details($update, $method_defs);
 }
 
 =head2 _p2p_advertiser_payment_method_delete

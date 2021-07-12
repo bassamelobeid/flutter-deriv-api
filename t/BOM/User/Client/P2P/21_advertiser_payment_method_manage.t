@@ -99,19 +99,32 @@ subtest 'create' => sub {
             )->%*
         ],
         bag({
-                advertiser_id => $advertiser->{id},
-                method        => 'method1',
-                is_enabled    => bool(0),
-                fields        => {field1 => 'f1 val'}
+                method       => 'method1',
+                display_name => 'Method 1',
+                is_enabled   => bool(0),
+                fields       => {
+                    field1 => {
+                        value        => 'f1 val',
+                        display_name => 'Field 1',
+                        type         => 'text',
+                        required     => bool(1)}}
             },
             {
-                advertiser_id => $advertiser->{id},
-                method        => 'method2',
-                is_enabled    => bool(1),
-                fields        => {
-                    field3 => 'f3 val',
-                    field4 => 'f4 val'
-                }}
+                method       => 'method2',
+                display_name => 'Method 2',
+                is_enabled   => bool(1),
+                fields       => {
+                    field3 => {
+                        value        => 'f3 val',
+                        display_name => 'Field 3',
+                        type         => 'text',
+                        required     => bool(1)
+                    },
+                    field4 => {
+                        value        => 'f4 val',
+                        display_name => 'Field 4',
+                        type         => 'text',
+                        required     => bool(1)}}}
         ),
         'Create multiple methods ok'
     );
@@ -179,13 +192,21 @@ subtest 'update' => sub {
                 }}
         )->{$id},
         {
-            advertiser_id => $advertiser->{id},
-            method        => 'method1',
-            is_enabled    => bool(1),
-            fields        => {
-                field1 => 'f1 new val',
-                field2 => 'f2 val'
-            }
+            method       => 'method1',
+            display_name => 'Method 1',
+            is_enabled   => bool(1),
+            fields       => {
+                field1 => {
+                    value        => 'f1 new val',
+                    display_name => 'Field 1',
+                    type         => 'text',
+                    required     => bool(1)
+                },
+                field2 => {
+                    value        => 'f2 val',
+                    display_name => 'Field 2',
+                    type         => 'text',
+                    required     => bool(0)}}
         },
         'update a field and add another'
     );

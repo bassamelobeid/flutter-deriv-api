@@ -348,6 +348,7 @@ subtest 'Creating advert' => sub {
         min_order_amount         => num($params{min_order_amount}),
         min_order_amount_display => num($params{min_order_amount}),
         payment_method           => $params{payment_method},
+        payment_method_names     => ['Bank Transfer'],
         payment_info             => $params{payment_info},
         contact_info             => $params{contact_info},
         price                    => num($params{rate}),
@@ -362,13 +363,12 @@ subtest 'Creating advert' => sub {
             id                    => $advertiser->p2p_advertiser_info->{id},
             name                  => $name,
             total_completion_rate => undef,
-        },
-        payment_method_ids => undef,
-    };
+        }};
 
     cmp_deeply($advert, $expected_advert, "advert_create returns expected fields");
 
     $expected_advert->{advertiser_details}{total_completion_rate} = undef;
+
     cmp_deeply($advertiser->p2p_advertiser_adverts, [$expected_advert], "p2p_advertiser_adverts returns expected fields");
 
     # these are not returned by previous calls because there was no counterparty to check balance for buy orders

@@ -161,14 +161,10 @@ subtest 'Creating new buy order' => sub {
             dispute_reason   => undef,
             disputer_loginid => undef,
         },
-        payment_method         => undef,
-        payment_method_details => undef,
-        payment_method_ids     => undef,
     };
-    cmp_deeply($new_order,                                      $expected_order, 'order_create expected response');
-    cmp_deeply($client->p2p_order_info(id => $new_order->{id}), $expected_order, 'order_info() returns correct info');
-    delete $expected_order->{payment_method_details};    # not returned from order list
-    cmp_deeply($client->p2p_order_list, [$expected_order], 'order_list() returns correct info');
+    cmp_deeply($new_order,                                      $expected_order,   'order_create expected response');
+    cmp_deeply($client->p2p_order_info(id => $new_order->{id}), $expected_order,   'order_info() returns correct info');
+    cmp_deeply($client->p2p_order_list,                         [$expected_order], 'order_list() returns correct info');
 
 };
 
