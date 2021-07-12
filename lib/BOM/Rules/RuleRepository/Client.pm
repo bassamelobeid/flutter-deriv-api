@@ -17,6 +17,7 @@ use LandingCompany::Registry;
 
 use BOM::Platform::Context qw(localize);
 use BOM::Rules::Registry qw(rule);
+use BOM::Platform::Context qw(request);
 use BOM::Config::Runtime;
 use BOM::Config::CurrencyConfig;
 
@@ -95,6 +96,20 @@ rule 'client.is_not_virtual' => {
 
         return 1;
     }
+};
+
+rule 'client.forbidden_postcodes' => {
+    description => "Checks if the postalcode in action args or in the context client is allowed",
+    code        => sub {
+        my ($self, $context, $args) = @_;
+        my $forbidden_postcode_pattern =
+            request()->brand->countries_instance->countries_list->{$context->client->residence}->{forbidden_postcode_pattern};
+        my $postcode = $args->{address_postcode} // $context->client->address_postcode;
+
+        die +{code => 'ForbiddenPostcode'} if (defined $forbidden_postcode_pattern && $postcode =~ /$forbidden_postcode_pattern/i);
+
+        return 1;
+    },
 };
 
 1;

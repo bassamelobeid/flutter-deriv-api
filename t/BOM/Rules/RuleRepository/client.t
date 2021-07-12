@@ -112,4 +112,25 @@ subtest 'rule client.is_not_virtual' => sub {
     is_deeply exception { $rule_engine->apply_rules($rule_name) }, {error_code => 'PermissionDenied'}, 'Error with a virtual client';
 };
 
+subtest 'rule client.forbidden_postcodes' => sub {
+    my $rule_name = 'client.forbidden_postcodes';
+    $client->residence('gb');
+    $client->address_postcode('JE3');
+
+    is_deeply exception { $rule_engine->apply_rules($rule_name) }, {code => 'ForbiddenPostcode'}, 'correct error when postcode is forbidden';
+
+    $client->address_postcode('je3');
+
+    is_deeply exception { $rule_engine->apply_rules($rule_name) }, {code => 'ForbiddenPostcode'}, 'correct error when postcode is forbidden';
+
+    $client->address_postcode('Je3');
+
+    is_deeply exception { $rule_engine->apply_rules($rule_name) }, {code => 'ForbiddenPostcode'}, 'correct error when postcode is forbidden';
+
+    ok $rule_engine->apply_rules($rule_name, {address_postcode => 'EA1C'}), 'Test passes with a valid postcode in args';
+
+    $client->address_postcode('E1AC');
+    ok $rule_engine->apply_rules($rule_name), 'Test passes with valid postcode';
+};
+
 done_testing();

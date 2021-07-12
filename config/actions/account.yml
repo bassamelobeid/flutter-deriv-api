@@ -33,5 +33,6 @@ new_account:
         residence:
           gb:
             - profile.address_postcode_mandatory
+            - client.forbidden_postcodes
           default:
             - pass
