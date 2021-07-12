@@ -64,18 +64,17 @@ subtest 'sell ads' => sub {
     my $resp = $t->await::p2p_payment_methods({p2p_payment_methods => 1});
     test_schema('p2p_payment_methods', $resp);
 
-    my $method = {
-        method    => 'bank_transfer',
-        bank_name => 'maybank',
-        branch    => '001',
-        account   => '1234',
-    };
-
     $resp = $t->await::p2p_advertiser_payment_methods({
             p2p_advertiser_payment_methods => 1,
-            create                         => [$method]});
+            create => [{
+                method    => 'bank_transfer',
+                bank_name => 'maybank',
+                branch    => '001',
+                account   => '1234',
+    }]});
     test_schema('p2p_advertiser_payment_methods', $resp);
-    my ($method_id) = keys $resp->{p2p_advertiser_payment_methods}->%*;
+    my $method = $resp->{p2p_advertiser_payment_methods};
+    my ($method_id) = keys $method->%*;
 
     $resp = $t->await::p2p_advert_create({
         p2p_advert_create  => 1,
@@ -90,6 +89,13 @@ subtest 'sell ads' => sub {
     });
     test_schema('p2p_advert_create', $resp);
     my $advert = $resp->{p2p_advert_create};
+    cmp_deeply $advert->{payment_method_details}, $method, 'payment method details from advert create';
+
+    $resp = $t->await::p2p_advert_info({
+        p2p_advert_info => 1,
+        id              => $advert->{id},
+    });
+    cmp_deeply $advert->{payment_method_details}, $method, 'payment method details from advert info';
 
     my $client       = BOM::Test::Helper::P2P::create_advertiser;
     my $client_token = BOM::Platform::Token::API->new->create_token($client->loginid, 'test', ['payments']);
@@ -100,6 +106,7 @@ subtest 'sell ads' => sub {
         payment_method  => ['bank_transfer', 'other'],
     });
     is $resp->{p2p_advert_list}{list}[0]{id}, $advert->{id}, 'search ads by payment methods';
+    cmp_deeply $resp->{p2p_advert_list}{list}[0]{payment_method_names}, ['Bank Transfer'], 'payment method names in advert list';
 
     $resp = $t->await::p2p_order_create({
         p2p_order_create => 1,
@@ -109,21 +116,20 @@ subtest 'sell ads' => sub {
     test_schema('p2p_order_create', $resp);
     my $order = $resp->{p2p_order_create};
 
-    cmp_deeply $order->{payment_method_details}, [$method], 'got method details in from order_create';
+    cmp_deeply $order->{payment_method_details}, $method, 'got method details in from order_create';
 
     $t->await::authorize({authorize => $advertiser_token});
 
-    $method = {
-        method    => 'bank_transfer',
-        bank_name => 'hsbc',
-        branch    => '002',
-        account   => '4321',
-    };
-
     $resp = $t->await::p2p_advertiser_payment_methods({
             p2p_advertiser_payment_methods => 1,
-            create                         => [$method]});
-    $method_id = first { $resp->{p2p_advertiser_payment_methods}{$_}{fields}{bank_name} eq 'hsbc' } keys $resp->{p2p_advertiser_payment_methods}->%*;
+            create => [{
+                method    => 'bank_transfer',
+                bank_name => 'hsbc',
+                branch    => '002',
+                account   => '4321',
+            }]});
+    $method = $resp->{p2p_advertiser_payment_methods};
+    $method_id = first { $resp->{p2p_advertiser_payment_methods}{$_}{fields}{bank_name}{value} eq 'hsbc' } keys $method->%*;
 
     $resp = $t->await::p2p_advert_update({
             p2p_advert_update  => 1,
@@ -133,12 +139,18 @@ subtest 'sell ads' => sub {
     test_schema('p2p_advert_update', $resp);
 
     $t->await::authorize({authorize => $client_token});
+    
+    $resp = $t->await::p2p_advert_info({
+        p2p_advert_info  => 1,
+        id               => $advert->{id}
+    });
+    cmp_deeply $resp->{p2p_advert_info}{payment_method_names}, ['Bank Transfer'], 'payment method names for client';
 
     $resp = $t->await::p2p_order_info({
         p2p_order_info => 1,
         id             => $order->{id},
     });
-    cmp_deeply $resp->{p2p_order_info}{payment_method_details}, [$method], 'method details updated for client';
+    cmp_deeply $resp->{p2p_order_info}{payment_method_details}, { $method_id => $method->{$method_id} }, 'method details updated for client';
 
     $t->await::p2p_order_confirm({
         p2p_order_confirm => 1,
@@ -222,17 +234,17 @@ subtest 'sell orders' => sub {
     });
     is $resp->{p2p_advert_list}{list}[0]{id}, $advert->{id}, 'search ads by payment method';
 
-    my $method = {
+    $resp = $t->await::p2p_advertiser_payment_methods({
+            p2p_advertiser_payment_methods => 1,
+            create                         => [{
         method    => 'bank_transfer',
         bank_name => 'cimb',
         branch    => '001',
         account   => '1234',
-    };
-
-    $resp = $t->await::p2p_advertiser_payment_methods({
-            p2p_advertiser_payment_methods => 1,
-            create                         => [$method]});
-    my ($method_id) = keys $resp->{p2p_advertiser_payment_methods}->%*;
+    }]});
+    
+    my $method = $resp->{p2p_advertiser_payment_methods};
+    my ($method_id) = keys $method->%*;
 
     $resp = $t->await::p2p_order_create({
         p2p_order_create   => 1,
@@ -243,15 +255,21 @@ subtest 'sell orders' => sub {
     });
     test_schema('p2p_order_create', $resp);
     my $order = $resp->{p2p_order_create};
-    cmp_deeply $order->{payment_method_details}, [$method], 'got method details in from order_create';
+    cmp_deeply $order->{payment_method_details}, $method, 'got method details in from order_create';
 
+    $resp = $t->await::p2p_order_list({
+        p2p_order_list   => 1,
+    });
+    
+    cmp_deeply $resp->{p2p_order_list}{list}[0]{payment_method_names}, ['Bank Transfer'], 'payment method names in order list';
+    
     $t->await::authorize({authorize => $advertiser_token});
 
     $resp = $t->await::p2p_order_info({
         p2p_order_info => 1,
         id             => $order->{id},
     });
-    cmp_deeply $resp->{p2p_order_info}{payment_method_details}, [$method], 'counterparty sees payment details';
+    cmp_deeply $resp->{p2p_order_info}{payment_method_details}, $method, 'counterparty sees payment details';
 
 };
 

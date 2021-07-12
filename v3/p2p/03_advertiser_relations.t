@@ -53,7 +53,7 @@ subtest 'favourites' => sub {
     my $resp = $t->await::p2p_advertiser_relations({
             p2p_advertiser_relations => 1,
             add_favourites           => [$fav->_p2p_advertiser_cached->{id}]});
-    note explain $resp;
+
     test_schema('p2p_advertiser_relations', $resp);
     my $update = $resp->{p2p_advertiser_relations};
     is $update->{favourite_advertisers}[0]{id}, $fav->_p2p_advertiser_cached->{id}, 'created favourite';
