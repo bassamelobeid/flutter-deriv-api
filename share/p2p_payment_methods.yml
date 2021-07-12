@@ -301,6 +301,9 @@ orange_money:
 other:
   display_name: Other
   fields:
+    account:
+      display_name: "Account ID / Phone Number / Email"
+      required: 0
     instructions:
       display_name: Instructions
       type: memo
