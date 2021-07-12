@@ -843,10 +843,7 @@ subtest 'P2P Order Info' => sub {
             disputer_loginid => undef,
             dispute_reason   => undef
         },
-        payment_method         => undef,
-        payment_method_ids     => undef,
-        payment_method_details => undef,
-        stash                  => {
+        stash => {
             source_bypass_verification => 0,
             app_markup_percentage      => '0',
             valid_source               => 1
