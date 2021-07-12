@@ -176,7 +176,7 @@ sub execute_set_status {
             return
                 "<span class='error'>ERROR:</span>&nbsp;&nbsp;<b>$encoded_login_id $encoded_reason ($encoded_clerk)</b>&nbsp;&nbsp;has not been saved, cannot override existing status reason</b>"
                 if $client->status->$status_code;
-            $client->status->set($status_code, $params->{clerk}, $params->{reason});
+            $client->status->upsert($status_code, $params->{clerk}, $params->{reason});
         }
 
         $params->{override}->() if $params->{override};
