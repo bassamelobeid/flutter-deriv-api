@@ -22,20 +22,53 @@
                         "method"
                     ],
                     "properties": {
+                        "display_name": {
+                            "description": "Display name of payment method.",
+                            "type": "string"
+                        },
                         "fields": {
-                            "description": "Field values of method.",
+                            "description": "Payment method fields.",
                             "type": "object",
                             "additionalProperties": false,
                             "minProperties": 1,
                             "patternProperties": {
                                 "^[a-z0-9_]{1,30}$": {
-                                    "description": "Payment method field value.",
-                                    "type": "string"
+                                    "description": "Field identifier.",
+                                    "type": "object",
+                                    "additionalProperties": false,
+                                    "required": [
+                                        "display_name",
+                                        "required",
+                                        "type",
+                                        "value"
+                                    ],
+                                    "properties": {
+                                        "display_name": {
+                                            "description": "Display name of payment method field.",
+                                            "type": "string"
+                                        },
+                                        "required": {
+                                            "description": "Is field required or optional.",
+                                            "type": "integer"
+                                        },
+                                        "type": {
+                                            "description": "Field type.",
+                                            "type": "string",
+                                            "enum": [
+                                                "text",
+                                                "memo"
+                                            ]
+                                        },
+                                        "value": {
+                                            "description": "Current value of payment method field.",
+                                            "type": "string"
+                                        }
+                                    }
                                 }
                             }
                         },
                         "is_enabled": {
-                            "description": "Indicates if this method is available on adverts.",
+                            "description": "Indicates if this method is available on adverts and orders.",
                             "type": "integer",
                             "enum": [
                                 0,
