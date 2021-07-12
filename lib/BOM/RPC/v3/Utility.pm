@@ -538,6 +538,8 @@ sub error_map {
         'DXInvalidAccount'         => localize("Sorry, we couldn't find your DXTrader account."),
         'InvalidTradingAccount'    => localize("Sorry, we couldn't find your trading account."),
         'CannotLinkVirtualAndReal' => localize("Please ensure your trading account type is the same as your wallet account type."),
+        'ForbiddenPostcode'        =>
+            localize("Our services are not available for your country of residence. Please see our terms and conditions for more information."),
 
         'CurrencySuspended'      => localize("The provided currency [_1] is not selectable at the moment."),
         'InvalidCryptoCurrency'  => localize("The provided currency [_1] is not a valid cryptocurrency."),

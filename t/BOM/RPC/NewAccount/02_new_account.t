@@ -88,7 +88,6 @@ $client_details = {
     account_opening_reason => 'Speculative',
     citizen                => 'de',
     place_of_birth         => "de",
-
 };
 
 $params = {
@@ -1391,6 +1390,84 @@ subtest 'Repeating phone number' => sub {
     $rpc_ct->call_ok('new_account_real', $params)->has_no_system_error->has_error->error_code_is('InvalidPhone', 'Repeating digits are not valid')
         ->error_message_is('Please enter a valid phone number, including the country code (e.g. +15417541234).',
         "Invalid phone number provided (repeated digits)");
+};
+
+subtest 'Forbidden postcodes' => sub {
+    my $idauth_mock = Test::MockModule->new('BOM::Platform::Client::IDAuthentication');
+    $idauth_mock->mock(
+        'run_validation',
+        sub {
+            return 1;
+        });
+
+    my $password = 'Abcd33!@';
+    my $hash_pwd = BOM::User::Password::hashpw($password);
+    my $email    = 'the_forbidden_one' . rand(999) . '@binary.com';
+    my $user     = BOM::User->create(
+        email          => $email,
+        password       => $hash_pwd,
+        email_verified => 1,
+    );
+    my $client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'VRTC',
+        email       => $email,
+        residence   => 'gb',
+    });
+
+    my $auth_token = BOM::Platform::Token::API->new->create_token($client_vr->loginid, 'test token');
+
+    $params->{country}                  = 'gb';
+    $params->{args}->{residence}        = 'gb';
+    $params->{args}->{client_password}  = 'assfqwf12412!';
+    $params->{args}->{subtype}          = 'real';
+    $params->{args}->{first_name}       = 'mr family';
+    $params->{args}->{last_name}        = 'man';
+    $params->{args}->{date_of_birth}    = '1999-01-02';
+    $params->{args}->{email}            = $email;
+    $params->{args}->{phone}            = '+15417541234';
+    $params->{args}->{salutation}       = 'hello';
+    $params->{args}->{citizen}          = 'gb';
+    $params->{args}->{address_postcode} = 'JE2 1234';
+    $params->{token}                    = BOM::Platform::Token::API->new->create_token($client_vr->loginid, 'test token');
+
+    $rpc_ct->call_ok('new_account_real', $params)->has_no_system_error->has_error->error_code_is('ForbiddenPostcode', 'Invalid Jersey postcode');
+    $params->{args}->{address_postcode} = 'EA1 C1A1';
+
+    my $result = $rpc_ct->call_ok('new_account_real', $params)->has_no_system_error->has_no_error('gb mx account created successfully')->result;
+    ok $result->{client_id}, 'got a client id';
+    $idauth_mock->unmock_all;
+
+    $params->{args} = {
+        'other_instruments_trading_frequency'  => '6-10 transactions in the past 12 months',
+        'forex_trading_frequency'              => '0-5 transactions in the past 12 months',
+        'education_level'                      => 'Secondary',
+        'forex_trading_experience'             => '1-2 years',
+        'binary_options_trading_experience'    => '1-2 years',
+        'cfd_trading_experience'               => '1-2 years',
+        'employment_industry'                  => 'Finance',
+        'income_source'                        => 'Self-Employed',
+        'other_instruments_trading_experience' => 'Over 3 years',
+        'binary_options_trading_frequency'     => '40 transactions or more in the past 12 months',
+        'set_financial_assessment'             => 1,
+        'occupation'                           => 'Managers',
+        'cfd_trading_frequency'                => '0-5 transactions in the past 12 months',
+        'source_of_wealth'                     => 'Company Ownership',
+        'estimated_worth'                      => '$100,000 - $250,000',
+        'employment_status'                    => 'Self-Employed',
+        'net_income'                           => '$25,000 - $50,000',
+        'account_turnover'                     => '$50,001 - $100,000',
+        'tax_residence'                        => 'gb',
+        'tax_identification_number'            => 'E1241241',
+        'account_opening_reason'               => 'Speculative',
+    };
+
+    $params->{args}->{address_postcode} = 'JE2';
+    $rpc_ct->call_ok('new_account_maltainvest', $params)
+        ->has_no_system_error->has_error->error_code_is('ForbiddenPostcode', 'Invalid Jersey postcode');
+
+    $params->{args}->{address_postcode} = 'EA1 C1A1';
+    $result = $rpc_ct->call_ok('new_account_maltainvest', $params)->has_no_system_error->has_no_error('gb mf account created successfully')->result;
+    ok $result->{client_id}, 'got a client id';
 };
 
 done_testing();
