@@ -79,8 +79,8 @@ subtest 'disable cashier' => sub {
             BOM::RPC::v3::Utility::cashier_validation($client, $type),
             {
                 error => {
-                    code              => 'PaymentAgentWithdrawError',
-                    message_to_client => 'Sorry, this facility is temporarily disabled due to system maintenance.'
+                    code              => 'CashierForwardError',
+                    message_to_client => 'Sorry, cashier is temporarily unavailable due to system maintenance.'
                 }
             },
             'cashier suspended has error for ' . $type

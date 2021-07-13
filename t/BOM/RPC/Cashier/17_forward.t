@@ -96,6 +96,15 @@ my $client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     place_of_birth => 'id',
 });
 $user_client_cr->add_client($client_cr);
+my $client_cr_token = BOM::Platform::Token::API->new->create_token($client_cr->loginid, 'test token');
+
+my $client_btc = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+    broker_code => 'CR',
+    email       => $email,
+});
+$client_btc->account('BTC');
+$user_client_cr->add_client($client_btc);
+my $client_btc_token = BOM::Platform::Token::API->new->create_token($client_btc->loginid, 'test token');
 
 my $user_client_cr1 = BOM::User->create(
     email          => 'cr1@binary.com',
@@ -170,7 +179,7 @@ subtest 'common' => sub {
         ->has_no_system_error->has_error->error_code_is('CashierForwardError', 'Client has wrong default currency for landing_company')
         ->error_message_is('JPY transactions may not be performed with this account.', 'Correct error message for wrong default account');
 
-    $params->{token} = BOM::Platform::Token::API->new->create_token($client_cr->loginid, 'test token');
+    $params->{token} = $client_cr_token;
     $rpc_ct->call_ok('cashier', $params)->has_no_system_error->has_error->error_code_is('ASK_CURRENCY', 'Client has no default currency')
         ->error_message_is('Please set the currency.', 'Correct error message when currency is not set');
 
@@ -238,28 +247,63 @@ subtest 'common' => sub {
 };
 
 subtest 'deposit' => sub {
+    $params->{token}  = $client_cr_token;
     $params->{domain} = 'binary.com';
+
+    $runtime_system->suspend->payments(1);
+    $rpc_ct->call_ok('cashier', $params)->has_no_system_error->has_error->error_code_is('CashierForwardError', 'Cashier is suspended')
+        ->error_message_is('Sorry, cashier is temporarily unavailable due to system maintenance.',
+        'Correct error message for deposit when payments are suspended.');
+    $runtime_system->suspend->payments(0);
+
     $runtime_system->suspend->cashier(1);
     $rpc_ct->call_ok('cashier', $params)->has_no_system_error->has_error->error_code_is('CashierForwardError', 'Cashier is suspended')
         ->error_message_is('Sorry, cashier is temporarily unavailable due to system maintenance.',
-        'Correct error message for withdrawal when cashier is locked.');
+        'Correct error message for deposit when cashier is suspended.');
     $runtime_system->suspend->cashier(0);
 
     $client_cr->status->set('unwelcome', 'system');
-
     $rpc_ct->call_ok('cashier', $params)->has_no_system_error->has_error->error_code_is('CashierForwardError', 'Client marked as unwelcome')
         ->error_message_is('Your account is restricted to withdrawals only.', 'Correct error message for client marked as unwelcome');
-
     $client_cr->status->clear_unwelcome;
 
-    $runtime_system->suspend->cashier(1);
+    $runtime_system->suspend->cryptocashier(1);
+    warning {
+        $rpc_ct->call_ok('cashier', $params)->has_no_system_error->has_error->error_internal_message_like(qr/Error with DF CreateCustomer/,
+            'Fiat client can access cashier when cryptocashier is suspended');
+    };
+    $runtime_system->suspend->cryptocashier(0);
+
+};
+
+subtest 'crypto deposit' => sub {
+    $params->{token} = $client_btc_token;
+
+    $runtime_system->suspend->payments(1);
     $rpc_ct->call_ok('cashier', $params)->has_no_system_error->has_error->error_code_is('CashierForwardError', 'Cashier is suspended')
-        ->error_message_is('Sorry, cashier is temporarily unavailable due to system maintenance.',
-        'Correct error message for deposit when cashier is locked.');
+        ->error_message_is('Sorry, cashier is temporarily unavailable due to system maintenance.', 'error when payments are suspended.');
+    $runtime_system->suspend->payments(0);
+
+    $runtime_system->suspend->cryptocashier(1);
+    $rpc_ct->call_ok('cashier', $params)->has_no_system_error->has_error->error_code_is('CashierForwardError', 'Cashier is suspended')
+        ->error_message_is('Sorry, crypto cashier is temporarily unavailable due to system maintenance.', 'error when cryptocashier is suspended.');
+    $runtime_system->suspend->cryptocashier(0);
+
+    $runtime_system->suspend->cashier(1);
+    $rpc_ct->call_ok('cashier', $params)->has_no_system_error->has_no_error('no error when fiat cashier is suspended');
     $runtime_system->suspend->cashier(0);
+
+    $runtime_system->suspend->cryptocurrencies('BTC');
+    $rpc_ct->call_ok('cashier', $params)->has_no_system_error->has_error->error_code_is('CashierForwardError', 'Cashier is suspended')
+        ->error_message_is('Sorry, crypto cashier is temporarily unavailable due to system maintenance.', 'error when currency is suspended.');
+
+    $runtime_system->suspend->cryptocurrencies('LTC');
+    $rpc_ct->call_ok('cashier', $params)->has_no_system_error->has_no_error('no error when other currency is suspended');
+    $runtime_system->suspend->cryptocurrencies('');
 };
 
 subtest 'withdraw' => sub {
+    $params->{token} = $client_cr_token;
     $params->{args}->{cashier} = 'withdraw';
 
     $client_cr->status->set('withdrawal_locked', 'system', 'locked for security reason');

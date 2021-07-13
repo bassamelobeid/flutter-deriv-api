@@ -148,9 +148,6 @@ rpc "cashier", sub {
         });
     }
 
-    return $error_sub->(localize('Sorry, cashier is temporarily unavailable due to system maintenance.'))
-        if BOM::Config::CurrencyConfig::is_cashier_suspended();
-
     my $df_client = BOM::Platform::Client::DoughFlowClient->new({'loginid' => $client->loginid});
     # hit DF's CreateCustomer API
     my $ua = LWP::UserAgent->new(timeout => 20);

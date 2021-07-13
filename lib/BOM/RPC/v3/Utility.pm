@@ -1142,16 +1142,13 @@ sub cashier_validation {
     if ($type =~ /^(deposit|withdraw|payment_withdraw)$/) {
         my $validation_error = BOM::RPC::v3::Utility::validation_checks($client, ['compliance_checks']);
         return $validation_error if $validation_error;
-
-        return $error_sub->(localize('Sorry, cashier is temporarily unavailable due to system maintenance.'))
-            if BOM::Config::CurrencyConfig::is_cashier_suspended;
     }
 
     if ($type eq 'paymentagent_withdraw') {
         my $app_config = BOM::Config::Runtime->instance->app_config;
-        if (BOM::Config::CurrencyConfig::is_cashier_suspended or $app_config->system->suspend->payment_agents) {
-            return $error_sub->(localize('Sorry, this facility is temporarily disabled due to system maintenance.'));
-        }
+
+        return $error_sub->(localize('Sorry, this facility is temporarily disabled due to system maintenance.'))
+            if ($app_config->system->suspend->payment_agents);
 
         return $error_sub->(localize('Payment agent facilities are not available for this account.'))
             unless $client->landing_company->allows_payment_agents;
