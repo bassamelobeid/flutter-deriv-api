@@ -347,6 +347,11 @@ subtest 'get account status' => sub {
                                 }}
                         },
                         needs_verification => [],
+                        attempts           => {
+                            latest  => undef,
+                            count   => 0,
+                            history => []
+                        },
                     }
                 },
                 'duplicate_account is not in the status'
@@ -399,6 +404,11 @@ subtest 'get account status' => sub {
                                 }}
                         },
                         needs_verification => ["document", "identity"],
+                        attempts           => {
+                            latest  => undef,
+                            count   => 0,
+                            history => []
+                        },
                     },
                     cashier_validation =>
                         ['ASK_AUTHENTICATE', 'ASK_CURRENCY', 'ASK_FINANCIAL_RISK_APPROVAL', 'ASK_TIN_INFORMATION', 'FinancialAssessmentRequired'],
@@ -452,6 +462,11 @@ subtest 'get account status' => sub {
                                 }}
                         },
                         needs_verification => [],
+                        attempts           => {
+                            latest  => undef,
+                            count   => 0,
+                            history => []
+                        },
                     },
                     cashier_validation => ['ASK_CURRENCY', 'ASK_FINANCIAL_RISK_APPROVAL', 'ASK_TIN_INFORMATION', 'FinancialAssessmentRequired'],
                 },
@@ -500,6 +515,11 @@ subtest 'get account status' => sub {
                                 }}
                         },
                         needs_verification => ['identity'],
+                        attempts           => {
+                            latest  => undef,
+                            count   => 0,
+                            history => []
+                        },
                     },
                     cashier_validation => ['ASK_CURRENCY', 'ASK_FINANCIAL_RISK_APPROVAL', 'ASK_TIN_INFORMATION', 'FinancialAssessmentRequired'],
                 },
@@ -565,6 +585,11 @@ subtest 'get account status' => sub {
                                 }}
                         },
                         needs_verification => [],
+                        attempts           => {
+                            latest  => undef,
+                            count   => 0,
+                            history => []
+                        },
                     },
                     cashier_validation => ['ASK_CURRENCY', 'ASK_FINANCIAL_RISK_APPROVAL', 'ASK_TIN_INFORMATION', 'FinancialAssessmentRequired'],
                 },
@@ -656,6 +681,11 @@ subtest 'get account status' => sub {
                                     }}
                             },
                             needs_verification => superbagof(qw(identity)),
+                            attempts           => {
+                                latest  => undef,
+                                count   => 0,
+                                history => []
+                            },
                         },
                         cashier_validation => ['ASK_CURRENCY', 'ASK_UK_FUNDS_PROTECTION', 'documents_expired'],
                     },
@@ -709,6 +739,11 @@ subtest 'get account status' => sub {
                                 }}
                         },
                         needs_verification => [],
+                        attempts           => {
+                            latest  => undef,
+                            count   => 0,
+                            history => []
+                        },
                     }
                 },
                 'Intial CR status is correct'
@@ -756,6 +791,11 @@ subtest 'get account status' => sub {
                                 }}
                         },
                         needs_verification => [],
+                        attempts           => {
+                            latest  => undef,
+                            count   => 0,
+                            history => []
+                        },
                     },
                     cashier_validation => ['withdrawal_locked_status'],
                 },
@@ -825,6 +865,11 @@ subtest 'get account status' => sub {
                                 }}
                         },
                         needs_verification => ["document", "identity"],
+                        attempts           => {
+                            latest  => undef,
+                            count   => 0,
+                            history => []
+                        },
                     }
                 },
                 'authentication page for POI and POA should be shown if the client is not age verified and needs action is set regardless of balance'
@@ -872,6 +917,11 @@ subtest 'get account status' => sub {
                                 }}
                         },
                         needs_verification => ["document"],
+                        attempts           => {
+                            latest  => undef,
+                            count   => 0,
+                            history => []
+                        },
                     }
                 },
                 'authentication page should be shown for proof of address if needs action is set for age verified clients'
@@ -951,6 +1001,11 @@ subtest 'get account status' => sub {
                                     }}
                             },
                             needs_verification => ['identity'],
+                            attempts           => {
+                                latest  => undef,
+                                count   => 0,
+                                history => []
+                            },
                         },
                         cashier_validation => ['documents_expired'],
                     },
@@ -1045,6 +1100,11 @@ subtest 'get account status' => sub {
                                     }}
                             },
                             needs_verification => ['identity'],
+                            attempts           => {
+                                latest  => undef,
+                                count   => 0,
+                                history => []
+                            },
                         },
                         cashier_validation => ['documents_expired'],
                     },
@@ -1101,6 +1161,11 @@ subtest 'get account status' => sub {
                                 }}
                         },
                         needs_verification => ["document", "identity"],
+                        attempts           => {
+                            latest  => undef,
+                            count   => 0,
+                            history => []
+                        },
                     },
                     cashier_validation => ['ASK_AUTHENTICATE', 'FinancialAssessmentRequired'],
                 },
@@ -1154,6 +1219,11 @@ subtest 'get account status' => sub {
                                 }}
                         },
                         needs_verification => [],
+                        attempts           => {
+                            latest  => undef,
+                            count   => 0,
+                            history => []
+                        },
                     }
                 },
                 'allow_document_upload flag is set if client is not authenticated and status exists on client'
@@ -1202,6 +1272,11 @@ subtest 'get account status' => sub {
                                 }}
                         },
                         needs_verification => [],
+                        attempts           => {
+                            latest  => undef,
+                            count   => 0,
+                            history => []
+                        },
                     }
                 },
                 'allow_document_upload flag is not send back if client is authenticated and even if status exists on client'
@@ -1254,6 +1329,11 @@ subtest 'get account status' => sub {
                                 }}
                         },
                         needs_verification => [],
+                        attempts           => {
+                            latest  => undef,
+                            count   => 0,
+                            history => []
+                        },
                     }
                 },
                 'test if all manual status has been removed'
@@ -1308,6 +1388,11 @@ subtest 'get account status' => sub {
                                     }}
                             },
                             needs_verification => superbagof(qw(identity)),
+                            attempts           => {
+                                latest  => undef,
+                                count   => 0,
+                                history => []
+                            },
                         }
                     },
                 );
@@ -1357,7 +1442,13 @@ subtest 'get account status' => sub {
                                         status => 'none',
                                     }}
                             },
-                            needs_verification => superbagof(qw(document))}
+                            needs_verification => superbagof(qw(document)),
+                            attempts           => {
+                                latest  => undef,
+                                count   => 0,
+                                history => []
+                            },
+                        },
                     },
                 );
 
@@ -1411,6 +1502,11 @@ subtest 'get account status' => sub {
                                 }}
                         },
                         needs_verification => ["document", "identity"],
+                        attempts           => {
+                            latest  => undef,
+                            count   => 0,
+                            history => []
+                        },
                     },
                     cashier_validation => ['ASK_AUTHENTICATE', 'FinancialAssessmentRequired']
                 },
@@ -1460,6 +1556,11 @@ subtest 'get account status' => sub {
                                 }}
                         },
                         needs_verification => [],
+                        attempts           => {
+                            latest  => undef,
+                            count   => 0,
+                            history => []
+                        },
                     },
                 },
                 'no prompt for malta client if first deposit is pending'
@@ -1508,6 +1609,11 @@ subtest 'get account status' => sub {
                                 }}
                         },
                         needs_verification => ["document", "identity"],
+                        attempts           => {
+                            latest  => undef,
+                            count   => 0,
+                            history => []
+                        },
                     },
                 },
                 'ask for documents for malta client if first deposit has been done and not authorized'
@@ -1588,6 +1694,11 @@ subtest 'get account status' => sub {
                                     }}
                             },
                             needs_verification => superbagof(qw(identity)),
+                            attempts           => {
+                                latest  => undef,
+                                count   => 0,
+                                history => []
+                            },
                         },
                         cashier_validation => ['documents_expired'],
                     },
@@ -1654,6 +1765,11 @@ subtest 'get account status' => sub {
                                 }}
                         },
                         needs_verification => ["document", "identity"],
+                        attempts           => {
+                            latest  => undef,
+                            count   => 0,
+                            history => []
+                        },
                     },
                     cashier_validation => ignore(),
                 },
@@ -1719,6 +1835,11 @@ subtest 'get account status' => sub {
                                 }}
                         },
                         needs_verification => ["document"],
+                        attempts           => {
+                            latest  => undef,
+                            count   => 0,
+                            history => []
+                        },
                     },
                     cashier_validation => ignore(),
                 },
@@ -1776,8 +1897,12 @@ subtest 'get account status' => sub {
                                     status => 'none',
                                 }}
                         },
-                        needs_verification => ["document"],
                         needs_verification => [],
+                        attempts           => {
+                            latest  => undef,
+                            count   => 0,
+                            history => []
+                        },
                     },
                     cashier_validation => ignore(),
                 },
@@ -1868,6 +1993,11 @@ subtest 'get account status' => sub {
                                     }}
                             },
                             needs_verification => superbagof(qw(identity)),
+                            attempts           => {
+                                latest  => undef,
+                                count   => 0,
+                                history => []
+                            },
                         },
                         cashier_validation => ['ASK_CURRENCY', 'ASK_UK_FUNDS_PROTECTION', 'documents_expired'],
                     },
@@ -1935,6 +2065,11 @@ subtest 'get account status' => sub {
                                     }}
                             },
                             needs_verification => [],
+                            attempts           => {
+                                latest  => undef,
+                                count   => 0,
+                                history => []
+                            },
                         },
                         cashier_validation => ignore(),
                     },
@@ -2015,6 +2150,11 @@ subtest 'get account status' => sub {
                                     }}
                             },
                             needs_verification => ["identity"],
+                            attempts           => {
+                                latest  => undef,
+                                count   => 0,
+                                history => []
+                            },
                         },
                         cashier_validation => ignore(),
                     },
@@ -2086,6 +2226,11 @@ subtest 'get account status' => sub {
                         },
                     },
                     needs_verification => ['identity'],
+                    attempts           => {
+                        latest  => undef,
+                        count   => 0,
+                        history => []
+                    },
                 };
 
                 my $result = $method_response->{authentication};
@@ -2146,6 +2291,11 @@ subtest 'get account status' => sub {
                                     }}
                             },
                             needs_verification => ["document"],
+                            attempts           => {
+                                latest  => undef,
+                                count   => 0,
+                                history => []
+                            },
                         },
                         cashier_validation => ignore(),
                     },
@@ -2211,7 +2361,12 @@ subtest 'get account status' => sub {
                             document => {
                                 status => "none",
                             },
-                            needs_verification => ["document", "identity"]
+                            needs_verification => ["document", "identity"],
+                            attempts           => {
+                                latest  => undef,
+                                count   => 0,
+                                history => []
+                            },
                         },
                         cashier_validation => ignore(),
                     },
@@ -2269,6 +2424,11 @@ subtest 'get account status' => sub {
                                 }}
                         },
                         needs_verification => ["document", "identity"],
+                        attempts           => {
+                            latest  => undef,
+                            count   => 0,
+                            history => []
+                        },
                     },
                     cashier_validation => ignore(),
                 },
@@ -2322,6 +2482,11 @@ subtest 'get account status' => sub {
                                 }}
                         },
                         needs_verification => ["identity"],
+                        attempts           => {
+                            latest  => undef,
+                            count   => 0,
+                            history => []
+                        },
                     },
                     cashier_validation => ['cashier_locked_status'],
                 },
@@ -2406,6 +2571,11 @@ subtest "Test onfido is_country_supported" => sub {
                         }}
                 },
                 needs_verification => [],
+                attempts           => {
+                    latest  => undef,
+                    count   => 0,
+                    history => []
+                },
             }
         },
         'Onfido-unsupported country correct response'
@@ -2451,6 +2621,11 @@ subtest "Test onfido is_country_supported" => sub {
                         }}
                 },
                 needs_verification => [],
+                attempts           => {
+                    latest  => undef,
+                    count   => 0,
+                    history => []
+                },
             }
         },
         'is_country_supported uses POB as priority when checking'
@@ -2532,7 +2707,12 @@ subtest 'Experian validated account' => sub {
                                 status => 'none',
                             }}
                     },
-                    needs_verification => []
+                    needs_verification => [],
+                    attempts           => {
+                        latest  => undef,
+                        count   => 0,
+                        history => []
+                    },
                 },
                 cashier_validation => ignore(),
             },
@@ -2595,6 +2775,11 @@ subtest 'Experian validated account' => sub {
                             }}
                     },
                     needs_verification => supersetof('identity', 'document'),
+                    attempts           => {
+                        latest  => undef,
+                        count   => 0,
+                        history => []
+                    },
                 },
                 cashier_validation => ignore(),
             },
@@ -2658,7 +2843,12 @@ subtest 'Experian validated account' => sub {
                                     status => 'none',
                                 }}
                         },
-                        needs_verification => ['identity']
+                        needs_verification => ['identity'],
+                        attempts           => {
+                            latest  => undef,
+                            count   => 0,
+                            history => []
+                        },
                     },
                     cashier_validation => ignore(),
                 },
@@ -2727,6 +2917,11 @@ subtest 'Experian validated account' => sub {
                                     }}
                             },
                             needs_verification => [],
+                            attempts           => {
+                                latest  => undef,
+                                count   => 0,
+                                history => []
+                            },
                         },
                         cashier_validation => ignore(),
                     },
@@ -2801,6 +2996,11 @@ subtest 'Experian validated account' => sub {
                                 }}
                         },
                         needs_verification => [],
+                        attempts           => {
+                            latest  => undef,
+                            count   => 0,
+                            history => []
+                        },
                     },
                     cashier_validation => ignore(),
                 },
@@ -2877,7 +3077,12 @@ subtest 'Experian validated account' => sub {
                                         status => 'none',
                                     }}
                             },
-                            needs_verification => []
+                            needs_verification => [],
+                            attempts           => {
+                                latest  => undef,
+                                count   => 0,
+                                history => []
+                            },
                         },
                         cashier_validation => ignore(),
                     },
@@ -2971,6 +3176,11 @@ subtest 'Experian validated account' => sub {
                                     }}
                             },
                             needs_verification => ['identity'],
+                            attempts           => {
+                                latest  => undef,
+                                count   => 0,
+                                history => []
+                            },
                         },
                         cashier_validation => ignore(),
                     },
@@ -3310,7 +3520,12 @@ subtest 'Social identity provider' => sub {
                     status => 'none'
                 },
                 needs_verification => [],
-                document           => {'status' => 'none'}
+                attempts           => {
+                    latest  => undef,
+                    count   => 0,
+                    history => []
+                },
+                document => {'status' => 'none'}
             },
         },
         'has social_identity_provider as google'

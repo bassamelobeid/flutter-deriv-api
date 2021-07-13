@@ -1107,6 +1107,11 @@ sub _get_authentication {
         document => {
             status => "none",
         },
+        attempts => {
+            count   => 0,
+            history => [],
+            latest  => undef
+        },
     };
 
     return $authentication_object if $client->is_virtual;
@@ -1130,6 +1135,8 @@ sub _get_authentication {
     $needs_verification_hash{document} = 1 if $client->needs_poa_verification($documents, $poa_status, $args{is_verification_required});
     # Craft the `needs_verification` array
     $authentication_object->{needs_verification} = [sort keys %needs_verification_hash];
+    # Craft the `attempts` object
+    $authentication_object->{attempts} = $client->poi_attempts;
     return $authentication_object;
 }
 

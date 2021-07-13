@@ -67,9 +67,24 @@
          "required": [
              "needs_verification",
              "document",
-             "identity"
+             "identity",
+             "attempts"
          ],
          "properties" : {
+             "attempts" : {
+                "type" : "object",
+                "properties": {
+                    "count" : {
+                        "type" : "integer"
+                    },
+                    "history" : {
+                        "type" : "array"
+                    },
+                    "latest" : {
+                        "type" : [ "object", "null" ]
+                    }
+                }
+             },
              "needs_verification" : {
                  "type" : "array"
              },
