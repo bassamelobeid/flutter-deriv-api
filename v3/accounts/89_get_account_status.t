@@ -1,6 +1,7 @@
 use strict;
 use warnings;
 use Test::More;
+use Test::Deep;
 
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
@@ -8,6 +9,7 @@ use BOM::Test::Helper qw/test_schema build_wsapi_test call_mocked_consumer_group
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
+
 use BOM::Platform::Account::Virtual;
 use BOM::Database::Model::OAuth;
 use await;
@@ -64,6 +66,34 @@ subtest 'Onfido country code' => sub {
 
         is $res->{get_account_status}->{authentication}->{identity}->{services}->{onfido}->{country_code}, 'BRA', 'Expected country code found';
     };
+};
+
+subtest 'POI Attempts' => sub {
+    my ($vr_client, $user) = create_vr_account({
+        email           => 'poi+attempts@binary.com',
+        client_password => 'abc123',
+        residence       => 'br',
+    });
+
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+    });
+
+    my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $client->loginid);
+    $t->await::authorize({authorize => $token});
+
+    $user->add_client($client);
+
+    my $res = $t->await::get_account_status({get_account_status => 1});
+    test_schema('get_account_status', $res);
+    cmp_deeply $res->{get_account_status}->{authentication}->{attempts}, {
+        count   => 0,
+        history => [],
+        latest  => undef,
+    }, 'expected result for empty history';
+
+    # TODO: Add more test cases when IDV is implemented
+    
 };
 
 sub create_vr_account {
