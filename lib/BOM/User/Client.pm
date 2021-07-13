@@ -57,7 +57,7 @@ use BOM::Config;
 use BOM::Config::Redis;
 use BOM::Config::CurrencyConfig;
 use BOM::Config::Onfido;
-
+use BOM::User::IdentityVerification;
 use BOM::User::Client::PaymentNotificationQueue;
 use BOM::User::Client::PaymentTransaction::Doughflow;
 
@@ -6637,6 +6637,104 @@ sub linked_accounts {
             balance    => $account->{display_balance},
             currency   => $account->{currency},
             platform   => $account->{platform}}};
+}
+
+=head2 poi_attempts
+
+Gets the list of POI attempts in chronological descending order.
+
+The following services are supported:
+
+=over 4
+
+=item * C<onfido>
+
+=item * C<idv>
+
+=back
+
+Each element of the list is a hashref containing:
+
+=over 4
+
+=item * C<service> - the name of the service (onfido, idv)
+
+=item * C<id> - the id of this attempt, make sure these are strings
+
+=item * C<status> - the status of this attempt (keep it simple: pending, verified, rejected)
+
+=item * C<country_code> - the country code used/selected on this attempt
+
+=item * C<timestamp> - timestamp of the attempt
+
+=back
+
+It returns an hashref with the following structure:
+
+=over 4
+
+=item * C<history> - the list mentioned above
+
+=item * C<count> - the size of the list mentioned above
+
+=item * C<latest> - the latest attempt made (the head of the list mentioned above)
+
+=back
+
+=cut
+
+sub poi_attempts {
+    my ($self) = @_;
+    my $attempts = [];
+
+    if (my $onfido_checks = BOM::User::Onfido::get_onfido_checks($self->binary_user_id, undef, 1)) {
+        for my $onfido_check ($onfido_checks->@*) {
+            my ($onfido_id, $onfido_result, $onfido_created_at) = @{$onfido_check}{qw/id result created_at/};
+
+            $onfido_result //= '';
+
+            my $onfido_status = 'pending';
+            $onfido_status = 'rejected' if $onfido_result eq 'consider';
+            $onfido_status = 'verified' if $onfido_result eq 'clear';
+
+            push $attempts->@*, {
+                id      => $onfido_id,
+                status  => $onfido_status,
+                service => 'onfido',
+                # the country for onfido is just this, not stored anywhere
+                country_code => $self->place_of_birth // $self->residence,
+                timestamp    => Date::Utility->new($onfido_created_at)->epoch,
+            };
+        }
+    }
+
+    my $idv = BOM::User::IdentityVerification->new(user_id => $self->binary_user_id);
+
+    if (my $idv_checks = $idv->get_document_check_list) {
+        for my $idv_check ($idv_checks->@*) {
+            my $idv_status = 'pending';
+            $idv_status = 'rejected' if $idv_check->{status} eq 'failed';
+            $idv_status = 'rejected' if $idv_check->{status} eq 'refuted';
+            $idv_status = 'verified' if $idv_check->{status} eq 'verified';
+
+            push $attempts->@*,
+                {
+                id           => '' . $idv_check->{id},
+                status       => $idv_status,
+                service      => 'idv',
+                country_code => $idv_check->{issuing_country},
+                timestamp    => Date::Utility->new($idv_check->{submitted_at})->epoch,
+                };
+        }
+    }
+
+    $attempts = [sort { $b->{timestamp} <=> $a->{timestamp} } $attempts->@*];
+
+    return {
+        latest  => $attempts->[0],
+        count   => scalar $attempts->@*,
+        history => $attempts,
+    };
 }
 
 1;

@@ -154,7 +154,29 @@ sub get_latest_onfido_check {
     }
 
     return;
+}
 
+=head2 get_onfido_checks
+
+Gets an arrayref of all the Onfido checks made by the user.
+
+=cut
+
+sub get_onfido_checks {
+    my ($user_id) = @_;
+
+    my $dbic = BOM::Database::UserDB::rose_db()->dbic;
+
+    try {
+        return $dbic->run(
+            fixup => sub {
+                $_->selectall_arrayref('SELECT * FROM users.get_onfido_checks(?::BIGINT)', {Slice => {}}, $user_id);
+            });
+    } catch ($e) {
+        die "Fail to get Onfido checks in DB: $e . Please check USER_ID: $user_id";
+    }
+
+    return;
 }
 
 =head2 update_onfido_check

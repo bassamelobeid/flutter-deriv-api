@@ -11,6 +11,8 @@ Note this module is meant to be decoupled from L<BOM::User> or L<BOM::User::Clie
 use strict;
 use warnings;
 
+use Syntax::Keyword::Try;
+
 use BOM::Config::Redis;
 use Moo;
 
@@ -96,6 +98,75 @@ Returns the mapped status.
 
 sub status {
     return 'none';    # TODO: proper implementation
+}
+
+=head2 get_document_check
+
+Gets the the document check related to the given document.
+
+=cut
+
+sub get_document_check {
+    my ($self, $document_id) = @_;
+
+    my $dbic = BOM::Database::UserDB::rose_db()->dbic;
+
+    try {
+        return $dbic->run(
+            fixup => sub {
+                $_->selectrow_hashref('SELECT * FROM idv.get_document_check(?::BIGINT)', undef, $document_id);
+            });
+    } catch ($e) {
+        die sprintf("Failed while getting document check for IDV process, document_id: %s, error: %s", $document_id, $e);
+    }
+
+    return undef;
+}
+
+=head2 get_last_updated_document
+
+Gets the latest document added by user
+
+=cut
+
+sub get_last_updated_document {
+    my $self = shift;
+
+    my $dbic = BOM::Database::UserDB::rose_db()->dbic;
+
+    try {
+        return $dbic->run(
+            fixup => sub {
+                $_->selectrow_hashref('SELECT * FROM idv.get_last_updated_document(?::BIGINT)', undef, $self->user_id);
+            });
+    } catch ($e) {
+        die sprintf("Failed while getting last updated document for IDV process, check user_id: %s, error: %s", $self->user_id, $e);
+    }
+
+    return undef;
+}
+
+=head2 get_document_check_list
+
+Gets the document check list in chronological descending order for the current user.
+
+=cut
+
+sub get_document_check_list {
+    my $self = shift;
+
+    my $dbic = BOM::Database::UserDB::rose_db()->dbic;
+
+    try {
+        return $dbic->run(
+            fixup => sub {
+                $_->selectall_arrayref('SELECT * FROM idv.get_document_check_list(?::BIGINT)', {Slice => {}}, $self->user_id);
+            });
+    } catch ($e) {
+        die sprintf("Failed while getting the document chec list for IDV process, check user_id: %s, error: %s", $self->user_id, $e);
+    }
+
+    return undef;
 }
 
 1;

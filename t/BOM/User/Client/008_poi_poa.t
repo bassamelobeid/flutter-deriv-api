@@ -2,10 +2,9 @@ use strict;
 use warnings;
 use Test::More;
 use Test::MockModule;
+use Test::Deep;
 use BOM::User::Client;
 use BOM::User;
-use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
-
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 
 my $mocked_documents = Test::MockModule->new('BOM::User::Client::AuthenticationDocuments');
@@ -1727,6 +1726,262 @@ subtest 'Manual POI status' => sub {
     $mocked_status->unmock_all;
     $mocked_config->unmock_all;
     $mocked_client->unmock_all;
+};
+
+subtest 'POI attempts' => sub {
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+    });
+
+    my $mocked_onfido = Test::MockModule->new('BOM::User::Onfido');
+    my $onfido_list;
+
+    $mocked_onfido->mock(
+        'get_onfido_checks',
+        sub {
+            return $onfido_list;
+        });
+
+    my $mocked_idv = Test::MockModule->new('BOM::User::IdentityVerification');
+    my $idv_list;
+
+    $mocked_idv->mock(
+        'get_document_check_list',
+        sub {
+            return $idv_list;
+        });
+
+    my $now    = Date::Utility->new();
+    my $before = Date::Utility->new()->_minus_years(1);
+    my $after  = Date::Utility->new()->_plus_years(1);
+
+    my $tests = [{
+            title   => 'No attempts',
+            onfido  => undef,
+            idv     => undef,
+            results => [],
+        },
+        {
+            title  => 'Only Onfido in_progress',
+            onfido => [{
+                    status     => 'in_progress',
+                    result     => undef,
+                    id         => 'onfido-test-1',
+                    created_at => $now->datetime_yyyymmdd_hhmmss,
+                }
+            ],
+            idv     => undef,
+            results => [{
+                    service      => 'onfido',
+                    status       => 'pending',
+                    country_code => $client->place_of_birth // $client->residence,
+                    id           => 'onfido-test-1',
+                    timestamp    => $now->epoch,
+                }
+            ],
+        },
+        {
+            title  => 'Only Onfido consider',
+            onfido => [{
+                    status       => 'complete',
+                    result       => 'consider',
+                    country_code => $client->place_of_birth // $client->residence,
+                    id           => 'onfido-test-2',
+                    created_at   => $now->datetime_yyyymmdd_hhmmss,
+                }
+            ],
+            idv     => undef,
+            results => [{
+                    service      => 'onfido',
+                    status       => 'rejected',
+                    country_code => $client->place_of_birth // $client->residence,
+                    id           => 'onfido-test-2',
+                    timestamp    => $now->epoch,
+                }
+            ],
+        },
+        {
+            title  => 'Only Onfido clear',
+            onfido => [{
+                    status       => 'complete',
+                    result       => 'clear',
+                    country_code => $client->place_of_birth // $client->residence,
+                    id           => 'onfido-test-3',
+                    timestamp    => $now->datetime_yyyymmdd_hhmmss,
+                }
+            ],
+            idv     => undef,
+            results => [{
+                    service      => 'onfido',
+                    status       => 'verified',
+                    country_code => $client->place_of_birth // $client->residence,
+                    id           => 'onfido-test-3',
+                    timestamp    => $now->epoch,
+                }
+            ],
+        },
+        {
+            title  => 'Only IDV pending',
+            onfido => undef,
+            idv    => [{
+                    issuing_country => 'ng',
+                    status          => 'pending',
+                    id              => 1,
+                    submitted_at    => $now->datetime_yyyymmdd_hhmmss,
+                }
+            ],
+            results => [{
+                    service      => 'idv',
+                    status       => 'pending',
+                    country_code => 'ng',
+                    id           => '1',
+                    timestamp    => $now->epoch,
+                }
+            ],
+        },
+        {
+            title  => 'Only IDV failed',
+            onfido => undef,
+            idv    => [{
+                    issuing_country => 'za',
+                    status          => 'failed',
+                    id              => 2,
+                    submitted_at    => $now->datetime_yyyymmdd_hhmmss,
+                }
+            ],
+            results => [{
+                    service      => 'idv',
+                    status       => 'rejected',
+                    country_code => 'za',
+                    id           => '2',
+                    timestamp    => $now->epoch,
+                }
+            ],
+        },
+        {
+            title  => 'Only IDV refuted',
+            onfido => undef,
+            idv    => [{
+                    issuing_country => 'gh',
+                    status          => 'refuted',
+                    id              => 3,
+                    submitted_at    => $now->datetime_yyyymmdd_hhmmss,
+                }
+            ],
+            results => [{
+                    service      => 'idv',
+                    status       => 'rejected',
+                    country_code => 'gh',
+                    id           => '3',
+                    timestamp    => $now->epoch,
+                }
+            ],
+        },
+        {
+            title  => 'Only IDV verified',
+            onfido => undef,
+            idv    => [{
+                    issuing_country => 'ke',
+                    status          => 'verified',
+                    id              => 4,
+                    submitted_at    => $now->datetime_yyyymmdd_hhmmss,
+                }
+            ],
+            results => [{
+                    service      => 'idv',
+                    status       => 'verified',
+                    country_code => 'ke',
+                    id           => '4',
+                    timestamp    => $now->epoch,
+                }
+            ],
+        },
+        {
+            title  => 'Onfido should be the first in the list',
+            onfido => undef,
+            onfido => [{
+                    status     => 'in_progress',
+                    result     => undef,
+                    id         => 'onfido-test-1',
+                    created_at => $after->datetime_yyyymmdd_hhmmss,
+                }
+            ],
+            idv => [{
+                    issuing_country => 'ke',
+                    status          => 'verified',
+                    id              => 4,
+                    submitted_at    => $before->datetime_yyyymmdd_hhmmss,
+                }
+            ],
+            results => [{
+                    service      => 'onfido',
+                    status       => 'pending',
+                    country_code => $client->place_of_birth // $client->residence,
+                    id           => 'onfido-test-1',
+                    timestamp    => $after->epoch,
+                },
+                {
+                    service      => 'idv',
+                    status       => 'verified',
+                    country_code => 'ke',
+                    id           => '4',
+                    timestamp    => $before->epoch,
+                }
+            ],
+        },
+        {
+            title  => 'IDV should be the first in the list',
+            onfido => [{
+                    status     => 'in_progress',
+                    result     => undef,
+                    id         => 'onfido-test-1',
+                    created_at => $before->datetime_yyyymmdd_hhmmss,
+                }
+            ],
+            idv => [{
+                    issuing_country => 'ke',
+                    status          => 'verified',
+                    id              => 4,
+                    submitted_at    => $after->datetime_yyyymmdd_hhmmss,
+                }
+            ],
+            results => [{
+                    service      => 'idv',
+                    status       => 'verified',
+                    country_code => 'ke',
+                    id           => '4',
+                    timestamp    => $after->epoch,
+                },
+                {
+                    service      => 'onfido',
+                    status       => 'pending',
+                    country_code => $client->place_of_birth // $client->residence,
+                    id           => 'onfido-test-1',
+                    timestamp    => $before->epoch,
+                }
+            ],
+        },
+    ];
+
+    for my $test ($tests->@*) {
+        my ($title, $onfido, $idv, $results) = @{$test}{qw/title onfido idv results/};
+
+        $onfido_list = $onfido;
+        $idv_list    = $idv;
+
+        subtest $title => sub {
+            cmp_deeply $client->poi_attempts,
+                {
+                history => $results,
+                count   => scalar $results->@*,
+                latest  => $results->[0],
+                },
+                'Expected POI attempts';
+        };
+    }
+
+    $mocked_onfido->unmock_all;
+    $mocked_idv->unmock_all;
 };
 
 done_testing();
