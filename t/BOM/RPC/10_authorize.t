@@ -296,7 +296,7 @@ subtest $method => sub {
             'is_virtual'                    => '1',
             'country'                       => 'id',
             'landing_company_fullname'      => 'Deriv Limited',
-            'upgradeable_landing_companies' => [],
+            'upgradeable_landing_companies' => ['svg'],
             'preferred_language'            => 'EN',
             'account_list'                  => [{
                     'currency'             => 'USD',
@@ -383,7 +383,8 @@ subtest $method => sub {
                 platform   => 'deriv'
             },
         };
-        cmp_deeply($c->call_ok($method, $params)->has_no_error->result, $expected_result, 'result is correct');
+        cmp_deeply($c->call_ok($method, $params)->has_no_error->result,
+            $expected_result, 'result is correct - upgradeable even if authenticated by a virtual token');
 
         # call authorize for a wallet account
         my $token_wallet = $oauth->store_access_token_only(1, $vr_wallet->loginid);
@@ -505,7 +506,8 @@ subtest $method => sub {
             },
         };
 
-        cmp_deeply($c->call_ok($method, $params)->has_no_error->result, $expected_result, 'result is correct');
+        cmp_deeply($c->call_ok($method, $params)->has_no_error->result,
+            $expected_result, 'result is correct - no upgradeable landing company, because currenct account is a wallet');
     };
 };
 
@@ -786,8 +788,8 @@ subtest 'upgradeable_landing_companies clients have not selected currency & disa
     $params->{token} = BOM::Database::Model::OAuth->new->store_access_token_only(1, $client_vr->loginid);
 
     $result = $c->call_ok($method, $params)->has_no_error->result;
-    is_deeply $result->{upgradeable_landing_companies}, ['malta', 'maltainvest'],
-        'Real client is disabled & has not selected currency yet so it can upgrade to malta and maltainvest.';
+    is_deeply $result->{upgradeable_landing_companies}, ['maltainvest'],
+        'Real client is disabled & has not selected currency - it suffices to remove malta from upgradeable list.';
     $client_mlt->account('USD');
 
     $result = $c->call_ok($method, $params)->has_no_error->result;
@@ -810,13 +812,13 @@ subtest 'upgradeable_landing_companies clients have not selected currency & disa
     $client_mf->status->set('disabled', 1, 'test disabled');
     $params->{token} = BOM::Database::Model::OAuth->new->store_access_token_only(1, $client_mlt->loginid);
     $result = $c->call_ok($method, $params)->has_no_error->result;
-    is_deeply $result->{upgradeable_landing_companies}, ['maltainvest'],
-        'Maltainvest account is disabled & currency not selected  client can upgrade to maltainvest.';
+    is_deeply $result->{upgradeable_landing_companies}, [],
+        'Maltainvest account is disabled & currency not selected - client cannot upgrade to maltainvest.';
     $client_mf->status->clear_disabled;
 
     $params->{token} = BOM::Database::Model::OAuth->new->store_access_token_only(1, $client_mlt->loginid);
     $result = $c->call_ok($method, $params)->has_no_error->result;
-    is_deeply $result->{upgradeable_landing_companies}, [], 'Client upgraded to maltainvest.';
+    is_deeply $result->{upgradeable_landing_companies}, [], 'Client has already upgraded to maltainvest.';
 
 };
 
@@ -863,20 +865,10 @@ subtest 'upgradeable_landing_companies clients have not selected currency & disa
 
     # Test 3
     $result = $c->call_ok($method, $params)->has_no_error->result;
-    is_deeply $result->{upgradeable_landing_companies}, ['maltainvest'], 'Client disabled & no currency set can create new maltainvest account.';
-    # create new MF account
-    my $client_mf2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code    => 'MF',
-        residence      => 'de',
-        email          => $email,
-        binary_user_id => $user->id,
-    });
-    #set MF acount currency
-    $client_mf2->account('USD');
-    $user->add_client($client_mf2);
-    $params->{token} = BOM::Database::Model::OAuth->new->store_access_token_only(1, $client_mf2->loginid);
+    is_deeply $result->{upgradeable_landing_companies}, [], 'Client disabled & no currency set - cannot create new maltainvest account.';
 
     # Test 4
+    $client_mf->status->clear_disabled;
     $result = $c->call_ok($method, $params)->has_no_error->result;
     is_deeply $result->{upgradeable_landing_companies}, [], 'Client already upgraded to maltainvest.';
 };
@@ -932,9 +924,10 @@ subtest 'upgradeable_landing_companies svg' => sub {
     $client_cr2->account('USD');
     $user->add_client($client_cr2);
 
-    my $siblings             = $client->real_account_siblings_information;
-    my @available_currencies = BOM::RPC::v3::Utility::get_available_currencies($siblings, $client->landing_company->short);
-    foreach my $currency (@available_currencies) {
+    foreach my $currency (keys LandingCompany::Registry->new->get('svg')->legal_allowed_currencies->%*) {
+        # we have already created a USD account; so all fiat currencies are unavailable.
+        next if LandingCompany::Registry::get_currency_type($currency) eq 'fiat';
+
         $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
             broker_code    => 'CR',
             residence      => 'id',

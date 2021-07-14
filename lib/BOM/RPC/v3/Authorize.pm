@@ -19,7 +19,9 @@ use BOM::User::TOTP;
 use LandingCompany::Registry;
 
 sub _get_upgradeable_landing_companies {
-    my ($client_list, $client) = @_;
+    my ($client) = @_;
+
+    return [] unless $client->account_type eq 'trading';
 
     # List to store upgradeable companies
     my @upgradeable_landing_companies;
@@ -27,29 +29,38 @@ sub _get_upgradeable_landing_companies {
     my $countries_instance = request()->brand->countries_instance;
 
     # Get the gaming and financial company from the client's residence
-    my $gaming_company    = $countries_instance->gaming_company_for_country($client->residence);
-    my $financial_company = $countries_instance->financial_company_for_country($client->residence);
+    my $gaming_company    = $countries_instance->gaming_company_for_country($client->residence)    // '';
+    my $financial_company = $countries_instance->financial_company_for_country($client->residence) // '';
 
-    # Multiple CR account scenario:
-    # - virtual clients can upgrade to CR
-    # - client's landing company is CR
-    # - client can upgrade to other CR accounts, assuming no fiat currency OR other cryptocurrencies
-    if ($client->landing_company->short eq 'svg'
-        or ($client->is_virtual and $gaming_company and $gaming_company eq 'svg' or $financial_company and $financial_company eq 'svg'))
-    {
-        # Get siblings of the current client
-        my $siblings = $client->real_account_siblings_information;
+    for my $lc (uniq($gaming_company, $financial_company)) {
+        next unless $lc;
 
-        # Push to upgradeable_landing_companies, if possible to open another CR account
-        push @upgradeable_landing_companies, 'svg'
-            if BOM::RPC::v3::Utility::get_available_currencies($siblings, $client->landing_company->short);
-    } else {
-        for my $lc (uniq($gaming_company, $financial_company)) {
-            next unless $lc;
-            next if any { $_->landing_company->short eq $lc } @$client_list;
-            push @upgradeable_landing_companies, $lc;
+        my $rule_engine = BOM::Rules::Engine->new(
+            client          => $client,
+            landing_company => $lc,
+            stop_on_failure => 0
+        );
+        # check accounts limit
+        next if $rule_engine->apply_rules([qw/landing_company.accounts_limit_not_reached/])->has_failure;
+
+        # check currency availability
+        for my $currency (keys LandingCompany::Registry->new->get($lc)->legal_allowed_currencies->%*) {
+            unless (
+                $rule_engine->apply_rules(
+                    [qw/landing_company.currency_is_allowed currency.is_available_for_new_account currency.is_currency_suspended/],
+                    {
+                        currency     => $currency,
+                        account_type => 'trading'
+                    }
+                )->has_failure
+                )
+            {
+                push @upgradeable_landing_companies, $lc;
+                last;
+            }
         }
     }
+
     return \@upgradeable_landing_companies;
 }
 
@@ -126,10 +137,10 @@ rpc authorize => sub {
     my $client_list = $user->get_clients_in_sorted_order;
     # if its a virtual account
     # selected account currency
-    # not disabled & account currency not yet selected
-    my @active_client_list = grep { ($_->is_virtual || $_->account || !$_->status->disabled) } @$client_list;
+    # not disabled & account currency not yet selected (for unregulated landing companies only)
+    my @client_list = grep { $_->is_virtual || $_->account || !$_->status->disabled || $_->landing_company->is_eu } @$client_list;
 
-    my @account_list = map { BOM::User::Client::get_account_details($_) } @active_client_list;
+    my @account_list = map { BOM::User::Client::get_account_details($_) } @client_list;
 
     my $precisions = Format::Util::Numbers->get_precision_config;
     my %local_currencies =
@@ -151,7 +162,7 @@ rpc authorize => sub {
         preferred_language            => $user->preferred_language,
         scopes                        => $scopes,
         is_virtual                    => $client->is_virtual ? 1 : 0,
-        upgradeable_landing_companies => _get_upgradeable_landing_companies(\@active_client_list, $client),
+        upgradeable_landing_companies => _get_upgradeable_landing_companies($client),
         account_list                  => \@account_list,
         stash                         => {
             loginid              => $client->loginid,
