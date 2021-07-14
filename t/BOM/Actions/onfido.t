@@ -8,6 +8,7 @@ use Log::Any qw($log);
 use Test::MockModule;
 use Test::Warnings qw/warnings/;
 use Future;
+use Future::Exception;
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Email;
@@ -467,6 +468,313 @@ subtest 'Upload document' => sub {
     $event_mocker->unmock('_get_applicant_and_file');
     $onfido_mocker->unmock('document_upload');
     $onfido_mocker->unmock('live_photo_upload');
+};
+
+subtest '_get_onfido_applicant' => sub {
+    my $onfido     = BOM::Event::Actions::Client::_onfido();
+    my $event_mock = Test::MockModule->new('BOM::Event::Actions::Client');
+    my ($traced_subs);
+    $event_mock->mock(
+        '_send_email_onfido_unsupported_country_cs',
+        sub {
+            $traced_subs->{_send_email_onfido_unsupported_country_cs} = 1;
+            return Future->done(1);
+        });
+    my $config_mock = Test::MockModule->new('BOM::Config::Onfido');
+    my ($is_country_supported);
+    $config_mock->mock(
+        'is_country_supported',
+        sub {
+            return $is_country_supported;
+        });
+    my $dog_mock = Test::MockModule->new('DataDog::DogStatsd::Helper');
+    my ($stats_inc, $stats_timing);
+    $dog_mock->mock(
+        'stats_inc',
+        sub {
+            $stats_inc = {@_, $stats_inc ? $stats_inc->%* : ()};
+            return;
+        });
+    $dog_mock->mock(
+        'stats_timing',
+        sub {
+            $stats_timing = {@_, $stats_timing ? $stats_timing->%* : ()};
+            return;
+        });
+    my $onfido_mock = Test::MockModule->new('BOM::User::Onfido');
+    my ($applicant_id, $applicant_exists, $store_applicant);
+    $onfido_mock->mock(
+        'get_user_onfido_applicant',
+        sub {
+            return undef unless $applicant_exists;
+
+            return {
+                id => $applicant_id,
+            };
+        });
+    $onfido_mock->mock(
+        'store_onfido_applicant',
+        sub {
+            $store_applicant = [@_];
+            return;
+        });
+    my $onfido_async_mock = Test::MockModule->new(ref($onfido));
+    my ($onfido_exception, $onfido_http_exception);
+    $onfido_async_mock->mock(
+        'applicant_get',
+        sub {
+            return Future->done(
+                WebService::Async::Onfido::Applicant->new(
+                    id => $applicant_id,
+                ));
+        });
+    $onfido_async_mock->mock(
+        'applicant_create',
+        sub {
+            if ($onfido_http_exception) {
+                my $res = HTTP::Response->new(422);
+                $res->content(eval { encode_json_utf8($onfido_http_exception) });
+
+                Future::Exception->throw('some exception', 'http', $res);
+            }
+            die $onfido_exception if $onfido_exception;
+            return Future->done(undef) unless $applicant_id;
+            return Future->done(
+                WebService::Async::Onfido::Applicant->new(
+                    id => $applicant_id,
+                ));
+        });
+
+    my $tests = [{
+            title  => 'Unsupported country not uploaded by staff',
+            client => {
+                place_of_birth => 'gb',
+                residence      => 'gb',
+                email          => 'test1@binary.com',
+                broker_code    => 'MX',
+            },
+            uploaded_manually_by_staff => 0,
+            is_country_supported       => 0,
+            logs                       => [qr/\bDocument not uploaded to Onfido as client is from list of countries not supported by Onfido\b/],
+            dog                        => {
+                timing => undef,
+                inc    => {
+                    'onfido.unsupported_country' => {
+                        tags => ['gb'],
+                    },
+                }
+            },
+            trace => {
+                _send_email_onfido_unsupported_country_cs => 1,
+            },
+            result => undef,
+        },
+        {
+            title  => 'Unsupported country uploaded by staff',
+            client => {
+                place_of_birth => 'wa',
+                residence      => 'gb',
+                email          => 'test2@binary.com',
+                broker_code    => 'MX',
+            },
+            uploaded_manually_by_staff => 1,
+            is_country_supported       => 0,
+            logs                       => [qr/\bDocument not uploaded to Onfido as client is from list of countries not supported by Onfido\b/],
+            dog                        => {
+                timing => undef,
+                inc    => {
+                    'onfido.unsupported_country' => {
+                        tags => ['wa'],
+                    },
+                }
+            },
+            trace => {
+
+            },
+            result => undef,
+        },
+        {
+            title  => 'Supported country and applicant already exists',
+            client => {
+                place_of_birth => 'gb',
+                residence      => 'gb',
+                email          => 'test3@binary.com',
+                broker_code    => 'MX',
+            },
+            uploaded_manually_by_staff => 0,
+            is_country_supported       => 1,
+            logs                       => [qr/\bApplicant id already exists, returning that instead of creating new one\b/,],
+            dog                        => {
+                timing => undef,
+                inc    => undef,
+            },
+            trace  => {},
+            result => {
+                applicant_exists => 1,
+                applicant_id     => 'test1',
+            },
+        },
+        {
+            title  => 'Supported country and applicant does not exist',
+            client => {
+                place_of_birth => 'gb',
+                residence      => 'gb',
+                email          => 'test4@binary.com',
+                broker_code    => 'MX',
+            },
+            uploaded_manually_by_staff => 0,
+            is_country_supported       => 1,
+            logs                       => [],
+            dog                        => {
+                timing => {
+                    'event.document_upload.onfido.applicant_create.done.elapsed' => re('\d+'),
+                },
+                inc => undef,
+            },
+            trace  => {},
+            result => {
+                applicant_exists => 0,
+                applicant_id     => 'test2',
+            },
+        },
+        {
+            title  => 'Supported country and applicant does not exist but undef applicant was created',
+            client => {
+                place_of_birth => 'gb',
+                residence      => 'gb',
+                email          => 'test5@binary.com',
+                broker_code    => 'MX',
+            },
+            uploaded_manually_by_staff => 0,
+            is_country_supported       => 1,
+            logs                       => [],
+            dog                        => {
+                timing => {
+                    'event.document_upload.onfido.applicant_create.failed.elapsed' => re('\d+'),
+                },
+                inc => undef,
+            },
+            trace  => {},
+            result => {
+                applicant_exists => 0,
+                applicant_id     => undef,
+            },
+        },
+        {
+            title  => 'Non http exception happens',
+            client => {
+                place_of_birth => 'gb',
+                residence      => 'gb',
+                email          => 'test6@binary.com',
+                broker_code    => 'MX',
+            },
+            uploaded_manually_by_staff => 0,
+            is_country_supported       => 1,
+            logs                       => [qr/\bgot so far\b/],
+            dog                        => {
+                timing => undef,
+                inc    => undef,
+            },
+            trace      => {},
+            result     => undef,
+            exceptions => {
+                onfido_exception => 'got so far',
+            }
+        },
+        {
+            title  => 'Http exception happens',
+            client => {
+                place_of_birth => 'gb',
+                residence      => 'gb',
+                email          => 'test7@binary.com',
+                broker_code    => 'MX',
+            },
+            uploaded_manually_by_staff => 0,
+            is_country_supported       => 1,
+            logs                       => [qr/\bsome exception\b/, qr/\bOnfido http exception: .*invalid postcode.*\b/,],
+            dog                        => {
+                timing => undef,
+                inc    => undef,
+            },
+            trace      => {},
+            result     => undef,
+            exceptions => {
+                onfido_http_exception => {
+                    error => {
+                        type    => 'validation_error',
+                        message => 'There was a validation error on this request',
+                        fields  => {
+                            addresses => [{
+                                    postcode => ['invalid postcode'],
+                                }
+                            ],
+                        },
+                    },
+                },
+            }}];
+
+    for my $test ($tests->@*) {
+        my ($title, $client_data, $uploaded_manually_by_staff, $country_supported, $logs, $dog, $result, $trace, $exceptions) =
+            @{$test}{qw/title client uploaded_manually_by_staff is_country_supported logs dog result trace exceptions/};
+        $is_country_supported  = $country_supported;
+        $onfido_exception      = $exceptions->{onfido_exception};
+        $onfido_http_exception = $exceptions->{onfido_http_exception};
+
+        subtest $title => sub {
+            my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client($client_data);
+            my $user   = BOM::User->create(
+                email          => $client->email,
+                password       => "hello",
+                email_verified => 1,
+            );
+
+            if (defined $result) {
+                ($applicant_exists, $applicant_id) = @{$result}{qw/applicant_exists applicant_id/};
+            }
+
+            $stats_timing    = undef;
+            $stats_inc       = undef;
+            $traced_subs     = {};
+            $store_applicant = [];
+            $log->clear();
+
+            my $applicant = BOM::Event::Actions::Client::_get_onfido_applicant(
+                client                     => $client,
+                onfido                     => $onfido,
+                uploaded_manually_by_staff => $uploaded_manually_by_staff,
+            )->get;
+
+            if (not defined $result) {
+                is $applicant, undef, 'No applicant returned';
+            } else {
+                if ($applicant) {
+                    isa_ok $applicant, 'WebService::Async::Onfido::Applicant', 'Expected class';
+                    is $applicant->id, $applicant_id, 'Expected applicant id';
+
+                    if ($applicant_exists) {
+                        cmp_deeply $store_applicant, [], 'Existing applicant is not stored';
+                    } else {
+                        cmp_deeply $store_applicant, [$applicant, $client->binary_user_id,], 'New applicant stored';
+                    }
+                } else {
+                    cmp_deeply $store_applicant, [], 'Cannot store undefined applicant';
+                }
+            }
+
+            cmp_deeply $stats_timing, $dog->{timing}, 'Expected stats_timing';
+            cmp_deeply $stats_inc,    $dog->{inc},    'Expected stats_inc';
+
+            for my $expected_log ($logs->@*) {
+                $log->contains_ok($expected_log, 'Expected log found');
+            }
+
+            cmp_deeply $traced_subs, $trace, 'Expected trace';
+        };
+    }
+
+    $config_mock->unmock_all;
+    $dog_mock->unmock_all;
+    $event_mock->unmock_all;
 };
 
 $s3_mocker->unmock_all;

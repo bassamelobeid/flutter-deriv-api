@@ -35,6 +35,7 @@ use Syntax::Keyword::Try;
 use Template::AutoFilter;
 use Time::HiRes;
 use Array::Utils qw(intersect);
+use Scalar::Util qw(blessed);
 
 use BOM::Config;
 use BOM::Config::Onfido;
@@ -1185,11 +1186,13 @@ async sub _get_onfido_applicant {
     my $onfido                     = $args{onfido};
     my $uploaded_manually_by_staff = $args{uploaded_manually_by_staff};
     my $country                    = $client->place_of_birth // $client->residence;
+
     try {
         my $is_supported_country = BOM::Config::Onfido::is_country_supported($country);
 
         unless ($is_supported_country) {
             DataDog::DogStatsd::Helper::stats_inc('onfido.unsupported_country', {tags => [$country]});
+
             await _send_email_onfido_unsupported_country_cs($client) unless $uploaded_manually_by_staff;
             $log->debugf('Document not uploaded to Onfido as client is from list of countries not supported by Onfido');
             return undef;
@@ -1207,7 +1210,7 @@ async sub _get_onfido_applicant {
         my $applicant = await $onfido->applicant_create(%{_client_onfido_details($client)});
         my $elapsed   = Time::HiRes::time() - $start;
         # saving data into onfido_applicant table
-        BOM::User::Onfido::store_onfido_applicant($applicant, $client->binary_user_id);
+        BOM::User::Onfido::store_onfido_applicant($applicant, $client->binary_user_id) if $applicant;
 
         $applicant
             ? DataDog::DogStatsd::Helper::stats_timing("event.document_upload.onfido.applicant_create.done.elapsed",   $elapsed)
@@ -1215,6 +1218,14 @@ async sub _get_onfido_applicant {
 
         return $applicant;
     } catch ($e) {
+        if (blessed($e) and $e->isa('Future::Exception')) {
+            my ($payload) = $e->details;
+
+            if (blessed($payload) && $payload->can('content')) {
+                $log->warnf('Onfido http exception: %s', $payload->content);
+            }
+        }
+
         $log->warn($e);
         exception_logged();
     }
