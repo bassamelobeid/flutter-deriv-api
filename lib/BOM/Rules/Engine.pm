@@ -123,15 +123,16 @@ sub apply_rules {
 
     $rules = [$rules] unless ref $rules;
 
+    my $final_results = BOM::Rules::Result->new();
     for my $rule_name (@$rules) {
         my $rule = BOM::Rules::Registry::get_rule($rule_name);
 
         die "Unknown rule '$rule_name' cannot be applied" unless $rule;
 
-        $rule->apply($self->context, $args // {});
+        $final_results->merge($rule->apply($self->context, $args // {}));
     }
 
-    return 1;
+    return $final_results;
 }
 
 1;

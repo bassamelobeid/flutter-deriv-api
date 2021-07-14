@@ -110,14 +110,36 @@ subtest 'Applying rules' => sub {
     like exception { $rule_engine_1->apply_rules() }, qr/Rule name cannot be empty/, 'Correct exception for empty rule name';
     like exception { $rule_engine_1->apply_rules('invalid_name_for_testing') }, qr/Unknown rule 'invalid_name_for_testing' cannot be applied/,
         'Correct error for invalid rule name';
-    ok $rule_engine_1->apply_rules([]), 'Empty rule array is accepted';
+
+    is_deeply $rule_engine_1->apply_rules([]),
+        {
+        has_failure  => 0,
+        failed_rules => {},
+        errors       => {},
+        passed_rules => []
+        },
+        'Empty rule array is accepted';
 
     my $test_rule = rule 'test rule 1' => {
         code => sub { return 'result 1' }
     };
 
-    ok $rule_engine_1->apply_rules('test rule 1'), 'Rule is applied with default return value';
-    ok $rule_engine_1->apply_rules(['test rule 1']), 'Rule array is applied with default return value';
+    is_deeply $rule_engine_1->apply_rules('test rule 1'),
+        {
+        has_failure  => 0,
+        failed_rules => {},
+        errors       => {},
+        passed_rules => ['test rule 1']
+        },
+        'Rule is applied with default return value';
+    is_deeply $rule_engine_1->apply_rules(['test rule 1']),
+        {
+        has_failure  => 0,
+        failed_rules => {},
+        errors       => {},
+        passed_rules => ['test rule 1']
+        },
+        'Rule array is applied with default return value';
 
     my @rule_args;
     my $mock_rule = Test::MockModule->new('BOM::Rules::Registry::Rule');
@@ -128,9 +150,7 @@ subtest 'Applying rules' => sub {
         {
             a => 1,
             b => 2,
-        }
-        ),
-        1, 'Rule applied';
+        })->{has_failure}, 0, 'Rule applied';
     is scalar @rule_args, 3, 'Number of args is correct';
     my ($rule, $context, $args) = @rule_args;
     is $rule, $test_rule, 'Correct rule is found';
@@ -143,6 +163,44 @@ subtest 'Applying rules' => sub {
         'Rule args are correct';
 
     $mock_rule->unmock_all;
+
+    rule 'failing rule' => {
+        code => sub { die {code => 'DummyError'} }
+    };
+    rule 'failing rule2' => {
+        code => sub { die {code => 'DummyError2'} }
+    };
+
+    is_deeply exception { $rule_engine_1->apply_rules('failing rule') }, {code => 'DummyError'}, 'Correct exception for the failing rule';
+
+    my $rule_engine_2 = BOM::Rules::Engine->new(
+        client          => $client,
+        stop_on_failure => 0
+    );
+
+    is_deeply $rule_engine_2->apply_rules('failing rule'),
+        {
+        has_failure  => 1,
+        failed_rules => {'failing rule' => {code => 'DummyError'}},
+        errors       => {DummyError     => 1},
+        passed_rules => []
+        },
+        'Correct result for a failing rule';
+
+    is_deeply $rule_engine_2->apply_rules(['failing rule', 'test rule 1', 'failing rule2']),
+        {
+        has_failure  => 1,
+        failed_rules => {
+            'failing rule'  => {code => 'DummyError'},
+            'failing rule2' => {code => 'DummyError2'}
+        },
+        errors => {
+            DummyError  => 1,
+            DummyError2 => 1
+        },
+        passed_rules => ['test rule 1']
+        },
+        'Correct result for three rules (two failing and one passing)';
 };
 
 done_testing();

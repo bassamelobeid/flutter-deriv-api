@@ -58,7 +58,7 @@ subtest 'rule landing_company.accounts_limit_not_reached' => sub {
     $mock_client->unmock_all;
 
     $client_mf->status->set('disabled', 'test', 'test');
-    lives_ok { $rule_engine->apply_rules($rule_name) } 'Disabled accounts are excluded';
+    is_deeply exception { $rule_engine->apply_rules($rule_name) }, {error_code => 'NewAccountLimitReached'}, 'Number of MF accounts is limited';
 };
 
 subtest 'rule landing_company.required_fields_are_non_empty' => sub {

@@ -20,22 +20,22 @@ use BOM::Platform::Context qw(request);
 use BOM::Rules::Registry qw(rule);
 
 rule 'landing_company.accounts_limit_not_reached' => {
-    description => "Succeeds if the number of clients on the context landing company less the limit (if there's any such limit); fails otherwise",
+    description => "Only one account ( enabled or disabled) is allowed on regulated landing companies.",
     code        => sub {
         my ($self, $context, $args) = @_;
 
-        my $account_type               = $args->{account_type} // '';
-        my $number_of_accounts_limited = ($context->landing_company ne 'svg') && ($account_type ne 'wallet');
+        my $account_type = $args->{account_type} // '';
+        # Only regulated landing companies and trading accounts are limitted.
+        my $number_of_accounts_limited = $context->landing_company_object->is_eu && ($account_type ne 'wallet');
 
         return 1 unless $number_of_accounts_limited;
 
-        # only trading accounts are checked. There is no limit on wallet accounts.
-        my @clients = $context->client->user->clients_for_landing_company($context->landing_company);
-        @clients = grep { not($_->status->disabled or $_->status->duplicate_account) } @clients;
+        my @clients         = $context->client->user->clients_for_landing_company($context->landing_company);
+        my @enabled_clients = grep { not($_->status->disabled or $_->status->duplicate_account) } @clients;
 
         return 1 unless scalar @clients;
 
-        die +{error_code => 'FinancialAccountExists'} if $context->landing_company eq 'maltainvest';
+        die +{error_code => 'FinancialAccountExists'} if @enabled_clients && $context->landing_company eq 'maltainvest';
         die +{error_code => 'NewAccountLimitReached'};
     },
 };

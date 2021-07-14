@@ -205,9 +205,9 @@ subtest $rule_name => sub {
     )->add_client($client);
 
     my $engine = BOM::Rules::Engine->new(client => $client);
-    is $engine->apply_rules($rule_name), 1, 'Rule applies with empty args';
+    ok $engine->apply_rules($rule_name), 'Rule applies with empty args';
 
-    is $engine->apply_rules($rule_name, {currency => 'BTC'}), 1, 'Rule applies with no MT5 account';
+    ok $engine->apply_rules($rule_name, {currency => 'BTC'}), 'Rule applies with no MT5 account';
 
     my $mock_user = Test::MockModule->new('BOM::User');
     $mock_user->redefine(get_mt5_loginids => sub { return (1, 2); });
@@ -223,7 +223,7 @@ subtest $rule_name => sub {
 
 $rule_name = 'currency.no_deposit';
 subtest $rule_name => sub {
-    is $rule_engine->apply_rules($rule_name), 1, 'Rule applies with empty args - no trades';
+    ok $rule_engine->apply_rules($rule_name), 'Rule applies with empty args - no trades';
 
     my $mock_client = Test::MockModule->new('BOM::User::Client');
     $mock_client->redefine(has_deposits => sub { return 1; });
@@ -234,7 +234,7 @@ subtest $rule_name => sub {
 $rule_name = 'currency.account_is_not_crypto';
 subtest $rule_name => sub {
     my $engine = BOM::Rules::Engine->new(client => $client_cr_usd);
-    is $rule_engine->apply_rules($rule_name), 1, 'Rule applies for fiat account';
+    ok $rule_engine->apply_rules($rule_name), 'Rule applies for fiat account';
 
     $engine = BOM::Rules::Engine->new(client => $client_cr_btc);
     is_deeply exception { $engine->apply_rules($rule_name) }, {code => 'CryptoAccount'}, 'Fails for crypto account';

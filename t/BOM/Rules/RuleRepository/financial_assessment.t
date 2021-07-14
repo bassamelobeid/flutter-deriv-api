@@ -74,14 +74,15 @@ subtest 'rule financial_assessment.required_sections_are_complete' => sub {
 
     @keys = $assessment_keys->{financial_info}->@*;
     %args = {%financial_data}->%{@keys};
-    is($engines{$_}->apply_rules($rule_name, \%args), 1, "Financial assessment is complete with financial info only - $_") for (qw/svg malta iom/);
+    lives_ok { $engines{$_}->apply_rules($rule_name, \%args) } "Financial assessment is complete with financial info only - $_"
+        for (qw/svg malta iom/);
     is_deeply(
         exception { $engines{maltainvest}->apply_rules($rule_name, \%args) },
         {error_code => 'IncompleteFinancialAssessment'},
         "Correct error for financial info only - maltainvest"
     );
 
-    is($engines{$_}->apply_rules($rule_name, \%financial_data), 1, "Financial assessment is complete with all data - $_") for keys %engines;
+    lives_ok { $engines{$_}->apply_rules($rule_name, \%financial_data) } "Financial assessment is complete with all data - $_" for keys %engines;
 };
 
 done_testing();
