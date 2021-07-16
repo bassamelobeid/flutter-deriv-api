@@ -238,7 +238,6 @@ sub failed_login_attempt {
 
                 my $ttl = $redis->get('oauth::backoff_by_ip::' . $ip);
                 $ttl = min(BLOCK_MAX_DURATION, $ttl ? $ttl * 2 : BLOCK_MIN_DURATION);
-                $log->infof('Multiple login failures from the same IP %s, blocking for %d seconds', $ip, $ttl);
 
                 # Record our new TTL (hangs around for a day, which we expect to be sufficient
                 # to slow down offenders enough that we no longer have to be particularly concerned),
