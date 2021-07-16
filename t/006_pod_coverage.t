@@ -32,7 +32,6 @@ my $allowed_naked_packages = {
     'BOM::Backoffice::Config'                            => 2,
     'BOM::Backoffice::PricePreview'                      => 3,
     'BOM::Backoffice::Cookie'                            => 5,
-    'BOM::Backoffice::ExperianBalance'                   => 2,
     'BOM::Backoffice::EconomicEventPricePreview'         => 5,
     'BOM::Backoffice::QuantsConfigHelper'                => 13,
     'BOM::Backoffice::PlackApp'                          => 1,

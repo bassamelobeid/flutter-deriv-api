@@ -5,6 +5,7 @@
 #
 use strict;
 use warnings;
+no indirect;
 
 use Syntax::Keyword::Try;
 
@@ -23,12 +24,14 @@ my $ua       = Mojo::UserAgent->new->cookie_jar(Mojo::UserAgent::CookieJar->new)
 my $base_dir = '/etc/rmg/ssl/';
 $ua->key($base_dir . 'key/experian.key');
 $ua->cert($base_dir . 'crt/experian.crt');
+
 try {
     ($used, $limit) = BOM::Backoffice::ExperianBalance::get_balance(
         $ua,
         BOM::Config::third_party()->{proveid}->{username},
         BOM::Config::third_party()->{proveid}->{password});
 } catch ($e) {
+
     warn "An error occurred: $e";
 }
 
