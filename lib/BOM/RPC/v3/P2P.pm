@@ -59,10 +59,10 @@ our %ERROR_MAP = do {
         # System or country limitations
         NoCountry            => localize("Please set your country of residence."),
         NoCurrency           => localize("Please set your account currency."),
-        P2PDisabled          => localize("P2P cashier is currently unavailable. Please check back later."),
-        RestrictedCountry    => localize("P2P cashier is unavailable in your country."),
+        P2PDisabled          => localize("Deriv P2P is currently unavailable. Please check back later."),
+        RestrictedCountry    => localize("Deriv P2P is unavailable in your country."),
         RestrictedCurrency   => localize("[_1] is not supported at the moment."),
-        UnavailableOnVirtual => localize("P2P cashier is unavailable on demo accounts. Please switch to your real account."),
+        UnavailableOnVirtual => localize("Deriv P2P is unavailable on demo accounts. Please switch to your real account."),
 
         # Client status
         NoLocalCurrency  => localize("We cannot recognise your local currency. Please contact our Customer Support team."),    # TODO maybe this?
@@ -93,7 +93,7 @@ our %ERROR_MAP = do {
         AdvertIsDisabled             => localize("This ad is currently unavailable. Please choose another ad or check back later."),
         OrderCreateFailAdvertiser    => localize("This ad is currently unavailable. Please choose another ad or check back later."),
         OrderCreateFailClient        => localize("There was a problem in placing this order. [_1]"),
-        OrderCreateFailClientBalance => localize('The amount of the order exceeds your funds available in DP2P.'),
+        OrderCreateFailClientBalance => localize('The amount of the order exceeds your funds available in Deriv P2P.'),
         OrderCreateFailBalance       => localize("An order cannot be created for this amount at this time. Please try adjusting the amount."),
         AdvertiserNameRequired       => localize("Please provide your name."),
         AdvertiserNameTaken          => localize("This name is already in use. Please provide a different name."),
@@ -142,19 +142,20 @@ our %ERROR_MAP = do {
 
         # TODO these messages needs to be checked with copywritter team
         AdvertiserCreateChatError        => localize('An error occurred (chat user not created). Please try again later.'),
-        AdvertiserNotFoundForChat        => localize('You may not chat until you have registered on the P2P system.'),
+        AdvertiserNotFoundForChat        => localize('You may not chat until you have registered as a Deriv P2P advertiser.'),
         ChatTokenError                   => localize('An error occurred when issuing a new token. Please try again later.'),
-        AdvertiserNotFoundForChatToken   => localize('This account is not registered as a P2P advertiser.'),
+        AdvertiserNotFoundForChatToken   => localize('This account is not registered as a Deriv P2P advertiser.'),
         OrderChatAlreadyCreated          => localize('A chat for this order has already been created.'),
-        CounterpartyNotAdvertiserForChat => localize('Chat is not possible because the other client is not yet registered on the P2P system.'),
-        CreateChatError                  => localize('An error occurred when creating the chat. Please try again later.'),
-        AdvertiserCannotListAds          => localize("You cannot list adverts because you've not been approved as an advertiser yet."),
-        InvalidStateForDispute           => localize('Please wait until the order expires to raise a dispute.'),
-        InvalidReasonForBuyer            => localize("This reason doesn't apply to your case. Please choose another reason."),
-        InvalidReasonForSeller           => localize("This reason doesn't apply to your case. Please choose another reason."),
-        OrderUnderDispute                => localize('This order is under dispute.'),
-        InvalidFinalStateForDispute      => localize('This order is complete and can no longer be disputed.'),
-        TemporaryBar                     =>
+        CounterpartyNotAdvertiserForChat =>
+            localize('Chat is not possible because the other client is not yet registered as a Deriv P2P advertiser.'),
+        CreateChatError             => localize('An error occurred when creating the chat. Please try again later.'),
+        AdvertiserCannotListAds     => localize("You cannot list adverts because you've not been approved as an advertiser yet."),
+        InvalidStateForDispute      => localize('Please wait until the order expires to raise a dispute.'),
+        InvalidReasonForBuyer       => localize("This reason doesn't apply to your case. Please choose another reason."),
+        InvalidReasonForSeller      => localize("This reason doesn't apply to your case. Please choose another reason."),
+        OrderUnderDispute           => localize('This order is under dispute.'),
+        InvalidFinalStateForDispute => localize('This order is complete and can no longer be disputed.'),
+        TemporaryBar                =>
             localize("You've been temporarily barred from using our services due to multiple cancellation attempts. Try again after [_1]."),
         PaymentMethodNotFound     => localize('The payment method ID does not exist.'),
         InvalidPaymentMethodField => localize('[_1] is not a valid field for payment method [_2].'),
