@@ -95,14 +95,15 @@ rule 'landing_company.currency_is_allowed' => {
 };
 
 rule 'landing_company.p2p_availability' => {
-    description => "Checks p2p availablility in the context landing company, if account opening reason is p2p exchange",
+    description => "Checks p2p availablility in the context landing company, if account opening reason is p2p related",
     code        => sub {
         my ($self, $context, $args) = @_;
 
         return 1 unless $args->{account_opening_reason};
 
         die +{error_code => 'P2PRestrictedCountry'}
-            if !$context->landing_company_object->p2p_available && ($args->{account_opening_reason} =~ qr/p2p/i);
+            if !$context->landing_company_object->p2p_available
+            && ($args->{account_opening_reason} =~ qr/p2p/i or $args->{account_opening_reason} eq 'Peer-to-peer exchange');
 
         return 1;
     },

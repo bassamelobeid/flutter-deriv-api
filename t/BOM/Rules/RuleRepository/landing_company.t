@@ -122,8 +122,12 @@ subtest 'rule landing_company.p2p_availability' => sub {
     $mock_lc->redefine(p2p_available => sub { return 0 });
     lives_ok { $rule_engine->apply_rules($rule_name, {account_opening_reason => 'dummy'}) } 'any p2p unrelated reason is fine';
 
-    is_deeply exception { $rule_engine->apply_rules($rule_name, {account_opening_reason => 'p2p'}) }, {error_code => 'P2PRestrictedCountry'},
+    is_deeply exception { $rule_engine->apply_rules($rule_name, {account_opening_reason => 'p2p exchange'}) }, {error_code => 'P2PRestrictedCountry'},
         'It fails for a p2p related reason in args';
+
+    is_deeply exception { $rule_engine->apply_rules($rule_name, {account_opening_reason => 'Peer-to-peer exchange'}) },
+        {error_code => 'P2PRestrictedCountry'},
+        "It fails when reason is 'Peer-to-peer exchange'";
 
     $mock_lc->unmock_all;
 };
