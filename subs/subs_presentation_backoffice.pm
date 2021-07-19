@@ -257,6 +257,10 @@ sub vk_BOtopPRES    # this sub executed in BrokerPresentation
                     text => 'Client Anonymization'
                 },
                 {
+                    link => 'f_client_bulk_authentication',
+                    text => 'Bulk Authentication'
+                },
+                {
                     link => 'crypto_admin',
                     text => 'Crypto Tools'
                 },

@@ -1,0 +1,81 @@
+<style>
+    .inlineLabels {
+        width: 25%;
+        text-align: right;
+        text-transform: uppercase;
+    }
+    .customSuccess{
+        margin-top: 20px;
+        color: var(--color-green);
+        border: 1px solid;
+        border-radius: 5px;
+        border-color: var(--color-green);
+    }
+   </style>
+<form id='clientTriggerAuthentication' method='post' enctype='multipart/form-data'> 
+    <input type="hidden" name="csrf" value="[% csrf %]" />
+    <input type='hidden' name='l' value='EN'>
+    <div class='row'>
+        <div class='inlineLabels'><label>ALLOW POI RESUBMISSION : </label></div>
+        <input type='checkbox' onclick='toggle_checkbox(this)' name='allow_poi_resubmission' value=[% allow_poi_resubmission %] [% IF allow_poi_resubmission %]checked="checked"[% END %]>
+        <span id='allow_poi_resubmission_toggle' [% IF allow_poi_resubmission %] style="display:inline" [% ELSE %]  style="display:none" [% END %]>
+            <label for='poi_reasons'>REASON:</label>
+            <select name='poi_reason' >
+                <option value='unselected'> Please Select </option>
+                <option value='blurred'>blurred</option>
+                <option value='cropped'>cropped</option>
+                <option value='different_person_name'>different person/name</option>
+                <option value='expired'>expired</option>
+                <option value='missing_one_side'>missing one side</option>
+                <option value='nimc_no_dob'>nimc or no dob</option>
+                <option value='selfie_is_not_valid'>selfie is not valid</option>
+                <option value='suspicious'>suspicious</option>
+                <option value='type_is_not_valid'>type is not valid</option>
+                <option value='other' [% IF allow_poi_resubmission %]selected="selected"[% END %] > Other </option>
+            </select>
+        </span>
+    </div>
+    <div class='row'>
+        <div class='inlineLabels'><label for='client_authentication'>ID AUTHENTICATION : </label></div>
+        <select name='client_authentication' >
+            <option value=''>Please select to update</option>
+            <option value='CLEAR_ALL'>Not authenticated</option>
+            <option value='ID_DOCUMENT'>Authenticated with scans</option>
+            <option value='ID_NOTARIZED'>Authenticated with Notarized docs</option>
+            <option value='ID_ONLINE'>Authenticated with online verification</option>
+            <option value='NEEDS_ACTION' selected='selected'>Needs Action</option>
+        </select>
+    </div>
+    <div class='row'>
+        <div class='inlineLabels'><label>FILE : </label></div>
+        <input type='file' name='bulk_authentication_file'>
+    </div>
+    <div class='row'>
+        <div class='inlineLabels'><label>TO SEND EMAIL:</label></div>
+        <span name='to_email'>[% to_email %]</span>
+    </div>
+    <div class='row'>
+        <div class='inlineLabels'><label>Department:</label></div>
+        <select name='staff_department' >
+            <option value='Compliance' selected='selected'>Compliance</option>
+            <option value='CS'>CS</option>
+            <option value='Payments'>Payments</option>
+            <option value='Anti-Fraud'>Anti-Fraud</option>
+        </select>
+    </div>
+    <div class='row'>
+        <div class='inlineLabels'><label>Comment:</label></div>
+        <textarea cols="60" maxsize="1000" name="comment" row="10">[% comment %]</textarea>
+    </div>
+    <br>
+    <input type='submit' class='btn btn--primary' name='bulk_auth_btn' value='Bulk Authentication'>
+</form>
+<script>
+    function toggle_checkbox(checkbox) {
+        if (checkbox.checked){
+            document.getElementById(checkbox.name + '_toggle').style.display = 'inline';
+            } else {
+            document.getElementById(checkbox.name + '_toggle').style.display = 'none';
+        }
+    }
+</script>
