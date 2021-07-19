@@ -7,6 +7,7 @@ use Log::Any qw($log);
 use BOM::User;
 use BOM::User::Client;
 use BOM::Platform::ProveID;
+use BOM::Event::Actions::CustomerIO;
 use BOM::Database::ClientDB;
 use BOM::Database::UserDB;
 use Syntax::Keyword::Try;
@@ -14,6 +15,8 @@ use BOM::Platform::Token::API;
 use BOM::Platform::Context;
 use BOM::Event::Utility qw(exception_logged);
 use List::Util qw(uniqstr);
+use Future::AsyncAwait;
+
 # Load Brands object globally
 my $BRANDS = BOM::Platform::Context::request()->brand();
 
@@ -39,12 +42,12 @@ Returns B<1> on success.
 
 =cut
 
-sub anonymize_client {
+async sub anonymize_client {
     my $arg     = shift;
     my $loginid = $arg->{loginid};
     return undef unless $loginid;
     my ($success, $error);
-    my $result = _anonymize($loginid);
+    my $result = await _anonymize($loginid);
     $result eq 'successful' ? $success->{$loginid} = $result : ($error->{$loginid} = ERROR_MESSAGE_MAPPING->{$result});
     _send_anonymization_report($error, $success);
     return 1;
@@ -64,7 +67,7 @@ Returns **1** on success.
 
 =cut
 
-sub bulk_anonymization {
+async sub bulk_anonymization {
     my $arg  = shift;
     my $data = $arg->{data};
     return undef unless $data;
@@ -72,7 +75,7 @@ sub bulk_anonymization {
 
     my @loginids = uniqstr grep { $_ } map { uc $_ } map { s/^\s+|\s+$//gr } map { $_->@* } $data->@*;
     foreach my $loginid (@loginids) {
-        my $result = _anonymize($loginid);
+        my $result = await _anonymize($loginid);
         $result eq 'successful' ? $success->{$loginid} = $result : $error->{$loginid} = ERROR_MESSAGE_MAPPING->{$result};
     }
     $error->{'There is no login ID in file'} = "File corrupted" if @loginids == 0;
@@ -183,7 +186,7 @@ Possible error_codes for now are:
 
 =cut
 
-sub _anonymize {
+async sub _anonymize {
     my $loginid = shift;
     my ($user, @clients_hashref);
     try {
@@ -193,6 +196,10 @@ sub _anonymize {
         return "userNotFound" unless $user;
         return "userAlreadyAnonymized" if $user->email =~ /\@deleted\.binary\.user$/;
         return "activeClient" unless ($user->valid_to_anonymize);
+
+        # Delete data on customer io.
+        await BOM::Event::Actions::CustomerIO->new(user => $user)->anonymize_user();
+
         @clients_hashref = $client->user->clients(
             include_disabled   => 1,
             include_duplicated => 1,

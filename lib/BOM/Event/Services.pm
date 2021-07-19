@@ -21,6 +21,7 @@ use Net::Async::Redis;
 use WebService::Async::Onfido;
 use WebService::Async::SmartyStreets;
 use WebService::Async::Segment;
+use WebService::Async::CustomerIO;
 
 use BOM::Config;
 use BOM::Config::Redis;
@@ -83,6 +84,25 @@ sub smartystreets {
                 international_auth_id => BOM::Config::third_party()->{smartystreets}->{auth_id},
                 international_token   => BOM::Config::third_party()->{smartystreets}->{token},
             ));
+        $service;
+    }
+}
+
+=head2 customerio
+
+Provides connector to customer.io.
+
+=cut
+
+sub customerio {
+    my ($self) = @_;
+
+    return $self->{customerio} //= do {
+        my %args = (
+            api_key => BOM::Config::third_party()->{customerio}->{api_key},
+            site_id => BOM::Config::third_party()->{customerio}->{site_id},
+        );
+        $self->add_child(my $service = WebService::Async::CustomerIO->new(%args));
         $service;
     }
 }

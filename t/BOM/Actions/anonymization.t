@@ -36,7 +36,7 @@ subtest client_anonymization => sub {
     });
     $user->add_client($cr_client);
 
-    my $result = BOM::Event::Actions::Anonymization::anonymize_client();
+    my $result = BOM::Event::Actions::Anonymization::anonymize_client()->get;
     is $result, undef, "Return undef when loginid is not provided.";
 
     mailbox_clear();
@@ -76,11 +76,25 @@ subtest client_anonymization_vrtc_without_siblings => sub {
     my $mock_anonymization = Test::MockModule->new('BOM::Event::Actions::Anonymization');
     $mock_anonymization->mock('_send_anonymization_report', sub { return 1 });
 
+    # Mock BOM::Event::Actions::CustomerIO with an error on anonymization.
+    my $mock_customerio = Test::MockModule->new('BOM::Event::Actions::CustomerIO');
+    $mock_customerio->mock('anonymize_user', sub { return Future->fail(0) });
+
     my $result = BOM::Event::Actions::Anonymization::anonymize_client({'loginid' => $vrtc_client->loginid});
     ok($result, 'Returns 1 after user anonymized.');
 
     # Retrieve anonymized user from database by id
     my @anonymized_clients = $user->clients(include_disabled => 1);
+
+    isnt $_->email, lc($_->loginid . '@deleted.binary.user'), 'Email was NOT anonymized' for @anonymized_clients;
+
+    # Mock BOM::Event::Actions::CustomerIO with success on anonymization.
+    $mock_customerio->mock('anonymize_user', sub { return Future->done(1) });
+    $result = BOM::Event::Actions::Anonymization::anonymize_client({'loginid' => $vrtc_client->loginid});
+    ok($result, 'Returns 1 after user anonymized.');
+
+    # Retrieve anonymized user from database by id
+    @anonymized_clients = $user->clients(include_disabled => 1);
 
     is $_->email, lc($_->loginid . '@deleted.binary.user'), 'Email was anonymized' for @anonymized_clients;
 
@@ -144,7 +158,7 @@ subtest bulk_anonymization => sub {
         $users[$i]->add_client($clients[$i]);
         push @lines, [$clients[$i]->loginid];
     }
-    my $result = BOM::Event::Actions::Anonymization::bulk_anonymization();
+    my $result = BOM::Event::Actions::Anonymization::bulk_anonymization()->get;
     is $result, undef, "Return undef when client's list is not provided.";
 
     mailbox_clear();
@@ -158,10 +172,30 @@ subtest bulk_anonymization => sub {
 
     $mock_user_module->mock('valid_to_anonymize', sub { return 1 });
 
+    # Mock BOM::Event::Actions::CustomerIO with an error on anonymization.
+    my $mock_customerio = Test::MockModule->new('BOM::Event::Actions::CustomerIO');
+    $mock_customerio->mock('anonymize_user', sub { return Future->fail(0) });
+
+    mailbox_clear();
+    $result = BOM::Event::Actions::Anonymization::bulk_anonymization({'data' => \@lines});
+    ok($result, 'Returns 1 after user anonymized.');
+
+    $msg = mailbox_search(subject => qr/Anonymization report for/);
+
+    # It should send an notification email to compliance
+    like($msg->{subject}, qr/Anonymization report for \d{4}-\d{2}-\d{2}/, qq/Compliance report including failures and successes./);
+    like($msg->{body}, qr/Client anonymization failed. Please re-try or inform Backend team./, qq/Failure reason is correct/);
+    cmp_deeply($msg->{to}, [$BRANDS->emails('compliance')], qq/Email should send to the compliance team./);
+
+    # Mock BOM::Event::Actions::CustomerIO with success on anonymization.
+    $mock_customerio->mock('anonymize_user', sub { return Future->done(1) });
+
     # Mock BOM::User::Client module
     my $mock_client_module = Test::MockModule->new('BOM::User::Client');
     $mock_client_module->mock('anonymize_client',                          sub { return 1 });
     $mock_client_module->mock('remove_client_authentication_docs_from_S3', sub { return 1 });
+
+    mailbox_clear();
 
     $result = BOM::Event::Actions::Anonymization::bulk_anonymization({'data' => \@lines});
     ok($result, 'Returns 1 after user anonymized.');
@@ -195,6 +229,10 @@ subtest users_clients_will_set_to_disabled_after_anonymization => sub {
 
     my @user_clients = ();
     $mock_client_module->mock('get_user_loginids_list', sub { return @user_clients });
+
+    # Mock BOM::Event::Actions::CustomerIO with success on anonymization.
+    my $mock_customerio = Test::MockModule->new('BOM::Event::Actions::CustomerIO');
+    $mock_customerio->mock('anonymize_user', sub { return Future->done(1) });
 
     my $email = random_email_address;
 
@@ -255,6 +293,10 @@ subtest 'Anonymization disabled accounts' => sub {
     # Mock BOM::User::Client module
     my $mock_client_module = Test::MockModule->new('BOM::User::Client');
     $mock_client_module->mock(remove_client_authentication_docs_from_S3 => 1);
+
+    # Mock BOM::Event::Actions::CustomerIO with success on anonymization.
+    my $mock_customerio = Test::MockModule->new('BOM::Event::Actions::CustomerIO');
+    $mock_customerio->mock('anonymize_user', sub { return Future->done(1) });
 
     my $email = random_email_address;
 
