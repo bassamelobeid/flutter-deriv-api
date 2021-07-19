@@ -51,6 +51,7 @@ my %event_queue_mapping = (
     anonymize_client                => 'ANONYMIZATION_QUEUE',
     bulk_anonymization              => 'ANONYMIZATION_QUEUE',
     multiplier_hit_type             => 'CONTRACT_QUEUE',
+    bulk_authentication             => 'BULK_EVENTS_QUEUE',
     # We want to move these events out of general queue, without creating a new service.
     # ANONYMIZATION_QUEUE can be renamed to avoid confusion.
     mt5_inactive_account_closed => 'ANONYMIZATION_QUEUE',
