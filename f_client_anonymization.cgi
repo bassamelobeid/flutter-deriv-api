@@ -30,7 +30,6 @@ print "<form id='generateDCC' action='"
     . "<input type='hidden' name='l' value='EN'>"
     . "<label>Transaction type:</label><select name='transtype'>"
     . "<option value='Anonymize client'>Anonymize client details</option>"
-    . "<option value='Delete customerio record'>Delete client customerio record</option>"
     . "</select><br><br>"
     . "<p><b>Provide Login ID for individual anonymization or attach a file for bulk anonymization:</b></p>"
     . "<label>Login ID:</label><input type='text' name='clientloginid' size='15' data-lpignore='true'>"
@@ -52,6 +51,7 @@ print "<b class='error'>WARNING : THIS WILL RESULT IN PERMANENT DATA LOSS</b><br
     <li>Replace all personal data and IP address in audit trail(history of changes) in BO with deleted</li>
     <li>Replace payment remarks for bank wires transactions available on the client's account statement in BO with `deleted wire payment</li>
     <li>Delete all documents from database and S3</li>
+    <li>Remove user record from customer.io</li>
     </ul>
     <hr>";
 my $loginid  = $input->{clientloginid} // '';
@@ -69,7 +69,6 @@ print "<form id='clientAnonymization' action='"
     . "<br><br><input type='checkbox' name='verification' id='chk_verify' value='true'> <label for='chk_verify'>I understand this action is irreversible ("
     . encode_entities($clerk)
     . ")</label><br><br><input type='submit' class='btn btn--primary' name='transtype' value='Anonymize client'/>"
-    . " <input type='submit' class='btn btn--secondary' name='transtype' value='Delete customerio record'/>"
     . "</form>";
 
 if ($transaction_type eq 'Anonymize client') {
@@ -134,19 +133,6 @@ if ($transaction_type eq 'Anonymize client') {
             }
         }
     }
-}
-if ($transaction_type eq 'Delete customerio record') {
-    # Note:
-    #   send 'profile_change' event to Segment to update Customer's trait `unsubscribed` to true,
-    #   it doesn't actually delete the record from Customerio
-    BOM::Platform::Event::Emitter::emit(
-        'profile_change',
-        {
-            loginid       => $loginid,
-            email_consent => 0
-        });
-
-    code_exit_BO(_get_display_message("Process to delete customerio initiated. Please verify by logging into customer.io portal."));
 }
 
 sub _get_display_message {
