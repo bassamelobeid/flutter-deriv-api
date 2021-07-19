@@ -26,6 +26,7 @@ use BOM::Platform::Context qw(request);
 use BOM::Platform::Context::Request;
 use BOM::Event::Actions::App;
 use BOM::Event::Utility qw(exception_logged);
+use BOM::Event::Actions::Authentication;
 
 use Scalar::Util qw(blessed);
 
@@ -110,6 +111,7 @@ my $action_mapping = {
     trading_platform_password_change_failed          => \&BOM::Event::Actions::Client::trading_platform_password_change_failed,
     trading_platform_investor_password_changed       => \&BOM::Event::Actions::Client::trading_platform_investor_password_changed,
     trading_platform_investor_password_change_failed => \&BOM::Event::Actions::Client::trading_platform_investor_password_change_failed,
+    bulk_authentication                              => \&BOM::Event::Actions::Authentication::bulk_authentication,
     p2p_archived_ad                                  => \&BOM::Event::Actions::P2P::archived_ad,
 };
 
