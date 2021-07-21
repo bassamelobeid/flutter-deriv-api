@@ -73,19 +73,11 @@ subtest 'residence_list' => sub {
                             },
                             drivers_license => {
                                 display_name => 'Drivers License',
-                                format       => '^(?=.*[0-9])(?=.*[A-Z])[A-Z0-9]{3}([ -]{1})?[A-Z0-9]{6,12}$',
+                                format       => '^[a-zA-Z]{3}([ -]{1})?[A-Z0-9]{6,12}$',
                             },
                             voter_id => {
                                 display_name => 'Voter ID',
-                                format       => '^([A-Z0-9]{19}|[A-Z0-9]{9})$',
-                            },
-                            cac => {
-                                display_name => 'CAC',
-                                format       => '^(RC)?[0-9]{5,8}$',
-                            },
-                            tin => {
-                                display_name => 'TIN',
-                                format       => '^[0-9]{8,}-[0-9]{4,}$',
+                                format       => '^[a-zA-Z0-9 ]{9,19}$',
                             },
                         },
                     },
