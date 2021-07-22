@@ -14,6 +14,8 @@ use Date::Utility;
 use ExpiryQueue;
 use Syntax::Keyword::Try;
 use DataDog::DogStatsd::Helper qw(stats_inc stats_count);
+use Log::Any qw($log);
+use Log::Any::Adapter 'Stderr';
 
 use Brands;
 use BOM::User::Client;
@@ -735,7 +737,14 @@ sub prepare_buy {
     if ($self->multiple) {
         for my $m (@{$self->multiple}) {
             next if $m->{code};
-            my $c = eval { BOM::User::Client->new({loginid => $m->{loginid}}) };
+            my $c;
+            if ($m->{loginid}) {
+                try {
+                    $c = BOM::User::Client->new({loginid => $m->{loginid}});
+                } catch ($e) {
+                    $log->warnf("Error when get client of login id $m->{loginid}. more detail: %s", $e);
+                }
+            }
             unless ($c) {
                 $m->{code}  = 'InvalidLoginid';
                 $m->{error} = BOM::Platform::Context::localize('Invalid loginid');
@@ -1143,7 +1152,12 @@ sub prepare_sell {
     if ($self->multiple) {
         for my $m (@{$self->multiple}) {
             next if $m->{code};
-            my $c = eval { BOM::User::Client->new({loginid => $m->{loginid}}) };
+            my $c;
+            try {
+                $c = BOM::User::Client->new({loginid => $m->{loginid}});
+            } catch ($e) {
+                $log->warnf("Error when get client of login id $m->{loginid}. more detail: %s", $e);
+            };
             unless ($c) {
                 $m->{code}  = 'InvalidLoginid';
                 $m->{error} = BOM::Platform::Context::localize('Invalid loginid');
