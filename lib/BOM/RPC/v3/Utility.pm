@@ -563,11 +563,12 @@ sub error_map {
         'ProfessionalNotAllowed'        => localize('Professional status is not applicable to your account.'),
         'ProfessionalAlreadySubmitted'  => localize('You already requested professional status.'),
         'IncompleteFinancialAssessment' => localize("The financial assessment is not complete"),
-
-        'SelfExclusion' => localize(
+        'SelfExclusion'                 => localize(
             'Sorry, but you have self-excluded yourself from the website until [_1]. If you are unable to place a trade or deposit after your self-exclusion period, please contact the Customer Support team for assistance.'
         ),
-        'SetSelfExclusionError' => localize('Sorry, but setting your maximum deposit limit is unavailable in your country.'),
+        'SetSelfExclusionError'     => localize('Sorry, but setting your maximum deposit limit is unavailable in your country.'),
+        'PaymentAgentNotAvailable'  => localize('The payment agent facility is not available for this account.'),
+        'PaymentAgentAlreadyExists' => localize("You've already submitted a payment agent application request."),
     };
 }
 

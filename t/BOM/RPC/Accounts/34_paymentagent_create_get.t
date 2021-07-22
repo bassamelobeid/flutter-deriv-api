@@ -243,4 +243,53 @@ subtest 'call with non-empty args' => sub {
     like $email_args->{message}->[0], qr/$_: $expected_values->{$_}/, "The field $_ is included in the email body" for keys %$expected_values;
 };
 
+subtest 'paymentagent create erors' => sub {
+
+    my $mock_landingcompany = Test::MockModule->new('LandingCompany');
+    $mock_landingcompany->mock('allows_payment_agents', sub { return 0; });
+
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+    });
+    $client->set_default_account('USD');
+    my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $client->loginid);
+
+    my $set_params = {
+        language => 'EN',
+        token    => $token
+    };
+    $set_params->{args} = {
+        'payment_agent_name'        => 'John',
+        'url'                       => 'http://john.deriv.com',
+        'email'                     => 'john@test.com',
+        'phone'                     => '23344577',
+        'information'               => 'just for test',
+        'currency_code'             => 'USD',
+        'target_country'            => 'de',
+        'max_withdrawal'            => 3,
+        'min_withdrawal'            => 2,
+        'commission_withdrawal'     => 4,
+        'commission_deposit'        => 5,
+        'is_authenticated'          => 1,
+        'is_listed'                 => 1,
+        'supported_payment_methods' => ['Visa'],
+        'code_of_conduct_approval'  => 1,
+        'affiliate_id'              => 'abcd12347',
+    };
+
+    $c->call_ok('paymentagent_create', $set_params)
+        ->has_no_system_error->has_error->error_message_is("The payment agent facility is not available for this account.")
+        ->error_code_is("PaymentAgentNotAvailable");
+
+    $mock_landingcompany->mock('allows_payment_agents', sub { return 1; });
+
+    $c->call_ok('paymentagent_create', $set_params)->has_no_system_error->has_no_error("paymentagent_create is called successfully");
+
+    $c->call_ok('paymentagent_create', $set_params)
+        ->has_no_system_error->has_error->error_message_is("You've already submitted a payment agent application request.")
+        ->error_code_is("PaymentAgentAlreadyExists");
+
+    $mock_landingcompany->unmock_all;
+};
+
 done_testing();

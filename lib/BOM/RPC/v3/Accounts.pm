@@ -2750,14 +2750,15 @@ rpc paymentagent_create => sub {
     delete $args->{is_listed};
     delete $args->{is_authenticated};
 
-    return BOM::RPC::v3::Utility::create_error({
-            code              => 'PaymentAgentNotAvailable',
-            message_to_client => localize('The payment agent facility is not available for this account.')}
-    ) unless $client->landing_company->allows_payment_agents;
-
-    return BOM::RPC::v3::Utility::create_error({
-            code              => 'PaymentAgentAlreadyExists',
-            message_to_client => localize("You've already submitted a payment agent application request.")}) if $client->get_payment_agent();
+    my $rule_engine = BOM::Rules::Engine->new(
+        client          => $client,
+        landing_company => $client->landing_company
+    );
+    try {
+        $rule_engine->verify_action('paymentagent_create' => $args);
+    } catch ($error) {
+        return BOM::RPC::v3::Utility::rule_engine_error($error);
+    }
 
     # convert the array supported_payment_methods (api field) into the string supported_banks (db field)
     my $payment_methods = (delete $args->{supported_payment_methods}) // [];
