@@ -36,3 +36,9 @@ new_account:
             - client.forbidden_postcodes
           default:
             - pass
+
+paymentagent_create:
+  description: A set of rules to be applied on paymentagent create
+  ruleset:
+    - paymentagent.pa_allowed_in_landing_company
+    - paymentagent.paymentagent_shouldnt_already_exist

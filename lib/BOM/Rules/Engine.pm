@@ -42,6 +42,7 @@ use BOM::Rules::RuleRepository::Transfers;
 use BOM::Rules::RuleRepository::FinancialAssessment;
 use BOM::Rules::RuleRepository::SelfExclusion;
 use BOM::Rules::RuleRepository::IdentityVerification;
+use BOM::Rules::RuleRepository::Paymentagent;
 use BOM::Rules::Registry qw(get_action);
 use BOM::Rules::Context;
 
