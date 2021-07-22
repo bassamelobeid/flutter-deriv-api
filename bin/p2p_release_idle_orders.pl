@@ -7,6 +7,8 @@ use Getopt::Long;
 use Syntax::Keyword::Try;
 
 use BOM::User::Client;
+use Log::Any qw($log);
+use Log::Any::Adapter 'Stderr';
 
 =head1 Name
 
@@ -31,7 +33,12 @@ CLIENT:
 for my $client_loginid (@client_loginids) {
     next CLIENT unless $client_loginid;
 
-    my $client = eval { BOM::User::Client->new({loginid => $client_loginid}) };
+    my $client;
+    try {
+        $client = BOM::User::Client->new({loginid => $client_loginid});
+    } catch ($e) {
+        $log->warnf("Error when get client of login id $client_loginid. more detail: %s", $e);
+    }
     unless ($client) {
         warn 'Incorrect  buyer login id: ' . $client_loginid . "\n";
         next CLIENT;
