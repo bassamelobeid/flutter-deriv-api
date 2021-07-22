@@ -124,8 +124,7 @@ subtest 'process' => sub {
                 dispute_notification account_reactivated verify_false_profile_info check_onfido_rules mt5_inactive_notification mt5_inactive_account_closed
                 identity_verification_requested trading_platform_account_created trading_platform_password_reset_request
                 trading_platform_investor_password_reset_request trading_platform_password_changed trading_platform_password_change_failed
-                trading_platform_investor_password_changed trading_platform_investor_password_change_failed
-                bulk_authentication/
+                trading_platform_investor_password_changed trading_platform_investor_password_change_failed mt5_inactive_account_closure_report bulk_authentication/
         ],
         'Correct number of actions that can be emitted'
     );

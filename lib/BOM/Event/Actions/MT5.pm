@@ -448,4 +448,40 @@ sub mt5_inactive_account_closed {
         });
 }
 
+=head2 mt5_inactive_account_closure_report
+
+Sends email to Compliance, Customer Service and Payments team about account closure details
+
+=over 4
+
+=item * C<reports> - account closure reports
+
+=back
+
+=cut
+
+sub mt5_inactive_account_closure_report {
+    my $args = shift;
+
+    my $brand = request()->brand;
+
+    return unless $args->{reports} and $args->{reports}->@*;
+
+    my @message = map {
+        sprintf("Date[%s] MT5 account[%s] MT5 currency[%s] MT5 balance[%s] Deriv account[%s] Deriv currency[%s] Transferred amount[%s] <br/>",
+            @{$_}{'date', 'mt5_account', 'mt5_account_currency', 'mt5_balance', 'deriv_account', 'deriv_account_currency', 'transferred_amount'})
+    } $args->{reports}->@*;
+
+    # it seems weird that it does not support email in array ref
+    foreach my $email ($brand->emails('cs'), $brand->emails('payments'), $brand->emails('compliance_alert')) {
+        BOM::Platform::Email::send_email({
+            to                    => $email,
+            from                  => $brand->emails('no-reply'),
+            subject               => localize('MT5 account closure report'),
+            message               => \@message,
+            email_content_is_html => 1,
+        });
+    }
+}
+
 1;

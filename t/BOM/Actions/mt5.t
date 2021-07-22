@@ -524,4 +524,34 @@ subtest 'mt5 inactive account closed' => sub {
         'Transferred account appears in the email body';
 };
 
+subtest 'mt5 account closure report' => sub {
+    my $req = BOM::Platform::Context::Request->new(
+        brand_name => 'deriv',
+    );
+    request($req);
+    my $args = {
+        reports => [{
+                date                   => '2021-07-15',
+                mt5_account            => 'MTD123',
+                mt5_balance            => 0,
+                mt5_account_currency   => 'USD',
+                deriv_account          => 'CR321',
+                deriv_account_currency => 'USD',
+                transferred_amount     => 0,
+            }]};
+
+    mailbox_clear();
+
+    my $action_handler = BOM::Event::Process::get_action_mappings()->{mt5_inactive_account_closure_report};
+    $action_handler->($args);
+
+    my $email = mailbox_search(
+        email   => request()->brand->emails('cs'),
+        subject => qr/MT5 account closure report/
+    );
+
+    ok $email, 'Account closure report email sent';
+    like $email->{body}, qr/Transferred/, 'corrent content';
+};
+
 done_testing();
