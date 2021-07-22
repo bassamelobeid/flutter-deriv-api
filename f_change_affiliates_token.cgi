@@ -15,6 +15,8 @@ use strict;
 use warnings;
 use f_brokerincludeall;
 use BOM::User;
+use Syntax::Keyword::Try;
+use Log::Any qw($log);
 
 BOM::Backoffice::Sysinit::init();
 
@@ -67,7 +69,13 @@ if ($input->{EditAffiliatesToken}) {
         code_exit_BO(_get_display_error_message("ERROR: Affiliate Token is not available for this type of Accounts.!"));
     }
 
-    my $client = eval { BOM::User::Client->new({loginid => $ClientLoginid}) };
+    my $client;
+    try {
+        $client = BOM::User::Client->new({loginid => $ClientLoginid});
+    } catch($e) {
+        $log->warnf("Error when get client of login id $ClientLoginid. more detail: %s", $e);
+    }
+
     code_exit_BO(
         qq[<p>ERROR: Client [$ClientLoginid] not found. </p>
             <form action="$self_post" method="get">

@@ -10,6 +10,8 @@ use BOM::Database::ClientDB;
 use ExchangeRates::CurrencyConverter qw(in_usd);
 use BOM::Transaction;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
+use Syntax::Keyword::Try;
+use Log::Any qw($log);
 
 BOM::Backoffice::Sysinit::init();
 
@@ -27,7 +29,14 @@ my $grandtotal = 0;
 CLIENT:
 foreach my $loginID (split(/,/, $listaccounts)) {
     my $encoded_loginID = encode_entities($loginID);
-    my $client          = eval { BOM::User::Client->new({loginid => $loginID}) } || do {
+    my $client;
+    try {
+        $client = BOM::User::Client->new({loginid => $loginID});
+    } catch($e) {
+        $log->warnf("Error when get client of login id $loginID. more detail: %s", $e);
+    }
+
+    unless ($client) {
         print "<p class='notify notify--danger'>ERROR: Cannot find client '$encoded_loginID'</p>";
         next CLIENT;
     };

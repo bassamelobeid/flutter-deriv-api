@@ -24,6 +24,8 @@ use BOM::Backoffice::Config;
 use BOM::Backoffice::Sysinit ();
 use BOM::Config::Runtime;
 use BOM::Platform::Event::Emitter;
+use Log::Any qw($log);
+
 BOM::Backoffice::Sysinit::init();
 
 PrintContentType();
@@ -95,9 +97,15 @@ my $clerk = BOM::Backoffice::Auth0::get_staffname();
 unless ($curr =~ /^[a-zA-Z0-9]{2,20}$/ && LandingCompany::Registry::get_currency_type($curr)) {
     code_exit_BO('Invalid currency, please check: ' . encode_entities($curr));
 }
-my $client = eval { BOM::User::Client->new({loginid => $loginID}) } || do {
-    code_exit_BO("Error: no such client $encoded_loginID");
+my $client;
+try {
+    $client = BOM::User::Client->new({loginid => $loginID});
+} catch($e) {
+    $log->warnf("Error when get client of login id $loginID. more detail: %s", $e);
 };
+
+code_exit_BO("Error: no such client $encoded_loginID") unless $client;
+
 my $broker = $client->broker;
 
 my $toClient;
@@ -105,9 +113,14 @@ if ($ttype eq 'TRANSFER') {
     unless ($toLoginID) {
         code_exit_BO('ERROR: transfer-to LoginID missing.');
     }
-    $toClient = eval { BOM::User::Client->new({loginid => $toLoginID}) } || do {
-        code_exit_BO("Error: no such transfer-to client $encoded_toLoginID");
+    try {
+        $toClient = BOM::User::Client->new({loginid => $toLoginID});
+    } catch($e) {
+        $log->warnf("Error when get client of login id $toLoginID. more detail: %s", $e);
     };
+
+    code_exit_BO("Error: no such transfer-to client $encoded_toLoginID") unless $toClient;
+
     if ($broker ne $toClient->broker) {
         code_exit_BO(sprintf("ERROR: $toClient broker is %s not %s", encode_entities($toClient->broker), encode_entities($broker)));
     }

@@ -22,6 +22,7 @@ use Text::Trim qw(trim);
 use LandingCompany::Registry;
 use BOM::Config::Runtime;
 use BOM::Backoffice::QuantsAuditEmail qw(send_trading_ops_email);
+use Log::Any qw($log);
 
 BOM::Backoffice::Sysinit::init();
 my $staff = BOM::Backoffice::Auth0::get_staffname();
@@ -130,7 +131,13 @@ if ($r->param('save_multiplier_user_limit')) {
 
         my $comment = $r->param('comment') // '';
 
-        my $client = eval { BOM::User::Client->new({loginid => $loginid}) };
+        my $client;
+        try {
+            $client = BOM::User::Client->new({loginid => $loginid});
+        } catch($e) {
+            $log->warnf("Error when get client of login id $loginid. more detail: %s", $e);
+        }
+
         die "invalid loginid " . $loginid unless $client;
         my $user_id = 'binary_user_id::' . $client->binary_user_id;
 
@@ -170,7 +177,13 @@ if ($r->param('delete_multiplier_user_limit')) {
         my $loginid  = $r->param('loginid');
         my $uniq_key = $r->param('uniq_key');
 
-        my $client = eval { BOM::User::Client->new({loginid => $loginid}) };
+        my $client;
+        try {
+            $client = BOM::User::Client->new({loginid => $loginid});
+        } catch ($e) {
+            $log->warnf("Error when get client of login id $loginid. more detail: %s", $e);
+        }
+
         die "invalid loginid " . $loginid unless $client;
         my $user_id = 'binary_user_id::' . $client->binary_user_id;
 

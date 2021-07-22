@@ -13,6 +13,7 @@ use BOM::Backoffice::Cookie;
 use BOM::User::AuditLog;
 use BOM::User::Client;
 use Syntax::Keyword::Try;
+use Log::Any qw($log);
 
 use constant COMMENT_LIMIT => 1000000;
 
@@ -41,7 +42,12 @@ PrintContentType();
 
 return_error('Client loginid is missed') unless $input->{loginid};
 
-my $client = eval { BOM::User::Client->new({loginid => $input->{loginid}}) };
+my $client;
+try {
+    $client = BOM::User::Client->new({loginid => $input->{loginid}});
+} catch($e) {
+    $log->warnf("Error when get client of login id $input->{loginid}. more detail: %s", $e);
+};
 
 return_error('Invalid clientloginid, Client not found') unless $client;
 
