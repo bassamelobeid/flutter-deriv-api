@@ -11,6 +11,8 @@ use BOM::User::Client;
 use BOM::RPC::Registry '-dsl';
 
 use Finance::Contract::Category;
+use Syntax::Keyword::Try;
+use Log::Any qw($log);
 
 requires_auth('trading');
 
@@ -33,7 +35,17 @@ rpc copy_start => sub {
 
     my $trader_token  = $args->{copy_start};
     my $token_details = BOM::RPC::v3::Utility::get_token_details($trader_token);
-    my $trader        = eval { BOM::User::Client->new({loginid => $token_details->{loginid}, db_operation => 'replica'}) };
+    my $trader;
+    if ($token_details && $token_details->{loginid}) {
+        try {
+            $trader = BOM::User::Client->new({
+                loginid      => $token_details->{loginid},
+                db_operation => 'replica'
+            });
+        } catch ($e) {
+            $log->warnf("Error when get client. more detail: %s", $e);
+        };
+    }
     unless ($token_details && $trader) {
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'InvalidToken',

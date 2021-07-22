@@ -19,12 +19,21 @@ use BOM::Platform::Context qw (localize);
 use BOM::Config::Redis;
 use BOM::Product::ContractFactory qw(produce_contract);
 use BOM::RPC::v3::Utility qw(log_exception);
+use Log::Any qw($log);
 
 rpc copytrading_statistics => sub {
     my $params = shift->{args};
 
     my $trader_id = uc $params->{trader_id};
-    my $trader    = eval { BOM::User::Client->new({loginid => $trader_id, db_operation => 'replica'}) };
+    my $trader;
+    try {
+        $trader = BOM::User::Client->new({
+            loginid      => $trader_id,
+            db_operation => 'replica'
+        });
+    } catch ($e) {
+        $log->warnf("Error when get client of login id $trader_id. more detail: %s", $e);
+    };
     unless ($trader) {
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'WrongLoginID',
