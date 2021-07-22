@@ -44,7 +44,7 @@ $reason = ($additional_info) ? $reason . ' - ' . $additional_info : $reason;
 local $\ = "\n";
 my ($printline, @invalid_logins);
 
-$clientID || code_exit_BO('Login ID is mandatory.', "UNTRUSTED/DISABLE CLIENT");
+$clientID || code_exit_BO('Login ID is mandatory.', "UNTRUSTED/DISABLE CLIENT", redirect());
 
 Bar("UNTRUSTED/DISABLE CLIENT");
 
@@ -159,7 +159,30 @@ if (scalar @invalid_logins > 0) {
         . "</b>. Please check and try again.";
 }
 
-code_exit_BO();
+code_exit_BO(redirect());
+
+sub redirect {
+    my $redirect_uri     = shift // request()->http_handler->env->{HTTP_REFERER};
+    my $time_to_redirect = shift // 3;
+
+    print qq{
+        </br></br><p style="text-align: center;" id="count-down">You will be redirected to the <a class="link" href="$redirect_uri">previous page</a> in $time_to_redirect seconds</p>
+        <script>
+            let time_to_redirect = $time_to_redirect;
+
+            const redirect_message_field = document.querySelector('#count-down');
+            const interval = setInterval(() => {
+                if (time_to_redirect-- === 1) {
+                    clearInterval(interval);
+                    window.location.replace('$redirect_uri');
+                }
+
+                const new_message = redirect_message_field.innerHTML.replace(/[0-9] seconds/, time_to_redirect + ' seconds');
+                redirect_message_field.innerHTML = new_message;
+            }, 1000);
+        </script>
+    };
+}
 
 sub execute_set_status {
     my $params = shift;
@@ -217,7 +240,7 @@ sub execute_remove_status {
 sub print_error_and_exit {
     my $error_msg = shift;
     print "<p class='notify notify--danger'>ERROR : $error_msg</span>";
-    code_exit_BO();
+    code_exit_BO(redirect());
 }
 
 sub notify_submission_of_documents_for_pending_payout {

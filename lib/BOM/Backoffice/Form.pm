@@ -514,6 +514,8 @@ sub get_self_exclusion_form {
 
     };
 
+    my $params = {loginid => $loginID};
+
     #instantiate the form object
     my $form_self_exclusion = HTML::FormBuilder::Validation->new(
         data => {
@@ -524,9 +526,8 @@ sub get_self_exclusion_form {
             'action' => request()->url_for(
                 $restricted_only
                 ? 'backoffice/f_setting_selfexclusion_restricted.cgi'
-                : 'backoffice/f_setting_selfexclusion.cgi'
-            ),
-        });
+                : 'backoffice/f_setting_selfexclusion.cgi', $params
+            )});
 
     my @restricted_fields = (
         $input_field_daily_loss_limit, $deposit_limit_enabled ? ($input_field_daily_deposit_limit) : (),

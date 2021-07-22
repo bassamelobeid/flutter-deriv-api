@@ -70,9 +70,6 @@ my $client_details_link = request()->url_for(
         loginID => $loginid
     });
 
-print qq~
-    <p><a class="link" href="$client_details_link">&laquo; Return to client details</a></p>~;
-
 Bar($title);
 
 my $self_exclusion_form = BOM::Backoffice::Form::get_self_exclusion_form({
@@ -110,6 +107,79 @@ sub make_row {
         . '</strong></td><td><strong>'
         . $expiration_date
         . '</strong></td></tr>';
+}
+
+if (request()->http_method eq 'POST') {
+    # Server side validations
+    $self_exclusion_form->set_input_fields(request()->params);
+
+    my $v;
+    $v = request()->param('MAXOPENPOS');
+    $client->set_exclusion->max_open_bets(looks_like_number($v) && $v ? $v : undef);
+    $v = request()->param('DAILYTURNOVERLIMIT');
+    $client->set_exclusion->max_turnover(looks_like_number($v) && $v ? $v : undef);
+    $v = request()->param('7DAYTURNOVERLIMIT');
+    $client->set_exclusion->max_7day_turnover(looks_like_number($v) && $v ? $v : undef);
+    $v = request()->param('30DAYTURNOVERLIMIT');
+    $client->set_exclusion->max_30day_turnover(looks_like_number($v) && $v ? $v : undef);
+    $v = request()->param('MAXCASHBAL');
+    $client->set_exclusion->max_balance(looks_like_number($v) && $v ? $v : undef);
+    $v = request()->param('SESSIONDURATION');
+    $client->set_exclusion->session_duration_limit(looks_like_number($v) && $v ? $v : undef);
+
+    unless ($regulated_lc) {
+        $v = request()->param('DAILYLOSSLIMIT');
+        $client->set_exclusion->max_losses(looks_like_number($v) && $v ? $v : undef);
+        $v = request()->param('7DAYLOSSLIMIT');
+        $client->set_exclusion->max_7day_losses(looks_like_number($v) && $v ? $v : undef);
+        $v = request()->param('30DAYLOSSLIMIT');
+        $client->set_exclusion->max_30day_losses(looks_like_number($v) && $v ? $v : undef);
+    }
+
+    if ($deposit_limit_enabled) {
+        $v = request()->param('DAILYDEPOSITLIMIT');
+        $client->set_exclusion->max_deposit_daily(looks_like_number($v) && $v ? $v : undef);
+        $v = request()->param('7DAYDEPOSITLIMIT');
+        $client->set_exclusion->max_deposit_7day(looks_like_number($v) && $v ? $v : undef);
+        $v = request()->param('30DAYDEPOSITLIMIT');
+        $client->set_exclusion->max_deposit_30day(looks_like_number($v) && $v ? $v : undef);
+    }
+
+    my $form_exclusion_until_date = request()->param('EXCLUDEUNTIL') || undef;
+
+    $form_exclusion_until_date = Date::Utility->new($form_exclusion_until_date) if $form_exclusion_until_date;
+
+    my $exclude_until_date;
+
+    if ($client->get_self_exclusion->exclude_until) {
+        $exclude_until_date = Date::Utility->new($client->get_self_exclusion->exclude_until);
+    }
+
+    # If no change has been made in the exclude_until field, then ignore the checking
+    if (!$exclude_until_date || !$form_exclusion_until_date || $form_exclusion_until_date->date ne $exclude_until_date->date) {
+        if (allow_uplift_self_exclusion($client, $exclude_until_date, $form_exclusion_until_date)) {
+
+            if ($form_exclusion_until_date) {
+                $client->set_exclusion->exclude_until($form_exclusion_until_date->date);
+            } else {
+                $client->set_exclusion->exclude_until(undef);
+            }
+        } else {
+            print "<p class=\"aligncenter error\">>WARNING: Client's self-exclusion date cannot be changed</p>";
+        }
+    }
+
+    my $timeout_until = request()->param('TIMEOUTUNTIL') || undef;
+    $timeout_until = Date::Utility->new($timeout_until)->epoch if $timeout_until;
+    $client->set_exclusion->timeout_until($timeout_until);
+
+    if ($client->save) {
+        #print message inform Client everything is ok
+        print "<p class=\"success\">Thank you. the client settings have been updated.</p>";
+    } else {
+        print "<p class=\"error\">Sorry, the client settings have not been updated, please try it again.</p>";
+        warn("Error: cannot write to self_exclusion table $!");
+    }
 }
 
 # to generate existing limits
@@ -187,93 +257,6 @@ if (my $self_exclusion = $client->get_self_exclusion) {
     $page .= '<p>You may change it by editing the corresponding value:</p>';
 }
 
-# first time (not submitted)
-if (request()->http_method eq 'GET' or request()->param('action') ne 'process') {
-    $page .= $self_exclusion_form->build();
-    print $page;
-    code_exit_BO();
-}
-
-# Server side validations
-$self_exclusion_form->set_input_fields(request()->params);
-
-# print the form again if there is any error
-if (not $self_exclusion_form->validate()) {
-    $page .= $self_exclusion_form->build();
-    print $page;
-    code_exit_BO();
-}
-
-my $v;
-$v = request()->param('MAXOPENPOS');
-$client->set_exclusion->max_open_bets(looks_like_number($v) && $v ? $v : undef);
-$v = request()->param('DAILYTURNOVERLIMIT');
-$client->set_exclusion->max_turnover(looks_like_number($v) && $v ? $v : undef);
-$v = request()->param('7DAYTURNOVERLIMIT');
-$client->set_exclusion->max_7day_turnover(looks_like_number($v) && $v ? $v : undef);
-$v = request()->param('30DAYTURNOVERLIMIT');
-$client->set_exclusion->max_30day_turnover(looks_like_number($v) && $v ? $v : undef);
-$v = request()->param('MAXCASHBAL');
-$client->set_exclusion->max_balance(looks_like_number($v) && $v ? $v : undef);
-$v = request()->param('SESSIONDURATION');
-$client->set_exclusion->session_duration_limit(looks_like_number($v) && $v ? $v : undef);
-
-unless ($regulated_lc) {
-    $v = request()->param('DAILYLOSSLIMIT');
-    $client->set_exclusion->max_losses(looks_like_number($v) && $v ? $v : undef);
-    $v = request()->param('7DAYLOSSLIMIT');
-    $client->set_exclusion->max_7day_losses(looks_like_number($v) && $v ? $v : undef);
-    $v = request()->param('30DAYLOSSLIMIT');
-    $client->set_exclusion->max_30day_losses(looks_like_number($v) && $v ? $v : undef);
-}
-
-if ($deposit_limit_enabled) {
-    $v = request()->param('DAILYDEPOSITLIMIT');
-    $client->set_exclusion->max_deposit_daily(looks_like_number($v) && $v ? $v : undef);
-    $v = request()->param('7DAYDEPOSITLIMIT');
-    $client->set_exclusion->max_deposit_7day(looks_like_number($v) && $v ? $v : undef);
-    $v = request()->param('30DAYDEPOSITLIMIT');
-    $client->set_exclusion->max_deposit_30day(looks_like_number($v) && $v ? $v : undef);
-}
-
-my $form_exclusion_until_date = request()->param('EXCLUDEUNTIL') || undef;
-
-$form_exclusion_until_date = Date::Utility->new($form_exclusion_until_date) if $form_exclusion_until_date;
-
-my $exclude_until_date;
-
-if ($client->get_self_exclusion->exclude_until) {
-    $exclude_until_date = Date::Utility->new($client->get_self_exclusion->exclude_until);
-}
-
-# If no change has been made in the exclude_until field, then ignore the checking
-if (!$exclude_until_date || !$form_exclusion_until_date || $form_exclusion_until_date->date ne $exclude_until_date->date) {
-    if (allow_uplift_self_exclusion($client, $exclude_until_date, $form_exclusion_until_date)) {
-
-        if ($form_exclusion_until_date) {
-            $client->set_exclusion->exclude_until($form_exclusion_until_date->date);
-        } else {
-            $client->set_exclusion->exclude_until(undef);
-        }
-    } else {
-        print "<p class=\"aligncenter error\">>WARNING: Client's self-exclusion date cannot be changed</p>";
-    }
-}
-
-my $timeout_until = request()->param('TIMEOUTUNTIL') || undef;
-$timeout_until = Date::Utility->new($timeout_until)->epoch if $timeout_until;
-$client->set_exclusion->timeout_until($timeout_until);
-
-if ($client->save) {
-    #print message inform Client everything is ok
-    print "<p class=\"aligncenter\">Thank you. the client settings have been updated.</p>";
-} else {
-    print "<p class=\"aligncenter\">Sorry, the client settings have not been updated, please try it again.</p>";
-    warn("Error: cannot write to self_exclusion table $!");
-}
-
-my $self_exclusion_link = request()->url_for('backoffice/f_setting_selfexclusion.cgi', {loginid => $loginid});
-print qq{<a class='link' href='$client_details_link'>&laquo; Return to client details</a>};
-print qq{<br/><a class='link' href='$self_exclusion_link'>&laquo; Go back to self-exclusion settings</a>};
-
-code_exit_BO;
+$page .= $self_exclusion_form->build();
+print $page;
+code_exit_BO();
