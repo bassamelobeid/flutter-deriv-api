@@ -1238,13 +1238,16 @@ sub client_inernal_transfer_summary {
     my %args = @_;
     my ($client, $from, $to) = @args{qw/client from to/};
 
+    my $summary = {};
+
+    return $summary unless $client->account;
+
     my $raw_summary = $client->db->dbic->run(
         fixup => sub {
             $_->selectall_arrayref('SELECT * FROM payment.get_internal_transfer_summary(?,?,?)', {Slice => {}}, $client->account->id, $from, $to);
         },
     );
 
-    my $summary = {};
     foreach my $item (@$raw_summary) {
         my ($amount, $action, $type) = @{$item}{qw/amount action_type payment_type/};
 
@@ -1278,6 +1281,10 @@ sub client_payment_agent_transfer_summary {
     my %args = @_;
     my ($client, $from, $to) = @args{qw/client from to/};
 
+    my $summary = {};
+
+    return $summary unless $client->account;
+
     my $raw_summary = $client->db->dbic->run(
         fixup => sub {
             $_->selectall_arrayref('SELECT * FROM payment.get_payment_agent_transfer_summary(?,?,?)', {Slice => {}}, $client->account->id, $from,
@@ -1285,7 +1292,6 @@ sub client_payment_agent_transfer_summary {
         },
     );
 
-    my $summary = {};
     foreach my $item (@$raw_summary) {
         my ($amount, $count, $action, $loginid, $account_id, $is_payment_agent, $api_call) =
             @{$item}{qw/amount count action_type fellow_loginid fellow_accountid fellow_is_payment_agent api_call/};
@@ -1337,6 +1343,8 @@ C<paymentagent_deposit>, C<paymentagent_dwithdraw> and C<total> (both api calls)
 sub client_payment_agent_transfer_details {
     my %args = @_;
     my ($client, $fellow_account, $from, $to, $api_call) = @args{qw/client fellow_account from to api_call/};
+
+    return {} unless $client->account;
 
     my $result = $client->db->dbic->run(
         fixup => sub {
