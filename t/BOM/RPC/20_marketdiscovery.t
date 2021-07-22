@@ -112,8 +112,8 @@ subtest 'active_symbols for whitelisted apps' => sub {
             1408  => 0,
             16303 => 79,
             16929 => 79,
-            19111 => 68,
-            19112 => 68,
+            19111 => 74,
+            19112 => 74,
             22168 => 68,
             23789 => 49,
         );
@@ -121,7 +121,8 @@ subtest 'active_symbols for whitelisted apps' => sub {
         foreach my $app_id (keys %$app) {
             $params->{source} = $app_id;
             my $result = $c->call_ok($method, $params)->has_no_system_error->result;
-            is scalar @$result, $expected_symbol_count{$app_id}, 'symbol count expected for ' . $app->{$app_id}{name} if ref $result eq 'ARRAY';
+            is scalar @$result, $expected_symbol_count{$app_id}, 'symbol count expected for ' . $app->{$app_id}{name} . ' with id ' . $app_id
+                if ref $result eq 'ARRAY';
         }
     };
 
