@@ -76,7 +76,14 @@ sub profile_change {
 
     my $loginid = $params->{loginid};
 
-    my $client = eval { BOM::User::Client->new({loginid => $loginid}) } or die 'Could not instantiate client for login ID ' . $loginid;
+    my $client;
+    try {
+        $client = BOM::User::Client->new({loginid => $loginid});
+    } catch ($e) {
+        $log->warnf("Error when get client of login id $loginid. more detail: %s", $e);
+    };
+
+    die 'Could not instantiate client for login ID ' . $loginid unless $client;
 
     # Apply sanctions on profile update
     if (any { exists $params->{properties}->{updated_fields}->{$_} } qw/first_name last_name date_of_birth/) {
