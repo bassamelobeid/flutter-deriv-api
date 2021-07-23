@@ -1,0 +1,495 @@
+kind: pipeline
+type: docker
+name: syntax
+
+clone:
+  disable: true
+
+volumes:
+- name: git
+  temp: {}
+
+steps:
+- name: Prepare repos
+  image: regentmarkets/drone-git
+  volumes:
+  - name: git
+    path: /home/git
+  pull: if-not-exists
+  settings:
+    ssh_key:
+      from_secret: ssh_key
+  environment:
+    CIRCLE_PROJECT_USERNAME: regentmarkets
+    CIRCLE_PROJECT_REPONAME: bom
+- name: Run tests
+  image: regentmarkets/debian-ci:stable
+  volumes:
+  - name: git
+    path: /home/git
+  commands:
+  - cp /home/git/.pg* /root
+  - . /etc/profile.d/perl5.sh
+  - cd /home/git/regentmarkets/bom && make syntax
+
+---
+kind: pipeline
+type: docker
+name: unit
+
+clone:
+  disable: true
+
+volumes:
+- name: git
+  temp: {}
+
+steps:
+- name: Prepare repos
+  image: regentmarkets/drone-git
+  volumes:
+  - name: git
+    path: /home/git
+  pull: if-not-exists
+  settings:
+    ssh_key:
+      from_secret: ssh_key
+  environment:
+    CIRCLE_PROJECT_USERNAME: regentmarkets
+    CIRCLE_PROJECT_REPONAME: bom
+- name: Run tests
+  image: regentmarkets/debian-ci:stable
+  volumes:
+  - name: git
+    path: /home/git
+  commands:
+  - cp /home/git/.pg* /root
+  - . /etc/profile.d/perl5.sh
+  - cd /home/git/regentmarkets/bom && make unit
+
+---
+kind: pipeline
+type: docker
+name: product_contract
+
+clone:
+  disable: true
+
+volumes:
+- name: git
+  temp: {}
+
+steps:
+- name: Prepare repos
+  image: regentmarkets/drone-git
+  volumes:
+  - name: git
+    path: /home/git
+  pull: if-not-exists
+  settings:
+    ssh_key:
+      from_secret: ssh_key
+  environment:
+    CIRCLE_PROJECT_USERNAME: regentmarkets
+    CIRCLE_PROJECT_REPONAME: bom
+- name: Run tests
+  image: regentmarkets/debian-ci:stable
+  volumes:
+  - name: git
+    path: /home/git
+  commands:
+  - cp /home/git/.pg* /root
+  - . /etc/profile.d/perl5.sh
+  - start_services
+  - cd /home/git/regentmarkets/bom && make unit_test_product_contract
+
+---
+kind: pipeline
+type: docker
+name: product_contract_settlement
+
+clone:
+  disable: true
+
+volumes:
+- name: git
+  temp: {}
+
+steps:
+- name: Prepare repos
+  image: regentmarkets/drone-git
+  volumes:
+  - name: git
+    path: /home/git
+  pull: if-not-exists
+  settings:
+    ssh_key:
+      from_secret: ssh_key
+  environment:
+    CIRCLE_PROJECT_USERNAME: regentmarkets
+    CIRCLE_PROJECT_REPONAME: bom
+- name: Run tests
+  image: regentmarkets/debian-ci:stable
+  volumes:
+  - name: git
+    path: /home/git
+  commands:
+  - cp /home/git/.pg* /root
+  - . /etc/profile.d/perl5.sh
+  - start_services
+  - cd /home/git/regentmarkets/bom && make unit_test_product_contract_settlement
+
+---
+kind: pipeline
+type: docker
+name: product_contract_extended
+
+clone:
+  disable: true
+
+volumes:
+- name: git
+  temp: {}
+
+steps:
+- name: Prepare repos
+  image: regentmarkets/drone-git
+  volumes:
+  - name: git
+    path: /home/git
+  pull: if-not-exists
+  settings:
+    ssh_key:
+      from_secret: ssh_key
+  environment:
+    CIRCLE_PROJECT_USERNAME: regentmarkets
+    CIRCLE_PROJECT_REPONAME: bom
+- name: Run tests
+  image: regentmarkets/debian-ci:stable
+  volumes:
+  - name: git
+    path: /home/git
+  commands:
+  - cp /home/git/.pg* /root
+  - . /etc/profile.d/perl5.sh
+  - start_services
+  - cd /home/git/regentmarkets/bom && make unit_test_product_contract_extended
+
+---
+kind: pipeline
+type: docker
+name: validation
+
+clone:
+  disable: true
+
+volumes:
+- name: git
+  temp: {}
+
+steps:
+- name: Prepare repos
+  image: regentmarkets/drone-git
+  volumes:
+  - name: git
+    path: /home/git
+  pull: if-not-exists
+  settings:
+    ssh_key:
+      from_secret: ssh_key
+  environment:
+    CIRCLE_PROJECT_USERNAME: regentmarkets
+    CIRCLE_PROJECT_REPONAME: bom
+- name: Run tests
+  image: regentmarkets/debian-ci:stable
+  volumes:
+  - name: git
+    path: /home/git
+  commands:
+  - cp /home/git/.pg* /root
+  - . /etc/profile.d/perl5.sh
+  - start_services
+  - cd /home/git/regentmarkets/bom && make unit_test_validation
+
+---
+kind: pipeline
+type: docker
+name: pricing
+
+clone:
+  disable: true
+
+volumes:
+- name: git
+  temp: {}
+
+steps:
+- name: Prepare repos
+  image: regentmarkets/drone-git
+  volumes:
+  - name: git
+    path: /home/git
+  pull: if-not-exists
+  settings:
+    ssh_key:
+      from_secret: ssh_key
+  environment:
+    CIRCLE_PROJECT_USERNAME: regentmarkets
+    CIRCLE_PROJECT_REPONAME: bom
+- name: Run tests
+  image: regentmarkets/debian-ci:stable
+  volumes:
+  - name: git
+    path: /home/git
+  commands:
+  - cp /home/git/.pg* /root
+  - . /etc/profile.d/perl5.sh
+  - start_services
+  - cd /home/git/regentmarkets/bom && make unit_test_pricing
+
+---
+kind: pipeline
+type: docker
+name: product_except_validation_contract_pricing
+
+clone:
+  disable: true
+
+volumes:
+- name: git
+  temp: {}
+
+steps:
+- name: Prepare repos
+  image: regentmarkets/drone-git
+  volumes:
+  - name: git
+    path: /home/git
+  pull: if-not-exists
+  settings:
+    ssh_key:
+      from_secret: ssh_key
+  environment:
+    CIRCLE_PROJECT_USERNAME: regentmarkets
+    CIRCLE_PROJECT_REPONAME: bom
+- name: Run tests
+  image: regentmarkets/debian-ci:stable
+  volumes:
+  - name: git
+    path: /home/git
+  commands:
+  - cp /home/git/.pg* /root
+  - . /etc/profile.d/perl5.sh
+  - start_services
+  - cd /home/git/regentmarkets/bom
+  - make unit_test_product_base
+  - make unit_test_product_model
+  - make unit_test_volatility
+  - make unit_test_offerings
+
+---
+kind: pipeline
+type: docker
+name: benchmark_merlin
+
+clone:
+  disable: true
+
+volumes:
+- name: git
+  temp: {}
+
+steps:
+- name: Prepare repos
+  image: regentmarkets/drone-git
+  volumes:
+  - name: git
+    path: /home/git
+  pull: if-not-exists
+  settings:
+    ssh_key:
+      from_secret: ssh_key
+  environment:
+    CIRCLE_PROJECT_USERNAME: regentmarkets
+    CIRCLE_PROJECT_REPONAME: bom
+- name: Run tests
+  image: regentmarkets/debian-ci:stable
+  volumes:
+  - name: git
+    path: /home/git
+  commands:
+  - cp /home/git/.pg* /root
+  - . /etc/profile.d/perl5.sh
+  - start_services
+  - cd /home/git/regentmarkets/bom-quant-benchmark
+  - make merlin_benchmark
+
+---
+kind: pipeline
+type: docker
+name: benchmark_OVRA
+
+clone:
+  disable: true
+
+volumes:
+- name: git
+  temp: {}
+
+steps:
+- name: Prepare repos
+  image: regentmarkets/drone-git
+  volumes:
+  - name: git
+    path: /home/git
+  pull: if-not-exists
+  settings:
+    ssh_key:
+      from_secret: ssh_key
+  environment:
+    CIRCLE_PROJECT_USERNAME: regentmarkets
+    CIRCLE_PROJECT_REPONAME: bom
+- name: Run tests
+  image: regentmarkets/debian-ci:stable
+  volumes:
+  - name: git
+    path: /home/git
+  commands:
+  - cp /home/git/.pg* /root
+  - . /etc/profile.d/perl5.sh
+  - start_services
+  - cd /home/git/regentmarkets/bom-quant-benchmark
+  - make OVRA_benchmark
+
+---
+kind: pipeline
+type: docker
+name: benchmark_SDFC_SDEQ
+
+clone:
+  disable: true
+
+volumes:
+- name: git
+  temp: {}
+
+steps:
+- name: Prepare repos
+  image: regentmarkets/drone-git
+  volumes:
+  - name: git
+    path: /home/git
+  pull: if-not-exists
+  settings:
+    ssh_key:
+      from_secret: ssh_key
+  environment:
+    CIRCLE_PROJECT_USERNAME: regentmarkets
+    CIRCLE_PROJECT_REPONAME: bom
+- name: Run tests
+  image: regentmarkets/debian-ci:stable
+  volumes:
+  - name: git
+    path: /home/git
+  commands:
+  - cp /home/git/.pg* /root
+  - . /etc/profile.d/perl5.sh
+  - start_services
+  - cd /home/git/regentmarkets/bom-quant-benchmark
+  - make SDFX_benchmark_major
+  - make SDFX_benchmark_minor
+  - make SDEQ_benchmark_OTC_DJI
+  - make SDEQ_benchmark_OTC_FCHI
+  - make SDEQ_benchmark_OTC_SPC
+  - make SDEQ_benchmark_SSECOMP
+  - make SDEQ_benchmark_OTC_FTSE
+
+---
+kind: pipeline
+type: docker
+name: perl-Pricing-Engine-Tests
+
+clone:
+  disable: true
+
+volumes:
+- name: git
+  temp: {}
+
+steps:
+- name: Prepare repos
+  image: regentmarkets/drone-git
+  volumes:
+  - name: git
+    path: /home/git
+  pull: if-not-exists
+  settings:
+    ssh_key:
+      from_secret: ssh_key
+  environment:
+    CIRCLE_PROJECT_USERNAME: regentmarkets
+    CIRCLE_PROJECT_REPONAME: bom
+- name: Run tests
+  image: regentmarkets/debian-ci:stable
+  volumes:
+  - name: git
+    path: /home/git
+  commands:
+  - cp /home/git/.pg* /root
+  - . /etc/profile.d/perl5.sh
+  - start_services
+  - cd /home/git/regentmarkets/perl-Pricing-Engine-European-Digital-Slope
+  - make test
+  - cd /home/git/regentmarkets/perl-Pricing-Engine-BlackScholes
+  - make test
+  - cd /home/git/regentmarkets/perl-Pricing-Engine-Digits
+  - make test
+  - cd /home/git/regentmarkets/perl-Pricing-Engine-HighLow-Ticks
+  - make test
+  - cd /home/git/regentmarkets/perl-Pricing-Engine-Intraday-Forex-Base
+  - make test
+  - cd /home/git/regentmarkets/perl-Pricing-Engine-Lookback
+  - make test
+  - cd /home/git/regentmarkets/perl-Pricing-Engine-Markup
+  - make test
+  - cd /home/git/regentmarkets/perl-Pricing-Engine-Reset
+  - make test
+  - cd /home/git/regentmarkets/perl-Pricing-Engine-TickExpiry
+  - make test
+
+---
+kind: pipeline
+type: docker
+name: code_coverage
+
+clone:
+  disable: true
+
+volumes:
+- name: git
+  temp: {}
+
+steps:
+- name: Prepare repos
+  image: regentmarkets/drone-git
+  volumes:
+  - name: git
+    path: /home/git
+  pull: if-not-exists
+  settings:
+    ssh_key:
+      from_secret: ssh_key
+  environment:
+    CIRCLE_PROJECT_USERNAME: regentmarkets
+    CIRCLE_PROJECT_REPONAME: bom
+- name: Run tests
+  image: regentmarkets/debian-ci:stable
+  volumes:
+  - name: git
+    path: /home/git
+  commands:
+  - cp /home/git/.pg* /root
+  - . /etc/profile.d/perl5.sh
+  - start_services
+  - cd /home/git/regentmarkets/bom
+  - make cover
