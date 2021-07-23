@@ -288,24 +288,28 @@ subtest 'app_markup_transaction' => sub {
     is $txn->buy(skip_validation => 1), undef, "no error in transaction buy for stake";
     cmp_ok $txn->contract->app_markup_dollar_amount(), '==', 0, "no app markup for stake";
 
-    $app_markup_percentage = 2;
-    ($contract_details, $txn_con) = Test::BOM::RPC::Contract::prepare_contract(
-        client                => $client,
-        basis                 => 'stake',
-        app_markup_percentage => $app_markup_percentage
-    );
-    $now = time;
-    $txn = BOM::Transaction->new({
-        client              => $client,
-        contract_parameters => $contract_details,
-        price               => $txn_con->contract->ask_price,
-        purchase_date       => $now,
-        amount_type         => 'payout',
-    });
-    is $txn->buy(skip_validation => 1), undef, "no error in transaction buy for stake";
-    is $txn->contract->app_markup_dollar_amount, formatnumber('amount', 'USD', $txn->payout * $app_markup_percentage / 100),
-        "in case of stake contract, app_markup is app_markup_percentage of final payout i.e transaction payout";
-    cmp_ok $txn->payout, "<", $payout, "payout after app_markup_percentage is less than actual payout";
+    SKIP: {
+        skip "skip running time sensitive tests for code coverage tests", 1 if $ENV{DEVEL_COVER_OPTIONS};
+
+        $app_markup_percentage = 2;
+        ($contract_details, $txn_con) = Test::BOM::RPC::Contract::prepare_contract(
+            client                => $client,
+            basis                 => 'stake',
+            app_markup_percentage => $app_markup_percentage
+        );
+        $now = time;
+        $txn = BOM::Transaction->new({
+            client              => $client,
+            contract_parameters => $contract_details,
+            price               => $txn_con->contract->ask_price,
+            purchase_date       => $now,
+            amount_type         => 'payout',
+        });
+        is $txn->buy(skip_validation => 1), undef, "no error in transaction buy for stake";
+        is $txn->contract->app_markup_dollar_amount, formatnumber('amount', 'USD', $txn->payout * $app_markup_percentage / 100),
+            "in case of stake contract, app_markup is app_markup_percentage of final payout i.e transaction payout";
+        cmp_ok $txn->payout, "<", $payout, "payout after app_markup_percentage is less than actual payout";
+    }
 };
 
 done_testing();
