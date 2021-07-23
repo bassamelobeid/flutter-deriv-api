@@ -1,0 +1,65 @@
+kind: pipeline
+type: docker
+name: default
+
+steps:
+- name: Prepare repos
+  image: regentmarkets/drone-git
+  pull: if-not-exists
+  settings:
+    ssh_key:
+      from_secret: ssh_key
+  environment:
+    CIRCLE_PROJECT_USERNAME: regentmarkets
+    CIRCLE_PROJECT_REPONAME: bom-paymentapi
+  volumes:
+  - name: git
+    path: /home/git
+- name: Run tests
+  image: regentmarkets/debian-ci:stable
+  commands:
+  - cp /home/git/.pg* /root
+  - . /etc/profile.d/perl5.sh
+  - start_services
+  - sudo tee -a /etc/hosts < /home/git/regentmarkets/bom-postgres/hosts.db
+  - cd /home/git/regentmarkets/bom-paymentapi && make test
+  volumes:
+  - name: git
+    path: /home/git
+
+volumes:
+- name: git
+  temp: {}
+---
+kind: pipeline
+type: docker
+name: cover
+
+steps:
+- name: Prepare repos
+  image: regentmarkets/drone-git
+  pull: if-not-exists
+  settings:
+    ssh_key:
+      from_secret: ssh_key
+  environment:
+    CIRCLE_PROJECT_USERNAME: regentmarkets
+    CIRCLE_PROJECT_REPONAME: bom-paymentapi
+  volumes:
+  - name: git
+    path: /home/git
+- name: Run tests
+  image: regentmarkets/debian-ci:stable
+  commands:
+  - cp /home/git/.pg* /root
+  - . /etc/profile.d/perl5.sh
+  - start_services
+  - sudo tee -a /etc/hosts < /home/git/regentmarkets/bom-postgres/hosts.db
+  - cd /home/git/regentmarkets/bom-paymentapi && HARNESS_PERL_SWITCHES=-MDevel::Cover DEVEL_COVER_OPTIONS=-'ignore,^t/' /etc/rmg/bin/prove --timer -rl --norc -MBOM::Test  t/plack
+  volumes:
+  - name: git
+    path: /home/git
+
+volumes:
+- name: git
+  temp: {}
