@@ -13,9 +13,10 @@ Initialize a connection to the commission database and return it.
 sub rose_db {
     my %overrides = @_;
 
-    my $db_postfix = $ENV{DB_POSTFIX} // '';
-    my $operation  = $overrides{operation} ? $overrides{operation} : 'write';
-    my $database   = 'commission-' . $operation . $db_postfix;
+    my $operation = $overrides{operation} // 'write';
+    # connect to commission db by default unless replica is specified
+    my $database = 'commission';
+    $database .= '-replica' if $operation eq 'replica';
 
     BOM::Database::Rose::DB->register_db(
         connect_options => {
