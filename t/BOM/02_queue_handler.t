@@ -64,20 +64,24 @@ subtest 'sync_subs' => sub {
             };
         });
 
-    # Synchronous jobs running less  than MAXIMUM_PROCESSING_TIME should not time out
-    $log->clear;
-    $handler = BOM::Event::QueueHandler->new(
-        queue                   => 'GENERIC_EVENTS_QUEUE',
-        maximum_job_time        => 20,
-        maximum_processing_time => 3
-    );
-    $loop->add($handler);
-    $handler->process_job(
-        'GENERIC_EVENTS_QUEUE',
-        {
-            type    => 'sync_sub',
-            details => {wait => 1}});
-    $log->contains_ok(qr/test did not time out/, "Sync job less than max_processing_time did not time out.");
+    SKIP: {
+        skip "skip running time sensitive tests for code coverage tests", 1 if $ENV{DEVEL_COVER_OPTIONS};
+
+        # Synchronous jobs running less  than MAXIMUM_PROCESSING_TIME should not time out
+        $log->clear;
+        $handler = BOM::Event::QueueHandler->new(
+            queue                   => 'GENERIC_EVENTS_QUEUE',
+            maximum_job_time        => 20,
+            maximum_processing_time => 3
+        );
+        $loop->add($handler);
+        $handler->process_job(
+            'GENERIC_EVENTS_QUEUE',
+            {
+                type    => 'sync_sub',
+                details => {wait => 1}});
+        $log->contains_ok(qr/test did not time out/, "Sync job less than max_processing_time did not time out.");
+    }
 
     # Synchronous jobs running more  than MAXIMUM_PROCESSING_TIME should time out
     $log->clear;
