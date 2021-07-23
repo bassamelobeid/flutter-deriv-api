@@ -163,7 +163,7 @@ code_exit_BO(redirect());
 
 sub redirect {
     my $redirect_uri     = shift // request()->http_handler->env->{HTTP_REFERER};
-    my $time_to_redirect = shift // 3;
+    my $time_to_redirect = shift // 10;
 
     print qq{
         </br></br><p style="text-align: center;" id="count-down">You will be redirected to the <a class="link" href="$redirect_uri">previous page</a> in $time_to_redirect seconds</p>
@@ -177,7 +177,7 @@ sub redirect {
                     window.location.replace('$redirect_uri');
                 }
 
-                const new_message = redirect_message_field.innerHTML.replace(/[0-9] seconds/, time_to_redirect + ' seconds');
+                const new_message = redirect_message_field.innerHTML.replace(/[0-9]+ seconds/, time_to_redirect + ' seconds');
                 redirect_message_field.innerHTML = new_message;
             }, 1000);
         </script>
