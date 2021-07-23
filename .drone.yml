@@ -1,0 +1,63 @@
+kind: pipeline
+type: docker
+name: default
+
+steps:
+- name: Prepare repos
+  image: regentmarkets/drone-git
+  pull: if-not-exists
+  settings:
+    ssh_key:
+      from_secret: ssh_key
+  environment:
+    CIRCLE_PROJECT_USERNAME: regentmarkets
+    CIRCLE_PROJECT_REPONAME: bom-market
+  volumes:
+  - name: git
+    path: /home/git
+- name: Run tests
+  image: regentmarkets/debian-ci:stable
+  commands:
+  - cp /home/git/.pg* /root
+  - . /etc/profile.d/perl5.sh
+  - start_services
+  - cd /home/git/regentmarkets/bom-market && make test
+  volumes:
+  - name: git
+    path: /home/git
+
+volumes:
+- name: git
+  temp: {}
+---
+kind: pipeline
+type: docker
+name: cover
+
+steps:
+- name: Prepare repos
+  image: regentmarkets/drone-git
+  pull: if-not-exists
+  settings:
+    ssh_key:
+      from_secret: ssh_key
+  environment:
+    CIRCLE_PROJECT_USERNAME: regentmarkets
+    CIRCLE_PROJECT_REPONAME: bom-market
+  volumes:
+  - name: git
+    path: /home/git
+- name: Run tests
+  image: regentmarkets/debian-ci:stable
+  commands:
+  - cp /home/git/.pg* /root
+  - . /etc/profile.d/perl5.sh
+  - start_services
+  - cd /home/git/regentmarkets/bom-market && HARNESS_PERL_SWITCHES=-MDevel::Cover DEVEL_COVER_OPTIONS=-'ignore,^t/' /etc/rmg/bin/prove --timer --norc  -MBOM::Test -rl t/BOM/
+  volumes:
+  - name: git
+    path: /home/git
+
+volumes:
+- name: git
+  temp: {}
