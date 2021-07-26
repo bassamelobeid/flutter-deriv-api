@@ -17,6 +17,11 @@ use Unicode::UTF8;
 use Scalar::Util qw(refaddr blessed);
 use DataDog::DogStatsd::Helper qw(stats_inc stats_timing);
 use curry::weak;
+use Time::HiRes qw(gettimeofday tv_interval);
+use Socket qw(IPPROTO_TCP);
+use URI;
+
+$Future::TIMES = 1;
 
 use Log::Any qw($log);
 
@@ -74,6 +79,10 @@ sub configure {
     for (qw(listen_port demo_host demo_port demo_user demo_pass real_host real_port real_user real_pass)) {
         $self->{$_} = delete $args{$_} if exists $args{$_};
     }
+
+    $self->{demo_host_base} = URI->new($self->{demo_host})->host;
+    $self->{real_host_base} = URI->new($self->{real_host})->host;
+
     return $self->next::method(%args);
 }
 
@@ -222,20 +231,33 @@ async sub start {
 
 =head2 do_heartbeat
 
-Sends a simple server request and reports success to Datadog.
+Sends simple server request and ping and sends metrics to Datadog.
 
 =cut
 
 async sub do_heartbeat {
     my ($self) = @_;
+    my (@calls, @pings);
     for my $server ('real', 'demo') {
-        try {
-            $log->debugf('sending heartbeat request for %s', $server);
-            await $self->{clients}{$server}->broker_get(broker_code => 'root_broker');
-            stats_inc('devexperts.api_service.heartbeat', {tags => ["server:$server"]});
-        } catch {
-            $log->debugf('heartbeat failed for %s', $server);
-        }
+        push @calls, $self->{clients}{$server}->broker_get(broker_code => 'root_broker')->set_label($server);
+        push @pings,
+            $self->loop->connect(
+            host     => $self->{$server . '_host_base'},
+            service  => $self->{$server . '_port'},
+            protocol => IPPROTO_TCP,
+        )->set_label($server);
+    }
+
+    my @call_fs = await Future->wait_all(@calls);
+    for my $f (@call_fs) {
+        stats_inc('devexperts.api_service.heartbeat', {tags => ['server:' . $f->label]}) unless ($f->is_failed);
+        $log->debugf('heartbeat failed for %s: $s', $f->label, $f->failure) if $f->is_failed;
+    }
+
+    my @ping_fs = await Future->wait_all(@pings);
+    for my $f (@ping_fs) {
+        stats_timing('devexperts.api_service.ping', 1000 * $f->elapsed, {tags => ['server:' . $f->label]}) unless ($f->is_failed);
+        $log->debugf('ping failed for %s: %s', $f->label, $f->failure) if $f->is_failed;
     }
 }
 
