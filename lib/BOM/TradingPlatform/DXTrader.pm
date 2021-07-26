@@ -14,7 +14,8 @@ use Format::Util::Numbers qw(financialrounding formatnumber);
 use Digest::SHA1 qw(sha1_hex);
 use BOM::Platform::Context qw(request);
 use BOM::Rules::Engine;
-use DataDog::DogStatsd::Helper qw(stats_inc);
+use DataDog::DogStatsd::Helper qw(stats_inc stats_timing);
+use Time::HiRes qw(gettimeofday tv_interval);
 
 use Log::Any '$dxapi_log',
     category  => 'dxapi_log',
@@ -52,7 +53,7 @@ use parent qw(BOM::TradingPlatform);
 use constant {
     DX_CLEARING_CODE           => 'default',
     DX_DOMAIN                  => 'default',
-    HTTP_TIMEOUT               => 10,
+    HTTP_TIMEOUT               => 20,
     DEMO_TOPUP_AMOUNT          => 10000,
     DEMO_TOPUP_MINIMUM_BALANCE => 1000,
 };
@@ -742,7 +743,12 @@ sub call_api {
     my $resp;
 
     try {
+        my $start_time = [Time::HiRes::gettimeofday];
         $resp = $self->http->post($self->config->{service_url}, {content => $payload});
+        stats_timing(
+            'devexperts.rpc.timing',
+            1000 * Time::HiRes::tv_interval($start_time),
+            {tags => ['server:' . $args{server}, 'method:' . $args{method}]});
         $resp->{content} = decode_json_utf8($resp->{content} || '{}');
         die unless $resp->{success} or $quiet;    # we expect some calls to fail, eg. client_get
         return $resp;
