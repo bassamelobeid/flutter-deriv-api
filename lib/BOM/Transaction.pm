@@ -1233,6 +1233,7 @@ sub sell {
     if (   $self->contract->underlying->market->name eq 'forex'
         && $self->contract->is_path_dependent
         && $self->action_type eq 'sell'
+        && $self->contract->category_code ne 'multiplier'
         && $self->contract->underlying->symbol =~ /AUD|NZD|JPY/)
     {
         if (is_within_rollover_period($datetime)) {

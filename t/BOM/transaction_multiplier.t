@@ -1377,4 +1377,106 @@ subtest 'buy multiplier on cryptocurrency' => sub {
     ok !$error, 'buy without error';
 };
 
+subtest 'buy and sell multiplier for AUD, NZD and JPY forex pair during rollover time(DST)' => sub {
+    lives_ok {
+        my $datetime   = Date::Utility->new('2013-03-27 21:00:34');
+        my $underlying = create_underlying('frxAUDJPY');
+        set_absolute_time($datetime->epoch);
+
+        my $tick_params = {
+            symbol => 'frxAUDJPY',
+            epoch  => $datetime->epoch,
+            quote  => 100
+        };
+        my $tick_rollover = Postgres::FeedDB::Spot::Tick->new($tick_params);
+
+        BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+            'volsurface_delta',
+            {
+                symbol        => 'frxAUDJPY',
+                recorded_date => $datetime,
+            });
+
+        my $contract = produce_contract({
+            underlying   => 'frxAUDJPY',
+            bet_type     => 'MULTUP',
+            currency     => 'USD',
+            multiplier   => 100,
+            amount       => 100,
+            date_start   => $datetime->epoch,
+            date_pricing => $datetime->epoch,
+            amount_type  => 'stake',
+            current_tick => $current_tick,
+        });
+        ok($contract->is_valid_to_buy, 'Valid for purchase');
+
+        my $txn = BOM::Transaction->new({
+            client        => $cl,
+            contract      => $contract,
+            price         => 100,
+            amount        => 100,
+            amount_type   => 'stake',
+            source        => 19,
+            purchase_date => $contract->date_start,
+        });
+        my $buy_error  = $txn->buy;
+        my $sell_error = $txn->sell;
+
+        is $buy_error,  undef;
+        is $sell_error, undef;
+    }
+    'can buy and sell frxAUDJPY during rollover time';
+};
+
+subtest 'buy and sell multiplier for AUD, NZD and JPY forex pair during rollover time(non-DST)' => sub {
+    lives_ok {
+        my $datetime   = Date::Utility->new('2013-02-11 22:00:34');
+        my $underlying = create_underlying('frxUSDJPY');
+        set_absolute_time($datetime->epoch);
+
+        my $tick_params = {
+            symbol => 'frxUSDJPY',
+            epoch  => $datetime->epoch,
+            quote  => 100
+        };
+        my $tick_rollover = Postgres::FeedDB::Spot::Tick->new($tick_params);
+
+        BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+            'volsurface_delta',
+            {
+                symbol        => 'frxUSDJPY',
+                recorded_date => $datetime,
+            });
+
+        my $contract = produce_contract({
+            underlying   => 'frxUSDJPY',
+            bet_type     => 'MULTUP',
+            currency     => 'USD',
+            multiplier   => 100,
+            amount       => 100,
+            date_start   => $datetime->epoch,
+            date_pricing => $datetime->epoch,
+            amount_type  => 'stake',
+            current_tick => $current_tick,
+        });
+        ok($contract->is_valid_to_buy, 'Valid for purchase');
+
+        my $txn = BOM::Transaction->new({
+            client        => $cl,
+            contract      => $contract,
+            price         => 100,
+            amount        => 100,
+            amount_type   => 'stake',
+            source        => 19,
+            purchase_date => $contract->date_start,
+        });
+        my $buy_error  = $txn->buy;
+        my $sell_error = $txn->sell;
+
+        is $buy_error,  undef;
+        is $sell_error, undef;
+    }
+    'can buy and sell frxUSDJPY during rollover time';
+};
+
 done_testing();
