@@ -15,7 +15,6 @@ use ExpiryQueue;
 use Syntax::Keyword::Try;
 use DataDog::DogStatsd::Helper qw(stats_inc stats_count);
 use Log::Any qw($log);
-use Log::Any::Adapter 'Stderr';
 
 use Brands;
 use BOM::User::Client;
