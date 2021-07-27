@@ -7,6 +7,7 @@ no indirect;
 
 use DataDog::DogStatsd::Helper qw(stats_gauge stats_inc);
 use JSON::MaybeUTF8 qw(:v1);
+use Log::Any qw($log);
 use RedisDB;
 use Syntax::Keyword::Try;
 use YAML::XS qw(LoadFile);
@@ -31,31 +32,31 @@ BOM::Platform::Event::Emitter - Emitter events to storage
 =head1 DESCRIPTION
 
 This class is generic event emit class, as of now underlying mechanism
-use redis to store events as FIFO queue
+use redis to store events as stream
 
 =cut
 
 use constant TIMEOUT => 5;
 
-my %event_queue_mapping = (
-    email_statement                 => 'STATEMENTS_QUEUE',
-    document_upload                 => 'DOCUMENT_AUTHENTICATION_QUEUE',
-    ready_for_authentication        => 'DOCUMENT_AUTHENTICATION_QUEUE',
-    client_verification             => 'DOCUMENT_AUTHENTICATION_QUEUE',
-    onfido_doc_ready_for_upload     => 'DOCUMENT_AUTHENTICATION_QUEUE',
-    identity_verification_requested => 'DOCUMENT_AUTHENTICATION_QUEUE',
-    affiliate_sync_initiated        => 'AFFILIATE_SYNC_LONG_RUNNING_QUEUE',
-    crypto_subscription             => 'CRYPTO_EVENTS_QUEUE',
-    new_crypto_address              => 'CRYPTO_EVENTS_QUEUE',
-    client_promo_codes_upload       => 'PROMO_CODE_IMPORT_LONG_RUNNING_QUEUE',
-    anonymize_client                => 'ANONYMIZATION_QUEUE',
-    bulk_anonymization              => 'ANONYMIZATION_QUEUE',
-    multiplier_hit_type             => 'CONTRACT_QUEUE',
-    bulk_authentication             => 'BULK_EVENTS_QUEUE',
+my %event_stream_mapping = (
+    email_statement                 => 'STATEMENTS_STREAM',
+    document_upload                 => 'DOCUMENT_AUTHENTICATION_STREAM',
+    ready_for_authentication        => 'DOCUMENT_AUTHENTICATION_STREAM',
+    client_verification             => 'DOCUMENT_AUTHENTICATION_STREAM',
+    onfido_doc_ready_for_upload     => 'DOCUMENT_AUTHENTICATION_STREAM',
+    identity_verification_requested => 'DOCUMENT_AUTHENTICATION_STREAM',
+    affiliate_sync_initiated        => 'AFFILIATE_SYNC_LONG_RUNNING_STREAM',
+    crypto_subscription             => 'CRYPTO_EVENTS_STREAM',
+    new_crypto_address              => 'CRYPTO_EVENTS_STREAM',
+    client_promo_codes_upload       => 'PROMO_CODE_IMPORT_LONG_RUNNING_STREAM',
+    anonymize_client                => 'ANONYMIZATION_STREAM',
+    bulk_anonymization              => 'ANONYMIZATION_STREAM',
+    multiplier_hit_type             => 'CONTRACT_STREAM',
+    bulk_authentication             => 'BULK_EVENTS_STREAM',
     # We want to move these events out of general queue, without creating a new service.
     # ANONYMIZATION_QUEUE can be renamed to avoid confusion.
-    mt5_inactive_account_closed => 'ANONYMIZATION_QUEUE',
-    mt5_inactive_notification   => 'ANONYMIZATION_QUEUE',
+    mt5_inactive_account_closed => 'ANONYMIZATION_STREAM',
+    mt5_inactive_notification   => 'ANONYMIZATION_STREAM',
 );
 
 my $config = LoadFile('/etc/rmg/redis-events.yml');
@@ -82,7 +83,7 @@ Given type and data corresponding for an event, it stores that event
 
 =over 4
 
-Positive number on successful emit of event, zero otherwise
+True on successful emit of event, False otherwise
 
 =back
 
@@ -113,22 +114,21 @@ sub emit {
     }
 
     if ($event_data) {
-        my $queue_name = _queue_name($type);
-        my $queue_size = _write_connection()->lpush($queue_name, $event_data);
-        stats_gauge(lc "$queue_name.size", $queue_size) if $queue_size;
+        my $stream_name = _stream_name($type);
+        _write_connection()->execute(XADD => ($stream_name, qw(MAXLEN ~ 100000), '*', 'event', $event_data));
 
         # Metrics to log emitted events tagged by event type and queue name
-        stats_inc(lc "event_emitter.sent", {tags => ["type:$type", "queue:$queue_name"]});
+        stats_inc(lc "event_emitter.sent", {tags => ["type:$type", "queue:$stream_name"]});
 
-        return $queue_size;
+        return 1;
     }
 
     return 0;
 }
 
-=head2 get
+=head2 get (deprecated)
 
-Get emitted event
+Get emitted event (This is a deprecated subroutine and should not be used in new code)
 
 =head3 Return value
 
@@ -138,25 +138,25 @@ If any event is present then return an event object as hash else return undef
 
 Event hash is in form of:
 
-    {type => 'emit_details', details => { loginid => 'CR123', email => 'abc@binary.com' }}
+    {type => 'emit_details', details => { loginid => 'CR123', email => 'abc@binary.com' }, context => { language => 'EN', brand_name => 'deriv', app_id => '' }}
 
 =back
 
 =cut
 
 sub get {
-    my $queue_name = shift;
+    my $stream_name = shift;
 
-    my $event_data = _write_connection()->brpop($queue_name, 1);
+    my $event_data = _write_connection()->execute(XRANGE => ($stream_name, '-', '+', 'COUNT', 1));
 
     my $decoded_data;
 
-    if ($event_data) {
+    if ($event_data->[0]) {
         try {
-            $decoded_data = decode_json_utf8($event_data->[1]);
-            stats_inc(lc "$queue_name.read");
+            $decoded_data = decode_json_utf8($event_data->[0]->[1]->[1]);
+            stats_inc(lc "$stream_name.read");
         } catch {
-            stats_inc(lc "$queue_name.invalid_data");
+            stats_inc(lc "$stream_name.invalid_data");
         }
     }
 
@@ -191,16 +191,16 @@ sub _get_connection_by_type {
     return $connections->{$type};
 }
 
-=head2 _queue_name
+=head2 _stream_name
 
-Bind event name to its queue
+Bind event name to its stream
 
 =head3 Return function name
 
 =cut
 
-sub _queue_name {
-    return $event_queue_mapping{+shift} // 'GENERIC_EVENTS_QUEUE';
+sub _stream_name {
+    return $event_stream_mapping{+shift} // 'GENERIC_EVENTS_STREAM';
 }
 
 1;

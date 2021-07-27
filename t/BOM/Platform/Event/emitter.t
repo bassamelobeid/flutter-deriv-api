@@ -85,7 +85,7 @@ subtest 'Event emmission' => sub {
             'Streamed content is correct.';
 
         is scalar @datadog_metric, 1, 'One metric is measured';
-        is_deeply $datadog_metric[0], ['event_emitter.sent', {'tags' => ['type:dummy_event', 'queue:GENERIC_EVENTS_QUEUE']}],
+        is_deeply $datadog_metric[0], ['event_emitter.sent', {'tags' => ['type:dummy_event', 'queue:GENERIC_EVENTS_STREAM']}],
             'Mertic args are correct.';
     }
 
