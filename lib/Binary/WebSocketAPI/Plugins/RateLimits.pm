@@ -135,7 +135,7 @@ sub _check_single_limit {
     my ($c, $limit_descriptor) = @_;
     my $name = $limit_descriptor->{name};
     my $local_storage = $c->stash->{rate_limits} //= {};
-    
+
     # update value speculatively (i.e. before getting real values from redis)
     my $value = _limits_cache($c, $name)->{value};
     $value += ++$local_storage->{$name}{pending};

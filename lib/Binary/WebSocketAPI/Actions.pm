@@ -203,7 +203,7 @@ sub actions_config {
             'new_account_virtual',
             {
                 stash_params => [qw/ token server_name client_ip user_agent /],
-                msg_group => 'account',
+                msg_group    => 'account',
             }
         ],
         [
@@ -421,7 +421,7 @@ sub actions_config {
         [
             'trading_servers',
             {
-                msg_group    => 'mt5_hybrid',
+                msg_group => 'mt5_hybrid',
             }
         ],
         [

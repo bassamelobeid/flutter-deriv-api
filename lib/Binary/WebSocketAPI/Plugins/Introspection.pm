@@ -89,7 +89,7 @@ sub start_server {
             return unless $err;
             $log->errorf('Failed to subscribe to introspection endpoint: %s', $err);
         });
-    $app->log->info('Introspection listening on: ' . INTROSPECTION_CHANNEL);
+    $log->info('Introspection listening on: ' . INTROSPECTION_CHANNEL);
     return;
 }
 

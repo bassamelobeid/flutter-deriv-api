@@ -36,6 +36,7 @@ use YAML::XS qw(LoadFile);
 use URI;
 use List::Util qw( first any );
 use Syntax::Keyword::Try;
+use Log::Any qw($log);
 
 # Set up the event loop singleton so that any code we pull in uses the Mojo
 # version, rather than trying to set its own.
@@ -222,7 +223,6 @@ sub backend_setup {
 
 sub startup {
     my $app = shift;
-    my $log = $app->log;
 
     $app->moniker('websocket');
     $app->plugin('Config' => {file => $ENV{WEBSOCKET_CONFIG} || '/etc/rmg/websocket.conf'});
@@ -234,12 +234,12 @@ sub startup {
     Mojo::IOLoop->singleton->reactor->on(
         error => sub {
             my (undef, $err) = @_;
-            $app->log->error("EventLoop error: $err");
+            $log->error("EventLoop error: $err");
         });
 
     $log->info("Binary.com Websockets API: Starting.");
-    $log->info("Mojolicious Mode is " . $app->mode);
-    $log->info("Log Level        is " . $log->level);
+    $log->infof("Mojolicious Mode is %s", $app->mode);
+    $log->infof("Log Level        is %s", $log->adapter->can('level') ? $log->adapter->level : $log->adapter->{log_level});
 
     apply_usergroup $app->config->{hypnotoad}, sub {
         $log->info(@_);
