@@ -81,35 +81,35 @@ if ($confirm) {
 }
 
 my @hdgs = (
-    'Line Number',       'Login Id', 'Name',   'debit/credit', 'Payment Type',   'Trace ID',
-    'Payment Processor', 'Currency', 'Amount', 'Comment',      'Transaction ID', 'Notes'
+    'Line Number', 'Login Id', 'Name', 'Debit/credit/reversal', 'Payment Type', 'Trace ID',
+    'Payment Processor',
+    'Payment Method',
+    'Currency', 'Amount', 'Comment', 'Transaction ID', 'Notes'
 );
 
-my $client_account_table =
-    '<h3>Batch Credit/Debit details</h3><table class="border full-width">' . '<tr>' . join('', map { "<th>$_</th>" } @hdgs) . '</tr>';
+my $client_account_table = '<h3>Batch details</h3><table class="border full-width">' . '<tr>' . join('', map { "<th>$_</th>" } @hdgs) . '</tr>';
 
 my %summary_amount_by_currency;
 my @invalid_lines;
 my $line_number;
 my %client_to_be_processed;
-my $is_transaction_id_required = 0;
+my $error;
+
 read_csv_row_and_callback(
     \@payment_lines,
     sub {
         my $cols_found = @_;
         my (
-            $login_id, $action, $payment_type,      $payment_processor, $trace_id,
-            $currency, $amount, $statement_comment, $transaction_id,    $cols_expected
+            $login_id, $action, $payment_type,      $payment_processor, $payment_method, $trace_id,
+            $currency, $amount, $statement_comment, $transaction_id,    $cols_expected,  $transaction_type
         );
         if ($format eq 'doughflow') {
-            ($login_id, $action, $trace_id, $payment_processor, $currency, $amount, $statement_comment, $transaction_id) = @_;
+            ($login_id, $action, $trace_id, $payment_processor, $payment_method, $currency, $amount, $statement_comment, $transaction_id) = @_;
             $payment_type = 'external_cashier';
-            if (($action // '') eq 'credit' and ($statement_comment // '') !~ 'DoughFlow withdrawal_reversal') {
-                $is_transaction_id_required = 1;
-                $cols_expected              = 8;
+            if (($action // '') eq 'credit') {
+                $cols_expected = 9;
             } else {
-                $is_transaction_id_required = 0;
-                $cols_expected              = 7;
+                $cols_expected = 8;
             }
         } else {
             ($login_id, $action, $payment_type, $currency, $amount, $statement_comment) = @_;
@@ -119,46 +119,36 @@ read_csv_row_and_callback(
         $line_number++;
 
         my $client;
-        my $error;
-        {
-
+        try {
             my $curr_regex = LandingCompany::Registry::get_currency_type($currency) eq 'fiat' ? '^\d*\.?\d{1,2}$' : '^\d*\.?\d{1,8}$';
             $amount = formatnumber('price', $currency, $amount) if looks_like_number($amount);
 
-            # TODO fix this critic
-            ## no critic (ProhibitCommaSeparatedStatements, ProhibitMixedBooleanOperators)
-            $cols_found == $cols_expected or $error = "Found $cols_found fields, needed $cols_expected for $format payments", last;
-            $action !~ /^(debit|credit)$/          and $error = "Invalid transaction type [$action]", last;
-            $amount !~ $curr_regex || $amount == 0 and $error = "Invalid amount [$amount]",           last;
-            !$statement_comment and $error = 'Statement comment can not be empty', last;
-            try {
-                $client = BOM::User::Client->new({loginid => $login_id});
-            } catch ($e) {
-                $error = $e;
-            }
-            unless ($client) {
-                $error ||= 'No such client';
-                last;
-            }
+            die "Found $cols_found fields, needed $cols_expected for $format payments\n" unless $cols_found == $cols_expected;
+            die "Invalid transaction type: $action\n" if $action !~ /^(debit|credit|reversal)$/;
+            die "Invalid $amount: $amount\n"          if $amount !~ $curr_regex or $amount == 0;
+            die "'Statement comment can not be empty\n" unless $statement_comment;
+
+            $client = BOM::User::Client->new({loginid => $login_id}) or die "Invalid loginid: $login_id\n";
+
             my $signed_amount = $action eq 'debit' ? $amount * -1 : $amount;
 
-            if ($is_transaction_id_required) {
-                $error = "Transaction id is mandatory for doughflow credit"
-                    if not $transaction_id or $transaction_id !~ '\w+';
-                $error = "Transaction id provided does not match with one provided in comment (it should be in format like: transaction_id=33232)."
-                    if $statement_comment !~ /transaction_id=$transaction_id/;
+            if ($format eq 'doughflow') {
+                if ($action eq 'credit') {
+                    die "Transaction id is mandatory for doughflow credit\n" if ($transaction_id // '') !~ '\w+';
+                    die "Payment processor is mandatory for doughflow credit\n" unless $payment_processor;
+                    $transaction_type = 'deposit';
+                } else {
+                    die "Payment method is mandatory for doughflow debit and reversal\n" unless $payment_method;
+                    $transaction_type = 'withdrawal'          if $action eq 'debit';
+                    $transaction_type = 'withdrawal_reversal' if $action eq 'reversal';
+                }
             }
 
             unless ($skip_validation) {
-                try {
-                    $client->validate_payment(
-                        currency => $currency,
-                        amount   => $signed_amount
-                    );
-                } catch ($e) {
-                    $error = $e;
-                }
-                last if $error;
+                $client->validate_payment(
+                    currency => $currency,
+                    amount   => $signed_amount
+                );
             }
 
             # check pontential duplicate entry
@@ -174,9 +164,10 @@ read_csv_row_and_callback(
                         comment => $statement_comment
                     }))
             {
-                $error = "Same transaction found in client account. Check [transaction id: $duplicate_record]";
-                last;
+                die "Same transaction found in client account. Check [transaction id: $duplicate_record]\n";
             }
+        } catch ($e) {
+            $error = $e;
         }
 
         my %row = (
@@ -189,10 +180,10 @@ read_csv_row_and_callback(
             amount            => $amount,
             comment           => $statement_comment,
             payment_processor => $payment_processor,
+            payment_method    => $payment_method,
             trace_id          => $trace_id,
+            transaction_id    => $transaction_id,
         );
-
-        $row{transaction_id} = $transaction_id if $is_transaction_id_required;
 
         if ($error) {
             $client_account_table .= construct_row_line(%row, error => $error);
@@ -223,7 +214,10 @@ read_csv_row_and_callback(
                         remark            => $statement_comment,
                         staff             => $clerk,
                         payment_processor => $payment_processor,
+                        payment_method    => $payment_method,
+                        transaction_type  => $transaction_type,
                         trace_id          => $trace_id,
+                        transaction_id    => $transaction_id,
                         ($skip_validation ? (skip_validation => 1) : ()),
                     );
                 }
@@ -269,13 +263,14 @@ if (%summary_amount_by_currency and scalar @invalid_lines == 0) {
         table.summary th { border: 1px solid #777 }
         table.summary td { border: 1px solid #777; text-align: right }
       </style>
-      <table class="summary"><caption>Currency Totals</caption><thead><tr><th>Currency</th><th>Credits</th><th>Debits</th></tr></thead><tbody>
+      <table class="summary"><caption>Currency Totals</caption><thead><tr><th>Currency</th><th>Credits</th><th>Debits</th><th>Reversals</th></tr></thead><tbody>
     ];
     foreach my $currency (sort keys %summary_amount_by_currency) {
-        my $c  = encode_entities($currency);
-        my $cr = encode_entities(formatnumber('amount', $currency, $summary_amount_by_currency{$currency}{credit} // 0));
-        my $db = encode_entities(formatnumber('amount', $currency, $summary_amount_by_currency{$currency}{debit}  // 0));
-        $summary_table .= "<tr><th>$c</th><td>$cr</td><td>$db</td></tr>";
+        my $c   = encode_entities($currency);
+        my $cr  = encode_entities(formatnumber('amount', $currency, $summary_amount_by_currency{$currency}{credit}   // 0));
+        my $db  = encode_entities(formatnumber('amount', $currency, $summary_amount_by_currency{$currency}{debit}    // 0));
+        my $rev = encode_entities(formatnumber('amount', $currency, $summary_amount_by_currency{$currency}{reversal} // 0));
+        $summary_table .= "<tr><th>$c</th><td>$cr</td><td>$db</td><td>$rev</td></tr>";
     }
     $summary_table .= '</tbody></table>';
 }
@@ -339,7 +334,6 @@ sub construct_row_line {
     my $notes = $args{error} || $args{remark};
     my $class = $args{error} ? 'error' : 'success';
     $args{$_} ||= '&nbsp;' for keys %args;
-    my $transaction_id = $args{transaction_id} // '';
 
     return qq[ <tr>
         <td><a name="ln$args{line_number}">$args{line_number}</td>
@@ -349,10 +343,11 @@ sub construct_row_line {
         <td>$args{payment_type}</td>
         <td>$args{trace_id}</td>
         <td>$args{payment_processor}</td>
+        <td>$args{payment_method}</td>
         <td>$args{currency}</td>
         <td>$args{amount}</td>
         <td>$args{comment}</td>
-        <td>$transaction_id</td>
+        <td>$args{transaction_id}</td>
         <td class="$class">$notes</td>
     </tr>];
 }

@@ -8,6 +8,7 @@
             <th>Transaction type</th>
             <th>Trace ID</th>
             <th>Payment processor</th>
+            <th>Payment method</th>
             <th>Currency</th>
             <th>Amount</th>
             <th>Comment</th>
@@ -15,13 +16,17 @@
         </tr>
     </thead>
     <tbody>
-        <tr><td colspan="8" align="center">Examples:</td></tr>
+        <tr><td colspan="9" align="center">Examples:</td></tr>
+        <tr><td colspan="9" align="center">Transaction ID and Payment processor are required for <b>credit</b> (deposit)</td></tr>
         <tr>
-            <td>CR0001</td><td>credit</td><td>714859<td>DCash1</td><td>USD</td><td>10.00</td><td>"DoughFlow deposit"</td><td>143222</td>
+            <td>CR0001</td><td>credit</td><td>714858<td>DCash1</td><td></td><td>USD</td><td>10.00</td><td>DoughFlow deposit</td><td>143222</td>
         </tr>
-        <tr><td colspan="8" align="center">Please note that for debit and withdrawal reversal, transaction id is not required</td></tr>
+        <tr><td colspan="9" align="center">Payment method is required for <b>debit</b> (withdrawal) and <b>reversal</b> (withdrawal reversal)</td></tr>
         <tr>
-            <td>CR0001</td><td>debit</td><td>714859<td>NETeller</td><td>USD</td><td>10.00</td><td>"reversal of DoughFlow deposit"</td><td></td>
+            <td>CR0001</td><td>debit</td><td>714859</td><td></td><td>NETeller</td><td>USD</td><td>10.00</td><td>DoughFlow withdrawal</td><td></td>
+        </tr>
+        <tr>
+            <td>CR0001</td><td>reversal</td><td>714859</td><td></td><td>NETeller</td><td>USD</td><td>10.00</td><td>DoughFlow withdrawal reversal</td><td></td>
         </tr>
     </tbody>
 </table>
