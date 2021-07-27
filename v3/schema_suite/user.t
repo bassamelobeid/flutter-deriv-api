@@ -24,7 +24,5 @@ test_sendrecv_params 'new_account_virtual/test_send.json', 'new_account_virtual/
 test_sendrecv_params 'authorize/test_send.json', 'authorize/test_receive_vrtc.json',
     $suite->get_stashed('new_account_virtual/new_account_virtual/oauth_token'), 'test@binary.com';
 
-test_sendrecv_params 'identity_verification_document_add/test_send.json', 'identity_verification_document_add/test_receive.json';
-
 finish;
 
