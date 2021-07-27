@@ -33,13 +33,17 @@ sub initialize_realtime_ticks_db {
 
 =head2 initialize_events_redis
 
-Empties all queues in the test bom-events redis instance. This sub needs to be updated if new queues are added.
+Empties all streams in the test bom-events redis instance. This sub needs to be updated if new streams are added.
+The queue keys can be removed after the migration to streams is done.
 
 =cut
 
 sub initialize_events_redis {
     my $redis = BOM::Config::Redis::redis_events_write();
-    $redis->del($_) for qw (GENERIC_EVENTS_QUEUE STATEMENTS_QUEUE DOCUMENT_AUTHENTICATION_QUEUE);
+    $redis->del($_)
+        for
+        qw (GENERIC_EVENTS_QUEUE STATEMENTS_QUEUE CONTRACT_QUEUE DOCUMENT_AUTHENTICATION_QUEUE ANONYMIZATION_QUEUE AFFILIATE_SYNC_LONG_RUNNING_QUEUE PROMO_CODE_IMPORT_LONG_RUNNING_QUEUE
+        GENERIC_EVENTS_STREAM STATEMENTS_STREAM CONTRACT_STREAM DOCUMENT_AUTHENTICATION_STREAM ANONYMIZATION_STREAM AFFILIATE_SYNC_LONG_RUNNING_STREAM PROMO_CODE_IMPORT_LONG_RUNNING_STREAM);
     return;
 }
 
