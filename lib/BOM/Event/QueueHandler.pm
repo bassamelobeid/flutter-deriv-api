@@ -25,6 +25,22 @@ use DataDog::DogStatsd::Helper qw(stats_gauge stats_inc);
 use Log::Any qw($log);
 use BOM::Event::Utility qw(exception_logged);
 use Clone qw( clone );
+use Future::AsyncAwait;
+use Net::Domain qw( hostname );
+use Algorithm::Backoff;
+use curry;
+use Future::Utils qw(fmap0);
+use List::Util qw( any );
+
+use constant REQUESTS_PER_CYCLE => 5000;
+
+=head2 CONSUMER_GROUP
+
+Name of the Redis stream Consumer-Group
+
+=cut
+
+use constant CONSUMER_GROUP => 'GENERIC_EVENTS_CONSUMERS';
 
 =head2 DEFAULT_QUEUE_WAIT_TIME
 
@@ -38,8 +54,8 @@ use constant DEFAULT_QUEUE_WAIT_TIME => 10;
 
 How long (in seconds) to allow for the process
 call to wait for L<BOM::Event::QueueHandler::process_job>.
-Note: MAXIMUM_JOB_TIME can be greater than this if the job is 
-Async. 
+Note: MAXIMUM_JOB_TIME can be greater than this if the job is
+Async.
 
 =cut
 
@@ -69,10 +85,13 @@ Takes the following named parameters:
 =item * C<maximum_job_time> - total amount of a time a single async job is
 allowed to take. Note that this is separate from L</MAXIMUM_PROCESSING_TIME>.
 
-=item * C<maximum_processing_time> - maximum amount of time a job can be 
+=item * C<maximum_processing_time> - maximum amount of time a job can be
 initiated for.  It basically means how long can it spend  in the actual end
 event subroutine. So if the end subroutine is async  this can be shorter
-than the L<MAXIMUM_JOB_TIME>  .
+than the L<MAXIMUM_JOB_TIME>.
+
+=item * C<stream> - Stream name to monitor Redis stream or default monitor queue
+
 
 =back
 
@@ -80,13 +99,13 @@ than the L<MAXIMUM_JOB_TIME>  .
 
 sub configure {
     my ($self, %args) = @_;
-    for (qw(queue queue_wait_time maximum_job_time maximum_processing_time)) {
+    for (qw(queue queue_wait_time maximum_job_time maximum_processing_time stream worker_index)) {
         $self->{$_} = delete $args{$_} if exists $args{$_};
     }
     return $self->next::method(%args);
 }
 
-=head2 redis
+=head2 services
 
 The L<BOM::Event::Services> instance.
 
@@ -122,8 +141,19 @@ This will connect to the Redis server and start the job handling.
 sub _add_to_loop {
     my ($self) = @_;
     # Initiate connection and processing as soon as we're added to the loop
-    return $self->redis->connect->then($self->curry::weak::process_loop)->retain;
+    $self->services;
+    $self->redis;
+
+    return undef;
 }
+
+=head2 initialize_request_counter
+
+initialize request counter
+
+=cut
+
+sub initialize_request_counter { shift->{request_counter} //= 0; return undef; }
 
 =head2 queue_name
 
@@ -133,18 +163,83 @@ Returns the queue name which contains the events;
 
 sub queue_name { return shift->{queue} }
 
+=head2 stream_name
+
+Returns te stream name which contains the events;
+
+=cut
+
+sub stream_name { return shift->{stream} }
+
+=head2 host_name
+
+Returns host name if defined otherwise returns machine's name
+by default using L<Net::Domain>'s B<hostname> sub
+
+=cut
+
+sub host_name {
+    my $self = shift;
+
+    return $self->{host} //= hostname;
+}
+
+=head2 consumer_name
+
+Returns a consumer to subscribe as;
+
+=cut
+
+sub consumer_name {
+    my $self = shift;
+
+    return join '-', ($self->host_name, $self->{worker_index} // 0);
+}
+
+=head2 init_stream
+
+Return undef and Creates a Redis stream consumer group if the stream is not created it will be created using the MKSTREAM option.
+
+=cut
+
+async sub init_stream {
+    my ($self) = @_;
+    $self->initialize_request_counter;
+    try {
+        await $self->redis->connected;
+
+        # $ means: the ID of the last item in the stream.
+        # MKSTREAM subcommand as the last argument after the ID
+        # to automatically create the stream, if it doesn't exist.
+        await $self->redis->xgroup('CREATE', $self->stream_name, $self->CONSUMER_GROUP, '$', 'MKSTREAM');
+        $log->tracef('Initalizing stream with a consumer group');
+
+    } catch ($err) {
+        if (($err) =~ /Consumer Group name already exists/) {
+            await $self->_resolve_pending_messages;
+            # Consumer group exists error will always occurre after the first init
+            # so since we may use more than 1 worker, we have to ignore it.;
+            return undef;
+        } else {
+            $log->errorf('An error occurred while initializing connection: %s', $err);
+            die "Sorry, an error occurred while processing your request. $err";
+        }
+    }
+    return undef;
+}
+
 =head2 queue_wait_time
 
 Returns the current timeout while waiting for a message from redis
 
 We should not cache this value as it could be changed in run-time
 
-Note that the processing will be blocked until new data comes hence we 
+Note that the processing will be blocked until new data comes hence we
 need a timeout.
 
 =cut
 
-sub queue_wait_time { return (shift->{queue_wait_time} || DEFAULT_QUEUE_WAIT_TIME) }
+sub queue_wait_time { return (shift->{queue_wait_time} // DEFAULT_QUEUE_WAIT_TIME) }
 
 =head2 maximum_job_time
 
@@ -154,16 +249,15 @@ We should not cache this value as it could be changed in run-time
 
 =cut
 
-sub maximum_job_time { return (shift->{maximum_job_time} || MAXIMUM_JOB_TIME) }
+sub maximum_job_time { return (shift->{maximum_job_time} // MAXIMUM_JOB_TIME) }
 
 =head2 maximum_processing_time
 
 Returns the maximum timeout configured for the processing of a job.
 
-
 =cut
 
-sub maximum_processing_time { return (shift->{maximum_processing_time} || MAXIMUM_PROCESSING_TIME) }
+sub maximum_processing_time { return (shift->{maximum_processing_time} // MAXIMUM_PROCESSING_TIME) }
 
 =head2 should_shutdown
 
@@ -172,12 +266,104 @@ processing.
 
 =cut
 
-sub should_shutdown {
+async sub should_shutdown {
     my ($self) = @_;
-    return $self->{should_shutdown} //= $self->loop->new_future->set_label('QueueHandler::shutdown');
+    return $self->{should_shutdown} //= await $self->loop->new_future->set_label('QueueHandler::shutdown');
 }
 
-=head2 process_loop
+=head2 get_stream_item
+
+Returns an item from a redis stream
+
+=cut
+
+async sub get_stream_item {
+    my $self = shift;
+    my $message;
+    try {
+        $message = await $self->redis->xreadgroup(
+            GROUP => CONSUMER_GROUP,
+            $self->consumer_name,
+            BLOCK   => $self->queue_wait_time * 1000,    # BLOCK expects milliseconds
+            COUNT   => 1,
+            STREAMS => $self->stream_name,
+            '>'                                          # Redis special ID which retrieve last id of group's messages
+        );
+    } catch ($err) {
+        if (($err) =~ /^NOGROUP/) {
+            # There is no consumer group for reading, suppress error and recreate one.
+            # Note: it happens by purging Redis while the worker is working, common in testing.
+            $log->errorf('Redis exception: %s', $err);
+            await $self->init_stream;
+        } else {
+            $log->errorf('An exception occurred while processing events stream request: %s', $err);
+        }
+    }
+    return undef unless $message;
+
+    $self->{request_counter}++;
+    $log->debugf("Got stream item: %s", $message);
+
+    return {
+        event_id => $message->[0]->[1]->[0]->[0],
+        event    => $message->[0]->[1]->[0]->[1]->[1]};
+}
+
+=head2 stream_process_loop
+
+Returns the L<Future> representing the processing loop, starting it if required.
+
+This is the main logic for waiting on events from the Redis stream and calling the
+appropriate handler.
+
+=cut
+
+async sub stream_process_loop {
+    my $self = shift;
+    await $self->init_stream;
+
+    while (!$self->should_shutdown->is_ready() && $self->{request_counter} <= REQUESTS_PER_CYCLE) {
+        my $item = await $self->get_stream_item();
+        # $item will be undef in case of timeout occurred
+        next unless $item;
+
+        my $decoded_data;
+        try {
+            $decoded_data = decode_json_utf8($item->{event});
+            stats_inc(lc $self->stream_name . ".read");
+        } catch ($err) {
+            stats_inc(lc $self->stream_name . ".invalid_data");
+            # Invalid data indicates serious problems, we halt
+            # entirely and record the details
+            $log->errorf('Bad data received from stream causing exception %s', $err);
+            exception_logged();
+        }
+
+        # redis message will be undef in case of timeout occurred
+        await $self->process_job($self->stream_name, $decoded_data);
+        await $self->_ack_message($item->{event_id});
+    }
+}
+
+=head2 get_queue_item
+
+Returns a item from redis list
+
+=cut
+
+async sub get_queue_item {
+    my $self       = shift;
+    my $queue_item = await $self->redis->brpop(
+        # We don't cache these: each iteration uses the latest values,
+        # allowing ->configure to change name and wait time dynamically.
+        $self->queue_name,
+        $self->queue_wait_time
+    );
+    $log->debugf("Got queue item: %s", $queue_item);
+    return $queue_item;
+}
+
+=head2 queue_process_loop
 
 Returns the L<Future> representing the processing loop, starting it if required.
 
@@ -186,77 +372,77 @@ appropriate handler.
 
 =cut
 
-sub process_loop {
-    my ($self) = @_;
-    return $self->{process_loop} //= (
-        repeat {
-            Future->wait_any(
-                # This resolves as done, but we want to bail out of the loop,
-                # and we do that by returning a failed future from the repeat block
-                $self->should_shutdown->without_cancel->then_fail('normal_shutdown'),
-                $self->redis->brpop(
-                    # We don't cache these: each iteration uses the latest values,
-                    # allowing ->configure to change name and wait time dynamically.
-                    $self->queue_name,
-                    $self->queue_wait_time
-                )->then(
-                    sub {
-                        my ($item) = @_;
-                        # $item will be undef in case of timeout occurred
-                        return Future->done() unless $item;
-                        my ($queue_name, $event_data) = $item->@*;
-                        unless ($event_data) {
-                            $log->errorf('Invalid event data received');
-                            # Stop our processing, this indicates something is not
-                            # right and needs further investigation
-                            return Future->fail('bad event data - nothing received');
-                        }
-
-                        try {
-                            my $decoded_data = decode_json_utf8($event_data);
-                            stats_inc(lc "$queue_name.read");
-                            return Future->done($queue_name => $decoded_data);
-                        } catch ($err) {
-                            stats_inc(lc "$queue_name.invalid_data");
-                            # Invalid data indicates serious problems, we halt
-                            # entirely and record the details
-                            $log->errorf('Bad data received in event queue %s causing exception %s - data was %s',
-                                $queue_name, $err, $self->clean_data_for_logging($event_data));
-                            exception_logged();
-                            return Future->fail("bad event data - $err");
-                        }
-                    }
-                )->then(
-                    sub {
-                        # redis message will be undef in case of timeout occurred
-                        return Future->done() unless @_;
-                        my ($queue_name, $event_data) = @_;
-                        $self->process_job($queue_name, $event_data);
-
-                    }))
+async sub queue_process_loop {
+    my $self = shift;
+    while (!$self->should_shutdown->is_ready()) {
+        my $item = await $self->get_queue_item();
+        # $item will be undef in case of timeout occurred
+        next unless $item;
+        my ($queue_name, $event_data) = $item->@*;
+        my $decoded_data;
+        try {
+            $decoded_data = decode_json_utf8($event_data);
+            stats_inc(lc "$queue_name.read");
+        } catch ($err) {
+            stats_inc(lc "$queue_name.invalid_data");
+            # Invalid data indicates serious problems, we halt
+            # entirely and record the details
+            $log->errorf('Bad data received from queue causing exception %s', $err);
+            exception_logged();
         }
-        while => sub {
-            # We keep going until something fails
-            shift->is_done;
-        }
-    )->on_ready(
-        sub {
-            # ... and allow restart if we're stopped or fail,
-            # next caller to this method will start things up again
-            delete $self->{process_loop} if $self->{process_loop};
-        });
+
+        # redis message will be undef in case of timeout occurred
+        await $self->process_job($queue_name, $decoded_data);
+    }
+}
+
+=head2 _resolve_pending_messages
+
+Acknowledge all pending message unconditionally.
+
+- Since we have no idea about safety of messages reprocessing,
+every time new worker started, we try to mark all pending
+messages which have same consumer name as acknowledged.
+
+- In future phases we will support retrying mechanism for all
+one-way request which expect no response from server-side.
+
+Returns undef
+
+=cut
+
+async sub _resolve_pending_messages {
+    my $self = shift;
+    try {
+        my $result = await $self->redis->xpending($self->stream_name, CONSUMER_GROUP, '-', '+', '10000', $self->consumer_name);
+        # Since await is not allowed inside foreach on a non-lexical iterator variable
+        await &fmap0(    ## no critic
+            $self->$curry::weak(
+                async sub {
+                    my ($self, $msg) = @_;
+                    await $self->_ack_message($msg->[0]);
+                }
+            ),
+            foreach    => $result,
+            concurrent => 4,
+        );
+    } catch ($err) {
+        $log->errorf('Failed while resolving pending messages in (%s) stream: %s', $self->stream_name, $err);
+    }
+
+    return undef;
 }
 
 =head2 process_job
 
-Description: Handles the timeouts and launching the processing of the actual jobs. Not in-lined so that it can be more easily tested. 
-Takes the following arguments 
+Description: Handles the timeouts and launching the processing of the actual jobs. Not in-lined so that it can be more easily tested.
+Takes the following arguments
 
 =over 4
 
-=item - $queue_name : The name of the redis queue the job is from 
+=item - $queue_name : The name of the redis queue the job is from
 
-=item - $event_data : The Data that was passed to the event. 
+=item - $event_data : The Data that was passed to the event.
 
 =back
 
@@ -305,7 +491,7 @@ sub process_job {
                 stats_inc(lc "$queue_name.processed.failure");
             })->else_done();
     } catch ($e) {
-        $log->errorf('Failed to process %s (data %s) - %s', $queue_name, $self->clean_data_for_logging($event_data), $e);
+        $log->errorf('Failed to process data (%s) - %s', $self->clean_data_for_logging($event_data), $e);
         exception_logged();
         # This one's less clear cut than other failure cases:
         # we *do* expect occasional failures from processing,
@@ -318,26 +504,50 @@ sub process_job {
     }
 }
 
+=head2 _ack_message
+
+Mark message as acknowledged by consumer group
+
+=over 4
+
+=item * C<$id> - The message id
+
+=back
+
+Returns undef
+
+=cut
+
+async sub _ack_message {
+    my ($self, $id) = @_;
+    try {
+        await $self->redis->xack($self->stream_name, $self->CONSUMER_GROUP, $id);
+    } catch ($err) {
+        $log->errorf('Failed while marking message_id as acknowledged with Error: %s', $err);
+    }
+    return undef;
+}
+
 =head2 clean_data_for_logging
 
-Description: Cleans out any data that might be GDPR sensitive when the log level is not debug. 
+Description: Cleans out any data that might be GDPR sensitive when the log level is not debug.
 
 Takes the following arguments
 
 =over 4
 
-=item * C<$event_data> - A JSON string or HashRef containing the event data. 
+=item * C<$event_data> - A JSON string or HashRef containing the event data.
 
 =back
 
-Returns a JSON string with sanitized event data 
+Returns a JSON string with sanitized event data
 
 =cut
 
 sub clean_data_for_logging {
     my ($self, $event_data) = @_;
     # Event Data looks like {"details":{"loginid":"CR2000000"},"context":{"language":"EN","brand_name":"binary"},"type":"api_token_deleted"}
-    # where "details" is the values passed with the event and "type" is the name of the event.
+    # Where "details" is the values passed with the event and "type" is the name of the event.
     if ($log->is_debug()) {
         return $event_data;
     }

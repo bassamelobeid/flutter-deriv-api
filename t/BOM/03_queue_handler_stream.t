@@ -4,6 +4,7 @@ use warnings;
 use Test::More;
 use Test::Exception;
 use Test::MockModule;
+use Test::MockObject;
 use Test::Warn;
 use Log::Any::Test;
 use BOM::Event::QueueHandler;
@@ -18,39 +19,82 @@ use utf8;
 initialize_events_redis();
 my $redis = BOM::Config::Redis::redis_events_write();
 my $loop  = IO::Async::Loop->new;
-my $handler;
+my $stream_handler;
 my $mock_log_adapter_test = Test::MockModule->new('Log::Any::Adapter::Test');
-# Need to mock because in `Log::Any::Adapter::Test` is_debug always returns 1 that is used in OM::Event::QueueHandler->clean_data_for_logging.
+# Need to mock because in `Log::Any::Adapter::Test` is_debug always returns 1 that is used in BOM::Event::QueueHandler->clean_data_for_logging.
 $mock_log_adapter_test->mock(
     'is_debug',
     sub {
         return 0;
     });
 
-subtest 'startup and shutdown queue' => async sub {
-    lives_ok { $handler = BOM::Event::QueueHandler->new(queue => 'GENERIC_EVENTS_QUEUE') } 'create new queue instance';
-    $loop->add($handler);
-    await $handler->should_shutdown;
-    throws_ok { $handler->queue_process_loop->get } qr/normal_shutdown/, 'can shut down';
+subtest 'Startup and shutdown stream' => async sub {
+    lives_ok { $stream_handler = BOM::Event::QueueHandler->new(stream => 'GENERIC_EVENTS_STREAM') } 'Create new stream instance';
+    $loop->add($stream_handler);
+    await $stream_handler->should_shutdown;
+    throws_ok { $stream_handler->stream_process_loop->get } qr/normal_shutdown/, 'Can shut down';
 };
 
-subtest 'invalid queue messages' => sub {
-    $loop->add($handler = BOM::Event::QueueHandler->new(queue => 'GENERIC_EVENTS_QUEUE'));
-    $redis->lpush('GENERIC_EVENTS_QUEUE', 'junk');
-    Future->wait_any($handler->queue_process_loop, $loop->delay_future(after => 1))->get;
-    $log->contains_ok(qr/Bad data received from queue causing exception/, "Expected invalid json warning is thrown");
+subtest 'Consumer naming' => sub {
+    $loop->add(
+        $stream_handler = BOM::Event::QueueHandler->new(
+            stream       => 'GENERIC_EVENTS_STREAM',
+            worker_index => 'WORKER'
+        ));
+    my $consumername = join '-', $stream_handler->host_name, "WORKER";
+    is $stream_handler->consumer_name, "$consumername", 'Correct consumer name assigning';
+};
+
+subtest 'Create the stream consumer group' => sub {
+    my $redis_object    = Test::MockObject->new;
+    my @expected_groups = (['GENERIC_EVENTS_CONSUMERS']);
+    my @created         = ();
+    $redis_object->mock('connected', async sub { Future->done });
+    $redis_object->mock('xinfo',     async sub { return [] });
+    $redis_object->mock('xgroup',    async sub { push @created, [$_[3]]; return @created; });
+    my $mocked = Test::MockModule->new('BOM::Event::QueueHandler');
+    $mocked->mock('redis', sub { $redis_object });
+    $loop->add($stream_handler = BOM::Event::QueueHandler->new(stream => 'GENERIC_EVENTS_STREAM'));
+    $stream_handler->init_stream->get;
+    is_deeply \@created, \@expected_groups, 'Created group';
+};
+
+subtest 'Invalid stream messages' => sub {
+    $redis->execute("XADD", 'GENERIC_EVENTS_STREAM', '*', 0, 0);
+    my $mocked = Test::MockModule->new('BOM::Event::QueueHandler');
+    $loop->add($stream_handler = BOM::Event::QueueHandler->new(stream => 'GENERIC_EVENTS_STREAM'));
+    my %msg = (
+        'event_id' => '0-0',
+        'event'    => 'junk'
+    );
+    $mocked->redefine('get_stream_item' => async sub { return \%msg; });
+    Future->wait_any($stream_handler->stream_process_loop, $loop->delay_future(after => 1))->get;
+    $log->contains_ok(qr/Bad data received from stream causing exception/, "Expected invalid json warning is thrown");
+};
+
+subtest 'Resolve pending messages' => sub {
+    my $redis_object = Test::MockObject->new;
+    my $pendings     = [['123-0'], ['123-1'], ['123-2'], ['123-3']];
+    my @acked        = ();
+    $redis_object->mock('connected', async sub { Future->done });
+    $redis_object->mock('xpending',  async sub { return [@$pendings] });
+    $redis_object->mock('xack',      async sub { push @acked, [$_[3]]; return @acked; });
+    my $mocked = Test::MockModule->new('BOM::Event::QueueHandler');
+    $mocked->mock('redis', sub { $redis_object });
+    $loop->add($stream_handler = BOM::Event::QueueHandler->new(stream => 'GENERIC_EVENTS_STREAM'));
+    $stream_handler->_resolve_pending_messages->get;
+    is_deeply \@acked, $pendings, 'Pending message marked as acknowledge successfully';
 };
 
 subtest 'undefined functions' => sub {
     # undefined functions
-    $handler = BOM::Event::QueueHandler->new(queue => 'GENERIC_EVENTS_QUEUE');
-    $loop->add($handler);
-    $handler->process_job('GENERIC_EVENTS_QUEUE', {type => 'unknown_function'})->get;
-    $log->contains_ok(qr/no function mapping found for event/, "undefined functions should return an error");
+    $stream_handler = BOM::Event::QueueHandler->new(stream => 'GENERIC_EVENTS_STREAM');
+    $loop->add($stream_handler);
+    $stream_handler->process_job('GENERIC_EVENTS_STREAM', {type => 'unknown_function'})->get;
+    $log->contains_ok(qr/no function mapping found for event/, "Undefined functions should return an error");
 };
 
-subtest 'sync_subs' => sub {
-
+subtest 'stream sync_subs' => sub {
     my $module = Test::MockModule->new('BOM::Event::Process');
     $log->clear;
     $module->mock(
@@ -62,35 +106,31 @@ subtest 'sync_subs' => sub {
             };
         });
 
-    SKIP: {
-        skip "skip running time sensitive tests for code coverage tests", 1 if $ENV{DEVEL_COVER_OPTIONS};
-
-        # Synchronous jobs running less  than MAXIMUM_PROCESSING_TIME should not time out
-        $log->clear;
-        $handler = BOM::Event::QueueHandler->new(
-            queue                   => 'GENERIC_EVENTS_QUEUE',
-            maximum_job_time        => 20,
-            maximum_processing_time => 3
-        );
-        $loop->add($handler);
-        $handler->process_job(
-            'GENERIC_EVENTS_QUEUE',
-            {
-                type    => 'sync_sub',
-                details => {wait => 1}});
-        $log->contains_ok(qr/test did not time out/, "Sync job less than max_processing_time did not time out.");
-    }
+    # Synchronous jobs running less  than MAXIMUM_PROCESSING_TIME should not time out
+    $log->clear;
+    $stream_handler = BOM::Event::QueueHandler->new(
+        stream                  => 'GENERIC_EVENTS_STREAM',
+        maximum_job_time        => 20,
+        maximum_processing_time => 3
+    );
+    $loop->add($stream_handler);
+    $stream_handler->process_job(
+        'GENERIC_EVENTS_STREAM',
+        {
+            type    => 'sync_sub',
+            details => {wait => 1}})->get;
+    $log->contains_ok(qr/test did not time out/, "Sync job less than max_processing_time did not time out.");
 
     # Synchronous jobs running more  than MAXIMUM_PROCESSING_TIME should time out
     $log->clear;
-    $handler = BOM::Event::QueueHandler->new(
-        queue                   => 'GENERIC_EVENTS_QUEUE',
+    $stream_handler = BOM::Event::QueueHandler->new(
+        stream                  => 'GENERIC_EVENTS_STREAM',
         maximum_job_time        => 20,
         maximum_processing_time => 2
     );
-    $loop->add($handler);
-    $handler->process_job(
-        'GENERIC_EVENTS_QUEUE',
+    $loop->add($stream_handler);
+    $stream_handler->process_job(
+        'GENERIC_EVENTS_STREAM',
         {
             type    => 'sync_sub',
             details => {wait => 5}})->get;
@@ -110,32 +150,32 @@ subtest 'sync_subs' => sub {
 
     # Synchronous jobs marked as C<async>  should time out  if longer than MAXIMUM_PROCESSING_TIME but they are treated as a L<FUTURE> fail.
     $log->clear;
-    $handler = BOM::Event::QueueHandler->new(
-        queue                   => 'GENERIC_EVENTS_QUEUE',
+    $stream_handler = BOM::Event::QueueHandler->new(
+        stream                  => 'GENERIC_EVENTS_STREAM',
         maximum_job_time        => 20,
         maximum_processing_time => 1
     );
-    $loop->add($handler);
-    $handler->process_job(
-        'GENERIC_EVENTS_QUEUE',
+    $loop->add($stream_handler);
+    $stream_handler->process_job(
+        'GENERIC_EVENTS_STREAM',
         {
             type    => 'sync_sub_2',
             details => {wait => 2}})->get;
     $log->contains_ok(
-        qr/GENERIC_EVENTS_QUEUE took longer than 'MAXIMUM_PROCESSING_TIME'/,
+        qr/GENERIC_EVENTS_STREAM took longer than 'MAXIMUM_PROCESSING_TIME'/,
         "Sync job marked as async should time out after maximum_processing_time"
     );
 
     # Synchronous jobs marked as C<async>  should not time out  if shorter  than MAXIMUM_PROCESSING_TIME.
     $log->clear;
-    $handler = BOM::Event::QueueHandler->new(
-        queue                   => 'GENERIC_EVENTS_QUEUE',
+    $stream_handler = BOM::Event::QueueHandler->new(
+        stream                  => 'GENERIC_EVENTS_STREAM',
         maximum_job_time        => 20,
         maximum_processing_time => 2
     );
-    $loop->add($handler);
-    $handler->process_job(
-        'GENERIC_EVENTS_QUEUE',
+    $loop->add($stream_handler);
+    $stream_handler->process_job(
+        'GENERIC_EVENTS_STREAM',
         {
             type    => 'sync_sub_2',
             details => {wait => 1}})->get;
@@ -143,14 +183,14 @@ subtest 'sync_subs' => sub {
 
     # Synchronous jobs marked as C<async>  should ignore maximum_job_time
     $log->clear;
-    $handler = BOM::Event::QueueHandler->new(
-        queue                   => 'GENERIC_EVENTS_QUEUE',
+    $stream_handler = BOM::Event::QueueHandler->new(
+        stream                  => 'GENERIC_EVENTS_STREAM',
         maximum_job_time        => 1,
         maximum_processing_time => 5
     );
-    $loop->add($handler);
-    $handler->process_job(
-        'GENERIC_EVENTS_QUEUE',
+    $loop->add($stream_handler);
+    $stream_handler->process_job(
+        'GENERIC_EVENTS_STREAM',
         {
             type    => 'sync_sub_2',
             details => {wait => 3}})->get;
@@ -176,23 +216,25 @@ subtest 'async_subs' => sub {
 
     # Test when the Job is Async and shorter then maximum_job_time. Should work OK
     $log->clear;
-    $handler = BOM::Event::QueueHandler->new(
-        queue                   => 'GENERIC_EVENTS_QUEUE',
+    $stream_handler = BOM::Event::QueueHandler->new(
+        stream                  => 'GENERIC_EVENTS_STREAM',
         maximum_job_time        => 2,
         maximum_processing_time => 10
     );
-    $loop->add($handler);
-    my $f = $handler->process_job(
-        'GENERIC_EVENTS_QUEUE',
+    $loop->add($stream_handler);
+    my $f = $stream_handler->process_job(
+        'GENERIC_EVENTS_STREAM',
         {
             type    => 'async_sub_1',
             details => {wait => 1}})->get;
+
+    # Future->wait_any($f, $loop->delay_future(after => 10))->get;
     is $f, 'test did not time out', "Async job less than MAXIMUM_JOB_TIME should not timeout";
 
     # Test when the job is async but runs too long, should fail the maximum_job_time check.
     $log->clear;
-    $f = $handler->process_job(
-        'GENERIC_EVENTS_QUEUE',
+    $f = $stream_handler->process_job(
+        'GENERIC_EVENTS_STREAM',
         {
             type    => 'async_sub_1',
             details => {wait => 4}})->get;
@@ -200,14 +242,14 @@ subtest 'async_subs' => sub {
 
     # Test when the job is async  and runs longer than MAXIMUM_PROCESSING_TIME, should not fail.
     $log->clear;
-    $handler = BOM::Event::QueueHandler->new(
-        queue                   => 'GENERIC_EVENTS_QUEUE',
+    $stream_handler = BOM::Event::QueueHandler->new(
+        stream                  => 'GENERIC_EVENTS_STREAM',
         maximum_job_time        => 4,
         maximum_processing_time => 1
     );
-    $loop->add($handler);
-    $f = $handler->process_job(
-        'GENERIC_EVENTS_QUEUE',
+    $loop->add($stream_handler);
+    $f = $stream_handler->process_job(
+        'GENERIC_EVENTS_STREAM',
         {
             type    => 'async_sub_1',
             details => {wait => 2}})->get;
@@ -237,8 +279,7 @@ subtest 'clean_data_for_logging_utf8' => sub {
     my $event_data_json = Encode::encode("UTF-8",
         '{"details":{"loginid":"CR10000","properties":{"type":"real"},"email":"abc@def.com"},"utf_8":"À Á Â Ã Ä Å Æ Ç È É Ê Ë Ì Í Î Ï Ð Ñ Ò Ó "}');
     my $expected_cleaned_data = '{"sanitised_details":{"loginid":"CR10000"},"utf_8":"À Á Â Ã Ä Å Æ Ç È É Ê Ë Ì Í Î Ï Ð Ñ Ò Ó "}';
-
-    my $cleaned_data = BOM::Event::QueueHandler->clean_data_for_logging($event_data_json);
+    my $cleaned_data          = BOM::Event::QueueHandler->clean_data_for_logging($event_data_json);
     like $cleaned_data, qr/"utf_8":"À Á Â Ã Ä Å Æ Ç È É Ê Ë Ì Í Î Ï Ð Ñ Ò Ó "/, 'utf_8 characters OK when JSON string with UTF8 passed';
 
     my $event_data_hashref = decode_json_utf8($event_data_json);

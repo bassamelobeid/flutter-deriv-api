@@ -9,6 +9,7 @@ use Syntax::Keyword::Try;
 use BOM::Event::QueueHandler;
 
 use IO::Async::Loop;
+use Future::AsyncAwait;
 use BOM::Event::Utility qw(exception_logged);
 
 use constant SHUTDOWN_TIMEOUT => 60;
@@ -19,7 +20,8 @@ BOM::Event::Listener - Listen to events
 
 =head1 SYNOPSIS
 
-    BOM::Event::Listener->new(queue => '...')->run
+    BOM::Event::Listener->new(queue  => '...')->run
+    BOM::Event::Listener->new(stream => '...')->run
 
 =head1 DESCRIPTION
 
@@ -29,12 +31,16 @@ Watches queues in Redis for events and processes them accordingly.
 
 sub new {
     my ($class, %args) = @_;
+
     return bless \%args, $class;
 }
 
-# The following 3 attributes are mainly just passed through
+# The following 5 attributes are mainly just passed through
 # to QueueHandler.
 sub queue { return shift->{queue} }
+
+# Use redis stream
+sub stream_name { return shift->{stream} }
 
 sub maximum_job_time { return shift->{maximum_job_time} }
 
@@ -48,15 +54,22 @@ sub running_parallel { return shift->{running_parallel} // 0 }
 
 sub handler { return shift->{handler} }
 
+sub worker_index { return shift->{worker_index} }
+
 sub run {    ## no critic (RequireFinalReturn)
     my $self = shift;
-    $log->infof('Starting listener for queue %s', $self->queue);
-    my $loop    = IO::Async::Loop->new;
+
+    my $loop = IO::Async::Loop->new;
+
     my $handler = BOM::Event::QueueHandler->new(
         queue                   => $self->queue,
+        stream                  => $self->stream_name,
         maximum_job_time        => $self->maximum_job_time,
-        maximum_processing_time => $self->maximum_processing_time
+        maximum_processing_time => $self->maximum_processing_time,
+        worker_index            => $self->worker_index,
     );
+
+    $loop->add($handler);
     $self->{handler} = $handler;
     local $SIG{TERM} = local $SIG{INT} = sub {
         # If things go badly wrong, we might never exit the loop. This attempts to
@@ -73,14 +86,13 @@ sub run {    ## no critic (RequireFinalReturn)
         # calls to this sub will not be able to mark as done
         $handler->should_shutdown->done unless $handler->should_shutdown->is_ready;
     };
-    $loop->add($handler);
     # Wait for the processing loop to end naturally (either due to errors, or
     # from the shutdown signal)
     try {
-        $handler->process_loop->get;
+        $self->stream_name ? $handler->stream_process_loop->get : $handler->queue_process_loop->get;
     } catch ($e) {
-        $log->errorf('Event listener bailing out early for %s - %s', $self->queue, $e) unless $e =~ /normal_shutdown/;
-        exception_logged()                                                             unless $e =~ /normal_shutdown/;
+        $log->errorf("Event listener bailing out early - %s ", $e) unless $e =~ /normal_shutdown/;
+        exception_logged()                                         unless $e =~ /normal_shutdown/;
     } finally {
         alarm(0);
     }

@@ -136,7 +136,7 @@ Process event passed by invoking corresponding method from action mapping
 
 =over 4
 
-=item * event_to_be_processed : emitted event ( {type => action, details => {}, context => {}}, $queue_name )
+=item * event_to_be_processed : emitted event ( {type => action, details => {}, context => {}}, $stream_name )
 
 =back
 
@@ -146,18 +146,18 @@ sub process {
     # event is of form { type => action, details => {}, context => {} }
 
     my $event_to_be_processed = shift;
-    my $queue_name            = shift;
+    my $stream_name           = shift;
 
     my $event_type = $event_to_be_processed->{type} // '<unknown>';
 
     # don't process if type is not supported as of now
     unless (exists get_action_mappings()->{$event_type}) {
-        $log->warnf("no function mapping found for event %s from queue %s", $event_type, $queue_name);
+        $log->warnf("no function mapping found for event %s from stream %s", $event_type, $stream_name);
         return undef;
     }
 
     unless (exists $event_to_be_processed->{details}) {
-        $log->warnf("event %s from queue %s contains no details", $event_type, $queue_name);
+        $log->warnf("event %s from stream %s contains no details", $event_type, $stream_name);
         return undef;
     }
 

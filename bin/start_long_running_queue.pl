@@ -1,4 +1,4 @@
-#!/usr/bin/env perl 
+#!/usr/bin/env perl
 
 use strict;
 use warnings;
@@ -19,28 +19,28 @@ start_long_running_job_queue.pl - Long running job queue runner
 
 =head1 DESCRIPTION
 
-This is designed as a generic queue runner for various long running queues. 
-This can run multiple synchronous jobs that take minutes to hours to complete. 
+This is designed as a generic queue runner for various long running queues.
+This can run multiple synchronous jobs that take minutes to hours to complete.
 Rather than having multiple PL files for each queue this takes a Queue name parameter among others so
-it can be reused. 
+it can be reused.
 
 Because the Event system will not rerun failed or incomplete jobs, Long running jobs need to make sure they are
-capable of being rerun. 
+capable of being rerun.
 
 =head1 SYNOPSIS
-    
-    start_long_running_job_queue.pl  --queue <queue_name> --maximum_process_time=<Process time out> --maximum_job_time=<Max job time> --number_of_workers=<number of processes to spawn> --shutdown_time_out=<Number of seconds allowed for graceful shutdown>
+
+    start_long_running_job_queue.pl  --stream <stream_name> --queue <queue_name> --maximum_process_time=<Process time out> --maximum_job_time=<Max job time> --number_of_workers=<number of processes to spawn> --shutdown_time_out=<Number of seconds allowed for graceful shutdown>
 
 
 =over 4
 
-=item * --queue  the name of the queue in Redis that this will be listening to. 
+=item * --queue  the name of the queue in Redis that this will be listening to.
 
-=item * --maximum_process_time : The maximum number of seconds a Synchronous job can run for. 
+=item * --maximum_process_time : The maximum number of seconds a Synchronous job can run for.
 
-=item * --maximum_job_time : The maximum number of seconds an Ansychronous Job can run for. 
+=item * --maximum_job_time : The maximum number of seconds an Ansychronous Job can run for.
 
-=item * --number_of_workers :  The Number of forks of this script to run in parallel.  Defaults to  the the number of cpu's available. 
+=item * --number_of_workers :  The Number of forks of this script to run in parallel.  Defaults to  the the number of cpu's available.
 
 =item * --shutdown_time_out :  The amount of time to allow for a graceful shutdown after the C<TERM> or C<INT> signal is received. Once reached the C<KILL> signal will be sent.
 
@@ -57,17 +57,22 @@ $options{shutdown_time_out} = 60;    #this defaults to 60 seconds in BOM::Event:
 $options{number_of_workers} = max(1, Sys::Info->new->device("CPU")->count);
 $options{json_log_file}     = '/var/log/deriv/' . path($0)->basename . '.json.log';
 
-GetOptions(\%options, "number_of_workers=i", "queue=s", "maximum_job_time=i", "maximum_process_time=i", "shutdown_time_out=i", "json_log_file=s");
+GetOptions(\%options, "stream=s", "number_of_workers=i", "queue=s", "maximum_job_time=i", "maximum_process_time=i", "shutdown_time_out=i",
+    "json_log_file=s");
 Log::Any::Adapter->import(
     qw(DERIV),
     log_level     => $ENV{BOM_LOG_LEVEL} // 'info',
     json_log_file => $options{json_log_file},
 );
 
-my @required_options = qw/queue maximum_job_time maximum_process_time/;
-
-for (@required_options) {
-    if (!$options{$_}) { pod2usage(1); die " Missing Option $_ "; }
+# Between queue and stream options one and only one of them should be used,
+# maximum_job_time and maximum_process_time are required options.
+if (   !(!$options{queue} != !$options{stream})
+    || !$options{maximum_job_time}
+    || !$options{maximum_process_time})
+{
+    pod2usage(1);
+    die " Invalid Options Entered ";
 }
 
 my @running_forks;
@@ -115,9 +120,11 @@ $pm->run_on_finish(
     });
 
 while (1) {
-    $pm->start and next;
+    my $pid = $pm->start and next;
+    my ($index) = grep { $workers[$_] == $pid } 0 .. $#workers;
+
     #We are running in child processes here.
-    my $daemon = BOM::Event::Listener->new(%options);
+    my $daemon = BOM::Event::Listener->new(%options, worker_index => $index);
 
     # This runs the actual process (queue listening, running jobs etc ) that  we are interested in.
     # It is a blocking call, This while loop will only loop again if the child finishes or is killed.

@@ -15,7 +15,7 @@ use BOM::Platform::Context;
 
 initialize_events_redis();
 
-use constant QUEUE_NAME => 'GENERIC_EVENTS_QUEUE';
+use constant QUEUE_NAME => 'GENERIC_EVENTS_STREAM';
 
 my $count  = 0;
 my @events = ({
@@ -132,10 +132,10 @@ subtest 'process' => sub {
     is(ref($action_mappings->{$_}), 'CODE', 'event handler is a code reference') for keys %$action_mappings;
 
     BOM::Event::Process::process({}, QUEUE_NAME);
-    $log->contains_ok(qr/no function mapping found for event <unknown> from queue GENERIC_EVENTS_QUEUE/, 'Empty message not processed');
+    $log->contains_ok(qr/no function mapping found for event <unknown> from stream GENERIC_EVENTS_STREAM/, 'Empty message not processed');
 
     BOM::Event::Process::process({type => 'dummy_action'}, QUEUE_NAME);
-    $log->contains_ok(qr/no function mapping found for event dummy_action from queue GENERIC_EVENTS_QUEUE/,
+    $log->contains_ok(qr/no function mapping found for event dummy_action from stream GENERIC_EVENTS_STREAM/,
         'Process cannot be processed as function action is not available');
 
     my $mock_process = Test::MockModule->new('BOM::Event::Process');
