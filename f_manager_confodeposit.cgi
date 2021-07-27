@@ -100,7 +100,7 @@ unless ($curr =~ /^[a-zA-Z0-9]{2,20}$/ && LandingCompany::Registry::get_currency
 my $client;
 try {
     $client = BOM::User::Client->new({loginid => $loginID});
-} catch($e) {
+} catch ($e) {
     $log->warnf("Error when get client of login id $loginID. more detail: %s", $e);
 };
 
@@ -115,7 +115,7 @@ if ($ttype eq 'TRANSFER') {
     }
     try {
         $toClient = BOM::User::Client->new({loginid => $toLoginID});
-    } catch($e) {
+    } catch ($e) {
         $log->warnf("Error when get client of login id $toLoginID. more detail: %s", $e);
     };
 

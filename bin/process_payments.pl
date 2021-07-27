@@ -3,7 +3,7 @@ use strict;
 use warnings;
 
 use Path::Tiny;
-use Try::Tiny;
+use Syntax::Keyword::Try;
 
 use Date::Utility;
 use Brands;
@@ -132,7 +132,16 @@ read_csv_row_and_callback(
                 $action !~ /^(debit|credit)$/          and $error = "Invalid transaction type [$action]", last;
                 $amount !~ $curr_regex || $amount == 0 and $error = "Invalid amount [$amount]",           last;
                 !$statement_comment and $error = 'Statement comment can not be empty', last;
-                $client    = eval { BOM::User::Client->new({loginid => $login_id}) } or $error = ($@ || 'No such client'), last;
+                try {
+                    $client = BOM::User::Client->new({loginid => $login_id});
+                    unless ($client) {
+                        $error = 'No such client';
+                        last;
+                    }
+                } catch ($e) {
+                    $error = $e;
+                    last;
+                }
                 $row{name} = $client->full_name;
                 my $signed_amount = $action eq 'debit' ? $amount * -1 : $amount;
 
@@ -144,7 +153,9 @@ read_csv_row_and_callback(
                         if $statement_comment !~ /transaction_id=$transaction_id/;
                 }
 
-                try { $client->validate_payment(currency => $currency, amount => $signed_amount) } catch { $error = $_ };
+                try { $client->validate_payment(currency => $currency, amount => $signed_amount) } catch ($e) {
+                    $error = $e
+                };
                 last if $error;
 
                 # check pontential duplicate entry
@@ -181,10 +192,11 @@ read_csv_row_and_callback(
                 my $signed_amount = $amount;
                 $signed_amount *= -1 if $action eq 'debit';
                 my $err;
-                my $trx = try {
+                my $trx;
+                try {
                     $log->infof('Making payment for %s %s as %s from %s (%s %s)',
                         $currency, $signed_amount, $payment_type, $staff, $payment_processor, $trace_id);
-                    $client->smart_payment(
+                    $trx = $client->smart_payment(
                         currency          => $currency,
                         amount            => $signed_amount,
                         payment_type      => $payment_type,
@@ -193,8 +205,8 @@ read_csv_row_and_callback(
                         payment_processor => $payment_processor,
                         trace_id          => $trace_id,
                     );
-                } catch {
-                    $err = $_;
+                } catch ($e) {
+                    $err = $e;
                     $log->errorf('%s failed - %s', $login_id, $err,);
                 };
                 if ($err) {
@@ -214,8 +226,8 @@ read_csv_row_and_callback(
                 $row{remark} = "OK to $action [Preview only]";
             }
 
-        } catch {
-            my $err = $_;
+        } catch ($e) {
+            my $err = $e;
             $log->errorf('Failed on %s - %s', $login_id, $err);
             $row{remark} = "Failed - $err";
         };

@@ -134,7 +134,7 @@ if ($r->param('save_multiplier_user_limit')) {
         my $client;
         try {
             $client = BOM::User::Client->new({loginid => $loginid});
-        } catch($e) {
+        } catch ($e) {
             $log->warnf("Error when get client of login id $loginid. more detail: %s", $e);
         }
 

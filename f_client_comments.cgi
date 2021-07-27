@@ -45,7 +45,7 @@ return_error('Client loginid is missed') unless $input->{loginid};
 my $client;
 try {
     $client = BOM::User::Client->new({loginid => $input->{loginid}});
-} catch($e) {
+} catch ($e) {
     $log->warnf("Error when get client of login id $input->{loginid}. more detail: %s", $e);
 };
 

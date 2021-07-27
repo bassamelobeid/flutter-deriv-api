@@ -32,14 +32,14 @@ foreach my $loginID (split(/,/, $listaccounts)) {
     my $client;
     try {
         $client = BOM::User::Client->new({loginid => $loginID});
-    } catch($e) {
+    } catch ($e) {
         $log->warnf("Error when get client of login id $loginID. more detail: %s", $e);
     }
 
     unless ($client) {
         print "<p class='notify notify--danger'>ERROR: Cannot find client '$encoded_loginID'</p>";
         next CLIENT;
-    };
+    }
 
     my $name          = $client->salutation . ' ' . $client->first_name . ' ' . $client->last_name;
     my $email         = $client->email;

@@ -72,7 +72,7 @@ if ($input->{EditAffiliatesToken}) {
     my $client;
     try {
         $client = BOM::User::Client->new({loginid => $ClientLoginid});
-    } catch($e) {
+    } catch ($e) {
         $log->warnf("Error when get client of login id $ClientLoginid. more detail: %s", $e);
     }
 
