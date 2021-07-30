@@ -100,14 +100,29 @@ subtest 'Can change fiat -> fiat before first deposit' => sub {
     };
 };
 
-subtest 'Currency locks if an MT5 account is opened' => sub {
+subtest 'Currency locks if a real MT5 account is opened' => sub {
     my $mocked_user = Test::MockModule->new(ref($client->user));
-    $mocked_user->mock('get_mt5_loginids', sub { return 'MT0001' });
+    $mocked_user->mock('mt5_logins', sub { return 'MT0001' });
 
-    subtest 'Changing currency on account with transactions should fail' => sub {
+    subtest 'Changing currency on account with with real MT5 account should fail' => sub {
         $params->{currency} = 'EUR';
-        $c->call_ok($method, $params)->has_error->error_message_is('Change of currency is not allowed due to an existing MT5 account.',
-            'changing currency is not allowed after MT5 account opening')->error_code_is('CurrencyTypeNotAllowed', 'error code is correct');
+        $c->call_ok($method, $params)
+            ->has_error->error_message_is('Change of currency is not allowed due to an existing MT5 real account.', 'error message is correct')
+            ->error_code_is('CurrencyTypeNotAllowed', 'error code is correct');
+    };
+
+    $mocked_user->unmock_all;
+};
+
+subtest 'Currency locks if a real Deriv X account is opened' => sub {
+    my $mocked_user = Test::MockModule->new(ref($client->user));
+    $mocked_user->mock('dxtrade_loginids', sub { return 'DXR0001' });
+
+    subtest 'Changing currency on account with real Deriv X account should fail' => sub {
+        $params->{currency} = 'EUR';
+        $c->call_ok($method, $params)
+            ->has_error->error_message_is('Change of currency is not allowed due to an existing Deriv X real account.', 'error message is correct')
+            ->error_code_is('CurrencyTypeNotAllowed', 'error code is correct');
     };
 
     $mocked_user->unmock_all;
