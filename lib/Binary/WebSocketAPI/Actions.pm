@@ -171,7 +171,7 @@ sub actions_config {
             'set_account_currency',
             {
                 before_forward => \&Binary::WebSocketAPI::v3::Wrapper::Accounts::set_account_currency_params_handler,
-                msg_group      => 'account',
+                msg_group      => 'mt5_hybrid',
             }
         ],
         [
