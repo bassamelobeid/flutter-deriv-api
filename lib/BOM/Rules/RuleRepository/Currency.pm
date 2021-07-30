@@ -67,8 +67,8 @@ rule 'currency.experimental_currency' => {
     },
 };
 
-rule 'currency.no_mt5_existing' => {
-    description => "Currency cannot be changed if there's any MT5 account existing.",
+rule 'currency.no_real_mt5_accounts' => {
+    description => "Currency cannot be changed if there's any existing real MT5 account.",
     code        => sub {
         my ($self, $context, $args) = @_;
         my $client = $context->client;
@@ -76,7 +76,22 @@ rule 'currency.no_mt5_existing' => {
         return 1 unless exists $args->{currency};
 
         die {code => 'MT5AccountExisting'}
-            if $client->account() && $client->user->get_mt5_loginids();
+            if $client->account() && $client->user->mt5_logins('real');
+
+        return 1;
+    },
+};
+
+rule 'currency.no_real_dxtrade_accounts' => {
+    description => "Currency cannot be changed if there's any existing Deriv X account.",
+    code        => sub {
+        my ($self, $context, $args) = @_;
+        my $client = $context->client;
+
+        return 1 unless exists $args->{currency};
+
+        die {code => 'DXTradeAccountExisting'}
+            if $client->account() && $client->user->dxtrade_loginids('real');
 
         return 1;
     },

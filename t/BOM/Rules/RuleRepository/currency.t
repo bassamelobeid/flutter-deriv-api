@@ -191,7 +191,7 @@ subtest $rule_name => sub {
         'Only one fiat trading account is allowed';
 };
 
-$rule_name = 'currency.no_mt5_existing';
+$rule_name = 'currency.no_real_mt5_accounts';
 subtest $rule_name => sub {
     my $email  = 'rules_no_mt5@test.deriv';
     my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
@@ -210,13 +210,51 @@ subtest $rule_name => sub {
     ok $engine->apply_rules($rule_name, {currency => 'BTC'}), 'Rule applies with no MT5 account';
 
     my $mock_user = Test::MockModule->new('BOM::User');
-    $mock_user->redefine(get_mt5_loginids => sub { return (1, 2); });
+    $mock_user->redefine(mt5_logins => sub { ('MTR1000') });
 
     is exception { $engine->apply_rules($rule_name, {currency => 'BTC'}) }, undef, 'Rule applies if client currency is not set yet';
 
     $client->set_default_account('USD');
     is_deeply exception { $engine->apply_rules($rule_name, {currency => 'BTC'}) },
         {code => 'MT5AccountExisting'}, 'Fails after setting account entry';
+
+    $mock_user->redefine(mt5_logins => sub { () });
+
+    is exception { $engine->apply_rules($rule_name, {currency => 'BTC'}) }, undef, 'Rule applies if client only has demo account';
+
+    $mock_user->unmock_all;
+};
+
+$rule_name = 'currency.no_real_dxtrade_accounts';
+subtest $rule_name => sub {
+    my $email  = 'rules_no_dx@test.deriv';
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+        email       => $email,
+    });
+
+    BOM::User->create(
+        email    => $email,
+        password => 'TEST PASS',
+    )->add_client($client);
+
+    my $engine = BOM::Rules::Engine->new(client => $client);
+    ok $engine->apply_rules($rule_name), 'Rule applies with empty args';
+
+    ok $engine->apply_rules($rule_name, {currency => 'BTC'}), 'Rule applies with no MT5 account';
+
+    my $mock_user = Test::MockModule->new('BOM::User');
+    $mock_user->redefine(loginids => sub { ($client->loginid, 'DXD1000', 'DXR1001', 'MTR1000', 'MT1001', 'MTD1002') });
+
+    is exception { $engine->apply_rules($rule_name, {currency => 'BTC'}) }, undef, 'Rule applies if client currency is not set yet';
+
+    $client->set_default_account('USD');
+    is_deeply exception { $engine->apply_rules($rule_name, {currency => 'BTC'}) },
+        {code => 'DXTradeAccountExisting'}, 'Fails after setting account entry';
+
+    $mock_user->redefine(loginids => sub { ($client->loginid, 'DXD1000', 'MTR1000', 'MT1001', 'MTD1002') });
+
+    is exception { $engine->apply_rules($rule_name, {currency => 'BTC'}) }, undef, 'Rule applies if client only has demo account';
 
     $mock_user->unmock_all;
 };
