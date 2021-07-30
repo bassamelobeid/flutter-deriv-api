@@ -139,10 +139,13 @@ cmp_deeply(
 );
 
 cmp_deeply([$client->user->get_trading_platform_loginids('dxtrader')], bag(qw/DXD1000 DXR1001/), 'Correct loginids reported');
+cmp_deeply([$client->user->dxtrade_loginids()],                        bag(qw/DXD1000 DXR1001/), 'Correct loginids reported');
 
 cmp_deeply([$client->user->get_trading_platform_loginids('dxtrader', 'demo')], bag(qw/DXD1000/), 'Correct loginids reported');
+cmp_deeply([$client->user->dxtrade_loginids('demo')],                          bag(qw/DXD1000/), 'Correct loginids reported');
 
 cmp_deeply([$client->user->get_trading_platform_loginids('dxtrader', 'real')], bag(qw/DXR1001/), 'Correct loginids reported');
+cmp_deeply([$client->user->dxtrade_loginids('real')],                          bag(qw/DXR1001/), 'Correct loginids reported');
 
 cmp_deeply(
     $client->user->loginid_details->{$account2->{account_id}},

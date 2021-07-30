@@ -520,8 +520,10 @@ get dxtrade loginids for the user
 =cut
 
 sub dxtrade_loginids {
-    my $self = shift;
-    return grep { $_ =~ DXTRADE_REGEX } $self->loginids;
+    my ($self, $type) = @_;
+
+    my @loginids = sort $self->get_trading_platform_loginids('dxtrader', $type);
+    return @loginids;
 }
 
 sub get_last_successful_login_history {
