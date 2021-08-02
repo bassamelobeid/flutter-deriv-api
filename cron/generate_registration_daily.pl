@@ -25,8 +25,12 @@ GetOptions(
     'l|log=s' => \my $log_level,
 );
 
-$log_level ||= 'error';
-Log::Any::Adapter->import(qw(Stdout), log_level => $log_level);
+$log_level ||= 'warn';
+Log::Any::Adapter->import(
+    qw(DERIV),
+    stdout    => 'text',
+    log_level => $log_level
+);
 
 run() unless caller;
 
@@ -129,19 +133,20 @@ sub _get_download_url {
     try {
         unless ($zip->numberOfMembers) {
             $statsd->event('Failed to generate MyAffiliates registration report', 'MyAffiliates registration report generated an empty zip archive');
-            warn "Generated empty zip file $output_zip_path, the related warnings are: \n", join "\n-", @warn_msgs;
+            $log->warnf("Generated empty zip file %s,the related warnings are: \n %s", $output_zip_path, join("\n-", @warn_msgs));
             exit 1;
         }
 
         unless ($zip->writeToFileNamed($output_zip_path) == AZ_OK) {
             $statsd->event('Failed to generate MyAffiliates registration report', "MyAffiliates registration report failed to generate zip archive");
-            warn 'Failed to generate MyAffiliates registration report: ', "MyAffiliates registration report failed to generate zip archive";
+            $log->warn('Failed to generate MyAffiliates registration report: MyAffiliates registration report failed to generate zip archive');
             exit 1;
         }
     } catch ($error) {
         $statsd->event('Failed to generate MyAffiliates registration report',
             "MyAffiliates registration report failed to generate zip archive with $error");
-        warn 'Failed to generate MyAffiliates registration report: ', "MyAffiliates registration report failed to generate zip archive with $error";
+        $log->warnf("Failed to generate MyAffiliates registration report: MyAffiliates registration report failed to generate zip archive with %s",
+            $error);
         exit 1;
     }
 

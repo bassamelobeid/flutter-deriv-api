@@ -15,6 +15,7 @@ use BOM::Database::ClientDB;
 use BOM::Database::DataMapper::CollectorReporting;
 use BOM::Config::Runtime;
 use BOM::MyAffiliates::BackfillManager;
+use Log::Any qw($log);
 
 use constant HEADERS => qw(
     Date Loginid AffiliateToken
@@ -74,7 +75,7 @@ sub _date_joined {
     my $date_joined = $client_data->{date_joined};
 
     if (!$date_joined) {
-        warn("date_joined is empty?! [", $client_data->{'loginid'}, "]: [$date_joined]");
+        $log->warnf("date_joined is empty?! [%s]:[%s]", $client_data->{'loginid'}, $date_joined);
         $date_joined = Date::Utility->new->date_yyyymmdd;
     }
     return Date::Utility->new({datetime => $date_joined})->date_yyyymmdd;
@@ -134,7 +135,7 @@ sub force_backfill {
     foreach (1 .. $retries) {
         BOM::MyAffiliates::BackfillManager->new->backfill_promo_codes;
         return 1 unless $self->is_pending_backfill;
-        warn("[Attempt $_ of $retries] Backfill failed.");
+        $log->warn("[Attempt $_ of $retries] Backfill failed.");
         $self->_force_backfill_sleep;
     }
 

@@ -8,17 +8,19 @@ use Brands;
 use BOM::Config;
 use BOM::Config::Runtime;
 
+use Log::Any qw($log);
+use Log::Any::Adapter::Util qw(logging_methods);
+
 sub startup {
     my $app = shift;
 
     $app->plugin('Config' => {file => $ENV{MYAFFILIATES_CONFIG} || '/etc/rmg/myaffiliates.conf'});
 
-    my $log = $app->log;
-
     # announce startup and context in logfile
     $log->warn("BOM-MyAffiliates: Starting.");
-    $log->warn("Mojolicious Mode is " . $app->mode);
-    $log->warn("Log Level        is " . $log->level);
+    $log->warnf("Mojolicious Mode is %s", $app->mode);
+
+    $log->warnf("Log Level        is %s", $log->adapter->can('level') ? $log->adapter->level : $log->adapter->{log_level});
 
     $app->plugin('DefaultHelpers');
 
