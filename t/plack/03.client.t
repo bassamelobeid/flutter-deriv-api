@@ -3,7 +3,7 @@ use warnings;
 use FindBin qw/$Bin/;
 use lib "$Bin/lib";
 use Test::More;
-use APIHelper qw(decode_json request);
+use APIHelper qw(decode_json request request_xml);
 
 my $loginid = 'CR0011';
 my $r       = request('GET', '/client', {client_loginid => $loginid});
@@ -23,5 +23,20 @@ $r = request(
         client_loginid => 'CR0999000',
     });
 is($r->code, 401);    # Authorization required
+
+subtest 'Handle invalid XML' => sub {
+    my $boggus_xml_content = '<deposit account_identifier="email=stuff%40domain.com&country=BR"/>';
+    my $buggy_xml_content  = '<deposit account_identifier="<!-- account_identifier -->"/>';
+
+    my $req = request_xml('POST', '/transaction/payment/doughflow/deposit', $boggus_xml_content);
+
+    is $req->code,      422,                      'Expected 422 for XML message with &';
+    like $req->content, qr/Unprocessable entity/, 'Expected Unprocessable entity as message';
+
+    $req = request_xml('POST', '/transaction/payment/doughflow/deposit', $buggy_xml_content);
+
+    is $req->code,      422,                      'Expected 422 for XML message with <!-- -->';
+    like $req->content, qr/Unprocessable entity/, 'Expected Unprocessable entity as message';
+};
 
 done_testing();

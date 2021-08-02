@@ -5,7 +5,7 @@ use warnings;
 
 use Exporter 'import';
 our @EXPORT_OK =
-    qw(request auth_request decode_json deposit_validate deposit withdrawal_validate create_payout update_payout balance new_client record_failed_withdrawal);
+    qw(request auth_request decode_json deposit_validate deposit withdrawal_validate create_payout update_payout balance new_client record_failed_withdrawal request_xml);
 
 use Encode;
 use FindBin qw/$Bin/;
@@ -44,6 +44,18 @@ unless ($ENV{PLACK_TEST_IMPL} eq 'ExternalServer') {
 }
 
 my $clear_password = '123456';    # this is the unencrypted pwd of CR011 in the test database.
+
+sub request_xml {
+    my ($method, $url, $content, $headers) = @_;
+    my $uri = URI->new($url);
+
+    $headers ||= {};
+    $headers->{'X-BOM-DoughFlow-Authorization'} ||= __df_auth_header();
+    $headers->{'Content-Type'} = 'text/xml';
+
+    my $req = HTTP::Request->new($method, $uri, HTTP::Headers->new(%$headers), $content);
+    __request($req);
+}
 
 sub request {
     my ($method, $url, $query_form, $headers) = @_;
