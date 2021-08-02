@@ -902,6 +902,11 @@ subtest 'set settings' => sub {
         "Was able to set settings correctly for second CR client"
     );
     ok($emitted->{check_onfido_rules}, 'onfido rules emit exist');
+
+    is $emitted->{check_name_changes_after_first_deposit}, undef, 'no name change check yet';
+    $params->{args} = {first_name => 'bob'};
+    $c->tcall($method, $params);
+    is_deeply($emitted->{check_name_changes_after_first_deposit}, {loginid => $test_client_Y_cr_1->loginid}, 'name change check event emitted');
 };
 
 subtest 'set_settings on virtual account should not change real account settings' => sub {
