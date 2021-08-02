@@ -126,3 +126,5 @@ eUSDT:
         min_usd: 25
     protocol_cost: 0
     decimal_places: 6
+    sweep:
+        address: 0x067f48d1BbaAb135cFBe43535Cc34312FACc54a1
