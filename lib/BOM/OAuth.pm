@@ -15,33 +15,10 @@ sub startup {
     my $app = shift;
 
     $app->plugin('Config' => {file => $ENV{OAUTH_CONFIG} || '/etc/rmg/oauth.conf'});
-
-    my $mojo_log = $app->log;
-
-    $mojo_log->on(
-        message => sub {
-            my ($msg, $level, @lines) = @_;
-            if ($msg) {
-                if ($level eq 'info') {
-                    $log->infof('%s: %s', $level, @lines);
-                } elsif ($level eq 'error') {
-                    $log->errorf('%s: %s', $level, @lines);
-                } elsif ($level eq 'fatal') {
-                    $log->fatalf('%s: %s', $level, @lines);
-                } elsif ($level eq 'warn') {
-                    $log->warnf('%s: %s', $level, @lines);
-                } elsif ($level eq 'debug') {
-                    $log->debugf('%s: %s', $level, @lines);
-                } else {
-                    $log->infof('%s: %s', $level, @lines);
-                }
-            }
-        });
-
     # announce startup and context in logfile
-    $mojo_log->warn("BOM-OAuth:            Starting.");
-    $mojo_log->debug("Mojolicious Mode is " . $app->mode);
-    $mojo_log->warn("Log Level        is " . $mojo_log->level);
+    $log->warn("BOM-OAuth:            Starting.");
+    $log->debugf("Mojolicious Mode is %s", $app->mode);
+    $log->warnf("Log Level        is %s", $log->adapter->can('level') ? $log->adapter->level : $log->adapter->{log_level});
 
     $app->plugin('DefaultHelpers');
     $app->plugin(
@@ -85,7 +62,7 @@ sub startup {
             try {
                 BOM::Database::Rose::DB->db_cache->finish_request_cycle;
             } catch ($e) {
-                warn "->finish_request_cycle: $e\n";
+                $log->warnf("->finish_request_cycle: %s", $e);
             }
         });
 

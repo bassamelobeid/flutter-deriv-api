@@ -5,7 +5,10 @@ use warnings;
 
 use FindBin;
 BEGIN { unshift @INC, "$FindBin::Bin/../lib" }
-use Log::Any::Adapter 'Stderr', log_level => 'info';
+use Log::Any::Adapter 'DERIV',
+    log_level => 'info',
+    stderr    => 'json';
+
 # Mojo will redirect STDERR without autoflush, so we should set autoflush manually
 *STDERR->autoflush(1);
 
