@@ -5701,6 +5701,9 @@ sub update_status_after_auth_fa {
         if ($sibling->get_poi_status() eq 'verified') {
             # auto-unlock MLT clients locked after first deposit
             $sibling->status->clear_unwelcome if ($sibling->status->reason('unwelcome') // '') =~ qr/Age verification is needed after first deposit/;
+            # clear withdrawal_locked set by check_name_changes_after_first_deposit event
+            $sibling->status->clear_withdrawal_locked
+                if ($sibling->status->reason('withdrawal_locked') // '') eq 'Excessive name changes after first deposit - pending POI';
         }
     }
 

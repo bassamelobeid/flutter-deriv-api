@@ -146,4 +146,34 @@ subtest 'VR age_verification for GB clients' => sub {
     $mocked_client->unmock_all();
 };
 
+subtest 'Name change after first deposit' => sub {
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+        email       => 'namechange@test.com',
+    });
+
+    BOM::User->create(
+        email    => $client->email,
+        password => 'test',
+    )->add_client($client);
+
+    $client->status->set('withdrawal_locked', 'system', 'Excessive name changes after first deposit - pending POI');
+    undef $client->{status};
+    $client->update_status_after_auth_fa();
+    undef $client->{status};
+    ok $client->status->withdrawal_locked, 'retain withdrawal_locked if not age verified';
+
+    $client->status->set('age_verification', 'system', 'testing');
+    undef $client->{status};
+    $client->update_status_after_auth_fa();
+    undef $client->{status};
+    ok !$client->status->withdrawal_locked, 'withdrawal_locked removed when age verified';
+
+    $client->status->set('withdrawal_locked', 'system', 'other reason');
+    undef $client->{status};
+    $client->update_status_after_auth_fa();
+    undef $client->{status};
+    ok $client->status->withdrawal_locked, 'retain withdrawal_locked for other reason';
+};
+
 done_testing();
