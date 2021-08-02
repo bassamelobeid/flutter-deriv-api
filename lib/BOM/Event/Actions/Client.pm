@@ -27,13 +27,14 @@ use Future::AsyncAwait;
 use Future::Utils qw(fmap0);
 use IO::Async::Loop;
 use JSON::MaybeUTF8 qw(decode_json_utf8 encode_json_utf8);
-use List::Util qw(any all first uniq none);
+use List::Util qw(any all first uniq none min);
 use Locale::Codes::Country qw(country_code2code);
 use Log::Any qw($log);
 use POSIX qw(strftime);
 use Syntax::Keyword::Try;
 use Template::AutoFilter;
 use Time::HiRes;
+use Text::Levenshtein::XS;
 use Array::Utils qw(intersect);
 use Scalar::Util qw(blessed);
 
@@ -2339,6 +2340,8 @@ async sub payment_deposit {
         }
     }
 
+    BOM::Platform::Event::Emitter::emit('check_name_changes_after_first_deposit', {loginid => $client->loginid});
+
     return BOM::Event::Services::Track::payment_deposit($args);
 }
 
@@ -3020,6 +3023,87 @@ sub trading_platform_investor_password_change_failed {
         loginid    => $args->{loginid},
         properties => $args->{properties},
     );
+}
+
+=head2 check_name_changes_after_first_deposit
+
+Called when name is changed or doughflow deposit occurs.
+Calculates a score for all name changes since first doughflow deposit.
+If score exceeds a threshold and lifetime doughflow deposits are above a threshold,
+withdrawal_locked is applied and an email sent to client.
+
+=cut
+
+sub check_name_changes_after_first_deposit {
+    my ($args) = @_;
+
+    my $loginid = $args->{loginid};
+
+    my $deposit_total    = 100;    # check is run when aggregate doughflow deposits equal or exceed this amount
+    my $change_threshold = 0.6;    # withdrawl lock is applied when name changes exceed this
+
+    my $client = BOM::User->get_client_using_replica($loginid);
+    return 1 if $client->get_poi_status eq 'verified';
+    return 1 if $client->status->withdrawal_locked;
+
+    my $changes = $client->db->dbic->run(
+        fixup => sub {
+            $_->selectall_arrayref('SELECT * FROM payment.name_changes_after_first_deposit(?, ?)', {Slice => {}}, $loginid, $deposit_total);
+        });
+
+    return unless @$changes;
+
+    my $total = 0;
+    for my $change (@$changes) {
+        my ($cur_first, $cur_last, $prev_first, $prev_last, $pg_userid) =
+            $change->@{qw/cur_first_name cur_last_name prev_first_name prev_last_name pg_userid/};
+
+        next unless $pg_userid eq 'system';    # exclude backoffice changes
+
+        # a small number of clients in our db have empty names - we won't count their first name change
+        next unless $prev_first and $prev_last;
+
+        my $normal_score = Text::Levenshtein::XS::distance($cur_first, $prev_first);
+        $normal_score += Text::Levenshtein::XS::distance($cur_last, $prev_last);
+        $normal_score = $normal_score / length($prev_first . $prev_last);
+
+        # compare the change with first name last name reversed
+        my $flipped_score = Text::Levenshtein::XS::distance($cur_first, $prev_last);
+        $flipped_score += Text::Levenshtein::XS::distance($cur_last, $prev_first);
+        $flipped_score = $flipped_score / length($prev_first . $prev_last);
+
+        $total += min($normal_score, $flipped_score);
+    }
+
+    if ($total > $change_threshold) {
+        my $brand = request->brand();
+        send_email({
+                from          => $brand->emails('no-reply'),
+                to            => $client->email,
+                subject       => localize('Account verification'),
+                template_name => 'authentication_required',
+                template_args => {
+                    l                  => \&localize,
+                    name               => $client->first_name,
+                    title              => localize('Account verification'),
+                    authentication_url => $brand->authentication_url,
+                    profile_url        => $brand->profile_url,
+                    is_name_change     => 1,
+                },
+                use_email_template    => 1,
+                email_content_is_html => 1,
+                use_event             => 0
+            });
+
+        # assumes that allow_document_upload is added in RPC get_account_status when withdrawal_locked is present
+        _set_all_sibling_status({
+            loginid => $loginid,
+            status  => 'withdrawal_locked',
+            message => 'Excessive name changes after first deposit - pending POI'
+        });
+    }
+
+    return 1;
 }
 
 1;
