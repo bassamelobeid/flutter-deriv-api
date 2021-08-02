@@ -23,7 +23,7 @@ use BOM::Platform::Context qw(request);
 use BOM::Platform::Context::Request;
 
 use Log::Any qw($log);
-use Log::Any::Adapter qw(Stdout), log_level => 'debug';
+use Log::Any::Adapter qw(DERIV), log_level => 'debug';
 
 my $send_emails  = 0;
 my $show_summary = 0;

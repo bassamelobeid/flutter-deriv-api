@@ -4,6 +4,7 @@ use warnings;
 
 use open qw[ :encoding(UTF-8) ];
 use BOM::Backoffice::Config;
+use Log::Any qw($log);
 
 #####################################################################
 # Purpose    : Save difference to difflog
@@ -29,13 +30,13 @@ sub save_difflog {
         print $data "=============================================================";
         print $data $diff;
         unless (close $data) {
-            warn("Error: cannot close $overridefilename.difflog after append $!");
+            $log->warn("Error: cannot close $overridefilename.difflog after append $!");
             return 0;
         }
 
         return 1;
     } else {
-        warn("Error: cannot open $overridefilename.difflog to append $!");
+        $log->warn("Error: cannot open $overridefilename.difflog to append $!");
         return 0;
     }
 
@@ -77,10 +78,10 @@ sub save_log_staff_difflog {
         print $data "=============================================================";
         print $data $diff;
         unless (close $data) {
-            warn("Error: cannot close $log_dir/$staff.difflog after append $!");
+            $log->warn("Error: cannot close $log_dir/$staff.difflog after append $!");
         }
     } else {
-        warn("Error: cannot open $log_dir/$staff.difflog to append $!");
+        $log->warn("Error: cannot open $log_dir/$staff.difflog to append $!");
     }
 
     return;
@@ -117,12 +118,11 @@ sub save_log_save_complete_log {
         print $data "=============================================================";
         print $data $diff;
         unless (close $data) {
-            warn("Error: cannot close $log after append $!");
+            $log->warn("Error: cannot close $log after append $!");
         }
     } else {
-        warn("Error: cannot open $log to append $!");
+        $log->warn("Error: cannot open $log to append $!");
     }
     return;
 }
-
 1;

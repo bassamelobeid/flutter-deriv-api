@@ -19,7 +19,7 @@ use Fcntl qw(:flock);
 use Sys::Info;
 use POSIX qw(floor);
 use Parallel::ForkManager;
-
+use Log::Any qw($log);
 # How many ticks to request at a time
 use constant TICK_CHUNK_SIZE => 86400;
 
@@ -127,7 +127,7 @@ sub run {
                             $fh->print(join(",", (map { $tick->{$_} } qw(epoch quote)), $ask_price, $value, $contract->theo_price) . "\n");
                         }
                     } catch ($e) {
-                        warn "Failed to price with parameters " . Dumper($args) . " - $e\n";
+                        $log->warnf("Failed to price with parameters %s - $e", $args);
                     }
                     if ($step_unit eq 't') {
                         $idx += $step_amount;
@@ -144,7 +144,7 @@ sub run {
         }
         $pm->wait_all_children;
     } catch ($e) {
-        warn "Failed to run - $e";
+        $log->warn("Failed to run - $e");
     }
     alarm(0);
     {

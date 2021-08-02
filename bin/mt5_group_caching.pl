@@ -23,7 +23,7 @@ use BOM::Config::Redis;
 use BOM::MT5::User::Async;
 
 use Log::Any qw($log);
-use Log::Any::Adapter ('Stderr', log_level => 'info');
+use Log::Any::Adapter ('DERIV', log_level => 'info');
 use DataDog::DogStatsd::Helper qw(stats_inc);
 
 use constant COOLDOWN => 1;

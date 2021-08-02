@@ -14,6 +14,7 @@ use CGI;
 use CGI::Util;
 use CGI::Cookie;
 use Syntax::Keyword::Try;
+use Log::Any qw($log);
 
 use BOM::Config::Runtime;
 use BOM::Backoffice::Request qw(request);
@@ -41,7 +42,7 @@ sub http_redirect {
             'Location'      => $new_url,
         );
     } catch ($e) {
-        $e =~ /too late to set a HTTP header/ and warn($e);
+        $e =~ /too late to set a HTTP header/ and $log->warn($e);
         die $e;
     }
     $http_handler->status(302);    #Moved
@@ -151,7 +152,7 @@ sub PrintContentType_JSON {
     try {
         $http_handler->print_header('Cache-control' => "private, no-cache, must-revalidate");
     } catch ($e) {
-        $e =~ /too late to set a HTTP header/ and warn($e);
+        $e =~ /too late to set a HTTP header/ and $log->warn($e);
         die $e;
     }
     $http_handler->status(200);

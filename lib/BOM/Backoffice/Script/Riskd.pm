@@ -12,7 +12,6 @@ use DataDog::DogStatsd::Helper qw(stats_gauge);
 use Syntax::Keyword::Try;
 
 use Log::Any qw($log);
-use Log::Any::Adapter ('Stderr', log_level => $ENV{RISKD_LOG_LEVEL} // 'info');
 
 use constant INTERVAL => 37;
 
@@ -45,7 +44,7 @@ sub run {
     local $SIG{__WARN__} = sub {
         my $msg = shift;
         if (!$old_msgs{$msg} && !$msgs{$msg}) {
-            CORE::warn "$msg\n";
+            $log->warn($msg);
         }
         $msgs{$msg} = 1;
     };

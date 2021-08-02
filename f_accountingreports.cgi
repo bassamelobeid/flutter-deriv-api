@@ -16,6 +16,7 @@ use BOM::Backoffice::Request qw(request);
 use BOM::MarketData::Types;
 use BOM::Config;
 use BOM::Backoffice::Sysinit ();
+use Log::Any qw($log);
 BOM::Backoffice::Sysinit::init();
 
 PrintContentType();
@@ -70,7 +71,7 @@ foreach my $pair (@$currency_pairs) {
     try {
         print "<li>" . $pair_name . " : " . $underlying_spot . "</li>";
     } catch ($e) {
-        warn "Failed to get exchange rate for $pair_name - $e\n";
+        $log->warn("Failed to get exchange rate for $pair_name - $e");
         print '<li>' . $pair_name . ': <span class="error">ERROR</span></li>';
     }
 
@@ -106,7 +107,7 @@ foreach my $currency_symbol (qw(AUD GBP EUR USD HKD)) {
             . $currency->rate_for(30 / 365) * 100
             . '%</td></tr>';
     } catch ($e) {
-        warn "Failed to get currency interest rates for $currency_symbol - $e\n";
+        $log->warn("Failed to get currency interest rates for $currency_symbol - $e");
         print '<tr><td>' . $currency_symbol . '</td><td colspan="2" class="error">ERROR</td></tr>';
     }
 }

@@ -14,7 +14,7 @@ use BOM::Database::ClientDB;
 use BOM::Config;
 use BOM::Platform::Email qw(send_email);
 use Log::Any qw($log);
-use Log::Any::Adapter;
+use Log::Any::Adapter qw(DERIV);
 
 =head2
 

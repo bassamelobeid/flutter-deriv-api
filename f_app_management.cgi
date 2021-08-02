@@ -17,7 +17,7 @@ use Binary::WebSocketAPI::v3::Instance::Redis qw| check_connections ws_redis_mas
 use JSON::MaybeUTF8;
 use Syntax::Keyword::Try;
 use Scalar::Util qw(looks_like_number);
-
+use Log::Any qw($log);
 use BOM::Backoffice::Sysinit ();
 
 BOM::Backoffice::Sysinit::init();
@@ -36,7 +36,7 @@ sub redis_push {
         sub {
             my ($redis, $err, $ids) = @_;
             if ($err) {
-                warn "Error reading blocked app IDs from Redis: $err\n";
+                $log->warn("Error reading blocked app IDs from Redis: $err");
                 return;
             }
             return 0 if $ids;
@@ -50,7 +50,7 @@ sub redis_push {
                 'app_id::blocked' => JSON::MaybeUTF8::encode_json_utf8(\%block_app_ids),
                 sub {
                     my ($redis, $err) = @_;
-                    warn "Redis error when recording blocked app_id - $err";
+                    $log->warn("Redis error when recording blocked app_id - $err");
                     return;
                 });
         });

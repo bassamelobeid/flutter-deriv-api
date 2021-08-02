@@ -6,8 +6,9 @@ use warnings;
 use Test::Exception;
 use Test::MockModule;
 use Test::More tests => 3;
-use Test::Warn;
 use Test::Warnings;
+use Log::Any::Test;
+use Log::Any qw($log);
 
 use BOM::User::Client;
 use Crypt::NamedKeys;
@@ -17,7 +18,6 @@ use BOM::DailySummaryReport;
 use BOM::Database::Helper::FinancialMarketBet;
 use BOM::User::Password;
 use BOM::Config::Runtime;
-
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
@@ -76,16 +76,15 @@ subtest 'skip if it dies' => sub {
         });
     lives_ok {
         my $total_pl;
-        warning_like {
-            $total_pl = BOM::DailySummaryReport->new(
-                for_date    => Date::Utility->new->date_yyyymmdd,
-                currencies  => ['USD'],
-                brokercodes => ['CR'],
-                broker_path => BOM::Config::Runtime->instance->app_config->system->directory->db . '/f_broker/',
-                save_file   => 0,
-            )->generate_report;
-        }
-        [qr/^bid price error/], "Expected warning is thrown";
+        $log->clear;
+        $total_pl = BOM::DailySummaryReport->new(
+            for_date    => Date::Utility->new->date_yyyymmdd,
+            currencies  => ['USD'],
+            brokercodes => ['CR'],
+            broker_path => BOM::Config::Runtime->instance->app_config->system->directory->db . '/f_broker/',
+            save_file   => 0,
+        )->generate_report;
+        $log->contains_ok(qr/^bid price error/, "Expected warning is thrown");
         cmp_ok $total_pl->{CR}->{USD}, '==', 0;
     }
     'skip if it dies';
@@ -122,16 +121,15 @@ subtest 'successful run' => sub {
 
     lives_ok {
         my $total_pl;
-        warning_like {
-            $total_pl = BOM::DailySummaryReport->new(
-                for_date    => $next_day->date_yyyymmdd,
-                currencies  => ['USD'],
-                brokercodes => ['CR'],
-                broker_path => BOM::Config::Runtime->instance->app_config->system->directory->db . '/f_broker/',
-                save_file   => 0,
-            )->generate_report;
-        }
-        [qr/^bid price error/], "Expected warning is thrown";
+        $log->clear;
+        $total_pl = BOM::DailySummaryReport->new(
+            for_date    => $next_day->date_yyyymmdd,
+            currencies  => ['USD'],
+            brokercodes => ['CR'],
+            broker_path => BOM::Config::Runtime->instance->app_config->system->directory->db . '/f_broker/',
+            save_file   => 0,
+        )->generate_report;
+        $log->contains_ok(qr/^bid price error/, "Expected warning is thrown");
         my @brokers = keys %$total_pl;
         ok @brokers, 'has element';
         cmp_ok scalar @brokers, '==', 1;

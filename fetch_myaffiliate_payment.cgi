@@ -7,6 +7,7 @@ no indirect;
 use Digest::MD5;
 use Path::Tiny;
 use Syntax::Keyword::Try;
+use Log::Any qw($log);
 use Fcntl qw/:flock O_RDWR O_CREAT/;
 use BOM::MyAffiliates::PaymentToAccountManager;
 use BOM::Config;
@@ -86,7 +87,7 @@ try {
 
     print "Fetch Myaffiliates payment triggered, info will be emailed soon to " . $brand->emails('affiliates');
 } catch ($error) {
-    warn "Error: $error";
+    $log->warn("Error: $error");
     $error =~ s/at .*$//;
     print "An error has occurred -- $error\n";
 }

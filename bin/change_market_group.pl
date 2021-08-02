@@ -16,6 +16,8 @@ use warnings;
 # This script does switching of market group at the specified time and at the same time remove expired quants related config.
 
 use BOM::Database::QuantsConfig;
+use Log::Any::Adapter 'DERIV';
+
 my $qc = BOM::Database::QuantsConfig->new;
 # switches market group to new market or reverting it to previous market
 $qc->switch_pending_market_group();

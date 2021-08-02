@@ -35,7 +35,6 @@ use BOM::Transaction;
 use BOM::Transaction::Utility;
 use List::Util qw(max);
 use Log::Any qw($log);
-use Log::Any::Adapter ('Stderr', log_level => $ENV{RISKD_LOG_LEVEL} // 'info');
 
 use constant SECONDS_PAST_CONTRACT_EXPIRY => 15;
 
@@ -165,13 +164,13 @@ sub check_open_bets {
                     my $body    = join "\n", @mail_content;
 
                     Email::Stuffer->from($from)->to($to)->subject($subject)->text_body($body)->send
-                        || warn "Sending email from $from to $to subject $subject failed";
+                        || $log->warn("Sending email from $from to $to subject $subject failed");
                 }
 
             });
     } catch ($e) {
         my $errmsg = ref $e ? $e->trace : $e;
-        warn('Updating realtime book transaction aborted while processing bet [' . $last_fmb_id . '] because ' . $errmsg);
+        $log->warn('Updating realtime book transaction aborted while processing bet [' . $last_fmb_id . '] because ' . $errmsg);
     }
 
     $self->cache_daily_turnover($pricing_date);
@@ -253,11 +252,8 @@ sub sell_expired_contracts {
                     push @error_lines, $bet_info;
                 }
             } catch ($e) {
-                warn "Failed to sell expired contracts for "
-                    . $client->loginid
-                    . " - IDs were "
-                    . join(',', @fmb_ids_to_be_sold)
-                    . " and error was $e\n";
+                $log->warnf("Failed to sell expired contracts for %s - IDs were %s and error was $e",
+                    $client->loginid, join(',', @fmb_ids_to_be_sold))
             }
         }
     }
@@ -291,7 +287,7 @@ sub sell_expired_contracts {
             my $from = '"Autosell" <autosell@regentmarkets.com>';
             my $to   = Brands->new(name => 'deriv')->emails('quants');
             Email::Stuffer->from($from)->to($to)->subject($subject)->text_body(join("\n", @msg) . "\n\n")->send
-                || warn "sending email from $from to $to subject $subject failed";
+                || $log->warn("sending email from $from to $to subject $subject failed");
         }
     }
 

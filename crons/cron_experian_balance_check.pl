@@ -16,6 +16,8 @@ use Mojo::UserAgent;
 use Mojo::UserAgent::CookieJar;
 use DataDog::DogStatsd::Helper qw(stats_inc);
 use constant THRESHOLD => 25000;
+use Log::Any qw($log);
+use Log::Any::Adapter 'DERIV';
 
 my $brand = Brands->new(name => 'binary');
 
@@ -31,8 +33,7 @@ try {
         BOM::Config::third_party()->{proveid}->{username},
         BOM::Config::third_party()->{proveid}->{password});
 } catch ($e) {
-
-    warn "An error occurred: $e";
+    $log->warn("An error occurred: $e");
 }
 
 unless ($used && $limit) {

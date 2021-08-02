@@ -1,6 +1,8 @@
 #!/usr/bin/env plackup
 use strict;
 use warnings;
+use Log::Any::Adapter 'DERIV', stderr => 'json';
+use Log::Any qw($log);
 
 use lib qw!/etc/perl
            /home/git/regentmarkets/bom/lib
@@ -11,5 +13,5 @@ use lib qw!/etc/perl
 use BOM::Backoffice::PlackApp;
 use Crypt::NamedKeys;
 Crypt::NamedKeys::keyfile '/etc/rmg/aes_keys.yml';
-
+$log->info("Service bom-backoffice is starting...");
 BOM::Backoffice::PlackApp::app("root"=>"/home/git/regentmarkets/bom-backoffice");

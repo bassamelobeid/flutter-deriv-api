@@ -17,7 +17,7 @@ use LandingCompany::Registry;
 use Finance::MIFIR::CONCAT qw(mifir_concat);
 use Format::Util::Numbers qw(financialrounding);
 use Scalar::Util qw(looks_like_number);
-
+use Log::Any qw($log);
 use f_brokerincludeall;
 
 use BOM::Config;
@@ -70,7 +70,7 @@ if (open my $mime_defs, '<', '/etc/mime.types') {
     $mts = Media::Type::Simple->new($mime_defs);
     close $mime_defs;
 } else {
-    warn "Can't open MIME types definition file: $!";
+    $log->warn("Can't open MIME types definition file: $!");
     $mts = Media::Type::Simple->new();
 }
 my $dbloc = BOM::Config::Runtime->instance->app_config->system->directory->db;
@@ -424,7 +424,7 @@ if ($input{whattodo} eq 'uploadID') {
                         unless $finish_upload_result == $file_id;
                 } catch ($e) {
                     $err = 'Document upload failed on finish';
-                    warn $err . $e;
+                    $log->warn($err . $e);
                 }
                 return Future->fail("Database Falure: " . $err) if $err;
                 BOM::Platform::Event::Emitter::emit(

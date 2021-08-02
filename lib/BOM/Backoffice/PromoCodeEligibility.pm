@@ -197,7 +197,7 @@ sub approve_all {
     my $subject = 'Promo code processing report for ' . Date::Utility->new->date;
 
     Email::Stuffer->from($from)->to($to)->subject($subject)->html_body($body)->send
-        || warn "Sending email from $from to $to subject $subject failed";
+        || $log->warn("Sending email from $from to $to subject $subject failed");
 
     return 0;
 }
@@ -309,7 +309,7 @@ sub active_promocodes {
             $config = $json->decode($code->{promo_code_config});
             $config->{country} = [split ',', $config->{country}];
         } catch ($e) {
-            warn 'Invalid config for promocode ' . $code->{code} . ': ' . $e;
+            $log->warn('Invalid config for promocode ' . $code->{code} . ': ' . $e);
             next;
         }
         $result{$code->{code}} = $code;
@@ -407,7 +407,7 @@ sub add_codes_to_clients {
                         code      => $code->{code}};
                 }
             } catch ($e) {
-                warn $e;
+                $log->warn($e);
             }
         }
     }

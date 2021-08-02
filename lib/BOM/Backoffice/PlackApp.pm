@@ -70,7 +70,7 @@ package BOM::Backoffice::PlackApp::Streaming;
 use strict;
 use warnings;
 use parent 'Plack::App::CGIBin::Streaming';
-
+use Log::Any qw($log);
 use Syntax::Keyword::Try;
 # The control flow is a bit difficult to understand here. Hence, ...
 # Plack::App::CGIBin::Streaming takes a script and compiles it into
@@ -103,7 +103,7 @@ sub mkapp {
             # overloads '""', like Mojo::Exception. In that case the
             # exception could also be handled in an intermediate stack
             # frame as if it were a normal string.
-            warn($e) unless ref($e);
+            $log->warn($e) unless ref($e);
 
             # in many cases the HTTP status seen by the client cannot
             # be changed anymore. But we still can set it for our own

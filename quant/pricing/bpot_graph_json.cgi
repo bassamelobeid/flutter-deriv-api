@@ -27,6 +27,7 @@ use BOM::Product::ContractFactory qw( produce_contract make_similar_contract );
 use Finance::Contract::Longcode qw( shortcode_to_parameters );
 use BOM::Backoffice::PlackHelpers qw( PrintContentType PrintContentType_JSON );
 use BOM::Backoffice::Sysinit ();
+use Log::Any qw($log);
 BOM::Backoffice::Sysinit::init();
 
 # to complete a multiplier contract, we need limit order
@@ -165,7 +166,7 @@ sub get_graph_data_for_others {
                 if ($attr !~ /probability/) {
                     # if it is not probability and it is not in pricing args, we should warn.
                     $amount = $expired ? 0 : $bet->_pricing_args->{$attr};
-                    warn "$attr is not defined in \$bet->_pricing_args" unless defined $amount;
+                    $log->warn("$attr is not defined in \$bet->_pricing_args") unless defined $amount;
                 } else {
                     next if not $bet->is_binary;
                     $amount = ($expired) ? $value : $bet->$attr->amount;

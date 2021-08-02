@@ -9,6 +9,7 @@ use List::MoreUtils qw( any );
 use Path::Tiny;
 use Plack::App::CGIBin::Streaming;
 use Time::HiRes ();
+use Log::Any qw($log);
 
 use BOM::Backoffice::Auth0;
 use BOM::Backoffice::Config;
@@ -18,7 +19,6 @@ use BOM::Backoffice::Request qw(request localize);
 use BOM::Backoffice::Request::Base;
 use BOM::Config::Chronicle;
 use BOM::Config;
-use Log::Any::Adapter qw(Stderr), log_level => 'info';
 
 my $permissions = {
     'f_broker_login.cgi'   => ['ALL'],
@@ -167,7 +167,7 @@ sub init {
         $SIG{ALRM} = sub {                            ## no critic (RequireLocalizedPunctuationVars)
             my $runtime = time - $^T;
 
-            warn("Panic timeout after $runtime seconds");
+            $log->warn("Panic timeout after $runtime seconds");
             _show_error_and_exit(
                 'The page has timed out. This may be due to a slow Internet connection, or to excess load on our servers.  Please try again in a few moments.'
             );
@@ -255,7 +255,7 @@ sub _show_error_and_exit {
     my $error   = shift;
     my $timenow = Date::Utility->new->datetime;
     my $staff   = BOM::Backoffice::Auth0::check_staff();
-    warn "_show_error_and_exit: $error (IP: " . request()->client_ip . '), user: ' . ($staff ? $staff->{nickname} : '-');
+    $log->warn("_show_error_and_exit: $error (IP: " . request()->client_ip . '), user: ' . ($staff ? $staff->{nickname} : '-'));
     # this can be duplicated for ALARM message, but not an issue
     PrintContentType();
     if ($staff) {

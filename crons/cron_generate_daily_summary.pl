@@ -9,6 +9,7 @@ BEGIN {
 use Getopt::Long;
 use Path::Tiny qw(path);
 use Text::CSV;
+use Log::Any::Adapter 'DERIV';
 
 use Date::Utility;
 

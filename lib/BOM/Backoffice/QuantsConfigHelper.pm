@@ -19,6 +19,7 @@ use BOM::Backoffice::QuantsAuditLog;
 use Time::Duration::Concise;
 use Scalar::Util qw(looks_like_number);
 use Data::Compare;
+use Log::Any qw($log);
 
 my $app_config = BOM::Config::Runtime->instance->app_config;
 $app_config->chronicle_writer(BOM::Config::Chronicle::get_chronicle_writer());
@@ -139,7 +140,7 @@ sub update_contract_group {
         }
         return {success => 1};
     } catch ($e) {
-        warn 'Exception thrown while updating contract group: ' . $e;
+        $log->warn('Exception thrown while updating contract group: ' . $e);
         return {error => 'Error while updating contract group'};
     }
 }
@@ -162,7 +163,7 @@ sub rebuild_aggregate_tables {
         }
         return {successful => 1};
     } catch ($e) {
-        warn 'Exception thrown while rebuilding aggregate tables: ' . $e;
+        $log->warn('Exception thrown while rebuilding aggregate tables: ' . $e);
         return {error => 'Error while rebuilding aggregate tables.'};
     }
 }
@@ -311,7 +312,7 @@ sub update_ultra_short {
         rebuild_aggregate_tables($duration->seconds());
         $output = {result => $duration->as_string()};
     } catch ($e) {
-        warn $e;
+        $log->warn($e);
         $output = {error => 'Failed to set the duration. Please check log.'}
     }
 
@@ -350,7 +351,7 @@ sub save_threshold {
         }
 
     } catch ($e) {
-        warn $e;
+        $log->warn($e);
         $output = {error => 'Failed setting threshold. Please check log.'}
     }
 
@@ -377,7 +378,7 @@ sub update_config_switch {
         $app_config->set({$key_name => $switch});
         $output = {status => $switch};
     } catch ($e) {
-        warn $e;
+        $log->warn($e);
         $output = {error => 'Failed to update config status. Please check log.'}
     }
 
@@ -462,7 +463,7 @@ sub update_market_group {
         BOM::Database::QuantsConfig->new->update_market_group($args);
         return {success => 1};
     } catch ($e) {
-        warn 'Exception thrown while updating market group: ' . $e;
+        $log->warn('Exception thrown while updating market group: ' . $e);
         return {error => 'Error while updating market group'};
     }
 }

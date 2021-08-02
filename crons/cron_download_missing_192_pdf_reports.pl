@@ -13,7 +13,8 @@ use BOM::User::Client;
 use Date::Utility;
 use Time::Duration::Concise::Localize;
 use DataDog::DogStatsd::Helper qw(stats_inc stats_event);
-
+use Log::Any qw($log);
+use Log::Any::Adapter 'DERIV';
 use constant HOURS_TO_QUERY => 4;    # This cron runs every hour, but we will pick up clients with `proveid_pending` status set 4 hours in the past.
 
 my $accounts_dir  = BOM::Config::Runtime->instance->app_config->system->directory->db . "/f_accounts";
@@ -31,7 +32,7 @@ for my $broker (qw(MX)) {
             )->proveid;
         } catch ($e) {
             stats_event('ProveID Failed', 'ProveID Failed, an email should have been sent', {alert_type => 'warning'});
-            warn "ProveID failed, $e";
+            $log->warn("ProveID failed, $e");
         }
     }
 }

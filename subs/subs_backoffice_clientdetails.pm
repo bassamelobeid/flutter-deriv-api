@@ -443,7 +443,7 @@ SQL
         $can_decode_secret_answer = 1;
     } catch ($e) {
         $can_decode_secret_answer = 0;
-        warn "ERROR: Login ID: " . $client->loginid . " - $e";
+        $log->warnf("ERROR: Login ID: %s - $e", $client->loginid);
     }
 
     # MARKETING SECTION

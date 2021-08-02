@@ -15,6 +15,7 @@ use BOM::Backoffice::Form;
 
 use f_brokerincludeall;
 use BOM::Backoffice::Sysinit ();
+use Log::Any qw($log);
 BOM::Backoffice::Sysinit::init();
 
 PrintContentType();
@@ -178,7 +179,7 @@ if (request()->http_method eq 'POST') {
         print "<p class=\"success\">Thank you. the client settings have been updated.</p>";
     } else {
         print "<p class=\"error\">Sorry, the client settings have not been updated, please try it again.</p>";
-        warn("Error: cannot write to self_exclusion table $!");
+        $log->warn("Error: cannot write to self_exclusion table $!");
     }
 }
 

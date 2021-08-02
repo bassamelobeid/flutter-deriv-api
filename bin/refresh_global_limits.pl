@@ -4,6 +4,7 @@ use strict;
 use warnings;
 
 use BOM::Database::QuantsConfig;
+use Log::Any::Adapter 'DERIV';
 
 my %multiplier = (
     global_potential_loss => 2,

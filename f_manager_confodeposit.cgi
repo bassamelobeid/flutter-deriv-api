@@ -8,7 +8,7 @@ use Scalar::Util qw(looks_like_number);
 use Path::Tiny;
 use Syntax::Keyword::Try;
 use HTML::Entities;
-
+use Log::Any qw($log);
 use LandingCompany::Registry;
 
 use f_brokerincludeall;
@@ -321,7 +321,7 @@ if ($ttype eq 'CREDIT' and $is_internal_payment) {
     try {
         $client->status->clear_pa_withdrawal_explicitly_allowed;
     } catch ($e) {
-        warn "Not able to unset payment agent explicity allowed flag for " . $client_pa_exp->loginid . ": $e";
+        $log->warn("Not able to unset payment agent explicity allowed flag for " . $client_pa_exp->loginid . ": $e");
     }
 }
 my $now = Date::Utility->new;

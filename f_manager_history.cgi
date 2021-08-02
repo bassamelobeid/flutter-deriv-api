@@ -16,6 +16,7 @@ use ExchangeRates::CurrencyConverter qw(in_usd);
 use Format::Util::Numbers qw(formatnumber);
 use Syntax::Keyword::Try;
 use LandingCompany::Registry;
+use Log::Any qw($log);
 
 use BOM::User::Client;
 use BOM::Platform::Locale;
@@ -110,7 +111,7 @@ if (defined $action && $action eq "gross_transactions") {
             $total_deposits    = formatnumber('amount', $currency, $total_deposits);
             $total_withdrawals = formatnumber('amount', $currency, $total_withdrawals);
         } catch ($e) {
-            warn "Error caught : $e\n";
+            $log->warn("Error caught : $e");
             print "<div class='error center'>Error: Unable to fetch total deposits/withdrawals </div>";
         }
     } else {

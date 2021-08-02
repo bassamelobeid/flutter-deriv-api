@@ -24,6 +24,7 @@ use BOM::User::AuditLog;
 use BOM::Backoffice::Config;
 use BOM::Backoffice::Sysinit ();
 use BOM::Config::Runtime;
+use Log::Any qw($log);
 BOM::Backoffice::Sysinit::init();
 
 PrintContentType();
@@ -230,7 +231,7 @@ read_csv_row_and_callback(
                 try {
                     $client->status->clear_pa_withdrawal_explicitly_allowed;
                 } catch {
-                    warn "Not able to unset payment agent explicity allowed flag for " . $client->loginid;
+                    $log->warn("Not able to unset payment agent explicity allowed flag for " . $client->loginid);
                 }
             }
             $row{remark} = sprintf "OK transaction reference id: %d", $trx->{id};

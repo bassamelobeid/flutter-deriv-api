@@ -6,6 +6,7 @@ use Date::Utility;
 use BOM::Config;
 use BOM::Platform::Email qw(send_email);
 use Path::Tiny 'path';
+use Log::Any::Adapter 'DERIV';
 
 =head2
 

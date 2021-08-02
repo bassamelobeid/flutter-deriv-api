@@ -31,6 +31,7 @@ use BOM::Backoffice::Utility qw( master_live_server_error);
 BOM::Backoffice::Sysinit::init();
 use BOM::Backoffice::Auth0;
 use BOM::Backoffice::QuantsAuditLog;
+use Log::Any qw($log);
 
 PrintContentType();
 
@@ -248,7 +249,7 @@ if (    -e $overridefilename
 
 #internal audit warnings
 if ($filen eq 'f_broker/promocodes.txt' and not BOM::Config::on_qa and $diff) {
-    warn("promocodes.txt EDITED BY $clerk");
+    $log->warn("promocodes.txt EDITED BY $clerk");
     my $brand = request()->brand;
     send_email({
             from    => $brand->emails('system'),
@@ -326,7 +327,7 @@ unless ($diff eq '0') {
     }
 }
 if ($message and not BOM::Config::on_qa) {
-    warn("FILECHANGED : File $filen edited by $clerk : $message");
+    $log->warn("FILECHANGED : File $filen edited by $clerk : $message");
 }
 
 code_exit_BO();

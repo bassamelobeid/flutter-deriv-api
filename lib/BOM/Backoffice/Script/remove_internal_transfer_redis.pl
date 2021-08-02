@@ -22,7 +22,7 @@ GetOptions(
 
 $log_level    ||= 'info';
 $dry_run_flag ||= 0;
-Log::Any::Adapter->import(qw(Stdout), log_level => $log_level);
+Log::Any::Adapter->import(qw(DERIV), log_level => $log_level);
 
 $log->infof("Start script with setings: %s , %s \n", $log_level, $dry_run_flag);
 
@@ -32,7 +32,7 @@ my $all_keys = $redis->keys('INTERNAL::TRANSFER::FIAT::CRYPTO::USER::*');
 
 sub show_all_keys {
 
-    warn "KEYS TO REMOVE: " . Dumper($all_keys);
+    $log->warnf("KEYS TO REMOVE: %s", $all_keys);
 
     return undef;
 }

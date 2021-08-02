@@ -5,7 +5,7 @@ use warnings;
 use BOM::Backoffice::PromoCodeEligibility;
 
 use Log::Any qw($log);
-use Log::Any::Adapter qw(Stderr), log_level => $ENV{BOM_LOG_LEVEL} // 'info';
+use Log::Any::Adapter qw(DERIV), log_level => $ENV{BOM_LOG_LEVEL} // 'info';
 
 =head2
 

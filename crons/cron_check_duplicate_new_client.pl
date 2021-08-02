@@ -2,6 +2,7 @@
 package main;
 use strict;
 use warnings;
+use Log::Any::Adapter 'DERIV';
 
 BEGIN {
     push @INC, "/home/git/regentmarkets/bom-backoffice/lib";

@@ -14,7 +14,6 @@ use BOM::Database::ClientDB;
 use Syntax::Keyword::Try;
 use Scalar::Util qw(looks_like_number);
 use Log::Any qw($log);
-use Log::Any::Adapter 'Stderr';
 use BOM::Backoffice::CGI::SettingWebsiteStatus qw/get_redis_keys get_statuses get_messages/;
 use BOM::Backoffice::CGI::SettingWebsiteStatus;
 

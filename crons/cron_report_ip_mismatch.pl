@@ -24,6 +24,7 @@ use BOM::Config::Redis;
 use BOM::User::Client;
 use BOM::User;
 use Cache::RedisDB;
+use Log::Any::Adapter 'DERIV';
 
 use BOM::Backoffice::Sysinit ();
 

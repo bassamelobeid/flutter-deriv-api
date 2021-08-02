@@ -17,7 +17,7 @@ key was set, we use that key to calculate the age of the key.
 use BOM::Config::Runtime;
 use BOM::DynamicSettings;
 use DataDog::DogStatsd::Helper qw(stats_timing);
-
+use Log::Any::Adapter 'DERIV';
 my $app_config          = BOM::Config::Runtime->instance->app_config;
 my @suspended_keys_list = BOM::DynamicSettings::get_settings_by_group('shutdown_suspend')->@*;
 

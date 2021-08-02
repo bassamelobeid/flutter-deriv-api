@@ -19,6 +19,7 @@ use JSON::MaybeUTF8 qw(encode_json_utf8);
 use BOM::Backoffice::EconomicEventTool;
 use LandingCompany::Registry;
 use Storable qw(dclone);
+use Log::Any qw($log);
 
 #News generation
 
@@ -102,12 +103,11 @@ sub update_economic_event_price_preview {
     my $args = shift;
     my $prices;
     my $news_info;
-
     try {
         ($prices, $news_info) = calculate_economic_event_prices($args)
     } catch ($e) {
         $prices = {error => 'Exception thrown while calculating prices: ' . $e};
-        warn $prices->{error};
+        $log->warn($prices->{error});
     }
 
     return $prices if $prices->{error};

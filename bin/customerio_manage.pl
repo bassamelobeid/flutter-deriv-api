@@ -20,6 +20,8 @@ use Path::Tiny qw(path);
 use Text::CSV;
 use Time::HiRes;
 use File::Basename;
+use Log::Any qw($log);
+use Log::Any::Adapter 'DERIV';
 
 use BOM::Config;
 
@@ -70,7 +72,7 @@ if ($chk_file) {
     }
 
     for my $error (grep { $results->{$_}->res->code != 200 and $results->{$_}->res->code != 404 } sort keys %$results) {
-        warn "Error checking $error: " . $results->{$error}->res->body . "\n";
+        $log->warnf("Error checking %s: %s", $error, $results->{$error}->res->body);
     }
     my ($name, $path, $suffix) = fileparse($chk_file, qr/\.[^.]*/);
     my $outfile = $path . $name . '_checked.csv';
@@ -99,7 +101,7 @@ if ($chk_file) {
     my $results = query_slowly(\%calls);
 
     for my $result (grep { $results->{$_}->res->code != 200 } sort keys %$results) {
-        warn "Failed to delete $result (" . $results->{$result}->res->code . ")";
+        $log->warnf("Failed to delete %s (%s)", $result, $results->{$result}->res->code);
     }
     my $success_count = scalar grep { $results->{$_}->res->code == 200 } keys %$results;
     print "$success_count/" . scalar(@clientids) . " Customer IO records deleted\n";
@@ -120,7 +122,7 @@ if ($chk_file) {
     my $results = query_slowly(\%calls);
 
     for my $result (grep { $results->{$_}->res->code != 200 } sort keys %$results) {
-        warn "Failed to update $result (" . $results->{$result}->res->code . ")";
+        $log->warnf("Failed to update %s (%s)", $result, $results->{$result}->res->code);
     }
     my $success_count = scalar grep { $results->{$_}->res->code == 200 } keys %$results;
     print "$success_count/" . scalar(keys %$restore_data) . " Customer IO records restored\n";

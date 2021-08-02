@@ -18,7 +18,7 @@ use namespace::autoclean;
 use List::MoreUtils qw(uniq);
 use List::Util qw(max);
 use Syntax::Keyword::Try;
-
+use Log::Any qw($log);
 use BOM::Config::Runtime;
 use BOM::Backoffice::Request;
 use BOM::MarketData qw(create_underlying);
@@ -255,7 +255,7 @@ sub _get_moneyness_surface {
             symbol  => $bet->underlying->symbol
         });
     } catch ($e) {
-        warn("caught error in _get_moneyness_surface: $e");
+        $log->warn("caught error in _get_moneyness_surface: $e");
     }
 
     my @unique_dates   = uniq(@$dates);
@@ -306,7 +306,7 @@ sub _get_volsurface {
             symbol  => $bet->underlying->symbol
         });
     } catch ($e) {
-        warn "Failed to fetch historical surface data (usually just a timeout): $e";
+        $log->warn("Failed to fetch historical surface data (usually just a timeout): $e");
     }
 
     # master vol surface
