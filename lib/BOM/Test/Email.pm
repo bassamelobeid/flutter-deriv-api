@@ -58,7 +58,7 @@ and as a side effect will clear the list.
 =cut
 
 sub mailbox_check_empty {
-    return is(0 + email_list(), 0, 'have no emails to start with');
+    return is(0 + email_list(), 0, shift // 'have no emails to start with');
 }
 
 =head2 mailbox_search
