@@ -165,9 +165,9 @@ sub to_app {    ## no critic (RequireArgUnpacking,Subroutines::RequireFinalRetur
         }
         'Auth::DoughFlow',
             header_name      => 'X-BOM-DoughFlow-Authorization',
-            secret_key       => 'N73X49dS6SmX9Tf4',
-            continue_on_fail => 1;                                 # allow to fallback to Basic
-                                                                   # fallback to Basic only DoughFlow failed
+            secret_key       => BOM::Config::paymentapi_config()->{secret},
+            continue_on_fail => 1;                                            # allow to fallback to Basic
+                                                                              # fallback to Basic only DoughFlow failed
         enable_if {
             $_[0]->{PATH_INFO} ne '/ping' and not $_[0]->{'X-DoughFlow-Authorization-Passed'};
         }

@@ -18,8 +18,9 @@ use HTTP::Headers;
 use HTTP::Request;
 use Digest::MD5 qw/md5_hex/;
 use Digest::SHA qw/sha256_hex/;
-use Data::Dumper;
 use MIME::Base64;
+
+use BOM::Config;
 
 if ($ENV{SKIP_TESTDB_INIT}) {
     ok(1, 'Note: Continuing with unchanged Test Database');
@@ -72,7 +73,7 @@ sub request {
 
 sub __df_auth_header {
     my $time = time();
-    my $hash = md5_hex($time . 'N73X49dS6SmX9Tf4');
+    my $hash = md5_hex($time . BOM::Config::paymentapi_config->{secret});
     $hash = substr($hash, length($hash) - 10, 10);
     return join(':', $time, $hash);
 }
