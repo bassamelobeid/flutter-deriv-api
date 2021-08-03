@@ -48,6 +48,7 @@ ok BOM::Config::mt5_account_types(),                'mt5_account_types';
 ok BOM::Config::mt5_webapi_config(),                'mt5_webapi_config';
 ok BOM::Config::onfido_supported_documents(),       'onfido_supported_documents';
 ok BOM::Config::redis_payment_config(),             'redis_payment_config';
+ok BOM::Config::paymentapi_config(),                'paymentapi_config';
 ok !BOM::Config::on_production(),                   'not on_production';
 ok BOM::Config::on_qa() || BOM::Config::on_ci(), 'on_qa or on_ci';
 

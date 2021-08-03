@@ -292,4 +292,17 @@ sub qa_config {
     return $config;
 }
 
+=head2 paymentapi_config
+
+Loads and caches configuration for PaymentAPI
+
+Returns the loaded config
+
+=cut
+
+sub paymentapi_config {
+    state $config = YAML::XS::LoadFile('/etc/rmg/paymentapi.yml');
+    return $config;
+}
+
 1;
