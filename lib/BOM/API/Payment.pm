@@ -189,9 +189,9 @@ sub to_app {    ## no critic (RequireArgUnpacking,Subroutines::RequireFinalRetur
                 if (not $client_loginid and $content_type and $content_type =~ 'xml') {
                     $xs = XML::Simple->new(ForceArray => 0);
                     if ($req->content) {
-                        my $data;
+                        my $data = {};
                         try {
-                            $xs->XMLin($req->content);
+                            $data = $xs->XMLin($req->content);
                         } catch ($error) {
                             return [422, [], ['Unprocessable entity']];
                         }
