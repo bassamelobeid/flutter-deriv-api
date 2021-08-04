@@ -166,7 +166,7 @@ lives_ok {
 is(scalar(keys %{$bets}), 33, 'check all sell bets count for CR');
 
 subtest get_daily_summary_report => sub {
-    plan tests => 3;
+    plan tests => 4;
 
     my $client_ref = BOM::Database::DataMapper::Transaction->new({
             broker_code => 'CR',
@@ -203,6 +203,25 @@ subtest get_daily_summary_report => sub {
             'loginid'     => 'CR0021',
             'balance_at'  => '1505.0000',
             'account_id'  => '200359'
+        });
+
+    $client_ref = BOM::Database::DataMapper::Transaction->new({
+            broker_code => 'CR',
+        }
+    )->get_daily_summary_report({
+        currency_code     => 'USD',
+        broker_code       => 'CR',
+        start_of_next_day => '2009-09-11',
+    });
+
+    is_deeply(
+        $client_ref->{'CR0026'},
+        {
+            'deposits'    => '300.0000',
+            'withdrawals' => '0',
+            'loginid'     => 'CR0026',
+            'balance_at'  => '300.0000',
+            'account_id'  => '200319'
         });
 };
 

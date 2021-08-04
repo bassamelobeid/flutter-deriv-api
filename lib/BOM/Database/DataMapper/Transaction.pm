@@ -81,7 +81,30 @@ sub get_daily_summary_report {
             FROM
                 payment.payment
             WHERE
-                payment_time < $3::date
+                payment_time < $3::date::timestamp
+/*
+There have been cases where a transaction_time was in one month and a payment_time in another month by only ms
+ amount |    payment_time     |      transaction_time      | payment_id | client_loginid 
+--------+---------------------+----------------------------+------------+----------------
+  -5.00 | 2021-07-01 00:00:00 | 2021-06-30 23:59:59.533795 |  854554581 | CR1018706
+
+In a case like that, the payment is not picked up for June EOM,
+but Metabase doesn't use payment_time, but rather transaction_time... and oh the raucus caused in Accounting recon when that happens.
+
+So here, we hack in a look for a payment that matches that condition by considering the last minute of txns and pulling in the associated payment even if it falls in the next month.
+
+In production CR, this condition doesn't really change the execution time of this subquery which is currently between 50 & 60s
+
+Someday we'll get rid of this legacy code boat anchor...
+*/
+               OR id IN (
+                    SELECT p.id
+                    FROM payment.payment p
+                    JOIN transaction.transaction t
+                         ON  t.payment_id=p.id
+                         AND t.transaction_time > $3::date::timestamp - INTERVAL '1m'
+                         AND t.transaction_time < $3::date::timestamp
+                   )
             GROUP BY
                 account_id
         ) payment_table ON (payment_table.account_id=a.id)
