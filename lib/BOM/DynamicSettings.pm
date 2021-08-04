@@ -333,8 +333,12 @@ sub get_settings_by_group {
                 payments.transfer_between_accounts.fees.default.fiat_fiat
                 payments.transfer_between_accounts.fees.default.fiat_crypto
                 payments.transfer_between_accounts.fees.default.fiat_stable
+                payments.transfer_between_accounts.fees.default.crypto_crypto
                 payments.transfer_between_accounts.fees.default.crypto_fiat
+                payments.transfer_between_accounts.fees.default.crypto_stable
+                payments.transfer_between_accounts.fees.default.stable_crypto
                 payments.transfer_between_accounts.fees.default.stable_fiat
+                payments.transfer_between_accounts.fees.default.stable_stable
                 payments.transfer_between_accounts.fees.by_currency
                 payments.p2p.enabled
                 payments.p2p.available

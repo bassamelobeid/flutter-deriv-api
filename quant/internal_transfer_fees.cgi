@@ -21,17 +21,24 @@ BrokerPresentation('INTERNAL TRANSFER FEES');
 my @all_currencies = LandingCompany::Registry::all_currencies();
 my $app_config     = BOM::Config::Runtime->instance->app_config();
 my $config         = $app_config->get([
-    'payments.transfer_between_accounts.fees.default.fiat_fiat',   'payments.transfer_between_accounts.fees.default.fiat_crypto',
-    'payments.transfer_between_accounts.fees.default.fiat_stable', 'payments.transfer_between_accounts.fees.default.crypto_fiat',
-    'payments.transfer_between_accounts.fees.default.stable_fiat', 'payments.transfer_between_accounts.fees.by_currency'
+    'payments.transfer_between_accounts.fees.default.fiat_fiat',     'payments.transfer_between_accounts.fees.default.fiat_crypto',
+    'payments.transfer_between_accounts.fees.default.fiat_stable',   'payments.transfer_between_accounts.fees.default.crypto_fiat',
+    'payments.transfer_between_accounts.fees.default.stable_fiat',   'payments.transfer_between_accounts.fees.by_currency',
+    'payments.transfer_between_accounts.fees.default.crypto_crypto', 'payments.transfer_between_accounts.fees.default.crypto_stable',
+    'payments.transfer_between_accounts.fees.default.stable_crypto', 'payments.transfer_between_accounts.fees.default.stable_stable'
 ]);
 
 my $fee_by_currency = $config->{'payments.transfer_between_accounts.fees.by_currency'};
 my $fiat_fiat       = $config->{'payments.transfer_between_accounts.fees.default.fiat_fiat'};
 my $fiat_crypto     = $config->{'payments.transfer_between_accounts.fees.default.fiat_crypto'};
 my $fiat_stable     = $config->{'payments.transfer_between_accounts.fees.default.fiat_stable'};
+my $crypto_crypto   = $config->{'payments.transfer_between_accounts.fees.default.crypto_crypto'};
 my $crypto_fiat     = $config->{'payments.transfer_between_accounts.fees.default.crypto_fiat'};
+my $crypto_stable   = $config->{'payments.transfer_between_accounts.fees.default.crypto_stable'};
+my $stable_stable   = $config->{'payments.transfer_between_accounts.fees.default.stable_stable'};
 my $stable_fiat     = $config->{'payments.transfer_between_accounts.fees.default.stable_fiat'};
+my $stable_crypto   = $config->{'payments.transfer_between_accounts.fees.default.stable_crypto'};
+
 $fee_by_currency =~ s/\s//g;    #remove line feeds for backward compatibility
 
 my (@fiat, @crypto, @stable);
@@ -70,20 +77,32 @@ if ($submit) {
         or $fiat_crypto != request()->param('fiat_crypto')
         or $fiat_stable != request()->param('fiat_stable')
         or $crypto_fiat != request()->param('crypto_fiat')
-        or $stable_fiat != request()->param('stable_fiat'))
+        or $stable_fiat != request()->param('stable_fiat')
+        or $crypto_crypto != request()->param('crypto_crypto')
+        or $crypto_stable != request()->param('crypto_stable')
+        or $stable_crypto != request()->param('stable_crypto')
+        or $stable_stable != request()->param('stable_stable'))
     {
-        $fiat_fiat   = request()->param('fiat_fiat');
-        $fiat_crypto = request()->param('fiat_crypto');
-        $fiat_stable = request()->param('fiat_stable');
-        $crypto_fiat = request()->param('crypto_fiat');
-        $stable_fiat = request()->param('stable_fiat');
+        $fiat_fiat     = request()->param('fiat_fiat');
+        $fiat_crypto   = request()->param('fiat_crypto');
+        $fiat_stable   = request()->param('fiat_stable');
+        $crypto_crypto = request()->param('crypto_crypto');
+        $crypto_fiat   = request()->param('crypto_fiat');
+        $crypto_stable = request()->param('crypto_stable');
+        $stable_fiat   = request()->param('stable_fiat');
+        $stable_crypto = request()->param('stable_crypto');
+        $stable_stable = request()->param('stable_stable');
 
         $app_config->set({
-            'payments.transfer_between_accounts.fees.default.fiat_fiat'   => $fiat_fiat,
-            'payments.transfer_between_accounts.fees.default.fiat_crypto' => $fiat_crypto,
-            'payments.transfer_between_accounts.fees.default.fiat_stable' => $fiat_stable,
-            'payments.transfer_between_accounts.fees.default.crypto_fiat' => $crypto_fiat,
-            'payments.transfer_between_accounts.fees.default.stable_fiat' => $stable_fiat
+            'payments.transfer_between_accounts.fees.default.fiat_fiat'     => $fiat_fiat,
+            'payments.transfer_between_accounts.fees.default.fiat_crypto'   => $fiat_crypto,
+            'payments.transfer_between_accounts.fees.default.fiat_stable'   => $fiat_stable,
+            'payments.transfer_between_accounts.fees.default.crypto_crypto' => $crypto_crypto,
+            'payments.transfer_between_accounts.fees.default.crypto_fiat'   => $crypto_fiat,
+            'payments.transfer_between_accounts.fees.default.crypto_stable' => $crypto_stable,
+            'payments.transfer_between_accounts.fees.default.stable_fiat'   => $stable_fiat,
+            'payments.transfer_between_accounts.fees.default.stable_crypto' => $stable_crypto,
+            'payments.transfer_between_accounts.fees.default.stable_stable' => $stable_stable
         });
         $defaults_msg = "<p class='success'><strong>SUCCESS: Default transfer fees saved.</strong></p>";
     }
@@ -103,12 +122,15 @@ BOM::Backoffice::Request::template()->process(
         fiat_fiat         => $fiat_fiat,
         fiat_crypto       => $fiat_crypto,
         fiat_stable       => $fiat_stable,
+        crypto_crypto     => $crypto_crypto,
         crypto_fiat       => $crypto_fiat,
+        crypto_stable     => $crypto_stable,
+        stable_crypto     => $stable_crypto,
         stable_fiat       => $stable_fiat,
+        stable_stable     => $stable_stable,
         fee_by_currency   => $fee_by_currency,
         max_percent       => $max_fee_percent,
         disabled          => $disabled_write,
     });
 
 code_exit_BO();
-

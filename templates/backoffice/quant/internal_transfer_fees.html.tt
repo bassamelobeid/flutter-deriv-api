@@ -4,13 +4,17 @@
 let _fiat_currencies   = [ [% fiat_currencies %] ];
 let _crypto_currencies = [ [% crypto_currencies %] ];
 let _stable_currencies = [ [% stable_currencies %] ];
-let _fiat_fiat = [% fiat_fiat %];
-let _fiat_crypto = [% fiat_crypto %];
-let _fiat_stable = [% fiat_stable %];
-let _crypto_fiat = [% crypto_fiat %];
-let _stable_fiat = [% stable_fiat %];
-let _fee_by_currency = JSON.parse('[% fee_by_currency %]'.replace(/&quot;/g, '"'));
-let _max_percent = [% max_percent %];
+let _fiat_fiat         = [% fiat_fiat %];
+let _fiat_crypto       = [% fiat_crypto %];
+let _fiat_stable       = [% fiat_stable %];
+let _crypto_crypto     = [% crypto_crypto %];
+let _crypto_fiat       = [% crypto_fiat %];
+let _crypto_stable     = [% crypto_stable %];
+let _stable_crypto     = [% stable_crypto %];
+let _stable_fiat       = [% stable_fiat %];
+let _stable_stable     = [% stable_stable %];
+let _fee_by_currency   = JSON.parse('[% fee_by_currency %]'.replace(/&quot;/g, '"'));
+let _max_percent       = [% max_percent %];
 
 
 let _all_currencies = _fiat_currencies.concat(_crypto_currencies).concat(_stable_currencies).sort();
@@ -57,10 +61,14 @@ function validate_input(){
     document.getElementById("currency_msg").innerHTML = '';
     document.getElementById("default_msg").innerHTML = '';
     let default_valid = validate_fee(document.getElementById("fiat_fiat").value, "fiat-fiat") &&
-    validate_fee(document.getElementById("fiat_crypto").value, "fiat-crypto") &&
-    validate_fee(document.getElementById("fiat_stable").value, "fiat-stable") &&
-    validate_fee(document.getElementById("crypto_fiat").value, "crypto_fiat") &&
-    validate_fee(document.getElementById("stable_fiat").value, "stable_fiat");
+    validate_fee(document.getElementById("fiat_crypto").value,   "fiat-crypto")   &&
+    validate_fee(document.getElementById("fiat_stable").value,   "fiat-stable")   &&
+    validate_fee(document.getElementById("crypto_crypto").value, "crypto-crypto") &&
+    validate_fee(document.getElementById("crypto_fiat").value,   "crypto-fiat")   &&
+    validate_fee(document.getElementById("crypto_stable").value, "crypto-stable") &&
+    validate_fee(document.getElementById("stable_crypto").value, "stable-crypto") &&
+    validate_fee(document.getElementById("stable_fiat").value,   "stable-fiat")   &&
+    validate_fee(document.getElementById("stable_stable").value, "stable-stable");
 
     if (!default_valid)
         return false;
@@ -199,11 +207,15 @@ function initialize_values(){
     document.getElementById("first_currency").selectedIndex = "0";
     document.getElementById("second_currency").selectedIndex = "0";
 
-    document.getElementById("fiat_fiat").value = _fiat_fiat;
-    document.getElementById("fiat_crypto").value = _fiat_crypto;
-    document.getElementById("fiat_stable").value = _fiat_stable;
-    document.getElementById("crypto_fiat").value = _crypto_fiat;
-    document.getElementById("stable_fiat").value = _stable_fiat;
+    document.getElementById("fiat_fiat").value     = _fiat_fiat;
+    document.getElementById("fiat_crypto").value   = _fiat_crypto;
+    document.getElementById("fiat_stable").value   = _fiat_stable;
+    document.getElementById("crypto_crypto").value = _crypto_crypto;
+    document.getElementById("crypto_fiat").value   = _crypto_fiat;
+    document.getElementById("crypto_stable").value = _crypto_stable;
+    document.getElementById("stable_crypto").value = _stable_crypto;
+    document.getElementById("stable_fiat").value   = _stable_fiat;
+    document.getElementById("stable_stable").value = _stable_stable;
 };
 
 window.onload = initialize_values;
@@ -218,8 +230,12 @@ window.onload = initialize_values;
 	<tr><td>fiat-fiat: </td><td><input type="text" size="10" name="fiat_fiat" id="fiat_fiat" data-lpignore="true" /> % </td></tr>
 	<tr><td>fiat-crypto: </td><td><input type="text" size="10" name="fiat_crypto" id="fiat_crypto" data-lpignore="true" /> % </td></tr>
 	<tr><td>fiat-stable: </td><td><input type="text" size="10" name="fiat_stable" id="fiat_stable" data-lpignore="true" /> % </td></tr>
-	<tr><td>crypto_fiat: </td><td><input type="text" size="10" name="crypto_fiat" id="crypto_fiat" data-lpignore="true" /> % </td></tr>
-	<tr><td>stable_fiat: </td><td><input type="text" size="10" name="stable_fiat" id="stable_fiat" data-lpignore="true" /> % </td></tr>
+    <tr><td>crypto-crypto: </td><td><input type="text" size="10" name="crypto_crypto" id="crypto_crypto" data-lpignore="true" /> % </td></tr>
+	<tr><td>crypto-fiat: </td><td><input type="text" size="10" name="crypto_fiat" id="crypto_fiat" data-lpignore="true" /> % </td></tr>
+    <tr><td>crypto-stable: </td><td><input type="text" size="10" name="crypto_stable" id="crypto_stable" data-lpignore="true" /> % </td></tr>
+    <tr><td>stable-crypto: </td><td><input type="text" size="10" name="stable_crypto" id="stable_crypto" data-lpignore="true" /> % </td></tr>
+	<tr><td>stable-fiat: </td><td><input type="text" size="10" name="stable_fiat" id="stable_fiat" data-lpignore="true" /> % </td></tr>
+    <tr><td>stable-stable: </td><td><input type="text" size="10" name="stable_stable" id="stable_stable" data-lpignore="true" /> % </td></tr>
 </table>
 <hr>
 <p><strong>BY CURRENCY</strong> <i>(The non-default transfer fees per currency pair overriding the default values)</i></p>
