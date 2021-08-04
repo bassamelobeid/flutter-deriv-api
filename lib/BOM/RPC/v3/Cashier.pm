@@ -1851,25 +1851,30 @@ sub _validate_transfer_between_accounts {
         and ($from_currency_type eq 'fiat')
         and ($currency ne $to_currency));
 
-    return _transfer_between_accounts_error(localize('Transfers between fiat and crypto accounts are currently unavailable. Please try again later.'))
+    return _transfer_between_accounts_error(localize('Transfers between accounts are currently unavailable. Please try again later.'))
         if BOM::Config::Runtime->instance->app_config->system->suspend->transfer_between_accounts
         and (($from_currency_type // '') ne ($to_currency_type // ''));
 
-    # we don't allow crypto to crypto transfer
-    return _transfer_between_accounts_error(localize('Account transfers are not available within accounts with cryptocurrency as default currency.'))
-        if (($from_currency_type eq $to_currency_type)
-        and ($from_currency_type eq 'crypto'));
-
-    # check for exchange rates offer
-    my $crypto_currency = $from_currency_type eq 'crypto' ? $from_currency : $to_currency;
-    unless ($from_currency eq $to_currency || offer_to_clients($crypto_currency)) {
-        stats_event(
-            'Exchange Rates Issue - No offering to clients',
-            'Please inform Quants and Backend Teams to check the exchange_rates for the currency.',
-            {
-                alert_type => 'warning',
-                tags       => ['currency:' . $crypto_currency . '_USD']});
-        return _transfer_between_accounts_error(localize('Sorry, transfers are currently unavailable. Please try again later.'));
+    # check for exchange rates offer for the cryptocurrencies
+    unless ($from_currency eq $to_currency) {
+        if ($from_currency_type eq 'crypto' && !offer_to_clients($from_currency)) {
+            stats_event(
+                'Exchange Rates Issue - No offering to clients',
+                'Please inform Quants and Backend Teams to check the exchange_rates for the currency.',
+                {
+                    alert_type => 'warning',
+                    tags       => ['currency:' . $from_currency . '_USD']});
+            return _transfer_between_accounts_error(localize('Sorry, transfers are currently unavailable. Please try again later.'));
+        }
+        if ($to_currency_type eq 'crypto' && !offer_to_clients($to_currency)) {
+            stats_event(
+                'Exchange Rates Issue - No offering to clients',
+                'Please inform Quants and Backend Teams to check the exchange_rates for the currency.',
+                {
+                    alert_type => 'warning',
+                    tags       => ['currency:' . $to_currency . '_USD']});
+            return _transfer_between_accounts_error(localize('Sorry, transfers are currently unavailable. Please try again later.'));
+        }
     }
 
     return _transfer_between_accounts_error(localize("Transfers are not allowed for these accounts."))

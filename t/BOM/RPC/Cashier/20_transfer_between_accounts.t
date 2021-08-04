@@ -42,7 +42,7 @@ sub _offer_to_clients {
 
     $redis->hmset("exchange_rates::${from_currency}_${to_currency}", offer_to_clients => $value);
 }
-_offer_to_clients(1, $_) for qw/BTC USD ETH UST EUR/;
+_offer_to_clients(1, $_) for qw/BTC LTC USDC USD ETH UST EUR/;
 
 # In the weekend the account transfers will be suspended. So we mock a valid day here
 set_absolute_time(Date::Utility->new('2018-02-15')->epoch);
@@ -103,13 +103,16 @@ my (
 
 my $btc_usd_rate = 4000;
 my $custom_rates = {
-    'BTC' => $btc_usd_rate,
-    'UST' => 1,
-    'USD' => 1,
-    'EUR' => 1.1888,
-    'GBP' => 1.3333,
-    'JPY' => 0.0089,
-    'AUD' => 1,
+    'BTC'  => $btc_usd_rate,
+    'LTC'  => 1000,
+    'ETH'  => 1000,
+    'USDC' => 1,
+    'UST'  => 1,
+    'USD'  => 1,
+    'EUR'  => 1.1888,
+    'GBP'  => 1.3333,
+    'JPY'  => 0.0089,
+    'AUD'  => 1,
 };
 populate_exchange_rates();
 populate_exchange_rates($custom_rates);
@@ -350,10 +353,6 @@ subtest 'validation' => sub {
         'Correct error message for amount with decimal places more than allowed per currency';
 
     $params->{args}->{amount} = 0.02;
-    $result = $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->result;
-    is $result->{error}->{code}, 'TransferBetweenAccountsError', 'Correct error code crypto to crypto';
-    is $result->{error}->{message_to_client}, 'Account transfers are not available within accounts with cryptocurrency as default currency.',
-        'Correct error message for crypto to crypto';
 
     # min/max should be calculated for transfer between different currency (fiat to crypto and vice versa)
     $client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
@@ -466,6 +465,287 @@ subtest 'validation' => sub {
         qr/This amount is too low. Please enter a minimum of $elevated_minimum USD./,
         'A different error message containing the elevated (lower bound) minimum value included.';
     $mock_fees->unmock_all;
+};
+
+subtest 'transfer_between_crypto_to_crypto_accounts' => sub {
+    my $email = 'dummy_2' . rand(999) . '@binary.com';
+
+    my $user = BOM::User->create(
+        email          => $email,
+        password       => BOM::User::Password::hashpw('jskjd8292922'),
+        email_verified => 1,
+    );
+
+    my $client_cr_btc = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code    => 'CR',
+        email          => $email,
+        place_of_birth => 'id'
+    });
+
+    my $client_cr_eth = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code    => 'CR',
+        email          => $email,
+        place_of_birth => 'id'
+    });
+
+    my $client_cr_ltc = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code    => 'CR',
+        email          => $email,
+        place_of_birth => 'id'
+    });
+
+    my $client_cr_usdc = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code    => 'CR',
+        email          => $email,
+        place_of_birth => 'id'
+    });
+
+    my $client_cr_ust = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code    => 'CR',
+        email          => $email,
+        place_of_birth => 'id'
+    });
+
+    $client_cr_btc->set_default_account('BTC');
+    $client_cr_eth->set_default_account('ETH');
+    $client_cr_ltc->set_default_account('LTC');
+    $client_cr_usdc->set_default_account('USDC');
+    $client_cr_ust->set_default_account('UST');
+
+    $user->add_client($client_cr_btc);
+    $user->add_client($client_cr_eth);
+    $user->add_client($client_cr_ltc);
+    $user->add_client($client_cr_usdc);
+    $user->add_client($client_cr_ust);
+
+    my $api_token_btc  = BOM::Platform::Token::API->new->create_token($client_cr_btc->loginid,  _get_unique_display_name());
+    my $api_token_eth  = BOM::Platform::Token::API->new->create_token($client_cr_eth->loginid,  _get_unique_display_name());
+    my $api_token_usdc = BOM::Platform::Token::API->new->create_token($client_cr_usdc->loginid, _get_unique_display_name());
+
+    my $params = {
+        token_type => 'oauth_token',
+    };
+
+    subtest 'crypto to crypto' => sub {
+        $client_cr_eth->payment_free_gift(
+            currency => 'ETH',
+            amount   => 1,
+            remark   => 'free gift',
+        );
+
+        $params->{token} = $api_token_eth;
+        $params->{args}  = {
+            account_from => $client_cr_eth->loginid,
+            account_to   => $client_cr_ltc->loginid,
+            amount       => 0.1,
+            currency     => 'ETH'
+        };
+
+        my $expected_result = {
+            'client_to_loginid'   => $client_cr_ltc->loginid,
+            'client_to_full_name' => $client_cr_ltc->full_name,
+            'accounts'            => bag({
+                    'account_type' => 'trading',
+                    'loginid'      => $client_cr_ltc->loginid,
+                    'balance'      => ignore(),
+                    'currency'     => 'LTC'
+                },
+                {
+                    'currency'     => 'ETH',
+                    'balance'      => ignore(),
+                    'loginid'      => $client_cr_eth->loginid,
+                    'account_type' => 'trading'
+                }
+            ),
+            'stash'          => ignore(),
+            'status'         => 1,
+            'transaction_id' => ignore(),
+        };
+
+        my $result = $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->result;
+
+        cmp_deeply $result, $expected_result, 'Result structure is fine for crypto to crypto transfer';
+
+        cmp_deeply(
+            _get_transaction_details($client_cr_eth, $result->{transaction_id}),
+            {
+                from_login                => $client_cr_eth->loginid,
+                to_login                  => $client_cr_ltc->loginid,
+                fees                      => num(0.002),
+                fee_calculated_by_percent => num(0.002),
+                fees_currency             => 'ETH',
+                fees_percent              => num(2),
+                min_fee                   => num(0.00000001),
+            },
+            'metadata saved correctly in transaction_details table for crypto to crypto transfer'
+        );
+    };
+
+    subtest 'crypto to stable' => sub {
+
+        $client_cr_btc->payment_free_gift(
+            currency => 'BTC',
+            amount   => 1,
+            remark   => 'free gift',
+        );
+
+        $params->{token} = $api_token_btc;
+        $params->{args}  = {
+            account_from => $client_cr_btc->loginid,
+            account_to   => $client_cr_usdc->loginid,
+            amount       => 0.1,
+            currency     => 'BTC'
+        };
+
+        my $expected_result = {
+            'client_to_loginid'   => $client_cr_usdc->loginid,
+            'client_to_full_name' => $client_cr_usdc->full_name,
+            'accounts'            => bag({
+                    'account_type' => 'trading',
+                    'loginid'      => $client_cr_usdc->loginid,
+                    'balance'      => ignore(),
+                    'currency'     => 'USDC'
+                },
+                {
+                    'currency'     => 'BTC',
+                    'balance'      => ignore(),
+                    'loginid'      => $client_cr_btc->loginid,
+                    'account_type' => 'trading'
+                }
+            ),
+            'stash'          => ignore(),
+            'status'         => 1,
+            'transaction_id' => ignore(),
+        };
+
+        my $result = $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->result;
+
+        cmp_deeply $result, $expected_result, 'Result structure is fine for crypto to stable transfer';
+
+        cmp_deeply(
+            _get_transaction_details($client_cr_btc, $result->{transaction_id}),
+            {
+                from_login                => $client_cr_btc->loginid,
+                to_login                  => $client_cr_usdc->loginid,
+                fees                      => num(0.002),
+                fee_calculated_by_percent => num(0.002),
+                fees_currency             => 'BTC',
+                fees_percent              => num(2),
+                min_fee                   => num(0.00000001),
+            },
+            'metadata saved correctly in transaction_details table for crypto to stable transfer'
+        );
+    };
+
+    subtest 'stable to crypto' => sub {
+        $client_cr_usdc->payment_free_gift(
+            currency => 'USDC',
+            amount   => 1000,
+            remark   => 'free gift',
+        );
+
+        $params->{token} = $api_token_usdc;
+        $params->{args}  = {
+            account_from => $client_cr_usdc->loginid,
+            account_to   => $client_cr_eth->loginid,
+            amount       => 150,
+            currency     => 'USDC'
+        };
+
+        my $expected_result = {
+            'client_to_loginid'   => $client_cr_eth->loginid,
+            'client_to_full_name' => $client_cr_eth->full_name,
+            'accounts'            => bag({
+                    'account_type' => 'trading',
+                    'loginid'      => $client_cr_usdc->loginid,
+                    'balance'      => ignore(),
+                    'currency'     => 'USDC'
+                },
+                {
+                    'currency'     => 'ETH',
+                    'balance'      => ignore(),
+                    'loginid'      => $client_cr_eth->loginid,
+                    'account_type' => 'trading'
+                }
+            ),
+            'stash'          => ignore(),
+            'status'         => 1,
+            'transaction_id' => ignore(),
+        };
+
+        my $result = $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->result;
+
+        cmp_deeply $result, $expected_result, 'Result structure is fine for stable to crypto transfer';
+
+        cmp_deeply(
+            _get_transaction_details($client_cr_usdc, $result->{transaction_id}),
+            {
+                from_login                => $client_cr_usdc->loginid,
+                to_login                  => $client_cr_eth->loginid,
+                fees                      => num(3),
+                fee_calculated_by_percent => num(3),
+                fees_currency             => 'USDC',
+                fees_percent              => num(2),
+                min_fee                   => num(0.01),
+            },
+            'metadata saved correctly in transaction_details table for stable to crypto transfer'
+        );
+    };
+
+    subtest 'stable to stable' => sub {
+        $client_cr_usdc->payment_free_gift(
+            currency => 'USDC',
+            amount   => 1000,
+            remark   => 'free gift',
+        );
+
+        $params->{token} = $api_token_usdc;
+        $params->{args}  = {
+            account_from => $client_cr_usdc->loginid,
+            account_to   => $client_cr_ust->loginid,
+            amount       => 150,
+            currency     => 'USDC'
+        };
+
+        my $expected_result = {
+            'client_to_loginid'   => $client_cr_ust->loginid,
+            'client_to_full_name' => $client_cr_ust->full_name,
+            'accounts'            => bag({
+                    'account_type' => 'trading',
+                    'loginid'      => $client_cr_usdc->loginid,
+                    'balance'      => ignore(),
+                    'currency'     => 'USDC'
+                },
+                {
+                    'currency'     => 'UST',
+                    'balance'      => ignore(),
+                    'loginid'      => $client_cr_ust->loginid,
+                    'account_type' => 'trading'
+                }
+            ),
+            'stash'          => ignore(),
+            'status'         => 1,
+            'transaction_id' => ignore(),
+        };
+
+        my $result = $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->result;
+
+        cmp_deeply $result, $expected_result, 'Result structure is fine for stable to stable transfer';
+
+        cmp_deeply(
+            _get_transaction_details($client_cr_usdc, $result->{transaction_id}),
+            {
+                from_login                => $client_cr_usdc->loginid,
+                to_login                  => $client_cr_ust->loginid,
+                fees                      => num(3),
+                fee_calculated_by_percent => num(3),
+                fees_currency             => 'USDC',
+                fees_percent              => num(2),
+                min_fee                   => num(0.01),
+            },
+            'metadata saved correctly in transaction_details table for stable to stable transfer'
+        );
+    };
 };
 
 subtest 'Validation for transfer from incomplete account' => sub {
@@ -801,7 +1081,7 @@ subtest 'transfer with fees' => sub {
     BOM::Config::Runtime->instance->app_config->system->suspend->transfer_between_accounts(1);
     $rpc_ct->call_ok('transfer_between_accounts', $params)->has_error('error as all transfer_between_accounts are suspended in system config')
         ->error_code_is('TransferBetweenAccountsError', 'error code is TransferBetweenAccountsError')
-        ->error_message_like(qr/Transfers between fiat and crypto accounts/);
+        ->error_message_like(qr/Transfers between accounts are currently unavailable/);
     BOM::Config::Runtime->instance->app_config->system->suspend->transfer_between_accounts(0);
 
     my ($usd_btc_fee, $btc_usd_fee, $usd_ust_fee, $ust_usd_fee, $ust_eur_fee) = (2, 3, 4, 5, 6);
