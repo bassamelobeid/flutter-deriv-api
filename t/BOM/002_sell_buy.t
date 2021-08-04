@@ -3,6 +3,7 @@
 use strict;
 use warnings;
 
+use Test::MockTime qw(set_absolute_time);
 use Test::More;
 use Test::Exception;
 
@@ -20,7 +21,11 @@ use Finance::Contract::Longcode qw(shortcode_to_parameters);
 use BOM::Test::Data::Utility::UnitTestMarketData qw(:init);
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Transaction;
+use Test::MockModule;
 
+# mock time to avoid is_within_rollover_period https://github.com/regentmarkets/bom-transaction/blob/1e9547b87afc3fdaceac2f10d7854b60aad337a6/lib/BOM/Transaction.pm#L1238
+# This timestamp minus 3600*6 will lead to the error https://redmine.deriv.cloud/issues/39658#test/fix_intermittent_failure
+set_absolute_time(1627704442);
 my $now = Date::Utility->new;
 initialize_realtime_ticks_db();
 
