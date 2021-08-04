@@ -705,7 +705,7 @@ COPY payment (id, payment_time, amount, payment_gateway_code, payment_type_code,
 200539	2009-09-10 04:18:00	100.0000	datacash	credit_debit_card	OK	200319	CR0016	BLURB=datacash credit card deposit ORDERID=77516256288 (4900200063643402,) TIMESTAMP=10-Sep-09 04h18GMT CCHH 0283E9A742FA8DE5547099BD2F88B404 V99042100 VISA 3DS
 200559	2007-04-15 21:02:00	10.0000	legacy_payment	ewallet	OK	200339	CR0025	Egold deposit Batch 79320704 from egold ac 4312604 (0.014586 ounces of Gold at $685.60/ounce) Egold Ti$
 200599	2005-09-21 06:14:00	600.0000	legacy_payment	ewallet	OK	200359	CR0021	Egold deposit Batch 49100734 from egold ac 2427854 (1.291156 ounces of Gold at $464.70/ounce) Egold Timestamp 1127283282
-200579	2009-09-10 04:28:00	200.0000	envoy_transfer	bank_money_transfer	OK	200319	CR0016	Envoy deposit
+200579	2009-09-11 00:00:00	200.0000	envoy_transfer	bank_money_transfer	OK	200319	CR0016	Envoy deposit
 200619	2007-04-16 01:53:00	5.0000	legacy_payment	ewallet	OK	200339	CR0025	Egold deposit Batch 79327577 from egold ac 4312604 (0.007308 ounces of Gold at $684.20/ounce) Egold Tim$
 200639	2007-04-16 21:34:00	5.0000	legacy_payment	ewallet	OK	200339	CR0025	Egold deposit Batch 79375397 from egold ac 4312604 (0.007241 ounces of Gold at $690.50/ounce) Egold Tim$
 200659	2009-09-10 04:18:00	100.0000	datacash	credit_debit_card	OK	200379	CR0016	BLURB=datacash credit card deposit ORDERID=77516256288 (4900200063643402,) TIMESTAMP=10-Sep-09 04h18GMT CCHH 0283E9A742FA8DE5547099BD2F88B404 V99042100 VISA 3DS
@@ -872,7 +872,7 @@ COPY transaction (id, account_id, transaction_time, amount, staff_loginid, remar
 202779	200379	2009-10-27 02:07:00	15.00	CR0016	\N	financial_market_bet	201039	\N	sell	1	274.34	\N	\N
 202839	200379	2009-10-27 02:07:00	0.00	CR0016	\N	financial_market_bet	201079	\N	sell	1	274.34	\N	\N
 202939	200479	2008-07-24 08:15:00	5.00	CR0006	\N	payment	\N	200759	deposit	1	5.00	\N	\N
-201419	200319	2009-09-10 04:28:00	200.00	CR0016	\N	payment	\N	200579	deposit	1	300.00	\N	\N
+201419	200319	2009-09-10 23:59:59.234567	200.00	CR0016	\N	payment	\N	200579	deposit	1	300.00	\N	\N
 201459	200319	2009-10-16 08:27:00	-1.16	CR0016	\N	financial_market_bet	200539	\N	buy	1	298.84	\N	\N
 201519	200319	2009-10-20 08:46:00	-7.26	CR0016	\N	financial_market_bet	200559	\N	buy	1	291.58	\N	\N
 201599	200319	2009-10-23 05:42:00	-1.04	CR0016	\N	financial_market_bet	200619	\N	buy	1	290.54	\N	\N
