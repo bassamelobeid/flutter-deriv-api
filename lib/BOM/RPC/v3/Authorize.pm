@@ -134,11 +134,14 @@ rpc authorize => sub {
         }
     }
 
-    my $client_list = $user->get_clients_in_sorted_order;
-    # if its a virtual account
-    # selected account currency
-    # not disabled & account currency not yet selected (for unregulated landing companies only)
-    my @client_list = grep { $_->is_virtual || $_->account || !$_->status->disabled || $_->landing_company->is_eu } @$client_list;
+    my $all_clients = $user->get_clients_in_sorted_order;
+
+    # Return a client if:
+    # its a virtual account
+    # or selected account currency
+    # or not disabled
+    # is a regulated (EU) disabled account (disabled or enabled)
+    my @client_list = grep { $_->is_virtual || $_->account || !$_->status->disabled || $_->landing_company->is_eu } @$all_clients;
 
     my @account_list = map { BOM::User::Client::get_account_details($_) } @client_list;
 

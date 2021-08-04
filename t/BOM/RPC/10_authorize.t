@@ -770,6 +770,27 @@ subtest 'upgradeable_landing_companies clients have not selected currency & disa
     my $result = $c->call_ok($method, $params)->has_no_error->result;
     is_deeply $result->{upgradeable_landing_companies}, ['malta', 'maltainvest'], 'Not disabled Virtual Client can upgrade to malta and maltainvest.';
 
+    # duplicate account
+    my $client_mlt_duplicate = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code    => 'MLT',
+        residence      => 'hu',
+        email          => $email,
+        binary_user_id => $user->id,
+    });
+    $user->add_client($client_mlt_duplicate);
+    $client_mlt_duplicate->status->set('duplicate_account', 1, 'test duplicate');
+    $client_mlt_duplicate->save;
+
+    $params->{token} = BOM::Database::Model::OAuth->new->store_access_token_only(1, $client_vr->loginid);
+    $result = $c->call_ok($method, $params)->has_no_error->result;
+    is_deeply $result->{upgradeable_landing_companies}, ['malta', 'maltainvest'],
+        'Real malta client is marked as duplicate, so we can upgrade to both malta and maltainvest.';
+
+    $client_mlt_duplicate->account('USD');
+    $result = $c->call_ok($method, $params)->has_no_error->result;
+    is_deeply $result->{upgradeable_landing_companies}, ['malta', 'maltainvest'],
+        'We can upgrade to both malta and maltainvest, even if the duplicate account has currency.';
+
     # Create MLT account
     my $client_mlt = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code    => 'MLT',
@@ -778,11 +799,11 @@ subtest 'upgradeable_landing_companies clients have not selected currency & disa
         binary_user_id => $user->id,
     });
     $user->add_client($client_mlt);
-
     $params->{token} = BOM::Database::Model::OAuth->new->store_access_token_only(1, $client_mlt->loginid);
     $result = $c->call_ok($method, $params)->has_no_error->result;
     is_deeply $result->{upgradeable_landing_companies}, ['maltainvest'],
         'Real malta Client have not selected currency yet but not disabled so can upgrade to maltainvest.';
+
     # make client disabled
     $client_mlt->status->set('disabled', 1, 'test disabled');
     $params->{token} = BOM::Database::Model::OAuth->new->store_access_token_only(1, $client_vr->loginid);
@@ -860,14 +881,20 @@ subtest 'upgradeable_landing_companies clients have not selected currency & disa
     $result = $c->call_ok($method, $params)->has_no_error->result;
     is_deeply $result->{upgradeable_landing_companies}, [], 'Client already upgraded to maltainvest.';
 
-    $client_mf->status->set('disabled', 1, 'test disabled');
-    $params->{token} = BOM::Database::Model::OAuth->new->store_access_token_only(1, $client_vr->loginid);
-
     # Test 3
+    $client_mf->status->set('duplicate_account', 1, 'test duplicate');
+    $params->{token} = BOM::Database::Model::OAuth->new->store_access_token_only(1, $client_vr->loginid);
+    $result = $c->call_ok($method, $params)->has_no_error->result;
+    is_deeply $result->{upgradeable_landing_companies}, ['maltainvest'], 'Client is duplicate - we can create a new maltainvest account.';
+    $client_mf->status->clear_duplicate_account;
+    $client_mf->save;
+
+    # Test 4
+    $client_mf->status->set('disabled', 1, 'test disabled');
     $result = $c->call_ok($method, $params)->has_no_error->result;
     is_deeply $result->{upgradeable_landing_companies}, [], 'Client disabled & no currency set - cannot create new maltainvest account.';
 
-    # Test 4
+    # Test 5
     $client_mf->status->clear_disabled;
     $result = $c->call_ok($method, $params)->has_no_error->result;
     is_deeply $result->{upgradeable_landing_companies}, [], 'Client already upgraded to maltainvest.';
