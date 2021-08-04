@@ -27,7 +27,7 @@
     <select name="page_type_[% n %]" id="page_type_[% n %]">
     </select>
   <td>
-  <td>*<input type="FILE" name="FILE_[% n %]" onchange="file_size_validation(this)"></td>
+  <td>*<input type="FILE" name="FILE_[% n %]" onchange="file_size_validation([% n %])"></td>
   <td align="right">
     <div id="expiration_date_div_[% n %]" anch>
       <select class="expiration_dropdown" name="expiration_[% n %]" onChange="expiration_changed([% n %])">
@@ -67,14 +67,15 @@
 </form>
 <script type="text/javascript" language="javascript">
 
-var regex_poi = /([% poi_doctypes %])/i;
-var regex_expirable =  /([% expirable_doctypes %])/i;
-var regex_dateless = /[% dateless_doctypes %]/i;
+var regex_poi            = /([% poi_doctypes %])/i;
+var regex_expirable      =  /([% expirable_doctypes %])/i;
+var regex_dateless       = /[% dateless_doctypes %]/i;
 var regex_selfie_with_id = /selfie_with_id/i;
-var regex_numberless = /[% numberless_doctypes %]/;
-var docsides = [% docsides | none %];
-var sides = [% sides | none %];
-var type_sides = {};
+var regex_numberless     = /[% numberless_doctypes %]/;
+var docsides             = [% docsides | none %];
+var sides                = [% sides | none %];
+var type_sides           = {};
+var onfido_types         = [% onfido_doctypes | none %];
 
 for(const side in docsides) {
   docsides[side].forEach(type => {
@@ -161,14 +162,35 @@ function doc_type_changed(i){
   }
   
   req_elements[3].style.display = id_required && !doc_type.match(regex_numberless) ? 'inline': 'none';
+
+  file_size_validation(i);
 }
 
-function file_size_validation(file) {
-  var FileSize = file.files[0].size / (1024 * 1024);
+function file_size_validation(i) {
+  const file = document.getElementsByName('FILE_' + i)[0];
 
-  // Maximum is 10MB
-  var max_size = 10;
-  if(FileSize > max_size) {
+  if (!file) {
+    return;
+  }
+
+  const f = file.files[0];
+
+  if (!f) {
+    return;
+  }
+
+  const file_size    = f.size / (1024 * 1024);
+  const types_select = document.getElementById('doctype_' + i);
+  const type         = types_select.value;
+
+  // Maximum is 20MB globally but 10MB for Onfido types 
+  var max_size = [% document_size_limit %];
+
+  if(onfido_types.includes(type)) {
+    max_size = [% onfido_document_size_limit %];
+  }
+
+  if(file_size > max_size) {
     alert ("Exceeds maximum size of " + max_size + "MB");
     file.value = "";
   }

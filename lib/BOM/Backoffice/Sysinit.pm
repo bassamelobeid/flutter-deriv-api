@@ -203,7 +203,7 @@ sub init {
 
 sub build_request {
     if (Plack::App::CGIBin::Streaming->request) {    # is web server ?
-        $CGI::POST_MAX        = 10000 * 1024;        # max 10MB posts
+        $CGI::POST_MAX        = 20 * 1024 * 1024;    # max 20MB posts
         $CGI::DISABLE_UPLOADS = 0;
         return request(
             BOM::Backoffice::Request::Base::from_cgi({

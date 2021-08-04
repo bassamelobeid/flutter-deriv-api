@@ -63,6 +63,11 @@ local $SIG{ALRM} = sub {
     $log->errorf('Timeout processing request f_clientloginid_edit.cgi: %s', request()->params);
     code_exit_BO(qq[ERROR: Timeout loading page, try again later]);
 };
+use constant {
+    DOCUMENT_SIZE_LIMIT_IN_MB        => 20,
+    ONFIDO_DOCUMENT_SIZE_LIMIT_IN_MB => 10,
+    MB_IN_BYTES                      => 1024 * 1024,
+};
 
 # /etc/mime.types should exist but just in case...
 my $mts;
@@ -100,6 +105,7 @@ my @expirable_doctypes   = $client->documents->expirable_types->@*;
 my %document_type_sides  = $client->documents->sided_types->%*;
 my %document_sides       = $client->documents->sides->%*;
 my @numberless_doctypes  = $client->documents->numberless->@*;
+my @onfido_doctypes      = keys $client->documents->provider_types->{onfido}->%*;
 
 # Enabling onfido resubmission
 my $redis             = BOM::Config::Redis::redis_replicated_write();
@@ -386,6 +392,21 @@ if ($input{whattodo} eq 'uploadID') {
         my $abs_path_to_temp_file = $cgi->tmpFileName($filetoupload);
         my $mime_type             = $cgi->uploadInfo($filetoupload)->{'Content-Type'};
         my ($file_ext)            = $cgi->param('FILE_' . $i) =~ /\.([^.]+)$/;
+        my $file_size             = (-s $abs_path_to_temp_file) / MB_IN_BYTES;
+
+        if (any { $doctype eq $_ } @onfido_doctypes && $file_size > ONFIDO_DOCUMENT_SIZE_LIMIT_IN_MB) {
+            $result .=
+                  qq{<p class="notify notify--warning">Error Uploading File $i: the upload limit is }
+                . ONFIDO_DOCUMENT_SIZE_LIMIT_IN_MB
+                . qq{ MB for document type $doctype</p>};
+            next;
+        } elsif ($file_size > DOCUMENT_SIZE_LIMIT_IN_MB) {
+            $result .=
+                  qq{<p class="notify notify--warning">Error Uploading File $i: the upload limit is }
+                . DOCUMENT_SIZE_LIMIT_IN_MB
+                . qq{ MB for document type $doctype</p>};
+            next;
+        }
 
         # try to get file extension from mime type, else get it from filename
         my $docformat = lc($mts->ext_from_type($mime_type) // $file_ext);
@@ -1612,18 +1633,20 @@ if (not $client->is_virtual) {
     BOM::Backoffice::Request::template()->process(
         'backoffice/client_edit_upload_doc.html.tt',
         {
-            self_post           => $self_post,
-            broker              => $encoded_broker,
-            loginid             => $encoded_loginid,
-            countries           => request()->brand->countries_instance->countries,
-            poi_doctypes        => join('|', @poi_doctypes),
-            expirable_doctypes  => join('|', @expirable_doctypes),
-            dateless_doctypes   => join('|', @dateless_doctypes),
-            doctypes            => [sort { $a->{priority} <=> $b->{priority} } $doctypes->@*],
-            docsides            => encode_json_utf8(\%document_type_sides),
-            sides               => encode_json_utf8(\%document_sides),
-            numberless_doctypes => join('|', @numberless_doctypes),
-
+            self_post                  => $self_post,
+            broker                     => $encoded_broker,
+            loginid                    => $encoded_loginid,
+            countries                  => request()->brand->countries_instance->countries,
+            poi_doctypes               => join('|', @poi_doctypes),
+            expirable_doctypes         => join('|', @expirable_doctypes),
+            dateless_doctypes          => join('|', @dateless_doctypes),
+            doctypes                   => [sort { $a->{priority} <=> $b->{priority} } $doctypes->@*],
+            docsides                   => encode_json_utf8(\%document_type_sides),
+            sides                      => encode_json_utf8(\%document_sides),
+            numberless_doctypes        => join('|', @numberless_doctypes),
+            onfido_doctypes            => encode_json_utf8(\@onfido_doctypes),
+            document_size_limit        => DOCUMENT_SIZE_LIMIT_IN_MB,
+            onfido_document_size_limit => ONFIDO_DOCUMENT_SIZE_LIMIT_IN_MB,
         });
 
     Bar('P2P Advertiser');
