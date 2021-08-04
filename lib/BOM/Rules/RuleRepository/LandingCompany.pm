@@ -20,7 +20,7 @@ use BOM::Platform::Context qw(request);
 use BOM::Rules::Registry qw(rule);
 
 rule 'landing_company.accounts_limit_not_reached' => {
-    description => "Only one account ( enabled or disabled) is allowed on regulated landing companies.",
+    description => "Only one account (enabled or disabled) is allowed on regulated landing companies. Duplicate account are ignored.",
     code        => sub {
         my ($self, $context, $args) = @_;
 
@@ -30,8 +30,10 @@ rule 'landing_company.accounts_limit_not_reached' => {
 
         return 1 unless $number_of_accounts_limited;
 
-        my @clients         = $context->client->user->clients_for_landing_company($context->landing_company);
-        my @enabled_clients = grep { not($_->status->disabled or $_->status->duplicate_account) } @clients;
+        # duplicate should be ignored here; because we want to let new accounts created with a duplicate account existing
+        # (it's a common workaround for currency change after deposit).
+        my @clients = grep { not($_->status->duplicate_account) } $context->client->user->clients_for_landing_company($context->landing_company);
+        my @enabled_clients = grep { not($_->status->disabled) } @clients;
 
         return 1 unless scalar @clients;
 

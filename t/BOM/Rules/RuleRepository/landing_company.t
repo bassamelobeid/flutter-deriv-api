@@ -57,6 +57,10 @@ subtest 'rule landing_company.accounts_limit_not_reached' => sub {
     lives_ok { $rule_engine->apply_rules($rule_name, {account_type => 'wallet'}) } 'Wallet accounts is not restricted';
     $mock_client->unmock_all;
 
+    $client_mf->status->set('duplicate_account', 'test', 'test');
+    lives_ok { $rule_engine->apply_rules($rule_name) } 'Duplicate accounts are ignored';
+    $client_mf->status->clear_duplicate_account;
+
     $client_mf->status->set('disabled', 'test', 'test');
     is_deeply exception { $rule_engine->apply_rules($rule_name) }, {error_code => 'NewAccountLimitReached'}, 'Number of MF accounts is limited';
 };
