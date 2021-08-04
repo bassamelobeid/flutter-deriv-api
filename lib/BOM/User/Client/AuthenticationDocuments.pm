@@ -642,4 +642,45 @@ sub _build_numberless {
 
     return $numberless;
 }
+
+=head2 provider_types
+
+A collection of document types that are valid to upload to different providers supported.
+
+=cut
+
+has provider_types => (
+    is      => 'lazy',
+    clearer => '_clear_provider_types',
+);
+
+=head2 _build_provider_types
+
+Computes a nested hashref of hashref of valid document types.
+
+The outer mapping corresponds to each provider.
+
+The inner mapping corresponds to our document type definition to the provider equivalent type.
+
+Returns a hashref of hashref.
+
+=cut
+
+sub _build_provider_types {
+    my $self  = shift;
+    my $types = {};
+
+    for my $category (values $self->categories->%*) {
+        for my $document_type (keys $category->{types}->%*) {
+            if (my $providers = $category->{types}->{$document_type}->{providers}) {
+                for my $provider (keys $providers->%*) {
+                    $types->{$provider}->{$document_type} = $providers->{$provider};
+                }
+            }
+        }
+    }
+
+    return $types;
+}
+
 1;

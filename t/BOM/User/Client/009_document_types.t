@@ -28,6 +28,7 @@ my $categories = [{
         two_sided      => [qw/poi_others passport driving_licence voter_card national_identity_card student_card nimc_slip pan_card tax_photo_id/],
         photo          => [qw/birth_certificate selfie_with_id/],
         numberless     => [qw/birth_certificate/],
+        onfido         => [qw/passport driving_licence national_identity_card proofid vf_face_id selfie_with_id driverslicense/],
     },
     {
         category             => 'POA',
@@ -46,6 +47,7 @@ my $categories = [{
         two_sided      => [qw/utility_bill bank_statement tax_receipt insurance_bill phone_bill poa_others/],
         photo          => [],
         numberless     => [],
+        onfido         => [],
     },
     {
         category             => 'EDD',
@@ -62,6 +64,7 @@ my $categories = [{
         two_sided            => [qw/tax_return employment_contract payslip edd_others/],
         photo                => [],
         numberless           => [],
+        onfido               => [],
     },
     {
         category             => 'Verification - ID',
@@ -78,6 +81,7 @@ my $categories = [{
         two_sided            => [qw/doc_verification/],
         photo                => [qw/selfie/],
         numberless           => [],
+        onfido               => [],
     },
     {
         category             => 'Business documents',
@@ -94,6 +98,7 @@ my $categories = [{
         two_sided            => [qw/coi business_poa article_of_association memorandum authorisation_letter declarations business_documents_others/],
         photo                => [],
         numberless           => [],
+        onfido               => [],
     },
     {
         category             => 'Others',
@@ -110,6 +115,7 @@ my $categories = [{
         two_sided            => [qw/ip_mismatch_confirmation power_of_attorney code_of_conduct others/],
         photo                => [],
         numberless           => [],
+        onfido               => [],
     },
     {
         category             => 'AML Global Check',
@@ -126,6 +132,7 @@ my $categories = [{
         two_sided            => [qw/amlglobalcheck/],
         photo                => [],
         numberless           => [],
+        onfido               => [],
     },
 ];
 
@@ -186,12 +193,12 @@ my $sided_types_all    = $client->documents->sided_types;
 
 for ($categories->@*) {
     my (
-        $category,  $deprecated,          $documents_uploaded, $date_expiration, $date_issuance,
-        $date_none, $expiration_strategy, $preferred,          $maybe_lifetime,  $two_sided,
-        $photo,     $numberless,          $side_required,      $document_id_required
+        $category,  $deprecated,          $documents_uploaded, $date_expiration,      $date_issuance,
+        $date_none, $expiration_strategy, $preferred,          $maybe_lifetime,       $two_sided,
+        $photo,     $numberless,          $side_required,      $document_id_required, $onfido
         )
         = @{$_}{
-        qw/category deprecated documents_uploaded date_expiration date_issuance date_none expiration_strategy preferred maybe_lifetime two_sided photo numberless side_required document_id_required/
+        qw/category deprecated documents_uploaded date_expiration date_issuance date_none expiration_strategy preferred maybe_lifetime two_sided photo numberless side_required document_id_required onfido/
         };
 
     subtest $category => sub {
@@ -228,6 +235,8 @@ for ($categories->@*) {
         cmp_set [map { $doctypes{$category}->{types}->{$_}->{numberless} ? $_ : () } @category_types], $numberless,
             'Numberless types are looking good';
         cmp_set [intersect(@maybe_lifetime_all, @category_types)], $maybe_lifetime, 'Maybe lifetime types are looking good for this category';
+        cmp_set [map { $doctypes{$category}->{types}->{$_}->{providers}->{onfido} ? $_ : () } @category_types], $onfido,
+            'Onfido types are looking good';
 
         for my $non_deprecated (map { ($doctypes{$category}->{types}->{$_}->{deprecated} // 0) ? () : $_ } @category_types) {
             ok defined $doctypes{$category}->{types}->{$non_deprecated}->{description}, "$non_deprecated is not deprecated and has a description";
@@ -416,6 +425,20 @@ subtest 'Expirable document types' => sub {
 
 subtest 'Sides' => sub {
     cmp_deeply $client->documents->sides, $defined_sides, 'Expected sides';
+};
+
+subtest 'Onfido mapping' => sub {
+    my $mappings = {
+        passport               => 'passport',
+        driving_licence        => 'driving_licence',
+        national_identity_card => 'national_identity_card',
+        proofid                => 'national_identity_card',
+        vf_face_id             => 'live_photo',
+        selfie_with_id         => 'live_photo',
+        driverslicense         => 'driving_licence',
+    };
+
+    cmp_deeply $client->documents->provider_types->{onfido}, $mappings, 'Expected Onfido types mapping';
 };
 
 done_testing();
