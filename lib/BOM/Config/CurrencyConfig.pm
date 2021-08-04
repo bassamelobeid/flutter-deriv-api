@@ -279,9 +279,11 @@ sub transfer_between_accounts_fees {
     my @all_currencies = LandingCompany::Registry::all_currencies();
 
     my $configs = app_config()->get([
-        'payments.transfer_between_accounts.fees.default.fiat_fiat',   'payments.transfer_between_accounts.fees.default.fiat_crypto',
-        'payments.transfer_between_accounts.fees.default.fiat_stable', 'payments.transfer_between_accounts.fees.default.crypto_fiat',
-        'payments.transfer_between_accounts.fees.default.stable_fiat', 'payments.transfer_between_accounts.fees.by_currency'
+        'payments.transfer_between_accounts.fees.default.fiat_fiat',     'payments.transfer_between_accounts.fees.default.fiat_crypto',
+        'payments.transfer_between_accounts.fees.default.fiat_stable',   'payments.transfer_between_accounts.fees.default.crypto_fiat',
+        'payments.transfer_between_accounts.fees.default.stable_fiat',   'payments.transfer_between_accounts.fees.by_currency',
+        'payments.transfer_between_accounts.fees.default.crypto_crypto', 'payments.transfer_between_accounts.fees.default.crypto_stable',
+        'payments.transfer_between_accounts.fees.default.stable_crypto', 'payments.transfer_between_accounts.fees.default.stable_stable'
     ]);
     my $fee_by_currency = JSON::MaybeUTF8::decode_json_utf8($configs->{'payments.transfer_between_accounts.fees.by_currency'});
 
@@ -294,8 +296,8 @@ sub transfer_between_accounts_fees {
         foreach my $to_currency (@all_currencies) {
             my $to_def = LandingCompany::Registry::get_currency_definition($to_currency);
 
-            #Same-currency and crypto-to-crypto transfers are not supported: fee = undef.
-            unless (($from_def->{type} eq 'crypto' and $to_def->{type} eq 'crypto') or $from_currency eq $to_currency) {
+            #Same-currency is not supported: fee = undef.
+            unless ($from_currency eq $to_currency) {
                 my $to_category = $to_def->{stable} ? 'stable' : $to_def->{type};
                 my $fee         = $fee_by_currency->{"${from_currency}_$to_currency"}
                     // $configs->{"payments.transfer_between_accounts.fees.default.${from_category}_$to_category"};

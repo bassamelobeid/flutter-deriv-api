@@ -447,15 +447,35 @@ payments:
                   isa: Num
                   default: 0.5
                   global: 1
+                crypto_crypto:
+                  description: 'Default fee for transferring from a crypto to a crypto currency in percentage'
+                  isa: Num
+                  default: 2
+                  global: 1
                 crypto_fiat:
                   description: 'Default fee for transferring from a crypto to a fiat currency in percentage'
                   isa: Num
                   default: 1
                   global: 1
+                crypto_stable:
+                  description: 'Default fee for transferring from a crypto to a stablecoin in percentage'
+                  isa: Num
+                  default: 2
+                  global: 1
+                stable_crypto:
+                  description: 'Default fee for transferring from a stablecoin to a crypto currency in percentage'
+                  isa: Num
+                  default: 2
+                  global: 1
                 stable_fiat:
                   description: 'Default fee for transferring from a stablecoin to a fiat currency in percentage'
                   isa: Num
                   default: 0.5
+                  global: 1
+                stable_stable:
+                  description: 'Default fee for transferring from a stablecoin to a stablecoin in percentage'
+                  isa: Num
+                  default: 2
                   global: 1
         minimum:
           isa: section
