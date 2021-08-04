@@ -48,9 +48,10 @@ binmode STDOUT, ':encoding(UTF-8)';
 binmode STDERR, ':encoding(UTF-8)';
 
 GetOptions(
-    'q|queue=s'       => \(my $queue  = undef),
-    's|stream=s'      => \(my $stream = undef),
-    'json_log_file=s' => \(my $json_log_file),
+    'q|queue=s'          => \(my $queue  = undef),
+    's|stream=s'         => \(my $stream = undef),
+    'json_log_file=s'    => \(my $json_log_file),
+    'maximum_job_time=i' => \(my $maximum_job_time),
 ) or die;
 
 #One and only one option must be passed
@@ -67,8 +68,9 @@ Log::Any::Adapter->import(
 );
 
 my $listener = BOM::Event::Listener->new(
-    queue  => $queue,
-    stream => $stream
+    queue            => $queue,
+    stream           => $stream,
+    maximum_job_time => $maximum_job_time,
 );
 
 $listener->run;
