@@ -400,6 +400,8 @@ subtest 'Creating advert' => sub {
     );
 
     cmp_ok $test_client_cr->p2p_advert_list(amount => 23)->[0]{price}, '==', $params{rate} * 23, 'Price is adjusted by amount param in advert list';
+
+    lives_ok { $test_client_cr->p2p_advert_info(id => $advert->{id} . '.') } 'trailing period in id';
 };
 
 subtest 'Rate Validation' => sub {

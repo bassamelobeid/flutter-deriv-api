@@ -2073,6 +2073,9 @@ sub p2p_advertiser_create {
     # sb api returns milliseconds timestamps
     my ($token, $expiry) = ($sb_user->session_tokens->[0]{session_token}, int($sb_user->session_tokens->[0]{expires_at} / 1000));
 
+    # sb call can take a while, so we must check again
+    die +{error_code => 'AlreadyRegistered'} if $self->_p2p_advertiser_cached;
+
     my $advertiser = $self->db->dbic->run(
         fixup => sub {
             $_->selectrow_hashref(
@@ -2462,15 +2465,9 @@ sub p2p_advert_update {
         fixup => sub {
             my $dbh = shift;
 
-            # lock advert row while checking open orders (order create will update the row)
-            $dbh->do('SELECT 1 FROM p2p.p2p_advert WHERE id = ? FOR UPDATE', undef, $id);
-
             if ($param{delete}) {
-                my $open_orders = $self->_p2p_orders(
-                    advert_id => $id,
-                    status    => ['pending', 'buyer-confirmed', 'timed-out'],
-                );
-                die +{error_code => 'OpenOrdersDeleteAdvert'} if @$open_orders;
+                my ($open_orders) = $dbh->selectrow_array('SELECT active_orders FROM p2p.p2p_advert WHERE id = ? FOR UPDATE', undef, $id);
+                die +{error_code => 'OpenOrdersDeleteAdvert'} if $open_orders > 0;
             }
 
             $dbh->selectrow_hashref('SELECT * FROM p2p.advert_update(?, ?, ?, ?, ?, ?, ?, ?)',
@@ -2644,8 +2641,8 @@ sub p2p_order_create {
     die +{error_code => 'OrderAlreadyExists'} if @{$open_orders};
 
     my $txn_time = Date::Utility->new->datetime;
-    my $order    = $self->db->dbic->run(
-        txn => sub {
+    my $order    = $self->db->dbic->txn(
+        fixup => sub {
             my $dbh = shift;
 
             # lock advert row while checking advert limits
@@ -3325,6 +3322,10 @@ sub _p2p_adverts {
     $param{reversible_lookback} = BOM::Config::Runtime->instance->app_config->payments->reversible_deposits_lookback;
     $param{advertiser_name} =~ s/([%_])/\\$1/g if $param{advertiser_name};
 
+    for my $field (qw/id advert_id limit offset/) {
+        $param{$field} += 0 if defined $param{$field};
+    }
+
     $self->db->dbic->run(
         fixup => sub {
             $_->selectall_arrayref(
@@ -3355,6 +3356,10 @@ sub _p2p_orders {
     my ($limit, $offset) = @param{qw/limit offset/};
     die +{error_code => 'InvalidListLimit'}  if defined $limit  && $limit <= 0;
     die +{error_code => 'InvalidListOffset'} if defined $offset && $offset < 0;
+
+    for my $field (qw/id advert_id limit offset/) {
+        $param{$field} += 0 if defined $param{$field};
+    }
 
     return $self->db->dbic->run(
         fixup => sub {

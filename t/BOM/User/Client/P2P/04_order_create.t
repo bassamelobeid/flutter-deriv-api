@@ -166,6 +166,8 @@ subtest 'Creating new buy order' => sub {
     cmp_deeply($client->p2p_order_info(id => $new_order->{id}), $expected_order,   'order_info() returns correct info');
     cmp_deeply($client->p2p_order_list,                         [$expected_order], 'order_list() returns correct info');
 
+    lives_ok { $client->p2p_order_info(id => $new_order->{id} . '.') } 'trailing period in id';
+
 };
 
 subtest 'Creating two orders from two clients' => sub {
