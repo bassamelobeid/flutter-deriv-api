@@ -7,6 +7,10 @@ use Plack::Builder;
 use BOM::API::Payment;
 use IO::Handle;
 
+use Log::Any::Adapter 'DERIV',
+    log_level => 'info',
+    stderr    => 'json';
+
 my $alog;
 if ($ENV{ACCESS_LOG}) {
     open $alog, '>>', $ENV{ACCESS_LOG}    ## no critic (RequireBriefOpen)

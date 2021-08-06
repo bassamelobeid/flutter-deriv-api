@@ -62,7 +62,11 @@ GetOptions(
 die $usage unless ($action && $endpoint_url && $secret_key && $client_loginid);
 
 $log_level ||= 'info';
-Log::Any::Adapter->import(qw(Stdout), log_level => $log_level);
+Log::Any::Adapter->import(
+    qw(DERIV),
+    stdout    => 'text',
+    log_level => $log_level
+);
 
 die 'ERROR: action must be one of ' . (join ', ', keys %$actions) . ". $usage" unless $action and exists($actions->{$action});
 die "ERROR: endpoint url must be specified. $usage"                            unless $endpoint_url;
