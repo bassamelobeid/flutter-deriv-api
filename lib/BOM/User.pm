@@ -1534,4 +1534,45 @@ sub get_feature_flag {
     return +{_get_default_flags->%*, map { $_->{name} => $_->{enabled} } $result->@*};
 }
 
+=head2 update_edd_status
+
+Update users' EDD status
+
+Returns a hashref of the users' updated EDD status
+
+=cut
+
+sub update_edd_status {
+    my ($self, %args) = @_;
+
+    if ($args{average_earnings}) {
+        $args{average_earnings} = keys %{$args{average_earnings}} ? encode_json($args{average_earnings}) : undef;
+    }
+
+    return $self->dbic->run(
+        fixup => sub {
+            $_->do('SELECT users.update_edd_status(?, ?, ?, ?, ?, ?)',
+                undef, $self->{id}, @args{qw/status start_date last_review_date average_earnings comment/});
+        });
+}
+
+=head2 get_edd_status
+
+Returns a hashref of the most recent users' EDD status if exists, otherwise returns 0
+
+=cut
+
+sub get_edd_status {
+    my $self = shift;
+
+    try {
+        return $self->dbic->run(
+            fixup => sub {
+                $_->selectrow_hashref('SELECT * FROM users.edd_status WHERE binary_user_id = ?', undef, $self->{id});
+            }) // {};
+    } catch {
+        return 0;
+    }
+}
+
 1;
