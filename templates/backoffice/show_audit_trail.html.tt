@@ -79,7 +79,7 @@
     </thead>
     <tbody>
     [% FOREACH log = logs %]
-        <tr>
+        <tr class="[% log.row_classname%]">
             [% FOREACH hdr = hdrs;
                 SET value = log.data.$hdr;
                 SET value = '' IF value == 'now()'; # default timestamp vals.  tacky; need to fix this at source!
@@ -131,7 +131,7 @@
     const elm_group_style = document.getElementById('group_display_style');
 
     const showColumns = (group = getDefaultGroup()) => {
-        elm_group_style.innerHTML = group ? `#show_log_list_table th, #show_log_list_table td { display: none; } .group-\${group} { display: table-cell !important; }` : '';
+        elm_group_style.innerHTML = group ? `#show_log_list_table tr.edd_status { display: none; } #show_log_list_table th, #show_log_list_table td { display: none; } .group-\${group} { display: table-cell !important; }` : '';
         updateSelectors(group);
     };
 

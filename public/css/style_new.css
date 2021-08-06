@@ -224,11 +224,11 @@ tr.row {
     grid-gap: 16px;
 }
 
-.grid2col.border div:not(:last-child):not(:nth-last-child(2)) {
+.grid2col.border > div:not(:last-child):not(:nth-last-child(2)) {
     border-bottom: 1px solid var(--bg-primary-light);
 }
 
-.grid2col.border div:nth-child(odd) {
+.grid2col.border > div:nth-child(odd) {
     border-right: 1px solid var(--bg-primary-light);
 }
 

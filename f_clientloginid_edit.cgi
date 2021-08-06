@@ -47,7 +47,7 @@ use BOM::Platform::S3Client;
 use BOM::User::Onfido;
 use BOM::User::Phone;
 use Log::Any qw($log);
-use JSON::MaybeUTF8 qw(encode_json_utf8);
+use JSON::MaybeUTF8 qw(encode_json_utf8 decode_json_utf8);
 use constant ONFIDO_REQUEST_PER_USER_PREFIX => 'ONFIDO::REQUEST::PER::USER::';
 
 BOM::Backoffice::Sysinit::init();
@@ -517,6 +517,73 @@ if ($input{whattodo} eq 'disable_2fa' and $user->is_totp_enabled) {
 
     print "<p class=\"notify\">2FA Disabled</p>";
     code_exit_BO(qq[<p><a class="link" href="$self_href">&laquo; Return to client details</a></p>]);
+}
+
+# SAVE EDD STATUS
+if ($input{whattodo} eq 'save_edd_status') {
+    my $startdate = $input{edd_start_date};
+    my $enddate   = $input{edd_last_review_date};
+
+    # start_date is nullable
+    if ($startdate) {
+        try {
+            $startdate = Date::Utility->new($startdate)->date;
+        } catch ($e) {
+            code_exit_BO("Cannot parse EDD start date: $startdate: $e");
+        }
+    } else {
+        $startdate = undef;
+    }
+
+    # last_review_date is nullable
+    if ($enddate) {
+        # if $enddate has some value, validate the date
+        try {
+            $enddate = Date::Utility->new($enddate)->date;
+        } catch ($e) {
+            code_exit_BO("Cannot parse EDD last review date: $enddate: $e");
+        }
+    } else {
+        $enddate = undef;
+    }
+
+    my $average_earnings = undef;
+    if (length $input{edd_average_earnings_currency} and length $input{edd_average_earnings_amount}) {
+        $average_earnings = {
+            currency => $input{edd_average_earnings_currency},
+            amount   => $input{edd_average_earnings_amount},
+        };
+    }
+
+    try {
+        my $edd_status = $input{edd_status};
+
+        $user->update_edd_status(
+            status           => $edd_status,
+            start_date       => $startdate,
+            last_review_date => $enddate,
+            average_earnings => $average_earnings,
+            comment          => $input{edd_comment});
+
+        my $withdrawal_locked_reason = "Pending EDD docs/info for withdrawal request";
+
+        my @clients_to_update = $client->is_virtual ? () : grep { not $_->is_virtual } $user_clients->@*;
+
+        foreach my $client_to_update (@clients_to_update) {
+            # trigger withdrawal_locked when EDD status = 'failed', 'in_progress' or 'pending'
+            # remove withdrawal_locked when EDD status = 'passed', 'n/a'
+            if ($client_to_update->status->reason('withdrawal_locked') eq $withdrawal_locked_reason
+                and ($edd_status eq 'passed' or $edd_status eq 'n/a'))
+            {
+                $client_to_update->status->clear_withdrawal_locked;
+            } elsif (any { $_ eq $edd_status } qw(failed in_progress pending)) {
+                $client_to_update->status->setnx('withdrawal_locked', BOM::Backoffice::Auth0::get_staffname(), $withdrawal_locked_reason);
+            }
+        }
+    } catch ($e) {
+        code_exit_BO("Cannot update EDD status: $e");
+    }
+
 }
 
 # PERFORM ON-DEMAND ID CHECKS
@@ -1430,29 +1497,37 @@ my $built_fa =
     BOM::User::FinancialAssessment::build_financial_assessment(BOM::User::FinancialAssessment::decode_fa($client->financial_assessment()));
 my $fa_score = $built_fa->{scores};
 
+my $user_edd_status = $user->get_edd_status();
+
 for my $section_name (qw(trading_experience financial_information)) {
     next unless ($built_fa->{$section_name});
 
+    my $is_financial_information = $section_name eq 'financial_information';
+    my $show_edd_form            = $is_financial_information && !$client->is_virtual && $user_edd_status;
+
     my $title = join ' ', map { ucfirst } split '_', $section_name;
+    my $content_class = $show_edd_form ? 'grid2col border' : 'grid2col';
+    Bar($title, {content_class => $content_class});
 
-    print "<a name='$section_name'></a>";
-    Bar($title);
-
-    print_fa_table($section_name, $self_href, $is_compliance, $built_fa->{$section_name}->%*);
+    print "<div class='card__content'>";
+    print_fa_table($user, $client, $section_name, $self_href, $is_compliance, $built_fa->{$section_name}->%*);
     print "<p class='success'>$title updated</p>"
         if $fa_updated{$section_name};
 
-    print_fa_force_btn($section_name, $self_href) if ($section_name eq 'financial_information' && $is_compliance);
+    print_fa_force_btn($section_name, $self_href) if ($is_financial_information && $is_compliance);
     print "<p class='error'>Financial Assessment questionnaire triggered.</p>"
-        if ($section_name eq 'financial_information' && $fa_updated{force_financial_assessment});
+        if ($is_financial_information && $fa_updated{force_financial_assessment});
 
     print "<hr><div class='row'><span class='right'>$title score:</span>&nbsp;<strong>" . $fa_score->{$section_name} . '</strong></div>';
     print '<div><span class="right">CFD Score:</span>&nbsp;<strong>' . $fa_score->{cfd_score} . '</strong></div>'
         if ($section_name eq 'trading_experience');
+    print '</div>';
+
+    print_edd_status_form($user_edd_status, $client, $section_name, $self_href, $is_compliance) if ($show_edd_form);
 }
 
 sub print_fa_table {
-    my ($section_name, $self_href, $is_editable, %section) = @_;
+    my ($user, $client, $section_name, $self_href, $is_editable, %section) = @_;
 
     my @hdr    = ('Question', 'Answer', 'Score');
     my $config = BOM::Config::financial_assessment_fields();
@@ -1479,6 +1554,7 @@ sub print_fa_table {
             . '</td></tr>';
     }
     print '</tbody></table><br>';
+
     print '<input type="submit" class="btn btn--primary" value="Update"></form>' if $is_editable;
 
     return undef;
@@ -1494,6 +1570,79 @@ sub print_fa_force_btn {
     print '<input type="submit" class="btn btn--primary" value="Click to force financial assessment">';
 
     print '</form>';
+}
+
+sub print_edd_status_form {
+    my ($selected, $client, $section_name, $self_href, $is_editable) = @_;
+
+    my $currency = $client->currency;
+
+    my $status           = $selected->{status}           // '';
+    my $start_date       = $selected->{start_date}       // '';
+    my $last_review_date = $selected->{last_review_date} // '';
+    my $average_earnings = $selected->{average_earnings} ? decode_json_utf8($selected->{average_earnings}) : {};
+    my $comment          = $selected->{comment} // '';
+
+    $start_date       = Date::Utility->new($start_date)->date       if $start_date;
+    $last_review_date = Date::Utility->new($last_review_date)->date if $last_review_date;
+
+    my $options = [{
+            value => 'n/a',
+            name  => 'Not applicable'
+        },
+        {
+            value => 'passed',
+            name  => 'Passed'
+        },
+        {
+            value => 'failed',
+            name  => 'Failed'
+        },
+        {
+            value => 'pending',
+            name  => 'Pending'
+        },
+        {
+            value => 'in_progress',
+            name  => 'In progress'
+        },
+    ];
+
+    my $dropdown = "<select name='edd_status' required>";
+    $dropdown .= "<option value=''></option>" unless $status;
+    $dropdown .= "<option value='$_->{value}'@{[$_->{value} eq $status ? ' selected=\"selected\"' : '']}>$_->{name}</option>" for @$options;
+    $dropdown .= "</select>";
+
+    my @currencies        = LandingCompany::Registry::all_currencies();
+    my $currency_dropdown = dropdown('edd_average_earnings_currency', $average_earnings->{currency}, @currencies);
+
+    my $is_disabled = $is_editable ? '' : 'disabled';
+
+    print "<div class='card__content'><form method='post' action='$self_href#$section_name'><fieldset $is_disabled style='border: none;'>";
+
+    print qq{
+            <h3>EDD status</h3>
+            <input type='hidden' name='whattodo' value='save_edd_status' />
+            <div class="row">
+                <label>Status:</label>
+                $dropdown  
+                <label>Start date:</label><input size="10" type="text" class="datepick" name="edd_start_date" value="$start_date" />
+                <label>Last review date:</label><input size="10" type="text" class="datepick" name="edd_last_review_date" value="$last_review_date" />
+            </div>
+            <div class="row">
+                <label>Actual average earnings yearly:</label>
+                $currency_dropdown
+                <input type="number" name="edd_average_earnings_amount" value="$average_earnings->{amount}" />
+            </div>
+            <label>Notes: </label><br>
+            <div class="row">
+                <textarea rows="8" cols="80" name="edd_comment" maxlength="1000" minlength="1" placeholder="Enter new comment here">$comment</textarea>
+            </div>
+        };
+
+    print '<input type="submit" class="btn btn--primary" value="Update" />' if $is_editable;
+
+    print "</fieldset></form></div>";
 }
 
 sub dropdown {
