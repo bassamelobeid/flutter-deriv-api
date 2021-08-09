@@ -3,19 +3,22 @@ package BOM::Event::Actions::Anonymization;
 use strict;
 use warnings;
 
-use Log::Any qw($log);
+use Future::AsyncAwait;
+use List::Util qw( uniqstr );
+use Log::Any qw( $log );
+use Syntax::Keyword::Try;
+
 use BOM::User;
 use BOM::User::Client;
 use BOM::Platform::ProveID;
 use BOM::Event::Actions::CustomerIO;
 use BOM::Database::ClientDB;
 use BOM::Database::UserDB;
-use Syntax::Keyword::Try;
-use BOM::Platform::Token::API;
+use BOM::Event::Utility qw( exception_logged );
+use BOM::Platform::CloseIO;
 use BOM::Platform::Context;
-use BOM::Event::Utility qw(exception_logged);
-use List::Util qw(uniqstr);
-use Future::AsyncAwait;
+use BOM::Platform::ProveID;
+use BOM::Platform::Token::API;
 
 # Load Brands object globally
 my $BRANDS = BOM::Platform::Context::request()->brand();
@@ -34,7 +37,7 @@ Removal of a client's personally identifiable information from Binary's systems.
 
 =over 4
 
-=item * C<arg> - A hash including loginid
+=item * C<args> - A hash including loginid
 
 =back
 
@@ -43,13 +46,17 @@ Returns B<1> on success.
 =cut
 
 async sub anonymize_client {
-    my $arg     = shift;
-    my $loginid = $arg->{loginid};
+    my $args = shift;
+
+    my $loginid = $args->{loginid};
     return undef unless $loginid;
+
     my ($success, $error);
     my $result = await _anonymize($loginid);
     $result eq 'successful' ? $success->{$loginid} = $result : ($error->{$loginid} = ERROR_MESSAGE_MAPPING->{$result});
+
     _send_anonymization_report($error, $success);
+
     return 1;
 }
 
@@ -59,7 +66,7 @@ Remove client's personally identifiable information (PII)
 
 =over 1
 
-=item * C<arg> - A hash including data about loginids to be anonymized.
+=item * C<args> - A hash including data about loginids to be anonymized.
 
 =back
 
@@ -68,9 +75,11 @@ Returns **1** on success.
 =cut
 
 async sub bulk_anonymization {
-    my $arg  = shift;
-    my $data = $arg->{data};
+    my $args = shift;
+
+    my $data = $args->{data};
     return undef unless $data;
+
     my ($success, $error);
 
     my @loginids = uniqstr grep { $_ } map { uc $_ } map { s/^\s+|\s+$//gr } map { $_->@* } $data->@*;
@@ -197,6 +206,9 @@ async sub _anonymize {
         return "userAlreadyAnonymized" if $user->email =~ /\@deleted\.binary\.user$/;
         return "activeClient" unless ($user->valid_to_anonymize);
 
+        # Delete data on close io
+        BOM::Platform::CloseIO->new(user => $user)->anonymize_user() or die "couldn't anonymize user on Close.io, user id: " . $user->id;
+
         # Delete data on customer io.
         await BOM::Event::Actions::CustomerIO->new(user => $user)->anonymize_user();
 
@@ -221,6 +233,7 @@ async sub _anonymize {
                 BOM::Platform::ProveID->new(client => $cli)->delete_existing_reports()
                     if ($prove->has_saved_xml || ($cli->status->proveid_requested && !$cli->status->proveid_pending));
             }
+
             # Set client status to disabled to prevent user from doing any future actions
 
             $cli->status->setnx('disabled', 'system', 'Anonymized client');

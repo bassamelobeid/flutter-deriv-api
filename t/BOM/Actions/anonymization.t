@@ -76,6 +76,10 @@ subtest client_anonymization_vrtc_without_siblings => sub {
     my $mock_anonymization = Test::MockModule->new('BOM::Event::Actions::Anonymization');
     $mock_anonymization->mock('_send_anonymization_report', sub { return 1 });
 
+    # Bypass CloseIO API calling and mock error response
+    my $mock_closeio = Test::MockModule->new('BOM::Platform::CloseIO');
+    $mock_closeio->mock('anonymize_user', 0);
+
     # Mock BOM::Event::Actions::CustomerIO with an error on anonymization.
     my $mock_customerio = Test::MockModule->new('BOM::Event::Actions::CustomerIO');
     $mock_customerio->mock('anonymize_user', sub { return Future->fail(0) });
@@ -88,8 +92,12 @@ subtest client_anonymization_vrtc_without_siblings => sub {
 
     isnt $_->email, lc($_->loginid . '@deleted.binary.user'), 'Email was NOT anonymized' for @anonymized_clients;
 
+    # Bypass CloseIO API calling and mock success response
+    $mock_closeio->mock('anonymize_user', 1);
+
     # Mock BOM::Event::Actions::CustomerIO with success on anonymization.
     $mock_customerio->mock('anonymize_user', sub { return Future->done(1) });
+
     $result = BOM::Event::Actions::Anonymization::anonymize_client({'loginid' => $vrtc_client->loginid});
     ok($result, 'Returns 1 after user anonymized.');
 
@@ -99,7 +107,6 @@ subtest client_anonymization_vrtc_without_siblings => sub {
     is $_->email, lc($_->loginid . '@deleted.binary.user'), 'Email was anonymized' for @anonymized_clients;
 
     ok((grep { $_->broker_code eq 'VRTC' } @anonymized_clients), 'VRTC client was anonymized');
-
 };
 
 subtest client_anonymization_vrtc_with_siblings => sub {
@@ -145,7 +152,7 @@ subtest bulk_anonymization => sub {
     $mock_user_module->mock('valid_to_anonymize', sub { return 0 });
 
     # Create an array of active loginids to be like csv read output.
-    for (my $i = 0; $i <= 20; $i++) {
+    for (my $i = 0; $i <= 5; $i++) {
         $users[$i] = BOM::User->create(
             email    => random_email_address,
             password => BOM::User::Password::hashpw('password'));
@@ -172,6 +179,10 @@ subtest bulk_anonymization => sub {
 
     $mock_user_module->mock('valid_to_anonymize', sub { return 1 });
 
+    # Bypass CloseIO API calling and mock error response
+    my $mock_closeio = Test::MockModule->new('BOM::Platform::CloseIO');
+    $mock_closeio->mock('anonymize_user', 0);
+
     # Mock BOM::Event::Actions::CustomerIO with an error on anonymization.
     my $mock_customerio = Test::MockModule->new('BOM::Event::Actions::CustomerIO');
     $mock_customerio->mock('anonymize_user', sub { return Future->fail(0) });
@@ -187,6 +198,8 @@ subtest bulk_anonymization => sub {
     like($msg->{body}, qr/Client anonymization failed. Please re-try or inform Backend team./, qq/Failure reason is correct/);
     cmp_deeply($msg->{to}, [$BRANDS->emails('compliance')], qq/Email should send to the compliance team./);
 
+    $mock_closeio->mock('anonymize_user', 1);
+
     # Mock BOM::Event::Actions::CustomerIO with success on anonymization.
     $mock_customerio->mock('anonymize_user', sub { return Future->done(1) });
 
@@ -194,6 +207,8 @@ subtest bulk_anonymization => sub {
     my $mock_client_module = Test::MockModule->new('BOM::User::Client');
     $mock_client_module->mock('anonymize_client',                          sub { return 1 });
     $mock_client_module->mock('remove_client_authentication_docs_from_S3', sub { return 1 });
+
+    $mock_closeio->mock('anonymize_user', 1);
 
     mailbox_clear();
 
@@ -229,6 +244,10 @@ subtest users_clients_will_set_to_disabled_after_anonymization => sub {
 
     my @user_clients = ();
     $mock_client_module->mock('get_user_loginids_list', sub { return @user_clients });
+
+    # Bypass CloseIO API calling and mock success response
+    my $mock_closeio = Test::MockModule->new('BOM::Platform::CloseIO');
+    $mock_closeio->mock('anonymize_user', 1);
 
     # Mock BOM::Event::Actions::CustomerIO with success on anonymization.
     my $mock_customerio = Test::MockModule->new('BOM::Event::Actions::CustomerIO');
@@ -293,6 +312,10 @@ subtest 'Anonymization disabled accounts' => sub {
     # Mock BOM::User::Client module
     my $mock_client_module = Test::MockModule->new('BOM::User::Client');
     $mock_client_module->mock(remove_client_authentication_docs_from_S3 => 1);
+
+    # Bypass CloseIO API calling and mock success response
+    my $mock_closeio = Test::MockModule->new('BOM::Platform::CloseIO');
+    $mock_closeio->mock('anonymize_user', 1);
 
     # Mock BOM::Event::Actions::CustomerIO with success on anonymization.
     my $mock_customerio = Test::MockModule->new('BOM::Event::Actions::CustomerIO');
