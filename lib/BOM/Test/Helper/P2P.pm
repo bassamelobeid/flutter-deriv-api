@@ -216,20 +216,4 @@ sub set_order_disputable {
         });
 }
 
-=head2 adjust_completion_rates
-
-Moves advertiser daily aggregrations $seconds seconds into the past.
-After calling this, you need to or cancel an order to update the advertiser's completion rate.
-
-=cut
-
-sub adjust_completion_rates {
-    my ($secs, $broker) = @_;
-    my $db = BOM::Database::ClientDB->new({broker_code => uc($broker // 'CR')})->db->dbic;
-    $db->run(
-        fixup => sub {
-            $_->do("UPDATE p2p.p2p_advertiser_totals_daily SET day = day - '1 second'::INTERVAL * ?", undef, $secs);
-        });
-}
-
 1;
