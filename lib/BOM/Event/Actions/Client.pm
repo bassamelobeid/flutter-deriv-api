@@ -70,11 +70,6 @@ $Future::TIMES = 1;
 # Number of seconds to allow for just the verification step.
 use constant VERIFICATION_TIMEOUT => 60;
 
-# Number of seconds to allow for the full document upload.
-# We expect our documents to be small (<10MB) and all API calls
-# to complete within a few seconds.
-use constant UPLOAD_TIMEOUT => 60;
-
 # Redis key namespace to store onfido applicant id
 use constant ONFIDO_REQUEST_PER_USER_PREFIX  => 'ONFIDO::REQUEST::PER::USER::';
 use constant ONFIDO_REQUEST_PER_USER_LIMIT   => BOM::User::Onfido::limit_per_user();
@@ -112,16 +107,6 @@ use constant ONFIDO_RESUBMISSION_COUNTER_TTL        => 2592000;                 
 
 # Redis key for SR keys expire
 use constant SR_30_DAYS_EXP => 86400 * 30;
-
-# List of document types that we use as proof of address
-use constant POA_DOCUMENTS_TYPE => qw(
-    proofaddress payslip bankstatement cardstatement utility_bill
-);
-
-# List of document types that we use as proof of identity
-use constant POI_DOCUMENTS_TYPE => qw(
-    proofid driverslicense passport selfie_with_id
-);
 
 # Templates prefix path
 use constant TEMPLATE_PREFIX_PATH => "/home/git/regentmarkets/bom-events/share/templates/email/";
@@ -186,8 +171,6 @@ my %ONFIDO_DOCUMENT_TYPE_PRIORITY = (
     tax_id                        => 1,
     unknown                       => 0,
 );
-
-my %allowed_synchronizable_documents_type = map { $_ => 1 } (POA_DOCUMENTS_TYPE, POI_DOCUMENTS_TYPE);
 
 # Mapping to convert our database entries for 'net_income'
 # in json field of financial_assessment to values which will be
@@ -265,7 +248,7 @@ async sub document_upload {
     my ($args) = @_;
 
     BOM::Config::Runtime->instance->app_config->check_for_update();
-    return if (BOM::Config::Runtime->instance->app_config->system->suspend->onfido);
+
     try {
         my $loginid = $args->{loginid}
             or die 'No client login ID supplied?';
@@ -276,9 +259,6 @@ async sub document_upload {
             or die 'Could not instantiate client for login ID ' . $loginid;
 
         my $uploaded_manually_by_staff = $args->{uploaded_manually_by_staff} // 0;
-
-        $log->debugf('Applying Onfido verification process for client %s', $loginid);
-        my $file_data = $args->{content};
 
         # We need information from the database to confirm file name and date
         my $document_entry = _get_document_details(
@@ -291,47 +271,30 @@ async sub document_upload {
             return;
         }
 
-        $client->propagate_clear_status('allow_poi_resubmission')
-            if any { $_ eq $document_entry->{document_type} } intersect($client->documents->poi_types->@*, $client->documents->preferred_types->@*);
-        $client->propagate_clear_status('allow_poa_resubmission')
-            if any { $_ eq $document_entry->{document_type} } $client->documents->poa_types->@*;
-
-        await BOM::Event::Services::Track::document_upload({
-                loginid    => $loginid,
-                properties => {
-                    uploaded_manually_by_staff => $uploaded_manually_by_staff,
-                    %$document_entry
-                }});
-        # don't sync documents to onfido if its not in allowed types
-        unless ($allowed_synchronizable_documents_type{$document_entry->{document_type}}) {
-            $log->debugf('Can not sync documents to Onfido as it is not in allowed types for client %s', $loginid);
-            return;
-        }
         die 'Expired document ' . $document_entry->{expiration_date}
             if $document_entry->{expiration_date} and Date::Utility->new($document_entry->{expiration_date})->is_before(Date::Utility->today);
 
-        await _send_email_notification_for_poa(
-            document_entry => $document_entry,
-            client         => $client
-        ) unless $uploaded_manually_by_staff;
+        my $is_poa_document = any { $_ eq $document_entry->{document_type} } $client->documents->poa_types->@*;
+        my $is_poi_document =
+            any { $_ eq $document_entry->{document_type} } intersect($client->documents->poi_types->@*, $client->documents->preferred_types->@*);
+        my $is_onfido_document =
+            any { $_ eq $document_entry->{document_type} } keys $client->documents->provider_types->{onfido}->%*;
 
-        my $loop   = IO::Async::Loop->new;
-        my $onfido = _onfido();
+        $log->warnf("Unsupported document by onfido $document_entry->{document_type}") if $is_poi_document && !$is_onfido_document;
 
-        # We have an overall timeout for this entire operation - it won't
-        # limit any SQL queries, but all network operations should be covered.
-        await Future->wait_any(
-            $loop->timeout_future(after => UPLOAD_TIMEOUT)->on_fail(sub { $log->errorf('Time out waiting for Onfido upload.') }),
+        $client->propagate_clear_status('allow_poi_resubmission') if $is_poi_document || $is_onfido_document;
 
-            _upload_documents(
-                onfido                     => $onfido,
-                client                     => $client,
-                document_entry             => $document_entry,
-                file_data                  => $file_data,
-                uploaded_manually_by_staff => $uploaded_manually_by_staff,
-            )
+        my $document_args = {
+            args              => $args,
+            client            => $client,
+            document_entry    => $document_entry,
+            uploaded_by_staff => $uploaded_manually_by_staff,
+            loginid           => $loginid,
+        };
 
-        );
+        return await _upload_poa_document($document_args) if $is_poa_document;
+        return await _upload_to_onfido($document_args)    if $is_onfido_document;
+
     } catch ($e) {
         $log->errorf('Failed to process Onfido application for %s : %s', $args->{loginid}, $e);
         exception_logged();
@@ -339,6 +302,62 @@ async sub document_upload {
     }
 
     return;
+}
+
+=head2 _upload_poa_document
+
+This subroutine handles uploading POA documents
+
+=cut
+
+async sub _upload_poa_document {
+    my $args = shift;
+
+    my ($client, $document_entry, $uploaded_by_staff, $loginid) = @{$args}{qw/client document_entry uploaded_by_staff loginid/};
+
+    $client->propagate_clear_status('allow_poa_resubmission');
+
+    await BOM::Event::Services::Track::document_upload({
+            loginid    => $loginid,
+            properties => {
+                uploaded_manually_by_staff => $uploaded_by_staff,
+                %$document_entry
+            }});
+
+    await _send_email_notification_for_poa(client => $client) unless $uploaded_by_staff;
+}
+
+=head2 _upload_to_onfido
+
+This subroutine handles uploading POI documents to onfido.
+
+=cut
+
+async sub _upload_to_onfido {
+    die 'Onfido is suspended' if BOM::Config::Runtime->instance->app_config->system->suspend->onfido;
+
+    my $data = shift;
+
+    my ($args, $client, $document_entry, $uploaded_by_staff, $loginid) = @{$data}{qw/args client document_entry uploaded_by_staff loginid/};
+
+    $log->debugf('Applying Onfido verification process for client %s', $loginid);
+
+    my $file_data = $args->{content};
+
+    await BOM::Event::Services::Track::document_upload({
+            loginid    => $loginid,
+            properties => {
+                uploaded_manually_by_staff => $uploaded_by_staff,
+                %$document_entry
+            }});
+
+    await _upload_documents(
+        onfido                     => _onfido(),
+        client                     => $client,
+        document_entry             => $document_entry,
+        file_data                  => $file_data,
+        uploaded_manually_by_staff => $uploaded_by_staff,
+    );
 }
 
 =head2 ready_for_authentication
@@ -793,7 +812,8 @@ async sub check_onfido_rules {
     $check_id = $check->{id};
 
     if ($check_id) {
-        my ($report) = grep { $_->{api_name} eq 'document' } values BOM::User::Onfido::get_all_onfido_reports($client->binary_user_id, $check_id)->%*;
+        my ($report) =
+            grep { $_->{api_name} eq 'document' } values BOM::User::Onfido::get_all_onfido_reports($client->binary_user_id, $check_id)->%*;
 
         if ($report) {
             my $rule_engine   = BOM::Rules::Engine->new(client => $client);
@@ -812,7 +832,8 @@ async sub check_onfido_rules {
 
                 # If the user had this status but now is clear then age verification is due,
                 # we should alse ensure the aren't other rejection reasons.
-                _set_age_verification($client) if $poi_name_mismatch && $report_result eq 'clear' && $check_result eq 'clear' && scalar @reasons == 0;
+                _set_age_verification($client)
+                    if $poi_name_mismatch && $report_result eq 'clear' && $check_result eq 'clear' && scalar @reasons == 0;
             } catch ($e) {
                 my $error_code = '';
                 $error_code = $e->{error_code} // '' if ref($e) eq 'HASH';
@@ -892,7 +913,8 @@ async sub onfido_doc_ready_for_upload {
     }
 
     my $expiration_date = $document_info->{expiration_date};
-    die "Invalid expiration date" if ($expiration_date
+    die "Invalid expiration date"
+        if ($expiration_date
         && $expiration_date ne (eval { Date::Utility->new($expiration_date)->date_yyyymmdd } // ''));
 
     $file_type = lc $file_type;
@@ -1616,11 +1638,7 @@ need to extend later for all landing companies
 async sub _send_email_notification_for_poa {
     my (%args) = @_;
 
-    my $document_entry = $args{document_entry};
-    my $client         = $args{client};
-
-    # no need to notify if document is not POA
-    return undef unless (any { $_ eq $document_entry->{document_type} } POA_DOCUMENTS_TYPE);
+    my $client = $args{client};
 
     # don't send email if client is already authenticated
     return undef if $client->fully_authenticated();

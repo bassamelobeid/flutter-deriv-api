@@ -10,7 +10,6 @@ use Test::Deep;
 use Guard;
 use Log::Any::Test;
 use Log::Any qw($log);
-use Array::Utils qw(intersect);
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 
 use BOM::Test::Email;
@@ -124,87 +123,176 @@ my $args = {
 
 };
 
-my ($applicant, $applicant_id, $loop, $onfido);
-subtest 'upload document' => sub {
+sub start_document_upload {
+    my ($document_args, $client) = @_;
 
-    $loop = IO::Async::Loop->new;
-    my $upload_info = $test_client->db->dbic->run(
+    return $client->db->dbic->run(
         ping => sub {
             $_->selectrow_hashref(
                 'SELECT * FROM betonmarkets.start_document_upload(?, ?, ?, ?, ?, ?, ?, ?)', undef,
-                $test_client->loginid,                                                      $args->{document_type},
-                $args->{document_format}, $args->{expiration_date} || undef,
-                $args->{document_id} || '', $args->{expected_checksum},
-                '', $args->{page_type} || '',
+                $client->loginid,                                                           $document_args->{document_type},
+                $document_args->{document_format}, $document_args->{expiration_date} || undef,
+                $document_args->{document_id} || '', $document_args->{expected_checksum},
+                '', $document_args->{page_type} || '',
             );
         });
+}
 
-    # Redis key for resubmission flag
-    $loop->add(my $services = BOM::Event::Services->new);
-    $test_client->status->set('allow_poa_resubmission', 'test', 'test');
-    $test_client->copy_status_to_siblings('allow_poa_resubmission', 'test');
-    ok $test_sibling->status->_get('allow_poa_resubmission'), 'POA flag propagated to siblings';
+my ($applicant, $applicant_id, $loop, $onfido);
+subtest 'upload document' => sub {
+    $loop = IO::Async::Loop->new;
 
-    $test_client->db->dbic->run(
-        ping => sub {
-            $_->selectrow_array('SELECT * FROM betonmarkets.finish_document_upload(?)', undef, $upload_info->{file_id});
-        });
+    subtest 'upload POA documents' => sub {
+        my $upload_info = start_document_upload($args, $test_client);
 
-    my $mocked_action    = Test::MockModule->new('BOM::Event::Actions::Client');
-    my $document_content = 'it is a proffaddress document';
-    $mocked_action->mock('_get_document_s3', sub { return Future->done($document_content) });
+        # Redis key for resubmission flag
+        $loop->add(my $services = BOM::Event::Services->new);
+        $test_client->status->set('allow_poa_resubmission', 'test', 'test');
+        $test_client->copy_status_to_siblings('allow_poa_resubmission', 'test');
+        ok $test_sibling->status->_get('allow_poa_resubmission'), 'POA flag propagated to siblings';
 
-    $loop->add(
-        $onfido = WebService::Async::Onfido->new(
-            token    => 'test',
-            base_uri => $ENV{ONFIDO_URL}));
+        $test_client->db->dbic->run(
+            ping => sub {
+                $_->selectrow_array('SELECT * FROM betonmarkets.finish_document_upload(?)', undef, $upload_info->{file_id});
+            });
 
-    subtest "invalid place_of_birth" => sub {
-        my $old_pob = $test_client->place_of_birth;
-        scope_guard {
-            $test_client->place_of_birth($old_pob);
-            $test_client->save;
-        };
-        $test_client->place_of_birth('xxx');
-        $test_client->save;
-        $log->clear;
+        my $mocked_action    = Test::MockModule->new('BOM::Event::Actions::Client');
+        my $document_content = 'it is a proffaddress document';
+        $mocked_action->mock('_get_document_s3', sub { return Future->done($document_content) });
+
         BOM::Event::Actions::Client::document_upload({
                 loginid => $test_client->loginid,
                 file_id => $upload_info->{file_id}})->get;
-        $log->contains_ok(qr/Document not uploaded to Onfido as client is from list of countries not supported by Onfido/,
-            'error log: country not supported');
+
+        my $applicant = BOM::Database::UserDB::rose_db()->dbic->run(
+            fixup => sub {
+                my $sth = $_->selectrow_hashref('select * from users.get_onfido_applicant(?::BIGINT)', undef, $test_client->user_id);
+            });
+
+        is $applicant, undef, 'POA does not populate to onfido';
+
+        my $resubmission_flag_after = $test_client->status->_get('allow_poa_resubmission');
+        ok !$resubmission_flag_after, 'poa resubmission status is removed after document uploading';
+
+        my $sibling_resubmission_flag_after = $test_sibling->status->_get('allow_poa_resubmission');
+        ok !$sibling_resubmission_flag_after, 'poa resubmission status is removed from the sibling after document uploading';
     };
 
-    BOM::Event::Actions::Client::document_upload({
-            loginid => $test_client->loginid,
-            file_id => $upload_info->{file_id}})->get;
-    my $applicant = BOM::Database::UserDB::rose_db()->dbic->run(
-        fixup => sub {
-            my $sth = $_->selectrow_hashref('select * from users.get_onfido_applicant(?::BIGINT)', undef, $test_client->user_id);
-        });
-    ok($applicant, 'There is an applicant data in db');
-    $applicant_id = $applicant->{id};
-    ok($applicant_id, 'applicant id ok');
+    my $args = {
+        document_type     => 'passport',
+        document_format   => 'PDF',
+        document_id       => undef,
+        expiration_date   => undef,
+        expected_checksum => '12345',
+        page_type         => undef,
+    };
 
-    my $resubmission_flag_after = $test_client->status->_get('allow_poa_resubmission');
-    ok !$resubmission_flag_after, 'poa resubmission status is removed after document uploading';
+    subtest 'upload POI documents' => sub {
+        my $upload_info = start_document_upload($args, $test_client);
 
-    my $sibling_resubmission_flag_after = $test_sibling->status->_get('allow_poa_resubmission');
-    ok !$sibling_resubmission_flag_after, 'poa resubmission status is removed from the sibling after document uploading';
+        subtest 'document type is not supported' => sub {
+            my $old_pob  = $upload_info;
+            my $old_args = $args;
 
-    my $doc = $onfido->document_list(applicant_id => $applicant_id)->as_arrayref->get->[0];
-    ok($doc, "there is a document");
+            scope_guard {
+                $upload_info = $old_pob;
+                $test_client->db->dbic->run(
+                    ping => sub {
+                        $_->selectrow_array('SELECT * FROM betonmarkets.finish_document_upload(?)', undef, $upload_info->{file_id});
+                    });
 
-    my $content2;
-    lives_ok {
-        $content2 = $onfido->download_document(
-            applicant_id => $applicant_id,
-            document_id  => $doc->id
-            )->get
-    }
-    'download doc ok';
+                $args = $old_args;
+            };
 
-    is($content2, $document_content, "the content is right");
+            # Redis key for resubmission flag
+            $test_client->status->set('allow_poi_resubmission', 'test', 'test');
+            $test_client->copy_status_to_siblings('allow_poi_resubmission', 'test');
+            ok $test_sibling->status->_get('allow_poi_resubmission'), 'POI flag propagated to siblings';
+
+            $args = {
+                document_type     => 'tax_photo_id',
+                document_format   => 'PDF',
+                document_id       => undef,
+                expiration_date   => undef,
+                expected_checksum => '12345',
+                page_type         => undef,
+            };
+
+            $upload_info = start_document_upload($args, $test_client);
+
+            $test_client->db->dbic->run(
+                ping => sub {
+                    $_->selectrow_array('SELECT * FROM betonmarkets.finish_document_upload(?)', undef, $upload_info->{file_id});
+                });
+
+            BOM::Event::Actions::Client::document_upload({
+                    loginid => $test_client->loginid,
+                    file_id => $upload_info->{file_id}})->get;
+
+            my $loginid = $test_client->loginid;
+            $log->contains_ok(qr/Unsupported document by onfido $args->{document_type}*/, 'error log: POI document type is not supported by onfido');
+
+            my $applicant = BOM::Database::UserDB::rose_db()->dbic->run(
+                fixup => sub {
+                    my $sth = $_->selectrow_hashref('select * from users.get_onfido_applicant(?::BIGINT)', undef, $test_client->user_id);
+                });
+
+            ok !$applicant, 'Unsupported POI document does not upload to onfido';
+
+            my $resubmission_flag_after = $test_client->status->_get('allow_poi_resubmission');
+            ok !$resubmission_flag_after, 'poi resubmission status is removed after document uploading';
+
+            my $sibling_resubmission_flag_after = $test_sibling->status->_get('allow_poi_resubmission');
+            ok !$sibling_resubmission_flag_after, 'poi resubmission status is removed from the sibling after document uploading';
+        };
+
+        # Redis key for resubmission flag
+        $test_client->status->set('allow_poi_resubmission', 'test', 'test');
+        $test_client->copy_status_to_siblings('allow_poi_resubmission', 'test');
+        ok $test_sibling->status->_get('allow_poi_resubmission'), 'POI flag propagated to siblings';
+
+        my $mocked_action    = Test::MockModule->new('BOM::Event::Actions::Client');
+        my $document_content = 'it is a passport document';
+        $mocked_action->mock('_get_document_s3', sub { return Future->done($document_content) });
+
+        BOM::Event::Actions::Client::document_upload({
+                loginid => $test_client->loginid,
+                file_id => $upload_info->{file_id}})->get;
+
+        my $applicant = BOM::Database::UserDB::rose_db()->dbic->run(
+            fixup => sub {
+                my $sth = $_->selectrow_hashref('select * from users.get_onfido_applicant(?::BIGINT)', undef, $test_client->user_id);
+            });
+
+        ok $applicant, 'There is an applicant data in db';
+        $applicant_id = $applicant->{id};
+        ok $applicant_id, 'applicant id ok';
+
+        my $resubmission_flag_after = $test_client->status->_get('allow_poi_resubmission');
+        ok !$resubmission_flag_after, 'poi resubmission status is removed after document uploading';
+
+        my $sibling_resubmission_flag_after = $test_sibling->status->_get('allow_poi_resubmission');
+        ok !$sibling_resubmission_flag_after, 'poi resubmission status is removed from the sibling after document uploading';
+
+        $loop->add(
+            $onfido = WebService::Async::Onfido->new(
+                token    => 'test',
+                base_uri => $ENV{ONFIDO_URL}));
+
+        my $doc = $onfido->document_list(applicant_id => $applicant_id)->as_arrayref->get->[0];
+        ok($doc, "there is a document");
+
+        my $content2;
+        lives_ok {
+            $content2 = $onfido->download_document(
+                applicant_id => $applicant_id,
+                document_id  => $doc->id
+                )->get
+        }
+        'download doc ok';
+
+        is($content2, $document_content, "the content is right");
+    };
 };
 
 my $check;
@@ -1238,21 +1326,12 @@ subtest 'segment document upload' => sub {
         document_type     => 'national_identity_card',
         document_format   => 'PNG',
         document_id       => '1234',
-        expiration_date   => '1900-01-01',
+        expiration_date   => '2022-01-01',
         expected_checksum => '123456',
         page_type         => undef,
     };
 
-    my $upload_info = $test_client->db->dbic->run(
-        ping => sub {
-            $_->selectrow_hashref(
-                'SELECT * FROM betonmarkets.start_document_upload(?, ?, ?, ?, ?, ?, ?, ?)', undef,
-                $test_client->loginid,                                                      $args->{document_type},
-                $args->{document_format}, $args->{expiration_date} || undef,
-                $args->{document_id} || '', $args->{expected_checksum},
-                '', $args->{page_type} || '',
-            );
-        });
+    my $upload_info = start_document_upload($args, $test_client);
 
     $test_client->db->dbic->run(
         ping => sub {
@@ -1525,6 +1604,7 @@ subtest 'card deposits' => sub {
 };
 
 subtest 'POI flag removal' => sub {
+
     my $document_types = [
         map {
             +{
@@ -1535,23 +1615,15 @@ subtest 'POI flag removal' => sub {
                 expected_checksum => '12345_' . $_,
                 page_type         => undef,
             }
-        } intersect($test_client->documents->poi_types->@*, $test_client->documents->preferred_types->@*)];
+        } keys $test_client->documents->provider_types->{onfido}->%*
+    ];
 
     $test_client->status->clear_allow_poi_resubmission;
     $test_client->status->clear_allow_poa_resubmission;
 
     foreach my $args ($document_types->@*) {
         subtest $args->{document_type} => sub {
-            my $upload_info = $test_client->db->dbic->run(
-                ping => sub {
-                    $_->selectrow_hashref(
-                        'SELECT * FROM betonmarkets.start_document_upload(?, ?, ?, ?, ?, ?, ?, ?)', undef,
-                        $test_client->loginid,                                                      $args->{document_type},
-                        $args->{document_format}, $args->{expiration_date} || undef,
-                        $args->{document_id} || '', $args->{expected_checksum},
-                        '', $args->{page_type} || '',
-                    );
-                });
+            my $upload_info = start_document_upload($args, $test_client);
 
             $test_client->status->set('allow_poi_resubmission', 'test', 'test');
             $test_client->status->setnx('allow_poa_resubmission', 'test', 'test');
@@ -1590,16 +1662,7 @@ subtest 'POA flag removal' => sub {
 
     foreach my $args ($document_types->@*) {
         subtest $args->{document_type} => sub {
-            my $upload_info = $test_client->db->dbic->run(
-                ping => sub {
-                    $_->selectrow_hashref(
-                        'SELECT * FROM betonmarkets.start_document_upload(?, ?, ?, ?, ?, ?, ?, ?)', undef,
-                        $test_client->loginid,                                                      $args->{document_type},
-                        $args->{document_format}, $args->{expiration_date} || undef,
-                        $args->{document_id} || '', $args->{expected_checksum},
-                        '', $args->{page_type} || '',
-                    );
-                });
+            my $upload_info = start_document_upload($args, $test_client);
 
             $test_client->status->setnx('allow_poi_resubmission', 'test', 'test');
             $test_client->status->set('allow_poa_resubmission', 'test', 'test');
