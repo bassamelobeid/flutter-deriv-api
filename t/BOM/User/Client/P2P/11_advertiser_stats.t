@@ -45,7 +45,6 @@ sub tt_secs {
     my $secs = shift;
     $dt = $dt->plus_time_interval($secs . 's');
     set_fixed_time($dt->iso8601);
-    BOM::Test::Helper::P2P::adjust_completion_rates($secs);
 }
 
 my $emit_args;
@@ -152,6 +151,8 @@ subtest 'sell ads' => sub {
     check_stats($client,     $stats_cli, 'client stats after order expired');
 
     tt_secs(60 * 24 * 60 * 60);    #+60d
+    $client->db->dbic->dbh->do('UPDATE p2p.p2p_advertiser_totals_daily SET day = day - 60');
+
     ($client, $order) = BOM::Test::Helper::P2P::create_order(
         client    => $client,
         advert_id => $advert->{id},
