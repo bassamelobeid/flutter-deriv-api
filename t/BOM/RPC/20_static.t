@@ -65,7 +65,7 @@ subtest 'residence_list' => sub {
                             },
                             nin => {
                                 display_name => 'NIN',
-                                format       => '^[0-9]{11}$',
+                                format       => '^[0-9]{10,11}$',
                             },
                             nin_slip => {
                                 display_name => 'NIN Slip',
