@@ -51,6 +51,7 @@ print "<b class='error'>WARNING : THIS WILL RESULT IN PERMANENT DATA LOSS</b><br
     <li>Replace all personal data and IP address in audit trail(history of changes) in BO with deleted</li>
     <li>Replace payment remarks for bank wires transactions available on the client's account statement in BO with `deleted wire payment</li>
     <li>Delete all documents from database and S3</li>
+    <li>Remove all related lead data on Close.io</li>
     <li>Remove user record from customer.io</li>
     </ul>
     <hr>";
