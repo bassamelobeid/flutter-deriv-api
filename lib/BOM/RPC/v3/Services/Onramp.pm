@@ -22,6 +22,10 @@ use BOM::RPC::v3::Utility;
 use BOM::Config;
 use LandingCompany::Registry;
 
+use constant BANXA_CURRENCIES => {
+    eUSDT => 'USDT',
+};
+
 =head2 new
 
 Constructor. Supported arguments:
@@ -149,7 +153,7 @@ sub _banxa_order {
         account_reference     => $client->loginid,
         return_url_on_success => $referrer,
         source                => "USD",
-        target                => $client->currency,
+        target                => BANXA_CURRENCIES()->{$client->currency} // $client->currency,
         wallet_address        => _get_crypto_deposit_address($client->loginid),
     };
 

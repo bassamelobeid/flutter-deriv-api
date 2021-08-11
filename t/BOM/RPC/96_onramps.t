@@ -11,6 +11,7 @@ use BOM::RPC::v3::Services::Onramp;
 use BOM::Config;
 use Digest::SHA qw(hmac_sha256_hex);
 use JSON::MaybeUTF8 qw(encode_json_utf8 decode_json_utf8);
+use LandingCompany::Registry;
 
 my $email = 'onramp@deriv.com';
 
@@ -220,6 +221,46 @@ subtest wyre => sub {
         'Valid API response'
     );
 
+};
+
+subtest 'Banxa target currencies' => sub {
+    my $o = BOM::RPC::v3::Services::Onramp->new(service => 'banxa');
+
+    my $tests = +{map { ($_ => $_) } LandingCompany::Registry::all_crypto_currencies()};
+
+    $tests->{eUSDT} = 'USDT';
+
+    for my $currency (keys $tests->%*) {
+        my $cli = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+            broker_code => 'CR',
+            email       => 'buying+' . $currency . '@test.com',
+        });
+        my $config = {
+            api_url    => 'dummy',
+            api_key    => '12345',
+            api_secret => 'topsecret'
+        };
+
+        $mock_config->mock('third_party' => sub { return {banxa => $config} });
+
+        $cli->account($currency);
+        $fake_response->mock(content => sub { encode_json_utf8({data => {order => {id => '1', checkout_url => 'http://test'}}}) });
+
+        $mock_http->mock(
+            POST => sub {
+                my $payload = decode_json_utf8($_[2]);
+
+                is $payload->{target}, $tests->{$currency}, "Expected target currency for $currency";
+
+                return Future->done($fake_response);
+            });
+
+        $o->create_order({
+                client      => $cli,
+                source_type => 'official',
+                referrer    => 'https://www.deriv.com'
+            })->get;
+    }
 };
 
 $mock_onramp->unmock_all;
