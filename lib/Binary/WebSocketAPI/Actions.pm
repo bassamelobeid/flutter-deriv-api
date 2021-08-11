@@ -469,7 +469,8 @@ sub actions_config {
         [
             'p2p_advert_info',
             {
-                msg_group => 'p2p',
+                rpc_response_cb => \&Binary::WebSocketAPI::v3::Wrapper::P2P::subscribe_adverts,
+                msg_group       => 'p2p',
             },
         ],
         [

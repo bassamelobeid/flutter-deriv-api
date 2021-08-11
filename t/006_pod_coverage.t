@@ -21,7 +21,7 @@ my $allowed_naked_packages = {
     'Binary::WebSocketAPI::v3::Subscription'                               => 4,
     'Binary::WebSocketAPI::v3::Instance::Redis'                            => 9,
     'Binary::WebSocketAPI::v3::Wrapper::P2P'                               => 2,
-    'Binary::WebSocketAPI::v3::Wrapper::System'                            => 11,
+    'Binary::WebSocketAPI::v3::Wrapper::System'                            => 10,
     'Binary::WebSocketAPI::v3::Wrapper::Transaction'                       => 4,
     'Binary::WebSocketAPI::v3::Wrapper::Accounts'                          => 4,
     'Binary::WebSocketAPI::v3::Wrapper::Streamer'                          => 5,
@@ -37,7 +37,7 @@ my $allowed_naked_packages = {
     'Binary::WebSocketAPI::v3::Subscription::Pricer::Proposal'             => 1,
     'Binary::WebSocketAPI::v3::Subscription::Pricer::ProposalOpenContract' => 1,
     'Binary::WebSocketAPI::v3::Subscription::P2P::Advertiser'              => 7,
-    'Binary::WebSocketAPI::v3::Subscription::P2P::Advert'                  => 1,
+    'Binary::WebSocketAPI::v3::Subscription::P2P::Advert'                  => 7,
     'Binary::WebSocketAPI::v3::Subscription::P2P::Order'                   => 9,
 };
 

@@ -108,4 +108,56 @@ sub subscribe_advertisers {
     return $result;
 }
 
+=head2 subscribe_adverts
+
+Handle subscriptions for p2p_advert_info
+
+=cut
+
+sub subscribe_adverts {
+    my ($c, $rpc_response, $req_storage) = @_;
+
+    my $args     = $req_storage->{args};
+    my $msg_type = $req_storage->{msg_type};
+
+    if ($rpc_response->{error}) {
+        return $c->new_error($msg_type, $rpc_response->{error}{code}, $rpc_response->{error}{message_to_client});
+    }
+    
+    my $account_id = delete $rpc_response->{advertiser_account_id};
+    my $advertiser_id = delete $rpc_response->{advertiser_id};
+
+    my $result = {
+        msg_type  => $msg_type,
+        $msg_type => $rpc_response,
+        defined $args->{req_id} ? (req_id => $args->{req_id}) : (),
+    };
+
+    return $result unless $args->{subscribe} and $c->stash('loginid');
+    my $advert_id = $args->{id};
+
+    my $sub = Binary::WebSocketAPI::v3::Subscription::P2P::Advert->new(
+        c             => $c,
+        args          => $args,
+        loginid       => $c->stash('loginid'),
+        account_id    => $account_id,
+        advert_id     => $advert_id,
+        advertiser_id => $advertiser_id,
+    );
+
+    if ($sub->already_registered) {
+        my $msg =
+              $advert_id
+            ? $c->l('You are already subscribed to P2P Advert Info for advert [_1].', $advert_id)
+            : $c->l('You are already subscribed to all adverts.');
+        return $c->new_error($msg_type, 'AlreadySubscribed', $msg);
+    }
+
+    $sub->register;
+    $sub->subscribe;
+    $result->{subscription}{id} = $sub->uuid;
+    return $result;
+
+}
+
 1;
