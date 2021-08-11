@@ -29,7 +29,6 @@ use BOM::Product::ContractFactory qw( produce_contract );
 use Finance::Contract::Longcode qw( shortcode_to_parameters );
 use BOM::Database::DataMapper::CollectorReporting;
 use BOM::Config;
-use DataDog::DogStatsd::Helper qw (stats_inc stats_timing stats_count);
 use BOM::User::Client;
 use BOM::Transaction;
 use BOM::Transaction::Utility;

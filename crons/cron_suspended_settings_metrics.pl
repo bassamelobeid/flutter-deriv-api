@@ -16,8 +16,12 @@ key was set, we use that key to calculate the age of the key.
 
 use BOM::Config::Runtime;
 use BOM::DynamicSettings;
-use DataDog::DogStatsd::Helper qw(stats_timing);
+
+use Metrics::Any::Adapter qw(DogStatsd);
+use Metrics::Any qw($metrics), strict => 0;
+
 use Log::Any::Adapter 'DERIV';
+
 my $app_config          = BOM::Config::Runtime->instance->app_config;
 my @suspended_keys_list = BOM::DynamicSettings::get_settings_by_group('shutdown_suspend')->@*;
 
@@ -35,11 +39,11 @@ for my $key (@suspended_keys_list) {
         # Sometimes we keep keys in a string separated by ,
         $data = $data =~ /,/ ? [split ',', $data] : $data;
         # Sometimes we keep keys in an array
-        my $tag = ref $data eq 'ARRAY' ? {tags => [map { "tag:$_" } $data->@*]} : {};
+        my $tag = ref $data eq 'ARRAY' ? ['tag' => join(",", map { 'tag:' . $_ } $data->@*)] : [];
         # _local_rev is the time the value was set
-        stats_timing("settings.$key", time - $active_settings{$key}{_local_rev}, $tag);
+        $metrics->report_timer("settings.$key", time - $active_settings{$key}{_local_rev}, $tag);
     } else {
-        stats_timing("settings.$key", 0);
+        $metrics->report_timer("settings.$key", 0);
     }
 }
 

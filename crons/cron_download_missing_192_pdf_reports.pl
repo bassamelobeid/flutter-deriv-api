@@ -12,9 +12,14 @@ use BOM::Platform::Client::IDAuthentication;
 use BOM::User::Client;
 use Date::Utility;
 use Time::Duration::Concise::Localize;
-use DataDog::DogStatsd::Helper qw(stats_inc stats_event);
+use DataDog::DogStatsd::Helper qw(stats_event);
+
+use Metrics::Any::Adapter qw(DogStatsd);
+use Metrics::Any qw($metrics), strict => 0;
+
 use Log::Any qw($log);
 use Log::Any::Adapter 'DERIV';
+
 use constant HOURS_TO_QUERY => 4;    # This cron runs every hour, but we will pick up clients with `proveid_pending` status set 4 hours in the past.
 
 my $accounts_dir  = BOM::Config::Runtime->instance->app_config->system->directory->db . "/f_accounts";
@@ -31,6 +36,7 @@ for my $broker (qw(MX)) {
                 client => $client,
             )->proveid;
         } catch ($e) {
+            #TODO this has to be replaced with Metrics::Any method based on future developemnt
             stats_event('ProveID Failed', 'ProveID Failed, an email should have been sent', {alert_type => 'warning'});
             $log->warn("ProveID failed, $e");
         }
@@ -62,7 +68,7 @@ WHERE status_code = 'proveid_pending' AND last_modified_date >= ?;
 SQL
 
     my $clients = [grep { $_ =~ /$broker/ } map { $_->{client_loginid} } @$result];
-    stats_inc("proveid.cron.request.number_of_clients", scalar @$clients);
+    $metrics->inc_counter_by("proveid.cron.request.number_of_clients", scalar @$clients);
     return $clients;
 }
 

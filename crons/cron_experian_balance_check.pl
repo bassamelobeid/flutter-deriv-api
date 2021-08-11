@@ -14,7 +14,9 @@ use BOM::Config;
 use BOM::Platform::Email qw(send_email);
 use Mojo::UserAgent;
 use Mojo::UserAgent::CookieJar;
-use DataDog::DogStatsd::Helper qw(stats_inc);
+use Metrics::Any::Adapter qw(DogStatsd);
+use Metrics::Any qw($metrics), strict => 0;
+
 use constant THRESHOLD => 25000;
 use Log::Any qw($log);
 use Log::Any::Adapter 'DERIV';
@@ -37,7 +39,7 @@ try {
 }
 
 unless ($used && $limit) {
-    DataDog::DogStatsd::Helper::stats_inc('service.experian.failures', {tags => ["balance_check"]});
+    $metrics->inc_counter('service.experian.failures', ["tag" => "balance_check"]);
     die "Not able to get balance from experian.";
 }
 

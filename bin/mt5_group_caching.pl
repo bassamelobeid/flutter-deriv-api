@@ -24,7 +24,9 @@ use BOM::MT5::User::Async;
 
 use Log::Any qw($log);
 use Log::Any::Adapter ('DERIV', log_level => 'info');
-use DataDog::DogStatsd::Helper qw(stats_inc);
+
+use Metrics::Any::Adapter qw(DogStatsd);
+use Metrics::Any qw($metrics), strict => 0;
 
 use constant COOLDOWN => 1;
 
@@ -76,7 +78,7 @@ my $connection_lost = 1;
                         my $group = $data->[0];
                         if ($group) {
                             $log->debugf('Details found for ID [%s] - %s', $loginid, $group);
-                            stats_inc('mt5.group_populator.item_cached', 1);
+                            $metrics->inc_counter('mt5.group_populator.item_cached');
                             return Future->done;
                         }
                         # We avoid the MT5 call if it's suspended, but also pause for
@@ -92,7 +94,7 @@ my $connection_lost = 1;
                                 # if response is NotFound its most probably Archived account in MT5 , log level should be debugf otherwise errorf
                                 my $log_level = $resp_code eq 'NotFound' ? 'debugf' : 'errorf';
                                 $log->$log_level('Failure when retrieving group for [%s] - %s', $loginid, [@_]);
-                                stats_inc('mt5.group_populator.item_failed', 1);
+                                $metrics->inc_counter('mt5.group_populator.item_failed');
                                 Future->done({});
                             }
                         )->then(
@@ -110,7 +112,7 @@ my $connection_lost = 1;
                                 $group  //= 'Archived';
                                 $rights //= 0x0004;
 
-                                stats_inc('mt5.group_populator.item_processed', 1);
+                                $metrics->inc_counter('mt5.group_populator.item_processed');
                                 my $mt5_details = {
                                     'group'  => $group,
                                     'rights' => $rights,

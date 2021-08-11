@@ -8,7 +8,7 @@ use BOM::Config::Runtime;
 
 use BOM::RiskReporting::Dashboard;
 use BOM::RiskReporting::MarkedToModel;
-use DataDog::DogStatsd::Helper qw(stats_gauge);
+use Metrics::Any qw($metrics), strict => 0;
 use Syntax::Keyword::Try;
 
 use Log::Any qw($log);
@@ -87,8 +87,7 @@ sub send_log {
     my ($self, $type) = @_;
     my $last_run = $self->last_run;
     my $now      = time;
-
-    stats_gauge('risk_reporting.run', $now - $last_run->{lc $type}, {tags => ["tag:$type"]});
+    $metrics->set_gauge_to('risk_reporting.run', $now - $last_run->{lc $type}, ["tag" => "$type"]);
     $last_run->{lc $type} = $now;
 
     return;
