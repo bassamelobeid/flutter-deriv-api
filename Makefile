@@ -2,7 +2,7 @@ M=[ -t 1 ] && echo -e 'making \033[01;33m$@\033[00m' || echo 'making $@'
 MOJO_LOG_LEVEL?=info
 export MOJO_LOG_LEVEL
 P=/etc/rmg/bin/prove --timer -v -rl
-C=PERL5OPT=-MBOM::Test HARNESS_PERL_SWITCHES=-MDevel::Cover DEVEL_COVER_OPTIONS=-'ignore,bom-websocket-tests,ignore,^t/' /etc/rmg/bin/prove --timer -rl
+C=PERL5OPT=-MBOM::Test HARNESS_PERL_SWITCHES=-MDevel::Cover DEVEL_COVER_OPTIONS=-'ignore,bom-websocket-tests,ignore,^t/' /etc/rmg/bin/prove --timer --ignore-exit -rl
 
 PROVE=p () { $M; echo '$P' "$$@"; $P "$$@"; }; p
 
@@ -60,7 +60,8 @@ unit:
 
 cover:
 	sed -i '/--exec/d' .proverc
-	$C --norc $$(find t/ -type f | grep -v 00) t/unit/
+	sed -i '1667,1668d' /home/git/binary-com/perl/lib/5.26.2/B/Deparse.pm
+	$C $$(find t/ -type f | grep -v 00) t/unit/
 
 cover_websocket_tests:
 	$C /home/git/regentmarkets/bom-websocket-tests/v3/$(sub_test)
