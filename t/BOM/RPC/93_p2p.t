@@ -347,6 +347,19 @@ subtest 'Adverts' => sub {
     $c->call_ok('p2p_advert_update', $params)->has_no_system_error->has_error->error_code_is('AdvertNotFound', 'Edit non-existent advert');
 
     $params->{args} = {};
+    $c->call_ok('p2p_advert_info', $params)->has_no_system_error->has_error->error_code_is('AdvertInfoMissingParam', 'Error for no id or subscribe');
+
+    $params->{args} = {subscribe => 1};
+    $res = $c->call_ok('p2p_advert_info', $params)->has_no_system_error->has_no_error->result;
+    cmp_deeply $res,
+        {
+        advertiser_id         => $client_advertiser->p2p_advertiser_info->{id},
+        advertiser_account_id => $client_advertiser->account->id,
+        stash                 => ignore()
+        },
+        'can subscribe to p2p_advert_info with no id';
+
+    $params->{args} = {};
     $res = $c->call_ok('p2p_advertiser_adverts', $params)->has_no_system_error->has_no_error->result;
     is((map { $_{offer_id} } $res->{list}->@*), @offer_ids, 'Advert returned in p2p_advertiser_adverts');
 };

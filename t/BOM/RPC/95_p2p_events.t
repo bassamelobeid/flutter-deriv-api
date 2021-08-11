@@ -63,6 +63,12 @@ subtest 'p2p order create and confirm' => sub {
                 'p2p_advertiser_updated',
                 {
                     client_loginid => $advertiser->loginid,
+                }
+            ],
+            [
+                'p2p_adverts_updated',
+                {
+                    advertiser_id => $client->p2p_advertiser_info->{id},
                 }]
         ),
         'expected events for order create'
@@ -132,6 +138,12 @@ subtest 'p2p order create and confirm' => sub {
                 'p2p_advertiser_updated',
                 {
                     client_loginid => $advertiser->loginid,
+                }
+            ],
+            [
+                'p2p_adverts_updated',
+                {
+                    advertiser_id => $advertiser->p2p_advertiser_info->{id},
                 }]
         ),
         'expected event for order completion'
@@ -174,6 +186,12 @@ subtest 'p2p order create and cancel' => sub {
                 'p2p_advertiser_updated',
                 {
                     client_loginid => $advertiser->loginid,
+                }
+            ],
+            [
+                'p2p_adverts_updated',
+                {
+                    advertiser_id => $client->p2p_advertiser_info->{id},
                 }]
         ),
         'expected events for order create'
@@ -214,6 +232,12 @@ subtest 'p2p order create and cancel' => sub {
                 'p2p_advertiser_updated',
                 {
                     client_loginid => $advertiser->loginid,
+                }
+            ],
+            [
+                'p2p_adverts_updated',
+                {
+                    advertiser_id => $client->p2p_advertiser_info->{id},
                 }]
         ),
         'expected events emitted for cancellation'

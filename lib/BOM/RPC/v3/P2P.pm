@@ -177,6 +177,7 @@ our %ERROR_MAP = do {
         InvalidAdvertiserID             => localize('Invalid Advertiser ID provided.'),
         AdvertiserBlocked               => localize('You cannot place an order on the advert, because you have blocked the advertiser.'),
         InvalidAdvertForOrder           => localize('It is not possible to place an order on this advert. Please choose another advert.'),
+        AdvertInfoMissingParam          => localize('An advert ID must be provided when not subscribing.'),
     );
 };
 
@@ -525,8 +526,9 @@ Returns a hashref containing the following keys:
 p2p_rpc p2p_advert_info => sub {
     my (%args) = @_;
 
+    my %params = $args{params}{args}->%* or die +{error_code => 'AdvertInfoMissingParam'};
     my $client = $args{client};
-    return $client->p2p_advert_info($args{params}{args}->%*) // die +{error_code => 'AdvertNotFound'};
+    return $client->p2p_advert_info(%params) // die +{error_code => 'AdvertNotFound'};
 };
 
 =head2 p2p_advert_list
