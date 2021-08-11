@@ -9,8 +9,7 @@ use Future::AsyncAwait;
 use Syntax::Keyword::Try;
 use Net::Async::HTTP::Server;
 use IO::Async::Timer::Periodic;
-use WebService::Async::DevExperts::Client;
-use WebService::Async::DevExperts::Model::Common;
+use WebService::Async::DevExperts::DxWeb::Client;
 use HTTP::Response;
 use JSON::MaybeUTF8 qw(:v1);
 use Unicode::UTF8;
@@ -107,20 +106,18 @@ sub _add_to_loop {
 
     # devexperts API client for demo server
     $self->add_child(
-        $self->{clients}{demo} = WebService::Async::DevExperts::Client->new(
+        $self->{clients}{demo} = WebService::Async::DevExperts::DxWeb::Client->new(
             host => $self->{demo_host},
             port => $self->{demo_port},
-            auth => $self->{demo_host} ne 'http://localhost' ? 'basic' : '',
             user => $self->{demo_user},
             pass => $self->{demo_pass},
         ));
 
     # devexperts API client for real server
     $self->add_child(
-        $self->{clients}{real} = WebService::Async::DevExperts::Client->new(
+        $self->{clients}{real} = WebService::Async::DevExperts::DxWeb::Client->new(
             host => $self->{real_host},
             port => $self->{real_port},
-            auth => $self->{real_host} ne 'http://localhost' ? 'basic' : '',
             user => $self->{real_user},
             pass => $self->{real_pass},
         ));
@@ -171,24 +168,31 @@ async sub handle_http_request {
         my $response = HTTP::Response->new(200);
         my $response_content;
 
-        if ($data) {
+        if (ref $data) {
             if (ref $data eq 'ARRAY') {
-                $response_content = [map { WebService::Async::DevExperts::Model::Common::convert_case($_->as_hashref) } $data->@*];
-            } else {
-                $response_content = WebService::Async::DevExperts::Model::Common::convert_case($data->as_hashref);
+                $response_content = [map { $_->as_fields } $data->@*];
+            } elsif (blessed($data) and $data->isa('WebService::Async::DevExperts::BaseModel')) {
+                $response_content = $data->as_fields;
             }
+            $response->add_content(encode_json_utf8($response_content));
+            $response->content_type("application/javascript");
         }
-        $response->add_content($response_content ? encode_json_utf8($response_content) : '');
+
+        if ($data and not $response->content) {
+            $response->add_content($data);
+            $response->content_type("text/plain");
+        }
+
         $response->content_length(length $response->content);
-        $response->content_type("application/javascript");
         $req->respond($response);
     } catch ($e) {
         $log->debugf('Failed processing request: %s', $e);
 
         try {
-            if (blessed($e) and $e->isa('WebService::Async::DevExperts::Model::Error')) {
+            if (blessed($e) and $e->isa('WebService::Async::DevExperts::BaseModel')) {
                 my $response      = HTTP::Response->new($e->http_code);
-                my $response_data = WebService::Async::DevExperts::Model::Common::convert_case($e->as_hashref);
+                my $response_data = $e->as_fields;
+
                 $response->add_content(encode_json_utf8($response_data));
                 $response->content_length(length $response->content);
                 $response->content_type("application/javascript");

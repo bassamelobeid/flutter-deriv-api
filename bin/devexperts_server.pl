@@ -3,7 +3,7 @@ use warnings;
 
 use Getopt::Long;
 use IO::Async::Loop;
-use WebService::Async::DevExperts::Server;
+use WebService::Async::DevExperts::DxWeb::Server;
 use YAML::XS;
 use Log::Any::Adapter;
 use Path::Tiny qw(path);
@@ -36,7 +36,7 @@ Log::Any::Adapter->import('Stderr', log_level => $log_level);
 
 my $loop = IO::Async::Loop->new;
 $loop->add(
-    my $server = WebService::Async::DevExperts::Server->new(
+    my $server = WebService::Async::DevExperts::DxWeb::Server->new(
         addr => {
             family   => "inet",
             socktype => "stream",

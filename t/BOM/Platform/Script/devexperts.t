@@ -6,7 +6,7 @@ use Test::MockModule;
 use Test::Deep;
 use IO::Async::Loop;
 use BOM::Platform::Script::DevExpertsAPIService;
-use WebService::Async::DevExperts::Model::Error;
+use WebService::Async::DevExperts::DxWeb::Model::Error;
 use IO::Async::Loop;
 use JSON::MaybeUTF8 qw(:v1);
 use Log::Any::Adapter qw(TAP);
@@ -29,7 +29,10 @@ my $resp;
 subtest 'bad requests' => sub {
 
     for my $method ('GET', 'PUT', 'DELETE') {
-        $resp = $http->$method($url)->get;
+        $resp = $http->do_request(
+            method => $method,
+            uri    => $url
+        )->get;
         is $resp->content, 'Only POST is allowed', $method . ' not allowed - message';
         ok $resp->is_error, $method . ' not allowed - error';
     }
@@ -50,24 +53,30 @@ subtest 'bad requests' => sub {
 
 subtest 'API response types' => sub {
 
-    my $mock_api = Test::MockModule->new('WebService::Async::DevExperts::Client');
-    $mock_api->mock('http_send', sub { Future->done(decode_json_utf8($_[3])) });
+    my $mock_api = Test::MockModule->new('WebService::Async::DevExperts::DxWeb::Client');
+    $mock_api->redefine('request', sub { Future->done(decode_json_utf8($_[3])) });
     my $login = 'mylogin';
     $resp = $http->POST($url, '{ "server": "demo", "method": "client_create", "login": "' . $login . '" }', content_type => 'application/json')->get;
     is decode_json_utf8($resp->content)->{login}, $login, 'client_create (scalar result)';
 
-    $mock_api->mock('http_get', sub { Future->done([{login => $login}]) });
+    $mock_api->redefine('request', sub { Future->done([{login => $login}]) });
     $resp = $http->POST($url, '{ "server": "demo", "method": "client_list" }', content_type => 'application/json')->get;
     is decode_json_utf8($resp->content)->[0]{login}, $login, 'client_list (array result)';
 
-    $mock_api->mock('account_category_set', sub { Future->done() });
+    $mock_api->redefine('account_category_set', sub { Future->done() });
     $resp = $http->POST($url, '{ "server": "demo", "method": "account_category_set" }', content_type => 'application/json')->get;
     is $resp->content, '', 'account_category_set (empty result)';
 
-    $mock_api->mock(
-        'http_send',
+    $mock_api->redefine('logout_user_by_login', sub { Future->done('all sessions for user x closed.') });
+    $resp =
+        $http->POST($url, '{ "server": "demo", "method": "logout_user_by_login", "domain": "x", "login" : "x" }', content_type => 'application/json')
+        ->get;
+    is $resp->content, 'all sessions for user x closed.', 'logout_user_by_login (text result)';
+
+    $mock_api->redefine(
+        'request',
         sub {
-            die WebService::Async::DevExperts::Model::Error->new(
+            die WebService::Async::DevExperts::DxWeb::Model::Error->new(
                 error_code    => '123',
                 error_message => 'it failed',
                 http_code     => 469
