@@ -8,7 +8,8 @@ use Data::Dumper;
 use Path::Tiny;
 use Getopt::Long qw( GetOptions );
 Getopt::Long::Configure(qw/ auto_version /);
-use Log::Any qw($log), default_adapter => 'Stdout';
+use Log::Any::Adapter qw(DERIV), stdout => 'text';
+use Log::Any qw($log);
 
 my (%opt, $verbose, $quiet, $repo, $repodir, $db);
 

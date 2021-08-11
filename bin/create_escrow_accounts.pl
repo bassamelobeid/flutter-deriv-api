@@ -5,7 +5,9 @@ use warnings;
 no indirect;
 
 use List::Util qw(any);
-use Log::Any::Adapter qw(Stdout), log_level => 'debug';
+use Log::Any::Adapter qw(DERIV),
+    stdout    => 'text',
+    log_level => 'debug';
 use Log::Any qw($log);
 use Getopt::Long;
 use Date::Utility;
