@@ -104,6 +104,11 @@ if ($input{update}) {
             },
         );
 
+        BOM::Platform::Event::Emitter::emit(
+            p2p_adverts_updated => {
+                advertiser_id => $id,
+            });
+
         if ($name ne $input{current_name}) {
             my $sendbird_api = BOM::User::Utility::sendbird_api();
             WebService::SendBird::User->new(
@@ -168,6 +173,9 @@ if ($output{advertiser}) {
                 {Slice => {}},
                 $output{advertiser}->{id});
         });
+
+    map { $_->{is_visible} = ($_->{is_active} and $_->{can_order} and $_->{advertiser_is_approved} and $_->{advertiser_is_listed}) ? 1 : 0 } @$ads;
+
     # pagination
     my $page_size = 30;
     my $start     = $input{start} // 0;

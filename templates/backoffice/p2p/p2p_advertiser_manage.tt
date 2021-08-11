@@ -24,6 +24,10 @@
                 <a class="link" href="[% request.url_for('backoffice/f_manager_history.cgi', { loginID => advertiser.client_loginid }) %]">Client statement</a>
             </td>            
         </tr>
+        <tr>
+            <td>ID</td>
+            <td>[% advertiser.id %]</td>
+        </tr>        
         <tr [% IF !advertiser.is_enabled %]style="background:#ffaaaa;"[% END %]>
             <td>Enabled</td>
             <td>
@@ -239,13 +243,14 @@
     [% IF prev.defined %]<a class="link" href="[% request.url_for('backoffice/p2p_advertiser_manage.cgi', { id => advertiser.id, start => prev }) %]">Previous</a>[% END %]
     [% IF next.defined %]<a class="link" href="[% request.url_for('backoffice/p2p_advertiser_manage.cgi', { id => advertiser.id, start => next }) %]">Next</a>[% END %]    
     <div class="scrollable">
-    <table class="full-width border">
+    <table class="full-width border hover alternate">
         <thead>
             <tr>
                 <th scope="col">ID</th>
                 <th scope="col">Created</th>
                 <th scope="col">Deleted</th>
                 <th scope="col">Active</th>
+                <th scope="col">Visible</th>
                 <th scope="col">Type</th>
                 <th scope="col">Description</th>
                 <th scope="col">Deriv Currency</th>
@@ -257,12 +262,11 @@
                 <th scope="col">Max order</th>
                 <th scope="col">Actual min</th>
                 <th scope="col">Actual max</th>
-                <th scope="col">Orderable</th>
                 <th scope="col">Country</th>
                 <th scope="col">Payment method</th>
                 <th scope="col">Payment info</th>
                 <th scope="col">Contact info</th>
-                <th scope="col"></th>
+                <th scope="col">Orders</th>
             </tr>
         </thead>
         <tbody>
@@ -272,6 +276,7 @@
                 <td>[% ad.created_time %]</td>
                 <td>[% ad.is_deleted %]</td>
                 <td>[% ad.is_active %]</td>
+                <td>[% ad.is_visible %]</td>
                 <td>[% ad.type %]</td>
                 <td>[% ad.description %]</td>
                 <td>[% ad.account_currency %]</td>
@@ -283,12 +288,11 @@
                 <td>[% ad.max_order_amount %]</td>
                 <td>[% ad.min_order_amount_actual %]</td>
                 <td>[% ad.max_order_amount_actual %]</td>
-                <td>[% IF ad.min_order_amount_actual <= ad.max_order_amount_actual %]Yes[% ELSE %]No[% END %]</td>
                 <td>[% ad.country %]</td>
                 <td>[% ad.payment_method %]</td>
                 <td>[% ad.payment_info %]</td>
                 <td>[% ad.contact_info %]</td>
-                <td><a class="link" href="[% request.url_for('backoffice/p2p_order_list.cgi', { advert_id => ad.id }) %]">Orders</a></td>
+                <td><a class="link" href="[% request.url_for('backoffice/p2p_order_list.cgi', { advert_id => ad.id }) %]">Active: [% ad.active_orders %]</a></td>
             </tr>
             [% END %]
         </tbody>
