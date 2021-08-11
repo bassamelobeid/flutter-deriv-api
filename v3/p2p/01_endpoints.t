@@ -319,10 +319,6 @@ subtest 'create advert (sell)' => sub {
 
     cmp_deeply($resp->{p2p_advertiser_adverts}{list}[0], $advert, 'Advertiser adverts item matches advert create');
 
-    # These fields are not returned from advert_create and advertiser_adverts, but should be returned from following calls
-    $advert->{min_order_amount_limit} = $advert->{min_order_amount_limit_display} = num($advert_params{min_order_amount});
-    $advert->{max_order_amount_limit} = $advert->{max_order_amount_limit_display} = num($advert_params{max_order_amount});
-
     $resp = $t->await::p2p_advert_list({p2p_advert_list => 1});
     test_schema('p2p_advert_list', $resp);
     cmp_deeply($resp->{p2p_advert_list}{list}[0], $advert, 'Advert list item matches advert create');
@@ -527,6 +523,13 @@ subtest 'p2p_advert_update' => sub {
         is_active         => 0,
     });
     test_schema('p2p_advert_update', $resp, 'actual update');
+
+    $resp = $t->await::p2p_advert_update({
+        p2p_advert_update => 1,
+        id                => $advert->{id},
+        delete         => 1,
+    });
+    test_schema('p2p_advert_update', $resp, 'delete ad');
 };
 
 subtest 'show real names' => sub {
