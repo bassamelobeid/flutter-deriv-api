@@ -87,7 +87,7 @@ $client_details = {
     secret_answer          => 'test',
     account_opening_reason => 'Speculative',
     citizen                => 'de',
-    place_of_birth         => "de",
+    place_of_birth         => 'de',
 };
 
 $params = {
@@ -1459,6 +1459,212 @@ subtest 'Forbidden postcodes' => sub {
     $params->{args}->{address_postcode} = 'EA1 C1A1';
     $result = $rpc_ct->call_ok('new_account_maltainvest', $params)->has_no_system_error->has_no_error('gb mf account created successfully')->result;
     ok $result->{client_id}, 'got a client id';
+};
+
+subtest 'Italian TIN test' => sub {
+    subtest 'Old format' => sub {
+        my $idauth_mock = Test::MockModule->new('BOM::Platform::Client::IDAuthentication');
+        $idauth_mock->mock(
+            'run_validation',
+            sub {
+                return 1;
+            });
+
+        my $password = 'Alienbatata20';
+        my $hash_pwd = BOM::User::Password::hashpw($password);
+        my $email    = 'bat2021' . rand(999) . '@binary.com';
+        my $user     = BOM::User->create(
+            email          => $email,
+            password       => $hash_pwd,
+            email_verified => 1,
+        );
+        my $client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+            broker_code => 'VRTC',
+            email       => $email,
+            residence   => 'it',
+        });
+
+        my $auth_token = BOM::Platform::Token::API->new->create_token($client_vr->loginid, 'test token');
+
+        $params->{country}                 = 'it';
+        $params->{args}->{residence}       = 'it';
+        $params->{args}->{client_password} = $hash_pwd;
+        $params->{args}->{subtype}         = 'real';
+        $params->{args}->{first_name}      = 'Josue Lee';
+        $params->{args}->{last_name}       = 'King';
+        $params->{args}->{date_of_birth}   = '1989-09-01';
+        $params->{args}->{email}           = $email;
+        $params->{args}->{phone}           = '+393678917832';
+        $params->{args}->{salutation}      = 'Op';
+        $params->{args}->{citizen}         = 'it';
+        $params->{args}->{accept_risk}     = 1;
+        $params->{token}                   = $auth_token;
+
+        $params->{args} = {
+            $params->{args}->%*,
+            'other_instruments_trading_frequency'  => '3-4 transactions in the past 9 months',
+            'forex_trading_frequency'              => '19-29 transactions in the past 11',
+            'education_level'                      => 'Tecnical',
+            'forex_trading_experience'             => '5 years',
+            'binary_options_trading_experience'    => '8 years',
+            'cfd_trading_experience'               => '3 years',
+            'employment_industry'                  => 'not Construction',
+            'income_source'                        => 'employed',
+            'other_instruments_trading_experience' => 'Over 6 years',
+            'binary_options_trading_frequency'     => '15 transactions or more in the past 2 months',
+            'set_financial_assessment'             => 1,
+            'occupation'                           => 'Student',
+            'cfd_trading_frequency'                => '8-9 transactions in the past 4 months',
+            'source_of_wealth'                     => 'Not company Owner',
+            'estimated_worth'                      => '$150,000 - $250,000',
+            'employment_status'                    => 'Not Self-Employed',
+            'net_income'                           => '$10,000 - $15,000',
+            'account_turnover'                     => '$20,000 - $90,000',
+            'tax_residence'                        => 'it',
+            'tax_identification_number'            => 'MRTSVT79M29F899P',
+            'account_opening_reason'               => 'Speculative',
+        };
+
+        my $result =
+            $rpc_ct->call_ok('new_account_maltainvest', $params)->has_no_system_error->has_no_error('it mf account created successfully')->result;
+        ok $result->{client_id}, 'got a client id';
+    };
+
+    subtest 'New format' => sub {
+        my $idauth_mock = Test::MockModule->new('BOM::Platform::Client::IDAuthentication');
+        $idauth_mock->mock(
+            'run_validation',
+            sub {
+                return 1;
+            });
+
+        my $password = 'Alienbatata20';
+        my $hash_pwd = BOM::User::Password::hashpw($password);
+        my $email    = 'batata2020' . rand(999) . '@binary.com';
+        my $user     = BOM::User->create(
+            email          => $email,
+            password       => $hash_pwd,
+            email_verified => 1,
+        );
+        my $client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+            broker_code => 'VRTC',
+            email       => $email,
+            residence   => 'it',
+        });
+
+        my $auth_token = BOM::Platform::Token::API->new->create_token($client_vr->loginid, 'test token');
+
+        $params->{country}                 = 'it';
+        $params->{args}->{residence}       = 'it';
+        $params->{args}->{client_password} = $hash_pwd;
+        $params->{args}->{subtype}         = 'real';
+        $params->{args}->{first_name}      = 'Joseph Batata';
+        $params->{args}->{last_name}       = 'Junior';
+        $params->{args}->{date_of_birth}   = '1997-01-01';
+        $params->{args}->{email}           = $email;
+        $params->{args}->{phone}           = '+393678916732';
+        $params->{args}->{salutation}      = 'Hi';
+        $params->{args}->{citizen}         = 'it';
+        $params->{args}->{accept_risk}     = 1;
+        $params->{token}                   = $auth_token;
+
+        $params->{args} = {
+            $params->{args}->%*,
+            'other_instruments_trading_frequency'  => '4-5 transactions in the past 4 months',
+            'forex_trading_frequency'              => '11-39 transactions in the past 12',
+            'education_level'                      => 'University',
+            'forex_trading_experience'             => '2 years',
+            'binary_options_trading_experience'    => '3 years',
+            'cfd_trading_experience'               => '6 years',
+            'employment_industry'                  => 'Construction',
+            'income_source'                        => 'Not employed',
+            'other_instruments_trading_experience' => 'Over 6 years',
+            'binary_options_trading_frequency'     => '80 transactions or more in the past 8 months',
+            'set_financial_assessment'             => 1,
+            'occupation'                           => 'Boss',
+            'cfd_trading_frequency'                => '4-6 transactions in the past 9 months',
+            'source_of_wealth'                     => 'Not company Owner',
+            'estimated_worth'                      => '$200,000 - $250,000',
+            'employment_status'                    => 'Self-Employed',
+            'net_income'                           => '$10,000 - $25,000',
+            'account_turnover'                     => '$30,000 - $90,000',
+            'tax_residence'                        => 'it',
+            'tax_identification_number'            => 'MRTSVT79M29F8P9P',
+            'account_opening_reason'               => 'Income Earning',
+        };
+
+        my $result =
+            $rpc_ct->call_ok('new_account_maltainvest', $params)->has_no_system_error->has_no_error('it mf account created successfully')->result;
+        ok $result->{client_id}, 'got a client id';
+    };
+
+    subtest 'TIN with wrong format' => sub {
+        my $idauth_mock = Test::MockModule->new('BOM::Platform::Client::IDAuthentication');
+        $idauth_mock->mock(
+            'run_validation',
+            sub {
+                return 1;
+            });
+
+        my $password = 'Allison90';
+        my $hash_pwd = BOM::User::Password::hashpw($password);
+        my $email    = 'Allison2020' . rand(999) . '@binary.com';
+        my $user     = BOM::User->create(
+            email          => $email,
+            password       => $hash_pwd,
+            email_verified => 1,
+        );
+        my $client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+            broker_code => 'VRTC',
+            email       => $email,
+            residence   => 'it',
+        });
+
+        my $auth_token = BOM::Platform::Token::API->new->create_token($client_vr->loginid, 'test token');
+
+        $params->{country}                 = 'it';
+        $params->{args}->{residence}       = 'it';
+        $params->{args}->{client_password} = $hash_pwd;
+        $params->{args}->{subtype}         = 'real';
+        $params->{args}->{first_name}      = 'Allison Laura';
+        $params->{args}->{last_name}       = 'Sean';
+        $params->{args}->{date_of_birth}   = '1997-01-01';
+        $params->{args}->{email}           = $email;
+        $params->{args}->{phone}           = '+393678916702';
+        $params->{args}->{salutation}      = 'Helloo';
+        $params->{args}->{citizen}         = 'it';
+        $params->{args}->{accept_risk}     = 1;
+        $params->{token}                   = $auth_token;
+
+        $params->{args} = {
+            $params->{args}->%*,
+            'other_instruments_trading_frequency'  => '3-4 transactions in the past 6 months',
+            'forex_trading_frequency'              => '21-40 transactions in the past 8',
+            'education_level'                      => 'University',
+            'forex_trading_experience'             => '4 years',
+            'binary_options_trading_experience'    => '7 years',
+            'cfd_trading_experience'               => '4 years',
+            'employment_industry'                  => 'Construction Industry',
+            'income_source'                        => 'employed',
+            'other_instruments_trading_experience' => 'Over 9 years',
+            'binary_options_trading_frequency'     => '30 transactions or more in the past 3 months',
+            'set_financial_assessment'             => 1,
+            'occupation'                           => 'Not Boss',
+            'cfd_trading_frequency'                => '7-9 transactions in the past 11 months',
+            'source_of_wealth'                     => 'Not company Owner',
+            'estimated_worth'                      => '$100,000 - $250,000',
+            'employment_status'                    => 'Self-Employed',
+            'net_income'                           => '$15,000 - $25,000',
+            'account_turnover'                     => '$40,000 - $90,000',
+            'tax_residence'                        => 'it',
+            'tax_identification_number'            => 'MRTSVT79M29F8_9P',
+            'account_opening_reason'               => 'Hedging',
+        };
+
+        my $result =
+            $rpc_ct->call_ok('new_account_maltainvest', $params)->has_no_system_error->has_no_error('it mf account created successfully')->result;
+        ok $result->{client_id}, 'got a client id';
+    };
 };
 
 done_testing();
