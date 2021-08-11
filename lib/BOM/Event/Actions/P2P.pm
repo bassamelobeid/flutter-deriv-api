@@ -36,6 +36,7 @@ use Format::Util::Numbers qw/financialrounding formatnumber/;
 use Date::Utility;
 use DataDog::DogStatsd::Helper qw(stats_timing stats_inc);
 use BOM::Event::Utility qw(exception_logged);
+use List::Util qw(first);
 
 #TODO: Put here id for special bom-event application
 # May be better to move it to config rather than keep it here.
@@ -255,6 +256,7 @@ sub dispute_expired {
                     '</ul>',
                 ],
             });
+
         return 1;
     }
 
@@ -296,6 +298,7 @@ sub order_expired {
             source => $data->{source} // DEFAULT_SOURCE,
             staff  => $data->{staff}  // DEFAULT_STAFF,
         );
+
         return $status ? 1 : 0;
     } catch ($err) {
         $log->info('Fail to process order_expired: ' . $err, $data);
@@ -395,6 +398,58 @@ sub archived_ad {
         loginid => $loginid,
         adverts => [map { $client->_p2p_adverts(id => $_, limit => 1)->@* } $ads->@*],
     });
+}
+
+=head2 p2p_adverts_updated
+
+Publish p2p_advert_info updates to subscribers.
+
+=over 4
+
+=item * C<advertiser_id> advertiser id of updated adverts.
+
+=item * C<channels> redis channels of current subscribers (optional).
+
+=back
+
+=cut
+
+sub p2p_adverts_updated {
+    my $data = shift;
+    my ($channels, $advertiser_id) = @$data{qw/channels advertiser_id/};
+
+    my $redis = BOM::Config::Redis->redis_p2p_write;
+    $channels //= $redis->pubsub('channels', 'P2P::ADVERT::' . $advertiser_id . '::*');
+    return unless $channels and @$channels;
+
+    my ($adverts, $client_channels);
+    for my $channel (@$channels) {
+        my ($loginid, $advert_id) = $channel =~ /P2P::ADVERT::.+?::.+?::(.+?)::(.+?)$/;
+        my $client = BOM::User::Client->new({loginid => $loginid});
+        if ($advert_id eq 'ALL') {
+            $adverts->{$loginid}{$advert_id} = $client->p2p_advertiser_adverts;
+        } else {
+            $adverts->{$loginid}{$advert_id} = [
+                $client->p2p_advert_info(id => $advert_id) // {
+                    id      => $advert_id,
+                    deleted => 1
+                }];
+        }
+        $client_channels->{$loginid}{$advert_id} = $channel;
+    }
+
+    my $updates = BOM::User::Utility::p2p_on_advert_view($advertiser_id, $adverts);
+    return 1 unless $updates;
+
+    for my $loginid (keys %$updates) {
+        for my $advert_id (keys $updates->{$loginid}->%*) {
+            for my $item ($updates->{$loginid}{$advert_id}->@*) {
+                $redis->publish($client_channels->{$loginid}{$advert_id}, encode_json_utf8($item));
+            }
+        }
+    }
+
+    return 1;
 }
 
 =head2 _track_p2p_order_event

@@ -115,6 +115,7 @@ my $action_mapping = {
     check_name_changes_after_first_deposit           => \&BOM::Event::Actions::Client::check_name_changes_after_first_deposit,
     bulk_authentication                              => \&BOM::Event::Actions::Authentication::bulk_authentication,
     p2p_archived_ad                                  => \&BOM::Event::Actions::P2P::archived_ad,
+    p2p_adverts_updated                              => \&BOM::Event::Actions::P2P::p2p_adverts_updated,
 };
 
 =head1 METHODS
