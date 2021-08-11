@@ -355,7 +355,8 @@ subtest 'trading_servers' => sub {
 
 subtest 'p2p_config' => sub {
 
-    my $p2p_config = BOM::Config::Runtime->instance->app_config->payments->p2p;
+    my $config     = BOM::Config::Runtime->instance->app_config;
+    my $p2p_config = $config->payments->p2p;
 
     my %vals = (
         adverts_active_limit        => int(rand(1000)),
@@ -368,6 +369,7 @@ subtest 'p2p_config' => sub {
         maximum_order_amount        => int(rand(1000)),
         order_daily_limit           => int(rand(1000)),
         order_payment_period        => int(rand(1000)),
+        disabled                    => bool(0),
     );
 
     $p2p_config->archive_ads_days($vals{adverts_archive_period});
@@ -380,14 +382,23 @@ subtest 'p2p_config' => sub {
     $p2p_config->limits->maximum_order($vals{maximum_order_amount});
     $p2p_config->limits->count_per_day_per_client($vals{order_daily_limit});
     $p2p_config->order_timeout($vals{order_payment_period} * 60);
+    $p2p_config->enabled(1);
+    $config->system->suspend->p2p(0);
 
-    my $result = $c->call_ok(
-        'website_status',
-        {
+    my %params = (
+        website_status => {
             language => 'EN',
-            args     => {website_status => 1}})->has_no_system_error->has_no_error->result;
+            args     => {website_status => 1}});
 
-    cmp_deeply($result->{p2p_config}, \%vals, 'expected results from runtime config');
+    cmp_deeply($c->call_ok(%params)->result->{p2p_config}, \%vals, 'expected results from runtime config');
+
+    $config->system->suspend->p2p(1);
+    is $c->call_ok(%params)->result->{p2p_config}{disabled}, 1, 'p2p suspended';
+
+    $config->system->suspend->p2p(0);
+    $p2p_config->enabled(0);
+    is $c->call_ok(%params)->result->{p2p_config}{disabled}, 1, 'p2p disabled';
+
 };
 
 done_testing();

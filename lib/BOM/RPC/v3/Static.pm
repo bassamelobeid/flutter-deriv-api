@@ -290,6 +290,10 @@ rpc website_status => sub {
             maximum_order_amount        => $p2p_config->limits->maximum_order,
             adverts_active_limit        => $p2p_config->limits->maximum_ads_per_type,
             order_daily_limit           => $p2p_config->limits->count_per_day_per_client,
+            disabled                    => (
+                not $p2p_config->enabled
+                    or $app_config->system->suspend->p2p
+            ) ? 1 : 0,
         }};
 };
 
