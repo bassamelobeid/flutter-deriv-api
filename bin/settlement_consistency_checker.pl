@@ -10,6 +10,11 @@ use DataDog::DogStatsd::Helper qw(stats_inc stats_event);
 use Format::Util::Numbers;
 use List::Util qw(min max);
 
+use Log::Any qw($log);
+use Log::Any::Adapter qw(DERIV),
+    stderr    => 'json',
+    log_level => 'info';
+
 ++$|;
 my $broker_code = 'CR';
 my $clientdb    = BOM::Database::ClientDB->new({
@@ -23,7 +28,7 @@ my $count   = 0;
 
 my $precision_config = Format::Util::Numbers::get_precision_config()->{price};
 
-warn "Starting price consistency checker ...";
+$log->info("Starting price consistency checker ...");
 
 while (1) {
 
@@ -60,7 +65,7 @@ while (1) {
                 stats_event("Inconsistent settlement price", $error_msg, {alert_type => 'error'});
             }
         } catch {
-            print "Exception $@ for ID $row->{id} on $row->{expiry_time} with $row->{short_code}\n";
+            $log->info("Exception $@ for ID $row->{id} on $row->{expiry_time} with $row->{short_code}");
         }
     }
     sleep 15;

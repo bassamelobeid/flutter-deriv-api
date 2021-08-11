@@ -2,6 +2,11 @@
 use strict;
 use warnings;
 
+use Log::Any qw($log);
+use Log::Any::Adapter qw(DERIV),
+    stderr    => 'json',
+    log_level => 'info';
+
 use BOM::Config::Redis;
 use ExpiryQueue;
 use Getopt::Long qw(GetOptions :config no_auto_abbrev no_ignore_case);
@@ -35,13 +40,13 @@ die 'invalid number of processes' unless $threads_number > 0;
 my @pids;
 
 $SIG{INT} = $SIG{TERM} = sub {
-    print("Terminating $$\n");
+    $log->info("Terminating $$");
     kill TERM => @pids if (@pids);
     exit(0);
 };
 
 sub _daemon_run {
-    print("Starting as PID $$\n");
+    $log->info("Starting as PID $$");
     my $redis   = BOM::Config::Redis::redis_expiryq_write;
     my $expiryq = ExpiryQueue->new(redis => $redis);
     while (1) {
@@ -58,7 +63,7 @@ sub _daemon_run {
                     db_operation => 'replica'
                 });
                 if ($info->{in_currency} ne $client->currency) {
-                    warn(     'Skip on currency mismatch for contract '
+                    $log->warn('Skip on currency mismatch for contract '
                             . $contract_id
                             . '. Expected: '
                             . $info->{in_currency}
@@ -87,7 +92,7 @@ sub _daemon_run {
     }
 }
 
-print "parent $$ launching child processes\n";
+$log->info("parent $$ launching child processes");
 
 for (my $i = 1; $i < $threads_number; $i++) {
     if (my $pid = fork // die 'unable to fork - ' . $!) {

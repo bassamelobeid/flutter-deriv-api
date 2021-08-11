@@ -22,7 +22,9 @@ use warnings;
 
 use BOM::Transaction::Limits::SyncLoss;
 use Log::Any qw($log);
-use Log::Any::Adapter qw(Stdout), log_level => 'info';
+use Log::Any::Adapter qw(DERIV),
+    stdout    => 'text',
+    log_level => 'info';
 
 my $output = BOM::Transaction::Limits::SyncLoss::reset_daily_loss_hashes();
 
