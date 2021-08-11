@@ -50,6 +50,12 @@ use constant TOKEN_GENERATION_ATTEMPTS => 3;
 # Length of allowed url params keys
 use constant URL_PARAMS_LENGTH => 15;
 
+# Redis key to temporary store OneAll response
+use constant ONE_ALL_TEMP_KEY => 'ONE::ALL::TEMP::';
+
+# Timeout for temporary OneAll storage (10 minutes)
+use constant ONE_ALL_TEMP_TIMEOUT => 600;
+
 use constant {
     ONE_TIME_TOKEN_TIMEOUT => 60,                         # one time token takes 1 minute (60 seconds) to expire.
     ONE_TIME_TOKEN_LENGTH  => 20,
@@ -566,13 +572,25 @@ sub _perform_social_login {
         };
     }
 
-    my $oneall = WWW::OneAll->new(
-        subdomain   => $brand_name,
-        public_key  => BOM::Config::third_party()->{"oneall"}->{$brand_name}->{public_key},
-        private_key => BOM::Config::third_party()->{"oneall"}->{$brand_name}->{private_key},
-    );
+    my $redis = BOM::Config::Redis::redis_auth_write;
+    my $data;
 
-    my $data = eval { $oneall->connection($connection_token); };
+    try {
+        my $cached = $redis->get(ONE_ALL_TEMP_KEY . $connection_token);
+        $data = decode_json_utf8($cached) if $cached;
+    } catch {
+        $data = undef;
+    }
+
+    unless ($data) {
+        my $oneall = WWW::OneAll->new(
+            subdomain   => $brand_name,
+            public_key  => BOM::Config::third_party()->{"oneall"}->{$brand_name}->{public_key},
+            private_key => BOM::Config::third_party()->{"oneall"}->{$brand_name}->{private_key},
+        );
+
+        $data = eval { $oneall->connection($connection_token); };
+    }
 
     if (!$data || $data->{response}->{request}->{status}->{code} != 200) {
         stats_inc('login.oneall.connection_failure',
@@ -582,6 +600,8 @@ sub _perform_social_login {
             status => 500
         };
     }
+
+    $redis->setex(ONE_ALL_TEMP_KEY . $connection_token, ONE_ALL_TEMP_TIMEOUT, encode_json_utf8($data));
 
     my $provider_result = $data->{response}->{result};
     die +{code => "NO_AUTHENTICATION"} if $provider_result->{status}->{code} != 200 || $provider_result->{status}->{flag} eq 'error';
@@ -692,6 +712,8 @@ sub _perform_social_login {
             oneall_user_id => $user->{id}});
 
     _verify_otp($result->{user}, defang($c->req->json->{one_time_password}));
+
+    $redis->del(ONE_ALL_TEMP_KEY . $connection_token);
 
     return $result;
 }

@@ -15,6 +15,7 @@ use JSON::MaybeUTF8 qw(encode_json_utf8);
 use Digest::SHA qw(hmac_sha256_hex);
 use JSON::WebToken;
 use JSON::MaybeUTF8 qw(decode_json_utf8);
+use BOM::Config::Redis;
 
 my $redis = BOM::Config::Redis::redis_auth_write();
 my $t     = Test::Mojo->new('BOM::OAuth');
@@ -475,10 +476,12 @@ subtest 'login' => sub {
 
         note 'Successful Login';
         # Mocking OneAll Data
+        my $oneall_hit;
         my $mocked_oneall = Test::MockModule->new('WWW::OneAll');
         $mocked_oneall->mock(
             new        => sub { bless +{}, 'WWW::OneAll' },
             connection => sub {
+                $oneall_hit = 1;
                 return +{
                     response => {
                         request => {
@@ -516,8 +519,10 @@ subtest 'login' => sub {
             {
                 Authorization => "Bearer $jwt_token",
             })->status_is(200)->json_has('/tokens')->json_has('/refresh_token', 'Response has refresh_token');
+        ok $oneall_hit, 'OneAll API was hit';
 
         # Updating social_user to is_totp_enabled
+        $oneall_hit = 0;
         $social_user->update_totp_fields(is_totp_enabled => 1);
         note "Missing ONE TIME PASSWORD";
         $post->(
@@ -532,7 +537,12 @@ subtest 'login' => sub {
                 Authorization => "Bearer $jwt_token",
             })->status_is(400)->json_is('/error_code', 'MISSING_ONE_TIME_PASSWORD');
 
+        ok $oneall_hit, 'OneAll API was hit';
+        ok $redis->get('ONE::ALL::TEMP::true'), 'OneAll response is cached';
+        ok $redis->ttl('ONE::ALL::TEMP::true') <= 600, 'OneAll cache expiration is 600 seconds';
+
         note "Wrong ONE TIME PASSWORD";
+        $oneall_hit = 0;
         $post->(
             $login_url,
             {
@@ -544,6 +554,10 @@ subtest 'login' => sub {
             {
                 Authorization => "Bearer $jwt_token",
             })->status_is(400)->json_is('/error_code', 'TFA_FAILURE');
+
+        ok !$oneall_hit, 'OneAll API was skipped';
+        ok $redis->get('ONE::ALL::TEMP::true'), 'OneAll response is still cached';
+        ok $redis->ttl('ONE::ALL::TEMP::true') <= 600, 'OneAll cache expiration is 600 seconds (or less)';
 
         note "Successful social login with ONE TIME PASSWORD";
         $post->(
@@ -557,6 +571,9 @@ subtest 'login' => sub {
             {
                 Authorization => "Bearer $jwt_token",
             })->status_is(200)->json_has('/tokens')->json_has('/refresh_token', 'Response has refresh_token');
+
+        ok !$oneall_hit, 'OneAll API was skipped';
+        ok !$redis->get('ONE::ALL::TEMP::true'), 'OneAll response cache is deleted after successful login';
     };
 
     subtest 'New social signup' => sub {
