@@ -385,6 +385,14 @@ for my $test_case (@test_cases) {
                             client_loginid => $advertiser->loginid,
                         }
                     ],
+                    [
+                        'p2p_adverts_updated',
+                        {
+                            advertiser_id => $test_case->{type} eq 'sell'
+                            ? $client->p2p_advertiser_info->{id}
+                            : $advertiser->p2p_advertiser_info->{id},
+                        }
+                    ],
                 ),
                 'expected events emitted'
             );

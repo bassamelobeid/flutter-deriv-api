@@ -13,14 +13,9 @@ use BOM::Test::Helper::Client;
 BOM::Test::Helper::P2P::bypass_sendbird();
 BOM::Test::Helper::P2P::create_escrow();
 
-my @advertisers_updated;
+my $emitted_events;
 my $mock_events = Test::MockModule->new('BOM::Platform::Event::Emitter');
-$mock_events->mock(
-    'emit',
-    sub {
-        my ($type, $data) = @_;
-        push @advertisers_updated, $data->{client_loginid} if $type eq 'p2p_advertiser_updated';
-    });
+$mock_events->mock(emit => sub { push $emitted_events->{$_[0]}->@*, $_[1] });
 
 subtest 'favourites' => sub {
     my $client = BOM::Test::Helper::Client::create_client();
@@ -42,7 +37,7 @@ subtest 'favourites' => sub {
         'relations of new advertiser'
     );
 
-    undef @advertisers_updated;
+    undef $emitted_events;
     cmp_deeply(
         $me->p2p_advertiser_relations(add_favourites => [$fav->_p2p_advertiser_cached->{id}]),
         {
@@ -56,7 +51,15 @@ subtest 'favourites' => sub {
         },
         'add favourite'
     );
-    cmp_deeply(\@advertisers_updated, bag($fav->loginid), 'event fired');
+
+    cmp_deeply(
+        $emitted_events,
+        {
+            p2p_advertiser_updated => [{client_loginid => $fav->loginid}],
+            p2p_adverts_updated    => [{advertiser_id  => $fav->_p2p_advertiser_cached->{id}}]
+        },
+        'events fired'
+    );
 
     is $me->p2p_advertiser_info->{favourited}, 0, 'nobody likes me';
 
@@ -111,6 +114,7 @@ subtest 'favourites' => sub {
     ok !exists $fav->p2p_advert_info(id => $fav_ad->{id})->{advertiser_details}{is_favourite},
         'favourite flag not in advert info for favourite themself';
 
+    undef $emitted_events;
     my $update = $me->p2p_advertiser_relations(
         add_favourites => [$other->_p2p_advertiser_cached->{id}],
         add_blocked    => [$fav->_p2p_advertiser_cached->{id}]);
@@ -122,6 +126,16 @@ subtest 'favourites' => sub {
     is $info->{favourited}, 0, 'favourited count decreased';
 
     cmp_deeply(
+        $emitted_events,
+        {
+            p2p_advertiser_updated => bag({client_loginid => $fav->loginid}, {client_loginid => $other->loginid}),
+            p2p_adverts_updated => bag({advertiser_id => $fav->_p2p_advertiser_cached->{id}}, {advertiser_id => $other->_p2p_advertiser_cached->{id}})
+        },
+        'events fired'
+    );
+
+    undef $emitted_events;
+    cmp_deeply(
         $me->p2p_advertiser_relations(
             remove_favourites => [$other->_p2p_advertiser_cached->{id}],
             remove_blocked    => [$fav->_p2p_advertiser_cached->{id}]
@@ -131,6 +145,15 @@ subtest 'favourites' => sub {
             blocked_advertisers   => [],
         },
         'remove all relations'
+    );
+
+    cmp_deeply(
+        $emitted_events,
+        {
+            p2p_advertiser_updated => bag({client_loginid => $fav->loginid}, {client_loginid => $other->loginid}),
+            p2p_adverts_updated => bag({advertiser_id => $fav->_p2p_advertiser_cached->{id}}, {advertiser_id => $other->_p2p_advertiser_cached->{id}})
+        },
+        'events fired'
     );
 
     cmp_deeply(
@@ -169,6 +192,7 @@ subtest 'blocking' => sub {
     my ($other1, $other1_ad) = BOM::Test::Helper::P2P::create_advert();
     my ($other2, $other2_ad) = BOM::Test::Helper::P2P::create_advert();
 
+    undef $emitted_events;
     cmp_deeply(
         $me->p2p_advertiser_relations(add_blocked => [$other1->_p2p_advertiser_cached->{id}]),
         {
@@ -180,6 +204,15 @@ subtest 'blocking' => sub {
                 }]
         },
         'advertiser update returns blocked advertiser details'
+    );
+
+    cmp_deeply(
+        $emitted_events,
+        {
+            p2p_advertiser_updated => [{client_loginid => $other1->loginid}],
+            p2p_adverts_updated    => [{advertiser_id  => $other1->_p2p_advertiser_cached->{id}}]
+        },
+        'events fired'
     );
 
     cmp_deeply(
@@ -247,7 +280,17 @@ subtest 'blocking' => sub {
         'can complete an order after blocking advertiser'
     );
 
+    undef $emitted_events;
     my $update = $me->p2p_advertiser_relations(add_favourites => [$other1->_p2p_advertiser_cached->{id}]);
+
+    cmp_deeply(
+        $emitted_events,
+        {
+            p2p_advertiser_updated => [{client_loginid => $other1->loginid}],
+            p2p_adverts_updated    => [{advertiser_id  => $other1->_p2p_advertiser_cached->{id}}]
+        },
+        'events fired'
+    );
 
     is $update->{favourite_advertisers}[0]{id}, $other1->_p2p_advertiser_cached->{id}, 'blocked is now favourite';
     is $update->{blocked_advertisers}[0]{id},   $other2->_p2p_advertiser_cached->{id}, 'other is still blocked';

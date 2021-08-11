@@ -117,8 +117,14 @@ subtest 'Creating new buy order' => sub {
                     client_loginid => $advertiser->loginid,
                 }
             ],
+            [
+                'p2p_adverts_updated',
+                {
+                    advertiser_id => $client->p2p_advertiser_info->{id},
+                }
+            ],
         ),
-        'p2p_order_created and p2p_advertiser_updated events emitted'
+        'events emitted: p2p_order_created, p2p_advertiser_updated, p2p_adverts_updated'
     );
 
     BOM::Test::Helper::P2P::reset_escrow();
@@ -511,7 +517,7 @@ subtest 'Buy adverts' => sub {
 
     ok($escrow->account->balance == 0,     'Escrow balance is correct');
     ok($advertiser->account->balance == 0, 'advertiser balance is correct');
-    note $advertiser->account->balance;
+
     my %params = (
         advert_id    => $advert_info->{id},
         amount       => $amount,
@@ -528,19 +534,49 @@ subtest 'Buy adverts' => sub {
     $err = exception { $client->p2p_order_create(%params, contact_info => undef) };
     is $err->{error_code}, 'OrderContactInfoRequired', 'error for empty contact info';
 
-    my $order_data = $client->p2p_order_create(%params);
+    @emitted_events = ();
+    my $order = $client->p2p_order_create(%params);
 
-    ok($order_data, 'Order is created');
+    cmp_deeply(
+        \@emitted_events,
+        bag([
+                'p2p_order_created',
+                {
+                    client_loginid => $client->loginid,
+                    order_id       => $order->{id},
+                }
+            ],
+            [
+                'p2p_advertiser_updated',
+                {
+                    client_loginid => $client->loginid,
+                }
+            ],
+            [
+                'p2p_advertiser_updated',
+                {
+                    client_loginid => $advertiser->loginid,
+                }
+            ],
+            [
+                'p2p_adverts_updated',
+                {
+                    advertiser_id => $advertiser->p2p_advertiser_info->{id},
+                }
+            ],
+        ),
+        'events emitted: p2p_order_created, p2p_advertiser_updated, p2p_adverts_updated'
+    );
 
     ok($escrow->account->balance == $amount, 'Money is deposited to Escrow account');
     ok($client->account->balance == 0,       'Money is withdrawn from Client account');
 
-    is($order_data->{status}, 'pending', 'Status for new order is correct');
-    ok($order_data->{amount} == $amount, 'Amount for new order is correct');
-    is($order_data->{advert_details}{type}, $advert_info->{type},              'advert type is correct');
-    is($order_data->{type},                 $advert_info->{counterparty_type}, 'order type is correct');
-    is($order_data->{payment_info},         $params{payment_info},             'payment_info is correct');
-    is($order_data->{contact_info},         $params{contact_info},             'contact_info is correct');
+    is($order->{status}, 'pending', 'Status for new order is correct');
+    ok($order->{amount} == $amount, 'Amount for new order is correct');
+    is($order->{advert_details}{type}, $advert_info->{type},              'advert type is correct');
+    is($order->{type},                 $advert_info->{counterparty_type}, 'order type is correct');
+    is($order->{payment_info},         $params{payment_info},             'payment_info is correct');
+    is($order->{contact_info},         $params{contact_info},             'contact_info is correct');
 
     BOM::Test::Helper::P2P::reset_escrow();
 };

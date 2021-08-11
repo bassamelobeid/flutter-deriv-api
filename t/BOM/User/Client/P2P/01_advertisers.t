@@ -13,17 +13,9 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 
 BOM::Test::Helper::P2P::bypass_sendbird();
 
-my %last_event;
+my @emitted_events;
 my $mock_events = Test::MockModule->new('BOM::Platform::Event::Emitter');
-$mock_events->mock(
-    'emit',
-    sub {
-        my ($type, $data) = @_;
-        %last_event = (
-            type => $type,
-            data => $data
-        );
-    });
+$mock_events->mock('emit' => sub { push @emitted_events, [@_] });
 
 my $email = 'p2p_adverts_test@binary.com';
 
@@ -46,6 +38,7 @@ my $advertiser_name = 'Ad_man';
 subtest 'advertiser Registration' => sub {
     my $client = BOM::Test::Helper::Client::create_client();
     $client->account('USD');
+    @emitted_events = ();
 
     cmp_deeply(exception { $client->p2p_advertiser_create() }, {error_code => 'AdvertiserNameRequired'}, 'Error when advertiser name is blank');
 
@@ -53,14 +46,14 @@ subtest 'advertiser Registration' => sub {
     lives_ok { $advertiser = $client->p2p_advertiser_create(name => $advertiser_name) } 'create advertiser ok';
 
     cmp_deeply(
-        \%last_event,
-        {
-            type => 'p2p_advertiser_created',
-            data => {
-                client_loginid => $client->loginid,
-                %$advertiser
-            }
-        },
+        \@emitted_events,
+        [[
+                'p2p_advertiser_created',
+                {
+                    client_loginid => $client->loginid,
+                    %$advertiser
+                }]
+        ],
         'p2p_advertiser_created event emitted'
     );
 
@@ -118,15 +111,6 @@ subtest 'Updating advertiser fields' => sub {
     ok $advertiser_info->{is_listed},   'advertiser is listed';
 
     cmp_deeply(
-        \%last_event,
-        {
-            type => 'p2p_advertiser_updated',
-            data => {client_loginid => $advertiser->loginid}
-        },
-        'p2p_advertiser_updated event emitted'
-    );
-
-    cmp_deeply(
         exception {
             $advertiser->p2p_advertiser_update(name => ' ');
         },
@@ -134,7 +118,13 @@ subtest 'Updating advertiser fields' => sub {
         'Error when advertiser name is blank'
     );
 
+    @emitted_events = ();
     is $advertiser->p2p_advertiser_update(name => 'test')->{name}, 'test', 'Changing name';
+    cmp_deeply(
+        \@emitted_events,
+        [['p2p_advertiser_updated', {client_loginid => $advertiser->loginid}], ['p2p_adverts_updated', {advertiser_id => $advertiser_info->{id}}],],
+        'p2p_advertiser_updated and p2p_adverts_updated events emitted'
+    );
 
     ok !($advertiser->p2p_advertiser_update(is_listed => 0)->{is_listed}), 'Switch flag is_listed to false';
 

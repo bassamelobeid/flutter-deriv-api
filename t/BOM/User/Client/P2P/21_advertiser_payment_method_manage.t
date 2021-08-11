@@ -15,6 +15,10 @@ use BOM::Config::Runtime;
 my $json = JSON::MaybeXS->new;
 BOM::Test::Helper::P2P::bypass_sendbird();
 
+my @emitted_events;
+my $mock_events = Test::MockModule->new('BOM::Platform::Event::Emitter');
+$mock_events->mock('emit' => sub { push @emitted_events, [@_] });
+
 my $runtime_config = BOM::Config::Runtime->instance->app_config->payments->p2p;
 
 my $mock_config = Test::MockModule->new('BOM::Config');
@@ -84,6 +88,8 @@ subtest 'create' => sub {
         'Missing required field'
     );
 
+    @emitted_events = ();
+
     cmp_deeply([
             values $client->p2p_advertiser_payment_methods(
                 create => [{
@@ -129,6 +135,8 @@ subtest 'create' => sub {
         'Create multiple methods ok'
     );
 
+    ok !@emitted_events, 'no events for create';
+
     cmp_deeply(
         exception { $client->p2p_advertiser_payment_methods(create => [{method => 'method2', field3 => 'f3 val', field4 => 'f4 val'}]) },
         {
@@ -159,7 +167,6 @@ subtest 'create' => sub {
         },
         'Duplicate method in same call'
     );
-
 };
 
 subtest 'update' => sub {
@@ -172,7 +179,9 @@ subtest 'update' => sub {
         'Invalid method id'
     );
 
+    @emitted_events = ();
     ok $client->p2p_advertiser_payment_methods(update => {$id => {is_enabled => 1}})->{$id}{is_enabled}, 'enable a method';
+    cmp_deeply \@emitted_events, [['p2p_adverts_updated', {'advertiser_id' => $advertiser->{id}}]], 'advert update event fired';
 
     cmp_deeply(
         exception { $client->p2p_advertiser_payment_methods(update => {$id => {boo => 'x'}}) },
@@ -224,7 +233,9 @@ subtest 'delete' => sub {
 
     cmp_deeply(exception { $client->p2p_advertiser_payment_methods(delete => [-1]) }, {error_code => 'PaymentMethodNotFound'}, 'Invalid method id');
 
+    @emitted_events = ();
     is $client->p2p_advertiser_payment_methods(delete => [$id])->{$id}, undef, 'delete ok';
+    cmp_deeply \@emitted_events, [['p2p_adverts_updated', {'advertiser_id' => $advertiser->{id}}]], 'advert update event fired';
 
     my @ids = keys $client->p2p_advertiser_payment_methods->%*;
     cmp_deeply($client->p2p_advertiser_payment_methods(delete => \@ids), {}, 'delete everything');

@@ -102,6 +102,45 @@ subtest 'Order dispute (type buy)' => sub {
 
     is $response_advertiser->{status}, 'disputed', 'Order is disputed';
     cmp_deeply($response_advertiser->{dispute_details}, $expected_response_advertiser, 'order_dispute expected response after advertiser complaint');
+
+    @emitted_events = ();
+    $advertiser->p2p_resolve_order_dispute(
+        id     => $new_order->{id},
+        action => 'refund',
+        staff  => 'x'
+    );
+
+    cmp_deeply(
+        \@emitted_events,
+        bag([
+                'p2p_order_updated',
+                {
+                    client_loginid => $advertiser->loginid,
+                    order_id       => $new_order->{id},
+                    order_event    => 'dispute_refund',
+                }
+            ],
+            [
+                'p2p_advertiser_updated',
+                {
+                    client_loginid => $client->loginid,
+                }
+            ],
+            [
+                'p2p_advertiser_updated',
+                {
+                    client_loginid => $advertiser->loginid,
+                }
+            ],
+            [
+                'p2p_adverts_updated',
+                {
+                    advertiser_id => $client->p2p_advertiser_info->{id},
+                }
+            ],
+        ),
+        'expected events emitted for resolve dispute'
+    );
 };
 
 subtest 'Order dispute (type sell)' => sub {
@@ -151,6 +190,45 @@ subtest 'Order dispute (type sell)' => sub {
 
     is $response_client->{status}, 'disputed', 'Order is disputed';
     cmp_deeply($response_client->{dispute_details}, $expected_response_client, 'order_dispute expected response after client complaint');
+
+    @emitted_events = ();
+    $advertiser->p2p_resolve_order_dispute(
+        id     => $order->{id},
+        action => 'complete',
+        staff  => 'x'
+    );
+
+    cmp_deeply(
+        \@emitted_events,
+        bag([
+                'p2p_order_updated',
+                {
+                    client_loginid => $advertiser->loginid,
+                    order_id       => $order->{id},
+                    order_event    => 'dispute_complete',
+                }
+            ],
+            [
+                'p2p_advertiser_updated',
+                {
+                    client_loginid => $client->loginid,
+                }
+            ],
+            [
+                'p2p_advertiser_updated',
+                {
+                    client_loginid => $advertiser->loginid,
+                }
+            ],
+            [
+                'p2p_adverts_updated',
+                {
+                    advertiser_id => $client->p2p_advertiser_info->{id},
+                }
+            ],
+        ),
+        'expected events emitted for resolve dispute'
+    );
 };
 
 subtest 'Seller can confirm under dispute' => sub {
@@ -465,7 +543,14 @@ subtest 'Returning dispute fields' => sub {
                 'p2p_advertiser_updated',
                 {
                     client_loginid => $advertiser->loginid,
-                }]
+                }
+            ],
+            [
+                'p2p_adverts_updated',
+                {
+                    advertiser_id => $client->p2p_advertiser_info->{id},
+                }
+            ],
         ),
         'exepcted events emitted'
     );

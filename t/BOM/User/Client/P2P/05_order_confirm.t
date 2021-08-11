@@ -443,6 +443,12 @@ for my $test_case (@test_cases) {
                     'p2p_advertiser_updated',
                     {
                         client_loginid => $advertiser->loginid,
+                    }
+                    ],
+                    [
+                    'p2p_adverts_updated',
+                    {
+                        advertiser_id => $test_case->{type} eq 'sell' ? $advertiser->p2p_advertiser_info->{id} : $client->p2p_advertiser_info->{id},
                     }];
             }
 

@@ -11,6 +11,7 @@ use Log::Any qw($log);
 use Syntax::Keyword::Try;
 use Date::Utility;
 use BOM::Platform::Event::Emitter;
+use List::Util qw(uniq);
 
 use constant CRON_INTERVAL_DAYS => 1;
 use constant REDIS_KEY          => 'P2P::AD_ARCHIVAL_DATES';
@@ -58,19 +59,35 @@ sub run {
                     });
 
                 my $archived_ads = {};
+                my @advertiser_ids;
 
                 for ($updates->@*) {
-                    my ($id, $advertiser_loginid, $archive_date, $is_archived) = @{$_}{qw/id advertiser_loginid archive_date is_archived/};
+                    my ($id, $advertiser_loginid, $advertiser_id, $archive_date, $is_archived) =
+                        @{$_}{qw/id advertiser_loginid advertiser_id archive_date is_archived/};
                     $archival_dates{$id} = $archive_date;
 
-                    push $archived_ads->{$advertiser_loginid}->@*, $id if $is_archived;
+                    if ($is_archived) {
+                        push $archived_ads->{$advertiser_loginid}->@*, $id;
+                        push @advertiser_ids, $advertiser_id;
+                    }
                 }
-                BOM::Platform::Event::Emitter::emit(
-                    'p2p_archived_ad',
-                    {
-                        archived_ads       => $archived_ads->{$_},
-                        advertiser_loginid => $_,
-                    }) for keys $archived_ads->%*;
+
+                for my $login (keys $archived_ads->%*) {
+                    BOM::Platform::Event::Emitter::emit(
+                        'p2p_archived_ad',
+                        {
+                            archived_ads       => [sort $archived_ads->{$login}->@*],
+                            advertiser_loginid => $login,
+                        });
+                }
+
+                for my $advertiser_id (uniq @advertiser_ids) {
+                    BOM::Platform::Event::Emitter::emit(
+                        'p2p_adverts_updated' => {
+                            advertiser_id => $advertiser_id,
+                        });
+                }
+
             }
 
             $db->run(

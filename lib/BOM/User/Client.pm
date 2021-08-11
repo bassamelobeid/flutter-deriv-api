@@ -66,14 +66,6 @@ use Carp qw(croak confess);
 use Log::Any qw($log);
 
 use constant {
-    P2P_TOKEN_MIN_EXPIRY => 2 * 60 * 60,    # 2 hours
-
-    # Statuses here should match the DB function p2p.is_status_final.
-    P2P_ORDER_STATUS => {
-        active => [qw(pending buyer-confirmed timed-out disputed)],
-        final  => [qw(completed cancelled refunded dispute-refunded dispute-completed)],
-    },
-
     MT5_REGEX                           => qr/^MT[DR]?(?=\d+$)/,
     VIRTUAL_REGEX                       => qr/^VR/,
     FALSE_PROFILE_INFO_REGEX            => qr/(potential corporate account|fake profile info)/,
@@ -2033,6 +2025,14 @@ use constant {
     P2P_STATS_REDIS_PREFIX       => 'P2P::ADVERTISER_STATS',
     P2P_STATS_TTL_IN_DAYS        => 120,                                # days after which to prune redis stats
     P2P_ARCHIVE_DATES_KEY        => 'P2P::AD_ARCHIVAL_DATES',
+
+    P2P_TOKEN_MIN_EXPIRY => 2 * 60 * 60,                                # 2 hours
+
+    # Statuses here should match the DB function p2p.is_status_final.
+    P2P_ORDER_STATUS => {
+        active => [qw(pending buyer-confirmed timed-out disputed)],
+        final  => [qw(completed cancelled refunded dispute-refunded dispute-completed)],
+    },
 };
 
 =head2 p2p_advertiser_create
@@ -2176,6 +2176,11 @@ sub p2p_advertiser_update {
         },
     );
 
+    BOM::Platform::Event::Emitter::emit(
+        p2p_adverts_updated => {
+            advertiser_id => $advertiser_info->{id},
+        });
+
     return $self->_advertiser_details($update);
 }
 
@@ -2214,15 +2219,20 @@ sub p2p_advertiser_relations {
                     @param{qw/add_favourites add_blocked remove_favourites remove_blocked/});
             });
 
-        # notify advertisers whose 'favourited' value changed
-        my @favourites =
-            map { $advertisers->{$_}{loginid} } grep { exists $advertisers->{$_} } ($param{add_favourites}->@*, $param{remove_favourites}->@*);
+        for my $advertiser (values %$advertisers) {
 
-        BOM::Platform::Event::Emitter::emit(
-            p2p_advertiser_updated => {
-                client_loginid => $_,
-            },
-        ) for @favourites;
+            # favourited value can change on advertiser info
+            BOM::Platform::Event::Emitter::emit(
+                p2p_advertiser_updated => {
+                    client_loginid => $advertiser->{loginid},
+                });
+
+            # is_favourite/is_blocked can change on subscribed ads
+            BOM::Platform::Event::Emitter::emit(
+                p2p_adverts_updated => {
+                    advertiser_id => $advertiser->{id},
+                });
+        }
     }
 
     return $self->_p2p_advertiser_relation_lists;
@@ -2316,10 +2326,10 @@ sub p2p_advert_create {
         }
     }
 
-    my $advert = $self->db->dbic->run(
+    my ($id) = $self->db->dbic->run(
         fixup => sub {
-            $_->selectrow_hashref(
-                'SELECT * FROM p2p.advert_create(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+            $_->selectrow_array(
+                'SELECT id FROM p2p.advert_create(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
                 undef,
                 $advertiser_info->{id},
                 @param{
@@ -2327,8 +2337,16 @@ sub p2p_advert_create {
                 });
         });
 
+    BOM::Platform::Event::Emitter::emit(
+        p2p_adverts_updated => {
+            advertiser_id => $advertiser_info->{id},
+        });
+
+    # to get all the fields
+    my $advert = $self->_p2p_adverts(id => $id)->[0];
+
     $advert->{payment_method_details} =
-        $self->_p2p_advertiser_payment_method_details($self->_p2p_advertiser_payment_methods(advert_id => $advert->{id}));
+        $self->_p2p_advertiser_payment_method_details($self->_p2p_advertiser_payment_methods(advert_id => $id));
 
     my $response = $self->_advert_details([$advert])->[0];
     delete $response->{days_until_archive};    # guard against almost impossible race condition
@@ -2343,15 +2361,45 @@ Get a single advert by id.
 
 sub p2p_advert_info {
     my ($self, %param) = @_;
-    return unless $param{id};
-    $param{client_loginid} = $self->loginid;
-    my $list = $self->_p2p_adverts(%param);
 
-    $list->[0]{payment_method_details} =
-        $self->_p2p_advertiser_payment_method_details($self->_p2p_advertiser_payment_methods(advert_id => $param{id}))
-        if @$list and $self->loginid eq $list->[0]{advertiser_loginid};
+    my ($list, $advertiser_id, $account_id);
 
-    return $self->_advert_details($list, undef, 1)->[0];
+    if ($param{id}) {
+        $param{client_loginid} = $self->loginid;
+        $list = $self->_p2p_adverts(%param);
+        return undef unless @$list;
+
+        $list->[0]{payment_method_details} =
+            $self->_p2p_advertiser_payment_method_details($self->_p2p_advertiser_payment_methods(advert_id => $param{id}))
+            if $self->loginid eq $list->[0]{advertiser_loginid};
+
+    } elsif ($param{subscribe}) {
+        # at this point, advertiser is subscribing to all their ads
+        my $advertiser_info = $self->_p2p_advertiser_cached or die +{error_code => 'AdvertiserNotRegistered'};
+        $list = $self->_p2p_adverts(advertiser_id => $advertiser_info->{id});
+    }
+
+    my $details = $self->_advert_details($list);
+
+    if ($param{subscribe}) {
+        if (@$list and $list->[0]{advertiser_loginid} ne $self->loginid) {
+            my $owner_client = BOM::User::Client->new({loginid => $list->[0]{advertiser_loginid}});
+            $account_id    = $owner_client->account->id;
+            $advertiser_id = $list->[0]{advertiser_id};
+        }
+        $account_id    //= $self->account->id;
+        $advertiser_id //= $self->_p2p_advertiser_cached->{id};    # done this way to handle non-advertisers
+
+        BOM::User::Utility::p2p_on_advert_view($advertiser_id, {$self->loginid => {($param{id} // 'ALL') => $details}});
+
+        $details = [] unless $param{id};                           # this call can only return a single ad
+
+        # fields to be removed in websocket
+        $details->[0]{advertiser_id}         = $advertiser_id;
+        $details->[0]{advertiser_account_id} = $account_id;
+    }
+
+    return $details->[0];
 }
 
 =head2 p2p_advert_list
@@ -2380,7 +2428,7 @@ sub p2p_advert_list {
         hide_blocked           => 1,
     );
 
-    return $self->_advert_details($list, $param{amount}, 1);
+    return $self->_advert_details($list, $param{amount});
 }
 
 =head2 p2p_advert_update
@@ -2404,10 +2452,8 @@ sub p2p_advert_update {
 
     # return current advert details if nothing changed
     unless ($param{delete} or $param{payment_method_ids} or grep { exists $advert_info->{$_} and $param{$_} ne $advert_info->{$_} } keys %param) {
-        delete $advert_info->@{qw/max_order_amount_actual advertiser_completion/};    # not usually returned by this call
-        my $response = $self->_advert_details([$advert_info])->[0];
-        $response->{payment_method_details} = $payment_method_details if %$payment_method_details;
-        return $response;
+        $advert_info->{payment_method_details} = $payment_method_details;
+        return $self->_advert_details([$advert_info])->[0];
     }
 
     if ($param{is_active}) {
@@ -2461,7 +2507,7 @@ sub p2p_advert_update {
         delete $param{payment_method};
     }
 
-    my $update = $self->db->dbic->txn(
+    $self->db->dbic->txn(
         fixup => sub {
             my $dbh = shift;
 
@@ -2470,16 +2516,27 @@ sub p2p_advert_update {
                 die +{error_code => 'OpenOrdersDeleteAdvert'} if $open_orders > 0;
             }
 
-            $dbh->selectrow_hashref('SELECT * FROM p2p.advert_update(?, ?, ?, ?, ?, ?, ?, ?)',
+            $dbh->do('SELECT FROM p2p.advert_update(?, ?, ?, ?, ?, ?, ?, ?)',
                 undef, $id, @param{qw/is_active delete description payment_method payment_info contact_info payment_method_ids/});
         });
 
-    $payment_method_details = $self->_p2p_advertiser_payment_method_details($self->_p2p_advertiser_payment_methods(advert_id => $id))
-        if defined $param{payment_method_ids};
+    BOM::Platform::Event::Emitter::emit(
+        p2p_adverts_updated => {
+            advertiser_id => $advert_info->{advertiser_id},
+        });
 
-    my $response = $self->_advert_details([$update])->[0];
-    $response->{payment_method_details} = $payment_method_details if %$payment_method_details;
-    return $response;
+    if ($param{delete}) {
+        return {
+            id      => $id,
+            deleted => 1
+        };
+    } else {
+        $advert_info            = $self->_p2p_adverts(id => $id)->[0];
+        $payment_method_details = $self->_p2p_advertiser_payment_method_details($self->_p2p_advertiser_payment_methods(advert_id => $id))
+            if defined $param{payment_method_ids};
+        $advert_info->{payment_method_details} = $payment_method_details;
+        return $self->_advert_details([$advert_info])->[0];
+    }
 }
 
 =head2 p2p_order_create
@@ -2578,7 +2635,6 @@ sub p2p_order_create {
                     error_code     => 'PaymentMethodNotInAd',
                     message_params => [$method_defs->{$invalid_method}{display_name}]} if $invalid_method;
             }
-
         }
 
     } elsif ($advert_type eq 'sell') {
@@ -2705,6 +2761,12 @@ sub p2p_order_create {
             },
         );
     }
+
+    # only update the buyer's ads, the seller's event is fired via the transaction
+    BOM::Platform::Event::Emitter::emit(
+        p2p_adverts_updated => {
+            advertiser_id => $order->{type} eq 'buy' ? $order->{client_id} : $order->{advertiser_id},
+        });
 
     $order->{payment_method_details} = $self->_p2p_order_payment_method_details($order);
     return $self->_order_details([$order])->[0];
@@ -2838,6 +2900,12 @@ sub p2p_order_cancel {
             },
         );
     }
+
+    # only update the buyer's ads, the seller's event is fired via the transaction
+    BOM::Platform::Event::Emitter::emit(
+        p2p_adverts_updated => {
+            advertiser_id => $order->{type} eq 'buy' ? $order->{client_id} : $order->{advertiser_id},
+        });
 
     return $update;
 }
@@ -3089,6 +3157,7 @@ sub p2p_resolve_order_dispute {
     my ($buyer, $seller) = $self->_p2p_order_parties($order);
     my $amount    = $order->{amount};
     my $is_manual = 1;
+    my $advertiser_for_update;
 
     if ($action eq 'refund') {
         my $buyer_fault = 1;    # this will negatively affect the buyer's completion rate
@@ -3103,6 +3172,7 @@ sub p2p_resolve_order_dispute {
             $self->_p2p_order_fraud('buy', $order);
         }
         $self->_p2p_record_stat($buyer, 'BUY_COMPLETION', $id, 0);
+        $advertiser_for_update = $order->{type} eq 'buy' ? $order->{client_id} : $order->{advertiser_id};
     } elsif ($action eq 'complete') {
         $self->db->dbic->run(
             fixup => sub {
@@ -3122,6 +3192,7 @@ sub p2p_resolve_order_dispute {
         } else {
             $self->_p2p_record_stat($seller, 'SELL_COMPLETION', $id, 1);
         }
+        $advertiser_for_update = $order->{type} eq 'sell' ? $order->{client_id} : $order->{advertiser_id};
 
     } else {
         die "Invalid action: $action\n";
@@ -3136,13 +3207,19 @@ sub p2p_resolve_order_dispute {
             order_event    => $order_event,
         });
 
-    for my $order_loginid ($order->{client_loginid}, $order->{advertiser_loginid}) {
+    for my $order_loginid ($buyer, $seller) {
         BOM::Platform::Event::Emitter::emit(
             p2p_advertiser_updated => {
                 client_loginid => $order_loginid,
             },
         );
     }
+
+    # only update the party who did not have a transaction
+    BOM::Platform::Event::Emitter::emit(
+        p2p_adverts_updated => {
+            advertiser_id => $advertiser_for_update,
+        });
 
     return undef;
 }
@@ -3204,6 +3281,9 @@ sub p2p_expire_order {
     my $hit_timeout        = ($old_status eq 'buyer-confirmed' and $new_status eq 'timed-out');
     my $hit_timeout_refund = ($old_status eq 'timed-out'       and $new_status eq 'refunded');
 
+    my $order = $self->_p2p_orders(id => $order_id)->[0];
+    my ($buyer, $seller) = $self->_p2p_order_parties($order);
+
     # order hit timed out
     if ($hit_timeout) {
         $p2p_redis->zadd(P2P_ORDER_TIMEDOUT_AT, Date::Utility->new($expiry)->epoch, $redis_payload);
@@ -3232,14 +3312,11 @@ sub p2p_expire_order {
 
     if ($hit_expire_refund) {
         # this counts as a manual cancel
-        my $order = $self->_p2p_orders(id => $order_id)->[0];
         $self->_p2p_order_cancelled($order);
     }
 
     if ($hit_timeout_refund) {
         # degrade the buyer's completion rate but don't count as cancel
-        my $order = $self->_p2p_orders(id => $order_id)->[0];
-        my ($buyer) = $self->_p2p_order_parties($order);
         $self->_p2p_record_stat($buyer, 'BUY_COMPLETION', $order_id, 0);
 
         stats_inc('p2p.order.timeout_refund');
@@ -3253,15 +3330,20 @@ sub p2p_expire_order {
     }
 
     if ($hit_expire_refund or $hit_timeout_refund) {
-        # order was refunded, need to update advertisers
-        my $order_info = $self->_p2p_orders(id => $order_id)->[0];
-        for my $order_loginid ($order_info->{client_loginid}, $order_info->{advertiser_loginid}) {
+        # order was refunded, need to update both advertisers
+        for my $order_loginid ($buyer, $seller) {
             BOM::Platform::Event::Emitter::emit(
                 p2p_advertiser_updated => {
                     client_loginid => $order_loginid,
                 },
             );
         }
+
+        # only update the buyer's ads, the seller's event is triggered by the transaction
+        BOM::Platform::Event::Emitter::emit(
+            p2p_adverts_updated => {
+                advertiser_id => $order->{type} eq 'buy' ? $order->{client_id} : $order->{advertiser_id},
+            });
     }
 
     return $new_status;
@@ -3295,7 +3377,7 @@ sub _p2p_advertisers {
 
 Cache of p2p_advertiser record for the current client.
 We often need to get it more than once for a single RPC call.
-In tests you will need to delete this every time you update an advertiser and call anohter RPC method.
+In tests you will need to delete this every time you update an advertiser and call another RPC method.
 
 =cut
 
@@ -3743,36 +3825,38 @@ Takes and returns an arrayref of advert.
 =cut
 
 sub _advert_details {
-    my ($self, $list, $amount, $show_limits) = @_;
+    my ($self, $list, $amount) = @_;
     my (@results, $payment_method_defs);
 
     for my $advert (@$list) {
-
         my $result = {
-            account_currency  => $advert->{account_currency},
-            country           => $advert->{country},
-            created_time      => Date::Utility->new($advert->{created_time})->epoch,
-            description       => $advert->{description} // '',
-            id                => $advert->{id},
-            is_active         => $advert->{is_active},
-            local_currency    => $advert->{local_currency},
-            payment_method    => $advert->{payment_method},
-            type              => $advert->{type},
-            counterparty_type => P2P_COUNTERYPARTY_TYPE_MAPPING->{$advert->{type}},
-            price             => financialrounding('amount', $advert->{local_currency}, $advert->{rate} * ($amount // 1)),
-            price_display     => formatnumber('amount', $advert->{local_currency}, $advert->{rate} * ($amount // 1)),
-            rate              => $advert->{rate},
-            rate_display      => _p2p_rate_format($advert->{rate}),
-            (
-                $show_limits
-                ? (
-                    min_order_amount_limit         => financialrounding('amount', $advert->{account_currency}, $advert->{min_order_amount}),
-                    min_order_amount_limit_display => formatnumber('amount', $advert->{account_currency}, $advert->{min_order_amount}),
-                    max_order_amount_limit         => financialrounding('amount', $advert->{account_currency}, $advert->{max_order_amount_actual}),
-                    max_order_amount_limit_display => formatnumber('amount', $advert->{account_currency}, $advert->{max_order_amount_actual}),
-                    )
-                : ()
-            ),
+            account_currency               => $advert->{account_currency},
+            country                        => $advert->{country},
+            created_time                   => Date::Utility->new($advert->{created_time})->epoch,
+            description                    => $advert->{description} // '',
+            id                             => $advert->{id},
+            is_active                      => $advert->{is_active},
+            local_currency                 => $advert->{local_currency},
+            payment_method                 => $advert->{payment_method},
+            type                           => $advert->{type},
+            counterparty_type              => P2P_COUNTERYPARTY_TYPE_MAPPING->{$advert->{type}},
+            price                          => financialrounding('amount', $advert->{local_currency}, $advert->{rate} * ($amount // 1)),
+            price_display                  => formatnumber('amount', $advert->{local_currency}, $advert->{rate} * ($amount // 1)),
+            rate                           => $advert->{rate},
+            rate_display                   => _p2p_rate_format($advert->{rate}),
+            min_order_amount_limit         => financialrounding('amount', $advert->{account_currency}, $advert->{min_order_amount}),
+            min_order_amount_limit_display => formatnumber('amount', $advert->{account_currency}, $advert->{min_order_amount}),
+            max_order_amount_limit         => financialrounding('amount', $advert->{account_currency}, $advert->{max_order_amount_actual}),
+            max_order_amount_limit_display => formatnumber('amount', $advert->{account_currency}, $advert->{max_order_amount_actual}),
+            # to match p2p_advert_list params, plus checking if advertiser blocked
+            is_visible => (
+                        $advert->{is_active}
+                    and $advert->{can_order}
+                    and $advert->{advertiser_is_approved}
+                    and $advert->{advertiser_is_listed}
+                    and not $advert->{advertiser_blocked})
+            ? 1
+            : 0,
             (
                 $self->loginid eq $advert->{advertiser_loginid}    # only advert owner can see these fields
                 ? (
@@ -4035,47 +4119,6 @@ sub _p2p_rate_format {
     return sprintf('%0.0' . P2P_RATE_PRECISION . 'f', shift()) =~ s/(?<=\.\d{2})(\d*?)0*$/$1/r;
 }
 
-=head2 _check_deposit_limits
-
-Checks the amount to be deposited against client's daily, weekly, and monthly deposit limits.
-
-=cut
-
-sub _check_deposit_limits {
-    my ($self, $amount) = @_;
-
-    return unless $self->landing_company->deposit_limit_enabled;
-
-    my $deposit_limits = $self->get_deposit_limits();
-
-    my %limit_days_to_name = (
-        1  => 'daily',
-        7  => '7day',
-        30 => '30day',
-    );
-
-    my $period_end = Date::Utility->new;
-
-    for my $limit_days (sort { $a <=> $b } keys %limit_days_to_name) {
-        my $limit_name   = $limit_days_to_name{$limit_days};
-        my $limit_amount = $deposit_limits->{$limit_name};
-
-        next unless defined $limit_amount;
-
-        # Call get_total_deposit and validate against limits
-        my $period_start = $period_end->minus_time_interval("${limit_days}d");
-
-        my ($deposit_over_period) = $self->db->dbic->run(
-            fixup => sub {
-                return $_->selectrow_array('SELECT payment.get_total_deposit(?,?,?,?)',
-                    undef, $self->loginid, $period_start->datetime, $period_end->datetime, '{mt5_transfer}');
-            }) // 0;
-
-        die "Deposit exceeds $limit_name limit [$limit_amount]. Aggregated deposit over period [$deposit_over_period]. Current amount [$amount].\n"
-            if ($deposit_over_period + $amount) > $limit_amount;
-    }
-}
-
 =head2 _p2p_record_stat
 
 Records time-sensitive stats for a P2P advertiser.
@@ -4245,6 +4288,12 @@ sub _p2p_order_completed {
             });
     }
 
+    # only update the seller's ads, the buyer event is triggered by the transaction
+    BOM::Platform::Event::Emitter::emit(
+        p2p_adverts_updated => {
+            advertiser_id => $order->{type} eq 'sell' ? $order->{client_id} : $order->{advertiser_id},
+        });
+
     return;
 }
 
@@ -4304,11 +4353,6 @@ sub _p2p_order_cancelled {
         # used in p2p daemon to push a p2p_advertiser_info message
         $redis->zadd(P2P_ADVERTISER_BLOCK_ENDS_AT, $block_time->epoch, $buyer_loginid);
     }
-
-    BOM::Platform::Event::Emitter::emit(
-        p2p_advertiser_updated => {
-            client_loginid => $buyer_loginid,
-        });
 
     return;
 }
@@ -4539,6 +4583,11 @@ sub p2p_advertiser_payment_methods {
     $existing = $self->_p2p_advertiser_payment_method_update($method_defs, $existing, $param{update}) if $param{update};
     $self->_p2p_advertiser_payment_method_create($method_defs, $existing, $param{create}) if $param{create};
 
+    BOM::Platform::Event::Emitter::emit(
+        p2p_adverts_updated => {
+            advertiser_id => $advertiser->{id},
+        }) if $param{delete} or $param{update};
+
     my $update = $self->_p2p_advertiser_payment_methods(advertiser_id => $advertiser->{id});
     return $self->_p2p_advertiser_payment_method_details($update, $method_defs);
 }
@@ -4746,6 +4795,47 @@ sub _p2p_check_payment_methods_in_use {
 =head1 METHODS - Payments
 
 =cut
+
+=head2 _check_deposit_limits
+
+Checks the amount to be deposited against client's daily, weekly, and monthly deposit limits.
+
+=cut
+
+sub _check_deposit_limits {
+    my ($self, $amount) = @_;
+
+    return unless $self->landing_company->deposit_limit_enabled;
+
+    my $deposit_limits = $self->get_deposit_limits();
+
+    my %limit_days_to_name = (
+        1  => 'daily',
+        7  => '7day',
+        30 => '30day',
+    );
+
+    my $period_end = Date::Utility->new;
+
+    for my $limit_days (sort { $a <=> $b } keys %limit_days_to_name) {
+        my $limit_name   = $limit_days_to_name{$limit_days};
+        my $limit_amount = $deposit_limits->{$limit_name};
+
+        next unless defined $limit_amount;
+
+        # Call get_total_deposit and validate against limits
+        my $period_start = $period_end->minus_time_interval("${limit_days}d");
+
+        my ($deposit_over_period) = $self->db->dbic->run(
+            fixup => sub {
+                return $_->selectrow_array('SELECT payment.get_total_deposit(?,?,?,?)',
+                    undef, $self->loginid, $period_start->datetime, $period_end->datetime, '{mt5_transfer}');
+            }) // 0;
+
+        die "Deposit exceeds $limit_name limit [$limit_amount]. Aggregated deposit over period [$deposit_over_period]. Current amount [$amount].\n"
+            if ($deposit_over_period + $amount) > $limit_amount;
+    }
+}
 
 sub validate_payment {
     my ($self, %args) = @_;

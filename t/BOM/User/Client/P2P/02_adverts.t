@@ -5,12 +5,15 @@ use Test::More;
 use Test::Fatal;
 use Test::Exception;
 use Test::Deep;
+use Test::MockModule;
 use List::Util qw(pairs);
+use JSON::MaybeUTF8 qw(:v1);
 
 use BOM::User::Client;
 use BOM::Test::Helper::P2P;
 use BOM::Test::Helper::Client;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use BOM::Config::Redis;
 
 BOM::Test::Helper::P2P::bypass_sendbird();
 
@@ -20,6 +23,10 @@ BOM::Config::Runtime->instance->app_config->payments->p2p->limits->maximum_adver
 BOM::Config::Runtime->instance->app_config->payments->p2p->escrow([]);
 BOM::Config::Runtime->instance->app_config->payments->p2p->cancellation_barring->count(3);
 BOM::Config::Runtime->instance->app_config->payments->p2p->cancellation_barring->period(24);
+
+my @emitted_events;
+my $mock_events = Test::MockModule->new('BOM::Platform::Event::Emitter');
+$mock_events->mock('emit' => sub { push @emitted_events, [@_] });
 
 my $test_client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'CR',
@@ -46,14 +53,17 @@ my %advert_params = (
     local_currency    => 'myr',
     max_order_amount  => 10,
     min_order_amount  => 0.1,
-    payment_method    => 'camels',
+    payment_method    => 'bank_transfer',
     payment_info      => 'ad pay info',
     contact_info      => 'ad contact info',
     rate              => 1.23,
     type              => 'sell',
     counterparty_type => 'buy',
-    payment_method    => 'bank_transfer',
 );
+
+# advert fields that should only be shown to the owner
+my @sensitive_fields =
+    qw(amount amount_display max_order_amount max_order_amount_display min_order_amount min_order_amount_display remaining_amount remaining_amount_display payment_info contact_info payment_method_ids);
 
 subtest 'Creating advert from non-advertiser' => sub {
     my %params = %advert_params;
@@ -334,46 +344,46 @@ subtest 'Creating advert' => sub {
     );
 
     my $expected_advert = {
-        account_currency         => uc($params{account_currency}),
-        amount                   => num($params{amount}),
-        amount_display           => num($params{amount}),
-        country                  => $advertiser->residence,
-        created_time             => re('\d+'),
-        description              => $params{description},
-        id                       => re('\d+'),
-        is_active                => bool(1),
-        local_currency           => $params{local_currency},
-        max_order_amount         => num($params{max_order_amount}),
-        max_order_amount_display => num($params{max_order_amount}),
-        min_order_amount         => num($params{min_order_amount}),
-        min_order_amount_display => num($params{min_order_amount}),
-        payment_method           => $params{payment_method},
-        payment_method_names     => ['Bank Transfer'],
-        payment_info             => $params{payment_info},
-        contact_info             => $params{contact_info},
-        price                    => num($params{rate}),
-        price_display            => num($params{rate}),
-        rate                     => num($params{rate}),
-        rate_display             => num($params{rate}),
-        remaining_amount         => num($params{amount}),
-        remaining_amount_display => num($params{amount}),
-        type                     => $params{type},
-        counterparty_type        => $params{counterparty_type},
-        advertiser_details       => {
+        account_currency               => uc($params{account_currency}),
+        amount                         => num($params{amount}),
+        amount_display                 => num($params{amount}),
+        country                        => $advertiser->residence,
+        created_time                   => re('\d+'),
+        description                    => $params{description},
+        id                             => re('\d+'),
+        is_active                      => bool(1),
+        local_currency                 => $params{local_currency},
+        max_order_amount               => num($params{max_order_amount}),
+        max_order_amount_display       => num($params{max_order_amount}),
+        max_order_amount_limit         => num(2.4),                         # advertiser balance,
+        max_order_amount_limit_display => num(2.4),
+        min_order_amount               => num($params{min_order_amount}),
+        min_order_amount_display       => num($params{min_order_amount}),
+        min_order_amount_limit         => num($params{min_order_amount}),
+        min_order_amount_limit_display => num($params{min_order_amount}),
+        payment_method                 => $params{payment_method},
+        payment_method_names           => ['Bank Transfer'],
+        payment_info                   => $params{payment_info},
+        contact_info                   => $params{contact_info},
+        price                          => num($params{rate}),
+        price_display                  => num($params{rate}),
+        rate                           => num($params{rate}),
+        rate_display                   => num($params{rate}),
+        remaining_amount               => num($params{amount}),
+        remaining_amount_display       => num($params{amount}),
+        type                           => $params{type},
+        counterparty_type              => $params{counterparty_type},
+        advertiser_details             => {
             id                    => $advertiser->p2p_advertiser_info->{id},
             name                  => $name,
             total_completion_rate => undef,
-        }};
+        },
+        is_visible => bool(1),
+    };
 
     cmp_deeply($advert, $expected_advert, "advert_create returns expected fields");
 
-    $expected_advert->{advertiser_details}{total_completion_rate} = undef;
-
     cmp_deeply($advertiser->p2p_advertiser_adverts, [$expected_advert], "p2p_advertiser_adverts returns expected fields");
-
-    # these are not returned by previous calls because there was no counterparty to check balance for buy orders
-    $expected_advert->{min_order_amount_limit} = $expected_advert->{min_order_amount_limit_display} = num($params{min_order_amount});
-    $expected_advert->{max_order_amount_limit} = $expected_advert->{max_order_amount_limit_display} = num(2.4);    # advertiser balance
 
     cmp_deeply($advertiser->p2p_advert_info(id => $advert->{id}), $expected_advert, "advert_info returns expected fields");
 
@@ -383,9 +393,7 @@ subtest 'Creating advert' => sub {
         [$expected_advert], "p2p_advert_list returns expected result when filtered by type");
 
     # Fields that should only be visible to advert owner
-    delete @$expected_advert{
-        qw( amount amount_display max_order_amount max_order_amount_display min_order_amount min_order_amount_display remaining_amount remaining_amount_display payment_info contact_info payment_method_ids)
-    };
+    delete $expected_advert->@{@sensitive_fields};
 
     cmp_deeply($test_client_cr->p2p_advert_list, [$expected_advert], "p2p_advert_list returns less fields for client");
 
@@ -659,17 +667,16 @@ subtest 'Updating advert' => sub {
 
     my $ad_info = $advertiser->p2p_advert_info(id => $advert->{id});
 
-    # p2p_advert_update does not return these, because we don't know counterparty balance
-    delete @$ad_info{qw( min_order_amount_limit min_order_amount_limit_display max_order_amount_limit max_order_amount_limit_display)};
-
+    @emitted_events = ();
     my $empty_update = $advertiser->p2p_advert_update(id => $advert->{id});
     cmp_deeply($empty_update, $ad_info, 'empty update returns all fields');
+    ok !@emitted_events, 'no events emitted for empty update';
 
     my $real_update = $advertiser->p2p_advert_update(
         id        => $advert->{id},
         is_active => 1
     );
-    $ad_info->{is_active} = 1;
+    $ad_info->{is_active} = $ad_info->{is_visible} = 1;
     cmp_deeply($real_update, $ad_info, 'actual update returns all fields');
 };
 
@@ -709,7 +716,14 @@ subtest 'Deleting ads' => sub {
 
     BOM::Test::Helper::P2P::set_order_status($client, $order->{id}, 'cancelled');
 
-    is exception { $advertiser->p2p_advert_update(id => $advert->{id}, delete => 1) }, undef, 'can delete ad with cancelled order';
+    my $resp;
+    is exception { $resp = $advertiser->p2p_advert_update(id => $advert->{id}, delete => 1) }, undef, 'can delete ad with cancelled order';
+    cmp_deeply $resp,
+        {
+        id      => $advert->{id},
+        deleted => 1
+        },
+        'response for deleted ad';
 
     is $advertiser->p2p_advert_info(id => $advert->{id}), undef, 'deleted ad is not seen';
 
@@ -797,6 +811,114 @@ subtest 'payment method validation' => sub {
     is exception { $ad = $advertiser->p2p_advert_create(%advert_params, payment_method => ' other, bank_transfer ') }, undef, 'valid methods';
     is $ad->{payment_method}, 'bank_transfer,other', 'payment_method field parsed correctly';
 
+};
+
+subtest 'is_visible flag' => sub {
+    my $client        = BOM::Test::Helper::P2P::create_advertiser(balance => 1);
+    my $advertiser_id = $client->_p2p_advertiser_cached->{id};
+
+    @emitted_events = ();
+    my $advert = $client->p2p_advert_create(
+        type             => 'sell',
+        amount           => 100,
+        description      => 'test advert',
+        local_currency   => 'myr',
+        rate             => 1,
+        max_order_amount => 10,
+        min_order_amount => 2,
+        payment_method   => 'bank_transfer',
+        payment_info     => 'x',
+        contact_info     => 'x',
+    );
+
+    cmp_deeply(\@emitted_events, [['p2p_adverts_updated', {advertiser_id => $advertiser_id}]], 'p2p_adverts_updated event emitted for advert create');
+
+    cmp_ok $advert->{is_visible}, '==', 0, 'not visible due to low balance';
+    BOM::Test::Helper::Client::top_up($client, $client->currency, 9);
+    cmp_ok $client->p2p_advert_info(id => $advert->{id})->{is_visible}, '==', 1, 'visible after top up';
+
+    $client->db->dbic->dbh->do("UPDATE p2p.p2p_advertiser SET blocked_until=NOW() + INTERVAL '1 hour' WHERE id = $advertiser_id");
+    cmp_ok $client->p2p_advert_info(id => $advert->{id})->{is_visible}, '==', 0, 'not visible due to temp block';
+    $client->db->dbic->dbh->do("UPDATE p2p.p2p_advertiser SET blocked_until=NULL WHERE id = $advertiser_id");
+    cmp_ok $client->p2p_advert_info(id => $advert->{id})->{is_visible}, '==', 1, 'visible after temp block removed';
+
+    $client->db->dbic->dbh->do("UPDATE p2p.p2p_advertiser SET is_approved=FALSE WHERE id = $advertiser_id");
+    cmp_ok $client->p2p_advert_info(id => $advert->{id})->{is_visible}, '==', 0, 'not visible when not approved';
+    $client->db->dbic->dbh->do("UPDATE p2p.p2p_advertiser SET is_approved=TRUE WHERE id = $advertiser_id");
+    cmp_ok $client->p2p_advert_info(id => $advert->{id})->{is_visible}, '==', 1, 'visible after approved';
+
+    $client->db->dbic->dbh->do("UPDATE p2p.p2p_advertiser SET is_listed=FALSE WHERE id = $advertiser_id");
+    cmp_ok $client->p2p_advert_info(id => $advert->{id})->{is_visible}, '==', 0, 'not visible when not listed';
+    $client->db->dbic->dbh->do("UPDATE p2p.p2p_advertiser SET is_listed=TRUE WHERE id = $advertiser_id");
+    cmp_ok $client->p2p_advert_info(id => $advert->{id})->{is_visible}, '==', 1, 'visible after listed';
+
+    my $client2 = BOM::Test::Helper::P2P::create_advertiser;
+    $client2->p2p_advertiser_relations(add_blocked => [$advertiser_id]);
+    cmp_ok $client2->p2p_advert_info(id => $advert->{id})->{is_visible}, '==', 0, 'not visible when blocked';
+    $client2->p2p_advertiser_relations(remove_blocked => [$advertiser_id]);
+    cmp_ok $client2->p2p_advert_info(id => $advert->{id})->{is_visible}, '==', 1, 'visible after unblocked';
+
+    @emitted_events = ();
+    cmp_ok $client->p2p_advert_update(
+        id        => $advert->{id},
+        is_active => 0
+    )->{is_visible}, '==', 0, 'not visible after deactivate';
+
+    cmp_deeply(\@emitted_events, [['p2p_adverts_updated', {advertiser_id => $advertiser_id}]],,
+        'p2p_adverts_updated event emitted for advert update');
+
+    cmp_ok $client->p2p_advert_update(
+        id        => $advert->{id},
+        is_active => 1
+    )->{is_visible}, '==', 1, 'visible after activate';
+};
+
+subtest 'subscriptions' => sub {
+    my $redis   = BOM::Config::Redis->redis_p2p_write;
+    my $client1 = BOM::Test::Helper::Client::create_client();
+    $client1->account('USD');
+
+    cmp_deeply(
+        exception { $client1->p2p_advert_info(subscribe => 1) },
+        {error_code => 'AdvertiserNotRegistered'},
+        'must be advertiser to subscribe all'
+    );
+
+    my $advertiser_id = $client1->p2p_advertiser_create(name => 'x')->{id};
+    $client1->status->set('age_verification', 'system', 'x');
+    my $key = 'P2P::ADVERT_STATE::' . $advertiser_id;
+    $redis->del($key);
+    my $expected_response = {
+        advertiser_id         => $advertiser_id,
+        advertiser_account_id => $client1->account->id
+    };
+
+    cmp_deeply($client1->p2p_advert_info(subscribe => 1), $expected_response, 'response when subscribe to all with no ads');
+
+    cmp_deeply decode_json_utf8($redis->get($key)), {}, 'no ads, no state saved in redis';
+
+    my $advert = (BOM::Test::Helper::P2P::create_advert(client => $client1))[1];
+
+    cmp_deeply($client1->p2p_advert_info(subscribe => 1), $expected_response, 'response when subscribe to all with an ad');
+
+    my $state = decode_json_utf8($redis->get($key));
+    cmp_deeply [keys %$state], [$advert->{id}], 'state saved';
+
+    my $client2 = BOM::Test::Helper::Client::create_client();
+    $client2->account('USD');
+
+    $redis->del($key);
+    my $resp = $client2->p2p_advert_info(
+        id        => $advert->{id},
+        subscribe => 1
+    );
+
+    delete $advert->@{@sensitive_fields};
+
+    cmp_deeply($resp, {%$advert, %$expected_response}, 'response for other client subscribing to ad');
+
+    $state = decode_json_utf8($redis->get($key));
+    cmp_deeply [keys %$state], [$advert->{id}], 'state saved';
 };
 
 done_testing();

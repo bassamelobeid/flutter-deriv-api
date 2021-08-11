@@ -308,7 +308,15 @@ for my $test_case (@test_cases) {
                     'p2p_advertiser_updated',
                     {
                         client_loginid => $advertiser->loginid,
-                    }];
+                    }
+                    ],
+                    [
+                    'p2p_adverts_updated',
+                    {
+                        advertiser_id => $test_case->{type} eq 'sell' ? $client->p2p_advertiser_info->{id} : $advertiser->p2p_advertiser_info->{id},
+                    }
+                    ],
+                    ;
             }
 
             cmp_deeply(\@emitted_events, bag(@expected_events), 'expected event emitted');
@@ -399,6 +407,13 @@ subtest 'timed out orders' => sub {
                 'p2p_advertiser_updated',
                 {
                     client_loginid => $advertiser->loginid,
+                }
+            ],
+            [
+
+                'p2p_adverts_updated',
+                {
+                    advertiser_id => $client->p2p_advertiser_info->{id},
                 }
             ],
         ),

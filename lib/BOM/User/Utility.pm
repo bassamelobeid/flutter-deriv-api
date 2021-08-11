@@ -19,14 +19,21 @@ use Email::Address::UseXS;
 use Email::Stuffer;
 use YAML::XS qw(LoadFile);
 use WebService::SendBird;
+use JSON::MaybeUTF8 qw(:v1);
+use List::Util qw(any);
 
 use BOM::Platform::Context qw(request);
 use BOM::Config::Runtime;
+use BOM::Config::Redis;
 
 use Exporter qw(import);
 our @EXPORT_OK = qw(parse_mt5_group);
 
 use constant GAMSTOP_DURATION_IN_MONTHS => 6;
+
+# p2p advert state storage
+use constant P2P_ADVERT_STATE_PREFIX => 'P2P::ADVERT_STATE::';
+use constant P2P_ADVERT_STATE_EXPIRY => 7 * 24 * 60 * 60;        # 7 days
 
 sub aes_keys {
     state $config = YAML::XS::LoadFile('/etc/rmg/aes_keys.yml');
@@ -239,6 +246,94 @@ sub parse_mt5_group {
         sub_account_type      => $sub_account_type,
         currency              => $currency,
     };
+}
+
+=head2 p2p_on_advert_view
+
+Saves P2P advert states in redis and returns the ones that have changed.
+
+=over
+
+=item * C<$advertiser_id> - advertiser id - all ads must belong to a single advertiser
+
+=item * C<data> - 2 dimensional hash of arrays, keyed by loginid of subscriber and advert id of subscripton (or 'ALL' for all ads)
+
+=back
+
+Returns $data with unchanged ads removed.
+
+=cut
+
+sub p2p_on_advert_view {
+    my ($advertiser_id, $data) = @_;
+
+    # client specific fields will be stored in redis as field/loginid
+    my %fields = (
+        common            => [qw(payment_method is_active max_order_amount_limit max_order_amount_limit_display)],
+        client            => [qw(is_visible remaining_amount remaining_amount_display)],
+        advertiser_common => [qw(total_completion_rate)],
+        advertiser_client => [qw(is_favourite is_blocked)],
+    );
+
+    my $p2p_redis    = BOM::Config::Redis->redis_p2p_write();
+    my $key          = P2P_ADVERT_STATE_PREFIX . $advertiser_id;
+    my $state        = decode_json_utf8($p2p_redis->get($key) // '{}');
+    my @existing_ids = keys %$state;
+    my ($updates, $new_state);
+
+    for my $loginid (keys %$data) {
+        for my $type (keys $data->{$loginid}->%*) {
+            for my $new_ad ($data->{$loginid}{$type}->@*) {
+                my $id = $new_ad->{id};
+
+                if ($new_ad->{deleted}) {
+                    push $updates->{$loginid}{$type}->@*,
+                        {
+                        id      => $id,
+                        deleted => 1
+                        };
+                    delete $state->{$id};
+                    next;
+                }
+
+                my %new_ad_copy;
+                $new_ad_copy{$_} = $new_ad->{$_}                     // '' for ($fields{common}->@*,            $fields{client}->@*);
+                $new_ad_copy{$_} = $new_ad->{advertiser_details}{$_} // '' for ($fields{advertiser_common}->@*, $fields{advertiser_client}->@*);
+
+                my $cur_ad = $state->{$id};
+                if (   not $cur_ad
+                    or any     { ($cur_ad->{$_}           // '') ne $new_ad_copy{$_} } ($fields{common}->@*, $fields{advertiser_common}->@*)
+                        or any { ($cur_ad->{$_}{$loginid} // '') ne $new_ad_copy{$_} } ($fields{client}->@*, $fields{advertiser_client}->@*))
+                {
+                    push $updates->{$loginid}{$type}->@*, $new_ad;
+                    $new_state->{$id}{$loginid} = \%new_ad_copy;
+                }
+            }
+
+            # For ALL subscription, find deleted ads by comparing old state with new state
+            if ($type eq 'ALL') {
+                for my $id (@existing_ids) {
+                    next if any { $_->{id} == $id } $data->{$loginid}{$type}->@*;
+                    push $updates->{$loginid}{$type}->@*,
+                        {
+                        id      => $id,
+                        deleted => 1
+                        };
+                    delete $state->{$id};
+                }
+            }
+        }
+    }
+
+    for my $id (keys %$new_state) {
+        for my $loginid (keys $new_state->{$id}->%*) {
+            $state->{$id}{$_} = $new_state->{$id}{$loginid}{$_} for ($fields{common}->@*, $fields{advertiser_common}->@*);
+            $state->{$id}{$_}{$loginid} = $new_state->{$id}{$loginid}{$_} for ($fields{client}->@*, $fields{advertiser_client}->@*);
+        }
+    }
+
+    $p2p_redis->set($key, encode_json_utf8($state), 'EX', P2P_ADVERT_STATE_EXPIRY);
+    return $updates;
 }
 
 1;

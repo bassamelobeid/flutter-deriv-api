@@ -52,21 +52,26 @@ subtest 'archive old ads' => sub {
     ok $advertiser->p2p_advert_info(id => $advert->{id})->{is_active}, 'ad is not deactivated when config days is 0';
     ok !$emissions->{p2p_archived_ad}, 'Ad not yet archived';
 
+    $emissions = {};
     BOM::Config::Runtime->instance->app_config->payments->p2p->archive_ads_days(5);
     BOM::User::Script::P2PDailyMaintenance->new->run;
     $advert = $advertiser->p2p_advert_info(id => $advert->{id});
     ok !$advert->{is_active}, 'old ad is deactivated';
     is $advert->{days_until_archive}, undef, 'days_until_archive is undef';
 
-    cmp_bag $emissions->{p2p_archived_ad},
+    cmp_deeply(
+        $emissions->{p2p_archived_ad},
         [{
-            archived_ads       => [$advert->{id}],
-            advertiser_loginid => $advertiser->loginid,
-        }
+                archived_ads       => [$advert->{id}],
+                advertiser_loginid => $advertiser->loginid,
+            }
         ],
-        'Ad archival event emitted for 1 ad';
+        'Ad archival event emitted for 1 ad'
+    );
 
-    delete $emissions->{p2p_archived_ad};
+    cmp_deeply($emissions->{p2p_adverts_updated}, [{advertiser_id => $advertiser->p2p_advertiser_info->{id}}], 'Adverts updated event emitted');
+
+    $emissions = {};
     $advertiser->db->dbic->dbh->do("UPDATE p2p.p2p_advert SET created_time = NOW() - INTERVAL '6 day' WHERE id = ?", undef, $advert->{id});
     BOM::User::Script::P2PDailyMaintenance->new->run;
     $advert = $advertiser->p2p_advert_info(id => $advert->{id});
@@ -90,7 +95,7 @@ subtest 'archive old ads' => sub {
     restore_time();
 
     subtest 'Multiple archived ads' => sub {
-        delete $emissions->{p2p_archived_ad};
+
         my ($advertiser2, $advert2)   = BOM::Test::Helper::P2P::create_advert();
         my ($advertiser3, $advert3)   = BOM::Test::Helper::P2P::create_advert();
         my ($advertiser4, $advert4)   = BOM::Test::Helper::P2P::create_advert();
@@ -112,6 +117,7 @@ subtest 'archive old ads' => sub {
         $advertiser4->db->dbic->dbh->do("UPDATE p2p.p2p_advert SET created_time = NOW() - INTERVAL '3 day' WHERE id = ?", undef, $advert4->{id});
         $advertiser4->db->dbic->dbh->do("UPDATE p2p.p2p_advert SET created_time = NOW() - INTERVAL '3 day' WHERE id = ?", undef, $advert4_2->{id});
 
+        $emissions = {};
         BOM::User::Script::P2PDailyMaintenance->new->run;
         cmp_bag $emissions->{p2p_archived_ad},
             [{
@@ -119,11 +125,16 @@ subtest 'archive old ads' => sub {
                 advertiser_loginid => $advertiser2->loginid,
             },
             {
-                archived_ads       => [$advert4->{id}, $advert4_2->{id}],
+                archived_ads       => [sort ($advert4->{id}, $advert4_2->{id})],
                 advertiser_loginid => $advertiser4->loginid,
             }
             ],
             'Ad archival event emitted twice';
+
+        cmp_bag $emissions->{p2p_adverts_updated},
+            [{advertiser_id => $advertiser2->p2p_advertiser_info->{id}}, {advertiser_id => $advertiser4->p2p_advertiser_info->{id}}],
+            '2 adverts updated event emitted';
+
         ok !$advertiser2->p2p_advert_info(id => $advert2->{id})->{is_active},   'ad2 was shut down';
         ok $advertiser3->p2p_advert_info(id  => $advert3->{id})->{is_active},   'ad3 stays active';
         ok !$advertiser4->p2p_advert_info(id => $advert4->{id})->{is_active},   'ad4 was shut down';
