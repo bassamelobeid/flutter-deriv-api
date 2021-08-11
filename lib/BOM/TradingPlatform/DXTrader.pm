@@ -749,7 +749,8 @@ sub call_api {
             'devexperts.rpc.timing',
             1000 * Time::HiRes::tv_interval($start_time),
             {tags => ['server:' . $args{server}, 'method:' . $args{method}]});
-        $resp->{content} = decode_json_utf8($resp->{content} || '{}');
+        $resp->{content} = decode_json_utf8($resp->{content} || '{}')
+            if ($resp->{headers}{'content-type'} // '') eq 'application/javascript';
         die unless $resp->{success} or $quiet;    # we expect some calls to fail, eg. client_get
         return $resp;
     } catch ($e) {
