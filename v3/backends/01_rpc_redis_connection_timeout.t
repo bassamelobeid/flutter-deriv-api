@@ -47,6 +47,9 @@ $mock_http_backend->mock(
         push @http_requests, $req_storage;
         return $mock_http_backend->original('call_rpc')->(@_);
     });
+
+SKIP: {
+    skip "skip running time sensitive tests for code coverage tests", 1 if $ENV{DEVEL_COVER_OPTIONS};
 subtest 'Consumer service unavailability' => sub {
     # switch to rpc backend
     my $rpc_redis = BOM::Test::Script::RpcRedis->new();
@@ -101,6 +104,7 @@ subtest 'Consumer service unavailability' => sub {
 
     $redis->flushdb();
 };
+}
 
 subtest 'redis connnection loss' => sub {
     # switch to rpc redis backend
