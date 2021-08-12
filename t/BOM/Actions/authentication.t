@@ -73,18 +73,32 @@ subtest 'bulk_authentication' => sub {
     my $msg = mailbox_search(subject => qr/Authentication report for /);
     like($msg->{subject}, qr/Authentication report for \d{4}-\d{2}-\d{2}/, qq/report including failures and successes./);
 
-    foreach my $user (@users) {
-        # Retrieve user from database by id
-        my $user    = BOM::User->new(id => $user->id);
-        my @clients = $user->clients(include_disabled => 1);
-
-        foreach my $client (@clients) {
-            $client->status->reason('allow_poi_resubmission');
-            is($client->status->reason('allow_poi_resubmission'), 'other', sprintf("POI is set to other for client (%s).", $client->loginid));
-            is($client->authentication_status(),
-                'needs_action', sprintf("client_autnetication is set to NEEDS_ACTION for client (%s).", $client->loginid));
-        }
+    foreach my $client (@clients) {
+        is($client->status->reason('allow_poi_resubmission'), 'other', sprintf("POI is set to other for client (%s).", $client->loginid));
+        is($client->authentication_status(),
+            'needs_action', sprintf("client_autnetication is set to NEEDS_ACTION for client (%s).", $client->loginid));
     }
+
+};
+
+subtest 'call_authentication_for_MT5_and_DerivX_accounts' => sub {
+    my $loginid                = "MTR001122";
+    my $client_authentication  = "NEEDS_ACTION";
+    my $allow_poi_resubmission = 1;
+    my $poi_reason             = "other";
+    my $staff                  = "Sarah Aziziyan";
+    my $staff_ip               = "127.0.0.1";
+
+    my $result =
+        BOM::Event::Actions::Authentication::_authentication($loginid, $client_authentication, $allow_poi_resubmission, $poi_reason, $staff,
+        $staff_ip);
+    is($result, "MT5/DerivX login IDs are not allowed.", "MT5 login IDs are not allowed.");
+
+    $loginid = "DXD001122";
+    $result =
+        BOM::Event::Actions::Authentication::_authentication($loginid, $client_authentication, $allow_poi_resubmission, $poi_reason, $staff,
+        $staff_ip);
+    is($result, "MT5/DerivX login IDs are not allowed.", "DerivX login IDs are not allowed.");
 
 };
 

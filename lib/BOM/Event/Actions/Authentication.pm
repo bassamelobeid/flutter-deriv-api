@@ -15,19 +15,11 @@ use BOM::Platform::Context;
 use BOM::Event::Utility qw(exception_logged);
 use List::Util qw(uniqstr);
 use BOM::Platform::Email qw(send_email);
+use BOM::User::Client::AuthenticationDocuments;
 
 # Redis key for resubmission counter
 use constant ONFIDO_RESUBMISSION_COUNTER_KEY_PREFIX => 'ONFIDO::RESUBMISSION_COUNTER::ID::';
 use constant ONFIDO_REQUEST_PER_USER_PREFIX         => 'ONFIDO::REQUEST::PER::USER::';
-
-## NOTICE : THESE TWO CONSTANTS COULD BE MOVED, POTENTIAL DUPLICATE
-use constant AUTHENTICATION_DEFINITION => {
-    'CLEAR_ALL'    => 'Not authenticated',
-    'ID_DOCUMENT'  => 'Authenticated with scans',
-    'ID_NOTARIZED' => 'Authenticated with Notarized docs',
-    'ID_ONLINE'    => 'Authenticated with online verification',
-    'NEEDS_ACTION' => 'Needs Action',
-};
 
 use constant POI_DEFINITION => {
     'blurred'               => 'Blurred',
@@ -127,7 +119,7 @@ sub _send_authentication_report {
         successes  => $successes,
         failures   => $failures,
         auth_param => {
-            client_authentication  => AUTHENTICATION_DEFINITION->{$client_authentication} // '',
+            client_authentication  => BOM::User::Client::AuthenticationDocuments->get_authentication_definition($client_authentication) // '',
             allow_poi_resubmission => $allow_poi_resubmission,
             poi_reason             => POI_DEFINITION->{$poi_reason} // '',
         }};
@@ -191,13 +183,20 @@ sub _authentication {
     local @ENV{qw(AUDIT_STAFF_NAME AUDIT_STAFF_IP)} = ($staff, $staff_ip);
 
     try {
+        die "MT5/DerivX login IDs are not allowed.\n" if $loginid =~ m/^(MT|DX)[DR]?(\d+$)/;
         my $client = BOM::User::Client->new({loginid => $loginid});
         die "Getting client object failed. Please check if login ID is correct or client exist.\n" unless $client;
-        die "Can not find the associated user. Please check if login ID is correct.\n"             unless $client->user;
+        die "Virtual login IDs are not allowed.\n" if $client->is_virtual;
+        die "Can not find the associated user. Please check if login ID is correct.\n" unless $client->user;
 
         my $redis = BOM::Config::Redis::redis_replicated_write();
 
         my $poi_status_reason = $poi_reason // $client->status->reason('allow_poi_resubmission') // 'unselected';
+
+        # Active client specific update details:
+        if ($client_authentication) {
+            $client->set_authentication_and_status($client_authentication, $staff);
+        }
 
         # POI resubmission logic
         if ($allow_poi_resubmission) {
@@ -209,59 +208,12 @@ sub _authentication {
                 BOM::Config::Redis::redis_events()->incrby(ONFIDO_REQUEST_PER_USER_PREFIX . $client->binary_user_id, -1);
             }
             $client->propagate_status('allow_poi_resubmission', $staff, $poi_status_reason);
+            die "Cannot change POI status on disabled account.However, the authentication status can be changed.\n" if $client->status->disabled;
         } else {    # resubmission is unchecked
             $client->propagate_clear_status('allow_poi_resubmission');
             if (BOM::User::Onfido::submissions_left($client) == 1) {
-
                 BOM::Config::Redis::redis_events()->incrby(ONFIDO_REQUEST_PER_USER_PREFIX . $client->binary_user_id, 1);
             }
-        }
-
-        # Active client specific update details:
-        if ($client_authentication) {
-            # Remove existing status to make the auth methods mutually exclusive
-            $_->delete for @{$client->client_authentication_method};
-
-            if ($client_authentication eq 'ID_NOTARIZED') {
-                $client->set_authentication('ID_NOTARIZED', {status => 'pass'}, $staff);
-            }
-
-            my $already_passed_id_document =
-                  $client->get_authentication('ID_DOCUMENT')
-                ? $client->get_authentication('ID_DOCUMENT')->status
-                : '';
-            if ($client_authentication eq 'ID_DOCUMENT'
-                && !($already_passed_id_document eq 'pass'))
-            {    #Authenticated with scans, front end lets this get run again even if already set.
-
-                $client->set_authentication('ID_DOCUMENT', {status => 'pass'}, $staff);
-                BOM::Platform::Event::Emitter::emit('authenticated_with_scans', {loginid => $loginid});
-            }
-
-            my $already_passed_id_online =
-                  $client->get_authentication('ID_ONLINE')
-                ? $client->get_authentication('ID_ONLINE')->status
-                : '';
-            if (   $client_authentication eq 'ID_ONLINE'
-                && $already_passed_id_online ne 'pass')
-            {
-                $client->set_authentication('ID_ONLINE', {status => 'pass'}, $staff);
-            }
-
-            if ($client_authentication eq 'NEEDS_ACTION') {
-                $client->set_authentication('ID_DOCUMENT', {status => 'needs_action'}, $staff);
-                # 'Needs Action' shouldn't replace the locks from the account because we'll lose the request authentication reason
-                $client->status->upsert('allow_document_upload', $staff, 'MARKED_AS_NEEDS_ACTION');
-            }
-
-            $client->save;
-            $client->update_status_after_auth_fa('', $staff);
-            # Remove unwelcome status from MX client once it fully authenticated
-            $client->status->clear_unwelcome
-                if ($client->residence eq 'gb'
-                and $client->landing_company->short eq 'iom'
-                and $client->fully_authenticated
-                and $client->status->unwelcome);
         }
 
     } catch ($error) {
