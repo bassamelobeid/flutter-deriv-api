@@ -643,6 +643,24 @@ sub _build_numberless {
     return $numberless;
 }
 
+=head2 get_authentication_definition
+
+a method to give back the authentication_definition
+
+=cut
+
+sub get_authentication_definition {
+    my ($class, $status) = @_;
+    my %AUTHENTICATION_DEFINITION = (
+        'CLEAR_ALL'    => 'Not authenticated',
+        'ID_DOCUMENT'  => 'Authenticated with scans',
+        'ID_NOTARIZED' => 'Authenticated with Notarized docs',
+        'ID_ONLINE'    => 'Authenticated with online verification',
+        'NEEDS_ACTION' => 'Needs Action',
+    );
+    return $AUTHENTICATION_DEFINITION{$status};
+}
+
 =head2 provider_types
 
 A collection of document types that are valid to upload to different providers supported.

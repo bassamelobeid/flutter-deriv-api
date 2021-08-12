@@ -483,6 +483,59 @@ sub sync_authentication_from_siblings {
     return undef;
 }
 
+=head2 set_authentication_and_status
+
+gets an input and removes all clients auth statuses, then sets the authentication
+
+it is used in bom-backoffice->f_clientloginid_edit.cgi and bom-events->Authentication.pm
+
+=over 4
+
+=item * C<client_authentication> - client authentication status
+
+=item * C<staff> - the staff who triggered the process
+
+=back
+
+=cut
+
+sub set_authentication_and_status {
+    my ($self, $client_authentication, $staff) = @_;
+
+    # Remove existing status to make the auth methods mutually exclusive
+    $_->delete for @{$self->client_authentication_method};
+
+    if ($client_authentication eq 'ID_NOTARIZED') {
+        $self->set_authentication('ID_NOTARIZED', {status => 'pass'});
+    }
+
+    if ($client_authentication eq 'ID_DOCUMENT') {
+        $self->set_authentication('ID_DOCUMENT', {status => 'pass'});
+        BOM::Platform::Event::Emitter::emit('authenticated_with_scans', {loginid => $self->loginid});
+    }
+
+    if ($client_authentication eq 'ID_ONLINE') {
+        $self->set_authentication('ID_ONLINE', {status => 'pass'});
+    }
+
+    if ($client_authentication eq 'NEEDS_ACTION') {
+        $self->set_authentication('ID_DOCUMENT', {status => 'needs_action'});
+        # 'Needs Action' shouldn't replace the locks from the account because we'll lose the request authentication reason
+        $self->status->upsert('allow_document_upload', $staff, 'MARKED_AS_NEEDS_ACTION');
+    }
+
+    $self->save;
+    $self->update_status_after_auth_fa('', $staff);
+    # Remove unwelcome status from MX client once it fully authenticated
+    $self->status->clear_unwelcome
+        if ($self->residence eq 'gb'
+        and $self->landing_company->short eq 'iom'
+        and $self->fully_authenticated
+        and $self->status->unwelcome);
+
+    return 1;
+}
+
 =head2 notify_cs_about_authenticated_mf
 
 Send an email to CS about new authenticated MF based on MLT to check their TIN and MIFIR

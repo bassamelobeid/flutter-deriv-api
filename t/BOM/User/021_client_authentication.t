@@ -138,4 +138,33 @@ subtest 'Authenticate MX and MF' => sub {
 
 };
 
+subtest 'set_authentication_and_status' => sub {
+    my $cr_user = BOM::User->create(
+        email          => 'test@deriv.com',
+        password       => BOM::User::Password::hashpw('jskjd8292922'),
+        email_verified => 1,
+    );
+    my $client_cr1 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+    });
+    $client_cr1->email('test@deriv.com');
+    $client_cr1->set_default_account('USD');
+    $client_cr1->save();
+
+    $client_cr1->set_authentication_and_status('NEEDS_ACTION', 'Sarah Aziziyan');
+    ok $client_cr1->get_authentication('ID_DOCUMENT'), "Client has NEEDS_ACTION";
+    ok $client_cr1->status->allow_document_upload, "Client is allowed to upload document";
+
+    $client_cr1->set_authentication_and_status('ID_DOCUMENT', 'Sarah Aziziyan');
+    ok $client_cr1->get_authentication('ID_DOCUMENT'), "Client has ID_DOCUMENT";
+    ok !$client_cr1->status->allow_document_upload, "Authenticated client is not allowed to upload document";
+
+    $client_cr1->set_authentication_and_status('ID_NOTARIZED', 'Sarah Aziziyan');
+    ok $client_cr1->get_authentication('ID_NOTARIZED'), "Client has ID_NOTARIZED";
+
+    $client_cr1->set_authentication_and_status('ID_ONLINE', 'Sarah Aziziyan');
+    ok !$client_mf2->get_authentication('ID_ONLINE'), "Client has not ID_ONLINE";
+
+};
+
 done_testing();
