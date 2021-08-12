@@ -652,49 +652,7 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
     my $auth_method = 'dummy';
     if ($input{client_authentication}) {
         $auth_method = $input{client_authentication};
-        # Remove existing status to make the auth methods mutually exclusive
-        $_->delete for @{$client->client_authentication_method};
-
-        if ($auth_method eq 'ID_NOTARIZED') {
-            $client->set_authentication('ID_NOTARIZED', {status => 'pass'});
-        }
-
-        my $already_passed_id_document =
-              $client->get_authentication('ID_DOCUMENT')
-            ? $client->get_authentication('ID_DOCUMENT')->status
-            : '';
-        if ($auth_method eq 'ID_DOCUMENT'
-            && !($already_passed_id_document eq 'pass'))
-        {    #Authenticated with scans, front end lets this get run again even if already set.
-
-            $client->set_authentication('ID_DOCUMENT', {status => 'pass'});
-            BOM::Platform::Event::Emitter::emit('authenticated_with_scans', {loginid => $loginid});
-        }
-
-        my $already_passed_id_online =
-              $client->get_authentication('ID_ONLINE')
-            ? $client->get_authentication('ID_ONLINE')->status
-            : '';
-        if ($auth_method eq 'ID_ONLINE'
-            && !($already_passed_id_online eq 'pass'))
-        {
-            $client->set_authentication('ID_ONLINE', {status => 'pass'});
-        }
-
-        if ($auth_method eq 'NEEDS_ACTION') {
-            $client->set_authentication('ID_DOCUMENT', {status => 'needs_action'});
-            # 'Needs Action' shouldn't replace the locks from the account because we'll lose the request authentication reason
-            $client->status->setnx('allow_document_upload', $clerk, 'MARKED_AS_NEEDS_ACTION');
-        }
-
-        $client->save;
-        $client->update_status_after_auth_fa();
-        # Remove unwelcome status from MX client once it fully authenticated
-        $client->status->clear_unwelcome
-            if ($client->residence eq 'gb'
-            and $client->landing_company->short eq 'iom'
-            and $client->fully_authenticated
-            and $client->status->unwelcome);
+        $client->set_authentication_and_status($auth_method, $clerk);
     }
     if ($input{age_verification} and not $client->is_virtual) {
         my @allowed_lc_to_sync = @{$client->landing_company->allowed_landing_companies_for_age_verification_sync};
