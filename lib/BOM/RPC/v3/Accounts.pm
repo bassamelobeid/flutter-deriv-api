@@ -62,6 +62,7 @@ use BOM::Config::Redis;
 use BOM::User::Onfido;
 use BOM::User::IdentityVerification;
 use BOM::Rules::Engine;
+use Finance::Contract::Longcode qw(shortcode_to_parameters);
 
 use Locale::Country;
 use DataDog::DogStatsd::Helper qw(stats_gauge);
@@ -735,8 +736,9 @@ rpc "profit_table",
         $trx{app_id}         = BOM::RPC::v3::Utility::mask_app_id($row->{source}, $row->{purchase_time});
 
         if ($args->{description}) {
-            $trx{shortcode} = $row->{short_code};
-            $trx{longcode}  = $res->{longcodes}->{$row->{short_code}} // localize('Could not retrieve contract details');
+            $trx{shortcode}     = $row->{short_code};
+            $trx{longcode}      = $res->{longcodes}->{$row->{short_code}} // localize('Could not retrieve contract details');
+            $trx{duration_type} = (shortcode_to_parameters($trx{shortcode}, $client->currency))->{duration_type};
         }
 
         push @transactions, \%trx;

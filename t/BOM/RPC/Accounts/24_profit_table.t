@@ -330,9 +330,10 @@ subtest 'profit table' => sub {
         'app_id'         => undef
     };
     is_deeply($result->{transactions}[1], $expect0, 'result is correct');
-    $expect0->{longcode}  = 'Win payout if Volatility 50 Index is strictly higher than entry spot at 50 seconds after contract start time.';
-    $expect0->{shortcode} = $data->[1]{short_code};
-    $result               = $c->tcall(
+    $expect0->{longcode}      = 'Win payout if Volatility 50 Index is strictly higher than entry spot at 50 seconds after contract start time.';
+    $expect0->{shortcode}     = $data->[1]{short_code};
+    $expect0->{duration_type} = 'seconds';
+    $result                   = $c->tcall(
         $method,
         {
             token => $token_with_txn,
