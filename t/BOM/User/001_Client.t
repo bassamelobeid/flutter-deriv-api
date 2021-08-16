@@ -339,25 +339,26 @@ subtest "format and validate" => sub {
 };
 
 subtest "check duplicate accounts" => sub {
-    plan tests => 9;
+    plan tests => 10;
 
     my $client_details = {
         first_name    => 'alan',
         last_name     => 'turing',
-        date_of_birth => '1983-01-01'
+        date_of_birth => '1983-01-01',
     };
 
-    my $first_client = BOM::User::Client->new({loginid => 'CR0001'});
+    my $first_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+        email       => 'cr_dupe1@test.com',
+        residence   => 'id',
+        %$client_details,
+    });
 
-    $first_client->last_name($client_details->{last_name});
-    $first_client->first_name($client_details->{first_name});
-    $first_client->date_of_birth($client_details->{date_of_birth});
-    $first_client->email('another@email.com');
-    $first_client->save;
-
-    $first_client = BOM::User::Client->new({loginid => 'CR0001'});
-
-    my $second_client = BOM::User::Client->new({loginid => 'CR0002'});
+    my $second_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+        email       => 'cr_dupe2@test.com',
+        residence   => 'in',
+    });
 
     is $second_client->check_duplicate_account($client_details)->{error}, 'DuplicateAccount',
         'second client is considered as duplicate same name + dob with different email account';
@@ -371,8 +372,12 @@ subtest "check duplicate accounts" => sub {
     is $second_client->check_duplicate_account($client_details), undef,
         'no duplicate as emails are same, could have different currency in the account';
 
-    my $third_client = BOM::User::Client->new({loginid => 'CR0003'});
-    $third_client->email('ada@lovelace.com');
+    my $third_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+        email       => 'cr_dupe3@test.com',
+        residence   => 'au',
+    });
+
     $third_client->first_name('Ada');
     $third_client->last_name('Lovelace');
     $third_client->date_of_birth('1815-12-10');
@@ -413,6 +418,37 @@ subtest "check duplicate accounts" => sub {
     delete $modified_details->{date_of_birth};
     $result = $third_client->check_duplicate_account($modified_details);
     is $result, undef, 'No duplicated account found, same phone number alone doesn\'t consider duplicate account';
+
+    my $client_mf = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        email         => 'mf@test.com',
+        residence     => 'at',
+        broker_code   => 'MF',
+        first_name    => 'robert',
+        last_name     => 'smith',
+        date_of_birth => '2000-01-01',
+    });
+
+    my $client_mlt = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        email         => 'mlt@test.com',
+        residence     => 'at',
+        broker_code   => 'MLT',
+        first_name    => 'bob',
+        last_name     => 'smith',
+        date_of_birth => '2000-01-01',
+    });
+
+    $result = $client_mf->check_duplicate_account({first_name => 'bob'});
+    cmp_deeply(
+        $result,
+        {
+            error   => 'DuplicateAccount',
+            details => bag(
+                $client_mlt->loginid,     $client_mlt->first_name, $client_mlt->last_name, $client_mlt->date_of_birth,
+                $client_mlt->date_joined, $client_mlt->email,      $client_mlt->phone,
+            ),
+        },
+        'duplicate in upgradeable landing company'
+    );
 };
 
 subtest "immutable_fields and validate_immutable_fields" => sub {

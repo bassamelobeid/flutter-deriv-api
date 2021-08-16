@@ -2045,12 +2045,20 @@ sub check_duplicate_account {
             exclude_status => ['duplicate_account']};
         $dup_details->{$_} = $args->{$_} || $self->$_ for @$checks;
 
-        my @dup_account_details = BOM::Database::ClientDB->new({broker_code => $target_broker})->get_duplicate_client($dup_details);
-        return {
-            error   => 'DuplicateAccount',
-            details => \@dup_account_details
-        } if scalar @dup_account_details;
+        my $countries = request()->brand->countries_instance;
 
+        # check for duplicates in current and all uprgradeable landing companies
+        my @real_companies =
+            uniq grep { $_ } ($countries->gaming_company_for_country($self->residence), $countries->financial_company_for_country($self->residence));
+        my @broker_codes = map { LandingCompany::Registry->new->get($_)->broker_codes->@* } @real_companies;
+
+        for my $broker_code (@broker_codes) {
+            my @dup_account_details = BOM::Database::ClientDB->new({broker_code => $broker_code})->get_duplicate_client($dup_details);
+            return {
+                error   => 'DuplicateAccount',
+                details => \@dup_account_details
+            } if scalar @dup_account_details;
+        }
     }
     return undef;
 }
