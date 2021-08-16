@@ -36,8 +36,18 @@ subtest 'Check specfic calls' => sub {
 
 subtest 'Nested objects in all calls' => sub {
     for my $call_name (path($SCHEMA_DIR)->children) {
-        next if $call_name =~ /draft-03/;
         my $contents = path("$call_name/send.json")->slurp_utf8;
+        my $props    = $json->decode($contents)->{properties};
+        delete $props->{passthrough};
+        my @els = check($props);
+        ok(!@els, path($call_name)->basename . " nested objects prohibit additionalProperties")
+            or diag("Attribute(s): @els");
+    }
+};
+
+subtest 'Nested objects in all receive calls' => sub {
+    for my $call_name (path($SCHEMA_DIR)->children) {
+        my $contents = path("$call_name/receive.json")->slurp_utf8;
         my $props    = $json->decode($contents)->{properties};
         delete $props->{passthrough};
         my @els = check($props);
@@ -52,7 +62,11 @@ sub check {
     my @els;
 
     # objects must have an element "additionalProperties" and it must be False
-    if ($cur->{type} and $cur->{type} eq "object" and not(defined $cur->{additionalProperties} and not $cur->{additionalProperties})) {
+    if (    $cur->{type}
+        and $cur->{type} eq "object"
+        and defined $cur->{properties}
+        and not(defined $cur->{additionalProperties} and not $cur->{additionalProperties}))
+    {
         push @els, $e;
     }
 
