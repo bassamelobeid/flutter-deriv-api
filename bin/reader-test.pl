@@ -37,7 +37,11 @@ EOF
 
 my $loop = IO::Async::Loop->new;
 require Log::Any::Adapter;
-Log::Any::Adapter->import(qw(Stdout), log_level => $log_level);
+Log::Any::Adapter->import(
+    qw(DERIV),
+    stderr    => 'text',
+    log_level => $log_level
+);
 
 my $underlying = Finance::Underlying->by_symbol($symbol)
     or die 'No underlying found for ' . $symbol;

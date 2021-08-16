@@ -43,7 +43,11 @@ These options are available:
 EOF
 
 require Log::Any::Adapter;
-Log::Any::Adapter->import(qw(Stdout), log_level => $log_level);
+Log::Any::Adapter->import(
+    qw(DERIV),
+    stderr    => 'json',
+    log_level => $log_level
+);
 
 my $loop    = IO::Async::Loop->new;
 my @symbols = $symbols_list ? split(/,/, $symbols_list) : Finance::Asset->symbols;

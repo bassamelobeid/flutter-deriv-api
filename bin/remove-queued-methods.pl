@@ -8,7 +8,9 @@ use IO::Async::Loop;
 use Net::Async::Redis;
 use Future::AsyncAwait;
 use Log::Any qw($log);
-use Log::Any::Adapter qw(Stdout), log_level => 'info';
+use Log::Any::Adapter qw(DERIV),
+    stderr    => 'text',
+    log_level => 'info';
 use Getopt::Long;
 use Data::Dumper;
 use BOM::Config::Redis;

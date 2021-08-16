@@ -9,7 +9,9 @@ use IO::Async::Loop;
 use Net::Async::Redis;
 use Future::AsyncAwait;
 use Log::Any qw($log);
-use Log::Any::Adapter qw(Stdout), log_level => 'info';
+use Log::Any::Adapter qw(DERIV),
+    stderr    => 'json',
+    log_level => 'info';
 use Getopt::Long;
 use Algorithm::Backoff;
 use Syntax::Keyword::Try;
@@ -36,7 +38,7 @@ GetOptions(
     'redis|r=s'    => \(my $redis_uri           = $redis_config->{uri}),
     'interval|i=i' => \(my $interval_in_seconds = 30),
 ) or die("Error in input arguments\n");
-
+$log->info("Start running rpc_queue_monitor");
 my $loop = IO::Async::Loop->new;
 $loop->add(my $redis = Net::Async::Redis->new(uri => $redis_uri));
 

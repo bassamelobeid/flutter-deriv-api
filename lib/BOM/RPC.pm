@@ -5,7 +5,6 @@ use warnings;
 no indirect;
 
 use List::Util qw(any);
-use Log::Any::Adapter qw(Stderr), log_level => 'info';
 use Scalar::Util q(blessed);
 use Syntax::Keyword::Try;
 use Time::HiRes qw();

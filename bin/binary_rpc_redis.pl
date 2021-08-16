@@ -7,7 +7,9 @@ use Getopt::Long;
 use Net::Domain qw( hostname );
 use Parallel::ForkManager;
 use Pod::Usage;
-use Log::Any::Adapter qw( Stderr ), log_level => $ENV{BOM_LOG_LEVEL} // 'info';
+use Log::Any::Adapter qw( DERIV),
+    stderr    => 'json',
+    log_level => $ENV{BOM_LOG_LEVEL} // 'info';
 use Log::Any qw( $log );
 use Path::Tiny qw( path );
 
