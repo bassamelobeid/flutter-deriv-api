@@ -35,6 +35,7 @@ set_settings:
             - profile.tax_information_is_not_cleared
             - profile.professional_request_allowed
             - profile.professional_request_is_not_resubmitted
+            - client.check_duplicate_account
           default:
             - fail
     - context:
