@@ -447,7 +447,20 @@ sub output_validation {
         my $schema = _load_schema($api_response->{msg_type});
         my $error  = _validate_schema_error($schema, $api_response);
         return unless $error;
-        my $error_details = join("- ", (map { "$_:$error->{details}{$_}" } keys %{$error->{details}}), @{$error->{general}});
+        my $error_details = join("-ErrorAttribute ", (map { "$_:$error->{details}{$_}" } keys %{$error->{details}}), @{$error->{general}});
+            # log any additional property errors for receive schemas and return api response successfully.
+            # This will be a temporary check as we will monitor logs and take corrective actions for schemas having extra property errors.
+            # This check will be removed once the schemas/code are corrected so that they dont return extra properties that are not defined in schema.  
+            # If we get both output validation error and extra property error for same schema then we would throw output validation error.
+            my $add_prop_error_count = () = $error_details =~ /Properties not allowed/g; 
+            my $error_codes_count = () = $error_details =~ /ErrorAttribute/g; 
+            ++$error_codes_count;
+                if (($add_prop_error_count > 0) && ($add_prop_error_count == $error_codes_count)) {
+                    delete $log->context->{api_response};
+                    $log->error("Additional Property Error [ "
+                    . " error: $error_details ], make sure backend are aware of this error!, schema may need adjusting");
+                    return;
+                }
         $log->error("Schema validation failed for our own output [ "
                 . " error: $error_details ], make sure backend are aware of this error!, schema may need adjusting");
 

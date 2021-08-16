@@ -15,6 +15,7 @@
             "items": {
                 "title": "Details of each Trading account.",
                 "type": "object",
+                "additionalProperties": false,
                 "properties": {
                     "account_id": {
                         "description": "ID of Trading account.",

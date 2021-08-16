@@ -12,6 +12,7 @@
             "title": "trading_platform_withdrawal",
             "description": "Information about withdrawal transaction",
             "type": "object",
+            "additionalProperties": false,
             "properties": {
                 "transaction_id": {
                     "description": "The reference number for the related withdrawal from the wallet account",

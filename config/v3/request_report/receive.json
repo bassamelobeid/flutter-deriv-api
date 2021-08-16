@@ -12,6 +12,7 @@
             "title": "request_report",
             "description": "Response of request report",
             "type": "object",
+            "additionalProperties": false,
             "properties": {
                 "report_status": {
                     "description": "`1` indicates that report will be e-mailed, otherwise an error with error_code and error_message will be returned",

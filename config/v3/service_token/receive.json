@@ -17,6 +17,7 @@
                 "banxa": {
                     "description": "Banxa order data.",
                     "type": "object",
+                    "additionalProperties": false,
                     "properties": {
                         "token": {
                             "description": "Created order id reference token.",
@@ -35,6 +36,7 @@
                 "onfido": {
                     "description": "Onfido data.",
                     "type": "object",
+                    "additionalProperties": false,
                     "properties": {
                         "token": {
                             "description": "Onfido token.",
@@ -45,6 +47,7 @@
                 "sendbird": {
                     "description": "Sendbird data.",
                     "type": "object",
+                    "additionalProperties": false,
                     "properties": {
                         "app_id": {
                             "description": "Sendbird application ID.",
@@ -63,6 +66,7 @@
                 "wyre": {
                     "description": "Wyre reservation data.",
                     "type": "object",
+                    "additionalProperties": false,
                     "properties": {
                         "token": {
                             "description": "Wyre reservation id token",

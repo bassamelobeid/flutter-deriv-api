@@ -12,6 +12,7 @@
             "title": "trading_platform_new_account",
             "description": "New Trading account details",
             "type": "object",
+            "additionalProperties": false,
             "properties": {
                 "account_id": {
                     "description": "ID of Trading account.",

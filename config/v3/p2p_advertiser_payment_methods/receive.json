@@ -16,6 +16,7 @@
                 "^[0-9]{1,8}$": {
                     "description": "Advertiser payment method ID, to be used for updates.",
                     "type": "object",
+                    "additionalProperties": false,
                     "required": [
                         "fields",
                         "is_enabled",

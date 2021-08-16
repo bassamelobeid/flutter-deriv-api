@@ -12,6 +12,7 @@
             "title": "cashier_payments",
             "description": "List of cashier transactions.",
             "type": "object",
+            "additionalProperties": false,
             "properties": {
                 "crypto": {
                     "description": "Response for provider `crypto'.",

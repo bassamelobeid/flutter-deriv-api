@@ -180,11 +180,12 @@ subtest 'common properties' => sub {
         },
         receive => {
             subscription => {
-                title       => 'Subscription information',
-                description => 'For subscription requests only.',
-                type        => 'object',
-                required    => ['id'],
-                properties  => {
+                title                => 'Subscription information',
+                description          => 'For subscription requests only.',
+                type                 => 'object',
+                additionalProperties => '0',
+                required             => ['id'],
+                properties           => {
                     id => {
                         description => 'A per-connection unique identifier. Can be passed to the `forget` API call to unsubscribe.',
                         type        => 'string',

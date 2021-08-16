@@ -12,6 +12,7 @@
             "title": "account_statistics",
             "description": "Response of account statistics",
             "type": "object",
+            "additionalProperties": false,
             "properties": {
                 "currency": {
                     "description": "Currency of an account",

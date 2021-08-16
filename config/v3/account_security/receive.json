@@ -12,10 +12,12 @@
             "title": "account_security",
             "description": "The information of 2-Factor authentication.",
             "type": "object",
+            "additionalProperties": false,
             "properties": {
                 "totp": {
                     "description": "TOTP information.",
                     "type": "object",
+                    "additionalProperties": false,
                     "properties": {
                         "is_enabled": {
                             "description": "Determines whether the 2-Factor authentication is enabled.",
