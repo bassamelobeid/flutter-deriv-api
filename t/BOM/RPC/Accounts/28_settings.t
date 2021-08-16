@@ -976,4 +976,53 @@ subtest 'set_setting with feature flag' => sub {
     is($c->tcall('set_settings', $params)->{status}, 1, 'Set settings with feature flag has been set successfully');
 };
 
+subtest 'set_setting duplicate account' => sub {
+    my $client1 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        email         => 'duplicate_client1@test.com',
+        broker_code   => 'CR',
+        first_name    => 'bob',
+        last_name     => 'smith',
+        date_of_birth => '2000-01-01',
+    });
+
+    BOM::User->create(
+        email    => $client1->email,
+        password => 'x',
+    )->add_client($client1);
+
+    my $client2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        email         => 'duplicate_client2@test.com',
+        broker_code   => 'CR',
+        first_name    => 'robert',
+        last_name     => 'smith',
+        date_of_birth => '2000-01-01',
+    });
+
+    BOM::User->create(
+        email    => $client2->email,
+        password => 'x',
+    )->add_client($client2);
+
+    my $token = $token_gen->create_token($client1->loginid, 'test token');
+
+    my $params = {
+        language  => 'EN',
+        token     => $token,
+        client_ip => '127.0.0.1',
+        args      => {first_name => 'robert'}};
+
+    is $c->tcall('set_settings', $params)->{error}{code}, 'DuplicateAccount', 'set_settings fails due to duplicate account';
+
+    $params->{args}{first_name} = 'bobby';
+    ok !exists $c->tcall('set_settings', $params)->{error}, 'can set name to something else';
+
+    $params->{args} = {
+        first_name    => 'bobby',
+        last_name     => 'smith',
+        date_of_birth => '2000-01-01',
+    };
+
+    ok !exists $c->tcall('set_settings', $params)->{error}, 'can call set_settings even though the client is duplicating its own data';
+};
+
 done_testing();
