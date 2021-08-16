@@ -586,6 +586,15 @@ sub contracts_for {
         if (exists $contract->{payout_limit}) {
             $contracts_for->{available}->[$i]->{payout_limit} = $contract->{payout_limit}->{$currency};
         }
+
+        # localise contract *_display
+        if ($contracts_for->{available}->[$i]->{contract_category_display}) {
+            $contracts_for->{available}->[$i]->{contract_category_display} = localize($contracts_for->{available}->[$i]->{contract_category_display});
+        }
+
+        if ($contracts_for->{available}->[$i]->{contract_display}) {
+            $contracts_for->{available}->[$i]->{contract_display} = localize($contracts_for->{available}->[$i]->{contract_display});
+        }
         $i++;
     }
 
