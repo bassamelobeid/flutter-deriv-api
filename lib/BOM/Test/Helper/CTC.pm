@@ -5,6 +5,7 @@ use warnings;
 
 use Exporter qw( import );
 
+use JSON::MaybeXS;
 use Test::MockModule;
 use Path::Tiny;
 use LandingCompany::Registry;
@@ -110,8 +111,14 @@ sub deploy_erc20_test_contract {
     my $bytecode = path($path)->slurp();
     $bytecode =~ s/[\x0D\x0A]+//g;
 
+    my $constructor =
+        '{ "inputs": [ { "internalType": "string", "name": "symbol", "type": "string" }, { "internalType": "string", "name": "name", "type": "string" }, { "internalType": "uint256", "name": "total_supply", "type": "uint256" }, { "internalType": "uint8", "name": "decimals", "type": "uint8" } ], "stateMutability": "nonpayable", "type": "constructor" }';
+
+    my $decoded_abi = decode_json($currency->_minimal_erc20_abi);
+    push(@$decoded_abi, decode_json($constructor));
+
     my $contract = $currency->rpc_client->contract({
-        contract_abi => $currency->_minimal_erc20_abi,
+        contract_abi => encode_json($decoded_abi),
         from         => $currency->account_config->{account}->{address},
         # The default contract gas is lower that what we need to deploy this contract
         # so we need manually specify the maximum amount of gas needed to deploy the
