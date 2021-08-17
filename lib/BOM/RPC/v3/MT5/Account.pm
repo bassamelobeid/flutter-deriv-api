@@ -139,47 +139,6 @@ async_rpc "mt5_login_list",
         });
     };
 
-=head2 trading_servers
-
-    $trading_servers = trading_servers()
-
-Takes a single C<$params> hashref containing the following keys:
-
-=over 4
-
-=item * client (deriv client object)
-
-=over 4
-
-=item * args which contains the following keys:
-
-=item * platform (currently mt5)
-
-=back
-
-=back
-
-Returns an array of hashes for trade server config, sorted by
-recommended flag and sorted by region
-
-=cut
-
-async_rpc "trading_servers",
-    category => 'mt5',
-    sub {
-    my $params = shift;
-
-    my $client   = $params->{client};
-    my $platform = $params->{args}{platform};
-
-    return get_mt5_server_list(
-        client       => $client,
-        residence    => $client->residence,
-        account_type => $params->{args}{account_type},
-        market_type  => $params->{args}{market_type},
-    );
-    };
-
 =head2 get_mt5_server_list
 
     get_mt5_server_list(residence => $client->residence, account_type => 'real', market_type => 'synthetic');
@@ -239,7 +198,8 @@ sub get_mt5_server_list {
                             $server->{message_to_client} = localize('Region added');
                         }
 
-                        $server->{market_type} = $market_type;
+                        $server->{market_type}  = $market_type;
+                        $server->{account_type} = $group_type;
                         push @valid_servers, $server;
                     }
                 }

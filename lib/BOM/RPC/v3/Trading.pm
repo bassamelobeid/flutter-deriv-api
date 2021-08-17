@@ -18,7 +18,7 @@ use BOM::RPC::v3::MT5::Errors;
 use BOM::RPC::v3::MT5::Account;
 use BOM::User;
 use BOM::User::Password;
-use List::Util qw(first);
+use List::Util qw(first none);
 
 requires_auth('trading', 'wallet');
 
@@ -145,6 +145,50 @@ rpc trading_platform_accounts => sub {
     } catch ($e) {
         handle_error($e);
     }
+};
+
+=head2 trading_servers
+
+    $trading_servers = trading_servers()
+
+Takes a single C<$params> hashref containing the following keys:
+
+=over 4
+
+=item * client (deriv client object)
+
+=over 4
+
+=item * args which contains the following keys:
+
+=item * platform: mt5 or dxtrade
+
+=back
+
+=back
+
+Returns an array of hashes for trade server config, sorted by
+recommended flag and sorted by region
+
+=cut
+
+async_rpc trading_servers => sub {
+    my $params = shift;
+
+    my $client   = $params->{client};
+    my $platform = $params->{args}{platform};
+
+    return BOM::RPC::v3::MT5::Account::get_mt5_server_list(
+        client       => $client,
+        residence    => $client->residence,
+        account_type => $params->{args}{account_type} // 'real',
+        market_type  => $params->{args}{market_type},
+    ) if ($platform eq 'mt5');
+
+    return get_dxtrade_server_list(
+        country      => $client->residence,
+        account_type => $params->{args}{account_type},
+    ) if ($platform eq 'dxtrade');
 };
 
 =head2 trading_platform_deposit
@@ -699,6 +743,35 @@ sub change_investor_password {
             }});
 
     return;
+}
+
+=head2 get_dxtrade_server_list
+
+    get_dxtrade_server_list(country => $client->residence, account_type => 'real');
+
+    Return the array of hash of trade servers configuration for Deriv X.
+
+=cut
+
+sub get_dxtrade_server_list {
+    my (%args) = @_;
+
+    my ($country, $account_type) = @args{qw/country account_type/};
+    my @active_servers = BOM::TradingPlatform::DXTrader->new->active_servers;
+    my $countries      = request()->brand->countries_instance;
+
+    my @market_types = grep { $countries->dx_company_for_country(country => $country, account_type => $_) ne 'none' } qw/gaming financial/;
+
+    return Future->done([]) unless @market_types;
+
+    my @servers = map { {account_type => $_} } grep { not $account_type or $account_type eq $_ } qw/real demo/;
+
+    for my $server (@servers) {
+        $server->{disabled}           = (none { $server->{account_type} eq $_ } @active_servers) ? 1 : 0;
+        $server->{supported_accounts} = \@market_types;
+    }
+
+    return Future->done(\@servers);
 }
 
 1;

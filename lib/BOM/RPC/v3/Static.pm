@@ -37,6 +37,7 @@ use BOM::RPC::v3::Utility;
 use BOM::Config::CurrencyConfig;
 use BOM::Config::Onfido;
 use BOM::Platform::Context qw(localize);
+use BOM::TradingPlatform::DXTrader;
 
 =head2 residence_list
 
@@ -294,7 +295,8 @@ rpc website_status => sub {
                 not $p2p_config->enabled
                     or $app_config->system->suspend->p2p
             ) ? 1 : 0,
-        }};
+        },
+    };
 };
 
 1;

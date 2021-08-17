@@ -44,6 +44,7 @@ subtest 'trading servers for south africa' => sub {
         language => 'EN',
         token    => $token,
         args     => {
+            platform     => 'mt5',
             account_type => 'real',
             market_type  => 'synthetic',
         },
