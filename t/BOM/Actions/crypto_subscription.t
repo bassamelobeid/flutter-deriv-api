@@ -22,6 +22,7 @@ use BOM::Event::Services;
 use List::Util qw(all any);
 use BOM::Test::Helper::Client qw(create_client top_up);
 use BOM::Test::Helper::ExchangeRates qw(populate_exchange_rates);
+use Future::AsyncAwait;
 
 initialize_events_redis();
 populate_exchange_rates();
@@ -647,6 +648,54 @@ subtest "Skip ETH fee transaction" => sub {
         });
 
     is $res->[0]->{status}, 'NEW', "correct transaction status";
+};
+
+subtest "check fraud address in TP" => sub {
+    my $client = create_client();
+    $client->set_default_account('BTC');
+    my $helper = BOM::CTC::Helper->new(client => $client);
+
+    my $address   = "bc1_I_AM_COOL_FRAUD_ADDRESS";
+    my $f_address = "bc1_I_AM_A_FRAUD_ADDRESS_HEHE";
+
+    my $mock_third_party = Test::MockModule->new('BOM::CTC::TP::API::BTC');
+
+    $mock_third_party->mock(
+        'tp_fraud_address' => async sub {
+            my ($self, $address) = @_;
+            if ($address eq "bc1_I_AM_A_FRAUD_ADDRESS_HEHE") {
+                return {
+                    "response_result" => {
+                        "count"   => "1",
+                        "address" => $f_address
+                    }};
+            } else {
+                # in success the original call will return the transaction, so we just take a random key to return
+                return {"response_result" => {"count" => "0"}};
+            }
+        });
+
+    my $response = BOM::Event::Actions::CryptoSubscription::fraud_address({
+        address       => $address,
+        currency_code => "BTC"
+    });
+    is $response, '0', "address wasn't found on the TP";
+
+    $response = BOM::Event::Actions::CryptoSubscription::fraud_address({
+        address       => $f_address,
+        currency_code => "LTC"
+    });
+    is $response, '1', "address found on the TP";
+
+    my $rows = $dbic->run(
+        fixup => sub {
+            my $sth = $_->prepare(q{SELECT * FROM payment.blacklist_addresses where address = (?)});
+            $sth->execute($f_address);
+            return $sth->fetchall_arrayref({});
+        });
+
+    is $rows->@*, 1, "Address was correctly inserted in the database";
+
 };
 
 done_testing;

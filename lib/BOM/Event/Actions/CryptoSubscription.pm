@@ -15,6 +15,7 @@ use BOM::CTC::Database;
 use BOM::CTC::Constants qw(:transaction :datadog);
 use BOM::CTC::Helper;
 use BOM::Event::Utility qw(exception_logged);
+use BOM::CTC::TP::API::BTC;
 
 =head1 NAME
 
@@ -43,6 +44,27 @@ sub subscription {
 
     set_pending_transaction($transaction);
     set_transaction_fee($transaction);
+}
+
+my $loop = IO::Async::Loop->new;
+my $tp_api;
+
+=head2 _tp_api
+
+Private subroutine whose purpose is to add the async
+C<BOM::CTC::TP::API::BTC> into the C<IO::Async::Loop>
+so to use safe the async subs contained in the
+C<BOM::CTC::TP::API::BTC>
+
+Returns a C<BOM::CTC::TP::API::BTC> object
+
+=cut
+
+sub _tp_api {
+    return $tp_api //= do {
+        $loop->add($tp_api = BOM::CTC::TP::API::BTC->new());
+        $tp_api;
+    }
 }
 
 =head2 set_transaction_fee
@@ -467,6 +489,54 @@ sub emit_new_address_call {
         });
 
     return $emit;
+}
+
+=head2 fraud_address
+
+calls the subroutine which checks the address if
+exists in the third party
+
+Note that this works only for BTC at the moment
+
+=over 4
+
+=item * C<address> the address to check
+
+=back
+
+Returns 0 in fail or 1 in success
+
+=cut
+
+sub fraud_address {
+
+    my $data = shift;
+
+    my $address       = $data->{address};
+    my $currency_code = $data->{currency_code};
+
+    my $check = _tp_api()->tp_fraud_address($address)->get;
+
+    # if the address is found, then we need to insert it in the database,
+    # otherwise, we can either just exit or send a message to the logs
+    # that the address is not found on the third party
+
+    my $response = $check->{response_result};
+    unless ($response) {
+        $log->warnf("An error occured communication with Bitcoinabuse for: %s", $address);
+        return 0;
+    }
+    my $found = $response->{count} > 0 && defined $response->{address} ? 1 : 0;
+
+    if ($found) {
+        my $dbic = BOM::CTC::Database->new();
+        my $rows = $dbic->insert_fraud_addresses($currency_code, $check->{response_result}->{address}, $check->{response_result}->{count});
+
+        $log->warnf("An error occurred while insterting fraud address in database") unless ($rows);
+    }
+
+    return $found;
+
 }
 
 1;
