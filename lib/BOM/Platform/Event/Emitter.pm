@@ -47,6 +47,7 @@ my %event_stream_mapping = (
     identity_verification_requested => 'DOCUMENT_AUTHENTICATION_STREAM',
     affiliate_sync_initiated        => 'AFFILIATE_SYNC_LONG_RUNNING_STREAM',
     crypto_subscription             => 'CRYPTO_EVENTS_STREAM',
+    fraud_address                   => 'CRYPTO_EVENTS_STREAM',
     new_crypto_address              => 'CRYPTO_EVENTS_STREAM',
     client_promo_codes_upload       => 'PROMO_CODE_IMPORT_LONG_RUNNING_STREAM',
     anonymize_client                => 'ANONYMIZATION_STREAM',
