@@ -14,7 +14,11 @@ use Format::Util::Numbers qw(financialrounding formatnumber);
 use Digest::SHA1 qw(sha1_hex);
 use BOM::Platform::Context qw(request);
 use BOM::Rules::Engine;
+use WebService::MyAffiliates;
+use BOM::Config;
+use BOM::Database::CommissionDB;
 use DataDog::DogStatsd::Helper qw(stats_inc stats_timing);
+use BOM::Config::Redis;
 use Time::HiRes qw(gettimeofday tv_interval);
 
 use Log::Any '$dxapi_log',
@@ -56,6 +60,7 @@ use constant {
     HTTP_TIMEOUT               => 20,
     DEMO_TOPUP_AMOUNT          => 10000,
     DEMO_TOPUP_MINIMUM_BALANCE => 1000,
+    PLATFORM_ID                => 'dxtrade',
 };
 
 =head2 new
@@ -116,7 +121,7 @@ Returns dxtrade account info from our db.
 sub local_accounts {
     my ($self)        = @_;
     my $login_details = $self->client->user->loginid_details;
-    my @accounts      = sort grep { ($_->{platform} // '') eq 'dxtrade' } values %$login_details;
+    my @accounts      = sort grep { ($_->{platform} // '') eq PLATFORM_ID } values %$login_details;
     return @accounts;
 }
 
@@ -255,7 +260,12 @@ sub new_account {
         clearing_code => $account->{clearing_code},
     );
 
-    $self->client->user->add_loginid($account_id, 'dxtrade', $args{account_type}, $account->{currency}, \%attributes);
+    $self->client->user->add_loginid($account_id, PLATFORM_ID, $args{account_type}, $account->{currency}, \%attributes);
+
+    # If client has affiliate token, link the client to the affiliate.
+    if (my $token = $self->client->myaffiliates_token and $args{account_type} ne 'demo') {
+        $self->_link_client($token, $account_id, $self->client->binary_user_id);
+    }
 
     $account->{account_id} = $account_id;
     $account->{login}      = $dxclient->{login};
@@ -458,7 +468,7 @@ sub deposit {
     }
 
     $self->insert_payment_details($txn->payment_id, $args{to_account}, $tx_amounts->{recv_amount});
-    $self->client->user->daily_transfer_incr('dxtrade');
+    $self->client->user->daily_transfer_incr(PLATFORM_ID);
 
     # get updated balance
     my $update;
@@ -569,7 +579,7 @@ sub withdraw {
     }
 
     $self->insert_payment_details($txn->payment_id, $args{from_account}, -$args{amount});
-    $self->client->user->daily_transfer_incr('dxtrade');
+    $self->client->user->daily_transfer_incr(PLATFORM_ID);
 
     # get updated balance
     my $update;
@@ -822,7 +832,7 @@ sub dxtrade_login {
         my $prefix = $self->config->{real_account_ids_login_prefix} // '';
         return $prefix . $self->client->user->id;
     } else {
-        my $account = first { ($_->{platform} // '') eq 'dxtrade' } values $self->client->user->loginid_details->%*;
+        my $account = first { ($_->{platform} // '') eq PLATFORM_ID } values $self->client->user->loginid_details->%*;
         return $account->{attributes}{login} if $account;
         return sha1_hex($$ . time . rand);
     }
@@ -847,7 +857,7 @@ sub account_details {
         balance               => financialrounding('amount', $account->{currency}, $account->{balance}),
         currency              => $account->{currency},
         display_balance       => formatnumber('amount', $account->{currency}, $account->{balance}),
-        platform              => 'dxtrade',
+        platform              => PLATFORM_ID,
         market_type           => $market_type,
         landing_company_short => 'svg',                                                                    #todo
     };
@@ -920,4 +930,115 @@ sub insert_payment_details {
         });
 }
 
+## PRIVATE METHODS ##
+
+=head2 _link_client
+
+If a client comes from an affiliate link, we need know link this client to the affiliate.
+
+=over 4
+
+=item * $myaffiliate_token = token from MyAffiliates platform
+
+=item * $dx_loginid = login id for dxtrade
+
+=item * $binary_user_id = deriv binary user id
+
+=back
+
+Returns the affiliate id.
+
+=cut
+
+sub _link_client {
+    my ($self, $myaffiliate_token, $dx_loginid, $binary_user_id) = @_;
+
+    my $aff = $self->_myaffiliates();
+
+    unless ($aff) {
+        stats_inc('myaffiliates.dxtrade.failure.get_aff_id', 1);
+        $dxapi_log->warnf("Unable to connect to MyAffiliate to parse token %s to link %s", $myaffiliate_token, $dx_loginid);
+        return;
+    }
+
+    my $myaffiliate_id = $aff->get_affiliate_id_from_token($myaffiliate_token);
+
+    unless ($myaffiliate_id) {
+        stats_inc('myaffiliates.dxtrade.failure.get_aff_id', 1);
+        $dxapi_log->warnf("Unable to parse token %s", $myaffiliate_token);
+        return;
+    }
+
+    my $affiliate_id;
+    try {
+        my ($res) = $self->_commission_db->dbic->run(
+            fixup => sub {
+                $_->selectall_array('SELECT id FROM affiliate.affiliate WHERE external_affiliate_id=?', undef, $myaffiliate_id);
+            });
+        die "can't fine affiliate_id for $myaffiliate_id" unless $res;
+        $affiliate_id = $res->[0];
+    } catch ($e) {
+        $dxapi_log->warnf("Unable to get affiliate id for %s. Error [%s]", $myaffiliate_id, $e);
+    }
+
+    unless ($affiliate_id) {
+        stats_inc('myaffiliates.dxtrade.failure.get_internal_aff_id', 1);
+        $dxapi_log->warnf("Unable to get affiliate id for %s", $myaffiliate_id);
+        return;
+    }
+
+    try {
+        $self->_commission_db->dbic->run(
+            ping => sub {
+                $_->do('SELECT * FROM affiliate.add_new_affiliate_client(?,?,?,?)', undef, $dx_loginid, PLATFORM_ID, $binary_user_id, $affiliate_id);
+            });
+
+        # notify commission deal listener about a new sign up
+        my $stream = join '::', (PLATFORM_ID, 'real_signup');
+        BOM::Config::Redis::redis_cfds_write()->execute('xadd', $stream, '*', 'platform', PLATFORM_ID, 'account_id', $dx_loginid);
+    } catch ($e) {
+        $dxapi_log->warnf("Unable to add client %s to affiliate.affiliate_client table. Error [%s]", $dx_loginid, $e);
+    }
+
+    return;
+}
+
+my $commission_db;
+
+=head2 _commission_db
+
+Return commission db.
+
+=cut
+
+sub _commission_db {
+    my $self = shift;
+
+    $commission_db //= BOM::Database::CommissionDB::rose_db();
+
+    return $commission_db;
+}
+
+my $aff;
+
+=head2 _myaffiliates
+
+Returns C<WebService::MyAffiliates> object.
+
+=cut
+
+sub _myaffiliates {
+    my $self = @_;
+
+    my $config = BOM::Config::third_party()->{myaffiliates};
+
+    $aff //= WebService::MyAffiliates->new(
+        user    => $config->{user},
+        pass    => $config->{pass},
+        host    => $config->{host},
+        timeout => 10
+    );
+
+    return $aff;
+}
 1;
