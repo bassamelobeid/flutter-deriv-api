@@ -518,4 +518,30 @@ sub redis_payment {
     return _redis('payment', 'read', 10);
 }
 
+=head2 redis_cfds
+
+    my $redis = BOM::Config::Redis::redis_cfds();
+
+Returns a read-only L<RedisDB> handle to our CFDs Redis service.
+
+=cut
+
+sub redis_cfds {
+    $config->{cfds} //= BOM::Config::redis_cfds_config();
+    return _redis('cfds', 'read', 10);
+}
+
+=head2 redis_cfds_write
+
+    my $redis = BOM::Config::Redis::redis_cfds_write();
+
+Returns a writable L<RedisDB> handle to our CFDs Redis service.
+
+=cut
+
+sub redis_cfds_write {
+    $config->{cfds} //= BOM::Config::redis_cfds_config();
+    return _redis('cfds', 'write', 10);
+}
+
 1;

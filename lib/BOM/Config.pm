@@ -305,4 +305,17 @@ sub paymentapi_config {
     return $config;
 }
 
+=head2 redis_cfds_config
+
+    BOM::Config::redis_cfds_config()
+
+Loads and caches configuration for CFDs Redis instance
+
+=cut
+
+sub redis_cfds_config {
+    state $config = YAML::XS::LoadFile('/etc/rmg/redis-cfds.yml');
+    return $config;
+}
+
 1;
