@@ -1,0 +1,101 @@
+<h3>Crypto Fradulent Addresses</h3>
+
+<form action="[% data_url %]" method="POST">
+<div class="row"><label>Crypto Address:</label>
+<input type="text" name="s_address" required/>
+<input type=submit class="btn btn--primary" value='Search for address'>
+<input type="hidden" name="type" value="search">
+</div>
+</form>
+
+<hr>
+
+<form action="[% data_url %]" method="post">
+<div class="row">
+<label>Login ID:</label><input type=text size=50 maxlength=50 name="loginid" placeholder="CR12345" required/>
+<input type="submit" class="btn btn--primary" value="Search for client">
+<input type="hidden" name="type" value="search">
+</div>
+</form>
+
+<hr>
+
+<form action="[% data_url %]" method="post">
+<div class="row">
+<label>Return all fraudulent addresses from the database</label>
+<input type="submit" class="btn btn--primary" value="Return all addresses">
+<input type="hidden" name="type" value="search_all">
+</div>
+</form>
+
+[% IF search %]
+<hr>
+<form action="[% data_url %]" method="POST">
+    <div class="scrollable">
+        <div class="row">
+        <a class="btn btn--primary" download="FraudulentAddresses.xls" href="#" onclick="return ExcellentExport.excel(this, 'fraud_data', 'FraudulentAddresses.xls');">Export to Excel</a>
+        <a class="btn btn--primary" download="FraudulentAddresses.csv" href="#" onclick="return ExcellentExport.csv(this, 'fraud_data');">Export to CSV</a>
+         </div>
+        <table class="border hover alternate" id="fraud_data">
+            <tr>
+                <th>Fraudulent address</th>
+                <th>Currency</th>
+                <th>Transaction type</th>
+                <th>Other login IDs that used this address</th>
+                <th>Report Count</th>
+                <th>Bitcoin Abuse Website link</th>
+                <th>Investigation remarks</th>
+                <th>Disable/Enable address</th>
+                <th>Last Update Date</th>
+                <th>Staff</th>
+            </tr>
+            [% FOREACH row IN data %]
+                <tr>
+                    <td id="address">[% row.address %]</td>
+                    <td id="currency_code">[% row.currency_code %]</td>
+                    <td>[% row.transaction_type %]</td>
+                    <td>[% row.clients %]</td>
+                    <td>[% row.address_report_count %]</td>
+                    <td><a target="_blank" href="[% row.link %]">[% row.link %]</a></td>
+                    <td><input type="text" id="remark" name="investigations_remarks" value="[% row.investigation_remarks %]" onkeydown="this.className='changed'" /> <div style="display : none">[% row.investigation_remarks %] </div> </td>
+                    <td align="middle">
+                        <input type="checkbox" id="blocked" name="blocked" value="[% row.blocked %]" onclick="this.className='changed' " [% IF row.blocked %] checked="checked" [% END %]> <div style="display : none">[% row.blocked %] </div></td>
+                    <td>[% row.last_status_date %]</td>
+                    <td>[% row.last_status_update_by %]
+                </tr>
+            [% END %]
+        </table>
+    </div>
+    <br>
+        <input type="button"  onclick="post_data()" class="btn btn--primary" name="save" value="Save Changes"/>
+</form>
+[% END %]
+<script>
+
+function post_data() {
+    var json_arr = [];
+
+    \$("#fraud_data tbody tr").each(function(id, value) {
+        if(\$(this).find(".changed").length > 0 && \$("#address", this).text() != ''){
+            json_arr.push({
+                address: \$("#address", this).text(),
+                blocked: \$("#blocked", this).val(),
+                remark:  \$("#remark", this).val(),
+            });
+        }
+    })
+    var jsonString = JSON.stringify(json_arr);
+    \$.ajax({
+        type: 'POST',
+        url: 'crypto_fraudulent_addresses.cgi',
+        data: { "json_data": jsonString },
+        success: function() {  location.reload(); },
+        error: function() { alert("Error while processing the request"); }
+    });
+}
+
+\$(':checkbox').on('change', function(){
+   this.value = this.checked ? 1 : 0;
+}).change();
+
+</script>

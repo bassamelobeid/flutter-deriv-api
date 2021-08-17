@@ -11,6 +11,7 @@ use Path::Tiny;
 use f_brokerincludeall;
 use BOM::Backoffice::Sysinit ();
 use BOM::Config;
+use BOM::CTC::Database;
 BOM::Backoffice::Sysinit::init();
 
 PrintContentType();
@@ -57,5 +58,11 @@ BOM::Backoffice::Request::template()->process(
         ip_search_url => request()->url_for('backoffice/ip_search.cgi'),
         ip            => $ENV{REMOTE_ADDR},
     }) || die BOM::Backoffice::Request::template()->error(), "\n";
+
+Bar("Crypto Fraudulent Addresses");
+
+BOM::Backoffice::Request::template()
+    ->process('backoffice/crypto_fraudulent_addresses.html.tt', {data_url => request()->url_for('backoffice/crypto_fraudulent_addresses.cgi')})
+    || die BOM::Backoffice::Request::template()->error(), "\n";
 
 code_exit_BO();
