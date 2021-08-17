@@ -19,6 +19,12 @@ BTC:
             methods:
                 fee: /
                 tx: /txs/
+        fraud:
+            url: https://www.bitcoinabuse.com/api
+            report_url: https://www.bitcoinabuse.com/reports
+            methods:
+                check: /reports/check
+                download: /download/forever
 LTC:
     withdrawal:
         timeout: "3d"
