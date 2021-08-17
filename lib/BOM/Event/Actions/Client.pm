@@ -284,6 +284,11 @@ async sub document_upload {
 
         $client->propagate_clear_status('allow_poi_resubmission') if $is_poi_document || $is_onfido_document;
 
+        # If is a POI document but not Onfido supported, send an email to CS
+        if ($is_poi_document && !$is_onfido_document && !$uploaded_manually_by_staff) {
+            _notify_onfido_unsupported_document($client, $document_entry);
+        }
+
         my $document_args = {
             args              => $args,
             client            => $client,
@@ -302,6 +307,45 @@ async sub document_upload {
     }
 
     return;
+}
+
+=head2 _notify_onfido_unsupported_document
+
+Send an email to CS about unsupported onfido document uploaded by the client.
+
+=over 4
+
+=item * C<$client> - The client instance.
+
+=item * C<$document_entry> - The document uploaded.
+
+=back
+
+Returns C<undef>.
+
+=cut
+
+sub _notify_onfido_unsupported_document {
+    my ($client, $document_entry) = @_;
+    my $brand = request()->brand;
+    my $msg   = 'POI document type not supported by Onfido: ' . $document_entry->{document_type} . '. Please verify the age of the client manually.';
+    my $email_subject  = "Manual age verification needed for " . $client->loginid;
+    my $email_template = "\
+        <p>$msg</p>
+        <ul>
+            <li><b>loginid:</b> " . $client->loginid . "</li>
+            <li><b>place of birth:</b> " . (code2country($client->place_of_birth) // 'not set') . "</li>
+            <li><b>residence:</b> " . code2country($client->residence) . "</li>
+        </ul>
+        Team " . $brand->website_name . "\
+        ";
+
+    my $from_email = $brand->emails('no-reply');
+    my $to_email   = $brand->emails('authentications');
+
+    Email::Stuffer->from($from_email)->to($to_email)->subject($email_subject)->html_body($email_template)->send();
+
+    return undef;
 }
 
 =head2 _upload_poa_document
