@@ -586,6 +586,53 @@ subtest 'MX' => sub {
 
         $c->call_ok('get_limits', $params)->has_no_error->result_is_deeply($expected_result, 'result is ok for fully authenticated client');
     };
+
+    subtest 'limits with withdrawal_reversals' => sub {
+        $client->smart_payment(
+            %withdrawal,
+            amount   => -100,
+            currency => 'EUR'
+        );
+
+        my $expected_result = {
+            stash => {
+                app_markup_percentage      => 0,
+                valid_source               => 1,
+                source_bypass_verification => 0
+            },
+            'account_balance'                     => formatnumber('amount', 'EUR', $client->get_limit_for_account_balance),
+            'open_positions'                      => $client->get_limit_for_open_positions,
+            'payout'                              => formatnumber('price', 'EUR', $client->get_limit_for_payout),
+            'market_specific'                     => BOM::Platform::RiskProfile::get_current_profile_definitions($client),
+            'num_of_days'                         => $limits->{for_days},
+            'num_of_days_limit'                   => formatnumber('price', 'EUR', 99999999),
+            'lifetime_limit'                      => formatnumber('price', 'EUR', 99999999),
+            'withdrawal_since_inception_monetary' => '1100.00',
+            'withdrawal_for_x_days_monetary'      => '1100.00',
+            'remainder'                           => formatnumber('price', 'EUR', 99998899),
+            'daily_transfers'                     => $transfer_limits,
+        };
+
+        $c->call_ok('get_limits', $params)->has_no_error->result_is_deeply($expected_result, 'correct withdrawal limits');
+
+        # perform a reversal
+        $client->payment_doughflow(
+            %withdrawal,
+            transaction_type => 'withdrawal_reversal',
+            amount           => 50,
+            payment_fee      => -1,
+            payment_method   => 'BigPay',
+            trace_id         => 104,
+            currency         => 'EUR',
+            remark           => 'x'
+        );
+
+        $expected_result->{withdrawal_since_inception_monetary} = '1050.00';
+        $expected_result->{withdrawal_for_x_days_monetary}      = '1050.00';
+        $expected_result->{remainder}                           = formatnumber('price', 'EUR', 99998949);
+
+        $c->call_ok('get_limits', $params)->has_no_error->result_is_deeply($expected_result, 'correct withdrawal limits after 50 EUR reversal');
+    }
 };
 
 # Test for VR accounts
