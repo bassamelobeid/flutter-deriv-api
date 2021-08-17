@@ -84,4 +84,16 @@ subtest 'get total withdrawal' => sub {
     );
     cmp_ok($payment_data_mapper->get_total_withdrawal({exclude => ['free_gift', 'legacy_payment']}),
         '==', 0, 'check total withdrawal, excluding free_gift and legacy_payment');
+
+    $test_client->payment_doughflow(
+        transaction_type => 'withdrawal_reversal',
+        amount           => 50,
+        payment_fee      => -1,
+        payment_method   => 'BigPay',
+        trace_id         => 104,
+        currency         => 'USD',
+        remark           => 'x'
+    );
+
+    cmp_ok($payment_data_mapper->get_total_withdrawal(), '==', 100, 'total withdrawal after one withdrawal_reversal');
 };
