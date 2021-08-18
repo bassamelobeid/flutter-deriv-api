@@ -201,7 +201,7 @@ subtest 'Slope' => sub {
     plan tests => 6;
 
     ok $expiry_range->ask_probability->amount > 0, 'probability > 0';
-    ok $expiry_range->ask_probability->amount < 1, 'probability < 1';
+    ok $expiry_range->ask_probability->amount <= 1, 'probability <= 1';
     #We expect risk_markup, CALL and PUT
     is scalar keys %{$expiry_range->debug_information}, 4;
     ok exists $expiry_range->debug_information->{CALL};

@@ -207,7 +207,7 @@ expected_result:
       price_engine: Pricing::Engine::EuropeanDigitalSlope
       risk_markup: 0.00153478553254254
       spot: 9518.2
-      theo_prob: 0.458106126922709
+      theo_prob: 0.5670
       total_markup: 0.0245
     DIGITMATCH:
       ask_prob: 0.11
@@ -228,7 +228,7 @@ expected_result:
       price_engine: Pricing::Engine::EuropeanDigitalSlope
       risk_markup: 0.00495632643636729
       spot: 9518.2
-      theo_prob: 0.744313976684318
+      theo_prob: 1.0000
       total_markup: 0.0249
     NOTOUCH:
       ask_prob: 0.6441

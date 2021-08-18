@@ -687,12 +687,14 @@ my $data = [{
         bet_type   => 'CALL',
         date_start => 1428458885,
         duration   => 60,
+        prob       => '0.51',
     },
     {
         underlying => 'OTC_AS51',
         bet_type   => 'CALL',
         date_start => 1428458885,
         duration   => 30,
+        prob       => '0.50',
     },
 ];
 
@@ -746,6 +748,6 @@ foreach my $d (@$data) {
         });
 
     my $c = produce_contract($params);
-    is roundcommon(0.01, $c->theo_probability->amount),  0.52, 'theo prob checked';
+    is roundcommon(0.01, $c->theo_probability->amount), $d->{prob}, 'theo prob checked';
     is roundcommon(0.01, $c->commission_markup->amount), 0.03, 'commission markup checked';
 }
