@@ -108,6 +108,7 @@ subtest 'passwords' => sub {
         trading_platform_password_change => 1,
         old_password                     => 'Test1234',
         new_password                     => 'Destr0y!',
+        platform                         => 'dxtrade',
     };
 
     $t->await::authorize({authorize => $client1_token_read});
@@ -122,13 +123,14 @@ subtest 'passwords' => sub {
     my $code = BOM::Platform::Token->new({
             email       => $client1->email,
             expires_in  => 3600,
-            created_for => 'trading_platform_password_reset',
+            created_for => 'trading_platform_dxtrade_password_reset',
         })->token;
 
     $params = {
         trading_platform_password_reset => 1,
         new_password                    => 'Rebui1ld!',
         verification_code               => $code,
+        platform                        => 'dxtrade',
     };
 
     $t->await::authorize({authorize => $client1_token_read});
