@@ -53,7 +53,7 @@ Create new record in table users.binary_user
 =cut
 
 my @fields =
-    qw(id email password email_verified utm_source utm_medium utm_campaign app_id email_consent gclid_url has_social_signup secret_key is_totp_enabled signup_device date_first_contact utm_data preferred_language trading_password);
+    qw(id email password email_verified utm_source utm_medium utm_campaign app_id email_consent gclid_url has_social_signup secret_key is_totp_enabled signup_device date_first_contact utm_data preferred_language trading_password dx_trading_password);
 
 # generate attribute accessor
 for my $k (@fields) {
@@ -1244,7 +1244,7 @@ Calls a db function to store a hashed trading_password for the user.
 
 =over 4
 
-=item * C<$trading_password> - new trading password
+=item * C<trading_password> - new trading password
 
 =back
 
@@ -1255,11 +1255,42 @@ Returns $self
 sub update_trading_password {
     my ($self, $trading_password) = @_;
 
+    die 'PasswordRequired' unless $trading_password;
+
     my $hash_pw = BOM::User::Password::hashpw($trading_password);
 
     $self->{trading_password} = $self->dbic->run(
         fixup => sub {
-            $_->selectrow_array('select * from users.update_trading_password(?, ?)', undef, $self->{id}, $hash_pw);
+            $_->selectrow_array('select trading_password from users.update_trading_password(?, ?, ?)', undef, $self->{id}, $hash_pw, undef);
+        });
+
+    return $self;
+}
+
+=head2 update_dx_trading_password
+
+Calls a db function to store a hashed dx_trading_password for the user.
+
+=over 4
+
+=item * C<trading_password> - new trading password
+
+=back
+
+Returns $self
+
+=cut
+
+sub update_dx_trading_password {
+    my ($self, $trading_password) = @_;
+
+    die 'PasswordRequired' unless $trading_password;
+
+    my $hash_pw = BOM::User::Password::hashpw($trading_password);
+
+    $self->{dx_trading_password} = $self->dbic->run(
+        fixup => sub {
+            $_->selectrow_array('select dx_trading_password from users.update_trading_password(?, ?, ?)', undef, $self->{id}, undef, $hash_pw);
         });
 
     return $self;

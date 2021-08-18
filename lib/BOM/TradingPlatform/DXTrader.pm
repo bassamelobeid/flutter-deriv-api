@@ -345,14 +345,23 @@ Takes the following arguments as named parameters:
 
 =back
 
-Returns future or dies with error.
+Returns a hashref of loginids, or dies with error.
 
 =cut
 
 sub change_password {
     my ($self, %args) = @_;
 
-    my $password = $args{password} or die +{error_code => 'PasswordRequired'};
+    my $password = $args{password};
+
+    if ($self->local_accounts) {
+        $self->server_check($self->account_servers);
+    } else {
+        $self->server_check(('real', 'demo'));
+        $self->client->user->update_dx_trading_password($password);
+        return undef;
+    }
+
     my $pwd_changed;
 
     for my $server ($self->account_servers) {
@@ -369,7 +378,7 @@ sub change_password {
             );
             $pwd_changed = 1;
         } catch {
-            return Future->done({failed_dx_logins => [$self->dxtrade_login]});
+            return {failed_logins => [$self->dxtrade_login]};
         }
 
         try {
@@ -384,7 +393,11 @@ sub change_password {
         }
     }
 
-    return Future->done($pwd_changed ? {successful_dx_logins => [$self->dxtrade_login]} : undef);
+    if ($pwd_changed) {
+        $self->client->user->update_dx_trading_password($password);
+    }
+
+    return ($pwd_changed ? {successful_logins => [$self->dxtrade_login]} : undef);
 }
 
 =head2 deposit

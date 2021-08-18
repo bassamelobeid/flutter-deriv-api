@@ -63,17 +63,22 @@ Takes the following arguments as named parameters:
 
 =back
 
-Returns list of logins on success, throws exception on error
+Returns a hashref of loginids, or dies with error.
 
 =cut
 
 sub change_password {
     my ($self, %args) = @_;
 
-    my @mt5_loginids = $self->client->user->get_mt5_loginids or return Future->done;
-    die +{error_code => 'PlatformPasswordChangeSuspended'} if $self->is_any_mt5_servers_suspended;
+    die +{error_code => 'MT5Suspended'} if $self->is_any_mt5_servers_suspended;
 
-    my $password = $args{password} or die 'no password provided';
+    my $password = $args{password};
+
+    my @mt5_loginids = $self->client->user->get_mt5_loginids;
+    unless (@mt5_loginids) {
+        $self->client->user->update_trading_password($password);
+        return;
+    }
 
     my (@valid_logins, $res);
 
@@ -83,7 +88,7 @@ sub change_password {
             for my $result (@_) {
                 push @valid_logins, $result->label if !$result->is_failed;
                 # NotFound error indicates an archived account which should be ignored
-                push $res->{failed_mt5_logins}->@*, $result->label
+                push $res->{failed_logins}->@*, $result->label
                     if $result->is_failed and not(ref $result->failure eq 'HASH' and ($result->failure->{code} // '') eq 'NotFound');
             }
         })->get;
@@ -91,11 +96,19 @@ sub change_password {
     my @mt5_password_change =
         map { BOM::MT5::User::Async::password_change({login => $_, new_password => $password, type => 'main'})->set_label($_) } @valid_logins;
 
-    return Future->wait_all(@mt5_password_change)->then(
+    my $result = Future->wait_all(@mt5_password_change)->then(
         sub {
-            push $res->{$_->is_failed ? 'failed_mt5_logins' : 'successful_mt5_logins'}->@*, $_->label for @_;
+            push $res->{$_->is_failed ? 'failed_logins' : 'successful_logins'}->@*, $_->label for @_;
             Future->done($res);
-        });
+        })->get;
+
+    my ($successful_logins, $failed_logins) = $result->@{qw/successful_logins failed_logins/};
+
+    if ($successful_logins and not defined $failed_logins) {
+        $self->client->user->update_trading_password($password);
+    }
+
+    return $result;
 }
 
 =head2 change_investor_password

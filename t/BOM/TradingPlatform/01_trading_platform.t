@@ -134,7 +134,7 @@ subtest 'MT5 suspend' => sub {
 
     cmp_deeply(
         exception { $mt5->change_password(password => 'Abcd1234') },
-        {error_code => 'PlatformPasswordChangeSuspended'},
+        {error_code => 'MT5Suspended'},
         'correct error_code when one of mt5 servers is suspended'
     );
 

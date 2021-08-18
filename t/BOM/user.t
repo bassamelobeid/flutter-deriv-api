@@ -1016,8 +1016,13 @@ subtest 'update trading password' => sub {
 
     ok $user->trading_password, 'user has set trading password successfully';
 
-    my $hash_pw = BOM::User::Password::hashpw('Abcd1234');
     ok BOM::User::Password::checkpw('Abcd1234', $user->trading_password), 'trading password is OK';
+
+    lives_ok { $user->update_dx_trading_password('Random123'); } 'deriv x trading password saved';
+
+    ok $user->dx_trading_password, 'user has set deriv x trading password successfully';
+
+    ok BOM::User::Password::checkpw('Random123', $user->dx_trading_password), 'deriv x trading password is OK';
 };
 
 subtest 'update user password' => sub {
