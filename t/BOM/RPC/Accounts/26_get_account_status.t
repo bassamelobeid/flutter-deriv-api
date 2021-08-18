@@ -172,7 +172,11 @@ subtest 'get account status' => sub {
             my $result = $c->tcall('get_account_status', {token => $token_vr});
             cmp_deeply(
                 $result->{status},
-                ['cashier_locked', 'financial_information_not_complete', 'trading_experience_not_complete', 'trading_password_required'],
+                [
+                    'cashier_locked',                     'dxtrade_password_not_set',
+                    'financial_information_not_complete', 'mt5_password_not_set',
+                    'trading_experience_not_complete'
+                ],
                 "cashier is locked for virtual accounts"
             );
 
@@ -180,7 +184,11 @@ subtest 'get account status' => sub {
             $result = $c->tcall('get_account_status', {token => $token_cr});
             cmp_deeply(
                 $result->{status},
-                ['cashier_locked', 'financial_information_not_complete', 'trading_experience_not_complete', 'trading_password_required'],
+                [
+                    'cashier_locked',                     'dxtrade_password_not_set',
+                    'financial_information_not_complete', 'mt5_password_not_set',
+                    'trading_experience_not_complete'
+                ],
                 "cashier is locked correctly."
             );
 
@@ -189,7 +197,7 @@ subtest 'get account status' => sub {
 
             cmp_deeply(
                 $result->{status},
-                ['financial_information_not_complete', 'trading_experience_not_complete', 'trading_password_required'],
+                ['dxtrade_password_not_set', 'financial_information_not_complete', 'mt5_password_not_set', 'trading_experience_not_complete'],
                 "cashier is not locked for correctly"
             );
 
@@ -197,7 +205,11 @@ subtest 'get account status' => sub {
             $result = $c->tcall('get_account_status', {token => $token_cr});
             cmp_deeply(
                 $result->{status},
-                ['financial_information_not_complete', 'trading_experience_not_complete', 'trading_password_required', 'withdrawal_locked'],
+                [
+                    'dxtrade_password_not_set', 'financial_information_not_complete',
+                    'mt5_password_not_set',     'trading_experience_not_complete',
+                    'withdrawal_locked'
+                ],
                 "withdrawal is locked correctly"
             );
 
@@ -205,7 +217,7 @@ subtest 'get account status' => sub {
             $result = $c->tcall('get_account_status', {token => $token_cr});
             cmp_deeply(
                 $result->{status},
-                ['financial_information_not_complete', 'trading_experience_not_complete', 'trading_password_required'],
+                ['dxtrade_password_not_set', 'financial_information_not_complete', 'mt5_password_not_set', 'trading_experience_not_complete'],
                 "withdrawal is not locked correctly"
             );
 
@@ -213,7 +225,11 @@ subtest 'get account status' => sub {
             $result = $c->tcall('get_account_status', {token => $token_cr});
             cmp_deeply(
                 $result->{status},
-                ['deposit_locked', 'financial_information_not_complete', 'trading_experience_not_complete', 'trading_password_required'],
+                [
+                    'deposit_locked',                     'dxtrade_password_not_set',
+                    'financial_information_not_complete', 'mt5_password_not_set',
+                    'trading_experience_not_complete'
+                ],
                 "deposit is not locked correctly"
             );
 
@@ -221,7 +237,7 @@ subtest 'get account status' => sub {
             $result = $c->tcall('get_account_status', {token => $token_cr});
             cmp_deeply(
                 $result->{status},
-                ['financial_information_not_complete', 'trading_experience_not_complete', 'trading_password_required'],
+                ['dxtrade_password_not_set', 'financial_information_not_complete', 'mt5_password_not_set', 'trading_experience_not_complete'],
                 "deposit is not locked correctly"
             );
 
@@ -229,7 +245,11 @@ subtest 'get account status' => sub {
             $result = $c->tcall('get_account_status', {token => $token_cr});
             cmp_deeply(
                 $result->{status},
-                ['cashier_locked', 'financial_information_not_complete', 'trading_experience_not_complete', 'trading_password_required'],
+                [
+                    'cashier_locked',                     'dxtrade_password_not_set',
+                    'financial_information_not_complete', 'mt5_password_not_set',
+                    'trading_experience_not_complete'
+                ],
                 "cashier_locked when both deposit and withdrawal are locked"
             );
 
@@ -709,8 +729,8 @@ subtest 'get account status' => sub {
                             is_withdrawal_suspended => 0,
                         }
                     },
-                    status              => [qw(financial_information_not_complete trading_experience_not_complete trading_password_required)],
-                    risk_classification => 'low',
+                    status => [qw(dxtrade_password_not_set financial_information_not_complete mt5_password_not_set trading_experience_not_complete)],
+                    risk_classification           => 'low',
                     prompt_client_to_authenticate => '0',
                     authentication                => {
                         document => {
@@ -3486,7 +3506,8 @@ subtest 'Social identity provider' => sub {
         $result,
         {
             social_identity_provider => 'google',
-            status          => bag(qw(social_signup financial_information_not_complete trading_experience_not_complete trading_password_required)),
+            status                   => bag(
+                qw(dxtrade_password_not_set social_signup financial_information_not_complete mt5_password_not_set trading_experience_not_complete)),
             currency_config => {
                 'USD' => {
                     is_deposit_suspended    => 0,

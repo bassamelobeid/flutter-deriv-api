@@ -44,6 +44,7 @@ subtest 'create mt5 client with different currency' => sub {
             email    => $new_email,
             password => 's3kr1t',
         );
+        $user->update_trading_password($DETAILS{password}{main});
         $user->add_client($new_client);
 
         my $method = 'mt5_new_account';
@@ -83,6 +84,7 @@ subtest 'create mt5 client with different currency' => sub {
             email    => $new_email,
             password => 's3kr1t',
         );
+        $user->update_trading_password($DETAILS{password}{main});
         $user->add_client($new_client);
 
         $params->{token} = $token;
@@ -109,6 +111,7 @@ subtest 'create mt5 client with different currency' => sub {
             email    => $new_email,
             password => 's3kr1t',
         );
+        $user->update_trading_password($DETAILS{password}{main});
         $user->add_client($new_client);
 
         my $method = 'mt5_new_account';
@@ -137,6 +140,7 @@ subtest 'create mt5 client with different currency' => sub {
             email    => $new_email,
             password => 's3kr1t',
         );
+        $user->update_trading_password($DETAILS{password}{main});
         $user->add_client($new_client);
 
         $params->{token} = $token;

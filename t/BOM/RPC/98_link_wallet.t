@@ -51,6 +51,8 @@ my $token = $m->create_token($vr_client->loginid, 'test token');
 my %ACCOUNTS = %Test::BOM::RPC::Accounts::MT5_ACCOUNTS;
 my %DETAILS  = %Test::BOM::RPC::Accounts::ACCOUNT_DETAILS;
 
+$user->update_trading_password($DETAILS{password}{main});
+
 BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend->all(0);
 
 my $method = 'link_wallet';

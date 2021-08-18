@@ -114,7 +114,7 @@ sub process_template {
 }
 
 sub get_verification {
-    my ($type, $with_link, $template) = @_;
+    my ($type, $with_link, $template, $args) = @_;
     $template //= $type;
 
     my $verification = email_verification({
@@ -124,7 +124,7 @@ sub get_verification {
             source       => $source,
             ($with_link ? (verification_uri => $verification_uri) : ()),
             type => $type,
-        })->{$template}->();
+            $args ? ($args->%*) : ()})->{$template}->();
 
     $verification->{message} = process_template($verification->{template_name}, $verification->{template_args});
     # removing whitesapces out of html
@@ -185,6 +185,27 @@ subtest 'Payment Withdraw Verification' => sub {
 
     is $verification->{message},
         get_verification_message('payment_agent_withdraw', 'payment_agent_withdraw'), 'Payment Agent Withdraw with verification URI';
+};
+
+subtest 'Trading Platform Password Reset' => sub {
+    $user_mocked->mock('new', sub { return bless {password => 'test@deriv.com'}, 'BOM::User' });
+
+    my $verification = get_verification('trading_platform_dxtrade_password_reset');
+
+    is $verification->{subject}, "New Deriv X password request", 'Trading platform password reset subject';
+
+    my $args = {
+        language         => 'EN',
+        code             => "Thisisthecode",
+        verification_uri => "https://www.rover.com/search"
+    };
+    my $result = BOM::RPC::v3::EmailVerification::_build_verification_url('trading_platform_dxtrade_password_reset', $args);
+
+    is(
+        $result,
+        'https://www.rover.com/search?action=trading_platform_dxtrade_password_reset&lang=EN&code=Thisisthecode',
+        'verification URI has platform'
+    );
 };
 
 subtest 'Build Verification  URL' => sub {
@@ -296,6 +317,12 @@ subtest 'Build Verification  URL' => sub {
     $result       = BOM::RPC::v3::EmailVerification::_build_verification_url('invalid_utm_data', {$args->%*, $extra_params->%*});
 
     is($result, $expected_url, "invalid UTM params are being skipped correctly");
+
+    $extra_params = {redirect_to => 'derivx'};
+    $expected_url = $construct_expected_url->($args, $extra_params, 'trading_platform_dxtrade_password_reset');
+    $result = BOM::RPC::v3::EmailVerification::_build_verification_url('trading_platform_dxtrade_password_reset', {$args->%*, $extra_params->%*});
+
+    is($result, $expected_url, "url params set correctly");
 };
 
 done_testing();

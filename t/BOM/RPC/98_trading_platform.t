@@ -77,12 +77,13 @@ subtest 'dxtrader accounts' => sub {
                     account_id   => $acc->{account_id},
                     login        => $acc->{login},
                     first_name   => $client->first_name,
+                    platform     => 'dxtrade'
                 }}
         ],
         'new account event emitted'
     );
 
-    ok BOM::User::Password::checkpw('Abcd1234', $client->user->trading_password), 'trading password was set';
+    ok BOM::User::Password::checkpw('Abcd1234', $client->user->dx_trading_password), 'trading password was set';
 
     BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend->all(1);
 
@@ -212,6 +213,7 @@ subtest 'dxtrade password change' => sub {
         args     => {
             old_password => 'test',
             new_password => 'C0rrect0',
+            platform     => 'dxtrade'
         }};
     $c->call_ok('trading_platform_password_change', $params)
         ->has_no_system_error->has_error->error_code_is('NoOldPassword', 'cannot provide old password yet');
@@ -221,6 +223,8 @@ subtest 'dxtrade password change' => sub {
         token    => $token,
         args     => {
             new_password => 'C0rrect0',
+            platform     => 'dxtrade'
+
         }};
     $c->call_ok('trading_platform_password_change', $params)->has_no_system_error->has_no_error->result_is_deeply(1, 'New password successfully set');
 
@@ -260,16 +264,15 @@ subtest 'dxtrade password change' => sub {
         args     => {
             new_password => 'C0rrect1',
             old_password => 'C0rrect0',
+            platform     => 'dxtrade'
         }};
 
     BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend->demo(1);
-    $c->call_ok('trading_platform_password_change', $params)
-        ->has_no_system_error->has_error->error_code_is('PlatformPasswordChangeError', 'server suspended');
+    $c->call_ok('trading_platform_password_change', $params)->has_no_system_error->has_error->error_code_is('DXServerSuspended', 'server suspended');
     BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend->demo(0);
 
     BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend->all(1);
-    $c->call_ok('trading_platform_password_change', $params)
-        ->has_no_system_error->has_error->error_code_is('PlatformPasswordChangeSuspended', 'all suspended');
+    $c->call_ok('trading_platform_password_change', $params)->has_no_system_error->has_error->error_code_is('DXSuspended', 'all suspended');
     BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend->all(0);
 
     BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend->real(1);
@@ -318,10 +321,10 @@ subtest 'dxtrade password reset' => sub {
         language => 'EN',
         args     => {
             verify_email => $user->email,
-            type         => 'trading_platform_password_reset',
+            type         => 'trading_platform_dxtrade_password_reset',
         }};
 
-    $c->call_ok('verify_email', $params)->has_no_system_error->has_no_error->result_is_deeply({
+    my $result = $c->call_ok('verify_email', $params)->has_no_system_error->has_no_error->result_is_deeply({
             status => 1,
             stash  => {
                 app_markup_percentage      => 0,
@@ -340,6 +343,7 @@ subtest 'dxtrade password reset' => sub {
             platform          => 'dxtrade',
             new_password      => 'C0rrect0',
             verification_code => $verification_code,
+            platform          => 'dxtrade'
         }};
 
     $c->call_ok('trading_platform_password_reset', $params)->has_no_system_error->has_no_error->result_is_deeply(1, 'Password successfully reset');
@@ -350,7 +354,7 @@ subtest 'dxtrade password reset' => sub {
         language => 'EN',
         args     => {
             verify_email => $user->email,
-            type         => 'trading_platform_password_reset',
+            type         => 'trading_platform_dxtrade_password_reset'
         }};
 
     $c->call_ok('verify_email', $params)->has_no_system_error->has_no_error;
@@ -364,8 +368,7 @@ subtest 'dxtrade password reset' => sub {
         }};
 
     BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend->all(1);
-    $c->call_ok('trading_platform_password_reset', $params)
-        ->has_no_system_error->has_error->error_code_is('PlatformPasswordChangeSuspended', 'all suspended');
+    $c->call_ok('trading_platform_password_reset', $params)->has_no_system_error->has_error->error_code_is('DXSuspended', 'all suspended');
     BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend->all(0);
 
     $mock_token->unmock_all;

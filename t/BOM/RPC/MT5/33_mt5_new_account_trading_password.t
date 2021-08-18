@@ -72,6 +72,8 @@ BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real->p01_ts03
 
 my $method = 'mt5_new_account';
 subtest 'mt5 new account - no trading password' => sub {
+    my $password = $details{password}{main};
+
     my $params = {
         language => 'EN',
         token    => $token,
@@ -79,7 +81,7 @@ subtest 'mt5 new account - no trading password' => sub {
             account_type => 'gaming',
             email        => $details{email},
             name         => $details{name},
-            mainPassword => $details{password}{main},
+            mainPassword => $password,
             leverage     => 100,
         }};
 
@@ -93,7 +95,7 @@ subtest 'mt5 new account - no trading password' => sub {
     };
 
     subtest 'should not save trading password on dry_run' => sub {
-        $params->{args}->{mainPassword} = $details{password}{main};
+        $params->{args}->{mainPassword} = $password;
         $params->{args}->{dry_run}      = 1;
         $c->call_ok($method, $params)->has_no_error('financial account successfully created');
         is $test_client->user->trading_password, undef, 'trading password is not saved';
@@ -112,10 +114,11 @@ subtest 'mt5 new account - no trading password' => sub {
     BOM::RPC::v3::MT5::Account::reset_throttler($test_client->loginid);
 
     subtest 'can create new mt5 account' => sub {
+        $user->update_trading_password($password);
+
         my $result = $c->call_ok($method, $params)->has_no_error('gaming account successfully created')->result;
         is $result->{account_type}, 'gaming';
         is $result->{login},        'MTR' . $accounts{'real\p01_ts03\synthetic\svg_std_usd\01'};
-        ok $test_client->user->trading_password, 'trading password is saved';
     };
 };
 

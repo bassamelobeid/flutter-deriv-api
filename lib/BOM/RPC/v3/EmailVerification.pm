@@ -96,8 +96,10 @@ sub email_verification {
         language     => $language,
         app_name     => $app_name
     };
-    my $password_reset_url = $brand->password_reset_url($params);
-    my $contact_url        = $brand->contact_url($params);
+    my $password_reset_url  = $brand->password_reset_url($params);
+    my $contact_url         = $brand->contact_url($params);
+    my $password_change_url = $brand->password_change_url($params);
+    my $mt5_dashboard_url   = $brand->mt5_dashboard_url($params);
 
     my %common_args = (
         $args->%*,
@@ -237,21 +239,71 @@ sub email_verification {
                 },
             };
         },
-        trading_platform_investor_password_reset => sub {
+        trading_platform_mt5_password_reset => sub {
+            my $display_name = BOM::RPC::v3::Utility::trading_platform_display_name('mt5');
+
             return {
-                subject => $brand->name eq 'deriv' ? localize('Your new DMT5 investor password request')
-                : localize('Your new MT5 investor password request'),
+                subject       => localize('New [_1] password request', $display_name),
                 template_name => 'reset_password_request',
                 template_args => {
                     name          => $name,
-                    title         => localize("Forgot your investor password?[_1]Let's get you a new one.", '<br>'),
+                    title         => localize('Need a new [_1] password?', $display_name),
                     title_padding => 50,
                     brand_name    => ucfirst $brand->name,
                     (
-                        $verification_uri ? (verification_url => _build_verification_url('trading_platform_investor_password_reset', $args))
+                        $verification_uri
+                        ? (verification_url => _build_verification_url('trading_platform_mt5_password_reset', $args))
+                        : ()
+                    ),
+                    is_trading_password => 1,
+                    display_name        => $display_name,
+                    password_change_url => $password_change_url,
+                    %common_args,
+                },
+            };
+        },
+        trading_platform_dxtrade_password_reset => sub {
+            my $display_name = BOM::RPC::v3::Utility::trading_platform_display_name('dxtrade');
+
+            return {
+                subject       => localize('New [_1] password request', $display_name),
+                template_name => 'reset_password_request',
+                template_args => {
+                    name          => $name,
+                    title         => localize('Need a new [_1] password?', $display_name),
+                    title_padding => 50,
+                    brand_name    => ucfirst $brand->name,
+                    (
+                        $verification_uri
+                        ? (verification_url => _build_verification_url('trading_platform_dxtrade_password_reset', $args))
+                        : ()
+                    ),
+                    is_trading_password => 1,
+                    display_name        => $display_name,
+                    password_change_url => $password_change_url,
+                    %common_args,
+                },
+            };
+        },
+        trading_platform_investor_password_reset => sub {
+            my $display_name = BOM::RPC::v3::Utility::trading_platform_display_name('mt5');
+
+            return {
+                subject       => localize('New [_1] investor password request', $display_name),
+                template_name => 'reset_password_request',
+                template_args => {
+                    name          => $name,
+                    title         => localize('Need a new [_1] investor password?', $display_name),
+                    title_padding => 50,
+                    brand_name    => ucfirst $brand->name,
+                    (
+                        $verification_uri
+                        ? (verification_url => _build_verification_url('trading_platform_investor_password_reset', $args))
                         : ()
                     ),
                     is_investor_password => 1,
+                    display_name         => $display_name,
+                    mt5_dashboard_url    => $mt5_dashboard_url,
                     %common_args,
                 },
             };
@@ -284,11 +336,13 @@ sub _build_verification_url {
         utm_source       utm_campaign utm_medium  signup_device   gclid_url      date_first_contact
         affiliate_token  utm_content  utm_term    utm_campaign_id utm_adgroup_id utm_ad_id
         utm_gl_client_id utm_msclk_id utm_fbcl_id utm_adrollclk_id
+        redirect_to
     );
     my $extra_params_filtered = BOM::Platform::Utility::extract_valid_params(\@tags_list, $args, $regex_validation);
 
     my @extra_params = keys $extra_params_filtered->%*;
     push @extra_params, qw ( pa_loginid pa_amount pa_currency pa_remarks ) if ($action eq 'payment_agent_withdraw');
+
     @extra_params = map { defined $args->{$_} ? join('=', $_, $args->{$_}) : () } sort @extra_params;
     my $extra_params_string = @extra_params ? '&' . join('&', @extra_params) : '';
 

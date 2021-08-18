@@ -60,6 +60,7 @@ my $user = BOM::User->create(
     email    => $DETAILS{email},
     password => 's3kr1t',
 );
+$user->update_trading_password($DETAILS{password}{main});
 $user->add_client($test_client);
 
 my $m     = BOM::Platform::Token::API->new;
@@ -319,7 +320,7 @@ subtest 'mt5 settings with correct account type' => sub {
             email    => $email,
             password => 's3kr1t'
         );
-
+        $user->update_trading_password($DETAILS{password}{main});
         $user->add_client($test_client);
 
         my $m     = BOM::Platform::Token::API->new;
@@ -376,6 +377,7 @@ my $inactive_user = BOM::User->create(
     email    => "Inactive" . $DETAILS{email},
     password => 's3kr1t',
 );
+$inactive_user->update_trading_password($DETAILS{password}{main});
 $inactive_user->add_client($inactive_client);
 $m     = BOM::Platform::Token::API->new;
 $token = $m->create_token($inactive_client->loginid, 'test token');

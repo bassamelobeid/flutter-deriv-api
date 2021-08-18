@@ -230,16 +230,33 @@ sub invalid_email {
             message_to_client => localize('This email address is invalid.')});
 }
 
-=head2 invalid_params
-pa parameters are allowed when the type provided is paymentagent_withdraw.
-invalid_params returns an error when the client declare pa params for other types.
+=head2 invalid_params 
+
+Validates the url_parameters.
+
+- pa parameters are allowed only when the type provided is paymentagent_withdraw.
+
+=over 4
+
+=item * C<args> rpc params args
+
+=back
+
+Returns error if args are invalid, otherwise return undef
+
 =cut
 
 sub invalid_params {
+    my $args = shift;
+
+    my ($type, $url_parameters) = @{$args}{qw/type url_parameters/};
+
     return create_error({
-        code              => 'InvalidParameters',
-        message_to_client => 'pa parameters are valid from paymentagent_withdraw only'
-    });
+            code              => 'InvalidParameters',
+            message_to_client => 'pa parameters are valid from paymentagent_withdraw only'
+        }) if grep { /^pa/ } keys $url_parameters->%* and $type ne 'paymentagent_withdraw';
+
+    return undef;
 }
 
 # Start this at zero to ensure we always load on first call.
@@ -1169,7 +1186,7 @@ sub cashier_validation {
 
 =head2 set_trading_password_new_account
 
-Validates or sets the user trading password when creating a new trading accout.
+Validates or sets the user dx_trading_password when creating a new dxtrader trading account.
 
 =over 4
 
@@ -1188,7 +1205,7 @@ sub set_trading_password_new_account {
 
     return 'PasswordRequired' unless $trading_password;
 
-    if (my $current_password = $client->user->trading_password) {
+    if (my $current_password = $client->user->dx_trading_password) {
         return validate_password_with_attempts($trading_password, $current_password, $client->loginid);
     } else {
         my $error = check_password({
@@ -1197,7 +1214,7 @@ sub set_trading_password_new_account {
         });
         die $error->{error} if $error;
 
-        $client->user->update_trading_password($trading_password);
+        $client->user->update_dx_trading_password($trading_password);
         return undef;
     }
 }
@@ -1221,6 +1238,33 @@ sub get_qa_node_website_url {
     my $node_config = BOM::Config->qa_config()->{'nodes'}->{$qa_number . '.regentmarkets.com'};
     my $website     = $node_config->{'website'};
     return ($website =~ /^binaryqa/ ? "www.$website" : $website);
+}
+
+=head2 trading_platform_display_name
+
+Returns the user-interface name of trading platform per Brand (binary|deriv)
+
+=over 4
+
+=item * C<platform>: trading platform name (mt5|dxtrade)
+
+=back
+
+Returns the display name of trading platform
+
+=cut
+
+sub trading_platform_display_name {
+    my ($platform) = @_;
+
+    die 'TradingPlatformRequired' unless $platform;
+
+    my %display_name = (
+        mt5     => request()->brand->name eq 'deriv' ? 'DMT5' : 'MT5',
+        dxtrade => 'Deriv X'
+    );
+
+    return $display_name{$platform};
 }
 
 1;

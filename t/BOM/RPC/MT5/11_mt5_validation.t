@@ -122,6 +122,7 @@ subtest 'new account' => sub {
         email    => 'test.account@binary.com',
         password => $hash_pwd,
     );
+    $user->update_trading_password('Abcd33@!');
     $user->add_client($test_client);
 
     my $m     = BOM::Platform::Token::API->new;
@@ -285,6 +286,7 @@ subtest 'CR account types - low risk' => sub {
         email    => 'cr+low@binary.com',
         password => 'Abcd33@!',
     );
+    $user->update_trading_password('Abcd33@!');
     $user->add_client($client);
     my $token = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token');
 
@@ -380,7 +382,7 @@ subtest 'CR account types - high risk' => sub {
         email    => 'cr+high@binary.com',
         password => 'Abcd33@!',
     );
-
+    $user->update_trading_password('Abcd33@!');
     my $client = create_client('CR');
     $client->set_default_account('USD');
     $client->place_of_birth('af');
@@ -498,6 +500,7 @@ subtest 'MLT account types - low risk' => sub {
         email    => 'mlt+low@binary.com',
         password => 'Abcd33@!',
     );
+    $user->update_trading_password('Abcd33@!');
     $user->add_client($client);
     my $token = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token');
 
@@ -562,6 +565,7 @@ subtest 'MLT account types - high risk' => sub {
         email    => 'mlt+high@binary.com',
         password => 'Abcd33@!',
     );
+    $user->update_trading_password('Abcd33@!');
     $user->add_client($client);
     my $token = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token');
 
@@ -637,6 +641,7 @@ subtest 'MF accout types' => sub {
         email    => 'mf+low@binary.com',
         password => 'Abcd33@!',
     );
+    $user->update_trading_password('Abcd33@!');
     $user->add_client($client);
     my $token = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token');
 
@@ -762,6 +767,7 @@ subtest 'MX account types' => sub {
         email    => 'mx+gb@binary.com',
         password => 'Abcd33@!',
     );
+    $user->update_trading_password('Abcd33@!');
     $user->add_client($client);
     my $token = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token');
 
@@ -842,6 +848,7 @@ subtest 'VR account types - CR residence' => sub {
         email    => 'vrtc+cr@binary.com',
         password => 'Abcd33@!',
     );
+    $user->update_trading_password('Abcd33@!');
     $user->add_client($client);
     my $token = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token');
 
@@ -909,6 +916,7 @@ subtest 'Virtual account types - EU residences' => sub {
         email    => 'vrtc+eu@binary.com',
         password => 'Abcd33@!',
     );
+    $user->update_trading_password('Abcd33@!');
     $user->add_client($client);
     my $token = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token');
 
@@ -999,6 +1007,7 @@ subtest 'Virtual account types - GB residence' => sub {
         email    => 'vrtc+gb@binary.com',
         password => 'Abcd33@!',
     );
+    $user->update_trading_password('Abcd33@!');
     $user->add_client($client);
     my $token = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token');
 

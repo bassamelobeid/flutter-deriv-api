@@ -965,7 +965,9 @@ rpc get_account_status => sub {
 
     push(@$status, 'financial_assessment_not_complete') unless $client->is_financial_assessment_complete();
 
-    push(@$status, 'trading_password_required') unless $client->user->trading_password;
+    push(@$status, 'mt5_password_not_set') unless $client->user->trading_password;
+
+    push(@$status, 'dxtrade_password_not_set') unless $client->user->dx_trading_password;
 
     my $base_validation     = BOM::Platform::Client::CashierValidation::base_validation($client);
     my $deposit_validation  = BOM::Platform::Client::CashierValidation::deposit_validation($client);

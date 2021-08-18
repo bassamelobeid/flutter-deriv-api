@@ -28,7 +28,8 @@ BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend->demo(1);
 BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend->real(1);
 
 my $method = 'trading_platform_password_change';
-subtest 'setting up new trading password' => sub {
+
+subtest 'set new trading password - no mt5 or dxtrade accounts' => sub {
     # create client
     my $client = create_client('CR');
     $client->email('Test123@binary.com');
@@ -44,7 +45,6 @@ subtest 'setting up new trading password' => sub {
     );
     $user->add_client($client);
 
-    # can set a new trading_password
     my $token  = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token');
     my $params = {
         language => 'EN',
@@ -53,50 +53,52 @@ subtest 'setting up new trading password' => sub {
             new_password => 'Abc',
             old_password => ''
         }};
-    $c->call_ok($method, $params)->has_error->error_code_is('PasswordError')
-        ->error_message_is('Your password must be 8 to 25 characters long. It must include lowercase and uppercase letters, and numbers.',
-        'weak new password');
 
-    $params->{args}{new_password} = 'Abcd1234';
-    $params->{args}{old_password} = 'Hello123';
-    $c->call_ok($method, $params)->has_error->error_code_is('NoOldPassword', 'cannot provide old password yet');
+    subtest 'validation' => sub {
+        $params->{args}{platform} = 'mt5';
+        $c->call_ok($method, $params)->has_error->error_code_is('PasswordError')
+            ->error_message_is('Your password must be 8 to 25 characters long. It must include lowercase and uppercase letters, and numbers.',
+            'weak new password');
 
-    # should fail if trading password = user password
-    $params->{args}{new_password} = $user->email;
-    delete $params->{args}{old_password};
-    $c->call_ok($method, $params)->has_error->error_code_is('PasswordError')
-        ->error_message_like(qr/cannot use your email address/, 'new password same as email');
+        $params->{args}{new_password} = 'Abcd1234';
+        $params->{args}{old_password} = 'Hello123';
+        $c->call_ok($method, $params)->has_error->error_code_is('NoOldPassword', 'cannot provide old password yet');
 
-    $params->{args}->{new_password} = 'Abcd1234';
-    is($c->call_ok($method, $params)->has_no_error->result, 1, 'user trading password changed successfully');
+        # should fail if trading password = user password
+        $params->{args}{new_password} = $user->email;
+        delete $params->{args}{old_password};
+        $c->call_ok($method, $params)->has_error->error_code_is('PasswordError')
+            ->error_message_like(qr/cannot use your email address/, 'new password same as email');
+    };
 
-    # should not allow setting new trading password if trading_password is already set
-    $params->{args}->{new_password} = 'Efgh1234';
-    $params->{args}->{old_password} = '';
-    $c->call_ok($method, $params)->has_error->error_code_is('OldPasswordRequired');
+    subtest 'new mt5 trading password' => sub {
+        $params->{args}{new_password} = 'Abcd1234';
 
-    # should pass
-    $params->{args}->{old_password} = 'Abcd1234';
-    is($c->call_ok($method, $params)->has_no_error->result, 1, 'user trading password changed successfully');
+        is($c->call_ok($method, $params)->has_no_error->result, 1, 'trading password changed successfully');
 
-    ok BOM::User::Password::checkpw('Efgh1234', $client->user->trading_password), 'correctly changed trading password';
+        ok BOM::User::Password::checkpw('Abcd1234', $client->user->trading_password), 'mt5 trading password is set';
 
-    cmp_deeply(
-        $last_event->{trading_platform_password_changed},
-        {
-            loginid    => $client->loginid,
-            properties => {
-                contact_url       => ignore(),
-                first_name        => $client->first_name,
-                type              => 'change',
-                mt5_logins        => undef,
-                dx_logins         => undef,
-                dxtrade_available => 1,
-            }
-        },
-        'password change event emitted'
-    );
-    undef $last_event;
+        is $client->user->dx_trading_password, undef, 'dxtrade trading password is not set';
+    };
+
+    subtest 'new dx trading password' => sub {
+        BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend->demo(0);
+        BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend->real(0);
+        BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend->all(0);
+
+        $params->{args}{platform}     = 'dxtrade';
+        $params->{args}{new_password} = 'Abcd123456';
+
+        is($c->call_ok($method, $params)->has_no_error->result, 1, 'dx trading password changed successfully');
+
+        ok BOM::User::Password::checkpw('Abcd123456', $client->user->dx_trading_password), 'dx trading password is set';
+
+        ok BOM::User::Password::checkpw('Abcd1234', $client->user->trading_password), 'mt5 trading password is unchanged';
+
+        BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend->demo(1);
+        BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend->real(1);
+        BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend->all(1);
+    };
 };
 
 # prepare mock mt5 accounts
@@ -113,6 +115,7 @@ my $user     = BOM::User->create(
     password       => $hash_pwd,
     email_verified => 1
 );
+$user->update_trading_password($details{password}{main});
 
 # create client
 my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
@@ -125,6 +128,7 @@ $client->set_authentication('ID_DOCUMENT', {status => 'pass'});
 $user->add_client($client);
 
 my ($mt5_loginid, $mt5_demo_loginid);
+
 subtest 'password change with mt5 accounts' => sub {
     # create mt5 account (for existing user with mt5 accounts - but no trading password)
     my $token      = BOM::Platform::Token::API->new->create_token($client->loginid, 'token');
@@ -188,6 +192,7 @@ subtest 'password change with mt5 accounts' => sub {
         args  => {
             new_password => $trading_password,
             old_password => 'what is my password',
+            platform     => 'mt5'
         }};
 
     # should fail when using the wrong old password
@@ -203,12 +208,11 @@ subtest 'password change with mt5 accounts' => sub {
         {
             loginid    => $client->loginid,
             properties => {
-                contact_url       => ignore(),
-                first_name        => $client->first_name,
-                type              => 'change',
-                mt5_logins        => bag($mt5_demo_loginid, $mt5_loginid),
-                dx_logins         => undef,
-                dxtrade_available => 1,
+                contact_url => ignore(),
+                first_name  => $client->first_name,
+                type        => 'change',
+                logins      => bag($mt5_demo_loginid, $mt5_loginid),
+                platform    => 'mt5'
             }
         },
         'password change event emitted'
@@ -247,10 +251,10 @@ subtest 'password change with mt5 accounts' => sub {
 
     $params->{args}->{old_password} = $trading_password;
     $params->{args}->{new_password} = 'Xyz12345';
-
+    $params->{args}->{platform}     = 'mt5';
     $c->call_ok($method, $params)
         ->has_error->error_message_is(
-        "Due to a network issue, we couldn't update the trading password for some of your accounts. Please check your email for more details.",
+        "Due to a network issue, we couldn't update the password for some of your accounts. Please check your email for more details.",
         'error message for single failed login');
 
     cmp_deeply(
@@ -258,21 +262,20 @@ subtest 'password change with mt5 accounts' => sub {
         {
             loginid    => $client->loginid,
             properties => {
-                contact_url           => ignore(),
-                first_name            => $client->first_name,
-                type                  => 'change',
-                successful_mt5_logins => [$mt5_demo_loginid],
-                failed_mt5_logins     => [$mt5_loginid],
-                successful_dx_logins  => undef,
-                failed_dx_logins      => undef,
-                dxtrade_available     => 1,
+                contact_url       => ignore(),
+                first_name        => $client->first_name,
+                type              => 'change',
+                successful_logins => [$mt5_demo_loginid],
+                failed_logins     => [$mt5_loginid],
+                platform          => 'mt5'
             }
         },
         'password change failed event emitted'
     );
     undef $last_event;
 
-    ok BOM::User::Password::checkpw('Xyz12345', $client->user->trading_password), 'trading password is changed when one trading account is ok';
+    ok BOM::User::Password::checkpw($trading_password, $client->user->trading_password),
+        'trading password is not changed when one trading account is ok';
 
     # mock mt5 password_change call failure
     $mock_mt5->mock(
@@ -282,12 +285,12 @@ subtest 'password change with mt5 accounts' => sub {
             });
         });
 
-    $params->{args}->{old_password} = 'Xyz12345';
+    $params->{args}->{old_password} = $trading_password;
     $params->{args}->{new_password} = 'Hello1234!@';
 
     $c->call_ok($method, $params)
         ->has_error->error_message_is(
-        "Due to a network issue, we couldn't update the trading password for some of your accounts. Please check your email for more details.",
+        "Due to a network issue, we couldn't update the password for some of your accounts. Please check your email for more details.",
         'error message for multiple failed logins');
 
     cmp_deeply(
@@ -295,21 +298,20 @@ subtest 'password change with mt5 accounts' => sub {
         {
             loginid    => $client->loginid,
             properties => {
-                contact_url           => ignore(),
-                first_name            => $client->first_name,
-                type                  => 'change',
-                successful_mt5_logins => undef,
-                failed_mt5_logins     => bag($mt5_demo_loginid, $mt5_loginid),
-                successful_dx_logins  => undef,
-                failed_dx_logins      => undef,
-                dxtrade_available     => 1,
+                contact_url       => ignore(),
+                first_name        => $client->first_name,
+                type              => 'change',
+                successful_logins => undef,
+                failed_logins     => bag($mt5_demo_loginid, $mt5_loginid),
+                platform          => 'mt5'
             }
         },
         'password change failed event emitted'
     );
     undef $last_event;
 
-    ok BOM::User::Password::checkpw('Xyz12345', $client->user->trading_password), 'should not change trading password when all trading accounts fail';
+    ok BOM::User::Password::checkpw($trading_password, $client->user->trading_password),
+        'should not change trading password when all trading accounts fail';
 };
 
 $method = 'trading_platform_password_reset';
@@ -354,7 +356,7 @@ subtest 'password reset with mt5 accounts' => sub {
         language => 'EN',
         args     => {
             verify_email => $details{email},
-            type         => 'trading_platform_password_reset',
+            type         => 'trading_platform_mt5_password_reset'
         }};
 
     $c->call_ok('verify_email', $params)->has_no_system_error->has_no_error->result_is_deeply({
@@ -373,10 +375,10 @@ subtest 'password reset with mt5 accounts' => sub {
         {
             loginid    => $client->loginid,
             properties => {
-                first_name        => $client->first_name,
-                code              => $verification_code,
-                verification_url  => re($verification_code),
-                dxtrade_available => 1,
+                first_name       => $client->first_name,
+                code             => $verification_code,
+                verification_url => re($verification_code),
+                platform         => 'mt5'
             }
         },
         'password reset request event emitted'
@@ -386,7 +388,8 @@ subtest 'password reset with mt5 accounts' => sub {
     $params = {
         args => {
             new_password      => $trading_password,
-            verification_code => $verification_code
+            verification_code => $verification_code,
+            platform          => 'mt5'
         },
     };
 
@@ -397,12 +400,11 @@ subtest 'password reset with mt5 accounts' => sub {
         {
             loginid    => $client->loginid,
             properties => {
-                contact_url       => ignore(),
-                first_name        => $client->first_name,
-                type              => 'reset',
-                mt5_logins        => bag($mt5_demo_loginid, $mt5_loginid),
-                dx_logins         => undef,
-                dxtrade_available => 1,
+                contact_url => ignore(),
+                first_name  => $client->first_name,
+                type        => 'reset',
+                logins      => bag($mt5_demo_loginid, $mt5_loginid),
+                platform    => 'mt5',
             }
         },
         'password change event emitted'
@@ -427,6 +429,26 @@ subtest 'password reset with mt5 accounts' => sub {
 
     $params->{args}->{password} = $trading_password;
     is($c->call_ok('mt5_password_check', $params)->has_no_error->result, 1, 'mt5 account password was changed successfully');
+
+    # test suspend one server
+    BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real->p01_ts03->all(1);
+    my $code = BOM::Platform::Token->new({
+            email       => $client->email,
+            expires_in  => 3600,
+            created_for => 'trading_platform_mt5_password_reset'
+        })->token;
+
+    $params = {
+        args => {
+            new_password      => $trading_password,
+            verification_code => $code,
+            platform          => 'mt5'
+        },
+    };
+
+    $c->call_ok($method, $params)->has_error->error_code_is('MT5Suspended')->error_message_is('MT5 account management is currently suspended.');
+
+    BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real->p01_ts03->all(0);
 
     $mock_mt5->unmock_all();
     $mock_token->unmock_all();

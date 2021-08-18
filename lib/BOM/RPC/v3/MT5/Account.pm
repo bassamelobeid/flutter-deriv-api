@@ -820,6 +820,11 @@ async_rpc "mt5_new_account",
                 ($mt5_account_type) ? (mt5_account_type => $mt5_account_type) : ()});
     }
 
+    # don't allow new mt5 account creation without trading password
+    return create_error_future('TradingPasswordRequired',
+        {message => localize('Please set your MT5 password using the [_1] API.', 'trading_platform_password_change')})
+        unless $client->user->trading_password;
+
     return get_mt5_logins($client, $account_type)->then(
         sub {
             my (@logins) = @_;
@@ -1000,44 +1005,6 @@ async_rpc "mt5_new_account",
                             my ($group_details) = @_;
                             return create_error_future('MT5CreateUserError', {message => $group_details->{error}})
                                 if ref $group_details eq 'HASH' and $group_details->{error};
-
-                            unless ($client->user->trading_password) {
-                                # Save new trading password once we have successfully created a new account
-                                $client->user->update_trading_password($trading_password);
-
-                                my $dxtrade_available = $client->landing_company->short eq 'svg' ? 1 : 0;  # TODO: add some sort of LC entry for this.
-
-                                BOM::Platform::Email::send_email({
-                                        to            => $client->email,
-                                        subject       => localize('Your [_1] trading password has been set', ucfirst($brand->name)),
-                                        template_name => 'reset_password_confirm',
-                                        template_args => {
-                                            email               => $client->email,
-                                            name                => $client->first_name,
-                                            title               => localize("You've got a new trading password"),
-                                            contact_url         => $contact_url,
-                                            is_trading_password => 1,
-                                            mt5_logins          => [$mt5_login],
-                                            dxtrade_available   => $dxtrade_available,
-                                        },
-                                        use_email_template => 1,
-                                        template_loginid   => $client->loginid,
-                                        use_event          => 1,
-                                    });
-
-                                BOM::Platform::Event::Emitter::emit(
-                                    'trading_platform_password_changed',
-                                    {
-                                        loginid    => $client->loginid,
-                                        properties => {
-                                            first_name        => $client->first_name,
-                                            contact_url       => $contact_url,
-                                            type              => 'change',
-                                            mt5_logins        => [$mt5_login],
-                                            dxtrade_available => $dxtrade_available,
-                                        }});
-
-                            }
 
                             return Future->done({
                                     login           => $mt5_login,

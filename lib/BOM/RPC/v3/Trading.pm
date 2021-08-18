@@ -86,7 +86,7 @@ my %ERROR_MAP = do {
         InvalidMinAmount                 => localize('The minimum amount for transfers is [_1] [_2]. Please adjust your amount.'),
         InvalidMaxAmount                 => localize('The maximum amount for deposits is [_1] [_2]. Please adjust your amount.'),
         CurrencyTypeNotAllowed           => localize('This currency is temporarily suspended. Please select another currency to proceed.'),
-        PlatformPasswordChangeSuspended => localize("We're unable to reset your trading password due to system maintenance. Please try again later."),
+        PlatformPasswordChangeSuspended  => localize("We're unable to reset your trading password due to system maintenance. Please try again later.")
     );
 };
 
@@ -120,6 +120,7 @@ rpc trading_platform_new_account => sub {
                     account_id   => $account->{account_id},
                     account_type => $account->{account_type},
                     market_type  => $account->{market_type},
+                    platform     => $params->{args}{platform},
                 }});
         return $account;
     } catch ($e) {
@@ -232,10 +233,12 @@ async_rpc trading_platform_password_change => sub {
     my $user   = $client->user;
 
     try {
-        my $new_password = $params->{args}{new_password} or die +{error_code => 'PasswordRequired'};
-        my $old_password = $params->{args}{old_password};
+        my $new_password     = $params->{args}{new_password} or die +{error_code => 'PasswordRequired'};
+        my $old_password     = $params->{args}{old_password};
+        my $platform         = $params->{args}{platform};
+        my $current_password = $platform eq 'dxtrade' ? $user->dx_trading_password : $user->trading_password;
 
-        if (my $current_password = $user->trading_password) {
+        if ($current_password) {
             die +{error_code => 'OldPasswordRequired'} unless $old_password;
 
             my $error = BOM::RPC::v3::Utility::validate_password_with_attempts($old_password, $current_password, $client->loginid);
@@ -276,30 +279,35 @@ Returns a L<Future> which resolves to C<1> on success.
 
 =cut
 
+my %CREATED_FOR = (
+    mt5     => 'trading_platform_mt5_password_reset',
+    dxtrade => 'trading_platform_dxtrade_password_reset',
+);
+
 async_rpc trading_platform_password_reset => auth => [],
     sub {
     my $params = shift;
 
     try {
-        my $password = delete $params->{args}{new_password};
-        die +{error_code => 'PasswordRequired'} unless $password;
+        my $new_password = $params->{args}{new_password} or die +{error_code => 'PasswordRequired'};
+        my $platform     = $params->{args}{platform};
 
-        my $verification_code = delete $params->{args}{verification_code};
-        my $email             = lc(BOM::Platform::Token->new({token => $verification_code})->email // '');
+        my $token = delete $params->{args}{verification_code};
+        my $email = lc(BOM::Platform::Token->new({token => $token})->email // '');
 
-        my $error = BOM::RPC::v3::Utility::is_verification_token_valid($verification_code, $email, 'trading_platform_password_reset')->{error};
+        my $error = BOM::RPC::v3::Utility::is_verification_token_valid($token, $email, $CREATED_FOR{$platform})->{error};
         die $error if $error;
 
         $error = BOM::RPC::v3::Utility::check_password({
             email        => $email,
-            new_password => $password
+            new_password => $new_password
         });
         die $error->{error} if $error;
 
         my $user = BOM::User->new(email => $email);
         $params->{client} = $user->get_default_client();
 
-        change_platform_passwords($password, 'reset', $params);
+        change_platform_passwords($new_password, 'reset', $params);
         return Future->done(1);
     } catch ($e) {
         return Future->fail(handle_error($e));
@@ -525,56 +533,40 @@ sub change_platform_passwords {
             source   => $params->{source},
             language => $params->{language}});
 
-    my $mt5 = BOM::TradingPlatform->new(
-        platform => 'mt5',
+    my $platform_name = $params->{args}{platform};
+
+    my $platform = BOM::TradingPlatform->new(
+        platform => $platform_name,
         client   => $client
     );
 
-    my $dxtrade = BOM::TradingPlatform->new(
-        platform => 'dxtrade',
-        client   => $client
-    );
+    my $updated_logins = $platform->change_password(password => $password);
 
-    die +{error_code => 'PlatformPasswordChangeSuspended'}
-        if $dxtrade->local_accounts and BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend->all;
+    my ($successful_logins, $failed_logins) = $updated_logins->@{qw/successful_logins failed_logins/};
 
-    my ($updated_logins, $error_message);
+    my $display_name = BOM::RPC::v3::Utility::trading_platform_display_name($platform_name);
 
-    Future->wait_all($mt5->change_password(password => $password), $dxtrade->change_password(password => $password),)->then(
-        sub {
-            my $data;
-            for my $f (@_) {
-                my $result = $f->result or next;
-                push $updated_logins->{$_}->@*, $result->{$_}->@* for keys $result->%*;
-            }
-            Future->done($data);
-        })->get;
+    my ($error_message);
 
-    my ($success_mt5, $success_dx, $failed_mt5, $failed_dx) =
-        $updated_logins->@{qw/successful_mt5_logins successful_dx_logins failed_mt5_logins failed_dx_logins/};
+    if ($failed_logins) {
 
-    my $dxtrade_available = $client->landing_company->short eq 'svg' ? 1 : 0;    # TODO: add some sort of LC entry for this.
-
-    if ($failed_mt5 or $failed_dx) {
-
-        $error_message = localize(
-            "Due to a network issue, we couldn't update the trading password for some of your accounts. Please check your email for more details.");
+        $error_message =
+            localize("Due to a network issue, we couldn't update the password for some of your accounts. Please check your email for more details.");
 
         send_email({
                 to            => $client->email,
-                subject       => localize('Unsuccessful trading password change'),
+                subject       => localize('Unsuccessful [_1] password change', $display_name),
                 template_name => 'reset_password_confirm',
                 template_args => {
                     email                             => $client->email,
                     name                              => $client->first_name,
-                    title                             => localize("There was an issue with changing your trading password"),
+                    title                             => localize("There was an issue with changing your [_1] password", $display_name),
                     contact_url                       => $contact_url,
                     is_trading_password_change_failed => 1,
-                    successful_mt5_logins             => $success_mt5,
-                    successful_dx_logins              => $success_dx,
-                    failed_mt5_logins                 => $failed_mt5,
-                    failed_dx_logins                  => $failed_dx,
-                    dxtrade_available                 => $dxtrade_available,
+                    successful_logins                 => $successful_logins,
+                    failed_logins                     => $failed_logins,
+                    display_name                      => $display_name,
+                    platform                          => $platform_name,
                 },
                 use_email_template => 1,
                 template_loginid   => $client->loginid,
@@ -586,33 +578,29 @@ sub change_platform_passwords {
             {
                 loginid    => $client->loginid,
                 properties => {
-                    first_name            => $client->first_name,
-                    contact_url           => $contact_url,
-                    type                  => $type,
-                    successful_mt5_logins => $success_mt5,
-                    successful_dx_logins  => $success_dx,
-                    failed_mt5_logins     => $failed_mt5,
-                    failed_dx_logins      => $failed_dx,
-                    dxtrade_available     => $dxtrade_available,
+                    first_name        => $client->first_name,
+                    contact_url       => $contact_url,
+                    type              => $type,
+                    successful_logins => $successful_logins,
+                    failed_logins     => $failed_logins,
+                    platform          => $platform_name,
                 }});
     } else {
-        my $successful_logins = ($success_mt5 or $success_dx);
 
         send_email({
-                to      => $client->email,
-                subject => $brand->name eq 'deriv'
-                ? ($successful_logins ? localize('Your new trading password') : localize('Your trading password has been set'))
-                : localize('Your Binary trading password has been set'),
+                from          => $brand->emails('no-reply'),
+                to            => $client->email,
+                subject       => localize('Your new [_1] password', $display_name),
                 template_name => 'reset_password_confirm',
                 template_args => {
                     email               => $client->email,
                     name                => $client->first_name,
-                    title               => $successful_logins ? localize("You've got a new password") : localize("You've got a new trading password"),
+                    title               => localize("You've got a new [_1] password", $display_name),
                     contact_url         => $contact_url,
                     is_trading_password => 1,
-                    mt5_logins          => $success_mt5,
-                    dx_logins           => $success_dx,
-                    dxtrade_available   => $dxtrade_available,
+                    logins              => $successful_logins,
+                    display_name        => $display_name,
+                    platform            => $platform_name,
                 },
                 use_email_template => 1,
                 template_loginid   => $client->loginid,
@@ -624,17 +612,13 @@ sub change_platform_passwords {
             {
                 loginid    => $client->loginid,
                 properties => {
-                    first_name        => $client->first_name,
-                    contact_url       => $contact_url,
-                    type              => $type,
-                    mt5_logins        => $success_mt5,
-                    dx_logins         => $success_dx,
-                    dxtrade_available => $dxtrade_available,
+                    first_name  => $client->first_name,
+                    contact_url => $contact_url,
+                    type        => $type,
+                    logins      => $successful_logins,
+                    platform    => $platform_name,
                 }});
     }
-
-    # If all accounts failed, we we won't update password on our side
-    $client->user->update_trading_password($password) unless ($failed_mt5 or $failed_dx) and not($success_mt5 or $success_dx);
 
     die +{
         code              => 'PlatformPasswordChangeError',
@@ -710,17 +694,17 @@ sub change_investor_password {
     my $account_info = $platform->get_account_info($account_id)->get;
     my $email        = $client->email;
 
+    my $display_name = BOM::RPC::v3::Utility::trading_platform_display_name('mt5');
+
     send_email({
-            from    => $brand->emails('support'),
-            to      => $email,
-            subject => $brand->name eq 'deriv'
-            ? localize('Your new DMT5 account investor password')
-            : ($type eq 'change' ? localize('Your MT5 investor password has been changed.') : localize('Your MT5 investor password has been reset.')),
-            template_name => 'mt5_password_reset_notification',
+            from          => $brand->emails('no-reply'),
+            to            => $email,
+            subject       => localize('Your new [_1] investor password', $display_name),
+            template_name => 'reset_password_confirm',
             template_args => {
                 name                 => $client->first_name,
-                title                => localize("You've got a new password"),
-                loginid              => $account_id,
+                title                => localize("You've got a new [_1] investor password", $display_name),
+                login                => $account_id,
                 email                => $email,
                 contact_url          => $contact_url,
                 is_investor_password => 1

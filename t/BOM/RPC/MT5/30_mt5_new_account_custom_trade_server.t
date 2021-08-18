@@ -44,6 +44,7 @@ my $user = BOM::User->create(
     email    => $DETAILS{email},
     password => 's3kr1t',
 );
+$user->update_trading_password($DETAILS{password}{main});
 $user->add_client($test_client);
 $user->add_client($test_client_vr);
 

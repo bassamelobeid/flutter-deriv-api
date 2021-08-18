@@ -191,6 +191,7 @@ subtest 'mt5' => sub {
             mainPassword     => $DETAILS{password}{main},
         },
     };
+    $client_usd->user->update_trading_password($DETAILS{password}{main});
     my $login_std = $c->call_ok('mt5_new_account', $params)->has_no_system_error->has_no_error('create financial mt5 account')->result->{login};
     $params->{args}{mt5_account_type} = 'financial_stp';
     my $login_adv = $c->call_ok('mt5_new_account', $params)->has_no_system_error->has_no_error('create financial_stp mt5 account')->result->{login};

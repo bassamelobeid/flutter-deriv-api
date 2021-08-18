@@ -73,33 +73,34 @@ rpc "verify_email",
     auth => [],    # unauthenticated
     sub {
     my $params = shift;
-    my $email  = lc $params->{args}->{verify_email};
-    my $args   = $params->{args};
+
+    my ($token_details, $website_name, $source, $language, $args) = @{$params}{qw/token_details website_name source language args/};
+
+    my ($email, $type, $url_params) = @{$args}{qw/verify_email type url_parameters/};
+
+    $email = lc $email;
+
     return BOM::RPC::v3::Utility::invalid_email() unless Email::Valid->address($email);
 
-    my $type = $params->{args}->{type};
+    my $error = BOM::RPC::v3::Utility::invalid_params($args);
+    return $error if $error;
+
     my $code = BOM::Platform::Token->new({
             email       => $email,
             expires_in  => 3600,
             created_for => $type,
         })->token;
 
-    my $loginid          = $params->{token_details} ? $params->{token_details}->{loginid} : undef;
-    my $extra_url_params = {};
-    $extra_url_params = $args->{url_parameters} if defined $args->{url_parameters};
-
-    return BOM::RPC::v3::Utility::invalid_params() if grep { /^pa/ } keys $extra_url_params->%* and $type ne 'paymentagent_withdraw';
-
     my $verification = email_verification({
         code             => $code,
-        website_name     => $params->{website_name},
-        verification_uri => get_verification_uri($params->{source}),
-        language         => $params->{language},
-        source           => $params->{source},
-        app_name         => get_app_name($params->{source}),
+        website_name     => $website_name,
+        verification_uri => get_verification_uri($source),
+        language         => $language,
+        source           => $source,
+        app_name         => get_app_name($source),
         email            => $email,
         type             => $type,
-        %$extra_url_params
+        $url_params ? ($url_params->%*) : (),
     });
 
     my $existing_user = BOM::User->new(
@@ -110,6 +111,8 @@ rpc "verify_email",
         request_email($email, $verification->{closed_account}->());
         return {status => 1};
     }
+
+    my $loginid = $token_details ? $token_details->{loginid} : undef;
 
     my $client;
     # If user is logged in, email for verification must belong to the logged in account
@@ -152,6 +155,36 @@ rpc "verify_email",
                     verification_url  => $verification->{template_args}{verification_url},
                     code              => $verification->{template_args}{code},
                     dxtrade_available => $verification->{template_args}{dxtrade_available},
+                },
+            });
+    } elsif ($existing_user and $type eq 'trading_platform_mt5_password_reset') {
+        my $verification = $verification->{trading_platform_mt5_password_reset}->();
+        request_email($email, $verification);
+
+        BOM::Platform::Event::Emitter::emit(
+            'trading_platform_password_reset_request',
+            {
+                loginid    => $existing_user->get_default_client->loginid,
+                properties => {
+                    first_name       => $existing_user->get_default_client->first_name,
+                    verification_url => $verification->{template_args}{verification_url},
+                    code             => $verification->{template_args}{code},
+                    platform         => 'mt5',
+                },
+            });
+    } elsif ($existing_user and $type eq 'trading_platform_dxtrade_password_reset') {
+        my $verification = $verification->{trading_platform_dxtrade_password_reset}->();
+        request_email($email, $verification);
+
+        BOM::Platform::Event::Emitter::emit(
+            'trading_platform_password_reset_request',
+            {
+                loginid    => $existing_user->get_default_client->loginid,
+                properties => {
+                    first_name       => $existing_user->get_default_client->first_name,
+                    verification_url => $verification->{template_args}{verification_url},
+                    code             => $verification->{template_args}{code},
+                    platform         => 'dxtrade',
                 },
             });
     } elsif ($existing_user and $type eq 'trading_platform_investor_password_reset') {

@@ -1618,6 +1618,7 @@ subtest 'MT5' => sub {
         password       => $DETAILS{password}{main},
         email_verified => 1
     );
+    $user->update_trading_password($DETAILS{password}{main});
 
     my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code            => 'CR',

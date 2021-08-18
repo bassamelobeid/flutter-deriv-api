@@ -470,6 +470,7 @@ subtest 'get and set self_exclusion' => sub {
             leverage       => 100,
         }};
 
+    $test_client_mlt->user->update_trading_password($DETAILS{password}{main});
     my $mt5_loginid = $c->tcall('mt5_new_account', $mt5_params)->{login};
     is($mt5_loginid, 'MTR' . $ACCOUNTS{'real\p01_ts01\synthetic\malta_std_eur'}, 'MT5 loginid is correct: ' . $mt5_loginid);
 

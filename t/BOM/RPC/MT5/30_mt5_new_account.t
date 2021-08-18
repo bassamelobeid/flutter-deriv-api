@@ -46,6 +46,7 @@ my $user     = BOM::User->create(
     email    => $details{email},
     password => $hash_pwd,
 );
+$user->update_trading_password($details{password}{main});
 $user->add_client($test_client);
 $user->add_client($test_client_vr);
 
@@ -146,6 +147,7 @@ subtest 'new account with missing signup fields' => sub {
 };
 
 subtest 'new account' => sub {
+    $test_client->user->update_trading_password($details{password}{main});
     my $method = 'mt5_new_account';
     my $params = {
         language => 'EN',
@@ -218,6 +220,7 @@ subtest 'new account with account in highRisk groups' => sub {
         email    => $new_email,
         password => 's3kr1t',
     );
+    $user->update_trading_password($details{password}{main});
     $user->add_client($new_client);
 
     subtest 'corresponding high risk group exists' => sub {
@@ -455,7 +458,7 @@ subtest 'MF to MLT account switching' => sub {
         email    => 'switch@binary.com',
         password => 's3kr1t',
     );
-
+    $switch_user->update_trading_password($details{password}{main});
     $switch_user->add_client($mf_switch_client);
 
     my $mf_switch_token = $m->create_token($mf_switch_client->loginid, 'test token');
@@ -522,7 +525,7 @@ subtest 'MLT to MF account switching' => sub {
     );
 
     $switch_user->add_client($mlt_switch_client);
-
+    $switch_user->update_trading_password($details{password}{main});
     my $mlt_switch_token = $m->create_token($mlt_switch_client->loginid, 'test token');
 
     # we should get an error if we are trying to open a financial account
@@ -593,6 +596,7 @@ subtest 'VRTC to MLT and MF account switching' => sub {
     );
 
     $switch_user->add_client($vr_switch_client);
+    $switch_user->update_trading_password($details{password}{main});
 
     my $vr_switch_token = $m->create_token($vr_switch_client->loginid, 'test token');
 
@@ -678,6 +682,7 @@ subtest 'new account on addtional trade server' => sub {
         email    => $new_email,
         password => 's3kr1t',
     );
+    $user->update_trading_password($details{password}{main});
     $user->add_client($new_client);
 
     my $method = 'mt5_new_account';
@@ -741,6 +746,7 @@ subtest 'new account identical account check' => sub {
         email    => $new_email,
         password => 's3kr1t',
     );
+    $user->update_trading_password($details{password}{main});
     $user->add_client($new_client);
 
     my $method = 'mt5_new_account';
@@ -770,6 +776,7 @@ subtest 'country=za; creates financial account with existing gaming account whil
         email    => $new_email,
         password => 's3kr1t',
     );
+    $user->update_trading_password($details{password}{main});
     $user->add_client($new_client);
 
     my $method = 'mt5_new_account';
@@ -810,6 +817,7 @@ subtest 'country=au, financial account' => sub {
         email    => $new_email,
         password => 's3kr1t',
     );
+    $user->update_trading_password($details{password}{main});
     $user->add_client($new_client);
 
     my $method = 'mt5_new_account';

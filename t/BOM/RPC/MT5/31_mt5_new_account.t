@@ -38,6 +38,7 @@ subtest 'create mt5 client with different currency' => sub {
             email    => $new_email,
             password => 's3kr1t',
         );
+        $user->update_trading_password($DETAILS{password}{main});
         $user->add_client($new_client);
 
         my $method = 'mt5_new_account';
@@ -89,7 +90,9 @@ subtest 'create mt5 client with different currency' => sub {
             email    => $new_email,
             password => 'Abcd33@!',
         );
+        $user->update_trading_password($DETAILS{password}{main});
         $user->add_client($client);
+
         my $token = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token');
 
         my $method = 'mt5_new_account';
@@ -124,6 +127,7 @@ subtest 'create mt5 client with different currency' => sub {
             email    => $new_email,
             password => 'Abcd33@!',
         );
+        $user->update_trading_password($DETAILS{password}{main});
         $user->add_client($client);
         $token = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token');
         $params->{token} = $token;
@@ -147,6 +151,7 @@ subtest 'create mt5 client with different currency' => sub {
             email    => $new_email,
             password => 'Abcd33@!',
         );
+        $user->update_trading_password($DETAILS{password}{main});
         $user->add_client($client);
         $token                      = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token');
         $params->{token}            = $token;
@@ -184,7 +189,9 @@ subtest 'create mt5 client with different currency' => sub {
             email    => $new_email,
             password => 'Abcd33@!',
         );
+        $user->update_trading_password($DETAILS{password}{main});
         $user->add_client($client);
+
         my $token = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token');
 
         my $method = 'mt5_new_account';
@@ -221,6 +228,7 @@ subtest 'create mt5 client with different currency' => sub {
             email    => $new_email,
             password => 'Abcd33@!',
         );
+        $user->update_trading_password($DETAILS{password}{main});
         $user->add_client($client);
         $token = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token');
         $params->{token} = $token;
@@ -245,6 +253,7 @@ subtest 'create mt5 client with different currency' => sub {
             email    => $new_email,
             password => 'Abcd33@!',
         );
+        $user->update_trading_password($DETAILS{password}{main});
         $user->add_client($client);
         $token = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token');
 
@@ -284,6 +293,7 @@ subtest 'create mt5 client with different currency' => sub {
             email    => $new_email,
             password => 'Abcd33@!',
         );
+        $user->update_trading_password($DETAILS{password}{main});
         $user->add_client($client);
         my $token = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token');
 
@@ -327,6 +337,7 @@ subtest 'auto b-booking' => sub {
         email    => $new_email,
         password => 's3kr1t',
     );
+    $user->update_trading_password($DETAILS{password}{main});
     $user->add_client($new_client);
 
     my $method = 'mt5_new_account';
@@ -375,6 +386,7 @@ subtest 'real & demo split on account creation' => sub {
         email    => $new_email,
         password => 's3kr1t',
     );
+    $user->update_trading_password($DETAILS{password}{main});
     $user->add_client($new_client);
 
     my $method = 'mt5_new_account';
@@ -415,6 +427,7 @@ subtest 'account creation throttle' => sub {
         email    => $new_email,
         password => 's3kr1t',
     );
+    $user->update_trading_password($DETAILS{password}{main});
     $user->add_client($new_client);
 
     my $method = 'mt5_new_account';

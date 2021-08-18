@@ -45,6 +45,7 @@ subtest 'frozen free gift' => sub {
         email    => $DETAILS{email},
         password => 's3kr1t',
     );
+    $user->update_trading_password($DETAILS{password}{main});
     $user->add_client($client);
     $client->account('USD');
     $client->tax_identification_number('111222333');

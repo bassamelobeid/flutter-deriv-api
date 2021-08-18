@@ -45,6 +45,7 @@ subtest 'balance with mt5 disabled' => sub {
         email    => $email,
         password => $hash_pwd
     );
+    $user->update_trading_password($DETAILS{password}{main});
     $user->add_client($test_client);
     my $token = $m->create_token($test_loginid, 'test token');
 

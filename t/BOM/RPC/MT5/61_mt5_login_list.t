@@ -37,6 +37,7 @@ subtest 'country=za; creates financial account with existing gaming account whil
         email    => $new_email,
         password => 's3kr1t',
     );
+    $user->update_trading_password($DETAILS{password}{main});
     $user->add_client($new_client);
 
     my $method = 'mt5_new_account';
