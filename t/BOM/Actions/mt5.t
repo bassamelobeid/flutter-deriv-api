@@ -331,7 +331,7 @@ subtest 'mt5 account opening mail' => sub {
                         is $result, $expected_mt5_result, "Successfull MT5 account opening for $brand customer ($lang), $type $category account";
 
                         # Note subject is localized
-                        my $subject = localize('MT5 [_1] Account Created.', ucfirst $category);
+                        my $subject = localize('Your MT5 account is ready!', ucfirst $category);
                         my $email   = mailbox_search(
                             email   => $mt5_client->email,
                             subject => qr/\Q$subject\E/
@@ -365,7 +365,7 @@ subtest 'mt5 account opening mail' => sub {
                                         client_first_name => $mt5_client->first_name,
                                         lang              => $lang,
                                         website_name      => $brand_ref->website_name,
-                                        contact_url       => $brand_ref->contact_url({language => $lang}),
+                                        live_chat_url     => $brand_ref->live_chat_url({language => $lang}),
                                         tnc_approval_url  => $brand_ref->tnc_approval_url({language => $lang}),
                                         help_centre_url   => $brand_ref->help_centre_url({language => $lang}),
                                     },

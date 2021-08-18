@@ -329,7 +329,7 @@ sub send_mt5_account_opening_email {
     send_email({
             from          => $brand->emails('no-reply'),
             to            => $email,
-            subject       => localize('MT5 [_1] Account Created.', ucfirst $mt5_category),
+            subject       => localize('Your MT5 account is ready!'),
             template_name => 'mt5_account_opening',
             template_args => {
                 mt5_loginid       => $mt5_loginid,
@@ -340,7 +340,7 @@ sub send_mt5_account_opening_email {
                 client_first_name => $client_first_name,
                 lang              => $lang,
                 website_name      => $website_name,
-                contact_url       => $brand->contact_url($url_params),
+                live_chat_url     => $brand->live_chat_url($url_params),
             },
             use_email_template => 1,
         });
