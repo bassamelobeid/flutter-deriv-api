@@ -34,7 +34,9 @@ isa_ok($mt5, 'BOM::TradingPlatform::MT5');
 
 $client->account('USD');
 
-is $mt5->change_password(password => 'test'), undef, 'New MT5 password is set';
+$mt5_config->suspend->real->p01_ts01->all(1);
+is $mt5->change_password(password => 'test'), undef, 'New MT5 password is set with real suspended and no mt5 accounts';
+$mt5_config->suspend->real->p01_ts01->all(0);
 
 ok BOM::User::Password::checkpw('test', $client->user->trading_password), 'MT5 password is OK';
 

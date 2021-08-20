@@ -70,8 +70,6 @@ Returns a hashref of loginids, or dies with error.
 sub change_password {
     my ($self, %args) = @_;
 
-    die +{error_code => 'MT5Suspended'} if $self->is_any_mt5_servers_suspended;
-
     my $password = $args{password};
 
     my @mt5_loginids = $self->client->user->get_mt5_loginids;
@@ -79,6 +77,8 @@ sub change_password {
         $self->client->user->update_trading_password($password);
         return;
     }
+
+    die +{error_code => 'MT5Suspended'} if $self->is_any_mt5_servers_suspended;
 
     my (@valid_logins, $res);
 

@@ -357,7 +357,6 @@ sub change_password {
     if ($self->local_accounts) {
         $self->server_check($self->account_servers);
     } else {
-        $self->server_check(('real', 'demo'));
         $self->client->user->update_dx_trading_password($password);
         return undef;
     }

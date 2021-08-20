@@ -30,11 +30,8 @@ isa_ok($dxtrader, 'BOM::TradingPlatform::DXTrader');
 $client->account('USD');
 
 $dxconfig->suspend->real(1);
-cmp_deeply(
-    exception { $dxtrader->change_password(password => 'secret') },
-    {error_code => 'DXServerSuspended'},
-    'Password change fails with real server suspended and no DXClient'
-);
+cmp_deeply($dxtrader->change_password(password => 'secret'),
+    undef, 'Password change request is successful with real server suspended and no DXClient');
 $dxconfig->suspend->real(0);
 
 is exception { $dxtrader->change_password(password => 'test') }, undef, 'No DXClient has no error';
