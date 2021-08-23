@@ -271,7 +271,7 @@
                 if (link.disabled) return;
 
                 const token = '[% sendbird_token %]';
-                const url = event.toElement.href;
+                const url = link.href;
                 const xhr = new XMLHttpRequest();
                 let to = setTimeout(() => { xhr.abort() }, 10000);
                 link.innerHTML = 'downloading file...';
