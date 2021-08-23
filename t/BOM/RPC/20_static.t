@@ -59,17 +59,9 @@ subtest 'residence_list' => sub {
                         is_country_supported => 0,
                         has_visual_sample    => 1,
                         documents_supported  => {
-                            bvn => {
-                                display_name => 'BVN',
-                                format       => '^[0-9]{11}$'
-                            },
-                            nin => {
-                                display_name => 'NIN',
-                                format       => '^[0-9]{10,11}$',
-                            },
                             nin_slip => {
                                 display_name => 'NIN Slip',
-                                format       => '^[0-9]{11}$',
+                                format       => '^[0-9]{10,11}$',
                             },
                             drivers_license => {
                                 display_name => 'Drivers License',

@@ -30,8 +30,8 @@ subtest 'identity_verification_document_add' => sub {
 
     $params->{args} = {
         issuing_country => 'xxx',
-        document_type   => 'bvn',
-        document_number => '001234564564',
+        document_type   => 'nin_slip',
+        document_number => '01234564564',
     };
 
     $c->call_ok('identity_verification_document_add', $params)
@@ -59,13 +59,13 @@ subtest 'identity_verification_document_add' => sub {
             my (undef, $country) = @_;
             return {
                 provider       => 'smile_identity',
-                document_types => {bvn => {format => '^[0-9]+$'}}} if $country eq 'ng';
+                document_types => {nin_slip => {format => '^[0-9]+$'}}} if $country eq 'ng';
             return '';
         });
 
     $params->{args} = {
         issuing_country => 'ng',
-        document_type   => 'bvn',
+        document_type   => 'nin_slip',
         document_number => '01test',
     };
 
@@ -74,7 +74,7 @@ subtest 'identity_verification_document_add' => sub {
 
     $params->{args} = {
         issuing_country => 'ng',
-        document_type   => 'bvn',
+        document_type   => 'nin_slip',
         document_number => '01',
     };
 
