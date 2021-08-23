@@ -10,6 +10,7 @@ use Pod::Usage qw(pod2usage);
 use IO::Async::Loop;
 
 use Log::Any::Adapter;
+use Log::Any qw($log);
 
 use BOM::Pricing::Queue;
 
@@ -26,7 +27,12 @@ $record_price_metrics ||= 0;
 pod2usage(1)              if $help;
 path($pid_file)->spew($$) if $pid_file;
 
-Log::Any::Adapter->set('Stdout', log_level => $log_level // 'warn');
+Log::Any::Adapter->set(
+    'DERIV',
+    stdout    => 'json',
+    log_level => $log_level // 'info'
+);
+$log->info("price_queue service is running");
 
 my $loop = IO::Async::Loop->new;
 $loop->add(my $queue = BOM::Pricing::Queue->new(record_price_metrics => $record_price_metrics));

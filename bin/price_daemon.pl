@@ -13,7 +13,10 @@ use Parallel::ForkManager;
 use Sys::Info;
 use Path::Tiny qw(path);
 use Volatility::LinearCache;
-use Log::Any::Adapter qw(Stderr), log_level => $ENV{BOM_LOG_LEVEL} // 'info';
+use Log::Any::Adapter qw(DERIV),
+    stderr    => 'json',
+    log_level => $ENV{BOM_LOG_LEVEL} // 'info';
+use Log::Any qw($log);
 use BOM::Pricing::PriceDaemon;
 
 my $ua = LWP::UserAgent->new(timeout => 2);
@@ -54,7 +57,7 @@ $SIG{TERM} = sub {
 # tune cache: up to 2s
 $ENV{QUANT_FRAMEWORK_HOLIDAY_CACHE} = $ENV{QUANT_FRAMEWORK_PATRIALTRADING_CACHE} = 2;    ## nocritic
 my $pm = Parallel::ForkManager->new($workers);
-
+$log->info("price_daemon service is running");
 $pm->run_on_start(
     sub {
         my $pid = shift;
