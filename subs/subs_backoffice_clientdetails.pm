@@ -525,6 +525,21 @@ SQL
         sort { $POA_REASONS->{$a}->{reason} cmp $POA_REASONS->{$b}->{reason} }
         keys $POA_REASONS->%*;
 
+    my $redis_oauth  = BOM::Config::Redis::redis_auth_write();
+    my $login_locked = $redis_oauth->ttl('oauth::blocked_by_user::' . $client->user->id);
+    my $login_locked_until;
+    my $too_many_attempts;
+
+    if ($login_locked > 0) {
+        $login_locked_until = Date::Utility->new(time + $login_locked);
+    } else {
+        $too_many_attempts = $client->user->dbic->run(
+            fixup => sub {
+                $_->selectrow_arrayref('select users.too_many_login_attempts(?::BIGINT, ?::SMALLINT, ?::INTERVAL)',
+                    undef, $client->user->id, 5, '5 minutes')->[0];
+            });
+    }
+
     my $template_param = {
         balance              => $balance,
         client               => $client,
@@ -590,6 +605,8 @@ SQL
         onfido_reported_properties         => BOM::User::Onfido::reported_properties($client),
         poi_name_mismatch                  => $client->status->poi_name_mismatch,
         expired_poi_docs                   => $client->documents->expired(1),
+        login_locked_until                 => $login_locked_until ? $login_locked_until->datetime_ddmmmyy_hhmmss_TZ : undef,
+        too_many_attempts                  => $too_many_attempts,
     };
 
     return BOM::Backoffice::Request::template()->process('backoffice/client_edit.html.tt', $template_param, undef, {binmode => ':utf8'})

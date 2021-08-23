@@ -77,6 +77,16 @@ window.addEventListener('DOMContentLoaded', init_text_validations, false);
         <td>: <b>[% IF has_social_signup  %]YES[% ELSE %]NO[% END %]</b></td>
     </tr>
     <tr>
+        <td class="label">Login Lock</td>
+        [% IF login_locked_until %]
+        <td>: <b class="error">Locked until [% login_locked_until %]</b></td>
+        [% ELSIF too_many_attempts %]
+        <td>: <b class="error">Locked temporary due to many failed attempts</b></td>
+        [% ELSE %]
+        <td>: <b>Not locked</b></td>
+        [% END %]
+    </tr>
+    <tr>
         <td class="label">BROKER</td>
         <td>: <b>[% client.broker %]</b> <input type="hidden" name="edit_client_loginid" value="[% client.loginid %]"></td>
     </tr>
