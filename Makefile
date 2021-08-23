@@ -80,7 +80,8 @@ doc:
 
 cover:
 	cover -delete
-	PERL5OPT=-MBOM::Test HARNESS_PERL_SWITCHES=-MDevel::Cover DEVEL_COVER_OPTIONS=-'ignore,^t/' /etc/rmg/bin/prove --timer --norc -It/lib -rl $$(find t/unit t/BOM -name "*.t" | grep -vE 'memtest|benchmark')
+	sed -i '1667,1668d' /home/git/binary-com/perl/lib/5.26.2/B/Deparse.pm
+	PERL5OPT=-MBOM::Test HARNESS_PERL_SWITCHES=-MDevel::Cover DEVEL_COVER_OPTIONS=-'ignore,^t/' /etc/rmg/bin/prove --ignore-exit --timer --norc -It/lib -rl $$(find t/unit t/BOM -name "*.t" | grep -vE 'memtest|benchmark')
 	cover -report coveralls
 	
 unit:
