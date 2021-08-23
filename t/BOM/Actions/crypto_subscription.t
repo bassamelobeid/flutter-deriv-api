@@ -15,6 +15,7 @@ use BOM::Test::Helper::Client qw( create_client );
 use BOM::Test;
 use BOM::CTC::Helper;
 use BOM::CTC::Database;
+use BOM::CTC::Constants qw(:transaction);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_events_redis);
 use BOM::Platform::Event::Emitter;
 use IO::Async::Loop;
@@ -22,6 +23,7 @@ use BOM::Event::Services;
 use List::Util qw(all any);
 use BOM::Test::Helper::Client qw(create_client top_up);
 use BOM::Test::Helper::ExchangeRates qw(populate_exchange_rates);
+use BOM::Test::Helper::CTC;
 use Future::AsyncAwait;
 
 initialize_events_redis();
@@ -696,6 +698,58 @@ subtest "check fraud address in TP" => sub {
 
     is $rows->@*, 1, "Address was correctly inserted in the database";
 
+};
+
+subtest "ERC20 deposit swept on subscription" => sub {
+    # mock this subroutine so that get_deposit_id_and_address call does not invoke node in bom-cryptocurrency
+    my $mock_eth = Test::MockModule->new('BOM::CTC::Currency::ETH');
+    $mock_eth->mock(
+        get_new_address => sub {
+            return '0x63D264afFf99944ba1523f88DDDa08B611350a8D',;
+        });
+
+    foreach my $currency_code ('USDC', 'eUSDT') {
+        my $amount           = 1;
+        my $transaction_hash = "dummy_hash";
+
+        my $client = create_client();
+        $client->set_default_account($currency_code);
+        $client->save();
+        my $helper    = BOM::CTC::Helper->new(client => $client);
+        my $db_helper = BOM::CTC::Database->new();
+
+        #deposit amount to a new address
+        my ($deposit_id, $address) = $helper->get_deposit_id_and_address();
+        BOM::Test::Helper::CTC::set_pending($address, $currency_code, $amount, $transaction_hash);
+        $db_helper->set_deposit_confirmed($deposit_id, $deposit_id, $amount, $transaction_hash);
+
+        my @pending_sweep_deposits = $db_helper->get_addresses_pending_sweep($currency_code)->@*;
+        is scalar(@pending_sweep_deposits), 1, "correct no of pending sweep deposits after deposit";
+
+        # Check for case when we first send ETH to ERC20 address as fee for the actual transaction. deposit should not be swept now
+        BOM::Event::Actions::CryptoSubscription::_set_deposit_swept({
+            type         => TRANSACTION_TYPE_INTERNAL,
+            from         => $address,
+            currency     => 'ETH',
+            fee_currency => 'ETH'
+        });
+
+        @pending_sweep_deposits = $db_helper->get_addresses_pending_sweep($currency_code)->@*;
+        is scalar(@pending_sweep_deposits), 1, "correct no of pending sweep deposits after eth sent to ERC20 address";
+
+        # Check for case when we receive actual transaction in subscription.
+        BOM::Event::Actions::CryptoSubscription::_set_deposit_swept({
+            type         => TRANSACTION_TYPE_INTERNAL,
+            from         => $address,
+            currency     => $currency_code,
+            fee_currency => 'ETH'
+        });
+
+        @pending_sweep_deposits = $db_helper->get_addresses_pending_sweep($currency_code)->@*;
+        is scalar(@pending_sweep_deposits), 0, "correct no of pending sweep deposits after subscription receives an internal sweep transaction";
+    }
+
+    $mock_eth->unmock_all();
 };
 
 done_testing;

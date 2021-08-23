@@ -44,6 +44,7 @@ sub subscription {
 
     set_pending_transaction($transaction);
     set_transaction_fee($transaction);
+    _set_deposit_swept($transaction);
 }
 
 my $loop = IO::Async::Loop->new;
@@ -537,6 +538,28 @@ sub fraud_address {
 
     return $found;
 
+}
+
+=head2 _set_deposit_swept
+
+Sets a deposit row as swept. Needed for ERC20 based token internal sweep, as the contract may fail in blockchain.
+
+=over 4
+
+=item * C<transaction> - an instance of C<Net::Async::Blockchain::Transaction>
+
+=back
+
+=cut
+
+sub _set_deposit_swept {
+    my $transaction = shift;
+
+    # Return if the transaction is not an ERC20 internal sweep
+    return unless $transaction->{type} eq TRANSACTION_TYPE_INTERNAL && $transaction->{fee_currency} eq 'ETH' && $transaction->{currency} ne 'ETH';
+
+    my $db_helper = BOM::CTC::Database->new();
+    $db_helper->set_deposit_swept([$transaction->{from}], $transaction->{currency});
 }
 
 1;
