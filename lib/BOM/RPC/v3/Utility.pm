@@ -332,8 +332,32 @@ sub check_authorization {
     return;
 }
 
+=head2 is_verification_token_valid
+
+Checks the validity of the verification token.
+Also, deletes the token if it's not a C<dry_run>.
+
+Takes the following parameters:
+
+=over 4
+
+=item * C<$token> - Token to be validated
+
+=item * C<$email> - Email of the client
+
+=item * C<$created_for> - The type that the token is created for
+
+=item * C<$is_dry_run> - [Optional] If true, won't delete the token
+
+=back
+
+Returns a hashref containing C<< { status => 1 } >> if successfully validated.
+Otherwise, an error.
+
+=cut
+
 sub is_verification_token_valid {
-    my ($token, $email, $created_for) = @_;
+    my ($token, $email, $created_for, $is_dry_run) = @_;
 
     my $verification_token = BOM::Platform::Token->new({token => $token});
     my $response           = create_error({
@@ -350,7 +374,7 @@ sub is_verification_token_valid {
     if ($verification_token->email and $verification_token->email eq $email) {
         $response = {status => 1};
     }
-    $verification_token->delete_token;
+    $verification_token->delete_token unless $is_dry_run;
 
     return $response;
 }

@@ -138,6 +138,28 @@ subtest 'Crypto cashier calls' => sub {
         },
         {
             call_name    => 'cashier',
+            call_display => 'cashier: withdraw (dry-run)',
+            args         => {
+                cashier           => 'withdraw',
+                provider          => 'crypto',
+                type              => 'api',
+                address           => 'withdrawal_address',
+                amount            => 1,
+                verification_code => 'verification_code',
+                dry_run           => 1,
+            },
+            api_response => {
+                dry_run => 1,
+            },
+            rpc_response => {
+                action   => 'withdraw',
+                withdraw => {
+                    dry_run => 1,
+                },
+            },
+        },
+        {
+            call_name    => 'cashier',
             call_display => 'cashier: withdraw',
             args         => {
                 cashier           => 'withdraw',

@@ -81,6 +81,8 @@ rpc "cashier", sub {
     my $provider = $args->{provider} // 'doughflow';
     my $type     = $args->{type}     // 'url';
 
+    my $is_dry_run = ($provider eq 'crypto' and $type eq 'api' and $args->{dry_run}) ? 1 : 0;
+
     # this should come before all validation as verification
     # token is mandatory for withdrawal.
     if ($action eq 'withdraw') {
@@ -90,7 +92,7 @@ rpc "cashier", sub {
         if (not $email or $email =~ /\s+/) {
             return $error_sub->(localize("Please provide a valid email address."));
         } elsif ($token) {
-            if (my $err = BOM::RPC::v3::Utility::is_verification_token_valid($token, $email, 'payment_withdraw')->{error}) {
+            if (my $err = BOM::RPC::v3::Utility::is_verification_token_valid($token, $email, 'payment_withdraw', $is_dry_run)->{error}) {
                 return BOM::RPC::v3::Utility::create_error({
                         code              => $err->{code},
                         message_to_client => $err->{message_to_client}});
@@ -131,7 +133,7 @@ rpc "cashier", sub {
         if ($action eq 'deposit') {
             return $crypto_service->deposit($client->loginid);
         } elsif ($action eq 'withdraw') {
-            return $crypto_service->withdraw($client->loginid, $args->{address}, $args->{amount});
+            return $crypto_service->withdraw($client->loginid, $args->{address}, $args->{amount}, $is_dry_run);
         }
     }
 

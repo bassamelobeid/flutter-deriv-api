@@ -132,9 +132,20 @@ Takes the following parameters:
 
 =item * C<$amount> - Withdrawal amount
 
+=item * C<$is_dry_run> - If true, just do the validations
+
 =back
 
-Returns the result of the withdrawal request containing the following keys:
+Returns error if any validation failed.
+On success, returns either the result of the validations (if C<$is_dry_run> was true):
+
+=over 4
+
+=item * C<dry_run> - C<1> validations succeeded
+
+=back
+
+Or the result of withdrawal operation containing the following keys:
 
 =over 4
 
@@ -149,7 +160,7 @@ Returns the result of the withdrawal request containing the following keys:
 =cut
 
 sub withdraw {
-    my ($self, $loginid, $address, $amount) = @_;
+    my ($self, $loginid, $address, $amount, $is_dry_run) = @_;
 
     unless ($address && $amount) {
         return BOM::RPC::v3::Utility::create_error({
@@ -165,6 +176,7 @@ sub withdraw {
             loginid => $loginid,
             address => $address,
             amount  => $amount,
+            dry_run => $is_dry_run,
         });
 
     return $result if $result->{error};
