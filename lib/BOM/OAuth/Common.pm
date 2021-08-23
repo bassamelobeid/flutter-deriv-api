@@ -213,49 +213,145 @@ sub is_social_login_suspended {
 =head2 failed_login_attempt
 
 Called for failed manual login attempt.
+
 Increments redis counts and may set a blocking flag.
+
+It takes the following arguments:
+
+=over 4
+
+=item * C<$c> - a controller instance
+
+=item * C<$user> - (optional) a L<BOM::User> instance
+
+=back
+
+Returns C<undef>.
 
 =cut
 
 sub failed_login_attempt {
-    my $c = shift;
+    my ($c, $user) = @_;
 
     stats_inc('login.authorizer.login_failed');
 
     # Something went wrong - most probably login failure. Innocent enough in isolation;
     # if we see a pattern of failures from the same address, we would want to discourage
     # further attempts.
-    my $ip = $c->stash('request')->client_ip;
-    if ($ip) {
-        try {
-            my $redis = BOM::Config::Redis::redis_auth_write();
-            my $k     = 'oauth::failure_count_by_ip::' . $ip;
-            if ($redis->incr($k) > BLOCK_TRIGGER_COUNT) {
-                # Note that we don't actively delete the failure count here, since we expect
-                # it to expire before the block does. If it doesn't... well, this only applies
-                # on failed login attempt, if you get the password right first time after the
-                # block then you're home free.
-
-                my $ttl = $redis->get('oauth::backoff_by_ip::' . $ip);
-                $ttl = min(BLOCK_MAX_DURATION, $ttl ? $ttl * 2 : BLOCK_MIN_DURATION);
-
-                # Record our new TTL (hangs around for a day, which we expect to be sufficient
-                # to slow down offenders enough that we no longer have to be particularly concerned),
-                # and also apply the block at this stage.
-                $redis->set('oauth::backoff_by_ip::' . $ip, $ttl, EX => BLOCK_TTL_RESET_AFTER);
-                $redis->set('oauth::blocked_by_ip::' . $ip, 1,    EX => $ttl);
-                stats_inc('login.authorizer.block.add');
-            } else {
-                # Extend expiry every time there's a failure
-                $redis->expire($k, BLOCK_TRIGGER_WINDOW);
-                stats_inc('login.authorizer.block.fail');
-            }
-        } catch ($err) {
-            $log->errorf('Failure encountered while handling Redis blocklists for failed login: %s', $err);
-            stats_inc('login.authorizer.block.error');
-        }
+    if (my $ip = $c->stash('request')->client_ip) {
+        failed_login_by_ip($ip);
     }
 
+    # Applies the same treatment to ip, but to the specific user if given.
+    # Most probably due to totp failure.
+    if ($user) {
+        failed_login_by_user($user);
+    }
+
+    return undef;
+}
+
+=head2 failed_login_by_user
+
+Applies the login failure punishment by user.
+
+Takes the following arguments:
+
+=over 4
+
+=item * C<$user> - the offending L<BOM::User> instance.
+
+=back
+
+Returns C<undef>.
+
+=cut
+
+sub failed_login_by_user {
+    my $user = shift;
+
+    _block_counter_by('user', $user->id);
+
+    return undef;
+}
+
+=head2 failed_login_by_ip
+
+Applies the login failure punishment by ip address.
+
+Takes the following arguments:
+
+=over 4
+
+=item * C<$ip> - the offending ip address.
+
+=back
+
+Returns C<undef>.
+
+=cut
+
+sub failed_login_by_ip {
+    my $ip = shift;
+
+    _block_counter_by('ip', $ip);
+
+    return undef;
+}
+
+=head2 _block_counter_by
+
+Handles the login attempts counter in Redis.
+
+It takes the following arguments:
+
+=over 4
+
+=item * C<$key> - what we are about to block, either 'ip' or 'user'.
+
+=item * C<$identifier> - the ip or user id we are about to block.
+
+=back
+
+Returns C<undef>.
+
+=cut
+
+sub _block_counter_by {
+    my ($key, $identifier) = @_;
+
+    try {
+        my $redis       = BOM::Config::Redis::redis_auth_write();
+        my $counter_key = 'oauth::failure_count_by_' . $key . '::' . $identifier;
+        my $backoff_key = 'oauth::backoff_by_' . $key . '::' . $identifier;
+        my $blocked_key = 'oauth::blocked_by_' . $key . '::' . $identifier;
+
+        if ($redis->incr($counter_key) > BLOCK_TRIGGER_COUNT) {
+            # Note that we don't actively delete the failure count here, since we expect
+            # it to expire before the block does. If it doesn't... well, this only applies
+            # on failed login attempt, if you get the password right first time after the
+            # block then you're home free.
+
+            my $ttl = $redis->get($backoff_key);
+            $ttl = min(BLOCK_MAX_DURATION, $ttl ? $ttl * 2 : BLOCK_MIN_DURATION);
+
+            # Record our new TTL (hangs around for a day, which we expect to be sufficient
+            # to slow down offenders enough that we no longer have to be particularly concerned),
+            # and also apply the block at this stage.
+            $redis->set($backoff_key, $ttl, EX => BLOCK_TTL_RESET_AFTER);
+            $redis->set($blocked_key, 1,    EX => $ttl);
+            stats_inc('login.authorizer.block.add');
+        } else {
+            # Extend expiry every time there's a failure
+            $redis->expire($counter_key, BLOCK_TRIGGER_WINDOW);
+            stats_inc('login.authorizer.block.fail');
+        }
+    } catch ($err) {
+        $log->errorf('Failure encountered while handling Redis blocklists for failed login: %s', $err);
+        stats_inc('login.authorizer.block.error');
+    }
+
+    return undef;
 }
 
 sub get_email_by_provider {

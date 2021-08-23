@@ -83,7 +83,11 @@ my $config = {
         INVALID_REDIRECTION       => "Destination app id can't be source app id.",
         INVALID_SCOPES            => "Redirection failed to the requested app.",
         INVALID_URL_PARAMS        => "The provided parameters are invalid.",
-        TOO_MANY_PARAMETERS       => "Too Many Parameters are provided."
+        TOO_MANY_PARAMETERS       => "Too Many Parameters are provided.",
+        TOO_MANY_ATTEMPTS         => 'Sorry, you have already had too many unsuccessful attempts. Please try again in 5 minutes.',
+    },
+    api_error_mappings => {
+        LoginTooManyAttempts => 'TOO_MANY_ATTEMPTS',
     }};
 
 =head2 get_message_mapping
@@ -103,7 +107,15 @@ Return messages mapping for Api errors
 =cut
 
 sub get_api_errors_mapping {
-    return $config->{api_errors};
+    my $errors   = $config->{api_errors};
+    my $mappings = $config->{api_error_mappings};
+
+    for (keys $mappings->%*) {
+        my $error_code = $mappings->{$_};
+        $errors->{$_} = $errors->{$error_code};
+    }
+
+    return $errors;
 }
 
 =head2 get_valid_device_types

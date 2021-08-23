@@ -94,7 +94,6 @@ sub authorize {
         $c->session('_loginid',      $client->loginid);
         $c->session('_self_closed',  $login->{login_result}->{self_closed});
     } elsif ($c->req->method eq 'POST' and $c->session('_is_logged_in')) {
-
         # Get loginid from Mojo Session
         $clients = $c->_get_client($app_id);
         $client  = $clients->[0];
@@ -161,6 +160,13 @@ sub authorize {
 
     my $user = $client->user or die "no user for email " . $client->email;
 
+    # Let's check the block counter
+    if ($redis->get('oauth::blocked_by_user::' . $user->id)) {
+        stats_inc('login.authorizer.block.hit');
+        $template_params{error} = localize(get_message_mapping()->{SUSPICIOUS_BLOCKED});
+        return $c->render(%template_params);
+    }
+
     my $is_verified = $c->session('_otp_verified') // 0;
     my $otp_error   = '';
     # If the User has provided OTP, verify it
@@ -173,7 +179,7 @@ sub authorize {
         $c->session('_otp_verified', $is_verified);
         $otp_error = localize(get_message_mapping->{TFA_FAILURE});
         _stats_inc_error($brand_name, "TFA_FAILURE");
-        BOM::OAuth::Common::failed_login_attempt($c) unless $is_verified;
+        BOM::OAuth::Common::failed_login_attempt($c, $user) unless $is_verified;
     }
 
     # Check if user has enabled 2FA authentication and this is not a scope request

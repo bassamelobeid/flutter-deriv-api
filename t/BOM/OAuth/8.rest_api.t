@@ -371,6 +371,22 @@ subtest 'login' => sub {
                 Authorization => "Bearer $jwt_token",
             })->status_is(400)->json_is('/error_code', 'INVALID_PASSWORD');
 
+        note 'Blocked user';
+        $block_redis_key = 'oauth::blocked_by_user::' . $sytem_user->id;
+        $redis->set($block_redis_key, 1);
+        $post->(
+            $login_url,
+            {
+                app_id   => $app_id,
+                type     => $login_type,
+                email    => $system_user_email,
+                password => $password
+            },
+            {
+                Authorization => "Bearer $jwt_token",
+            })->status_is(429)->json_is('/error_code', 'SUSPICIOUS_BLOCKED');
+        $redis->del($block_redis_key);
+
         note "Successful Login";
         $post->(
             $login_url,
@@ -401,6 +417,8 @@ subtest 'login' => sub {
             })->status_is(400)->json_is('/error_code', 'MISSING_ONE_TIME_PASSWORD');
 
         note "Wrong ONE TIME PASSWORD";
+        $redis->del('oauth::failure_count_by_user::' . $sytem_user->id);
+        $redis->del('oauth::failure_count_by_ip::127.0.0.1');
         $post->(
             $login_url,
             {
@@ -413,6 +431,9 @@ subtest 'login' => sub {
             {
                 Authorization => "Bearer $jwt_token",
             })->status_is(400)->json_is('/error_code', 'TFA_FAILURE');
+
+        is $redis->get('oauth::failure_count_by_user::' . $sytem_user->id), 1, 'Failure counter by user is incremented';
+        is $redis->get('oauth::failure_count_by_ip::127.0.0.1'), 1, 'Failure counter by ip is incremented';
 
         note "Successful Login with ONE TIME PASSWORD";
         $post->(
@@ -542,6 +563,8 @@ subtest 'login' => sub {
         ok $redis->ttl('ONE::ALL::TEMP::true') <= 600, 'OneAll cache expiration is 600 seconds';
 
         note "Wrong ONE TIME PASSWORD";
+        $redis->del('oauth::failure_count_by_user::' . $social_user->id);
+        $redis->del('oauth::failure_count_by_ip::127.0.0.1');
         $oneall_hit = 0;
         $post->(
             $login_url,
@@ -554,6 +577,8 @@ subtest 'login' => sub {
             {
                 Authorization => "Bearer $jwt_token",
             })->status_is(400)->json_is('/error_code', 'TFA_FAILURE');
+        is $redis->get('oauth::failure_count_by_user::' . $social_user->id), 1, 'Failure counter by user is incremented';
+        is $redis->get('oauth::failure_count_by_ip::127.0.0.1'), 1, 'Failure counter by ip is incremented';
 
         ok !$oneall_hit, 'OneAll API was skipped';
         ok $redis->get('ONE::ALL::TEMP::true'), 'OneAll response is still cached';
@@ -798,6 +823,24 @@ subtest 'pta_login' => sub {
             Authorization => "Bearer $jwt_token",
         })->status_is(400)->json_is('/error_code', 'INVALID_URL_PARAMS');
 
+    note "Blocked user";
+    $block_redis_key = 'oauth::blocked_by_user::' . $sytem_user->id;
+    $redis->set($block_redis_key, 1);
+    $post->(
+        $pta_login_url,
+        {
+            app_id        => $destination_app_id,
+            refresh_token => $refresh_token,
+            url_params    => {
+                "action"             => "open_cashier_page",
+                "alpha_numeric_only" => 'OK'
+            }
+        },
+        {
+            Authorization => "Bearer $jwt_token",
+        })->status_is(429)->json_is('/error_code', 'SUSPICIOUS_BLOCKED');
+    $redis->del($block_redis_key);
+
     $post->(
         $pta_login_url,
         {
@@ -866,13 +909,66 @@ subtest 'one_time_token' => sub {
     my $one_time_token          = $response->{one_time_token};
     my $one_time_token_endpoint = "$pta_login_url/$one_time_token";
 
-    my $client_ip = $raw_response->tx->original_remote_address;
+    note "Blocked client ip";
+    my $block_redis_key = "oauth::blocked_by_ip::127.0.0.1";
+    $redis->set($block_redis_key, 1);
+    warning_like {
+        $t->get_ok($one_time_token_endpoint)->status_is(429)->json_is('/error_code', 'SUSPICIOUS_BLOCKED');
+    }
+    qr /domain/;
+    $redis->del($block_redis_key);
+
+    $block_redis_key = 'oauth::blocked_by_user::' . $sytem_user->id;
+    $redis->set($block_redis_key, 1);
+    warning_like {
+        $t->get_ok($one_time_token_endpoint)->status_is(429)->json_is('/error_code', 'SUSPICIOUS_BLOCKED');
+    }
+    qr /domain/;
+    $redis->del($block_redis_key);
 
     warning_like {
         $t->get_ok($one_time_token_endpoint)->status_is(302);
     }
     qr/domain/;
+};
 
+subtest 'Too many attempts' => sub {
+    my $response = $post->('/api/v1/verify', {app_id => $app_id})->status_is(200)->json_has('/challenge', 'Response has a challenge')
+        ->json_has('/expire', 'Response has an expire')->tx->res->json;
+
+    $challenge = $response->{challenge};
+    $expire    = $response->{expire};
+
+    my $solution  = hmac_sha256_hex($challenge, 'tok3n');
+    my $user_mock = Test::MockModule->new('BOM::User');
+    $user_mock->mock(
+        'login',
+        {
+            return {
+                error_code => 'LoginTooManyAttempts',
+            }});
+
+    $post->(
+        '/api/v1/authorize',
+        {
+            app_id   => $app_id,
+            expire   => $expire,
+            solution => $solution
+        })->status_is(200);
+
+    $post->(
+        '/api/v1/login',
+        {
+            app_id   => $app_id,
+            type     => 'system',
+            email    => $system_user_email,
+            password => ''
+        },
+        {
+            Authorization => "Bearer $jwt_token",
+        }
+    )->status_is(400)->json_is('/error_code', 'TOO_MANY_ATTEMPTS')
+        ->json_is('/message', 'Sorry, you have already had too many unsuccessful attempts. Please try again in 5 minutes.');
 };
 
 $api_mock->unmock_all;

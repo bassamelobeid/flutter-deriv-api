@@ -355,6 +355,11 @@ sub pta_login {
         return $c->_make_error('INVALID_REFRESH_TOKEN', 401);
     }
 
+    if ($redis->get('oauth::blocked_by_user::' . $record->{binary_user_id})) {
+        stats_inc('login.authorizer.block.hit');
+        return $c->_make_error('SUSPICIOUS_BLOCKED', 429);
+    }
+
     my $source_app = {id => $payload->{app}};
     return $c->_make_error('INVALID_APP_ID', 400) if $source_app->{id} != $record->{app_id};
 
@@ -427,7 +432,7 @@ sub one_time_token {
     my $ip    = $r->client_ip // '';
     if ($ip && $redis->get("oauth::blocked_by_ip::$ip")) {
         stats_inc('login.authorizer.block.hit');
-        return $c->_make_login_error('SUSPICIOUS_BLOCKED');
+        return $c->_make_error('SUSPICIOUS_BLOCKED', 429);
     }
 
     my $token   = $c->param('one_time_token');
@@ -478,6 +483,11 @@ sub one_time_token {
     my $clients = $login->{clients};
     my $client  = $clients->[0];
     return $c->_make_login_error('NO_USER_IDENTITY', $destination_app_id) unless $client;
+
+    if ($redis->get('oauth::blocked_by_user::' . $client->user->id)) {
+        stats_inc('login.authorizer.block.hit');
+        return $c->_make_error('SUSPICIOUS_BLOCKED', 429);
+    }
 
     # create token per all loginids
     my @url_tokens_params;
@@ -542,7 +552,20 @@ sub _perform_system_login {
             code => $err,
         };
     }
-    _verify_otp($result->{user}, defang($c->req->json->{one_time_password}));
+
+    my $redis = BOM::Config::Redis::redis_auth_write;
+    my $user  = $result->{user};
+
+    if ($redis->get('oauth::blocked_by_user::' . $user->id)) {
+        stats_inc('login.authorizer.block.hit');
+
+        die +{
+            code   => "SUSPICIOUS_BLOCKED",
+            status => 429,
+        };
+    }
+
+    _verify_otp($c, $user, defang($c->req->json->{one_time_password}));
 
     return $result;
 }
@@ -626,6 +649,17 @@ sub _perform_social_login {
 
         my $user_providers = $user_connect->get_connects_by_user_id($user->{id});
         die +{code => "INVALID_PROVIDER"} if defined $user_providers->[0] and $provider_name ne $user_providers->[0];
+
+        my $redis = BOM::Config::Redis::redis_auth_write;
+
+        if ($redis->get('oauth::blocked_by_user::' . $user->id)) {
+            stats_inc('login.authorizer.block.hit');
+
+            die +{
+                code   => "SUSPICIOUS_BLOCKED",
+                status => 429,
+            };
+        }
     } else {
         my $residence = $c->stash('request')->country_code;
 
@@ -711,7 +745,7 @@ sub _perform_social_login {
             app            => $app,
             oneall_user_id => $user->{id}});
 
-    _verify_otp($result->{user}, defang($c->req->json->{one_time_password}));
+    _verify_otp($c, $result->{user}, defang($c->req->json->{one_time_password}));
 
     $redis->del(ONE_ALL_TEMP_KEY . $connection_token);
 
@@ -764,25 +798,32 @@ Checks if OTP is enabled and validates the OTP
 
 =over 4
 
-=item * C<$user> User object
+=item * C<$c> - the current controller object
 
-=item * C<$otp> One Time Password
+=item * C<$user> - User object
+
+=item * C<$otp> - One Time Password
 
 =back
 
 =cut
 
 sub _verify_otp {
-    my ($user, $otp) = @_;
+    my ($c, $user, $otp) = @_;
     if ($user->{is_totp_enabled}) {
         die +{
             code   => 'MISSING_ONE_TIME_PASSWORD',
             status => 400
         } unless $otp;
-        die +{
-            code   => 'TFA_FAILURE',
-            status => 400
-        } unless BOM::User::TOTP->verify_totp($user->{secret_key}, $otp);
+
+        unless (BOM::User::TOTP->verify_totp($user->{secret_key}, $otp)) {
+            BOM::OAuth::Common::failed_login_attempt($c, $user);
+
+            die +{
+                code   => 'TFA_FAILURE',
+                status => 400
+            };
+        }
     }
 }
 
