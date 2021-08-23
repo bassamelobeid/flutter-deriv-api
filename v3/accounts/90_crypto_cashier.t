@@ -69,6 +69,23 @@ subtest 'Crypto cashier calls' => sub {
     $rpc_response = {
         action   => 'withdraw',
         withdraw => {
+            dry_run => 1,
+        },
+    };
+    $ws_response = $t->await::cashier({
+        cashier  => 'withdraw',
+        provider => 'crypto',
+        type     => 'api',
+        address  => 'sample_withdrawal_address',
+        amount   => 0.005,
+        dry_run  => 1,
+    });
+    test_schema(cashier => $ws_response);
+    cmp_deeply $ws_response->{cashier}, $rpc_response, 'Expected response for cashier:withdraw (dry-run) received';
+
+    $rpc_response = {
+        action   => 'withdraw',
+        withdraw => {
             id             => 123,
             status_code    => 'LOCKED',
             status_message => 'sample status message',
