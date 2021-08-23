@@ -38,7 +38,9 @@ use Sys::Hostname;
 use DataDog::DogStatsd::Helper qw(stats_gauge);
 
 use Log::Any qw($log);
-use Log::Any::Adapter qw(Stdout), log_level => 'info';
+use Log::Any::Adapter qw(DERIV),
+    stderr    => 'json',
+    log_level => 'info';
 
 use Getopt::Long qw(GetOptions);
 

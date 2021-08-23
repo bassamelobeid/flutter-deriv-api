@@ -3,6 +3,7 @@
 use strict;
 use warnings;
 use BOM::Platform::Webhook;
+use Log::Any::Adapter qw(DERIV), stderr => 'json', log_level => $ENV{WEBHOOK_LOG_LEVEL} // 'info';
 
 =head2 binary_webhook
 

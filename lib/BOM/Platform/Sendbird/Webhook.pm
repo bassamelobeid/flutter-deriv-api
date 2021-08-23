@@ -2,7 +2,6 @@ package BOM::Platform::Sendbird::Webhook;
 
 use strict;
 use warnings;
-use Log::Any::Adapter qw(Stderr), log_level => $ENV{SENDBIRD_LOG_LEVEL} // 'info';
 use BOM::Platform::Sendbird::Webhook::Collector;
 use Log::Any qw($log);
 

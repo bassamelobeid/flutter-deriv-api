@@ -3,7 +3,6 @@ package BOM::Platform::Sendbird::Webhook::Collector;
 use strict;
 use warnings;
 use Log::Any qw($log);
-use Log::Any::Adapter qw(Stderr), log_level => $ENV{SENDBIRD_LOG_LEVEL} // 'info';
 use Syntax::Keyword::Try;
 use Digest::HMAC;
 use Digest::SHA qw(hmac_sha256_hex);

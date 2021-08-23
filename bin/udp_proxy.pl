@@ -38,7 +38,11 @@ die "Missing --sendto parameter, try --help\n" unless $udp_sendto;
 =cut
 
 require Log::Any::Adapter;
-Log::Any::Adapter->import(qw(Stderr), log_level => $log_level);
+Log::Any::Adapter->import(
+    qw(DERIV),
+    stderr    => 'json',
+    log_level => $log_level
+);
 
 $0 = "udp_proxy";
 

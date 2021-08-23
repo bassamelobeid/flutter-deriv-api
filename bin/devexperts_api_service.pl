@@ -36,7 +36,11 @@ GetOptions(
 path($pid_file)->spew("$$") if $pid_file;
 
 $log_level //= 'info';
-Log::Any::Adapter->import('Stderr', log_level => $log_level);
+Log::Any::Adapter->import(
+    'DERIV',
+    stderr    => 'json',
+    log_level => $log_level
+);
 
 my $config = YAML::XS::LoadFile('/etc/rmg/devexperts.yml');
 

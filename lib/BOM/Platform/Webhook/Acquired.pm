@@ -3,7 +3,6 @@ package BOM::Platform::Webhook::Acquired;
 use strict;
 use warnings;
 use Log::Any qw($log);
-use Log::Any::Adapter qw(Stderr), log_level => $ENV{ACQUIRED_LOG_LEVEL} // 'info';
 use Syntax::Keyword::Try;
 use Digest::SHA qw(sha256_hex);
 use BOM::Config;

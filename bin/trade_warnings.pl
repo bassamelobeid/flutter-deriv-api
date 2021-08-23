@@ -14,7 +14,11 @@ GetOptions(
 ) or die "Usage: $0 --pid-file=/tmp/$0.pid --log=<log_level>\n";
 
 require Log::Any::Adapter;
-Log::Any::Adapter->import(qw(Stderr), log_level => $log_level);
+Log::Any::Adapter->import(
+    qw(DERIV),
+    stderr    => 'json',
+    log_level => $log_level
+);
 
 if ($pid_file) {
     $pid_file = Path::Tiny->new($pid_file);

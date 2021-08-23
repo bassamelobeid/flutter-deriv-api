@@ -2,7 +2,6 @@ package BOM::Platform::Webhook;
 
 use strict;
 use warnings;
-use Log::Any::Adapter qw(Stderr), log_level => $ENV{WEBHOOK_LOG_LEVEL} // 'info';
 use BOM::Platform::Webhook::Acquired;
 use BOM::Platform::Webhook::ISignThis;
 use Log::Any qw($log);
