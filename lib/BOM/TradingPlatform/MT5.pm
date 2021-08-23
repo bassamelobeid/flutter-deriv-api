@@ -104,7 +104,7 @@ sub change_password {
 
     my ($successful_logins, $failed_logins) = $result->@{qw/successful_logins failed_logins/};
 
-    if ($successful_logins and not defined $failed_logins) {
+    if (not defined $failed_logins) {
         $self->client->user->update_trading_password($password);
     }
 
