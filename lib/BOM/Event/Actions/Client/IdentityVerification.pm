@@ -17,27 +17,38 @@ Provides handlers for ID verification events
 use Brands::Countries;
 use Crypt::OpenSSL::RSA;
 use Data::UUID;
+use Date::Utility;
 use Digest::SHA qw( sha256_hex );
 use Future::AsyncAwait;
 use IO::Async::Loop;
 use JSON::MaybeUTF8 qw( decode_json_utf8  encode_json_utf8 );
 use Log::Any qw( $log );
 use MIME::Base64 qw( decode_base64  encode_base64 );
+use Scalar::Util qw( blessed );
 use Syntax::Keyword::Try;
+use Text::Trim;
 
 use BOM::Event::Services;
 use BOM::Event::Utility qw( exception_logged );
 use BOM::Platform::Context qw( request );
+use BOM::User::IdentityVerification;
 use BOM::User::Client;
+
+use Brands::Countries;
 
 use constant TRIGGER_MAP => {
     smile_identity => \&_trigger_smile_identity,
 };
 
+use constant TRANSFORMER_MAP => {
+    smile_identity => \&_transform_smile_identity_response,
+};
+
 use constant RESULT_STATUS => {
-    pass => 'pass',
-    fail => 'fail',
-    n_a  => 'unavailable',
+    pass   => 'verified',
+    fail   => 'failed',
+    reject => 'refuted',
+    n_a    => 'unavailable',
 };
 
 my $loop = IO::Async::Loop->new;
@@ -71,43 +82,112 @@ Returns undef.
 
 async sub verify_identity {
     my $args = shift;
-    # test_result is for QA testing and will remove in next changes
-    my ($test_result, $loginid) = @{$args}{qw/test_result loginid/};
+
+    my ($loginid) = @{$args}{qw/loginid/};
 
     my $client = BOM::User::Client->new({loginid => $loginid})
         or die 'Could not instantiate client for login ID: ' . $loginid;
 
-    return undef
-        if $client->status->allow_document_upload
-        or $client->status->age_verification;
+    my $idv_model = BOM::User::IdentityVerification->new(user_id => $client->binary_user_id);
 
-    my $provider = _get_provider($client);
+    die sprintf("No submissions left, IDV request has ignored for loginid: %s", $client->loginid) unless $idv_model->submissions_left($client);
+
+    my $document = $idv_model->get_standby_document();
+
+    die 'No standby document found.' unless $document;
+
+    my $provider = _get_provider($client, $document);
+
+    return undef if $provider eq 'onfido';
 
     die "Could not perform triggering, the function for provider $provider not found."
         unless exists TRIGGER_MAP->{$provider};
 
     try {
         $log->debugf('Start triggering identity verification service (%s) for loginID %s', $provider, $loginid);
-        my $result = await TRIGGER_MAP->{$provider}($client, $test_result) // undef;
 
-        if ($result eq RESULT_STATUS->{n_a}) {
-            # Identity verification status in unknown
-            warn 'Identity is unknown.';
-            return undef;
-        }
+        $idv_model->incr_submissions();
 
-        my ($status, $payload) = $result;
+        my @result = await TRIGGER_MAP->{$provider}(
+            $client,
+            $document,
+            sub {
+                my $request_body = shift;
 
-        $payload = $payload;    # for pass the strict unused variable checker
+                $idv_model->update_document_check({
+                    document_id  => $document->{id},
+                    status       => 'pending',
+                    messages     => ['VERIFICATION_STARTED'],
+                    provider     => $provider,
+                    request_body => $request_body
+                });
+            }) // undef;
+
+        my ($status, $response_hash, $message) = @result;
+
+        my $transformed_resp = $response_hash;
+        $transformed_resp = TRANSFORMER_MAP->{$provider}($response_hash) if exists TRANSFORMER_MAP->{$provider};
 
         if ($status eq RESULT_STATUS->{pass}) {
-            # Identity has been verified, perform required steps
-            warn 'Identity is verified.';
-        }
+            my $rule_engine = BOM::Rules::Engine->new(
+                client          => $client,
+                residence       => $client->residence,
+                stop_on_failure => 0
+            );
 
-        if ($status eq RESULT_STATUS->{fail}) {
-            # Identity has not verified
-            warn 'Identity is not verified.';
+            my $rules_result = $rule_engine->verify_action('identity_verification', +{result => $transformed_resp});
+
+            unless ($rules_result->has_failure) {
+                $client->status->clear_poi_name_mismatch;
+
+                BOM::Event::Actions::Common::set_age_verification($client, $provider);
+
+                $idv_model->update_document_check({
+                    document_id   => $document->{id},
+                    status        => $status,
+                    provider      => $provider,
+                    response_body => encode_json_utf8 $response_hash
+                });
+
+            } else {
+                my @messages = ();
+
+                if (exists $rules_result->errors->{NameMismatch}) {
+                    push @messages, "NAME_MISMATCH";
+
+                    $client->status->setnx('poi_name_mismatch', 'system', "Client's name doesn't match with provided name by $provider");
+                }
+
+                if (exists $rules_result->errors->{UnderAge}) {
+                    push @messages, 'UNDERAGE';
+
+                    BOM::Event::Actions::Common::handle_under_age_client($client, $provider, $transformed_resp->{date_of_birth});
+                }
+
+                if (exists $rules_result->errors->{DobMismatch}) {
+                    push @messages, 'DOB_MISMATCH';
+
+                    $client->status->clear_age_verification;
+                }
+
+                $idv_model->update_document_check({
+                    document_id   => $document->{id},
+                    status        => 'refuted',
+                    messages      => \@messages,
+                    provider      => $provider,
+                    response_body => encode_json_utf8 $response_hash
+                });
+            }
+        } else {
+            $idv_model->update_document_check({
+                document_id   => $document->{id},
+                status        => 'failed',
+                messages      => [$message],
+                provider      => $provider,
+                response_body => encode_json_utf8 $response_hash
+            });
+
+            die $message;
         }
     } catch ($e) {
         $log->errorf('An error occurred while triggering IDV provider due to %s', $e);
@@ -136,14 +216,7 @@ Returns bool.
 =cut
 
 async sub _trigger_smile_identity {
-    my ($client, $test_result) = @_;
-
-    my %verification_status_map = (
-        'Verified'           => 'pass',
-        'Not Verified'       => 'fail',
-        'Issuer Unavailable' => 'unavailable',
-        'N/A'                => 'unavailable',
-    );
+    my ($client, $document, $before_request_hook) = @_;
 
     my $config = BOM::Config::third_party()->{smile_identity};
 
@@ -153,79 +226,135 @@ async sub _trigger_smile_identity {
 
     my $ts = time;
 
-    my $residence = uc 'ke';
-    my $id_number = '0000000' . $test_result;    # FIXME: get id number from db
-    my $id_type   = 'NATIONAL_ID';               # FIXME: get id type from db
+    my $country   = uc $document->{issuing_country};
+    my $id_number = $document->{document_number};
+    my $id_type   = uc $document->{document_type};
 
-    my $job_type = 5;                            # based on Smile Identity documentation
+    my $job_type = 5;                               # based on Smile Identity documentation
     my $job_id   = Data::UUID->new->create_str();
 
-    my $req_body = {
+    my $dob = eval { Date::Utility->new(_extract_data($client, 'date_of_birth'))->date_yyyymmdd };
+
+    my $req_body = encode_json_utf8 {
         partner_id     => "$partner_id",
         sec_key        => _generate_smile_identity_secret_key($api_key, $partner_id, $ts),
         timestamp      => $ts,
-        country        => $residence,
+        country        => $country,
         id_type        => $id_type,
         id_number      => $id_number,
         first_name     => _extract_data($client, 'first_name'),
         last_name      => _extract_data($client, 'last_name'),
+        dob            => Date::Utility->new(_extract_data($client, 'date_of_birth'))->date_yyyymmdd,
         partner_params => {
             job_type => $job_type,
             job_id   => $job_id,
-            #user_id  => encode_base64(join '-', $id_number, $id_type, $residence),
-            user_id => encode_base64($client->loginid),    # the danger of loginid exposure to third-party services
+            user_id  => trim(encode_base64($client->loginid)),
         },
 
-        #dob            => _extract_data($client, 'date_of_birth'), // required format is YYYY-MM-DD | it is optional field so we ignore it for now.
-        #phone_number   => _extract_data($client, 'phone_number'), // It's optional field, we ignore it
+        $dob ? (dob => $dob) : undef,
     };
 
-    my $res = undef;
+    my $response         = undef;
+    my $decoded_response = undef;
+    my $status           = undef;
+    my $status_message   = '';
 
-    _http()->POST("$api_base_url/id_verification", encode_json_utf8($req_body), (content_type => 'application/json'))->on_fail(
-        sub {
-            my ($err, undef, $payload) = @_;
-            my $resp = eval { decode_json_utf8 $payload->content } // {};
+    $before_request_hook->($req_body);
 
-            $log->errorf(
+    my $url = "$api_base_url/id_verification";
+
+    $log->tracef("SmileIdentitiy verify: POST %s %s", $url, $req_body);
+
+    try {
+        $response = (await _http()->POST($url, $req_body, (content_type => 'application/json')))->content;
+
+        $decoded_response = eval { decode_json_utf8 $response };
+
+        ($status, $status_message) = _handle_smile_identity_response($decoded_response);
+    } catch ($e) {
+        if (blessed($e) and $e->isa('Future::Exception')) {
+            my ($payload) = $e->details;
+            $response = $payload->content;
+
+            $decoded_response = eval { decode_json_utf8 $response } // {};
+
+            $status         = RESULT_STATUS->{fail};
+            $status_message = sprintf(
                 "SmileIdentity respond an error to our request with code: %s, message: %s - %s",
-                $resp->{code} // 'UNKNOWN',
-                $err, $resp->{error} // 'UNKNOWN'
+                $decoded_response->{code} // 'UNKNOWN',
+                $e->message, $decoded_response->{error} // 'UNKNOWN'
             );
 
-            return RESULT_STATUS->{fail};
-
+            $status_message = $log->error($status_message);
         }
-    )->on_done(
-        sub {
-            $res = eval { decode_json_utf8 shift->content };
+    }
 
-            unless ($res) {
-                $log->errorf("SmileIdentity response is not a valid JSON.");
+    return ($status, $decoded_response, $status_message);
+}
 
-                return RESULT_STATUS->{fail};
+=head2 _handle_smile_identity_response
+
+Handle the response of smile_identity api
+
+=over 4
+
+=item * C<$response_hash> - A hashref of response
+
+=back
+
+Returns an array contains status and message.
+
+=cut
+
+sub _handle_smile_identity_response {
+    my $response_hash = shift;
+
+    my %verification_status_map = (
+        'Verified'           => 'pass',
+        'Not Verified'       => 'fail',
+        'Issuer Unavailable' => 'unavailable',
+        'N/A'                => 'unavailable',
+    );
+
+    my ($status, $status_message);
+
+    unless ($response_hash) {
+        $status         = RESULT_STATUS->{fail};
+        $status_message = $log->errorf("SmileIdentity response is not a valid JSON.");
+        return ($status, $status_message);
+    } else {
+        my $verify_status = $response_hash->{Actions}->{Verify_ID_Number} // 'unavailable';
+
+        unless (exists $verification_status_map{$verify_status}) {
+            $status         = RESULT_STATUS->{n_a};
+            $status_message = 'The verification status was empty, rejected for lack of information.';
+            return ($status, $status_message);
+        }
+
+        if ($verification_status_map{$verify_status} eq 'unavailable') {
+            $status = RESULT_STATUS->{n_a};
+            $status_message = sprintf 'The verification status is not available, provider says: %s', $verify_status;
+            return ($status, $status_message);
+        }
+
+        my $personal_info_returned = $response_hash->{Actions}->{Return_Personal_Info} eq 'Returned';
+        if ($verification_status_map{$verify_status} eq 'pass') {
+            if ($personal_info_returned) {
+                $status = RESULT_STATUS->{pass};
+            } else {
+                $status         = RESULT_STATUS->{n_a};
+                $status_message = 'The verfication is passed but the personal info is unavailable';
             }
-        })->get;
 
-    my $verify_status = $res->{Actions}->{Verify_ID_Number} // 'unavailable';
+            return ($status, $status_message);
+        }
 
-    return RESULT_STATUS->{n_a} unless exists $verification_status_map{$verify_status};
-    return RESULT_STATUS->{n_a} if $verification_status_map{$verify_status} eq 'unavailable';
-
-    my $personal_info_returned = $res->{Actions}->{Return_Personal_Info} eq 'Returned';
-
-    my $payload = undef;
-    $payload = _transform_smile_identity_response($res) if $personal_info_returned;
-
-    if ($verification_status_map{$verify_status} eq 'pass') {
-        return (RESULT_STATUS->{pass}, $payload);
+        if ($verification_status_map{$verify_status} eq 'fail') {
+            $status         = RESULT_STATUS->{reject};
+            $status_message = 'Document has rejected by the provider.';
+            return ($status, $status_message);
+        }
     }
-
-    if ($verification_status_map{$verify_status} eq 'fail') {
-        return (RESULT_STATUS->{fail}, $payload);
-    }
-
-    return undef;
 }
 
 =head2 _get_provider
@@ -244,14 +373,12 @@ Returns string.
 =cut
 
 sub _get_provider {
-    my $client = shift;
-
-    my $residence = $client->residence;    # FIXME: should replace with document issuer country
+    my ($client, $document) = @_;
 
     my $country_configs = Brands::Countries->new();
 
-    return 'onfido' unless $country_configs->is_idv_supported($residence);
-    return $country_configs->get_idv_config($residence)->{provider};
+    return 'onfido' unless $country_configs->is_idv_supported($document->{issuing_country});
+    return $country_configs->get_idv_config($document->{issuing_country})->{provider};
 }
 
 =head2 _generate_smile_identity_secret_key
@@ -275,7 +402,7 @@ Returns token.
 sub _generate_smile_identity_secret_key {
     my ($api_key, $partner_id, $timestamp) = @_;
 
-    return 'dummy' unless BOM::Config::on_production() and $api_key;
+    return 'dummy' unless BOM::Config::on_production() or $api_key;
 
     $partner_id = 0 + $partner_id;
 
@@ -299,11 +426,15 @@ the results consistent for parent handler subroutine.
 =cut
 
 sub _transform_smile_identity_response {
-    my %data = shift->%*;
+    my ($response) = @_;
 
-    $data{date_of_birth} = delete $data{DOB};
+    my $expiration_date = eval { Date::Utility->new($response->{ExpirationDate}) };
 
-    return \%data;
+    return {
+        full_name       => $response->{FullName},
+        date_of_birth   => $response->{DOB},
+        expiration_date => $expiration_date,
+    };
 }
 
 =head2 _extract_data
@@ -318,9 +449,10 @@ sub _extract_data {
     my $func = "_extract_$property";
 
     try {
-        return __PACKAGE__->can($func)->($client) // '';
+        return __PACKAGE__->can($func)->($client) if __PACKAGE__->can($func);
+        return $client->{$property} // $client->$property() // '';
     } catch ($e) {
-        $log->errorf('An error occurred while extracting %s from client %s data.', $property, $client->loginid)
+        $log->errorf('An error occurred while extracting %s from client %s data.', $property, $client->loginid);
     }
 
     return '';

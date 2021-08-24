@@ -82,7 +82,7 @@ $test_sibling->save;
 
 mailbox_clear();
 
-BOM::Event::Actions::Client::_email_client_age_verified($test_client);
+BOM::Event::Actions::Common::_email_client_age_verified($test_client);
 
 my $msg = mailbox_search(subject => qr/Your identity is verified/);
 
@@ -90,7 +90,7 @@ is($msg->{from}, 'no-reply@deriv.com', 'Correct from Address');
 $test_client->status->set('age_verification');
 
 mailbox_clear();
-BOM::Event::Actions::Client::_email_client_age_verified($test_client);
+BOM::Event::Actions::Common::_email_client_age_verified($test_client);
 
 $msg = mailbox_search(subject => qr/Your identity is verified/);
 is($msg, undef, "Didn't send email when already age verified");
@@ -101,7 +101,7 @@ my $test_client_mx = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'MLT',
 });
 
-BOM::Event::Actions::Client::_email_client_age_verified($test_client_mx);
+BOM::Event::Actions::Common::_email_client_age_verified($test_client_mx);
 
 $msg = mailbox_search(subject => qr/Your identity is verified/);
 is($msg, undef, 'No email for non CR account');
@@ -1624,11 +1624,11 @@ subtest 'onfido resubmission' => sub {
         request($req);
 
         $test_client->status->setnx('poi_name_mismatch', 'test', 'test');
-        BOM::Event::Actions::Client::_set_age_verification($test_client);
+        BOM::Event::Actions::Common::set_age_verification($test_client, 'Onfido');
         ok !$test_client->status->age_verification, 'Could not set age verification: poi name mismatch';
 
         $test_client->status->clear_poi_name_mismatch;
-        BOM::Event::Actions::Client::_set_age_verification($test_client);
+        BOM::Event::Actions::Common::set_age_verification($test_client, 'Onfido');
         my $msg = mailbox_search(subject => qr/Your identity is verified/);
         ok $test_client->status->age_verification, 'Client is age verified';
         ok($msg, 'Valid email sent to client for resubmission passed');
@@ -1783,7 +1783,7 @@ subtest 'Overwrite Experian reason' => sub {
         });
 
     # Overwrite the Experian reason
-    BOM::Event::Actions::Client::_set_age_verification($test_client);
+    BOM::Event::Actions::Common::set_age_verification($test_client, 'Onfido');
 
     ok $upsert_called, 'Upsert was called';
     cmp_deeply $test_client->status->_get('age_verification'),
@@ -1797,7 +1797,7 @@ subtest 'Overwrite Experian reason' => sub {
 
     # If the status does not have the Experian reason, don't overwrite it
     $upsert_called = 0;
-    BOM::Event::Actions::Client::_set_age_verification($test_client);
+    BOM::Event::Actions::Common::set_age_verification($test_client, 'Onfido');
 
     ok !$upsert_called, 'Upsert was not called';
     cmp_deeply $test_client->status->_get('age_verification'),
