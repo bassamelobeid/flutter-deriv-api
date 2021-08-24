@@ -274,26 +274,51 @@ subtest 'Final status' => sub {
 
 subtest 'Unsupported country email' => sub {
     my $tests = [{
-            place_of_birth => undef,
-            residence      => 'aq',
-            strings        => [
-                '<p>Place of birth is not set and residence is not supported by Onfido. Please verify the age of the client manually.</p>',
+            selected_country => undef,
+            place_of_birth   => undef,
+            residence        => 'aq',
+            strings          => [
+                '<p>No country specified by user, place of birth is not set and residence is not supported by Onfido. Please verify the age of the client manually.</p>',
+                '<li><b>specified country:</b> not set</li>',
                 '<li><b>place of birth:</b> not set</li>',
                 '<li><b>residence:</b> ' . code2country('aq') . '</li>'
             ],
         },
         {
-            place_of_birth => 'aq',
-            residence      => 'aq',
-            strings        => [
+            selected_country => undef,
+            place_of_birth   => 'aq',
+            residence        => 'aq',
+            strings          => [
                 '<p>Place of birth is not supported by Onfido. Please verify the age of the client manually.</p>',
+                '<li><b>specified country:</b> not set</li>',
                 '<li><b>place of birth:</b> ' . code2country('aq') . '</li>',
                 '<li><b>residence:</b> ' . code2country('aq') . '</li>'
             ],
-        }];
+        },
+        {
+            selected_country => 'aq',
+            place_of_birth   => 'aq',
+            residence        => 'aq',
+            strings          => [
+                '<p>Place of birth is not supported by Onfido. Please verify the age of the client manually.</p>',
+                '<li><b>specified country:</b> ' . code2country('aq') . '</li>',
+                '<li><b>place of birth:</b> ' . code2country('aq') . '</li>',
+                '<li><b>residence:</b> ' . code2country('aq') . '</li>'
+            ]
+        },
+        {
+            selected_country => 'aq',
+            place_of_birth   => 'ir',
+            residence        => 'aq',
+            strings          => [
+                '<p>The specified country by user `aq` is not supported by Onfido. Please verify the age of the client manually.',
+                '<li><b>specified country:</b> ' . code2country('aq') . '</li>',
+                '<li><b>place of birth:</b> ' . code2country('ir') . '</li>',
+                '<li><b>residence:</b> ' . code2country('aq') . '</li>'
+            ]}];
 
     for my $test ($tests->@*) {
-        my ($place_of_birth, $residence, $strings) = @{$test}{qw/place_of_birth residence strings/};
+        my ($selected_country, $place_of_birth, $residence, $strings) = @{$test}{qw/selected_country place_of_birth residence strings/};
 
         $test_client->place_of_birth($place_of_birth);
         $test_client->residence($residence);
@@ -303,7 +328,7 @@ subtest 'Unsupported country email' => sub {
 
         mailbox_clear();
 
-        ok BOM::Event::Actions::Client::_send_email_onfido_unsupported_country_cs($test_client)->get, 'email sent';
+        ok BOM::Event::Actions::Client::_send_email_onfido_unsupported_country_cs($test_client, $selected_country)->get, 'email sent';
 
         my $msg = mailbox_search(subject => qr/Manual age verification needed for/);
 
@@ -440,7 +465,7 @@ subtest 'Upload document' => sub {
         type            => 'passport',
         filename        => '124112412.passport.front.png',
         side            => 'front',
-        issuing_country => 'ATA',
+        issuing_country => 'IRN',
         applicant_id    => 'appl',
         },
         'Expected request for document';
@@ -546,7 +571,7 @@ subtest '_get_onfido_applicant' => sub {
         });
 
     my $tests = [{
-            title  => 'Unsupported country not uploaded by staff',
+            title  => 'Unsupported POB country not uploaded by staff',
             client => {
                 place_of_birth => 'gb',
                 residence      => 'gb',
@@ -570,7 +595,7 @@ subtest '_get_onfido_applicant' => sub {
             result => undef,
         },
         {
-            title  => 'Unsupported country uploaded by staff',
+            title  => 'Unsupported POB country uploaded by staff',
             client => {
                 place_of_birth => 'wa',
                 residence      => 'gb',
@@ -585,6 +610,56 @@ subtest '_get_onfido_applicant' => sub {
                 inc    => {
                     'onfido.unsupported_country' => {
                         tags => ['wa'],
+                    },
+                }
+            },
+            trace => {
+
+            },
+            result => undef,
+        },
+        {
+            title   => 'Unsupported selected country not uploaded by staff',
+            country => 'aq',
+            client  => {
+                place_of_birth => 'gb',
+                residence      => 'gb',
+                email          => 'test8@binary.com',
+                broker_code    => 'MX',
+            },
+            uploaded_manually_by_staff => 0,
+            is_country_supported       => 0,
+            logs                       => [qr/\bDocument not uploaded to Onfido as client is from list of countries not supported by Onfido\b/],
+            dog                        => {
+                timing => undef,
+                inc    => {
+                    'onfido.unsupported_country' => {
+                        tags => ['aq'],
+                    },
+                }
+            },
+            trace => {
+                _send_email_onfido_unsupported_country_cs => 1,
+            },
+            result => undef,
+        },
+        {
+            title   => 'Unsupported selected country uploaded by staff',
+            country => 'ng',
+            client  => {
+                place_of_birth => 'wa',
+                residence      => 'gb',
+                email          => 'test9@binary.com',
+                broker_code    => 'MX',
+            },
+            uploaded_manually_by_staff => 1,
+            is_country_supported       => 0,
+            logs                       => [qr/\bDocument not uploaded to Onfido as client is from list of countries not supported by Onfido\b/],
+            dog                        => {
+                timing => undef,
+                inc    => {
+                    'onfido.unsupported_country' => {
+                        tags => ['ng'],
                     },
                 }
             },
@@ -711,11 +786,13 @@ subtest '_get_onfido_applicant' => sub {
                         },
                     },
                 },
-            }}];
+            },
+        },
+    ];
 
     for my $test ($tests->@*) {
-        my ($title, $client_data, $uploaded_manually_by_staff, $country_supported, $logs, $dog, $result, $trace, $exceptions) =
-            @{$test}{qw/title client uploaded_manually_by_staff is_country_supported logs dog result trace exceptions/};
+        my ($title, $country, $client_data, $uploaded_manually_by_staff, $country_supported, $logs, $dog, $result, $trace, $exceptions) =
+            @{$test}{qw/title country client uploaded_manually_by_staff is_country_supported logs dog result trace exceptions/};
         $is_country_supported  = $country_supported;
         $onfido_exception      = $exceptions->{onfido_exception};
         $onfido_http_exception = $exceptions->{onfido_http_exception};
@@ -742,6 +819,7 @@ subtest '_get_onfido_applicant' => sub {
                 client                     => $client,
                 onfido                     => $onfido,
                 uploaded_manually_by_staff => $uploaded_manually_by_staff,
+                country                    => $country
             )->get;
 
             if (not defined $result) {

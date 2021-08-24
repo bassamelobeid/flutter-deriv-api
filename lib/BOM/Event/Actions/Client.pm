@@ -389,6 +389,7 @@ async sub _upload_to_onfido {
     await BOM::Event::Services::Track::document_upload({
             loginid    => $loginid,
             properties => {
+                issuing_country            => $args->{issuing_country},
                 uploaded_manually_by_staff => $uploaded_by_staff,
                 %$document_entry
             }});
@@ -399,6 +400,7 @@ async sub _upload_to_onfido {
         document_entry             => $document_entry,
         file_data                  => $file_data,
         uploaded_manually_by_staff => $uploaded_by_staff,
+        issuing_country            => $args->{issuing_country},
     );
 }
 
@@ -569,6 +571,7 @@ async sub client_verification {
             for my $each_report (@all_report) {
                 BOM::User::Onfido::store_onfido_report($check, $each_report);
             }
+
             await _store_applicant_documents($applicant_id, $client, \@all_report);
 
             my $redis_events_write = _redis_events_write();
@@ -740,7 +743,8 @@ async sub _store_applicant_documents {
 
         $log->debugf('Insert document data for user %s and document id %s', $client->binary_user_id, $doc->id);
 
-        BOM::User::Onfido::store_onfido_document($doc, $applicant_id, $client->place_of_birth, $type, $side);
+        my $issuing_country = $doc->issuing_country // $client->place_of_birth // $client->residence;
+        BOM::User::Onfido::store_onfido_document($doc, $applicant_id, $issuing_country, $type, $side);
 
         my ($expiration_date, $document_numbers) = @{$report_for_doc_id{$doc->id}{properties}}{qw(date_of_expiry document_numbers)};
         my $doc_number = $document_numbers ? $document_numbers->[0]->{value} : undef;
@@ -1224,7 +1228,7 @@ async sub _get_onfido_applicant {
     my $client                     = $args{client};
     my $onfido                     = $args{onfido};
     my $uploaded_manually_by_staff = $args{uploaded_manually_by_staff};
-    my $country                    = $client->place_of_birth // $client->residence;
+    my $country                    = $args{country} // $client->place_of_birth // $client->residence;
 
     try {
         my $is_supported_country = BOM::Config::Onfido::is_country_supported($country);
@@ -1232,7 +1236,7 @@ async sub _get_onfido_applicant {
         unless ($is_supported_country) {
             DataDog::DogStatsd::Helper::stats_inc('onfido.unsupported_country', {tags => [$country]});
 
-            await _send_email_onfido_unsupported_country_cs($client) unless $uploaded_manually_by_staff;
+            await _send_email_onfido_unsupported_country_cs($client, $country) unless $uploaded_manually_by_staff;
             $log->debugf('Document not uploaded to Onfido as client is from list of countries not supported by Onfido');
             return undef;
         }
@@ -1566,8 +1570,10 @@ Send email to CS when Onfido does not support the client's country.
 =cut
 
 async sub _send_email_onfido_unsupported_country_cs {
-    my ($client) = @_;
+    my ($client, $country) = @_;
     my $brand = request->brand;
+
+    $country //= '';
 
     # Prevent sending multiple emails for the same user
     my $redis_key         = ONFIDO_UNSUPPORTED_COUNTRY_EMAIL_PER_USER_PREFIX . $client->binary_user_id;
@@ -1575,16 +1581,25 @@ async sub _send_email_onfido_unsupported_country_cs {
     await $redis_events_read->connect;
     return undef if await $redis_events_read->exists($redis_key);
 
-    my $msg =
-        $client->place_of_birth
-        ? 'Place of birth is not supported by Onfido. Please verify the age of the client manually.'
-        : 'Place of birth is not set and residence is not supported by Onfido. Please verify the age of the client manually.';
+    my $msg = "";
+
+    if ($client->place_of_birth) {
+        if (!$country || $client->place_of_birth eq $country) {
+            $msg = 'Place of birth is not supported by Onfido. Please verify the age of the client manually.';
+        } else {
+            $msg = 'The specified country by user `' . $country . '` is not supported by Onfido. Please verify the age of the client manually.';
+        }
+    } else {
+        $msg =
+            'No country specified by user, place of birth is not set and residence is not supported by Onfido. Please verify the age of the client manually.';
+    }
 
     my $email_subject  = "Manual age verification needed for " . $client->loginid;
     my $email_template = "\
         <p>$msg</p>
         <ul>
             <li><b>loginid:</b> " . $client->loginid . "</li>
+            <li><b>specified country:</b> " . (code2country($country) // 'not set') . "</li>
             <li><b>place of birth:</b> " . (code2country($client->place_of_birth) // 'not set') . "</li>
             <li><b>residence:</b> " . code2country($client->residence) . "</li>
         </ul>
@@ -1782,7 +1797,7 @@ async sub _get_applicant_and_file {
     # Start with an applicant and the file data (which might come from S3
     # or be provided locally)
     my ($applicant, $file_data) = await Future->needs_all(
-        _get_onfido_applicant(%args{onfido}, %args{client}, %args{uploaded_manually_by_staff}),
+        _get_onfido_applicant(%args{onfido}, %args{client}, %args{uploaded_manually_by_staff}, %args{country}),
         _get_document_s3(%args{file_data}, %args{document_entry}),
     );
 
@@ -1814,6 +1829,7 @@ async sub _upload_documents {
     my $client         = $args{client};
     my $document_entry = $args{document_entry};
     my $file_data      = $args{file_data};
+    my $country        = $args{issuing_country} // $client->place_of_birth // $client->residence;
 
     try {
         my $applicant;
@@ -1823,11 +1839,19 @@ async sub _upload_documents {
             document_entry             => $document_entry,
             file_data                  => $file_data,
             uploaded_manually_by_staff => $args{uploaded_manually_by_staff},
+            country                    => $country
         );
 
         my $loginid = $client->loginid;
 
-        die('No applicant created for ' . $loginid . ' with place of birth ' . $client->place_of_birth . ' and residence ' . $client->residence)
+        die(      'No applicant created for '
+                . $loginid
+                . ' with country '
+                . $country
+                . ', place of birth '
+                . $client->place_of_birth
+                . ' and residence '
+                . $client->residence)
             unless $applicant;
 
         $log->debugf('Applicant created: %s, uploading %d bytes for document', $applicant->id, length($file_data));
@@ -1853,12 +1877,11 @@ async sub _upload_documents {
             $future_upload_item = $onfido->live_photo_upload(%request);
         } else {
             # We already checked country when _get_applicant_and_file
-            my $country = country_code2code($client->place_of_birth || $client->residence, 'alpha-2', 'alpha-3') // '';
             %request = (
                 applicant_id    => $applicant->id,
                 data            => $file_data,
                 filename        => $document_entry->{file_name},
-                issuing_country => uc($country),
+                issuing_country => uc(country_code2code($country, 'alpha-2', 'alpha-3') // ''),
                 side            => $side,
                 type            => $type,
             );
@@ -1874,7 +1897,7 @@ async sub _upload_documents {
 
                 # details is in res, req form
                 my ($res) = @details;
-                local $log->context->{place_of_birth}             = $client->place_of_birth || $client->residence // 'unknown';
+                local $log->context->{place_of_birth}             = $country // 'unknown';
                 local $log->context->{uploaded_manually_by_staff} = $args{uploaded_manually_by_staff} ? 1 : 0;
 
                 delete $request{data};
@@ -1892,7 +1915,7 @@ async sub _upload_documents {
         if ($type eq 'live_photo') {
             BOM::User::Onfido::store_onfido_live_photo($doc, $applicant->id);
         } else {
-            BOM::User::Onfido::store_onfido_document($doc, $applicant->id, $client->place_of_birth, $type, $side);
+            BOM::User::Onfido::store_onfido_document($doc, $applicant->id, $country, $type, $side);
 
             await $redis_events_write->connect;
             # Set expiry time for document id key in case of no onfido response due to
