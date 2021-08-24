@@ -9,6 +9,14 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 
 my $mocked_documents = Test::MockModule->new('BOM::User::Client::AuthenticationDocuments');
 my $uploaded;
+my $is_onfido_supported_country;
+
+my $mocked_onfido_config = Test::MockModule->new('BOM::Config::Onfido');
+$mocked_onfido_config->mock(
+    'is_country_supported',
+    sub {
+        $is_onfido_supported_country;
+    });
 
 $mocked_documents->mock(
     'uploaded',
@@ -23,6 +31,12 @@ subtest 'get_poa_status' => sub {
         my $test_client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
             broker_code => 'CR',
         });
+        my $user = BOM::User->create(
+            email          => 'emailtest1@email.com',
+            password       => BOM::User::Password::hashpw('asdf12345'),
+            email_verified => 1,
+        );
+        $user->add_client($test_client_cr);
 
         my $mocked_client = Test::MockModule->new(ref($test_client_cr));
         subtest 'POA status none' => sub {
@@ -89,6 +103,12 @@ subtest 'get_poa_status' => sub {
         my $test_client_mf = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
             broker_code => 'MF',
         });
+        my $user = BOM::User->create(
+            email          => 'emailtest2@email.com',
+            password       => BOM::User::Password::hashpw('asdf12345'),
+            email_verified => 1,
+        );
+        $user->add_client($test_client_mf);
 
         my $mocked_client = Test::MockModule->new(ref($test_client_mf));
         subtest 'POA status none' => sub {
@@ -169,6 +189,12 @@ subtest 'get_poi_status' => sub {
         my $test_client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
             broker_code => 'CR',
         });
+        my $user = BOM::User->create(
+            email          => 'emailtest3@email.com',
+            password       => BOM::User::Password::hashpw('asdf12345'),
+            email_verified => 1,
+        );
+        $user->add_client($test_client_cr);
 
         my $mocked_client = Test::MockModule->new(ref($test_client_cr));
         subtest 'POI status none' => sub {
@@ -199,6 +225,8 @@ subtest 'get_poi_status' => sub {
 
         subtest 'POI status pending' => sub {
             $mocked_client->mock('fully_authenticated', sub { return 0 });
+            $mocked_client->mock('latest_poi_by',       sub { return 'onfido' });
+            $is_onfido_supported_country = 1;
 
             $uploaded = {
                 proof_of_identity => {
@@ -212,19 +240,24 @@ subtest 'get_poi_status' => sub {
 
             subtest 'pending is above everything' => sub {
                 $mocked_client->mock('fully_authenticated', sub { return 0 });
+                $mocked_client->mock('latest_poi_by',       sub { return 'onfido' });
+                $is_onfido_supported_country = 1;
+
                 $uploaded = {
                     proof_of_identity => {
                         is_expired => 1,
                         documents  => {},
                     }};
                 $onfido_document_status = 'in_progress';
-                is $test_client_cr->get_poi_status, 'pending', 'Client POI status is still expired';
+                is $test_client_cr->get_poi_status, 'pending', 'Client POI status is still pending';
                 $mocked_client->unmock_all;
             };
         };
 
         subtest 'POI status is pending' => sub {
             $mocked_client->mock('fully_authenticated', sub { return 0 });
+            $mocked_client->mock('latest_poi_by',       sub { return undef });
+            $is_onfido_supported_country = 0;
 
             $uploaded = {
                 proof_of_identity => {
@@ -240,6 +273,8 @@ subtest 'get_poi_status' => sub {
         subtest 'POI documents expired but onfido status in_progress' => sub {
             $onfido_document_status = 'in_progress';
             $mocked_client->mock('fully_authenticated', sub { return 0 });
+            $mocked_client->mock('latest_poi_by',       sub { return 'onfido' });
+            $is_onfido_supported_country = 1;
 
             $uploaded = {
                 proof_of_identity => {
@@ -260,6 +295,8 @@ subtest 'get_poi_status' => sub {
             $onfido_document_status = 'complete';
             $onfido_sub_result      = 'rejected';
             $mocked_client->mock('fully_authenticated', sub { return 0 });
+            $mocked_client->mock('latest_poi_by',       sub { return 'onfido' });
+            $is_onfido_supported_country = 1;
 
             $uploaded = {
                 proof_of_identity => {
@@ -277,6 +314,8 @@ subtest 'get_poi_status' => sub {
             $onfido_document_status = 'complete';
             $onfido_sub_result      = 'suspected';
             $mocked_client->mock('fully_authenticated', sub { return 0 });
+            $mocked_client->mock('latest_poi_by',       sub { return 'onfido' });
+            $is_onfido_supported_country = 1;
 
             $uploaded = {
                 proof_of_identity => {
@@ -306,7 +345,10 @@ subtest 'get_poi_status' => sub {
         subtest 'POI status rejected - fully authenticated or age verified' => sub {
             $test_client_cr->status->clear_age_verification;
             my $authenticated = 1;
-            $mocked_client->mock('fully_authenticated', sub { return $authenticated });
+            $mocked_client->mock('fully_authenticated',               sub { return $authenticated });
+            $mocked_client->mock('latest_poi_by',                     sub { return 'onfido' });
+            $mocked_client->mock('is_document_expiry_check_required', sub { return 1 });
+            $is_onfido_supported_country = 1;
 
             my $authenticated_test_scenarios = sub {
                 $uploaded = {
@@ -372,6 +414,12 @@ subtest 'get_poi_status' => sub {
         my $test_client_mf = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
             broker_code => 'MF',
         });
+        my $user = BOM::User->create(
+            email          => 'emailtest4@email.com',
+            password       => BOM::User::Password::hashpw('asdf12345'),
+            email_verified => 1,
+        );
+        $user->add_client($test_client_mf);
         $test_client_mf->status->clear_age_verification;
         undef $onfido_document_status;
         undef $onfido_sub_result;
@@ -405,6 +453,8 @@ subtest 'get_poi_status' => sub {
 
         subtest 'POI status pending' => sub {
             $mocked_client->mock('fully_authenticated', sub { return 0 });
+            $mocked_client->mock('latest_poi_by',       sub { return 'onfido' });
+            $is_onfido_supported_country = 1;
 
             $uploaded = {
                 proof_of_identity => {
@@ -421,6 +471,8 @@ subtest 'get_poi_status' => sub {
             $onfido_document_status = 'complete';
             $onfido_sub_result      = 'rejected';
             $mocked_client->mock('fully_authenticated', sub { return 0 });
+            $mocked_client->mock('latest_poi_by',       sub { return 'onfido' });
+            $is_onfido_supported_country = 1;
 
             $uploaded = {
                 proof_of_identity => {
@@ -438,6 +490,8 @@ subtest 'get_poi_status' => sub {
             $onfido_document_status = 'complete';
             $onfido_sub_result      = 'suspected';
             $mocked_client->mock('fully_authenticated', sub { return 0 });
+            $mocked_client->mock('latest_poi_by',       sub { return 'onfido' });
+            $is_onfido_supported_country = 1;
 
             $uploaded = {
                 proof_of_identity => {
@@ -481,6 +535,12 @@ subtest 'needs_poa_verification' => sub {
         my $test_client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
             broker_code => 'CR',
         });
+        my $user = BOM::User->create(
+            email          => 'emailtest5@email.com',
+            password       => BOM::User::Password::hashpw('asdf12345'),
+            email_verified => 1,
+        );
+        $user->add_client($test_client_cr);
 
         my $mocked_client = Test::MockModule->new(ref($test_client_cr));
         subtest 'Not needed' => sub {
@@ -560,6 +620,12 @@ subtest 'needs_poa_verification' => sub {
         my $test_client_mf = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
             broker_code => 'MF',
         });
+        my $user = BOM::User->create(
+            email          => 'emailtest6@email.com',
+            password       => BOM::User::Password::hashpw('asdf12345'),
+            email_verified => 1,
+        );
+        $user->add_client($test_client_mf);
 
         my $mocked_client = Test::MockModule->new(ref($test_client_mf));
         subtest 'Not needed' => sub {
@@ -647,6 +713,12 @@ subtest 'needs_poi_verification' => sub {
         my $test_client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
             broker_code => 'CR',
         });
+        my $user = BOM::User->create(
+            email          => 'emailtest7@email.com',
+            password       => BOM::User::Password::hashpw('asdf12345'),
+            email_verified => 1,
+        );
+        $user->add_client($test_client_cr);
 
         my $mocked_client = Test::MockModule->new(ref($test_client_cr));
         my $mocked_status = Test::MockModule->new(ref($test_client_cr->status));
@@ -791,6 +863,12 @@ subtest 'needs_poi_verification' => sub {
         my $test_client_mf = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
             broker_code => 'MF',
         });
+        my $user = BOM::User->create(
+            email          => 'emailtest8@email.com',
+            password       => BOM::User::Password::hashpw('asdf12345'),
+            email_verified => 1,
+        );
+        $user->add_client($test_client_mf);
 
         my $mocked_client = Test::MockModule->new(ref($test_client_mf));
         my $mocked_status = Test::MockModule->new(ref($test_client_mf->status));
@@ -924,6 +1002,12 @@ subtest 'is_document_expiry_check_required' => sub {
         my $test_client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
             broker_code => 'CR',
         });
+        my $user = BOM::User->create(
+            email          => 'emailtest9@email.com',
+            password       => BOM::User::Password::hashpw('asdf12345'),
+            email_verified => 1,
+        );
+        $user->add_client($test_client_cr);
 
         my $mocked_client = Test::MockModule->new(ref($test_client_cr));
         $mocked_client->mock('fully_authenticated', sub { return 0 });
@@ -944,6 +1028,12 @@ subtest 'is_document_expiry_check_required' => sub {
         my $test_client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
             broker_code => 'MF',
         });
+        my $user = BOM::User->create(
+            email          => 'emailtest10@email.com',
+            password       => BOM::User::Password::hashpw('asdf12345'),
+            email_verified => 1,
+        );
+        $user->add_client($test_client_cr);
 
         my $mocked_client = Test::MockModule->new(ref($test_client_cr));
         $mocked_client->mock('fully_authenticated', sub { return 0 });
@@ -963,6 +1053,12 @@ subtest 'shared payment method' => sub {
     my $test_client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'CR',
     });
+    my $user = BOM::User->create(
+        email          => 'emailtest11@email.com',
+        password       => BOM::User::Password::hashpw('asdf12345'),
+        email_verified => 1,
+    );
+    $user->add_client($test_client_cr);
 
     my $mocked_onfido = Test::MockModule->new('BOM::User::Onfido');
     $mocked_onfido->mock(
@@ -1063,6 +1159,12 @@ subtest 'First Deposit' => sub {
             email       => 'nowthatsan@email.com',
             loginid     => 'MLT235711'
         );
+        my $user = BOM::User->create(
+            email          => 'nowthatsan@email.com',
+            password       => BOM::User::Password::hashpw('asdf12345'),
+            email_verified => 1,
+        );
+        $user->add_client($test_client);
 
         my $mocked_client = Test::MockModule->new(ref($test_client));
         $mocked_client->mock('has_deposits', sub { return 1 });
@@ -1100,6 +1202,12 @@ subtest 'First Deposit' => sub {
             email       => 'nowthatsan@email.com',
             loginid     => 'MLT235711'
         );
+        my $user = BOM::User->create(
+            email          => 'nowthatsan2@email.com',
+            password       => BOM::User::Password::hashpw('asdf12345'),
+            email_verified => 1,
+        );
+        $user->add_client($test_client);
 
         my $mocked_client = Test::MockModule->new(ref($test_client));
         $mocked_client->mock('has_deposits', sub { return 1 });
@@ -1139,6 +1247,12 @@ subtest 'Sign up' => sub {
             email       => 'nowthatsan@email.com',
             loginid     => 'MLT235711'
         );
+        my $user = BOM::User->create(
+            email          => 'nowthatsan3@email.com',
+            password       => BOM::User::Password::hashpw('asdf12345'),
+            email_verified => 1,
+        );
+        $user->add_client($test_client);
 
         my $mocked_client = Test::MockModule->new(ref($test_client));
         $mocked_client->mock('user', sub { bless {}, 'BOM::User' });
@@ -1160,6 +1274,12 @@ subtest 'Unsupported Onfido country' => sub {
         email       => 'nowthatsan@email.com',
         loginid     => 'CR00001618'
     );
+    my $user = BOM::User->create(
+        email          => 'nowthatsan4@email.com',
+        password       => BOM::User::Password::hashpw('asdf12345'),
+        email_verified => 1,
+    );
+    $user->add_client($test_client);
 
     my $mocked_client = Test::MockModule->new(ref($test_client));
     $mocked_client->mock('user',                     sub { bless {}, 'BOM::User' });
@@ -1189,6 +1309,12 @@ subtest 'Experian validated accounts' => sub {
         email       => 'nowthatsan@email.com',
         loginid     => 'MLT235711'
     );
+    my $user = BOM::User->create(
+        email          => 'nowthatsan5@email.com',
+        password       => BOM::User::Password::hashpw('asdf12345'),
+        email_verified => 1,
+    );
+    $user->add_client($test_client);
 
     subtest 'POI' => sub {
         my $mocked_client = Test::MockModule->new(ref($test_client));
@@ -1218,6 +1344,8 @@ subtest 'Experian validated accounts' => sub {
                 return bless({status => 'pass'}, 'BOM::Database::AutoGenerated::Rose::ClientAuthenticationMethod') if $method eq $auth_method;
                 return undef;
             });
+        $mocked_client->mock('latest_poi_by', sub { return 'onfido' });
+        $is_onfido_supported_country = 1;
 
         subtest 'Low risk' => sub {
             $auth_method = 'ID_ONLINE';
@@ -1397,6 +1525,12 @@ subtest 'Ignore age verification' => sub {
         email       => 'nowthatsan@email.com',
         loginid     => 'MLT235711'
     );
+    my $user = BOM::User->create(
+        email          => 'nowthatsan6@email.com',
+        password       => BOM::User::Password::hashpw('asdf12345'),
+        email_verified => 1,
+    );
+    $user->add_client($test_client);
 
     my $mocked_client = Test::MockModule->new(ref($test_client));
     my $mocked_status = Test::MockModule->new(ref($test_client->status));
@@ -1469,6 +1603,12 @@ subtest 'Ignore address verification' => sub {
         email       => 'nowthatsan@email.com',
         loginid     => 'MLT235711'
     );
+    my $user = BOM::User->create(
+        email          => 'nowthatsan7@email.com',
+        password       => BOM::User::Password::hashpw('asdf12345'),
+        email_verified => 1,
+    );
+    $user->add_client($test_client);
 
     my $mocked_client = Test::MockModule->new(ref($test_client));
     my $mocked_status = Test::MockModule->new(ref($test_client->status));
@@ -1541,6 +1681,12 @@ subtest 'Onfido status' => sub {
         email       => 'onfido-status@email.com',
         loginid     => 'CR1317189'
     );
+    my $user = BOM::User->create(
+        email          => 'nowthatsan8@email.com',
+        password       => BOM::User::Password::hashpw('asdf12345'),
+        email_verified => 1,
+    );
+    $user->add_client($test_client);
 
     my $mocked_onfido = Test::MockModule->new('BOM::User::Onfido');
     my $mocked_config = Test::MockModule->new('BOM::Config::Onfido');
@@ -1567,10 +1713,27 @@ subtest 'Onfido status' => sub {
         });
 
     my $docs;
-    $mocked_client->mock(
-        'documents_uploaded',
+    my $is_document_expiry_check_required;
+
+    my $mocked_documents = Test::MockModule->new('BOM::User::Client::AuthenticationDocuments');
+    $mocked_documents->mock(
+        'uploaded',
         sub {
-            return {proof_of_identity => $docs};
+            return {
+                proof_of_identity => {
+                    defined $docs ? $docs->%* : (),
+                    documents => {},
+                }};
+        });
+    $mocked_client->mock(
+        'is_document_expiry_check_required',
+        sub {
+            return $is_document_expiry_check_required;
+        });
+    $mocked_client->mock(
+        'latest_poi_by',
+        sub {
+            return 'onfido';
         });
 
     my $tests = [{
@@ -1593,10 +1756,11 @@ subtest 'Onfido status' => sub {
             status                 => 'pending'
         },
         {
-            is_supported_country   => 1,
-            onfido_document_status => 'complete',
-            onfido_check_result    => 'clear',
-            docs                   => {
+            is_supported_country              => 1,
+            is_document_expiry_check_required => 1,
+            onfido_document_status            => 'complete',
+            onfido_check_result               => 'clear',
+            docs                              => {
                 is_expired => 1,
             },
             status => 'expired'
@@ -1642,8 +1806,9 @@ subtest 'Onfido status' => sub {
     for my $test ($tests->@*) {
         my $status;
 
-        ($is_supported_country, $onfido_document_status, $onfido_check_result, $onfido_sub_result, $docs, $status) =
-            @{$test}{qw/is_supported_country onfido_document_status onfido_check_result onfido_sub_result docs status/};
+        ($is_supported_country, $onfido_document_status, $onfido_check_result, $onfido_sub_result, $docs, $status, $is_document_expiry_check_required)
+            = @{$test}
+            {qw/is_supported_country onfido_document_status onfido_check_result onfido_sub_result docs status is_document_expiry_check_required/};
 
         is $test_client->get_onfido_status, $status, "Got the expected status=$status";
     }
@@ -1651,6 +1816,7 @@ subtest 'Onfido status' => sub {
     $mocked_onfido->unmock_all;
     $mocked_config->unmock_all;
     $mocked_client->unmock_all;
+    $mocked_documents->unmock_all;
 };
 
 subtest 'Manual POI status' => sub {
@@ -1661,12 +1827,25 @@ subtest 'Manual POI status' => sub {
         email       => 'manual-poi-status@email.com',
         loginid     => 'CR1317184'
     );
+    my $user = BOM::User->create(
+        email          => 'nowthatsan9@email.com',
+        password       => BOM::User::Password::hashpw('asdf12345'),
+        email_verified => 1,
+    );
+    $user->add_client($test_client);
 
     my $mocked_config = Test::MockModule->new('BOM::Config::Onfido');
     my $mocked_client = Test::MockModule->new('BOM::User::Client');
     my $mocked_status = Test::MockModule->new('BOM::User::Client::Status');
-
     my $age_verification;
+    my $is_document_expiry_check_required;
+
+    $mocked_client->mock(
+        'is_document_expiry_check_required',
+        sub {
+            return $is_document_expiry_check_required;
+        });
+
     $mocked_status->mock(
         'age_verification',
         sub {
@@ -1681,13 +1860,15 @@ subtest 'Manual POI status' => sub {
         });
 
     my ($is_expired, $is_pending);
-    $mocked_client->mock(
-        'documents_uploaded',
+    my $mocked_documents = Test::MockModule->new('BOM::User::Client::AuthenticationDocuments');
+    $mocked_documents->mock(
+        'uploaded',
         sub {
             return {
                 proof_of_identity => {
                     is_expired => $is_expired,
                     is_pending => $is_pending,
+                    documents  => {},
                 },
             };
         });
@@ -1701,8 +1882,9 @@ subtest 'Manual POI status' => sub {
             status     => 'pending',
         },
         {
-            is_expired => 1,
-            status     => 'expired',
+            is_expired                        => 1,
+            status                            => 'expired',
+            is_document_expiry_check_required => 1,
         },
         {
             age_verification => 1,
@@ -1717,8 +1899,8 @@ subtest 'Manual POI status' => sub {
     for my $test ($tests->@*) {
         my $status;
 
-        ($is_expired, $is_pending, $is_supported_country, $age_verification, $status) =
-            @{$test}{qw/is_expired is_pending is_supported_country age_verification status/};
+        ($is_expired, $is_pending, $is_supported_country, $age_verification, $status, $is_document_expiry_check_required) =
+            @{$test}{qw/is_expired is_pending is_supported_country age_verification status is_document_expiry_check_required/};
 
         is $test_client->get_manual_poi_status, $status, "Got the expected status=$status";
     }
@@ -1726,6 +1908,97 @@ subtest 'Manual POI status' => sub {
     $mocked_status->unmock_all;
     $mocked_config->unmock_all;
     $mocked_client->unmock_all;
+    $mocked_documents->unmock_all;
+};
+
+subtest 'IDV status' => sub {
+    my $client = BOM::User::Client->rnew(
+        broker_code => 'CR',
+        residence   => 'br',
+        citizen     => 'br',
+        email       => 'idv-poi-status@email.com',
+        loginid     => 'CR191003'
+    );
+    my $user = BOM::User->create(
+        email          => 'idv-poi-status@email.com',
+        password       => BOM::User::Password::hashpw('asdf12345'),
+        email_verified => 1,
+    );
+    $user->add_client($client);
+
+    my $tests = [{
+            document => {
+                issuing_country => 'br',
+                document_number => 'BR-001',
+                document_type   => 'national_identity_card',
+                status          => 'verified',
+            },
+            expected => 'verified'
+        },
+        {
+            document => {
+                issuing_country => 'br',
+                document_number => 'BR-001',
+                document_type   => 'national_identity_card',
+                status          => 'refuted',
+            },
+            expected => 'rejected'
+        },
+        {
+            document => {
+                issuing_country => 'br',
+                document_number => 'BR-001',
+                document_type   => 'national_identity_card',
+                status          => 'failed',
+            },
+            expected => 'rejected'
+        },
+        {
+            document => {
+                issuing_country => 'br',
+                document_number => 'BR-001',
+                document_type   => 'national_identity_card',
+                status          => 'pending',
+            },
+            expected => 'pending'
+        },
+        {
+            document => {
+                issuing_country          => 'br',
+                document_number          => 'BR-001',
+                document_type            => 'national_identity_card',
+                status                   => 'verified',
+                document_expiration_date => Date::Utility->new()->_minus_years(1),
+            },
+            expected => 'expired'
+        },
+        {
+            document => {
+                issuing_country          => 'br',
+                document_number          => 'BR-001',
+                document_type            => 'national_identity_card',
+                status                   => 'verified',
+                document_expiration_date => Date::Utility->new()->_plus_years(1),
+            },
+            expected => 'verified'
+        },
+        {
+            document => undef,
+            expected => 'none'
+        }];
+
+    for my $test ($tests->@*) {
+        my ($doc_data, $expected) = @{$test}{qw/document expected/};
+
+        my $doc_mock = Test::MockModule->new('BOM::User::IdentityVerification');
+        $doc_mock->mock(
+            'get_last_updated_document',
+            sub {
+                return $doc_data;
+            });
+
+        is $client->get_idv_status, $expected, "Expected status: $expected";
+    }
 };
 
 subtest 'POI attempts' => sub {

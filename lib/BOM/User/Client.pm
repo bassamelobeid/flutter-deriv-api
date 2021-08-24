@@ -57,9 +57,9 @@ use BOM::Config;
 use BOM::Config::Redis;
 use BOM::Config::CurrencyConfig;
 use BOM::Config::Onfido;
-use BOM::User::IdentityVerification;
 use BOM::User::Client::PaymentNotificationQueue;
 use BOM::User::Client::PaymentTransaction::Doughflow;
+use BOM::User::IdentityVerification;
 
 use Carp qw(croak confess);
 
@@ -6156,15 +6156,7 @@ sub get_poa_status {
 =head2 get_poi_status
 
 Resolves the POI status.
-Infers C<status> from onfido latest check, or returns C<verified> if client already has poa or poi.
-
-It takes the following params:
-
-=over 4
-
-=item * C<documents> hashref containing the client documents by type (optional)
-
-=back
+Infers C<status> from onfido/idv latest check, or returns C<verified> if client already has poa or poi.
 
 Returns,
     string for the current POI status, it can be: none, expired, pending, rejected, suspected, verified.
@@ -6172,57 +6164,93 @@ Returns,
 =cut
 
 sub get_poi_status {
-    my ($self, $documents) = @_;
-    # Note optional arguments will be resolved if not provided
-    $documents //= $self->documents->uploaded();
+    my ($self) = @_;
 
-    my ($is_poi_already_expired, $is_poi_pending) =
-        @{$documents->{proof_of_identity}}{qw/is_expired is_pending/};
+    my $is_poi_expired = $self->documents->uploaded->{proof_of_identity}->{is_expired};
 
-    my $onfido = BOM::User::Onfido::get_latest_check($self);
-    my ($report_document_status, $report_document_sub_result) = @{$onfido}{qw/report_document_status report_document_sub_result/};
-    $report_document_sub_result //= '';
-    $report_document_status     //= '';
+    my ($latest) = $self->latest_poi_by();
+    $latest //= '';
 
-    return 'pending' if any { $_ eq $report_document_status } qw/in_progress awaiting_applicant/;
+    my $status = 'none';
+    $status = $self->get_idv_status()    if $latest eq 'idv';
+    $status = $self->get_onfido_status() if $latest eq 'onfido';
+
+    return 'pending' if $status eq 'pending';
 
     if (!$self->ignore_age_verification && ($self->fully_authenticated || $self->status->age_verification)) {
-        return 'pending' if $is_poi_pending;
+        return 'pending' if $self->documents->pending;
 
-        # A verified account uploads due to expired docs, but this time onfido rejects them,
-        # we should return rejected status and show the rejected reasons on RPC account status.
-        # Couldn't figure out other reason why a verified account could have the `rejected` status,
-        # if you do, please be extra careful otherwise you'll bring lots of pain to CS.
-
-        if ($is_poi_already_expired) {
-            return 'rejected' if any { $_ eq $report_document_sub_result } qw/rejected caution/;
+        if ($is_poi_expired) {
+            return 'rejected' if $status eq 'rejected';
             return 'expired';
         }
 
         return 'verified';
     }
 
-    return 'suspected' if $report_document_sub_result eq 'suspected';
+    return 'suspected' if $status eq 'suspected';
 
     return 'rejected' if $self->status->poi_name_mismatch;
 
-    return 'rejected' if any { $_ eq $report_document_sub_result } qw/rejected caution/;
+    return 'rejected' if $status eq 'rejected';
 
-    return 'pending' if $is_poi_pending;
+    return 'pending' if $self->documents->pending;
 
-    return 'expired' if $is_poi_already_expired;
+    return 'expired' if $is_poi_expired;
 
     return 'none';
+}
+
+=head2 get_idv_status
+
+Gets the current IDV status of the client.
+
+It takes the following parameters:
+
+=over 4
+
+=item * C<$document> - A hashref of document info retrived from database (optional)
+
+=back
+
+Returns,
+    string for the current IDV status, it can be: none, expired, pending, rejected, verified.
+
+=cut
+
+sub get_idv_status {
+    my ($self, $document) = @_;
+    my $idv_model = BOM::User::IdentityVerification->new(user_id => $self->binary_user_id);
+    $document //= $idv_model->get_last_updated_document();
+
+    return 'none' unless $document;
+
+    my $status_mapping = {
+        refuted  => 'rejected',
+        failed   => 'rejected',
+        pending  => 'pending',
+        verified => 'verified',
+    };
+
+    my $expiration_date = undef;
+    $expiration_date = Date::Utility->new($document->{document_expiration_date})->epoch if $document->{document_expiration_date};
+
+    my $idv_status = $document->{status};
+    my $status     = $status_mapping->{$idv_status} // 'none';
+    $status = 'expired' if defined $expiration_date && Date::Utility->new->epoch > $expiration_date;
+
+    return $status;
 }
 
 =head2 get_onfido_status
 
 Gets the current Onfido status of the client. This is an Onfido-only analysis, may vary from
 the actual POI status of the client.
+It takes the following parameters;
 
 =over 4
 
-=item * C<documents> hashref containing the client documents by type (optional)
+=item * C<$documents> hashref containing the client documents by type (optional)
 
 =back
 
@@ -6232,7 +6260,7 @@ Returns,
 =cut
 
 sub get_onfido_status {
-    my ($self, $documents) = @_;
+    my ($self) = @_;
     my $country_code = uc($self->place_of_birth || $self->residence // '');
     return 'none' unless BOM::Config::Onfido::is_country_supported($country_code);
 
@@ -6250,13 +6278,11 @@ sub get_onfido_status {
     # (it would yield verified otherwise). Far from perfect but better than null.
 
     if ($check_result eq 'clear') {
-        $documents //= $self->documents_uploaded();
+        my $is_poi_expired = $self->documents->uploaded->{proof_of_identity}->{is_expired};
 
-        my $is_poi_already_expired = $documents->{proof_of_identity}->{is_expired};
+        return 'expired' if $is_poi_expired;
 
-        return 'expired' if $is_poi_already_expired;
-
-        return 'verified' if $check_result eq 'clear';
+        return 'verified';
     }
 
     return 'suspected' if $report_document_sub_result eq 'suspected';
@@ -6272,29 +6298,23 @@ Gets the current manual POI status of the client. This would only apply to Onfid
 countries, although due to the monolithic implementation we may share some status across both.
 This may vary from the actual client POI status.
 
-=over 4
-
-=item * C<documents> hashref containing the client documents by type (optional)
-
-=back
-
 Returns,
     string for the current manual POI status, it can be: none, expired, pending, verified.
 
 =cut
 
 sub get_manual_poi_status {
-    my ($self, $documents) = @_;
+    my ($self) = @_;
+
+    my $is_poi_expired = $self->documents->uploaded->{proof_of_identity}->{is_expired};
+
     my $country_code = uc($self->place_of_birth || $self->residence // '');
+
     return 'none' if BOM::Config::Onfido::is_country_supported($country_code);
-    $documents //= $self->documents_uploaded();
 
-    my ($is_poi_already_expired, $is_poi_pending) =
-        $documents->{proof_of_identity}->@{qw/is_expired is_pending/};
+    return 'pending' if $self->documents->pending;
 
-    return 'pending' if $is_poi_pending;
-
-    return 'expired' if $is_poi_already_expired;
+    return 'expired' if $is_poi_expired;
 
     return 'verified' if $self->status->age_verification;
 
@@ -6796,6 +6816,38 @@ sub linked_accounts {
             balance    => $account->{display_balance},
             currency   => $account->{currency},
             platform   => $account->{platform}}};
+}
+
+=head2 latest_poi_by
+
+Resolves the name of the latest POI check subsystem made by this client.
+Returns a couple containing the name of the subsystem (onfido, idv) as the first element
+and the related check as the last element.
+
+=cut
+
+sub latest_poi_by {
+    my ($self) = @_;
+    my @triplets;
+
+    my $onfido_check = BOM::User::Onfido::get_latest_check($self)->{user_check} // {};
+
+    if (my $onfido_created_at = $onfido_check->{created_at}) {
+        push @triplets, ['onfido', $onfido_check, Date::Utility->new($onfido_created_at)->epoch];
+    }
+
+    my $idv = BOM::User::IdentityVerification->new(user_id => $self->binary_user_id);
+    if (my $idv_document = $idv->get_last_updated_document()) {
+        if (my $idv_document_check = $idv->get_document_check_detail($idv_document->{id})) {
+            push @triplets, ['idv', $idv_document_check, Date::Utility->new($idv_document_check->{requested_at})->epoch];
+        }
+    }
+
+    my @sorted = sort { @{$b}[2] <=> @{$a}[2] } @triplets;
+
+    my $latest = shift @sorted // [];
+
+    return $latest->@*;
 }
 
 =head2 poi_attempts

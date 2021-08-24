@@ -701,4 +701,19 @@ sub _build_provider_types {
     return $types;
 }
 
+=head2 pending
+
+Determines whether the documents are in a pending status.
+It returns a boolean value.
+
+=cut
+
+sub pending {
+    my ($self) = @_;
+
+    my $poi = $self->uploaded->{proof_of_identity} || return 0;
+
+    return $poi->{is_pending};
+}
+
 1;

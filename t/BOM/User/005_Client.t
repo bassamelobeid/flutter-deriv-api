@@ -10,6 +10,8 @@ use BOM::User::Client;
 use Test::More qw(no_plan);
 use Test::Exception;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use Test::MockModule;
+use Date::Utility;
 
 use BOM::User;
 use BOM::User::Password;
@@ -232,3 +234,118 @@ subtest 'no salutation, set Gender explicitly' => sub {
     is($client->gender,     'f', 'gender: ' . $client->gender);
 };
 
+subtest 'latest poi by' => sub {
+    my $user = BOM::User->create(
+        email          => 'latest+poi+by@bin.com',
+        password       => 'cantgetitout',
+        email_verified => 1,
+    );
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code    => 'CR',
+        email          => 'latest+poi+by@bin.com',
+        binary_user_id => $user->id,
+    });
+    $user->add_client($client);
+
+    my $tests = [{
+            title  => 'Onfido wins',
+            onfido => {
+                created_at => Date::Utility->new->_plus_years(1)->date_yyyymmdd,
+            },
+            idv => {
+                requested_at => Date::Utility->new->_minus_years(1)->date_yyyymmdd,
+            },
+            expected => 'onfido'
+        },
+        {
+            title  => 'IDV wins',
+            onfido => {
+                created_at => Date::Utility->new->_minus_years(1)->date_yyyymmdd,
+            },
+            idv => {
+                requested_at => Date::Utility->new->_plus_years(1)->date_yyyymmdd,
+            },
+            expected => 'idv'
+        },
+        {
+            title  => 'Only Onfido',
+            onfido => {
+                created_at => Date::Utility->new->_minus_years(1)->date_yyyymmdd,
+            },
+            idv      => undef,
+            expected => 'onfido'
+        },
+        {
+            title => 'Only IDV',
+            idv   => {
+                requested_at => Date::Utility->new->_minus_years(1)->date_yyyymmdd,
+            },
+            onfido   => undef,
+            expected => 'idv'
+        },
+        {
+            title    => 'none',
+            idv      => undef,
+            onfido   => undef,
+            expected => undef,
+        }];
+
+    my $mock_onfido = Test::MockModule->new('BOM::User::Onfido');
+    my $idv_mock    = Test::MockModule->new('BOM::User::IdentityVerification');
+
+    my $onfido_latest;
+    my $idv_latest;
+
+    $mock_onfido->mock(
+        'get_latest_check',
+        sub {
+            return $onfido_latest;
+        });
+
+    $idv_mock->mock(
+        'get_last_updated_document',
+        sub {
+            return {
+                binary_user_id  => $client->user->id,
+                document_type   => 'bvn',
+                issuing_country => 'ng',
+                document_number => '124124123412',
+            };
+        });
+
+    $idv_mock->mock(
+        'get_document_check_detail',
+        sub {
+            my (undef, $doc_id) = @_;
+
+            return undef unless defined $idv_latest;
+
+            return {
+                document_id => $doc_id,
+                status      => 'pending',
+                $idv_latest->%*,
+            };
+        });
+
+    for my $test ($tests->@*) {
+        my ($onfido, $idv, $title, $expected) = @{$test}{qw/onfido idv title expected/};
+
+        subtest $title => sub {
+            $onfido_latest = {user_check => $onfido};
+
+            $idv_latest = $idv;
+
+            my ($name, $check) = $client->latest_poi_by;
+
+            is $name, $expected, 'Expected POI subsystem reported';
+
+            is $check, undef, 'Undef check' unless defined $expected;
+
+            $expected //= '';
+            isa_ok $check, 'HASH', 'Expected IDV check'    if $expected eq 'idv';
+            isa_ok $check, 'HASH', 'Expected Onfido check' if $expected eq 'onfido';
+        };
+    }
+};
+
+done_testing();

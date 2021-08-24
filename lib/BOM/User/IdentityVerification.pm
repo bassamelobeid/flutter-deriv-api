@@ -11,9 +11,13 @@ Note this module is meant to be decoupled from L<BOM::User> or L<BOM::User::Clie
 use strict;
 use warnings;
 
+use Date::Utility;
+use JSON::MaybeUTF8 qw( encode_json_utf8 );
 use Syntax::Keyword::Try;
 
 use BOM::Config::Redis;
+use BOM::Database::UserDB;
+
 use Moo;
 
 use constant IDV_REQUEST_PER_USER_PREFIX => 'IDV::REQUEST::PER::USER::';
@@ -24,10 +28,193 @@ The current IDV user.
 
 =cut
 
-has 'user_id' => (
+has user_id => (
     is       => 'ro',
     required => 1,
 );
+
+=head2 add_document
+
+Add document row filled by provided info by user
+
+=over 4
+
+=item * C<$issuing_country> - the id of document to which this record belongs
+
+=item * C<$document_number> - the status of check
+
+=item * C<$document_type> - the message for status
+
+=item * C<$expiration_date> - nullable, the document expiry date
+
+=back
+
+Returns void.
+
+=cut
+
+sub add_document {
+    my ($self, $args) = @_;
+
+    my ($issuing_country, $document_number, $document_type, $expiration_date) = @{$args}{
+        qw/
+            issuing_country   number            type            expiration_date
+            /
+    };
+
+    die 'issuing_country is required' unless $issuing_country;
+    die 'document_number is required' unless $document_number;
+    die 'document_type is required'   unless $document_type;
+
+    $expiration_date = Date::Utility->new($expiration_date)->date if $expiration_date;
+
+    my $dbic = BOM::Database::UserDB::rose_db()->dbic;
+
+    try {
+        return $dbic->run(
+            fixup => sub {
+                $_->selectrow_hashref('SELECT * FROM idv.add_document(?::BIGINT, ?::TEXT, ?::TEXT, ?::TEXT, ?::TIMESTAMP)',
+                    undef, $self->user_id, $issuing_country, $document_number, $document_type, $expiration_date);
+            });
+    } catch ($e) {
+        die sprintf("Failed while adding document due to '%s'", $e);
+    }
+
+    return;
+}
+
+=head2 get_standby_document
+
+Gets last standby document added by user
+
+=cut
+
+sub get_standby_document {
+    my $self = shift;
+
+    my $dbic = BOM::Database::UserDB::rose_db()->dbic;
+    try {
+        return $dbic->run(
+            fixup => sub {
+                $_->selectrow_hashref('SELECT * FROM idv.get_standby_document(?::BIGINT)', undef, $self->user_id);
+            });
+    } catch ($e) {
+        die sprintf("Failed while getting standby document for IDV process, check user_id: %s", $self->user_id);
+    }
+
+    return;
+}
+
+=head2 update_document_check
+
+Updates status on idv.document and try to update
+details in idv.document_check otherwise will
+create new row for details.
+
+=over 4
+
+=item * C<$document_id> - the id of document to which this record belongs
+
+=item * C<$status> - the status of check
+
+=item * C<$message> - the message for status
+
+=item * C<$provider> - the third-party provider which we use for IDV
+
+=item * C<$request_body> - nullable, the request body we sent to provider
+
+=item * C<$response_body> - nullable, the response we received from provider
+
+=item * C<$expiration_date> - nullable, the document expiry date
+
+=back
+
+Returns void.
+
+=cut
+
+sub update_document_check {
+    my ($self, $args) = @_;
+
+    my ($document_id, $status, $messages, $provider, $request_body, $response_body, $expiration_date) = @{$args}{
+        qw/
+            document_id   status   messages   provider   request_body   response_body   expiration_date
+            /
+    };
+
+    die 'document_id is required' unless $document_id;
+
+    $messages        = encode_json_utf8($messages)                if $messages;
+    $expiration_date = Date::Utility->new($expiration_date)->date if $expiration_date;
+
+    my $dbic = BOM::Database::UserDB::rose_db()->dbic;
+
+    try {
+        $dbic->run(
+            fixup => sub {
+                $_->do(
+                    'SELECT FROM idv.update_document_check(?::BIGINT, ?::idv.provider, ?::idv.check_status, ?::JSONB, ?::JSONB, ?::JSONB, ?::TIMESTAMP)',
+                    undef, $document_id, $provider, $status, $messages, $request_body, $response_body, $expiration_date
+                );
+            });
+    } catch ($e) {
+        die sprintf("Failed while updating document_check due to '%s', for document_id: %s", $e, $document_id);
+    }
+
+    return;
+}
+
+=head2 get_last_updated_document
+
+Gets the document information which has been updated recently.
+
+=cut
+
+sub get_last_updated_document {
+    my $self = shift;
+
+    my $dbic = BOM::Database::UserDB::rose_db()->dbic;
+    try {
+        return $dbic->run(
+            fixup => sub {
+                $_->selectrow_hashref('SELECT * FROM idv.get_last_updated_document(?::BIGINT)', undef, $self->user_id);
+            });
+    } catch ($e) {
+        die sprintf("Failed while getting last IDV updated document, check user_id: %s", $self->user_id);
+    }
+
+    return;
+}
+
+=head2 get_document_check_detail
+
+Gets the checks details for the given document information which has been updated recently.
+
+=over 4
+
+=item * C<$document_id> - the id of document
+
+=back
+
+=cut
+
+sub get_document_check_detail {
+    my ($self, $document_id) = @_;
+
+    die 'ARGUMENT #1: document_id is required' unless $document_id;
+
+    my $dbic = BOM::Database::UserDB::rose_db()->dbic;
+    try {
+        return $dbic->run(
+            fixup => sub {
+                $_->selectrow_hashref('SELECT * FROM idv.get_document_check(?::BIGINT)', undef, $document_id);
+            });
+    } catch ($e) {
+        die sprintf("Failed while getting document check detail, check user_id: %s", $self->user_id);
+    }
+
+    return;
+}
 
 =head2 get_rejected_reasons
 
@@ -52,11 +239,28 @@ Returns,
 =cut
 
 sub submissions_left {
-    my $self             = shift;
+    my $self = shift;
+
     my $redis            = BOM::Config::Redis::redis_events();
     my $request_per_user = $redis->get(IDV_REQUEST_PER_USER_PREFIX . $self->user_id) // 0;
-    my $submissions_left = $self->limit_per_user() - $request_per_user;
+    my $submissions_left = limit_per_user() - $request_per_user;
     return $submissions_left;
+}
+
+=head2 incr_submissions
+
+Returns the submissions left for the user.
+
+Returns,
+    an integer representing the submissions left for the user involved.
+
+=cut
+
+sub incr_submissions {
+    my $self  = shift;
+    my $redis = BOM::Config::Redis::redis_events();
+
+    $redis->incr(IDV_REQUEST_PER_USER_PREFIX . $self->user_id);
 }
 
 =head2 limit_per_user
@@ -70,7 +274,7 @@ Returns,
 =cut
 
 sub limit_per_user {
-    return $ENV{IDV_REQUEST_PER_USER_LIMIT} // 0;    # TODO: proper implementation
+    return $ENV{IDV_REQUEST_PER_USER_LIMIT} // 2;
 }
 
 =head2 reported_properties
@@ -118,29 +322,6 @@ sub get_document_check {
             });
     } catch ($e) {
         die sprintf("Failed while getting document check for IDV process, document_id: %s, error: %s", $document_id, $e);
-    }
-
-    return undef;
-}
-
-=head2 get_last_updated_document
-
-Gets the latest document added by user
-
-=cut
-
-sub get_last_updated_document {
-    my $self = shift;
-
-    my $dbic = BOM::Database::UserDB::rose_db()->dbic;
-
-    try {
-        return $dbic->run(
-            fixup => sub {
-                $_->selectrow_hashref('SELECT * FROM idv.get_last_updated_document(?::BIGINT)', undef, $self->user_id);
-            });
-    } catch ($e) {
-        die sprintf("Failed while getting last updated document for IDV process, check user_id: %s, error: %s", $self->user_id, $e);
     }
 
     return undef;
