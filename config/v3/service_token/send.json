@@ -21,6 +21,11 @@
                 1
             ]
         },
+        "country": {
+            "description": "[Optional] The 2-letter country code.",
+            "type": "string",
+            "pattern": "^[a-z]{2}$"
+        },
         "referrer": {
             "description": "[Optional] The URL of the web page where the Web SDK will be used.",
             "type": "string",

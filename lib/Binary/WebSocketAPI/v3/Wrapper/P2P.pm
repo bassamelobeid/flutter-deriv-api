@@ -123,8 +123,8 @@ sub subscribe_adverts {
     if ($rpc_response->{error}) {
         return $c->new_error($msg_type, $rpc_response->{error}{code}, $rpc_response->{error}{message_to_client});
     }
-    
-    my $account_id = delete $rpc_response->{advertiser_account_id};
+
+    my $account_id    = delete $rpc_response->{advertiser_account_id};
     my $advertiser_id = delete $rpc_response->{advertiser_id};
 
     my $result = {

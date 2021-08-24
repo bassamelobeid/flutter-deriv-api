@@ -35,16 +35,17 @@ sub add_upload_info {
 
     my $upload_info = {
         %{$call_params},
-        file_id           => $rpc_response->{file_id},
-        call_type         => $rpc_response->{call_type},
-        file_name         => $rpc_response->{file_name},
-        file_size         => $args->{file_size},
-        page_type         => $args->{page_type},
-        md5               => Digest::MD5->new,
-        received_bytes    => 0,
-        pending_futures   => [],
-        upload_id         => $upload_id,
-        expected_checksum => $args->{expected_checksum}};
+        file_id                  => $rpc_response->{file_id},
+        call_type                => $rpc_response->{call_type},
+        file_name                => $rpc_response->{file_name},
+        file_size                => $args->{file_size},
+        page_type                => $args->{page_type},
+        document_issuing_country => $args->{document_issuing_country},
+        md5                      => Digest::MD5->new,
+        received_bytes           => 0,
+        pending_futures          => [],
+        upload_id                => $upload_id,
+        expected_checksum        => $args->{expected_checksum}};
 
     wait_for_chunks_and_upload_to_s3($c, $upload_info);
 
@@ -98,6 +99,7 @@ sub get_upload_info {
 
     my ($call_type, $upload_id, $chunk_size, $data) = unpack "N3a*", $frame;
     my $upload_info = $c->stash->{document_upload}->{$upload_id};
+
     unless ($upload_info) {
         stats_inc('bom_websocket_api.v_3.document_upload_error',
             {tags => ['source_type:' . $c->stash('source_type'), "brand:" . $c->stash('brand'),]});
@@ -127,6 +129,7 @@ sub send_upload_failure {
 
     $c->call_rpc({
             method      => 'document_upload',
+            msg_type    => 'account',
             call_params => {
                 token => $c->stash->{token},
             },
@@ -158,10 +161,12 @@ sub send_upload_successful {
         call_type => $upload_info->{call_type},
         checksum  => $checksum,
         status    => $status,
-    };
+
+        $upload_info->{document_issuing_country} ? (document_issuing_country => $upload_info->{document_issuing_country}) : ()};
 
     $c->call_rpc({
             method      => 'document_upload',
+            msg_type    => 'account',
             call_params => {
                 token => $c->stash->{token},
             },
