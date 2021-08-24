@@ -21,7 +21,7 @@ use ClientAccountTestHelper;
 use lib qw(/home/git/regentmarkets/bom/cgi);
 
 subtest 'client Balance' => sub {
-    plan tests => 38;
+    plan tests => 30;
     my $client = ClientAccountTestHelper::create_client({
         broker_code => 'CR',
     });
@@ -240,8 +240,6 @@ sub verify_txn {
 
     isa_ok $txn, 'BOM::User::Client::PaymentTransaction', "Correct output type for $payment_expected->{payment_type_code}";
     my $trasaction_time = Date::Utility->new($txn->transaction_time);
-    cmp_ok($trasaction_time->epoch(), '>=', time - 1, "Acceptable transaction time for $payment_expected->{payment_type_code}");
-    cmp_ok($trasaction_time->epoch(), '<=', time,     "Acceptable transaction time for $payment_expected->{payment_type_code}");
     is(
         roundcommon('0.00001', $account->balance),
         roundcommon('0.00001', $initial_balance + $call_args->{amount}),
