@@ -44,6 +44,7 @@ sub start_document_upload {
     my $params = shift;
     my $client = $params->{client};
     my $args   = $params->{args};
+
     unless ($client->get_db eq 'write') {
         $client->set_db('write');
     }
@@ -95,6 +96,9 @@ sub successful_upload {
     my $params = shift;
     my $client = $params->{client};
     my $args   = $params->{args};
+
+    my $issuing_country = $args->{document_issuing_country};
+
     unless ($client->get_db eq 'write') {
         $client->set_db('write');
     }
@@ -134,8 +138,9 @@ sub successful_upload {
     BOM::Platform::Event::Emitter::emit(
         'document_upload',
         {
-            loginid => $client_id,
-            file_id => $args->{file_id},
+            loginid         => $client_id,
+            file_id         => $args->{file_id},
+            issuing_country => $issuing_country,
         });
 
     return $args;

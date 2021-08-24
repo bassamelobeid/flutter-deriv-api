@@ -44,12 +44,17 @@ Returns the Onfido WebService token for the client.
 
 =item * C<referrer> - URL of the web page where the Web SDK will be used
 
+=item * C<country> - The country as the context to create tokens based on that if needed. 
+
 =back
 
 =cut
 
 sub onfido_service_token {
-    my ($client, $referrer) = @_;
+    my ($client, $args) = @_;
+
+    my $referrer = $args->{referrer};
+    my $country  = $args->{country} // '';
 
     return Future->done({
             error => BOM::RPC::v3::Utility::create_error({
@@ -61,8 +66,9 @@ sub onfido_service_token {
     $loop->add($services = BOM::RPC::v3::Services->new) unless $services;
 
     my $onfido  = $services->onfido();
-    my $country = uc($client->place_of_birth || $client->residence);
     my $loginid = $client->loginid;
+
+    $country = uc($country || $client->place_of_birth || $client->residence);
 
     return Future->done({
             error => BOM::RPC::v3::Utility::create_error({
@@ -82,7 +88,7 @@ sub onfido_service_token {
                     message_to_client => localize('Country "[_1]" is not supported by Onfido.', $country),
                 })}) unless $is_country_supported;
 
-    return _get_onfido_applicant($client, $onfido)->then(
+    return _get_onfido_applicant($client, $onfido, $country)->then(
         sub {
             my $applicant = shift;
             return Future->done({
@@ -187,7 +193,7 @@ Gets the existing applicant otherwise creates a new one on Onfido.
 =cut
 
 sub _get_onfido_applicant {
-    my ($client, $onfido) = @_;
+    my ($client, $onfido, $country) = @_;
 
     my $dbic = BOM::Database::UserDB::rose_db()->dbic;
     # accessing applicant_data from onfido_applicant table
@@ -201,7 +207,7 @@ sub _get_onfido_applicant {
         return $onfido->applicant_get(applicant_id => $applicant_id);
     }
 
-    return $onfido->applicant_create(%{_client_onfido_details($client)})->then(
+    return $onfido->applicant_create(%{_client_onfido_details($client, $country)})->then(
         sub {
             my $applicant = shift;
 
@@ -232,7 +238,7 @@ Generate the list of client personal details needed for Onfido API.
 =cut
 
 sub _client_onfido_details {
-    my $client = shift;
+    my ($client, $country) = @_;
 
     my $details = {
         (map { $_ => $client->$_ } qw(first_name last_name email)),
@@ -246,7 +252,7 @@ sub _client_onfido_details {
             town            => $client->address_city,
             state           => $client->address_state,
             postcode        => $client->address_postcode,
-            country         => uc(country_code2code($client->residence, 'alpha-2', 'alpha-3')),
+            country         => uc(country_code2code($country, 'alpha-2', 'alpha-3')),
         }]
         if all { length $client->$_ } ONFIDO_ADDRESS_REQUIRED_FIELDS;
 

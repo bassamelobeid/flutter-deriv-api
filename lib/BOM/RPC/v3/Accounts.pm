@@ -2343,6 +2343,8 @@ async_rpc service_token => sub {
 
         if ($service eq 'onfido') {
             my $referrer = $args->{referrer} // $params->{referrer};
+            my $country  = $args->{country}  // $params->{country};
+
             # The requirement for the format of <referrer> is https://*.<DOMAIN>/*
             # as stated in https://documentation.onfido.com/#generate-web-sdk-token
             $referrer =~ s/(\/\/).*?(\..*?)(\/|$).*/$1\*$2\/\*/g;
@@ -2352,7 +2354,8 @@ async_rpc service_token => sub {
                 $client,
                 {
                     service  => $service,
-                    referrer => $referrer
+                    referrer => $referrer,
+                    country  => $country,
                 }
             )->then(
                 sub {

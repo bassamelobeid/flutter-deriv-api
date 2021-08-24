@@ -60,7 +60,7 @@ sub service_token {
     my ($client, $args) = @_;
 
     if ($args->{service} eq 'onfido') {
-        return BOM::RPC::v3::Services::Onfido::onfido_service_token($client, $args->{referrer});
+        return BOM::RPC::v3::Services::Onfido::onfido_service_token($client, $args);
     }
 }
 
