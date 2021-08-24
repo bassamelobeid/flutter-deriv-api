@@ -77,7 +77,7 @@ sub append_failure {
     $self->{has_failure} = 1;
 
     $self->{failed_rules}->{$rule} = $error;
-    $self->{errors}->{$error->{code}} = 1 if exists $error->{code};
+    $self->{errors}->{$error->{error_code} // $error->{code}} = 1 if exists $error->{error_code} || exists $error->{code};
 
     return $self;
 }

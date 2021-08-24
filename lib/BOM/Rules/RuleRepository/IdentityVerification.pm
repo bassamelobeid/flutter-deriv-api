@@ -43,15 +43,33 @@ rule 'idv.check_age_legality' => {
 
         die 'Client is missing'     unless my $client = $context->client;
         die 'IDV result is missing' unless my $result = $args->{result} and ref $args->{result} eq 'HASH';
-        die 'IDV date_of_birth is not present in result' unless $result->{date_of_birth};
 
-        my $date_of_birth = $result->{date_of_birth};
+        my $date_of_birth = eval { Date::Utility->new($result->{date_of_birth}) };
 
         my $countries_config = Brands::Countries->new();
         my $min_legal_age    = $countries_config->minimum_age_for_country($client->residence);
 
-        die +{error_code => 'UnderAge'} unless Date::Utility->new($date_of_birth)->is_before(Date::Utility->new->_minus_years($min_legal_age));
+        die +{error_code => 'UnderAge'} unless $date_of_birth and $date_of_birth->is_before(Date::Utility->new->_minus_years($min_legal_age));
 
         return undef;
     }
-    }
+};
+
+rule 'idv.check_dob_conformity' => {
+    description => "Checks whether the context client's date of birth is matched to reported one or not",
+    code        => sub {
+        my ($self, $context, $args) = @_;
+
+        die 'Client is missing'     unless my $client = $context->client;
+        die 'IDV result is missing' unless my $result = $args->{result} and ref $args->{result} eq 'HASH';
+
+        my $reported_dob = eval { Date::Utility->new($result->{date_of_birth}) };
+        my $profile_dob  = eval { Date::Utility->new($client->{date_of_birth}) };
+
+        die +{error_code => 'DobMismatch'} unless $reported_dob and $profile_dob and $profile_dob->is_same_as($reported_dob);
+
+        return undef;
+    },
+};
+
+1;

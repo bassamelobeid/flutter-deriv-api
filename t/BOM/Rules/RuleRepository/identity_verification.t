@@ -136,9 +136,6 @@ subtest 'rule idv.check_age_legality' => sub {
         'Missing result in passed args';
 
     $rule_engine = BOM::Rules::Engine->new(client => $client_cr);
-    like exception {
-        $rule_engine->apply_rules($rule_name, {result => {date_of_birth => ''}});
-    }, qr/IDV date_of_birth is not present in result/, 'Missing date_of_birth in args';
 
     my $mock_country_config = Test::MockModule->new('Brands::Countries');
     $mock_country_config->mock(
@@ -207,7 +204,28 @@ subtest 'rule idv.check_age_legality' => sub {
                 residence => 'ir',
             },
             error => undef
-        }];
+        },
+        {
+            result => {
+
+                date_of_birth => '',
+            },
+            client => {
+                residence => 'be',
+            },
+            error => 'UnderAge'
+        },
+        {
+            result => {
+
+                date_of_birth => 'Not Available',
+            },
+            client => {
+                residence => 'be',
+            },
+            error => 'UnderAge'
+        },
+    ];
 
     for my $case ($tests->@*) {
         $client_cr->residence($case->{client}->{residence});
@@ -224,6 +242,108 @@ subtest 'rule idv.check_age_legality' => sub {
     }
 
     $mock_country_config->unmock_all();
+};
+
+subtest 'rule idv.check_dob_conformity' => sub {
+    my $check_id  = 'test';
+    my $rule_name = 'idv.check_dob_conformity';
+
+    my $rule_engine = BOM::Rules::Engine->new();
+    like exception { $rule_engine->apply_rules($rule_name) }, qr/Client is missing/, 'Client is required';
+
+    $rule_engine = BOM::Rules::Engine->new(client => $client_cr);
+    like exception { $rule_engine->apply_rules($rule_name); $rule_engine->apply_rules($rule_name, {result => []}); }, qr/IDV result is missing/,
+        'Missing result in passed args';
+
+    $rule_engine = BOM::Rules::Engine->new(client => $client_cr);
+
+    my $tests = [{
+            result => {
+                date_of_birth => Date::Utility->new->date_yyyymmdd,
+            },
+            client => {
+                date_of_birth => Date::Utility->new->_minus_months(1)->date_yyyymmdd,
+            },
+            error => 'DobMismatch'
+        },
+        {
+            result => {
+                date_of_birth => Date::Utility->new->date_yyyymmdd,
+            },
+            client => {
+                date_of_birth => Date::Utility->new->date_yyyymmdd,
+            },
+            error => undef
+        },
+        {
+            result => {
+                date_of_birth => Date::Utility->new->date_ddmmyyyy,
+            },
+            client => {
+                date_of_birth => Date::Utility->new->date_yyyymmdd,
+            },
+            error => undef
+        },
+        {
+            result => {
+                date_of_birth => Date::Utility->new->datetime_yyyymmdd_hhmmss,
+            },
+            client => {
+                date_of_birth => Date::Utility->new->date_yyyymmdd,
+            },
+            error => 'DobMismatch'
+        },
+        {
+            result => {
+                date_of_birth => Date::Utility->new->date_ddmmyyyy,
+            },
+            client => {
+                date_of_birth => '1999-10-31',
+            },
+            error => 'DobMismatch'
+        },
+        {
+            result => {
+                date_of_birth => undef,
+            },
+            client => {
+                date_of_birth => Date::Utility->new->date_yyyymmdd,
+            },
+            error => 'DobMismatch'
+        },
+        {
+            result => {
+                date_of_birth => '2020-02-02',
+            },
+            client => {
+                date_of_birth => '2020-02-01',
+            },
+            error => 'DobMismatch'
+        },
+        {
+            result => {
+                date_of_birth => 'Not Available',
+            },
+            client => {
+                date_of_birth => '123',
+            },
+            error => 'DobMismatch'
+        },
+    ];
+
+    for my $case ($tests->@*) {
+        $client_cr->date_of_birth($case->{client}->{date_of_birth});
+
+        $rule_engine = BOM::Rules::Engine->new(client => $client_cr);
+
+        my $args = {result => $case->{result}};
+
+        if (my $error = $case->{error}) {
+            is_deeply exception { $rule_engine->apply_rules($rule_name, $args) }, +{error_code => $error}, "Broken rules: $error";
+        } else {
+            lives_ok { $rule_engine->apply_rules($rule_name, $args) } 'Rules are honored';
+        }
+    }
 };
 
 done_testing();
