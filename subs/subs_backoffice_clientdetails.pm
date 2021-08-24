@@ -601,7 +601,6 @@ SQL
         onfido_check_url                   => $onfido_check->{results_uri} // '',
         onfido_resubmission                => $onfido_allow_resubmission_flag,
         poa_resubmission_allowed           => $poa_resubmission_allowed,
-        is_client_in_onfido_country        => is_client_in_onfido_country($client) // 1,
         text_validation_info               => client_text_field_validation_info($client, secret_answer => $secret_answer),
         aml_risk_levels                    => [get_aml_risk_classicications()],
         is_staff_compliance                => BOM::Backoffice::Auth0::has_authorisation(['Compliance']),
@@ -1950,12 +1949,6 @@ sub client_search_and_navigation {
 
     print '</div>';
     return undef;
-}
-
-sub is_client_in_onfido_country {
-    my $client  = shift;
-    my $country = uc($client->place_of_birth // $client->residence);
-    return BOM::Config::Onfido::is_country_supported($country);
 }
 
 =head2 get_fiat_login_id_for

@@ -395,11 +395,7 @@ window.addEventListener('DOMContentLoaded', init_text_validations, false);
                 </a>
             [% ELSE %]
                 <strong>
-                    [% IF is_client_in_onfido_country %]
                         Check not performed
-                    [% ELSE %]
-                        Country not supported by Onfido
-                    [% END %]
                 </strong>
             [% END %]
         </td>
@@ -416,7 +412,6 @@ window.addEventListener('DOMContentLoaded', init_text_validations, false);
         </tr>
     [% END %]
 
-    [% IF is_client_in_onfido_country %]
     <tr>
         <td class="label"></td>
         <td>
@@ -431,7 +426,6 @@ window.addEventListener('DOMContentLoaded', init_text_validations, false);
         <td><button name="run_onfido_check" type="submit" class="btn btn--primary" value="1">Run Onfido Check</button></td>
     </tr>
 
-    [% END %]
     <tr>
         <td class="label" style="vertical-align:middle; color: blue;">Allow POI Resubmission</td>
         <td>:<input type="checkbox" onclick="toggle_checkbox(this)" name="allow_onfido_resubmission" value="1" [% IF onfido_resubmission %] checked="checked" [% END %] />
