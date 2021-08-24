@@ -293,7 +293,7 @@ Stores onfido document into the DB
 =cut
 
 sub store_onfido_document {
-    my ($doc, $applicant_id, $client_pob, $type, $side) = @_;
+    my ($doc, $applicant_id, $issuing_country, $type, $side) = @_;
 
     my $dbic = BOM::Database::UserDB::rose_db()->dbic;
 
@@ -310,7 +310,7 @@ sub store_onfido_document {
                     $doc->download_href,
                     $type,
                     $side,
-                    uc(country_code2code($client_pob, 'alpha-2', 'alpha-3') // ''),
+                    uc(country_code2code($issuing_country, 'alpha-2', 'alpha-3') // $issuing_country),
                     $doc->file_name,
                     $doc->file_type,
                     $doc->file_size,
