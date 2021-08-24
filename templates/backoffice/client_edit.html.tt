@@ -339,8 +339,55 @@ window.addEventListener('DOMContentLoaded', init_text_validations, false);
             </select>
         </td>
     </tr>
+
     <tr>
-        <td class = 'label'>ONFIDO</td>
+        <td style='text-align: right;' colspan='2'><hr/></td>
+    </tr>
+
+    <tr>
+        <td class='label'><b style='color: darkorange;'>IDV</b></td>
+        <td>:
+            [% IF idv_check_status %]
+                [% idv_check_status FILTER upper %]
+            [% ELSE %]
+                <strong>
+                        Check is not performed
+                </strong>
+            [% END %]
+        </td>
+    </tr>
+
+    [% IF idv_check_messages %]
+        <tr>
+            <td class="label" style='color: darkorange;'>IDV CHECK MESSAGES :</td>
+            <td>
+            <ul>
+            [% FOR msg IN idv_check_messages %]
+                <li>[% msg %]</li>
+            [% END %]
+                <ul>
+            </td>
+        </tr>
+    [% END %]
+
+    <tr>
+        <td class="label"></td>
+        <td>
+            Submissions left: [% idv_submissions_left %]
+        </td>
+    </tr>
+
+    <tr>
+        <td class="label"></td>
+        <td><button name="run_idv_check" type="submit" class="btn btn--primary" value="1">Run IDV Check</button></td>
+    </tr>
+
+    <tr>
+        <td style='text-align: right;' colspan='2'><hr/></td>
+    </tr>
+
+    <tr>
+        <td class = 'label'><b style='color: blue;'>ONFIDO</b></td>
         <td>:
             [% IF onfido_check_result %]
                 <a href="[% onfido_check_url %]" target="_blank">
@@ -358,9 +405,9 @@ window.addEventListener('DOMContentLoaded', init_text_validations, false);
         </td>
     </tr>
 
-    [% IF client.status.poi_name_mismatch %]
+    [% IF client.status.poi_name_mismatch && client.latest_poi_by.0 == 'onfido' %]
         <tr>
-            <td class="label">ONFIDO NAME MISMATCH</td>
+            <td class="label" style='color: blue;'>ONFIDO NAME MISMATCH</td>
             <td>
                 [% FOREACH prop IN onfido_reported_properties.keys %]
                     <b>[% prop %]:</b> [% onfido_reported_properties.item(prop) %]<br/>
@@ -386,7 +433,7 @@ window.addEventListener('DOMContentLoaded', init_text_validations, false);
 
     [% END %]
     <tr>
-        <td class="label" style="vertical-align:middle">Allow POI Resubmission</td>
+        <td class="label" style="vertical-align:middle; color: blue;">Allow POI Resubmission</td>
         <td>:<input type="checkbox" onclick="toggle_checkbox(this)" name="allow_onfido_resubmission" value="1" [% IF onfido_resubmission %] checked="checked" [% END %] />
         <span id="allow_onfido_resubmission_toggle" [% IF onfido_resubmission %] style="display:inline" [% ELSE %]  style="display:none" [% END %] >
         <label for="poi_reasons">REASON:</label>
@@ -401,7 +448,7 @@ window.addEventListener('DOMContentLoaded', init_text_validations, false);
         </td>
     </tr>
     <tr>
-        <td class="label">Resubmission Counter</td>
+        <td class="label" style='color: blue;'>Resubmission Counter</td>
         <td>: [% onfido_resubmission_counter %]</td>
     </tr>
 

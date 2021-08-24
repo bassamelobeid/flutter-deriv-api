@@ -26,6 +26,7 @@ use BOM::Database::DataMapper::Transaction;
 use BOM::Database::DataMapper::Account;
 use BOM::Database::DataMapper::Payment;
 use BOM::User::Utility;
+use BOM::User::IdentityVerification;
 use BOM::Platform::Locale;
 use BOM::Platform::Context;
 use BOM::Platform::S3Client;
@@ -38,6 +39,7 @@ use BOM::Config::Redis;
 use BOM::User::Client;
 use BOM::Backoffice::Request qw(request);
 use BOM::User::Onfido;
+use BOM::User::IdentityVerification;
 use 5.010;
 
 =head1 subs_backoffice_clientdetails
@@ -508,7 +510,14 @@ SQL
     my $onfido_allow_resubmission_flag = $client->status->reason('allow_poi_resubmission') // '';
     $onfido_allow_resubmission_flag =~ s/\skyc_email$//;    # Match the dropdown reasons to avoid user confusion
     my $onfido_resubmission_counter = $redis->get(ONFIDO_RESUBMISSION_COUNTER_KEY_PREFIX . $client->binary_user_id);
-    my $poa_resubmission_allowed    = $client->status->reason('allow_poa_resubmission') // '';
+
+    my $idv_model    = BOM::User::IdentityVerification->new(user_id => $client->binary_user_id);
+    my $idv_document = $idv_model->get_last_updated_document();
+
+    my $idv_messages = undef;
+    $idv_messages = eval { decode_json_utf8 $idv_document->{status_messages} } if $idv_document and $idv_document->{status_messages};
+
+    my $poa_resubmission_allowed = $client->status->reason('allow_poa_resubmission') // '';
     $poa_resubmission_allowed =~ s/\skyc_email$//;          # Match the dropdown reasons to avoid user confusion
 
     my $balance =
@@ -604,6 +613,9 @@ SQL
         onfido_submissions_reset           => BOM::User::Onfido::submissions_reset_at($client),
         onfido_reported_properties         => BOM::User::Onfido::reported_properties($client),
         poi_name_mismatch                  => $client->status->poi_name_mismatch,
+        idv_check_status                   => $idv_document ? $idv_document->{status} : undef,
+        idv_check_messages                 => $idv_messages,
+        idv_submissions_left               => $idv_model->submissions_left(),
         expired_poi_docs                   => $client->documents->expired(1),
         login_locked_until                 => $login_locked_until ? $login_locked_until->datetime_ddmmmyy_hhmmss_TZ : undef,
         too_many_attempts                  => $too_many_attempts,

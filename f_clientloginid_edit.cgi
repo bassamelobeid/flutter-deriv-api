@@ -174,6 +174,21 @@ if (defined $input{run_onfido_check}) {
     code_exit_BO(qq[<p><a href="$self_href">&laquo; Return to client details<a/></p>]);
 }
 
+if (defined $input{run_idv_check}) {
+    my $idv_model        = BOM::User::IdentityVerification->new(user_id => $client->binary_user_id);
+    my $standby_document = $idv_model->get_standby_document();
+
+    unless ($standby_document) {
+        print "<p class=\"notify notify--warning\">No standby document found for client $loginid.</p>";
+        code_exit_BO(qq[<p><a href="$self_href" class="link">&laquo; Return to client details<a/></p>]);
+    }
+
+    BOM::Platform::Event::Emitter::emit('identity_verification_requested', {loginid => $loginid});
+
+    print "<p class=\"notify\">Identity verification request sent.</p>";
+    code_exit_BO(qq[<p><a href="$self_href">&laquo; Return to client details<a/></p>]);
+}
+
 if ($input{document_list}) {
     my $new_doc_status;
     $new_doc_status = 'rejected' if $input{reject_checked_documents};
