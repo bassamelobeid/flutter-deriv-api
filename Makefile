@@ -22,7 +22,7 @@ p2p:
 	@$(PROVE) /home/git/regentmarkets/bom-websocket-tests/v3/p2p t/999_redis_keys.t
 
 structure:
-	@$(PROVE) t
+	@$(PROVE) --norc t
 
 schema:
 	@$(PROVE) /home/git/regentmarkets/bom-websocket-tests/v3/schema_suite t/999_redis_keys.t
@@ -34,7 +34,7 @@ backends:
 	@$(PROVE) --norc /home/git/regentmarkets/bom-websocket-tests/v3/backends
 
 pod_test:
-	@$(PROVE) t/*pod*.t
+	@$(PROVE) --norc t/*pod*.t
 
 test: structure schema accounts security pricing misc p2p
 
