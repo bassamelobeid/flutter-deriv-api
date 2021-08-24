@@ -17,7 +17,7 @@ no indirect;
 use Syntax::Keyword::Try;
 use Date::Utility;
 use YAML::XS qw(LoadFile);
-use List::Util qw(any uniqstr shuffle minstr);
+use List::Util qw( any  uniqstr  shuffle  minstr  none );
 use List::UtilsBy qw(bundle_by);
 use JSON::MaybeXS qw{encode_json};
 use URI;
@@ -1262,6 +1262,40 @@ sub get_qa_node_website_url {
     my $node_config = BOM::Config->qa_config()->{'nodes'}->{$qa_number . '.regentmarkets.com'};
     my $website     = $node_config->{'website'};
     return ($website =~ /^binaryqa/ ? "www.$website" : $website);
+}
+
+=head2 is_idv_disallowed
+
+Checks whether client allowed to verify identity via IDV based on some business rules
+
+=over 4
+
+=item * C<$client> - The corresponding client instance
+
+=back
+
+Returns bool
+
+=cut
+
+sub is_idv_disallowed {
+    my $client = shift;
+
+    return 1 if $client->status->unwelcome;
+    return 1 if $client->landing_company->short eq 'svg' and ($client->aml_risk_classification // '') eq 'high';
+
+    if ($client->status->allow_document_upload) {
+        return 1 if none { $_ eq $client->status->allow_document_upload->{reason} // '' }
+        qw/FIAT_TO_CRYPTO_TRANSFER_OVERLIMIT P2P_ADVERTISER_CREATED/;
+
+        my $manual_status = $client->get_manual_poi_status();
+        return 1 if $manual_status eq 'expired' or $manual_status eq 'rejected';
+
+        my $onfido_status = $client->get_onfido_status();
+        return 1 if $onfido_status eq 'expired' or $onfido_status eq 'rejected';
+    }
+
+    return 0;
 }
 
 =head2 trading_platform_display_name

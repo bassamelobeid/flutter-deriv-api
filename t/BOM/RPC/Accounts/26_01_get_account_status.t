@@ -22,7 +22,7 @@ use BOM::Config::Redis;
 
 BOM::Test::Helper::Token::cleanup_redis_tokens();
 
-my $idv_limit    = 0;
+my $idv_limit    = 2;
 my $onfido_limit = BOM::User::Onfido::limit_per_user;
 my $email        = 'abc@binary.com';
 my $password     = 'jskjd8292922';
@@ -353,13 +353,11 @@ subtest 'get account status' => sub {
                                     country_code         => 'IDN',
                                     reported_properties  => {},
                                     status               => 'none',
-                                    status               => 'none',
                                 },
                                 idv => {
                                     submissions_left    => $idv_limit,
                                     last_rejected       => [],
                                     reported_properties => {},
-                                    status              => 'none',
                                     status              => 'none',
                                 },
                                 manual => {
@@ -410,7 +408,6 @@ subtest 'get account status' => sub {
                                     documents_supported  => ['Driving Licence', 'National Identity Card', 'Passport'],
                                     country_code         => 'IDN',
                                     reported_properties  => {},
-                                    status               => 'none',
                                     status               => 'none',
                                 },
                                 idv => {
@@ -468,13 +465,11 @@ subtest 'get account status' => sub {
                                     country_code         => 'IDN',
                                     reported_properties  => {},
                                     status               => 'none',
-                                    status               => 'none',
                                 },
                                 idv => {
                                     submissions_left    => $idv_limit,
                                     last_rejected       => [],
                                     reported_properties => {},
-                                    status              => 'none',
                                     status              => 'none',
                                 },
                                 manual => {
@@ -2456,6 +2451,108 @@ subtest 'get account status' => sub {
             );
         };
 
+        subtest 'idv disallowed' => sub {
+            my $mocked_client = Test::MockModule->new(ref $test_client);
+            my $mocked_lc     = Test::MockModule->new('LandingCompany');
+
+            $test_client->status->clear_allow_document_upload;
+            my $result = $c->tcall($method, {token => $token});
+            cmp_deeply(
+                $result->{status},
+                superbagof(qw(financial_information_not_complete financial_assessment_not_complete)),
+                'no idv_disallowed if no allow_document_upload'
+            );
+
+            $test_client->status->setnx('unwelcome', 'system', 'reason');
+            $result = $c->tcall($method, {token => $token});
+            cmp_deeply(
+                $result->{status},
+                superbagof(qw(idv_disallowed financial_information_not_complete financial_assessment_not_complete)),
+                'no idv_disallowed if no allow_document_upload'
+            );
+            $test_client->status->clear_unwelcome;
+
+            $mocked_client->mock(aml_risk_classification => 'high');
+            $mocked_lc->mock(short => 'svg');
+            $result = $c->tcall($method, {token => $token});
+            cmp_deeply(
+                $result->{status},
+                superbagof(qw(idv_disallowed financial_information_not_complete financial_assessment_not_complete)),
+                'no idv_disallowed if cr account aml high risk'
+            );
+
+            $test_client->status->upsert('allow_document_upload', 'system', 'FIAT_TO_CRYPTO_TRANSFER_OVERLIMIT');
+            $result = $c->tcall($method, {token => $token});
+            cmp_deeply(
+                $result->{status},
+                superbagof(qw(financial_information_not_complete financial_assessment_not_complete)),
+                'no idv_disallowed if allow_document_upload with allowed reason'
+            );
+
+            $test_client->status->upsert('allow_document_upload', 'system', 'FIAT_TO_CRYPTO_TRANSFER_OVERLIMIT');
+            $result = $c->tcall($method, {token => $token});
+            cmp_deeply(
+                $result->{status},
+                superbagof(qw(allow_document_upload financial_information_not_complete financial_assessment_not_complete)),
+                'correct statuses for reason FIAT_TO_CRYPTO_TRANSFER_OVERLIMIT'
+            );
+
+            $test_client->status->upsert('allow_document_upload', 'system', 'P2P_ADVERTISER_CREATED');
+            $result = $c->tcall($method, {token => $token});
+            cmp_deeply(
+                $result->{status},
+                superbagof(qw(allow_document_upload financial_information_not_complete financial_assessment_not_complete)),
+                'correct statuses for reason P2P_ADVERTISER_CREATED'
+            );
+
+            $test_client->status->upsert('allow_document_upload', 'system', 'ANYTHING_ELSE');
+            $result = $c->tcall($method, {token => $token});
+            cmp_deeply(
+                $result->{status},
+                superbagof(qw(idv_disallowed allow_document_upload financial_information_not_complete financial_assessment_not_complete)),
+                'idv not allowed correctly for ANYTHING_ELSE'
+            );
+
+            $mocked_client->mock('get_onfido_status', 'expired');
+            $test_client->status->upsert('allow_document_upload', 'system', 'P2P_ADVERTISER_CREATED');
+            $result = $c->tcall($method, {token => $token});
+            cmp_deeply(
+                $result->{status},
+                superbagof(qw(idv_disallowed allow_document_upload financial_information_not_complete financial_assessment_not_complete)),
+                'idv not allowed correctly for because onfido docs are expired'
+            );
+
+            $mocked_client->mock('get_onfido_status', 'rejected');
+            $test_client->status->upsert('allow_document_upload', 'system', 'P2P_ADVERTISER_CREATED');
+            $result = $c->tcall($method, {token => $token});
+            cmp_deeply(
+                $result->{status},
+                superbagof(qw(idv_disallowed allow_document_upload financial_information_not_complete financial_assessment_not_complete)),
+                'idv not allowed correctly for because onfido docs are expired'
+            );
+            $mocked_client->unmock('get_onfido_status');
+
+            $mocked_client->mock('get_manual_poi_status', 'expired');
+            $test_client->status->upsert('allow_document_upload', 'system', 'P2P_ADVERTISER_CREATED');
+            $result = $c->tcall($method, {token => $token});
+            cmp_deeply(
+                $result->{status},
+                superbagof(qw(idv_disallowed allow_document_upload financial_information_not_complete financial_assessment_not_complete)),
+                'idv not allowed correctly for because manual docs are expired'
+            );
+
+            $mocked_client->mock('get_manual_poi_status', 'rejected');
+            $test_client->status->upsert('allow_document_upload', 'system', 'P2P_ADVERTISER_CREATED');
+            $result = $c->tcall($method, {token => $token});
+            cmp_deeply(
+                $result->{status},
+                superbagof(qw(idv_disallowed allow_document_upload financial_information_not_complete financial_assessment_not_complete)),
+                'idv not allowed correctly for because manual docs are expired'
+            );
+
+            $mocked_client->unmock_all();
+        };
+
         subtest 'shared payment method' => sub {
             $documents_uploaded = undef;
             $test_client_cr->status->clear_age_verification;
@@ -2952,7 +3049,14 @@ subtest 'Experian validated account' => sub {
 
         subtest 'Client uploaded Onfido docs' => sub {
             my $mocked_onfido = Test::MockModule->new('BOM::User::Onfido');
+            my $mocked_client = Test::MockModule->new('BOM::User::Client');
             my $onfido_document_status;
+
+            $mocked_client->mock(
+                'latest_poi_by',
+                sub {
+                    return 'onfido';
+                });
 
             $mocked_onfido->mock(
                 'get_latest_check',
@@ -3577,4 +3681,5 @@ subtest 'Empty country code scenario' => sub {
 };
 
 $documents_mock->unmock_all;
+
 done_testing();

@@ -15,10 +15,11 @@ use JSON::MaybeXS;
 use Syntax::Keyword::Try;
 use WWW::OneAll;
 use Date::Utility;
-use Array::Utils qw(intersect);
-use List::Util qw(any sum0 first min uniq none);
-use Digest::SHA qw(hmac_sha256_hex);
-use Text::Trim qw(trim);
+use Array::Utils qw( intersect );
+use List::Util qw(  any  sum0  first  min  uniq  none  );
+use Digest::SHA qw( hmac_sha256_hex );
+use Text::Trim qw( trim );
+use JSON::MaybeUTF8 qw( decode_json_utf8 );
 
 use BOM::User::Client;
 use BOM::User::FinancialAssessment qw(is_section_complete update_financial_assessment decode_fa build_financial_assessment);
@@ -192,6 +193,17 @@ our %RejectedOnfidoReasons = do {
         'selfie' => localize(
             "Your selfie isn't clear. Please take a clearer photo and try again. Ensure that there's enough light where you are and that your entire face is in the frame."
         ),
+    );
+};
+
+our %RejectedIdentityVerificationReasons = do {
+    ## no critic(TestingAndDebugging::ProhibitNoWarnings)
+    no warnings 'redefine';
+    local *localize = sub { die 'you probably wanted an arrayref for this localize() call' if @_ > 1; shift };
+    (
+        'UNDERAGE'      => localize("You're under legal age."),
+        'NAME_MISMATCH' => localize("The name retrieved from your document doesn't match your profile."),
+        'DOB_MISMATCH'  => localize("The date of birth retrieved from your document doesn't match your profile."),
     );
 };
 
@@ -947,6 +959,8 @@ rpc get_account_status => sub {
         push @$status, 'allow_document_upload';
     }
 
+    push @$status, 'idv_disallowed' if BOM::RPC::v3::Utility::is_idv_disallowed($client);
+
     my $user = $client->user;
 
     my $provider;
@@ -1167,23 +1181,26 @@ Returns,
 sub _get_authentication_poi {
     my $params = shift;
     my ($client, $documents) = @{$params}{qw/client documents/};
-    my $poi_expiry_date = $documents->{proof_of_identity}->{expiry_date};
-    my $expiry_date     = $poi_expiry_date ? $poi_expiry_date : undef;
-    my $country_code    = uc($client->place_of_birth || $client->residence // '');
-    my $poi_status      = $client->get_poi_status($documents);
+    my $poi_expiry_date      = $documents->{proof_of_identity}->{expiry_date};
+    my $expiry_date          = $poi_expiry_date ? $poi_expiry_date : undef;
+    my $country_code         = uc($client->place_of_birth || $client->residence // '');
+    my $poi_status           = $client->get_poi_status($documents);
+    my $country_code_triplet = uc(Locale::Country::country_code2code($country_code, LOCALE_CODE_ALPHA_2, LOCALE_CODE_ALPHA_3) // "");
 
     my $last_rejected = [];
     push $last_rejected->@*, BOM::User::Onfido::get_consider_reasons($client)->@* if $poi_status =~ /rejected|suspected/;
     push $last_rejected->@*, BOM::User::Onfido::get_rules_reasons($client)->@*;
 
-    my $idv = BOM::User::IdentityVerification->new(user_id => $client->binary_user_id);
-
-    my $country_code_triplet = uc(Locale::Country::country_code2code($country_code, LOCALE_CODE_ALPHA_2, LOCALE_CODE_ALPHA_3) // "");
+    my $idv_details = _get_idv_service_detail($client);
+    my ($latest_poi_by) = $client->latest_poi_by();
+    $latest_poi_by //= '';
+    $expiry_date   //= $idv_details->{expiry_date} if $latest_poi_by eq 'idv';
 
     # Return the identity structure
     return {
         status   => $poi_status,
         services => {
+            idv    => $idv_details,
             onfido => {
                 submissions_left     => BOM::User::Onfido::submissions_left($client),
                 is_country_supported => BOM::Config::Onfido::is_country_supported($country_code),
@@ -1193,18 +1210,48 @@ sub _get_authentication_poi {
                 status              => $client->get_onfido_status($documents),
                 $country_code_triplet ? (country_code => $country_code_triplet) : (),
             },
-            idv => {
-                submissions_left    => $idv->submissions_left,
-                last_rejected       => $idv->get_rejected_reasons,
-                reported_properties => $idv->reported_properties,
-                status              => $idv->status,
-            },
             manual => {
                 status => $client->get_manual_poi_status($documents),
             },
         },
         defined $expiry_date ? (expiry_date => $expiry_date) : (),
     };
+}
+
+=head2 _get_idv_service_detail
+
+Gets Identity verification service details from database and wrap them in the manner format for returning to user
+
+=cut
+
+sub _get_idv_service_detail {
+    my ($client) = @_;
+
+    my $idv      = BOM::User::IdentityVerification->new(user_id => $client->binary_user_id);
+    my $document = $idv->get_last_updated_document();
+    my $expiration_date;
+    my $idv_reject_reasons;
+    my $reported_properties;
+    my $status;
+
+    if ($document) {
+        $expiration_date = eval { Date::Utility->new($document->{document_expiration_date})->epoch } if $document->{document_expiration_date};
+        $status          = $client->get_idv_status($document);
+
+        if ($status eq 'rejected') {
+            my $messages = eval { decode_json_utf8($document->{status_messages}) };
+
+            $idv_reject_reasons =
+                [map { $RejectedIdentityVerificationReasons{$_} ? localize($RejectedIdentityVerificationReasons{$_}) : () } $messages->@*];
+        }
+    }
+
+    return {
+        submissions_left    => $idv->submissions_left(),
+        last_rejected       => $idv_reject_reasons  // [],
+        status              => $status              // 'none',
+        reported_properties => $reported_properties // {},
+        defined $expiration_date ? (expiry_date => $expiration_date) : ()};
 }
 
 =head2 _get_authentication_poa
