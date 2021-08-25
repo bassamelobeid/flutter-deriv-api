@@ -38,7 +38,7 @@
 <div class="card">
     <div class="card__label toggle">
         CRYPTOCURRENCY ACTIVITY: [% txn_type.upper %]
-        [% IF minimum_withdrawal_limit %] 
+        [% IF minimum_withdrawal_limit && currency %]
              <span class="card_span_red">/ CURRENT MINIMUM: [% minimum_withdrawal_limit %] [% currency %]</span>
         [% END %]
     </div>

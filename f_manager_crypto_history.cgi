@@ -190,7 +190,7 @@ my $render_crypto_transactions = sub {
     };
 
     my %min_withdrawal_info;
-    if ($txn_type eq 'withdrawal') {
+    if ($txn_type eq 'withdrawal' && defined($client_currency)) {
         %min_withdrawal_info = (
             minimum_withdrawal_limit => BOM::CTC::Currency->new(currency_code => $client_currency)->get_minimum_withdrawal,
         );

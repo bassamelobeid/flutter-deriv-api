@@ -50,6 +50,11 @@ print qq~
     <input type="text" size="30" name="email" placeholder="email\@domain.com" value="" data-lpignore="true" />
     <input type="submit" class="btn btn--primary" value="View / Edit" />
 </form>
+<form action="~ . request()->url_for('backoffice/f_manager_crypto_history.cgi') . qq~" method="get" class="row">
+        <label for="txt_search_crypto_address">Crypto Address:</label>
+        <input id="txt_search_crypto_address" placeholder="bc1qewnv87ueqsss..." type="text" size="40" name="address" data-lpignore="true" />
+        <input type="submit" class="btn btn--primary" value="Search" />
+    </form>
 ~;
 
 Bar("IMPERSONATE CLIENT");
@@ -157,16 +162,5 @@ print qq~
     ~;
 print '<input type="submit" class="btn btn--primary" value="Submit">';
 print "</form>";
-
-Bar("Search for a Client's Crypto Address");
-print qq~
-    <form action="~ . request()->url_for('backoffice/f_manager_crypto_history.cgi') . qq~" method="get">
-        <div class="row">
-            <label for="txt_search_crypto_address">Crypto Address:</label>
-            <input id="txt_search_crypto_address" type="text" size="40" name="address" data-lpignore="true" />
-        </div>
-        <input type="submit" class="btn btn--primary" value="Search" />
-    </form>
-    ~;
 
 code_exit_BO();
