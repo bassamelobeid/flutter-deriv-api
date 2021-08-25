@@ -102,9 +102,25 @@ sub mailbox_search {
 
 sub email_list {
     my $transport = Email::Sender::Simple->default_transport;
-    my @emails =
-        map { +{$_->{envelope}->%*, subject => '' . $_->{email}->get_header('Subject'), body => '' . $_->{email}->cast('Email::MIME')->body_str,} }
-        $transport->deliveries;
+
+    my @emails;
+    for ($transport->deliveries) {
+        my $data  = $_->{envelope};
+        my $email = $_->{email};
+        $data->{subject} = '' . $email->get_header('Subject');
+
+        my $mime = $email->cast('Email::MIME');
+        my $body = '';
+        if ($mime->content_type !~ /multipart/) {
+            $body .= $mime->body_str;
+        } else {
+            # just search the first part
+            $body .= ($mime->parts)[0]->body_str;
+        }
+        $data->{body} = $body;
+        push @emails, $data;
+    }
+
     $transport->clear_deliveries;
     return @emails;
 }
