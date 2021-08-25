@@ -546,12 +546,12 @@ subtest 'mt5 account closure report' => sub {
     $action_handler->($args);
 
     my $email = mailbox_search(
-        email   => request()->brand->emails('cs'),
+        email   => 'i-payments@deriv.com',
         subject => qr/MT5 account closure report/
     );
 
     ok $email, 'Account closure report email sent';
-    like $email->{body}, qr/Transferred/, 'corrent content';
+    like $email->{body}, qr/MT5 account closure report is attached/, 'corrent content';
 };
 
 done_testing();

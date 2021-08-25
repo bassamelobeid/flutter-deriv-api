@@ -24,7 +24,7 @@ use YAML::XS;
 use Date::Utility;
 use Text::CSV;
 use List::Util qw(any);
-use Path::Tiny qw(tempdir);
+use Path::Tiny;
 use JSON::MaybeUTF8 qw/encode_json_utf8/;
 use DataDog::DogStatsd::Helper;
 use Syntax::Keyword::Try;
@@ -467,19 +467,26 @@ sub mt5_inactive_account_closure_report {
 
     return unless $args->{reports} and $args->{reports}->@*;
 
-    my @message = map {
-        sprintf("Date[%s] MT5 account[%s] MT5 currency[%s] MT5 balance[%s] Deriv account[%s] Deriv currency[%s] Transferred amount[%s] <br/>",
-            @{$_}{'date', 'mt5_account', 'mt5_account_currency', 'mt5_balance', 'deriv_account', 'deriv_account_currency', 'transferred_amount'})
-    } $args->{reports}->@*;
+    my $csv = path('/tmp/report.csv');
+    # cleans the file
+    $csv->remove if $csv->exists;
+    $csv->touch;
+    $csv->append("date,mt5_account,mt5_account_currency,mt5_balance,deriv_account,deriv_account_currency,transferred_amount\n");
+    foreach my $data ($args->{reports}->@*) {
+        my $line = join ',',
+            (map { $data->{$_} } qw(date mt5_account mt5_account_currency mt5_balance deriv_account deriv_account_currency transferred_amount));
+        $line .= "\n";
+        $csv->append($line);
+    }
 
     # it seems weird that it does not support email in array ref
-    foreach my $email ($brand->emails('cs'), $brand->emails('payments'), $brand->emails('compliance_alert')) {
+    foreach my $email ('i-payments@deriv.com', $brand->emails('compliance_alert')) {
         BOM::Platform::Email::send_email({
-            to                    => $email,
-            from                  => $brand->emails('no-reply'),
-            subject               => localize('MT5 account closure report'),
-            message               => \@message,
-            email_content_is_html => 1,
+            to         => $email,
+            from       => $brand->emails('no-reply'),
+            subject    => 'MT5 account closure report',
+            message    => ['MT5 account closure report is attached'],
+            attachment => [$csv->[0]],
         });
     }
 }
