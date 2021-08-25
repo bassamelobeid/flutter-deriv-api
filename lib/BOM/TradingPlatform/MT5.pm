@@ -134,8 +134,7 @@ Returns a Future object, throws exception on error
 sub change_investor_password {
     my ($self, %args) = @_;
 
-    my $new_password = $args{new_password} or die 'no password provided';
-    my $account_id   = $args{account_id}   or die 'no account_id provided';
+    my ($new_password, $account_id) = @args{qw/new_password account_id/};
 
     my @mt5_loginids = $self->client->user->get_mt5_loginids;
     my $mt5_login    = first { $_ eq $account_id } @mt5_loginids;
