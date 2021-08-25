@@ -134,8 +134,11 @@ sub proveid {
     if (@invalid_matches) {
         my $msg = join(", ", @invalid_matches);
         $client->status->setnx('disabled', 'system', "Experian categorizes this client as $msg.");
-        $self->_notify_cs("Account $loginid disabled following Experian results",
-            "Experian results has marked this client as $msg and an email has been sent out to the client requesting for Proof of Identification.");
+        $self->_notify_disabled_by_experian({
+            loginid         => $loginid,
+            invalid_matches => \@invalid_matches,
+        });
+
         return $self->_request_id_authentication();
     }
 
@@ -293,19 +296,41 @@ sub _request_id_authentication {
     });
 }
 
-=head2 _notify_cs
+=head2 _notify_disabled_by_experian
 
-Adds an entry in the helpdesk system for the client with $subject and $body
+Sends an email to x-compops about the account being disabled by experian.
+
+Takes the following arguments:
+
+=over 4
+
+=item * C<$loginid> - the client loginid being disabled.
+
+=item * C<$invalid_matches> - array ref of invalid matches found by experian.
+
+=back
+
+Returns C<undef>.
 
 =cut
 
-sub _notify_cs {
-    my ($self, $subject, $body) = @_;
+sub _notify_disabled_by_experian {
+    my ($self, $args) = @_;
 
-    return unless BOM::Config::on_production();
+    my ($loginid, $invalid_matches) = @{$args}{qw/loginid invalid_matches/};
 
-    my $client = $self->client;
-    $client->add_note($subject, $client->loginid . ' ' . $body);
+    my $msg  = join(", ", $invalid_matches->@*);
+    my $to   = request()->brand->emails('compliance_ops');
+    my $from = request()->brand->emails('system');
+
+    send_email({
+            from    => $from,
+            to      => $to,
+            subject => "Account $loginid disabled following Experian results",
+            message => [
+                "$loginid Experian results has marked this client as $msg and an email has been sent out to the client requesting for Proof of Identification."
+            ],
+        });
 
     return undef;
 }

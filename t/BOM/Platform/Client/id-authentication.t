@@ -23,7 +23,7 @@ use BOM::Test::Helper::Client qw(create_client);
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 
 my $xml              = XML::Simple->new;
-my $support_email    = 'support@deriv.com';
+my $compops_email    = 'x-compops@deriv.com';
 my $compliance_email = 'compliance@deriv.com';
 my $password         = 'Abc123';
 my $hash_pwd         = BOM::User::Password::hashpw($password);
@@ -179,16 +179,6 @@ subtest 'MX accounts' => sub {
             _send_email(shift);
         });
 
-    $mock->mock(
-        _notify_cs => sub {
-            my $self    = shift;
-            my $subject = shift;
-
-            return _send_email({
-                to      => $support_email,
-                subject => $subject
-            });
-        });
     subtest 'Non-gb residence' => sub {
         my $user_client_mx = BOM::User->create(
             email          => 'mx@binary.com',
@@ -236,7 +226,7 @@ subtest 'MX accounts' => sub {
                 ok $v->client->status->proveid_requested, "ProveID requested";
                 ok !$vr_client->status->age_verification, "VR not age verified";
 
-                is($emails->{$support_email}->{subject}, "Account $loginid disabled following Experian results", "CS received email");
+                is($emails->{$compops_email}->{subject}, "Account $loginid disabled following Experian results", "CS received email");
                 is($emails->{$client_email}->{subject},  "Documents are required to verify your identity",       "Client received email");
             };
         }
