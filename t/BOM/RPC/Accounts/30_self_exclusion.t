@@ -675,11 +675,37 @@ subtest 'Set self-exclusion - CR clients' => sub {
             "Correct error for negative value - $field";
 
         my $base_value = $arg_values{$field} // 1001;
-        for my $value ($base_value, $base_value - 1, $base_value + 1, 0) {
+        if ($field eq 'max_open_bets') {
+            # test less than maximum value
+            my $value = $base_value - 1;
             $params->{args}->{$field} = $value;
             is $c->tcall($method, $params)->{status}, 1, "RPC called successfully with value $value - $field";
-
             is $c->tcall('get_self_exclusion', $get_params)->{$field} // 0, $value, "get_self_exclusion returns the same value $value - $field";
+            # test more than maximum value
+            my $value_plus = $base_value + 1;
+            $params->{args}->{$field} = $value_plus;
+            is_deeply $c->tcall($method, $params)->{error},
+                {
+                code              => 'SetSelfExclusionError',
+                details           => $field,
+                message_to_client => "Please enter a number between 1 and $base_value."
+                },
+                "RPC fails if called with value $value_plus again - $field";
+            is $c->tcall('get_self_exclusion', $get_params)->{$field} // 0, $value, "get_self_exclusion returns the previous value - $field";
+
+            # test exact maximum value
+            $params->{args}->{$field} = $base_value;
+            is $c->tcall($method, $params)->{status}, 1, "RPC called successfully with value $base_value - $field";
+            is $c->tcall('get_self_exclusion', $get_params)->{$field} // 0, $base_value,
+                "get_self_exclusion returns the same value $base_value - $field";
+
+        } else {
+            for my $value ($base_value, $base_value - 1, $base_value + 1, 0) {
+                $params->{args}->{$field} = $value;
+                is $c->tcall($method, $params)->{status}, 1, "RPC called successfully with value $value - $field";
+
+                is $c->tcall('get_self_exclusion', $get_params)->{$field} // 0, $value, "get_self_exclusion returns the same value $value - $field";
+            }
         }
         delete $params->{args}->{$field};
     }
@@ -700,8 +726,8 @@ subtest 'Set self-exclusion - regulated landing companies' => sub {
 
     foreach my $field (@field_names) {
         my $value = $arg_values{$field} // 1001;
-
         $params->{args}->{$field} = $value;
+
         is $c->tcall($method, $params)->{status}, 1, "RPC called successfully with value $value - $field";
         is $c->tcall('get_self_exclusion', $get_params)->{$field} // 0, $value, "get_self_exclusion returns the same value $value - $field";
 

@@ -2032,14 +2032,20 @@ rpc set_self_exclusion => sub {
         return $error_sub->($min->{message}, $field) if $min and $value < $min->{value};
         return $error_sub->($max->{message}, $field) if $max and $value > $max->{value};
 
-        # the rest is applied on regulated landing companies only.
-        next unless $is_regulated;
+        # accept any max value if unregulated account and the field is not 'max_open_bets'
+        next if (not $is_regulated and $field ne 'max_open_bets');
 
         # in regulated landing companies, clients are not allowed to extend or remove their self-exclusion settings
+        # non-regulated clients are allowed to extend max_open_bets up to default max value
         if ($self_exclusion->{$field}) {
             $min = $field_settings->{is_integer} ? 1 : 0;
-            return $error_sub->(localize('Please enter a number between [_1] and [_2].', $min, $self_exclusion->{$field}), $field)
-                unless $value > 0 and $value <= $self_exclusion->{$field};
+            $max = $self_exclusion->{$field};
+            if (not $is_regulated and $field eq 'max_open_bets') {
+                $max = BOM::Config::client_limits()->{max_open_bets_default};
+            }
+
+            return $error_sub->(localize('Please enter a number between [_1] and [_2].', $min, $max), $field)
+                if $value <= 0 or $value > $max;
         }
     }
 
