@@ -49,6 +49,19 @@ WLDAUD: &smart_fx
 WLDEUR: *smart_fx
 WLDGBP: *smart_fx
 WLDUSD: *smart_fx
+WLDXAU: &smart_gold
+  callput:
+    intraday:
+      spot:
+        euro_atm:
+          max: 10h
+          min: 1m
+  callputequal:
+    intraday:
+      spot:
+        euro_atm:
+          max: 10h
+          min: 3m
 frxAUDCAD: &inactive_fx
   callput:
     intraday:

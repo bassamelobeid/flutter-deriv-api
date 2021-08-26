@@ -25,7 +25,7 @@ subtest 'trading durations at quiet period' => sub {
 
     my $trading_durations = generate_trading_durations($offerings);
     my $expected          = LoadFile('t/BOM/Product/Offerings/expected_trading_durations_quiet_period.yml');
-    is_deeply($trading_durations, $expected);
+    cmp_deeply($trading_durations, $expected);
 };
 
 subtest 'trading durations' => sub {
@@ -34,7 +34,7 @@ subtest 'trading durations' => sub {
 
     my $trading_durations = generate_trading_durations($offerings);
     my $expected          = LoadFile('t/BOM/Product/Offerings/expected_trading_durations.yml');
-    is_deeply($trading_durations, $expected);
+    cmp_deeply($trading_durations, $expected);
 };
 
 done_testing();
