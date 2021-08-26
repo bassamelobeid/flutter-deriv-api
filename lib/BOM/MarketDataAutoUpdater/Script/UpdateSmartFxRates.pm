@@ -76,11 +76,12 @@ sub script_run {
         {
             my %rates       = map { $_->symbol => $_->interest_rate_for($term / 365) - $_->dividend_rate_for($term / 365) } @source;
             my @rates_array = map { $neg{$_->symbol} ? -$rates{$_->symbol} : $rates{$_->symbol} } @source;
-            $world_rate{$term} = ($rates_array[0] + $rates_array[1] + $rates_array[2] + $rates_array[3] + $rates_array[4]) / 5;
+            $world_rate{$term} = ($rates_array[0] + $rates_array[1] + $rates_array[2] + $rates_array[3] + $rates_array[4]) / 5
+                if scalar(@rates_array == 5);
             # the formula for WLDXAU is slightly different, hence a different formula for rates too.
             if ($symbol eq 'WLDXAU') {
                 my $xauusd = create_underlying('frxXAUUSD');
-                my $rates  = $xauusd->interest_rates_for($term / 365) - $xauusd->dividend_rate_for($term / 365);
+                my $rates  = $xauusd->interest_rate_for($term / 365) - $xauusd->dividend_rate_for($term / 365);
                 $world_rate{$term} += $rates;
             }
         }

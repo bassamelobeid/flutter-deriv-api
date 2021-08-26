@@ -62,6 +62,7 @@ sub _build_symbols_to_update {
     );
     my @commodities = create_underlying_db->get_symbols_for(
         market            => 'commodities',
+        submarket         => ['energy', 'metals'],
         contract_category => 'ANY',
     );
 

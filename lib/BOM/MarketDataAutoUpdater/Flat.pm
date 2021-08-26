@@ -82,7 +82,7 @@ sub run {
     my ($chronicle_r, $chronicle_w) = (BOM::Config::Chronicle::get_chronicle_reader, BOM::Config::Chronicle::get_chronicle_writer);
 
     foreach my $symbol (@{$self->symbols_for_delta}) {
-        my $surface_data = {map { $_ => {vol_spread => _get_volspread('delta'), smile => _get_smile('delta')} } @tenors};
+        my $surface_data = {map { $_ => {vol_spread => _get_volspread('delta'), smile => _get_smile('delta', $symbol)} } @tenors};
         Quant::Framework::VolSurface::Delta->new({
                 underlying       => create_underlying($symbol),
                 surface_data     => $surface_data,
@@ -93,7 +93,7 @@ sub run {
     }
 
     foreach my $symbol (@{$self->symbols_for_moneyness}) {
-        my $surface_data = {map { $_ => {vol_spread => _get_volspread('moneyness'), smile => _get_smile('moneyness')} } @tenors};
+        my $surface_data = {map { $_ => {vol_spread => _get_volspread('moneyness'), smile => _get_smile('moneyness', $symbol)} } @tenors};
         my $underlying   = create_underlying($symbol);
         Quant::Framework::VolSurface::Moneyness->new({
                 underlying       => $underlying,
@@ -115,12 +115,17 @@ sub _get_volspread {
 }
 
 sub _get_smile {
-    my $type = shift;
+    my $type   = shift;
+    my $symbol = shift;
 
     my %smile_point = (
         delta     => [25, 50, 75],
         moneyness => [90, 92, 94, 96, 98, 100, 102, 104, 106, 108, 110],
     );
+
+    if ($type eq 'delta' and $symbol eq 'WLDXAU') {
+        return {map { $_ => 0.25 } @{$smile_point{$type}}};
+    }
 
     return {map { $_ => 0.1 } @{$smile_point{$type}}};
 }
