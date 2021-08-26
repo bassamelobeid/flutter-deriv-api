@@ -736,6 +736,24 @@ quants:
       isa: Num
       global: 1
       default: 300
+compliance:
+  description: "Compliance related adjustable parameters"
+  isa: section
+  contains:
+    fake_names:
+      description: "Fake name detection settings"
+      isa: section
+      contains:
+        corporate_patterns:
+          description: "Keywords for indentifying corporate names. The symbol % can be used as wildcard (any number of characters)." 
+          isa: ArrayRef
+          global: 1
+          default: ['company', 'ltd%', 'co', 'co.', '%club', 'consult%', '%limited', 'holding%', 'invest%', 'market%', 'forex%', 'fx%', '%academy', 'trader']
+        accepted_consonant_names:
+          description: "All-consonant names or family names are regarded as fake names, with the exception of this list."
+          isa: ArrayRef
+          global: 1
+          default: ['md']
 system:
   description: "Various parameters determining core application functionality"
   isa: section
