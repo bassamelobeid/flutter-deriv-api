@@ -9,14 +9,15 @@ use Test::MockModule;
 use Test::Deep;
 
 use WebService::Async::Segment::Customer;
+use Time::Moment;
+use Date::Utility;
+use Encode;
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Email;
 use BOM::Platform::Context qw(request);
 use BOM::Platform::Context::Request;
 use BOM::User;
-use Time::Moment;
-use Date::Utility;
 use BOM::Platform::Locale qw/get_state_by_id/;
 use BOM::Event::Process;
 
@@ -561,10 +562,17 @@ subtest 'false profile info' => sub {
 
     my @test_set = ({
             field      => 'first_name',
-            'value'    => 'bcd',
+            'value'    => 'mdb',
             result     => 'fake',
             label      => 'all-consonant latin ascii name',
             email_sent => 1
+        },
+        {
+            field      => 'last_name',
+            'value'    => 'md',
+            result     => 0,
+            label      => 'Exempted all-consonant name.',
+            email_sent => 0
         },
         {
             field      => 'first_name',
@@ -637,6 +645,97 @@ subtest 'false profile info' => sub {
         $_->status->clear_unwelcome      for $test_user->clients;
         undef @mail_box;
     }
+
+    subtest 'app settings' => sub {
+        my $original_values = BOM::Config::Runtime->instance->app_config->compliance->fake_names->accepted_consonant_names;
+        BOM::Config::Runtime->instance->app_config->compliance->fake_names->accepted_consonant_names([]);
+        my $test_case = {
+            field      => 'first_name',
+            value      => 'md',
+            result     => 'fake',
+            label      => 'exceptional keyword <md> is removed and consequently rejected',
+            email_sent => 1
+        };
+        $args = {
+            loginid             => $client_cr->loginid,
+            $test_case->{field} => $test_case->{value}};
+        $event_handler->($args);
+        test_fake_name($test_case, $client_cr, \@mail_box, $brand);
+        $_->status->clear_unwelcome for $test_user->clients;
+        undef @mail_box;
+        BOM::Config::Runtime->instance->app_config->compliance->fake_names->accepted_consonant_names($original_values);
+
+        $original_values = BOM::Config::Runtime->instance->app_config->compliance->fake_names->corporate_patterns;
+        BOM::Config::Runtime->instance->app_config->compliance->fake_names->corporate_patterns([]);
+        $test_case = {
+            field      => 'last_name',
+            value      => 'company',
+            result     => 0,
+            label      => 'corporate name patterns are empty - no corporate name is detected',
+            email_sent => 0
+        };
+        $args = {
+            loginid             => $client_cr->loginid,
+            $test_case->{field} => $test_case->{value}};
+        $event_handler->($args);
+        test_fake_name($test_case, $client_cr, \@mail_box, $brand);
+
+        BOM::Config::Runtime->instance->app_config->compliance->fake_names->corporate_patterns(['ALI%']);
+        for my $name (qw/ali alibaba/) {
+            $test_case = {
+                field      => 'last_name',
+                value      => $name,
+                result     => 'corporate',
+                label      => "$name is a corporate name now matcing the pattern ALI%",
+                email_sent => 1
+            };
+            $args = {
+                loginid             => $client_cr->loginid,
+                $test_case->{field} => $test_case->{value}};
+            $event_handler->($args);
+            test_fake_name($test_case, $client_cr, \@mail_box, $brand);
+            $_->status->clear_unwelcome for $test_user->clients;
+            undef @mail_box;
+        }
+
+        BOM::Config::Runtime->instance->app_config->compliance->fake_names->corporate_patterns(['%rä%dïò%']);
+        $test_case = {
+            field      => 'last_name',
+            value      => 'BASDFASDF',
+            result     => 0,
+            label      => "Rädïò doesn't match the pattern %Rä%dïò%",
+            email_sent => 0
+        };
+        $args = {
+            loginid             => $client_cr->loginid,
+            $test_case->{field} => $test_case->{value}};
+        $event_handler->($args);
+        test_fake_name($test_case, $client_cr, \@mail_box, $brand);
+        $_->status->clear_unwelcome for $test_user->clients;
+        undef @mail_box;
+
+        for my $name (qw/Rä%dïò _Rä%dïò Rä%dïò_ __Rä%dïò__/) {
+            $test_case = {
+                field      => 'last_name',
+                value      => $name,
+                result     => 'corporate',
+                label      => "$name is a corporate name now matcing the pattern %Rä%dïò%",
+                email_sent => 1
+            };
+            $args = {
+                loginid             => $client_cr->loginid,
+                $test_case->{field} => $test_case->{value}};
+            $event_handler->($args);
+            test_fake_name($test_case, $client_cr, \@mail_box, $brand);
+            $_->status->clear_unwelcome for $test_user->clients;
+            undef @mail_box;
+        }
+
+        $_->status->clear_unwelcome for $test_user->clients;
+        undef @mail_box;
+
+        BOM::Config::Runtime->instance->app_config->compliance->fake_names->corporate_patterns($original_values);
+    };
 
     subtest 'corner cases' => sub {
         my $mock_client = Test::MockModule->new('BOM::User::Client');

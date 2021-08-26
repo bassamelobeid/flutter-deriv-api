@@ -2,12 +2,12 @@ package BOM::Event::Actions::User;
 
 use strict;
 use warnings;
-use utf8;
 
 use List::Util qw(any);
 use Text::Unidecode;
 use Syntax::Keyword::Try;
 use Log::Any qw($log);
+use Text::Trim;
 
 use BOM::Event::Services::Track;
 use BOM::Platform::Client::Sanctions;
@@ -15,6 +15,7 @@ use BOM::User::Client;
 use BOM::Platform::Context qw(request localize);
 use BOM::Platform::Email qw(send_email);
 use BOM::Event::Utility qw(exception_logged);
+use BOM::Config::Runtime;
 
 =head1 NAME
 
@@ -152,40 +153,49 @@ sub verify_false_profile_info {
     my $client  = BOM::User::Client->new({loginid => $loginid}) or die 'Could not instantiate client for login ID ' . $loginid;
     my $brand   = request->brand();
 
-    my $vowels_pattern = qr/[aoeiuy]/i;
+    my $vowels_regex = qr/[aoeiuy]/i;
 
-    my $corporate_pattern = qr/\b(company|ltd.*|co[\.]?|.*club|consult.*|.*limited|holding.*|invest.*|market.*|forex.*|fx.*|.*academy)\b/i;
+    my %regex;
+    for my $config (qw/corporate_patterns accepted_consonant_names/) {
+        my @patterns = map { (trim $_) || () } BOM::Config::Runtime->instance->app_config->compliance->fake_names->$config->@*;
+        # lets see if each pattern starts or ends with a wildcard character
+        my @begins_with_wildcard = map { $_ =~ qr/^%/ ? 1 : 0 } @patterns;
+        my @ends_with_wildcard   = map { $_ =~ qr/%$/ ? 1 : 0 } @patterns;
 
-    # acceptable all-consonant names
-    my $exceptions = qr/md/;
+        for my $index (0 .. scalar(@patterns) - 1) {
+            $patterns[$index] =~ s/^%|%$//g;
+            # escape special characters
+            $patterns[$index] = "\Q$patterns[$index]\E";
+            # put wildcard regular expressions in their original positions
+            $patterns[$index] = '.*' . $patterns[$index] if $begins_with_wildcard[$index];
+            $patterns[$index] = $patterns[$index] . '.*' if $ends_with_wildcard[$index];
+        }
+        $regex{$config} = join '|', @patterns;
+    }
 
     my @fields = (qw/first_name last_name/);
 
     my ($no_vowels, $corporate_name);
 
     for my $key (@fields) {
-        my $value = $args->{$key};
+        my $value = $args->{$key} or next;
 
-        next unless $value;
-
-        $no_vowels      |= (lc($value) !~ $exceptions) && (lc(unidecode($value) // '') !~ $vowels_pattern);
-        $corporate_name |= (lc($value) =~ $corporate_pattern);
+        my $is_accepted_all_consonant = $regex{accepted_consonant_names} && ($value =~ qr/\b($regex{accepted_consonant_names})\b/i);
+        $no_vowels |= !$is_accepted_all_consonant && (unidecode($value) !~ $vowels_regex);
+        $corporate_name |= ($value =~ qr/\b($regex{corporate_patterns})\b/i) if $regex{corporate_patterns};
     }
-
     return undef unless $no_vowels || $corporate_name;
 
     my $message = $no_vowels ? 'fake profile info - pending POI' : 'potential corporate account - pending POI';
 
-    my ($sibling_locked_for_false_info, $just_locked);
+    my ($sibling_locked_for_false_info, $just_locked) = (0, 0);
     for my $sibling ($client->user->clients) {
         $sibling_locked_for_false_info = 1 if $sibling->locked_for_false_profile_info;
 
         next if $sibling->is_virtual || ($sibling->get_poi_status(undef, 0) eq 'verified');
 
         my $status = $sibling->has_deposits ? 'cashier_locked' : 'unwelcome';
-        next if $sibling->status->$status;
-
-        $sibling->status->setnx($status, 'system', $message) unless $sibling->is_virtual;
+        $sibling->status->setnx($status, 'system', $message);
         $just_locked = 1;
     }
 
