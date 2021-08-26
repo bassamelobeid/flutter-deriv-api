@@ -140,6 +140,64 @@ ok $res->{error}->{message} =~ /Input validation failed: scopes/, 'Input validat
 
 $t = $t->send_ok({
         json => {
+            app_register          => 1,
+            name                  => 'App 3',
+            scopes                => ['read', 'admin', 'trade'],
+            app_markup_percentage => 2
+        }})->message_ok;
+$res = $json->decode(Encode::decode_utf8($t->message->[1]));
+ok $res->{error}->{message} =~ /provide redirect url/, 'Requesting redirect url';
+
+$t = $t->send_ok({
+        json => {
+            app_register => 1,
+            name         => 'App 3',
+            scopes       => ['read', 'admin', 'trade'],
+        }})->message_ok;
+$res = $json->decode(Encode::decode_utf8($t->message->[1]));
+test_schema('app_register', $res);
+my $app3 = $res->{app_register};
+
+$app_id = $app3->{app_id};
+$t      = $t->send_ok({
+        json => {
+            app_get => $app_id,
+        }})->message_ok;
+$res = decode_json($t->message->[1]);
+is $res->{msg_type}, 'app_get';
+test_schema('app_get', $res);
+is_deeply($res->{app_get}, $app3, 'app_get ok');
+
+$t = $t->send_ok({
+        json => {
+            app_update            => $app_id,
+            name                  => 'App 3',
+            scopes                => ['read', 'admin', 'trade'],
+            app_markup_percentage => 1
+        }})->message_ok;
+$res = $json->decode(Encode::decode_utf8($t->message->[1]));
+ok $res->{error}->{message} =~ /provide redirect url/, 'Requesting redirect url';
+
+$t = $t->send_ok({
+        json => {
+            app_update            => $app_id,
+            name                  => 'App 3',
+            scopes                => ['read', 'admin', 'trade'],
+            app_markup_percentage => 1,
+            redirect_uri          => 'https://www.example3.com/callback',
+            homepage              => 'https://www.homepage3.com/',
+        }})->message_ok;
+$res = $json->decode(Encode::decode_utf8($t->message->[1]));
+is $res->{msg_type}, 'app_update';
+test_schema('app_update', $res);
+$app3 = $res->{app_update};
+is_deeply([sort @{$app3->{scopes}}], ['admin', 'read', 'trade'], 'scopes are updated');
+is $app3->{redirect_uri},          'https://www.example3.com/callback', 'redirect_uri is updated';
+is $app3->{homepage},              'https://www.homepage3.com/',        'homepage is updated';
+is $app3->{app_markup_percentage}, 1,                                   'markup is updated';
+
+$t = $t->send_ok({
+        json => {
             app_register => 1,
             name         => 'App 2',
             scopes       => ['read', 'admin'],
@@ -158,7 +216,7 @@ is $res->{msg_type}, 'app_list';
 test_schema('app_list', $res);
 my $get_apps = [grep { $_->{app_id} ne '1' } @{$res->{app_list}}];
 
-is_deeply($get_apps, [$app1, $app2, $app_no_admin], 'app_list ok');
+is_deeply($get_apps, [$app1, $app2, $app3, $app_no_admin], 'app_list ok');
 
 $t = $t->send_ok({
         json => {
@@ -175,7 +233,7 @@ $t = $t->send_ok({
 $res = $json->decode(Encode::decode_utf8($t->message->[1]));
 test_schema('app_list', $res);
 $get_apps = [grep { $_->{app_id} ne '1' } @{$res->{app_list}}];
-is_deeply($get_apps, [$app1, $app_no_admin], 'app_delete ok');
+is_deeply($get_apps, [$app1, $app3, $app_no_admin], 'app_delete ok');
 
 ## for used and revoke
 my $test_appid = $app1->{app_id};
