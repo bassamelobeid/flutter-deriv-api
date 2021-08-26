@@ -208,6 +208,112 @@ $get_apps = $c->call_ok(
 $get_apps = [grep { $_->{app_id} ne '1' } @$get_apps];
 is_deeply($get_apps, [$app1], 'delete ok');
 
+my $app3 = $c->call_ok(
+    'app_register',
+    {
+        token => $token,
+        args  => {
+            name   => 'App 3',
+            scopes => ['read', 'admin'],
+        },
+    })->has_no_system_error->has_no_error->result;
+is $app3->{redirect_uri}, '', 'no redirect_uri provided';
+$expected_event_payload = {
+    $app3->%{
+        qw(app_id name scopes redirect_uri verification_uri homepage
+            github appstore googleplay app_markup_percentage)
+    },
+    loginid => $test_loginid
+};
+is $emit_args[0], 'app_registered', 'emitted event name is correct';
+is_deeply $emit_args[1], $expected_event_payload, 'emitted event payload is correct';
+undef @emit_args;
+$app3 = $c->call_ok(
+    'app_update',
+    {
+        token => $token,
+        args  => {
+            app_update => $app3->{app_id},
+            name       => 'App 3',
+            scopes     => ['read', 'admin']
+        },
+    })->has_no_system_error->has_no_error->result;
+delete $app3->{stash};    # This will check against an ARRAY response which doesn't have the stash
+is $app3->{redirect_uri}, '', 'App updated excluding redirect uri';
+undef @emit_args;
+
+$res = $c->call_ok(
+    'app_update',
+    {
+        token => $token,
+        args  => {
+            app_update            => $app3->{app_id},
+            name                  => 'App 3',
+            app_markup_percentage => 2,
+            scopes                => ['read', 'admin'],
+        },
+    })->has_no_system_error->has_error->result;
+ok $res->{error}->{message_to_client} =~ /provide redirect url/, 'provide redirect url';
+is scalar @emit_args, 0, 'no event emitted';
+
+$app3 = $c->call_ok(
+    'app_update',
+    {
+        token => $token,
+        args  => {
+            app_update   => $app3->{app_id},
+            name         => 'App 3',
+            redirect_uri => 'https://www.example3.com/',
+            scopes       => ['read', 'admin'],
+        },
+    })->has_no_system_error->has_no_error->result;
+delete $app3->{stash};    # This will check against an ARRAY response which doesn't have the stash
+is $app3->{redirect_uri}, 'https://www.example3.com/', 'redirect_uri is updated';
+undef @emit_args;
+
+$app3 = $c->call_ok(
+    'app_update',
+    {
+        token => $token,
+        args  => {
+            app_update            => $app3->{app_id},
+            name                  => 'App 3',
+            redirect_uri          => 'https://www.example3.com/',
+            app_markup_percentage => 2,
+            scopes                => ['read', 'admin'],
+        },
+    })->has_no_system_error->has_no_error->result;
+delete $app3->{stash};    # This will check against an ARRAY response which doesn't have the stash
+is $app3->{redirect_uri}, 'https://www.example3.com/', 'redirect_uri is updated';
+undef @emit_args;
+
+$get_apps = $c->call_ok(
+    'app_list',
+    {
+        token => $token,
+        args  => {
+            app_list => 1,
+        },
+    })->has_no_system_error->result;
+
+$get_apps = [grep { $_->{app_id} ne '1' } @$get_apps];
+
+is_deeply($get_apps, [$app1, $app3], 'list ok');
+undef @emit_args;
+
+$res = $c->call_ok(
+    'app_register',
+    {
+        token => $token,
+        args  => {
+            name                  => 'App 4',
+            scopes                => ['read', 'admin'],
+            app_markup_percentage => 2
+        },
+    })->has_no_system_error->has_error->result;
+ok $res->{error}->{message_to_client} =~ /provide redirect url/, 'provide redirect url';
+is scalar @emit_args, 0, 'no event emitted';
+
 ## for used and revoke
 my $test_appid = $app1->{app_id};
 $oauth = BOM::Database::Model::OAuth->new;    # re-connect db

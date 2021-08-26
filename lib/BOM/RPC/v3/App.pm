@@ -43,6 +43,10 @@ rpc app_register => sub {
         });
     };
 
+    if (my $err = __validate_redirect_uri($redirect_uri, $app_markup_percentage)) {
+        return $error_sub->($err);
+    }
+
     if (my $err = __validate_app_links($homepage, $github, $appstore, $googleplay, $redirect_uri, $verification_uri)) {
         return $error_sub->($err);
     }
@@ -105,6 +109,10 @@ rpc app_update => sub {
 
     my $app = $oauth->get_app($user_id, $app_id);
     return $error_sub->(localize('Not Found')) unless $app;
+
+    if (my $err = __validate_redirect_uri($redirect_uri, $app_markup_percentage)) {
+        return $error_sub->($err);
+    }
 
     if (my $err = __validate_app_links($homepage, $github, $appstore, $googleplay, $redirect_uri, $verification_uri)) {
         return $error_sub->($err);
@@ -306,5 +314,34 @@ rpc app_markup_details => sub {
                 );
             })};
 };
+
+=head2 __validate_redirect_uri
+
+    __validate_redirect_uri($redirect_uri, $app_markup_percentage);
+
+validate redirect_uri exists on charging markup
+
+The following arguments are used
+
+=over 4
+
+=item * C<redirect_uri> redirect URL
+
+=item * C<app_markup_percentage> markup charge percentage
+
+=back
+
+=cut
+
+sub __validate_redirect_uri {
+    my ($redirect_uri)          = shift // '';
+    my ($app_markup_percentage) = shift // 0;
+
+    if (($app_markup_percentage + 0) > 0 && $redirect_uri eq '') {
+        return localize('Please provide redirect url.');
+    }
+
+    return;
+}
 
 1;
