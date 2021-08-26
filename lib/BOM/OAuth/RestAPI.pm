@@ -102,9 +102,10 @@ sub verify {
 
     return $c->_make_error('NEED_JSON_BODY', 400) unless $c->req->json;
 
-    my $app_id = defang($c->req->json->{app_id}) or return $c->_make_error('INVALID_APP_ID', 400);
+    my $app_id = defang($c->req->json->{app_id});
 
     my $oauth_model = BOM::Database::Model::OAuth->new;
+    return $c->_make_error('INVALID_APP_ID', 400) unless $app_id && $oauth_model->verify_app($app_id);
     return $c->_make_error('UNOFFICIAL_APP', 400) unless $oauth_model->is_official_app($app_id);
 
     my $expire = time + CHALLENGE_TIMEOUT;
@@ -152,14 +153,14 @@ sub authorize {
 
     return $c->_make_error('NEED_JSON_BODY', 400) unless $c->req->json;
 
-    my $app_id = defang($c->req->json->{app_id}) or return $c->_make_error('INVALID_APP_ID',           400);
+    my $app_id = defang($c->req->json->{app_id});
     my $expire = defang($c->req->json->{expire}) or return $c->_make_error('INVALID_EXPIRE_TIMESTAMP', 400);
 
     return $c->_make_error('INVALID_EXPIRE_TIMESTAMP', 400) if time > $expire;
 
     my $oauth_model = BOM::Database::Model::OAuth->new;
+    return $c->_make_error('INVALID_APP_ID', 400) unless $app_id && $oauth_model->verify_app($app_id);
     return $c->_make_error('UNOFFICIAL_APP', 400) unless $oauth_model->is_official_app($app_id);
-    return $c->_make_error('INVALID_APP_ID', 400) unless $oauth_model->verify_app($app_id);
 
     my $solution  = defang($c->req->json->{solution});
     my $tokens    = $oauth_model->get_app_tokens($app_id);
@@ -216,13 +217,13 @@ sub login {
     my $encoded_app_id = $payload->{app};
 
     my $app_id = defang $c->req->json->{app_id};
-    return $c->_make_error('INVALID_APP_ID', 400) if !$app_id || $app_id !~ /^[0-9]+$/ || $encoded_app_id ne $app_id;
+    return $c->_make_error('INVALID_APP_ID', 400) if !$app_id || $app_id !~ /^[0-9]+$/ || $encoded_app_id != $app_id;
 
     my $oauth_model = BOM::Database::Model::OAuth->new;
-    return $c->_make_error('UNOFFICIAL_APP', 400) unless $oauth_model->is_official_app($app_id);
 
     my $app = $oauth_model->verify_app($app_id);
     return $c->_make_error('INVALID_APP_ID', 400) unless $app;
+    return $c->_make_error('UNOFFICIAL_APP', 400) unless $oauth_model->is_official_app($app_id);
 
     my $login_type = defang $c->req->json->{type};
     return $c->_make_error('INVALID_LOGIN_TYPE', 400) if !$login_type || none { $_ eq $login_type } get_valid_login_types;
@@ -361,13 +362,16 @@ sub pta_login {
     }
 
     my $source_app = {id => $payload->{app}};
-    return $c->_make_error('INVALID_APP_ID', 400) if $source_app->{id} != $record->{app_id};
+    return $c->_make_error('INVALID_APP_ID', 400)
+        if !$source_app->{id} || !$oauth_model->verify_app($source_app->{id}) || $source_app->{id} != $record->{app_id};
+    return $c->_make_error('UNOFFICIAL_APP', 400) unless $oauth_model->is_official_app($source_app->{id});
 
-    $source_app->{scopes} = $oauth_model->get_app_by_id($source_app->{id})->{scopes};
+    $source_app->{scopes} = $oauth_model->get_app_by_id($record->{app_id})->{scopes};
 
-    my $destination_app = {id => defang $c->req->json->{app_id}};
-    my $app             = $oauth_model->verify_app($destination_app->{id});
-    return $c->_make_error('INVALID_APP_ID', 400) if !$app || !$destination_app->{id} || $destination_app->{id} !~ /^[0-9]+$/;
+    my $destination_app = {id => defang $c->req->json->{app_id}} or return $c->_make_error('INVALID_APP_ID', 400);
+
+    my $app = $oauth_model->verify_app($destination_app->{id});
+    return $c->_make_error('INVALID_APP_ID', 400) if !$app;
     return $c->_make_error('UNOFFICIAL_APP', 400) unless $oauth_model->is_official_app($destination_app->{id});
 
     $destination_app->{scopes} = $oauth_model->get_app_by_id($destination_app->{id})->{scopes};
@@ -459,16 +463,16 @@ sub one_time_token {
         unless $refresh_token && (my $record = $oauth_model->get_user_app_details_by_refresh_token($refresh_token));
 
     my $source_app_id = $one_time_token_params->{source_app_id};
-    return $c->_make_login_error('INVALID_APP_ID') if $source_app_id != $record->{app_id};
+    return $c->_make_login_error('INVALID_APP_ID')
+        if !$source_app_id || !$oauth_model->verify_app($source_app_id) || $source_app_id != $record->{app_id};
     return $c->_make_login_error('UNOFFICIAL_APP') unless $oauth_model->is_official_app($source_app_id);
 
     my $binary_user_id     = $record->{binary_user_id};
-    my $destination_app_id = $one_time_token_params->{app_id};
-
-    return $c->_make_login_error('UNOFFICIAL_APP', $destination_app_id) unless $oauth_model->is_official_app($destination_app_id);
+    my $destination_app_id = $one_time_token_params->{app_id} or return $c->_make_error('INVALID_APP_ID', 400);
 
     my $app = $oauth_model->verify_app($destination_app_id);
     return $c->_make_login_error('INVALID_APP_ID', $destination_app_id) unless $app;
+    return $c->_make_login_error('UNOFFICIAL_APP', $destination_app_id) unless $oauth_model->is_official_app($destination_app_id);
 
     my $redirect_uri = $app->{redirect_uri};
     return $c->_make_login_error('REDIRECT_URI_NOT_FOUND', $destination_app_id) unless $redirect_uri;

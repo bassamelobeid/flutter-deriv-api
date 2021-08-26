@@ -971,6 +971,158 @@ subtest 'Too many attempts' => sub {
         ->json_is('/message', 'Sorry, you have already had too many unsuccessful attempts. Please try again in 5 minutes.');
 };
 
+subtest 'app_id' => sub {
+    subtest '/verify' => sub {
+        my $verify_url = '/api/v1/verify';
+
+        $post->($verify_url, {app_id => '{"16929","23789"}'})->status_is(400)->json_is('/error_code', 'INVALID_APP_ID');
+    };
+
+    my $authorize_url = '/api/v1/authorize';
+    my $solution      = hmac_sha256_hex($challenge, 'tok3n');
+
+    my $oauth = BOM::Database::Model::OAuth->new;
+    ok $oauth->create_app_token($app_id, 'tok3n'), 'App token has been created';
+
+    $app->{active} = 1;
+    $oauth->update_app($app_id, $app);
+
+    my $response;
+    subtest '/authorize' => sub {
+        $response = $post->(
+            $authorize_url,
+            {
+                app_id   => '{"16929","23789"}',
+                expire   => $expire,
+                solution => $solution
+            })->status_is(400)->json_is('/error_code', 'INVALID_APP_ID');
+
+        $response = $post->(
+            $authorize_url,
+            {
+                app_id   => 'app_id',
+                expire   => $expire,
+                solution => $solution
+            })->status_is(400)->json_is('/error_code', 'INVALID_APP_ID');
+    };
+
+    $response = $post->(
+        $authorize_url,
+        {
+            app_id   => $app_id,
+            expire   => $expire,
+            solution => $solution
+        })->status_is(200)->json_has('/token', 'Response has a token')->tx->res->json;
+
+    my $jwt_token = $response->{token};
+    ok $jwt_token, 'Got the JWT token from the JSON response';
+
+    note '/login';
+    my $login_url = '/api/v1/login';
+
+    subtest '/login' => sub {
+        $response = $post->(
+            $login_url,
+            {
+                app_id            => '{"16929","23789"}',
+                type              => 'system',
+                email             => $system_user_email,
+                password          => $password,
+                one_time_password => $totp_value
+            },
+            {
+                Authorization => "Bearer $jwt_token",
+            })->status_is(400)->json_is('/error_code', 'INVALID_APP_ID');
+
+        $response = $post->(
+            $login_url,
+            {
+                app_id            => 'invalid_app_id',
+                type              => 'system',
+                email             => $system_user_email,
+                password          => $password,
+                one_time_password => $totp_value
+            },
+            {
+                Authorization => "Bearer $jwt_token",
+            })->status_is(400)->json_is('/error_code', 'INVALID_APP_ID');
+    };
+
+    $response = $post->(
+        $login_url,
+        {
+            app_id            => $app_id,
+            type              => 'system',
+            email             => $system_user_email,
+            password          => $password,
+            one_time_password => $totp_value
+        },
+        {
+            Authorization => "Bearer $jwt_token",
+        })->status_is(200)->json_has('/tokens')->json_has('/refresh_token', 'Response has refresh_token')->tx->res->json;
+
+    my $refresh_token = $response->{refresh_token};
+    ok $refresh_token, 'Get refresh_token from JSON response';
+
+    my $pta_login_url = '/api/v1/pta_login';
+    my $mock_app_id   = _generate_app_id('Test App 4', 'https://www.example4.com/', ['payments', 'read', 'trade', 'admin']);
+
+    subtest '/pta_login' => sub {
+        $post->(
+            $pta_login_url,
+            {
+                app_id        => 'pta_login',
+                refresh_token => $refresh_token,
+                url_params    => {
+                    "action"             => "open_cashier_page",
+                    "alpha_numeric_only" => 'OK'
+                }
+            },
+            {
+                Authorization => "Bearer $jwt_token",
+            })->status_is(400)->json_is('/error_code', 'INVALID_APP_ID');
+
+        $post->(
+            $pta_login_url,
+            {
+                app_id        => '{"16929","23789"}',
+                refresh_token => $refresh_token,
+                url_params    => {
+                    "action"             => "open_cashier_page",
+                    "alpha_numeric_only" => 'OK'
+                }
+            },
+            {
+                Authorization => "Bearer $jwt_token",
+            })->status_is(400)->json_is('/error_code', 'INVALID_APP_ID');
+    };
+
+    my $raw_response = $post->(
+        $pta_login_url,
+        {
+            app_id        => $destination_app_id,
+            refresh_token => $refresh_token,
+            url_params    => {
+                "action"             => "open_cashier_page",
+                "alpha_numeric_only" => 'OK'
+            }
+        },
+        {
+            Authorization => "Bearer $jwt_token",
+        })->status_is(200)->json_has('/one_time_token', 'Response contains one_time_token');
+
+    $response = $raw_response->tx->res->json;
+    my $one_time_token          = $response->{one_time_token};
+    my $one_time_token_endpoint = "$pta_login_url/$one_time_token";
+
+    my $client_ip = $raw_response->tx->original_remote_address;
+
+    warning_like {
+        $t->get_ok($one_time_token_endpoint)->status_is(302);
+    }
+    qr/domain/;
+};
+
 $api_mock->unmock_all;
 $totp_mock->unmock_all;
 done_testing()
