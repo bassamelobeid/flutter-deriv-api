@@ -844,7 +844,11 @@ async sub check_onfido_rules {
                 grep { $_ !~ /^(data_comparison\.first_name|data_comparison\.last_name)$/ } BOM::User::Onfido::get_consider_reasons($client)->@*;
 
             try {
-                $rule_engine->verify_action('check_results', +{report => $report});
+                $rule_engine->verify_action(
+                    'check_results',
+                    loginid => $client->loginid,
+                    report  => $report
+                );
 
                 my $poi_name_mismatch = $client->status->poi_name_mismatch;
 

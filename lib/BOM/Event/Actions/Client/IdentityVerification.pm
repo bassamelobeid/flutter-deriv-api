@@ -135,7 +135,11 @@ async sub verify_identity {
                 stop_on_failure => 0
             );
 
-            my $rules_result = $rule_engine->verify_action('identity_verification', +{result => $transformed_resp});
+            my $rules_result = $rule_engine->verify_action(
+                'identity_verification',
+                loginid => $client->loginid,
+                result  => $transformed_resp
+            );
 
             unless ($rules_result->has_failure) {
                 $client->status->clear_poi_name_mismatch;
