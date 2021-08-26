@@ -55,7 +55,10 @@ subtest 'deposits' => sub {
     cmp_deeply(exception { $dxtrader->deposit(amount => 10, to_account => 'xxx') }, {error_code => 'DXInvalidAccount'}, 'invalid account');
     cmp_deeply(
         exception { $dxtrader->deposit(amount => 10, to_account => $account->{account_id}, currency => 'JPY') },
-        {error_code => 'CurrencyShouldMatch'},
+        {
+            error_code => 'CurrencyShouldMatch',
+            rule       => 'transfers.currency_should_match'
+        },
         'invalid currency'
     );
 

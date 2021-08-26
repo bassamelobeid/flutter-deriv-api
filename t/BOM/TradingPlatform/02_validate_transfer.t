@@ -240,6 +240,7 @@ subtest 'deposit' => sub {
         {
             error_code     => 'InvalidMinAmount',
             message_params => ['100.00', 'USD'],
+            rule           => 'transfers.limits',
         },
         'Minimum limit reached'
     );
@@ -259,6 +260,7 @@ subtest 'deposit' => sub {
         {
             error_code     => 'InvalidMaxAmount',
             message_params => ['5.00', 'USD'],
+            rule           => 'transfers.limits',
         },
         'Maximum limit reached'
     );

@@ -155,7 +155,11 @@ sub new_account {
     $args{platform} //= $self->name;
 
     my $rule_engine = BOM::Rules::Engine->new(client => $self->client);
-    $rule_engine->verify_action('new_trading_account', \%args);
+    $rule_engine->verify_action(
+        'new_trading_account',
+        loginid => $self->client->loginid,
+        %args
+    );
 
     my $server = $args{account_type};    # account_type means a different thing for dxtrade
 

@@ -178,7 +178,12 @@ sub validate_transfer {
     my ($recv_amount, $fees, $fees_percent, $min_fee, $fee_calculated_by_percent, $fees_in_client_currency);
 
     my $rule_engine = BOM::Rules::Engine->new(client => $self->client);
-    $rule_engine->verify_action("trading_account_$action", {%args, platform => $self->name});
+    $rule_engine->verify_action(
+        "trading_account_$action",
+        %args,
+        platform => $self->name,
+        loginid  => $self->client->loginid,
+    );
 
     die +{error_code => 'PlatformTransferSuspended'} if BOM::Config::Runtime->instance->app_config->system->suspend->payments;
     die +{error_code => 'PlatformTransferSuspended'} if BOM::Config::Runtime->instance->app_config->system->suspend->transfer_between_accounts;
