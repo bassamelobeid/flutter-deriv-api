@@ -63,7 +63,7 @@
                         "properties" : {
                            "name" : {
                               "type" : "string",
-                              "pattern" : "^Commodities$"
+                              "pattern" : "^(Commodities|Smart FX)$"
                            },
                            "turnover_limit" : {
                               "type" : "number",
