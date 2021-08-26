@@ -8,6 +8,7 @@ use Encode;
 use HTML::Entities;
 use JSON::MaybeXS;
 use Text::CSV;
+use Text::Trim;
 use Syntax::Keyword::Try;
 use feature 'state';
 use LandingCompany::Registry;
@@ -328,6 +329,7 @@ sub get_settings_by_group {
                 payments.transfer_between_accounts.exchange_rate_expiry.crypto
                 )
         ],
+        compliance => [qw(compliance.fake_names.corporate_patterns compliance.fake_names.accepted_consonant_names)],
         # these settings are configured in separate pages. No need to reconfigure them in Dynamic Settings/Others.
         exclude => [qw(
                 payments.transfer_between_accounts.fees.default.fiat_fiat
@@ -470,9 +472,48 @@ sub get_extra_validation {
         'payments.transfer_between_accounts.maximum.MT5'             => \&_validate_transfer_trading_platform,
         'payments.transfer_between_accounts.maximum.dxtrade'         => \&_validate_transfer_trading_platform,
         'payments.payment_limits'                                    => \&_validate_payment_min_by_staff,
+        'compliance.fake_names.corporate_patterns'                   => \&_validate_corporate_patterns,
+        'compliance.fake_names.accepted_consonant_names'             => \&_validate_accepted_consonant_names,
     };
 
     return $setting_validators->{$setting};
+}
+
+=head2 _validate_corporate_patterns
+
+Only aphabetic characters, . and % (wildcard) are acceptable for corporate name patterns.
+
+=cut
+
+sub _validate_corporate_patterns {
+    my $values = shift;
+
+    for my $value (@$values) {
+        die "Invalid keyword '$value' found. No alphabetic character was found."                                 unless $value =~ qr/\p{L}/;
+        die "Invalid keyword '$value' found. Only alphabetic characters, . and % (wildcard) are allowed"         unless $value =~ qr/^[\p{L}\.%]+$/;
+        die "Invalid keyword '$value' found. Each keyword should begin either with an alphabetic character or %" unless $value =~ qr/^[\p{L}%]/;
+        die "Invalid keyword '$value' found. % is only allowed at the beginning or the end of a keyword" if $value =~ qr/.+%.+/;
+    }
+    return;
+}
+
+=head2 _validate_accepted_consonant_names
+
+Only alphabetic characters are allowed for accepted consonant names.
+
+=cut
+
+sub _validate_accepted_consonant_names {
+    my $values = shift;
+
+    # remove redundant spaces
+    $values = [map { trim($_ =~ s/\s+/ /gr) } @$values];
+
+    for my $value (@$values) {
+        die "Invalid keyword '$value' found. Only alphabetic characters and space are allowed" unless $value =~ qr/^[\p{L} ]+$/;
+    }
+
+    return;
 }
 
 =head2 _validate_positive_number

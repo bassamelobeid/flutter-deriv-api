@@ -1,8 +1,11 @@
 use strict;
 use warnings;
+use utf8;
+use Encode;
 
 use Test::More;
 use Test::Exception;
+use Test::Fatal;
 use BOM::DynamicSettings;
 
 subtest 'BOM::DynamicSettings::_validate_tnc_string' => sub {
@@ -61,6 +64,117 @@ subtest 'BOM::DynamicSettings::_validate_tnc_string' => sub {
             'The validation passes';
         }
     };
+};
+
+subtest '_validate_accepted_consonant_names' => sub {
+    my @test_cases = ({
+            value => [],
+            error => undef
+        },
+        {
+            value => [''],
+            error => "Invalid keyword '' found."
+        },
+        {
+            value => ['    '],
+            error => "Invalid keyword '' found."
+        },
+        {
+            value => [','],
+            error => "Invalid keyword ',' found."
+        },
+        {
+            value => ['1234'],
+            error => "Invalid keyword '1234' found."
+        },
+        {
+            value => ['bbbb', '1234'],
+            error => "Invalid keyword '1234' found."
+        },
+        {
+            value => ['bbbb', '1234'],
+            error => "Invalid keyword '1234' found."
+        },
+        {
+            value => ['bbbb'],
+            error => undef
+        },
+        {
+            value => ['bbbb', 'cccc'],
+            error => undef
+        },
+    );
+
+    for my $case (@test_cases) {
+        my $value = $case->{value};
+        my $error = $case->{error};
+        if ($error) {
+            like exception { BOM::DynamicSettings::_validate_accepted_consonant_names($value) }, qr/$error/;
+        } else {
+            lives_ok { BOM::DynamicSettings::_validate_accepted_consonant_names($value) };
+        }
+    }
+};
+
+subtest '_validate_corporate_patterns' => sub {
+    my @test_cases = ({
+            value => [],
+            error => undef
+        },
+        {
+            value => [''],
+            error => 'No alphabetic character was found.'
+        },
+        {
+            value => [' '],
+            error => 'No alphabetic character was found.'
+        },
+        {
+            value => [','],
+            error => 'No alphabetic character was found.'
+        },
+        {
+            value => ['1234'],
+            error => 'No alphabetic character was found.'
+        },
+        {
+            value => ['.abc'],
+            error => 'Each keyword should begin either with an alphabetic character or %'
+        },
+        {
+            value => ['ab%c'],
+            error => '% is only allowed at the beginning or the end of a keyword'
+        },
+        {
+            value => ['%'],
+            error => 'No alphabetic character was found.'
+        },
+        {
+            value => ['bbbb', 'abc*'],
+            error => 'Only alphabetic characters, \. and % \(wildcard\) are allowed'
+        },
+        {
+            value => ['%bbbb'],
+            error => undef
+        },
+        {
+            value => ['%bbbb%', 'cccc%', 'درز'],
+            error => undef
+        },
+    );
+
+    for my $case (@test_cases) {
+        my $value = $case->{value};
+        my $error = $case->{error};
+
+        my $value_str = encode_utf8(join ',', @$value);
+
+        if ($error) {
+            like exception { BOM::DynamicSettings::_validate_corporate_patterns($value) }, qr/$error/, "Correct error for value '$value_str'";
+        } else {
+            lives_ok { BOM::DynamicSettings::_validate_corporate_patterns($value) } "No error for value '$value_str'";
+        }
+    }
 };
 
 done_testing;

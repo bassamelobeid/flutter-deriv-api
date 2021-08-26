@@ -2329,6 +2329,7 @@ sub get_dynamic_settings_list {
         others           => 'Others',
         payments         => 'Payments',
         crypto           => 'Cryptocurrency',
+        compliance       => 'Compliance',
     };
 }
 

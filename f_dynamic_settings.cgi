@@ -34,6 +34,7 @@ if (request()->param('page') eq 'global') {
         others           => ['IT'],
         payments         => ['IT'],
         crypto           => ['IT'],
+        compliance       => ['Compliance'],
     };
 
     unless (exists $authorisations->{$group_to_display}) {
