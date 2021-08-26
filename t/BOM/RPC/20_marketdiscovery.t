@@ -41,12 +41,13 @@ subtest "$method on binary_smarttrader" => sub {
     is_deeply([sort keys %$indices], [sort @$expected_keys], 'result has correct keys');
     is($indices->{market_display_name},    'Stock Indices', 'the market_display_name is translated');
     is($indices->{submarket_display_name}, 'Europe',        'the submarket_display_name is translated');
+
     # the full list of active symbols is 83. But, smart trader only offers 63, excluding:
     # - cryptocurrenty
     # - jump indices
     # - crash/bomm indices
     # - stpRNG
-    is(scalar @$result, 68, 'the default landing company is "svg", the number of result should be ok');
+    is(scalar @$result, 69, 'the default landing company is "svg", the number of result should be ok');
 };
 
 # unauthenticated call for `active_symbols` for landing company like `maltainvest` doesn't have an offering
@@ -114,7 +115,7 @@ subtest 'active_symbols for whitelisted apps' => sub {
             16929 => 79,
             19111 => 74,
             19112 => 74,
-            22168 => 68,
+            22168 => 69,
             23789 => 49,
         );
         my $app = $deriv->whitelist_apps;
@@ -134,21 +135,21 @@ subtest 'active_symbols for whitelisted apps' => sub {
                 active_symbols => 'brief',
             }};
         my %expected_symbol_count = (
-            1  => 68,
+            1  => 69,
             10 => {
                 normal       => 34,
-                quiet_period => 21,
+                quiet_period => 22,
             },
-            11    => 68,
-            1169  => 68,
-            14473 => 68,
-            15284 => 68,
-            15437 => 68,
-            15438 => 68,
-            15481 => 68,
+            11    => 69,
+            1169  => 69,
+            14473 => 69,
+            15284 => 69,
+            15437 => 69,
+            15438 => 69,
+            15481 => 69,
             15488 => {
                 normal       => 34,
-                quiet_period => 21
+                quiet_period => 22
             });
         my $o = LandingCompany::Registry::get('svg')->basic_offerings({
             loaded_revision => 1,
