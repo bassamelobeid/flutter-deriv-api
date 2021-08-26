@@ -34,7 +34,7 @@ subtest 'Rule object behaviour on context provided without stop on failure, and 
     my @properties = qw/name description category error_code error_message/;
 
     my $result;
-    $result = $rule->apply(BOM::Rules::Context->new({stop_on_failure => 0}));
+    $result = $rule->apply(BOM::Rules::Context->new(stop_on_failure => 0));
     is_deeply $rule, \%failing_args, "New object's properties are correct";
     isa_ok $result, 'BOM::Rules::Result', 'Code is correctly called';
 };
@@ -46,7 +46,7 @@ subtest 'Rule object behaviour on context provided with stop on failure, and cod
 
     my $result;
     isa_ok exception {
-        $result = $rule->apply(BOM::Rules::Context->new({stop_on_failure => 1}))
+        $result = $rule->apply(BOM::Rules::Context->new(stop_on_failure => 1))
     }, 'HASH', 'Exception thrown';
     is_deeply $rule, \%failing_args, "New object's properties are correct";
 };

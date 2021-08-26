@@ -12,38 +12,37 @@ This modules declares rules and regulations concerning transfers between account
 
 use strict;
 use warnings;
-use BOM::Platform::Context qw(request);
+
 use BOM::Rules::Registry qw(rule);
 use BOM::Config::Runtime;
-use Format::Util::Numbers qw/formatnumber financialrounding/;
+use BOM::Platform::Context qw(request);
 use BOM::Config::CurrencyConfig;
+
+use Format::Util::Numbers qw(formatnumber financialrounding);
 use Syntax::Keyword::Try;
 use List::Util qw/any/;
 
 rule 'transfers.currency_should_match' => {
     description => "The currency of the account given should match the currency param when defined",
     code        => sub {
-        my ($self, $context, $action_args) = @_;
+        my ($self, $context, $args) = @_;
+        my $client = $context->client($args);
 
         # only transfer_between_accounts sends this param, trading_platform_* do not send it
-        my $currency = $action_args->{currency} // return 1;
+        my $currency = $args->{currency} // return 1;
 
-        my $action = $action_args->{action} // '';
+        my $action = $args->{action} // '';
         my $account_currency;
 
         if ($action eq 'deposit') {
-            $account_currency = $context->client->account->currency_code;
+            $account_currency = $client->account->currency_code;
         } elsif ($action eq 'withdrawal') {
-            $account_currency = $action_args->{platform_currency};
+            $account_currency = $args->{platform_currency};
         } else {
-            die +{
-                error_code => 'InvalidAction',
-            };
+            $self->fail('InvalidAction');
         }
 
-        die +{
-            error_code => 'CurrencyShouldMatch',
-        } unless ($account_currency // '') eq $currency;
+        $self->fail('CurrencyShouldMatch') unless ($account_currency // '') eq $currency;
 
         return 1;
     },
@@ -52,14 +51,13 @@ rule 'transfers.currency_should_match' => {
 rule 'transfers.daily_limit' => {
     description => "Validates the daily transfer limits for the context client",
     code        => sub {
-        my ($self, $context, $action_args) = @_;
-        my $platform                  = $action_args->{platform} // '';
+        my ($self, $context, $args) = @_;
+        my $client                    = $context->client($args);
+        my $platform                  = $args->{platform} // '';
         my $daily_transfer_limit      = BOM::Config::Runtime->instance->app_config->payments->transfer_between_accounts->limits->$platform;
-        my $user_daily_transfer_count = $context->client->user->daily_transfer_count($platform);
+        my $user_daily_transfer_count = $client->user->daily_transfer_count($platform);
 
-        die +{
-            error_code     => 'MaximumTransfers',
-            message_params => [$daily_transfer_limit]} unless $user_daily_transfer_count < $daily_transfer_limit;
+        $self->fail('MaximumTransfers', message_params => [$daily_transfer_limit]) unless $user_daily_transfer_count < $daily_transfer_limit;
 
         return 1;
     },
@@ -68,35 +66,36 @@ rule 'transfers.daily_limit' => {
 rule 'transfers.limits' => {
     description => "Validates the minimum and maximum limits for transfers on the given platform",
     code        => sub {
-        my ($self, $context, $action_args) = @_;
+        my ($self, $context, $args) = @_;
+        my $client          = $context->client($args);
         my $brand_name      = request()->brand->name;
-        my $platform        = $action_args->{platform} // '';
-        my $action          = $action_args->{action}   // '';
-        my $amount          = $action_args->{amount}   // '';
+        my $platform        = $args->{platform} // '';
+        my $action          = $args->{action}   // '';
+        my $amount          = $args->{amount}   // '';
         my $transfer_limits = BOM::Config::CurrencyConfig::platform_transfer_limits($platform, $brand_name);
         my $source_currency;
 
         # limit currency / source currency is always the sending account
         if ($action eq 'deposit') {
-            $source_currency = $context->client->account->currency_code;
+            $source_currency = $client->account->currency_code;
         } elsif ($action eq 'withdrawal') {
-            $source_currency = $action_args->{platform_currency};
+            $source_currency = $args->{platform_currency};
         } else {
-            die +{error_code => 'InvalidAction'};
+            $self->fail('InvalidAction');
         }
 
         my $min = $transfer_limits->{$source_currency}->{min};
         my $max = $transfer_limits->{$source_currency}->{max};
 
-        die +{
-            error_code     => 'InvalidMinAmount',
-            message_params => [formatnumber('amount', $source_currency, $min), $source_currency]}
-            if $amount < financialrounding('amount', $source_currency, $min);
+        die $self->fail(
+            'InvalidMinAmount',
+            message_params => [formatnumber('amount', $source_currency, $min), $source_currency],
+        ) if $amount < financialrounding('amount', $source_currency, $min);
 
-        die +{
-            error_code     => 'InvalidMaxAmount',
-            message_params => [formatnumber('amount', $source_currency, $max), $source_currency]}
-            if $amount > financialrounding('amount', $source_currency, $max);
+        $self->fail(
+            'InvalidMaxAmount',
+            message_params => [formatnumber('amount', $source_currency, $max), $source_currency],
+        ) if $amount > financialrounding('amount', $source_currency, $max);
 
         return 1;
     },
@@ -105,17 +104,15 @@ rule 'transfers.limits' => {
 rule 'transfers.experimental_currency_email_whitelisted' => {
     description => "Validate experimental currencies for whitelisted emails",
     code        => sub {
-        my ($self, $context, $action_args) = @_;
-        my $client = $context->client;
+        my ($self, $context, $args) = @_;
+        my $client = $context->client($args);
 
         if (   BOM::Config::CurrencyConfig::is_experimental_currency($client->account->currency_code)
-            or BOM::Config::CurrencyConfig::is_experimental_currency($action_args->{platform_currency}))
+            or BOM::Config::CurrencyConfig::is_experimental_currency($args->{platform_currency}))
         {
             my $allowed_emails = BOM::Config::Runtime->instance->app_config->payments->experimental_currencies_allowed;
 
-            die +{
-                error_code => 'CurrencyTypeNotAllowed',
-            } if not any { $_ eq $client->email } @$allowed_emails;
+            $self->fail('CurrencyTypeNotAllowed') if not any { $_ eq $client->email } @$allowed_emails;
         }
 
         return 1;

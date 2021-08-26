@@ -15,51 +15,18 @@ my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
 });
 
 subtest 'Context initialization' => sub {
-    my $rule_engine = BOM::Rules::Engine->new(
-        client          => $client,
-        stop_on_failure => 0
-    );
-    is_deeply $rule_engine->context,
-        {
-        client          => $client,
-        loginid         => $client->loginid,
-        landing_company => $client->landing_company->short,
-        residence       => $client->residence,
-        stop_on_failure => 0
-        },
-        'Context loginid and landing_company matches that of client';
+    my $rule_engine = BOM::Rules::Engine->new(stop_on_failure => 0);
+    is $rule_engine->context->stop_on_failure, 0, 'stop_on_failure is saved in the context';
 
-    $rule_engine = BOM::Rules::Engine->new(loginid => $client->loginid);
-    is_deeply $rule_engine->context,
-        {
-        client          => $client,
-        loginid         => $client->loginid,
-        landing_company => $client->landing_company->short,
-        residence       => $client->residence,
-        stop_on_failure => 1
-        },
-        'Context client and landing_company matches that of loginid';
+    $rule_engine = BOM::Rules::Engine->new();
 
-    $rule_engine = BOM::Rules::Engine->new(
-        client          => $client,
-        loginid         => 'test_loginid',
-        landing_company => 'test_lc',
-        residence       => 'xyz',
-        stop_on_failure => 1
-    );
-    is_deeply $rule_engine->context,
-        {
-        client          => $client,
-        loginid         => 'test_loginid',
-        landing_company => 'test_lc',
-        residence       => 'xyz',
-        stop_on_failure => 1,
-        },
-        'Context loginid, landing_company and residence are overriden by constructor args';
+    $rule_engine = BOM::Rules::Engine->new(stop_on_failure => 1);
+    is $rule_engine->context->stop_on_failure, 1,
+        'Context loginid, landing_company and residence are not saved in context by rule-engine constructor.';
 };
 
 subtest 'Verify an action' => sub {
-    my $rule_engine_1 = BOM::Rules::Engine->new(client => $client);
+    my $rule_engine_1 = BOM::Rules::Engine->new();
     like exception { $rule_engine_1->verify_action() }, qr/Action name is required/, 'exception thrown on verify without providing action';
     like exception { $rule_engine_1->verify_action('invalid_name_for_testing') }, qr/Unknown action 'invalid_name_for_testing' cannot be verified/,
         'exception thrown on invalid name for testing';
@@ -84,10 +51,8 @@ subtest 'Verify an action' => sub {
     undef @action_verify_args;
     isa_ok $rule_engine_1->verify_action(
         'test_action',
-        {
-            a => 1,
-            b => 2,
-        }
+        a => 1,
+        b => 2,
         ),
         'BOM::Rules::Result', 'action result is as expected';
     is scalar @action_verify_args, 3, 'Number of args is correct';
@@ -147,10 +112,9 @@ subtest 'Applying rules' => sub {
 
     is $rule_engine_1->apply_rules(
         'test rule 1',
-        {
-            a => 1,
-            b => 2,
-        })->{has_failure}, 0, 'Rule applied';
+        a => 1,
+        b => 2,
+    )->{has_failure}, 0, 'Rule applied';
     is scalar @rule_args, 3, 'Number of args is correct';
     my ($rule, $context, $args) = @rule_args;
     is $rule, $test_rule, 'Correct rule is found';

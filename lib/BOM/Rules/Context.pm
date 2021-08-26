@@ -15,38 +15,29 @@ use warnings;
 
 use Moo;
 use LandingCompany::Registry;
+use BOM::Platform::Context qw(request);
 
-=head2 client
+=head2 BUILDARGS
 
-A L<BOM::User::Client> object for whom the rules are  being applied.
-
-=cut
-
-has client => (is => 'ro');
-
-=head2 loginid
-
-The B<loginid> of the context's L<client>.
+This method overrides the default constructor by initializing the cache and attributes.
 
 =cut
 
-has loginid => (is => 'ro');
+around BUILDARGS => sub {
+    my ($orig, $class, %constructor_args) = @_;
+    my $client_list = $constructor_args{client_list} // [];
 
-=head2 landing_company
+    my %cache = map { "client_" . $_->loginid => $_ } @$client_list;
 
-The name of landing company in which the B<actions> takes place. It's usually the same as L<client>'s landing company, but not always.
+    my $stop_on_failure = $constructor_args{stop_on_failure} // 1;
 
-=cut
-
-has landing_company => (is => 'ro');
-
-=head2 residence
-
-The country of residence. It's usually the same as L<client>'s residence, but not always (for example in virtual account opening).
-
-=cut
-
-has residence => (is => 'ro');
+    return $class->$orig(
+        _cache          => \%cache,
+        stop_on_failure => $stop_on_failure,
+        times_invoked   => 0,
+        client_list     => $client_list,
+    );
+};
 
 =head2 stop_on_failure
 
@@ -59,37 +50,138 @@ has stop_on_failure => (
     default => 1
 );
 
+=head2 _cache
+
+The cache for efficiently loading business objects (clients and landing companies)
+
+=cut
+
+has _cache => (
+    is      => 'rw',
+    default => sub { return +{}; });
+
+=head2 client
+
+Retrieves a client object from cache by getting a loginid. It accepts one argument:
+
+=over 4
+
+item C<args> event args as a hashref; expected to contain a B<loginid> key.
+
+=back
+
+It returns the corresponding L<BOM::User::Client>; fist from cache, otherwise from  
+
+=cut
+
+sub client {
+    my ($self, $args) = @_;
+
+    my $loginid = $args->{loginid};
+
+    die 'Client loginid is missing' unless $loginid;
+
+    # TODO: we can load missing client from database; but it can only be done after the circular dependency to bom-use is resolved.
+    my $client = $self->_cache->{"client_$loginid"}
+        or die "Client with id $loginid was not found in the context initialized by the rule engine constructor.";
+
+    return $client;
+}
+
 =head2 landing_company_object
 
-The object representing context's L<landing_company>.
+Retrieves a landing company object from cache. It accepts one argument:
+
+=over 4
+
+=item C<args> event args as a hashref; expected to contain a B<landing_company> or B<loginid> key.
+
+=back
+
+It returns an object of the type L<LandingCompany>.
 
 =cut
 
 sub landing_company_object {
-    my $self = shift;
-    $self->{landing_company_object} //= LandingCompany::Registry->new->get($self->landing_company);
+    my ($self, $args) = @_;
+    my $short_code = $self->landing_company($args);
 
-    return $self->{landing_company_object};
+    $self->_cache->{"company_$short_code"} //= LandingCompany::Registry->new->get($short_code);
+
+    my $landing_company = $self->_cache->{"company_$short_code"};
+    die "Invalid landing company name $short_code" unless $landing_company;
+
+    return $landing_company;
 }
 
-=head2 client_switched
+=head2 landing_company
 
-If the context client is virtual has a real sibling account in the context landing company, it will return that real sibling;
-otherwise it will return the context client itself.
+Retrieves a landing company name from input. It accepts one argument:
+
+=over 4
+
+=item C<args> event args as a hashref; expected to contain a B<landing_company> or B<loginid> key.
+
+=back
 
 =cut
 
-sub client_switched {
-    my $self = shift;
+sub landing_company {
+    my ($self, $args) = @_;
+    my $short_code = $args->{landing_company};
 
-    my $client = $self->client;
+    die 'Either landing_company or loginid is required' unless ($short_code || $args->{loginid});
 
+    return $short_code || $self->client($args)->landing_company->short;
+}
+
+=head2 get_country
+
+Retrieves a country object from cache by country code. It accepts one argument:
+
+=over 4
+
+=item C<country_code> a country code.
+
+=back
+
+It returns an object of the type L<Country>.
+
+=cut
+
+sub get_country {
+    my ($self, $country_code) = @_;
+
+    die 'Country code is required' unless $country_code;
+
+    $self->_cache->{"country_$country_code"} //= request()->brand->countries_instance->countries_list->{$country_code};
+
+    return $self->_cache->{"country_$country_code"};
+}
+
+=head2 get_real_sibling
+
+If the client indicted in C<args> is virtual, it will return the earliest real sibling (if there's any);
+otherwise it will return the same client object. Arguments:
+
+=over 4
+
+=item C<args> event args as a hashref; expected to contain a B<loginid> key.
+
+=back
+
+=cut
+
+sub get_real_sibling {
+    my ($self, $args) = @_;
+
+    die 'Client loginid is missing' unless $args->{loginid};
+
+    my $client = $self->client($args);
     return $client unless ($client and $client->user and not $client->is_virtual);
 
-    $self->{client_switch} //=
-        (sort { $b->date_joined cmp $a->date_joined } grep { not $_->is_virtual } $client->user->clients(include_disabled => 0))[0] // $client;
-
-    return $self->{client_switch};
+    my @real_siblings = sort { $b->date_joined cmp $a->date_joined } grep { not $_->is_virtual } $client->user->clients(include_disabled => 0);
+    return $real_siblings[0] // $client;
 }
 
 =head2 client_type
@@ -99,11 +191,35 @@ Returns the client type as a string with three values: virtual,real, none (no co
 =cut
 
 sub client_type {
-    my $self = shift;
+    my ($self, $args) = @_;
 
-    return 'none' unless $self->client;
+    die 'Client loginid is missing' unless $args->{loginid};
 
-    return $self->client->is_virtual ? 'virtual' : 'real';
+    my $client = $self->client($args);
+
+    return 'none' unless $client;
+
+    return $client->is_virtual ? 'virtual' : 'real';
+}
+
+=head2 residence
+
+Retrieves the name of the country of residence from args. It accepts one argument:
+
+=over 4
+
+=item C<args> event args as a hashref; expected to contain a B<residence> or B<loginid> key.
+
+=back
+
+=cut
+
+sub residence {
+    my ($self, $args) = @_;
+
+    die 'Either residence or loginid is required' unless $args->{loginid} // $args->{residence};
+
+    return $args->{residence} // $self->client($args)->residence;
 }
 
 1;

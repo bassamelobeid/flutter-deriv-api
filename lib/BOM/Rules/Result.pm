@@ -104,17 +104,41 @@ sub append_success {
     return $self;
 }
 
+=head2 has_failure
+
+Tells if there is a failed rule or all are passed.
+
+=cut
+
 sub has_failure {
     shift->{has_failure};
 }
+
+=head2 passed_rules
+
+Returns the list of passed rules.
+
+=cut
 
 sub passed_rules {
     shift->{passed_rules};
 }
 
+=head2 failed_rules
+
+Returns the list of failed rules and their failure details.
+
+=cut
+
 sub failed_rules {
     shift->{failed_rules};
 }
+
+=head2 errors
+
+Returns the list of all failures occured during verificaiton.
+
+=cut
 
 sub errors {
     shift->{errors};

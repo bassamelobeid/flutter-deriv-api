@@ -56,33 +56,40 @@ my $assessment_keys = {
 subtest 'rule financial_assessment.required_sections_are_complete' => sub {
     my $rule_name = 'financial_assessment.required_sections_are_complete';
 
-    my %engines = map { $_ => BOM::Rules::Engine->new(landing_company => $_) } (qw/svg malta iom maltainvest/);
+    my $engine            = BOM::Rules::Engine->new();
+    my @landing_companies = qw/svg malta iom maltainvest/;
 
-    is_deeply(
-        exception { $engines{$_}->apply_rules($rule_name) },
-        {error_code => 'IncompleteFinancialAssessment'},
-        "Correct error for empty args - $_"
-    ) for keys %engines;
+    like
+        exception { $engine->apply_rules($rule_name) },
+        qr/Either landing_company or loginid is required/,
+        "Correct error for empty args";
 
     my @keys = $assessment_keys->{trading_experience}->@*;
     my %args = {%financial_data}->%{@keys};
     is_deeply(
-        exception { $engines{$_}->apply_rules($rule_name, \%args) },
-        {error_code => 'IncompleteFinancialAssessment'},
+        exception { $engine->apply_rules($rule_name, %args, landing_company => $_) },
+        {
+            error_code => 'IncompleteFinancialAssessment',
+            rule       => $rule_name
+        },
         "Correct error for trading experience only - $_"
-    ) for keys %engines;
+    ) for @landing_companies;
 
     @keys = $assessment_keys->{financial_info}->@*;
     %args = {%financial_data}->%{@keys};
-    lives_ok { $engines{$_}->apply_rules($rule_name, \%args) } "Financial assessment is complete with financial info only - $_"
+    lives_ok { $engine->apply_rules($rule_name, %args, landing_company => $_) } "Financial assessment is complete with financial info only - $_"
         for (qw/svg malta iom/);
     is_deeply(
-        exception { $engines{maltainvest}->apply_rules($rule_name, \%args) },
-        {error_code => 'IncompleteFinancialAssessment'},
+        exception { $engine->apply_rules($rule_name, %args, landing_company => 'maltainvest') },
+        {
+            error_code => 'IncompleteFinancialAssessment',
+            rule       => $rule_name
+        },
         "Correct error for financial info only - maltainvest"
     );
 
-    lives_ok { $engines{$_}->apply_rules($rule_name, \%financial_data) } "Financial assessment is complete with all data - $_" for keys %engines;
+    lives_ok { $engine->apply_rules($rule_name, %financial_data, landing_company => $_) } "Financial assessment is complete with all data - $_"
+        for @landing_companies;
 };
 
 done_testing();

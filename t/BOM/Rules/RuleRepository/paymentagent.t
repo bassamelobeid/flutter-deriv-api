@@ -19,25 +19,13 @@ subtest 'rule paymentagent.pa_allowed_in_landing_company' => sub {
         password => 'TEST PASS',
     )->add_client($client);
 
-    my $rule_engine = BOM::Rules::Engine->new(
-        client          => $client,
-        landing_company => $client->landing_company,
-    );
-    lives_ok { $rule_engine->apply_rules($rule_name) } 'This landing company is allowed';
+    my $rule_engine = BOM::Rules::Engine->new(client => $client);
+    lives_ok { $rule_engine->apply_rules($rule_name, loginid => $client->loginid) } 'This landing company is allowed';
 
     $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'MX',
     });
-    BOM::User->create(
-        email    => 'rules_pa2@test.deriv',
-        password => 'TEST PASS',
-    )->add_client($client);
-
-    $rule_engine = BOM::Rules::Engine->new(
-        client          => $client,
-        landing_company => $client->landing_company,
-    );
-    dies_ok { $rule_engine->apply_rules($rule_name) } 'This landing company is NOT allowed';
+    dies_ok { $rule_engine->apply_rules($rule_name, loginid => $client->loginid) } 'This landing company is NOT allowed';
 };
 
 subtest 'rule paymentagent.paymentagent_shouldnt_already_exist' => sub {
@@ -53,11 +41,8 @@ subtest 'rule paymentagent.paymentagent_shouldnt_already_exist' => sub {
         password => 'TEST PASS',
     )->add_client($pa_client);
 
-    my $rule_engine = BOM::Rules::Engine->new(
-        client          => $pa_client,
-        landing_company => $pa_client->landing_company,
-    );
-    dies_ok { $rule_engine->apply_rules($rule_name) } 'paymentagent already exists';
+    my $rule_engine = BOM::Rules::Engine->new(client => $pa_client);
+    dies_ok { $rule_engine->apply_rules($rule_name, loginid => $pa_client->loginid) } 'paymentagent already exists';
 };
 
 done_testing();

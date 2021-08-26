@@ -22,15 +22,17 @@ rule 'idv.check_name_comparison' => {
     code        => sub {
         my ($self, $context, $args) = @_;
 
-        die 'Client is missing'     unless $context->client;
+        my $client = $context->client($args);
+
+        die 'Client is missing'     unless $client;
         die 'IDV result is missing' unless my $result = $args->{result} and ref $args->{result} eq 'HASH';
 
         my @fields = qw/first_name last_name/;
 
-        my $actual_full_name   = join ' ', map { $context->client->$_ // '' } @fields;
+        my $actual_full_name   = join ' ', map { $client->$_ // '' } @fields;
         my $expected_full_name = $result->{full_name} // join ' ', map { $result->{$_} // '' } @fields;
 
-        die +{error_code => 'NameMismatch'} unless BOM::Rules::Comparator::Text::check_words_similarity($actual_full_name, $expected_full_name);
+        $self->fail('NameMismatch') unless BOM::Rules::Comparator::Text::check_words_similarity($actual_full_name, $expected_full_name);
 
         return undef;
     },
@@ -41,7 +43,7 @@ rule 'idv.check_age_legality' => {
     code        => sub {
         my ($self, $context, $args) = @_;
 
-        die 'Client is missing'     unless my $client = $context->client;
+        die 'Client is missing'     unless my $client = $context->client($args);
         die 'IDV result is missing' unless my $result = $args->{result} and ref $args->{result} eq 'HASH';
 
         my $date_of_birth = eval { Date::Utility->new($result->{date_of_birth}) };
@@ -49,7 +51,7 @@ rule 'idv.check_age_legality' => {
         my $countries_config = Brands::Countries->new();
         my $min_legal_age    = $countries_config->minimum_age_for_country($client->residence);
 
-        die +{error_code => 'UnderAge'} unless $date_of_birth and $date_of_birth->is_before(Date::Utility->new->_minus_years($min_legal_age));
+        $self->fail('UnderAge') unless $date_of_birth and $date_of_birth->is_before(Date::Utility->new->_minus_years($min_legal_age));
 
         return undef;
     }
@@ -60,7 +62,7 @@ rule 'idv.check_dob_conformity' => {
     code        => sub {
         my ($self, $context, $args) = @_;
 
-        die 'Client is missing'     unless my $client = $context->client;
+        die 'Client is missing'     unless my $client = $context->client($args);
         die 'IDV result is missing' unless my $result = $args->{result} and ref $args->{result} eq 'HASH';
 
         my $reported_dob = eval { Date::Utility->new($result->{date_of_birth}) };

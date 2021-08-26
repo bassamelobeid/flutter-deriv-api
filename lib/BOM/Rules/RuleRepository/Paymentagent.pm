@@ -22,7 +22,7 @@ rule 'paymentagent.pa_allowed_in_landing_company' => {
         die +{
             error_code => 'PaymentAgentNotAvailable',
             }
-            unless $context->landing_company->allows_payment_agents;
+            unless $context->landing_company_object($args)->allows_payment_agents;
 
         return 1;
     },
@@ -35,7 +35,7 @@ rule 'paymentagent.paymentagent_shouldnt_already_exist' => {
         die +{
             error_code => 'PaymentAgentAlreadyExists',
             }
-            if $context->client->get_payment_agent;
+            if $context->client($args)->get_payment_agent;
 
         return 1;
     },

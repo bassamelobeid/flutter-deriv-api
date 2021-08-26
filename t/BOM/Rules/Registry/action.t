@@ -6,6 +6,7 @@ use Test::Fatal qw( lives_ok exception );
 
 use BOM::Rules::Registry qw(rule);
 use BOM::Rules::Registry::Action;
+use BOM::Rules::Context;
 
 my @rule_args;
 my $rule1 = rule(
@@ -52,7 +53,7 @@ subtest 'Verification' => sub {
     ok $action->verify($context, 'args'), 'Success retrun value';
     is_deeply \@rule_args, [$rule1, $context, 'args', $rule2, $context, 'args'], 'Context and args are correctly passed to rule codes';
 
-    $context = BOM::Rules::Context->new({stop_on_failure => 0});
+    $context = BOM::Rules::Context->new(stop_on_failure => 0);
 
     my $result = undef;
 
@@ -64,7 +65,7 @@ subtest 'Verification' => sub {
     is_deeply $result->passed_rules, ['rule1', 'rule2'], 'passed rules are same as expectation';
     is $result->has_failure, 0, 'has not failures same as expectation';
 
-    $context = BOM::Rules::Context->new({stop_on_failure => 1});
+    $context = BOM::Rules::Context->new(stop_on_failure => 1);
 
     undef @rule_args;
     push $action->{rule_set}->@*, $failing_rule1;
@@ -72,11 +73,11 @@ subtest 'Verification' => sub {
     is_deeply \@rule_args, [$rule1, $context, 'args', $rule2, $context, 'args', $failing_rule1, $context, 'args'],
         'Context and args are correctly passed to rule codes';
 
-    $context = BOM::Rules::Context->new({stop_on_failure => 0});
+    $context = BOM::Rules::Context->new(stop_on_failure => 0);
 
     undef @rule_args;
     push $action->{rule_set}->@*, $failing_rule2;
-    lives_ok { $result = $action->verify($context, 'args') } 'Rule exception is not handled verification code';
+    lives_ok { $result = $action->verify($context, 'args') } 'Rule falure does not throw any exception';
     is ref $result, 'BOM::Rules::Result', 'the reference type is correct';
     is_deeply \@rule_args, [$rule1, $context, 'args', $rule2, $context, 'args', $failing_rule1, $context, 'args', $failing_rule2, $context, 'args'],
         'Context and args are correctly passed to rule codes';

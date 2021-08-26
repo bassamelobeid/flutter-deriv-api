@@ -56,7 +56,7 @@ Applies the rule by running the object's L<code>. It takes the following argumen
 
 =over 4
 
-=item C<context> The context of the rule engine.
+=item C<context> The context rule engine object.
 
 =item C<action_args> The arguments by which an action is going to take place.
 
@@ -79,6 +79,31 @@ sub apply {
     }
 
     return $result;
+}
+
+=head2 fail
+
+Called on rule failure, it dies with the standard excption structure, consisting of a hash-ref with the standard hash-keys.
+It accepts the following arguments:
+
+=over 4
+
+=item C<code> The error code.
+
+=item C<args> A hash containing error details, to be included without change in the exception hash content.
+
+=back
+
+=cut
+
+sub fail {
+    my ($self, $code, %args) = @_;
+
+    die {
+        rule       => $self->name,
+        error_code => $code,
+        %args
+    };
 }
 
 1;

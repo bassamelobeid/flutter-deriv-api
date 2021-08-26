@@ -15,47 +15,43 @@ use warnings;
 
 use LandingCompany::Registry;
 
-use BOM::Platform::Context qw(localize);
 use BOM::Rules::Registry qw(rule);
-use BOM::Platform::Context qw(request);
 use BOM::Config::Runtime;
 use BOM::Config::CurrencyConfig;
 
 rule 'client.check_duplicate_account' => {
-    description => "Performs a duplicate check on the context client and the action args",
+    description => "Performs a duplicate check on the target client and the action args",
     code        => sub {
         my ($self, $context, $args) = @_;
 
-        die +{error_code => 'DuplicateAccount'} if $context->client->check_duplicate_account($args);
+        $self->fail('DuplicateAccount') if $context->client($args)->check_duplicate_account($args);
 
         return 1;
     },
 };
 
 rule 'client.has_currency_set' => {
-    description => 'Checks whether the context client has its currency set',
+    description => 'Checks whether the target client has its currency set',
     code        => sub {
         my ($self, $context, $args) = @_;
 
-        my $account = $context->client->account;
+        my $account = $context->client($args)->account;
         my $currency_code;
 
         $currency_code = $account->currency_code if $account;
 
-        die +{error_code => 'SetExistingAccountCurrency'} unless $currency_code;
+        $self->fail('SetExistingAccountCurrency') unless $currency_code;
 
         return 1;
     },
 };
 
 rule 'client.residence_is_not_empty' => {
-    description => "Fails if the context client's residence is not set yet.",
+    description => "fails if the target client's residence is not set yet.",
     code        => sub {
         my ($self, $context, $args) = @_;
 
-        die +{
-            error_code => 'NoResidence',
-        } unless $context->client->residence;
+        $self->fail('NoResidence') unless $context->client($args)->residence;
 
         return 1;
     },
@@ -63,11 +59,11 @@ rule 'client.residence_is_not_empty' => {
 
 # TODO: it's copied from bom-platform unchanged; but it should be removed in favor of client.immutable_fields
 rule 'client.signup_immitable_fields_not_changed' => {
-    description => "Fails if any of the values of signup immutable fields are changed in the args.",
+    description => "fails if any of the values of signup immutable fields are changed in the args.",
     code        => sub {
         my ($self, $context, $args) = @_;
 
-        my $client = $context->client_switched;
+        my $client = $context->get_real_sibling($args);
 
         return 1 if $client->is_virtual;
 
@@ -78,35 +74,33 @@ rule 'client.signup_immitable_fields_not_changed' => {
             push(@changed, $field) if $client->$field ne ($args->{$field} // '');
         }
 
-        die +{
-            error_code => 'CannotChangeAccountDetails',
-            details    => {changed => [@changed]},
-        } if @changed;
+        $self->fail('CannotChangeAccountDetails', details => {changed => [@changed]}) if @changed;
 
         return 1;
     },
 };
 
 rule 'client.is_not_virtual' => {
-    description => 'It dies with a permission error if the context client is virtual; succeeds otherwise.',
+    description => 'It dies with a permission error if the target client is virtual; succeeds otherwise.',
     code        => sub {
-        my ($self, $context) = @_;
+        my ($self, $context, $args) = @_;
 
-        die {error_code => 'PermissionDenied'} if $context->client->is_virtual;
+        $self->fail('PermissionDenied') if $context->client($args)->is_virtual;
 
         return 1;
     }
 };
 
 rule 'client.forbidden_postcodes' => {
-    description => "Checks if the postalcode in action args or in the context client is allowed",
+    description => "Checks if postalcode is not allowed",
     code        => sub {
         my ($self, $context, $args) = @_;
-        my $forbidden_postcode_pattern =
-            request()->brand->countries_instance->countries_list->{$context->client->residence}->{forbidden_postcode_pattern};
-        my $postcode = $args->{address_postcode} // $context->client->address_postcode;
 
-        die +{code => 'ForbiddenPostcode'} if (defined $forbidden_postcode_pattern && $postcode =~ /$forbidden_postcode_pattern/i);
+        my $client                     = $context->client($args);
+        my $forbidden_postcode_pattern = $context->get_country($client->residence)->{forbidden_postcode_pattern};
+        my $postcode                   = $args->{address_postcode} // $client->address_postcode;
+
+        $self->fail('ForbiddenPostcode') if (defined $forbidden_postcode_pattern && $postcode =~ /$forbidden_postcode_pattern/i);
 
         return 1;
     },

@@ -69,7 +69,7 @@ sub apply {
         die 'This rule cannot be applied with empy context' unless $context;
 
         $key   = $self->context_key;
-        $value = $context->$key // '';
+        $value = $context->$key($action_args) // '';
     } else {
         die 'This rule cannot be applied with empy action args' unless $action_args;
 

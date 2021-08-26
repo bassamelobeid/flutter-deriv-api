@@ -22,21 +22,17 @@ use BOM::Rules::Registry qw(rule);
 rule 'user.has_no_real_clients_without_currency' => {
     description => "Succeeds if currency of all ennabled real accounts of the context landing company are set",
     code        => sub {
-        my ($self, $context) = @_;
+        my ($self, $context, $args) = @_;
+        my $client = $context->client($args);
 
-        die 'Client is missing' unless $context->client;
-
-        my $siblings = $context->client->real_account_siblings_information(
+        my $siblings = $client->real_account_siblings_information(
             exclude_disabled_no_currency => 1,
-            landing_company              => $context->landing_company,
+            landing_company              => $context->landing_company($args),
             include_self                 => 1
         );
 
         if (my ($loginid_no_curr) = grep { not $siblings->{$_}->{currency} } keys %$siblings) {
-            die +{
-                error_code => 'SetExistingAccountCurrency',
-                params     => $loginid_no_curr
-            };
+            $self->fail('SetExistingAccountCurrency', params => $loginid_no_curr);
         }
 
         return 1;
@@ -47,11 +43,9 @@ rule 'user.email_is_verified' => {
     description => "Checks if email address is verified",
     code        => sub {
         my ($self, $context, $args) = @_;
+        my $client = $context->client($args);
 
-        die +{
-            error_code => 'email unverified',
-            }
-            unless $context->client->user->email_verified;
+        $self->fail('email unverified') unless $client->user->email_verified;
 
         return 1;
     },

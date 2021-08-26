@@ -24,12 +24,13 @@ rule 'pass' => {
     },
 };
 
-rule 'fail' => {
+rule 'fail' => +{
     description => "A basic rule that always fails.",
     code        => sub {
         my $self = shift;
 
-        die {code => 'RuleEngineError'};
+        # todo: rule name should represent the enclosing conditional rule
+        $self->fail('RuleEngineError');
     },
 };
 

@@ -1,5 +1,6 @@
 use strict;
 use warnings;
+no indirect;
 
 use Test::Most;
 use Test::Fatal;
@@ -20,47 +21,60 @@ my $user = BOM::User->create(
 );
 $user->add_client($client_cr);
 
-subtest 'rule user.has_no_enabled_clients_without_currency' => sub {
-    my $rule_name   = 'user.has_no_real_clients_without_currency';
-    my $rule_engine = BOM::Rules::Engine->new(landing_company => 'malta');
-    like exception { $rule_engine->apply_rules($rule_name) }, qr/Client is missing/, 'Client is required for this rule';
+my $rule_engine = BOM::Rules::Engine->new(client => $client_cr);
 
-    $rule_engine = BOM::Rules::Engine->new(client => $client_cr);
-    is_deeply exception { $rule_engine->apply_rules($rule_name) },
+subtest 'rule user.has_no_enabled_clients_without_currency' => sub {
+    my $rule_name = 'user.has_no_real_clients_without_currency';
+
+    my $args = {landing_company => 'svg'};
+    like exception { $rule_engine->apply_rules($rule_name) }, qr/Client loginid is missing/, 'Client is required for this rule';
+
+    $args->{loginid} = $client_cr->loginid;
+    is_deeply exception { $rule_engine->apply_rules($rule_name, %$args) },
         {
         error_code => 'SetExistingAccountCurrency',
-        params     => $client_cr->loginid
+        params     => $client_cr->loginid,
+        rule       => $rule_name
         },
         'Correct error when currency is not set';
 
     $client_cr->set_default_account('USD');
+    lives_ok { $rule_engine->apply_rules($rule_name, %$args) } 'Passed after setting currency';
+
     my $client_cr2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'CR',
     });
     $user->add_client($client_cr2);
-    is_deeply exception { $rule_engine->apply_rules($rule_name) },
+    is_deeply exception { $rule_engine->apply_rules($rule_name, %$args) },
         {
         error_code => 'SetExistingAccountCurrency',
-        params     => $client_cr2->loginid
+        params     => $client_cr2->loginid,
+        rule       => $rule_name
         },
         'Sibling account has not currency';
     $client_cr2->status->set('disabled', 'test', 'test');
-    lives_ok { $rule_engine->apply_rules($rule_name) }, 'Disabled accounts are ignored';
+    lives_ok { $rule_engine->apply_rules($rule_name, %$args) }, 'Disabled accounts are ignored';
 };
 
 subtest 'user.email_is_verified' => sub {
     my $rule_name = 'user.email_is_verified';
 
-    my $rule_engine = BOM::Rules::Engine->new(client => $client_cr);
+    like exception { $rule_engine->apply_rules($rule_name) }, qr/Client loginid is missing/, 'Client is required for this rule';
+    my $args = {loginid => $client_cr->loginid};
 
     my $mock_user      = Test::MockModule->new('BOM::User');
     my $email_verified = 1;
     $mock_user->redefine(email_verified => sub { return $email_verified });
 
-    lives_ok { $rule_engine->apply_rules($rule_name) } 'Rule applies when email is verified';
+    lives_ok { $rule_engine->apply_rules($rule_name, %$args) } 'Rule applies when email is verified';
 
     $email_verified = 0;
-    is_deeply exception { $rule_engine->apply_rules($rule_name) }, {error_code => 'email unverified'}, 'Rule fails when email is verified';
+    is_deeply exception { $rule_engine->apply_rules($rule_name, %$args) },
+        {
+        error_code => 'email unverified',
+        rule       => $rule_name
+        },
+        'Rule fails when email is verified';
 
     $mock_user->unmock_all;
 };

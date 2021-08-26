@@ -79,43 +79,27 @@ subtest 'Branching on context' => sub {
     my $rule = BOM::Rules::Registry::Rule::Conditional->new(%args);
     is_deeply $rule, \%args, 'Rule content is corerect';
     like exception { $rule->apply() }, qr/This rule cannot be applied with empy context/, 'Action args are required for this kind of rule';
-    like exception { is_deeply $rule->apply($context) }, qr/The key-value 'residence=' doesn't match any configured condition/,
-        'Empty rules_per_value will cause failure';
 
+    like exception { is_deeply $rule->apply($context) }, qr/Either residence or loginid is require/, 'Empty args will cause failure';
+
+    my $action_args = {residence => 'nowhere'};
     %args = (
         context_key     => 'residence',
         rules_per_value => {'de' => [$rule1]});
     $rule = BOM::Rules::Registry::Rule::Conditional->new(%args);
     is_deeply $rule, \%args, 'Rule content is corerect';
-    like exception { $rule->apply($context) }, qr/The key-value 'residence=' doesn't match any configured condition/,
+    like exception { $rule->apply($context, $action_args) }, qr/The key-value 'residence=nowhere' doesn't match any configured condition/,
         'Correct exception if the configured context key is empty';
-
-    $context->{residence} = 'nowhere';
-    like exception { $rule->apply($context) }, qr/The key-value 'residence=nowhere' doesn't match any configured condition/,
-        'Correct exception for unsupported value';
 
     is scalar @call_args, 0, 'No rule is applied yet';
     $rule->{rules_per_value}->{'default'} = [$rule2];
-    ok $rule->apply($context, {}), 'Rule applied successfully';
-    is_deeply \@call_args, [$rule2, $context, {}], 'The default rule set for missing value is applied';
+    ok $rule->apply($context, $action_args), 'Rule applied successfully';
+    is_deeply \@call_args, [$rule2, $context, $action_args], 'The default rule set for missing value is applied';
 
     undef @call_args;
-    $context->{residence} = 'de';
-    ok $rule->apply($context), 'Rule applied successfully';
-    is_deeply \@call_args, [$rule1, $context, undef], 'The matching rule set is invoked';
-
-    undef @call_args;
-    %args = (
-        context_key     => 'residence',
-        rules_per_value => {
-            'de'      => $rule1,
-            'default' => $rule2
-        });
-    $rule = BOM::Rules::Registry::Rule::Conditional->new(%args);
-    $context->{residence} = 'nowhere';
-    ok $rule->apply($context), 'Rule applied successfully';
-    is_deeply \@call_args, [$rule2, $context, undef], 'The unsuppoorted value is defaulted to the wildcard case';
-
+    $action_args->{residence} = 'de';
+    ok $rule->apply($context, $action_args), 'Rule applied successfully';
+    is_deeply \@call_args, [$rule1, $context, $action_args], 'The matching rule set is invoked';
 };
 
 done_testing();

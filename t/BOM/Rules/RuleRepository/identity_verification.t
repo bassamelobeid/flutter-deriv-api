@@ -26,11 +26,12 @@ $user->add_client($client_cr);
 subtest 'rule idv.check_name_comparison' => sub {
     my $check_id    = 'test';
     my $rule_name   = 'idv.check_name_comparison';
-    my $rule_engine = BOM::Rules::Engine->new(landing_company => 'svg');
-    like exception { $rule_engine->apply_rules($rule_name) }, qr/Client is missing/, 'Client is required for this rule';
+    my $rule_engine = BOM::Rules::Engine->new(client => $client_cr);
+    like exception { $rule_engine->apply_rules($rule_name) }, qr/Client loginid is missing/, 'Client is required for this rule';
 
-    $rule_engine = BOM::Rules::Engine->new(client => $client_cr);
-    like exception { $rule_engine->apply_rules($rule_name); $rule_engine->apply_rules($rule_name, {result => []}); }, qr/IDV result is missing/,
+    like exception { $rule_engine->apply_rules($rule_name, loginid => $client_cr->loginid); }, qr/IDV result is missing/,
+        'Missing result in passed args';
+    like exception { $rule_engine->apply_rules($rule_name, loginid => $client_cr->loginid, result => []); }, qr/IDV result is missing/,
         'Missing result in passed args';
 
     my $tests = [{
@@ -109,17 +110,22 @@ subtest 'rule idv.check_name_comparison' => sub {
     for my $case ($tests->@*) {
         $client_cr->first_name($case->{client}->{first_name});
         $client_cr->last_name($case->{client}->{last_name});
+        $client_cr->save;
 
-        my $args = {result => $case->{result}};
+        my %args = (
+            loginid => $client_cr->loginid,
+            result  => $case->{result});
 
         if (my $error = $case->{error}) {
-            is_deeply exception { $rule_engine->apply_rules($rule_name, $args) },
+            is_deeply exception { $rule_engine->apply_rules($rule_name, %args) },
                 {
                 error_code => $error,
+                rule       => $rule_name
                 },
                 "Broken rules: $error";
         } else {
-            lives_ok { $rule_engine->apply_rules($rule_name, $args) } 'Rules are honored';
+            $rule_engine->apply_rules($rule_name, %args);
+            lives_ok { $rule_engine->apply_rules($rule_name, %args) } 'Rules are honored';
         }
     }
 };
@@ -128,11 +134,10 @@ subtest 'rule idv.check_age_legality' => sub {
     my $check_id  = 'test';
     my $rule_name = 'idv.check_age_legality';
 
-    my $rule_engine = BOM::Rules::Engine->new();
-    like exception { $rule_engine->apply_rules($rule_name) }, qr/Client is missing/, 'Client is required';
+    my $rule_engine = BOM::Rules::Engine->new(client => $client_cr);
+    like exception { $rule_engine->apply_rules($rule_name) }, qr/Client loginid is missing/, 'Client is required';
 
-    $rule_engine = BOM::Rules::Engine->new(client => $client_cr);
-    like exception { $rule_engine->apply_rules($rule_name); $rule_engine->apply_rules($rule_name, {result => []}); }, qr/IDV result is missing/,
+    like exception { $rule_engine->apply_rules($rule_name, loginid => $client_cr->loginid, result => []); }, qr/IDV result is missing/,
         'Missing result in passed args';
 
     $rule_engine = BOM::Rules::Engine->new(client => $client_cr);
@@ -229,15 +234,21 @@ subtest 'rule idv.check_age_legality' => sub {
 
     for my $case ($tests->@*) {
         $client_cr->residence($case->{client}->{residence});
+        $client_cr->save;
 
-        $rule_engine = BOM::Rules::Engine->new(client => $client_cr);
-
-        my $args = {result => $case->{result}};
+        my %args = (
+            loginid => $client_cr->loginid,
+            result  => $case->{result});
 
         if (my $error = $case->{error}) {
-            is_deeply exception { $rule_engine->apply_rules($rule_name, $args) }, +{error_code => $error}, "Broken rules: $error";
+            is_deeply exception { $rule_engine->apply_rules($rule_name, %args) },
+                +{
+                error_code => $error,
+                rule       => $rule_name
+                },
+                "Broken rules: $error";
         } else {
-            lives_ok { $rule_engine->apply_rules($rule_name, $args) } 'Rules are honored';
+            lives_ok { $rule_engine->apply_rules($rule_name, %args) } 'Rules are honored';
         }
     }
 
@@ -248,14 +259,16 @@ subtest 'rule idv.check_dob_conformity' => sub {
     my $check_id  = 'test';
     my $rule_name = 'idv.check_dob_conformity';
 
-    my $rule_engine = BOM::Rules::Engine->new();
-    like exception { $rule_engine->apply_rules($rule_name) }, qr/Client is missing/, 'Client is required';
+    my $rule_engine = BOM::Rules::Engine->new(client => $client_cr);
+    like exception { $rule_engine->apply_rules($rule_name) }, qr/Client loginid is missing/, 'Client is required';
 
-    $rule_engine = BOM::Rules::Engine->new(client => $client_cr);
-    like exception { $rule_engine->apply_rules($rule_name); $rule_engine->apply_rules($rule_name, {result => []}); }, qr/IDV result is missing/,
-        'Missing result in passed args';
-
-    $rule_engine = BOM::Rules::Engine->new(client => $client_cr);
+    like exception {
+        $rule_engine->apply_rules($rule_name, loginid => $client_cr->loginid);
+        $rule_engine->apply_rules(
+            $rule_name,
+            loginid => $client_cr->loginid,
+            result  => []);
+    }, qr/IDV result is missing/, 'Missing result in passed args';
 
     my $tests = [{
             result => {
@@ -334,14 +347,14 @@ subtest 'rule idv.check_dob_conformity' => sub {
     for my $case ($tests->@*) {
         $client_cr->date_of_birth($case->{client}->{date_of_birth});
 
-        $rule_engine = BOM::Rules::Engine->new(client => $client_cr);
-
-        my $args = {result => $case->{result}};
+        my $args = {
+            loginid => $client_cr->loginid,
+            result  => $case->{result}};
 
         if (my $error = $case->{error}) {
-            is_deeply exception { $rule_engine->apply_rules($rule_name, $args) }, +{error_code => $error}, "Broken rules: $error";
+            is_deeply exception { $rule_engine->apply_rules($rule_name, %$args) }, +{error_code => $error}, "Broken rules: $error";
         } else {
-            lives_ok { $rule_engine->apply_rules($rule_name, $args) } 'Rules are honored';
+            lives_ok { $rule_engine->apply_rules($rule_name, %$args) } 'Rules are honored';
         }
     }
 };

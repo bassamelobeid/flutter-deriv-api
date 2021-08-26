@@ -26,18 +26,18 @@ rule 'onfido.check_name_comparison' => {
     code        => sub {
         my ($self, $context, $args) = @_;
 
-        die 'Client is missing'                 unless $context->client;
-        die 'Onfido report is missing'          unless my $report = $args->{report};
+        my $client = $context->client($args);
+        die 'Onfido report is missing' unless my $report = $args->{report};
         die 'Onfido report api_name is invalid' unless ($report->{api_name} // '') eq 'document';
 
         my @fields = qw/first_name last_name/;
 
         my $properties = eval { decode_json_utf8($report->{properties} // '{}') };
 
-        my $actual_full_name   = join ' ', map { $context->client->$_ // '' } @fields;
-        my $expected_full_name = join ' ', map { $properties->{$_}    // '' } @fields;
+        my $actual_full_name   = join ' ', map { $client->$_       // '' } @fields;
+        my $expected_full_name = join ' ', map { $properties->{$_} // '' } @fields;
 
-        die +{error_code => 'NameMismatch'} unless BOM::Rules::Comparator::Text::check_words_similarity($actual_full_name, $expected_full_name);
+        $self->fail('NameMismatch') unless BOM::Rules::Comparator::Text::check_words_similarity($actual_full_name, $expected_full_name);
 
         return undef;
     },

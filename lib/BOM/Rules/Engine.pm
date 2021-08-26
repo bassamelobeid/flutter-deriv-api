@@ -7,12 +7,20 @@ BOM::Rules::Engine
 =head1 SYNOPSIS
 
     use BOM::Rules::Engine;
-    my $rule_engine = BOM::Rules::Engine->new(loginid => 'CR1234', landing_company => 'svg');
+    my $rule_engine = BOM::Rules::Engine->new(client => $client);
 
     try {
-        $rule_engine->verify_action('new_account', {first_name => 'Sir John', last_name => 'Falstaff'});
+        $rule_engine->verify_action('set_settings', loginid => $client->loginid, first_name => 'Sir John', last_name => 'Falstaff');
     catch ($error) {
-        ...
+        # error hadling
+    }
+
+    # This can be rewritten equalantly without dying on failure:
+
+    my $rule_engine = BOM::Rules::Engine->new(client => $client, stop_on_failure => 0);
+    my $result = $rule_engine->verify_action('set_settings', loginid => $client->loginid, first_name => 'Sir John', last_name => 'Falstaff');
+    if ($result->has_error) {
+        # error hadling       
     }
 
 
@@ -27,6 +35,7 @@ use warnings;
 
 use YAML::XS;
 use Moo;
+use List::Util qw(all);
 
 use BOM::User::Client;
 use BOM::Rules::RuleRepository::Basic;
@@ -49,16 +58,6 @@ use BOM::Rules::Context;
 # load actions from .yml files
 BOM::Rules::Registry::register_actions();
 
-=head2 context
-
-A read-only attribute that returns the B<context> created by rule engine's constructor.
-
-Returns a L<BOM::Rules::Context> object
-
-=cut
-
-has context => (is => 'ro');
-
 =head2 BUILDARGS
 
 This method is implemented to override the default constructor by preprocessing context variables.
@@ -66,15 +65,22 @@ This method is implemented to override the default constructor by preprocessing 
 =cut
 
 around BUILDARGS => sub {
-    my ($orig, $class, %context) = @_;
+    my ($orig, $class, %constructor_args) = @_;
 
-    $context{client}          = BOM::User::Client->new({loginid => $context{loginid}}) if $context{loginid} && !$context{client};
-    $context{loginid}         = $context{client}->loginid                              if $context{client}  && !$context{loginid};
-    $context{landing_company} = $context{client}->landing_company->short               if $context{client}  && !$context{landing_company};
-    $context{residence}       = $context{client}->residence                            if $context{client}  && !$context{residence};
+    my $client      = $constructor_args{client} // [];
+    my $client_list = ref($client) eq 'ARRAY' ? $client : [$client];
+    die 'Invalid client object' unless all { ref($_) eq 'BOM::User::Client' } @$client_list;
 
-    return $class->$orig(context => BOM::Rules::Context->new(%context));
+    return $class->$orig(context => BOM::Rules::Context->new(%constructor_args, client_list => $client_list));
 };
+
+=head2 context
+
+A read-only attribute that returns the B<context> created by rule engine's constructor.
+
+=cut
+
+has context => (is => 'ro');
 
 =head2 verify_action
 
@@ -84,7 +90,7 @@ Verifies an B<action> by checking the configured B<rules> against current B<cont
 
 =item C<action_name> the name of action to be verified
 
-=item C<args> arguments of the action
+=item C<args> arguments of the action as a hash
 
 =back
 
@@ -93,14 +99,14 @@ Returns true on success and dies if any contained rule is violated.
 =cut
 
 sub verify_action {
-    my ($self, $action_name, $args) = @_;
+    my ($self, $action_name, %args) = @_;
 
     die "Action name is required" unless $action_name;
 
     my $action = BOM::Rules::Registry::get_action($action_name);
     die "Unknown action '$action_name' cannot be verified" unless $action;
 
-    return $action->verify($self->context, $args // {});
+    return $action->verify($self->context, \%args);
 }
 
 =head2 apply_rules
@@ -111,7 +117,7 @@ Applies any number of B<rules> independently from any action. It takes following
 
 =item C<rules> an array-ref containing the list of rules to be applied
 
-=item C<args> action argumennts for rules
+=item C<args> action arguments as a hash
 
 =back
 
@@ -120,7 +126,7 @@ Returns true on success and dies if any rule is violated.
 =cut
 
 sub apply_rules {
-    my ($self, $rules, $args) = @_;
+    my ($self, $rules, %args) = @_;
 
     $rules = [$rules] unless ref $rules;
 
@@ -130,7 +136,7 @@ sub apply_rules {
 
         die "Unknown rule '$rule_name' cannot be applied" unless $rule;
 
-        $final_results->merge($rule->apply($self->context, $args // {}));
+        $final_results->merge($rule->apply($self->context, \%args));
     }
 
     return $final_results;

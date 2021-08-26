@@ -22,16 +22,16 @@ my $user = BOM::User->create(
     password => 'TEST PASS',
 );
 $user->add_client($client_cr);
+my $rule_engine = BOM::Rules::Engine->new(client => $client_cr);
 
 subtest 'rule onfido.check_name_comparison' => sub {
-    my $check_id    = 'test';
-    my $rule_name   = 'onfido.check_name_comparison';
-    my $rule_engine = BOM::Rules::Engine->new(landing_company => 'svg');
-    like exception { $rule_engine->apply_rules($rule_name) }, qr/Client is missing/, 'Client is required for this rule';
+    my $check_id  = 'test';
+    my $rule_name = 'onfido.check_name_comparison';
 
-    $rule_engine = BOM::Rules::Engine->new(client => $client_cr);
-    like exception { $rule_engine->apply_rules($rule_name) }, qr/Onfido report is missing/, 'Missing report from args';
-    like exception { $rule_engine->apply_rules($rule_name, {report => {}}) }, qr/Onfido report api_name is invalid/,
+    like exception { $rule_engine->apply_rules($rule_name) }, qr/Client loginid is missing/, 'Loginid is required';
+    like exception { $rule_engine->apply_rules($rule_name, loginid => $client_cr->loginid) }, qr/Onfido report is missing/,
+        'Missing report from args';
+    like exception { $rule_engine->apply_rules($rule_name, loginid => $client_cr->loginid, report => {}) }, qr/Onfido report api_name is invalid/,
         'Report api_name is not valid (should be document)';
 
     my $tests = [{
@@ -115,21 +115,24 @@ subtest 'rule onfido.check_name_comparison' => sub {
     for my $case ($tests->@*) {
         $client_cr->first_name($case->{client}->{first_name});
         $client_cr->last_name($case->{client}->{last_name});
+        $client_cr->save;
 
-        my $args = {
-            report => {
+        my %args = (
+            loginid => $client_cr->loginid,
+            report  => {
                 api_name   => 'document',
                 properties => encode_json_utf8($case->{properties}),
-            }};
+            });
 
         if (my $error = $case->{error}) {
-            is_deeply exception { $rule_engine->apply_rules($rule_name, $args) },
+            is_deeply exception { $rule_engine->apply_rules($rule_name, %args) },
                 {
                 error_code => $error,
+                rule       => $rule_name
                 },
                 "Broken rules: $error";
         } else {
-            lives_ok { $rule_engine->apply_rules($rule_name, $args) } 'Rules are honored';
+            lives_ok { $rule_engine->apply_rules($rule_name, %args) } 'Rules are honored';
         }
     }
 };

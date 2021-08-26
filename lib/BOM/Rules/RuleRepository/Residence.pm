@@ -21,21 +21,24 @@ use BOM::Rules::Registry qw(rule);
 rule 'residence.market_type_is_available' => {
     description => "The market_type in args should be allowed in the context residence",
     code        => sub {
-        my ($self, $context, $action_args) = @_;
-        my $market_type  = $action_args->{market_type}  // '';
-        my $account_type = $action_args->{account_type} // '';
+        my ($self, $context, $args) = @_;
+
+        my $market_type     = $args->{market_type}  // '';
+        my $account_type    = $args->{account_type} // '';
+        my $residence       = $context->residence($args);
+        my $landing_company = $context->landing_company_object($args);
 
         my $countries_instance = Brands->new->countries_instance;
 
         my $companies = {
-            synthetic => $countries_instance->gaming_company_for_country($context->residence),
-            financial => $countries_instance->financial_company_for_country($context->residence),
+            synthetic => $countries_instance->gaming_company_for_country($context->residence($args)),
+            financial => $countries_instance->financial_company_for_country($context->residence($args)),
         };
 
         if ($account_type eq 'wallet') {
-            die {error_code => 'InvalidAccount'} unless List::Util::any { $_ } values %$companies;
+            $self->fail('InvalidAccount') unless List::Util::any { $_ } values %$companies;
         } else {
-            die {error_code => 'InvalidAccount'} if $context->landing_company ne ($companies->{$market_type} // '');
+            $self->fail('InvalidAccount') if $context->landing_company($args) ne ($companies->{$market_type} // '');
         }
 
         return 1;
@@ -45,11 +48,12 @@ rule 'residence.market_type_is_available' => {
 rule 'residence.is_signup_allowed' => {
     description => "Checks if signup is allowed in the country of residence",
     code        => sub {
-        my ($self, $context, $action_args) = @_;
+        my ($self, $context, $args) = @_;
+        my $residence = $context->residence($args);
 
         my $countries_instance = Brands->new->countries_instance;
 
-        die {error_code => 'InvalidAccount'} unless $countries_instance->is_signup_allowed($context->residence);
+        $self->fail('InvalidAccount') unless $countries_instance->is_signup_allowed($residence);
 
         return 1;
     },
@@ -59,9 +63,11 @@ rule 'residence.not_restricted' => {
     description => 'Fails if the context residence is restricted; succeeds otherwise',
     code        => sub {
         my ($self, $context, $args) = @_;
+        my $residence = $context->residence($args);
+
         my $countries_instance = Brands->new->countries_instance;
 
-        die +{error_code => 'InvalidResidence'} if $countries_instance->restricted_country($args->{residence} || $context->residence);
+        $self->fail('InvalidResidence') if $countries_instance->restricted_country($residence);
 
         return 1;
     },

@@ -26,31 +26,33 @@ subtest 'rule trading_account.should_match_landing_company' => sub {
 
         my $params = {
             trading_platform_new_account => 1,
+            loginid                      => $client->loginid,
             account_type                 => 'demo',
             market_type                  => 'financial',
             password                     => 'C0rrect_p4ssword',
             platform                     => 'dxtrade',
         };
 
-        is_deeply exception { $rule_engine->apply_rules($rule_name, $params) },
+        is_deeply exception { $rule_engine->apply_rules($rule_name, %$params) },
             {
             error_code     => 'TradingAccountNotAllowed',
-            message_params => ['Deriv X']
+            message_params => ['Deriv X'],
+            rule           => $rule_name
             },
             'Australia not allowed';
 
         $client->residence('id');
-        $rule_engine = BOM::Rules::Engine->new(client => $client);
-
-        ok $rule_engine->apply_rules($rule_name, $params), 'The test passes';
+        $client->save;
+        ok $rule_engine->apply_rules($rule_name, %$params), 'The test passes';
 
         # try to open a real trading account
         $params->{account_type} = 'real';
 
-        is_deeply exception { $rule_engine->apply_rules($rule_name, $params) },
+        is_deeply exception { $rule_engine->apply_rules($rule_name, %$params) },
             {
             error_code     => 'RealAccountMissing',
-            message_params => ['Deriv X']
+            message_params => ['Deriv X'],
+            rule           => $rule_name
             },
             'Real account missing';
 
@@ -60,53 +62,56 @@ subtest 'rule trading_account.should_match_landing_company' => sub {
         });
 
         $user->add_client($real);
-        ok $rule_engine->apply_rules($rule_name, $params), 'The test passes';
+        ok $rule_engine->apply_rules($rule_name, %$params), 'The test passes';
 
         $client->residence('jp');
-        $rule_engine = BOM::Rules::Engine->new(client => $client);
-
-        is_deeply exception { $rule_engine->apply_rules($rule_name, $params) },
+        $client->save;
+        is_deeply exception { $rule_engine->apply_rules($rule_name, %$params) },
             {
             error_code     => 'TradingAccountNotAllowed',
-            message_params => ['Deriv X']
+            message_params => ['Deriv X'],
+            rule           => $rule_name
             },
             'Japan cannot open financial demo';
 
         $params->{market_type} = 'synthetic';
-        ok $rule_engine->apply_rules($rule_name, $params), 'Japan can open synthetic demo';
+        ok $rule_engine->apply_rules($rule_name, %$params), 'Japan can open synthetic demo';
 
         # Make the real client disabled and try to open a real account
         $params->{account_type} = 'real';
         $real->status->set('disabled', 'test', 'test');
 
-        is_deeply exception { $rule_engine->apply_rules($rule_name, $params) },
+        is_deeply exception { $rule_engine->apply_rules($rule_name, %$params) },
             {
             error_code     => 'RealAccountMissing',
-            message_params => ['Deriv X']
+            message_params => ['Deriv X'],
+            rule           => $rule_name
             },
             'Real account missing again';
 
         $real->status->clear_disabled;
-        ok $rule_engine->apply_rules($rule_name, $params), 'The test passes again';
+        ok $rule_engine->apply_rules($rule_name, %$params), 'The test passes again';
 
         # Make the real client duplicate_account and try to open a real account
         $real->status->set('duplicate_account', 'test', 'test');
 
-        is_deeply exception { $rule_engine->apply_rules($rule_name, $params) },
+        is_deeply exception { $rule_engine->apply_rules($rule_name, %$params) },
             {
             error_code     => 'RealAccountMissing',
-            message_params => ['Deriv X']
+            message_params => ['Deriv X'],
+            rule           => $rule_name
             },
             'Real account missing again';
 
         $real->status->clear_duplicate_account;
-        ok $rule_engine->apply_rules($rule_name, $params), 'The test passes again';
+        ok $rule_engine->apply_rules($rule_name, %$params), 'The test passes again';
 
         $params->{market_type} = 'financial';
-        is_deeply exception { $rule_engine->apply_rules($rule_name, $params) },
+        is_deeply exception { $rule_engine->apply_rules($rule_name, %$params) },
             {
             error_code     => 'TradingAccountNotAllowed',
-            message_params => ['Deriv X']
+            message_params => ['Deriv X'],
+            rule           => $rule_name
             },
             'Japan cannot open financial real';
 
@@ -130,16 +135,18 @@ subtest 'rule trading_account.should_match_landing_company' => sub {
 
         my $params = {
             trading_platform_new_account => 1,
+            loginid                      => $client->loginid,
             account_type                 => 'demo',
             market_type                  => 'synthetic',
             password                     => 'C0rrect_p4ssword',
             platform                     => 'dxtrade',
         };
 
-        is_deeply exception { $rule_engine->apply_rules($rule_name, $params) },
+        is_deeply exception { $rule_engine->apply_rules($rule_name, %$params) },
             {
             error_code     => 'TradingAccountNotAllowed',
-            message_params => ['Deriv X']
+            message_params => ['Deriv X'],
+            rule           => $rule_name
             },
             'not available for MX';
 
@@ -149,14 +156,14 @@ subtest 'rule trading_account.should_match_landing_company' => sub {
 
         $client->residence('at');
         $client->save;
-        $rule_engine = BOM::Rules::Engine->new(client => $client);
 
         $user->add_client($client);
 
-        is_deeply exception { $rule_engine->apply_rules($rule_name, $params) },
+        is_deeply exception { $rule_engine->apply_rules($rule_name, %$params) },
             {
             error_code     => 'TradingAccountNotAllowed',
-            message_params => ['Deriv X']
+            message_params => ['Deriv X'],
+            rule           => $rule_name
             },
             'not available for MF';
     };
@@ -174,21 +181,22 @@ subtest 'rule trading_account.should_match_landing_company' => sub {
 
         $client->residence('at');
         $client->save;
-
         my $rule_engine = BOM::Rules::Engine->new(client => $client);
 
         my $params = {
             trading_platform_new_account => 1,
+            loginid                      => $client->loginid,
             account_type                 => 'demo',
             market_type                  => 'synthetic',
             password                     => 'C0rrect_p4ssword',
             platform                     => 'dxtrade',
         };
 
-        is_deeply exception { $rule_engine->apply_rules($rule_name, $params) },
+        is_deeply exception { $rule_engine->apply_rules($rule_name, %$params) },
             {
             error_code     => 'TradingAccountNotAllowed',
-            message_params => ['Deriv X']
+            message_params => ['Deriv X'],
+            rule           => $rule_name
             },
             'not available for MLT';
 
@@ -198,14 +206,15 @@ subtest 'rule trading_account.should_match_landing_company' => sub {
 
         $client->residence('at');
         $client->save;
-        $rule_engine = BOM::Rules::Engine->new(client => $client);
 
         $user->add_client($client);
 
-        is_deeply exception { $rule_engine->apply_rules($rule_name, $params) },
+        $rule_engine = BOM::Rules::Engine->new(client => $client);
+        is_deeply exception { $rule_engine->apply_rules($rule_name, %$params, loginid => $client->loginid) },
             {
             error_code     => 'TradingAccountNotAllowed',
-            message_params => ['Deriv X']
+            message_params => ['Deriv X'],
+            rule           => $rule_name
             },
             'not available for MF';
     };
@@ -228,27 +237,33 @@ subtest 'rule trading_account.should_be_age_verified' => sub {
         residence   => $residence,
     });
 
-    my $rule_name = 'trading_account.should_be_age_verified';
-
     my $rule_engine = BOM::Rules::Engine->new(client => $client);
 
-    ok $rule_engine->apply_rules($rule_name), 'Test passes as this residence does not need age verification';
+    my $rule_name = 'trading_account.should_be_age_verified';
 
+    my $args = {loginid => $client->loginid};
+
+    ok $rule_engine->apply_rules($rule_name, %$args), 'Test passes as this residence does not need age verification';
     # Redidence needs age verification
-    $residence                                  = 'gb';
+    $residence = 'gb';
     $country_config->{trading_age_verification} = 1;
-    $client                                     = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+
+    $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'MX',
         residence   => $residence,
     });
-
     $rule_engine = BOM::Rules::Engine->new(client => $client);
-
-    is_deeply exception { $rule_engine->apply_rules($rule_name) }, {error_code => 'NoAgeVerification'}, 'Age verification required';
+    $args->{loginid} = $client->loginid;
+    is_deeply exception { $rule_engine->apply_rules($rule_name, %$args) },
+        {
+        error_code => 'NoAgeVerification',
+        rule       => $rule_name
+        },
+        'Age verification required';
 
     $client->status->set('age_verification', 'test', 'test');
 
-    ok $rule_engine->apply_rules($rule_name), 'Test passes as the account is age verified';
+    ok $rule_engine->apply_rules($rule_name, %$args), 'Test passes as the account is age verified';
 
     # Redidence needs age verification + virtual account
     $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
@@ -260,10 +275,14 @@ subtest 'rule trading_account.should_be_age_verified' => sub {
         password => 'TRADING PASS',
     );
     $user->add_client($client);
-
     $rule_engine = BOM::Rules::Engine->new(client => $client);
-
-    is_deeply exception { $rule_engine->apply_rules($rule_name) }, {error_code => 'RealAccountMissing'}, 'Real account missing';
+    $args->{loginid} = $client->loginid;
+    is_deeply exception { $rule_engine->apply_rules($rule_name, %$args) },
+        {
+        error_code => 'RealAccountMissing',
+        rule       => $rule_name
+        },
+        'Real account missing';
 
     # Give real account
     $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
@@ -271,14 +290,18 @@ subtest 'rule trading_account.should_be_age_verified' => sub {
         residence   => $residence,
     });
     $user->add_client($client);
-
     $rule_engine = BOM::Rules::Engine->new(client => $client);
-
-    is_deeply exception { $rule_engine->apply_rules($rule_name) }, {error_code => 'NoAgeVerification'}, 'Age verification required';
+    $args->{loginid} = $client->loginid;
+    is_deeply exception { $rule_engine->apply_rules($rule_name, %$args) },
+        {
+        error_code => 'NoAgeVerification',
+        rule       => $rule_name
+        },
+        'Age verification required';
 
     $client->status->set('age_verification', 'test', 'test');
 
-    ok $rule_engine->apply_rules($rule_name), 'Test passes as the account is age verified';
+    ok $rule_engine->apply_rules($rule_name, %$args), 'Test passes as the account is age verified';
 };
 
 subtest 'rule trading_account.should_complete_financial_assessment' => sub {
@@ -302,6 +325,7 @@ subtest 'rule trading_account.should_complete_financial_assessment' => sub {
     # give some params
     my $params = {
         trading_platform_new_account => 1,
+        loginid                      => $client->loginid,
         account_type                 => 'real',
         market_type                  => 'synthetic',
         password                     => 'C0rrect_p4ssword',
@@ -310,16 +334,17 @@ subtest 'rule trading_account.should_complete_financial_assessment' => sub {
 
     # incomplete and required fa
     $fa_complete = 0;
-    is_deeply exception { $rule_engine->apply_rules($rule_name, $params) },
+    is_deeply exception { $rule_engine->apply_rules($rule_name, %$params) },
         {
         error_code     => 'FinancialAssessmentMandatory',
-        message_params => ['Deriv X']
+        message_params => ['Deriv X'],
+        rule           => $rule_name
         },
         'Financial Assesment mandatory';
 
     # complete fa
     $fa_complete = 1;
-    ok $rule_engine->apply_rules($rule_name, $params), 'Financial Assessment completed';
+    ok $rule_engine->apply_rules($rule_name, %$params), 'Financial Assessment completed';
 };
 
 subtest 'rule trading_account.should_provide_tax_details' => sub {
@@ -335,6 +360,7 @@ subtest 'rule trading_account.should_provide_tax_details' => sub {
     # give some params
     my $params = {
         trading_platform_new_account => 1,
+        loginid                      => $client->loginid,
         account_type                 => 'real',
         market_type                  => 'synthetic',
         password                     => 'C0rrect_p4ssword',
@@ -417,12 +443,13 @@ subtest 'rule trading_account.should_provide_tax_details' => sub {
         $is_tax_detail_mandatory = $case->{is_tax_detail_mandatory};
 
         if ($case->{result}) {
-            ok $rule_engine->apply_rules($rule_name, $params), 'Tax details not needed';
+            ok $rule_engine->apply_rules($rule_name, %$params), 'Tax details not needed';
         } else {
-            is_deeply exception { $rule_engine->apply_rules($rule_name, $params) },
+            is_deeply exception { $rule_engine->apply_rules($rule_name, %$params) },
                 {
                 error_code     => 'TINDetailsMandatory',
-                message_params => ['Deriv X']
+                message_params => ['Deriv X'],
+                rule           => $rule_name
                 },
                 'Tax details are mandatory';
         }
@@ -439,21 +466,21 @@ subtest 'rule trading_account.client_should_be_real' => sub {
     my $vrtc = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'VRTC',
     });
-
     my $rule_engine = BOM::Rules::Engine->new(client => $vrtc);
-    is_deeply exception { $rule_engine->apply_rules($rule_name, {platform => 'dxtrade'}) },
+
+    is_deeply exception { $rule_engine->apply_rules($rule_name, loginid => $vrtc->loginid, platform => 'dxtrade') },
         {
         error_code     => 'AccountShouldBeReal',
-        message_params => ['Deriv X']
+        message_params => ['Deriv X'],
+        rule           => $rule_name
         },
         'expected error when passing virtual account';
 
     my $cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'CR',
     });
-
     $rule_engine = BOM::Rules::Engine->new(client => $cr);
-    ok $rule_engine->apply_rules($rule_name), 'Test passes with CR';
+    ok $rule_engine->apply_rules($rule_name, loginid => $cr->loginid), 'Test passes with CR';
 };
 
 subtest 'rule trading_account.allowed_currency' => sub {
@@ -462,6 +489,8 @@ subtest 'rule trading_account.allowed_currency' => sub {
     my $vrtc = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'VRTC',
     });
+
+    my $rule_engine = BOM::Rules::Engine->new(client => $vrtc);
 
     my $available_currencies = {
         svg => {
@@ -476,18 +505,29 @@ subtest 'rule trading_account.allowed_currency' => sub {
             $available_currencies->{$lc->short};
         });
 
-    my $rule_engine = BOM::Rules::Engine->new(client => $vrtc);
-    is_deeply exception { $rule_engine->apply_rules($rule_name, {platform => 'dxtrade', 'currency' => 'EUR'}) },
+    my $args = {
+        loginid    => $vrtc->loginid,
+        platform   => 'dxtrade',
+        'currency' => 'EUR'
+    };
+    is_deeply exception { $rule_engine->apply_rules($rule_name, %$args) },
         {
         error_code     => 'TradingAccountCurrencyNotAllowed',
-        message_params => ['Deriv X']
+        message_params => ['Deriv X'],
+        rule           => $rule_name
         },
         'EUR is not allowed';
 
-    is_deeply exception { $rule_engine->apply_rules($rule_name, {platform => 'dxtrade', 'currency' => 'USD'}) },
+    $args = {
+        loginid    => $vrtc->loginid,
+        platform   => 'dxtrade',
+        'currency' => 'USD'
+    };
+    is_deeply exception { $rule_engine->apply_rules($rule_name, %$args) },
         {
         error_code     => 'TradingAccountCurrencyNotAllowed',
-        message_params => ['Deriv X']
+        message_params => ['Deriv X'],
+        rule           => $rule_name
         },
         'USD is not allowed (vrtc account)';
 
@@ -495,14 +535,7 @@ subtest 'rule trading_account.allowed_currency' => sub {
         dxtrade => [qw/USD/],
     };
 
-    ok $rule_engine->apply_rules(
-        $rule_name,
-        {
-            platform => 'dxtrade',
-            currency => 'USD'
-        }
-        ),
-        'Test passes with USD';
+    ok $rule_engine->apply_rules($rule_name, %$args), 'Test passes with USD';
 
     $lc_mock->unmock_all;
 };
