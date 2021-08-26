@@ -1545,7 +1545,11 @@ rpc set_settings => sub {
     my %required_values = map { $_ => $current_client->$_ } @$required_fields;
     my $rule_engine     = BOM::Rules::Engine->new(client => $current_client);
     try {
-        $rule_engine->verify_action('set_settings', {%required_values, %$args});
+        $rule_engine->verify_action(
+            'set_settings',
+            loginid => $current_client->loginid,
+            %required_values, %$args
+        );
     } catch ($error) {
         return BOM::RPC::v3::Utility::rule_engine_error($error);
     };
@@ -1917,7 +1921,11 @@ rpc set_self_exclusion => sub {
 
     my $rule_engine = BOM::Rules::Engine->new(client => $client);
     try {
-        $rule_engine->verify_action('set_self_exclusion', \%args);
+        $rule_engine->verify_action(
+            'set_self_exclusion',
+            loginid => $client->loginid,
+            %args
+        );
     } catch ($error) {
         return BOM::RPC::v3::Utility::rule_engine_error($error);
     }
@@ -2607,7 +2615,11 @@ rpc set_account_currency => sub {
 
     my $rule_engine = BOM::Rules::Engine->new(client => $client);
     try {
-        $rule_engine->verify_action(set_account_currency => {currency => $currency});
+        $rule_engine->verify_action(
+            'set_account_currency',
+            loginid  => $client->loginid,
+            currency => $currency
+        );
     } catch ($error) {
         return BOM::RPC::v3::Utility::rule_engine_error($error, 'CurrencyTypeNotAllowed');
     };
@@ -2642,7 +2654,7 @@ rpc set_financial_assessment => sub {
 
     my $rule_engine = BOM::Rules::Engine->new(client => $client);
     try {
-        $rule_engine->verify_action(set_financial_assessment => $params->{args});
+        $rule_engine->verify_action('set_financial_assessment', $params->{args}->%*, loginid => $client->loginid);
     } catch ($error) {
         return BOM::RPC::v3::Utility::rule_engine_error($error);
     }
@@ -2807,12 +2819,9 @@ rpc paymentagent_create => sub {
     delete $args->{is_listed};
     delete $args->{is_authenticated};
 
-    my $rule_engine = BOM::Rules::Engine->new(
-        client          => $client,
-        landing_company => $client->landing_company
-    );
+    my $rule_engine = BOM::Rules::Engine->new(client => $client);
     try {
-        $rule_engine->verify_action('paymentagent_create' => $args);
+        $rule_engine->verify_action('paymentagent_create', %$args, loginid => $client->loginid);
     } catch ($error) {
         return BOM::RPC::v3::Utility::rule_engine_error($error);
     }

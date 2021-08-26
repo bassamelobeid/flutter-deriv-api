@@ -641,14 +641,16 @@ sub create_new_real_account {
         return $val if $val;
     }
 
-    my $rule_engine = BOM::Rules::Engine->new(
-        client          => $client,
-        landing_company => $params{landing_company},
-    );
+    my $rule_engine = BOM::Rules::Engine->new(client => $client);
     try {
         # Rules are applied on actual request arguments ($args),
         # not the initialized values ($details_ref->{details}) used for creating the client object.
-        $rule_engine->verify_action('new_account', $args);
+        $rule_engine->verify_action(
+            'new_account',
+            %$args,
+            loginid         => $client->loginid,
+            landing_company => $params{landing_company},
+        );
     } catch ($error) {
         return BOM::RPC::v3::Utility::rule_engine_error($error);
     };

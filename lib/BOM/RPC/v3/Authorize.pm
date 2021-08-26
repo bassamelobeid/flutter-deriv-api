@@ -32,26 +32,31 @@ sub _get_upgradeable_landing_companies {
     my $gaming_company    = $countries_instance->gaming_company_for_country($client->residence)    // '';
     my $financial_company = $countries_instance->financial_company_for_country($client->residence) // '';
 
+    my $rule_engine = BOM::Rules::Engine->new(
+        client          => $client,
+        stop_on_failure => 0
+    );
     for my $lc (uniq($gaming_company, $financial_company)) {
         next unless $lc;
 
-        my $rule_engine = BOM::Rules::Engine->new(
-            client          => $client,
+        # check accounts limit
+        next
+            if $rule_engine->apply_rules(
+            [qw/landing_company.accounts_limit_not_reached/],
+            loginid         => $client->loginid,
             landing_company => $lc,
             stop_on_failure => 0
-        );
-        # check accounts limit
-        next if $rule_engine->apply_rules([qw/landing_company.accounts_limit_not_reached/])->has_failure;
+        )->has_failure;
 
         # check currency availability
         for my $currency (keys LandingCompany::Registry->new->get($lc)->legal_allowed_currencies->%*) {
             unless (
                 $rule_engine->apply_rules(
                     [qw/landing_company.currency_is_allowed currency.is_available_for_new_account currency.is_currency_suspended/],
-                    {
-                        currency     => $currency,
-                        account_type => 'trading'
-                    }
+                    loginid         => $client->loginid,
+                    landing_company => $lc,
+                    currency        => $currency,
+                    account_type    => 'trading'
                 )->has_failure
                 )
             {
