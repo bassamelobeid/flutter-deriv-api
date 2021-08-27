@@ -1364,13 +1364,17 @@ sub account_closure {
     my $client = BOM::User::Client->new({loginid => $data->{loginid}});
 
     send_email({
-        to                    => $client->email,
-        subject               => localize("Your accounts are deactivated"),
-        template_name         => 'account_closure',
-        use_email_template    => 1,
-        email_content_is_html => 1,
-        use_event             => 1,
-    });
+            to            => $client->email,
+            subject       => localize("Your account is deactivated"),
+            template_name => 'account_closure',
+            template_args => {
+                name  => $client->first_name,
+                title => localize('Your account has been closed'),
+            },
+            use_email_template    => 1,
+            email_content_is_html => 1,
+            use_event             => 1,
+        });
 
     return BOM::Event::Services::Track::account_closure($data);
 }
@@ -1382,28 +1386,32 @@ It's the handler for the event emitted on account reactivation, sending emails t
 =cut
 
 sub account_reactivated {
-    my $args = shift;
+    my $data = shift;
 
-    my $client = BOM::User::Client->new({loginid => $args->{loginid}});
+    my $client = BOM::User::Client->new({loginid => $data->{loginid}});
     my $brand  = request->brand;
 
+    my $args = {
+        loginid          => $client->loginid,
+        needs_poi        => $client->needs_poi_verification(),
+        profile_url      => $brand->profile_url,
+        resp_trading_url => $brand->responsible_trading_url,
+        live_chat_url    => $brand->live_chat_url,
+        name             => $client->first_name,
+        title            => $brand->name eq 'deriv' ? localize('Welcome Back!') : localize('Your account has been reactivated'),
+    };
+
     BOM::Platform::Email::send_email({
-            to            => $client->email,
-            from          => $brand->emails('no-reply'),
-            subject       => localize('Welcome back! Your account is ready.'),
-            template_name => 'account_reactivated',
-            template_args => {
-                loginid          => $client->loginid,
-                needs_poi        => $client->needs_poi_verification(),
-                profile_url      => $brand->profile_url,
-                resp_trading_url => $brand->responsible_trading_url,
-                live_chat_url    => $brand->live_chat_url,
-            },
-            template_loginid      => $client->loginid,
-            use_email_template    => 1,
-            email_content_is_html => 1,
-            use_event             => 0
-        });
+        to                    => $client->email,
+        from                  => $brand->emails('no-reply'),
+        subject               => localize('Welcome back! Your account is ready.'),
+        template_name         => 'account_reactivated',
+        template_args         => $args,
+        template_loginid      => $client->loginid,
+        use_email_template    => 1,
+        email_content_is_html => 1,
+        use_event             => 0
+    });
 
     BOM::Platform::Email::send_email({
             to            => $brand->emails('social_responsibility'),
@@ -1413,14 +1421,14 @@ sub account_reactivated {
             template_args => {
                 loginid => $client->loginid,
                 email   => $client->email,
-                reason  => $args->{closure_reason},
+                reason  => $data->{closure_reason},
             },
             use_email_template    => 1,
             email_content_is_html => 1,
             use_event             => 0
         }) if $client->landing_company->social_responsibility_check_required;
 
-    return 1;
+    return BOM::Event::Services::Track::account_reactivated($args);
 }
 
 =head2 _email_client_account_verification

@@ -1032,12 +1032,16 @@ subtest 'account closure' => sub {
 
     is_deeply $email_args,
         {
-        'to'                    => $test_client->email,
-        'subject'               => 'Your accounts are deactivated',
-        'template_name'         => 'account_closure',
-        'email_content_is_html' => 1,
-        'use_email_template'    => 1,
-        'use_event'             => 1
+        to                    => $test_client->email,
+        subject               => 'Your account is deactivated',
+        template_name         => 'account_closure',
+        email_content_is_html => 1,
+        use_email_template    => 1,
+        use_event             => 1,
+        template_args         => {
+            name  => $test_client->first_name,
+            title => 'Your account has been closed',
+        }
         },
         'correct email is sent';
 
@@ -1830,29 +1834,60 @@ subtest 'account_reactivated' => sub {
     my $handler = BOM::Event::Process::get_action_mappings()->{account_reactivated};
 
     mailbox_clear();
-    ok $handler->($call_args), 'Event processed successfully';
+    undef @track_args;
+
+    request(
+        BOM::Platform::Context::Request->new(
+            brand_name => 'deriv',
+            language   => 'EN',
+            app_id     => $app_id,
+        ));
+    my $brand = request->brand;
+
+    is exception { $handler->($call_args)->get }, undef, 'Event processed successfully';
     my $msg = mailbox_search(subject => qr/Welcome back! Your account is ready./);
     ok $msg, 'Email to client is found';
     like $msg->{body},    qr/Check your personal details/, 'Email contains link to profile page';
     unlike $msg->{body},  qr/Upload your documents/,       'No link to POI page';
     is_deeply $msg->{to}, [$test_client->email], 'Client email address is correct';
 
+    my (undef, %args) = @track_args;
+
+    cmp_deeply(
+        \%args,
+        {
+            context    => ignore(),
+            event      => 'account_reactivated',
+            properties => {
+                loginid          => $test_client->loginid,
+                brand            => 'deriv',
+                profile_url      => $brand->profile_url,
+                resp_trading_url => $brand->responsible_trading_url,
+                live_chat_url    => $brand->live_chat_url,
+                needs_poi        => bool(0),
+            }
+        },
+        'track event params'
+    );
+
     $needs_verification = 1;
     mailbox_clear();
-    ok $handler->($call_args), 'Event processed successfully';
+
+    is exception { $handler->($call_args)->get }, undef, 'Event processed successfully';
     $msg = mailbox_search(subject => qr/Welcome back! Your account is ready./);
     ok $msg, 'Email to client is found';
     unlike $msg->{body},  qr/Check your personal details/, 'Email contains link to profile page';
     like $msg->{body},    qr/Upload your documents/,       'No link to POI page';
     is_deeply $msg->{to}, [$test_client->email], 'Client email address is correct';
 
-    ok $handler->($call_args), 'Event processed successfully';
-    $msg = mailbox_search(subject => qr/has been reactivated/);
+    $msg = mailbox_search(
+        subject => qr/has been reactivated/,
+    );
     ok !$msg, 'No SR email is sent';
 
     $social_responsibility = 1;
     mailbox_clear();
-    ok $handler->($call_args), 'Event processed successfully';
+    is exception { $handler->($call_args)->get }, undef, 'Event processed successfully';
     $msg = mailbox_search(subject => qr/has been reactivated/);
     ok $msg, 'Email to SR team is found';
     is_deeply $msg->{to}, [request->brand->emails('social_responsibility')], 'SR email address is correct';

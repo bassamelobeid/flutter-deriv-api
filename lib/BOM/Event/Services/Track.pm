@@ -42,10 +42,11 @@ my %EVENT_PROPERTIES = (
         qw(revenue currency value from_account to_account from_currency to_currency from_amount to_amount source fees is_from_account_pa
             is_to_account_pa gateway_code remark time id brand)
     ],
-    account_closure => [qw(loginid closing_reason loginids_disabled loginids_failed email_consent brand)],
-    app_registered  => [qw(loginid name scopes redirect_uri verification_uri app_markup_percentage homepage github appstore googleplay app_id brand)],
-    app_updated     => [qw(loginid name scopes redirect_uri verification_uri app_markup_percentage homepage github appstore googleplay app_id brand)],
-    app_deleted     => [qw(loginid app_id brand)],
+    account_closure     => [qw(loginid closing_reason loginids_disabled loginids_failed email_consent brand)],
+    account_reactivated => [qw(loginid needs_poi profile_url resp_trading_url live_chat_url brand)],
+    app_registered => [qw(loginid name scopes redirect_uri verification_uri app_markup_percentage homepage github appstore googleplay app_id brand)],
+    app_updated    => [qw(loginid name scopes redirect_uri verification_uri app_markup_percentage homepage github appstore googleplay app_id brand)],
+    app_deleted    => [qw(loginid app_id brand)],
     api_token_created => [qw(loginid name scopes brand)],
     api_token_deleted => [qw(loginid name scopes brand)],
     profile_change    => [
@@ -297,6 +298,22 @@ sub account_closure {
         loginid              => $args->{loginid},
         properties           => $args,
         is_identify_required => 1,
+    );
+}
+
+=head2 account_reactivated
+
+It is triggered for each B<account_reactivated> event emitted, delivering the data to Segment.
+
+=cut
+
+sub account_reactivated {
+    my ($args) = @_;
+
+    return track_event(
+        event      => 'account_reactivated',
+        loginid    => $args->{loginid},
+        properties => $args,
     );
 }
 
