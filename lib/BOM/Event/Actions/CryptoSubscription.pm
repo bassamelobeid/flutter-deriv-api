@@ -8,12 +8,14 @@ use Log::Any qw($log);
 use List::Util qw(any all first);
 use Syntax::Keyword::Try;
 use DataDog::DogStatsd::Helper qw/stats_inc/;
+use JSON::MaybeUTF8 qw(encode_json_utf8);
 
 use BOM::Platform::Event::Emitter;
 use BOM::CTC::Currency;
 use BOM::CTC::Database;
 use BOM::CTC::Constants qw(:transaction :datadog);
 use BOM::CTC::Helper;
+use BOM::CTC::Utility;
 use BOM::Event::Utility qw(exception_logged);
 use BOM::CTC::TP::API::BTC;
 
@@ -258,9 +260,10 @@ sub set_pending_transaction {
             error  => $error
         } unless insert_new_deposit($transaction, \@payment);
 
-        my $result = update_transaction_status_to_pending($transaction, $to_address);
+        my $txn_id = update_transaction_status_to_pending($transaction, $to_address);
 
-        if ($result) {
+        if (defined $txn_id) {
+            BOM::CTC::Utility::emit_transaction_updated($txn_id);
 
             my $app_config = BOM::Config::Runtime->instance->app_config;
             $app_config->check_for_update;
@@ -560,6 +563,41 @@ sub _set_deposit_swept {
 
     my $db_helper = BOM::CTC::Database->new();
     $db_helper->set_deposit_swept([$transaction->{from}], $transaction->{currency});
+}
+
+=head2 transaction_updated
+
+A crypto transaction has been updated.
+
+=cut
+
+sub transaction_updated {
+    my $data = shift;
+
+    my $txn_id = $data->{txn_id};
+    return 0 unless $txn_id;
+
+    my $db_helper = BOM::CTC::Database->new();
+    my $txn_info  = $db_helper->get_transaction_info($txn_id);
+    return 0 unless $txn_info;
+
+    my $loginid = $txn_info->{client_loginid};
+    return 0 unless $loginid;
+
+    my $client = BOM::User::Client->new({loginid => $loginid});
+    my $helper = BOM::CTC::Helper->new(client => $client);
+    $txn_info = $helper->normalize_transaction_info($txn_info);
+
+    my $redis     = BOM::Config::Redis->redis_transaction_write();
+    my $redis_key = 'CASHIER::PAYMENTS::' . $loginid;
+    $redis->publish(
+        $redis_key,
+        encode_json_utf8({
+                crypto         => [$txn_info],
+                client_loginid => $loginid,
+            }));
+
+    return 1;
 }
 
 1;
