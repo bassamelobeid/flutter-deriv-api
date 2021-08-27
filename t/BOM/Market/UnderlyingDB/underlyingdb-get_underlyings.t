@@ -29,7 +29,7 @@ eq_or_diff [sort $udb->markets], [sort qw(commodities forex indices synthetic_in
 eq_or_diff [sort $udb->symbols_for_intraday_fx], [
     sort qw(frxAUDCAD frxAUDCHF frxAUDJPY frxAUDNZD frxAUDUSD frxEURAUD frxEURCAD frxEURCHF
         frxEURGBP frxEURJPY frxEURNZD frxEURUSD frxGBPAUD frxGBPCAD frxGBPCHF
-        frxGBPJPY frxGBPNZD frxGBPUSD frxNZDUSD frxUSDCAD frxUSDCHF frxUSDJPY frxXAGUSD frxXAUUSD WLDAUD WLDEUR WLDGBP WLDUSD)
+        frxGBPJPY frxGBPNZD frxGBPUSD frxNZDUSD frxUSDCAD frxUSDCHF frxUSDJPY frxXAGUSD frxXAUUSD WLDAUD WLDEUR WLDGBP WLDUSD WLDXAU)
     ],
     'Correct list of intraday historical symbols.';
 
