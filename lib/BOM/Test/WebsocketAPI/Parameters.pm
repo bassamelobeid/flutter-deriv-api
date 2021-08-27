@@ -40,6 +40,7 @@ struct ParamLists => [qw(
         contract
         p2p_order
         p2p_advertiser
+        cashier_payments
         )];
 
 struct Client => [qw(
@@ -153,6 +154,20 @@ struct P2PAdvertiser => [qw(
         total_completion_rate
         basic_verification
         full_verification
+        )];
+
+struct CashierPayments => [qw(
+        id
+        address_hash
+        address_url
+        amount
+        is_valid_to_cancel
+        transaction_hash
+        transaction_url
+        transaction_type
+        status_code
+        status_message
+        submit_date
         )];
 
 my $history_count = 10;
@@ -367,15 +382,35 @@ for my $name (qw(ad_man bob@test.com)) {
         );
 }
 
+my (@cashier_payments, $transaction_id);
+for my $transaction_type (qw(deposit)) {
+    $transaction_id++;
+    push @cashier_payments,
+        CashierPayments(
+        id                 => $transaction_id,
+        address_hash       => 'recipient_blockchain_address',
+        address_url        => 'address_url_on_blockchain',
+        amount             => 0.005,
+        is_valid_to_cancel => 0,
+        transaction_hash   => 'transaction_hash',
+        transaction_url    => 'transaction_url_on_blockchain',
+        transaction_type   => $transaction_type,
+        status_code        => 'PENDING',
+        status_message     => 'Transaction is pending confirmation on Blockchain.',
+        submit_date        => 1234567890,
+        );
+}
+
 our $parameters = {
-    underlying     => \@underlying,
-    ticks_history  => \@ticks_history,
-    global         => [{req_id => 10000}],
-    proposal_array => \@proposal_array,
-    client         => \@client,
-    contract       => \@contract,
-    p2p_order      => \@p2p_orders,
-    p2p_advertiser => \@p2p_advertisers,
+    underlying       => \@underlying,
+    ticks_history    => \@ticks_history,
+    global           => [{req_id => 10000}],
+    proposal_array   => \@proposal_array,
+    client           => \@client,
+    contract         => \@contract,
+    p2p_order        => \@p2p_orders,
+    p2p_advertiser   => \@p2p_advertisers,
+    cashier_payments => \@cashier_payments,
 };
 $parameters->{param_lists} = [ParamLists($parameters->%*)];
 
