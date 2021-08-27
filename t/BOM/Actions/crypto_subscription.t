@@ -261,7 +261,7 @@ subtest "change_address_status" => sub {
                     or die $sth->errstr;
             });
         $response = BOM::Event::Actions::CryptoSubscription::update_transaction_status_to_pending($tx, $tx->{address});
-        is $response, 1, "response ok from the database";
+        ok $response, "response ok from the database";
     }
 
     my ($address) =
