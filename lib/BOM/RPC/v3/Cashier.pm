@@ -12,6 +12,7 @@ use Date::Utility;
 use Syntax::Keyword::Try;
 use String::UTF8::MD5;
 use LWP::UserAgent;
+use HTTP::Headers;
 use Log::Any qw($log);
 use IO::Socket::SSL qw( SSL_VERIFY_NONE );
 use YAML::XS qw(LoadFile);
@@ -152,7 +153,12 @@ rpc "cashier", sub {
 
     my $df_client = BOM::Platform::Client::DoughFlowClient->new({'loginid' => $client->loginid});
     # hit DF's CreateCustomer API
-    my $ua = LWP::UserAgent->new(timeout => 20);
+    my $header = HTTP::Headers->new();
+    $header->header('User-Agent' => 'Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:47.0) Gecko/20100101 Firefox/47.0');
+    my $ua = LWP::UserAgent->new(
+        timeout         => 20,
+        default_headers => $header
+    );
     $ua->ssl_opts(
         verify_hostname => 0,
         SSL_verify_mode => SSL_VERIFY_NONE
