@@ -28,6 +28,13 @@
                 "crypto"
             ]
         },
+        "subscribe": {
+            "description": "[Optional] If set to 1, will send updates whenever there is update to crypto payments.",
+            "type": "integer",
+            "enum": [
+                1
+            ]
+        },
         "transaction_type": {
             "description": "[Optional] Type of transactions to receive.",
             "type": "string",

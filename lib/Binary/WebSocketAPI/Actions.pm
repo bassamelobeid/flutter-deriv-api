@@ -3,16 +3,17 @@ package Binary::WebSocketAPI::Actions;
 use strict;
 use warnings;
 
-use Binary::WebSocketAPI::v3::Wrapper::Streamer;
-use Binary::WebSocketAPI::v3::Wrapper::Transaction;
-use Binary::WebSocketAPI::v3::Wrapper::Authorize;
-use Binary::WebSocketAPI::v3::Wrapper::System;
 use Binary::WebSocketAPI::v3::Wrapper::Accounts;
-use Binary::WebSocketAPI::v3::Wrapper::Cashier;
-use Binary::WebSocketAPI::v3::Wrapper::Pricer;
-use Binary::WebSocketAPI::v3::Wrapper::DocumentUpload;
 use Binary::WebSocketAPI::v3::Wrapper::App;
+use Binary::WebSocketAPI::v3::Wrapper::Authorize;
+use Binary::WebSocketAPI::v3::Wrapper::Cashier;
+use Binary::WebSocketAPI::v3::Wrapper::CashierPayments;
+use Binary::WebSocketAPI::v3::Wrapper::DocumentUpload;
 use Binary::WebSocketAPI::v3::Wrapper::P2P;
+use Binary::WebSocketAPI::v3::Wrapper::Pricer;
+use Binary::WebSocketAPI::v3::Wrapper::Streamer;
+use Binary::WebSocketAPI::v3::Wrapper::System;
+use Binary::WebSocketAPI::v3::Wrapper::Transaction;
 
 sub actions_config {
     return [[
@@ -359,8 +360,9 @@ sub actions_config {
         [
             'cashier_payments',
             {
-                stash_params => [qw/ server_name domain /],
-                msg_group    => 'payment',
+                stash_params    => [qw/ server_name domain /],
+                rpc_response_cb => \&Binary::WebSocketAPI::v3::Wrapper::CashierPayments::subscribe_cashier_payments,
+                msg_group       => 'payment',
             },
         ],
         [

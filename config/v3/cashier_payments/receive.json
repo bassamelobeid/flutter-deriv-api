@@ -54,13 +54,18 @@
                                 ]
                             },
                             "status_code": {
-                                "description": "The status code of the transaction. Possible values for **deposit:** `PENDING`, possible values for **withdrawal:** `LOCKED|VERIFIED|PROCESSING`.",
+                                "description": "The status code of the transaction. Possible values for **deposit:** `PENDING|CONFIRMED|ERROR`, possible values for **withdrawal:** `LOCKED|VERIFIED|REJECTED|PERFORMING_BLOCKCHAIN_TXN|PROCESSING|SENT|ERROR|CANCELLED`.",
                                 "type": "string",
                                 "enum": [
+                                    "CANCELLED",
+                                    "CONFIRMED",
+                                    "ERROR",
                                     "LOCKED",
                                     "PENDING",
                                     "PERFORMING_BLOCKCHAIN_TXN",
                                     "PROCESSING",
+                                    "REJECTED",
+                                    "SENT",
                                     "VERIFIED"
                                 ]
                             },
@@ -90,6 +95,24 @@
                             }
                         }
                     }
+                }
+            }
+        },
+        "subscription": {
+            "title": "Subscription information",
+            "description": "For subscription requests only.",
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+                "id"
+            ],
+            "properties": {
+                "id": {
+                    "description": "A per-connection unique identifier. Can be passed to the `forget` API call to unsubscribe.",
+                    "type": "string",
+                    "examples": [
+                        "c84a793b-8a87-7999-ce10-9b22f7ceead3"
+                    ]
                 }
             }
         },

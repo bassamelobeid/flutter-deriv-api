@@ -23,7 +23,7 @@ sub forget {
     };
 }
 
-# forgeting all stream which need authentication after logout
+# forgetting all stream which need authentication after logout
 sub forget_after_logout {
     my $c = shift;
     _forget_transaction_subscription($c, 'balance');
@@ -35,6 +35,7 @@ sub forget_after_logout {
     _forget_feed_subscription($c, 'proposal_open_contract');
     _forget_p2p_order_subscription($c);
     _forget_p2p_advert_subscription($c);
+    _forget_cashier_payments_subscription($c);
     return;
 }
 
@@ -58,6 +59,7 @@ sub forget_all {
             p2p_order
             p2p_advertiser
             p2p_advert
+            cashier_payments
         );
         my $accepted_types = qr/^${\join q{|} => @accepted_types}$/;
         my @failed_types   = grep { !/$accepted_types/ } @$types;
@@ -79,6 +81,8 @@ sub forget_all {
                 @removed_ids{@{_forget_p2p_advertiser_subscription($c)}} = ();
             } elsif ($type eq 'p2p_advert') {
                 @removed_ids{@{_forget_p2p_advert_subscription($c)}} = ();
+            } elsif ($type eq 'cashier_payments') {
+                @removed_ids{@{_forget_cashier_payments_subscription($c)}} = ();
             }
             #TODO why we check 'proposal_open_contract' here ?
             #TODO be brave and remove it. This is most likely legacy code left around (?)
@@ -107,7 +111,7 @@ Takes the following arguments
 
 =item * C<$id> - a uuid representig the subscription to be teminated (optional).
 
-=back 
+=back
 
 Returns an array ref containg uuid of subscriptions effectively cancelled.
 
@@ -239,6 +243,25 @@ sub _forget_p2p_advert_subscription {
     my ($c) = @_;
     my @removed_ids;
     my @subscriptions = Binary::WebSocketAPI::v3::Subscription::P2P::Advert->get_by_class($c);
+
+    foreach my $subscription (@subscriptions) {
+        my $uuid = $subscription->uuid;
+        push @removed_ids, $uuid;
+        $subscription->unregister;
+    }
+    return \@removed_ids;
+}
+
+=head2 _forget_cashier_payments_subscription
+
+Handles forgetting the subscriptions of C<cashier_payments>.
+
+=cut
+
+sub _forget_cashier_payments_subscription {
+    my ($c) = @_;
+    my @removed_ids;
+    my @subscriptions = Binary::WebSocketAPI::v3::Subscription::CashierPayments->get_by_class($c);
 
     foreach my $subscription (@subscriptions) {
         my $uuid = $subscription->uuid;
