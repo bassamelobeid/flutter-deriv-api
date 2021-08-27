@@ -15,7 +15,7 @@ use BOM::Config::Runtime;
 my $all_groups = ['underlying', 'contract'];
 
 sub get_default_underlying_group_mappings {
-    my @uls = Finance::Underlying::all_underlyings();
+    my @uls = Finance::Underlying->all_underlyings();
 
     my %default_underlying_group;
     $default_underlying_group{$_->{symbol}} = $_->{market} for @uls;
