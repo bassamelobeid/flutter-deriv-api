@@ -45,6 +45,7 @@ ok(1, 'SKIP THE TEST');
 #                         p2p_order_list
 #                         p2p_advertiser_create
 #                         p2p_advertiser_info
+#                         cashier_payments
 #                         )
 #                 ],
 #                 filter => sub {
