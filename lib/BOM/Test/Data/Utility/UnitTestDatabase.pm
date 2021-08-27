@@ -367,7 +367,7 @@ sub setup_db_underlying_mapping {
         operation   => 'write',
     });
     my $db   = $connection_builder->db;
-    my @uls  = Finance::Underlying::all_underlyings();
+    my @uls  = Finance::Underlying->all_underlyings();
     my @data = map { [$_->{symbol}, $_->{market}, $_->{submarket}, $_->{market_type}] } @uls;
     $db->dbic->run(
         ping => sub {
