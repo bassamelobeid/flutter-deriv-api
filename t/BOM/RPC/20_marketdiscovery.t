@@ -137,7 +137,7 @@ subtest 'active_symbols for whitelisted apps' => sub {
         my %expected_symbol_count = (
             1  => 69,
             10 => {
-                normal       => 34,
+                normal       => 35,
                 quiet_period => 22,
             },
             11    => 69,
@@ -148,7 +148,7 @@ subtest 'active_symbols for whitelisted apps' => sub {
             15438 => 69,
             15481 => 69,
             15488 => {
-                normal       => 34,
+                normal       => 35,
                 quiet_period => 22
             });
         my $o = LandingCompany::Registry::get('svg')->basic_offerings({
