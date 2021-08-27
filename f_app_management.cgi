@@ -13,7 +13,6 @@ use BOM::Backoffice::Auth0;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use LandingCompany;
 use Mojo::Redis2;
-use Binary::WebSocketAPI::v3::Instance::Redis qw| check_connections ws_redis_master |;
 use JSON::MaybeUTF8;
 use Syntax::Keyword::Try;
 use Scalar::Util qw(looks_like_number);
@@ -26,7 +25,7 @@ PrintContentType();
 
 BrokerPresentation('App management');
 
-our $redis = ws_redis_master();
+our $redis = BOM::Config::Redis->redis_ws_write();
 
 sub redis_push {
     my ($app_id, $is_block) = @_;
@@ -104,7 +103,7 @@ Returns a json format apps blocked from operation domain
 =cut
 
 sub get_blocked_app_operation_domain {
-    return $redis->get('domain_based_apps::blocked') // '{}';
+    return BOM::Config::Redis->redis_ws_write()->get('domain_based_apps::blocked') // '{}';
 }
 
 # Check if a staff is logged in

@@ -10,7 +10,6 @@ use File::Basename;
 use Term::ANSIColor qw(colored);
 
 my @repositories_containing_localize = qw(
-    binary-websocket-api
     bom
     bom-backoffice
     bom-cryptocurrency
