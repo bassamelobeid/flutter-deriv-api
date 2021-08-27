@@ -405,8 +405,11 @@ if ($view_action eq 'withdrawals') {
                     $_->selectrow_array('SELECT payment.ctc_set_withdrawal_rejected(?, ?, ?)', undef, $trxn->{id}, 'Insufficient balance', $staff);
                 });
 
-            code_exit_BO(sprintf("ERROR: %s. Failed to auto-reject a withdrawal. %d were rejected so far.", $error, $count))
-                if $error;
+            if ($error) {
+                code_exit_BO(sprintf("ERROR: %s. Failed to auto-reject a withdrawal. %d were rejected so far.", $error, $count));
+            } else {
+                BOM::CTC::Utility::emit_transaction_updated($trxn->{id});
+            }
 
             $count++;
         }
@@ -679,6 +682,9 @@ sub withdrawal_verify {
             );
         });
 
+    BOM::CTC::Utility::emit_transaction_updated($trx_id)
+        unless $error;
+
     return $error;
 }
 
@@ -724,8 +730,10 @@ sub withdrawal_reject {
             $_->selectrow_array('SELECT payment.ctc_set_withdrawal_rejected(?, ?, ?)', undef, $trx_id, $remark, $staff);
         });
 
-    notify_crypto_withdrawal_rejected($loginid, $rejection_reason, $app_id)
-        unless $error;
+    unless ($error) {
+        notify_crypto_withdrawal_rejected($loginid, $rejection_reason, $app_id);
+        BOM::CTC::Utility::emit_transaction_updated($trx_id);
+    }
 
     return $error;
 }
