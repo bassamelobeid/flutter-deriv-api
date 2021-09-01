@@ -6,25 +6,23 @@ name: core
 clone:
   disable: true
 
+image_pull_secrets:
+- dockerconfig
+
 steps:
 - name: redis-v6
   image: redis:6
   detach: true
 - name: test
   image: regentmarkets/drone-git
-  pull: if-not-exists
+  pull: always
   settings:
     ssh_key:
       from_secret: ssh_key
   environment:
     RPC_CONFIG: /home/git/regentmarkets/bom-rpc/rpc.conf.travis
   commands:
-  - /opt/circle/drone_prepare.sh
-  - cd /home/git/regentmarkets/bom-rpc
-  - . /etc/profile.d/perl5.sh
-  - /opt/circle/start_services
-  - /opt/circle/check_services
-  - make test
+  - /opt/ci/run.sh make test
 
 ---
 kind: pipeline
@@ -34,22 +32,20 @@ name: syntax
 clone:
   disable: true
 
+image_pull_secrets:
+- dockerconfig
+
 steps:
 - name: syntax
   image: regentmarkets/drone-git
-  pull: if-not-exists
+  pull: always
   settings:
     ssh_key:
       from_secret: ssh_key
   environment:
     RPC_CONFIG: /home/git/regentmarkets/bom-rpc/rpc.conf.travis
   commands:
-  - /opt/circle/drone_prepare.sh
-  - cd /home/git/regentmarkets/bom-rpc
-  - . /etc/profile.d/perl5.sh
-  - /opt/circle/start_services
-  - /opt/circle/check_services
-  - make syntax
+  - /opt/ci/run.sh make syntax
 
 ---
 kind: pipeline
@@ -59,22 +55,20 @@ name: json_schemas
 clone:
   disable: true
 
+image_pull_secrets:
+- dockerconfig
+
 steps:
 - name: redis-v6
   image: redis:6
   detach: true
 - name: test
   image: regentmarkets/drone-git
-  pull: if-not-exists
+  pull: always
   settings:
     ssh_key:
       from_secret: ssh_key
   environment:
     RPC_CONFIG: /home/git/regentmarkets/bom-rpc/rpc.conf.travis
   commands:
-  - /opt/circle/drone_prepare.sh
-  - cd /home/git/regentmarkets/bom-rpc
-  - . /etc/profile.d/perl5.sh
-  - /opt/circle/start_services
-  - /opt/circle/check_services
-  - make json_schemas
+  - /opt/ci/run.sh make json_schemas
