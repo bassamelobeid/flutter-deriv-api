@@ -80,7 +80,8 @@
             ],
             "has_reality_check": 0,
             "legal_allowed_markets": [
-               "forex"
+               "forex",
+               "cryptocurrency"
             ],
             "address": [
                "W Business Centre",
@@ -120,6 +121,20 @@
                   }
                },
                "forex": {
+                  "USD": {
+                     "min_stake": 5,
+                     "max_payout": 50000
+                  },
+                  "GBP": {
+                     "min_stake": 5,
+                     "max_payout": 50000
+                  },
+                  "EUR": {
+                     "min_stake": 5,
+                     "max_payout": 50000
+                  }
+               },
+               "cryptocurrency": {
                   "USD": {
                      "min_stake": 5,
                      "max_payout": 50000
@@ -196,7 +211,7 @@
                "minItems": 1,
                "items": {
                   "type": "string",
-                  "pattern": "^forex$"
+                  "pattern": "^(forex|cryptocurrency)$"
                },
                "type": "array"
             },

@@ -71,7 +71,7 @@ subtest "active_symbols for $landing_company_name" => sub {
 
     $params->{source} = 11780;                                                 # dervi_dtrader
     $result = $c->call_ok($method, $params)->has_no_error->result;
-    is scalar @$result, 14, '14 major forex pairs';
+    is scalar @$result, 24, '14 major forex pairs';
 };
 
 subtest 'active_symbols for suspend_buy' => sub {
