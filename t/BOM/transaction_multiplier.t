@@ -1201,6 +1201,82 @@ subtest 'buy multiplier with MF' => sub {
     is $error->{'-mesg'},              'multiplier config undefined for R_100',  'symbol is not allowed for client';
     is $error->{'-message_to_client'}, 'Trading is not offered for this asset.', 'trading not available';
     Test::Warnings::allow_warnings(0);
+
+    $contract = produce_contract({
+        underlying      => 'cryBTCUSD',
+        bet_type        => 'MULTUP',
+        currency        => 'USD',
+        multiplier      => 10,
+        amount          => 100,
+        amount_type     => 'stake',
+        current_tick    => $current_tick,
+        landing_company => $mf->landing_company->short,
+    });
+
+    $txn = BOM::Transaction->new({
+        client        => $mf,
+        contract      => $contract,
+        price         => 100,
+        amount        => 100,
+        amount_type   => 'stake',
+        source        => 19,
+        purchase_date => $contract->date_start,
+    });
+
+    $error = $txn->buy;
+    is $error->{'-type'}, 'InvalidtoBuy', 'invalid to buy';
+    is $error->{'-message_to_client'}, 'Multiplier is not in acceptable range. Accepts 1,2.',
+        'message to client - Multiplier is not in acceptable range. Accepts 1,2.';
+
+    $contract = produce_contract({
+        underlying      => 'cryBTCUSD',
+        bet_type        => 'MULTUP',
+        currency        => 'USD',
+        multiplier      => 1,
+        amount          => 50,
+        amount_type     => 'stake',
+        current_tick    => $current_tick,
+        cancellation    => '1h',
+        landing_company => $mf->landing_company->short,
+    });
+
+    $txn = BOM::Transaction->new({
+        client        => $mf,
+        contract      => $contract,
+        price         => 50,
+        amount        => 100,
+        amount_type   => 'stake',
+        source        => 19,
+        purchase_date => $contract->date_start,
+    });
+
+    $error = $txn->buy;
+    is $error->{'-type'}, 'InvalidtoBuy', 'invalid to buy';
+    is $error->{'-message_to_client'}, 'Deal cancellation is not available at this moment.',
+        'message to client - Deal cancellation is not available at this moment.';
+
+    $contract = produce_contract({
+        underlying      => 'cryBTCUSD',
+        bet_type        => 'MULTUP',
+        currency        => 'USD',
+        multiplier      => 1,
+        amount          => 50,
+        amount_type     => 'stake',
+        current_tick    => $current_tick,
+        landing_company => $mf->landing_company->short,
+    });
+
+    $txn = BOM::Transaction->new({
+        client        => $mf,
+        contract      => $contract,
+        price         => 50,
+        amount        => 100,
+        amount_type   => 'stake',
+        source        => 19,
+        purchase_date => $contract->date_start,
+    });
+
+    ok !$txn->buy, 'valid to buy';
 };
 
 subtest 'buy multiplier on crash/boom with VRTC' => sub {
