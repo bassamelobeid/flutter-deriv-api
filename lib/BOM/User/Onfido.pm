@@ -538,7 +538,10 @@ sub get_rules_reasons {
     my $client  = shift;
     my $reasons = [];
 
-    push $reasons->@*, 'data_comparison.first_name' if $client->status->poi_name_mismatch;
+    my ($provider) = $client->latest_poi_by();
+    $provider //= '';
+
+    push $reasons->@*, 'data_comparison.first_name' if $client->status->poi_name_mismatch && $provider eq 'onfido';
 
     return $reasons;
 }

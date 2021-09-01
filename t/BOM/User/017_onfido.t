@@ -820,15 +820,30 @@ subtest 'get consider reasons' => sub {
                 return $poi_name_mismatch;
             });
 
+        my $provider;
+        my $client_mock = Test::MockModule->new('BOM::User::Client');
+        $client_mock->mock(
+            'latest_poi_by',
+            sub {
+                return ($provider);
+            });
+
+        $provider          = 'onfido';
         $poi_name_mismatch = 1;
         $reasons           = BOM::User::Onfido::get_rules_reasons($test_client);
         cmp_deeply($reasons, set(['data_comparison.first_name']->@*), 'Name mismatch reported');
 
+        $provider = 'idv';
+        $reasons  = BOM::User::Onfido::get_rules_reasons($test_client);
+        cmp_deeply($reasons, set([]->@*), 'No reason reported for Onfido');
+
+        $provider          = 'onfido';
         $poi_name_mismatch = 0;
         $reasons           = BOM::User::Onfido::get_rules_reasons($test_client);
         cmp_deeply($reasons, set([]->@*), 'No reason reported');
 
         $status_mock->unmock_all;
+        $client_mock->unmock_all;
     };
 
     # Finish it
