@@ -505,11 +505,7 @@ subtest 'set settings' => sub {
     $full_args{account_opening_reason} = 'Income Earning';
 
     $params->{args} = {%{$params->{args}}, %full_args};
-    is(
-        $c->tcall($method, $params)->{error}{message_to_client},
-        'Sorry, our service is not available for your country of residence.',
-        'real account cannot update residence'
-    );
+    is($c->tcall($method, $params)->{error}{message_to_client}, 'Permission denied.', 'real account cannot update residence');
 
     $params->{args} = {%full_args};
     is(
