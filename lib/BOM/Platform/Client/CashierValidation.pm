@@ -186,10 +186,11 @@ sub deposit_validation {
     _add_error(
         $errors,
         localize(
-            'Sorry, but you have self-excluded yourself from the website until [_1]. If you are unable to place a trade or deposit after your self-exclusion period, please contact the Customer Support team for assistance.',
+            'You have chosen to exclude yourself from trading on our website until [_1]. If you are unable to place a trade or deposit after your self-exclusion period, please contact us via live chat.',
             $lim
         ),
-        'SelfExclusion'
+        'SelfExclusion',
+        {excluded_until => $lim},
     ) if $lim;
 
     _add_error($errors, localize('Your account is restricted to withdrawals only.'), 'unwelcome_status')

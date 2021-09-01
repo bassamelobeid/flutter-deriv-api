@@ -237,6 +237,25 @@ subtest 'Cashier validation common' => sub {
     cmp_deeply $res->{missing_fields}, ['first_name'], 'missing fields for deposit returned';
     $mock_client->unmock_all();
 
+    my $excluded_until = '2000-01-01';
+    $mock_client->redefine('get_self_exclusion_until_date' => $excluded_until);
+    $res = BOM::Platform::Client::CashierValidation::validate($cr_client->loginid, 'deposit');
+
+    cmp_deeply(
+        $res,
+        {
+            error => {
+                code              => 'SelfExclusion',
+                details           => {excluded_until => $excluded_until},
+                message_to_client =>
+                    "You have chosen to exclude yourself from trading on our website until $excluded_until. If you are unable to place a trade or deposit after your self-exclusion period, please contact us via live chat.",
+            },
+            status => ['SelfExclusion'],
+        },
+        'correct response for self excluded until date',
+    );
+
+    $mock_client->unmock_all();
 };
 
 subtest 'Cashier validation deposit' => sub {
