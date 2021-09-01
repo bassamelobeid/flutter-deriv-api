@@ -263,6 +263,19 @@ sub incr_submissions {
     $redis->incr(IDV_REQUEST_PER_USER_PREFIX . $self->user_id);
 }
 
+=head2 reset_to_zero_left_submissions 
+
+Reset left submissions count to zero equaivalent of disabling the IDV system.
+
+=cut
+
+sub reset_to_zero_left_submissions {
+    my $user_id = shift;
+    my $redis   = BOM::Config::Redis::redis_events();
+
+    $redis->set(IDV_REQUEST_PER_USER_PREFIX . $user_id, limit_per_user());
+}
+
 =head2 limit_per_user
 
 Provides a central point for onfido resubmissions limit per user in the specified

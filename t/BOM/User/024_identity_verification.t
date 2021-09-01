@@ -398,4 +398,10 @@ subtest 'Incr submissions' => sub {
     is $idv_model_ccr->submissions_left, 1, 'Expected submissions left';
 };
 
+subtest 'Reset submissions to zero' => sub {
+    is $idv_model_ccr->submissions_left, 1, 'Expected submissions left is correct';
+    BOM::User::IdentityVerification::reset_to_zero_left_submissions($user_cr->id);
+    is $idv_model_ccr->submissions_left, 0, 'Expected submissions left is reset';
+};
+
 done_testing();
