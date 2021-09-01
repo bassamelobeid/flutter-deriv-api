@@ -22,6 +22,7 @@ use Digest::SHA qw( sha256_hex );
 use Future::AsyncAwait;
 use IO::Async::Loop;
 use JSON::MaybeUTF8 qw( decode_json_utf8  encode_json_utf8 );
+use List::Util qw( any );
 use Log::Any qw( $log );
 use MIME::Base64 qw( decode_base64  encode_base64 );
 use Scalar::Util qw( blessed );
@@ -129,6 +130,7 @@ async sub verify_identity {
         $transformed_resp = TRANSFORMER_MAP->{$provider}($response_hash) if exists TRANSFORMER_MAP->{$provider};
 
         if ($status eq RESULT_STATUS->{pass}) {
+
             my $rule_engine = BOM::Rules::Engine->new(
                 client          => $client,
                 residence       => $client->residence,
@@ -166,6 +168,7 @@ async sub verify_identity {
                     push @messages, 'UNDERAGE';
 
                     BOM::Event::Actions::Common::handle_under_age_client($client, $provider, $transformed_resp->{date_of_birth});
+                    $client->status->clear_age_verification;
                 }
 
                 if (exists $rules_result->errors->{DobMismatch}) {
@@ -173,6 +176,8 @@ async sub verify_identity {
 
                     $client->status->clear_age_verification;
                 }
+
+                BOM::User::IdentityVerification::reset_to_zero_left_submissions($client->binary_user_id);    # no second attempts allowed
 
                 $idv_model->update_document_check({
                     document_id   => $document->{id},
@@ -191,7 +196,7 @@ async sub verify_identity {
                 response_body => encode_json_utf8 $response_hash
             });
 
-            die $message;
+            $log->errorf('Identity verification by provider %s get failed due to %s', $provider, $message);
         }
     } catch ($e) {
         $log->errorf('An error occurred while triggering IDV provider due to %s', $e);
@@ -201,7 +206,7 @@ async sub verify_identity {
         die $e;    # Keeps event in the queue.
     }
 
-    return undef;
+    return 1;
 }
 
 =head2 _trigger_smile_identity
@@ -274,7 +279,7 @@ async sub _trigger_smile_identity {
 
         $decoded_response = eval { decode_json_utf8 $response };
 
-        ($status, $status_message) = _handle_smile_identity_response($decoded_response);
+        ($status, $status_message) = _handle_smile_identity_response($client, $decoded_response);
     } catch ($e) {
         if (blessed($e) and $e->isa('Future::Exception')) {
             my ($payload) = $e->details;
@@ -311,7 +316,16 @@ Returns an array contains status and message.
 =cut
 
 sub _handle_smile_identity_response {
-    my $response_hash = shift;
+    my ($client, $response_hash) = @_;
+
+    if ($response_hash->{ResultCode}) {
+        my @foul_codes = (
+            1022,    # No match
+            1013,    # Invalid ID
+        );
+        BOM::User::IdentityVerification::reset_to_zero_left_submissions($client->binary_user_id)
+            if any { $_ == $response_hash->{ResultCode} } @foul_codes;
+    }
 
     my %verification_status_map = (
         'Verified'           => 'pass',
