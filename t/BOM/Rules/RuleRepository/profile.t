@@ -171,7 +171,7 @@ subtest $rule_name => sub {
     $args->{residence} = 'us';
     is_deeply exception { $rule_engine->apply_rules($rule_name, %$args) },
         {
-        error_code => 'InvalidResidence',
+        error_code => 'PerimissionDenied',
         rule       => $rule_name
         },
         'rule fails with a different residence';
@@ -179,7 +179,7 @@ subtest $rule_name => sub {
     $args->{residence} = undef;
     is_deeply exception { $rule_engine->apply_rules($rule_name, %$args) },
         {
-        error_code => 'InvalidResidence',
+        error_code => 'PerimissionDenied',
         rule       => $rule_name
         },
         'rule fails with empty residence';

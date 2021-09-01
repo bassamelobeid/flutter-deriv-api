@@ -137,7 +137,7 @@ rule 'profile.residence_cannot_be_changed' => {
 
         return 1 if $client->is_virtual and not $client->residence;
 
-        $self->fail('InvalidResidence') if $client->residence ne ($args->{residence} // '');
+        $self->fail('PerimissionDenied') if $client->residence ne ($args->{residence} // '');
 
         return 1;
     },
