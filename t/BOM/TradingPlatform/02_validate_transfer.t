@@ -9,6 +9,7 @@ use BOM::TradingPlatform;
 use BOM::Test::Helper::Client;
 use BOM::Test::Helper::ExchangeRates qw(populate_exchange_rates);
 use BOM::Config::Runtime;
+use BOM::Rules::Engine;
 
 my $mock_fees = Test::MockModule->new('BOM::Config::CurrencyConfig', no_auto => 1);
 $mock_fees->mock(
@@ -47,8 +48,12 @@ subtest 'common' => sub {
         $user->add_client($client_vr);
         $user->add_client($client_real);
 
-        my $dxtrader_vr   = BOM::TradingPlatform->new_base(client => $client_vr);
-        my $dxtrader_real = BOM::TradingPlatform->new_base(client => $client_real);
+        my $dxtrader_vr = BOM::TradingPlatform->new_base(
+            client      => $client_vr,
+            rule_engine => BOM::Rules::Engine->new(client => $client_vr));
+        my $dxtrader_real = BOM::TradingPlatform->new_base(
+            client      => $client_real,
+            rule_engine => BOM::Rules::Engine->new(client => $client_real));
 
         BOM::Config::Runtime->instance->app_config->system->suspend->payments(1);
 
@@ -170,7 +175,10 @@ subtest 'deposit' => sub {
         email    => $client->email,
         password => 'test'
     )->add_client($client);
-    my $dxtrader = BOM::TradingPlatform->new_base(client => $client);
+    my $dxtrader = BOM::TradingPlatform->new_base(
+        client      => $client,
+        rule_engine => BOM::Rules::Engine->new(client => $client),
+    );
 
     cmp_deeply(
         exception {
@@ -296,7 +304,9 @@ subtest 'withdrawal' => sub {
         email    => $client->email,
         password => 'test'
     )->add_client($client);
-    my $dxtrader = BOM::TradingPlatform->new_base(client => $client);
+    my $dxtrader = BOM::TradingPlatform->new_base(
+        client      => $client,
+        rule_engine => BOM::Rules::Engine->new(client => $client));
 
     cmp_deeply(
         $dxtrader->validate_transfer(

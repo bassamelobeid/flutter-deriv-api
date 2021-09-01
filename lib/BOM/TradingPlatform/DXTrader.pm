@@ -13,10 +13,10 @@ use Array::Utils qw(array_minus);
 use Format::Util::Numbers qw(financialrounding formatnumber);
 use Digest::SHA1 qw(sha1_hex);
 use BOM::Platform::Context qw(request);
-use BOM::Rules::Engine;
 use WebService::MyAffiliates;
 use BOM::Config;
 use BOM::Database::CommissionDB;
+
 use DataDog::DogStatsd::Helper qw(stats_inc stats_timing);
 use BOM::Config::Redis;
 use Time::HiRes qw(gettimeofday tv_interval);
@@ -71,7 +71,9 @@ Creates and returns a new L<BOM::TradingPlatform::DXTrader> instance.
 
 sub new {
     my ($class, %args) = @_;
-    return bless {client => $args{client}}, $class;
+    return bless {
+        client      => $args{client},
+        rule_engine => $args{rule_engine}}, $class;
 }
 
 =head2 active_servers
@@ -154,12 +156,7 @@ sub new_account {
     $args{currency} //= $self->get_new_account_currency();
     $args{platform} //= $self->name;
 
-    my $rule_engine = BOM::Rules::Engine->new(client => $self->client);
-    $rule_engine->verify_action(
-        'new_trading_account',
-        loginid => $self->client->loginid,
-        %args
-    );
+    $self->rule_engine->verify_action('new_trading_account', %args, loginid => $self->client->loginid);
 
     my $server = $args{account_type};    # account_type means a different thing for dxtrade
 

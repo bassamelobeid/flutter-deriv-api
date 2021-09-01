@@ -8,6 +8,7 @@ use BOM::Test::Script::DevExperts;
 use BOM::Test::Helper::Client;
 use BOM::TradingPlatform;
 use BOM::Config::Runtime;
+use BOM::Rules::Engine;
 
 my $app_config = BOM::Config::Runtime->instance->app_config->system;
 $app_config->suspend->wallets(1);
@@ -25,8 +26,9 @@ BOM::User->create(
 $client->account('USD');
 
 my $dxtrader = BOM::TradingPlatform->new(
-    platform => 'dxtrade',
-    client   => $client
+    platform    => 'dxtrade',
+    client      => $client,
+    rule_engine => BOM::Rules::Engine->new(client => $client),
 );
 
 my $account = $dxtrader->new_account(

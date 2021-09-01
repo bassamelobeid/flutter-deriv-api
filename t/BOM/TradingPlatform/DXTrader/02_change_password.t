@@ -3,11 +3,13 @@ use warnings;
 use Test::More;
 use Test::Fatal;
 use Test::Deep;
+use Test::MockModule;
+
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Script::DevExperts;
 use BOM::TradingPlatform;
 use BOM::Config::Runtime;
-use Test::MockModule;
+use BOM::Rules::Engine;
 
 my $dxconfig = BOM::Config::Runtime->instance->app_config->system->dxtrade;
 $dxconfig->suspend->all(0);
@@ -22,8 +24,9 @@ BOM::User->create(
 )->add_client($client);
 
 my $dxtrader = BOM::TradingPlatform->new(
-    platform => 'dxtrade',
-    client   => $client
+    platform    => 'dxtrade',
+    client      => $client,
+    rule_engine => BOM::Rules::Engine->new(client => $client),
 );
 isa_ok($dxtrader, 'BOM::TradingPlatform::DXTrader');
 

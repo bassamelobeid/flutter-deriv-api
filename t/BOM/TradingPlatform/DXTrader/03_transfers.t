@@ -11,6 +11,7 @@ use BOM::TradingPlatform;
 use BOM::Test::Helper::ExchangeRates qw(populate_exchange_rates);
 use JSON::MaybeUTF8;
 use BOM::Config::Runtime;
+use BOM::Rules::Engine;
 
 my $dxconfig = BOM::Config::Runtime->instance->app_config->system->dxtrade;
 $dxconfig->suspend->all(0);
@@ -38,8 +39,9 @@ $mock_fees->mock(
 populate_exchange_rates({AUD => 0.75});
 
 my $dxtrader = BOM::TradingPlatform->new(
-    platform => 'dxtrade',
-    client   => $client
+    platform    => 'dxtrade',
+    client      => $client,
+    rule_engine => BOM::Rules::Engine->new(client => $client),
 );
 
 my $account = $dxtrader->new_account(

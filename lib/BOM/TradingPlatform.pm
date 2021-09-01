@@ -33,7 +33,6 @@ use BOM::Platform::Client::CashierValidation;
 use Format::Util::Numbers qw(financialrounding);
 use ExchangeRates::CurrencyConverter qw(convert_currency);
 use List::Util qw(first);
-use BOM::Rules::Engine;
 
 use constant CLASS_DICT => {
     mt5     => 'BOM::TradingPlatform::MT5',
@@ -98,6 +97,9 @@ We curently support as valid trading platform names:
 
 =item * C<dxtrade> The DevExperts trading platform.
 
+=item * C<rule_engine> (optional) A rule engine object for checking business rules. 
+We don't want to create rule engine objects in bom-user repo to avoid circular dependency.
+
 =back
 
 Returns a valid implementation of L<BOM::TradingPlatform>
@@ -121,6 +123,8 @@ Creates a plaform-less instance of the base class, for tests.
 
 =item * C<client> Client instance.
 
+=item * C<rule_engine> (optional) A rule engine object for checking business rules.
+
 =back
 
 Returns object.
@@ -130,7 +134,9 @@ Returns object.
 sub new_base {
     my ($class, %args) = @_;
 
-    return bless {client => $args{client}}, $class;
+    return bless {
+        client      => $args{client},
+        rule_engine => $args{rule_engine}}, $class;
 }
 
 =head2 client
@@ -141,6 +147,19 @@ Returns client instance provided to new().
 
 sub client {
     return shift->{client};
+}
+
+=head2 rule_engine
+
+Returns client instance provided to new().
+
+=cut
+
+sub rule_engine {
+    my $self = shift;
+
+    die 'Rule engine object was not found. Please add it to the constructor args.' unless $self->{rule_engine};
+    return $self->{rule_engine};
 }
 
 =head2 validate_transfer
@@ -177,12 +196,10 @@ sub validate_transfer {
     my ($action, $send_amount, $platform_currency, $account_type) = @args{qw/ action amount platform_currency account_type /};
     my ($recv_amount, $fees, $fees_percent, $min_fee, $fee_calculated_by_percent, $fees_in_client_currency);
 
-    my $rule_engine = BOM::Rules::Engine->new(client => $self->client);
-    $rule_engine->verify_action(
-        "trading_account_$action",
-        %args,
+    $self->rule_engine->verify_action(
+        "trading_account_$action", %args,
         platform => $self->name,
-        loginid  => $self->client->loginid,
+        loginid  => $self->client->loginid
     );
 
     die +{error_code => 'PlatformTransferSuspended'} if BOM::Config::Runtime->instance->app_config->system->suspend->payments;

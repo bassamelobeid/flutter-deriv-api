@@ -24,6 +24,7 @@ use BOM::Test::Helper::Client qw(create_client);
 use BOM::Test::Script::DevExperts;
 use BOM::TradingPlatform;
 use BOM::Config::Runtime;
+use BOM::Rules::Engine;
 
 my $email    = 'abc@binary.com';
 my $password = 'jskjd8292922';
@@ -844,8 +845,9 @@ subtest 'get_account_by_loginid' => sub {
     throws_ok { $user->get_account_by_loginid('DXR2000') } qr/DXInvalidAccount/, 'invalid dxtrade account';
 
     $dxtrader = BOM::TradingPlatform->new(
-        platform => 'dxtrade',
-        client   => $client_cr_new
+        platform    => 'dxtrade',
+        client      => $client_cr_new,
+        rule_engine => BOM::Rules::Engine->new(client => $client_cr_new),
     );
     isa_ok($dxtrader, 'BOM::TradingPlatform::DXTrader');
 
