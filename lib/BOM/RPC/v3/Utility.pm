@@ -606,7 +606,7 @@ sub error_map {
         'ProfessionalAlreadySubmitted'  => localize('You already requested professional status.'),
         'IncompleteFinancialAssessment' => localize("The financial assessment is not complete"),
         'SelfExclusion'                 => localize(
-            'Sorry, but you have self-excluded yourself from the website until [_1]. If you are unable to place a trade or deposit after your self-exclusion period, please contact the Customer Support team for assistance.'
+            'You have chosen to exclude yourself from trading on our website until [_1]. If you are unable to place a trade or deposit after your self-exclusion period, please contact us via live chat.'
         ),
         'SetSelfExclusionError'     => localize('Sorry, but setting your maximum deposit limit is unavailable in your country.'),
         'PaymentAgentNotAvailable'  => localize('The payment agent facility is not available for this account.'),

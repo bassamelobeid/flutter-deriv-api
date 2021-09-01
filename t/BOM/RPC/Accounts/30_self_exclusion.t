@@ -361,7 +361,7 @@ subtest 'get and set self_exclusion' => sub {
 
     like(
         $c->tcall($method, $params)->{error}->{message_to_client},
-        qr/Sorry, but you have self-excluded yourself from the website until/,
+        qr/You have chosen to exclude yourself from trading on our website until/,
         'Self excluded client cannot access set self exclusion'
     );
 
@@ -644,7 +644,7 @@ subtest 'Set self-exclusion - CR clients' => sub {
         is $c->tcall($method, $params)->{status}, 1, "RPC called successfully with value $value - $field";
         is $c->tcall('get_self_exclusion', $get_params)->{$field}, $value, "get_self_exclusion returns the same value $value - $field";
 
-        like $c->tcall($method, $params)->{error}->{message_to_client}, qr/Sorry, but you have self-excluded yourself from the website until/,
+        like $c->tcall($method, $params)->{error}->{message_to_client}, qr/You have chosen to exclude yourself from trading on our website until/,
             "set_self_exclusion fails if client is excluded - $field";
         is $c->tcall('get_self_exclusion', $get_params)->{$field}, $value, "get_self_exclusion returns the same value $value - $field";
 
@@ -757,7 +757,7 @@ subtest 'Set self-exclusion - regulated landing companies' => sub {
         is $c->tcall($method, $params)->{status}, 1, "RPC called successfully with value $value - $field";
         is $c->tcall('get_self_exclusion', $get_params)->{$field}, $value, "get_self_exclusion returns the same value $value - $field";
 
-        like $c->tcall($method, $params)->{error}->{message_to_client}, qr/Sorry, but you have self-excluded yourself from the website until/,
+        like $c->tcall($method, $params)->{error}->{message_to_client}, qr/You have chosen to exclude yourself from trading on our website until/,
             "set_self_exclusion fails if client is excluded - $field";
         is $c->tcall('get_self_exclusion', $get_params)->{$field}, $value, "get_self_exclusion returns the same value $value - $field";
 
