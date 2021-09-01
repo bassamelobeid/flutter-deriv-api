@@ -98,6 +98,24 @@ maltainvest:
     cancellation_duration_range: [5m, 10m, 15m, 30m, 60m]
     stop_out_level:
       30: 0
+  cryBTCUSD: &crypto_maltainvest
+    multiplier_range: [1, 2]
+    commission: 0.001
+    cancellation_commission: 0.05
+    cancellation_duration_range: []
+    stop_out_level:
+      1: 0
+      2: 0
+    expiry: '7d'
+  cryETHUSD: *crypto_maltainvest
+  cryBNBUSD: *crypto_maltainvest
+  cryBCHUSD: *crypto_maltainvest
+  cryLTCUSD: *crypto_maltainvest
+  cryXRPUSD: *crypto_maltainvest
+  cryEOSUSD: *crypto_maltainvest
+  cryZECUSD: *crypto_maltainvest
+  cryXMRUSD: *crypto_maltainvest
+  cryDSHUSD: *crypto_maltainvest
 common:
   R_10:
     multiplier_range: [100, 200, 300, 500, 1000]
