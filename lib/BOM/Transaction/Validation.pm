@@ -760,7 +760,7 @@ sub _validate_client_self_exclusion {
             -type              => 'ClientSelfExcluded',
             -mesg              => 'your account is not authorised for any further contract purchases.',
             -message_to_client => localize(
-                'Sorry, but you have self-excluded yourself from the website until [_1]. If you are unable to place a trade or deposit after your self-exclusion period, please contact the Customer Support team for assistance.',
+                'You have chosen to exclude yourself from trading on our website until [_1]. If you are unable to place a trade or deposit after your self-exclusion period, please contact us via live chat.',
                 $limit_excludeuntil
             ),
         );
