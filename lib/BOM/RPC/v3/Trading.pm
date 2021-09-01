@@ -104,8 +104,9 @@ rpc trading_platform_new_account => sub {
         my $error = BOM::RPC::v3::Utility::set_trading_password_new_account($params->{client}, $params->{args}{password});
         die +{error_code => $error} if $error;
         my $platform = BOM::TradingPlatform->new(
-            platform => $params->{args}{platform},
-            client   => $client
+            platform    => $params->{args}{platform},
+            client      => $client,
+            rule_engine => BOM::Rules::Engine->new(client => $client),
         );
 
         my $account = $platform->new_account($params->{args}->%*);
@@ -411,8 +412,9 @@ sub deposit {
         my $client = $is_demo ? $params->{client} : get_transfer_client($params, $from_account);
 
         my $platform = BOM::TradingPlatform->new(
-            platform => $params->{args}{platform},
-            client   => $client
+            platform    => $params->{args}{platform},
+            client      => $client,
+            rule_engine => BOM::Rules::Engine->new(client => $client),
         );
 
         return $platform->deposit(
@@ -440,8 +442,9 @@ sub withdrawal {
         my $client = get_transfer_client($params, $to_account);
 
         my $platform = BOM::TradingPlatform->new(
-            platform => $params->{args}{platform},
-            client   => $client
+            platform    => $params->{args}{platform},
+            client      => $client,
+            rule_engine => BOM::Rules::Engine->new(client => $client),
         );
 
         return $platform->withdraw(
