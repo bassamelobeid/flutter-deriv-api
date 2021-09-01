@@ -167,7 +167,7 @@ subtest 'create account failed' => sub {
 
         my $res = $t->await::new_account_real(\%details);
 
-        is($res->{error}->{code},    'InvalidResidence', 'cannot create real account');
+        is($res->{error}->{code},    'PermissionDenied', 'cannot create real account');
         is($res->{new_account_real}, undef,              'NO account created');
     };
 
