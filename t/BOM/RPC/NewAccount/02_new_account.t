@@ -1171,8 +1171,7 @@ subtest 'Duplicate accounts are not created in race condition' => sub {
         ->result_value_is(sub { shift->{currency} },     'USD', 'It should return new account data')
         ->result_value_is(sub { ceil shift->{balance} }, 10000, 'It should return new account data');
 
-    my $user        = BOM::User::Client->new({loginid => $rpc_ct->result->{client_id}})->user;
-    my $num_clients = $user->clients;
+    my $user = BOM::User::Client->new({loginid => $rpc_ct->result->{client_id}})->user;
 
     my $client_cr = {
         first_name    => 'James' . rand(999),
@@ -1184,48 +1183,19 @@ subtest 'Duplicate accounts are not created in race condition' => sub {
     $params->{token} = $rpc_ct->result->{oauth_token};
     $params->{args}->{currency} = 'USD';
 
-    is $num_clients, 1, 'number of clients before forking is 1';
-
     my $mocked_system = Test::MockModule->new('BOM::Config');
     $mocked_system->mock('on_production', sub { 1 });
-
-    my $pipe = IO::Pipe->new;
-
-    my $pid_sub = fork // die "Couldn't fork for testing race condition in duplicate accounts";
+    my $mocked_platform_redis = Test::MockModule->new('BOM::Platform::Redis');
+    $mocked_platform_redis->mock(
+        'acquire_lock',
+        sub {
+            return undef;
+        });
 
     my $result = $rpc_ct->call_ok($method, $params)->{result};
+    undef $mocked_platform_redis;
 
-    my $result_child;
-
-    if ($pid_sub != 0) {    # self
-        $pipe->reader;
-        waitpid $pid_sub, 0;
-        while (<$pipe>) {
-            $result_child = $_;
-        }
-    } else {                # child
-        $pipe->writer;
-        if ($result->{error}) {
-            print $pipe $result->{error}->{code};
-        } else {
-            print $pipe $result->{client_id};
-        }
-        close $pipe;
-        exit;
-    }
-
-    my ($new_loginid, $error_code);
-
-    if ($result->{error}) {
-        $new_loginid = $result_child;
-        $error_code  = $result->{error}->{code};
-    } else {
-        $new_loginid = $result->{client_id};
-        $error_code  = $result_child;
-    }
-
-    ok $new_loginid =~ /^CR\d+$/, 'first account created successfully in race condition';
-    is $error_code, 'RateLimitExceeded', 'second account creation face error RateLimitExceeded in race condition';
+    is $result->{error}{code}, 'RateLimitExceeded', 'Account creation face error RateLimitExceeded in race condition';
 };
 
 $method = 'new_account_wallet';
