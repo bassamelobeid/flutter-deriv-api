@@ -33,6 +33,17 @@
                         }
                     }
                 },
+                "dxtrade": {
+                    "description": "Deriv X data.",
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                        "token": {
+                            "description": "Deriv X login token.",
+                            "type": "string"
+                        }
+                    }
+                },
                 "onfido": {
                     "description": "Onfido data.",
                     "type": "object",
