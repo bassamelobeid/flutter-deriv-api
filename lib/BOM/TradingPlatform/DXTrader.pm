@@ -699,6 +699,30 @@ sub get_account_info {
     return $account;
 }
 
+=head2 generate_login_token
+
+Generate a temporary login token for a server.
+
+=cut
+
+sub generate_login_token {
+    my ($self, $server) = @_;
+
+    die +{error_code => 'DXNoServer'}  unless $server;
+    die +{error_code => 'DXNoAccount'} unless any { $server eq $_ } $self->account_servers;
+    $self->server_check($server);
+
+    my $resp = $self->call_api(
+        server => $server,
+        method => 'generate_token',
+        login  => $self->dxtrade_login,
+        domain => DX_DOMAIN,
+    );
+
+    die +{error_code => 'DXTokenGenerationFailed'} unless $resp->{success};
+    return $resp->{content};
+}
+
 =head2 get_open_positions
 
 The DXTrader implementation of getting an account open positions
@@ -727,10 +751,10 @@ sub config {
         my $config = YAML::XS::LoadFile('/etc/rmg/devexperts.yml');
         if ($ENV{DEVEXPERTS_API_SERVICE_PORT}) {
             # running under tests
-            $config->{service_url} = 'http://localhost:' . $ENV{DEVEXPERTS_API_SERVICE_PORT};
+            $config->{dxweb_service_url} = 'http://localhost:' . $ENV{DEVEXPERTS_API_SERVICE_PORT};
         } else {
-            $config->{service_url} = $config->{service}{host} // 'http://localhost';
-            $config->{service_url} .= ':' . $config->{service}{port} if $config->{service}{port};
+            $config->{dxweb_service_url} = $config->{dxweb_service}{host} // 'http://localhost';
+            $config->{dxweb_service_url} .= ':' . $config->{dxweb_service}{port} if $config->{dxweb_service}{port};
         }
         $config;
     }
@@ -767,7 +791,7 @@ sub call_api {
 
     try {
         my $start_time = [Time::HiRes::gettimeofday];
-        $resp = $self->http->post($self->config->{service_url}, {content => $payload});
+        $resp = $self->http->post($self->config->{dxweb_service_url}, {content => $payload});
         stats_timing(
             'devexperts.rpc.timing',
             1000 * Time::HiRes::tv_interval($start_time),
@@ -827,7 +851,8 @@ sub dxclient_get {
     return $resp->{content} if $resp->{success};
 
     # expected response for not found
-    return undef if ($resp->{content}{error_code} and $resp->{content}{error_code} eq '30002' and $resp->{status} eq '404');
+    return undef
+        if (ref $resp->{content} eq 'HASH' and $resp->{content}{error_code} and $resp->{content}{error_code} eq '30002' and $resp->{status} eq '404');
 
     $self->handle_api_error($resp);
 }
