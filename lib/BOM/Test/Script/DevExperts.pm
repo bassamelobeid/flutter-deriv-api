@@ -18,14 +18,14 @@ BEGIN {
         $service = BOM::Test::Script->new(
             script => '/home/git/regentmarkets/bom-platform/bin/devexperts_api_service.pl',
             args   => [
-                '--port',      $service_port, '--demo_port', $demo_port, '--demo_host', 'http://localhost',
-                '--real_port', $real_port,    '--real_host', 'http://localhost'
+                '--type',      'dxweb',            '--port',      $service_port, '--demo_port', $demo_port,
+                '--demo_host', 'http://localhost', '--real_port', $real_port,    '--real_host', 'http://localhost'
             ],
             perlinc => [
                 qw(/home/git/regentmarkets/perl-WebService-Async-DevExperts/lib /home/git/regentmarkets/perl-WebService-Async-DevExperts/local/lib/perl5)
             ],
         );
-        die 'Failed to start DevExperts API service.' unless $service->start_script_if_not_running;
+        die 'Failed to start DevExperts DXWeb API service.' unless $service->start_script_if_not_running;
 
         $demo = BOM::Test::Script->new(
             script  => '/home/git/regentmarkets/bom-platform/bin/devexperts_server.pl',
@@ -33,7 +33,7 @@ BEGIN {
             perlinc => [
                 qw(/home/git/regentmarkets/perl-WebService-Async-DevExperts/lib /home/git/regentmarkets/perl-WebService-Async-DevExperts/local/lib/perl5)
             ],
-            file_base => '/tmp/devexperts_demo_server'    # for pid file
+            file_base => '/tmp/devexperts_dxweb_demo_server'    # for pid file
         );
         die 'Failed to start DevExperts demo server.' unless $demo->start_script_if_not_running;
 
@@ -43,7 +43,7 @@ BEGIN {
             perlinc => [
                 qw(/home/git/regentmarkets/perl-WebService-Async-DevExperts/lib /home/git/regentmarkets/perl-WebService-Async-DevExperts/local/lib/perl5)
             ],
-            file_base => '/tmp/devexperts_real_server'
+            file_base => '/tmp/devexperts_dxweb_real_server'
         );
         die 'Failed to start DevExperts real server.' unless $real->start_script_if_not_running;
 
