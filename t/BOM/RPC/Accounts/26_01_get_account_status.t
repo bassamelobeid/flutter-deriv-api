@@ -3314,6 +3314,7 @@ subtest 'Experian validated account' => sub {
             };
 
             $mocked_onfido->unmock_all;
+            $mocked_client->unmock_all;
         };
     };
 };
@@ -3374,6 +3375,13 @@ subtest 'Rejected reasons' => sub {
             return $poi_status;
         });
 
+    my $provider;
+    $client_mock->mock(
+        'latest_poi_by',
+        sub {
+            return $provider;
+        });
+
     my $status_mock = Test::MockModule->new('BOM::User::Client::Status');
     $status_mock->mock(
         'poi_name_mismatch',
@@ -3385,6 +3393,16 @@ subtest 'Rejected reasons' => sub {
     my $tests   = [map { +{reasons => [$_], poi_status => 'rejected', expected => [$catalog{$_}], test => "Testing $_",} } keys %catalog];
 
     # Adding more cases
+
+    push $tests->@*,
+        {
+        reasons           => [],
+        expected          => [],
+        test              => 'From our rules (poi_name_mismatch is set but not by onfido)',
+        poi_status        => 'verified',
+        poi_name_mismatch => 1,
+        provider          => 'idv'
+        };
 
     push $tests->@*,
         {
@@ -3453,6 +3471,7 @@ subtest 'Rejected reasons' => sub {
         $reasons           = $test->{reasons};
         $poi_status        = $test->{poi_status};
         $poi_name_mismatch = $test->{poi_name_mismatch};
+        $provider          = $test->{provider} // 'onfido';
 
         if ($poi_status eq 'rejected') {
             $onfido_document_sub_result = 'rejected';
