@@ -25,9 +25,9 @@ BOM::User->create(
 $client->account('USD');
 
 my $dxtrader = BOM::TradingPlatform->new(
-    platform => 'dxtrade',
+    platform    => 'dxtrade',
     rule_engine => BOM::Rules::Engine->new(client => $client),
-    client   => $client
+    client      => $client
 );
 
 cmp_deeply(exception { $dxtrader->generate_login_token('') },     {error_code => 'DXNoServer'},  'missing server param');
