@@ -234,6 +234,25 @@ subtest 'service_token validation' => sub {
             args        => $args
         });
     is($res->{error}->{code}, 'OrderCreationError', 'Wyre returns expected error for non crypto');
+
+    $args = {service => 'dxtrade'};
+    $res  = $c->tcall(
+        $method,
+        {
+            token => $token,
+            args  => $args
+        });
+    is($res->{error}->{code}, 'DXNoServer', 'dxtrade returns expected error for no server');
+
+    $args->{server} = 'demo';
+    $res = $c->tcall(
+        $method,
+        {
+            token => $token,
+            args  => $args
+        });
+    is($res->{error}->{code}, 'DXNoAccount', 'dxtrade returns expected error for no account');
+
 };
 
 done_testing();

@@ -27,13 +27,11 @@ my $mt5_errors = BOM::RPC::v3::MT5::Errors->new();
 my %ERROR_MAP = do {
     # Show localize to `make i18n` here, so strings are picked up for translation.
     # Call localize again on the hash value to do the translation at runtime.
+    # Check BOM::RPC::v3::Utility::error_map if you can't find an error code here.
     ## no critic(TestingAndDebugging::ProhibitNoWarnings)
     no warnings 'redefine';
     local *localize = sub { die 'you probably wanted an arrayref for this localize() call' if @_ > 1; shift };
     (
-        DXSuspended           => localize('Deriv X account management is currently suspended.'),
-        DXGeneral             => localize('This service is currently unavailable. Please try again later.'),
-        DXServerSuspended     => localize('This feature is suspended for system maintenance. Please try later.'),
         DXtradeNoCurrency     => localize('Please provide a currency for the Deriv X account.'),
         DXExistingAccount     => localize('You already have Deriv X account of this type (account ID [_1]).'),
         DXInvalidAccount      => localize('An invalid Deriv X account ID was provided.'),

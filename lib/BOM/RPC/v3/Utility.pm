@@ -611,6 +611,12 @@ sub error_map {
         'SetSelfExclusionError'     => localize('Sorry, but setting your maximum deposit limit is unavailable in your country.'),
         'PaymentAgentNotAvailable'  => localize('The payment agent facility is not available for this account.'),
         'PaymentAgentAlreadyExists' => localize("You've already submitted a payment agent application request."),
+        'DXSuspended'               => localize('Deriv X account management is currently suspended.'),
+        'DXGeneral'                 => localize('This service is currently unavailable. Please try again later.'),
+        'DXServerSuspended'         => localize('This feature is suspended for system maintenance. Please try later.'),
+        'DXNoServer'                => localize('Server must be provided for Deriv X service token.'),
+        'DXNoAccount'               => localize('You do not have a Deriv X account on the provided server.'),
+        'DXTokenGenerationFailed'   => localize('Token generation failed. Please try later.'),
     };
 }
 

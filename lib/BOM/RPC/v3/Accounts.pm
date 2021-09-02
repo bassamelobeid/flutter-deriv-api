@@ -2400,6 +2400,27 @@ async_rpc service_token => sub {
                     }
                 });
         }
+
+        if ($service eq 'dxtrade') {
+
+            try {
+                my $trading_platform = BOM::TradingPlatform->new(
+                    platform => 'dxtrade',
+                    client   => $client
+                );
+
+                push @service_futures,
+                    Future->done({
+                        service => $service,
+                        token   => $trading_platform->generate_login_token($args->{server}),
+                    });
+
+            } catch ($e) {
+                my $error = BOM::RPC::v3::Utility::create_error_by_code($e->{error_code});
+                push @service_futures, Future->fail($error);
+            }
+
+        }
     }
 
     return Future->needs_all(@service_futures)->then(
