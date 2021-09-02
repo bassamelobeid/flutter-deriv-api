@@ -8,6 +8,7 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Script::DevExperts;
 use BOM::TradingPlatform;
 use BOM::Config::Runtime;
+use BOM::Rules::Engine;
 
 my $dxconfig = BOM::Config::Runtime->instance->app_config->system->dxtrade;
 $dxconfig->suspend->all(0);
@@ -25,6 +26,7 @@ $client->account('USD');
 
 my $dxtrader = BOM::TradingPlatform->new(
     platform => 'dxtrade',
+    rule_engine => BOM::Rules::Engine->new(client => $client),
     client   => $client
 );
 
