@@ -109,14 +109,14 @@ subtest 'active_symbols for whitelisted apps' => sub {
                 active_symbols => 'brief',
             }};
         my %expected_symbol_count = (
-            11780 => 79,
+            11780 => 85,
             1408  => 0,
-            16303 => 79,
-            16929 => 79,
-            19111 => 74,
-            19112 => 74,
+            16303 => 85,
+            16929 => 85,
+            19111 => 80,
+            19112 => 80,
             22168 => 69,
-            23789 => 49,
+            23789 => 55,
         );
         my $app = $deriv->whitelist_apps;
         foreach my $app_id (keys %$app) {
