@@ -5,7 +5,7 @@ use Test::More;
 use Test::MockModule;
 use Test::Deep;
 use IO::Async::Loop;
-use BOM::Platform::Script::DevExpertsAPIService;
+use BOM::Platform::Script::DevExpertsAPIService::DxWeb;
 use WebService::Async::DevExperts::DxWeb::Model::Error;
 use IO::Async::Loop;
 use JSON::MaybeUTF8 qw(:v1);
@@ -13,13 +13,13 @@ use Log::Any::Adapter qw(TAP);
 
 my $loop = IO::Async::Loop->new;
 $loop->add(
-    my $service = BOM::Platform::Script::DevExpertsAPIService->new(
+    my $service = BOM::Platform::Script::DevExpertsAPIService::DxWeb->new(
         demo_host => 'http://localhost',
-        real_host => 'http://localhost'
+        real_host => 'http://localhost',
     ));
 $loop->add(my $http = Net::Async::HTTP->new);
 
-isa_ok($service, 'BOM::Platform::Script::DevExpertsAPIService');
+isa_ok($service, 'BOM::Platform::Script::DevExpertsAPIService::DxWeb');
 
 my $port = $service->start->get;
 # it will have chosen a random port because none was specified
@@ -42,13 +42,16 @@ subtest 'bad requests' => sub {
     ok $resp->is_error, 'bad json - error';
 
     $resp = $http->POST($url, '{ "x": 1 }', content_type => 'application/json')->get;
-    is $resp->content, 'Server not provided', 'Server missing - message';
-    ok $resp->is_error, 'Method missing - error';
+    is $resp->content, 'Invalid server: <none>', 'Server missing - message';
+    ok $resp->is_error, 'Server missing - error';
 
     $resp = $http->POST($url, '{ "server": "demo", "x": 1 }', content_type => 'application/json')->get;
-    is $resp->content, 'Method not provided', 'Method missing - message';
+    is $resp->content, 'Invalid method: <none>', 'Method missing - message';
     ok $resp->is_error, 'Method missing - error';
 
+    $resp = $http->POST($url, '{ "server": "demo", "method": "lie" }', content_type => 'application/json')->get;
+    is $resp->content, 'Invalid method: lie', 'Invalid method - message';
+    ok $resp->is_error, 'Invalid method - error';
 };
 
 subtest 'API response types' => sub {

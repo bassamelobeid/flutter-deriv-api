@@ -9,7 +9,6 @@ use Future::AsyncAwait;
 use Syntax::Keyword::Try;
 use Net::Async::HTTP::Server;
 use IO::Async::Timer::Periodic;
-use WebService::Async::DevExperts::DxWeb::Client;
 use HTTP::Response;
 use JSON::MaybeUTF8 qw(:v1);
 use Unicode::UTF8;
@@ -17,15 +16,11 @@ use Scalar::Util qw(refaddr blessed);
 use DataDog::DogStatsd::Helper qw(stats_inc stats_timing);
 use curry::weak;
 use Time::HiRes qw(gettimeofday tv_interval);
-use Socket qw(IPPROTO_TCP);
 use URI;
 
 $Future::TIMES = 1;
 
 use Log::Any qw($log);
-
-# seconds between heartbeat requests
-use constant HEARTBEAT_INVERVAL => 60;
 
 =head1 NAME
 
@@ -33,7 +28,7 @@ DevExperts API Service
 
 =head1 DESCRIPTION
 
-Provides an HTTP interface to DevExperts API wrapper.
+Base class for services providing HTTP access to DevExperts API wrappers.
 
 All requests are made by POST with json payload. Any path will work.
 Payload must contain C<method> which is the name of the API wrapper method to call. E.g.
@@ -54,19 +49,19 @@ Takes the following named parameters:
 
 =item * Cdemo_host> - devexperts demo server host name including protocol.
 
-=item * Cdemo_port> - demo server.
+=item * Cdemo_port> - demo server port.
 
-=item * Cdemo_user> - demo server username for basic authentication.
+=item * Cdemo_user> - demo server username
 
-=item * Cdemo_pass> - demo server password for basic authentication.
+=item * Cdemo_pass> - demo server password
 
 =item * Creal_host> - devexperts real server host name including protocol.
 
-=item * Creal_port> - real server.
+=item * Creal_port> - real server port
 
-=item * Creal_user> - real server username for basic authentication.
+=item * Creal_user> - real server username
 
-=item * Creal_pass> - real server password for basic authentication.
+=item * Creal_pass> - real server password
 
 =back
 
@@ -79,8 +74,10 @@ sub configure {
         $self->{$_} = delete $args{$_} if exists $args{$_};
     }
 
-    $self->{demo_host_base} = URI->new($self->{demo_host})->host;
-    $self->{real_host_base} = URI->new($self->{real_host})->host;
+    $self->{demo_host_base}                 = URI->new($self->{demo_host})->host;
+    $self->{real_host_base}                 = URI->new($self->{real_host})->host;
+    $self->@{qw/demo_username demo_domain/} = split '@', ($self->{demo_user} // '');
+    $self->@{qw/real_username real_domain/} = split '@', ($self->{real_user} // '');
 
     return $self->next::method(%args);
 }
@@ -104,31 +101,6 @@ sub _add_to_loop {
                 $self->{active_requests}{$k} = $self->handle_http_request($req)->on_ready(sub { delete $self->{active_requests}{$k} });
             }));
 
-    # devexperts API client for demo server
-    $self->add_child(
-        $self->{clients}{demo} = WebService::Async::DevExperts::DxWeb::Client->new(
-            host => $self->{demo_host},
-            port => $self->{demo_port},
-            user => $self->{demo_user},
-            pass => $self->{demo_pass},
-        ));
-
-    # devexperts API client for real server
-    $self->add_child(
-        $self->{clients}{real} = WebService::Async::DevExperts::DxWeb::Client->new(
-            host => $self->{real_host},
-            port => $self->{real_port},
-            user => $self->{real_user},
-            pass => $self->{real_pass},
-        ));
-
-    $self->add_child(
-        $self->{heartbeat} = IO::Async::Timer::Periodic->new(
-            interval => HEARTBEAT_INVERVAL,
-            on_tick  => $self->$curry::weak(sub { shift->do_heartbeat->retain }),
-        ));
-    $self->{heartbeat}->start;
-
     return undef;
 }
 
@@ -149,21 +121,18 @@ Takes the following parameter:
 async sub handle_http_request {
     my ($self, $req) = @_;
 
-    my $dd_tags = [];
+    my ($server, $method);
 
     try {
         die "Only POST is allowed\n" unless $req->method eq 'POST';
         my $params = decode_json_utf8($req->body || '{}');
-        my $server = delete $params->{server} || die "Server not provided\n";
+        $server = delete $params->{server} || '<none>';
+        $method = delete $params->{method} || '<none>';
         die "Invalid server: $server\n" unless exists $self->{clients}{$server};
-        my $method = delete $params->{method} || die "Method not provided\n";
+        die "Invalid method: $method\n" unless $self->{clients}{$server}->can($method);
         $log->debugf('Got request for method %s with params %s', $method, $params);
-        $dd_tags = ["server:$server", "method:$method"];
-        stats_inc('devexperts.api_service.request', {tags => $dd_tags});
 
-        my $start_time = [Time::HiRes::gettimeofday];
-        my $data       = await $self->{clients}{$server}->$method($params->%*);
-        stats_timing('devexperts.api_service.timing', 1000 * Time::HiRes::tv_interval($start_time), {tags => $dd_tags},);
+        my $data = await $self->call_api($server, $method, $params);
 
         my $response = HTTP::Response->new(200);
         my $response_content;
@@ -186,6 +155,7 @@ async sub handle_http_request {
         $response->content_length(length $response->content);
         $req->respond($response);
     } catch ($e) {
+        chomp($e);
         $log->debugf('Failed processing request: %s', $e);
 
         try {
@@ -204,12 +174,31 @@ async sub handle_http_request {
                 $response->add_content(ref $e ? encode_json_utf8($e) : Unicode::UTF8::encode_utf8("$e"));
                 $response->content_length(length $response->content);
                 $req->respond($response);
-                stats_inc('devexperts.api_service.unexpected_error', {tags => $dd_tags});
+                stats_inc($self->{datadog_prefix} . 'unexpected_error', {tags => ['server:' . ($server // ''), 'method:' . ($method // '')]});
             }
         } catch ($e2) {
             $log->errorf('Failed when trying to send failure response - %s', $e2);
         }
     }
+}
+
+=head2 call_api
+
+Perform API request.
+
+=cut
+
+async sub call_api {
+    my ($self, $server, $method, $params) = @_;
+
+    stats_inc($self->{datadog_prefix} . 'request', {tags => ["server:$server", "method:$method"]});
+    $log->tracef('Calling %s server, method %s with params %s', $server, $method, $params);
+
+    my $start_time = [Time::HiRes::gettimeofday];
+    my $resp       = await $self->{clients}{$server}->$method($params->%*);
+    stats_timing($self->{datadog_prefix} . 'timing', 1000 * Time::HiRes::tv_interval($start_time), {tags => ["server:$server", "method:$method"]},);
+
+    return $resp;
 }
 
 =head2 start
@@ -222,6 +211,8 @@ Resolves to the actual port that is being listened to.
 async sub start {
     my ($self) = @_;
 
+    $log->tracef('Starting API service for %s on port %s', ref($self), $self->{listen_port} // '<undefined>');
+
     my $listner = await $self->{server}->listen(
         addr => {
             family   => 'inet',
@@ -229,40 +220,8 @@ async sub start {
             port     => $self->{listen_port}});
     my $port = $listner->read_handle->sockport;
 
-    $log->tracef('DevExperts API service is listening on port %s', $port);
+    $log->tracef('API service for %s is listening on port %s', ref($self), $port);
     return $port;
-}
-
-=head2 do_heartbeat
-
-Sends simple server request and ping and sends metrics to Datadog.
-
-=cut
-
-async sub do_heartbeat {
-    my ($self) = @_;
-    my (@calls, @pings);
-    for my $server ('real', 'demo') {
-        push @calls, $self->{clients}{$server}->broker_get(broker_code => 'root_broker')->set_label($server);
-        push @pings,
-            $self->loop->connect(
-            host     => $self->{$server . '_host_base'},
-            service  => $self->{$server . '_port'},
-            protocol => IPPROTO_TCP,
-        )->set_label($server);
-    }
-
-    my @call_fs = await Future->wait_all(@calls);
-    for my $f (@call_fs) {
-        stats_inc('devexperts.api_service.heartbeat', {tags => ['server:' . $f->label]}) unless ($f->is_failed);
-        $log->debugf('heartbeat failed for %s: $s', $f->label, $f->failure) if $f->is_failed;
-    }
-
-    my @ping_fs = await Future->wait_all(@pings);
-    for my $f (@ping_fs) {
-        stats_timing('devexperts.api_service.ping', 1000 * $f->elapsed, {tags => ['server:' . $f->label]}) unless ($f->is_failed);
-        $log->debugf('ping failed for %s: %s', $f->label, $f->failure) if $f->is_failed;
-    }
 }
 
 1;

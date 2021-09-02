@@ -3,7 +3,8 @@ use warnings;
 
 use Getopt::Long;
 use IO::Async::Loop;
-use BOM::Platform::Script::DevExpertsAPIService;
+use BOM::Platform::Script::DevExpertsAPIService::DxWeb;
+use BOM::Platform::Script::DevExpertsAPIService::Dxsca;
 use YAML::XS;
 use Log::Any::Adapter;
 use Path::Tiny qw(path);
@@ -13,13 +14,14 @@ binmode STDERR, ':encoding(UTF-8)';
 
 =head1 devexperts_api_service.pl
 
-Runs the DevExperts API service, which forwards HTTP requests to the DevExperts server.
+Runs a DevExperts API service, which forwards HTTP requests to the DevExperts server.
 
 =cut
 
 my %args;
 
 GetOptions(
+    't|type=s'    => \my $type,
     'l|log=s'     => \my $log_level,
     'p|port=s'    => \$args{listen_port},
     'demo_host=s' => \$args{demo_host},
@@ -35,16 +37,18 @@ GetOptions(
 
 path($pid_file)->spew("$$") if $pid_file;
 
+$type      //= 'dxweb';
 $log_level //= 'info';
+
 Log::Any::Adapter->import(
     'DERIV',
     stderr    => 'json',
-    log_level => $log_level
+    log_level => $log_level,
 );
 
 my $config = YAML::XS::LoadFile('/etc/rmg/devexperts.yml');
 
-$args{listen_port} //= $config->{service}{port};
+$args{listen_port} //= $config->{$type . '_service'}{port};
 $args{demo_host}   //= $config->{servers}{demo}{host};
 $args{demo_port}   //= $config->{servers}{demo}{port};
 $args{demo_user}   //= $config->{servers}{demo}{user};
@@ -54,8 +58,10 @@ $args{real_port}   //= $config->{servers}{real}{port};
 $args{real_user}   //= $config->{servers}{real}{user};
 $args{real_pass}   //= $config->{servers}{real}{pass};
 
+my $class = $type eq 'dxsca' ? 'BOM::Platform::Script::DevExpertsAPIService::Dxsca' : 'BOM::Platform::Script::DevExpertsAPIService::DxWeb';
+
 my $loop = IO::Async::Loop->new;
-$loop->add(my $service = BOM::Platform::Script::DevExpertsAPIService->new(%args));
+$loop->add(my $service = $class->new(%args));
 
 $service->start->get;
 $loop->run;

@@ -35,7 +35,7 @@ $port      //= $config->{servers}{$env}{port};
 Log::Any::Adapter->import(
     'DERIV',
     stderr    => 'json',
-    log_level => $log_level
+    log_level => $log_level,
 );
 
 my $loop = IO::Async::Loop->new;
