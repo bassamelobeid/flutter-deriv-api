@@ -1338,6 +1338,59 @@ subtest 'buy multiplier on crash/boom with VRTC' => sub {
     });
 
     ok !$txn->buy, 'buy successful';
+
+    my $vr_uk = create_client('VRTC', undef, {residence => 'gb'});
+    top_up $vr_uk, 'USD', 5000;
+
+    $contract_args = {
+        underlying   => 'CRASH300N',
+        bet_type     => 'MULTUP',
+        currency     => 'USD',
+        multiplier   => 1,
+        amount       => 50,
+        amount_type  => 'stake',
+        current_tick => $current_tick,
+    };
+    $contract = produce_contract($contract_args);
+
+    $txn = BOM::Transaction->new({
+        client        => $vr_uk,
+        contract      => $contract,
+        price         => 50,
+        amount        => 50,
+        amount_type   => 'stake',
+        source        => 19,
+        purchase_date => $contract->date_start,
+    });
+
+    $error = $txn->buy;
+    is $error->{'-type'}, 'NeedAuthenticateForSynthetic', 'need to authenticate for synthetic trading for client from GB';
+
+    my $vr_fr = create_client('VRTC', undef, {residence => 'fr'});
+    top_up $vr_fr, 'USD', 5000;
+
+    $contract_args = {
+        underlying   => 'CRASH300N',
+        bet_type     => 'MULTUP',
+        currency     => 'USD',
+        multiplier   => 1,
+        amount       => 50,
+        amount_type  => 'stake',
+        current_tick => $current_tick,
+    };
+    $contract = produce_contract($contract_args);
+
+    $txn = BOM::Transaction->new({
+        client        => $vr_fr,
+        contract      => $contract,
+        price         => 50,
+        amount        => 50,
+        amount_type   => 'stake',
+        source        => 19,
+        purchase_date => $contract->date_start,
+    });
+
+    ok !$txn->buy, 'is valid to buy for client from France';
 };
 
 subtest 'buy multiplier on step index with VRTC' => sub {
