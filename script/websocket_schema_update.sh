@@ -46,8 +46,14 @@ git push origin HEAD
 # repeat the push for api.deriv.com 
 cd /tmp/deriv-websockets
 git diff | cat
-
+git checkout production
 git add -A
 X="$(git commit -m "JSON Schema Update")" ||
 tee /dev/stderr <<<"$X" | grep -q 'nothing to commit'
-git push origin HEAD
+git push origin production
+
+#Merge changes to master branch. 
+git checkout master
+git merge production
+git push origin master
+
