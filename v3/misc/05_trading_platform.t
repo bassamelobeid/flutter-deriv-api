@@ -321,6 +321,27 @@ subtest 'transfers' => sub {
     );
 };
 
+subtest 'generate token' => sub {
+
+    $t->await::authorize({authorize => $client1_token_admin});
+
+    my $res = $t->await::service_token({
+        service_token => 1,
+        service       => 'dxtrade',
+        server        => 'real',
+    });
+    
+    cmp_deeply(
+        $res->{service_token},
+        {
+            dxtrade => {
+              token => re('_dummy_token$'),
+            }
+        },
+        'correct response'
+    );
+};
+
 $t->finish_ok;
 
 done_testing();
