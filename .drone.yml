@@ -16,12 +16,7 @@ steps:
     ssh_key:
       from_secret: ssh_key
   commands:
-    - /opt/circle/drone_prepare.sh
-    - cd /home/git/regentmarkets/bom-config
-    - . /etc/profile.d/perl5.sh
-    - /opt/circle/start_services
-    - /opt/circle/check_services
-    - make syntax
+   - /opt/ci/run.sh make syntax
 
 ---
 
@@ -46,9 +41,4 @@ steps:
     ssh_key:
       from_secret: ssh_key
   commands:
-    - /opt/circle/drone_prepare.sh
-    - cd /home/git/regentmarkets/bom-config
-    - . /etc/profile.d/perl5.sh
-    - /opt/circle/start_services
-    - /opt/circle/check_services
-    - make test
+    - /opt/ci/run.sh make test
