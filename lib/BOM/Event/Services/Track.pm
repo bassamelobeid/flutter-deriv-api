@@ -168,10 +168,9 @@ sub multiplier_hit_type {
     my ($args) = @_;
 
     return track_event(
-        event                => 'multiplier_hit_type',
-        loginid              => $args->{loginid},
-        properties           => $args,
-        is_identify_required => 1,
+        event      => 'multiplier_hit_type',
+        loginid    => $args->{loginid},
+        properties => $args,
     );
 }
 
