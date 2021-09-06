@@ -2048,8 +2048,8 @@ sub client_text_field_validation_info {
             name    => 'First Name',
         },
         last_name => {
-            pattern => q/^[\p{L}\s`'.-]{2,50}$/,
-            message => 'Within 2-50 characters, use only letters, spaces, hyphens, full-stops or apostrophes.',
+            pattern => q/^[\p{L}\s`'.-]{1,50}$/,
+            message => 'Within 1-50 characters, use only letters, spaces, hyphens, full-stops or apostrophes.',
             name    => 'Last Name',
 
         },
