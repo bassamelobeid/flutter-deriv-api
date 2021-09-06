@@ -269,10 +269,13 @@ rpc "payout_currencies",
     # If the client has not yet selected currency - we will use list from his landing company
     # or we may have a landing company even if we're not logged in - typically this
     # is obtained from the GeoIP country code lookup. If we have one, use it.
+    #
+    # Do not use LandingCompany::Registry::get_default() here because the default landing company is virtual
+    # and it only has USD as the currency.
     my $client_landing_company =
         (defined $params->{landing_company_name})
         ? LandingCompany::Registry::get($params->{landing_company_name})
-        : LandingCompany::Registry::get_default();
+        : LandingCompany::Registry::get('svg');
     my $lc = $client ? $client->landing_company : $client_landing_company;
 
     # ... but we fall back to `svg` as a useful default, since it has most
