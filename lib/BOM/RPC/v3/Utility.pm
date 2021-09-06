@@ -1288,7 +1288,11 @@ sub is_idv_disallowed {
     my $client = shift;
 
     return 1 if $client->status->unwelcome;
-    return 1 if $client->landing_company->short eq 'svg' and ($client->aml_risk_classification // '') eq 'high';
+
+    # Only for non-regulated LC
+    return 1 unless $client->landing_company->short eq 'svg';
+
+    return 1 if ($client->aml_risk_classification // '') eq 'high';
 
     if ($client->status->allow_document_upload) {
         return 1 if none { $_ eq $client->status->allow_document_upload->{reason} // '' }

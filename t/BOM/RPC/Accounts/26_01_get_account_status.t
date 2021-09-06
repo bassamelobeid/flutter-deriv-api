@@ -174,8 +174,8 @@ subtest 'get account status' => sub {
                 $result->{status},
                 [
                     'cashier_locked',                     'dxtrade_password_not_set',
-                    'financial_information_not_complete', 'mt5_password_not_set',
-                    'trading_experience_not_complete'
+                    'financial_information_not_complete', 'idv_disallowed',
+                    'mt5_password_not_set',               'trading_experience_not_complete',
                 ],
                 "cashier is locked for virtual accounts"
             );
@@ -2548,6 +2548,16 @@ subtest 'get account status' => sub {
                 $result->{status},
                 superbagof(qw(idv_disallowed allow_document_upload financial_information_not_complete financial_assessment_not_complete)),
                 'idv not allowed correctly for because manual docs are expired'
+            );
+
+            $mocked_client->unmock('get_manual_poi_status');
+            $test_client->status->clear_allow_document_upload;
+            $mocked_lc->mock(short => 'malta');
+            $result = $c->tcall($method, {token => $token});
+            cmp_deeply(
+                $result->{status},
+                superbagof(qw(idv_disallowed allow_document_upload financial_information_not_complete financial_assessment_not_complete)),
+                'idv not allowed for regulated landing companies'
             );
 
             $mocked_client->unmock_all();
