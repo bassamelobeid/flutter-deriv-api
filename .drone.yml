@@ -1,7 +1,7 @@
 ---
 kind: pipeline
 type: docker
-name: core
+name: core1
 
 clone:
   disable: true
@@ -22,9 +22,30 @@ steps:
   environment:
     RPC_CONFIG: /home/git/regentmarkets/bom-rpc/rpc.conf.travis
   commands:
-  - /opt/ci/run.sh make test
-
+  - /opt/ci/run.sh make test1
 ---
+kind: pipeline
+type: docker
+name: core2
+
+clone:
+  disable: true
+
+steps:
+- name: redis-v6
+  image: redis:6
+  detach: true
+- name: test
+  image: regentmarkets/drone-git
+  pull: if-not-exists
+  settings:
+    ssh_key:
+      from_secret: ssh_key
+  environment:
+    RPC_CONFIG: /home/git/regentmarkets/bom-rpc/rpc.conf.travis
+  commands:
+  - /opt/ci/run.sh make test2
+
 kind: pipeline
 type: docker
 name: syntax

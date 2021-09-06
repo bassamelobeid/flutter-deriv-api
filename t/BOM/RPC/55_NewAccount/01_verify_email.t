@@ -7,7 +7,8 @@ use Test::Fatal qw(lives_ok);
 
 use MojoX::JSON::RPC::Client;
 use BOM::User::Password;
-use BOM::Test::Data::Utility::UnitTestDatabase;
+use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Test::Email qw(:no_event);
 use BOM::RPC::v3::Utility;
 use BOM::Platform::Token::API;

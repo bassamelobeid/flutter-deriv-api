@@ -81,7 +81,7 @@ jobs:
         name: Verify syntax and compilation
     - store_test_results:
         path: /var/tmp/test-output
-  core:
+  core1:
     <<: *6
     steps:
     - *1
@@ -95,7 +95,27 @@ jobs:
           sudo touch /var/log/fixedodds/audit.log
           sudo chown nobody:nogroup /var/log/fixedodds/audit.log
           echo '--formatter TAP::Formatter::JUnit' >> .proverc
-          make test
+          make test1
+        name: Run tests
+    - store_test_results:
+        path: /var/tmp/test-output
+  core2:
+    <<: *6
+    steps:
+    - *1
+    - *2
+    - *3
+    - *4
+    - *check_services
+    - run:
+        <<: *5
+        command: |
+          sudo touch /var/log/fixedodds/audit.log
+          sudo chown nobody:nogroup /var/log/fixedodds/audit.log
+          # circleci need output in 10 minutes. Otherwise it will fail
+          while :; do echo -n "."; sleep 300; done &
+          echo '--formatter TAP::Formatter::JUnit' >> .proverc
+          make test2
         name: Run tests
         no_output_timeout: 30m
     - store_test_results:
@@ -131,7 +151,9 @@ workflows:
     jobs: &7
     - syntax:
         context: perl
-    - core:
+    - core1:
+        context: perl
+    - core2:
         context: perl
     - schema:
         context: perl

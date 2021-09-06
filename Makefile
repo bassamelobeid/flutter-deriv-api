@@ -9,8 +9,13 @@ test_all: $(TESTS)
 syntax:
 	@$(PROVE) --norc t/*.t
 
-test:
-	@$(PROVE) t/BOM/ t/999_redis_keys.t
+test1:
+	@$(PROVE) t/BOM/RPC/[0-4]* t/999_redis_keys.t
+
+test2:
+	@$(PROVE) t/BOM/RPC/[5-9]* t/999_redis_keys.t
+
+test: test1 test2
 
 pod_test:
 	@$(PROVE) --norc t/*pod*.t
@@ -28,6 +33,6 @@ cover:
 	sed -i '1667,1668d' /home/git/binary-com/perl/lib/5.26.2/B/Deparse.pm
 	PERL5OPT='-MBOM::Test' HARNESS_PERL_SWITCHES=-MDevel::Cover DEVEL_COVER_OPTIONS=-'ignore,^t/' /etc/rmg/bin/prove --timer -rl --norc --ignore-exit -It/lib t/BOM/RPC/ t/unit/
 	cover -report coveralls
-	
+
 unit:
 	@$(PROVE) t/unit/
