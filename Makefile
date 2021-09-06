@@ -67,6 +67,9 @@ unit_test_product_base:
 
 unit_test_product_all: $(PRODUCTALL)
 
+unit_test_product_except_validation_contract_pricing:
+	@$(PROVE) t/BOM/Product/*.t -r t/BOM/Product/Model/ -r t/BOM/Product/Volatility/ -r t/BOM/Product/Offerings/
+
 pod_test:
 	@$(PROVE) --norc t/*pod*.t
 
