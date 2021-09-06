@@ -351,16 +351,16 @@ subtest 'p2p_config' => sub {
     my $p2p_config = $config->payments->p2p;
 
     my %vals = (
-        adverts_active_limit        => int(rand(1000)),
-        adverts_archive_period      => int(rand(1000)),
-        cancellation_block_duration => int(rand(1000)),
-        cancellation_count_period   => int(rand(1000)),
-        cancellation_grace_period   => int(rand(1000)),
-        cancellation_limit          => int(rand(1000)),
-        maximum_advert_amount       => int(rand(1000)),
-        maximum_order_amount        => int(rand(1000)),
-        order_daily_limit           => int(rand(1000)),
-        order_payment_period        => int(rand(1000)),
+        adverts_active_limit        => 1,
+        adverts_archive_period      => 2,
+        cancellation_block_duration => 3,
+        cancellation_count_period   => 4,
+        cancellation_grace_period   => 5,
+        cancellation_limit          => 6,
+        maximum_advert_amount       => 7,
+        maximum_order_amount        => 8,
+        order_daily_limit           => 9,
+        order_payment_period        => 10,
         disabled                    => bool(0),
     );
 
