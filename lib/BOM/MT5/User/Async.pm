@@ -449,6 +449,37 @@ sub get_user {
         });
 }
 
+=head2 get_user_archive
+    
+Gets MT5 archived users by invoking a 'UserArchiveGet' call
+
+=over 4
+
+=item * C<$loginid> MT5 login id
+
+=back
+
+returns fields from the _get_user_fields() subroutine
+
+=cut
+
+sub get_user_archive {
+    my $login = shift;
+    my $param = {login => $login};
+
+    return _invoke_mt5('UserArchiveGet', $param)->then(
+        sub {
+            my ($response) = @_;
+
+            my $ret    = $response->{user};
+            my @fields = _get_user_fields();
+
+            my $mt_user;
+            $mt_user->{$_} = $ret->{$_} for (@fields);
+            return Future->done($mt_user);
+        });
+}
+
 sub update_user {
     my $args   = shift;
     my @fields = _get_update_user_fields();
