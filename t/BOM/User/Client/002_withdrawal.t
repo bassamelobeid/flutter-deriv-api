@@ -154,8 +154,13 @@ subtest 'CR withdrawal' => sub {
             });
 
         $client->smart_payment(%deposit, amount => 10500);
-        throws_ok { $client->validate_payment(%withdrawal, amount => -10001) } qr/exceeds withdrawal limit/,
+        throws_ok { $client->validate_payment(%withdrawal, amount => -10001) }
+        qr/We're unable to process your withdrawal request because it exceeds the limit of 10000.00 USD. Please authenticate your account before proceeding with this withdrawal./,
             'Non-Authed CR withdrawal greater than USD10K';
+
+        throws_ok { $client->validate_payment(%withdrawal, amount => -10001, use_brand_links => 1) }
+        qr/We're unable to process your withdrawal request because it exceeds the limit of 10000.00 USD. Please <a href=".+?">authenticate your account<\/a> before proceeding with this withdrawal./,
+            'Correct message with use_brand_links=1';
 
         lives_ok { $client->validate_payment(%withdrawal, amount => -10000) } 'Non-Authed CR withdrawal USD10K';
 
@@ -163,12 +168,18 @@ subtest 'CR withdrawal' => sub {
 
         subtest 'perform withdraw' => sub {
             lives_ok { $client->smart_payment(%withdrawal, amount => -5000) } 'first 5k withdrawal';
-            throws_ok { $client->smart_payment(%withdrawal, amount => -5001) } qr/exceeds withdrawal limit \[5000.00 USD\]/,
+            throws_ok { $client->smart_payment(%withdrawal, amount => -5001) }
+            qr/We're unable to process your withdrawal request because it exceeds the limit of 5000.00 USD. Please authenticate your account before proceeding with this withdrawal./,
                 'total withdraw cannot > 10k';
             lives_ok { $client->smart_payment(%withdrawal, amount => -5000) } 'second 5k withdrawal';
             is($emitted{$client->loginid}, 'withdrawal_limit_reached', 'An event is emitted to set the client as needs_action');
-            throws_ok { $client->validate_payment(%withdrawal, amount => -100) } qr/reached the maximum withdrawal limit of \[10000 USD\]/,
+            throws_ok { $client->validate_payment(%withdrawal, amount => -100) }
+            qr/You've reached the maximum withdrawal limit of 10000.00 USD. Please authenticate your account before proceeding with this withdrawal/,
                 'withdrawal_limit_reached';
+
+            throws_ok { $client->validate_payment(%withdrawal, amount => -100, use_brand_links => 1) }
+            qr/You've reached the maximum withdrawal limit of 10000.00 USD. Please <a href=".+?">authenticate your account<\/a> before proceeding with this withdrawal/,
+                'Correct message with use_brand_links=1';
         };
 
         $mock_events->unmock_all();
@@ -178,14 +189,17 @@ subtest 'CR withdrawal' => sub {
     subtest 'in EUR, unauthenticated' => sub {
         my $client = new_client('EUR');
         my $var    = $client->smart_payment(%deposit_eur, amount => 10500);
-        throws_ok { $client->validate_payment(%withdrawal_eur, amount => -10001) } qr/exceeds withdrawal limit/,
+        throws_ok { $client->validate_payment(%withdrawal_eur, amount => -10001) }
+        qr/We're unable to process your withdrawal request because it exceeds the limit of [\d\.]+ EUR. Please authenticate your account before proceeding with this withdrawal./,
             'Non-Authed CR withdrawal greater than USD 10K';
         lives_ok { $client->validate_payment(%withdrawal_eur, amount => -8411.84) } 'Non-Authed CR withdrawal USD 10K';
         lives_ok { $client->validate_payment(%withdrawal_eur, amount => -8410.84) } 'Non-Authed CR withdrawal USD 9999';
 
         subtest 'perform withdraw' => sub {
             lives_ok { $client->smart_payment(%withdrawal_eur, amount => -5000) } 'first 5k USD withdrawal';
-            throws_ok { $client->smart_payment(%withdrawal_eur, amount => -5001) } qr/exceeds withdrawal limit/, 'total withdraw cannot > 10k';
+            throws_ok { $client->smart_payment(%withdrawal_eur, amount => -5001) }
+            qr/We're unable to process your withdrawal request because it exceeds the limit of [\d\.]+ EUR. Please authenticate your account before proceeding with this withdrawal./,
+                'total withdraw cannot > 10k';
         };
     };
 
@@ -193,14 +207,15 @@ subtest 'CR withdrawal' => sub {
     subtest 'in BTC, unauthenticated' => sub {
         my $client = new_client('BTC');
         my $var    = $client->smart_payment(%deposit_btc, amount => 3.00000000);
-        throws_ok { $client->validate_payment(%withdrawal_btc, amount => -2) } qr/exceeds withdrawal limit/,
+        throws_ok { $client->validate_payment(%withdrawal_btc, amount => -2) } qr/We're unable to process your withdrawal request/,
             'Non-Authed CR withdrawal greater than USD 10K';
         lives_ok { $client->validate_payment(%withdrawal_btc, amount => -1.81818181) } 'Non-Authed CR withdrawal USD 10K';
         lives_ok { $client->validate_payment(%withdrawal_btc, amount => -1.80000000) } 'Non-Authed CR withdrawal USD 9999';
 
         subtest 'perform withdraw' => sub {
             lives_ok { $client->smart_payment(%withdrawal_btc, amount => -0.90909090) } 'first 5k USD withdrawal';
-            throws_ok { $client->smart_payment(%withdrawal_btc, amount => -0.91000000) } qr/exceeds withdrawal limit/, 'total withdraw cannot > 10k';
+            throws_ok { $client->smart_payment(%withdrawal_btc, amount => -0.91000000) } qr/We're unable to process your withdrawal request/,
+                'total withdraw cannot > 10k';
         };
     };
 
@@ -208,14 +223,14 @@ subtest 'CR withdrawal' => sub {
     subtest 'in LTC, unauthenticated' => sub {
         my $client = new_client('LTC');
         $client->smart_payment(%deposit_ltc, amount => 201.00000000);
-        throws_ok { $client->validate_payment(%withdrawal_ltc, amount => -201.00000000) } qr/exceeds withdrawal limit/,
+        throws_ok { $client->validate_payment(%withdrawal_ltc, amount => -201.00000000) } qr/We're unable to process your withdrawal request/,
             'Non-Authed CR withdrawal greater than USD 10K';
         lives_ok { $client->validate_payment(%withdrawal_ltc, amount => -200.00000000) } 'Non-Authed CR withdrawal USD 10K';
         lives_ok { $client->validate_payment(%withdrawal_ltc, amount => -199.98000000) } 'Non-Authed CR withdrawal USD 9999';
 
         subtest 'perform withdraw' => sub {
             lives_ok { $client->smart_payment(%withdrawal_ltc, amount => -100.00000000) } 'first 5k USD withdrawal';
-            throws_ok { $client->smart_payment(%withdrawal_ltc, amount => -100.02000000) } qr/exceeds withdrawal limit/,
+            throws_ok { $client->smart_payment(%withdrawal_ltc, amount => -100.02000000) } qr/We're unable to process your withdrawal request/,
                 'total withdraw cannot > 10k';
         };
     };
@@ -282,7 +297,8 @@ subtest 'EUR3k over 30 days MX limitation.' => sub {
     my %wd3001 = (%wd_gbp, amount => -_GBP_equiv(3001));
 
     # Test that the client cannot withdraw the equivalent of EUR 3001
-    throws_ok { $client->validate_payment(%wd3001) } qr/exceeds withdrawal limit .* GBP]/, 'Unauthed, not allowed to withdraw GBP equiv of EUR3001.';
+    throws_ok { $client->validate_payment(%wd3001) } qr/We're unable to process your withdrawal request .* GBP/,
+        'Unauthed, not allowed to withdraw GBP equiv of EUR3001.';
     # mx client should be cashier locked and unwelcome
     ok $client->status->unwelcome,      'MX client is unwelcome after wihtdrawal limit is reached';
     ok $client->status->cashier_locked, 'MX client is cashier_locked after wihtdrawal limit is reached';
@@ -303,7 +319,7 @@ subtest 'EUR3k over 30 days MX limitation.' => sub {
     my $payment      = $client->db->dbic->run(fixup => sub { $_->selectrow_hashref("SELECT * FROM payment.payment ORDER BY id DESC LIMIT 1"); });
     my $payment_time = Date::Utility->new($payment->{payment_time})->epoch;
 
-    throws_ok { $client->validate_payment(%wd0501) } qr/exceeds withdrawal limit .* GBP]/,
+    throws_ok { $client->validate_payment(%wd0501) } qr/We're unable to process your withdrawal request .* GBP/,
         'Unauthed, not allowed to withdraw equiv 2500 EUR then 501 making total over 3000.';
 
     # remove for further testing
@@ -315,7 +331,7 @@ subtest 'EUR3k over 30 days MX limitation.' => sub {
     # move forward 29 days
     set_fixed_time($payment_time + 29 * 86400);
 
-    throws_ok { $client->validate_payment(%wd0501) } qr/exceeds withdrawal limit .* GBP]/,
+    throws_ok { $client->validate_payment(%wd0501) } qr/We're unable to process your withdrawal request .* GBP/,
         'Unauthed, not allowed to withdraw equiv 3000 EUR then 1 more 29 days later';
 
     # remove for further testing
@@ -347,7 +363,8 @@ subtest 'Total EUR2000 MLT limitation.' => sub {
 
     # Test for unauthenticated withdrawals
     subtest 'unauthenticated' => sub {
-        throws_ok { $client->validate_payment(%withdrawal_eur, amount => -2001) } qr/exceeds withdrawal limit \[2000.00 EUR/,
+        throws_ok { $client->validate_payment(%withdrawal_eur, amount => -2001) }
+        qr/We're unable to process your withdrawal request because it exceeds the limit of 2000\.00 EUR\./,
             'Unauthed, not allowed to withdraw EUR2001.';
 
         is $client->status->unwelcome,      undef, 'Only MX client is unwelcome after it exceeds limit';
@@ -356,11 +373,12 @@ subtest 'Total EUR2000 MLT limitation.' => sub {
         ok $client->validate_payment(%withdrawal_eur, amount => -2000), 'Unauthed, allowed to withdraw EUR2000.';
 
         $client->smart_payment(%withdrawal_eur, amount => -1900);
-        throws_ok { $client->validate_payment(%withdrawal_eur, amount => -101) } qr/exceeds withdrawal limit \[100.00 EUR/,
+        throws_ok { $client->validate_payment(%withdrawal_eur, amount => -101) }
+        qr/We're unable to process your withdrawal request because it exceeds the limit of 100\.00 EUR\./,
             'Unauthed, total withdrawal (1900+101) > EUR2000.';
 
         ok $client->smart_payment(%withdrawal_eur, amount => -100), 'Unauthed, allowed to withdraw total EUR (1900+100).';
-        throws_ok { $client->smart_payment(%withdrawal_eur, amount => -101) } qr/reached the maximum withdrawal limit of \[2000 EUR\]/,
+        throws_ok { $client->smart_payment(%withdrawal_eur, amount => -101) } qr/You've reached the maximum withdrawal limit of 2000\.00 EUR\./,
             'withdrawal_limit_reached';
 
     };
@@ -377,7 +395,7 @@ subtest 'Total EUR2000 MLT limitation.' => sub {
         $client->set_authentication('ID_DOCUMENT', {status => 'pending'});
         $client->save;
 
-        throws_ok { $client->validate_payment(%withdrawal_eur, amount => -100) } qr/reached the maximum withdrawal limit of \[2000 EUR\]/,
+        throws_ok { $client->validate_payment(%withdrawal_eur, amount => -100) } qr/You've reached the maximum withdrawal limit of 2000\.00 EUR\./,
             'Unauthed, not allowed to withdraw as limit already > EUR2000';
     };
 };

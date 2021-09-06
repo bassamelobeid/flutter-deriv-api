@@ -802,11 +802,10 @@ Return: account balance limit
 sub get_limit_for_account_balance {
     my $self = shift;
 
-    my @maxbalances        = ();
-    my $max_bal            = BOM::Config::client_limits()->{max_balance};
-    my $curr               = $self->currency;
-    my $config_max_balance = $self->is_virtual ? $max_bal->{virtual}->{$curr} : $max_bal->{real}->{$curr};
-    push @maxbalances, $config_max_balance if defined $config_max_balance;
+    my @maxbalances = ();
+
+    my $fixed_max = $self->fixed_max_balance;
+    push @maxbalances, $fixed_max if defined $fixed_max;
 
     my $self_max_balance = $self->get_self_exclusion ? $self->get_self_exclusion->max_balance : undef;
     if (defined($self_max_balance)) {
@@ -814,6 +813,20 @@ sub get_limit_for_account_balance {
     }
 
     return List::Util::min(@maxbalances) // 0;
+}
+
+=head2 fixed_max_balance
+
+Returns the system-wide maximum account balance defined for the client type and currency.
+
+=cut
+
+sub fixed_max_balance {
+    my $self = shift;
+
+    my $max_bal = BOM::Config::client_limits()->{max_balance};
+    my $curr    = $self->currency;
+    return $self->is_virtual ? $max_bal->{virtual}{$curr} : $max_bal->{real}{$curr};
 }
 
 sub get_limit_for_daily_turnover {
@@ -4900,13 +4913,14 @@ sub _check_deposit_limits {
 
 sub validate_payment {
     my ($self, %args) = @_;
-    my $currency    = $args{currency} || die "no currency\n";
-    my $amount      = $args{amount}   || die "no amount\n";
-    my $action_type = $amount > 0 ? 'deposit' : 'withdrawal';
-    my $account     = $self->default_account || die "no account\n";
-    my $accbal      = $account->balance;
-    my $acccur      = $account->currency_code();
-    my $absamt      = abs($amount);
+    my $currency        = $args{currency} || die "no currency\n";
+    my $amount          = $args{amount}   || die "no amount\n";
+    my $action_type     = $amount > 0 ? 'deposit' : 'withdrawal';
+    my $account         = $self->default_account || die "no account\n";
+    my $accbal          = $account->balance;
+    my $acccur          = $account->currency_code();
+    my $absamt          = abs($amount);
+    my $use_brand_links = $args{use_brand_links};
 
     # validate expects 'deposit'/'withdraw' so if action_type is 'withdrawal' should be replaced to 'withdraw'
     my $validation =
@@ -4925,8 +4939,31 @@ sub validate_payment {
             $self->{mlt_affiliate_first_deposit} = 1;
         }
         my $max_balance = $self->get_limit({'for' => 'account_balance'});
-        die sprintf("Balance would exceed limit [%s %s] for [%s] \n", $max_balance, $currency, $self->loginid)
-            if ($amount + $accbal) > $max_balance;
+
+        if (($amount + $accbal) > $max_balance) {
+
+            if (    $self->get_self_exclusion
+                and defined $self->get_self_exclusion->max_balance
+                and $self->get_self_exclusion->max_balance < $self->fixed_max_balance // 0)
+            {
+                die sprintf(
+                    "This deposit will cause your account balance to exceed your limit of %s %s. To proceed with this deposit, please <a href=\"%s\">adjust your self exclusion settings</a>.\n",
+                    $max_balance, $currency, request()->brand->self_exclusion_url,
+                ) if $use_brand_links;
+
+                die sprintf(
+                    "This deposit will cause your account balance to exceed your limit of %s %s. To proceed with this deposit, please adjust your self exclusion settings.\n",
+                    $max_balance, $currency);
+            } else {
+                die sprintf(
+                    "This deposit will cause your account balance to exceed your <a href=\"%s\">account limit</a> of %s %s.\n",
+                    request()->brand->account_limits_url,
+                    $max_balance, $currency
+                ) if $use_brand_links;
+
+                die sprintf("This deposit will cause your account balance to exceed your account limit of %s %s.\n", $max_balance, $currency);
+            }
+        }
 
         $self->_check_deposit_limits($amount);
     }
@@ -4959,6 +4996,39 @@ sub validate_payment {
         die "Invalid landing company - $lc\n" unless $lc_limits;
         my $lc_currency = $lc_limits->{currency};
 
+        my $limit_reached_error = sub {
+            my ($amount, $currency) = @_;
+
+            $amount = formatnumber('amount', $currency, $amount);
+
+            if ($use_brand_links) {
+                # note: when this is moved to bom-rules, these use_brand_links messages should be moved to bom-payment-api.
+                my $auth_url = request()->brand->authentication_url;
+                die sprintf(
+                    "You've reached the maximum withdrawal limit of %s %s. Please <a href=\"%s\">authenticate your account</a> before proceeding with this withdrawal.\n",
+                    $amount, $currency, $auth_url);
+            }
+            die sprintf(
+                "You've reached the maximum withdrawal limit of %s %s. Please authenticate your account before proceeding with this withdrawal.\n",
+                $amount, $currency);
+        };
+
+        my $limit_error = sub {
+            my ($amount, $currency) = @_;
+
+            $amount = formatnumber('amount', $currency, $amount);
+
+            if ($use_brand_links) {
+                my $auth_url = request()->brand->authentication_url;
+                die sprintf(
+                    "We're unable to process your withdrawal request because it exceeds the limit of %s %s. Please <a href=\"%s\">authenticate your account</a> before proceeding with this withdrawal.\n",
+                    $amount, $currency, $auth_url);
+            }
+            die sprintf(
+                "We're unable to process your withdrawal request because it exceeds the limit of %s %s. Please authenticate your account before proceeding with this withdrawal.\n",
+                $amount, $currency);
+        };
+
         if ($self->landing_company->lifetime_withdrawal_limit_check) {
             # Withdrawals to date
             my $wd_epoch = $account->total_withdrawals();
@@ -4973,20 +5043,13 @@ sub validate_payment {
             my $total_wd = financialrounding('amount', $currency, $wd_epoch + $absamt);
             my $wd_left  = financialrounding('amount', $currency, $lc_limits->{lifetime_limit} - $wd_epoch);
 
-            die sprintf("You've reached the maximum withdrawal limit of [%s %s]. Please authenticate your account to make unlimited withdrawals.\n",
-                $lc_limits->{lifetime_limit}, $lc_currency)
-                if $wd_left <= 0;
+            $limit_reached_error->($lc_limits->{lifetime_limit}, $lc_currency) if $wd_left <= 0;
 
             if (financialrounding('amount', $currency, $absamt) > financialrounding('amount', $currency, $wd_left)) {
                 if ($currency ne $lc_currency) {
-                    die sprintf "Withdrawal amount [%s %s] exceeds withdrawal limit [%s %s].\n",
-                        formatnumber('amount', $currency, convert_currency($absamt,  $lc_currency, $currency)), $currency,
-                        formatnumber('amount', $currency, convert_currency($wd_left, $lc_currency, $currency)), $currency;
+                    $limit_error->(convert_currency($wd_left, $lc_currency, $currency), $currency);
                 } else {
-                    die sprintf "Withdrawal amount [%s %s] exceeds withdrawal limit [%s %s].\n",
-                        formatnumber('amount', $currency, $absamt),
-                        $currency,
-                        formatnumber('amount', $currency, $wd_left), $currency;
+                    $limit_error->($wd_left, $currency);
                 }
             }
 
@@ -5014,25 +5077,19 @@ sub validate_payment {
 
             # Amount withdrawable over the last x days
             my $wd_since_left = $wd_since_limit - $wd_since_converted;
+            $limit_reached_error->($wd_since_limit, $lc_currency) if $wd_since_left <= 0;
 
             # Amount withdrawable over the lifetime of the account
             my $wd_epoch_left = $wd_epoch_limit - $wd_epoch_converted;
+            $limit_reached_error->($wd_epoch_limit, $lc_currency) if $wd_epoch_left <= 0;
 
             # Withdrawable amount left between the two amounts - The smaller is used
             my $wd_left_min = List::Util::min($wd_since_left, $wd_epoch_left);
 
-            die sprintf("You've reached the maximum withdrawal limit of [%s %s]. Please authenticate your account to make unlimited withdrawals.\n",
-                $lc_limits->{lifetime_limit}, $lc_currency)
-                if $wd_epoch_left <= 0;
-
-            die sprintf("You've reached the maximum withdrawal limit of [%s %s]. Please authenticate your account to make unlimited withdrawals.\n",
-                $lc_limits->{limit_for_days}, $lc_currency)
-                if $wd_since_left <= 0;
-
             # Withdrawable amount is converted from the limit config currency to clients' currency and rounded
             my $wd_left = financialrounding('amount', $currency, convert_currency($wd_left_min, $lc_currency, $currency));
 
-            if (financialrounding('amount', $currency, $absamt) > financialrounding('amount', $currency, $wd_left)) {
+            if (financialrounding('amount', $currency, $absamt) > $wd_left) {
                 # lock cashier and unwelcome if its MX (as per compliance, check with compliance if you want to remove it)
                 if ($lc eq 'iom') {
                     $self->status->multi_set_clear({
@@ -5041,12 +5098,9 @@ sub validate_payment {
                         reason     => 'Exceeds withdrawal limit',
                     });
                 }
-                my $msg    = "Withdrawal amount [%s %s] exceeds withdrawal limit [%s %s]";
-                my @values = (formatnumber('amount', $currency, $absamt), $currency, formatnumber('amount', $currency, $wd_left), $currency);
-                die sprintf "$msg.\n", @values;
+                $limit_error->($wd_left, $currency);
             }
         }
-
     }
 
     return 1;

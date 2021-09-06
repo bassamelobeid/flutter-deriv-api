@@ -76,12 +76,33 @@ $client->status->clear_cashier_locked;
 
 ok $client->validate_payment(%deposit), 'can deposit when not cashier locked.';
 
-throws_ok { $client->validate_payment(%deposit, amount => 1_000_000) } qr/Balance would exceed/,
-    'cannot deposit an amount that puts client over maximum balance.';
-
 ok(!$client->status->unwelcome, 'CR client not unwelcome prior to first-deposit');
 $client->payment_free_gift(%deposit);
 ok(!$client->status->unwelcome, 'CR client still not unwelcome after first-deposit');
+
+subtest 'max balance messages' => sub {
+
+    throws_ok { $client->validate_payment(%deposit, amount => 1_000_000) }
+    qr/^This deposit will cause your account balance to exceed your account limit of \d+ \w+\.$/,
+        'cannot deposit an amount that puts client over maximum balance.';
+
+    throws_ok { $client->validate_payment(%deposit, amount => 1_000_000, use_brand_links => 1) }
+    qr/^This deposit will cause your account balance to exceed your <a href=".+?">account limit<\/a> of \d+ \w+\.$/,
+        'correct error message with use_brand_links=1';
+
+    $client->set_exclusion();
+    $client->self_exclusion->max_balance(1000);
+    $client->save;
+
+    throws_ok { $client->validate_payment(%deposit, amount => 1_000_000) }
+    qr/^This deposit will cause your account balance to exceed your limit of \d+ \w+\. To proceed with this deposit, please adjust your self exclusion settings\.$/,
+        'cannot deposit an amount that puts client over self exclusion max balance.';
+
+    throws_ok { $client->validate_payment(%deposit, amount => 1_000_000, use_brand_links => 1) }
+    qr/^This deposit will cause your account balance to exceed your limit of \d+ \w+\. To proceed with this deposit, please <a href=".+?">adjust your self exclusion settings<\/a>\.$/,
+        'CTA added with use_brand_links=1';
+
+};
 
 subtest 'GB fund protection' => sub {
     my $email_iom  = 'test' . rand(999) . '@binary.com';
