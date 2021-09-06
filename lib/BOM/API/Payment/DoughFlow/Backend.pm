@@ -158,9 +158,10 @@ sub validate_as_payment {
     try {
         $client->set_default_account($currency);
         $client->validate_payment(
-            currency    => $currency,
-            amount      => $signed_amount,
-            action_type => $action,
+            currency        => $currency,
+            amount          => $signed_amount,
+            action_type     => $action,
+            use_brand_links => 1,
         );
     } catch ($err) {
         return $c->throw(403, $err);
