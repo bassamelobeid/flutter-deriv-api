@@ -1,63 +1,61 @@
 kind: pipeline
 type: docker
-name: default
+name: core
+
+clone:
+  disable: true
+
+image_pull_secrets:
+- dockerconfig
 
 steps:
-- name: Prepare repos
+- name: core
   image: regentmarkets/drone-git
-  pull: if-not-exists
+  pull: always
   settings:
     ssh_key:
       from_secret: ssh_key
-  environment:
-    CIRCLE_PROJECT_USERNAME: regentmarkets
-    CIRCLE_PROJECT_REPONAME: bom-market
-  volumes:
-  - name: git
-    path: /home/git
-- name: Run tests
-  image: regentmarkets/debian-ci:stable
   commands:
-  - cp /home/git/.pg* /root
-  - . /etc/profile.d/perl5.sh
-  - start_services
-  - cd /home/git/regentmarkets/bom-market && make test
-  volumes:
-  - name: git
-    path: /home/git
+  - /opt/ci/run.sh make test
 
-volumes:
-- name: git
-  temp: {}
 ---
 kind: pipeline
 type: docker
-name: cover
+name: syntax
+
+clone:
+  disable: true
+
+image_pull_secrets:
+- dockerconfig
 
 steps:
-- name: Prepare repos
+- name: syntax
   image: regentmarkets/drone-git
-  pull: if-not-exists
+  pull: always
   settings:
     ssh_key:
       from_secret: ssh_key
-  environment:
-    CIRCLE_PROJECT_USERNAME: regentmarkets
-    CIRCLE_PROJECT_REPONAME: bom-market
-  volumes:
-  - name: git
-    path: /home/git
-- name: Run tests
-  image: regentmarkets/debian-ci:stable
   commands:
-  - cp /home/git/.pg* /root
-  - . /etc/profile.d/perl5.sh
-  - start_services
-  - cd /home/git/regentmarkets/bom-market && HARNESS_PERL_SWITCHES=-MDevel::Cover DEVEL_COVER_OPTIONS=-'ignore,^t/' /etc/rmg/bin/prove --timer --norc  -MBOM::Test -rl t/BOM/
-  volumes:
-  - name: git
-    path: /home/git
+  - /opt/ci/run.sh make syntax
 
-volumes:
-- name: git
-  temp: {}
+---
+kind: pipeline
+type: docker
+name: unit
+
+clone:
+  disable: true
+
+image_pull_secrets:
+- dockerconfig
+
+steps:
+- name: unit
+  image: regentmarkets/drone-git
+  pull: always
+  settings:
+    ssh_key:
+      from_secret: ssh_key
+  commands:
+  - /opt/ci/run.sh make unit
