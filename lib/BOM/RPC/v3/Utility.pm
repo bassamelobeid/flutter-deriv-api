@@ -1294,6 +1294,9 @@ sub is_idv_disallowed {
 
     return 1 if ($client->aml_risk_classification // '') eq 'high';
 
+    return 1 if $client->status->age_verification;
+    return 1 if $client->status->allow_poi_resubmission;
+
     if ($client->status->allow_document_upload) {
         return 1 if none { $_ eq $client->status->allow_document_upload->{reason} // '' }
         qw/FIAT_TO_CRYPTO_TRANSFER_OVERLIMIT P2P_ADVERTISER_CREATED/;

@@ -2465,11 +2465,7 @@ subtest 'get account status' => sub {
 
             $test_client->status->setnx('unwelcome', 'system', 'reason');
             $result = $c->tcall($method, {token => $token});
-            cmp_deeply(
-                $result->{status},
-                superbagof(qw(idv_disallowed financial_information_not_complete financial_assessment_not_complete)),
-                'no idv_disallowed if no allow_document_upload'
-            );
+            cmp_deeply($result->{status}, superbagof(qw(idv_disallowed)), 'no idv_disallowed if no allow_document_upload');
             $test_client->status->clear_unwelcome;
 
             $mocked_client->mock(aml_risk_classification => 'high');
@@ -2481,44 +2477,39 @@ subtest 'get account status' => sub {
                 'no idv_disallowed if cr account aml high risk'
             );
 
-            $test_client->status->upsert('allow_document_upload', 'system', 'FIAT_TO_CRYPTO_TRANSFER_OVERLIMIT');
+            $test_client->status->upsert('age_verification', 'system', 'verified');
             $result = $c->tcall($method, {token => $token});
-            cmp_deeply(
-                $result->{status},
-                superbagof(qw(financial_information_not_complete financial_assessment_not_complete)),
-                'no idv_disallowed if allow_document_upload with allowed reason'
-            );
+            cmp_deeply($result->{status}, superbagof(qw(allow_document_upload idv_disallowed)), 'idv_disallowed if client has age verified');
+            $test_client->status->clear_age_verification;
+
+            $test_client->status->upsert('allow_poi_resubmission', 'system', 'resubmission');
+            $result = $c->tcall($method, {token => $token});
+            cmp_deeply($result->{status}, superbagof(qw(allow_document_upload idv_disallowed)),
+                'idv_disallowed if client has allow_poi_resubmission');
+            $test_client->status->clear_allow_poi_resubmission;
 
             $test_client->status->upsert('allow_document_upload', 'system', 'FIAT_TO_CRYPTO_TRANSFER_OVERLIMIT');
             $result = $c->tcall($method, {token => $token});
-            cmp_deeply(
-                $result->{status},
-                superbagof(qw(allow_document_upload financial_information_not_complete financial_assessment_not_complete)),
-                'correct statuses for reason FIAT_TO_CRYPTO_TRANSFER_OVERLIMIT'
-            );
+            cmp_deeply($result->{status}, superbagof(qw(allow_document_upload)), 'no idv_disallowed if allow_document_upload with allowed reason');
+
+            $test_client->status->upsert('allow_document_upload', 'system', 'FIAT_TO_CRYPTO_TRANSFER_OVERLIMIT');
+            $result = $c->tcall($method, {token => $token});
+            cmp_deeply($result->{status}, superbagof(qw(allow_document_upload)), 'correct statuses for reason FIAT_TO_CRYPTO_TRANSFER_OVERLIMIT');
 
             $test_client->status->upsert('allow_document_upload', 'system', 'P2P_ADVERTISER_CREATED');
             $result = $c->tcall($method, {token => $token});
-            cmp_deeply(
-                $result->{status},
-                superbagof(qw(allow_document_upload financial_information_not_complete financial_assessment_not_complete)),
-                'correct statuses for reason P2P_ADVERTISER_CREATED'
-            );
+            cmp_deeply($result->{status}, superbagof(qw(allow_document_upload)), 'correct statuses for reason P2P_ADVERTISER_CREATED');
 
             $test_client->status->upsert('allow_document_upload', 'system', 'ANYTHING_ELSE');
             $result = $c->tcall($method, {token => $token});
-            cmp_deeply(
-                $result->{status},
-                superbagof(qw(idv_disallowed allow_document_upload financial_information_not_complete financial_assessment_not_complete)),
-                'idv not allowed correctly for ANYTHING_ELSE'
-            );
+            cmp_deeply($result->{status}, superbagof(qw(idv_disallowed allow_document_upload)), 'idv not allowed correctly for ANYTHING_ELSE');
 
             $mocked_client->mock('get_onfido_status', 'expired');
             $test_client->status->upsert('allow_document_upload', 'system', 'P2P_ADVERTISER_CREATED');
             $result = $c->tcall($method, {token => $token});
             cmp_deeply(
                 $result->{status},
-                superbagof(qw(idv_disallowed allow_document_upload financial_information_not_complete financial_assessment_not_complete)),
+                superbagof(qw(idv_disallowed allow_document_upload)),
                 'idv not allowed correctly for because onfido docs are expired'
             );
 
@@ -2527,7 +2518,7 @@ subtest 'get account status' => sub {
             $result = $c->tcall($method, {token => $token});
             cmp_deeply(
                 $result->{status},
-                superbagof(qw(idv_disallowed allow_document_upload financial_information_not_complete financial_assessment_not_complete)),
+                superbagof(qw(idv_disallowed allow_document_upload)),
                 'idv not allowed correctly for because onfido docs are expired'
             );
             $mocked_client->unmock('get_onfido_status');
@@ -2537,7 +2528,7 @@ subtest 'get account status' => sub {
             $result = $c->tcall($method, {token => $token});
             cmp_deeply(
                 $result->{status},
-                superbagof(qw(idv_disallowed allow_document_upload financial_information_not_complete financial_assessment_not_complete)),
+                superbagof(qw(idv_disallowed allow_document_upload)),
                 'idv not allowed correctly for because manual docs are expired'
             );
 
@@ -2546,7 +2537,7 @@ subtest 'get account status' => sub {
             $result = $c->tcall($method, {token => $token});
             cmp_deeply(
                 $result->{status},
-                superbagof(qw(idv_disallowed allow_document_upload financial_information_not_complete financial_assessment_not_complete)),
+                superbagof(qw(idv_disallowed allow_document_upload)),
                 'idv not allowed correctly for because manual docs are expired'
             );
 
