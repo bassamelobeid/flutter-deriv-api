@@ -59,6 +59,7 @@ my %event_stream_mapping = (
     # ANONYMIZATION_QUEUE can be renamed to avoid confusion.
     mt5_inactive_account_closed => 'ANONYMIZATION_STREAM',
     mt5_inactive_notification   => 'ANONYMIZATION_STREAM',
+    affiliate_loginids_sync     => 'AFFILIATE_SYNC_LONG_RUNNING_STREAM',
 );
 
 my $config = LoadFile('/etc/rmg/redis-events.yml');
