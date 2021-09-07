@@ -15,14 +15,75 @@ use Future::AsyncAwait;
 use Future::Utils 'fmap1';
 use BOM::MT5::User::Async;
 use BOM::Event::Utility qw(exception_logged);
+use BOM::Platform::Event::Emitter;
 
 use constant MT5_ACCOUNT_RANGE_SEPARATOR => 10000000;
+
+use constant AFFILIATE_CHUNK_SIZE => 300;
+
+=head2 affiliate_sync_initiated
+
+Initiates the affiliate sync process.
+
+Will fetch the collection of loginids related to this affiliate, split them in chunks and process every chunk separately.
+
+It takes the following arguments:
+
+=over 4
+
+=item * C<affiliate_id> - the id of the affiliate
+
+=back
+
+Retunrs a L<Future> which resolvs to C<undef>
+
+=cut
 
 async sub affiliate_sync_initiated {
     my ($data) = @_;
     my $affiliate_id = $data->{affiliate_id};
 
-    my $login_ids = _get_clean_loginids($affiliate_id);
+    my @login_ids = _get_clean_loginids($affiliate_id)->@*;
+
+    while (my @chunk = splice(@login_ids, 0, AFFILIATE_CHUNK_SIZE)) {
+        my $args = {
+            login_ids    => [@chunk],
+            affiliate_id => $affiliate_id,
+            email        => $data->{email},
+        };
+
+        # Don't fire a new event if this is the last batch, process it right away instead
+        return await affiliate_loginids_sync($args) unless @login_ids;
+
+        BOM::Platform::Event::Emitter::emit('affiliate_loginids_sync', $args);
+    }
+
+    return undef;
+}
+
+=head2 affiliate_loginids_sync
+
+Process an affiliate loginids by chunks.
+
+It takes the following arguments:
+
+=over 4
+
+=item * C<affiliate_id> - the id of the affiliate
+
+=item * C<login_ids> - the chunk of loginids to be processed in this batch.
+
+=back
+
+Retunrs a L<Future> which resolvs to C<undef>
+
+=cut
+
+async sub affiliate_loginids_sync {
+    my ($data)       = @_;
+    my $affiliate_id = $data->{affiliate_id};
+    my $login_ids    = $data->{login_ids};
+
     my @results;
     for my $login_id (@$login_ids) {
         my $result = {
@@ -55,6 +116,8 @@ async sub affiliate_sync_initiated {
                 (@errors ? ('During synchronization there were these errors:', @errors) : (''))
             ],
         });
+
+    return undef;
 }
 
 async sub _populate_mt5_affiliate_to_client {
