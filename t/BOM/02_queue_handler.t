@@ -77,7 +77,7 @@ subtest 'sync_subs' => sub {
             'GENERIC_EVENTS_QUEUE',
             {
                 type    => 'sync_sub',
-                details => {wait => 1}});
+                details => {wait => 1}})->get;
         $log->contains_ok(qr/test did not time out/, "Sync job less than max_processing_time did not time out.");
     }
 
