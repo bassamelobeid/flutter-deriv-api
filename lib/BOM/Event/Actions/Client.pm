@@ -37,6 +37,7 @@ use Time::HiRes;
 use Text::Levenshtein::XS;
 use Array::Utils qw(intersect);
 use Scalar::Util qw(blessed);
+use Text::Trim qw(trim);
 
 use BOM::Config;
 use BOM::Config::Onfido;
@@ -2707,31 +2708,43 @@ Returns, undef.
 =cut
 
 async sub shared_payment_method_found {
-    my ($args)         = @_;
-    my $client_loginid = $args->{client_loginid} or die 'No client login ID specified';
-    my $shared_loginid = $args->{shared_loginid} or die 'No shared client login ID specified';
+    my ($args)          = @_;
+    my $client_loginid  = $args->{client_loginid} or die 'No client login ID specified';
+    my $shared_loginids = $args->{shared_loginid} or die 'No shared client login ID specified';
 
     my $client = BOM::User::Client->new({loginid => $client_loginid})
         or die 'Could not instantiate client for login ID ' . $client_loginid;
 
-    my $shared = BOM::User::Client->new({loginid => $shared_loginid})
-        or die 'Could not instantiate shared client for login ID ' . $shared_loginid;
+    my @shared_loginid_array = sort(uniq(split(',', trim($shared_loginids))));
+
+    die "Invalid shared loginids specified. Loginids string passed is empty." unless @shared_loginid_array;
+
+    my @shared_clients    = ();
+    my @filtered_loginids = ();
+    foreach my $shared_loginid (@shared_loginid_array) {
+        my $shared_client = BOM::User::Client->new({loginid => $shared_loginid});
+
+        next unless $shared_client;
+
+        push @filtered_loginids, $shared_loginid;
+        push @shared_clients,    $shared_client;
+    }
 
     # Lock the cashier and set shared PM to both clients
     $args->{staff} //= 'system';
     $client->status->setnx('cashier_locked', $args->{staff}, 'Shared payment method found');
-    $client->status->upsert('shared_payment_method', $args->{staff}, _shared_payment_reason($client, $shared_loginid));
+    $client->status->upsert('shared_payment_method', $args->{staff}, _shared_payment_reason($client, join(',', @filtered_loginids)));
     # This may be dropped when POI/POA refactoring is done
     $client->status->upsert('allow_document_upload', $args->{staff}, 'Shared payment method found') unless $client->status->age_verification;
-
-    $shared->status->setnx('cashier_locked', $args->{staff}, 'Shared payment method found');
-    $shared->status->upsert('shared_payment_method', $args->{staff}, _shared_payment_reason($shared, $client_loginid));
-    # This may be dropped when POI/POA refactoring is done
-    $shared->status->upsert('allow_document_upload', $args->{staff}, 'Shared payment method found') unless $shared->status->age_verification;
-
-    # Send email to both clients
     _send_shared_payment_method_email($client);
-    _send_shared_payment_method_email($shared);
+
+    foreach my $shared (@shared_clients) {
+        $shared->status->setnx('cashier_locked', $args->{staff}, 'Shared payment method found');
+        $shared->status->upsert('shared_payment_method', $args->{staff}, _shared_payment_reason($shared, $client_loginid));
+        # This may be dropped when POI/POA refactoring is done
+        $shared->status->upsert('allow_document_upload', $args->{staff}, 'Shared payment method found') unless $shared->status->age_verification;
+        _send_shared_payment_method_email($shared);
+    }
 
     return;
 }
@@ -2777,7 +2790,7 @@ sub _shared_payment_reason {
     };
 
     my @loginids = $loginids_extractor->($current);
-    return $current if any { $_ eq $shared_loginid } @loginids;
+    return $current if any { $shared_loginid =~ /\b$_\b/ } @loginids;
     return join(' ', $current, $shared_loginid);
 }
 
