@@ -371,7 +371,8 @@ Returns the authentication method for a client.
 =cut
 
 sub set_authentication {
-    my ($self, $method, $authentication_status) = @_;
+    my ($self, $method, $authentication_status, $staff) = @_;
+    $staff ||= "system";
     my $status = $authentication_status->{status};
     unless ($self->get_db eq 'write') {
         $self->set_db('write');
@@ -419,7 +420,7 @@ sub set_authentication {
                     and $cli->landing_company->short eq 'iom'
                     and $cli->status->unwelcome);
             } elsif ($status eq 'needs_action' and not $cli->status->allow_document_upload) {
-                $cli->status->upsert('allow_document_upload', 'system', 'MARKED_AS_NEEDS_ACTION');
+                $cli->status->upsert('allow_document_upload', $staff, 'MARKED_AS_NEEDS_ACTION');
             }
             $cli->save;
         }
@@ -506,22 +507,22 @@ sub set_authentication_and_status {
     $_->delete for @{$self->client_authentication_method};
 
     if ($client_authentication eq 'ID_NOTARIZED') {
-        $self->set_authentication('ID_NOTARIZED', {status => 'pass'});
+        $self->set_authentication('ID_NOTARIZED', {status => 'pass'}, $staff);
     }
 
     if ($client_authentication eq 'ID_DOCUMENT') {
-        $self->set_authentication('ID_DOCUMENT', {status => 'pass'});
+        $self->set_authentication('ID_DOCUMENT', {status => 'pass'}, $staff);
         BOM::Platform::Event::Emitter::emit('authenticated_with_scans', {loginid => $self->loginid});
     }
 
     if ($client_authentication eq 'ID_ONLINE') {
-        $self->set_authentication('ID_ONLINE', {status => 'pass'});
+        $self->set_authentication('ID_ONLINE', {status => 'pass'}, $staff);
     }
 
     if ($client_authentication eq 'NEEDS_ACTION') {
-        $self->set_authentication('ID_DOCUMENT', {status => 'needs_action'});
+        $self->set_authentication('ID_DOCUMENT', {status => 'needs_action'}, $staff);
         # 'Needs Action' shouldn't replace the locks from the account because we'll lose the request authentication reason
-        $self->status->upsert('allow_document_upload', $staff, 'MARKED_AS_NEEDS_ACTION');
+        $self->status->setnx('allow_document_upload', $staff, 'MARKED_AS_NEEDS_ACTION');
     }
 
     $self->save;

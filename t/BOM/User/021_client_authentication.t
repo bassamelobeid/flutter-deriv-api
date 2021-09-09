@@ -167,4 +167,12 @@ subtest 'set_authentication_and_status' => sub {
 
 };
 
+subtest 'set_staff_name' => sub {
+
+    my $client = create_client();
+    $client->set_authentication('ID_DOCUMENT', {status => 'needs_action'}, 'Sarah Aziziyan');
+    my %client_status = map { $_ => $client->status->$_ } @{$client->status->all};
+    is($client_status{"allow_document_upload"}->{"staff_name"}, 'Sarah Aziziyan', "staff_name is correct");
+};
+
 done_testing();
