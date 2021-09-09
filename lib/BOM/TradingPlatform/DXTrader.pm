@@ -851,8 +851,7 @@ sub dxclient_get {
     return $resp->{content} if $resp->{success};
 
     # expected response for not found
-    return undef
-        if (ref $resp->{content} eq 'HASH' and $resp->{content}{error_code} and $resp->{content}{error_code} eq '30002' and $resp->{status} eq '404');
+    return undef if ($resp->{status} eq '404' and ref $resp->{content} eq 'HASH' and ($resp->{content}{error_code} // '') eq '30002');
 
     $self->handle_api_error($resp);
 }
