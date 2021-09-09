@@ -6,6 +6,7 @@ use Moo;
 with 'BOM::API::Payment::Role::Plack';
 
 use Scalar::Util qw/blessed/;
+
 use BOM::API::Payment::DoughFlow::Backend;
 use BOM::Database::DataMapper::Payment;
 use BOM::API::Payment::Metric;
@@ -199,6 +200,7 @@ sub record_failed_withdrawal_POST {
     unless (_is_authenticated($c)) {
         return $c->throw(401, 'Authorization required');
     }
+
     # Send event for specific error codes
     my $error_code = $c->request_parameters->{error_code} // '';
 
@@ -212,6 +214,59 @@ sub record_failed_withdrawal_POST {
             {
                 client_loginid => $client_loginid,
                 shared_loginid => $shared_loginid,
+            });
+    }
+
+    return {
+        status      => 0,
+        description => 'success',
+    };
+}
+
+=head2 shared_payment_method_POST
+
+Implements the RecordFailedWithdrawal Doughflow request.
+DoughFlow has provision to notify our platform upon the failure
+of customer withdrawal.
+
+Returns a hashref with the following keys
+
+=over 4
+
+=item * C<status>
+
+Representing status of the request
+
+=item * C<description>
+
+Representing message as per the status of the request
+
+=back
+
+=cut
+
+sub shared_payment_method_POST {
+    my $c = shift;
+
+    unless (_is_authenticated($c)) {
+        return $c->throw(401, 'Authorization required');
+    }
+
+    # <sharedpaymentmethod siteid="1" frontendname="test" client_loginid="CR90000001" shared_loginid="CR90000004,CR90000005,CR90000006" payment_method="VISA" payment_processor="" payment_type="CreditCard" account_identifier="444433******1111" payment_action="deposit" error_code="NDB2006" error_description="Shared AccountIdentifier" />
+
+    # Send event for specific error codes
+    my $error_code = $c->request_parameters->{error_code} // '';
+
+    # Shared Payment Method
+    if ($error_code eq 'NDB2006') {
+        my $client_loginid  = $c->request_parameters->{client_loginid} // '';
+        my $shared_loginids = $c->request_parameters->{shared_loginid} // '';
+
+        BOM::Platform::Event::Emitter::emit(
+            'shared_payment_method_found',
+            {
+                client_loginid => $client_loginid,
+                shared_loginid => $shared_loginids,
             });
     }
 

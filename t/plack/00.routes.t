@@ -19,9 +19,9 @@ my @GETs = (
     '/transaction/payment/doughflow/withdrawal_validate'
 );
 my @POSTs = (
-    '/transaction/payment/doughflow/deposit',       '/transaction/payment/doughflow/create_payout',
-    '/transaction/payment/doughflow/update_payout', '/transaction/payment/doughflow/record_failed_deposit',
-    '/transaction/payment/doughflow/record_failed_withdrawal'
+    '/transaction/payment/doughflow/deposit',                  '/transaction/payment/doughflow/create_payout',
+    '/transaction/payment/doughflow/update_payout',            '/transaction/payment/doughflow/record_failed_deposit',
+    '/transaction/payment/doughflow/record_failed_withdrawal', '/transaction/payment/doughflow/shared_payment_method'
 );
 
 foreach my $u (@GETs) {
@@ -35,9 +35,9 @@ foreach my $u (@POSTs) {
 
 # failed one
 @GETs = (
-    '/transaction/payment/doughflow/deposit',       '/transaction/payment/doughflow/create_payout',
-    '/transaction/payment/doughflow/update_payout', '/transaction/payment/doughflow/record_failed_deposit',
-    '/transaction/payment/doughflow/record_failed_withdrawal'
+    '/transaction/payment/doughflow/deposit',                  '/transaction/payment/doughflow/create_payout',
+    '/transaction/payment/doughflow/update_payout',            '/transaction/payment/doughflow/record_failed_deposit',
+    '/transaction/payment/doughflow/record_failed_withdrawal', '/transaction/payment/doughflow/shared_payment_method'
 );
 foreach my $u (@GETs) {
     $r = request('GET', "$u?client_loginid=$loginid&currency_code=USD");

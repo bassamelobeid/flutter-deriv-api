@@ -16,28 +16,29 @@ binmode STDERR, ':encoding(UTF-8)';
 # endpoint for QA box is 127.0.0.1:8110
 # 'update_payout' does a withdrawal.
 my $actions = {
-    'deposit'               => 'post',
-    'deposit_validate'      => 'get',
-    'withdrawal_validate'   => 'get',
-    'create_payout'         => 'post',
-    'update_payout'         => 'post',
-    'approve_payout'        => '',
-    'reject_payout'         => '',
-    'shared_payment_method' => 'post',
+    'deposit'                  => 'post',
+    'deposit_validate'         => 'get',
+    'withdrawal_validate'      => 'get',
+    'create_payout'            => 'post',
+    'update_payout'            => 'post',
+    'approve_payout'           => '',
+    'reject_payout'            => '',
+    'record_failed_withdrawal' => 'post',
+    'shared_payment_method'    => 'post',
 };
 
 my $usage = "
 Usage: $0 
     -a, --action               One of " . (join ', ', keys %$actions) . "
-    -e, --endpoint             Doughflow api url 
+    -e, --endpoint             Doughflow api url
     -s, --secret_key           Secret key
-    -c, --client_loginid       Client loginid 
+    -c, --client_loginid       Client loginid
     -t, --trace_id             Trace ID. Optional, default is a random number.
     --amount                   Optional, default is 1.
     -pm, --payment_method      Optional, default is AirTM
     -pp, --payment_processor   Optional, default is AirTM
     -f, --fee                  Optional
-    -p, --shared_loginid       For shared payment method
+    -p, --shared_loginid       For shared payment method, accepts a comma separated values for multiple loginids
     -pt, --payment_type        Payment type e.g. CreditCard
     -id, --account_identifier  Account identifier e.g. masked credit card number
     -l, --log                  debug, info or error
@@ -121,11 +122,11 @@ if ($action =~ /(update|reject|approve)_payout/) {
 
 # Shared PM needs the hardcoded error code and an error description
 # containing the shared's loginid, hence the -p option is required.
-if ($action eq 'shared_payment_method') {
+if ($action =~ /^(?:shared_payment_method|record_failed_withdrawal)$/) {
     die "ERROR: shared client loginid must be specified. " . ($usage =~ s/\n$//gr) . " -p <shared_loginid>\n" unless $shared_loginid;
-    $endpoint             = 'record_failed_withdrawal';
-    $params->{error_code} = 'NDB2006';
-    $params->{error_desc} = sprintf('Shared AccountIdentifier PIN: %s', $shared_loginid);
+    $params->{error_code}     = 'NDB2006';
+    $params->{shared_loginid} = $shared_loginid;
+    $params->{error_desc}     = sprintf('Shared AccountIdentifier PIN: %s', $shared_loginid);
 }
 
 $log->debugf('Trying %s with %s', $endpoint, pp($params));

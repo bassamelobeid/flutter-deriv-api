@@ -89,6 +89,11 @@ sub to_app {    ## no critic (RequireArgUnpacking,Subroutines::RequireFinalRetur
                 BOM::API::Payment::DoughFlow->new(env => $_[0])->record_failed_withdrawal_POST;
             }
         };
+        resource '/transaction/payment/doughflow/shared_payment_method' => sub {
+            POST {
+                BOM::API::Payment::DoughFlow->new(env => $_[0])->shared_payment_method_POST;
+            }
+        };
     };
 
     my $trace_log = $ENV{PAYMENTAPI_LOG_FILE} || '/var/log/httpd/paymentapi_trace.log';
