@@ -24,6 +24,7 @@ use BOM::Config::Runtime;
 use BOM::Config;
 use BOM::Backoffice::Request qw(request);
 use Brands;
+use BOM::Backoffice::Script::CustomerIOTranslation;
 
 has file_container => (
     is         => 'ro',
@@ -33,7 +34,7 @@ has file_container => (
 
 sub _build_file_container {
     my $self        = shift;
-    my $current_pot = IO::File->new($self->pot_filename, 'r');
+    my $current_pot = IO::File->new($self->pot_filename, '<:utf8');
     my @content     = <$current_pot>;
     return [map { chomp; $_ } @content];
 }
@@ -52,7 +53,7 @@ has pot_append_fh => (
 
 sub _build_pot_append_fh {
     my $self = shift;
-    return IO::File->new($self->pot_filename, 'a');
+    return IO::File->new($self->pot_filename, '>>:utf8');
 }
 
 sub documentation {
@@ -80,6 +81,7 @@ sub script_run {
     $self->add_p2p_payment_methods;
     $self->add_idv_document_types;
     $self->add_onfido_document_types;
+    $self->add_customerio_emails;
 
     return 0;
 }
@@ -342,6 +344,42 @@ sub add_onfido_document_types {
         }
     }
     return;
+}
+
+=head2 add_customerio_emails
+
+Adds localizable srings from Customer IO emails.
+Will only run if CUSTOMERIO_TOKEN is present in environment.
+
+=cut
+
+sub add_customerio_emails {
+    my $self = shift;
+
+    my $tokens = $ENV{CUSTOMERIO_TOKENS_I18N} or return;
+    my $fh     = $self->pot_append_fh;
+
+    for my $token (split(/\s*?,\s*?/, $tokens)) {
+
+        my $cio       = BOM::Backoffice::Script::CustomerIOTranslation->new(token => $token);
+        my $campaigns = $cio->get_campaigns;
+
+        for my $campaign (@$campaigns) {
+            next unless $campaign->{updateable};
+            my $type = $campaign->{template}{type};
+
+            my $result = $cio->process_camapign($campaign);
+            for my $string ($result->{strings}->@*) {
+                my $msgid = $self->msg_id($string->{loc_text});
+                if ($self->is_id_unique($msgid)) {
+                    print $fh "\n";
+                    print $fh "msgctxt \"Customer IO $type content \"\n";
+                    print $fh $msgid . "\n";
+                    print $fh "msgstr \"\"\n";
+                }
+            }
+        }
+    }
 }
 
 sub is_id_unique {
