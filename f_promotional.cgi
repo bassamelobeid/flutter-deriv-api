@@ -394,11 +394,11 @@ foreach my $client (@clients) {
         }) . '" target=_blank>statement</a>';
 
     my $check_account =
-          $client->status->disabled          ? 'account disabled'
-        : $client->status->cashier_locked    ? 'cashier locked'
-        : $client->status->unwelcome         ? 'unwelcome login'
-        : not $client->has_valid_documents() ? 'no documents/documents expired'
-        :                                      '';
+          $client->status->disabled       ? 'account disabled'
+        : $client->status->cashier_locked ? 'cashier locked'
+        : $client->status->unwelcome      ? 'unwelcome login'
+        : not $client->documents->valid() ? 'no documents/documents expired'
+        :                                   '';
 
     $table_elements .= qq[
         <tr>
