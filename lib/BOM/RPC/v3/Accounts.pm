@@ -2103,9 +2103,8 @@ rpc set_self_exclusion => sub {
         BOM::Platform::Event::Emitter::emit('self_exclude', $data_subscription);
     }
 
-# Need to send email in 2 circumstances:
-#   - Any client sets a self exclusion period && balance > 0
-#   - Client under Deriv (Europe) Limited with MT5 account(s) sets any of these settings
+# Need to send email in 1 circumstance:
+#   - Any MX/MLT/MF client sets a self exclusion period && balance > 0
 
     my $balance;
     if ($client->default_account) {
@@ -2114,11 +2113,8 @@ rpc set_self_exclusion => sub {
         $balance = '0.00';
     }
 
-    my @mt5_logins = $client->user->mt5_logins('real');
-    if ($client->landing_company->short eq 'malta' && @mt5_logins) {
-        warn 'Compliance email regarding Deriv (Europe) Limited user with MT5 account(s) failed to send.'
-            unless send_self_exclusion_notification($client, 'malta_with_mt5', \%args, $balance);
-    } elsif ($args{exclude_until}) {
+    if ($args{exclude_until} and $client->landing_company->short ne 'svg') {
+        # send exclude_until email for MLT, MF and MX only
         warn 'Compliance email regarding self exclusion from the website failed to send.'
             unless send_self_exclusion_notification($client, 'self_exclusion', \%args, $balance);
     }
@@ -2140,8 +2136,6 @@ Takes the following parameters:
 =item * C<$type>, which can be one of the following:
 
 =over 4
-
-=item * malta_with_mt5
 
 =item * self_exclusion
 
@@ -2202,11 +2196,7 @@ sub send_self_exclusion_notification {
     $balance = $balance // 0;
     my @fields_to_email;
     my $message;
-    if ($type eq 'malta_with_mt5') {
-        $message = "An MT5 account holder under the Deriv (Europe) Limited landing company has set account limits.\n";
-        @fields_to_email =
-            qw/max_balance max_turnover max_losses max_deposit max_7day_turnover max_7day_losses max_7day_deposit max_30day_losses max_30day_turnover max_30day_deposit max_deposit_daily max_deposit_7day max_deposit_30day max_open_bets session_duration_limit exclude_until timeout_until/;
-    } elsif ($type eq 'self_exclusion') {
+    if ($type eq 'self_exclusion') {
         $message         = "A user has excluded themselves from the website.\n";
         @fields_to_email = qw/exclude_until/;
     }
@@ -2223,12 +2213,6 @@ sub send_self_exclusion_notification {
             my $label = $email_field_labels->{$_};
             my $val   = $args->{$_};
             $message .= "$label: $val\n" if $val;
-        }
-
-        my @mt5_logins = $client->user->mt5_logins('real');
-        if ($type eq 'malta_with_mt5' && @mt5_logins) {
-            $message .= "\n\nClient $client_title has the following MT5 accounts:\n";
-            $message .= "$_\n" for @mt5_logins;
         }
 
         my $to_email = $brand->emails('compliance');
