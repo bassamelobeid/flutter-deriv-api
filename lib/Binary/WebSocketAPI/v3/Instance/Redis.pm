@@ -38,8 +38,8 @@ my $servers = {
         config => '/etc/rmg/redis-pricer.yml',
         user   => 'write',
     },
-    redis_pricer_subscription => {
-        config => '/etc/rmg/redis-pricer-subscription.yml',
+    redis_pricer_shared => {
+        config => '/etc/rmg/redis-pricer-shared.yml',
         user   => 'write',
     },
     ws_redis_master => {

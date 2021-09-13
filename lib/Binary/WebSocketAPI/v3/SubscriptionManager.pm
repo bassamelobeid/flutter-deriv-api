@@ -16,7 +16,7 @@ use Binary::WebSocketAPI::v3::Subscription;
 use Binary::WebSocketAPI::v3::Instance::Redis qw(
     redis_feed_master
     redis_pricer
-    redis_pricer_subscription
+    redis_pricer_shared
     redis_transaction
     redis_p2p
 );
@@ -94,7 +94,7 @@ return redis instance
 my $config = {
     redis_feed_master_manager         => sub { return redis_feed_master() },
     redis_pricer_manager              => sub { return redis_pricer() },
-    redis_pricer_subscription_manager => sub { return redis_pricer_subscription() },
+    redis_pricer_subscription_manager => sub { return redis_pricer_shared() },
     redis_transaction_manager         => sub { return redis_transaction() },
     redis_p2p_manager                 => sub { return redis_p2p() }
 };
