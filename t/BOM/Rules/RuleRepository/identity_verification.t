@@ -23,6 +23,96 @@ my $user = BOM::User->create(
 );
 $user->add_client($client_cr);
 
+subtest 'rule idv.check_expiration_date' => sub {
+    my $check_id  = 'test';
+    my $rule_name = 'idv.check_expiration_date';
+
+    my $rule_engine = BOM::Rules::Engine->new();
+
+    like exception { $rule_engine->apply_rules($rule_name); }, qr/IDV result is missing/, 'Missing result in passed args';
+    like exception { $rule_engine->apply_rules($rule_name, result => {}); }, qr/document is missing/, 'Missing document in passed args';
+
+    my $mock_country_config = Test::MockModule->new('Brands::Countries');
+    my $is_lifetime_valid   = 0;
+    $mock_country_config->mock(
+        get_idv_config => sub {
+            return {document_types => {test => {lifetime_valid => $is_lifetime_valid}}};
+        });
+
+    my $tests = [{
+            idv    => {lifetime_valid => 1},
+            result => {
+                expiration_date => 'Not Available',
+            },
+            error => undef,
+        },
+        {
+            idv    => {lifetime_valid => 0},
+            result => {
+                expiration_date => undef,
+            },
+            error => 'Expired',
+        },
+        {
+            idv    => {lifetime_valid => 0},
+            result => {
+                expiration_date => Date::Utility->new->_plus_months(1)->date_ddmmyyyy,
+            },
+            error => undef,
+        },
+        {
+            idv    => {lifetime_valid => 1},
+            result => {
+                expiration_date => Date::Utility->new->_minus_months(1)->date_ddmmyyyy,
+            },
+            error => undef
+        },
+        {
+            idv    => {lifetime_valid => 0},
+            result => {
+                expiration_date => Date::Utility->new->_minus_months(1)->date_ddmmyyyy,
+            },
+            error => 'Expired'
+        },
+        {
+            idv    => {lifetime_valid => 0},
+            result => {
+                expiration_date => Date::Utility->new->today,
+            },
+            error => 'Expired'
+        },
+        {
+            idv    => {lifetime_valid => 0},
+            result => {
+                expiration_date => '1999/02/66',
+            },
+            error => 'Expired'
+        },
+    ];
+
+    for my $case ($tests->@*) {
+        $is_lifetime_valid = $case->{idv}->{lifetime_valid};
+
+        my %args = (
+            result   => $case->{result},
+            document => {
+                document_type   => 'test',
+                issuing_country => 'test'
+            });
+
+        if (my $error = $case->{error}) {
+            is_deeply exception { $rule_engine->apply_rules($rule_name, %args) },
+                +{
+                error_code => $error,
+                rule       => $rule_name
+                },
+                "Broken rules: $error";
+        } else {
+            lives_ok { $rule_engine->apply_rules($rule_name, %args) } 'Rules are honored';
+        }
+    }
+};
+
 subtest 'rule idv.check_name_comparison' => sub {
     my $check_id    = 'test';
     my $rule_name   = 'idv.check_name_comparison';
@@ -352,7 +442,12 @@ subtest 'rule idv.check_dob_conformity' => sub {
             result  => $case->{result}};
 
         if (my $error = $case->{error}) {
-            is_deeply exception { $rule_engine->apply_rules($rule_name, %$args) }, +{error_code => $error}, "Broken rules: $error";
+            is_deeply exception { $rule_engine->apply_rules($rule_name, %$args) },
+                +{
+                error_code => $error,
+                rule       => $rule_name
+                },
+                "Broken rules: $error";
         } else {
             lives_ok { $rule_engine->apply_rules($rule_name, %$args) } 'Rules are honored';
         }

@@ -17,6 +17,28 @@ use utf8;
 use BOM::Rules::Comparator::Text;
 use BOM::Rules::Registry qw(rule);
 
+rule 'idv.check_expiration_date' => {
+    description => "Checks is the document expired or not based on expiration date",
+    code        => sub {
+        my ($self, $context, $args) = @_;
+
+        die 'IDV result is missing' unless my $result   = $args->{result}   and ref $args->{result} eq 'HASH';
+        die 'document is missing'   unless my $document = $args->{document} and ref $args->{document} eq 'HASH';
+
+        my $countries_config = Brands::Countries->new();
+        my $is_lifetime_valid =
+            $countries_config->get_idv_config(lc $document->{issuing_country})->{document_types}->{lc $document->{document_type}}->{lifetime_valid};
+
+        return undef if $is_lifetime_valid;
+
+        my $expiration_date = eval { Date::Utility->new($result->{expiration_date}) };
+
+        $self->fail('Expired') unless $expiration_date and $expiration_date->is_after(Date::Utility->new);
+
+        return undef;
+    },
+};
+
 rule 'idv.check_name_comparison' => {
     description => "Checks if the context client first and last names match with the reported data by IDV provider",
     code        => sub {
@@ -68,7 +90,7 @@ rule 'idv.check_dob_conformity' => {
         my $reported_dob = eval { Date::Utility->new($result->{date_of_birth}) };
         my $profile_dob  = eval { Date::Utility->new($client->{date_of_birth}) };
 
-        die +{error_code => 'DobMismatch'} unless $reported_dob and $profile_dob and $profile_dob->is_same_as($reported_dob);
+        $self->fail('DobMismatch') unless $reported_dob and $profile_dob and $profile_dob->is_same_as($reported_dob);
 
         return undef;
     },
