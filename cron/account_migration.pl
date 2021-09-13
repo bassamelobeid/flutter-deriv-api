@@ -37,7 +37,7 @@ my $inception_date = '2018-12-10';
 # If this is not specified, it will be defaulted to current date.
 my $now          = Date::Utility->new;
 my $to_date      = $now->date;
-my $from_date    = $now->minus_time_interval('1d')->date;
+my $from_date    = $now->minus_time_interval('30d')->date;
 my $help         = 0;
 my $test         = 0;
 my $all          = 0;
