@@ -1,0 +1,57 @@
+
+<style type="text/css">
+    .hidden {
+        background: var(--bg-primary-light);
+        font-size: 0;
+        user-select: none;
+    }
+    .hidden_show {
+        background: var(--bg-primary-light);
+        color: var(--text-primary);
+        padding: 0 4px;
+    }
+    #group_display span {
+        cursor: pointer;
+        display: inline-block;
+        font-weight: bold;
+        background: var(--bg-primary-light);
+        padding: 4px 8px;
+        border-bottom: 2px solid transparent;
+        font-size: 1rem;
+    }
+    #group_display span.selected {
+        border-bottom: 2px solid var(--color-orange);
+    }
+    #group_display span:hover {
+        background: var(--bg-active);
+    }
+    table#show_log_list_table th, table#show_log_list_table td {
+        font-size: 1.4rem;
+    }
+    table#show_log_list_table td div.changed {
+        padding: 0 4px;
+        background: var(--color-pink);
+        color: var(--grey-800);
+    }
+    table#show_log_list_table td div.unavailable {
+        padding: 0 4px;
+        background: var(--bg-disabled);
+        height: 20px;
+    }
+</style>
+
+<a class="link" href="[% url_to_client | none %]">&laquo; Return to client details</a><br><br>
+
+The affiliate id for the following MT5 accounts will be updated
+[% FOREACH mt5_account IN mt5_accounts.sort %]
+    <li>[% mt5_account %] </li>
+[% END %]
+
+
+ <form action="[% action %]" method="post">
+   <label for="new_aff_id">New Affiliate ID :</label>
+    <input type="hidden" name="broker" value="[% broker %]">
+    <input type="hidden" name="loginid" value="[% loginid %]">
+   <input type="text" id="new_aff_id" name="new_aff_id"><br><br>
+  <input type="submit" value="Reset">
+</form>

@@ -1354,6 +1354,15 @@ my $log_args = {
 my $new_log_href = request()->url_for('backoffice/show_audit_trail.cgi', $log_args);
 print qq{<a href="$new_log_href" class="btn btn--primary">View history of changes to $encoded_loginid</a>};
 
+if (%$aff_mt_accounts) {
+    my $update_affiliate_id_href = request()->url_for('backoffice/update_affiliate_id.cgi', $log_args);
+    print qq{<a href="$update_affiliate_id_href" class="btn btn--primary">Edit Affiliate ID for $encoded_loginid</a>};
+}
+else {
+    print qq{<span class="btn btn--disabled">No affiliates info to edit for $encoded_loginid</span>};
+}
+
+
 if ($payment_agent) {
     $log_args->{category} = 'payment_agent';
     $new_log_href = request()->url_for('backoffice/show_audit_trail.cgi', $log_args);

@@ -49,6 +49,7 @@ my $permissions = {
     'f_change_affiliates_token.cgi' => ['Marketing'],
     'f_ib_affiliate.cgi'            => ['Marketing'],
     'f_client_bonus_check.cgi'      => ['Marketing'],
+    'update_affiliate_id.cgi'       => ['Marketing'],
 
     'c_listclientlimits.cgi'            => ['CS'],
     'client_email.cgi'                  => ['CS'],
