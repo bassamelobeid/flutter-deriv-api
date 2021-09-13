@@ -37,10 +37,10 @@ use await;
 
 use Test::MockObject::Extends;
 use Mojo::Redis2;
-use Binary::WebSocketAPI::v3::Instance::Redis qw| redis_pricer_subscription |;
+use Binary::WebSocketAPI::v3::Instance::Redis qw| redis_pricer_shared |;
 
 my $t                         = build_wsapi_test();
-my $redis_pricer_subscription = Test::MockObject::Extends->new(redis_pricer_subscription);
+my $redis_pricer_subscription = Test::MockObject::Extends->new(redis_pricer_shared);
 
 my $keys_hash = {};
 $redis_pricer_subscription->mock(
