@@ -19,7 +19,7 @@ use BOM::Test::Helper::Client qw( top_up );
 use ExchangeRates::CurrencyConverter qw( convert_currency );
 use Format::Util::Numbers qw( formatnumber );
 
-my ($Alice, $Alice_id, $Bob, $Bob_id, $test, $test_currency, $test_amount, $dry_run, $testargs, $res);
+my ($Alice, $Alice_id, $Bob, $Bob_id, $test, $test_currency, $test_amount, $amount_boost, $dry_run, $testargs, $res);
 
 my @crypto_currencies = qw/ BTC ETH LTC /;       ## ETC not enabled for CR landing company
 my @fiat_currencies   = qw/ AUD EUR GBP USD /;
@@ -118,6 +118,8 @@ my $payment_agent_exclusion_list = BOM::Config::Runtime->instance->app_config->p
 my $payment_withdrawal_limits = BOM::Config->payment_limits()->{withdrawal_limits};
 my $payment_transfer_limits   = BOM::Config::payment_agent()->{transaction_limits}->{transfer};
 
+my $mock_documents = Test::MockModule->new('BOM::User::Client::AuthenticationDocuments');
+
 ##
 ## Test of 'rpc paymentagent_transfer' in Cashier.pm
 ##
@@ -177,13 +179,12 @@ $mock_cashier->mock(
 
 my $loop = 0;
 for my $transfer_currency (@fiat_currencies, @crypto_currencies) {
-
     $loop++;
     $test_currency = $transfer_currency;
 
-    $test_amount = (grep { $_ eq $test_currency } @crypto_currencies) ? '0.00200000' : '100.40';
-    my $amount_boost = (grep { $_ eq $test_currency } @crypto_currencies) ? '0.001' : 100;
-    my $precision    = (grep { $_ eq $test_currency } @crypto_currencies) ? 8       : 2;
+    $test_amount  = (grep { $_ eq $test_currency } @crypto_currencies) ? '0.00200000' : '100.40';
+    $amount_boost = (grep { $_ eq $test_currency } @crypto_currencies) ? '0.0001'     : 1;
+    my $precision = (grep { $_ eq $test_currency } @crypto_currencies) ? 8 : 2;
 
     my $email    = 'abc1' . rand . '@binary.com';
     my $password = 'jskjd8292922';
@@ -376,11 +377,10 @@ for my $transfer_currency (@fiat_currencies, @crypto_currencies) {
         $Alice->address_city('Beverly Hills');
         $Alice->save;
 
-        $test                          = "Withdraw fails if description is over $MAX_DESCRIPTION_LENGTH characters";
+        $test                          = "Transfer fails if description is over $MAX_DESCRIPTION_LENGTH characters";
         $testargs->{args}{description} = 'A' x (1 + $MAX_DESCRIPTION_LENGTH);
         $res                           = BOM::RPC::v3::Cashier::paymentagent_transfer($testargs);
         like($res->{error}{message_to_client}, qr/Notes must not exceed $MAX_DESCRIPTION_LENGTH/, $test);
-        reset_withdraw_testargs();
 
         $test                          = 'Transfer fails if transfer_to client does not exist';
         $testargs->{args}{transfer_to} = q{Invalid O'Hare};
@@ -435,7 +435,6 @@ for my $transfer_currency (@fiat_currencies, @crypto_currencies) {
         $test = 'After transfer with dry_run, transfer_to client account has an unchanged balance';
         is($Bob->default_account->balance, 0, $test);
 
-        reset_transfer_testargs();
         $test          = 'You can transfer to client of different residence';
         $old_residence = $Alice->residence;
         $Alice->residence('in');
@@ -444,37 +443,7 @@ for my $transfer_currency (@fiat_currencies, @crypto_currencies) {
         is($res->{status}, 2, $test) or diag Dumper $res;
         $Alice->residence($old_residence);
         $Alice->save;
-
-        $test = "Transfer fails if over maximum amount per day (USD $MAX_DAILY_TRANSFER_AMOUNT_USD)";
-        ## From this point on, we cannot have dry run enabled
-        $dry_run = 0;
         reset_transfer_testargs();
-        ## Technically, the mock should return that limit in the test_currency, but this large value covers it
-        $mock_cashier->mock('_get_amount_and_count', sub { return $MAX_DAILY_TRANSFER_AMOUNT_USD * 99, 0; });
-        $res = BOM::RPC::v3::Cashier::paymentagent_transfer($testargs);
-        is($res->{error}{message_to_client},
-            'Payment agent transfers are not allowed, as you have exceeded the maximum allowable transfer amount for today.', $test);
-        $mock_cashier->unmock('_get_amount_and_count');
-
-        $test = "Transfer fails is over the maximum transactions per day (USD $MAX_DAILY_TRANSFER_AMOUNT_USD)";
-        $mock_cashier->mock('_get_amount_and_count', sub { return 0, $MAX_DAILY_TRANSFER_TXNS * 55; });
-        $res = BOM::RPC::v3::Cashier::paymentagent_transfer($testargs);
-        is($res->{error}{message_to_client},
-            'Payment agent transfers are not allowed, as you have exceeded the maximum allowable transactions for today.', $test);
-        $mock_cashier->unmock('_get_amount_and_count');
-
-        ##
-        ## At this point in Cashier.pm, we call payment_account_transfer, so we need some funds
-        ##
-
-        $test = 'Client account has correct balance after top up';
-        ## We need enough to cover all the following tests, which start with $test_amount,
-        ## and increaase by $amount_boost after each successful transfer. Thus the '15'
-        my $Alice_balance = sprintf('%0.*f', $precision, $test_amount * 15);
-        top_up $Alice, $test_currency => $Alice_balance;
-        ## This is used to keep a running tab of amount transferred:
-        my $Alice_transferred = 0;
-        is($Alice->default_account->balance, $Alice_balance, "$test ($Alice_balance $test_currency)");
 
         $test = 'Transfer fails if argument not passed to payment_account_transfer';
         for my $arg (qw/ toClient currency amount Alice Bob /) {
@@ -503,20 +472,45 @@ for my $transfer_currency (@fiat_currencies, @crypto_currencies) {
             }
         }
 
-        ## We now are checking the database function payment.payment_account_transfer()
-        ## The actual database function is payment.local_payment_account_transfer()
-        ## It performs validations by a call to payment.validate_paymentagent_transfer()
         $test                          = 'Transfer fails if we try to transfer from and to the same account';
         $testargs->{args}{transfer_to} = $Alice_id;
         $res                           = BOM::RPC::v3::Cashier::paymentagent_transfer($testargs);
         is($res->{error}{message_to_client}, 'Payment agent transfers are not allowed within the same account.', $test);
+
+        $dry_run = 0;
         reset_transfer_testargs();
 
-        ## Skip validations that both client_ids exist. Caught before the database function is called.
+        $test = 'Transfer fails if amount exceeds client balance';
+        $res  = BOM::RPC::v3::Cashier::paymentagent_transfer($testargs);
+        like($res->{error}{message_to_client}, qr/exceeds client balance/, $test);
 
-        ## Skip check that client account is not virtual - handled in Cashier.pm
+        $test = 'Client account has correct balance after top up';
+        ## We need enough to cover all the following tests, which start with $test_amount,
+        ## and increaase by $amount_boost after each successful transfer. Thus the '15'
+        my $Alice_balance = sprintf('%0.*f', $precision, $test_amount * 15);
+        top_up($Alice, $test_currency, $Alice_balance, 'free_gift');
+        ## This is used to keep a running tab of amount transferred:
+        my $Alice_transferred = 0;
+        is($Alice->default_account->balance, $Alice_balance, "$test ($Alice_balance $test_currency)");
 
-        $test = 'Transfer fails if client status = cashier_locked';
+        $test = "Transfer fails if over maximum amount per day (USD $MAX_DAILY_TRANSFER_AMOUNT_USD)";
+        ## From this point on, we cannot have dry run enabled
+
+        ## Technically, the mock should return that limit in the test_currency, but this large value covers it
+        $mock_cashier->mock('_get_amount_and_count', sub { return $MAX_DAILY_TRANSFER_AMOUNT_USD * 99, 0; });
+        $res = BOM::RPC::v3::Cashier::paymentagent_transfer($testargs);
+        is($res->{error}{message_to_client},
+            'Payment agent transfers are not allowed, as you have exceeded the maximum allowable transfer amount for today.', $test);
+        $mock_cashier->unmock('_get_amount_and_count');
+
+        $test = "Transfer fails is over the maximum transactions per day (USD $MAX_DAILY_TRANSFER_AMOUNT_USD)";
+        $mock_cashier->mock('_get_amount_and_count', sub { return 0, $MAX_DAILY_TRANSFER_TXNS * 55; });
+        $res = BOM::RPC::v3::Cashier::paymentagent_transfer($testargs);
+        is($res->{error}{message_to_client},
+            'Payment agent transfers are not allowed, as you have exceeded the maximum allowable transactions for today.', $test);
+        $mock_cashier->unmock('_get_amount_and_count');
+
+        $test = 'Transfer fails if agent status = cashier_locked';
         $Alice->status->set('cashier_locked', 'Testy McTestington', 'Just running some tests');
         $Alice->save;
         $res = BOM::RPC::v3::Cashier::paymentagent_transfer($testargs);
@@ -556,40 +550,6 @@ for my $transfer_currency (@fiat_currencies, @crypto_currencies) {
         $Bob->status->clear_disabled;
         $Bob->save;
 
-        my $documents_mock = Test::MockModule->new('BOM::User::Client::AuthenticationDocuments');
-        my $client_mock    = Test::MockModule->new('BOM::User::Client');
-        $documents_mock->mock(
-            'uploaded',
-            sub {
-                return {
-                    proof_of_identity => {
-                        is_expired => 1,
-                        documents  => {},
-                    },
-                };
-            });
-        $client_mock->mock(
-            'is_document_expiry_check_required',
-            sub {
-                my $self = shift;
-
-                # Just for bob
-                return $self->loginid eq $Bob_id;
-            });
-        $res = BOM::RPC::v3::Cashier::paymentagent_transfer($testargs);
-
-        is(
-            $res->{error}{message_to_client},
-            "You cannot transfer to account $Bob_id, as their verification documents have expired.",
-            'Transfer fails if recipient has expired documents'
-        );
-        $Bob->status->clear_disabled;
-        $Bob->save;
-
-        # Left the mock as it was before this test
-        $documents_mock->unmock('uploaded');
-        $client_mock->unmock('is_document_expiry_check_required');
-
         $test = 'Transfer fails if transfer_to client status = unwelcome';
         $Bob->status->set('unwelcome', 'Testy McTestington', 'Just running some tests');
         $Bob->save;
@@ -598,48 +558,31 @@ for my $transfer_currency (@fiat_currencies, @crypto_currencies) {
         $Bob->status->clear_unwelcome;
         $Bob->save;
 
-        $test = 'Transfer fails if all client authentication documents are expired';
-        $auth_document_args->{expiration_date} = '1999-12-31';
-        $Alice->add_client_authentication_document($auth_document_args);
-        $Alice->save;
+        $test = 'Transfer fails if agent authentication documents are expired';
+        $mock_documents->mock(expired => sub { shift->client->loginid eq $Alice_id ? 1 : 0 });
         $res = BOM::RPC::v3::Cashier::paymentagent_transfer($testargs);
         is($res->{error}{message_to_client},
             'Your identity documents have expired. Visit your account profile to submit your valid documents and unlock your cashier.', $test);
 
-        $test = 'Transfer works if only one client authentication documents is expired';
-        $auth_document_args->{expiration_date} = '2999-12-31';
-        $Alice->add_client_authentication_document($auth_document_args);
-        $Alice->save;
-        $testargs->{args}->{description} = 'One document is expired';
-        $res = BOM::RPC::v3::Cashier::paymentagent_transfer($testargs);
-        is($res->{error}{message_to_client}, undef, $test);
-        $Alice_transferred += $test_amount;
-        $Alice_balance = sprintf('%0.*f', $precision, $Alice_balance - $test_amount);
-        my $Bob_balance = sprintf('%0.*f', $precision, $test_amount);
-        ## Need to boost the test_amount to get around the frequency checks
-        $test_amount = sprintf('%0.*f', $precision, $test_amount + $amount_boost);
-        reset_transfer_testargs();
-
-        $test =
-            'Transfer works with a previously transfered client, when payment agents are suspended in the target country (dry run to avoid sleeping)';
-        $testargs->{args}->{dry_run} = 1;
-        BOM::Config::Runtime->instance->app_config->system->suspend->payment_agents_in_countries([$Alice->residence]);
-        $res = BOM::RPC::v3::Cashier::paymentagent_transfer($testargs);
-        is($res->{error}, undef, $test) or warn($res->{error});
-        BOM::Config::Runtime->instance->app_config->system->suspend->payment_agents_in_countries([]);
-        $testargs->{args}->{dry_run} = 0;
-
-        $test = 'Transfer fails if transfer_to client authentication documents are expired';
-        $auth_document_args->{expiration_date} = '1999-12-31';
-        $Bob->add_client_authentication_document($auth_document_args);
-        $Bob->save;
+        $test = 'Transfer fails if client authentication documents are expired';
+        $mock_documents->mock(expired => sub { shift->client->loginid eq $Bob_id ? 1 : 0 });
         $res = BOM::RPC::v3::Cashier::paymentagent_transfer($testargs);
         is($res->{error}{message_to_client}, "You cannot transfer to account $Bob_id, as their verification documents have expired.", $test);
-        $auth_document_args->{expiration_date} = '2999-12-31';
-        $Bob->add_client_authentication_document($auth_document_args);
-        $Bob->save;
 
-        ## Skip check that client has a payment agent: already done in Cashier.pm
+        $mock_documents->unmock('expired');
+
+        $res = BOM::RPC::v3::Cashier::paymentagent_transfer($testargs);
+        is($res->{error}, undef, 'successful transfer');
+        $test_amount += $amount_boost;
+        reset_transfer_testargs();
+
+        $test = 'Transfer works with a previously transfered client, when payment agents are suspended in the target country';
+        BOM::Config::Runtime->instance->app_config->system->suspend->payment_agents_in_countries([$Alice->residence]);
+        $res = BOM::RPC::v3::Cashier::paymentagent_transfer($testargs);
+        is($res->{error}, undef, $test);
+        $test_amount += $amount_boost;
+
+        BOM::Config::Runtime->instance->app_config->system->suspend->payment_agents_in_countries([]);
 
         $test = 'Transfer fails if payment agent is not authenticated';
         $Alice->payment_agent->is_authenticated(0);
@@ -654,9 +597,7 @@ for my $transfer_currency (@fiat_currencies, @crypto_currencies) {
         my $alt_amount   = (grep { $alt_currency eq $_ } @crypto_currencies) ? 1 : 10;
         $testargs->{args}{currency} = $alt_currency;
         $testargs->{args}{amount}   = $alt_amount;
-        ## We need to mock this, as going from fiat to crypto can boost our cumulative amounts sky high
-        $mock_cashier->mock('_get_amount_and_count', sub { return 0, 0; });
-        $res = BOM::RPC::v3::Cashier::paymentagent_transfer($testargs);
+        $res                        = BOM::RPC::v3::Cashier::paymentagent_transfer($testargs);
         is(
             $res->{error}{message_to_client},
             "You cannot perform this action, as $alt_currency is not the default account currency for payment agent $Alice_id.",
@@ -672,7 +613,7 @@ for my $transfer_currency (@fiat_currencies, @crypto_currencies) {
         $Alice->payment_agent->save;
         $res = BOM::RPC::v3::Cashier::paymentagent_transfer($testargs);
         is($res->{error}{message_to_client},
-            "You cannot perform this action, as $alt_currency is not the default account currency for client $Alice_id.", $test);
+            "You cannot perform this action, as $alt_currency is not the default account currency for payment agent $Alice_id.", $test);
         $Alice->payment_agent->currency_code($test_currency);
         $Alice->payment_agent->save;
         reset_transfer_testargs();
@@ -693,7 +634,6 @@ for my $transfer_currency (@fiat_currencies, @crypto_currencies) {
         my $dummy_id = $dummy_client->loginid;
         is($res->{error}{message_to_client},
             "You cannot perform this action, as $test_currency is not the default account currency for client $dummy_id.", $test);
-        $mock_cashier->unmock('_get_amount_and_count');
         reset_transfer_testargs();
 
         $test = 'Transfer fails when amount is over available funds due to frozen free gift limit';
@@ -701,7 +641,7 @@ for my $transfer_currency (@fiat_currencies, @crypto_currencies) {
         my $SQL       = 'INSERT INTO betonmarkets.promo_code(code, description, promo_code_type, promo_code_config) VALUES(?,?,?,?)
                          ON CONFLICT (code) DO UPDATE SET promo_code_config = EXCLUDED.promo_code_config';
         my $sth_insert_promo  = $clientdbh->prepare($SQL);
-        my $promo_amount      = 10 * $Alice_balance;
+        my $promo_amount      = $Alice_balance;
         my $promo_code_config = qq!{"apples_turnover":"100","amount":"$promo_amount"}!;
         $sth_insert_promo->execute('TEST1234', 'Test only', 'FREE_BET', $promo_code_config);
         $SQL = 'INSERT INTO betonmarkets.client_promo_code (client_loginid, promotion_code, status, mobile) VALUES (?,?,?,?)';
@@ -709,9 +649,13 @@ for my $transfer_currency (@fiat_currencies, @crypto_currencies) {
         $sth_insert_client_promo->execute($Alice_id, 'TEST1234', 'NOT CLAIMED', 'PA6-5000');
         $res = BOM::RPC::v3::Cashier::paymentagent_transfer($testargs);
         my $bal = $Alice->default_account->balance;
-        is($res->{error}{message_to_client}, "Withdrawal is $test_amount $test_currency but balance $bal includes frozen bonus $bal.", $test);
+        is($res->{error}{message_to_client},
+            "Withdrawal is " . sprintf('%0.*f', $precision, $test_amount) . " $test_currency but balance $bal includes frozen bonus $bal.", $test);
         $SQL = 'DELETE FROM betonmarkets.client_promo_code WHERE client_loginid = ?';
         $clientdbh->do($SQL, undef, $Alice_id);
+        $Alice->client_promo_code(undef);
+        $Alice->save;
+        reset_transfer_testargs();
 
         # push payment agent's email into exclusion list
         push @$payment_agent_exclusion_list, $Alice->email;
@@ -720,24 +664,11 @@ for my $transfer_currency (@fiat_currencies, @crypto_currencies) {
         $Alice->residence('in the Wonder Land');
         $res = BOM::RPC::v3::Cashier::paymentagent_transfer($testargs);
         is($res->{status}, 1, $test);
-        $Alice_transferred += $test_amount;
-        $Alice_balance = sprintf('%0.*f', $precision, $Alice_balance - $test_amount);
-        $Bob_balance   = sprintf('%0.*f', $precision, $Bob_balance + $test_amount);
-        $test_amount   = sprintf('%0.*f', $precision, $test_amount + $amount_boost);
-        reset_transfer_testargs();
 
         $Alice->residence($old_residence);
+        $Alice->save;
         pop @$payment_agent_exclusion_list;
-
-        $test              = 'Transfer works when min_turnover overrides the frozen free gift limit check';
-        $promo_code_config = qq!{"min_turnover":"100","amount":"$promo_amount"}!;
-        $sth_insert_promo->execute('TEST1234', 'Test only', 'FREE_BET', $promo_code_config);
-        $res = BOM::RPC::v3::Cashier::paymentagent_transfer($testargs);
-        is($res->{status}, 1, $test);
-        $Alice_transferred += $test_amount;
-        $Alice_balance = sprintf('%0.*f', $precision, $Alice_balance - $test_amount);
-        $Bob_balance   = sprintf('%0.*f', $precision, $Bob_balance + $test_amount);
-        $test_amount   = sprintf('%0.*f', $precision, $test_amount + $amount_boost);
+        $test_amount += $amount_boost;
         reset_transfer_testargs();
 
         ##
@@ -745,90 +676,23 @@ for my $transfer_currency (@fiat_currencies, @crypto_currencies) {
         ##
 
         $test = 'Transfer fails if amount is over the lifetime limit for landing company svg';
-        ## For these tests, we need to know what the limits are:
-        my $limit_transactions_per_day = $payment_transfer_limits->{transactions_per_day};
-        my $limit_usd_per_day          = $payment_transfer_limits->{amount_in_usd_per_day};
-        my $lc_short                   = $Alice->landing_company->short;
-        my $test_lc_limits             = $payment_withdrawal_limits->{$lc_short};
-        my ($lc_currency, $lc_lifetime_limit, $lc_for_days, $lc_limit_for_days) =
-            @$test_lc_limits{qw/ currency  lifetime_limit  for_days  limit_for_days /};
-        my $old_test_amount = $test_amount;
-        $test_amount              = convert_currency($lc_lifetime_limit + 2, 'USD', $test_currency);
-        $test_amount              = formatnumber('amount', $test_currency, $test_amount);
-        $testargs->{args}{amount} = $test_amount;
-        ## Make sure we have enough funds that we do not hit the balance limit:
-        top_up $Alice, $test_currency => $test_amount;
-        $Alice_balance += $test_amount;
-
-        ## We need to prevent the earlier payment agent limit check inside from Cashier.pm from happening
-        modify_bom_config('payment_agent', 'payment_limits/*/maximum = ' . $lc_lifetime_limit * 2);
-
-        my $show_left = convert_currency($lc_lifetime_limit, 'USD', $test_currency);
-        $show_left = formatnumber('amount', $test_currency, $show_left - $Alice_transferred);
-        $res       = BOM::RPC::v3::Cashier::paymentagent_transfer($testargs);
-        is(
-            $res->{error}{message_to_client},
-            "Sorry, you cannot withdraw. Your withdrawal amount $test_amount $test_currency exceeds withdrawal limit $show_left $test_currency.",
-            "$test ($lc_lifetime_limit)"
-        );
-        reset_transfer_testargs();
-
-        $test = 'Transfer fails if amount is over the lifetime limit for landing company svg (limit not shown)';
-        modify_bom_config('payment_limits', 'withdrawal_limits/*/lifetime_limit = 2');
+        my $lc_short = $Alice->landing_company->short;
+        my $wd       = convert_currency($payment_withdrawal_limits->{$lc_short}, 'USD', $test_currency) - $test_amount + $amount_boost;
+        $mock_account->mock('total_withdrawals' => $wd);
         $res = BOM::RPC::v3::Cashier::paymentagent_transfer($testargs);
-        is($res->{error}{message_to_client},
-            "Sorry, you cannot withdraw. Your withdrawal amount $test_amount $test_currency exceeds withdrawal limit.", $test);
+
+        like($res->{error}{message_to_client}, qr/You've reached the maximum withdrawal limit/, $test);
+
+        $mock_user_client->mock(fully_authenticated => 1);
+        $test = 'OK when client if fully authenticated';
+        $res  = BOM::RPC::v3::Cashier::paymentagent_transfer($testargs);
+        is($res->{error}, undef, $test);
+        $mock_user_client->unmock('fully_authenticated');
+        $mock_account->unmock('total_withdrawals');
+        $test_amount += $amount_boost;
         reset_transfer_testargs();
 
-        $test = 'Landing company limits are skipped if the client is fully authenticated';
-
-        authenticate_client($clientdbh, $Alice_id);
-
-        top_up $Alice, $test_currency => $test_amount;
-        $Alice_balance += $test_amount;
-        $res = BOM::RPC::v3::Cashier::paymentagent_transfer($testargs);
-        is($res->{error}{message_to_client}, undef, $test);
-        $Alice_transferred += $test_amount;
-        $Alice_balance = sprintf('%0.*f', $precision, $Alice_balance - $test_amount);
-        $Bob_balance   = sprintf('%0.*f', $precision, $Bob_balance + $test_amount);
-        $test_amount   = sprintf('%0.*f', $precision, $test_amount + $amount_boost);
-        reset_transfer_testargs();
-
-        deauthenticate_client($clientdbh, $Alice_id);
-
-        $test = 'Transfer fails if amount is over the lifetime limit for landing company champion';
-        ## Same as above, but we force the landing company to be champion
-        $mock_user_client->mock('landing_company', sub { return LandingCompany::Registry->get_by_broker('CH') });
-        $lc_short       = $Alice->landing_company->short;
-        $test_lc_limits = $payment_withdrawal_limits->{$lc_short};
-        ($lc_currency, $lc_lifetime_limit) = @$test_lc_limits{qw/ currency lifetime_limit /};
-        $mock_landingcompany->mock('allows_payment_agents', sub { return 1; });
-        $mock_landingcompany->mock('is_currency_legal',     sub { 1 });
-        ## As before, we carefully adjust our payment history
-        $res = BOM::RPC::v3::Cashier::paymentagent_transfer($testargs);
-        is(
-            $res->{error}{message_to_client},
-            "Sorry, you cannot withdraw. Your withdrawal amount $test_amount $test_currency exceeds withdrawal limit.",
-            "$test ($lc_lifetime_limit)"
-        );
-
-        $mock_user_client->unmock('landing_company');
-        $mock_landingcompany->unmock('allows_payment_agents');
-        reset_transfer_testargs();
-        reset_transfer_testargs();
-
-        # Simulate a case where wrong error message is displayed when payment agent is authenticated
-        authenticate_client($clientdbh, $Alice_id);
-
-        $test = 'Transfer fails if amount exceeds client balance';
-        modify_bom_config('payment_limits', 'withdrawal_limits/*/lifetime_limit = 100000');
-        $testargs->{args}{amount} = $Alice_balance + $amount_boost;
-        $res = BOM::RPC::v3::Cashier::paymentagent_transfer($testargs);
-        is($res->{error}{message_to_client}, "Sorry, you cannot withdraw. Your account balance is $Alice_balance $test_currency.", $test);
-        $test_amount = $old_test_amount;
-        reset_transfer_testargs();
-
-        ## end of database function
+        # Not all scenarios of $client->validate_payment are covered above, full coverage is in bom-user tests
 
         $test = 'Transfer fails when request is too frequent';
         ## First time works, second gets the error:
