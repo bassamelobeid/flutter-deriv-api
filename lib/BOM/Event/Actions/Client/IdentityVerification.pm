@@ -139,8 +139,9 @@ async sub verify_identity {
 
             my $rules_result = $rule_engine->verify_action(
                 'identity_verification',
-                loginid => $client->loginid,
-                result  => $transformed_resp
+                loginid  => $client->loginid,
+                result   => $transformed_resp,
+                document => $document,
             );
 
             unless ($rules_result->has_failure) {
@@ -149,42 +150,50 @@ async sub verify_identity {
                 BOM::Event::Actions::Common::set_age_verification($client, $provider);
 
                 $idv_model->update_document_check({
-                    document_id   => $document->{id},
-                    status        => $status,
-                    provider      => $provider,
-                    response_body => encode_json_utf8 $response_hash
+                    document_id     => $document->{id},
+                    status          => $status,
+                    provider        => $provider,
+                    expiration_date => $transformed_resp->{expiration_date},
+                    response_body   => encode_json_utf8 $response_hash
                 });
 
             } else {
                 my @messages = ();
 
-                if (exists $rules_result->errors->{NameMismatch}) {
-                    push @messages, "NAME_MISMATCH";
+                if (not exists $rules_result->errors->{Expired}) {
+                    if (exists $rules_result->errors->{NameMismatch}) {
+                        push @messages, "NAME_MISMATCH";
 
-                    $client->status->setnx('poi_name_mismatch', 'system', "Client's name doesn't match with provided name by $provider");
-                }
+                        $client->status->setnx('poi_name_mismatch', 'system', "Client's name doesn't match with provided name by $provider");
+                    }
 
-                if (exists $rules_result->errors->{UnderAge}) {
-                    push @messages, 'UNDERAGE';
+                    if (exists $rules_result->errors->{UnderAge}) {
+                        push @messages, 'UNDERAGE';
 
-                    BOM::Event::Actions::Common::handle_under_age_client($client, $provider, $transformed_resp->{date_of_birth});
+                        BOM::Event::Actions::Common::handle_under_age_client($client, $provider, $transformed_resp->{date_of_birth});
+                        $client->status->clear_age_verification;
+                    }
+
+                    if (exists $rules_result->errors->{DobMismatch}) {
+                        push @messages, 'DOB_MISMATCH';
+
+                        $client->status->clear_age_verification;
+                    }
+
+                    BOM::User::IdentityVerification::reset_to_zero_left_submissions($client->binary_user_id);    # no second attempts allowed
+                } else {
+                    push @messages, 'EXPIRED';
+
                     $client->status->clear_age_verification;
                 }
-
-                if (exists $rules_result->errors->{DobMismatch}) {
-                    push @messages, 'DOB_MISMATCH';
-
-                    $client->status->clear_age_verification;
-                }
-
-                BOM::User::IdentityVerification::reset_to_zero_left_submissions($client->binary_user_id);    # no second attempts allowed
 
                 $idv_model->update_document_check({
-                    document_id   => $document->{id},
-                    status        => 'refuted',
-                    messages      => \@messages,
-                    provider      => $provider,
-                    response_body => encode_json_utf8 $response_hash
+                    document_id     => $document->{id},
+                    status          => 'refuted',
+                    expiration_date => $transformed_resp->{expiration_date},
+                    messages        => \@messages,
+                    provider        => $provider,
+                    response_body   => encode_json_utf8 $response_hash,
                 });
             }
         } else {
@@ -446,7 +455,8 @@ the results consistent for parent handler subroutine.
 sub _transform_smile_identity_response {
     my ($response) = @_;
 
-    my $expiration_date = eval { Date::Utility->new($response->{ExpirationDate}) };
+    my $expiration_date = undef;
+    $expiration_date = eval { Date::Utility->new($response->{ExpirationDate}) } if $response->{ExpirationDate};
 
     return {
         full_name       => $response->{FullName},
