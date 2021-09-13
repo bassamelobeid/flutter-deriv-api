@@ -137,7 +137,7 @@ sub process_job {
 sub run {
     my ($self, %args) = @_;
     my $redis_pricer              = BOM::Config::Redis::redis_pricer(timeout => 0);
-    my $redis_pricer_subscription = BOM::Config::Redis::redis_pricer_subscription_write(timeout => 0);
+    my $redis_pricer_subscription = BOM::Config::Redis::redis_pricer_shared(timeout => 0);
 
     my $tv_appconfig          = [0, 0];
     my $tv                    = [Time::HiRes::gettimeofday];
