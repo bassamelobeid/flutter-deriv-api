@@ -204,6 +204,7 @@ our %RejectedIdentityVerificationReasons = do {
         'UNDERAGE'      => localize("You're under legal age."),
         'NAME_MISMATCH' => localize("The name retrieved from your document doesn't match your profile."),
         'DOB_MISMATCH'  => localize("The date of birth retrieved from your document doesn't match your profile."),
+        'EXPIRED'       => localize("The document's validity has been expired."),
     );
 };
 
