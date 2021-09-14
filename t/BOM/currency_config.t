@@ -505,8 +505,12 @@ subtest 'currency config' => sub {
     is BOM::Config::CurrencyConfig::get_crypto_new_address_threshold('BTC'),    '0.003', 'get_crypto_new_address_threshold';
     is BOM::Config::CurrencyConfig::get_currency_external_sweep_address('BTC'), '1QEdWqpiEfWMCGLHmmABLFqym8SSeib8Ks',
         'correct external sweep address set for BTC';
-    is BOM::Config::CurrencyConfig::get_currency_external_sweep_address('eUSDT'), '0x067f48d1BbaAb135cFBe43535Cc34312FACc54a1',
+    is BOM::Config::CurrencyConfig::get_currency_external_sweep_address('ETH'), '0x8064bcf4a7892b99c1ce4b92d23252ab2fa129b6',
+        'correct external sweep address set for ETH';
+    is BOM::Config::CurrencyConfig::get_currency_external_sweep_address('eUSDT'), '0x8064bcf4a7892b99c1ce4b92d23252ab2fa129b6',
         'correct external sweep address set for eUSDT';
+    is BOM::Config::CurrencyConfig::get_currency_external_sweep_address('USDC'), '0x8064bcf4a7892b99c1ce4b92d23252ab2fa129b6',
+        'correct external sweep address set for USDC';
     is BOM::Config::CurrencyConfig::get_currency_external_sweep_address('USDK'), '',
         'correct empty address as no external sweep address set for USDK';
 };
