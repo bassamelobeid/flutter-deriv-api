@@ -10,6 +10,7 @@ use Format::Util::Numbers qw/ formatnumber /;
 use Locale::Country 'code2country';
 use Finance::MIFIR::CONCAT qw(mifir_concat);
 use LWP::UserAgent;
+use HTTP::Headers;
 use IO::Socket::SSL qw( SSL_VERIFY_NONE );
 use JSON::MaybeUTF8 qw(:v1);
 use Syntax::Keyword::Try;
@@ -1568,7 +1569,12 @@ sub sync_to_doughflow {
     my $url            = $doughflow_loc . '/CreateCustomer.asp';
 
     # hit DF's CreateCustomer API
-    my $ua = LWP::UserAgent->new(timeout => 60);
+    my $headers = HTTP::Headers->new();
+    $headers->header('User-Agent' => 'Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:47.0) Gecko/20100101 Firefox/47.0');
+    my $ua = LWP::UserAgent->new(
+        timeout         => 60,
+        default_headers => $headers
+    );
     $ua->ssl_opts(
         verify_hostname => 0,
         SSL_verify_mode => SSL_VERIFY_NONE
