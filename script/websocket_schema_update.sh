@@ -4,13 +4,17 @@
 # 07/2021 we are currently copying for two sites api.deriv.com and developers.binary.com.
 # developers.binary.com will soon be retired and redirect to api.deriv.com.
 
+# To test this fork binary-com/websockets and binary-com/deriv-developers-portal then supply your git username as an argument
+
+
+GITORG=${1:-binary-com}
 set -ex
 
 rm -rf /tmp/websockets
 rm -rf /tmp/deriv-websockets
 
-git clone git@github.com:binary-com/websockets /tmp/websockets
-git clone git@github.com:binary-com/deriv-developers-portal /tmp/deriv-websockets
+git clone git@github.com:${GITORG}/websockets /tmp/websockets
+git clone git@github.com:${GITORG}/deriv-developers-portal /tmp/deriv-websockets
 
 
 cd /tmp/websockets
@@ -54,6 +58,6 @@ git push origin production
 
 #Merge changes to master branch. 
 git checkout master
-git merge production
+git merge --no-edit production
 git push origin master
 
