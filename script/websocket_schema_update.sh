@@ -7,7 +7,7 @@
 # To test this fork binary-com/websockets and binary-com/deriv-developers-portal then supply your git username as an argument
 
 
-GITORG=${1:-binary-codddm}
+GITORG=${1:-binary-com}
 set -ex
 
 rm -rf /tmp/websockets
