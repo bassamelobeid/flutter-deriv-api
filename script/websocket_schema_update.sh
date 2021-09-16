@@ -28,6 +28,7 @@ rsync /home/git/regentmarkets/binary-websocket-api/config /tmp/deriv-websockets/
 /home/git/regentmarkets/binary-websocket-api/script/websocket_api_list.pl /tmp/websockets/
 
 cd /tmp/deriv-websockets
+git checkout production
 /home/git/regentmarkets/binary-websocket-api/script/websocket_api_list.pl /tmp/deriv-websockets/
 
 
@@ -50,7 +51,6 @@ git push origin HEAD
 # repeat the push for api.deriv.com 
 cd /tmp/deriv-websockets
 git diff | cat
-git checkout production
 git add -A
 X="$(git commit -m "JSON Schema Update")" ||
 tee /dev/stderr <<<"$X" | grep -q 'nothing to commit'
