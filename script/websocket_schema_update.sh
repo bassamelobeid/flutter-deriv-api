@@ -22,13 +22,13 @@ git config --local user.email "sysadmin@binary.com"
 git config --local user.name "CircleCI"
 
 rsync /home/git/regentmarkets/binary-websocket-api/config /tmp/websockets/ --delete -a
-rsync /home/git/regentmarkets/binary-websocket-api/config /tmp/deriv-websockets/ --delete -a
 
 # Generate api list yml file, and remove json files of excluded methods
 /home/git/regentmarkets/binary-websocket-api/script/websocket_api_list.pl /tmp/websockets/
 
 cd /tmp/deriv-websockets
 git checkout production
+rsync /home/git/regentmarkets/binary-websocket-api/config /tmp/deriv-websockets/ --delete -a
 /home/git/regentmarkets/binary-websocket-api/script/websocket_api_list.pl /tmp/deriv-websockets/
 
 
