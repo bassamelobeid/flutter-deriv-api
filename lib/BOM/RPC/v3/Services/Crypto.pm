@@ -80,7 +80,13 @@ sub create_url {
     my $url = URI->new($api_url . API_PATH . API_ENDPOINTS->{$api_name});
     $url->query_param_append($_, $args->{$_}) for sort keys $args->%*;
 
-    my %context_params = %{$self->{context_params}}{qw/domain language source brand/};
+    my %context_params = %{$self->{context_params}}{qw/domain l language app_id source brand/};
+
+    # In case the `app_id` and `l` (language) are missing in params, we set the
+    # same from `source` and `language` for creating the correct request context
+    $context_params{l}      //= $context_params{language};
+    $context_params{app_id} //= $context_params{source};
+
     $url->query_param_append($_, $context_params{$_}) for sort keys %context_params;
 
     return $url->as_string;

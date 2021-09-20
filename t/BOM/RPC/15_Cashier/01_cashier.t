@@ -254,6 +254,31 @@ subtest 'Crypto cashier calls' => sub {
     $mocked_call->unmock_all;
 };
 
+subtest 'Crypto URL params' => sub {
+    my $params = {
+        source   => 1234,
+        domain   => 'test-domain.com',
+        brand    => 'test_brand',
+        language => 'FR',
+        app_id   => undef,
+        l        => undef,
+    };
+    # Since some parameters are not available in RPC, we need to make sure that
+    # we pass them to the API with the value of their corresponding param as below
+    my %mapping = (
+        app_id => 'source',
+        l      => 'language',
+    );
+
+    my $crypto_service = BOM::RPC::v3::Services::Crypto->new($params);
+    my $url            = $crypto_service->create_url('DEPOSIT');
+
+    for my $key (keys $params->%*) {
+        my $value = $params->{$key} // $params->{$mapping{$key}};
+        like $url, qr/$key=$value/, "Value of '$key' is correct.";
+    }
+};
+
 subtest 'validate_amount' => sub {
     my $mocked_fun = Test::MockModule->new('Format::Util::Numbers');
     $mocked_fun->mock('get_precision_config', sub { return {amount => {'BBB' => 5}} });
