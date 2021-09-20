@@ -154,14 +154,18 @@ subtest 'Creating new buy order' => sub {
             payment_method => $ad_params{payment_method}
         },
         client_details => {
-            id      => $client->p2p_advertiser_info->{id},
-            name    => $client->p2p_advertiser_info->{name},
-            loginid => $client->loginid,
+            id         => $client->p2p_advertiser_info->{id},
+            name       => $client->p2p_advertiser_info->{name},
+            loginid    => $client->loginid,
+            first_name => $client->first_name,
+            last_name  => $client->last_name,
         },
         advertiser_details => {
-            id      => $advertiser->p2p_advertiser_info->{id},
-            name    => $advertiser->p2p_advertiser_info->{name},
-            loginid => $advertiser->loginid,
+            id         => $advertiser->p2p_advertiser_info->{id},
+            name       => $advertiser->p2p_advertiser_info->{name},
+            loginid    => $advertiser->loginid,
+            first_name => $advertiser->first_name,
+            last_name  => $advertiser->last_name,
         },
         dispute_details => {
             dispute_reason   => undef,
