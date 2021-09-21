@@ -379,13 +379,6 @@ sub actions_config {
             }
         ],
         [
-            'affiliate_account_add',
-            {
-                stash_params => [qw/ server_name client_ip user_agent /],
-                msg_group    => 'account',
-            }
-        ],
-        [
             'new_account_maltainvest',
             {
                 stash_params => [qw/ server_name client_ip user_agent /],
