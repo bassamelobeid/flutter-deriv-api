@@ -53,4 +53,75 @@ subtest 'get_today_client_payment_agent_transfer_total_amount' => sub {
     is($pa_total_amount + 0, 2000, "payment agent transfer total amount is correct");
 };
 
+subtest 'is_agent_to_client params in transfer/withdrawal' => sub {
+    is_deeply(
+        exception {
+            $pa_client->payment_account_transfer(
+                toClient     => $client,
+                currency     => 'USD',
+                amount       => 10,
+                fees         => 0,
+                gateway_code => 'payment_agent_transfer',
+            );
+        },
+        ['BI201', 'ERROR:  Invalid payment agent loginid.'],
+        'Correct error code with no value (defaults to 0)'
+    );
+
+    is_deeply(
+        exception {
+            $pa_client->payment_account_transfer(
+                toClient           => $client,
+                currency           => 'USD',
+                amount             => 10,
+                fees               => 0,
+                gateway_code       => 'payment_agent_transfer',
+                is_agent_to_client => 0
+            );
+        },
+        ['BI201', 'ERROR:  Invalid payment agent loginid.'],
+        'Correct error code when value is wrong (for payment agent to client)'
+    );
+};
+
+subtest 'PA withdrawal with long further instructions by client' => sub {
+    # for payment.payment table, remark field length is VARCHAR(800)
+    lives_ok {
+        my $remark;
+        $remark .= 'x' x 800;
+
+        # note amount must differ from 1000 here to avoid BI102
+        $client->payment_account_transfer(
+            toClient           => $pa_client,
+            currency           => 'USD',
+            amount             => 999,
+            remark             => $remark,
+            fees               => 0,
+            is_agent_to_client => 0,
+            gateway_code       => 'payment_agent_transfer'
+        );
+    }
+    "OK with remark length = 800";
+
+    select undef, undef, undef, 2.1;    # avoid BI102
+    throws_ok {
+        my $remark;
+        $remark .= 'x' x 801;
+        # expect DB call here to emit errors as warnings as well as exceptions
+        # https://github.com/regentmarkets/bom-postgres/blob/master/lib/BOM/Database/Rose/DB.pm#L68
+        warning {
+            $client->payment_account_transfer(
+                toClient           => $pa_client,
+                currency           => 'USD',
+                amount             => 999,
+                remark             => $remark,
+                fees               => 0,
+                is_agent_to_client => 0,
+                gateway_code       => 'payment_agent_transfer'
+            )
+        };
+    }
+    qr/value too long for type character varying\(800\)/, 'remark length cannot > 800';
+};
+
 done_testing();
