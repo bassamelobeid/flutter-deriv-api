@@ -996,49 +996,5 @@ sub _get_non_pep_declaration_time {
     return minstr(map { $_->date_joined } @same_lc_siblings) || time;
 }
 
-=head2 affiliate_account_add
-
-Creates a new affiliate client account.
-
-Will do:
-
-=over 4
-
-=item - The Affiliate account (new broker code)
-
-=item - Sync to MyAffiliates
-
-=back
-
-Will return the following data: 
-
-=over 4
-
-=item - C<client_id> the new client loginid
-
-=item - C<landing_company>
-
-=item - C<landing_company_shortcode> 
-
-=item - C<oauth_token>
-
-=item - C<currency>
-
-=back
-
-=cut
-
-rpc "affiliate_account_add", sub {
-    my $params = shift;
-
-    return {
-        client_id                 => 'AFF0000000001',
-        landing_company           => 'Dummy LC',
-        landing_company_shortcode => 'dummy',
-        oauth_token               => 'dummy',
-        currency                  => 'USD',
-    };
-};
-
 1;
 
