@@ -41,6 +41,7 @@ use BOM::User::Client;
 use BOM::Backoffice::Request qw(request);
 use BOM::User::Onfido;
 use BOM::User::IdentityVerification;
+use BOM::RPC::v3::Accounts;
 use 5.010;
 
 =head1 subs_backoffice_clientdetails
@@ -512,14 +513,24 @@ SQL
     $onfido_allow_resubmission_flag =~ s/\skyc_email$//;    # Match the dropdown reasons to avoid user confusion
     my $onfido_resubmission_counter = $redis->get(ONFIDO_RESUBMISSION_COUNTER_KEY_PREFIX . $client->binary_user_id);
 
-    my $idv_model    = BOM::User::IdentityVerification->new(user_id => $client->binary_user_id);
-    my $idv_document = $idv_model->get_last_updated_document();
+    my $idv_model = BOM::User::IdentityVerification->new(user_id => $client->binary_user_id);
 
-    my $idv_messages = undef;
-    $idv_messages = eval { decode_json_utf8 $idv_document->{status_messages} } if $idv_document and $idv_document->{status_messages};
+    my %rejected_reasons = %BOM::RPC::v3::Accounts::RejectedIdentityVerificationReasons;
+
+    my $idv_records = $idv_model->get_document_list;
+    my $messages;
+    if ($idv_records) {
+        for my $idv_record ($idv_records->@*) {
+            $messages                      = eval { decode_json_utf8 $idv_record->{status_messages} } if $idv_record->{status_messages};
+            $idv_record->{status_messages} = [map { $rejected_reasons{$_} ? localize($rejected_reasons{$_}) : $_ } $messages->@*];
+            $idv_record->{issuing_country} = $countries_instance->country_from_code($idv_record->{issuing_country});
+            $idv_record->{document_expiration_date} ||= "Lifetime Valid";
+            $idv_record->{document_expiration_date} = "-" if uc($idv_record->{status}) eq "FAILED";
+        }
+    }
 
     my $poa_resubmission_allowed = $client->status->reason('allow_poa_resubmission') // '';
-    $poa_resubmission_allowed =~ s/\skyc_email$//;          # Match the dropdown reasons to avoid user confusion
+    $poa_resubmission_allowed =~ s/\skyc_email$//;    # Match the dropdown reasons to avoid user confusion
 
     my $balance =
         $client->default_account
@@ -613,9 +624,8 @@ SQL
         onfido_submissions_reset           => BOM::User::Onfido::submissions_reset_at($client),
         onfido_reported_properties         => BOM::User::Onfido::reported_properties($client),
         poi_name_mismatch                  => $client->status->poi_name_mismatch,
-        idv_check_status                   => $idv_document ? $idv_document->{status} : undef,
-        idv_check_messages                 => $idv_messages,
         idv_submissions_left               => $idv_model->submissions_left(),
+        idv_records                        => $idv_records,
         expired_poi_docs                   => $client->documents->expired(1),
         login_locked_until                 => $login_locked_until ? $login_locked_until->datetime_ddmmmyy_hhmmss_TZ : undef,
         too_many_attempts                  => $too_many_attempts,
