@@ -210,7 +210,7 @@ subtest 'get_poi_status' => sub {
             $mocked_client->unmock_all;
         };
 
-        subtest 'POI status expired' => sub {
+        subtest 'POI status expired for uploaded files' => sub {
             $mocked_client->mock('fully_authenticated', sub { return 0 });
 
             $uploaded = {
@@ -221,6 +221,34 @@ subtest 'get_poi_status' => sub {
 
             is $test_client_cr->get_poi_status, 'expired', 'Client POI status is expired';
             $mocked_client->unmock_all;
+        };
+
+        subtest 'POI status expired for IDV' => sub {
+            $mocked_client->mock(
+                'latest_poi_by',
+                sub {
+                    return [['idv']];
+                });
+
+            my $doc_mock = Test::MockModule->new('BOM::User::IdentityVerification');
+            $doc_mock->mock(
+                'get_last_updated_document',
+                sub {
+                    return {
+                        document_id              => 1,
+                        issuing_country          => 'br',
+                        document_number          => 'BR-001',
+                        document_type            => 'national_identity_card',
+                        status                   => 'verified',
+                        document_expiration_date => Date::Utility->new()->_minus_years(1),
+                    };
+                });
+
+            is $test_client_cr->get_poi_status, 'expired', 'Client POI status is expired due to idv expired document';
+
+            $doc_mock->unmock_all;
+            $mocked_client->unmock_all;
+
         };
 
         subtest 'POI status pending' => sub {

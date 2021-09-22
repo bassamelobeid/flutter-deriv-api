@@ -6259,7 +6259,7 @@ sub get_poi_status {
 
     return 'pending' if $self->documents->pending;
 
-    return 'expired' if $is_poi_expired;
+    return 'expired' if $is_poi_expired or $status eq 'expired';
 
     return 'none';
 }
