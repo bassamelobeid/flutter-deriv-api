@@ -359,8 +359,27 @@ sub get_document_check_list {
     } catch ($e) {
         die sprintf("Failed while getting the document chec list for IDV process, check user_id: %s, error: %s", $self->user_id, $e);
     }
+}
 
-    return undef;
+=head2 get_document_list
+
+Gets the document list in chronological descending order for the current user.
+
+=cut
+
+sub get_document_list {
+    my $self = shift;
+
+    my $dbic = BOM::Database::UserDB::rose_db()->dbic;
+
+    try {
+        return $dbic->run(
+            fixup => sub {
+                $_->selectall_arrayref('SELECT * FROM idv.get_document_list(?::BIGINT)', {Slice => {}}, $self->user_id);
+            });
+    } catch ($e) {
+        die sprintf("Failed while getting the document list for IDV process, check user_id: %s, error: %s", $self->user_id, $e);
+    }
 }
 
 1;
