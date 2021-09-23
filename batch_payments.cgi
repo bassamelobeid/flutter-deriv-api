@@ -229,7 +229,7 @@ read_csv_row_and_callback(
 
             if ($action eq 'credit' and $payment_type =~ /^bank_money_transfer|external_cashier$/) {
                 try {
-                    $client->status->clear_pa_withdrawal_explicitly_allowed;
+                    $client->clear_status_and_sync_to_siblings('pa_withdrawal_explicitly_allowed');
                 } catch {
                     $log->warn("Not able to unset payment agent explicity allowed flag for " . $client->loginid);
                 }

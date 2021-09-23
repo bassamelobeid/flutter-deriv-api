@@ -319,7 +319,7 @@ my $today = Date::Utility->today;
 if ($ttype eq 'CREDIT' and $is_internal_payment) {
     # unset pa_withdrawal_explicitly_allowed for bank_wire and doughflow mannual deposit
     try {
-        $client->status->clear_pa_withdrawal_explicitly_allowed;
+        $client->clear_status_and_sync_to_siblings('pa_withdrawal_explicitly_allowed');
     } catch ($e) {
         $log->warn("Not able to unset payment agent explicity allowed flag for " . $client_pa_exp->loginid . ": $e");
     }
