@@ -106,3 +106,8 @@ steps:
       from_secret: ssh_key
   commands:
   - /opt/ci/run.sh bin/translation-build.sh
+  when:
+    event:
+    - cron:
+    cron:
+    - dailycronname #change this to daily once ci test completely move to drone
