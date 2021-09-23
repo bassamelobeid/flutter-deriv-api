@@ -179,4 +179,59 @@ subtest 'payment params' => sub {
     }
 };
 
+subtest 'PA withdrawal is disabled on deposit' => sub {
+    my $email = 'paymenti-api-test1@deriv.com';
+    my $user  = BOM::User->create(
+        email    => $email,
+        password => 'asdaiasda'
+    );
+    my $cli = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        binary_user_id => $user->id,
+        broker_code    => 'CR',
+        email          => $email,
+        residence      => 'id',
+    });
+    my $cli_sib = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        binary_user_id => $user->id,
+        broker_code    => 'CR',
+        email          => $email,
+        residence      => 'id',
+    });
+
+    $user->add_loginid($cli->loginid);
+    $user->add_loginid($cli_sib->loginid);
+
+    $cli->status->set('pa_withdrawal_explicitly_allowed', 'system', 'enable withdrawal through payment agent');
+    $cli_sib->status->set('pa_withdrawal_explicitly_allowed', 'system', 'enable withdrawal through payment agent');
+
+    my $start_balance = balance $cli->loginid;
+    my $req           = deposit(
+        loginid        => $cli->loginid,
+        trace_id       => 1237,
+        transaction_id => 94575935,
+    );
+
+    is $req->code,      201,                                  'Correct created status code';
+    like $req->content, qr/<opt>\s*<data><\/data>\s*<\/opt>/, 'Correct content';
+
+    my $current_balance = balance $cli->loginid;
+    is 0 + $current_balance, $start_balance + 1, 'Correct final balance';
+
+    # Record transaction
+    my $location = $req->header('location');
+    ok $location, 'Request header location is present';
+
+    $location =~ s/^(.*?)\/transaction/\/transaction/;
+    $req = request 'GET', $location;
+
+    my $body = decode_json $req->content;
+    is $body->{client_loginid}, $cli->loginid, "{client_loginid} is present and correct in response body";
+    is $body->{type}, 'deposit', '{type} is present and correct in response body';
+
+    ok !BOM::User::Client->new({loginid => $cli->loginid})->status->pa_withdrawal_explicitly_allowed,
+        'PA witdrawal status was removed from client account';
+    ok !BOM::User::Client->new({loginid => $cli_sib->loginid})->status->pa_withdrawal_explicitly_allowed,
+        'PA witdrawal status was removed from siblings accounts';
+};
+
 done_testing();

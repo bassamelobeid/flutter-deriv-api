@@ -62,7 +62,7 @@ sub execute {
 
     if ($c->type eq 'deposit') {
         # if the client uses DF to deposit, unset flag to dont allow them withdrawal through PA
-        $client->status->clear_pa_withdrawal_explicitly_allowed;
+        $client->clear_status_and_sync_to_siblings('pa_withdrawal_explicitly_allowed');
     }
 
     if ($c->type eq 'payout_rejected') {
