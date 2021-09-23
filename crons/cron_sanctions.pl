@@ -12,9 +12,12 @@ use Text::CSV;
 
 use BOM::Database::ClientDB;
 use BOM::Config;
+use BOM::Config::Redis;
 use BOM::Platform::Email qw(send_email);
 use Log::Any qw($log);
 use Log::Any::Adapter qw(DERIV);
+
+use constant LAST_CRON_SANCTIONS_CHECK_RUN_KEY => 'LAST_CRON_SANCTIONS_CHECK_RUN';
 
 =head2
 
@@ -25,9 +28,10 @@ use Log::Any::Adapter qw(DERIV);
 =cut
 
 GetOptions(
-    'v|verbose' => \(my $verbose = 0),
-    'f|force'   => \(my $force   = 0),
-    'u|update'  => \(my $update  = 0),
+    'v|verbose' => \(my $verbose        = 0),
+    'f|force'   => \(my $force          = 0),
+    'u|update'  => \(my $update         = 0),
+    'c|clear'   => \(my $clear_last_run = 0),
 ) or die "Invalid argument\n";
 
 Log::Any::Adapter->import(qw(Stdout), log_level => $verbose ? 'info' : 'warning');
@@ -50,8 +54,14 @@ my $reports_path = shift or die "Provide path for storing files as an argument";
 # Thus, it would be better to send the emails one at a time, with regulated ones first
 my @brokers = qw(MF MX MLT CR);
 
-my $file_flag = path('/tmp/last_cron_sanctions_check_run');
-my $last_run  = $file_flag->exists ? $file_flag->stat->mtime : 0;
+my $redis = BOM::Config::Redis::redis_replicated_write();
+
+if ($clear_last_run) {
+    $redis->del(LAST_CRON_SANCTIONS_CHECK_RUN_KEY);
+    $log->infof('Previous last cron check run is cleared.');
+}
+
+my $last_run = $redis->hget(LAST_CRON_SANCTIONS_CHECK_RUN_KEY, 'last_run_at') || 0;
 
 my %listdate;
 
@@ -127,9 +137,12 @@ sub do_report {
             subject    => 'Sanction list for ' . $broker . ' at ' . $today_date,
             attachment => $filename->canonpath,
         });
+
     }
 
-    $file_flag->spew_utf8("Created by $0 PID $$");
+    $redis->hset(LAST_CRON_SANCTIONS_CHECK_RUN_KEY, 'last_run_at', time);
+    my $last_run_at = $redis->hget(LAST_CRON_SANCTIONS_CHECK_RUN_KEY, 'last_run_at');
+    $log->infof('Last cron check run is at %s.', Date::Utility->new($last_run_at)->datetime_ddmmmyy_hhmmss_TZ);
 
     return undef;
 }
