@@ -3997,8 +3997,6 @@ sub _order_details {
     my (@results, $payment_method_defs);
 
     for my $order (@$list) {
-        my $final_status = $self->_is_order_status_final($order->{status});
-
         my $result = +{
             account_currency   => $order->{account_currency},
             created_time       => Date::Utility->new($order->{created_time})->epoch,
@@ -4018,32 +4016,18 @@ sub _order_details {
             type               => $order->{type},
             chat_channel_url   => $order->{chat_channel_url} // '',
             advertiser_details => {
-                id      => $order->{advertiser_id},
-                name    => $order->{advertiser_name},
-                loginid => $order->{advertiser_loginid},
-                (
-                    $order->{advertiser_show_name}
-                        or not $final_status
-                    )
-                ? (
-                    first_name => $order->{advertiser_first_name},
-                    last_name  => $order->{advertiser_last_name},
-                    )
-                : (),
+                id         => $order->{advertiser_id},
+                name       => $order->{advertiser_name},
+                loginid    => $order->{advertiser_loginid},
+                first_name => $order->{advertiser_first_name},
+                last_name  => $order->{advertiser_last_name},
             },
             client_details => {
-                id      => $order->{client_id}   // '',
-                name    => $order->{client_name} // '',
-                loginid => $order->{client_loginid},
-                (
-                    $order->{client_show_name}
-                        or not $final_status
-                    )
-                ? (
-                    first_name => $order->{client_first_name},
-                    last_name  => $order->{client_last_name},
-                    )
-                : (),
+                id         => $order->{client_id}   // '',
+                name       => $order->{client_name} // '',
+                loginid    => $order->{client_loginid},
+                first_name => $order->{client_first_name},
+                last_name  => $order->{client_last_name},
             },
             advert_details => {
                 id             => $order->{advert_id},
@@ -4055,8 +4039,9 @@ sub _order_details {
                 dispute_reason   => $order->{dispute_reason},
                 disputer_loginid => $order->{disputer_loginid},
             },
-            ($order->{payment_method})                                                  ? (payment_method         => $order->{payment_method}) : (),
-            ($order->{payment_method_details} and $order->{payment_method_details}->%*) ? (payment_method_details => $order->{payment_method_details})
+            ($order->{payment_method}) ? (payment_method => $order->{payment_method}) : (),
+            ($order->{payment_method_details} and $order->{payment_method_details}->%*)
+            ? (payment_method_details => $order->{payment_method_details})
             : (),
         };
 

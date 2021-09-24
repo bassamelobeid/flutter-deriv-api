@@ -26,14 +26,6 @@ my $order = $client->p2p_order_create(
     amount    => 10
 );
 
-my $names_hidden = sub {
-    my ($order, $desc) = @_;
-    is $order->{client_details}{first_name},     undef, "$desc client first_name is undef";
-    is $order->{client_details}{last_name},      undef, "$desc client last_name is undef";
-    is $order->{advertiser_details}{first_name}, undef, "$desc advertiser first_name is undef";
-    is $order->{advertiser_details}{last_name},  undef, "$desc advertiser last_name is undef";
-};
-
 my $names_shown = sub {
     my ($order, $desc) = @_;
     is $order->{client_details}{first_name},     $client_names->{first_name},     "$desc client first_name returned";
@@ -48,37 +40,14 @@ $names_shown->($advertiser->p2p_order_info(id => $order->{id}),      'p2p_order_
 $names_shown->($client->p2p_order_list(id => $order->{id})->[0],     'p2p_order_list for client, status: pending');
 $names_shown->($advertiser->p2p_order_list(id => $order->{id})->[0], 'p2p_order_list for advertiser, status: pending');
 
-subtest 'active orders' => sub {
-    for my $active_status (qw/buyer-confirmed timed-out disputed/) {
-        BOM::Test::Helper::P2P::set_order_status($client, $order->{id}, $active_status);
+for my $active_status (qw/buyer-confirmed timed-out disputed completed cancelled refunded dispute-refunded dispute-completed/) {
+    BOM::Test::Helper::P2P::set_order_status($client, $order->{id}, $active_status);
 
-        $names_shown->($client->p2p_order_info(id => $order->{id}),          'p2p_order_info for client, status: ' . $active_status);
-        $names_shown->($advertiser->p2p_order_info(id => $order->{id}),      'p2p_order_info for advertiser, status: ' . $active_status);
-        $names_shown->($client->p2p_order_list(id => $order->{id})->[0],     'p2p_order_list for client, status: ' . $active_status);
-        $names_shown->($advertiser->p2p_order_list(id => $order->{id})->[0], 'p2p_order_list for advertiser, status: ' . $active_status);
-    }
-};
-
-subtest 'completed orders' => sub {
-    for my $final_status (qw/completed cancelled refunded dispute-refunded dispute-completed/) {
-        BOM::Test::Helper::P2P::set_order_status($client, $order->{id}, $final_status);
-
-        $client->p2p_advertiser_update(show_name => 0);
-        $advertiser->p2p_advertiser_update(show_name => 0);
-        $names_hidden->($client->p2p_order_info(id => $order->{id}),      'p2p_order_info for client, show_name: 0, status: ' . $final_status);
-        $names_hidden->($advertiser->p2p_order_info(id => $order->{id}),  'p2p_order_info for advertiser, show_name: 0, status: ' . $final_status);
-        $names_hidden->($client->p2p_order_list(id => $order->{id})->[0], 'p2p_order_list for client, show_name: 0, status: ' . $final_status);
-        $names_hidden->($advertiser->p2p_order_list(id => $order->{id})->[0],
-            'p2p_order_list for advertiser, show_name: 0, status: ' . $final_status);
-
-        $client->p2p_advertiser_update(show_name => 1);
-        $advertiser->p2p_advertiser_update(show_name => 1);
-        $names_shown->($client->p2p_order_info(id => $order->{id}),          'p2p_order_info for client, show_name: 1, status: ' . $final_status);
-        $names_shown->($advertiser->p2p_order_info(id => $order->{id}),      'p2p_order_info for advertiser, show_name: 1, status: ' . $final_status);
-        $names_shown->($client->p2p_order_list(id => $order->{id})->[0],     'p2p_order_list for client, show_name: 1, status: ' . $final_status);
-        $names_shown->($advertiser->p2p_order_list(id => $order->{id})->[0], 'p2p_order_list for advertiser, show_name: 1, status: ' . $final_status);
-    }
-};
+    $names_shown->($client->p2p_order_info(id => $order->{id}),          'p2p_order_info for client, status: ' . $active_status);
+    $names_shown->($advertiser->p2p_order_info(id => $order->{id}),      'p2p_order_info for advertiser, status: ' . $active_status);
+    $names_shown->($client->p2p_order_list(id => $order->{id})->[0],     'p2p_order_list for client, status: ' . $active_status);
+    $names_shown->($advertiser->p2p_order_list(id => $order->{id})->[0], 'p2p_order_list for advertiser, status: ' . $active_status);
+}
 
 BOM::Test::Helper::P2P::reset_escrow();
 
