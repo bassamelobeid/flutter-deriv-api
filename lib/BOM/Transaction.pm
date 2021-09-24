@@ -1203,7 +1203,6 @@ sub prepare_sell {
 
 sub sell {
     my ($self, %options) = @_;
-
     $self->action_type('sell');
     my $stats_data = $self->stats_start('sell');
 
@@ -1260,6 +1259,12 @@ sub sell {
             if ($self->contract->can('available_orders')) {
                 $poc_parameters->{limit_order} = $self->contract->available_orders;
             }
+
+            # immediately after sell poc language
+            if ($self->contract_parameters && $self->contract_parameters->{language}) {
+                $poc_parameters->{language} = $self->contract_parameters->{language};
+            }
+
             BOM::Transaction::Utility::set_poc_parameters($poc_parameters, time);
         }
         $error = 0;
@@ -2149,6 +2154,9 @@ sub sell_expired_contracts {
                 $poc_parameters->{limit_order} = BOM::Transaction::Utility::extract_limit_orders($bet);
             }
 
+            if ($args->{language}) {
+                $poc_parameters->{language} = $args->{language};
+            }
             BOM::Transaction::Utility::set_poc_parameters($poc_parameters, time);
 
             if ($bet->{bet_class} eq 'multiplier') {
@@ -2313,6 +2321,10 @@ sub _get_params_for_expiryqueue {
     }
 
     $hash->{tick_count} = $contract->tick_count if $contract->tick_expiry;
+
+    if ($self->contract_parameters && $self->contract_parameters->{language}) {
+        $hash->{language} = $self->contract_parameters->{language};
+    }
 
     return $hash;
 }

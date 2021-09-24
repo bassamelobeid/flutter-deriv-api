@@ -75,9 +75,10 @@ sub _daemon_run {
                 # but for now we will ignore it.
                 my $is_sold = BOM::Transaction::sell_expired_contracts({
                     client        => $client,
-                    source        => 2,                # app id for `Binary.com expiryd.pl` in auth db => oauth.apps table
+                    source        => 2,                          # app id for `Binary.com expiryd.pl` in auth db => oauth.apps table
                     contract_ids  => [$contract_id],
-                    collect_stats => 1
+                    collect_stats => 1,
+                    language      => $info->{language} // 'EN'
                 });
 
                 my @processing_done = Time::HiRes::time;
