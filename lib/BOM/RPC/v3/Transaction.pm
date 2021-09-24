@@ -145,6 +145,10 @@ rpc "buy",
     $contract_parameters = BOM::Pricing::v3::Contract::prepare_ask($contract_parameters);
     $contract_parameters->{landing_company} = $landing_company;
 
+    if ($params->{language}) {
+        $contract_parameters->{language} = $params->{language};
+    }
+
     my $error = BOM::RPC::v3::Contract::validate_barrier($contract_parameters);
     return $error if $error->{error};
 
@@ -528,6 +532,10 @@ rpc "sell",
         currency        => $client->currency,
         landing_company => $client->landing_company->short,
     };
+
+    if ($params->{language}) {
+        $contract_parameters->{language} = $params->{language};
+    }
 
     $contract_parameters->{limit_order} = BOM::Transaction::Utility::extract_limit_orders($fmb) if $fmb->{bet_class} eq 'multiplier';
 

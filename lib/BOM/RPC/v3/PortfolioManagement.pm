@@ -175,6 +175,8 @@ rpc proposal_open_contract => sub {
         }
 
         if (not $res->{error} and $response->{channel} and not $res->{is_sold}) {
+            # set the language requested so the subscription response get translated
+            $poc_parameters->{language} = $params->{language};
             BOM::Transaction::Utility::set_poc_parameters($poc_parameters);
             my $pricer_args = BOM::Transaction::Utility::build_poc_pricer_args($poc_parameters);
 

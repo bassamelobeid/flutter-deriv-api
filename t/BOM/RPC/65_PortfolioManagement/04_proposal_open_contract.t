@@ -20,6 +20,7 @@ use BOM::MarketData qw(create_underlying_db);
 use BOM::MarketData qw(create_underlying);
 use BOM::MarketData::Types;
 use Email::Stuffer::TestLinks;
+use JSON::MaybeUTF8 qw(:v1);
 
 use utf8;
 
@@ -116,4 +117,42 @@ subtest 'Auth client' => sub {
     $rpc_ct->call_ok(@params)->has_no_system_error->has_no_error('It should be success using oauth token');
 };
 
+subtest 'poc language setting' => sub {
+    my @params1 = (
+        $method,
+        {
+            language => 'ES',
+            country  => 'ru',
+            args     => {subscribe => 1},
+        });
+
+    lives_ok {
+        create_fmb($client, buy_bet => 1);
+    }
+    'Create contract';
+    $params1[1]->{token} = $oauth_token;
+    my $result = $rpc_ct->call_ok(@params1)->has_no_system_error->has_no_error->result;
+
+    my $pricer_keys = $result->{pricer_args_keys}->[0];
+    $pricer_keys =~ s/^PRICER_ARGS:://;
+    my $payload                     = decode_json_utf8($pricer_keys);
+    my $params                      = {@{$payload}};
+    my $poc_parameters_redis_pricer = BOM::Pricing::v3::Utility::get_poc_parameters($params->{contract_id}, $params->{landing_company});
+    is $poc_parameters_redis_pricer->{language}, 'ES', 'Langage set correctly for poc subscription parameter';
+};
+
 done_testing();
+
+sub create_fmb {
+    my ($client, %params) = @_;
+
+    my $account = $client->set_default_account('USD');
+    return BOM::Test::Data::Utility::UnitTestDatabase::create_fmb_with_ticks({
+        type               => 'fmb_higher_lower_call_buy',
+        short_code_prefix  => 'CALL_R_100_26.49',
+        short_code_postfix => 'S0P_0',
+        account_id         => $account->id,
+        buy_bet            => 0,
+        %params,
+    });
+}
