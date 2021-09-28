@@ -93,6 +93,7 @@ subtest 'validate client error message' => sub {
         currency      => $currency,
         payout        => 1000,
         date_start    => $now,
+        date_pricing  => $now,
         duration      => '5t',
         selected_tick => 3,
     });
@@ -109,7 +110,7 @@ subtest 'validate client error message' => sub {
             transaction => $transaction
         })->_is_valid_to_buy($mf);
 
-    unlike($error->{-message_to_client}, qr/Try out the Synthetic Indices/, 'MF client didnt got message about Synthetic Indices');
+    like($error->{-message_to_client}, qr/Try out the Synthetic Indices/, 'MF client got message about Synthetic Indices');
 
 };
 

@@ -970,7 +970,9 @@ subtest 'buy multiplier with MX' => sub {
     });
 
     my $error = $txn->buy;
-    ok !$error, 'synthetic buy successful';
+    is $error->{'-type'}, 'NotLegalContractCategory', 'type - NotLegalContractCategory';
+    is $error->{'-message_to_client'}, 'Please switch accounts to trade this contract.',
+        'message to_client - Please switch accounts to trade this contract.';
 
     $contract = produce_contract({
         underlying      => 'frxUSDJPY',
@@ -995,7 +997,9 @@ subtest 'buy multiplier with MX' => sub {
     });
 
     $error = $txn->buy;
-    ok !$error, 'major pair buy successful with no multiplier range restriction';
+    is $error->{'-type'}, 'NotLegalContractCategory', 'type - NotLegalContractCategory';
+    is $error->{'-message_to_client'}, 'Please switch accounts to trade this contract.',
+        'message to_client - Please switch accounts to trade this contract.';
 
     my $uk_cl = create_client('MX', undef, {residence => 'gb'});
     top_up $uk_cl, 'USD', 5000;
@@ -1023,7 +1027,9 @@ subtest 'buy multiplier with MX' => sub {
     });
 
     $error = $txn->buy;
-    ok !$error, 'synthetic buy successful';
+    is $error->{'-type'}, 'NotLegalContractCategory', 'type - NotLegalContractCategory';
+    is $error->{'-message_to_client'}, 'Please switch accounts to trade this contract.',
+        'message to_client - Please switch accounts to trade this contract.';
 
     $contract = produce_contract({
         underlying      => 'frxUSDJPY',
@@ -1048,10 +1054,9 @@ subtest 'buy multiplier with MX' => sub {
     });
 
     $error = $txn->buy;
-    ok $error, 'invalid to buy forex multiplier options for UK clients';
-    is $error->{'-type'},              'InvalidOfferings',                       'InvalidOfferings';
-    is $error->{'-mesg'},              'Invalid underlying symbol',              'symbol is invalid';
-    is $error->{'-message_to_client'}, 'Trading is not offered for this asset.', 'symbol is invalid';
+    is $error->{'-type'}, 'NotLegalContractCategory', 'type - NotLegalContractCategory';
+    is $error->{'-message_to_client'}, 'Please switch accounts to trade this contract.',
+        'message to_client - Please switch accounts to trade this contract.';
 };
 
 subtest 'buy multiplier with MLT' => sub {
@@ -1081,7 +1086,9 @@ subtest 'buy multiplier with MLT' => sub {
     });
 
     my $error = $txn->buy;
-    ok !$error, 'synthetic buy successful';
+    is $error->{'-type'}, 'NotLegalContractCategory', 'type - NotLegalContractCategory';
+    is $error->{'-message_to_client'}, 'Please switch accounts to trade this contract.',
+        'message to_client - Please switch accounts to trade this contract.';
 
     $contract = produce_contract({
         underlying      => 'frxUSDJPY',
@@ -1106,11 +1113,9 @@ subtest 'buy multiplier with MLT' => sub {
     });
 
     $error = $txn->buy;
-    ok $error, 'invalid to buy forex multiplier options for MLT clients';
-    is $error->{'-type'}, 'NotLegalMarket', 'NotLegalMarket';
-    is $error->{'-mesg'}, 'Clients are not allowed to trade on this markets as its restricted for this landing company',
-        'symbol is not allowed for client';
-    is $error->{'-message_to_client'}, 'Please switch accounts to trade this market.', 'switch account to trade financial production';
+    is $error->{'-type'}, 'NotLegalContractCategory', 'type - NotLegalContractCategory';
+    is $error->{'-message_to_client'}, 'Please switch accounts to trade this contract.',
+        'message to_client - Please switch accounts to trade this contract.';
 };
 
 subtest 'buy multiplier with MF' => sub {
@@ -1171,6 +1176,55 @@ subtest 'buy multiplier with MF' => sub {
     });
 
     ok !$txn->buy, 'buy successful';
+
+    $contract = produce_contract({
+        underlying      => '1HZ200V',
+        bet_type        => 'MULTUP',
+        currency        => 'USD',
+        multiplier      => 30,
+        amount          => 100,
+        amount_type     => 'stake',
+        current_tick    => $current_tick,
+        landing_company => $mf->landing_company->short,
+    });
+
+    $txn = BOM::Transaction->new({
+        client        => $mf,
+        contract      => $contract,
+        price         => 100,
+        amount        => 100,
+        amount_type   => 'stake',
+        source        => 19,
+        purchase_date => $contract->date_start,
+    });
+
+    $error = $txn->buy;
+    is $error->{'-type'}, 'InvalidtoBuy', '-type is InvalidtoBuy';
+    is $error->{'-message_to_client'}, 'Multiplier is not in acceptable range. Accepts 1,2,3,4,5.',
+        '-message_to_client is Multiplier is not in acceptable range. Accepts 1,2,3,4,5.';
+
+    $contract = produce_contract({
+        underlying      => '1HZ200V',
+        bet_type        => 'MULTUP',
+        currency        => 'USD',
+        multiplier      => 5,
+        amount          => 100,
+        amount_type     => 'stake',
+        current_tick    => $current_tick,
+        landing_company => $mf->landing_company->short,
+    });
+
+    $txn = BOM::Transaction->new({
+        client        => $mf,
+        contract      => $contract,
+        price         => 100,
+        amount        => 100,
+        amount_type   => 'stake',
+        source        => 19,
+        purchase_date => $contract->date_start,
+    });
+
+    ok !$txn->buy, 'buy without error';
 
     Test::Warnings::allow_warnings(1);
     $contract = produce_contract({
