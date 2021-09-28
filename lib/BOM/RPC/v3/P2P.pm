@@ -118,7 +118,7 @@ our %ERROR_MAP = do {
             localize("Advertising for this currency is currently unavailable. Please contact our Customer Support team or try again later."),
         InvalidAdvertOwn              => localize("You cannot place an order for your own ad."),
         InvalidOrderCurrency          => localize("Please select an ad that matches your currency."),
-        OpenOrdersDeleteAdvert        => localize("You have open orders for this ad. Please wait until all orders are closed."),
+        OpenOrdersDeleteAdvert        => localize("You have open orders for this ad. Complete all open orders before deleting this ad."),
         OrderAlreadyCancelled         => localize("You've already cancelled this order."),
         OrderNotConfirmedPending      => localize("Please wait for the buyer to confirm the order."),
         OrderAlreadyConfirmedBuyer    => localize("You've already confirmed this order. Please wait for the seller to confirm."),
