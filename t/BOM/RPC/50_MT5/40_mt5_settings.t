@@ -23,10 +23,9 @@ my $c = BOM::Test::RPC::QueueClient->new();
 
 @BOM::MT5::User::Async::MT5_WRAPPER_COMMAND = ($^X, 't/lib/mock_binary_mt5.pl');
 
-my %ACCOUNTS                    = %Test::BOM::RPC::Accounts::MT5_ACCOUNTS;
-my %DETAILS                     = %Test::BOM::RPC::Accounts::ACCOUNT_DETAILS;
-my %GROUP_MAPPINGS              = %Test::BOM::RPC::Accounts::MT5_GROUP_MAPPING;
-my %EXPECTED_MT5_GROUP_MAPPINGS = %Test::BOM::RPC::Accounts::EXPECTED_MT5_GROUP_MAPPINGS;
+my %ACCOUNTS       = %Test::BOM::RPC::Accounts::MT5_ACCOUNTS;
+my %DETAILS        = %Test::BOM::RPC::Accounts::ACCOUNT_DETAILS;
+my %GROUP_MAPPINGS = %Test::BOM::RPC::Accounts::MT5_GROUP_MAPPING;
 
 my %emitted;
 my $mock_events = Test::MockModule->new('BOM::Platform::Event::Emitter');
@@ -282,23 +281,6 @@ subtest 'password check' => sub {
     $params->{args}{login} = "MTwrong";
     $c->call_ok($method, $params)->has_error('error for mt5_password_check wrong login')
         ->error_code_is('PermissionDenied', 'error code for mt5_password_check wrong login');
-};
-
-subtest 'MT5 old and new group names mapping' => sub {
-
-    my @groups = keys %EXPECTED_MT5_GROUP_MAPPINGS;
-
-    foreach (@groups) {
-        my $landing_company_short = $EXPECTED_MT5_GROUP_MAPPINGS{$_}{landing_company_short};
-        my $market_type           = $EXPECTED_MT5_GROUP_MAPPINGS{$_}{market_type};
-        my $sub_account_type      = $EXPECTED_MT5_GROUP_MAPPINGS{$_}{sub_account_type};
-        my $account_type          = $EXPECTED_MT5_GROUP_MAPPINGS{$_}{account_type};
-        my $config                = BOM::RPC::v3::MT5::Account::get_mt5_account_type_config($_);
-        is($landing_company_short, $config->{landing_company_short}, "Comparing landing_company_short for $_");
-        is($market_type,           $config->{market_type},           "Comparing market_type for $_");
-        is($sub_account_type,      $config->{sub_account_type},      "Comparing sub_account_type for $_");
-        is($account_type,          $config->{account_type},          "Comparing account_type for $_");
-    }
 };
 
 subtest 'mt5 settings with correct account type' => sub {

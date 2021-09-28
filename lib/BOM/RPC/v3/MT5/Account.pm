@@ -183,15 +183,8 @@ sub get_mt5_server_list {
                             $server->{message_to_client} = localize('Temporarily unavailable');
                         }
 
-                        my ($trade_server_id) = $server->{id} =~ /^p\d+_ts(\d+)$/;
-                        # TODO (JB): clean up once old mt5 group is removed
-                        my $created_mt5_accounts = scalar(
-                            grep {
-                                defined $_->{group}
-                                    and ($_->{group} =~ /^$group_type\\$server->{id}\\$market_type\\/
-                                    or $_->{group} =~ /^${group_type}${trade_server_id}\\$market_type\\/)
-                            } @mt5_logins
-                        );
+                        my $created_mt5_accounts =
+                            scalar(grep { defined $_->{group} and $_->{group} =~ /^$group_type\\$server->{id}\\$market_type\\/ } @mt5_logins);
 
                         if ($created_mt5_accounts >= $mt5_account_count->{$market_type}) {
                             $server->{disabled}          = 1;
@@ -784,15 +777,9 @@ async_rpc "mt5_new_account",
         }
     }
 
-    #TODO (JB): clean up old group name after we have migrated all accounts to new group
-    # - real\labuan_financial_stp
-    if (
-            $client->tax_residence
+    if (    $client->tax_residence
         and $account_type ne 'demo'
-        and (  $group eq 'real\labuan_financial_stp'
-            or $group =~ /real(?:\\p\d{2}_ts)?\d{2}\\financial\\labuan_stp_usd/
-            or $group eq 'real\bvi_financial_stp'
-            or $group =~ /real(?:\\p\d{2}_ts)?\d{2}\\financial\\bvi_stp_usd/))
+        and $group =~ /real(?:\\p\d{2}_ts)?\d{2}\\financial\\(?:labuan|bvi)_stp_usd/)
     {
         # In case of having more than a tax residence, client residence will be replaced.
         my $selected_tax_residence = $client->tax_residence =~ /\,/g ? $client->residence : $client->tax_residence;
@@ -873,9 +860,9 @@ async_rpc "mt5_new_account",
                 }
             }
 
-            # can't create account on the same group
-            # TODO (JB): We can remove this after we've moved all the accounts to the new group name.
-            # Basically, for now real\svg is identical to real01\synthetic\svg_std_usd or real02\synthetic\svg_std_usd
+            # Can't create account on the same group. We have subgroups which are identical
+            # - real\p01_ts01\synthetic\svg_std_usd\01
+            # - real\p01_ts01\synthetic\svg_std_usd\02
             if (my $identical = _is_identical_group($group, \%existing_groups)) {
                 return create_error_future(
                     'MT5Duplicate',
@@ -1697,16 +1684,12 @@ async_rpc "mt5_deposit",
                 return create_error_future($error_code, {message => $error->{-message_to_client}});
             }
 
-            # TODO (JB): clean up old group name after we have migrated all accounts to new group
-            # - real\vanuatu_financial
             _store_transaction_redis({
                     loginid       => $fm_loginid,
                     mt5_id        => $to_mt5,
                     action        => 'deposit',
                     amount_in_USD => convert_currency($amount, $fm_client->currency, 'USD'),
-                })
-                if ($response->{mt5_data}->{group} eq 'real\vanuatu_financial'
-                or $response->{mt5_data}->{group} =~ /real(?:\\p\d{2}_ts)?\d{2}\\financial\\vanuatu_std-hr_usd/);
+                }) if ($response->{mt5_data}->{group} =~ /real(?:\\p\d{2}_ts)?\d{2}\\financial\\vanuatu_std-hr_usd/);
 
             my $txn_id = $txn->transaction_id;
             # 31 character limit for MT5 comments
@@ -1834,16 +1817,12 @@ async_rpc "mt5_withdrawal",
                                     id                 => $txn->{id},
                                     time               => $txn->{transaction_time}}});
 
-                        # TODO (JB): clean up old group name after we have migrated all accounts to new group
-                        # - real\vanuatu_financial
                         _store_transaction_redis({
                                 loginid       => $to_loginid,
                                 mt5_id        => $fm_mt5,
                                 action        => 'withdraw',
                                 amount_in_USD => $amount,
-                            })
-                            if ($mt5_group eq 'real\vanuatu_financial'
-                            or $mt5_group =~ /real(?:\\p\d{2}_ts)?\d{2}\\financial\\vanuatu_std-hr_usd/);
+                            }) if ($mt5_group =~ /real(?:\\p\d{2}_ts)?\d{2}\\financial\\vanuatu_std-hr_usd/);
 
                         return Future->done({
                             status                => 1,

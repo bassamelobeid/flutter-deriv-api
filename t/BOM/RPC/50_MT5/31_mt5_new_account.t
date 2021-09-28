@@ -134,7 +134,7 @@ subtest 'create mt5 client with different currency' => sub {
 
         $result = $c->call_ok($method, $params)->has_no_error('financial account successfully created')->result;
         is $result->{account_type}, 'financial';
-        is $result->{login},        'MTR' . $ACCOUNTS{'real\p01_ts01\financial\maltainvest_std-hr_gbp'};
+        is $result->{login},        'MTR' . $ACCOUNTS{'real\p01_ts01\financial\maltainvest_std-hr_usd'};
 
         $client    = create_client('MF', undef, {residence => 'gb'});
         $new_email = 'mf+gbp@binary.com';
@@ -236,7 +236,7 @@ subtest 'create mt5 client with different currency' => sub {
         BOM::RPC::v3::MT5::Account::reset_throttler($client->loginid);
         $result = $c->call_ok($method, $params)->has_no_error('financial account successfully created')->result;
         is $result->{account_type}, 'financial';
-        is $result->{login},        'MTR' . $ACCOUNTS{'real\p01_ts01\financial\maltainvest_std-hr_eur'};
+        is $result->{login},        'MTR' . $ACCOUNTS{'real\p01_ts01\financial\maltainvest_std-hr_usd'};
 
         $client    = create_client('MF', undef, {residence => 'de'});
         $new_email = 'mfde+eur@binary.com';
