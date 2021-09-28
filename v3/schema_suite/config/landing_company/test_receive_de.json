@@ -16,7 +16,7 @@
                "properties" : {
                   "legal_allowed_markets" : {
                      "items" : {
-                        "pattern" : "^(forex|cryptocurrency)$",
+                        "pattern" : "^(forex|synthetic_index|cryptocurrency)$",
                         "type" : "string"
                      },
                      "minItems" : 1,
