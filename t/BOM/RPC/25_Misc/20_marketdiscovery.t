@@ -116,7 +116,7 @@ subtest 'active_symbols for whitelisted apps' => sub {
             19111 => 80,
             19112 => 80,
             22168 => 69,
-            23789 => 55,
+            23789 => 49,
         );
         my $app = $deriv->whitelist_apps;
         foreach my $app_id (keys %$app) {
