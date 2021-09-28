@@ -45,7 +45,8 @@ sub _collect_vol_ages {
     my %skip_list =
         map { $_ => 1 } (
         @{BOM::Config::Runtime->instance->app_config->quants->underlyings->disable_autoupdate_vol},
-        qw(OMXS30 IBOV KOSPI2 SPTSX60 USAAPL USGOOG USMSFT USORCL USQCOM USQQQQ frxBROUSD frxBROAUD frxBROEUR frxBROGBP frxXPTAUD frxXPDAUD frxAUDSAR)
+        qw/OMXS30 IBOV KOSPI2 SPTSX60 USAAPL USGOOG USMSFT USORCL USQCOM USQQQQ frxBROUSD frxBROAUD frxBROEUR frxBROGBP frxXPTAUD frxXPDAUD frxAUDSAR frxXALUSD frxXNIUSD frxXCUUSD frxXZNUSD frxXPBUSD
+            /
         );
     my @offered_forex = grep { not $skip_list{$_} } create_underlying_db->get_symbols_for(
         market            => 'forex',
