@@ -476,13 +476,12 @@ subtest 'get and set self_exclusion' => sub {
 
     ## Verify an email was sent after opening an MT5 account, since user has
     ##  limits currently in place.
+    mailbox_clear();
     $msg = mailbox_search(
         email   => 'compliance@deriv.com',
         subject => qr/Client $test_client_mlt_loginid set self-exclusion limits/
     );
-    ok($msg, 'Email for MLT client limits with MT5 accounts');
-    is_deeply($msg->{to}, ['compliance@deriv.com'], 'email to address ok');
-    like($msg->{body}, qr/$mt5_loginid/, 'email content is ok');
+    is $msg, undef, 'Email for MLT client limits with MT5 accounts is not sent';
 
     ## Set some limits again, and another email should be sent to compliance listing
     ##  the new limitations since an MT5 account is open.
@@ -492,9 +491,7 @@ subtest 'get and set self_exclusion' => sub {
         email   => 'compliance@deriv.com',
         subject => qr/Client $test_client_mlt_loginid set self-exclusion limits/
     );
-    ok($msg, 'Email for MLT client limits with MT5 accounts');
-    is_deeply($msg->{to}, ['compliance@deriv.com'], 'email to address ok');
-    like($msg->{body}, qr/$mt5_loginid/, 'email content is ok');
+    is $msg, undef, 'Email for MLT client limits with MT5 accounts is not sent';
 
     #client has balance in account
     $test_client_mlt->set_default_account('USD');
@@ -523,9 +520,6 @@ subtest 'get and set self_exclusion' => sub {
         subject => qr/Client $test_client_mlt_loginid set self-exclusion limits/
     );
     ok($msg, 'Email for MLT client limits with MT5 accounts');
-    is_deeply($msg->{to}, ['compliance@deriv.com', 'x-acc@deriv.com'], 'email to address ok');
-    like($msg->{body}, qr/$mt5_loginid/,                         'email content is ok');
-    like($msg->{body}, qr/.*Client's account balance is:.*\d+/s, 'email content is ok, balance in body');
 
     # client has no balance
     mailbox_clear();
@@ -557,8 +551,7 @@ subtest 'get and set self_exclusion' => sub {
     );
     ok($msg, 'Email for MLT client limits with MT5 accounts');
     is_deeply($msg->{to}, ['compliance@deriv.com'], 'email to address ok, sent only to compliance');
-    like($msg->{body}, qr/$mt5_loginid/, 'email content is ok');
-    unlike($msg->{body}, qr/.*Client's account balance is:.*\d+/s, 'email content is ok, balance in body');
+    like($msg->{body}, qr/Exclude from website until/, 'email content is ok');
 
     delete $params->{args};
     delete $emitted->{self_exclude};
@@ -642,6 +635,17 @@ subtest 'Set self-exclusion - CR clients' => sub {
         my $value = $arg_values{$field};
         $params->{args}->{$field} = $value;
         is $c->tcall($method, $params)->{status}, 1, "RPC called successfully with value $value - $field";
+
+        if ($field eq 'exclude_until') {
+            $test_loginid = $test_client_cr->loginid;
+            mailbox_clear();
+            my $msg = mailbox_search(
+                email   => 'compliance@deriv.com',
+                subject => qr/Client $test_loginid set self-exclusion limits/,
+            );
+            is $msg, undef, "msg is not sent to compliance email";
+        }
+
         is $c->tcall('get_self_exclusion', $get_params)->{$field}, $value, "get_self_exclusion returns the same value $value - $field";
 
         like $c->tcall($method, $params)->{error}->{message_to_client}, qr/You have chosen to exclude yourself from trading on our website until/,
