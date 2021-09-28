@@ -276,27 +276,8 @@ subtest 'multiplier on MX' => sub {
         },
         args => {price => 100},
     };
-    my $buy_res = $c->call_ok('buy', $buy_params)->has_no_error->result;
-
-    ok $buy_res->{contract_id}, 'contract is bought successfully with contract id';
-    ok !$buy_res->{contract_details}->{is_sold}, 'not sold';
-
-    my $update_params = {
-        client_ip => '127.0.0.1',
-        token     => $mx_token,
-        args      => {
-            contract_id     => $buy_res->{contract_id},
-            contract_update => 1,
-            limit_order     => {
-                take_profit => 10,
-                stop_loss   => 15
-            },
-        }};
-    my $update_res = $c->call_ok('contract_update', $update_params)->has_no_error->result;
-    is $update_res->{stop_loss}->{order_amount}, -15;
-    ok $update_res->{stop_loss}->{value};
-    is $update_res->{take_profit}->{order_amount}, 10;
-    ok $update_res->{take_profit}->{value};
+    my $buy_res = $c->call_ok('buy', $buy_params)->has_error->error_code_is('NotLegalContractCategory')
+        ->error_message_is('Please switch accounts to trade this contract.');
 };
 
 my $mx_uk = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
@@ -324,30 +305,13 @@ subtest 'multiplier on MX [with UK residence]' => sub {
         },
         args => {price => 100},
     };
-    $c->call_ok('buy', $buy_params)->has_error->error_code_is('InvalidOfferings', 'Trading is not offered for this asset.');
+    $c->call_ok('buy', $buy_params)->has_error->error_code_is('NotLegalContractCategory')
+        ->error_message_is('Please switch accounts to trade this contract.');
 
     $buy_params->{contract_parameters}{symbol} = 'R_100';
-    my $buy_res = $c->call_ok('buy', $buy_params)->has_no_error->result;
+    my $buy_res = $c->call_ok('buy', $buy_params)->has_error->error_code_is('NotLegalContractCategory')
+        ->error_message_is('Please switch accounts to trade this contract.');
 
-    ok $buy_res->{contract_id}, 'contract is bought successfully with contract id';
-    ok !$buy_res->{contract_details}->{is_sold}, 'not sold';
-
-    my $update_params = {
-        client_ip => '127.0.0.1',
-        token     => $mx_uk_token,
-        args      => {
-            contract_id     => $buy_res->{contract_id},
-            contract_update => 1,
-            limit_order     => {
-                take_profit => 10,
-                stop_loss   => 5
-            },
-        }};
-    my $update_res = $c->call_ok('contract_update', $update_params)->has_no_error->result;
-    is $update_res->{stop_loss}->{order_amount}, -5;
-    ok $update_res->{stop_loss}->{value};
-    is $update_res->{take_profit}->{order_amount}, 10;
-    ok $update_res->{take_profit}->{value};
 };
 
 my $mf = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
