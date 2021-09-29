@@ -64,7 +64,6 @@ subtest "asset_index" => sub {
             ["lookback",      "Lookbacks",                  "1m",  "30m"],
             ["callputequal",  "Rise/Fall Equal",            "1t",  "1d"],
             ["runs",          "Only Ups/Only Downs",        "2t",  "5t"],
-            ["multiplier",    "Multiply Up/Multiply Down",  "",    ""],
         ]];
 
     my $first_entry_cr = [
