@@ -356,6 +356,212 @@
          },
          "type": "object",
          "additionalProperties": false
+      },
+      "gaming_company": {
+         "required": [
+            "address",
+            "shortcode",
+            "legal_default_currency",
+            "legal_allowed_contract_categories",
+            "name",
+            "has_reality_check",
+            "country",
+            "legal_allowed_markets",
+            "requirements",
+            "changeable_fields",
+            "legal_allowed_currencies",
+            "currency_config"
+         ],
+         "properties": {
+            "requirements": {
+               "patternProperties": {
+                  "^.+$": {
+                     "type": "array",
+                     "items": {
+                        "type": "string"
+                     }
+                  }
+               },
+               "properties": {},
+               "additionalProperties": false,
+               "type": "object"
+            },
+            "legal_allowed_contract_categories": {
+               "type": "array",
+               "items": {
+                  "pattern": "^multiplier$",
+                  "type": "string"
+               },
+               "minItems": 1
+            },
+            "has_reality_check": {
+               "type": "integer",
+               "enum": [
+                  0
+               ]
+            },
+            "changeable_fields": {
+               "properties": {},
+               "patternProperties": {
+                  "^.+$": {
+                     "items": {
+                        "type": "string"
+                     },
+                     "type": "array"
+                  }
+               },
+               "type": "object",
+               "additionalProperties": false
+            },
+            "legal_allowed_markets": {
+               "minItems": 1,
+               "items": {
+                  "type": "string",
+                  "pattern": "^(forex|synthetic_index|cryptocurrency)$"
+               },
+               "type": "array"
+            },
+            "legal_allowed_currencies": {
+               "items": {
+                  "pattern": "^(USD|EUR|GBP)$",
+                  "type": "string"
+               },
+               "type": "array",
+               "minItems": 3
+            },
+            "currency_config": {
+               "properties": {
+                  "forex": {
+                     "additionalProperties": false,
+                     "type": "object",
+                     "patternProperties": {
+                        "^[a-zA-Z0-9]{2,20}$": {
+                           "type": "object",
+                           "additionalProperties": false,
+                           "properties": {
+                              "min_stake": {
+                                 "maximum": 10,
+                                 "type": "number",
+                                 "minimum": 0
+                              },
+                              "max_payout": {
+                                 "type": "number",
+                                 "minimum": 0
+                              }
+                           },
+                           "required": [
+                              "max_payout",
+                              "min_stake"
+                           ]
+                        }
+                     },
+                     "properties": {}
+                  },
+                  "synthetic_index": {
+                     "type": "object",
+                     "additionalProperties": false,
+                     "properties": {},
+                     "patternProperties": {
+                        "^[A-Z]{3,4}$": {
+                           "properties": {
+                              "max_payout": {
+                                 "minimum": 0,
+                                 "type": "number"
+                              },
+                              "min_stake": {
+                                 "maximum": 10,
+                                 "type": "number",
+                                 "minimum": 0
+                              }
+                           },
+                           "required": [
+                              "max_payout",
+                              "min_stake"
+                           ],
+                           "additionalProperties": false,
+                           "type": "object"
+                        }
+                     }
+                  },
+                  "commodities": {
+                     "type": "object",
+                     "additionalProperties": false,
+                     "properties": {},
+                     "patternProperties": {
+                        "^[A-Z]{3,4}$": {
+                           "type": "object",
+                           "additionalProperties": false,
+                           "properties": {
+                              "max_payout": {
+                                 "type": "number",
+                                 "minimum": 0
+                              },
+                              "min_stake": {
+                                 "minimum": 0,
+                                 "type": "number",
+                                 "maximum": 10
+                              }
+                           },
+                           "required": [
+                              "max_payout",
+                              "min_stake"
+                           ]
+                        }
+                     }
+                  },
+                  "indices": {
+                     "type": "object",
+                     "additionalProperties": false,
+                     "properties": {},
+                     "patternProperties": {
+                        "^[A-Z]{3,4}$": {
+                           "type": "object",
+                           "additionalProperties": false,
+                           "properties": {
+                              "min_stake": {
+                                 "maximum": 10,
+                                 "minimum": 0,
+                                 "type": "number"
+                              },
+                              "max_payout": {
+                                 "type": "number",
+                                 "minimum": 0
+                              }
+                           },
+                           "required": [
+                              "max_payout",
+                              "min_stake"
+                           ]
+                        }
+                     }
+                  }
+               }
+            },
+            "country": {
+               "pattern": "^Malta$",
+               "type": "string"
+            },
+            "address": {
+               "items": {
+                  "type": "string"
+               },
+               "type": "array"
+            },
+            "name": {
+               "pattern": "^Deriv Investments \\(Europe\\) Limited$",
+               "type": "string"
+            },
+            "shortcode": {
+               "type": "string",
+               "pattern": "^maltainvest$"
+            },
+            "legal_default_currency": {
+               "pattern": "^EUR$",
+               "type": "string"
+            }
+         },
+         "type": "object",
+         "additionalProperties": false
       }
    }
 }
