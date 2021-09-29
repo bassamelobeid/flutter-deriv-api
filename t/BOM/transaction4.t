@@ -133,7 +133,7 @@ subtest 'Validate legal allowed contract types' => sub {
 };
 
 subtest 'Validate Jurisdiction Restriction' => sub {
-    plan tests => 33;
+    plan tests => 32;
     lives_ok { $client->residence('') } 'set residence to null to test jurisdiction validation';
     lives_ok { $client->save({'log' => 0, 'clerk' => 'raunak'}); } "Can save residence changes back to the client";
 
@@ -178,12 +178,7 @@ subtest 'Validate Jurisdiction Restriction' => sub {
             clients     => [$client],
             transaction => $new_transaction
         })->_validate_jurisdictional_restrictions($client);
-    is($error->get_type, 'RandomRestrictedCountry', 'Germany clients are not allowed to place Random contracts as their country is restricted.');
-    like(
-        $error->{-message_to_client},
-        qr/Sorry, contracts on Synthetic Indices are not available in your country of residence/,
-        'Germany clients are not allowed to place Random contracts as their country is restricted due to vat regulations'
-    );
+    ok !$error, 'no error for Germany since synthetic indices are no longer restricted';
 
     #Checking that bets can be placed on other underlyings.
 
@@ -281,7 +276,7 @@ subtest 'Validate Jurisdiction Restriction' => sub {
             clients     => [$client],
             transaction => $new_transaction
         })->_validate_jurisdictional_restrictions($client);
-    is($error->get_type, 'RandomRestrictedCountry', 'Spain clients are not allowed to place Random contracts as their country is restricted.');
+    ok !$error, 'no error, synthetic indices are no longer restricted';
 
     lives_ok { $client->residence('gr') } 'set residence to Greece to test jurisdiction validation for random';
     $new_transaction = BOM::Transaction->new({
@@ -293,7 +288,7 @@ subtest 'Validate Jurisdiction Restriction' => sub {
             clients     => [$client],
             transaction => $new_transaction
         })->_validate_jurisdictional_restrictions($client);
-    is($error->get_type, 'RandomRestrictedCountry', 'Greece clients are not allowed to place Random contracts as their country is restricted.');
+    ok !$error, 'no error, synthetic indices are no longer restricted';
 
     lives_ok { $client->residence('lu') } 'set residence to Luxembourg to test jurisdiction validation for random';
     $new_transaction = BOM::Transaction->new({
@@ -305,7 +300,7 @@ subtest 'Validate Jurisdiction Restriction' => sub {
             clients     => [$client],
             transaction => $new_transaction
         })->_validate_jurisdictional_restrictions($client);
-    is($error->get_type, 'RandomRestrictedCountry', 'Luxembourg clients are not allowed to place Random contracts as their country is restricted.');
+    ok !$error, 'no error, synthetic indices are no longer restricted';
 
     lives_ok { $client->residence('fr') } 'set residence to France to test jurisdiction validation for random';
     $new_transaction = BOM::Transaction->new({
@@ -317,7 +312,7 @@ subtest 'Validate Jurisdiction Restriction' => sub {
             clients     => [$client],
             transaction => $new_transaction
         })->_validate_jurisdictional_restrictions($client);
-    is($error->get_type, 'RandomRestrictedCountry', 'France clients are not allowed to place Random contracts as their country is restricted.');
+    ok !$error, 'no error, synthetic indices are no longer restricted';
 
     lives_ok { $client->residence('it') } 'set residence to Italy to test jurisdiction validation for random';
     $new_transaction = BOM::Transaction->new({
@@ -329,7 +324,7 @@ subtest 'Validate Jurisdiction Restriction' => sub {
             clients     => [$client],
             transaction => $new_transaction
         })->_validate_jurisdictional_restrictions($client);
-    is($error->get_type, 'RandomRestrictedCountry', 'Italy clients are not allowed to place Random contracts as their country is restricted.');
+    ok !$error, 'no error, synthetic indices are no longer restricted';
 
     #changing client residence to gb and confirming that random contracts can be placed
 
