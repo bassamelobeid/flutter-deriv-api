@@ -83,8 +83,11 @@ Returns servers that are not suspended.
 =cut
 
 sub active_servers {
-    return () if BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend->all;
-    my @servers = grep { !BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend->$_ } qw(real demo);
+    my $self    = shift;
+    my $suspend = BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend;
+    return qw(real demo) if $self->client and any { $self->client->email eq $_ } $suspend->user_exceptions->@*;
+    return ()            if $suspend->all;
+    my @servers = grep { !$suspend->$_ } qw(real demo);
     return @servers;
 }
 
@@ -109,9 +112,12 @@ In some cases we need to call this before calling the api, e.g. deposit.
 
 sub server_check {
     my ($self, @servers) = @_;
-    die +{error_code => 'DXSuspended'} if BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend->all;
+
     my @active_servers = $self->active_servers;
-    die +{error_code => 'DXServerSuspended'} if array_minus(@servers, @active_servers);
+    if (array_minus(@servers, @active_servers)) {
+        die +{error_code => 'DXSuspended'} if BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend->all;
+        die +{error_code => 'DXServerSuspended'};
+    }
 }
 
 =head2 local_accounts

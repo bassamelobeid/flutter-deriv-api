@@ -6,6 +6,7 @@ use Test::Deep;
 use Test::MockModule;
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use BOM::Test::Helper::Client;
 use BOM::Test::Script::DevExperts;
 use BOM::TradingPlatform;
 use BOM::Config::Runtime;
@@ -257,6 +258,74 @@ cmp_deeply(
     },
     'created 4th account'
 );
+
+subtest 'suspend user exception list' => sub {
+
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+        email       => 'tester@deriv.com'
+    });
+
+    BOM::User->create(
+        email    => $client->email,
+        password => 'test'
+    )->add_client($client);
+
+    $client->account('USD');
+    BOM::Test::Helper::Client::top_up($client, $client->currency, 10);
+
+    my $dxtrader = BOM::TradingPlatform->new(
+        platform    => 'dxtrade',
+        client      => $client,
+        rule_engine => BOM::Rules::Engine->new(client => $client),
+    );
+
+    $dxconfig->suspend->all(1);
+    $dxconfig->suspend->demo(1);
+    $dxconfig->suspend->real(1);
+    $dxconfig->suspend->user_exceptions([$client->email]);
+
+    is(
+        exception {
+            $dxtrader->new_account(
+                account_type => 'demo',
+                password     => 'test',
+                market_type  => 'synthetic',
+                currency     => 'USD',
+            )
+        },
+        undef,
+        'create demo account'
+    );
+
+    my $account;
+    is(
+        exception {
+            $account = $dxtrader->new_account(
+                account_type => 'real',
+                password     => 'test',
+                market_type  => 'synthetic',
+                currency     => 'USD',
+            )
+        },
+        undef,
+        'create real account'
+    );
+
+    is(exception { $dxtrader->change_password(password => 'secret') }, undef, 'change password');
+
+    is(
+        exception {
+            $account = $dxtrader->deposit(
+                to_account => $account->{account_id},
+                amount     => 10,
+                currency   => 'USD',
+            )
+        },
+        undef,
+        'deposit'
+    );
+};
 
 done_testing();
 
