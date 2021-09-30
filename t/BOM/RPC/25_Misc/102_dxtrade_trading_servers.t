@@ -163,4 +163,41 @@ subtest 'account types' => sub {
     cmp_deeply($c->tcall(%params), [], 'none');
 };
 
+subtest 'user exceptions' => sub {
+
+    $suspend->user_exceptions([$client->email]);
+
+    my $expected = bag({
+            'account_type'       => 'real',
+            'disabled'           => 0,
+            'supported_accounts' => bag('gaming', 'financial'),
+        },
+        {
+            'account_type'       => 'demo',
+            'disabled'           => 0,
+            'supported_accounts' => bag('gaming', 'financial'),
+        });
+
+    $suspend->all(1);
+    $suspend->demo(0);
+    $suspend->real(0);
+    cmp_deeply $c->tcall(%params), $expected, 'all suspended';
+
+    $suspend->all(0);
+    $suspend->demo(1);
+    cmp_deeply $c->tcall(%params), $expected, 'demo suspended';
+
+    $suspend->demo(0);
+    $suspend->real(1);
+    cmp_deeply $c->tcall(%params), $expected, 'real suspended';
+
+    $suspend->real(0);
+    cmp_deeply $c->tcall(%params), $expected, 'none suspended';
+
+    $suspend->all(1);
+    $suspend->demo(1);
+    $suspend->demo(1);
+    cmp_deeply $c->tcall(%params), $expected, 'everything suspended';
+};
+
 done_testing();

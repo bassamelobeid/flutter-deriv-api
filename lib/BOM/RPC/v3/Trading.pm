@@ -186,7 +186,7 @@ async_rpc trading_servers => sub {
     ) if ($platform eq 'mt5');
 
     return get_dxtrade_server_list(
-        country      => $client->residence,
+        client       => $client,
         account_type => $params->{args}{account_type},
     ) if ($platform eq 'dxtrade');
 };
@@ -732,7 +732,7 @@ sub change_investor_password {
 
 =head2 get_dxtrade_server_list
 
-    get_dxtrade_server_list(country => $client->residence, account_type => 'real');
+    get_dxtrade_server_list(client => $client, account_type => 'real');
 
     Return the array of hash of trade servers configuration for Deriv X.
 
@@ -741,11 +741,11 @@ sub change_investor_password {
 sub get_dxtrade_server_list {
     my (%args) = @_;
 
-    my ($country, $account_type) = @args{qw/country account_type/};
-    my @active_servers = BOM::TradingPlatform::DXTrader->new->active_servers;
+    my ($client, $account_type) = @args{qw/client account_type/};
+    my @active_servers = BOM::TradingPlatform::DXTrader->new(client => $client)->active_servers;
     my $countries      = request()->brand->countries_instance;
 
-    my @market_types = grep { $countries->dx_company_for_country(country => $country, account_type => $_) ne 'none' } qw/gaming financial/;
+    my @market_types = grep { $countries->dx_company_for_country(country => $client->residence, account_type => $_) ne 'none' } qw/gaming financial/;
 
     return Future->done([]) unless @market_types;
 
