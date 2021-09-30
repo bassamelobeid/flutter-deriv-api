@@ -245,6 +245,7 @@ sub get_settings_by_group {
                 system.dxtrade.http_proxy.real
                 system.dxtrade.suspend.demo
                 system.dxtrade.suspend.real
+                system.dxtrade.suspend.user_exceptions
                 )
         ],
         quant => [qw(
