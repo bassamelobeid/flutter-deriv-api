@@ -715,7 +715,12 @@ sub _build_cancellation_expiry {
     return $self->date_start->plus_time_interval($cancellation_duration);
 }
 
-sub close_tick {
+has close_tick => (
+    is         => 'ro',
+    lazy_build => 1
+);
+
+sub _build_close_tick {
     my $self = shift;
 
     return $self->hit_tick if $self->hit_tick;

@@ -82,7 +82,12 @@ sub _build_ok_through_expiry {
     return 1;
 }
 
-sub close_tick {
+has close_tick => (
+    is         => 'ro',
+    lazy_build => 1
+);
+
+sub _build_close_tick {
     my $self = shift;
 
     return $self->hit_tick if ($self->category->code ne 'highlowticks');
