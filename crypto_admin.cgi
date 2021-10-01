@@ -19,6 +19,7 @@ use LandingCompany::Registry;
 use ExchangeRates::CurrencyConverter qw(in_usd);
 use BOM::Config::Redis;
 use BOM::Cryptocurrency::Helper;
+use Math::BigFloat;
 
 use BOM::Backoffice::Sysinit ();
 BOM::Backoffice::Sysinit::init();
@@ -267,7 +268,8 @@ sub _get_function_map {
                 value => $currency_wrapper->get_blockchain_amount($amount)->as_hex(),
             };
 
-            $currency_wrapper->get_estimatedgas($params);
+            my $gas = $currency_wrapper->get_gas_limit($params);
+            return Math::BigFloat->from_hex($gas)->bstr;
         },
         get_transaction => sub {
             die "Please provide transaction_hash" unless length $txn_hash;
