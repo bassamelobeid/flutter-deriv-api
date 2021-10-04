@@ -6,6 +6,8 @@ use warnings;
 use HTML::Entities;
 use Scalar::Util qw(looks_like_number);
 use Syntax::Keyword::Try;
+use ExchangeRates::CurrencyConverter qw(convert_currency);
+use Format::Util::Numbers qw/financialrounding/;
 
 use BOM::User::Client::PaymentAgent;
 use BOM::User qw( is_payment_agents_suspended_in_country );
@@ -17,7 +19,7 @@ use f_brokerincludeall;
 use BOM::Backoffice::Sysinit ();
 BOM::Backoffice::Sysinit::init();
 
-my %MAP_FIELDS = (
+use constant MAP_FIELDS => {
     pa_name                      => 'payment_agent_name',
     pa_coc_approval              => 'code_of_conduct_approval',
     pa_email                     => 'email',
@@ -33,7 +35,21 @@ my %MAP_FIELDS = (
     pa_supported_payment_methods => 'supported_banks',
     pa_countries                 => 'target_country',
     pa_affiliate_id              => 'affiliate_id',
-);
+};
+
+sub _prepare_display_values {
+    my ($pa) = @_;
+
+    my %input_fields = map { my $sub_name = MAP_FIELDS->{$_}; $_ => $pa->$sub_name } keys MAP_FIELDS->%*;
+    # convery 0/1 to yes/no
+    $input_fields{$_} = $input_fields{$_} ? 'yes' : 'no' for (qw/pa_coc_approval pa_auth pa_listed/);
+    $input_fields{$_} ||= '0.00' for (qw/pa_comm_depo pa_comm_with/);
+
+    my $pa_countries = $pa->get_countries;
+    $input_fields{pa_countries} = join(',', @$pa_countries);
+
+    return \%input_fields;
+}
 
 PrintContentType();
 BrokerPresentation('Payment Agent Setting');
@@ -57,14 +73,29 @@ if ($whattodo eq 'create') {
     code_exit_BO("Please note that to become payment agent client has to be fully authenticated.") unless $client->fully_authenticated;
     code_exit_BO("Payment agents are suspended in client's residence country.") if is_payment_agents_suspended_in_country($client->residence);
 
+    my $values = {
+        pa_name         => $client->full_name,
+        pa_email        => $client->email,
+        pa_tel          => $client->phone,
+        pa_comm_depo    => '0.00',
+        pa_comm_with    => '0.00',
+        pa_coc_approval => 'yes'
+    };
+
+    # try to copy from a sibling payment agent
+    if (my $sibling_pa = first { $_->get_payment_agent } $client->user->clients) {
+        $values = _prepare_display_values($sibling_pa->get_payment_agent);
+
+        # convert limits
+        for my $limit (qw/pa_max_withdrawal pa_min_withdrawal/) {
+            $values->{$limit} = convert_currency($values->{$limit}, $sibling_pa->currency, $client->currency);
+            $values->{$limit} = financialrounding('amount', $client->currency, $values->{$limit});
+        }
+    }
+
     my $payment_agent_registration_form = BOM::Backoffice::Form::get_payment_agent_registration_form($loginid, $broker);
-    $payment_agent_registration_form->set_input_fields({
-        'pa_name'      => $client->full_name,
-        'pa_email'     => $client->email,
-        'pa_tel'       => $client->phone,
-        'pa_comm_depo' => '0.00',
-        'pa_comm_with' => '0.00',
-    });
+    $payment_agent_registration_form->set_input_fields($values);
+
     print $payment_agent_registration_form->build();
 
     code_exit_BO();
@@ -75,15 +106,10 @@ my $pa = BOM::User::Client::PaymentAgent->new({loginid => $loginid});
 if ($whattodo eq 'show') {
     my $payment_agent_registration_form =
         BOM::Backoffice::Form::get_payment_agent_registration_form($loginid, $broker, $pa->code_of_conduct_approval_date);
-    my $pa_countries = $pa->get_countries;
 
-    my %input_fields = map { my $sub_name = $MAP_FIELDS{$_}; $_ => $pa->$sub_name } keys %MAP_FIELDS;
-    # convery 0/1 to yes/no
-    $input_fields{$_} = $input_fields{$_} ? 'yes' : 'no' for (qw/pa_coc_approval pa_auth pa_listed/);
-    $input_fields{$_} ||= '0.00' for (qw/pa_comm_depo pa_comm_with/);
-    $input_fields{pa_countries} = join(',', @$pa_countries);
+    my $input_fields = _prepare_display_values($pa);
 
-    $payment_agent_registration_form->set_input_fields(\%input_fields);
+    $payment_agent_registration_form->set_input_fields($input_fields);
 
     my $page_content = '<p>' . $payment_agent_registration_form->build();
     print $page_content;
@@ -125,13 +151,15 @@ if ($whattodo eq 'show') {
     code_exit_BO("Invalid deposint commission amount: it should be between 0 and 9")   unless $pa_comm_depo >= 0 and $pa_comm_depo <= 9;
     code_exit_BO("Invalid withdrawal commission amount: it should be between 0 and 9") unless $pa_comm_with >= 0 and $pa_comm_with <= 9;
 
-    my %args = map { $MAP_FIELDS{$_} => request()->param($_) } keys %MAP_FIELDS;
+    my %args = map { MAP_FIELDS->{$_} => request()->param($_) } keys MAP_FIELDS->%*;
     $args{$_} = ($args{$_} eq 'yes') for (qw/is_authenticated is_listed code_of_conduct_approval/);
     $args{currency_code} = $currency;
 
     $args{skip_coc_validation} = 1 if $editing;
     try {
         %args = $pa->validate_payment_agent_details(%args)->%*;
+        $pa->$_($args{$_}) for keys %args;
+        $pa->save;
     } catch ($error) {
         my $message;
         if (ref $error) {
@@ -150,8 +178,6 @@ if ($whattodo eq 'show') {
         code_exit_BO(encode_entities("Error - $message"));
     }
 
-    $pa->$_($args{$_}) for keys %args;
-    $pa->save || die "failed to save payment_agent!";
     code_exit_BO("Invalid Countries: could not add countries.")
         unless ($client->get_payment_agent->set_countries(\@countries));
 

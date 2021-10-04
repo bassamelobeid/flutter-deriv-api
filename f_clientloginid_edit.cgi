@@ -601,6 +601,21 @@ if ($input{whattodo} eq 'save_edd_status') {
 
 }
 
+if ($input{whattodo} eq 'copy_pa_details') {
+    my $pa = $client->get_payment_agent;
+
+    code_exit_BO("Payment agent not found") unless $pa;
+    my @sibling_pas = $pa->sibling_payment_agents;
+    code_exit_BO("There is no payment agent to copy details to.") unless scalar @sibling_pas > 1;
+
+    for my $sibling (@sibling_pas) {
+        next if $sibling->client_loginid eq $client->loginid;
+        eval { $pa->copy_details_to($sibling) }
+            ? print("<p class=\"success\">PA details copied to " . $sibling->client_loginid . "</p>")
+            : print("<p class=\"error\">Failed to copy PA details to " . $sibling->client_loginid . "</p>");
+    }
+}
+
 # PERFORM ON-DEMAND ID CHECKS
 if (my $check_str = $input{do_id_check} && !$client->is_virtual) {
     try {
@@ -1187,9 +1202,9 @@ if ($payment_agent) {
     print '<div class="row"><table class="border small">';
 
     foreach my $column (
-        qw/payment_agent_name url email phone information commission_deposit commission_withdrawal
-        currency_code supported_banks min_withdrawal max_withdrawal code_of_conduct_approval
-        code_of_conduct_approval_date affiliate_id is_authenticated is_listed/
+        qw/payment_agent_name url email phone information supported_banks commission_deposit commission_withdrawal
+        min_withdrawal max_withdrawal affiliate_id code_of_conduct_approval
+        code_of_conduct_approval_date is_authenticated is_listed currency_code/
         )
     {
 
@@ -1214,6 +1229,16 @@ if ($client->landing_company->allows_payment_agents) {
         }) . "\">Payment agent details</a> <strong>for $encoded_loginid</strong></div>";
 } else {
     print '<div>Payment Agents are not available for this account.</div>';
+}
+
+my @sibling_pas = $payment_agent ? $payment_agent->sibling_payment_agents : ();
+if (scalar @sibling_pas > 1) {
+    print qq[<br><form action="$self_post?loginID=$encoded_loginid" id="copy_pa_form" method="post">
+    <input type="hidden" name="whattodo" value="copy_pa_details"/>
+    <input type="hidden" name="broker" value="$encoded_broker"/>
+    <input type="hidden" name="loginID" value="$encoded_loginid">
+    <input type="submit" class="btn btn--secondary" value="Copy payment agent details to sibling accounts"/>
+    </form>];
 }
 
 my $statuses = join '/', map { uc $_ } @{$client->status->all};

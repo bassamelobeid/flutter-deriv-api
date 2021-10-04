@@ -1068,20 +1068,19 @@ sub get_payment_agent_registration_form {
     my $fieldset = $form_object->add_fieldset({});
 
     $fieldset->add_field($input_field_pa_name);
-    $fieldset->add_field($input_field_pa_coc_approval);
-    $fieldset->add_field($textarea_pa_info);
+    $fieldset->add_field($input_field_pa_url);
     $fieldset->add_field($input_field_pa_email);
     $fieldset->add_field($input_field_pa_tel);
-    $fieldset->add_field($input_field_pa_url);
-    $fieldset->add_field($input_field_pa_comm_depo);
-    $fieldset->add_field($input_field_pa_comm_with);
-    $fieldset->add_field($input_field_pa_max_withdrawal);
-    $fieldset->add_field($input_field_pa_min_withdrawal);
-    $fieldset->add_field($input_field_pa_affiliate_id);
-
+    $fieldset->add_field($textarea_pa_info);
     if ($input_field_pa_supported_payment_methods) {
         $fieldset->add_field($input_field_pa_supported_payment_methods);
     }
+    $fieldset->add_field($input_field_pa_comm_depo);
+    $fieldset->add_field($input_field_pa_comm_with);
+    $fieldset->add_field($input_field_pa_min_withdrawal);
+    $fieldset->add_field($input_field_pa_max_withdrawal);
+    $fieldset->add_field($input_field_pa_affiliate_id);
+    $fieldset->add_field($input_field_pa_coc_approval);
     if ($input_field_pa_auth) {
         $fieldset->add_field($input_field_pa_auth);
     }
