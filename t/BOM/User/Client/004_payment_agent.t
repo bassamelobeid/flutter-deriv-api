@@ -10,7 +10,7 @@ use Test::MockTime qw(restore_time set_fixed_time);
 use Test::Deep;
 use BOM::User::Client::PaymentAgent;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
-use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
+use BOM::Test::Helper::ExchangeRates qw(populate_exchange_rates);
 use BOM::Test::Helper::Client qw( top_up );
 use BOM::Database::Model::OAuth;
 use BOM::User::Password;
@@ -494,6 +494,115 @@ subtest 'validate payment agent details' => sub {
     };
 
     restore_time();
+};
+
+subtest 'copy payment agent details and related' => sub {
+    my $user = BOM::User->create(
+        email    => 'copy+' . $email,
+        password => 'test',
+    );
+    my $client1 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+    });
+    $client1->email($user->email);
+    $client1->set_default_account('USD');
+    $client1->save;
+    $user->add_client($client1);
+
+    my $client2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+    });
+    $client2->email($user->email);
+    $client2->set_default_account('BTC');
+    $client2->save;
+    $user->add_client($client2);
+
+    my $args1 = {
+        'payment_agent_name'            => 'Copy PA 1',
+        'email'                         => 'pa1@binary.com',
+        'phone'                         => '1111',
+        'summary'                       => 'I am a test pa 1',
+        'information'                   => 'Request for pa application 1',
+        'currency_code'                 => 'USD',
+        'target_country'                => 'af,ch',
+        'url'                           => 'http://aaaa.com',
+        'min_withdrawal'                => 10,
+        'max_withdrawal'                => 100,
+        'commission_deposit'            => 1,
+        'commission_withdrawal'         => 3,
+        'is_authenticated'              => 1,
+        'is_listed'                     => 1,
+        'supported_banks'               => 'Visa,bank_transfer',
+        'code_of_conduct_approval'      => 1,
+        'affiliate_id'                  => '1111aaaa',
+        'code_of_conduct_approval_time' => '2020-01-01T00:00:00'
+    };
+    $client1->payment_agent($args1);
+    $client1->save;
+    ok $client1->get_payment_agent->set_countries([qw/af ch/]), 'Countries are set';
+
+    my @pa_list = $client1->get_payment_agent->sibling_payment_agents;
+    is scalar @pa_list, 1, 'There is one sibling payment agent';
+    is $pa_list[0]->payment_agent_name, 'Copy PA 1', 'PA name is correct';
+
+    my $args2 = {
+        'payment_agent_name'            => 'Copy PA 2',
+        'email'                         => 'pa2@binary.com',
+        'phone'                         => '2222',
+        'summary'                       => 'I am a test pa 2',
+        'information'                   => 'Request for pa application 2',
+        'currency_code'                 => 'BTC',
+        'target_country'                => 'id,in',
+        'url'                           => 'http://bbbbb.com',
+        'min_withdrawal'                => 0.00001,
+        'max_withdrawal'                => 0.1,
+        'commission_deposit'            => 4,
+        'commission_withdrawal'         => 5,
+        'is_authenticated'              => 0,
+        'is_listed'                     => 0,
+        'supported_banks'               => 'Master card',
+        'code_of_conduct_approval'      => 0,
+        'affiliate_id'                  => '2222bbbbb',
+        'code_of_conduct_approval_time' => '2021-02-02'
+    };
+    $client2->payment_agent($args2);
+    $client2->save;
+    $client2->get_payment_agent->set_countries([qw/id in/]);
+
+    # copy to siblings
+    my $pa_1 = $client1->get_payment_agent;
+    @pa_list = $pa_1->sibling_payment_agents;
+    is scalar @pa_list, 2, 'There are two sibling payment agents';
+    is_deeply [map { $_->payment_agent_name } @pa_list], ['Copy PA 1', 'Copy PA 2'], 'PA names are correct';
+
+    like exception { $pa_1->copy_details_to($client2->get_payment_agent) }, qr/No rate available to convert BTC to USD/,
+        'Error if there is no exchange rate';
+    populate_exchange_rates({BTC => 10000});
+    $pa_1->copy_details_to($client2->get_payment_agent);
+
+    my $pa_2 = $client2->payment_agent;
+    is_deeply { $pa_2->%{keys %$args1} },
+        {
+        %$args1,
+        currency_code  => 'BTC',
+        min_withdrawal => '0.00100000',
+        max_withdrawal => '0.01000000'
+        },
+        'Everything is copied except loginid - limits are converted according to exchange rates';
+    is_deeply $pa_2->get_countries(), [qw/af ch/], 'Countries are also copied.';
+    is_deeply $pa_1->get_countries(), [qw/af ch/], 'Souce countries are correct.';
+
+    # convert withdrawal limits
+    is_deeply $pa_1->convert_withdrawal_limits('BTC'),
+        {
+        min_withdrawal => '0.00100000',
+        max_withdrawal => '0.01000000'
+        };
+    is_deeply $client2->get_payment_agent->convert_withdrawal_limits('USD'),
+        {
+        min_withdrawal => '10.00',
+        max_withdrawal => '100.00'
+        };
 };
 
 done_testing();
