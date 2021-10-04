@@ -2062,8 +2062,10 @@ rpc 'cashier_payments', sub {
 
     my ($client, $args) = @{$params}{qw/client args/};
 
-    my $currency = $client->default_account->currency_code();
-
+    my $currency = $client->default_account ? $client->default_account->currency_code() : '';
+    unless ($currency) {
+        return BOM::RPC::v3::Utility::create_error_by_code('NoAccountCurrency');
+    }
     if (LandingCompany::Registry::get_currency_type($currency) ne 'crypto') {
         return BOM::RPC::v3::Utility::create_error({
             code              => 'InvalidRequest',

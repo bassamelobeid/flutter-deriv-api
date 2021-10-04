@@ -100,8 +100,17 @@ subtest 'Crypto cashier calls' => sub {
     };
 
     my $client_fiat = BOM::Test::Data::Utility::UnitTestDatabase::create_client({$client_info->%*});
-    $client_fiat->set_default_account('USD');
     $user->add_client($client_fiat);
+
+    my $fiat_params = {
+        args   => {cashier_payments => 1},
+        token  => BOM::Platform::Token::API->new->create_token($client_fiat->loginid, 'test token123'),
+        domain => 'binary.com',
+    };
+    $rpc_ct->call_ok('cashier_payments', $fiat_params)->has_error->error_code_is('NoAccountCurrency', 'Correct error code when currency not set.')
+        ->error_message_is('Please set the currency for your existing account.', 'Correct error message when currency not set.');
+
+    $client_fiat->set_default_account('USD');
 
     my $client_crypto = BOM::Test::Data::Utility::UnitTestDatabase::create_client({$client_info->%*});
     $client_crypto->set_default_account('BTC');
