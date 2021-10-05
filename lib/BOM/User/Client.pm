@@ -100,7 +100,9 @@ sub new {
     my $args  = shift || die 'BOM::User::Client->new called without args';
 
     my $loginid = $args->{loginid};
-    die "no loginid" unless $loginid;
+
+    die "no loginid"                  unless $loginid;
+    croak "Invalid loginid: $loginid" unless $loginid =~ qr/^[A-Z]+/;
 
     my $operation = delete $args->{db_operation};
 

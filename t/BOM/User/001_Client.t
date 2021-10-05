@@ -20,6 +20,28 @@ use List::Util qw(uniq);
 my $login_id = 'CR0022';
 my $client;
 
+subtest 'initialization' => sub {
+    throws_ok {
+        BOM::User::Client->new({});
+    }
+    qr/no loginid/, 'Create instance with empty loginid throws error as expected';
+
+    throws_ok {
+        BOM::User::Client->new({loginid => 'cr123'});
+    }
+    qr/Invalid loginid: cr123/, 'Create instance with lowercase broker code throws error as expected';
+
+    throws_ok {
+        BOM::User::Client->new({loginid => '123'});
+    }
+    qr/Invalid loginid: 123/, 'Create instance with no broker code throws error as expected';
+
+    throws_ok {
+        BOM::User::Client->new({loginid => 'FF123'});
+    }
+    qr/Could not init_db\(\) - No such domain with the broker code FF/, 'Create instance with non-existing broker code throws error as expected';
+};
+
 subtest "Client load and saving." => sub {
     plan tests => 43;
     # create client object
