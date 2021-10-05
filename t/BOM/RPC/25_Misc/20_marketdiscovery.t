@@ -71,7 +71,7 @@ subtest "active_symbols for $landing_company_name" => sub {
 
     $params->{source} = 11780;                                                 # dervi_dtrader
     $result = $c->call_ok($method, $params)->has_no_error->result;
-    is scalar @$result, 30, 'forex, cryptocurrency and low leverage indices';
+    is scalar @$result, 28, 'forex and cryptocurrency';
 };
 
 subtest 'active_symbols for suspend_buy' => sub {
@@ -109,12 +109,12 @@ subtest 'active_symbols for whitelisted apps' => sub {
                 active_symbols => 'brief',
             }};
         my %expected_symbol_count = (
-            11780 => 85,
+            11780 => 83,
             1408  => 0,
-            16303 => 85,
-            16929 => 85,
-            19111 => 80,
-            19112 => 80,
+            16303 => 83,
+            16929 => 83,
+            19111 => 78,
+            19112 => 78,
             22168 => 69,
             23789 => 49,
         );
