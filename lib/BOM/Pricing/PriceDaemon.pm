@@ -231,7 +231,7 @@ sub run {
             my $subscribers_count = $redis_pricer_subscription->publish($redis_channel, encode_json_utf8($response));
 
             # delete the job if no-one is subscribed, or the contract is sold
-            if ($subscribers_count == 0 || $response->{is_sold} == 1) {
+            if (!$subscribers_count || $response->{is_sold}) {
                 $redis_pricer->del($key->[1], $next);
             }
         }
