@@ -447,7 +447,7 @@ subtest 'get and set self_exclusion' => sub {
             address_line_1         => 'address line 1',
             address_line_2         => 'address line 2',
             address_city           => 'address city',
-            address_state          => 'BA',
+            address_state          => 'Wien',
             place_of_birth         => 'de',
             account_opening_reason => 'Income Earning',
         }};

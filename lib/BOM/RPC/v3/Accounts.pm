@@ -1604,6 +1604,12 @@ rpc set_settings => sub {
     my $secret_answer          = $args->{secret_answer} ? BOM::User::Utility::encrypt_secret_answer($args->{secret_answer}) : '';
     my $secret_question        = $args->{secret_question} // '';
 
+    if ($args->{'address_state'}) {
+        my $match = BOM::Platform::Locale::validate_state($addressState, $current_client->residence);
+        return BOM::RPC::v3::Utility::create_error_by_code('InvalidState') unless (defined $match);
+        $addressState = $match->{value};
+    }
+
     my ($needs_verify_address_trigger, $cil_message);
     if (   ($address1 and $address1 ne $current_client->address_1)
         or ($address2 ne $current_client->address_2)
@@ -1653,7 +1659,7 @@ rpc set_settings => sub {
         $client->address_1($address1);
         $client->address_2($address2);
         $client->city($addressTown);
-        $client->state($addressState)       if defined $addressState;                 # FIXME validate
+        $client->state($addressState)       if defined $addressState;
         $client->postcode($addressPostcode) if defined $args->{'address_postcode'};
         $client->phone($phone)              if length $phone;
         $client->citizen($citizen);

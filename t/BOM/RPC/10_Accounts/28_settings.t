@@ -863,13 +863,15 @@ subtest 'set settings' => sub {
     $params->{args} = {%full_args};
     is($c->tcall($method, $params)->{status}, 1, 'postcode is optional for non-MX clients and can be set to null');
 
-    $params->{token} = $token_T_mx;
+    $params->{token}                        = $token_T_mx;
     $params->{args}{account_opening_reason} = 'Income Earning';
+    $params->{args}{address_state}          = 'Burgenland';
 
     delete $emitted->{profile_change};
     # setting account settings for one client also updates for clients that have a different landing company
     $params->{token} = $token_T_mlt;
     $params->{args}->{place_of_birth} = 'ir';
+
     is($c->tcall($method, $params)->{status}, 1, 'update successfully');
     ok($emitted->{profile_change}, 'profile_change emit exist');
 
@@ -879,6 +881,7 @@ subtest 'set settings' => sub {
 
     # setting account settings for one client updates for all clients with the same landing company
     $params->{token} = $token_Y_cr_1;
+    delete $params->{args}{address_state};
     is($c->tcall($method, $params)->{status}, 1, 'update successfully');
     ok($emitted->{profile_change}, 'profile_change emit exist');
     is_deeply $emitted->{profile_change}->{properties}->{updated_fields},

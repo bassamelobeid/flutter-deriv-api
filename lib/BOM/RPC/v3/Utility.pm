@@ -541,6 +541,7 @@ sub error_map {
         'InsufficientAccountDetails' => localize('Please provide complete details for your account.'),
         'InvalidCitizenship'         => localize('Sorry, our service is not available for your country of citizenship.'),
         'InvalidResidence'           => localize('Sorry, our service is not available for your country of residence.'),
+        'InvalidState'               => localize('Sorry, the provided state is not valid for your country of residence.'),
         'InvalidDateFirstContact'    => localize('Date first contact is invalid.'),
         'InvalidBrand'               => localize('Brand is invalid.'),
         'CannotChangeAccountDetails' => localize('You may not change these account details.'),
