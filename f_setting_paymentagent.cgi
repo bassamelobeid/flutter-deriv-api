@@ -160,6 +160,12 @@ if ($whattodo eq 'show') {
         %args = $pa->validate_payment_agent_details(%args)->%*;
         $pa->$_($args{$_}) for keys %args;
         $pa->save;
+        if (my $affiliate_id = $pa->{affiliate_id}) {
+            try {
+                $client->user->set_affiliate_id($affiliate_id);
+            } catch {
+            }
+        }
     } catch ($error) {
         my $message;
         if (ref $error) {

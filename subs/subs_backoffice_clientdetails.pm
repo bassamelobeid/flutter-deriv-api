@@ -32,6 +32,7 @@ use BOM::Platform::Locale;
 use BOM::Platform::Context;
 use BOM::Platform::S3Client;
 use BOM::Platform::Client::DoughFlowClient;
+use BOM::Platform::Event::Emitter;
 use BOM::Backoffice::FormAccounts;
 use BOM::Backoffice::Config;
 use BOM::Backoffice::Request qw(request);
@@ -50,8 +51,9 @@ A spot to place subroutines that might be useful for various client related oper
 
 =cut
 
-use constant ONFIDO_RESUBMISSION_COUNTER_KEY_PREFIX => 'ONFIDO::RESUBMISSION_COUNTER::ID::';
-use constant ACCOUNT_OPENING_REASONS                => ['Speculative', 'Income Earning', 'Hedging', 'Peer-to-peer exchange'];
+use constant ONFIDO_RESUBMISSION_COUNTER_KEY_PREFIX  => 'ONFIDO::RESUBMISSION_COUNTER::ID::';
+use constant RISK_DISCLAIMER_RESUBMISSION_KEY_PREFIX => 'RISK_DISCLAIMER_RESUBMISSION::ID::';
+use constant ACCOUNT_OPENING_REASONS                 => ['Speculative', 'Income Earning', 'Hedging', 'Peer-to-peer exchange'];
 
 my $POI_REASONS = {
     cropped => {
@@ -561,6 +563,14 @@ SQL
             });
     }
 
+    my $key = RISK_DISCLAIMER_RESUBMISSION_KEY_PREFIX . $client->user->id;
+    my $risk_disclaimer_resubmission_updated_at;
+    my $risk_disclaimer_resubmission_updated_by;
+    if (my $updated_at = $redis->hget($key . 'meta', 'updated_at')) {
+        $risk_disclaimer_resubmission_updated_at = Date::Utility->new($updated_at)->datetime;
+        $risk_disclaimer_resubmission_updated_by = $redis->hget($key . 'meta', 'staff_name');
+    }
+
     my $template_param = {
         balance              => $balance,
         client               => $client,
@@ -629,6 +639,8 @@ SQL
         expired_poi_docs                   => $client->documents->expired(1),
         login_locked_until                 => $login_locked_until ? $login_locked_until->datetime_ddmmmyy_hhmmss_TZ : undef,
         too_many_attempts                  => $too_many_attempts,
+        risk_disclaimer_updated_at         => $risk_disclaimer_resubmission_updated_at,
+        risk_disclaimer_updated_by         => $risk_disclaimer_resubmission_updated_by
     };
 
     return BOM::Backoffice::Request::template()->process('backoffice/client_edit.html.tt', $template_param, undef, {binmode => ':utf8'})
@@ -2329,6 +2341,40 @@ sub notify_resubmission_of_poi_poa_documents {
         use_event             => 1,
         language              => $client->user->preferred_language
     });
+}
+
+=head2 notify_resubmission_of_risk_disclaimer
+
+Trigger risk_disclaimer_resubmission event.
+
+=cut
+
+sub notify_resubmission_of_risk_disclaimer {
+    my ($loginid, $lang, $clerk) = @_;
+
+    my $client = BOM::User::Client->new({loginid => $loginid});
+
+    my $brand = Brands->new(name => 'deriv');
+
+    my $req = BOM::Platform::Context::Request->new(brand_name => $brand->name);
+    BOM::Platform::Context::request($req);
+
+    send_email({
+            use_event  => 1,
+            language   => $lang,
+            event      => 'risk_disclaimer_resubmission',
+            loginid    => $client->loginid,
+            properties => {
+                title        => localize('Your affiliate account needs an update'),
+                loginid      => $client->loginid,
+                salutation   => $client->salutation,
+                website_name => $brand->website_name,
+            }});
+
+    my $key   = RISK_DISCLAIMER_RESUBMISSION_KEY_PREFIX . $client->user->id;
+    my $redis = BOM::Config::Redis::redis_replicated_write();
+    $redis->hset($key . 'meta', 'updated_at', time);
+    $redis->hset($key . 'meta', 'staff_name', $clerk);
 }
 
 =head2 get_dynamic_settings_list

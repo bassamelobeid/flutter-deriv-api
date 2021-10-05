@@ -68,6 +68,7 @@ for ($category) {
         my $authentication_documents_queries = authentication_documents_queries($loginid, $broker);
         my $user_db_queries                  = user_db_queries($loginid, $broker);
         my $edd_status_queries               = edd_status_queries($loginid, $broker);
+        my $affiliate_queries                = affiliate_queries($loginid, $broker);
 
         @tables = ({
                 table  => 'client',
@@ -111,7 +112,8 @@ for ($category) {
             },
             $authentication_documents_queries->@*,
             $user_db_queries->@*,
-            $edd_status_queries->@*
+            $edd_status_queries->@*,
+            $affiliate_queries->@*
         );
     } elsif (/^payment_agent$/) {
         @tables = ({
@@ -425,6 +427,48 @@ sub edd_status_queries {
         params => ['edd_status', $binary_user_id],
         broker => 'users',                           # gonna hint the code to use UserDB
     };
+
+    return $queries;
+}
+
+=head2 affiliate_queries
+
+Gets the needed queries to hit the affiliate table in users db for the audit trail.
+
+Takes the following arguments:
+
+=over 4
+
+=item * C<$loginid> - The loginid of the current client.
+
+=back
+
+Returns an arrayref of database queries.
+
+=cut
+
+sub affiliate_queries {
+    my $loginid            = shift;
+    my $client             = BOM::User::Client->new({loginid => $loginid}) || die "Cannot find client: $loginid";
+    my $binary_user_id     = $client->binary_user_id;
+    my $queries            = [];
+    my @interesting_fields = qw/coc_approval/;
+    my $query              = "tbl = ? AND binary_user_id = ?";
+
+    return [] if $client->is_virtual;
+
+    # Tell the db which fields to grab
+    my $pg_userid = "COALESCE(metadata->>'staff', 'system') AS pg_userid";
+    my $select    = join ',', 'stamp', 'tbl', 'operation', $pg_userid, map { "new_row->>'$_' AS affiliate_$_" } @interesting_fields;
+
+    push $queries->@*,
+        {
+        select => $select,
+        table  => 'audittable',
+        query  => $query,
+        params => ['affiliate', $binary_user_id],
+        broker => 'users',
+        };
 
     return $queries;
 }

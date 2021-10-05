@@ -50,23 +50,26 @@ BOM::Backoffice::Request::template()->process('backoffice/update_affiliate_id.ht
     "\n";
 
 if (request()->http_method eq 'POST') {
-    my $new_aff_id = request()->param('new_aff_id'); 
+    my $new_aff_id = request()->param('new_aff_id');
 
     if ($new_aff_id) {
         my $updated_mt5_accounts = $user->dbic->run(
             fixup => sub {
-                $_->selectall_arrayref(q{SELECT * FROM mt5.update_mt5_myaffiliate_id(?,?,?)}, {Slice => {}}, $user->id, $new_aff_id, \@affiliate_mt5_accounts);
+                $_->selectall_arrayref(
+                    q{SELECT * FROM mt5.update_mt5_myaffiliate_id(?,?,?)},
+                    {Slice => {}},
+                    $user->id, $new_aff_id, \@affiliate_mt5_accounts
+                );
             });
 
         my @actual_updated_accounts = map { $_->{update_mt5_myaffiliate_id} } $updated_mt5_accounts->@*;
-        
-        unless ( scalar(@actual_updated_accounts) == 0) {
+
+        unless (scalar(@actual_updated_accounts) == 0) {
             print "Accounts are updated sucessfully with new affiliate id " . $new_aff_id;
-        }
-        else {
+        } else {
             print "Error : Accounts' affiliate IDs are not updated. Check Binary user ID has the correct MT5 accounts assigned.";
         }
-        
+
     } else {
         print "Please enter a valid Affiliate ID";
     }

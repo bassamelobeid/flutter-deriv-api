@@ -640,9 +640,35 @@ if ($input{delete_existing_192}) {
     ) if BOM::Platform::ProveID->new(client => $client)->delete_existing_reports();
 }
 
+my $is_compliance = BOM::Backoffice::Auth0::has_authorisation(['Compliance']);
+# AFFILIATE COC APPROVAL & RISK DISCLAIMER EMAIL
+if ($is_compliance) {
+    if ($input{risk_disclaimer_email_checkbox} eq 'on') {
+        if ($client->user->affiliate) {
+            my $lang = $input{risk_disclaimer_email_language} // 'EN';
+            notify_resubmission_of_risk_disclaimer($loginid, $lang, $clerk);
+            print "<p class=\"success\">Risk Disclaimer Resubmission email (" . $lang . ") is sent to Client " . $client->loginid . "</p>";
+        } else {
+            print "<p class=\"error\">Client " . $client->loginid . " is not an affiliate.</p>";
+        }
+    }
+
+    if (defined $input{force_coc_acknowledgement}) {
+        if ($client->user->affiliate) {
+            $client->user->set_affiliate_coc_approval(0);
+            print "<p class=\"success\">Client " . $client->loginid . " Affiliate's Code of Conduct approval banner triggered.</p>";
+        } else {
+            print "<p class=\"error\">Client " . $client->loginid . " is not an affiliate.</p>";
+        }
+    }
+}
+
+my $skip_loop_all_clients =
+    (defined $input{force_coc_acknowledgement} || defined $input{risk_disclaimer_email_checkbox});
+
 # SAVE DETAILS
 # TODO:  Once we switch to userdb, we will not need to loop through all clients
-if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
+if ($input{edit_client_loginid} =~ /^\D+\d+$/ and not $skip_loop_all_clients) {
     my $error;
     # algorithm provide different encrypted string from the same text based on some randomness
     # so we update this encrypted field only on value change - we don't want our trigger log trash
@@ -1094,7 +1120,6 @@ client's financial assessment information.
 
 =cut
 
-my $is_compliance = BOM::Backoffice::Auth0::has_authorisation(['Compliance']);
 my %fa_updated;
 if ($is_compliance) {
     if ($input{whattodo} =~ /^(trading_experience|financial_information)$/) {
@@ -1382,11 +1407,9 @@ print qq{<a href="$new_log_href" class="btn btn--primary">View history of change
 if (%$aff_mt_accounts) {
     my $update_affiliate_id_href = request()->url_for('backoffice/update_affiliate_id.cgi', $log_args);
     print qq{<a href="$update_affiliate_id_href" class="btn btn--primary">Edit Affiliate ID for $encoded_loginid</a>};
-}
-else {
+} else {
     print qq{<span class="btn btn--disabled">No affiliates info to edit for $encoded_loginid</span>};
 }
-
 
 if ($payment_agent) {
     $log_args->{category} = 'payment_agent';
