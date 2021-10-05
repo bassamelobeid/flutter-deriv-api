@@ -248,7 +248,7 @@ subtest 'get settings' => sub {
             'country'                        => 'Indonesia',
             'residence'                      => 'Indonesia',
             'salutation'                     => 'MR',
-            'is_authenticated_payment_agent' => '0',
+            'is_authenticated_payment_agent' => 0,
             'country_code'                   => 'id',
             'date_of_birth'                  => '267408000',
             'address_state'                  => 'LA',
@@ -274,7 +274,8 @@ subtest 'get settings' => sub {
             'non_pep_declaration'            => 1,
             'immutable_fields'               => ['residence', 'secret_answer', 'secret_question'],
             'preferred_language'             => 'FA',
-            'feature_flag'                   => {wallet => 0}});
+            'feature_flag'                   => {wallet => 0},
+        });
 
     $user_X->update_preferred_language('AZ');
     $params->{token} = $token_X_mf;
@@ -310,7 +311,7 @@ subtest 'get settings' => sub {
             'country'                        => 'Indonesia',
             'residence'                      => 'Indonesia',
             'salutation'                     => 'MR',
-            'is_authenticated_payment_agent' => '0',
+            'is_authenticated_payment_agent' => 0,
             'country_code'                   => 'id',
             'date_of_birth'                  => '267408000',
             'address_state'                  => 'LA',
@@ -336,7 +337,7 @@ subtest 'get settings' => sub {
             'non_pep_declaration'            => 0,
             'immutable_fields'               => ['residence'],
             'preferred_language'             => 'AZ',
-            'feature_flag'                   => {wallet => 0}
+            'feature_flag'                   => {wallet => 0},
         },
         'vr client return real account information when it has sibling'
     );
@@ -379,6 +380,41 @@ subtest 'get settings' => sub {
         'feature_flag'                   => {wallet => 0},
     };
     is_deeply($result, $expected, 'return 1 for authenticated payment agent');
+
+    $result   = $c->tcall($method, $params);
+    $expected = {
+        'country'                        => 'Indonesia',
+        'residence'                      => 'Indonesia',
+        'salutation'                     => 'MR',
+        'is_authenticated_payment_agent' => '1',
+        'country_code'                   => 'id',
+        'date_of_birth'                  => '267408000',
+        'address_state'                  => 'LA',
+        'address_postcode'               => '232323',
+        'phone'                          => '+15417543010',
+        'last_name'                      => 'pItT',
+        'email'                          => $email_Y,
+        'address_line_2'                 => '301',
+        'address_city'                   => 'Beverly Hills',
+        'address_line_1'                 => 'Civic Center',
+        'first_name'                     => 'bRaD',
+        'email_consent'                  => '0',
+        'allow_copiers'                  => '0',
+        'client_tnc_status'              => '',
+        'place_of_birth'                 => undef,
+        'tax_residence'                  => undef,
+        'tax_identification_number'      => undef,
+        'account_opening_reason'         => undef,
+        'request_professional_status'    => 0,
+        'citizen'                        => 'at',
+        'user_hash'                      => hmac_sha256_hex($user_Y->email, BOM::Config::third_party()->{elevio}->{account_secret}),
+        'has_secret_answer'              => 1,
+        'non_pep_declaration'            => 1,
+        'immutable_fields'               => ['residence', 'secret_answer', 'secret_question'],
+        'preferred_language'             => 'FA',
+        'feature_flag'                   => {wallet => 0},
+    };
+    is_deeply($result, $expected, 'return 1 for code of conduct approval');
 
     $poi_status = 'verified';
     $result     = $c->tcall($method, $params);

@@ -3700,6 +3700,61 @@ subtest 'Empty country code scenario' => sub {
     is $result->{authentication}->{identity}->{services}->{onfido}->{country_code}, 'BRA', 'Expected country code found';
 };
 
+subtest 'affiliate code of conduct' => sub {
+    my $user = BOM::User->create(
+        email    => 'aff123@deriv.com',
+        password => 'cooltobeanaffiliate',
+    );
+
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'CR'});
+    $user->add_client($client);
+
+    $client->user->set_affiliate_id('aff123');
+    is $client->user->affiliate_coc_approval_required, undef, 'new affiliate, coc_approval is undef';
+
+    my $token  = $m->create_token($client->loginid, 'test token');
+    my $result = $c->tcall($method, {token => $token});
+
+    cmp_deeply(
+        $result->{status},
+        [
+            'cashier_locked', 'dxtrade_password_not_set', 'financial_information_not_complete', 'mt5_password_not_set',
+            'trading_experience_not_complete'
+        ],
+        "needs_affiliate_coc_approval status is not added when code_of_conduct_approval is undef"
+    );
+
+    $client->user->set_affiliate_coc_approval(0);
+    is $client->user->affiliate_coc_approval_required, 1, 'coc_approval is required';
+
+    $result = $c->tcall($method, {token => $token});
+
+    cmp_deeply(
+        $result->{status},
+        [
+            'cashier_locked', 'dxtrade_password_not_set', 'financial_information_not_complete',
+            'mt5_password_not_set',
+            'needs_affiliate_coc_approval', 'trading_experience_not_complete',
+
+        ],
+        "needs_affiliate_coc_approval status is added when code_of_conduct_approval is 0"
+    );
+
+    $client->user->set_affiliate_coc_approval(1);
+    is $client->user->affiliate_coc_approval_required, 0, 'coc_approval is not required';
+
+    $result = $c->tcall($method, {token => $token});
+
+    cmp_deeply(
+        $result->{status},
+        [
+            'cashier_locked', 'dxtrade_password_not_set', 'financial_information_not_complete', 'mt5_password_not_set',
+            'trading_experience_not_complete'
+        ],
+        "needs_affiliate_coc_approval status is removed when code_of_conduct_approval is 1"
+    );
+};
+
 $documents_mock->unmock_all;
 
 done_testing();

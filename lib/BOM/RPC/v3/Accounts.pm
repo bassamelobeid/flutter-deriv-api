@@ -987,6 +987,8 @@ rpc get_account_status => sub {
 
     push(@$status, 'dxtrade_password_not_set') unless $client->user->dx_trading_password;
 
+    push(@$status, 'needs_affiliate_coc_approval') if $client->user->affiliate_coc_approval_required;
+
     my $base_validation     = BOM::Platform::Client::CashierValidation::base_validation($client);
     my $deposit_validation  = BOM::Platform::Client::CashierValidation::deposit_validation($client);
     my $withdraw_validation = BOM::Platform::Client::CashierValidation::withdraw_validation($client);
@@ -2427,22 +2429,29 @@ async_rpc service_token => sub {
 
 rpc tnc_approval => sub {
     my $params = shift;
-    my $error;
 
-    my $client = $params->{client};
+    my ($client, $args) = @{$params}{qw/client args/};
+
     return BOM::RPC::v3::Utility::permission_error() if $client->is_virtual;
 
-    if ($params->{args}->{ukgc_funds_protection}) {
-        if (not eval { $client->status->set('ukgc_funds_protection', 'system', 'Client acknowledges the protection level of funds'); }) {
-            return BOM::RPC::v3::Utility::client_error();
-        }
-    } else {
-        try {
+    try {
+        if ($args->{affiliate_coc_agreement}) {
+
+            return BOM::RPC::v3::Utility::create_error({
+                    code              => 'AffiliateNotFound',
+                    message_to_client => localize('You have not registered as an affiliate.')}) unless defined $client->user->affiliate;
+
+            $client->user->set_affiliate_coc_approval;
+
+        } elsif ($args->{ukgc_funds_protection}) {
+            return BOM::RPC::v3::Utility::client_error()
+                unless (eval { $client->status->set('ukgc_funds_protection', 'system', 'Client acknowledges the protection level of funds'); });
+        } else {
             $client->user->set_tnc_approval;
-        } catch {
-            log_exception();
-            return BOM::RPC::v3::Utility::client_error();
         }
+    } catch {
+        log_exception();
+        return BOM::RPC::v3::Utility::client_error();
     }
 
     return {status => 1};
