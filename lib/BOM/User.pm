@@ -1606,4 +1606,92 @@ sub get_edd_status {
     }
 }
 
+=head2 affiliate
+
+Returns a hashref of a L<BOM::User> affiliate_id, and the coc_approval
+
+=cut
+
+sub affiliate {
+    my $self = shift;
+
+    return $self->{affiliate} if $self->{affiliate};
+
+    $self->{affiliate} = $self->dbic->run(
+        fixup => sub {
+            $_->selectrow_hashref('SELECT * FROM users.get_affiliate(?)', {Slice => {}}, $self->{id});
+        });
+
+    return $self->{affiliate};
+}
+
+=head2 set_affiliate_id
+
+Sets the L<BOM::User> affiliate_id.
+
+Note: The coc_approval is set to null by default because we don't know if the coc approval is needed or not.
+
+This check is to be done manually by Compliance team.
+
+=cut
+
+sub set_affiliate_id {
+    my ($self, $affiliate_id) = @_;
+
+    try {
+        return $self->dbic->run(
+            fixup => sub {
+                $_->do('SELECT FROM users.add_affiliate_id(?, ?)', undef, $self->{id}, $affiliate_id);
+            });
+
+    } catch {
+        die +{code => 'AffiliateAlreadyExist'};
+    }
+}
+
+=head2 set_affiliate_coc_approval
+
+Sets the Affiliate & Payment Agent's Code of Conduct agreement as approved / needs approval.
+
+Note: This is a different Code of Conduct agreement for Payment Agent only.
+
+=cut
+
+sub set_affiliate_coc_approval {
+    my ($self, $coc_approval) = @_;
+
+    die +{code => 'AffiliateNotFound'} unless $self->affiliate;
+
+    $coc_approval //= 1;
+
+    my $coc_version = '';    # putting '' as coc_version for now, maybe in future we'll have proper coc_version numbering
+
+    return $self->dbic->run(
+        fixup => sub {
+            $_->do(
+                'SELECT users.set_affiliate_coc_approval(?, ?, ?, ?)',
+                undef,         $self->{id}, $self->affiliate->{affiliate_id},
+                $coc_approval, $coc_version
+            );
+        });
+}
+
+=head2 affiliate_coc_approval_required
+
+Returns 1 or 0 if the affiliate's approval to the Affiliate & Payment Agent's Code of Conduct agreement is required / needs approval
+
+or returns undef if user is not an affiliate
+
+=cut
+
+sub affiliate_coc_approval_required {
+    my $self = shift;
+
+    return undef unless $self->affiliate;
+
+    return undef unless defined $self->affiliate->{coc_approval};
+
+    return $self->affiliate->{coc_approval} ? 0 : 1;
+}
+
 1;
