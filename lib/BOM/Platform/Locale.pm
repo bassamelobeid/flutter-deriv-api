@@ -14,6 +14,7 @@ package BOM::Platform::Locale;
 use strict;
 use warnings;
 use feature "state";
+use List::Util qw /first/;
 
 use utf8;             # to support source-embedded country name strings in this module
 use JSON::MaybeXS;    #Locale::SubCountry using JSON::XS, so we should use JSON::MaybeXS before that
@@ -172,6 +173,39 @@ sub get_state_by_id {
     my ($state_name) = sort map { $_->{text} } grep { $_->{value} eq $id } @{get_state_option($residence) || []};
 
     return $state_name;
+}
+
+=head2 validate_state
+
+    validate_state($state, $residence)
+
+Lookup the state hashref by the state's code or name, and residence.
+
+Returns undef when state is not found.
+
+Takes two scalars:
+
+=over 4
+
+=item * state (code or name of a state, for example, 'BA' or Bali)
+
+=item * residence (2-letter country code, for example, 'id' for Indonesia)
+
+=back
+
+Returns the hash value of the state if found (e.g. { value => 'BA', text => 'Bali' }), or undef otherwise.
+
+Usage: validate_state('BA', 'id') => { value => 'BA', text => 'Bali' }
+       validate_state('Bury', 'id') => undef
+
+=cut
+
+sub validate_state {
+    my $state     = shift;
+    my $residence = shift;
+    my $match     = first { lc $_->{value} eq lc $state or lc $_->{text} eq lc $state } @{get_state_option($residence) || []};
+
+    return $match;
 }
 
 1;
