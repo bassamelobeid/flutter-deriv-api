@@ -2977,7 +2977,7 @@ sub check_name_changes_after_first_deposit {
     my $change_threshold = 0.6;    # withdrawl lock is applied when name changes exceed this
 
     my $client = BOM::User->get_client_using_replica($loginid);
-    return 1 if $client->get_poi_status eq 'verified';
+    return 1 if $client->status->age_verification || $client->fully_authenticated;
     return 1 if $client->status->withdrawal_locked;
 
     my $changes = $client->db->dbic->run(

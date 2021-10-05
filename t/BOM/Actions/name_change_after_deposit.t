@@ -52,6 +52,13 @@ subtest 'name checks' => sub {
     ok !BOM::User::Client->new({loginid => $client->loginid})->status->withdrawal_locked, 'not withdrawal locked after minor change';
     BOM::Test::Email::mailbox_check_empty('no email sent');
 
+    $client->status->setnx('age_verification', 'test');
+    change_name('maria', 'juana');
+    BOM::Event::Actions::Client::check_name_changes_after_first_deposit({loginid => $client->loginid});
+    ok !BOM::User::Client->new({loginid => $client->loginid})->status->withdrawal_locked, 'not withdrawal locked on age verified client';
+    BOM::Test::Email::mailbox_check_empty('no email sent');
+
+    $client->status->clear_age_verification;
     change_name('mary', 'jane');
     BOM::Event::Actions::Client::check_name_changes_after_first_deposit({loginid => $client->loginid});
     ok my $status = BOM::User::Client->new({loginid => $client->loginid})->status->withdrawal_locked, 'withdrawal locked after big change';
