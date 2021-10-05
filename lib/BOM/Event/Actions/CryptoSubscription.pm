@@ -527,7 +527,7 @@ sub fraud_address {
 
     my $response = $check->{response_result};
     unless ($response) {
-        $log->warnf("An error occured communication with Bitcoinabuse for: %s", $address);
+        $log->warnf("An error occured communicating with Bitcoinabuse for: %s, with response code: %s", $address, $check->{response_code});
         return 0;
     }
     my $found = $response->{count} > 0 && defined $response->{address} ? 1 : 0;
