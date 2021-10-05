@@ -1885,6 +1885,12 @@ sub _get_ib_affiliate_id_from_token {
         return 0;
     };
 
+    if (ref $affiliate_user->{USER_VARIABLES}{VARIABLE} ne 'ARRAY') {
+        stats_inc('myaffiliates.mt5.failure.get_aff_user_variable', 1);
+        $log->warnf("User variable is not defined for %s from token %s", $myaffiliate_id, $token);
+        return 0;
+    }
+
     try {
         my @mt5_custom_var =
             map { $_->{VALUE} =~ s/\s//rg; } grep { $_->{NAME} =~ s/\s//rg eq 'mt5_account' } $affiliate_user->{USER_VARIABLES}{VARIABLE}->@*;
