@@ -165,23 +165,35 @@ sub redirect {
     my $redirect_uri     = shift // request()->http_handler->env->{HTTP_REFERER};
     my $time_to_redirect = shift // 10;
 
-    print qq{
-        </br></br><p style="text-align: center;" id="count-down">You will be redirected to the <a class="link" href="$redirect_uri">previous page</a> in $time_to_redirect seconds</p>
-        <script>
-            let time_to_redirect = $time_to_redirect;
-
-            const redirect_message_field = document.querySelector('#count-down');
-            const interval = setInterval(() => {
-                if (time_to_redirect-- === 1) {
-                    clearInterval(interval);
-                    window.location.replace('$redirect_uri');
-                }
-
-                const new_message = redirect_message_field.innerHTML.replace(/[0-9]+ seconds/, time_to_redirect + ' seconds');
-                redirect_message_field.innerHTML = new_message;
-            }, 1000);
-        </script>
-    };
+    if ($redirect_uri) {
+        print qq{
+            </br></br><p style="text-align: center;" id="count-down">You will be redirected to the <a class="link" href="$redirect_uri">previous page</a> in $time_to_redirect seconds</p>
+            <script>
+                let time_to_redirect = $time_to_redirect;
+    
+                const redirect_message_field = document.querySelector('#count-down');
+                const interval = setInterval(() => {
+                    if (time_to_redirect-- === 1) {
+                        clearInterval(interval);
+                        window.location.replace('$redirect_uri');
+                    }
+    
+                    const new_message = redirect_message_field.innerHTML.replace(/[0-9]+ seconds/, time_to_redirect + ' seconds');
+                    redirect_message_field.innerHTML = new_message;
+                }, 1000);
+            </script>
+        };
+    } else {
+        my $rand     = '?' . rand(9999);  # to avoid caching on these fast navigation links
+        my $login_page = request()->url_for("backoffice/login.cgi", {_r => $rand});
+        
+        print qq{
+                </br></br><p style="text-align: center;" id="redirect-login">Redirecting to <a class="link" href="$login_page">login page</a></p>
+                <script>
+                    window.location.replace('$login_page');
+                </script>
+            };
+    }
 }
 
 sub execute_set_status {
