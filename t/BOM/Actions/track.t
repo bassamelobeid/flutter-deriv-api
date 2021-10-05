@@ -600,6 +600,7 @@ sub test_segment_customer {
     }
 
     my $expected_traits = {
+        'salutation' => $test_client->salutation,
         'email'      => $test_client->email,
         'first_name' => $test_client->first_name,
         'last_name'  => $test_client->last_name,

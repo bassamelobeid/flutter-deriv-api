@@ -7,8 +7,10 @@ no indirect;
 
 use Log::Any qw($log);
 
-use BOM::Platform::Context qw(request);
+use BOM::Platform::Context qw(request localize);
 use BOM::Platform::Email qw(process_send_email);
+use BOM::Event::Services;
+use BOM::Event::Services::Track;
 
 =head2 send_email_generic
 
@@ -30,6 +32,8 @@ based on the given args.
 =item * C<to> - The recipient email address
 
 =item * C<subject> - Subject of the email
+
+=item * C<event> - The event name, required to force emit email events instead of using process_send_email
 
 =back
 
@@ -58,18 +62,68 @@ Returns 1 if email has been sent, otherwise 0
 =cut
 
 sub send_email_generic {
-    my $args = shift;
+    my ($args) = @_;
 
-    my $status_code = process_send_email($args);
+    if ($args->{event}) {
+        return send_client_email($args);
+    } else {
+        my $status_code = process_send_email($args);
 
-    $log->errorf(
-        'Failed to send the email with subject: %s - template_name: %s - request_brand_name: %s',
-        $args->{subject},
-        $args->{template_name},
-        request()->brand->name
-    ) unless $status_code;
+        $log->errorf(
+            'Failed to send the email with subject: %s - template_name: %s - request_brand_name: %s',
+            $args->{subject},
+            $args->{template_name},
+            request()->brand->name
+        ) unless $status_code;
 
-    return $status_code;
+        return $status_code;
+    }
+}
+
+=head2 send_client_email
+
+Handler for sending client's email event.
+
+=over 4
+
+=item * C<event> - The event name
+
+=item * C<loginid> - The client loginid, a unique identifier for the event
+
+=item * C<language> - (Optional) The email language, defaults to the current context langauge
+
+=item * C<properties> - (Optional) A hashref of the properties associated to the event
+
+Note: Client's details ("traits") is already recorded in customer.io, don't send these as an additional properties unless needed.
+
+Refer to L<BOM::Event::Services::Track::_create_customer>.
+
+=back
+
+=cut
+
+sub send_client_email {
+    my ($args) = @_;
+
+    local $BOM::Platform::Context::current_request = request();
+    if (my $language = delete $args->{language}) {
+        $BOM::Platform::Context::current_request = BOM::Platform::Context::Request->new({
+            request->%*,
+            language => $language,
+        });
+    }
+
+    $args->{properties}{title} = localize($args->{properties}{title});
+
+    if ($args->{properties}{salutation}) {
+        $args->{properties}{salutation} = localize($args->{properties}{salutation});
+    }
+
+    return BOM::Event::Services::Track::track_event(
+        event      => $args->{event},
+        loginid    => $args->{loginid},
+        properties => $args->{properties},
+    );
 }
 
 1;

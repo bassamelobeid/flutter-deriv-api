@@ -1285,6 +1285,7 @@ sub test_segment_customer {
     if ($test_client->is_virtual) {
         is_deeply $customer->traits,
             {
+            'salutation' => $test_client->salutation,
             'email'      => $test_client->email,
             'first_name' => $test_client->first_name,
             'last_name'  => $test_client->last_name,
@@ -1319,6 +1320,7 @@ sub test_segment_customer {
 
         is_deeply $customer->traits,
             {
+            'salutation' => $test_client->salutation,
             'email'      => $test_client->email,
             'first_name' => $test_client->first_name,
             'last_name'  => $test_client->last_name,

@@ -110,6 +110,7 @@ my %EVENT_PROPERTIES = (
     trading_platform_investor_password_reset_request => [qw(first_name verification_url code)],
     trading_platform_investor_password_changed       => [qw(first_name contact_url type login)],
     trading_platform_investor_password_change_failed => [qw(first_name contact_url type login)],
+    risk_disclaimer_resubmission                     => [qw(loginid website_name title salutation)],
 );
 
 # Put the events that shouldn't care about brand or app_id source to get fired.
@@ -133,6 +134,7 @@ my @SKIP_BRAND_VALIDATION = qw(
     payment_withdrawal_reversal
     mt5_inactive_notification
     p2p_archived_ad
+    risk_disclaimer_resubmission
 );
 
 my $loop = IO::Async::Loop->new;
@@ -1246,6 +1248,7 @@ sub _create_customer {
             landing_companies           => @landing_companies ? join ',' => uniq sort @landing_companies : 'virtual',
             available_landing_companies => $available_landing_companies,
             provider                    => $provider,
+            salutation                  => $client->salutation,
 
             # subscribe or unsubscribed
             unsubscribed => $unsubscribed,
