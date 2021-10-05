@@ -4,6 +4,7 @@ package main;
 use strict;
 use warnings;
 
+use Text::Trim qw(trim);
 use f_brokerincludeall;
 use BOM::CTC::Database;
 use Syntax::Keyword::Try;
@@ -29,6 +30,8 @@ sub _config {
 
 my $s_address  = request()->param('s_address');
 my $loginid    = request()->param('loginid');
+my $from_date  = trim(request()->param('from_date'));
+my $to_date    = trim(request()->param('to_date'));
 my $type       = request()->param('type');
 my $today_date = Date::Utility->new()->datetime_yyyymmdd_hhmmss;
 my $post_data;
@@ -41,10 +44,15 @@ if ($type && $type eq "search") {
 
     $data = $db->list_blacklist_associated_addresses($s_address, $loginid);
 
+} elsif ($type && $type eq "search_for_date") {
+
+    $from_date .= ' 00:00:00';
+    $to_date   .= ' 23:59:59';
+    $data = $db->list_blacklist_associated_addresses(undef, undef, $from_date, $to_date);
+
 } elsif ($type && $type eq "search_all") {
 
     $data = $db->list_blacklist_associated_addresses();
-
 }
 
 if (request()->param('json_data')) {

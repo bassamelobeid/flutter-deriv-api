@@ -1,3 +1,5 @@
+[% USE date %]
+
 <h3>Crypto Fradulent Addresses</h3>
 
 <form action="[% data_url %]" method="POST">
@@ -15,6 +17,17 @@
 <label>Login ID:</label><input type=text size=50 maxlength=50 name="loginid" placeholder="CR12345" required/>
 <input type="submit" class="btn btn--primary" value="Search for client">
 <input type="hidden" name="type" value="search">
+</div>
+</form>
+
+<hr>
+
+<form action="[% data_url %]" method="post">
+<div class="row">
+<input name="from_date" type="text" size=15 value="[% from_date %]" placeholder="e.g. [% date.format(date.now, '%Y-%m-%d') %]" class="datepick" data-lpignore="true" required />
+<input name="to_date" type="text" size=15 value="[% to_date %]" placeholder="e.g. [% date.format(date.now, '%Y-%m-%d') %]" class="datepick" data-lpignore="true" required/>
+<input type="submit" class="btn btn--primary" value="Search for date">
+<input type="hidden" name="type" value="search_for_date">
 </div>
 </form>
 
@@ -45,7 +58,8 @@
                 <th>Report Count</th>
                 <th>Bitcoin Abuse Website link</th>
                 <th>Investigation remarks</th>
-                <th>Disable/Enable address</th>
+                <th>Blocked/Unblocked address</th>
+                <th>Insert Date</th>
                 <th>Last Update Date</th>
                 <th>Staff</th>
             </tr>
@@ -60,6 +74,7 @@
                     <td><input type="text" id="remark" name="investigations_remarks" value="[% row.investigation_remarks %]" onkeydown="this.className='changed'" /> <div style="display : none">[% row.investigation_remarks %] </div> </td>
                     <td align="middle">
                         <input type="checkbox" id="blocked" name="blocked" value="[% row.blocked %]" onclick="this.className='changed' " [% IF row.blocked %] checked="checked" [% END %]> <div style="display : none">[% row.blocked %] </div></td>
+                    <td>[% row.insert_date %]</td>
                     <td>[% row.last_status_date %]</td>
                     <td>[% row.last_status_update_by %]
                 </tr>
@@ -97,5 +112,10 @@ function post_data() {
 \$(':checkbox').on('change', function(){
    this.value = this.checked ? 1 : 0;
 }).change();
+
+
+\$(document).ready(function() {
+    \$('.datepick').datepicker({dateFormat: "yy-mm-dd"});
+});
 
 </script>
