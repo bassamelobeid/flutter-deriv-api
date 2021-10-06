@@ -151,7 +151,7 @@ subtest 'get proposal with invalid ticks duration' => sub {
 };
 
 subtest 'buy with invalid ticks duration' => sub {
-    $c->call_ok('buy', $buy_params)->has_no_system_error->has_error->error_code_is('ContractCreationFailure', 'correct error code');
+    $c->call_ok('buy', $buy_params)->has_no_system_error->has_error->error_code_is('InvalidOfferings', 'correct error code');
 };
 
 subtest 'buy with invalid expiry date' => sub {
