@@ -27,6 +27,17 @@ has clients => (
 
 has transaction => (is => 'ro');
 
+=head2 trade_adjusted
+
+A boolean to indicate if comaparison of requested vs recalculated has been done
+
+=cut
+
+has trade_adjusted => (
+    is      => 'rw',
+    default => 0,
+);
+
 my $json = JSON::MaybeXS->new;
 ################ Client and transaction validation ########################
 
@@ -89,88 +100,95 @@ sub validate_trx_sell {
     return undef;
 }
 
-sub validate_trx_buy {
+=head2 validate_trx_batch_buy
+
+Validate identical contract purchase for multiple clients.
+
+=cut
+
+sub validate_trx_batch_buy {
     my $self = shift;
+
+    CLI: for my $c ($self->clients->@*) {
+        my $client = $c->{client};
+        next unless $client;
+
+        if (my $error = $self->validate_trx_buy($client)) {
+            if ($self->_bailout_early($error)) {
+                return $error;
+            } else {
+                $c->{code}  = $error->get_type;
+                $c->{error} = $error->{-message_to_client};
+                next CLI;
+            }
+        }
+    }
+}
+
+=head2 _bailout_early
+
+If contract is invalid in batch buy, exit early.
+
+Returns boolean.
+
+=cut
+
+sub _bailout_early {
+    my ($self, $error) = @_;
+
+    my $type = $error->get_type;
+    # contract related error, bailout now
+    if ($type eq 'InvalidDatePricing' or $type eq 'BetExpired' or $type eq 'slippage') {
+        return 1;
+    }
+
+    my $message = $error->get_mesg;
+    if ($type eq 'InvalidOfferings' and ($message eq 'Invalid underlying symbol' or $message eq 'Invalid contract category')) {
+        return 1;
+    }
+
+    return 0;
+}
+
+=head2 validate_trx_buy
+
+Validate contract purchase for a single client.
+
+=cut
+
+sub validate_trx_buy {
+    my ($self, $client) = @_;
     # all these validations MUST NOT use the database
     # database related validations MUST be implemented in the database
     # ask your friendly DBA team if in doubt
-    my $res;
-    ### TODO: It's temporary trick for copy trading. Needs to refactor in BOM::Transaction ( remove multiple, change client to clients )
-    my $clients;
-    $clients = $self->transaction->multiple if $self->transaction;
-    $clients = [map { +{client => $_} } @{$self->clients}] unless $clients;
 
-    # If contract has 'primary_validation_error'(which is checked inside)
-    # we should not do any other checks and should return an error.
-    # additionally this check will be done inside _is_valid_to_buy check, but we will not return an error from there
-    $res = $self->_is_valid_to_buy($self->transaction->client);
-    return $res if $res;
-
-    my $has_multiple_clients = $self->transaction && $self->transaction->multiple;
+    $client //= $self->transaction->client;
+    my @transaction_checks = $client->landing_company->transaction_checks->@*;
+    my $contract           = $self->transaction->contract;
 
     my @extra_validation_methods = qw/
         _validate_offerings_buy
+        _is_valid_to_buy
+        _validate_trade_pricing_adjustment
+        _validate_no_volume_limit
         /;
 
-    push @extra_validation_methods, '_is_valid_to_buy' if $has_multiple_clients;
-
-    CLI: for my $c (@$clients) {
-        next CLI if !$c->{client} || $c->{code};
-        my $client = $c->{client};
-
-        my @validation_checks = (@{$client->landing_company->transaction_checks}, @extra_validation_methods);
-
-        foreach my $method (@validation_checks) {
-            $res = $self->$method($client);
-            next unless $res;
-
-            if ($has_multiple_clients) {
-                $c->{code}  = $res->get_type;
-                $c->{error} = $res->{-message_to_client};
-                next CLI;
-            }
-
-            return $res;
-        }
-    }
-
-    ### Order is very important
-    ### _validate_trade_pricing_adjustment may contain some expensive calculations
-    #### And last per-client checks must be after this calculations.
-
-    $res = $self->_validate_trade_pricing_adjustment();
-    return $res if $res;
-
-    my @contract_validation_methods = qw/
+    push @extra_validation_methods, qw(
         _validate_payout_limit
-        _validate_stake_limit
-        /;
+        _validate_stake_limit) if $contract->is_binary;
 
-    CLI: for my $c (@$clients) {
-        next CLI if !$c->{client} || $c->{code};
+    # We should check pricing time just before DB query. So check this last!
+    push @extra_validation_methods, '_validate_date_pricing';
 
-        $res = $self->_validate_no_volume_limit($c->{client});
-        return $res if $res;
+    my @validation_checks = (@transaction_checks, @extra_validation_methods);
 
-        foreach my $method (@contract_validation_methods) {
-
-            next unless $self->transaction->contract->is_binary;
-
-            $res = $self->$method($c->{client});
-            next unless $res;
-
-            if ($has_multiple_clients) {
-                $c->{code}  = $res->get_type;
-                $c->{error} = $res->{-message_to_client};
-                next CLI;
-            }
-
-            return $res;
+    foreach my $method (@validation_checks) {
+        if (my $error = $self->$method($client)) {
+            return $error;
         }
     }
 
-    ### we should check pricing time just before DB query
-    return $self->_validate_date_pricing();
+    return undef;
 }
 
 sub _validate_offerings_buy {
@@ -255,6 +273,8 @@ sub _validate_sell_pricing_adjustment {
 sub _validate_trade_pricing_adjustment {
     my $self = shift;
 
+    return undef if $self->trade_adjusted;
+
     my $transaction = $self->transaction;
     my $contract    = $transaction->contract;
 
@@ -304,6 +324,7 @@ sub _validate_non_binary_price_adjustment {
 sub _adjust_trade {
     my ($self, $move, $allowed_move) = @_;
 
+    $self->trade_adjusted(1);
     my $transaction = $self->transaction;
     # if we do not allow slippage
     if ($allowed_move == 0 and $move == 0) {

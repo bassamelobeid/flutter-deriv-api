@@ -730,41 +730,73 @@ sub prepare_bet_data_for_buy {
         });
 }
 
-sub prepare_buy {
+sub prepare_batch_buy {
     my ($self, $skip) = @_;
 
-    if ($self->multiple) {
-        for my $m (@{$self->multiple}) {
-            next if $m->{code};
-            my $c;
-            if ($m->{loginid}) {
-                try {
-                    $c = BOM::User::Client->new({loginid => $m->{loginid}});
-                } catch ($e) {
-                    $log->warnf("Error when get client of login id $m->{loginid}. more detail: %s", $e);
-                }
-            }
-            unless ($c) {
-                $m->{code}  = 'InvalidLoginid';
-                $m->{error} = BOM::Platform::Context::localize('Invalid loginid');
-                next;
-            }
+    # $self->client in a batch transaction is regarded as the Manager and it is not the clients that we want to
+    # perform the transaction on. The actual client list is in $self->multiple (bad name!)
+    unless ($self->multiple) {
+        die "client lists is required for batch_buy";
+    }
 
-            $m->{client} = $c;
-            $m->{limits} = $self->calculate_limits($m->{client});
+    for my $m (@{$self->multiple}) {
+        next if $m->{code};
+        my $c;
+        if ($m->{loginid}) {
+            try {
+                $c = BOM::User::Client->new({loginid => $m->{loginid}});
+            } catch ($e) {
+                $log->warnf("Error when get client of login id $m->{loginid}. more detail: %s", $e);
+            }
         }
+        unless ($c) {
+            $m->{code}  = 'InvalidLoginid';
+            $m->{error} = BOM::Platform::Context::localize('Invalid loginid');
+            next;
+        }
+
+        $m->{client} = $c;
+        $m->{limits} = $self->calculate_limits($m->{client});
     }
 
     return $self->prepare_bet_data_for_buy if $skip;
-    my @clients = ($self->client);
-    if ($self->multiple) {
-        @clients = map { $_->{client} } grep { ref $_->{client} } @{$self->multiple};
-    } else {
-        $self->limits($self->calculate_limits);
-    }
+
     my $error_status = BOM::Transaction::Validation->new({
             transaction => $self,
-            clients     => \@clients,
+            clients     => $self->multiple,
+        })->validate_trx_batch_buy();
+
+    return $error_status if $error_status;
+
+    $self->comment(
+        _build_pricing_comment({
+                contract => $self->contract,
+                price    => $self->price,
+                ($self->requested_amount)
+                ? (requested_price => $self->requested_amount)
+                : (),    # requested_price could be ask price or payout. Since this field is embedded in database schema, I don't want to change it.
+                ($self->recomputed_amount)
+                ? (recomputed_price => $self->recomputed_amount)
+                : (),    # recomputed_price could be ask price or payout. Since this field is embedded in database schema, I don't want to change it.
+                ($self->price_slippage)
+                ? (price_slippage => $self->price_slippage)
+                : (),    # price_slippage is the slippage of ask price or payout price.
+                action => 'buy'
+            })) unless (@{$self->comment});
+
+    return $self->prepare_bet_data_for_buy;
+}
+
+sub prepare_buy {
+    my ($self, $skip) = @_;
+
+    return $self->prepare_bet_data_for_buy if $skip;
+
+    $self->limits($self->calculate_limits);
+
+    my $error_status = BOM::Transaction::Validation->new({
+            transaction => $self,
+            clients     => [$self->client],
         })->validate_trx_buy();
 
     return $error_status if $error_status;
@@ -960,7 +992,7 @@ sub batch_buy {
     $self->action_type('buy');
     my $stats_data = $self->stats_start('batch_buy');
 
-    my ($error_status, $bet_data) = $self->prepare_buy($options{skip_validation});
+    my ($error_status, $bet_data) = $self->prepare_batch_buy($options{skip_validation});
 
     return $self->stats_stop($stats_data, $error_status) if $error_status;
 

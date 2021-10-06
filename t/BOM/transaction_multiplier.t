@@ -756,8 +756,8 @@ subtest 'buy multiplier with unsupported underlying' => sub {
 
         my $error = $txn->buy;
         ok $error, 'buy failed with error';
-        is $error->{-mesg},              'spread seasonality not defined for frxGBPPLN', 'message is spread seasonality not defined for frxGBPPLN';
-        is $error->{-message_to_client}, 'Trading is not offered for this asset.',       'message to client Trading is not offered for this asset.';
+        is $error->{-mesg},              'Invalid contract category',              'message is Invalid contract category';
+        is $error->{-message_to_client}, 'Trading is not offered for this asset.', 'message to client Trading is not offered for this asset.';
     };
 
     restore_time();
@@ -1251,9 +1251,10 @@ subtest 'buy multiplier with MF' => sub {
 
     $error = $txn->buy;
     ok $error, 'invalid to buy forex multiplier options for MF clients';
-    is $error->{'-type'},              'InvalidtoBuy',                           'InvalidtoBuy';
-    is $error->{'-mesg'},              'multiplier config undefined for R_100',  'symbol is not allowed for client';
-    is $error->{'-message_to_client'}, 'Trading is not offered for this asset.', 'trading not available';
+    is $error->{'-type'}, 'NotLegalMarket', 'NotLegalMarket';
+    is $error->{'-mesg'}, 'Clients are not allowed to trade on this markets as its restricted for this landing company',
+        'Clients are not allowed to trade on this markets as its restricted for this landing company';
+    is $error->{'-message_to_client'}, 'Please switch accounts to trade this market.', 'Please switch accounts to trade this market.';
     Test::Warnings::allow_warnings(0);
 
     $contract = produce_contract({
