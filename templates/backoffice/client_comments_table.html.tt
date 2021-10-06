@@ -1,6 +1,9 @@
+[% USE date %]
+
 <table class="alternate small toggle">
     <thead>
         <tr>
+            <th>LoginID</th>
             <th>Comment</th>
             <th>Author</th>
             <th>Date</th>
@@ -10,12 +13,13 @@
     <tbody>
         [% FOREACH record IN comments %]
         <tr>
+            <td style="vertical-align:top">[% record.exists('client_loginid') ? record.client_loginid : loginid %]</td>
             <td style="max-width: 800px;">[% record.comment | html | html_line_break %]</td>
             <td style="vertical-align:top">[% record.author %]</td>
-            <td style="vertical-align:top">[% record.creation_datetime %]</td>
+            <td style="vertical-align:top">[% record.exists('creation_time') ? date.format(record.creation_time, '%a, %d %b %Y %T %z') : record.creation_datetime %]</td>
             <td style="vertical-align:top">
-                <form method="post" action="[% request.url_for('backoffice/f_client_comments.cgi', { loginid => loginid }) | url %]">
-                    <input type="hidden" name="loginid" value="[% loginid %]" />
+                <form method="post" action="[% request.url_for('backoffice/f_client_comments.cgi', { loginid => record.exists('client_loginid') ? record.client_loginid : loginid }) | url %]">
+                    <input type="hidden" name="loginid" value="[% record.exists('client_loginid') ? record.client_loginid : loginid %]" />
                     <input type="hidden" name="action" value="show_edit_form" />
                     <input type="hidden" name="csrf" value="[% csrf %]" />
                     <input type="hidden" name="id" value="[% record.id %]" />
@@ -23,8 +27,8 @@
                 </form>
             </td>
             <td style="vertical-align:top">
-                <form method="post" action="[% request.url_for('backoffice/f_client_comments.cgi', { loginid => loginid }) | url %]" onSubmit="return confirm('Are you sure you want to delete the comment?');">
-                    <input type="hidden" name="loginid" value="[% loginid %]" />
+                <form method="post" action="[% request.url_for('backoffice/f_client_comments.cgi', { loginid => record.exists('client_loginid') ? record.client_loginid : loginid }) | url %]" onSubmit="return confirm('Are you sure you want to delete the comment?');">
+                    <input type="hidden" name="loginid" value="[% record.exists('client_loginid') ? record.client_loginid : loginid %]" />
                     <input type="hidden" name="action" value="delete_comment" />
                     <input type="hidden" name="csrf" value="[% csrf %]" />
                     <input type="hidden" name="id" value="[% record.id %]" />

@@ -71,6 +71,7 @@ if ($action && request()->http_method eq 'POST') {
             $input->{action} = 'show_edit_form';
             if ($err eq 'CommentChecksumMismatch') {
                 my $action = $action_router{$input->{action}};
+
                 $result = $action->(
                     client => $client,
                     clerk  => BOM::Backoffice::Auth0::get_staffname(),
@@ -92,7 +93,7 @@ BrokerPresentation("Client Review Comments");
 BOM::Backoffice::Request::template()->process(
     'backoffice/client_comments.html.tt',
     {
-        comments => $client->get_comments(),
+        comments => $client->get_all_comments(),
         action   => $input->{action} // '',
         input    => $input,
         result   => $result,
@@ -103,10 +104,10 @@ BOM::Backoffice::Request::template()->process(
 
 code_exit_BO();
 
-sub get_comments {
+sub get_all_comments {
     my (%args) = @_;
 
-    return $args{client}->get_comments();
+    return $args{client}->get_all_comments();
 }
 
 sub add_comment {
@@ -141,7 +142,9 @@ sub delete_comment {
 
     die "CommentChecksumMismatch\n" unless $record->{checksum} eq $args{input}{checksum};
 
-    $args{client}->delete_comment($args{input}{id}, $args{input}{checksum});
+    my $cli = BOM::User::Client->new({loginid => $record->{client_loginid}});
+
+    $cli->delete_comment($args{input}{id}, $args{input}{checksum});
 
     http_redirect BOM::Backoffice::Request::request()->url_for('backoffice/f_client_comments.cgi', {loginid => $args{client}->loginid});
     return;
@@ -173,7 +176,9 @@ sub update_comment {
     $args{input}{comment} =~ s/^\s+|\s+$//g;
     die "CommentTooLong\n" if length $args{input}{comment} > COMMENT_LIMIT;
 
-    $args{client}->update_comment(
+    my $cli = BOM::User::Client->new({loginid => $record->{client_loginid}});
+
+    $cli->update_comment(
         id       => $args{input}{id},
         comment  => $args{input}{comment},
         author   => $args{clerk},
@@ -187,7 +192,7 @@ sub update_comment {
 sub _get_comment_by_id {
     my ($client, $id) = @_;
 
-    my ($record) = grep { $_->{id} == $id } $client->get_comments()->@*;
+    my ($record) = grep { $_->{id} == $id && ($_->{client_loginid} // $client->loginid) eq $client->loginid } $client->get_all_comments()->@*;
 
     return $record;
 }

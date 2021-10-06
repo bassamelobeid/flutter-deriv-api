@@ -1165,7 +1165,7 @@ BOM::Backoffice::Request::template()->process(
 
 # Display only the latest 2 comments here for faster review by CS
 my $comments_count  = 2;
-my @client_comments = grep { defined } $client->get_comments()->@[0 .. $comments_count - 1];
+my @client_comments = grep { defined } $client->get_all_comments()->@[0 .. $comments_count - 1];
 if (@client_comments) {
     my $comments_url = request()->url_for('backoffice/f_client_comments.cgi', {loginid => $client->loginid});
     print qq~
