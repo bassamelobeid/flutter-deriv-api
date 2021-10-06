@@ -21,7 +21,7 @@ use Email::Valid;
 use Format::Util::Strings qw( defang );
 use JSON::MaybeXS;
 use JSON::WebToken;
-use List::Util qw( none );
+use List::Util qw( any none );
 use Log::Any qw( $log );
 use Mojo::Base 'Mojolicious::Controller';
 use Syntax::Keyword::Try;
@@ -252,7 +252,29 @@ sub login {
         return $c->_make_error($e->{code}, $e->{status});
     }
 
-    return $c->_make_error('SELF_CLOSED') if $login->{login_result}->{self_closed};
+    my $activate_account = defang $c->req->json->{activate_account} // '';
+    return $c->_make_error('INVALID_FIELD_VALUE') unless $activate_account eq '' || $activate_account eq "1";
+
+    my $self_closed = $login->{login_result}->{self_closed};
+    my $clients     = $login->{clients};
+
+    if ($self_closed && !$activate_account) {
+        my @closed_clients = grep { $_->status->closed } @$clients;
+
+        my $financial_reasons =
+            any { lc($_->status->closed->{reason} // '') =~ 'financial concerns|i have other financial priorities' } @closed_clients;
+
+        my $details = {(
+                $financial_reasons
+                ? 'financial'
+                : 'general'
+            ) => 1
+        };
+        return $c->_make_error('SELF_CLOSED', 401, $details);
+    }
+    return $c->_make_error('NO_SELF_CLOSED_ACCOUNT') if !$self_closed && $activate_account;
+
+    $c->_handle_self_closed($clients, $app) if $self_closed && $activate_account;
 
     # generate refresh token per user
     my $user = $login->{user};
@@ -274,8 +296,7 @@ sub login {
         return $c->_make_error($e->{code}, $e->{status});
     }
 
-    my $clients = $login->{clients};
-    my $client  = $clients->[0];
+    my $client = $clients->[0];
     return $c->_make_error('NO_USER_IDENTITY') unless $client;
 
     if ($c->tx and $c->tx->req and $c->tx->req->headers->header('REMOTE_ADDR')) {
@@ -796,6 +817,35 @@ sub _perform_refresh_token_login {
     return $result;
 }
 
+=head2 _handle_self_closed
+
+Handles the authorization of self-closed accounts.
+
+Arguments:
+
+=over 1
+
+=item C<$clients>
+
+A list of self-closed clients associated with the currently processed credentials.
+
+=item C<$app>
+
+The requested application.
+
+=back
+
+=cut
+
+sub _handle_self_closed {
+    my ($c, $clients, $app) = @_;
+
+    my @closed_clients = grep { $_->status->closed } @$clients;
+    BOM::OAuth::Common::activate_accounts($c, \@closed_clients, $app);
+
+    return undef;
+}
+
 =head2 _verify_otp
 
 Checks if OTP is enabled and validates the OTP
@@ -934,7 +984,7 @@ Returns a mojo json response
 =cut
 
 sub _make_error {
-    my ($c, $error_code, $status_code) = @_;
+    my ($c, $error_code, $status_code, $details) = @_;
 
     $error_code //= 'UNKNOWN';
 
@@ -946,6 +996,7 @@ sub _make_error {
         json => {
             error_code => $error_code,
             message    => $message,
+            ($details ? (details => $details) : ()),
         },
         status => $status_code // 401,
     );

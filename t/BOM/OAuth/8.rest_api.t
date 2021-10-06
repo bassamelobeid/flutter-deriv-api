@@ -51,11 +51,11 @@ my $system_client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client
 });
 $system_client_cr->email($system_user_email);
 $system_client_cr->save;
-my $sytem_user = BOM::User->create(
+my $system_user = BOM::User->create(
     email    => $system_user_email,
     password => $hash_pwd
 );
-$sytem_user->add_client($system_client_cr);
+$system_user->add_client($system_client_cr);
 
 # Create test social created user
 my $social_user_email = 'social@binary.com';
@@ -372,7 +372,7 @@ subtest 'login' => sub {
             })->status_is(400)->json_is('/error_code', 'INVALID_PASSWORD');
 
         note 'Blocked user';
-        $block_redis_key = 'oauth::blocked_by_user::' . $sytem_user->id;
+        $block_redis_key = 'oauth::blocked_by_user::' . $system_user->id;
         $redis->set($block_redis_key, 1);
         $post->(
             $login_url,
@@ -401,7 +401,7 @@ subtest 'login' => sub {
             })->status_is(200)->json_has('/tokens')->json_has('/refresh_token', 'Response has refresh_token');
 
         # Updating system_user to is_totp_enabled
-        $sytem_user->update_totp_fields(is_totp_enabled => 1);
+        $system_user->update_totp_fields(is_totp_enabled => 1);
         note "Missing ONE TIME PASSWORD";
         $post->(
             $login_url,
@@ -417,7 +417,7 @@ subtest 'login' => sub {
             })->status_is(400)->json_is('/error_code', 'MISSING_ONE_TIME_PASSWORD');
 
         note "Wrong ONE TIME PASSWORD";
-        $redis->del('oauth::failure_count_by_user::' . $sytem_user->id);
+        $redis->del('oauth::failure_count_by_user::' . $system_user->id);
         $redis->del('oauth::failure_count_by_ip::127.0.0.1');
         $post->(
             $login_url,
@@ -432,7 +432,7 @@ subtest 'login' => sub {
                 Authorization => "Bearer $jwt_token",
             })->status_is(400)->json_is('/error_code', 'TFA_FAILURE');
 
-        is $redis->get('oauth::failure_count_by_user::' . $sytem_user->id), 1, 'Failure counter by user is incremented';
+        is $redis->get('oauth::failure_count_by_user::' . $system_user->id), 1, 'Failure counter by user is incremented';
         is $redis->get('oauth::failure_count_by_ip::127.0.0.1'), 1, 'Failure counter by ip is incremented';
 
         note "Successful Login with ONE TIME PASSWORD";
@@ -824,7 +824,7 @@ subtest 'pta_login' => sub {
         })->status_is(400)->json_is('/error_code', 'INVALID_URL_PARAMS');
 
     note "Blocked user";
-    $block_redis_key = 'oauth::blocked_by_user::' . $sytem_user->id;
+    $block_redis_key = 'oauth::blocked_by_user::' . $system_user->id;
     $redis->set($block_redis_key, 1);
     $post->(
         $pta_login_url,
@@ -918,7 +918,7 @@ subtest 'one_time_token' => sub {
     qr /domain/;
     $redis->del($block_redis_key);
 
-    $block_redis_key = 'oauth::blocked_by_user::' . $sytem_user->id;
+    $block_redis_key = 'oauth::blocked_by_user::' . $system_user->id;
     $redis->set($block_redis_key, 1);
     warning_like {
         $t->get_ok($one_time_token_endpoint)->status_is(429)->json_is('/error_code', 'SUSPICIOUS_BLOCKED');
@@ -1121,6 +1121,152 @@ subtest 'app_id' => sub {
         $t->get_ok($one_time_token_endpoint)->status_is(302);
     }
     qr/domain/;
+};
+
+subtest 'account reactivation' => sub {
+
+    sub close_accounts {
+        my ($user, $reason, $just_disable) = @_;
+        for my $client ($user->clients(include_disabled => 1)) {
+            $client->status->clear_disabled;
+
+            $client->status->set('disabled', 'system', $reason);
+            $client->status->set('closed',   'system', $reason) unless $just_disable;
+        }
+    }
+
+    my $authorize_url = '/api/v1/authorize';
+    my $solution      = hmac_sha256_hex($challenge, 'tok3n');
+
+    my $oauth = BOM::Database::Model::OAuth->new;
+    ok $oauth->create_app_token($app_id, 'tok3n'), 'App token has been created';
+
+    $app->{active} = 1;
+    $oauth->update_app($app_id, $app);
+
+    my $response = $post->(
+        $authorize_url,
+        {
+            app_id   => $app_id,
+            expire   => $expire,
+            solution => $solution
+        })->status_is(200)->json_has('/token', 'Response has a token')->tx->res->json;
+
+    my $jwt_token = $response->{token};
+    ok $jwt_token, 'Got the JWT token from the JSON response';
+
+    my $login_url = '/api/v1/login';
+
+    subtest 'Internal closure' => sub {
+        close_accounts($system_user, 'test', 1);
+
+        $response = $post->(
+            $login_url,
+            {
+                app_id            => $app_id,
+                type              => 'system',
+                email             => $system_user_email,
+                password          => $password,
+                one_time_password => $totp_value
+            },
+            {
+                Authorization => "Bearer $jwt_token",
+            }
+        )->status_is(401)->json_is('/error_code', 'AccountUnavailable')
+            ->json_is('/message', 'Your account is deactivated. Please contact us via live chat.');
+    };
+
+    subtest 'self closed' => sub {
+        close_accounts($system_user, 'test');
+
+        $response = $post->(
+            $login_url,
+            {
+                app_id            => $app_id,
+                type              => 'system',
+                email             => $system_user_email,
+                password          => $password,
+                one_time_password => $totp_value,
+            },
+            {
+                Authorization => "Bearer $jwt_token",
+            }
+        )->status_is(401)->json_is('/error_code', 'SELF_CLOSED')->json_has('/details')
+            ->json_has('/details/general', 'Reason for closure is general');
+
+        $response = $post->(
+            $login_url,
+            {
+                app_id            => $app_id,
+                type              => 'system',
+                email             => $system_user_email,
+                password          => $password,
+                one_time_password => $totp_value,
+                activate_account  => -2,
+            },
+            {
+                Authorization => "Bearer $jwt_token",
+            })->status_is(401)->json_is('/error_code', 'INVALID_FIELD_VALUE');
+        $response = $post->(
+            $login_url,
+            {
+                app_id            => $app_id,
+                type              => 'system',
+                email             => $system_user_email,
+                password          => $password,
+                one_time_password => $totp_value,
+                activate_account  => 0,
+            },
+            {
+                Authorization => "Bearer $jwt_token",
+            })->status_is(401)->json_is('/error_code', 'INVALID_FIELD_VALUE');
+
+        $response = $post->(
+            $login_url,
+            {
+                app_id            => $app_id,
+                type              => 'system',
+                email             => $system_user_email,
+                password          => $password,
+                one_time_password => $totp_value,
+                activate_account  => 1,
+            },
+            {
+                Authorization => "Bearer $jwt_token",
+            })->status_is(200)->json_has('/tokens')->json_has('/refresh_token', 'Response has refresh_token');
+
+        $response = $post->(
+            $login_url,
+            {
+                app_id            => $app_id,
+                type              => 'system',
+                email             => $system_user_email,
+                password          => $password,
+                one_time_password => $totp_value,
+                activate_account  => 1
+            },
+            {
+                Authorization => "Bearer $jwt_token",
+            })->status_is(401)->json_is('/error_code', 'NO_SELF_CLOSED_ACCOUNT');
+
+        close_accounts($system_user, 'financial concerns');
+
+        $response = $post->(
+            $login_url,
+            {
+                app_id            => $app_id,
+                type              => 'system',
+                email             => $system_user_email,
+                password          => $password,
+                one_time_password => $totp_value,
+            },
+            {
+                Authorization => "Bearer $jwt_token",
+            }
+        )->status_is(401)->json_is('/error_code', 'SELF_CLOSED')->json_has('/details')
+            ->json_has('/details/financial', 'Reason for closure is financial');
+
+    };
 };
 
 $api_mock->unmock_all;

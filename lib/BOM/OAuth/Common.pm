@@ -489,4 +489,53 @@ sub redirect_to {
     return $c->redirect_to($uri);
 }
 
+=head2 activate_accounts
+
+Reactivates self-closed accounts of a user and sends email to client on each reactivated account.
+
+Arguments:
+
+=over 4
+
+=item C<closed_clients>
+
+An array-ref containing self-closed sibling accounts which are about to be reactivated.
+
+=item C<app>
+
+The db row representing the requested application.
+
+=back
+
+=cut
+
+sub activate_accounts {
+    my ($c, $closed_clients, $app) = @_;
+
+    # pick one of the activated siblings by the following order of priority:
+    # - social responsibility check is reqired (MLT and MX)
+    # - real account with fiat currency
+    # - real account with crypto currency
+    my $selected_account = (first { $_->landing_company->social_responsibility_check_required } @$closed_clients)
+        // (first { !$_->is_virtual && LandingCompany::Registry::get_currency_type($_->currency) eq 'fiat' } @$closed_clients)
+        // (first { !$_->is_virtual } @$closed_clients) // $closed_clients->[0];
+
+    my $reason = $selected_account->status->closed->{reason} // '';
+    $_->status->clear_disabled for @$closed_clients;
+
+    BOM::Platform::Event::Emitter::emit(
+        'account_reactivated',
+        {
+            loginid        => $selected_account->loginid,
+            closure_reason => $reason
+        });
+
+    my $environment      = request()->login_env({user_agent => $c->req->headers->header('User-Agent')});
+    my $unknown_location = !$selected_account->user->logged_in_before_from_same_location($environment);
+
+    # perform postponed logging and notification
+    $selected_account->user->after_login(undef, $environment, $app->{id}, @$closed_clients);
+    $c->c($selected_account, $unknown_location, $app);
+}
+
 1;

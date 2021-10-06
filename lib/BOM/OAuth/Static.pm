@@ -85,9 +85,13 @@ my $config = {
         INVALID_URL_PARAMS        => "The provided parameters are invalid.",
         TOO_MANY_PARAMETERS       => "Too Many Parameters are provided.",
         TOO_MANY_ATTEMPTS         => 'Sorry, you have already had too many unsuccessful attempts. Please try again in 5 minutes.',
+        ACCOUNT_UNAVAILABLE       => 'Your account is deactivated. Please contact us via live chat.',
+        NO_SELF_CLOSED_ACCOUNT    => 'activate account flag was provided, no self closed accounts were found.',
+        INVALID_FIELD_VALUE       => 'Value passed is invalid.'
     },
     api_error_mappings => {
         LoginTooManyAttempts => 'TOO_MANY_ATTEMPTS',
+        AccountUnavailable   => 'ACCOUNT_UNAVAILABLE',
     }};
 
 =head2 get_message_mapping
