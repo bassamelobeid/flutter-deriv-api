@@ -50,6 +50,15 @@
     </tbody>
 </table>
 
+<br>
+<div>
+    <span>Available balance for P2P:&nbsp;
+        <strong>
+            [% currency %]&nbsp;[% p2p_balance %]
+        </strong>
+    </span>
+</div>
+
 <script type="text/javascript" language="javascript">
   \$(document).ready(function() {
       \$('.datepick').datepicker({dateFormat: "yy-mm-dd"});

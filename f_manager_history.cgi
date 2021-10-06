@@ -241,8 +241,9 @@ BOM::Backoffice::Request::template()->process(
 
         payment_type_urls  => $payment_type_urls,
         transfer_type_urls => internal_transfer_statement_urls($client, $overview_from_date, $overview_to_date),
-    },
-) || die BOM::Backoffice::Request::template()->error(), "\n";
+
+        p2p_balance => financialrounding('amount', $currency, $client->balance_for_cashier('p2p')),
+    }) || die BOM::Backoffice::Request::template()->error(), "\n";
 
 BarEnd();
 
