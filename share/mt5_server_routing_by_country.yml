@@ -287,7 +287,12 @@ real:
   se: *p01_ts01 # Sweden
   si: *p01_ts01 # Slovenia
   sk: *p01_ts01 # Slovakia
-  be: *p01_ts01_financial_only # Belgium
+  be:
+    synthetic:
+      servers:
+        - 'p01_ts01'
+    financial:
+      servers: []
   de: *p01_ts01_financial_only # Germany
   es: *p01_ts01_financial_only # Spain
   gr: *p01_ts01_financial_only # Greece
