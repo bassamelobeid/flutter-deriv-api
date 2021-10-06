@@ -99,6 +99,11 @@ sub handle_message {
         $payload->{crypto} = [@crypto];
     }
 
+    # Need to localize messages here since WS is the only source for the language of each subscription.
+    for my $txn ($payload->{crypto}->@*) {
+        $txn->{status_message} = $c->l($txn->{status_message});
+    }
+
     delete $payload->{client_loginid};
 
     my $args = $self->args;
