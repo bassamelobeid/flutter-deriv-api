@@ -18,8 +18,8 @@ use parent 'Rose::DB';
 # as a guidepost to bring developers back to this comment so that
 # they can see the error of their ways. Oh, and because Rose::DB::*
 # requires it as well :-)
-# or BOM::Database::Rose::DB::Object::AutoBase1::init_db is being called 
-# with _broker field being undef. 
+# or BOM::Database::Rose::DB::Object::AutoBase1::init_db is being called
+# with _broker field being undef.
 __PACKAGE__->register_db(
     domain   => 'dummy',
     type     => 'dummy',
