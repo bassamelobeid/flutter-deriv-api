@@ -6007,25 +6007,52 @@ sub anonymize_associated_user_return_list_of_siblings {
         })->@*;
 }
 
+=head2 get_all_comments
+
+Returns a list of comments for a given client, including all siblings (from all brokers, including virtuals).
+
+=cut
+
+sub get_all_comments {
+    my ($self, $section) = @_;
+
+    my $brokers  = {};
+    my $comments = [];
+
+    for my $loginid ($self->user->loginids) {
+        next if $loginid =~ /^(DX|MT)/;
+
+        my $client = BOM::User::Client->new({loginid => $loginid});
+
+        next if $brokers->{$client->broker_code};
+
+        $brokers->{$client->broker_code} = $client;
+    }
+
+    for my $client (values $brokers->%*) {
+        $client->set_db('replica');
+
+        push $comments->@*, $client->get_comments($section)->@*;
+    }
+
+    return [sort { Date::Utility->new($b->{creation_time})->epoch <=> Date::Utility->new($a->{creation_time})->epoch } $comments->@*];
+}
+
 =head2 get_comments
 
-Returns a list of comments for a given client
+Returns the list of comments of the current client and its same-broker siblings.
 
 =cut
 
 sub get_comments {
     my ($self, $section) = @_;
 
-    $self->set_db('replica');
-
-    my $sql      = q{SELECT * FROM betonmarkets.get_client_comments(?, ?)};
-    my $comments = $self->db->dbic->run(
+    return $self->db->dbic->run(
         fixup => sub {
-            my $sth = $_->prepare($sql);
+            my $sth = $_->prepare(q{SELECT * FROM betonmarkets.get_client_comments(?, ?)});
             $sth->execute($self->loginid, $section);
             return $sth->fetchall_arrayref({});
-        });
-    return $comments // [];
+        }) // [];
 }
 
 =head2 add_comment
