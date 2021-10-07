@@ -1124,7 +1124,7 @@ subtest 'buy multiplier with MF' => sub {
     $mocked->mock('compliance_checks',         sub { return undef });
     $mocked->mock('check_client_professional', sub { return undef });
 
-    my $mf = create_client('MF');
+    my $mf = create_client('MF', undef, {residence => 'de'});
     top_up $mf, 'USD', 5000;
 
     my $contract = produce_contract({
@@ -1250,11 +1250,10 @@ subtest 'buy multiplier with MF' => sub {
     });
 
     $error = $txn->buy;
-    ok $error, 'invalid to buy forex multiplier options for MF clients';
-    is $error->{'-type'}, 'NotLegalMarket', 'NotLegalMarket';
-    is $error->{'-mesg'}, 'Clients are not allowed to trade on this markets as its restricted for this landing company',
-        'Clients are not allowed to trade on this markets as its restricted for this landing company';
-    is $error->{'-message_to_client'}, 'Please switch accounts to trade this market.', 'Please switch accounts to trade this market.';
+    ok $error, 'invalid to buy R_100 multiplier options for MF clients. Only low leverage indices are available';
+    is $error->{'-type'},              'InvalidOfferings',                       'InvalidOfferings';
+    is $error->{'-mesg'},              'Invalid underlying symbol',              'Clients are not allowed to trade on this R_100 on MF';
+    is $error->{'-message_to_client'}, 'Trading is not offered for this asset.', 'Trading is not offered for this asset.';
     Test::Warnings::allow_warnings(0);
 
     $contract = produce_contract({
