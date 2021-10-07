@@ -348,7 +348,7 @@ subtest 'multiplier on MF' => sub {
         args => {price => 100},
     };
     Test::Warnings::allow_warnings(1);
-    $c->call_ok('buy', $buy_params)->has_error->error_code_is('NotLegalMarket');
+    $c->call_ok('buy', $buy_params)->has_error->error_code_is('InvalidOfferings');
     Test::Warnings::allow_warnings(0);
 
     $buy_params->{contract_parameters}{symbol}     = 'frxAUDJPY';
