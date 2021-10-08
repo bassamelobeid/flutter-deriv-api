@@ -68,7 +68,7 @@ has flat_vol => (
 sub _build_flat_vol {
     my $self = shift;
     #if vol for this symbol does not exist in the yaml file, assume default 10% vol
-    return $vol->{$self->symbol} // 0.1;
+    return $vol->{$self->symbol} // die 'volatility not defined for ' . $self->symbol;
 }
 
 =head2 get_volatility
