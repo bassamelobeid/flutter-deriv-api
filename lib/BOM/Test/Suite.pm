@@ -201,8 +201,8 @@ sub get_stashed {
 }
 
 sub change_status {
-    my ($self, $loginid, $action, $status) = @_;
-    _change_status($loginid, $action, $status);
+    my ($self, $loginid, $action, $status, $reason) = @_;
+    _change_status($loginid, $action, $status, $reason);
     return;
 }
 
@@ -343,10 +343,10 @@ sub _free_gift {
 }
 
 sub _change_status {
-    my ($loginid, $action, $status) = @_;
+    my ($loginid, $action, $status, $reason) = @_;
     my $client = BOM::User::Client->new({loginid => $loginid});
     if ($action eq 'set') {
-        $client->status->set($status, 'system', 'for test');
+        $client->status->set($status, 'system', $reason);
     } else {
         $client->status->_clear($status);
     }
