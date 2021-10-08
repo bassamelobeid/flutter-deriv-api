@@ -120,7 +120,7 @@ maltainvest:
     multiplier_range: [1, 2, 3, 4, 5]
     commission: 0.00036
     cancellation_commission: 0.05
-    cancellation_duration_range: []
+    cancellation_duration_range: [5m, 10m, 15m, 30m, 60m]
     stop_out_level:
       1: 0
       2: 0
@@ -131,7 +131,7 @@ maltainvest:
     multiplier_range: [1, 2, 3, 4, 5]
     commission: 0.00053
     cancellation_commission: 0.05
-    cancellation_duration_range: []
+    cancellation_duration_range: [5m, 10m, 15m, 30m, 60m]
     stop_out_level:
       1: 0
       2: 0
@@ -650,7 +650,7 @@ common:
     multiplier_range: [1, 2, 3, 4, 5]
     commission: 0.00036
     cancellation_commission: 0.05
-    cancellation_duration_range: []
+    cancellation_duration_range: [5m, 10m, 15m, 30m, 60m]
     stop_out_level:
       1: 0
       2: 0
@@ -661,7 +661,7 @@ common:
     multiplier_range: [1, 2, 3, 4, 5]
     commission: 0.00053
     cancellation_commission: 0.05
-    cancellation_duration_range: []
+    cancellation_duration_range: [5m, 10m, 15m, 30m, 60m]
     stop_out_level:
       1: 0
       2: 0
