@@ -395,6 +395,11 @@ payments:
               description: 'Limits the cumulative amount for transferring Fiat to Crypto for unauthenticated clients. Amount is in USD.'
               default: 200
               global: 1
+            crypto_to_crypto:
+              isa: Num
+              description: 'Limits the cumulative amount for transferring Crypto to Crypto for unauthenticated clients. Amount is in USD.'
+              default: 1000
+              global: 1
             dxtrade:
               isa: Num
               description: 'Limits the numbers of daily transfers between binary accounts and Deriv X accounts'
