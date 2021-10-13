@@ -1913,10 +1913,11 @@ sub _validate_transfer_between_accounts {
     # this check is only for svg and unauthenticated clients
     if (    $current_client->landing_company->short eq 'svg'
         and not($current_client->status->age_verification or $current_client->fully_authenticated)
-        and $from_currency_type eq 'fiat'
+        and $from_currency_type =~ /^(fiat|crypto)$/
         and $to_currency_type eq 'crypto')
     {
-        my $limit_amount = BOM::Config::Runtime->instance->app_config->payments->transfer_between_accounts->limits->fiat_to_crypto;
+        my $limit_field  = $from_currency_type . '_to_crypto';
+        my $limit_amount = BOM::Config::Runtime->instance->app_config->payments->transfer_between_accounts->limits->$limit_field;
 
         $limit_amount = convert_currency($limit_amount, 'USD', $from_currency) if $from_currency ne 'USD';
 
@@ -1936,7 +1937,7 @@ sub _validate_transfer_between_accounts {
 
         if ($is_over_transfer_limit) {
 
-            $current_client->status->upsert('allow_document_upload', 'system', 'FIAT_TO_CRYPTO_TRANSFER_OVERLIMIT');
+            $current_client->status->upsert('allow_document_upload', 'system', uc($from_currency_type) . '_TO_CRYPTO_TRANSFER_OVERLIMIT');
 
             my $message_to_client = localize(
                 'You have exceeded [_1] [_2] in cumulative transactions. To continue, you will need to verify your identity.',
@@ -1945,11 +1946,10 @@ sub _validate_transfer_between_accounts {
             );
 
             return BOM::RPC::v3::Utility::create_error({
-                code              => 'Fiat2CryptoTransferOverLimit',
+                code              => ucfirst($from_currency_type) . '2CryptoTransferOverLimit',
                 message_to_client => $message_to_client,
             });
         }
-
     }
 
     return undef;

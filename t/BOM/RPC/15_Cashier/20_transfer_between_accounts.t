@@ -2175,6 +2175,84 @@ subtest 'fiat to crypto limits' => sub {
     $mock_client->unmock_all;
 };
 
+subtest 'crypto to crypto limits' => sub {
+    my $email = 'new_crypto_to_crypto_transfer_email' . rand(999) . '@sample.com';
+    my $user  = BOM::User->create(
+        email          => $email,
+        password       => BOM::User::Password::hashpw('jskjd8292922'),
+        email_verified => 1,
+    );
+    my $client_cr_btc = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code    => 'CR',
+        email          => $email,
+        binary_user_id => $test_binary_user_id,
+        place_of_birth => 'id',
+    });
+
+    my $client_cr_eth = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code    => 'CR',
+        email          => $email,
+        binary_user_id => $test_binary_user_id,
+        place_of_birth => 'id',
+    });
+
+    $user->add_client($client_cr_btc);
+    $user->add_client($client_cr_eth);
+
+    $client_cr_eth->set_default_account('ETH');
+    $client_cr_btc->set_default_account('BTC');
+
+    $client_cr_btc->payment_free_gift(
+        currency => 'BTC',
+        amount   => 2,
+        remark   => 'free gift',
+    );
+
+    cmp_ok $client_cr_btc->default_account->balance + 0, '==', 2, 'correct balance';
+
+    $client_cr_eth->payment_free_gift(
+        currency => 'ETH',
+        amount   => 1,
+        remark   => 'free gift',
+    );
+    cmp_ok $client_cr_eth->default_account->balance + 0, '==', 1, 'correct balance';
+
+    $params->{args} = {
+        account_from => $client_cr_btc->loginid,
+        account_to   => $client_cr_eth->loginid,
+        currency     => 'BTC',
+        amount       => 1
+    };
+
+    my $token = BOM::Platform::Token::API->new->create_token($client_cr_btc->loginid, _get_unique_display_name());
+    $params->{token}      = $token;
+    $params->{token_type} = 'oauth_token';
+
+    my $mock_client = Test::MockModule->new('BOM::User::Client');
+    my $mock_status = Test::MockModule->new('BOM::User::Client::Status');
+
+    my $auth = 1;
+    $mock_client->mock('fully_authenticated', sub { $auth; });
+    $mock_status->mock(
+        'age_verification',
+        sub {
+            return 0;
+        });
+
+    my $result = $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->result;
+    ok $result->{status}, 'Fully authenticated non age verified transfer is sucessful';
+
+    $auth = 0;
+
+    $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->has_error->error_code_is('Crypto2CryptoTransferOverLimit',
+        'Not verified account should not pass the crypto to crypto limit')
+        ->error_message_like(qr/You have exceeded [\d\.]+ BTC in cumulative transactions. To continue, you will need to verify your identity./,
+        'Correct error message returned for a crypto to crypto transfer that reached the limit.');
+
+    $mock_status->unmock_all;
+    $mock_client->unmock_all;
+};
+
 $documents_mock->unmock_all;
 
 done_testing();

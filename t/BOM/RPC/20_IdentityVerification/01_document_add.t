@@ -153,8 +153,32 @@ subtest 'identity_verification_document_add' => sub {
 
     $mocked_client->unmock_all();
 
+    $client_cr->status->upsert('allow_document_upload', 'system', 'CRYPTO_TO_CRYPTO_TRANSFER_OVERLIMIT');
+    $mocked_client->mock('get_manual_poi_status', 'expired');
+
+    $c->call_ok('identity_verification_document_add', $params)
+        ->has_no_system_error->has_error->error_code_is('IdentityVerificationDisallowed', 'client not allowed to upload data');
+
+    $mocked_client->mock('get_manual_poi_status', 'rejected');
+
+    $c->call_ok('identity_verification_document_add', $params)
+        ->has_no_system_error->has_error->error_code_is('IdentityVerificationDisallowed', 'client not allowed to upload data');
+
+    $mocked_client->unmock_all();
+
     $client_cr->status->upsert('allow_document_upload', 'system', 'FIAT_TO_CRYPTO_TRANSFER_OVERLIMIT');
     $c->call_ok('identity_verification_document_add', $params)->has_no_system_error->has_no_error->result;
+
+    is scalar @raised_events, 1, 'one event has raised';
+    is_deeply \@raised_events, ['identity_verification_requested'], 'the raised event is correct';
+
+    @raised_events = ();
+
+    $client_cr->status->upsert('allow_document_upload', 'system', 'CRYPTO_TO_CRYPTO_TRANSFER_OVERLIMIT');
+    $c->call_ok('identity_verification_document_add', $params)->has_no_system_error->has_no_error->result;
+
+    is scalar @raised_events, 1, 'one event has raised';
+    is_deeply \@raised_events, ['identity_verification_requested'], 'the raised event is correct';
 
     my $document = $idv_model->get_standby_document();
 
@@ -162,8 +186,6 @@ subtest 'identity_verification_document_add' => sub {
     is $document->{document_type},   $params->{args}->{document_type},   'document type submitted correctly';
     is $document->{issuing_country}, $params->{args}->{issuing_country}, 'document issuing country submitted correctly';
 
-    is scalar @raised_events, 1, 'one event has raised';
-    is_deeply \@raised_events, ['identity_verification_requested'], 'the raised event is correct';
 };
 
 done_testing();

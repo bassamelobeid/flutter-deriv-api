@@ -2476,6 +2476,7 @@ subtest 'get account status' => sub {
                 superbagof(qw(idv_disallowed financial_information_not_complete financial_assessment_not_complete)),
                 'no idv_disallowed if cr account aml high risk'
             );
+            $mocked_client->mock(aml_risk_classification => 'low');
 
             $test_client->status->upsert('age_verification', 'system', 'verified');
             $result = $c->tcall($method, {token => $token});
@@ -2488,17 +2489,12 @@ subtest 'get account status' => sub {
                 'idv_disallowed if client has allow_poi_resubmission');
             $test_client->status->clear_allow_poi_resubmission;
 
-            $test_client->status->upsert('allow_document_upload', 'system', 'FIAT_TO_CRYPTO_TRANSFER_OVERLIMIT');
-            $result = $c->tcall($method, {token => $token});
-            cmp_deeply($result->{status}, superbagof(qw(allow_document_upload)), 'no idv_disallowed if allow_document_upload with allowed reason');
-
-            $test_client->status->upsert('allow_document_upload', 'system', 'FIAT_TO_CRYPTO_TRANSFER_OVERLIMIT');
-            $result = $c->tcall($method, {token => $token});
-            cmp_deeply($result->{status}, superbagof(qw(allow_document_upload)), 'correct statuses for reason FIAT_TO_CRYPTO_TRANSFER_OVERLIMIT');
-
-            $test_client->status->upsert('allow_document_upload', 'system', 'P2P_ADVERTISER_CREATED');
-            $result = $c->tcall($method, {token => $token});
-            cmp_deeply($result->{status}, superbagof(qw(allow_document_upload)), 'correct statuses for reason P2P_ADVERTISER_CREATED');
+            for my $reason (qw/FIAT_TO_CRYPTO_TRANSFER_OVERLIMIT CRYPTO_TO_CRYPTO_TRANSFER_OVERLIMIT P2P_ADVERTISER_CREATED/) {
+                $test_client->status->upsert('allow_document_upload', 'system', $reason);
+                $result = $c->tcall($method, {token => $token});
+                cmp_deeply($result->{status}, noneof(qw(idv_disallowed)), 'no idv_disallowed if allow_document_upload with allowed reason');
+                cmp_deeply($result->{status}, superbagof(qw(allow_document_upload)), "correct statuses for reason $reason");
+            }
 
             $test_client->status->upsert('allow_document_upload', 'system', 'ANYTHING_ELSE');
             $result = $c->tcall($method, {token => $token});
@@ -2547,7 +2543,7 @@ subtest 'get account status' => sub {
             $result = $c->tcall($method, {token => $token});
             cmp_deeply(
                 $result->{status},
-                superbagof(qw(idv_disallowed allow_document_upload financial_information_not_complete financial_assessment_not_complete)),
+                superbagof(qw(idv_disallowed allow_document_upload financial_information_not_complete)),
                 'idv not allowed for regulated landing companies'
             );
 

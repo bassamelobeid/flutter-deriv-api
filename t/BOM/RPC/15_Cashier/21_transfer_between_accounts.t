@@ -260,8 +260,67 @@ subtest 'In status transfers_blocked Fiat <-> Crypto transfers are not allowed' 
 
     $rpc_ct->call_ok('transfer_between_accounts', $params)
         ->has_no_system_error->has_error->error_message_is('Transfers are not allowed for these accounts.',
-        'Correct error message when transfer from cryoto to fiat when transfers is blocked');
+        'Correct error message when transfer from crypto to fiat when transfers is blocked');
 
+};
+
+subtest 'Crypto <-> Crypto account transfers' => sub {
+    my $email      = 'new_email' . rand(999) . '@binary.com';
+    my $client_btc = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+        email       => $email
+    });
+    $client_btc->set_default_account('BTC');
+
+    my $client_eth = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+        email       => $email
+    });
+    $client_eth->set_default_account('ETH');
+
+    my $user = BOM::User->create(
+        email          => $email,
+        password       => BOM::User::Password::hashpw('hello'),
+        email_verified => 1,
+    );
+
+    for ($client_btc, $client_eth) {
+        $user->add_client($_);
+    }
+
+    $client_btc->payment_free_gift(
+        currency => 'BTC',
+        amount   => 2,
+        remark   => 'free gift',
+    );
+
+    my $amount_to_transfer = 0.001;
+    $params->{token}      = BOM::Platform::Token::API->new->create_token($client_btc->loginid, 'test token');
+    $params->{token_type} = 'oauth_token';
+    $params->{args}       = {
+        account_from => $client_btc->loginid,
+        account_to   => $client_eth->loginid,
+        currency     => 'BTC',
+        amount       => $amount_to_transfer
+    };
+    $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->has_no_error('simple transfer between sibling accounts');
+    # Reloads client
+    $client_btc = BOM::User::Client->new({loginid => $client_btc->loginid});
+    is($client_btc->status->allow_document_upload, undef, 'client is not allowed to upload documents');
+
+    # Transaction should be blocked as client is unauthenticated and >1000usd
+    $amount_to_transfer = 1;
+    $params->{args}->{amount} = $amount_to_transfer;
+    my $result = $rpc_ct->call_ok('transfer_between_accounts', $params)->has_no_system_error->result;
+    like $result->{error}->{message_to_client}, qr/To continue, you will need to verify your identity/,
+        'Correct error message for 1000USD transfer limit';
+
+    # Attempted transfer will trigger allow_document_upload status
+    $client_btc = BOM::User::Client->new({loginid => $client_btc->loginid});
+    is($client_btc->status->allow_document_upload->{reason}, 'CRYPTO_TO_CRYPTO_TRANSFER_OVERLIMIT', 'client is allowed to upload documents');
+
+    $client_btc->status->clear_allow_document_upload;
+    is($client_btc->status->allow_document_upload, undef, 'client is not allowed to upload documents 1');
 };
 
 subtest 'Virtual accounts' => sub {
