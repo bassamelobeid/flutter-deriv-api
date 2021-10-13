@@ -280,6 +280,7 @@ sub get_settings_by_group {
                 payments.transfer_between_accounts.limits.MT5
                 payments.transfer_between_accounts.limits.dxtrade
                 payments.transfer_between_accounts.limits.fiat_to_crypto
+                payments.transfer_between_accounts.limits.crypto_to_crypto
                 payments.transfer_between_accounts.exchange_rate_expiry.fiat
                 payments.transfer_between_accounts.exchange_rate_expiry.fiat_holidays
                 payments.transfer_between_accounts.exchange_rate_expiry.crypto
@@ -327,6 +328,7 @@ sub get_settings_by_group {
                 payments.sweep.max_transfer
                 payments.sweep.max_fee_percentage
                 payments.transfer_between_accounts.limits.fiat_to_crypto
+                payments.transfer_between_accounts.limits.crypto_to_crypto
                 payments.transfer_between_accounts.exchange_rate_expiry.crypto
                 )
         ],
