@@ -328,6 +328,21 @@ rpc "landing_company",
     #         'financial' => 'none'
     #    }
     # }
+    #
+    # OR
+    #
+    # 'mt' => {
+    #    'gaming' => {
+    #         'financial' => {
+    #             'company_name': 'malta',
+    #             'allow_signup': 'disabled',
+    #         }
+    #    },
+    #    'financial' => {
+    #         'financial_stp' => 'none',
+    #         'financial' => 'none'
+    #    }
+    # }
 
     # need to send it like
     # {
@@ -345,12 +360,13 @@ rpc "landing_company",
 
     foreach my $mt5_type (keys %{$mt5_landing_company_details}) {
         foreach my $mt5_sub_type (keys %{$mt5_landing_company_details->{$mt5_type}}) {
-            next
-                unless exists $mt5_landing_company_details->{$mt5_type}{$mt5_sub_type}
-                and $mt5_landing_company_details->{$mt5_type}{$mt5_sub_type} ne 'none';
+            my $mt5_data = $mt5_landing_company_details->{$mt5_type}{$mt5_sub_type};
+            next unless $mt5_data;
+            my $company_name = (ref $mt5_data) ? $mt5_data->{company_name} : $mt5_data;
+            next if $company_name eq 'none';
 
             $landing_company{"mt_${mt5_type}_company"}{$mt5_sub_type} =
-                __build_landing_company($registry->get($mt5_landing_company_details->{$mt5_type}{$mt5_sub_type}), $country);
+                __build_landing_company($registry->get($company_name), $country);
         }
     }
 

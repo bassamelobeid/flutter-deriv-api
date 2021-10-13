@@ -505,11 +505,9 @@ subtest 'MLT account types - low risk' => sub {
     my $token = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token');
 
     #demo account
-    my $login = create_mt5_account->($c, $token, $client, {account_type => 'demo'});
-    ok($login, 'demo account successfully created for a low risk client');
-    is $mt5_account_info->{group}, 'demo\p01_ts01\synthetic\malta_std_eur', 'correct MLT demo group';
+    create_mt5_account->($c, $token, $client, {account_type => 'demo'}, 'MT5NotAllowed', 'MLT client cannot gaming demo account');
 
-    $login = create_mt5_account->(
+    my $login = create_mt5_account->(
         $c, $token, $client,
         {
             account_type     => 'demo',
@@ -529,8 +527,7 @@ subtest 'MLT account types - low risk' => sub {
     );
 
     #real accounts
-    $login = create_mt5_account->($c, $token, $client, {account_type => 'gaming'});
-    is $mt5_account_info->{group}, 'real\p01_ts01\synthetic\malta_std_eur', 'correct MLT gaming group';
+    create_mt5_account->($c, $token, $client, {account_type => 'gaming'}, 'MT5NotAllowed', 'MLT client cannot gaming demo account');
 
     create_mt5_account->(
         $c, $token, $client,
@@ -570,11 +567,9 @@ subtest 'MLT account types - high risk' => sub {
     my $token = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token');
 
     #demo account
-    my $login = create_mt5_account->($c, $token, $client, {account_type => 'demo'});
-    ok($login, 'demo account successfully created for a high risk client');
-    is $mt5_account_info->{group}, 'demo\p01_ts01\synthetic\malta_std_eur', 'correct MLT demo group';
+    create_mt5_account->($c, $token, $client, {account_type => 'demo'}, 'MT5NotAllowed', 'MLT client cannot create a gaming demo account');
 
-    $login = create_mt5_account->(
+    my $login = create_mt5_account->(
         $c, $token, $client,
         {
             account_type     => 'demo',
@@ -595,16 +590,10 @@ subtest 'MLT account types - high risk' => sub {
 
     #real accounts
     financial_assessment($client, 'none');
-    create_mt5_account->(
-        $c, $token, $client,
-        {account_type => 'gaming'},
-        'FinancialAssessmentMandatory',
-        'Financial assessment required for high risk clients'
-    );
+    create_mt5_account->($c, $token, $client, {account_type => 'gaming'}, 'MT5NotAllowed', 'Gaming account not allowed');
 
     financial_assessment($client, 'financial_info');
-    $login = create_mt5_account->($c, $token, $client, {account_type => 'gaming'});
-    is $mt5_account_info->{group}, 'real\p01_ts01\synthetic\malta_std_eur', 'correct MLT gaming group';
+    create_mt5_account->($c, $token, $client, {account_type => 'gaming'}, 'MT5NotAllowed', 'Gaming account not allowed');
 
     create_mt5_account->(
         $c, $token, $client,
@@ -646,11 +635,9 @@ subtest 'MF accout types' => sub {
     my $token = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token');
 
     #demo accounts
-    my $login = create_mt5_account->($c, $token, $client, {account_type => 'demo'});
-    ok($login, 'demo gaming account successfully created for an MF client');
-    is $mt5_account_info->{group}, 'demo\p01_ts01\synthetic\malta_std_eur', 'correct MF demo group';
+    create_mt5_account->($c, $token, $client, {account_type => 'demo'}, 'MT5NotAllowed', 'Demo gaming account not allowed');
 
-    $login = create_mt5_account->(
+    my $login = create_mt5_account->(
         $c, $token, $client,
         {
             account_type     => 'demo',
@@ -685,10 +672,7 @@ subtest 'MF accout types' => sub {
 
     #real accounts
     financial_assessment($client, 'none');
-    create_mt5_account->(
-        $c, $token, $client, {account_type => 'gaming'},
-        'GamingAccountMissing', 'MF client cannot create a gaming real account before they have an MLT account'
-    );
+    create_mt5_account->($c, $token, $client, {account_type => 'gaming'}, 'MT5NotAllowed', 'MF client cannot create gaming account');
 
     create_mt5_account->(
         $c, $token, $client,

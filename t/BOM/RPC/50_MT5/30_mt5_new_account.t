@@ -481,14 +481,14 @@ subtest 'MF to MLT account switching' => sub {
 
     BOM::RPC::v3::MT5::Account::reset_throttler($mf_switch_client->loginid);
     $c->call_ok($method, $params)->has_error('cannot create gaming account for MF only users')
-        ->error_code_is('GamingAccountMissing', 'error should be missing gaming account');
+        ->error_code_is('MT5NotAllowed', 'error should be account not available');
 
     # add MLT client
     $switch_user->add_client($mlt_switch_client);
 
     BOM::RPC::v3::MT5::Account::reset_throttler($mlt_switch_client->loginid);
-    $c->call_ok($method, $params)->has_no_error('gaming account should be created');
-    is($c->result->{account_type}, 'gaming', 'account type should be gaming');
+    $c->call_ok($method, $params)->has_error('cannot create gaming account for MLT user')
+        ->error_code_is('MT5NotAllowed', 'error should be account not available');
 
     # MF client should be allowed to open financial account as well
     $params->{args}->{account_type}     = 'financial';
@@ -563,8 +563,8 @@ subtest 'MLT to MF account switching' => sub {
     BOM::RPC::v3::MT5::Account::reset_throttler($mf_switch_client->loginid);
     BOM::RPC::v3::MT5::Account::reset_throttler($mlt_switch_client->loginid);
 
-    $c->call_ok($method, $params)->has_no_error('gaming account should be created');
-    is($c->result->{account_type}, 'gaming', 'account type should be gaming');
+    $c->call_ok($method, $params)->has_error('cannot create gaming account for MLT user')
+        ->error_code_is('MT5NotAllowed', 'error should be account not available');
 };
 
 subtest 'VRTC to MLT and MF account switching' => sub {
@@ -615,15 +615,15 @@ subtest 'VRTC to MLT and MF account switching' => sub {
     };
 
     BOM::RPC::v3::MT5::Account::reset_throttler($mlt_switch_client->loginid);
-    $c->call_ok($method, $params)->has_error('cannot create gaming account for VRTC only users')
-        ->error_code_is('RealAccountMissing', 'error should be permission denied');
+    $c->call_ok($method, $params)->has_error('cannot create gaming account for MLT user')
+        ->error_code_is('MT5NotAllowed', 'error should be account not available');
 
     BOM::RPC::v3::MT5::Account::reset_throttler($mlt_switch_client->loginid);
 
     # Add dry_run test, we should get exact result like previous test
     $params->{args}->{dry_run} = 1;
-    $c->call_ok($method, $params)->has_error('cannot create gaming account for VRTC only users even on dry_run')
-        ->error_code_is('RealAccountMissing', 'error should be permission denied on dry_run');
+    $c->call_ok($method, $params)->has_error('cannot create gaming account for MLT user')
+        ->error_code_is('MT5NotAllowed', 'error should be account not available');
 
     # Reset params after dry_run test
     $params->{args}->{dry_run} = 0;
@@ -631,8 +631,8 @@ subtest 'VRTC to MLT and MF account switching' => sub {
 
     $switch_user->add_client($mlt_switch_client);
 
-    $c->call_ok($method, $params)->has_no_error('gaming account should be created');
-    is($c->result->{account_type}, 'gaming', 'account type should be gaming');
+    $c->call_ok($method, $params)->has_error('cannot create gaming account for MLT user')
+        ->error_code_is('MT5NotAllowed', 'error should be account not available');
 
     # we should get an error if we are trying to open a financial account
 
