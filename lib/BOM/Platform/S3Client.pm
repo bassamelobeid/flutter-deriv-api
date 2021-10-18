@@ -130,4 +130,28 @@ sub delete {
         bucket => $self->{config}->{aws_bucket},
     );
 }
+
+=head2 list_bucket
+
+wrapper to Net::Async::Webservice::S3->list_bucket subroutine.
+
+=over 4
+
+=item * C<prefix> - prefix to optimize search query.
+
+=back
+
+return array future results into keys and prefixes
+
+=cut
+
+sub list_bucket {
+    my ($self, $prefix) = @_;
+
+    return $self->{s3}->list_bucket(
+        bucket => $self->{config}->{aws_bucket},
+        prefix => $prefix,
+    );
+}
+
 1;
