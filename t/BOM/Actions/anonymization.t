@@ -84,6 +84,14 @@ subtest client_anonymization_vrtc_without_siblings => sub {
     my $mock_customerio = Test::MockModule->new('BOM::Event::Actions::CustomerIO');
     $mock_customerio->mock('anonymize_user', sub { return Future->fail(0) });
 
+    # mock BOM::Platform::Desk error response
+    my $mock_s3_desk = Test::MockModule->new('BOM::Platform::Desk');
+    $mock_s3_desk->mock(
+        'anonymize_user',
+        sub {
+            return Future->fail(0);
+        });
+
     my $result = BOM::Event::Actions::Anonymization::anonymize_client({'loginid' => $vrtc_client->loginid});
     ok($result, 'Returns 1 after user anonymized.');
 
@@ -97,6 +105,9 @@ subtest client_anonymization_vrtc_without_siblings => sub {
 
     # Mock BOM::Event::Actions::CustomerIO with success on anonymization.
     $mock_customerio->mock('anonymize_user', sub { return Future->done(1) });
+
+    # mock BOM::Platform::Desk success response
+    $mock_s3_desk->mock('anonymize_user', sub { return Future->done(1) });
 
     $result = BOM::Event::Actions::Anonymization::anonymize_client({'loginid' => $vrtc_client->loginid});
     ok($result, 'Returns 1 after user anonymized.');
@@ -187,6 +198,10 @@ subtest bulk_anonymization => sub {
     my $mock_customerio = Test::MockModule->new('BOM::Event::Actions::CustomerIO');
     $mock_customerio->mock('anonymize_user', sub { return Future->fail(0) });
 
+    # mock BOM::Platform::Desk error response
+    my $mock_s3_desk = Test::MockModule->new('BOM::Platform::Desk');
+    $mock_s3_desk->mock('anonymize_user', sub { return Future->fail(0) });
+
     mailbox_clear();
     $result = BOM::Event::Actions::Anonymization::bulk_anonymization({'data' => \@lines});
     ok($result, 'Returns 1 after user anonymized.');
@@ -195,13 +210,16 @@ subtest bulk_anonymization => sub {
 
     # It should send an notification email to compliance
     like($msg->{subject}, qr/Anonymization report for \d{4}-\d{2}-\d{2}/, qq/Compliance report including failures and successes./);
-    like($msg->{body}, qr/Client anonymization failed. Please re-try or inform Backend team./, qq/Failure reason is correct/);
+    like($msg->{body},    qr/Anonymization failed for \d+ clients/,       qq/Failure reason is correct/);
     cmp_deeply($msg->{to}, [$BRANDS->emails('compliance')], qq/Email should send to the compliance team./);
 
     $mock_closeio->mock('anonymize_user', 1);
 
     # Mock BOM::Event::Actions::CustomerIO with success on anonymization.
     $mock_customerio->mock('anonymize_user', sub { return Future->done(1) });
+
+    # mock BOM::Platform::Desk success response
+    $mock_s3_desk->mock('anonymize_user', sub { return Future->done(1) });
 
     # Mock BOM::User::Client module
     my $mock_client_module = Test::MockModule->new('BOM::User::Client');
@@ -252,6 +270,10 @@ subtest users_clients_will_set_to_disabled_after_anonymization => sub {
     # Mock BOM::Event::Actions::CustomerIO with success on anonymization.
     my $mock_customerio = Test::MockModule->new('BOM::Event::Actions::CustomerIO');
     $mock_customerio->mock('anonymize_user', sub { return Future->done(1) });
+
+    # mock BOM::Platform::Desk success response
+    my $mock_s3_desk = Test::MockModule->new('BOM::Platform::Desk');
+    $mock_s3_desk->mock('anonymize_user', sub { return Future->done(1) });
 
     my $email = random_email_address;
 
@@ -320,6 +342,10 @@ subtest 'Anonymization disabled accounts' => sub {
     # Mock BOM::Event::Actions::CustomerIO with success on anonymization.
     my $mock_customerio = Test::MockModule->new('BOM::Event::Actions::CustomerIO');
     $mock_customerio->mock('anonymize_user', sub { return Future->done(1) });
+
+    # # mock BOM::Platform::Desk success response
+    my $mock_s3_desk = Test::MockModule->new('BOM::Platform::Desk');
+    $mock_s3_desk->mock('anonymize_user', sub { return Future->done(1) });
 
     my $email = random_email_address;
 

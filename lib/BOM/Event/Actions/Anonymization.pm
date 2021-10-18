@@ -17,6 +17,7 @@ use BOM::Database::UserDB;
 use BOM::Event::Utility qw( exception_logged );
 use BOM::Platform::CloseIO;
 use BOM::Platform::Context;
+use BOM::Platform::Desk;
 use BOM::Platform::ProveID;
 use BOM::Platform::Token::API;
 
@@ -29,6 +30,8 @@ use constant ERROR_MESSAGE_MAPPING => {
     clientNotFound        => "Getting client object failed. Please check if loginid is correct or client exist.",
     anonymizationFailed   => "Client anonymization failed. Please re-try or inform Backend team.",
     userAlreadyAnonymized => "Client is already anonymized",
+    deskError             => "couldn't anonymize user from s3 desk",
+    closeIOError          => "couldn't anonymize user from Close.io",
 };
 
 =head2 anonymize_client
@@ -207,10 +210,13 @@ async sub _anonymize {
         return "activeClient" unless ($user->valid_to_anonymize);
 
         # Delete data on close io
-        BOM::Platform::CloseIO->new(user => $user)->anonymize_user() or die "couldn't anonymize user on Close.io, user id: " . $user->id;
+        return "closeIOError" unless BOM::Platform::CloseIO->new(user => $user)->anonymize_user();
 
         # Delete data on customer io.
         await BOM::Event::Actions::CustomerIO->new(user => $user)->anonymize_user();
+
+        # Delete desk data from s3
+        return "deskError" unless await BOM::Platform::Desk->new(user => $user)->anonymize_user();
 
         @clients_hashref = $client->user->clients(
             include_disabled   => 1,
