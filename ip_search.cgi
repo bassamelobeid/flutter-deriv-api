@@ -51,20 +51,22 @@ if ($search_type eq 'ip') {
         code_exit_BO('Invalid date. Date format should be YYYY-MM-DD', $title);
     }
 
-    # for some reason we have historically passed in an email address on 'loginid'... but now we will consider either one
+    my $is_email = $loginid !~ /^(\D+)(\d+)$/;
+
+    my $user = BOM::User->new(
+        $is_email ? (email => $loginid) : (loginid => $loginid)
+    );
+
+    unless($user){
+        code_exit_BO(sprintf('No user found with provided identifier: <b>%s</b>', $loginid), $title);
+    }
+
     $suspected_logins = $user_db->run(
         sub {
             $_->selectall_arrayref('
-                SELECT history_date, logins
-                FROM (
-                    SELECT id FROM users.binary_user WHERE email = $1
-                    UNION ALL
-                    SELECT binary_user_id FROM users.loginid WHERE loginid = $1
-                    LIMIT 1
-                    ) u(id)
-                CROSS JOIN LATERAL users.get_login_similarities(u.id, $2::TIMESTAMP, $3::TIMESTAMP)',
+                SELECT * FROM users.get_login_similarities(?::BIGINT, ?::TIMESTAMP, ?::TIMESTAMP)',
                 {Slice => {}},
-                $loginid, $date_from, $date_to);
+                $user->id, $date_from, $date_to);
         });
 }
 
