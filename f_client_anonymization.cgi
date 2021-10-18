@@ -53,6 +53,7 @@ print "<b class='error'>WARNING : THIS WILL RESULT IN PERMANENT DATA LOSS</b><br
     <li>Delete all documents from database and S3</li>
     <li>Remove all related lead data on Close.io</li>
     <li>Remove user record from customer.io</li>
+    <li>Remove all user desk and zendesk related files from S3</li>
     </ul>
     <hr>";
 my $loginid  = $input->{clientloginid} // '';
