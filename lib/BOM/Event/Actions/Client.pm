@@ -2229,14 +2229,14 @@ async sub payment_deposit {
         });
     }
 
-    my $card_processors = BOM::Config::Runtime->instance->app_config->payments->credit_card_processors;
-
-    if (!$client->landing_company->is_eu && any { lc($_) eq lc($payment_processor) } @$card_processors) {
-        $client->status->setnx('personal_details_locked', 'system', "A card deposit is made via $payment_processor with ref. id: $transaction_id");
-        $client->save;
-    }
-
     if ($payment_type eq 'CreditCard') {
+
+        if (!$client->landing_company->is_eu) {
+            $client->status->setnx('personal_details_locked', 'system',
+                "A card deposit is made via $payment_processor with ref. id: $transaction_id");
+            $client->save;
+        }
+
         my $record = BOM::User::PaymentRecord->new(user_id => $client->binary_user_id);
 
         $record->add_payment(

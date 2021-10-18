@@ -1681,9 +1681,10 @@ subtest 'card deposits' => sub {
     my $event_args = {
         loginid           => $test_client->loginid,
         is_first_deposit  => 0,
-        payment_processor => 'test processor',
+        payment_type      => 'EWallet',
         transaction_id    => 123,
         payment_id        => 456,
+        payment_processor => 'xyz',
     };
 
     BOM::Event::Actions::Client::payment_deposit($event_args);
@@ -1691,16 +1692,15 @@ subtest 'card deposits' => sub {
     $test_client = BOM::User::Client->new({loginid => $test_client->loginid});
     ok !$test_client->status->personal_details_locked, 'personal details are not locked - non-card payment method was used';
 
-    for my $processor (BOM::Config::Runtime->instance->app_config->payments->credit_card_processors->@*) {
-        $event_args->{payment_processor} = $processor;
-        BOM::Event::Actions::Client::payment_deposit($event_args);
-        $test_client = BOM::User::Client->new({loginid => $test_client->loginid});
+    $event_args->{payment_type} = 'CreditCard';
 
-        ok $test_client->status->personal_details_locked, 'personal details are locked when a card payment method is used';
-        is $test_client->status->personal_details_locked->{reason}, "A card deposit is made via $processor with ref. id: 123";
-        $test_client->status->clear_personal_details_locked;
-        $test_client->save;
-    }
+    BOM::Event::Actions::Client::payment_deposit($event_args);
+    $test_client = BOM::User::Client->new({loginid => $test_client->loginid});
+
+    ok $test_client->status->personal_details_locked, 'personal details are locked when a card payment method is used';
+    is $test_client->status->personal_details_locked->{reason}, "A card deposit is made via xyz with ref. id: 123";
+    $test_client->status->clear_personal_details_locked;
+    $test_client->save;
 };
 
 subtest 'POI flag removal' => sub {
