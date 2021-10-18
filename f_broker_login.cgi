@@ -305,8 +305,28 @@ if (BOM::Backoffice::Auth0::has_authorisation(['Quants'])) {
     </div>~;
 }
 
+# Payment Methods
+if (BOM::Backoffice::Auth0::has_authorisation(['IT'])) {
+    print qq~
+    <div class="card">
+        <div class="card__label toggle">
+            Payments
+        </div>
+        <div class="card__content grid2col border">
+            <div class="card__content">
+                <h3>Doughflow Payment Methods</h3>
+                <form action="~ . request()->url_for('backoffice/doughflow_method_manage.cgi') . qq~" method="get">
+                    <label>$brokerselection</label>
+                    <input type="submit" class="btn btn--primary" value="Go">
+                </form>
+            </div>
+        </div>
+    </div>~;
+}
+
 # WEBSITE CUSTOMIZATION
 if (BOM::Backoffice::Auth0::has_authorisation(['IT'])) {
+
     my $group_select = create_dropdown(
         name          => 'group',
         items         => get_dynamic_settings_list(),

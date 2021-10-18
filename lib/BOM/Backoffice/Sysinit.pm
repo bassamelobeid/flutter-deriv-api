@@ -135,6 +135,7 @@ my $permissions = {
     'quant/client_limit.cgi'                                                  => ['Quants'],
     'p2p_band_management.cgi'                                                 => ['QuantsWrite'],
     'quant/multiplier_risk_management.cgi'                                    => ['Quants'],
+    'doughflow_method_manage.cgi'                                             => ['IT'],
 };
 
 sub init {

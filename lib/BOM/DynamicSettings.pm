@@ -291,7 +291,6 @@ sub get_settings_by_group {
                 payments.transfer_between_accounts.maximum.MT5
                 payments.transfer_between_accounts.maximum.dxtrade
                 payments.experimental_currencies_allowed
-                payments.credit_card_processors
                 payments.reversible_balance_limits.ctc
                 payments.reversible_balance_limits.p2p
                 payments.reversible_deposits_lookback
