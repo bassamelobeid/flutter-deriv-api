@@ -30,6 +30,7 @@ GetOptions(
 
 $log_level     ||= 'info';
 $json_log_file ||= '/var/log/deriv/' . path($0)->basename . '.json.log';
+
 Log::Any::Adapter->import(
     qw(DERIV),
     log_level     => $log_level,
@@ -167,6 +168,24 @@ sub on_tick {
                 expiry_started => [Time::HiRes::gettimeofday],
             });
         $log->debugf('Order %s for %s has expired', $order_id, $client_loginid);
+    }
+
+    # Timedout orders that reached configured days after timeout
+    my $timeout_threshold = Date::Utility->new->minus_time_interval($app_config->payments->p2p->refund_timeout . 'd')->epoch;
+    my %timedout          = $p2p_redis->zrangebyscore(P2P_ORDER_TIMEDOUT_AT, '-Inf', $timeout_threshold, 'WITHSCORES')->@*;
+    my %timedout_updates  = map { ($timeout_threshold + PROCESSING_RETRY) => $_ } keys %timedout;
+    $p2p_redis->zadd(P2P_ORDER_TIMEDOUT_AT, %timedout_updates) if %timedout_updates;
+
+    foreach my $payload (keys %timedout) {
+        # Payload is P2P_ORDER_ID|CLIENT_LOGINID
+        my ($order_id, $client_loginid) = split(/\|/, $payload);
+
+        BOM::Platform::Event::Emitter::emit(
+            p2p_timeout_refund => {
+                order_id       => $order_id,
+                client_loginid => $client_loginid,
+            });
+        $log->debugf('Order %s for %s has reached timeout refund', $order_id, $client_loginid);
     }
 
     $advert_subscriptions = {};

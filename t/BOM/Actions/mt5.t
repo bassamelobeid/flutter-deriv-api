@@ -162,6 +162,7 @@ subtest 'mt5 track event' => sub {
                 mt5_server_region      => 'Africa',
                 mt5_server             => 'p02_ts02',
                 mt5_server_environment => 'Deriv-Server-02',
+                lang                   => 'ID'
             }
             },
             'properties are set properly for new mt5 account event';
@@ -205,7 +206,8 @@ subtest 'mt5 track event' => sub {
             properties => {
                 loginid       => $test_client->loginid,
                 'mt5_loginid' => 'MT90000',
-                brand         => 'deriv'
+                brand         => 'deriv',
+                lang          => 'ID'
             }
             },
             'properties are set properly for mt5 password change event';
@@ -445,6 +447,7 @@ subtest 'mt5 inactive notification' => sub {
             closure_date => $today->plus_days(4)->epoch,
             accounts     => $args->{accounts}->{4},
             brand        => 'deriv',
+            lang         => 'EN'
         }
         },
         'properties of the first event tracking is correct';
@@ -465,6 +468,7 @@ subtest 'mt5 inactive notification' => sub {
             closure_date => $today->plus_days(14)->epoch,
             accounts     => $args->{accounts}->{14},
             brand        => 'deriv',
+            lang         => 'EN'
         }
         },
         'properties of the second event tracking is correct';

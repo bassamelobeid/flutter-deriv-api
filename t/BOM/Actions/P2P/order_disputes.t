@@ -89,6 +89,7 @@ subtest 'Order dispute type buy' => sub {
                 dispute_reason   => $order->{dispute_details}->{dispute_reason},
                 disputer         => 'buyer',
                 order_created_at => Time::Moment->from_epoch(Date::Utility->new($order->{created_time})->epoch)->to_string,
+                lang             => 'EN'
             }
         },
         {
@@ -110,6 +111,7 @@ subtest 'Order dispute type buy' => sub {
                 dispute_reason   => $order->{dispute_details}->{dispute_reason},
                 disputer         => 'buyer',
                 order_created_at => Time::Moment->from_epoch(Date::Utility->new($order->{created_time})->epoch)->to_string,
+                lang             => 'EN'
             }});
 
     cmp_deeply $track_event_args[0], superhashof($expected_track_event_args[0]), 'Track event params are looking good for buyer';
@@ -169,6 +171,7 @@ subtest 'Order dispute type sell' => sub {
                 dispute_reason   => $order->{dispute_details}->{dispute_reason},
                 disputer         => 'seller',
                 order_created_at => Time::Moment->from_epoch(Date::Utility->new($order->{created_time})->epoch)->to_string,
+                lang             => 'EN'
             }
         },
         {
@@ -190,6 +193,7 @@ subtest 'Order dispute type sell' => sub {
                 dispute_reason   => $order->{dispute_details}->{dispute_reason},
                 disputer         => 'seller',
                 order_created_at => Time::Moment->from_epoch(Date::Utility->new($order->{created_time})->epoch)->to_string,
+                lang             => 'EN'
             }});
 
     cmp_deeply $track_event_args[0], superhashof($expected_track_event_args[0]), 'Track event params are looking good for buyer';
@@ -265,6 +269,7 @@ subtest 'Dispute resolution' => sub {
                         dispute_reason   => $order->{dispute_details}->{dispute_reason},
                         disputer         => $disputer,
                         order_created_at => Time::Moment->from_epoch(Date::Utility->new($order->{created_time})->epoch)->to_string,
+                        lang             => 'EN'
                     }};
 
                 my $seller_properties = {
@@ -286,6 +291,7 @@ subtest 'Dispute resolution' => sub {
                         dispute_reason   => $order->{dispute_details}->{dispute_reason},
                         disputer         => $disputer,
                         order_created_at => Time::Moment->from_epoch(Date::Utility->new($order->{created_time})->epoch)->to_string,
+                        lang             => 'EN'
                     }};
 
                 if ($type ne 'buy') {

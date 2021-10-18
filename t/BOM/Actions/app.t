@@ -72,6 +72,7 @@ subtest 'app registered' => sub {
         verification_uri => 'https://www.example.com/verify',
         homepage         => 'https://www.homepage.com/',
         brand            => 'deriv',
+        lang             => 'ID'
     };
     my $handler = BOM::Event::Process::get_action_mappings()->{app_registered};
     my $result  = $handler->($args)->get;
@@ -121,6 +122,7 @@ subtest 'app updated' => sub {
         googleplay => 'https://googleplay.com/app_2',
         homepage   => 'https://www.homepage.com/',
         brand      => 'deriv',
+        lang       => 'ID'
     };
     my $handler = BOM::Event::Process::get_action_mappings()->{app_updated};
     my $result  = $handler->($args)->get;
@@ -166,7 +168,8 @@ subtest 'app deleted' => sub {
     my $args = {
         loginid => $test_client->loginid,
         app_id  => 1,
-        brand   => 'deriv'
+        brand   => 'deriv',
+        lang    => 'ID'
     };
     my $handler = BOM::Event::Process::get_action_mappings()->{app_deleted};
     my $result  = $handler->($args)->get;

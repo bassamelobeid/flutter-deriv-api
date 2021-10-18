@@ -250,6 +250,8 @@ sub signup {
     $customer->{traits}->{signup_brand} = request->brand_name;
     $properties->{email_consent} = $client->user->email_consent // 0;
 
+    $properties->{lang} = uc($client->user->preferred_language // request->language) unless $properties->{lang};
+
     return Future->needs_all(_send_identify_request($customer), _send_track_request($customer, $properties, 'signup'));
 }
 
@@ -409,6 +411,8 @@ sub profile_change {
             if (defined $properties->{updated_fields}->{$field} and $properties->{updated_fields}->{$field} ne '');
     }
     $log->debugf('Track profile_change event for client %s', $loginid);
+
+    $properties->{updated_fields}->{lang} = uc($client->user->preferred_language // request->language) unless $properties->{updated_fields}->{lang};
 
     return Future->needs_all(_send_identify_request($customer),
         _send_track_request($customer, {$properties->{updated_fields}->%*, loginid => $loginid}, 'profile_change'));
@@ -906,12 +910,20 @@ sub _p2p_order_track {
         track_event(
             event      => $event,
             loginid    => $parties->{buyer}->loginid,
-            properties => {_p2p_properties($order, $parties, 'buyer')->%*, $extras->%*,},
+            properties => {
+                _p2p_properties($order, $parties, 'buyer')->%*,
+                lang => $parties->{buyer}->user->preferred_language // request->language,
+                $extras->%*
+            },
         ),
         track_event(
             event      => $event,
             loginid    => $parties->{seller}->loginid,
-            properties => {_p2p_properties($order, $parties, 'seller')->%*, $extras->%*,},
+            properties => {
+                _p2p_properties($order, $parties, 'seller')->%*,
+                lang => $parties->{seller}->user->preferred_language // request->language,
+                $extras->%*
+            },
         ),
     );
 }
@@ -1015,9 +1027,25 @@ sub track_event {
 
     $log->debugf('Tracked %s for client %s', $args{event}, $args{loginid});
 
+    my $enforced_lang = $args{properties}{lang};
+
     return Future->needs_all(
-        _send_track_request($customer, $args{properties}, $args{event}, $args{brand}),
-        $args{is_identify_required} ? _send_identify_request($customer, $args{brand}) : Future->done,
+        _send_track_request(
+            $customer,
+            {
+                ($args{properties} // {})->%*,
+                # CustomerIOTranslation script expects 'lang' as event language properties
+                # https://github.com/regentmarkets/bom-backoffice/blob/master/lib/BOM/Backoffice/Script/CustomerIOTranslation.pm#L578
+                lang => uc($enforced_lang // $client->user->preferred_language // request->language),
+            },
+            $args{event},
+            $args{brand}
+        ),
+        $args{is_identify_required}
+        ? _send_identify_request(
+            $customer,
+            $args{brand})
+        : Future->done,
     );
 }
 
@@ -1100,7 +1128,8 @@ sub _send_track_request {
     die "Unknown event <$event> tracking request was triggered by the client $customer->{client_loginid}" unless $EVENT_PROPERTIES{$event};
 
     # filter invalid or unknown properties out
-    my $valid_properties = {map { defined $properties->{$_} ? ($_ => $properties->{$_}) : () } $EVENT_PROPERTIES{$event}->@*};
+    my $valid_event_properties = [$EVENT_PROPERTIES{$event}->@*, 'lang'];
+    my $valid_properties       = {map { defined $properties->{$_} ? ($_ => $properties->{$_}) : () } @$valid_event_properties};
 
     return $customer->track(
         event      => $event,

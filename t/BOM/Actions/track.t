@@ -115,6 +115,7 @@ subtest 'General event validation - filtering by brand' => sub {
         'event'      => 'login',
         'properties' => {
             'brand' => 'deriv',
+            'lang'  => 'ID',
         }};
     is_deeply \%args, $expected_args;
 
@@ -128,7 +129,10 @@ subtest 'General event validation - filtering by brand' => sub {
     is @identify_args, 0, 'Segment identify is not invoked';
     ok @track_args, 'Segment track is invoked';
     ($customer, %args) = @track_args;
-    $expected_args->{properties} = {'brand' => 'deriv'};
+    $expected_args->{properties} = {
+        'brand' => 'deriv',
+        'lang'  => 'ID'
+    };
     is_deeply \%args, $expected_args, 'track request args are correct - invalid property filtered out';
     test_segment_customer($customer);
 
@@ -263,7 +267,8 @@ subtest 'General event validation - filtering by brand' => sub {
                 event      => "profile_change",
                 properties => {
                     email_consent => 1,
-                    brand         => 'deriv'
+                    brand         => 'deriv',
+                    lang          => 'ID',
                 },
             },
             'identify context is properly set for profile_change'
@@ -303,6 +308,7 @@ subtest 'General event validation - filtering by brand' => sub {
                     brand          => 'deriv',
                     closing_reason => 'Test',
                     email_consent  => 0,
+                    lang           => 'ID',
                 },
             },
             'identify context is properly set for account_closure'
@@ -342,6 +348,7 @@ subtest 'General event validation - filtering by brand' => sub {
                 properties => {
                     brand        => 'deriv',
                     unsubscribed => 1,
+                    lang         => 'ID',
                 },
             },
             'identify context is properly set for self_exclude event'
@@ -375,6 +382,7 @@ subtest 'General event validation - filtering by brand' => sub {
                 properties => {
                     brand         => 'deriv',
                     email_consent => 1,
+                    lang          => 'ID',
                 },
             },
             'identify context is properly set for profile_change'
@@ -427,6 +435,7 @@ subtest 'General event validation - filtering by brand' => sub {
                     payment_fee       => '0',
                     currency          => 'USD',
                     payment_method    => 'VISA',
+                    lang              => 'ID',
                 },
             },
             'track args is properly set for doughflow payment_deposit'
@@ -461,6 +470,7 @@ subtest 'General event validation - filtering by brand' => sub {
                     amount   => '10',
                     currency => 'USD',
                     remark   => 'test123',
+                    lang     => 'ID',
                 },
             },
             'track args is properly set for cryptocashier payment_deposit'
@@ -504,6 +514,7 @@ subtest 'General event validation - filtering by brand' => sub {
                     payment_fee    => '0',
                     currency       => 'USD',
                     payment_method => 'VISA',
+                    lang           => 'ID',
                 },
             },
             'track args is properly set for doughflow payment_withdrawal'
@@ -536,6 +547,7 @@ subtest 'General event validation - filtering by brand' => sub {
                     brand    => 'deriv',
                     amount   => '-10',
                     currency => 'USD',
+                    lang     => 'ID',
                 },
             },
             'track args is properly set for cryptocashier payment_withdrawal'
@@ -556,6 +568,7 @@ subtest 'General event validation - filtering by brand' => sub {
                 payment_fee    => '-10',
                 currency       => 'USD',
                 payment_method => 'VISA',
+                lang           => 'ID',
             },
             brand => Brands->new(name => 'deriv'))->get, 'event emitted successfully';
         is @identify_args, 0, 'Segment identify is not invoked';
@@ -579,9 +592,47 @@ subtest 'General event validation - filtering by brand' => sub {
                     payment_fee    => '-10',
                     currency       => 'USD',
                     payment_method => 'VISA',
+                    lang           => 'ID',
                 },
             },
             'track args is properly set for payment_withdrawal_reversal'
+        );
+    };
+
+    subtest 'enforced "lang" as an event properties' => sub {
+        undef @track_args;
+        undef @identify_args;
+
+        $test_client->user->update_preferred_language("RU");
+
+        ok BOM::Event::Services::Track::track_event(
+            event      => 'self_exclude',
+            loginid    => $test_client->loginid,
+            properties => {
+                unsubscribed => 1,
+                lang         => 'ES',
+            },
+            brand => Brands->new(name => 'deriv'))->get, 'event emitted successfully';
+        is @identify_args, 0, 'Segment identify is not invoked';
+        ok @track_args, 'Segment track is invoked';
+        ($customer, %args) = @track_args;
+
+        is_deeply(
+            \%args,
+            {
+                context => {
+                    active => 1,
+                    app    => {name => "deriv"},
+                    locale => "id"
+                },
+                event      => "self_exclude",
+                properties => {
+                    unsubscribed => 1,
+                    brand        => 'deriv',
+                    lang         => 'ES',
+                },
+            },
+            'track lang args is correct'
         );
     };
 };

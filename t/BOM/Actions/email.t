@@ -92,7 +92,8 @@ subtest 'email events - risk disclaimer resubmission' => sub {
         brand        => 'deriv',
         title        => 'test title',
         loginid      => 'CR10000',
-        salutation   => 'MR'
+        salutation   => 'MR',
+        lang         => 'ES',
         },
         'event properties are ok';
 

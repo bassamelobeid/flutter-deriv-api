@@ -57,6 +57,9 @@ subtest 'p2p order event validation' => sub {
 };
 
 subtest 'p2p order created' => sub {
+    $client->user->update_preferred_language('ID');
+    $advertiser->user->update_preferred_language('RU');
+
     my $handler = BOM::Event::Process::get_action_mappings()->{p2p_order_created};
     undef @identify_args;
     undef @track_args;
@@ -91,6 +94,7 @@ subtest 'p2p order created' => sub {
         order_created_at => Time::Moment->from_epoch(Date::Utility->new($order->{created_time})->epoch)->to_string,
         brand            => $brand,
         local_currency   => 'myr',
+        lang             => 'ID'
         },
         'properties are set properly for p2p_order_created event';
 
@@ -112,6 +116,7 @@ subtest 'p2p order created' => sub {
         order_created_at => Time::Moment->from_epoch(Date::Utility->new($order->{created_time})->epoch)->to_string,
         brand            => $brand,
         local_currency   => 'myr',
+        lang             => 'RU'
         },
         'properties are set properly for p2p_order_created event';
 };
@@ -154,6 +159,7 @@ subtest 'p2p order confirmed by buyer' => sub {
         order_created_at => Time::Moment->from_epoch(Date::Utility->new($order->{created_time})->epoch)->to_string,
         brand            => $brand,
         local_currency   => 'myr',
+        lang             => 'ID'
         },
         'properties are set properly for p2p_order_buyer_has_paid event';
 
@@ -175,6 +181,7 @@ subtest 'p2p order confirmed by buyer' => sub {
         order_created_at => Time::Moment->from_epoch(Date::Utility->new($order->{created_time})->epoch)->to_string,
         brand            => $brand,
         local_currency   => 'myr',
+        lang             => 'RU'
         },
         'properties are set properly for p2p_order_buyer_has_paid event';
 };
@@ -217,6 +224,7 @@ subtest 'p2p order confirmed by seller' => sub {
         order_created_at => Time::Moment->from_epoch(Date::Utility->new($order->{created_time})->epoch)->to_string,
         brand            => $brand,
         local_currency   => 'myr',
+        lang             => 'ID'
         },
         'properties are set properly for p2p_order_seller_has_released event';
 
@@ -238,6 +246,7 @@ subtest 'p2p order confirmed by seller' => sub {
         order_created_at => Time::Moment->from_epoch(Date::Utility->new($order->{created_time})->epoch)->to_string,
         brand            => $brand,
         local_currency   => 'myr',
+        lang             => 'RU'
         },
         'properties are set properly for p2p_order_seller_has_released event';
 };
@@ -282,6 +291,7 @@ subtest 'p2p order cancelled' => sub {
         order_created_at => Time::Moment->from_epoch(Date::Utility->new($order->{created_time})->epoch)->to_string,
         brand            => $brand,
         local_currency   => 'myr',
+        lang             => 'ID'
         },
         'properties are set properly for p2p_order_cancelled event';
 
@@ -303,6 +313,7 @@ subtest 'p2p order cancelled' => sub {
         order_created_at => Time::Moment->from_epoch(Date::Utility->new($order->{created_time})->epoch)->to_string,
         brand            => $brand,
         local_currency   => 'myr',
+        lang             => 'RU'
         },
         'properties are set properly for p2p_order_cancelled event';
 };
@@ -352,6 +363,7 @@ subtest 'pending order expired' => sub {
         order_created_at    => Time::Moment->from_epoch(Date::Utility->new($order->{created_time})->epoch)->to_string,
         brand               => $brand,
         local_currency      => 'myr',
+        lang                => 'EN'
     };
     is $args1->{event}, 'p2p_order_expired', 'Track event name is correct';
     is_deeply $args1->{properties}, $expected_properties, 'properties are set properly for p2p_order_expired event (buyer)';
@@ -415,6 +427,7 @@ subtest 'confirmed order expired' => sub {
         order_created_at    => Time::Moment->from_epoch(Date::Utility->new($order->{created_time})->epoch)->to_string,
         brand               => $brand,
         local_currency      => 'myr',
+        lang                => 'EN'
     };
     is $args1->{event}, 'p2p_order_expired', 'Track event name is correct';
     is_deeply $args1->{properties}, $expected_properties, 'properties are set properly for p2p_order_expired event (buyer)';

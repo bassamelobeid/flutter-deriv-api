@@ -82,6 +82,7 @@ subtest 'Archived ad' => sub {
                 loginid => $advertiser->loginid,
                 adverts => [map { $advertiser->_p2p_adverts(id => $_->{id}, limit => 1)->@* } ($advert, $advert2)],
                 brand   => $brand,
+                lang    => 'EN'
                 },
                 'Expected properties sent';
         }

@@ -782,6 +782,7 @@ subtest 'signup event' => sub {
             },
             brand         => 'deriv',
             email_consent => 1,
+            lang          => 'ID',
         }
         },
         'properties is properly set for virtual account signup';
@@ -858,6 +859,7 @@ subtest 'signup event' => sub {
             provider      => 'email',
             brand         => 'deriv',
             email_consent => 1,
+            lang          => 'ID',
         }
         },
         'properties is set properly for real account signup event';
@@ -971,6 +973,7 @@ subtest 'wallet signup event' => sub {
             },
             brand         => 'deriv',
             email_consent => 1,
+            lang          => 'ID',
         }
         },
         'properties is properly set for wallet virtual account signup';
@@ -1026,6 +1029,7 @@ subtest 'account closure' => sub {
             loginids_failed   => [],
             email_consent     => 0,
             brand             => 'deriv',
+            lang              => 'EN',
         },
         },
         'track context and properties are correct.';
@@ -1122,6 +1126,7 @@ subtest 'transfer between accounts event' => sub {
                 id            => 10,
                 time          => '2020-01-09T10:00:00Z',
                 brand         => 'deriv',
+                lang          => 'ID',
             },
         },
         'identify context is properly set for transfer_between_account'
@@ -1162,6 +1167,7 @@ subtest 'transfer between accounts event' => sub {
                 id                 => 10,
                 time               => '2020-01-09T10:00:00Z',
                 brand              => 'deriv',
+                lang               => 'ID',
             },
         },
         'identify context is properly set for transfer_between_account'
@@ -1207,6 +1213,7 @@ subtest 'api token create' => sub {
             loginid => $loginid,
             name    => [$loginid],
             scopes  => ['read', 'payment'],
+            lang    => 'ID',
         },
         },
         'track context and properties are correct.';
@@ -1261,6 +1268,7 @@ subtest 'api token delete' => sub {
             name    => [$loginid],
             scopes  => ['read', 'payment'],
             brand   => 'deriv',
+            lang    => 'ID',
         },
         },
         'track context and properties are correct.';
@@ -1394,7 +1402,8 @@ subtest 'set financial assessment segment' => sub {
     is_deeply({
             $args->{params}->%*,
             loginid => $loginid,
-            brand   => 'deriv'
+            brand   => 'deriv',
+            lang    => 'ID',
         },
         $returned_args{properties},
         'track properties are properly set for set_financial_assessment'
@@ -1867,6 +1876,7 @@ subtest 'account_reactivated' => sub {
                 resp_trading_url => $brand->responsible_trading_url,
                 live_chat_url    => $brand->live_chat_url,
                 needs_poi        => bool(0),
+                lang             => 'EN',
             }
         },
         'track event params'
