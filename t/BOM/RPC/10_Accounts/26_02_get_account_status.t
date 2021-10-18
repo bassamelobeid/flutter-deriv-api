@@ -139,6 +139,86 @@ subtest 'idv details' => sub {
                 reported_properties => {},
             }
         },
+        {
+            title    => 'failed',
+            document => {
+                issuing_country => 'ng',
+                document_number => '0000000000001',
+                document_type   => 'voter_id',
+                status          => 'failed',
+                status_messages => '["EMPTY_STATUS"]',
+            },
+            result => {
+                submissions_left    => 2,
+                last_rejected       => ["The verification status was empty, rejected for lack of information."],
+                status              => 'rejected',
+                reported_properties => {},
+            }
+        },
+        {
+            title    => 'failed',
+            document => {
+                issuing_country => 'ng',
+                document_number => '0000000000002',
+                document_type   => 'voter_id',
+                status          => 'failed',
+                status_messages => '["INFORMATION_LACK"]',
+            },
+            result => {
+                submissions_left    => 2,
+                last_rejected       => ["The verfication is passed but the personal info is not available to compare."],
+                status              => 'rejected',
+                reported_properties => {},
+            }
+        },
+        {
+            title    => 'failed',
+            document => {
+                issuing_country => 'ng',
+                document_number => '0000000000000',
+                document_type   => 'voter_id',
+                status          => 'failed',
+                status_messages => '["DOCUMENT_REJECTED"]',
+            },
+            result => {
+                submissions_left    => 2,
+                last_rejected       => ["Document was rejected by the provider."],
+                status              => 'rejected',
+                reported_properties => {},
+            }
+        },
+        {
+            title    => 'failed',
+            document => {
+                issuing_country => 'ng',
+                document_number => '0000000000003',
+                document_type   => 'voter_id',
+                status          => 'failed',
+                status_messages => '["UNAVAILABLE_ISSUER"]',
+            },
+            result => {
+                submissions_left    => 2,
+                last_rejected       => ["The verification status is not available, provider says: Issuer Unavailable."],
+                status              => 'rejected',
+                reported_properties => {},
+            }
+        },
+        {
+            title    => 'failed',
+            document => {
+                issuing_country => 'ng',
+                document_number => '0000000000004',
+                document_type   => 'voter_id',
+                status          => 'failed',
+                status_messages => '["UNAVAILABLE_STATUS"]',
+            },
+            result => {
+                submissions_left    => 2,
+                last_rejected       => ["The verification status is not available, provider says: N/A."],
+                status              => 'rejected',
+                reported_properties => {},
+            }
+        },
     ];
 
     my $document;
