@@ -354,13 +354,13 @@ sub _handle_smile_identity_response {
 
         unless (exists $verification_status_map{$verify_status}) {
             $status         = RESULT_STATUS->{n_a};
-            $status_message = 'The verification status was empty, rejected for lack of information.';
+            $status_message = 'EMPTY_STATUS';
             return ($status, $status_message);
         }
 
         if ($verification_status_map{$verify_status} eq 'unavailable') {
-            $status = RESULT_STATUS->{n_a};
-            $status_message = sprintf 'The verification status is not available, provider says: %s', $verify_status;
+            $status         = RESULT_STATUS->{n_a};
+            $status_message = $verify_status eq 'N/A' ? 'UNAVAILABLE_STATUS' : 'UNAVAILABLE_ISSUER';
             return ($status, $status_message);
         }
 
@@ -370,7 +370,7 @@ sub _handle_smile_identity_response {
                 $status = RESULT_STATUS->{pass};
             } else {
                 $status         = RESULT_STATUS->{n_a};
-                $status_message = 'The verfication is passed but the personal info is unavailable';
+                $status_message = 'INFORMATION_LACK';
             }
 
             return ($status, $status_message);
@@ -378,7 +378,7 @@ sub _handle_smile_identity_response {
 
         if ($verification_status_map{$verify_status} eq 'fail') {
             $status         = RESULT_STATUS->{reject};
-            $status_message = 'Document has rejected by the provider.';
+            $status_message = 'DOCUMENT_REJECTED';
             return ($status, $status_message);
         }
     }
