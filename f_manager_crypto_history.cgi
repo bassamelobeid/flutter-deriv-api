@@ -13,6 +13,7 @@ use List::Util qw( max );
 use ExchangeRates::CurrencyConverter qw( in_usd );
 use Format::Util::Numbers qw( formatnumber );
 use Syntax::Keyword::Try;
+use Log::Any qw($log);
 
 use BOM::User::Client;
 use BOM::Platform::Locale;
@@ -149,7 +150,10 @@ my $render_crypto_transactions = sub {
             $_->{usd_amount} = formatnumber('amount', 'USD', $amount * $currency_info->{exchange_rate});
         }
         $_->{address_url}     = URI->new($currency_info->{address_url} . $_->{address})            if $_->{address};
-        $_->{transaction_url} = URI->new($currency_info->{transaction_url} . $_->{blockchain_txn}) if $_->{blockchain_txn};
+        if ($_->{blockchain_txn}) {
+            $_->{transaction_url} = $currency_info->{transaction_url} ? URI->new($currency_info->{transaction_url} . $_->{blockchain_txn}) : '#';
+            $log->warnf("Blockchain transaction url is not defined for currency %s. client_loginid: %s", $_->{currency_code}, $loginid) unless $currency_info->{transaction_url};
+        }
 
         $_
     } get_crypto_transactions($txn_type, %query_params)->@*;
