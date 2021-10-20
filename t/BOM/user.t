@@ -540,7 +540,7 @@ subtest 'GAMSTOP' => sub {
     }
     'create user with loginid';
 
-    my $gamstop_module = Test::MockModule->new('Webservice::GAMSTOP');
+    my $gamstop_module = Test::MockModule->new('WebService::GAMSTOP');
     my %params         = (
         exclusion => 'Y',
         date      => Date::Utility->new()->datetime_ddmmmyy_hhmmss_TZ,
@@ -550,7 +550,7 @@ subtest 'GAMSTOP' => sub {
     my $date_plus_one_day = Date::Utility->new->plus_time_interval('1d')->date_yyyymmdd;
 
     subtest 'GAMSTOP - Y - excluded' => sub {
-        $gamstop_module->mock('get_exclusion_for', sub { return Webservice::GAMSTOP::Response->new(%params); });
+        $gamstop_module->mock('get_exclusion_for', sub { return WebService::GAMSTOP::Response->new(%params); });
 
         ok $user_gamstop->login(%args)->{success}, 'can login';
         is $client_gamstop->get_self_exclusion_until_date, Date::Utility->new(DateTime->now()->add(months => 6)->ymd)->date_yyyymmdd,
@@ -562,7 +562,7 @@ subtest 'GAMSTOP' => sub {
 
     subtest 'GAMSTOP - N - not excluded' => sub {
         $params{exclusion} = 'N';
-        $gamstop_module->mock('get_exclusion_for', sub { return Webservice::GAMSTOP::Response->new(%params); });
+        $gamstop_module->mock('get_exclusion_for', sub { return WebService::GAMSTOP::Response->new(%params); });
 
         ok $user_gamstop->login(%args)->{success}, 'can login';
         is $client_gamstop->get_self_exclusion_until_date, undef, 'Based on N response from GAMSTOP client was not self excluded';
@@ -571,7 +571,7 @@ subtest 'GAMSTOP' => sub {
     subtest 'GAMSTOP - P - previously excluded but not anymore' => sub {
         $params{exclusion} = 'P';
 
-        $gamstop_module->mock('get_exclusion_for', sub { return Webservice::GAMSTOP::Response->new(%params); });
+        $gamstop_module->mock('get_exclusion_for', sub { return WebService::GAMSTOP::Response->new(%params); });
 
         ok $user_gamstop->login(%args)->{success}, 'can login';
         is $client_gamstop->get_self_exclusion_until_date, undef, 'Based on N response from GAMSTOP client was not self excluded';

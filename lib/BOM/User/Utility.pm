@@ -14,7 +14,7 @@ use Date::Utility;
 use Encode;
 use Encode::Detect::Detector;
 use Syntax::Keyword::Try;
-use Webservice::GAMSTOP;
+use WebService::GAMSTOP;
 use Email::Address::UseXS;
 use Email::Stuffer;
 use YAML::XS qw(LoadFile);
@@ -99,7 +99,7 @@ sub set_gamstop_self_exclusion {
 
     my $gamstop_response;
     try {
-        my $instance = Webservice::GAMSTOP->new(
+        my $instance = WebService::GAMSTOP->new(
             api_url => $gamstop_config->{api_uri},
             api_key => $landing_company_config->{api_key});
 
