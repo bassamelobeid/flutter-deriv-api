@@ -246,6 +246,7 @@ demo:
   no: *demo # Norway
   vg: *demo # Virgin Islands (British)
   an: *demo # Netherlands Antilles
+  bq: *demo # Caribbean Netherlands
   ss: *demo # South sudan
 real:
   # IRELAND TRADE SERVER
@@ -537,4 +538,5 @@ real:
   no: *p01_ts04 # Norway
   vg: *p01_ts04 # Virgin Islands (British)
   an: *p01_ts04 # Netherlands Antilles
+  bq: *p01_ts04 # Caribbean Netherlands
   ss: *p01_ts04 # South sudan
