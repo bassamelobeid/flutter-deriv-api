@@ -1431,6 +1431,35 @@ subtest 'Forbidden postcodes' => sub {
     ok $result->{client_id}, 'got a client id';
 };
 
+subtest 'new affiliate account' => sub {
+    my $password = 'Abcd33!@';
+    my $hash_pwd = BOM::User::Password::hashpw($password);
+    my $email    = 'new_aff' . rand(999) . '@binary.com';
+    my $user     = BOM::User->create(
+        email          => $email,
+        password       => $hash_pwd,
+        email_verified => 1,
+    );
+    my $client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'VRTC',
+        email       => $email,
+        residence   => 'br',
+    });
+
+    my $auth_token = BOM::Platform::Token::API->new->create_token($client_vr->loginid, 'test token');
+
+    my $params = {};
+    $params->{token} = $auth_token;
+
+    my $result = $rpc_ct->call_ok('affiliate_account_add', $params)->has_no_system_error->has_no_error()->result;
+
+    is $result->{client_id},                 'AFF0000000001', 'Got the client_id';
+    is $result->{landing_company},           'Dummy LC',      'Got the landing_company';
+    is $result->{landing_company_shortcode}, 'dummy',         'Got the landing_company_shortcode';
+    is $result->{oauth_token},               'dummy',         'Got the oauth_token';
+    is $result->{currency},                  'USD',           'Got the currency';
+};
+
 subtest 'Italian TIN test' => sub {
     subtest 'Old format' => sub {
         my $idauth_mock = Test::MockModule->new('BOM::Platform::Client::IDAuthentication');
