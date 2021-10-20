@@ -5232,9 +5232,6 @@ sub payment_account_transfer {
     my $fmRemark           = delete $args{fmRemark} || $remark || ("Transfer to " . $toClient->loginid);
     my $source             = delete $args{source};
     my $is_agent_to_client = delete $args{is_agent_to_client} // 0;
-    my $lc_lifetime_limit  = delete $args{lc_lifetime_limit};
-    my $lc_for_days        = delete $args{lc_for_days};
-    my $lc_limit_for_days  = delete $args{lc_limit_for_days};
     my $txn_details        = delete $args{txn_details};
 
     # if client has no default account then error out
@@ -5295,12 +5292,13 @@ sub payment_account_transfer {
             # and an array ref for custom DB errors (starts with "BI").
             ping => sub {
                 my $sth = $_->prepare(
-                    'SELECT (v_from_trans).id, (v_from_trans).transaction_time FROM payment.payment_account_transfer(?,?,?,?,?,?,?, ?,?,?,?,?,?, ?,?,?,?)'
+                    'SELECT (v_from_trans).id, (v_from_trans).transaction_time FROM payment.payment_account_transfer(?,?,?,?, ?,?,?,?, ?,?,?,?, ?,?)'
                 );
+
                 $sth->execute(
-                    $fmClient->loginid,  $toClient->loginid, $currency,    $amount,            $to_amount, $fmStaff,
-                    $toStaff,            $fmRemark,          $toRemark,    $source,            $fees,      $gateway_code,
-                    $is_agent_to_client, $lc_lifetime_limit, $lc_for_days, $lc_limit_for_days, $txn_details,
+                    $fmClient->loginid, $toClient->loginid, $currency,           $amount,   $to_amount,
+                    $fmStaff,           $toStaff,           $fmRemark,           $toRemark, $source,
+                    $fees,              $gateway_code,      $is_agent_to_client, $txn_details,
                 );
                 return $sth->fetchall_arrayref({});
             });
