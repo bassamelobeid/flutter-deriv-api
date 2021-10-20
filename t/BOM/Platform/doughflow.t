@@ -176,9 +176,11 @@ subtest 'get_payment_methods' => sub {
 
     is(ref $payment_methods, 'ARRAY', 'Returns an ARRAY ref. (no brand, no country)');
     ok(scalar $payment_methods->@*, 'Brand and country param are not passed, the array returned is not empty.');
-    is(scalar @params, 2,                                       'Get all the 2 keys');
-    is($params[0],     'DERIV::CASHIER::PAYMENT_METHODS::1::@', 'Redis key for global, sportsbook 1');
-    is($params[1],     'DERIV::CASHIER::PAYMENT_METHODS::2::@', 'Redis key for global, sportsbook 2');
+    is(scalar @params, 4,                                        'Get all the 4 keys');
+    is($params[0],     'DERIV::CASHIER::PAYMENT_METHODS::1::AR', 'Redis key for Argentina, sportsbook 1');
+    is($params[1],     'DERIV::CASHIER::PAYMENT_METHODS::1::BR', 'Redis key for Brazil, sportsbook 1');
+    is($params[2],     'DERIV::CASHIER::PAYMENT_METHODS::2::AR', 'Redis key for Argentina, sportsbook 2');
+    is($params[3],     'DERIV::CASHIER::PAYMENT_METHODS::2::BR', 'Redis key for Brazil, sportsbook 2');
 
     $brand   = 'binary';
     $country = undef;

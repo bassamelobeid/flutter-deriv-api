@@ -216,7 +216,7 @@ The elements in the array have the following fields
 
 =item * C<type> - A string describing the type of payment method. Can be one of B<Ewallet>, B<CreditCard>.  
 
-=item * C<withdrawal_limits> - A hash ref with the deposit limits for this payment method.
+=item * C<withdrawal_limits> - A hash ref with the withdrawal limits for this payment method.
 
 =item * C<withdrawal_time> - A string with a description of how much time takes a withdrawal request to be processed.
 
@@ -377,7 +377,7 @@ If no country is passed all the payment method keys are returned.
 sub _get_all_payment_keys {
     my $redis   = shift;
     my $country = shift;
-    my $regex   = 'DERIV::CASHIER::PAYMENT_METHODS::.*::' . ($country ? uc $country : q{@});
+    my $regex   = 'DERIV::CASHIER::PAYMENT_METHODS::.*::' . ($country ? uc $country : '[A-Z]{2}');
     my @res;
 
     my $cursor = 0;
