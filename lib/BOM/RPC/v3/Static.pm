@@ -66,6 +66,7 @@ rpc residence_list => sub {
 
     my $countries_instance = request()->brand->countries_instance;
     my $countries          = $countries_instance->countries;
+
     foreach my $country_selection (
         sort { $a->{translated_name} cmp $b->{translated_name} }
         map  { +{code => $_, translated_name => $countries->localized_code2country($_, request()->language)} } $countries->all_country_codes
@@ -74,7 +75,7 @@ rpc residence_list => sub {
         my $country_code = $country_selection->{code};
         next if $country_code eq '';
         my $country_name       = $country_selection->{translated_name};
-        my $phone_idd          = $countries->idd_from_code($country_code);
+        my $phone_idd          = $countries_instance->idd_code_for_country($country_code);
         my $tin_format         = $countries_instance->get_tin_format($country_code);
         my $idv_config         = $countries_instance->get_idv_config($country_code) // {};
         my $idv_docs_supported = $idv_config->{document_types}                      // {};
