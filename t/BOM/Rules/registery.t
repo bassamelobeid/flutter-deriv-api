@@ -1,20 +1,19 @@
 use strict;
 use warnings;
+no indirect;
 
-use Test::More;
+use Test::Most;
 use Test::Fatal;
 use Test::Deep;
 use Test::Warnings qw(warning);
 use Test::MockModule;
+use Test::MockObject;
 
 use BOM::Rules::Registry qw(rule get_rule get_action);
 
 subtest 'Rules registery' => sub {
     like exception { rule() }, qr/Rule name is required but missing/, 'Rule name is required';
     like exception { rule('test_rule') }, qr/No code associated with rule 'test_rule'/, 'Rule code is required';
-    like exception { rule('test_rule' => {error_code => 'scalar value'}) }, qr/No code associated with rule 'test_rule'/,
-        'Rule code should be of correct type';
-    like exception { rule('test_rule' => {error_code => {}}) }, qr/No code associated with rule 'test_rule'/, 'Rule code should be of correct type';
     my $test_rule = rule(
         'test_rule' => {
             code => sub { return 'test result' }
@@ -52,44 +51,54 @@ subtest 'Actions registery' => sub {
     my $rule1 = get_rule('test_rule');
     my $rule2 = get_rule('test_rule2');
 
-    my $mock_data = {};
+    my $mock_action_data = {};
+    my $mock_rule_groups = {};
+    # the config path /actions has more than one file, which will make the test fails unless we mock to a single file
+    my $mock_registry = Test::MockModule->new('BOM::Rules::Registry');
+    $mock_registry->redefine('_get_config_files', sub { return ('test.yml') });
 
     my $mock_yml = Test::MockModule->new('YAML::XS');
-    $mock_yml->redefine('LoadFile', sub { return $mock_data });
-
-    # when /actions has more than one file the test fails unless we mock to a single file
-    my $mock_registry = Test::MockModule->new('BOM::Rules::Registry');
-    $mock_registry->redefine('_get_action_files', sub { return ('action.yml') });
+    $mock_yml->redefine(
+        'LoadFile',
+        sub {
+            my $path = shift;
+            return $mock_action_data
+                if $path =~ qr/actions/;
+            return $mock_rule_groups
+                if $path =~ qr/rule_groups/;
+            return undef;
+        });
 
     my $actions = BOM::Rules::Registry::register_actions();
     is_deeply $actions, {}, 'No action is registered';
 
-    $mock_data = {'' => 0};
+    $mock_action_data = {'' => 0};
     like exception { BOM::Rules::Registry::register_actions() }, qr/Action name is required but missing/, 'Empty action name';
 
-    $mock_data = {'action1' => 0};
-    like exception { BOM::Rules::Registry::register_actions() }, qr/Rule set of action 'action1' is not a hash/, 'Scalar rule set will fail';
+    $mock_action_data = {'action1' => 0};
+    like exception { BOM::Rules::Registry::register_actions() }, qr/Configuration of action 'action1' doesn't look like a hash/,
+        'Scalar rule set will fail';
 
-    $mock_data = {'action1' => 0};
-    like exception { BOM::Rules::Registry::register_actions() }, qr/Rule set of action 'action1' is not a hash/, 'Scalar rule set will fail';
+    $mock_action_data = {'action1' => {dummy_key => []}};
+    like exception { BOM::Rules::Registry::register_actions() }, qr/Action 'action1' doesn't have any 'ruleset'/, 'Scalar rule set will fail';
 
-    $mock_data = {'action1' => {dummy_key => []}};
-    like exception { BOM::Rules::Registry::register_actions() }, qr/Rule 'action1' doesn't have any 'ruleset/, 'Scalar rule set will fail';
-
-    $mock_data = {'action1' => {ruleset => {dummy_key => []}}};
+    $mock_action_data = {'action1' => {ruleset => [qw(test_rule invalid_rule)]}};
     like exception { BOM::Rules::Registry::register_actions() },
-        qr/Invalid condition type 'dummy_key' in action 'action1': only 'context' and 'args' are acceptable/, 'Scalar rule set will fail';
+        qr/Rule 'invalid_rule' used in 'action1' was not found/, 'Invalid rule names cannot be used';
 
-    $mock_data = {'action1' => {ruleset => [qw(test_rule invalid_rule)]}};
-    like exception { BOM::Rules::Registry::register_actions() },
-        qr/Rule 'invalid_rule' used in action 'action1' was not found/, 'Invalid rule names cannot be used';
-
-    $mock_data = {'action1' => {ruleset => []}};
-    $actions   = BOM::Rules::Registry::register_actions();
+    $mock_action_data = {'action1' => {ruleset => []}};
+    $actions          = BOM::Rules::Registry::register_actions();
     is_deeply [keys %$actions], ['action1'], 'Only one action is registered';
     is ref $actions->{action1}, 'BOM::Rules::Registry::Action', 'Action type is correct';
-    is_deeply $actions->{action1}->{rule_set}, [], 'Rule set is empty';
-    is $actions->{action1}->{description}, 'action1', 'Rule description is defaulted to its name';
+    is_deeply $actions,
+        {
+        action1 => {
+            name        => 'action1',
+            description => 'action1',
+            category    => 'test',
+            ruleset     => []}
+        },
+        'Action content is correct: empty rules and description defaulted to action name';
 
     like(
         warning { BOM::Rules::Registry::register_actions() },
@@ -97,11 +106,11 @@ subtest 'Actions registery' => sub {
         'Correct warning when registering actions again'
     );
 
+    # auto-reload actions on each 'register_actions' call
     $mock_registry->redefine(
         register_actions => sub { undef %BOM::Rules::Registry::action_registry; return $mock_registry->original(qw/register_actions/)->(@_) });
-    $mock_yml->redefine('LoadFile', sub { undef %BOM::Rules::Registry::action_registry; return $mock_data; });
 
-    $mock_data = {
+    $mock_action_data = {
         'action1' => {ruleset => ['test_rule']},
         'action2' => {ruleset => ['test_rule2']},
     };
@@ -109,61 +118,76 @@ subtest 'Actions registery' => sub {
     cmp_bag [keys %$actions], [qw/action1 action2/], 'two actions are registered';
     is ref $actions->{$_}, 'BOM::Rules::Registry::Action', "Action $_ type is correct" for (qw/action1 action2/);
 
-    is_deeply $actions->{action1}->{rule_set}, [$rule1], 'Rule set is correct';
-    is_deeply $actions->{action2}->{rule_set}, [$rule2], 'Rule set is correct';
+    is_deeply $actions->{action1}->{ruleset}, [$rule1], 'Rule set is correct';
+    is_deeply $actions->{action2}->{ruleset}, [$rule2], 'Rule set is correct';
+
+    $mock_action_data = {'action1' => {ruleset => {type => "abcd"}}};
+    like exception { BOM::Rules::Registry::register_actions() },
+        qr/Unknown composite rule type 'abcd' found in 'action1'; only 'conditional' and 'group' allowed/, 'Invalid conplex rule type';
 
     subtest 'conditional rules' => sub {
-        $mock_data = {'action1' => {ruleset => {context => {invalid_key => 'test_rule'}}}};
+        $mock_action_data = {'action1' => {ruleset => [{type => "conditional"}]}};
         like exception { BOM::Rules::Registry::register_actions() },
-            qr/Invalid context key 'invalid_key' used for a conditional rule in action 'action1'/, 'Invalid context key will fail';
+            qr/Conditional rule without target arg found in action1 \('on' hash key not found\)/,
+            'Conditional rule without a target property.';
 
-        $mock_data->{action1}->{ruleset}->{context} = {residence => 'test_rule'};
-        like exception { BOM::Rules::Registry::register_actions() },
-            qr/Conditional structure of rule 'context->residence' in action 'action1' is not a hash/, 'Invalid conditional structure will fail';
+        $mock_action_data->{action1}->{ruleset}->[0]->{on} = 'residence';
+        like exception { BOM::Rules::Registry::register_actions() }, qr/Conditional rule rules_per_value found in action1/,
+            'Conditional rule without rules_per_value';
 
-        $mock_data->{action1}->{ruleset}->{context} = {
-            residence => {
-                id => ['test_rule'],
-                de => ['rule_xyz']}};
+        $mock_action_data->{action1}->{ruleset}->[0]->{rules_per_value} = {};
+        is exception {
+            $actions = BOM::Rules::Registry::register_actions()
+        }, undef, 'The action registered successfully';
+        cmp_bag [keys %$actions], [qw/action1/], 'a single action is registered';
+        is ref $actions->{action1}, 'BOM::Rules::Registry::Action', "Action type is correct";
+        is_deeply $actions->{action1}->{ruleset},
+            [{
+                'key'             => 'residence',
+                'rules_per_value' => {
+                    default => [],
+                },
+            },
+            ],
+            'rule set is correct';
 
-        like exception { BOM::Rules::Registry::register_actions() },
-            qr/Rule 'rule_xyz' used in action 'action1' was not found/, 'Invalid names cannot be used in coditional rules';
-
-        $mock_data->{action1}->{ruleset} = [
+        $mock_action_data->{action1}->{ruleset} = [
             'test_rule',
             'test_rule2',
             {
-                context => {
-                    residence => {
-                        id      => ['test_rule'],
-                        de      => ['test_rule2'],
-                        default => 'test_rule'
-                    },
+                type            => 'conditional',
+                on              => 'residence',
+                rules_per_value => {
+                    id      => ['test_rule'],
+                    de      => ['test_rule2'],
+                    default => 'test_rule'
                 },
             },
             {
-                context => {
-                    landing_company => {mf => 'test_rule'},
-                },
+                type            => 'conditional',
+                on              => 'landing_company',
+                rules_per_value => {mf => 'test_rule'},
             },
             {
-                args => {
-                    name => {
-                        Ali     => 'test_rule2',
-                        default => 'test_rule'
-                    }
+                type            => 'conditional',
+                on              => 'name',
+                rules_per_value => {
+                    Ali     => 'test_rule2',
+                    default => 'test_rule'
                 },
             },
         ];
-        $actions = BOM::Rules::Registry::register_actions();
+        is exception {
+            $actions = BOM::Rules::Registry::register_actions()
+        }, undef, 'The action registered successfully';
         cmp_bag [keys %$actions], [qw/action1/], 'a single action is registered';
         is ref $actions->{action1}, 'BOM::Rules::Registry::Action', "Action type is correct";
-        is_deeply $actions->{action1}->{rule_set},
+        is_deeply $actions->{action1}->{ruleset},
             [
             get_rule('test_rule'),
             get_rule('test_rule2'),
             {
-                'context_key'     => 'residence',
+                'key'             => 'residence',
                 'rules_per_value' => {
                     'id'      => [$rule1],
                     'de'      => [$rule2],
@@ -171,19 +195,242 @@ subtest 'Actions registery' => sub {
                 },
             },
             {
-                'context_key'     => 'landing_company',
+                'key'             => 'landing_company',
                 'rules_per_value' => {
-                    'mf' => [$rule1],
+                    'mf'    => [$rule1],
+                    default => [],
                 },
             },
             {
-                'args_key'        => 'name',
+                'key'             => 'name',
                 'rules_per_value' => {
                     'Ali'     => [$rule2],
                     'default' => [$rule1],
                 },
-            }];
+            },
+            ];
 
+    };
+
+    subtest 'Rule groups' => sub {
+        $mock_action_data = {
+            'action1' => {
+                ruleset => [{
+                        type => 'group',
+                    }]
+            },
+        };
+
+        my $actions = BOM::Rules::Registry::register_actions();
+        is_deeply $actions,
+            {
+            action1 => {
+                name        => 'action1',
+                description => 'action1',
+                category    => 'test',
+                ruleset     => [{
+                        ruleset            => [],
+                        name               => 'anonymous',
+                        description        => 'Unnamed group in action configuration',
+                        required_arguments => [],
+                        argument_mapping   => {}}
+                ],
+            }};
+
+        $mock_action_data = {
+            'action1' => {
+                ruleset => [
+                    'test_rule',
+                    {
+                        type             => 'group',
+                        name             => 'test rule group',
+                        description      => 'created for testing inline rule groups',
+                        argument_mapping => {
+                            arg1 => 'first_name',
+                            arg2 => 'last_name',
+                        },
+                        ruleset => ['test_rule2']}]
+            },
+        };
+
+        $actions = BOM::Rules::Registry::register_actions();
+        is_deeply $actions,
+            {
+            action1 => {
+                name        => 'action1',
+                description => 'action1',
+                category    => 'test',
+                ruleset     => [
+                    $rule1,
+                    {
+                        name               => 'test rule group',
+                        description        => 'created for testing inline rule groups',
+                        required_arguments => [],
+                        argument_mapping   => {
+                            arg1 => 'first_name',
+                            arg2 => 'last_name',
+                        },
+                        ruleset => [$rule2],
+                    }
+                ],
+            }
+            },
+            'A ruleset consisting of a simple rule and a rule-group';
+
+        # TODO: we cannot ceate a real context object in this test script,
+        # because of the circular dependency with bom-user; a mock object is use instead.
+        my $context = Test::MockObject->new();
+        $context->mock(stop_on_failure => sub { return 0 });
+
+        is_deeply $actions->{action1}->verify($context),
+            {
+            failed_rules => [],
+            errors       => {},
+            has_failure  => 0,
+            passed_rules => ['test_rule', 'test_rule2']
+            },
+            'Both rules are applied';
+
+        subtest 'Argument mapping' => sub {
+            my $failing_rule = rule(
+                'failing_rule' => {
+                    code        => sub { my ($self, $context, $args) = @_; die $args },
+                    description => "This rule dies with it's args"
+                });
+
+            $mock_action_data = {
+                'action1' => {
+                    ruleset => [{
+                            type             => 'group',
+                            name             => 'test rule group',
+                            description      => 'created for testing inline rule groups',
+                            argument_mapping => {
+                                arg1 => 'first_name',
+                                arg2 => 'last_name',
+                            },
+                            ruleset => ['failing_rule'],
+                        },
+                        'test_rule',
+                    ]
+                },
+            };
+
+            my $action_args = {
+                first_name => 'Ali',
+                last_name  => 'Smith',
+                a          => 11
+            };
+            $actions = BOM::Rules::Registry::register_actions();
+            is_deeply $actions->{action1}->verify($context, $action_args),
+                {
+                failed_rules => [{
+                        rule    => 'failing_rule',
+                        failure => {
+                            arg1       => 'Ali',
+                            arg2       => 'Smith',
+                            first_name => 'Ali',
+                            last_name  => 'Smith',
+                            a          => 11,
+                        },
+                    },
+                ],
+                errors       => {},
+                has_failure  => 1,
+                passed_rules => ['test_rule']
+                },
+                'Arguments are mapped correctly';
+        };
+
+        subtest 'Named rule group' => sub {
+            $mock_rule_groups = [{
+                    group1 => [],
+                }];
+            like exception { BOM::Rules::Registry::register_actions() }, qr/Invalid config file structure in test.yml/,
+                'Correct error for invalid rule-group file content';
+
+            $mock_rule_groups = {
+                group1 => [],
+            };
+            like exception { BOM::Rules::Registry::register_actions() }, qr/Config of rule-group 'group1' doesn't look like a hash/,
+                'Correct error for invalid rule-group structure';
+
+            $mock_rule_groups = {
+                group1 => {},
+            };
+            like exception { BOM::Rules::Registry::register_actions() }, qr/Rule-group 'group1' doesn't have any 'ruleset'/,
+                'Ruleset is required for a rule-group';
+
+            $mock_rule_groups = {group1 => {ruleset => [qw/invalid_rule/]}};
+            like exception { BOM::Rules::Registry::register_actions() }, qr/Rule 'invalid_rule' used in 'ruleset test.yml -> group1' was not found/,
+                'Rule names are validated';
+
+            $mock_rule_groups = {group1 => {ruleset => [qw/failing_rule test_rule/]}};
+            lives_ok { BOM::Rules::Registry::register_actions() } 'Rule group created with minimum required info';
+
+            $mock_rule_groups = {
+                group1 => {
+                    description        => 'Test rule-group with required args',
+                    required_arguments => [qw/arg1 arg2/],
+                    ruleset            => [qw/failing_rule test_rule/]}};
+            $mock_action_data = {
+                action1 => {
+                    ruleset => [{
+                            type       => 'group',
+                            rule_group => 'invalid_group_name'
+                        },
+                        'test_rule2',
+                    ]
+                },
+            };
+            like exception { BOM::Rules::Registry::register_actions() }, qr/Invalid group name invalid_group_name found in action1/,
+                'Correct exception for a non-exsting rule-group invocation';
+
+            my $rule_group_incovation = $mock_action_data->{action1}->{ruleset}->[0];
+            $rule_group_incovation->{rule_group} = 'group1';
+            $rule_group_incovation->{ruleset}    = [qw/test_rule test_rule2/];
+            like exception { BOM::Rules::Registry::register_actions() },
+                qr/Ruleset incorrectly declared for a known rule-group \(group1\) in action1/,
+                'Correct exception if ruleset is declared for a named rule-group invocation';
+
+            delete $rule_group_incovation->{ruleset};
+            lives_ok { $actions = BOM::Rules::Registry::register_actions() } 'The rule-group is loaded by an action';
+            like exception { $actions->{action1}->verify($context) }, qr/No value found for required argument 'arg1'/,
+                'Required arguments should be mapped or found in action args.';
+
+            $rule_group_incovation->{argument_mapping} = {
+                arg1 => "'literal value'",
+            };
+            $actions = BOM::Rules::Registry::register_actions();
+            like exception { $actions->{action1}->verify($context) }, qr/No value found for required argument 'arg2'/,
+                'Arg1 is set with a literal value; arg2 is remaining.';
+
+            my $action_args = {
+                arg2 => 'taken from action args without mapping',
+                arg3 => 'additional action argument',
+            };
+            my $result;
+            lives_ok {
+                $actions = BOM::Rules::Registry::register_actions();
+                $result  = $actions->{action1}->verify($context, $action_args);
+            }
+            'Arg2 was correctly taken from action args';
+
+            is_deeply $result,
+                {
+                failed_rules => [{
+                        rule    => 'failing_rule',
+                        failure => {
+                            arg1 => 'literal value',
+                            arg2 => 'taken from action args without mapping',
+                            arg3 => 'additional action argument',
+                        }}
+                ],
+                errors       => {},
+                has_failure  => 1,
+                passed_rules => [qw/test_rule test_rule2/],
+                },
+                'Rules are applied as expected';
+        };
     };
 
     $mock_yml->unmock_all;

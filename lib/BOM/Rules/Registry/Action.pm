@@ -46,19 +46,19 @@ Action's category; determided by the name of the file in which it is declared.
 
 has category => (is => 'ro');
 
-=head2 rule_set
+=head2 ruleset
 
 An arrayref holding the rules to be applied on action verification.
 
 =cut
 
-has rule_set => (
+has ruleset => (
     is => 'ro',
 );
 
 =head2 verify
 
-Verifies the action, applyinng the rules in C<rule_set>.
+Verifies the action, applyinng the rules in C<ruleset>.
 
 =cut
 
@@ -66,7 +66,7 @@ sub verify {
     my ($self, $context, $args) = @_;
 
     my $final_results = BOM::Rules::Result->new();
-    for my $rule ($self->rule_set->@*) {
+    for my $rule ($self->ruleset->@*) {
         my $rule_result = $rule->apply($context, $args);
 
         $final_results->merge($rule_result);

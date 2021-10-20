@@ -36,8 +36,8 @@ subtest 'Verify an action' => sub {
     $mock_action->redefine(verify => sub { @action_verify_args = @_; return $mock_action->original('verify')->(@_); });
 
     my $test_action = BOM::Rules::Registry::Action->new(
-        name     => 'test_action',
-        rule_set => []);
+        name    => 'test_action',
+        ruleset => []);
     my $mock_registry = Test::MockModule->new('BOM::Rules::Registry');
     $mock_registry->redefine('get_action' => sub { return $test_action });
 
@@ -79,7 +79,7 @@ subtest 'Applying rules' => sub {
     is_deeply $rule_engine_1->apply_rules([]),
         {
         has_failure  => 0,
-        failed_rules => {},
+        failed_rules => [],
         errors       => {},
         passed_rules => []
         },
@@ -92,7 +92,7 @@ subtest 'Applying rules' => sub {
     is_deeply $rule_engine_1->apply_rules('test rule 1'),
         {
         has_failure  => 0,
-        failed_rules => {},
+        failed_rules => [],
         errors       => {},
         passed_rules => ['test rule 1']
         },
@@ -100,7 +100,7 @@ subtest 'Applying rules' => sub {
     is_deeply $rule_engine_1->apply_rules(['test rule 1']),
         {
         has_failure  => 0,
-        failed_rules => {},
+        failed_rules => [],
         errors       => {},
         passed_rules => ['test rule 1']
         },
@@ -145,8 +145,11 @@ subtest 'Applying rules' => sub {
     is_deeply $rule_engine_2->apply_rules('failing rule'),
         {
         has_failure  => 1,
-        failed_rules => {'failing rule' => {code => 'DummyError'}},
-        errors       => {DummyError     => 1},
+        failed_rules => [{
+                rule    => 'failing rule',
+                failure => {code => 'DummyError'}}
+        ],
+        errors       => {DummyError => 1},
         passed_rules => []
         },
         'Correct result for a failing rule';
@@ -154,10 +157,14 @@ subtest 'Applying rules' => sub {
     is_deeply $rule_engine_2->apply_rules(['failing rule', 'test rule 1', 'failing rule2']),
         {
         has_failure  => 1,
-        failed_rules => {
-            'failing rule'  => {code => 'DummyError'},
-            'failing rule2' => {code => 'DummyError2'}
-        },
+        failed_rules => [{
+                rule    => 'failing rule',
+                failure => {code => 'DummyError'}
+            },
+            {
+                rule    => 'failing rule2',
+                failure => {code => 'DummyError2'}}
+        ],
         errors => {
             DummyError  => 1,
             DummyError2 => 1
@@ -165,6 +172,57 @@ subtest 'Applying rules' => sub {
         passed_rules => ['test rule 1']
         },
         'Correct result for three rules (two failing and one passing)';
+};
+
+subtest 'Sample rule-gruop and action' => sub {
+    # the config path /actions has more than one file, which will make the test fails unless we mock to a single file
+    my $mock_registry = Test::MockModule->new('BOM::Rules::Registry');
+    $mock_registry->redefine('_get_config_files', sub { return ('test.yml') });
+
+    my $mock_yml = Test::MockModule->new('YAML::XS');
+    $mock_yml->redefine(
+        'LoadFile',
+        sub {
+            my $path = shift;
+            if ($path =~ qr/actions/) {
+                $path = '/home/git/regentmarkets/bom-rules/t/data/sample_action.yml';
+            } elsif ($path =~ qr/rule_groups/) {
+                $path = '/home/git/regentmarkets/bom-rules/t/data/sample_group.yml';
+            }
+
+            return $mock_yml->original('LoadFile')->($path, @_);
+        });
+
+    undef %BOM::Rules::Registry::action_registry;
+    my $actions = BOM::Rules::Registry::register_actions();
+    is scalar(keys %$actions), 1, 'Only one action is loaded';
+
+    my $rule_engine = BOM::Rules::Engine->new(stop_on_failure => 0);
+    like exception { $rule_engine->verify_action('demo_action_with_groups') }, qr/Client loginid is missing/, 'Required args are missing';
+    my $args = {
+        account_currency => 'USD',
+        company_name     => 'svg',
+        loginid          => $client->loginid
+    };
+    like exception { $rule_engine->verify_action('demo_action_with_groups', %$args) }, qr/Client with id .* was not found/,
+        'Client object is missing';
+
+    $rule_engine = BOM::Rules::Engine->new(
+        stop_on_failure => 0,
+        client          => $client
+    );
+    my $result = $rule_engine->verify_action('demo_action_with_groups', %$args);
+    is $result->has_failure, 1, 'One rule has failed';
+    is_deeply $result->failed_rules,
+        [{
+            rule    => 'profile.valid_profile_countries',
+            failure => {
+                rule       => 'profile.valid_profile_countries',
+                error_code => 'InvalidPlaceOfBirth',
+            }}];
+    is_deeply $result->passed_rules,
+        ['client.is_not_virtual', 'residence.not_restricted', 'landing_company.currency_is_allowed', 'currency.is_available_for_change', 'pass'],
+        "Correct list of applied rules";
 };
 
 done_testing();

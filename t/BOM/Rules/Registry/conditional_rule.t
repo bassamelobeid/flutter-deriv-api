@@ -3,12 +3,13 @@ use warnings;
 
 use Test::More;
 use Test::Fatal;
+use Test::Exception;
 
 use BOM::Rules::Registry::Rule::Conditional;
 use BOM::Rules::Registry qw(rule);
 use BOM::Rules::Context;
 
-my $context = BOM::Rules::Context->new(landing_company => 'cr');
+my $context = BOM::Rules::Context->new();
 
 my @call_args;
 
@@ -31,29 +32,27 @@ my %args;
 subtest 'Branching on args' => sub {
     undef @call_args;
     %args = (
-        args_key        => 'arg1',
+        key             => 'arg1',
         rules_per_value => {});
     my $rule = BOM::Rules::Registry::Rule::Conditional->new(%args);
     is_deeply $rule, \%args, 'Rule content is corerect';
     like exception { $rule->apply($context) }, qr/This rule cannot be applied with empy action args/,
         'Action args are required for this kind of rule';
-    like exception { is_deeply $rule->apply(undef, {arg1 => 1}) }, qr/The key-value 'arg1=1' doesn't match any configured condition/,
-        'Empty rules_per_value will cause failure';
+    like exception { $rule->apply(undef, {}) }, qr/Invalid context/, 'Empty rules_per_value will cause failure';
 
     %args = (
-        args_key        => 'arg1',
+        key             => 'arg1',
         rules_per_value => {'value1' => [$rule1]});
     $rule = BOM::Rules::Registry::Rule::Conditional->new(%args);
     is_deeply $rule, \%args, 'Rule content is corerect';
-    like exception { $rule->apply($context, {}) }, qr/The key-value 'arg1=' doesn't match any configured condition/,
+    like exception { $rule->apply($context, {}) }, qr/Condition key 'arg1' was not found in args or context/,
         'Correct exception if the configured action arg is missing';
-    like exception { $rule->apply($context, {arg1 => 'dummy'}) }, qr/The key-value 'arg1=dummy' doesn't match any configured condition/,
-        'Correct exception for unsupported value';
+    lives_ok { $rule->apply($context, {arg1 => 'dummy'}) } 'Missing value passes, if there is no default rule';
 
     is scalar @call_args, 0, 'No rule is applied yet';
     $rule->{rules_per_value}->{'default'} = [$rule2];
-    ok $rule->apply($context, {}), 'Rule applied successfully';
-    is_deeply \@call_args, [$rule2, $context, {}], 'The default rule set configured for empty arg is applied';
+    ok $rule->apply($context, {arg1 => 'dummy'}), 'Rule applied successfully';
+    is_deeply \@call_args, [$rule2, $context, {arg1 => 'dummy'}], 'The default rule set configured for empty arg is applied';
 
     undef @call_args;
     ok $rule->apply($context, {arg1 => 'value1'}), 'Rule applied successfully';
@@ -61,7 +60,7 @@ subtest 'Branching on args' => sub {
 
     undef @call_args;
     %args = (
-        args_key        => 'arg1',
+        key             => 'arg1',
         rules_per_value => {
             'value1'  => [$rule1],
             'default' => [$rule2]});
@@ -74,22 +73,21 @@ subtest 'Branching on args' => sub {
 subtest 'Branching on context' => sub {
     undef @call_args;
     %args = (
-        context_key     => 'residence',
+        key             => 'residence',
         rules_per_value => {});
     my $rule = BOM::Rules::Registry::Rule::Conditional->new(%args);
     is_deeply $rule, \%args, 'Rule content is corerect';
-    like exception { $rule->apply() }, qr/This rule cannot be applied with empy context/, 'Action args are required for this kind of rule';
+    like exception { $rule->apply() }, qr/This rule cannot be applied with empy action args/, 'Action args are required for this kind of rule';
 
-    like exception { is_deeply $rule->apply($context) }, qr/Either residence or loginid is require/, 'Empty args will cause failure';
+    like exception { is_deeply $rule->apply($context) }, qr/This rule cannot be applied with empy action args/, 'Empty args will cause failure';
 
     my $action_args = {residence => 'nowhere'};
     %args = (
-        context_key     => 'residence',
+        key             => 'residence',
         rules_per_value => {'de' => [$rule1]});
     $rule = BOM::Rules::Registry::Rule::Conditional->new(%args);
     is_deeply $rule, \%args, 'Rule content is corerect';
-    like exception { $rule->apply($context, $action_args) }, qr/The key-value 'residence=nowhere' doesn't match any configured condition/,
-        'Correct exception if the configured context key is empty';
+    lives_ok { $rule->apply($context, $action_args) } 'Non-maching value fails, because there is no default rule';
 
     is scalar @call_args, 0, 'No rule is applied yet';
     $rule->{rules_per_value}->{'default'} = [$rule2];

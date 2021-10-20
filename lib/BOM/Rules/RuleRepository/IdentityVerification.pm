@@ -65,7 +65,9 @@ rule 'idv.check_age_legality' => {
     code        => sub {
         my ($self, $context, $args) = @_;
 
-        die 'Client is missing'     unless my $client = $context->client($args);
+        my $client = $context->client($args);
+
+        die 'Client is missing'     unless $client;
         die 'IDV result is missing' unless my $result = $args->{result} and ref $args->{result} eq 'HASH';
 
         my $date_of_birth = eval { Date::Utility->new($result->{date_of_birth}) };

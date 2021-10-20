@@ -22,21 +22,19 @@ new_account:
     - profile.valid_non_pep_declaration_time
     - currency.is_available_for_new_account
     - client.check_duplicate_account
-    - context:
-        landing_company:
-          malta: &from_eu
-            - profile.no_pobox_in_address
-          maltainvest: *from_eu
-          iom: *from_eu
-          default:
-            - pass
-        residence:
-          gb:
-            - profile.address_postcode_mandatory
-            - client.forbidden_postcodes
-          default:
-            - pass
-
+    - type: conditional
+      on: landing_company
+      rules_per_value:
+        malta: &from_eu
+          - profile.no_pobox_in_address
+        maltainvest: *from_eu
+        iom: *from_eu
+    - type: conditional
+      on: residence
+      rules_per_value:
+        gb:
+          - profile.address_postcode_mandatory
+          - client.forbidden_postcodes
 paymentagent_create:
   description: A set of rules to be applied on paymentagent create
   ruleset:

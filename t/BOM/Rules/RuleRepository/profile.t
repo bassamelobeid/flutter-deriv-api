@@ -169,10 +169,10 @@ subtest $rule_name => sub {
     lives_ok { $rule_engine->apply_rules($rule_name, %$args) } 'Rule applies with the same residence';
 
     $args->{residence} = 'us';
-    is_deeply exception { $rule_engine->apply_rules($rule_name, %$args) },
-        {
+    is_deeply exception { $rule_engine->apply_rules($rule_name, %$args) }, {
         error_code => 'PerimissionDenied',
-        rule       => $rule_name
+
+        rule => $rule_name
         },
         'rule fails with a different residence';
 

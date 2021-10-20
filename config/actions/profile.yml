@@ -14,46 +14,46 @@ set_self_exclusion:
 set_settings:
   description: "Rules applied on setting account settings"
   ruleset:
-    - context:
-        client_type:
-          virtual:
-            - profile.fields_allowed_to_change
-            - profile.residence_cannot_be_changed
-            - residence.not_restricted
-            - profile.immutable_fields_cannot_change
-            - landing_company.required_fields_are_non_empty
-            - profile.copier_cannot_allow_copiers
-          real:
-            - profile.residence_cannot_be_changed
-            - residence.not_restricted
-            - profile.immutable_fields_cannot_change
-            - landing_company.required_fields_are_non_empty
-            - profile.valid_profile_countries
-            - profile.date_of_birth_complies_minimum_age
-            - profile.secret_question_with_answer
-            - profile.copier_cannot_allow_copiers
-            - profile.tax_information_is_not_cleared
-            - profile.professional_request_allowed
-            - profile.professional_request_is_not_resubmitted
-            - client.check_duplicate_account
-          default:
-            - fail
-    - context:
-        landing_company:
-          malta:
-            - profile.no_pobox_in_address
-          maltainvest:
-            - profile.no_pobox_in_address
-            - profile.tax_information_is_mandatory
-          iom:
-            - profile.no_pobox_in_address
-          default:
-            - pass
-        residence:
-          gb:
-            - profile.address_postcode_mandatory
-          default:
-            - pass
+    - type: conditional
+      on: client_type
+      rules_per_value:
+        virtual:
+          - profile.fields_allowed_to_change
+          - profile.residence_cannot_be_changed
+          - residence.not_restricted
+          - profile.immutable_fields_cannot_change
+          - landing_company.required_fields_are_non_empty
+          - profile.copier_cannot_allow_copiers
+        real:
+          - profile.residence_cannot_be_changed
+          - residence.not_restricted
+          - profile.immutable_fields_cannot_change
+          - landing_company.required_fields_are_non_empty
+          - profile.valid_profile_countries
+          - profile.date_of_birth_complies_minimum_age
+          - profile.secret_question_with_answer
+          - profile.copier_cannot_allow_copiers
+          - profile.tax_information_is_not_cleared
+          - profile.professional_request_allowed
+          - profile.professional_request_is_not_resubmitted
+          - client.check_duplicate_account
+        default:
+          - fail
+    - type: conditional
+      on: landing_company
+      rules_per_value:
+        malta:
+          - profile.no_pobox_in_address
+        maltainvest:
+          - profile.no_pobox_in_address
+          - profile.tax_information_is_mandatory
+        iom:
+          - profile.no_pobox_in_address
+    - type: conditional
+      on: residence
+      rules_per_value:
+        gb:
+          - profile.address_postcode_mandatory
 set_account_currency:
   description: Contains rules to be applied on setting account currency.
   ruleset:

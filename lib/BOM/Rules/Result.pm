@@ -25,7 +25,7 @@ sub new {
     return bless {
         has_failure  => 0,
         passed_rules => [],
-        failed_rules => {},
+        failed_rules => [],
         errors       => {}}, $class;
 }
 
@@ -49,8 +49,8 @@ sub merge {
     $self->{has_failure} = 1 if $result_instance->has_failure;
     push $self->{passed_rules}->@*, $result_instance->passed_rules->@*;
 
-    $self->{failed_rules}->%* = ($self->{failed_rules}->%*, $result_instance->failed_rules->%*);
-    $self->{errors}->%*       = ($self->{errors}->%*,       $result_instance->errors->%*);
+    push $self->{failed_rules}->@*, $result_instance->failed_rules->@*;
+    $self->{errors}->%* = ($self->{errors}->%*, $result_instance->errors->%*);
 
     return $self;
 }
@@ -76,7 +76,11 @@ sub append_failure {
 
     $self->{has_failure} = 1;
 
-    $self->{failed_rules}->{$rule} = $error;
+    push $self->{failed_rules}->@*,
+        {
+        rule    => $rule,
+        failure => $error
+        };
     $self->{errors}->{$error->{error_code} // $error->{code}} = 1 if exists $error->{error_code} || exists $error->{code};
 
     return $self;

@@ -83,7 +83,7 @@ sub client {
 
     # TODO: we can load missing client from database; but it can only be done after the circular dependency to bom-use is resolved.
     my $client = $self->_cache->{"client_$loginid"}
-        or die "Client with id $loginid was not found in the context initialized by the rule engine constructor.";
+        or die "Client with id $loginid was not found";
 
     return $client;
 }

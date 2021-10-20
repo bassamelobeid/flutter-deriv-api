@@ -1,0 +1,18 @@
+demo_action_with_groups: 
+  description: "Inline (anonymous) and named rule-groups used along with simple rules in a predefined order."
+  ruleset: 
+    - client.is_not_virtual
+    - type: group
+      description: "This is an anomymous group that only sets an invalid literal value to a rule's argument"
+      argument_mapping: 
+        place_of_birth: "'xyz'"
+      ruleset: 
+        - profile.valid_profile_countries
+    - residence.not_restricted
+    - type: group
+      rule_group: demo_group
+      description: "Maps action args to group arguments"
+      argument_mapping: 
+        currency: account_currency
+        landing_company: company_name
+        loginid: client_loginid
