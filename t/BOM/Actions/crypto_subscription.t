@@ -309,59 +309,7 @@ subtest "change_address_status" => sub {
     my @rows  = $rows->@*;
     my @newtx = grep { $_->{blockchain_txn} eq $transaction->{hash} } @rows;
     is @newtx, 1, "new transaction found in the database";
-
-    $transaction = {
-        currency     => 'ETH',
-        hash         => "withdrawal_test",
-        to           => '36ob9DZcMYQkRHGFNJHjrEKP7N9RyTihHo',
-        type         => 'send',
-        amount       => 10,
-        fee          => 247621000000000,
-        fee_currency => 'ETH',
-        block        => 10,
-    };
-
-    _insert_withdrawal_transaction($transaction);
-
-    $response = BOM::Event::Actions::CryptoSubscription::set_transaction_fee($transaction);
-    is $response, 1, "Just updating the fee for withdrawal transaction";
-
-    my $updated_transaction = _fetch_withdrawal_transaction($transaction->{hash});
-    is $updated_transaction->{txn_fee}, 0.000247621;
 };
-
-sub _insert_withdrawal_transaction {
-    my $transaction = shift;
-
-    my $address = $transaction->{to};
-
-    my $txn_db_id = $dbic->run(
-        ping => sub {
-            $_->selectrow_array(
-                'SELECT payment.ctc_insert_new_withdraw(?, ?, ?, ?::JSONB, ?, ?, ?, ?)',
-                undef,            $address, $transaction->{currency},
-                $client->loginid, '{"":0}', $transaction->{amount},
-                0,                1,        []);
-        });
-
-    $helper->process_withdrawal($txn_db_id, $address, $transaction->{amount});
-
-    return $dbic->run(
-        ping => sub {
-            my $sth = $_->prepare('UPDATE payment.cryptocurrency SET blockchain_txn = ? , status = ? WHERE address = ? AND blockchain_txn IS NULL');
-            $sth->execute($transaction->{hash}, 'PROCESSING', $address);
-        });
-}
-
-sub _fetch_withdrawal_transaction {
-    my ($blockchain_txn) = @_;
-    return $dbic->run(
-        fixup => sub {
-            my $sth = $_->prepare(q{SELECT * FROM payment.cryptocurrency where blockchain_txn = ?});
-            $sth->execute($blockchain_txn);
-            return $sth->fetchrow_hashref;
-        });
-}
 
 subtest "internal_transactions" => sub {
 

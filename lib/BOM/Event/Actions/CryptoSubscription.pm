@@ -45,7 +45,6 @@ sub subscription {
     my $transaction = shift;
 
     set_pending_transaction($transaction);
-    set_transaction_fee($transaction);
     _set_deposit_swept($transaction);
 }
 
@@ -67,36 +66,6 @@ sub _tp_api {
     return $tp_api //= do {
         $loop->add($tp_api = BOM::CTC::TP::API::BTC->new());
         $tp_api;
-    }
-}
-
-=head2 set_transaction_fee
-
-We store in the database just the estimation fee since we can't wait until
-the transaction to be completed in the sync process, here in this function
-we have the final fee returned from the node so we need to update the final fee
-in the database.
-
-=over 4
-
-=item * C<transaction> - transaction reference containing the blockchain data
-
-=back
-
-=cut
-
-sub set_transaction_fee {
-    my $transaction = shift;
-    my $currency    = BOM::CTC::Currency->new(currency_code => $transaction->{currency});
-
-    # we are specifying the currency here just for performance purpose, since for the other currencies
-    # this value is supposed to be correct, we check using the fee_currency because of the ERC20 contracts;
-    if ($transaction->{type} eq 'send' && $transaction->{fee_currency} eq 'ETH' && $transaction->{fee}) {
-        cryptodb()->run(
-            ping => sub {
-                my $sth = $_->prepare('select payment.ctc_update_transaction_fee(?, ?, ?)');
-                $sth->execute($transaction->{hash}, $transaction->{currency}, $currency->get_unformatted_fee($transaction->{fee}));
-            });
     }
 }
 
