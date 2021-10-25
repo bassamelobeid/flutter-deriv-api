@@ -616,211 +616,130 @@ subtest 'MLT account types - high risk' => sub {
     );
 };
 
-subtest 'MF accout types' => sub {
-    my $client = create_client('MF');
-    $client->set_default_account('EUR');
-    $client->residence('at');
-    $client->tax_residence('at');
-    $client->tax_identification_number('1234');
-    $client->account_opening_reason('speculative');
-    $client->aml_risk_classification('low');
-    $client->save();
-
-    my $user = BOM::User->create(
-        email    => 'mf+low@binary.com',
-        password => 'Abcd33@!',
-    );
-    $user->update_trading_password('Abcd33@!');
-    $user->add_client($client);
-    my $token = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token');
-
-    #demo accounts
-    create_mt5_account->($c, $token, $client, {account_type => 'demo'}, 'MT5NotAllowed', 'Demo gaming account not allowed');
-
-    my $login = create_mt5_account->(
-        $c, $token, $client,
-        {
-            account_type     => 'demo',
-            mt5_account_type => 'financial'
-        });
-    ok($login, 'demo financial account successfully created for an MF client');
-    is $mt5_account_info->{group}, 'demo\p01_ts01\financial\maltainvest_std_eur', 'correct MF demo group';
-
-    create_mt5_account->(
-        $c, $token, $client,
-        {
-            account_type     => 'demo',
-            mt5_account_type => 'financial_stp'
-        },
-        'MT5NotAllowed',
-        'non-professional MF clients cannot create demo financial_stp account'
-    );
-
-    $client->status->set("professional");
-    $client->save;
-    create_mt5_account->(
-        $c, $token, $client,
-        {
-            account_type     => 'demo',
-            mt5_account_type => 'financial_stp'
-        },
-        'MT5NotAllowed',
-        'professional MF clients cannot create demo financial_stp accounts either'
-    );
-    $client->status->clear_professional;
-    $client->save;
-
-    #real accounts
-    financial_assessment($client, 'none');
-    create_mt5_account->($c, $token, $client, {account_type => 'gaming'}, 'MT5NotAllowed', 'MF client cannot create gaming account');
-
-    create_mt5_account->(
-        $c, $token, $client,
-        {
-            account_type     => 'financial',
-            mt5_account_type => 'financial'
-        },
-        'FinancialAssessmentMandatory',
-        'Financial assessment is required for MF clients'
-    );
-
-    financial_assessment($client, 'financial_info');
-    create_mt5_account->(
-        $c, $token, $client,
-        {
-            account_type     => 'financial',
-            mt5_account_type => 'financial'
-        },
-        'FinancialAssessmentMandatory',
-        'Financial info is not enough for MF clients'
-    );
-
-    financial_assessment($client, 'trading_experience');
-    create_mt5_account->(
-        $c, $token, $client,
-        {
-            account_type     => 'financial',
-            mt5_account_type => 'financial'
-        },
-        'FinancialAssessmentMandatory',
-        'Trading experience is not enough for MF clients'
-    );
-
-    financial_assessment($client, 'full');
-    $login = create_mt5_account->(
-        $c, $token, $client,
-        {
-            account_type     => 'financial',
-            mt5_account_type => 'financial'
-        });
-    ok($login, 'real financial account successfully created for an MF client');
-    is $mt5_account_info->{group}, 'real\p01_ts01\financial\maltainvest_std-hr_eur', 'correct MF financial group';
-
-    create_mt5_account->(
-        $c, $token, $client,
-        {
-            account_type     => 'financial',
-            mt5_account_type => 'financial_stp'
-        },
-        'MT5NotAllowed',
-        'MF client cannot create a real financial_stp account'
-    );
-
-    $client->status->set("professional");
-    $client->save;
-    create_mt5_account->(
-        $c, $token, $client,
-        {
-            account_type     => 'financial',
-            mt5_account_type => 'financial_stp'
-        },
-        'MT5NotAllowed',
-        'MF client cannot create a real financial_stp account - even if they are professionals'
-    );
-    $client->status->clear_professional;
-    $client->save;
-};
-
-subtest 'MX account types' => sub {
-    my $client = create_client('MX');
-    $client->set_default_account('EUR');
-    $client->residence('gb');
-    $client->save();
-
-    my $user = BOM::User->create(
-        email    => 'mx+gb@binary.com',
-        password => 'Abcd33@!',
-    );
-    $user->update_trading_password('Abcd33@!');
-    $user->add_client($client);
-    my $token = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token');
-
-    #demo accounts
-    create_mt5_account->($c, $token, $client, {account_type => 'demo'}, 'MT5NotAllowed', 'MX clients cannot create demo gaming account');
-
-    create_mt5_account->(
-        $c, $token, $client,
-        {
-            account_type     => 'demo',
-            mt5_account_type => 'financial'
-        },
-        'FinancialAccountMissing',
-        'MX client cannot create mt5 financial_stp demo account without any MF sibling'
-    );
-
-    create_mt5_account->(
-        $c, $token, $client,
-        {
-            account_type     => 'demo',
-            mt5_account_type => 'financial_stp'
-        },
-        'MT5NotAllowed',
-        'MX client cannot create mt5 financial_stp demo account'
-    );
-
-    create_mt5_account->(
-        $c, $token, $client,
-        {
-            account_type => 'demo',
-        },
-        'MT5NotAllowed',
-        'MX client cannot create mt5 gaming demo account'
-    );
-
-    my $mf_client = create_client('MF');
-    $mf_client->set_default_account('EUR');
-
-    $mf_client->residence('de');
-    $mf_client->tax_residence('de');
-    $mf_client->tax_identification_number('1234');
-    $mf_client->account_opening_reason('speculative');
-    $client->aml_risk_classification('low');
-    financial_assessment($mf_client, 'full');
-    $mf_client->save();
-
-    $user->add_client($mf_client);
-    $token = BOM::Platform::Token::API->new->create_token($mf_client->loginid, 'test token');
-
-    create_mt5_account->(
-        $c, $token, $client,
-        {
-            account_type     => 'gaming',
-            mt5_account_type => 'financial'
-        },
-        'MT5NotAllowed',
-        'MF client upgraded from MX cannot create mt5 gaming account'
-    );
-
-    #demo account
-    create_mt5_account->(
-        $c, $token, $client,
-        {
-            account_type => 'demo',
-        },
-        'MT5NotAllowed',
-        'MF clients cannot create demo gaming account'
-    );
-};
+#subtest 'MF accout types' => sub {
+#    my $client = create_client('MF');
+#    $client->set_default_account('EUR');
+#    $client->residence('at');
+#    $client->tax_residence('at');
+#    $client->tax_identification_number('1234');
+#    $client->account_opening_reason('speculative');
+#    $client->aml_risk_classification('low');
+#    $client->save();
+#
+#    my $user = BOM::User->create(
+#        email    => 'mf+low@binary.com',
+#        password => 'Abcd33@!',
+#    );
+#    $user->update_trading_password('Abcd33@!');
+#    $user->add_client($client);
+#    my $token = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token');
+#
+#    #demo accounts
+#    create_mt5_account->($c, $token, $client, {account_type => 'demo'}, 'MT5NotAllowed', 'Demo gaming account not allowed');
+#
+#    my $login = create_mt5_account->(
+#        $c, $token, $client,
+#        {
+#            account_type     => 'demo',
+#            mt5_account_type => 'financial'
+#        });
+#    ok($login, 'demo financial account successfully created for an MF client');
+#    is $mt5_account_info->{group}, 'demo\p01_ts01\financial\maltainvest_std_eur', 'correct MF demo group';
+#
+#    create_mt5_account->(
+#        $c, $token, $client,
+#        {
+#            account_type     => 'demo',
+#            mt5_account_type => 'financial_stp'
+#        },
+#        'MT5NotAllowed',
+#        'non-professional MF clients cannot create demo financial_stp account'
+#    );
+#
+#    $client->status->set("professional");
+#    $client->save;
+#    create_mt5_account->(
+#        $c, $token, $client,
+#        {
+#            account_type     => 'demo',
+#            mt5_account_type => 'financial_stp'
+#        },
+#        'MT5NotAllowed',
+#        'professional MF clients cannot create demo financial_stp accounts either'
+#    );
+#    $client->status->clear_professional;
+#    $client->save;
+#
+#    #real accounts
+#    financial_assessment($client, 'none');
+#    create_mt5_account->($c, $token, $client, {account_type => 'gaming'}, 'MT5NotAllowed', 'MF client cannot create gaming account');
+#
+#    create_mt5_account->(
+#        $c, $token, $client,
+#        {
+#            account_type     => 'financial',
+#            mt5_account_type => 'financial'
+#        },
+#        'FinancialAssessmentMandatory',
+#        'Financial assessment is required for MF clients'
+#    );
+#
+#    financial_assessment($client, 'financial_info');
+#    create_mt5_account->(
+#        $c, $token, $client,
+#        {
+#            account_type     => 'financial',
+#            mt5_account_type => 'financial'
+#        },
+#        'FinancialAssessmentMandatory',
+#        'Financial info is not enough for MF clients'
+#    );
+#
+#    financial_assessment($client, 'trading_experience');
+#    create_mt5_account->(
+#        $c, $token, $client,
+#        {
+#            account_type     => 'financial',
+#            mt5_account_type => 'financial'
+#        },
+#        'FinancialAssessmentMandatory',
+#        'Trading experience is not enough for MF clients'
+#    );
+#
+#    financial_assessment($client, 'full');
+#    $login = create_mt5_account->(
+#        $c, $token, $client,
+#        {
+#            account_type     => 'financial',
+#            mt5_account_type => 'financial'
+#        });
+#    ok($login, 'real financial account successfully created for an MF client');
+#    is $mt5_account_info->{group}, 'real\p01_ts01\financial\maltainvest_std-hr_eur', 'correct MF financial group';
+#
+#    create_mt5_account->(
+#        $c, $token, $client,
+#        {
+#            account_type     => 'financial',
+#            mt5_account_type => 'financial_stp'
+#        },
+#        'MT5NotAllowed',
+#        'MF client cannot create a real financial_stp account'
+#    );
+#
+#    $client->status->set("professional");
+#    $client->save;
+#    create_mt5_account->(
+#        $c, $token, $client,
+#        {
+#            account_type     => 'financial',
+#            mt5_account_type => 'financial_stp'
+#        },
+#        'MT5NotAllowed',
+#        'MF client cannot create a real financial_stp account - even if they are professionals'
+#    );
+#    $client->status->clear_professional;
+#    $client->save;
+#};
 
 subtest 'VR account types - CR residence' => sub {
     my $client = create_client('VRTC');
@@ -981,101 +900,101 @@ subtest 'Virtual account types - EU residences' => sub {
 
 };
 
-subtest 'Virtual account types - GB residence' => sub {
-    my $client = create_client('VRTC');
-    $client->set_default_account('USD');
-    $client->residence('gb');
-    $client->save();
-
-    my $user = BOM::User->create(
-        email    => 'vrtc+gb@binary.com',
-        password => 'Abcd33@!',
-    );
-    $user->update_trading_password('Abcd33@!');
-    $user->add_client($client);
-    my $token = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token');
-
-    #demo account
-    $client->status->clear_age_verification();
-    $client->save();
-    create_mt5_account->(
-        $c, $token, $client,
-        {
-            account_type     => 'demo',
-            mt5_account_type => 'financial'
-        },
-        'FinancialAccountMissing',
-        'Virtual GB client cannot create a financial MT5 account'
-    );
-    $client->status->set('age_verification', 'test', 'test');
-    $client->save();
-
-    my $login = create_mt5_account->(
-        $c, $token, $client,
-        {
-            country      => 'mt',
-            account_type => 'demo',
-        },
-        'MT5NotAllowed',
-        'Virtual GB client can not create gaming demo account'
-    );
-
-    create_mt5_account->(
-        $c, $token, $client,
-        {
-            account_type     => 'demo',
-            mt5_account_type => 'financial'
-        },
-        'FinancialAccountMissing',
-        'Unable to create MT5 financial account from GB even after age verification'
-    );
-
-    $login = create_mt5_account->(
-        $c, $token, $client,
-        {
-            account_type     => 'demo',
-            mt5_account_type => 'financial_stp'
-        },
-        'MT5NotAllowed',
-        'Financial STP demo MT5 account is not available in this country'
-    );
-
-    #real accounts
-    $client->status->clear_age_verification();
-    $client->save();
-    create_mt5_account->(
-        $c, $token, $client, {account_type => 'gaming'},
-        'MT5NotAllowed', 'Real gaming MT5 account creation is not allowed from a virtual account for GB residence'
-    );
-
-    $client->status->set('age_verification', 'test', 'test');
-    $client->save();
-    create_mt5_account->(
-        $c, $token, $client, {account_type => 'gaming'},
-        'MT5NotAllowed', 'Real gaming MT5 account creation is not allowed from a virtual account for GB residence ( even if age verified)'
-    );
-
-    create_mt5_account->(
-        $c, $token, $client,
-        {
-            account_type     => 'financial',
-            mt5_account_type => 'financial'
-        },
-        'RealAccountMissing',
-        'Real financial MT5 account creation is not allowed from a virtual account'
-    );
-
-    create_mt5_account->(
-        $c, $token, $client,
-        {
-            account_type     => 'financial',
-            mt5_account_type => 'financial_stp'
-        },
-        'MT5NotAllowed',
-        'Financial STP MT5 account is not available in this country'
-    );
-
-};
+#subtest 'Virtual account types - GB residence' => sub {
+#    my $client = create_client('VRTC');
+#    $client->set_default_account('USD');
+#    $client->residence('gb');
+#    $client->save();
+#
+#    my $user = BOM::User->create(
+#        email    => 'vrtc+gb@binary.com',
+#        password => 'Abcd33@!',
+#    );
+#    $user->update_trading_password('Abcd33@!');
+#    $user->add_client($client);
+#    my $token = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token');
+#
+#    #demo account
+#    $client->status->clear_age_verification();
+#    $client->save();
+#    create_mt5_account->(
+#        $c, $token, $client,
+#        {
+#            account_type     => 'demo',
+#            mt5_account_type => 'financial'
+#        },
+#        'FinancialAccountMissing',
+#        'Virtual GB client cannot create a financial MT5 account'
+#    );
+#    $client->status->set('age_verification', 'test', 'test');
+#    $client->save();
+#
+#    my $login = create_mt5_account->(
+#        $c, $token, $client,
+#        {
+#            country      => 'mt',
+#            account_type => 'demo',
+#        },
+#        'MT5NotAllowed',
+#        'Virtual GB client can not create gaming demo account'
+#    );
+#
+#    create_mt5_account->(
+#        $c, $token, $client,
+#        {
+#            account_type     => 'demo',
+#            mt5_account_type => 'financial'
+#        },
+#        'FinancialAccountMissing',
+#        'Unable to create MT5 financial account from GB even after age verification'
+#    );
+#
+#    $login = create_mt5_account->(
+#        $c, $token, $client,
+#        {
+#            account_type     => 'demo',
+#            mt5_account_type => 'financial_stp'
+#        },
+#        'MT5NotAllowed',
+#        'Financial STP demo MT5 account is not available in this country'
+#    );
+#
+#    #real accounts
+#    $client->status->clear_age_verification();
+#    $client->save();
+#    create_mt5_account->(
+#        $c, $token, $client, {account_type => 'gaming'},
+#        'MT5NotAllowed', 'Real gaming MT5 account creation is not allowed from a virtual account for GB residence'
+#    );
+#
+#    $client->status->set('age_verification', 'test', 'test');
+#    $client->save();
+#    create_mt5_account->(
+#        $c, $token, $client, {account_type => 'gaming'},
+#        'MT5NotAllowed', 'Real gaming MT5 account creation is not allowed from a virtual account for GB residence ( even if age verified)'
+#    );
+#
+#    create_mt5_account->(
+#        $c, $token, $client,
+#        {
+#            account_type     => 'financial',
+#            mt5_account_type => 'financial'
+#        },
+#        'RealAccountMissing',
+#        'Real financial MT5 account creation is not allowed from a virtual account'
+#    );
+#
+#    create_mt5_account->(
+#        $c, $token, $client,
+#        {
+#            account_type     => 'financial',
+#            mt5_account_type => 'financial_stp'
+#        },
+#        'MT5NotAllowed',
+#        'Financial STP MT5 account is not available in this country'
+#    );
+#
+#};
 
 my %lc_company_specific_details = (
     CR => {
@@ -1089,10 +1008,6 @@ my %lc_company_specific_details = (
     MLT => {
         email_prefix => "vrtc+mlt2",
         residence    => "at"
-    },
-    MX => {
-        email_prefix => "vrtc+mx2",
-        residence    => "gb"
     });
 my ($email, $user, $vr_client, $client, $token_vr, $email_prefix, $residence);
 foreach my $broker_code (keys %lc_company_specific_details) {

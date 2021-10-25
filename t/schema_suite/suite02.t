@@ -18,39 +18,42 @@ sub _get_stashed { return $suite->get_stashed(@_); }
 
 set_language 'EN';
 
-# VIRTUAL ACCOUNT OPENING FOR (MX)
-test_sendrecv_params 'verify_email/test_send.json', 'verify_email/test_receive.json', 'test+mx@binary.com', 'account_opening';
-test_sendrecv_params 'new_account_virtual/test_send.json', 'new_account_virtual/test_receive.json',
-    _get_token('test+mx@binary.com'), 'gb', 'test\\\\+mx@binary.com';
-test_sendrecv_params 'authorize/test_send.json', 'authorize/test_receive_vrtc.json',
-    _get_stashed('new_account_virtual/oauth_token'), 'gb', 'test\\\\+mx@binary.com';
+## COMMENTING MX RELATED TESTS
+## VIRTUAL ACCOUNT OPENING FOR (MX)
+#test_sendrecv_params 'verify_email/test_send.json', 'verify_email/test_receive.json', 'test+mx@binary.com', 'account_opening';
+#test_sendrecv_params 'new_account_virtual/test_send.json', 'new_account_virtual/test_receive_error.json',
+#    _get_token('test+mx@binary.com'), 'gb', 'test\\\\+mx@binary.com';
+#test_sendrecv_params 'authorize/test_send.json', 'authorize/test_receive_error.json',
+#    _get_stashed('new_account_virtual/oauth_token'), 'gb', 'test\\\\+mx@binary.com';
+#
+## REAL ACCOUNT OPENING (MX)
+#$SIG{'__WARN__'} = sub { like shift, qr/signup validation proveid fail:/ };    # proveid will fail for these test clients
+#
+#test_sendrecv_params 'new_account_real/test_send.json', 'new_account_real/test_receive_mx.json',
+#    _get_stashed('authorize/stash/token'), 'Example First Name MX', 'gb';
+#test_sendrecv_params 'authorize/test_send.json', 'authorize/test_receive_error.json',
+#    _get_stashed('new_account_real/oauth_token'), 'gb', 'test\\\\+mx@binary.com';
+#test_sendrecv_params 'payout_currencies/test_send.json', 'payout_currencies/test_receive.json', _get_stashed('authorize/stash/token'), '(USD|GBP)', 2;
+#
+## PAYMENT SCOPE CALLS (MX)
+#test_sendrecv_params 'cashier/test_send_deposit.json', 'cashier/test_receive_currency_error.json', _get_stashed('new_account_real/oauth_token');
+#
+#test_sendrecv_params 'set_account_currency/test_send.json', 'set_account_currency/test_receive.json',
+#    _get_stashed('new_account_real/oauth_token'), 'GBP';
+#test_sendrecv_params 'payout_currencies/test_send.json', 'payout_currencies/test_receive.json', _get_stashed('authorize/stash/token'), '(GBP)', 1;
+#
+#test_sendrecv_params 'cashier/test_send_deposit.json', 'cashier/test_receive_ukgc_error.json', _get_stashed('new_account_real/oauth_token');
+#
+## ADMIN SCOPE CALLS (MX)
+#test_sendrecv_params 'tnc_approval/test_send_ukgc.json', 'tnc_approval/test_receive.json', _get_stashed('new_account_real/oauth_token');
+#
+## PAYMENT SCOPE CALLS (MX)
+#$suite->change_status(_get_stashed('new_account_real/client_id'), 'set',   'age_verification');
+#$suite->change_status(_get_stashed('new_account_real/client_id'), 'clear', 'max_turnover_limit_not_set');
+#$suite->change_status(_get_stashed('new_account_real/client_id'), 'set',   'max_turnover_limit_not_set');
+#test_sendrecv_params 'cashier/test_send_deposit.json', 'cashier/test_receive_max_turnover.json', _get_stashed('new_account_real/oauth_token');
+# END OF COMMENTING MX RELATED TESTS
 
-# REAL ACCOUNT OPENING (MX)
-$SIG{'__WARN__'} = sub { like shift, qr/signup validation proveid fail:/ };    # proveid will fail for these test clients
-
-test_sendrecv_params 'new_account_real/test_send.json', 'new_account_real/test_receive_mx.json',
-    _get_stashed('authorize/stash/token'), 'Example First Name MX', 'gb';
-test_sendrecv_params 'authorize/test_send.json', 'authorize/test_receive_mx.json',
-    _get_stashed('new_account_real/oauth_token'), 'gb', 'test\\\\+mx@binary.com';
-test_sendrecv_params 'payout_currencies/test_send.json', 'payout_currencies/test_receive.json', _get_stashed('authorize/stash/token'), '(USD|GBP)', 2;
-
-# PAYMENT SCOPE CALLS (MX)
-test_sendrecv_params 'cashier/test_send_deposit.json', 'cashier/test_receive_currency_error.json', _get_stashed('new_account_real/oauth_token');
-
-test_sendrecv_params 'set_account_currency/test_send.json', 'set_account_currency/test_receive.json',
-    _get_stashed('new_account_real/oauth_token'), 'GBP';
-test_sendrecv_params 'payout_currencies/test_send.json', 'payout_currencies/test_receive.json', _get_stashed('authorize/stash/token'), '(GBP)', 1;
-
-test_sendrecv_params 'cashier/test_send_deposit.json', 'cashier/test_receive_ukgc_error.json', _get_stashed('new_account_real/oauth_token');
-
-# ADMIN SCOPE CALLS (MX)
-test_sendrecv_params 'tnc_approval/test_send_ukgc.json', 'tnc_approval/test_receive.json', _get_stashed('new_account_real/oauth_token');
-
-# PAYMENT SCOPE CALLS (MX)
-$suite->change_status(_get_stashed('new_account_real/client_id'), 'set',   'age_verification');
-$suite->change_status(_get_stashed('new_account_real/client_id'), 'clear', 'max_turnover_limit_not_set');
-$suite->change_status(_get_stashed('new_account_real/client_id'), 'set',   'max_turnover_limit_not_set');
-test_sendrecv_params 'cashier/test_send_deposit.json', 'cashier/test_receive_max_turnover.json', _get_stashed('new_account_real/oauth_token');
 # set_self_exclusion for max_30day_turnover should remove max_turnover_limit_not_set status,
 # if we make call from here it will try to connect to doughflow, enable this when we can test doughflow
 # on qa and test

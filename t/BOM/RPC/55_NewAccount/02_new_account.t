@@ -810,51 +810,43 @@ subtest $method => sub {
         $client->address_postcode('');
         $params->{args}->{address_postcode} = '';
         $client->save();
-        $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('PostcodeRequired', 'needs address post code');
+        # TODO: JB re-enable the test when we enable MF signup
+        #$rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('PostcodeRequired', 'needs address post code');
 
         $params->{args}->{address_postcode} = '313131';
         $client->address_postcode('313131');
         $client->save();
 
-        $rpc_ct->call_ok($method, $params)->has_no_system_error->has_no_error->result_value_is(
-            sub { shift->{landing_company} },
-            'Deriv Investments (Europe) Limited',
-            'It should return new account data'
-        )->result_value_is(sub { shift->{landing_company_shortcode} }, 'maltainvest', 'It should return new account data');
+        $rpc_ct->call_ok($method, $params)->has_error->error_code_is('InvalidAccount')->error_message_is('Sorry, account opening is unavailable.');
 
-        my $new_loginid = $rpc_ct->result->{client_id};
-        ok $new_loginid =~ /^MF\d+/, 'new MF loginid';
+        # TODO: JB
+        #my $new_loginid;
+        #my $cl = BOM::User::Client->new({loginid => $new_loginid});
+        #ok($cl->status->financial_risk_approval, 'For mf accounts we will set financial risk approval status');
+        #is $cl->non_pep_declaration_time, $fixed_time->datetime_yyyymmdd_hhmmss,
+        #    'non_pep_declaration_time is auto-initialized with no non_pep_delclaration in args';
 
-        my $token_db = BOM::Database::Model::AccessToken->new();
-        my $tokens   = $token_db->get_all_tokens_by_loginid($new_loginid);
-        is($tokens->[0]{info}, "App ID: $app_id", "token's app_id is correct");
+        #is $cl->status->crs_tin_information->{reason}, 'Client confirmed tax information', "CRS status is set";
 
-        my $cl = BOM::User::Client->new({loginid => $new_loginid});
-        ok($cl->status->financial_risk_approval, 'For mf accounts we will set financial risk approval status');
-        is $cl->non_pep_declaration_time, $fixed_time->datetime_yyyymmdd_hhmmss,
-            'non_pep_declaration_time is auto-initialized with no non_pep_delclaration in args';
+        #my ($resp_loginid, $t, $uaf) =
+        #    @{BOM::Database::Model::OAuth->new->get_token_details($rpc_ct->result->{oauth_token})}{qw/loginid creation_time ua_fingerprint/};
+        #is $resp_loginid, $new_loginid, 'correct oauth token';
 
-        is $cl->status->crs_tin_information->{reason}, 'Client confirmed tax information', "CRS status is set";
+        #ok $emitted{"signup_$new_loginid"}, "signup event emitted";
 
-        my ($resp_loginid, $t, $uaf) =
-            @{BOM::Database::Model::OAuth->new->get_token_details($rpc_ct->result->{oauth_token})}{qw/loginid creation_time ua_fingerprint/};
-        is $resp_loginid, $new_loginid, 'correct oauth token';
+        ## check disabled case
+        #my $disabled_client = BOM::User::Client->new({loginid => $new_loginid});
+        #$disabled_client->status->set('disabled', 'system', 'reason');
+        #$rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('NewAccountLimitReached', 'correct error code.')
+        #    ->error_message_is('You have created all accounts available to you.', 'It should return expected error message');
 
-        ok $emitted{"signup_$new_loginid"}, "signup event emitted";
-
-        # check disabled case
-        my $disabled_client = BOM::User::Client->new({loginid => $new_loginid});
-        $disabled_client->status->set('disabled', 'system', 'reason');
-        $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('NewAccountLimitReached', 'correct error code.')
-            ->error_message_is('You have created all accounts available to you.', 'It should return expected error message');
-
-        # check disabled but account currency selected case
-        $disabled_client->set_default_account("USD");
-        my $mock_user = Test::MockModule->new('BOM::User');
-        $mock_user->redefine(bom_loginids => {return ($disabled_client->loginid)});
-        $rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('NewAccountLimitReached', 'correct error code.')
-            ->error_message_is('You have created all accounts available to you.', 'It should return expected error message');
-        $mock_user->unmock_all;
+        ## check disabled but account currency selected case
+        #$disabled_client->set_default_account("USD");
+        #my $mock_user = Test::MockModule->new('BOM::User');
+        #$mock_user->redefine(bom_loginids => {return ($disabled_client->loginid)});
+        #$rpc_ct->call_ok($method, $params)->has_no_system_error->has_error->error_code_is('NewAccountLimitReached', 'correct error code.')
+        #    ->error_message_is('You have created all accounts available to you.', 'It should return expected error message');
+        #$mock_user->unmock_all;
     };
 
     my $client_mlt;
@@ -959,145 +951,146 @@ subtest $method => sub {
     };
 
     my $client_mx;
-    subtest 'Init MX MF' => sub {
-        lives_ok {
-            my $password = 'Abcd33!@';
-            my $hash_pwd = BOM::User::Password::hashpw($password);
-            $email = 'mx_email' . rand(999) . '@binary.com';
-            $user  = BOM::User->create(
-                email          => $email,
-                password       => $hash_pwd,
-                email_verified => 1,
-            );
-            $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-                broker_code => 'VRTC',
-                email       => $email,
-                residence   => 'gb',
-            });
-            $client_mx = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-                    broker_code   => 'MX',
-                    email         => $email,
-                    residence     => 'gb',
-                    secret_answer => BOM::User::Utility::encrypt_secret_answer('mysecretanswer')});
-            $auth_token = BOM::Platform::Token::API->new->create_token($client_mx->loginid, 'test token');
-
-            $user->add_client($client);
-            $user->add_client($client_mx);
-
-            is $client_mx->non_pep_declaration_time, $fixed_time->datetime_yyyymmdd_hhmmss,
-                'non_pep_declaration_time is auto-initialized with no non_pep_delclaration in args (test create_account call)';
-            $client_mx->non_pep_declaration_time('2020-01-02');
-            $client_mx->status->set('age_verification', 'system', 'Age verified client');
-            $client_mx->save;
-        }
-        'Initial users and clients';
-    };
-
-    subtest 'Create new account maltainvest from MX' => sub {
-        $params->{args}->{accept_risk} = 1;
-        $params->{token}               = $auth_token;
-        $params->{args}->{residence}   = 'gb';
-        delete $params->{args}->{non_pep_delclaration};
-        %datadog_args = ();
-
-        # call with totally random values - our client still should have correct one
-        ($params->{args}->{$_} = $_) =~ s/_// for qw/first_name last_name address_city/;
-        $params->{args}->{phone}         = '+62 21 12345678';
-        $params->{args}->{date_of_birth} = '1990-09-09';
-
-        $client_mx->status->set('unwelcome', 'system', 'test');
-
-        my $result = $rpc_ct->call_ok($method, $params)->result;
-        is $result->{error}->{code}, undef, 'Allow to open even if Client KYC is pending and status is unwelcome';
-
-        my $new_loginid = $result->{client_id};
-        my $token_db    = BOM::Database::Model::AccessToken->new();
-        my $tokens      = $token_db->get_all_tokens_by_loginid($new_loginid);
-        is($tokens->[0]{info}, "App ID: $app_id", "token's app_id is correct");
-
-        my $auth_token_mf = BOM::Platform::Token::API->new->create_token($new_loginid, 'test token');
-
-        # make sure data is same, as in first account, regardless of what we have provided
-        my $cl = BOM::User::Client->new({loginid => $new_loginid});
-        is $client_mx->$_, $cl->$_, "$_ is correct on created account" for qw/first_name last_name residence address_city phone date_of_birth/;
-
-        $result = $rpc_ct->call_ok('get_settings', {token => $auth_token_mf})->result;
-        is($result->{tax_residence}, 'de,nl', 'MF client has tax residence set');
-        $result = $rpc_ct->call_ok('get_financial_assessment', {token => $auth_token_mf})->result;
-        isnt(keys %$result, 0, 'MF client has financial assessment set');
-
-        ok $emitted{"signup_$new_loginid"}, "signup event emitted";
-        ok $cl->status->age_verification, 'age verification synced between mx(gb) and mf.';
-        ok $cl->non_pep_declaration_time, 'non_pep_declaration_time is auto-initialized with no non_pep_delclaration in args';
-        cmp_ok $cl->non_pep_declaration_time, 'ne', '2020-01-02T00:00:00', 'non_pep declaration time is different from MLT account';
-    };
-
-    subtest 'Create a new account maltainvest from a virtual account' => sub {
-        #create a virtual gb client
-        my $password = 'Abcd33!@';
-        my $hash_pwd = BOM::User::Password::hashpw($password);
-        $email = 'virtual_email' . rand(999) . '@binary.com';
-        $user  = BOM::User->create(
-            email          => $email,
-            password       => $hash_pwd,
-            email_verified => 1,
-        );
-        $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-            broker_code => 'VRTC',
-            email       => $email,
-            residence   => 'gb',
-        });
-        $auth_token = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token');
-        $user->add_client($client);
-
-        $params->{args}->{accept_risk} = 1;
-        $params->{token}               = $auth_token;
-        $params->{args}->{residence}   = 'gb';
-
-        # call with totally random values - our client still should have correct one
-        ($params->{args}->{$_} = $_) =~ s/_// for qw/first_name last_name address_city/;
-        $params->{args}->{phone}         = '+62 21 12345678';
-        $params->{args}->{date_of_birth} = '1990-09-09';
-
-        my $result = $rpc_ct->call_ok($method, $params)->result;
-        ok $result->{client_id}, "Create an MF account from virtual account";
-
-        ok $emitted{'signup_' . $result->{client_id}}, "signup event emitted";
-
-        #create a virtual de client
-        $email = 'virtual_germany_email' . rand(999) . '@binary.com';
-        # call with totally random values - our client still should have correct one
-        ($params->{args}->{$_} = $_ . rand(9)) =~ s/_// for qw/first_name last_name residence address_city/;
-        $params->{args}->{phone}         = '+62 21 12345999';
-        $params->{args}->{date_of_birth} = '1990-09-09';
-
-        $user = BOM::User->create(
-            email          => $email,
-            password       => $hash_pwd,
-            email_verified => 1,
-        );
-        $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-            broker_code => 'VRTC',
-            email       => $email,
-            residence   => 'de',
-        });
-        $auth_token = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token');
-        $user->add_client($client);
-
-        $params->{token}                   = $auth_token;
-        $params->{args}->{residence}       = 'de';
-        $params->{args}->{secret_answer}   = 'test';
-        $params->{args}->{secret_question} = 'test';
-
-        $result = $rpc_ct->call_ok($method, $params)->result;
-        ok $result->{client_id}, "Germany users can create MF account from the virtual account";
-
-        ok $emitted{'signup_' . $result->{client_id}}, "signup event emitted";
-
-        my $cl = BOM::User::Client->new({loginid => $result->{client_id}});
-        ok $cl->non_pep_declaration_time,
-            'non_pep_declaration_time is auto-initialized with no non_pep_delclaration in args (test create_account call)';
-    };
+# TODO: JB re-enable when we allow MF
+#    subtest 'Init MX MF' => sub {
+#        lives_ok {
+#            my $password = 'Abcd33!@';
+#            my $hash_pwd = BOM::User::Password::hashpw($password);
+#            $email = 'mx_email' . rand(999) . '@binary.com';
+#            $user  = BOM::User->create(
+#                email          => $email,
+#                password       => $hash_pwd,
+#                email_verified => 1,
+#            );
+#            $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+#                broker_code => 'VRTC',
+#                email       => $email,
+#                residence   => 'gb',
+#            });
+#            $client_mx = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+#                    broker_code   => 'MX',
+#                    email         => $email,
+#                    residence     => 'gb',
+#                    secret_answer => BOM::User::Utility::encrypt_secret_answer('mysecretanswer')});
+#            $auth_token = BOM::Platform::Token::API->new->create_token($client_mx->loginid, 'test token');
+#
+#            $user->add_client($client);
+#            $user->add_client($client_mx);
+#
+#            is $client_mx->non_pep_declaration_time, $fixed_time->datetime_yyyymmdd_hhmmss,
+#                'non_pep_declaration_time is auto-initialized with no non_pep_delclaration in args (test create_account call)';
+#            $client_mx->non_pep_declaration_time('2020-01-02');
+#            $client_mx->status->set('age_verification', 'system', 'Age verified client');
+#            $client_mx->save;
+#        }
+#        'Initial users and clients';
+#    };
+#
+#    subtest 'Create new account maltainvest from MX' => sub {
+#        $params->{args}->{accept_risk} = 1;
+#        $params->{token}               = $auth_token;
+#        $params->{args}->{residence}   = 'gb';
+#        delete $params->{args}->{non_pep_delclaration};
+#        %datadog_args = ();
+#
+#        # call with totally random values - our client still should have correct one
+#        ($params->{args}->{$_} = $_) =~ s/_// for qw/first_name last_name address_city/;
+#        $params->{args}->{phone}         = '+62 21 12345678';
+#        $params->{args}->{date_of_birth} = '1990-09-09';
+#
+#        $client_mx->status->set('unwelcome', 'system', 'test');
+#
+#        my $result = $rpc_ct->call_ok($method, $params)->result;
+#        is $result->{error}->{code}, undef, 'Allow to open even if Client KYC is pending and status is unwelcome';
+#
+#        my $new_loginid = $result->{client_id};
+#        my $token_db    = BOM::Database::Model::AccessToken->new();
+#        my $tokens      = $token_db->get_all_tokens_by_loginid($new_loginid);
+#        is($tokens->[0]{info}, "App ID: $app_id", "token's app_id is correct");
+#
+#        my $auth_token_mf = BOM::Platform::Token::API->new->create_token($new_loginid, 'test token');
+#
+#        # make sure data is same, as in first account, regardless of what we have provided
+#        my $cl = BOM::User::Client->new({loginid => $new_loginid});
+#        is $client_mx->$_, $cl->$_, "$_ is correct on created account" for qw/first_name last_name residence address_city phone date_of_birth/;
+#
+#        $result = $rpc_ct->call_ok('get_settings', {token => $auth_token_mf})->result;
+#        is($result->{tax_residence}, 'de,nl', 'MF client has tax residence set');
+#        $result = $rpc_ct->call_ok('get_financial_assessment', {token => $auth_token_mf})->result;
+#        isnt(keys %$result, 0, 'MF client has financial assessment set');
+#
+#        ok $emitted{"signup_$new_loginid"}, "signup event emitted";
+#        ok $cl->status->age_verification, 'age verification synced between mx(gb) and mf.';
+#        ok $cl->non_pep_declaration_time, 'non_pep_declaration_time is auto-initialized with no non_pep_delclaration in args';
+#        cmp_ok $cl->non_pep_declaration_time, 'ne', '2020-01-02T00:00:00', 'non_pep declaration time is different from MLT account';
+#    };
+#
+#    subtest 'Create a new account maltainvest from a virtual account' => sub {
+#        #create a virtual gb client
+#        my $password = 'Abcd33!@';
+#        my $hash_pwd = BOM::User::Password::hashpw($password);
+#        $email = 'virtual_email' . rand(999) . '@binary.com';
+#        $user  = BOM::User->create(
+#            email          => $email,
+#            password       => $hash_pwd,
+#            email_verified => 1,
+#        );
+#        $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+#            broker_code => 'VRTC',
+#            email       => $email,
+#            residence   => 'gb',
+#        });
+#        $auth_token = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token');
+#        $user->add_client($client);
+#
+#        $params->{args}->{accept_risk} = 1;
+#        $params->{token}               = $auth_token;
+#        $params->{args}->{residence}   = 'gb';
+#
+#        # call with totally random values - our client still should have correct one
+#        ($params->{args}->{$_} = $_) =~ s/_// for qw/first_name last_name address_city/;
+#        $params->{args}->{phone}         = '+62 21 12345678';
+#        $params->{args}->{date_of_birth} = '1990-09-09';
+#
+#        my $result = $rpc_ct->call_ok($method, $params)->result;
+#        ok $result->{client_id}, "Create an MF account from virtual account";
+#
+#        ok $emitted{'signup_' . $result->{client_id}}, "signup event emitted";
+#
+#        #create a virtual de client
+#        $email = 'virtual_germany_email' . rand(999) . '@binary.com';
+#        # call with totally random values - our client still should have correct one
+#        ($params->{args}->{$_} = $_ . rand(9)) =~ s/_// for qw/first_name last_name residence address_city/;
+#        $params->{args}->{phone}         = '+62 21 12345999';
+#        $params->{args}->{date_of_birth} = '1990-09-09';
+#
+#        $user = BOM::User->create(
+#            email          => $email,
+#            password       => $hash_pwd,
+#            email_verified => 1,
+#        );
+#        $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+#            broker_code => 'VRTC',
+#            email       => $email,
+#            residence   => 'de',
+#        });
+#        $auth_token = BOM::Platform::Token::API->new->create_token($client->loginid, 'test token');
+#        $user->add_client($client);
+#
+#        $params->{token}                   = $auth_token;
+#        $params->{args}->{residence}       = 'de';
+#        $params->{args}->{secret_answer}   = 'test';
+#        $params->{args}->{secret_question} = 'test';
+#
+#        $result = $rpc_ct->call_ok($method, $params)->result;
+#        ok $result->{client_id}, "Germany users can create MF account from the virtual account";
+#
+#        ok $emitted{'signup_' . $result->{client_id}}, "signup event emitted";
+#
+#        my $cl = BOM::User::Client->new({loginid => $result->{client_id}});
+#        ok $cl->non_pep_declaration_time,
+#            'non_pep_declaration_time is auto-initialized with no non_pep_delclaration in args (test create_account call)';
+#    };
 
     subtest 'Create new account maltainvest without MLT' => sub {
         my $password = 'Abcd33!@';
@@ -1353,83 +1346,83 @@ subtest 'Repeating phone number' => sub {
         "Invalid phone number provided (repeated digits)");
 };
 
-subtest 'Forbidden postcodes' => sub {
-    my $idauth_mock = Test::MockModule->new('BOM::Platform::Client::IDAuthentication');
-    $idauth_mock->mock(
-        'run_validation',
-        sub {
-            return 1;
-        });
-
-    my $password = 'Abcd33!@';
-    my $hash_pwd = BOM::User::Password::hashpw($password);
-    my $email    = 'the_forbidden_one' . rand(999) . '@binary.com';
-    my $user     = BOM::User->create(
-        email          => $email,
-        password       => $hash_pwd,
-        email_verified => 1,
-    );
-    my $client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'VRTC',
-        email       => $email,
-        residence   => 'gb',
-    });
-
-    my $auth_token = BOM::Platform::Token::API->new->create_token($client_vr->loginid, 'test token');
-
-    $params->{country}                  = 'gb';
-    $params->{args}->{residence}        = 'gb';
-    $params->{args}->{client_password}  = 'assfqwf12412!';
-    $params->{args}->{subtype}          = 'real';
-    $params->{args}->{first_name}       = 'mr family';
-    $params->{args}->{last_name}        = 'man';
-    $params->{args}->{date_of_birth}    = '1999-01-02';
-    $params->{args}->{email}            = $email;
-    $params->{args}->{phone}            = '+15417541234';
-    $params->{args}->{salutation}       = 'hello';
-    $params->{args}->{citizen}          = 'gb';
-    $params->{args}->{address_postcode} = 'JE2 1234';
-    $params->{token}                    = BOM::Platform::Token::API->new->create_token($client_vr->loginid, 'test token');
-
-    $rpc_ct->call_ok('new_account_real', $params)->has_no_system_error->has_error->error_code_is('ForbiddenPostcode', 'Invalid Jersey postcode');
-    $params->{args}->{address_postcode} = 'EA1 C1A1';
-
-    my $result = $rpc_ct->call_ok('new_account_real', $params)->has_no_system_error->has_no_error('gb mx account created successfully')->result;
-    ok $result->{client_id}, 'got a client id';
-    $idauth_mock->unmock_all;
-
-    $params->{args} = {
-        'other_instruments_trading_frequency'  => '6-10 transactions in the past 12 months',
-        'forex_trading_frequency'              => '0-5 transactions in the past 12 months',
-        'education_level'                      => 'Secondary',
-        'forex_trading_experience'             => '1-2 years',
-        'binary_options_trading_experience'    => '1-2 years',
-        'cfd_trading_experience'               => '1-2 years',
-        'employment_industry'                  => 'Finance',
-        'income_source'                        => 'Self-Employed',
-        'other_instruments_trading_experience' => 'Over 3 years',
-        'binary_options_trading_frequency'     => '40 transactions or more in the past 12 months',
-        'set_financial_assessment'             => 1,
-        'occupation'                           => 'Managers',
-        'cfd_trading_frequency'                => '0-5 transactions in the past 12 months',
-        'source_of_wealth'                     => 'Company Ownership',
-        'estimated_worth'                      => '$100,000 - $250,000',
-        'employment_status'                    => 'Self-Employed',
-        'net_income'                           => '$25,000 - $50,000',
-        'account_turnover'                     => '$50,001 - $100,000',
-        'tax_residence'                        => 'gb',
-        'tax_identification_number'            => 'E1241241',
-        'account_opening_reason'               => 'Speculative',
-    };
-
-    $params->{args}->{address_postcode} = 'JE2';
-    $rpc_ct->call_ok('new_account_maltainvest', $params)
-        ->has_no_system_error->has_error->error_code_is('ForbiddenPostcode', 'Invalid Jersey postcode');
-
-    $params->{args}->{address_postcode} = 'EA1 C1A1';
-    $result = $rpc_ct->call_ok('new_account_maltainvest', $params)->has_no_system_error->has_no_error('gb mf account created successfully')->result;
-    ok $result->{client_id}, 'got a client id';
-};
+#subtest 'Forbidden postcodes' => sub {
+#    my $idauth_mock = Test::MockModule->new('BOM::Platform::Client::IDAuthentication');
+#    $idauth_mock->mock(
+#        'run_validation',
+#        sub {
+#            return 1;
+#        });
+#
+#    my $password = 'Abcd33!@';
+#    my $hash_pwd = BOM::User::Password::hashpw($password);
+#    my $email    = 'the_forbidden_one' . rand(999) . '@binary.com';
+#    my $user     = BOM::User->create(
+#        email          => $email,
+#        password       => $hash_pwd,
+#        email_verified => 1,
+#    );
+#    my $client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+#        broker_code => 'VRTC',
+#        email       => $email,
+#        residence   => 'gb',
+#    });
+#
+#    my $auth_token = BOM::Platform::Token::API->new->create_token($client_vr->loginid, 'test token');
+#
+#    $params->{country}                  = 'gb';
+#    $params->{args}->{residence}        = 'gb';
+#    $params->{args}->{client_password}  = 'assfqwf12412!';
+#    $params->{args}->{subtype}          = 'real';
+#    $params->{args}->{first_name}       = 'mr family';
+#    $params->{args}->{last_name}        = 'man';
+#    $params->{args}->{date_of_birth}    = '1999-01-02';
+#    $params->{args}->{email}            = $email;
+#    $params->{args}->{phone}            = '+15417541234';
+#    $params->{args}->{salutation}       = 'hello';
+#    $params->{args}->{citizen}          = 'gb';
+#    $params->{args}->{address_postcode} = 'JE2 1234';
+#    $params->{token}                    = BOM::Platform::Token::API->new->create_token($client_vr->loginid, 'test token');
+#
+#    $rpc_ct->call_ok('new_account_real', $params)->has_no_system_error->has_error->error_code_is('ForbiddenPostcode', 'Invalid Jersey postcode');
+#    $params->{args}->{address_postcode} = 'EA1 C1A1';
+#
+#    my $result = $rpc_ct->call_ok('new_account_real', $params)->has_no_system_error->has_no_error('gb mx account created successfully')->result;
+#    ok $result->{client_id}, 'got a client id';
+#    $idauth_mock->unmock_all;
+#
+#    $params->{args} = {
+#        'other_instruments_trading_frequency'  => '6-10 transactions in the past 12 months',
+#        'forex_trading_frequency'              => '0-5 transactions in the past 12 months',
+#        'education_level'                      => 'Secondary',
+#        'forex_trading_experience'             => '1-2 years',
+#        'binary_options_trading_experience'    => '1-2 years',
+#        'cfd_trading_experience'               => '1-2 years',
+#        'employment_industry'                  => 'Finance',
+#        'income_source'                        => 'Self-Employed',
+#        'other_instruments_trading_experience' => 'Over 3 years',
+#        'binary_options_trading_frequency'     => '40 transactions or more in the past 12 months',
+#        'set_financial_assessment'             => 1,
+#        'occupation'                           => 'Managers',
+#        'cfd_trading_frequency'                => '0-5 transactions in the past 12 months',
+#        'source_of_wealth'                     => 'Company Ownership',
+#        'estimated_worth'                      => '$100,000 - $250,000',
+#        'employment_status'                    => 'Self-Employed',
+#        'net_income'                           => '$25,000 - $50,000',
+#        'account_turnover'                     => '$50,001 - $100,000',
+#        'tax_residence'                        => 'gb',
+#        'tax_identification_number'            => 'E1241241',
+#        'account_opening_reason'               => 'Speculative',
+#    };
+#
+#    $params->{args}->{address_postcode} = 'JE2';
+#    $rpc_ct->call_ok('new_account_maltainvest', $params)
+#        ->has_no_system_error->has_error->error_code_is('ForbiddenPostcode', 'Invalid Jersey postcode');
+#
+#    $params->{args}->{address_postcode} = 'EA1 C1A1';
+#    $result = $rpc_ct->call_ok('new_account_maltainvest', $params)->has_no_system_error->has_no_error('gb mf account created successfully')->result;
+#    ok $result->{client_id}, 'got a client id';
+#};
 
 subtest 'new affiliate account' => sub {
     my $password = 'Abcd33!@';

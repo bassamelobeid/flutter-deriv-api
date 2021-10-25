@@ -650,7 +650,8 @@ subtest 'upgradeable_landing_companies' => sub {
 
     # Test 7
     $result = $c->call_ok($method, $params)->has_no_error->result;
-    is_deeply $result->{upgradeable_landing_companies}, ['iom', 'maltainvest'], 'Client can upgrade to iom and maltainvest.';
+    is_deeply $result->{upgradeable_landing_companies}, [], 'Client cannot upgrade';
+
     # Create MF account (United Kingdom) since MX can upgrade to maltainvest
     my $client3 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'MF',
@@ -663,7 +664,7 @@ subtest 'upgradeable_landing_companies' => sub {
 
     # Test 8
     $result = $c->call_ok($method, $params)->has_no_error->result;
-    is_deeply $result->{upgradeable_landing_companies}, ['iom'], 'Client can upgrade to iom.';
+    is_deeply $result->{upgradeable_landing_companies}, [], 'Client cannot upgrade';
 
     $client3 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'MX',
