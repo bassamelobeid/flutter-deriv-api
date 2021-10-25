@@ -5,6 +5,8 @@ use warnings;
 
 use BOM::Config::Redis;
 use BOM::CTC::Database;
+use DataDog::DogStatsd::Helper qw/stats_inc/;
+use BOM::CTC::Constants qw(:datadog);
 
 use constant {REPROCESS_KEY_TTL => 300};
 
@@ -39,6 +41,9 @@ sub reprocess_address {
     $address_to_reprocess =~ s/^\s+|\s+$//g;
     return _render_message(0, "Invalid address format.")
         unless ($currency_wrapper->is_valid_address($address_to_reprocess));
+
+    stats_inc(DD_METRIC_PREFIX . 'reprocess.submitted',
+        {tags => ['currency:' . lc($currency_wrapper->currency_code), 'address:' . lc($address_to_reprocess)]});
 
     my $redis_reader = BOM::Config::Redis::redis_replicated_read();
     my $redis_key    = "Reprocess::$address_to_reprocess";
