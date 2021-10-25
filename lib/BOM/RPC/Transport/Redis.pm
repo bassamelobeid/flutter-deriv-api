@@ -46,7 +46,7 @@ use constant SHIFT_INTERVAL        => 300;
 use constant BACKOFF_INITIAL_DELAY => 0.3;
 use constant BACKOFF_MAX_DELAY     => 10;
 use constant DEFAULT_ERROR_CODE    => 'WrongResponse';
-use constant REQUESTS_PER_CYCLE    => 1000;
+use constant REQUESTS_PER_CYCLE    => 500;
 
 use constant ERROR_MESSAGE_MAPPING => {
     RequestTimeout      => 'Request timed out',
@@ -456,23 +456,25 @@ sub _dispatch_request {
     $params = dclone $params;
 
     my $result;
+    my $method = $params->{rpc};
 
     # PRE-DISPATCH
     $0 = sprintf(    ## no critic (RequireLocalizedPunctuationVars)
         "bom-rpc-redis-%s: (dispatching %s)",
-        $self->stream_name, $params->{rpc});
+        $self->stream_name, $method
+    );
 
     my $request_start = [Time::HiRes::gettimeofday];
     my $vsz_start     = _current_virtual_mem_size();
 
-    DataDog::DogStatsd::Helper::stats_inc('bom_rpc.v_3.call.count', {tags => ['rpc:' . $params->{rpc}, 'stream:' . $self->stream_name]});
+    DataDog::DogStatsd::Helper::stats_inc('bom_rpc.v_3.call.count', {tags => ['rpc:' . $method, 'stream:' . $self->stream_name]});
 
     # DISPATCH
     try {
-        $result = $services{$params->{rpc}}{rpc_sub}->($params->{args});
+        $result = $services{$method}{rpc_sub}->($params->{args});
     } catch ($err) {
-        $log->errorf("An error occurred while RPC requesting for '%s', ERROR: %s", $params->{rpc}, $err);
-        DataDog::DogStatsd::Helper::stats_inc('bom_rpc.v_3.call_failure.count', {tags => ['rpc:' . $params->{rpc}, 'stream:' . $self->stream_name]});
+        $log->errorf("An error occurred while RPC requesting for '%s', ERROR: %s", $method, $err);
+        DataDog::DogStatsd::Helper::stats_inc('bom_rpc.v_3.call_failure.count', {tags => ['rpc:' . $method, 'stream:' . $self->stream_name]});
         die "InternalServerError\n";
     }
 
@@ -489,14 +491,21 @@ sub _dispatch_request {
     # Anything more than 100 MB is probably something we should know about,
     # residence_list and ticks can take >64MB so we can't have this limit set
     # too low.
-    $log->warnf("Large VSZ increase for %d - %d bytes, %s\n", $$, $vsz_increase, $params->{rpc})
-        if $vsz_increase > (100 * 1024 * 1024);
+    if ($vsz_increase > (100 * 1024 * 1024)) {
+        my $logging = $params->{args}{logging} // {};
+        if (exists $logging->{all} or exists $logging->{method}{$method}) {
+            $log->warnf("Large VSZ increase for %d - %d bytes, %s, params: %s result: %s", $$, $vsz_increase, $method, $params->{args}{args},
+                $result);
+        } else {
+            $log->warnf("Large VSZ increase for %d - %d bytes, %s", $$, $vsz_increase, $method);
+        }
+    }
 
     # We use timing for the extra statistics (min/max/avg) it provides
     DataDog::DogStatsd::Helper::stats_timing(
         'bom_rpc.v_3.call.timing',
         (1000 * Time::HiRes::tv_interval($request_start)),
-        {tags => ['rpc:' . $params->{rpc}, 'stream:' . $self->stream_name]});
+        {tags => ['rpc:' . $method, 'stream:' . $self->stream_name]});
 
     push @recent, [$request_start, Time::HiRes::tv_interval($request_end, $request_start)];
     shift @recent if @recent > 50;
