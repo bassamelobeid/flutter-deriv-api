@@ -30,8 +30,9 @@ use Syntax::Keyword::Try;
 use Text::Trim;
 
 use BOM::Event::Services;
+use BOM::Event::Services::Track;
 use BOM::Event::Utility qw( exception_logged );
-use BOM::Platform::Context qw( request );
+use BOM::Platform::Context qw( localize request );
 use BOM::User::IdentityVerification;
 use BOM::User::Client;
 
@@ -195,6 +196,16 @@ async sub verify_identity {
                     provider        => $provider,
                     response_body   => encode_json_utf8 $response_hash,
                 });
+
+                BOM::Event::Services::Track::track_event(
+                    event      => 'identity_verification_rejected',
+                    loginid    => $client->loginid,
+                    properties => {
+                        authentication_url => request->brand->authentication_url,
+                        live_chat_url      => request->brand->live_chat_url,
+                        title              => localize('We were unable to verify your document details'),
+                    },
+                );
             }
         } else {
             $idv_model->update_document_check({

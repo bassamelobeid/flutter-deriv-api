@@ -110,6 +110,7 @@ my %EVENT_PROPERTIES = (
     trading_platform_investor_password_reset_request => [qw(first_name verification_url code)],
     trading_platform_investor_password_changed       => [qw(first_name contact_url type login)],
     trading_platform_investor_password_change_failed => [qw(first_name contact_url type login)],
+    identity_verification_rejected                   => [qw(authentication_url live_chat_url title)],
     risk_disclaimer_resubmission                     => [qw(loginid website_name title salutation)],
 );
 
@@ -134,6 +135,7 @@ my @SKIP_BRAND_VALIDATION = qw(
     payment_withdrawal_reversal
     mt5_inactive_notification
     p2p_archived_ad
+    identity_verification_rejected
     risk_disclaimer_resubmission
 );
 

@@ -33,9 +33,12 @@ my ($resp, $verification_status, $personal_info_status, $personal_info, $args) =
 my $updates = 0;
 
 my $mock_idv_model = Test::MockModule->new('BOM::User::IdentityVerification');
+my $mock_idv_status;
 $mock_idv_model->redefine(
     update_document_check => sub {
         $updates++;
+        my ($idv, $args) = @_;
+        $mock_idv_status = $args->{status};
         return $mock_idv_model->original('update_document_check')->(@_);
     });
 
@@ -70,7 +73,23 @@ my $idv_model = BOM::User::IdentityVerification->new(user_id => $client->user->i
 
 my $idv_event_handler = BOM::Event::Process::get_action_mappings()->{identity_verification_requested};
 
+my (@identify_args, @track_args);
+my $segment_response = Future->done(1);
+my $mock_segment     = new Test::MockModule('WebService::Async::Segment::Customer');
+$mock_segment->redefine(
+    'identify' => sub {
+        @identify_args = @_;
+        return $segment_response;
+    },
+    'track' => sub {
+        @track_args = @_;
+        return $segment_response;
+    });
+
 subtest 'verify identity by smile_identity is passed and data are valid' => sub {
+    undef @identify_args;
+    undef @track_args;
+
     $args = {
         loginid => $client->loginid,
     };
@@ -116,9 +135,16 @@ subtest 'verify identity by smile_identity is passed and data are valid' => sub 
 
     ok !$client->status->poi_name_mismatch, 'poi_name_mismatch is removed correctly';
     ok $client->status->age_verification, 'age verified correctly';
+
+    is $mock_idv_status, 'verified', 'verify_identity returns `verified` status';
+    is @identify_args, 0, 'Segment identify is not called on `verified` status';
+    is @track_args,    0, 'Segment track is not called `verified` status';
 };
 
 subtest 'verify identity by smile_identity is passed but document is expired' => sub {
+    undef @identify_args;
+    undef @track_args;
+
     $client->status->clear_poi_name_mismatch;
     $client->status->clear_age_verification;
     $args = {
@@ -160,6 +186,13 @@ subtest 'verify identity by smile_identity is passed but document is expired' =>
     ok !$client->status->poi_name_mismatch, 'poi_name_mismatch is not set correctly';
     ok !$client->status->age_verification,  'age verified removed correctly';
 
+    is $mock_idv_status, 'refuted', 'verify_identity returns `refuted` status';
+    is @identify_args, 0, 'Segment identify is not called on `refuted` status';
+    ok @track_args, 'Segment track is called on `refuted` status';
+
+    undef @identify_args;
+    undef @track_args;
+
     $idv_model->add_document({
         issuing_country => 'ke',
         number          => '12345',
@@ -191,9 +224,16 @@ subtest 'verify identity by smile_identity is passed but document is expired' =>
     is $idv_model->submissions_left, 0, 'submissions left are finished';
     ok !$client->status->poi_name_mismatch, 'poi_name_mismatch is not set correctly';
     ok !$client->status->age_verification,  'age verified is not changed correctly';
+
+    is $mock_idv_status, 'refuted', 'verify_identity returns `refuted` status';
+    is @identify_args, 0, 'Segment identify is not called on `refuted` status';
+    ok @track_args, 'Segment track is called on `refuted` status';
 };
 
 subtest 'verify identity by smile_identity is passed but document expiration date is unknown but document is lifetime valid' => sub {
+    undef @identify_args;
+    undef @track_args;
+
     $client->status->clear_poi_name_mismatch;
     $client->status->clear_age_verification;
 
@@ -244,9 +284,16 @@ subtest 'verify identity by smile_identity is passed but document expiration dat
     is $idv_model->submissions_left, 1, 'submissions not reset';
     ok !$client->status->poi_name_mismatch, 'poi_name_mismatch is not set correctly';
     ok $client->status->age_verification, 'age verified correctly';
+
+    is $mock_idv_status, 'verified', 'verify_identity returns `verified` status';
+    is @identify_args, 0, 'Segment identify is not called on `verified` status';
+    is @track_args,    0, 'Segment track is not called `verified` status';
 };
 
 subtest 'verify identity by smile_identity is passed and name mismatched' => sub {
+    undef @identify_args;
+    undef @track_args;
+
     $args = {
         loginid => $client->loginid,
     };
@@ -295,6 +342,13 @@ subtest 'verify identity by smile_identity is passed and name mismatched' => sub
     ok $client->status->poi_name_mismatch, 'poi_name_mismatch is set correctly';
     ok !$client->status->age_verification, 'age verified not set correctly';
 
+    is $mock_idv_status, 'refuted', 'verify_identity returns `refuted` status';
+    is @identify_args, 0, 'Segment identify is not called on `refuted` status';
+    ok @track_args, 'Segment track is called on `refuted` status';
+
+    undef @identify_args;
+    undef @track_args;
+
     $idv_model->add_document({
         issuing_country => 'ke',
         number          => '12345',
@@ -330,9 +384,16 @@ subtest 'verify identity by smile_identity is passed and name mismatched' => sub
     is $idv_model->submissions_left, 0, 'submissions reset to 0 correctly';
     ok $client->status->poi_name_mismatch, 'poi_name_mismatch is set correctly';
     ok !$client->status->age_verification, 'age verified not set correctly';
+
+    is $mock_idv_status, 'refuted', 'verify_identity returns `refuted` status';
+    is @identify_args, 0, 'Segment identify is not called on `refuted` status';
+    ok @track_args, 'Segment track is called on `refuted` status';
 };
 
 subtest 'verify identity by smile_identity is passed and DOB mismatch or underage' => sub {
+    undef @identify_args;
+    undef @track_args;
+
     $args = {
         loginid => $client->loginid,
     };
@@ -379,6 +440,13 @@ subtest 'verify identity by smile_identity is passed and DOB mismatch or underag
     is $idv_model->submissions_left, 0, 'submissions reset to 0 correctly';
     ok !$client->status->poi_name_mismatch, 'poi_name_mismatch is not set correctly';
     ok !$client->status->age_verification,  'age verified removed correctly';
+
+    is $mock_idv_status, 'refuted', 'verify_identity returns `refuted` status';
+    is @identify_args, 0, 'Segment identify is not called on `refuted` status';
+    ok @track_args, 'Segment track is called on `refuted` status';
+
+    undef @identify_args;
+    undef @track_args;
 
     $idv_model->add_document({
         issuing_country => 'ke',
@@ -454,6 +522,10 @@ subtest 'verify identity by smile_identity is passed and DOB mismatch or underag
     is $idv_model->submissions_left, 0, 'submissions reset to 0 correctly';
     ok !$client->status->poi_name_mismatch, 'poi_name_mismatch is not set correctly';
     ok !$client->status->age_verification,  'age verified removed correctly';
+
+    is $mock_idv_status, 'refuted', 'verify_identity returns `refuted` status';
+    is @identify_args, 0, 'Segment identify is not called on `refuted` status';
+    ok @track_args, 'Segment track is called on `refuted` status';
 };
 
 subtest 'verification by smile_identity get failed with foul codes' => sub {
@@ -465,6 +537,9 @@ subtest 'verification by smile_identity get failed with foul codes' => sub {
     $client->status->clear_age_verification;
 
     for my $code (qw/ 1022 1013 /) {
+        undef @identify_args;
+        undef @track_args;
+
         _reset_submissions($client->binary_user_id);
 
         $resp = Future->done(
@@ -490,8 +565,14 @@ subtest 'verification by smile_identity get failed with foul codes' => sub {
         is $idv_model->submissions_left, 0, 'submissions reset to 0 correctly';
         ok !$client->status->age_verification,  'no change in statuses: age_verification';
         ok !$client->status->poi_name_mismatch, 'no change in statuses: age_verification';
+
+        is $mock_idv_status, 'failed', 'verify_identity returns `failed` status';
+        is @identify_args, 0, 'Segment identify is not called on `unavailable` status';
+        is @track_args,    0, 'Segment track is not called `unavailable` status';
     }
 };
+
+$mock_segment->unmock_all;
 
 sub _reset_submissions {
     my $user_id = shift;
