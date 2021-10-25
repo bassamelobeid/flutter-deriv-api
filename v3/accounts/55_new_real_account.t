@@ -61,48 +61,48 @@ subtest 'new CR real account' => sub {
     };
 };
 
-subtest 'new MX real account' => sub {
-    # create VR acc
-    my ($vr_client, $user) = create_vr_account({
-        email           => 'test+gb@binary.com',
-        client_password => 'abc123',
-        residence       => 'gb',
-    });
-    # authorize
-    my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $vr_client->loginid);
-    $t->await::authorize({authorize => $token});
-
-    # create real acc
-    my %details = %client_details;
-    $details{residence}  = 'gb';
-    $details{citizen}    = 'gb';
-    $details{first_name} = 'Valid';
-    $details{phone}      = '+442072343456';
-
-    subtest 'UK client - invalid postcode' => sub {
-        my $res = $t->await::new_account_real({%details, address_postcode => ''}, {timeout => 10});
-
-        is($res->{error}->{code}, 'InsufficientAccountDetails', 'UK client must have postcode');
-        is_deeply($res->{error}->{details}, {missing => ['address_postcode']});
-        is($res->{new_account_real}, undef, 'NO account created');
-    };
-
-    subtest 'UK client - invalid p.o. box' => sub {
-        my $res = $t->await::new_account_real({%details, address_line_1 => 'p.o. box 25325'}, {timeout => 10});
-
-        is($res->{error}->{code},    'PoBoxInAddress', 'Invalid p.o. box');
-        is($res->{new_account_real}, undef,            'NO account created');
-    };
-
-    subtest 'new MX account' => sub {
-        my $res = $t->await::new_account_real(\%details, {timeout => 10});
-        ok($res->{new_account_real});
-        test_schema('new_account_real', $res);
-
-        my $loginid = $res->{new_account_real}->{client_id};
-        like($loginid, qr/^MX\d+$/, "got MX client - $loginid");
-    };
-};
+#subtest 'new MX real account' => sub {
+#    # create VR acc
+#    my ($vr_client, $user) = create_vr_account({
+#        email           => 'test+gb@binary.com',
+#        client_password => 'abc123',
+#        residence       => 'gb',
+#    });
+#    # authorize
+#    my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $vr_client->loginid);
+#    $t->await::authorize({authorize => $token});
+#
+#    # create real acc
+#    my %details = %client_details;
+#    $details{residence}  = 'gb';
+#    $details{citizen}    = 'gb';
+#    $details{first_name} = 'Valid';
+#    $details{phone}      = '+442072343456';
+#
+#    subtest 'UK client - invalid postcode' => sub {
+#        my $res = $t->await::new_account_real({%details, address_postcode => ''}, {timeout => 10});
+#
+#        is($res->{error}->{code}, 'InsufficientAccountDetails', 'UK client must have postcode');
+#        is_deeply($res->{error}->{details}, {missing => ['address_postcode']});
+#        is($res->{new_account_real}, undef, 'NO account created');
+#    };
+#
+#    subtest 'UK client - invalid p.o. box' => sub {
+#        my $res = $t->await::new_account_real({%details, address_line_1 => 'p.o. box 25325'}, {timeout => 10});
+#
+#        is($res->{error}->{code},    'PoBoxInAddress', 'Invalid p.o. box');
+#        is($res->{new_account_real}, undef,            'NO account created');
+#    };
+#
+#    subtest 'new MX account' => sub {
+#        my $res = $t->await::new_account_real(\%details, {timeout => 10});
+#        ok($res->{new_account_real});
+#        test_schema('new_account_real', $res);
+#
+#        my $loginid = $res->{new_account_real}->{client_id};
+#        like($loginid, qr/^MX\d+$/, "got MX client - $loginid");
+#    };
+#};
 
 subtest 'new MLT real account' => sub {
     # create VR acc
@@ -398,33 +398,33 @@ subtest 'Address validation' => sub {
     is $cli->address_line_2, $cli_details->{address_line_2}, 'Expected address line 2';
 };
 
-subtest 'forbidden postcode' => sub {
-    my %details = %client_details;
-
-    my ($vr_client, $user) = create_vr_account({
-        email           => 'the-forbidden-one@binary.com',
-        client_password => 'abC123',
-        residence       => 'gb',
-    });
-
-    my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $vr_client->loginid);
-    $t->await::authorize({authorize => $token});
-
-    $details{currency}         = 'USD';
-    $details{residence}        = 'gb';
-    $details{citizen}          = 'gb';
-    $details{first_name}       = 'mister';
-    $details{last_name}        = 'familyman';
-    $details{phone}            = '+123423623523';
-    $details{address_postcode} = 'JE1';
-
-    my $res = $t->await::new_account_real(\%details);
-    is($res->{error}->{code}, 'ForbiddenPostcode', 'invalid jersey postcode');
-
-    $details{address_postcode} = 'EA1C';
-    $res = $t->await::new_account_real(\%details);
-    ok $res->{new_account_real}->{client_id}, 'Client created';
-};
+#subtest 'forbidden postcode' => sub {
+#    my %details = %client_details;
+#
+#    my ($vr_client, $user) = create_vr_account({
+#        email           => 'the-forbidden-one@binary.com',
+#        client_password => 'abC123',
+#        residence       => 'gb',
+#    });
+#
+#    my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $vr_client->loginid);
+#    $t->await::authorize({authorize => $token});
+#
+#    $details{currency}         = 'USD';
+#    $details{residence}        = 'gb';
+#    $details{citizen}          = 'gb';
+#    $details{first_name}       = 'mister';
+#    $details{last_name}        = 'familyman';
+#    $details{phone}            = '+123423623523';
+#    $details{address_postcode} = 'JE1';
+#
+#    my $res = $t->await::new_account_real(\%details);
+#    is($res->{error}->{code}, 'ForbiddenPostcode', 'invalid jersey postcode');
+#
+#    $details{address_postcode} = 'EA1C';
+#    $res = $t->await::new_account_real(\%details);
+#    ok $res->{new_account_real}->{client_id}, 'Client created';
+#};
 
 sub create_vr_account {
     my $args = shift;

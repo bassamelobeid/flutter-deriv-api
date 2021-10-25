@@ -207,35 +207,35 @@ fail_test_sendrecv_params 'new_account_maltainvest/test_send.json', 'new_account
 #####
 
 # VIRTUAL ACCOUNT OPENING FOR (MX)
-test_sendrecv_params 'verify_email/test_send.json', 'verify_email/test_receive.json', 'test-multiple-mx@binary.com', 'account_opening';
-test_sendrecv_params 'new_account_virtual/test_send.json', 'new_account_virtual/test_receive.json',
-    $suite->get_token('test-multiple-mx@binary.com'), 'test-multiple-mx@binary.com', 'gb';
-test_sendrecv_params 'authorize/test_send.json', 'authorize/test_receive_vrtc.json',
-    $suite->get_stashed('new_account_virtual/new_account_virtual/oauth_token'), 'test-multiple-mx@binary.com';
-fail_test_sendrecv_params 'new_account_virtual/test_send.json', 'new_account_virtual/test_receive.json',
-    $suite->get_token('test-multiple-mx@binary.com'), 'test-multiple-mx@binary.com', 'gb';
+#test_sendrecv_params 'verify_email/test_send.json', 'verify_email/test_receive.json', 'test-multiple-mx@binary.com', 'account_opening';
+#test_sendrecv_params 'new_account_virtual/test_send.json', 'new_account_virtual/test_receive.json',
+#    $suite->get_token('test-multiple-mx@binary.com'), 'test-multiple-mx@binary.com', 'gb';
+#test_sendrecv_params 'authorize/test_send.json', 'authorize/test_receive_vrtc.json',
+#    $suite->get_stashed('new_account_virtual/new_account_virtual/oauth_token'), 'test-multiple-mx@binary.com';
+#fail_test_sendrecv_params 'new_account_virtual/test_send.json', 'new_account_virtual/test_receive.json',
+#    $suite->get_token('test-multiple-mx@binary.com'), 'test-multiple-mx@binary.com', 'gb';
 
 # REAL ACCOUNT OPENING (MX)
-
-test_sendrecv_params 'new_account_real/test_send.json', 'new_account_real/test_receive_mx.json', 'Johny', 'gb', '+61298765432';
-$placeholder = $suite->get_stashed('new_account_real/new_account_real/oauth_token');
-
-# not allowed to open it again from virtual
-fail_test_sendrecv_params 'new_account_real/test_send.json', 'new_account_real/test_receive_mx.json', 'Johny', 'gb', '+61298765432';
-
-# authorize real account to make multiple accounts
-test_sendrecv_params 'authorize/test_send.json', 'authorize/test_receive_mx.json', $placeholder, 'test-multiple-mx@binary.com', 'Johny';
-
-# will fail as currency for existing client is not set
-fail_test_sendrecv_params 'new_account_real/test_send.json', 'new_account_real/test_receive_mx.json', 'Johny', 'gb', '+61298765432';
-
-# crypto currencies not allowed
-fail_test_sendrecv_params 'set_account_currency/test_send.json', 'set_account_currency/test_receive.json', 'BTC';
-
-test_sendrecv_params 'set_account_currency/test_send.json', 'set_account_currency/test_receive.json', 'GBP';
-test_sendrecv_params 'payout_currencies/test_send.json', 'payout_currencies/test_receive_vrt.json', 'GBP', 1;
-
-# will fail as exhausted
-fail_test_sendrecv_params 'new_account_real/test_send.json', 'new_account_real/test_receive_mx.json', 'Johny', 'gb', '+61298765432';
+#
+#test_sendrecv_params 'new_account_real/test_send.json', 'new_account_real/test_receive_mx.json', 'Johny', 'gb', '+61298765432';
+#$placeholder = $suite->get_stashed('new_account_real/new_account_real/oauth_token');
+#
+## not allowed to open it again from virtual
+#fail_test_sendrecv_params 'new_account_real/test_send.json', 'new_account_real/test_receive_mx.json', 'Johny', 'gb', '+61298765432';
+#
+## authorize real account to make multiple accounts
+#test_sendrecv_params 'authorize/test_send.json', 'authorize/test_receive_mx.json', $placeholder, 'test-multiple-mx@binary.com', 'Johny';
+#
+## will fail as currency for existing client is not set
+#fail_test_sendrecv_params 'new_account_real/test_send.json', 'new_account_real/test_receive_mx.json', 'Johny', 'gb', '+61298765432';
+#
+## crypto currencies not allowed
+#fail_test_sendrecv_params 'set_account_currency/test_send.json', 'set_account_currency/test_receive.json', 'BTC';
+#
+#test_sendrecv_params 'set_account_currency/test_send.json', 'set_account_currency/test_receive.json', 'GBP';
+#test_sendrecv_params 'payout_currencies/test_send.json', 'payout_currencies/test_receive_vrt.json', 'GBP', 1;
+#
+## will fail as exhausted
+#fail_test_sendrecv_params 'new_account_real/test_send.json', 'new_account_real/test_receive_mx.json', 'Johny', 'gb', '+61298765432';
 
 finish;
