@@ -353,7 +353,7 @@ subtest 'Validate Jurisdiction Restriction' => sub {
             clients     => [$client],
             transaction => $new_transaction
         })->_validate_jurisdictional_restrictions($client);
-    is($error->get_type, 'RandomRestrictedCountry', 'British clients are not allowed to trade random underlyings');
+    ok !$error, 'no error';
 
     lives_ok { $client->residence('be') } 'set residence to Belgium to test jurisdiction validation for random and financial binaries contracts';
 
