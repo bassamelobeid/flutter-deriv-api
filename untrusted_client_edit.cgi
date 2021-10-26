@@ -184,9 +184,9 @@ sub redirect {
             </script>
         };
     } else {
-        my $rand     = '?' . rand(9999);  # to avoid caching on these fast navigation links
+        my $rand       = '?' . rand(9999);                                            # to avoid caching on these fast navigation links
         my $login_page = request()->url_for("backoffice/login.cgi", {_r => $rand});
-        
+
         print qq{
                 </br></br><p style="text-align: center;" id="redirect-login">Redirecting to <a class="link" href="$login_page">login page</a></p>
                 <script>

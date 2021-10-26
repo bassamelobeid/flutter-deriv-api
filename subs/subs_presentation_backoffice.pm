@@ -267,6 +267,10 @@ sub vk_BOtopPRES    # this sub executed in BrokerPresentation
                     link => 'crypto_admin',
                     text => 'Crypto Tools'
                 },
+                {
+                    link => 'dividend_scheduler_tool',
+                    text => 'Dividend Scheduler Tool'
+                },
             ]
         },
         {

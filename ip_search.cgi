@@ -53,11 +53,9 @@ if ($search_type eq 'ip') {
 
     my $is_email = $loginid !~ /^(\D+)(\d+)$/;
 
-    my $user = BOM::User->new(
-        $is_email ? (email => $loginid) : (loginid => $loginid)
-    );
+    my $user = BOM::User->new($is_email ? (email => $loginid) : (loginid => $loginid));
 
-    unless($user){
+    unless ($user) {
         code_exit_BO(sprintf('No user found with provided identifier: <b>%s</b>', $loginid), $title);
     }
 

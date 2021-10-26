@@ -1,0 +1,114 @@
+<h3>Dividend Schedulers</h3>
+
+<form id='dividend_scheduler_form'>
+  <table>
+      <tr>
+          <td>
+              <label for="sorted_datetime">Date</label>
+              <input type="date" name="sorted_datetime" data-lpignore="true" style="color:black;" value="[% sorted_datetime %]"/>
+          </td>
+          <td><input type="button" class="btn btn--primary" onClick="searchByDate()" value="Search"></td>
+      </tr>
+  </table>
+</form>
+
+<table class="small full-width hover alternate border" id="dividend_schedulers">
+    <thead>
+      <tr align="center">
+          <th>Applied Date Time(GMT)</th>
+          <th>Platform</th>
+          <th>Server</th>
+          <th>Symbol</th>
+          <th>Currency</th>
+          <th>Long Dividends</th>
+          <th>Long Tax(%)</th>
+          <th>Short Dividends</th>
+          <th>Short Tax(%)</th>
+          <th>Comment</th>
+          <th>Status</th>
+          <th>Action</th>
+      </tr>
+    </thead>
+
+    <tbody>
+      [% FOREACH id IN index_dividend_scheduler.keys.nsort %]
+            [% dividend_scheduler = index_dividend_scheduler.$id %]
+            <tr id='dividend-scheduler-[% id %]'>
+                <td>[% dividend_scheduler.applied_date_time %]</td>
+                <td>[% dividend_scheduler.platform %]</td>
+                <td>[% dividend_scheduler.server %]</td>
+                <td>[% dividend_scheduler.symbol %]</td>
+                <td>[% dividend_scheduler.currency %]</td>
+                <td>[% dividend_scheduler.long_dividends %]</td>
+                <td>[% dividend_scheduler.long_tax %]</td>
+                <td>[% dividend_scheduler.short_dividends %]</td>
+                <td>[% dividend_scheduler.short_tax %]</td>
+                <td>[% dividend_scheduler.dividend_deal_comment %]</td>
+                [% IF dividend_scheduler.status == 'failed' %]
+                  <td style="background-color: red; color:black;">[% dividend_scheduler.status %]</td>
+                [% ELSIF dividend_scheduler.status == 'passed' %]
+                  <td style="background-color: lightgreen; color:black;">[% dividend_scheduler.status %]</td>
+                [% ELSIF dividend_scheduler.status == 'running' %]
+                  <td style="background-color: yellow; color:black;">[% dividend_scheduler.status %]</td>
+                [% ELSE %]
+                  <td style="background-color: lightblue; color:black;">[% dividend_scheduler.status %]</td>
+                  <td>
+                    <button onClick="deleteDividendScheduler('[% id %]')" type="button" class="btn btn--secondary">
+                      Delete
+                    </button>
+                    <button onClick="updateDividendScheduler('[% id %]')" type="button" class="btn btn--secondary">
+                      Edit
+                    </button>
+                  </td>
+                [% END %]
+            </tr>
+        [% END %]
+    </tbody>
+</table>
+
+<script>
+  var edit_dividend_scheduler_url    = "[% edit_dividend_scheduler_url | none %]";
+  var dividend_scheduler_controller_url = "[% dividend_scheduler_controller_url | none %]";
+  var index_dividend_scheduler_url = "[% index_dividend_scheduler_url | none %]";
+
+  function updateDividendScheduler(dividend_scheduler_id) {
+    const ds_id = dividend_scheduler_id;
+    location.replace(edit_dividend_scheduler_url + "?" + "id=" + ds_id);
+  }
+
+  function deleteDividendScheduler(dividend_scheduler_id) {
+    var el = \$('tr#dividend-scheduler-' + dividend_scheduler_id);
+    var result = el.find('td.form_status');
+    var data = {
+        destroy_dividend_scheduler: 1,
+        schedule_id: dividend_scheduler_id
+    };
+    var response = confirm('Are you sure?');
+
+    if (response == true) {
+      result.text('processing ...');
+
+      \$.ajax({
+        url: dividend_scheduler_controller_url,
+        data: data,
+        success: function(data) {
+            var config = \$.parseJSON(data);
+            if (config.error) {
+                result.text(config.error).css('color', 'var(--color-red)');
+            } else {
+                result.text('removed').css('color', 'var(--green-2)');
+                el.remove();
+            }
+        }
+      });
+    } else {}
+  }
+
+  function searchByDate() {
+    var el = \$('#dividend_scheduler_form');
+
+    var sorted_datetime = el.find('input[name="sorted_datetime"]').val();
+    location.replace(index_dividend_scheduler_url + "?" + "sorted_datetime=" + sorted_datetime);
+  }
+
+</script>

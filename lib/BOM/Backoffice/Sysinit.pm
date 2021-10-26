@@ -135,7 +135,14 @@ my $permissions = {
     'quant/client_limit.cgi'                                                  => ['Quants'],
     'p2p_band_management.cgi'                                                 => ['QuantsWrite'],
     'quant/multiplier_risk_management.cgi'                                    => ['Quants'],
-    'doughflow_method_manage.cgi'                                             => ['IT'],
+
+    'dividend_scheduler_tool.cgi'                                 => ['Quants'],
+    'quant/dividend_schedulers/new_dividend_scheduler.cgi'        => ['Quants'],
+    'quant/dividend_schedulers/edit_dividend_scheduler.cgi'       => ['Quants'],
+    'quant/dividend_schedulers/dividend_scheduler_controller.cgi' => ['Quants'],
+    'quant/dividend_schedulers/index_dividend_scheduler.cgi'      => ['Quants'],
+
+    'doughflow_method_manage.cgi' => ['IT'],
 };
 
 sub init {
