@@ -39,6 +39,8 @@ use constant {
 };
 
 my $default_multiplier_config = LoadFile('/home/git/regentmarkets/bom-config/share/default_multiplier_config.yml');
+my $dividend_scheduler_yml    = LoadFile('/home/git/regentmarkets/bom-config/share/dividend_scheduler.yml');
+my $mt5_symbols_mapping       = LoadFile('/home/git/regentmarkets/bom-config/share/mt5-symbols.yml');
 
 has [qw(chronicle_reader chronicle_writer)] => (is => 'ro');
 
@@ -302,6 +304,30 @@ sub _validate {
 
     return 0 unless $valid_inputs{$value};
     return 1;
+}
+
+=head2 get_mt5_symbols_mapping
+
+get_mt5_symbols_mapping will return the mapped mt5 symbol with deriv symbol
+
+->get_mt5_symbols_mapping
+
+=cut
+
+sub get_mt5_symbols_mapping {
+    return $mt5_symbols_mapping;
+}
+
+=head2 get_dividend_scheduler_yml
+
+get_dividend_scheduler_yml will return the symbols that will be used for dividend scheduler
+
+->get_dividend_scheduler_yml
+
+=cut
+
+sub get_dividend_scheduler_yml {
+    return $dividend_scheduler_yml;
 }
 
 no Moose;
