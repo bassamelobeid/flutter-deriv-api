@@ -133,7 +133,7 @@ subtest 'Validate legal allowed contract types' => sub {
 };
 
 subtest 'Validate Jurisdiction Restriction' => sub {
-    plan tests => 32;
+    plan tests => 33;
     lives_ok { $client->residence('') } 'set residence to null to test jurisdiction validation';
     lives_ok { $client->save({'log' => 0, 'clerk' => 'raunak'}); } "Can save residence changes back to the client";
 
@@ -353,7 +353,8 @@ subtest 'Validate Jurisdiction Restriction' => sub {
             clients     => [$client],
             transaction => $new_transaction
         })->_validate_jurisdictional_restrictions($client);
-    ok !$error, 'no error';
+    ok $error, 'has error';
+    is $error->get_type, 'RandomRestrictedCountry', 'correct error type - RandomRestrictedCountry';
 
     lives_ok { $client->residence('be') } 'set residence to Belgium to test jurisdiction validation for random and financial binaries contracts';
 
