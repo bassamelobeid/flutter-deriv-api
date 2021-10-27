@@ -22,8 +22,6 @@ sub _get_upgradeable_landing_companies {
     my ($client) = @_;
 
     return [] unless $client->account_type eq 'trading';
-    # TODO: JB come back to fix this properly
-    return [] if $client->residence eq 'gb' or $client->residence eq 'im';
 
     # List to store upgradeable companies
     my @upgradeable_landing_companies;

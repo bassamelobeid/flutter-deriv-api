@@ -472,10 +472,9 @@ subtest 'new account rules failure scenarios' => sub {
     $real->residence('gb');
     $real->save;
     # Only svg countries
-# TODO: JB temporary
-#    $c->call_ok('trading_platform_new_account', $params)
-#        ->has_no_system_error->has_error->error_code_is('TradingAccountNotAllowed', 'only svg countries')
-#        ->error_message_is('This trading platform account is not available in your country yet.', 'Expected error message');
+    $c->call_ok('trading_platform_new_account', $params)
+        ->has_no_system_error->has_error->error_code_is('TradingAccountNotAllowed', 'only svg countries')
+        ->error_message_is('This trading platform account is not available in your country yet.', 'Expected error message');
 
     # Move back to Brazil
     $real->residence('br');
