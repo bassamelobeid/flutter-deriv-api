@@ -470,16 +470,6 @@ sub _write_to_rejected {
 sub _is_valid_to_buy {
     my ($self, $client) = @_;
 
-    # We're blocking buy for virtual landing company for UK and IM clients while allowing existing MF clients to buy
-    if (($client->residence eq 'gb' or $client->residence eq 'im') and $client->landing_company->short ne 'maltainvest') {
-        return Error::Base->cuss(
-            -quiet             => 1,
-            -type              => 'ClientUnwelcome',
-            -mesg              => 'your account is not authorised for any further contract purchases.',
-            -message_to_client => localize('Sorry, your account is not authorised for any further contract purchases.'),
-        );
-    }
-
     my $contract = $self->transaction->contract;
 
     my $valid = $contract->is_valid_to_buy({
