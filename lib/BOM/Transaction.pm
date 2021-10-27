@@ -1837,6 +1837,12 @@ In case of an unexpected error, the exception is re-thrown unmodified.
                 BOM::Platform::Context::localize('No further trading is allowed on this contract type for the current trading session.'),
         );
     },
+    BI101 => Error::Base->cuss(
+        -quiet             => 1,
+        -type              => 'InsufficientBalance',
+        -mesg              => 'Insufficient account balance',
+        -message_to_client => BOM::Platform::Context::localize('Your account balance is insufficient for this transaction.'),
+    ),
     BI104 => sub {
         my $msg = 'Transaction time is too old (check server time), ' . $_[2];
 
