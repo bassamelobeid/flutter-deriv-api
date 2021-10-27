@@ -760,8 +760,10 @@ rpc paymentagent_transfer => sub {
 
         my ($error_code, $error_msg) = @$error;
 
-        # too many attempts
-        if ($error_code eq 'BI102') {
+        if ($error_code eq 'BI101') {
+            return $error_sub->(localize('Your account balance is insufficient for this transaction.'));
+        } elsif ($error_code eq 'BI102') {
+            # too many attempts
             return $error_sub->(localize('Request too frequent. Please try again later.'));
         } else {
             $log->fatalf('Unexpected DB error: %s', $error);
@@ -1072,8 +1074,12 @@ rpc paymentagent_withdraw => sub {
 
         my ($error_code, $error_msg) = @$error;
 
-        # too many attempts
-        if ($error_code eq 'BI102') {
+        my $full_error_msg = "Paymentagent Withdraw failed to $paymentagent_loginid [$error_msg]";
+
+        if ($error_code eq 'BI101') {
+            return $error_sub->(localize('Your account balance is insufficient for this transaction.'));
+        } elsif ($error_code eq 'BI102') {
+            # too many attempts
             return $error_sub->(localize('Request too frequent. Please try again later.'));
         } else {
             $log->fatalf('Unexpected DB error: %s', $error);
@@ -1519,6 +1525,14 @@ rpc transfer_between_accounts => sub {
             {
                 regex   => qr/Please authenticate your account/,
                 message => 'Please authenticate your account.',
+            },
+            {
+                regex   => qr/BI101/,
+                message => 'The sending account has insufficient funds for this transaction.',
+            },
+            {
+                regex   => qr/BI102/,
+                message => 'Request too frequent. Please try again later.',
             }];
 
         foreach ($message_mapping->@*) {
