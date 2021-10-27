@@ -41,8 +41,8 @@ test_schema('landing_company', $res);
 $res = $t->await::landing_company({landing_company => 'im'});
 ok $res->{landing_company};
 is $res->{landing_company}->{name}, 'Isle of Man';
-is $res->{landing_company}->{financial_company}->{shortcode}, 'iom';
-is $res->{landing_company}->{gaming_company}->{shortcode},    'iom';
+is $res->{landing_company}->{financial_company}->{shortcode}, undef;
+is $res->{landing_company}->{gaming_company}->{shortcode},    undef;
 test_schema('landing_company', $res);
 
 $res = $t->await::landing_company({landing_company => 'XX'});

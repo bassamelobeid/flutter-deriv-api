@@ -201,41 +201,6 @@ test_sendrecv_params 'get_financial_assessment/test_send.json', 'get_financial_a
     $suite->get_stashed('set_financial_assessment/set_financial_assessment/cfd_score'),
     $suite->get_stashed('set_financial_assessment/set_financial_assessment/trading_score'),
     $suite->get_stashed('set_financial_assessment/set_financial_assessment/financial_information_score');
-fail_test_sendrecv 'logout/test_send_to_fail.json', 'logout/test_receive.json';
-test_sendrecv 'logout/test_send.json',              'logout/test_receive.json';
-
-# have to restart the websocket connection because rate limit of verify_email call is reached
-reset_app;
-
-## VIRTUAL ACCOUNT OPENING FOR (MX)
-#test_sendrecv_params 'verify_email/test_send.json', 'verify_email/test_receive.json', 'test-mx@binary.com', 'account_opening';
-#test_sendrecv_params 'new_account_virtual/test_send.json', 'new_account_virtual/test_receive.json',
-#    $suite->get_token('test-mx@binary.com'), 'test-mx@binary.com', 'gb';
-#
-## REAL ACCOUNT OPENING (MX)
-#test_sendrecv_params 'authorize/test_send.json', 'authorize/test_receive_vrtc.json',
-#    $suite->get_stashed('new_account_virtual/new_account_virtual/oauth_token'), 'test-mx@binary.com';
-#test_sendrecv_params 'new_account_real/test_send.json', 'new_account_real/test_receive_mx.json', 'John', 'gb', '+61234567007';
-#test_sendrecv_params 'authorize/test_send.json', 'authorize/test_receive_mx.json',
-#    $suite->get_stashed('new_account_real/new_account_real/oauth_token'), 'test-mx@binary.com', 'John';
-#test_sendrecv_params 'balance/test_send.json', 'balance/test_receive.json', '0', '', $suite->get_stashed('authorize/authorize/loginid');
-#test_sendrecv_params 'payout_currencies/test_send.json',      'payout_currencies/test_receive_vrt.json', '(USD|GBP)', 2;
-#fail_test_sendrecv_params 'payout_currencies/test_send.json', 'payout_currencies/test_receive_vrt.json', '(EUR|GBP)', 2;
-#
-## PAYMENT SCOPE CALLS (MX)
-#test_sendrecv 'cashier/test_send_deposit.json',               'cashier/test_receive_currency_error.json';
-#test_sendrecv_params 'set_account_currency/test_send.json',   'set_account_currency/test_receive.json',  'GBP';
-#test_sendrecv_params 'payout_currencies/test_send.json',      'payout_currencies/test_receive_vrt.json', 'GBP', 1;
-#fail_test_sendrecv_params 'payout_currencies/test_send.json', 'payout_currencies/test_receive_vrt.json', 'EUR', 1;
-#test_sendrecv 'cashier/test_send_deposit.json',               'cashier/test_receive_ukgc_error.json';
-#test_sendrecv 'tnc_approval/test_send_ukgc.json',             'tnc_approval/test_receive.json';
-#$suite->change_status($suite->get_stashed('authorize/authorize/loginid'), 'set',   'age_verification');
-#$suite->change_status($suite->get_stashed('authorize/authorize/loginid'), 'clear', 'max_turnover_limit_not_set');
-#$suite->change_status($suite->get_stashed('authorize/authorize/loginid'), 'set',   'max_turnover_limit_not_set');
-#test_sendrecv 'cashier/test_send_deposit.json', 'cashier/test_receive_max_turnover.json';
-## set_self_exclusion for max_30day_turnover should remove max_turnover_limit_not_set status
-#test_sendrecv 'set_self_exclusion/test_send.json', 'set_self_exclusion/test_receive.json';
-#test_sendrecv_params 'balance/test_send.json', 'balance/test_receive.json', '0', 'GBP', $suite->get_stashed('authorize/authorize/loginid');
 
 # VIRTUAL ACCOUNT OPENING (VRTC)
 test_sendrecv_params 'verify_email/test_send.json', 'verify_email/test_receive.json', 'test2@binary.com', 'account_opening';
@@ -245,13 +210,16 @@ test_sendrecv_params 'verify_email/test_send.json', 'verify_email/test_receive.j
 test_sendrecv_params 'reset_password/test_send_vrt.json', 'reset_password/test_receive.json', $suite->get_token('test2@binary.com'), 'Abcd123!';
 
 # TWO Factor Authentication (Admin Scope)
-#test_sendrecv_params 'account_security/test_send_status.json', 'account_security/test_receive_status.json';
+test_sendrecv_params 'account_security/test_send_status.json', 'account_security/test_receive_status.json';
 
 # Payment Methods
-#test_sendrecv 'payment_methods/test_send_payment_methods.json',              'payment_methods/test_receive_empty.json';
-#test_sendrecv 'payment_methods/test_send_payment_methods_with_country.json', 'payment_methods/test_receive_empty.json';
+test_sendrecv 'payment_methods/test_send_payment_methods.json',              'payment_methods/test_receive_empty.json';
+test_sendrecv 'payment_methods/test_send_payment_methods_with_country.json', 'payment_methods/test_receive_empty.json';
 
 # BINDING WALLET <-> TRADING ACCOUNTS (Admin Scope)
-#test_sendrecv_params 'link_wallet/test_send.json', 'link_wallet/test_receive.json';
+test_sendrecv_params 'link_wallet/test_send.json', 'link_wallet/test_receive.json';
+
+fail_test_sendrecv 'logout/test_send_to_fail.json', 'logout/test_receive.json';
+test_sendrecv 'logout/test_send.json',              'logout/test_receive.json';
 
 finish;
