@@ -141,6 +141,16 @@ subtest 'app_id and app' => sub {
         },
         'correct app';
 
+    $request =
+        BOM::Platform::Context::Request::from_mojo({mojo_request => mock_request_for("https://www.dummy.com", {app_id => [1234, 4321]}, 'GET')});
+    is($request->app_id, 4321, 'app_id is the last one passed in arrayref');
+    is_deeply $request->app,
+        {
+        id   => 4321,
+        name => 'mocked name'
+        },
+        'correct app';
+
     $mocked_oauth->unmock_all();
 };
 

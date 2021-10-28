@@ -92,7 +92,7 @@ sub _build_brand_name {
     }
 
     # if brand is missing, let the brand be picked by app_id
-    return Brands->new(app_id => $self->param('app_id'))->name if $self->param('app_id');
+    return Brands->new(app_id => $self->app_id)->name if $self->param('app_id');
 
     if (my $domain = $self->domain_name) {
         # webtrader.champion-fx.com -> champion, visit this regex
@@ -227,7 +227,8 @@ sub _build_client_ip {
 
 sub _build_app_id {
     my $self = shift;
-    return ($self->param('app_id') || $self->source || '');
+
+    return ((ref $self->param('app_id') eq 'ARRAY' ? $self->param('app_id')->[-1] : $self->param('app_id')) || $self->source || '');
 }
 
 sub _build_app {
