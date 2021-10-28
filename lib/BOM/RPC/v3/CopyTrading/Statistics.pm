@@ -113,8 +113,9 @@ rpc copytrading_statistics => sub {
         my $deposit    = $result_hash->{monthly_profitable_trades}->{$date}->{deposit}    // 0;
         my $withdrawal = $result_hash->{monthly_profitable_trades}->{$date}->{withdrawal} // 0;
         # balance_before = balance_after - amount in the trade transaction.
-        my $balance_before       = $result_hash->{monthly_profitable_trades}->{$date}->{E0} // 0;
-        my $balance_after        = $result_hash->{monthly_profitable_trades}->{$date}->{E1} // 0;
+        my $balance_before = $result_hash->{monthly_profitable_trades}->{$date}->{E0} // 0;
+        my $balance_after  = $result_hash->{monthly_profitable_trades}->{$date}->{E1} // 0;
+        next unless $balance_before + $deposit > 0;
         my $current_month_profit = sprintf("%.4f", ((($balance_after + $withdrawal) - ($balance_before + $deposit)) / ($balance_before + $deposit)));
         $result_hash->{monthly_profitable_trades}->{$date} = $current_month_profit;
         push @sorted_monthly_profits, $current_month_profit;
@@ -160,7 +161,8 @@ rpc copytrading_statistics => sub {
             if ($c->exit_tick) {
                 push @{$contract_parameters->{exit_tick_epoch}}, $c->exit_tick->epoch;
             } else {
-                push @{$contract_parameters->{exit_tick_epoch}}, $c->underlying->tick_at($contract->{sell_time}, {allow_inconsistent => 1})->epoch;
+                # when there is no exit tick, sell time is used, which shoud make no signficant differnce to stats
+                push @{$contract_parameters->{exit_tick_epoch}}, Date::Utility->new($contract->{sell_time})->epoch;
             }
 
             push @{$contract_parameters->{barriers}},          $c->barrier->as_absolute;
