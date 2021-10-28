@@ -89,6 +89,18 @@ jobs:
         <<: *5
         command: bin/translation-build.sh
         name: Automated translations
+  cio_translations:
+    <<: *6
+    steps:
+    - *1
+    - *2
+    - *3
+    - *4
+    - run:
+        <<: *5
+        command: |
+            bin/customerio_translations.pl
+        name: Automated translations for Customer.io
   unit:
     <<: *6
     steps:
@@ -132,4 +144,16 @@ workflows:
           branches:
             only:
             - master
+  hourly:
+    jobs:
+    - cio_translations:
+        context: perl
+    triggers:
+    - schedule:
+        cron: 1 * * * *
+        filters:
+          branches:
+            only:
+            - master
+
   version: 2

@@ -185,7 +185,7 @@ sub get_campaigns {
         }
 
         my @tags       = ($campaign->{tags} // [])->@*;
-        my $updateable = (any { lc($_) eq 'ready' } @tags) & !(any { lc($_) eq 'testing' } @tags);
+        my $updateable = (any { lc($_) eq 'ready' } @tags) && !(any { lc($_) eq 'testing' } @tags);
 
         push @result,
             {
