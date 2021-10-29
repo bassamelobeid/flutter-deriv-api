@@ -618,6 +618,7 @@ sub error_map {
         'DXNoServer'                => localize('Server must be provided for Deriv X service token.'),
         'DXNoAccount'               => localize('You do not have a Deriv X account on the provided server.'),
         'DXTokenGenerationFailed'   => localize('Token generation failed. Please try later.'),
+        'OpenP2POrders'             => localize('You cannot change account currency while you have open P2P orders.'),
     };
 }
 
