@@ -573,6 +573,50 @@ subtest 'Experian validated account ID AUTH propagation' => sub {
     is $test_client->get_authentication('ID_DOCUMENT')->status, 'under_review', 'Authentication propagated';
 };
 
+subtest 'Forged Documents Status' => sub {
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        broker_code => 'CR',
+    });
+
+    ok !$client->has_forged_documents, 'Client does not have forged documents';
+
+    $client->status->upsert('cashier_locked', 'test', 'Forged document');
+
+    $client->status->_build_all;    # reload
+
+    ok $client->has_forged_documents, 'Client has forged documents';
+
+    $client->status->_build_all;    # reload
+
+    $client->status->upsert('cashier_locked', 'test', 'The guy said he has forged document but I, officially, dunno');
+
+    ok !$client->has_forged_documents, 'Client does not forged documents as the regex is not matched';
+
+    $client->status->upsert('no_trading', 'test', 'Forged document - based on SOP');
+
+    $client->status->_build_all;    # reload
+
+    ok $client->has_forged_documents, 'Client has forged document again';
+
+    $client->status->upsert('disabled', 'test', 'Forged document - based on SOP');
+
+    $client->status->clear_no_trading;    # calling clear_* also reloads the object state, no need to _build_all
+
+    ok !$client->has_forged_documents, 'Client does not have forged documents - the status is not in the SOP';
+
+    $client->status->upsert('cashier_locked', 'test');
+
+    $client->status->_build_all;          # reload
+
+    ok !$client->has_forged_documents, 'Client does not have forged documents on empty reason';
+
+    $client->status->upsert('cashier_locked', 'test', 'forged dOCUMENT - based on SOP');
+
+    $client->status->_build_all;          # reload
+
+    ok $client->has_forged_documents, 'Client has forged document - insensitive case';
+};
+
 done_testing();
 
 sub reset_client_statuses {

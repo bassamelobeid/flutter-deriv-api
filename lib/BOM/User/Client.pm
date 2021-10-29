@@ -7017,4 +7017,39 @@ sub poi_attempts {
     };
 }
 
+=head2 has_forged_documents
+
+Computes the forged status of the client documents.
+
+Naive approach, for now we will use the reason of the SOP defined status to tell the forged status of the client documents.
+
+The SOP statuses for forged documents are:
+
+=over 4
+
+=item * C<cashier_locked> 
+
+=item * C<no_trading> 
+
+=back
+
+Returns a boolean.
+
+=cut
+
+sub has_forged_documents {
+    my $self                = shift;
+    my @sop_forged_statuses = qw/cashier_locked no_trading/;
+
+    for my $code (@sop_forged_statuses) {
+        next unless my $status = $self->status->$code;
+
+        next unless my $reason = $status->{reason};
+
+        return 1 if $reason =~ /^Forged document/i;
+    }
+
+    return 0;
+}
+
 1;
