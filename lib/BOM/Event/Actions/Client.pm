@@ -99,6 +99,8 @@ use constant ONFIDO_AGE_BELOW_EIGHTEEN_EMAIL_PER_USER_PREFIX   => 'ONFIDO::AGE::
 use constant ONFIDO_ADDRESS_REQUIRED_FIELDS                    => qw(address_postcode residence);
 use constant ONFIDO_UPLOAD_TIMEOUT_SECONDS                     => 30;
 use constant SR_CHECK_TIMEOUT                                  => 5;
+use constant FORGED_DOCUMENT_EMAIL_LOCK                        => 'FORGED::EMAIL::LOCK::';
+use constant TTL_FORGED_DOCUMENT_EMAIL_LOCK                    => 600;
 
 # Redis TTLs
 use constant TTL_ONFIDO_APPLICANT_CONTEXT_HOLDER => 240 * 60 * 60;                                                          # 10 days in seconds
@@ -288,6 +290,11 @@ async sub document_upload {
             _notify_onfido_unsupported_document($client, $document_entry);
         }
 
+        # If is a POI document and the client has document forged reason (on any status), send an email to CS
+        if ($is_poi_document && $client->has_forged_documents && !$uploaded_manually_by_staff) {
+            await _notify_onfido_on_forged_document($client);
+        }
+
         my $document_args = {
             args              => $args,
             client            => $client,
@@ -306,6 +313,52 @@ async sub document_upload {
     }
 
     return;
+}
+
+=head2 _notify_onfido_on_forged_document
+
+Send an email to CS about Onfido document uploaded when the client has forged document reason (of any status).
+
+=over 4
+
+=item * C<$client> - The client instance.
+
+=back
+
+Returns C<undef>.
+
+=cut
+
+async sub _notify_onfido_on_forged_document {
+    my ($client) = @_;
+    my $redis_events_write = _redis_events_write();
+    await $redis_events_write->connect;
+
+    # check the cooldown
+    return undef if await $redis_events_write->get(FORGED_DOCUMENT_EMAIL_LOCK . $client->loginid);
+
+    my $brand   = request()->brand;
+    my $country = code2country($client->residence);
+    my $msg =
+        'Client uploaded new POI and account is locked due to forged SOP, please help to check and unlock if the document is legit, and to follow forged SOP if the document is forged again.';
+    my $email_subject  = "New POI uploaded for acc with forged lock - $country";
+    my $email_template = "\
+        <p>$msg</p>
+        <ul>
+            <li><b>loginid:</b> " . $client->loginid . "</li>
+            <li><b>residence:</b> " . $country . "</li>
+        </ul>
+        Team " . $brand->website_name . "\
+        ";
+
+    my $from_email = $brand->emails('no-reply');
+    my $to_email   = $brand->emails('authentications');
+
+    Email::Stuffer->from($from_email)->to($to_email)->subject($email_subject)->html_body($email_template)->send();
+
+    await $redis_events_write->setex(FORGED_DOCUMENT_EMAIL_LOCK . $client->loginid, TTL_FORGED_DOCUMENT_EMAIL_LOCK, 1);
+
+    return undef;
 }
 
 =head2 _notify_onfido_unsupported_document
@@ -590,6 +643,11 @@ async sub client_verification {
             await _clear_cached_context($applicant_id);
 
             $log->debugf('Onfido pending key cleared');
+
+            # Send email to CS if client has forged document status reason
+            if ($client->has_forged_documents) {
+                await _notify_onfido_on_forged_document($client);
+            }
 
             # Consume resubmission context
             my $redis_replicated_write = _redis_replicated_write();

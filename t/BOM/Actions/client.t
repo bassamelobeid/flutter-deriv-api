@@ -294,6 +294,81 @@ subtest 'upload document' => sub {
             }
         };
 
+        subtest 'Forged document email trigger' => sub {
+            my $tests = [{
+                    title         => 'Not a POI document',
+                    document_type => 'utility_bill',
+                    by_staff      => 0,
+                    email         => 0,
+                    checksum      => 'utility_bill_forged' . time,
+                    reason        => undef,
+                },
+                {
+                    title         => 'POI but uploaded by stafff',
+                    document_type => 'passport',
+                    by_staff      => 1,
+                    email         => 0,
+                    checksum      => 'passport_forged_1' . time,
+                    reason        => undef,
+                },
+                {
+                    title         => 'Forged reason is not set',
+                    document_type => 'passport',
+                    by_staff      => 0,
+                    email         => 0,
+                    checksum      => 'passport_forged_2' . time,
+                    reason        => 'all good'
+                },
+                {
+                    title         => 'Triggers the email',
+                    document_type => 'passport',
+                    by_staff      => 0,
+                    email         => 1,
+                    checksum      => 'passport_forged_3' . time,
+                    reason        => 'Forged document'
+                },
+            ];
+
+            for my $test ($tests->@*) {
+                my ($title, $document_type, $by_staff, $email_sent, $checksum, $reason) =
+                    @{$test}{qw/title document_type by_staff email checksum reason/};
+
+                subtest $title => sub {
+                    my $args = {
+                        document_type     => $document_type,
+                        document_format   => 'PNG',
+                        document_id       => undef,
+                        expiration_date   => undef,
+                        expected_checksum => $checksum,
+                        page_type         => undef,
+                    };
+
+                    my $upload_info = start_document_upload($args, $test_client);
+
+                    $test_client->db->dbic->run(
+                        ping => sub {
+                            $_->selectrow_array('SELECT * FROM betonmarkets.finish_document_upload(?)', undef, $upload_info->{file_id});
+                        });
+
+                    mailbox_clear();
+                    $test_client->status->clear_cashier_locked;
+                    $test_client->status->set('cashier_locked', 'test', $reason);
+
+                    BOM::Event::Actions::Client::document_upload({
+                            uploaded_manually_by_staff => $by_staff,
+                            loginid                    => $test_client->loginid,
+                            file_id                    => $upload_info->{file_id}})->get;
+
+                    my $email = mailbox_search(subject => qr/New POI uploaded for acc with forged lock/);
+                    if ($email_sent) {
+                        ok $email, 'Onfido uploaded document when client has forged documents sends an email';
+                    } else {
+                        ok !$email, 'Email not send';
+                    }
+                };
+            }
+        };
+
         # Redis key for resubmission flag
         $test_client->status->set('allow_poi_resubmission', 'test', 'test');
         $test_client->copy_status_to_siblings('allow_poi_resubmission', 'test');
@@ -451,6 +526,38 @@ subtest "client_verification" => sub {
             $_->selectrow_hashref('select * from users.get_onfido_reports(?::BIGINT, ?::TEXT)', undef, $test_client->user_id, $check->{id});
         });
     is($report_data->{check_id}, $check->{id}, 'report is correct');
+
+    subtest 'forged email' => sub {
+        my $redis_write = $services->redis_events_write();
+        $redis_write->del('FORGED::EMAIL::LOCK::' . $test_client->loginid)->get;
+
+        mailbox_clear();
+        $test_client->status->clear_cashier_locked;
+        $test_client->status->set('cashier_locked', 'test', 'Forged documents');
+
+        lives_ok {
+            BOM::Event::Actions::Client::client_verification({
+                    check_url => $check->{href},
+                })->get;
+        }
+        "client verification no exception";
+
+        my $msg = mailbox_search(subject => qr/New POI uploaded for acc with forged lock/);
+        ok $msg, 'Email sent';
+        ok $redis_write->ttl('FORGED::EMAIL::LOCK::' . $test_client->loginid)->get, 'Cooldown has been set';
+
+        mailbox_clear();
+
+        lives_ok {
+            BOM::Event::Actions::Client::client_verification({
+                    check_url => $check->{href},
+                })->get;
+        }
+        "client verification no exception";
+
+        $msg = mailbox_search(subject => qr/New POI uploaded for acc with forged lock/);
+        ok !$msg, 'Email not sent (on cooldown)';
+    };
 };
 
 subtest "Uninitialized date of birth" => sub {

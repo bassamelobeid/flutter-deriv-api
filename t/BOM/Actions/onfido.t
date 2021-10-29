@@ -340,6 +340,70 @@ subtest 'Unsupported country email' => sub {
     }
 };
 
+subtest 'Forged documents email' => sub {
+    my $tests = [{
+            residence => 'br',
+            strings   => [
+                '<p>Client uploaded new POI and account is locked due to forged SOP, please help to check and unlock if the document is legit, and to follow forged SOP if the document is forged again.</p>',
+                '<li><b>loginid:</b> ' . $test_client->loginid . '</li>',
+                '<li><b>residence:</b> ' . code2country('br') . '</li>'
+            ],
+            email     => 1,
+            clear_ttl => 0,
+        },
+        {
+            residence => 'gb',
+            strings   => [
+                '<p>Client uploaded new POI and account is locked due to forged SOP, please help to check and unlock if the document is legit, and to follow forged SOP if the document is forged again.</p>',
+                '<li><b>loginid:</b> ' . $test_client->loginid . '</li>',
+                '<li><b>residence:</b> ' . code2country('gb') . '</li>'
+            ],
+            email     => 0,
+            clear_ttl => 0,
+        },
+        {
+            residence => 'gb',
+            strings   => [
+                '<p>Client uploaded new POI and account is locked due to forged SOP, please help to check and unlock if the document is legit, and to follow forged SOP if the document is forged again.</p>',
+                '<li><b>loginid:</b> ' . $test_client->loginid . '</li>',
+                '<li><b>residence:</b> ' . code2country('gb') . '</li>'
+            ],
+            email     => 1,
+            clear_ttl => 1,
+        },
+    ];
+
+    for my $test ($tests->@*) {
+        my ($residence, $strings, $clear_ttl, $email) = @{$test}{qw/residence strings clear_ttl email/};
+
+        my $country = code2country($residence);
+        $test_client->residence($residence);
+        $test_client->save;
+
+        mailbox_clear();
+
+        if ($clear_ttl) {
+            $redis_events->del('FORGED::EMAIL::LOCK::' . $test_client->loginid);
+        }
+
+        is BOM::Event::Actions::Client::_notify_onfido_on_forged_document($test_client)->get, undef, 'email sent';
+
+        my $msg = mailbox_search(subject => qr/New POI uploaded for acc with forged lock - $country/);
+
+        if ($email) {
+            ok $msg, 'Email found';
+
+            for my $string ($strings->@*) {
+                ok index($msg->{body}, $string) > -1, 'Expected content found';
+            }
+
+            ok $redis_events->ttl('FORGED::EMAIL::LOCK::' . $test_client->loginid) > 0, 'TTL set';
+        } else {
+            ok !$msg, 'Email not send';
+        }
+    }
+};
+
 subtest 'Applicant Check' => sub {
     my $ryu_mock = Test::MockModule->new('Ryu::Source');
 
