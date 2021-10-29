@@ -5,6 +5,7 @@ use Test::More;
 use Test::Deep;
 use Test::Warn;
 use Test::MockTime qw(set_fixed_time);
+use Test::MockModule;
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
@@ -19,6 +20,10 @@ BOM::Test::Helper::P2P::create_escrow();
 
 my $config = BOM::Config::Runtime->instance->app_config->payments->p2p;
 $config->cancellation_grace_period(10);
+
+my %emitted_events;
+my $mock_events = Test::MockModule->new('BOM::Platform::Event::Emitter');
+$mock_events->mock('emit' => sub { $emitted_events{$_[0]} = $_[1] });
 
 my $redis = BOM::Config::Redis->redis_p2p();
 
@@ -56,8 +61,19 @@ subtest general => sub {
     is $client->p2p_advertiser_info->{cancels_remaining}, 2, 'initial cancel count';
 
     tt_hours(1);
+    undef %emitted_events;
     $client->p2p_order_cancel(id => $ord1->{id});
     is $client->p2p_advertiser_info->{cancels_remaining}, 1, 'cancel count decreases';
+
+    cmp_deeply(
+        $emitted_events{p2p_advertiser_cancel_at_fault},
+        {
+            loginid           => $client->loginid,
+            order_id          => $ord1->{id},
+            cancels_remaining => 1
+        },
+        'p2p_advertiser_cancel_at_fault event emitted'
+    );
 
     ($client, $ord2) = BOM::Test::Helper::P2P::create_order(
         client    => $client,
@@ -72,10 +88,22 @@ subtest general => sub {
         advert_id => $ad2->{id},
         amount    => 1
     );
+
+    undef %emitted_events;
     $client->p2p_order_cancel(id => $ord2->{id});
     is $client->p2p_advertiser_info->{cancels_remaining}, 0, 'cancel count decreases';
 
     my $block_until = Date::Utility->new('2000-01-02T02:00:00Z');
+
+    cmp_deeply(
+        $emitted_events{p2p_advertiser_temp_banned},
+        {
+            loginid        => $client->loginid,
+            order_id       => $ord2->{id},
+            block_end_time => $block_until->datetime,
+        },
+        'p2p_advertiser_temp_banned event emitted'
+    );
 
     my $expected_error = {
         error_code     => 'TemporaryBar',
@@ -91,7 +119,9 @@ subtest general => sub {
     is $redis->zscore('P2P::ADVERTISER::BLOCK_ENDS_AT', $client->loginid), $block_until->epoch, 'block end time saved in redis';
 
     tt_hours(1);
+    undef %emitted_events;
     lives_ok { $client->p2p_order_cancel(id => $ord3->{id}) } 'can cancel ad when barred';
+    ok !defined($emitted_events{p2p_advertiser_cancel_at_fault}) && !defined($emitted_events{p2p_advertiser_temp_banned}), 'no events sent';
 
     cmp_deeply(exception { $client->p2p_order_create(advert_id => $ad1->{id}, amount => 1) }, $expected_error, 'bar time does not increase',);
 

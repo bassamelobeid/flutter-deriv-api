@@ -2422,6 +2422,22 @@ sub p2p_advert_create {
         $self->_p2p_advertiser_payment_method_details($self->_p2p_advertiser_payment_methods(advert_id => $id));
 
     my $response = $self->_advert_details([$advert])->[0];
+
+    BOM::Platform::Event::Emitter::emit(
+        p2p_advert_created => {
+            loginid          => $self->loginid,
+            advert_id        => $response->{id},
+            type             => $response->{type},
+            account_currency => $response->{account_currency},
+            local_currency   => $response->{local_currency},
+            country          => $response->{country},
+            amount           => $response->{amount_display},
+            rate             => $response->{rate},
+            min_order_amount => $response->{min_order_amount_display},
+            max_order_amount => $response->{max_order_amount_display},
+            is_visible       => $response->{is_visible},
+        });
+
     delete $response->{days_until_archive};    # guard against almost impossible race condition
     return $response;
 }
@@ -4402,8 +4418,10 @@ sub _p2p_order_cancelled {
     }
 
     my $buyer_advertiser = $buyer_client->_p2p_advertisers(loginid => $buyer_loginid)->[0] // return;
+    return if $buyer_client->_p2p_get_advertiser_bar_error($buyer_advertiser);
+    my $cancels_remaining = $buyer_client->_p2p_advertiser_cancellations_remaining;
 
-    if (!$buyer_client->_p2p_get_advertiser_bar_error($buyer_advertiser) && $buyer_client->_p2p_advertiser_cancellations_remaining == 0) {
+    if ($cancels_remaining == 0) {
         my $block_time = Date::Utility->new->plus_time_interval($config->cancellation_barring->bar_time . 'h');
         $buyer_client->db->dbic->run(
             fixup => sub {
@@ -4416,6 +4434,20 @@ sub _p2p_order_cancelled {
 
         # used in p2p daemon to push a p2p_advertiser_info message
         $redis->zadd(P2P_ADVERTISER_BLOCK_ENDS_AT, $block_time->epoch, $buyer_loginid);
+
+        BOM::Platform::Event::Emitter::emit(
+            p2p_advertiser_temp_banned => {
+                loginid        => $buyer_loginid,
+                order_id       => $order->{id},
+                block_end_time => $block_time->datetime,
+            });
+    } else {
+        BOM::Platform::Event::Emitter::emit(
+            p2p_advertiser_cancel_at_fault => {
+                loginid           => $buyer_loginid,
+                order_id          => $order->{id},
+                cancels_remaining => $cancels_remaining,
+            });
     }
 
     return;

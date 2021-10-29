@@ -24,9 +24,9 @@ BOM::Config::Runtime->instance->app_config->payments->p2p->escrow([]);
 BOM::Config::Runtime->instance->app_config->payments->p2p->cancellation_barring->count(3);
 BOM::Config::Runtime->instance->app_config->payments->p2p->cancellation_barring->period(24);
 
-my @emitted_events;
+my $emitted_events;
 my $mock_events = Test::MockModule->new('BOM::Platform::Event::Emitter');
-$mock_events->mock('emit' => sub { push @emitted_events, [@_] });
+$mock_events->mock('emit' => sub { push $emitted_events->{$_[0]}->@*, $_[1] });
 
 my $test_client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'CR',
@@ -333,6 +333,7 @@ subtest 'Creating advert' => sub {
         'Error when contact info not provided for buy advert'
     );
 
+    undef $emitted_events;
     my $advert;
     %params = %advert_params;
     is(
@@ -382,6 +383,25 @@ subtest 'Creating advert' => sub {
     };
 
     cmp_deeply($advert, $expected_advert, "advert_create returns expected fields");
+
+    cmp_deeply(
+        $emitted_events->{p2p_advert_created},
+        [{
+                loginid          => $advertiser->loginid,
+                advert_id        => $advert->{id},
+                type             => $params{type},
+                account_currency => $params{account_currency},
+                local_currency   => $params{local_currency},
+                country          => $advertiser->residence,
+                amount           => num($params{amount}),
+                rate             => num($params{rate}),
+                min_order_amount => num($params{min_order_amount}),
+                max_order_amount => num($params{max_order_amount}),
+                is_visible       => bool(1),
+            }
+        ],
+        'p2p_advert_created event fired'
+    );
 
     cmp_deeply($advertiser->p2p_advertiser_adverts, [$expected_advert], "p2p_advertiser_adverts returns expected fields");
 
@@ -667,10 +687,10 @@ subtest 'Updating advert' => sub {
 
     my $ad_info = $advertiser->p2p_advert_info(id => $advert->{id});
 
-    @emitted_events = ();
+    undef $emitted_events;
     my $empty_update = $advertiser->p2p_advert_update(id => $advert->{id});
     cmp_deeply($empty_update, $ad_info, 'empty update returns all fields');
-    ok !@emitted_events, 'no events emitted for empty update';
+    ok !$emitted_events, 'no events emitted for empty update';
 
     my $real_update = $advertiser->p2p_advert_update(
         id        => $advert->{id},
@@ -813,11 +833,11 @@ subtest 'payment method validation' => sub {
 
 };
 
-subtest 'is_visible flag' => sub {
+subtest 'is_visible flag and subscription event' => sub {
     my $client        = BOM::Test::Helper::P2P::create_advertiser(balance => 1);
     my $advertiser_id = $client->_p2p_advertiser_cached->{id};
 
-    @emitted_events = ();
+    undef $emitted_events;
     my $advert = $client->p2p_advert_create(
         type             => 'sell',
         amount           => 100,
@@ -831,7 +851,7 @@ subtest 'is_visible flag' => sub {
         contact_info     => 'x',
     );
 
-    cmp_deeply(\@emitted_events, [['p2p_adverts_updated', {advertiser_id => $advertiser_id}]], 'p2p_adverts_updated event emitted for advert create');
+    cmp_deeply($emitted_events->{p2p_adverts_updated}, [{advertiser_id => $advertiser_id}], 'p2p_adverts_updated event emitted for advert create');
 
     cmp_ok $advert->{is_visible}, '==', 0, 'not visible due to low balance';
     BOM::Test::Helper::Client::top_up($client, $client->currency, 9);
@@ -858,14 +878,13 @@ subtest 'is_visible flag' => sub {
     $client2->p2p_advertiser_relations(remove_blocked => [$advertiser_id]);
     cmp_ok $client2->p2p_advert_info(id => $advert->{id})->{is_visible}, '==', 1, 'visible after unblocked';
 
-    @emitted_events = ();
+    undef $emitted_events;
     cmp_ok $client->p2p_advert_update(
         id        => $advert->{id},
         is_active => 0
     )->{is_visible}, '==', 0, 'not visible after deactivate';
 
-    cmp_deeply(\@emitted_events, [['p2p_adverts_updated', {advertiser_id => $advertiser_id}]],,
-        'p2p_adverts_updated event emitted for advert update');
+    cmp_deeply($emitted_events->{p2p_adverts_updated}, [{advertiser_id => $advertiser_id}], 'p2p_adverts_updated event emitted for advert update');
 
     cmp_ok $client->p2p_advert_update(
         id        => $advert->{id},
