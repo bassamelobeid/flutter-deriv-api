@@ -822,7 +822,8 @@ sub build_client_warning_message {
                     section            => $type->{comments},
                     editlink           => $edit_client_with_status->($type->{linktype}),
                     siblings_summary   => $siblings_summary,
-                    last_modified_date => $disabled->{last_modified_date}});
+                    last_modified_date => $disabled->{last_modified_date} // ''
+                });
         }
     }
 

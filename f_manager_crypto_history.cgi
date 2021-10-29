@@ -149,10 +149,11 @@ my $render_crypto_transactions = sub {
         if ($currency_info->{exchange_rate}) {
             $_->{usd_amount} = formatnumber('amount', 'USD', $amount * $currency_info->{exchange_rate});
         }
-        $_->{address_url}     = URI->new($currency_info->{address_url} . $_->{address})            if $_->{address};
+        $_->{address_url} = URI->new($currency_info->{address_url} . $_->{address}) if $_->{address};
         if ($_->{blockchain_txn}) {
             $_->{transaction_url} = $currency_info->{transaction_url} ? URI->new($currency_info->{transaction_url} . $_->{blockchain_txn}) : '#';
-            $log->warnf("Blockchain transaction url is not defined for currency %s. client_loginid: %s", $_->{currency_code}, $loginid) unless $currency_info->{transaction_url};
+            $log->warnf("Blockchain transaction url is not defined for currency %s. client_loginid: %s", $_->{currency_code}, $loginid)
+                unless $currency_info->{transaction_url};
         }
 
         $_
