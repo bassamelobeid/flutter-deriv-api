@@ -519,7 +519,7 @@ subtest 'errors' => sub {
         );
     };
 
-    like $exception, qr/P2P escrow not found/, 'P2P escrow not found';
+    like $exception, qr/No escrow account for USD/, 'P2P escrow not found';
 
     $mock->unmock_all;
 

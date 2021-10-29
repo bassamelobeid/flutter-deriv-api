@@ -2757,9 +2757,7 @@ sub p2p_order_create {
         message_params => [formatnumber('amount', $client_info->{account_currency}, $client_limit_remaining), $client_info->{account_currency}]}
         if $amount > $client_limit_remaining;
 
-    my $escrow = $self->p2p_escrow;
-
-    die +{error_code => 'EscrowNotFound'} unless $escrow;
+    my $escrow = $self->p2p_escrow($advert_info->{account_currency}) // die +{error_code => 'EscrowNotFound'};
 
     my $open_orders = $self->_p2p_orders(
         advert_id => $advert_id,
@@ -2876,8 +2874,6 @@ sub p2p_order_list {
     my ($self, %param) = @_;
 
     $param{loginid} = $self->loginid;
-    $param{status}  = $param{active} ? P2P_ORDER_STATUS->{active} : P2P_ORDER_STATUS->{final}
-        if exists $param{active};
 
     my $list = $self->_p2p_orders(%param);
     return $self->_order_details($list);
@@ -2941,9 +2937,9 @@ sub p2p_order_cancel {
         or ($ownership_type eq 'advertiser' and $order->{type} eq 'sell');
     die +{error_code => 'PermissionDenied'} unless $order->{status} eq 'pending';
 
-    my $escrow      = $self->p2p_escrow;
-    my $is_refunded = 0;                   # order will have cancelled status
-    my $is_manual   = 0;                   # this is not a manual cancellation
+    my $escrow      = $self->p2p_escrow($order->{account_currency}) // die +{error_code => 'EscrowNotFound'};
+    my $is_refunded = 0;                                                                                        # order will have cancelled status
+    my $is_manual   = 0;                                                                                        # this is not a manual cancellation
 
     my $elapsed      = time - Date::Utility->new($order->{created_time})->epoch;
     my $grace_period = BOM::Config::Runtime->instance->app_config->payments->p2p->cancellation_grace_period * 60;    # config period is minutes
@@ -3101,20 +3097,20 @@ sub p2p_chat_token {
 
 =head2 p2p_escrow
 
-Gets the configured escrow account for clients currency and landing company.
+Gets the configured escrow account for provided currency and current landing company.
 
 =cut
 
 sub p2p_escrow {
-    my ($self) = @_;
-    my ($broker, $currency) = ($self->broker_code, $self->currency);
+    my ($self, $currency) = @_;
+
     my @escrow_list = BOM::Config::Runtime->instance->app_config->payments->p2p->escrow->@*;
 
     foreach my $loginid (@escrow_list) {
         try {
             my $escrow = BOM::User::Client->new({loginid => $loginid});
 
-            return $escrow if $escrow && $escrow->broker eq $broker && $escrow->currency eq $currency;
+            return $escrow if $escrow && $escrow->broker eq $self->broker_code && $escrow->currency eq $currency;
         } catch {
             next;    # TODO: ideally, we should never have an error here, we should maybe log it?
         }
@@ -3222,8 +3218,7 @@ sub p2p_resolve_order_dispute {
     die "Order not found\n"                                                 unless $order;
     die "Order is in $order->{status} status and cannot be resolved now.\n" unless $order->{status} eq 'disputed';
 
-    my $escrow = $self->p2p_escrow;
-    die "Escrow not found\n" unless $escrow;
+    my $escrow = $self->p2p_escrow($order->{account_currency}) // die 'No escrow account defined for ' . $order->{account_currency} . "\n";
 
     my $txn_time = Date::Utility->new->datetime;
     my $redis    = BOM::Config::Redis->redis_p2p_write();
@@ -3332,8 +3327,10 @@ Returns new status if it changed.
 sub p2p_expire_order {
     my ($self, %param) = @_;
 
-    my $order_id = $param{id}        // die 'No id provided to p2p_expire_order';
-    my $escrow   = $self->p2p_escrow // die 'P2P escrow not found';
+    my $order_id = $param{id} // die 'No id provided to p2p_expire_order';
+    my $order    = $self->_p2p_orders(id => $order_id)->[0];
+    die 'Invalid order provided to p2p_expire_order' unless $order;
+    my $escrow   = $self->p2p_escrow($order->{account_currency}) // die 'No escrow account for ' . $order->{account_currency};
     my $txn_time = Date::Utility->new->datetime;
 
     my $days_for_release = BOM::Config::Runtime->instance->app_config->payments->p2p->refund_timeout;
@@ -3346,7 +3343,6 @@ sub p2p_expire_order {
                 undef, $order_id, $escrow->loginid, $param{source}, $param{staff}, $txn_time, $days_for_release);
         });
 
-    die 'Invalid order provided to p2p_expire_order' unless $old_status;
     $new_status //= '';
 
     my $order_complete     = ($self->_is_order_status_final($old_status) or $old_status eq 'disputed');
@@ -3354,7 +3350,6 @@ sub p2p_expire_order {
     my $hit_timeout        = ($old_status eq 'buyer-confirmed' and $new_status eq 'timed-out');
     my $hit_timeout_refund = ($old_status eq 'timed-out'       and $new_status eq 'refunded');
 
-    my $order = $self->_p2p_orders(id => $order_id)->[0];
     my ($buyer, $seller) = $self->_p2p_order_parties($order);
 
     # order hit timed out
@@ -3503,6 +3498,9 @@ $param{status} if provided must by an arrayref.
 
 sub _p2p_orders {
     my ($self, %param) = @_;
+
+    $param{status} = $param{active} ? P2P_ORDER_STATUS->{active} : P2P_ORDER_STATUS->{final}
+        if exists $param{active};
 
     croak 'Invalid status format'
         if defined $param{status}
@@ -3675,7 +3673,7 @@ sub _p2p_advertiser_buy_confirm {
     # $self is the seller
     $self->_p2p_validate_seller_confirm($order);
 
-    my $escrow   = $self->p2p_escrow;
+    my $escrow   = $self->p2p_escrow($order->{account_currency}) // die +{error_code => 'EscrowNotFound'};
     my $txn_time = Date::Utility->new->datetime;
     my $result   = $self->db->dbic->txn(
         fixup => sub {
@@ -3711,7 +3709,7 @@ sub _p2p_client_sell_confirm {
     # $self is the seller
     $self->_p2p_validate_seller_confirm($order);
 
-    my $escrow   = $self->p2p_escrow;
+    my $escrow   = $self->p2p_escrow($order->{account_currency}) // die +{error_code => 'EscrowNotFound'};
     my $txn_time = Date::Utility->new->datetime;
 
     my $result = $self->db->dbic->txn(
