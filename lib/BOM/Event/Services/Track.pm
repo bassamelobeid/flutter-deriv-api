@@ -112,6 +112,10 @@ my %EVENT_PROPERTIES = (
     trading_platform_investor_password_change_failed => [qw(first_name contact_url type login)],
     identity_verification_rejected                   => [qw(authentication_url live_chat_url title)],
     risk_disclaimer_resubmission                     => [qw(loginid website_name title salutation)],
+    p2p_advert_created                               =>
+        [qw(loginid advert_id type account_currency local_currency country amount rate min_order_amount max_order_amount is_visible)],
+    p2p_advertiser_cancel_at_fault => [qw(loginid order_id cancels_remaining)],
+    p2p_advertiser_temp_banned     => [qw(loginid order_id block_end_time)],
 );
 
 # Put the events that shouldn't care about brand or app_id source to get fired.
@@ -135,6 +139,8 @@ my @SKIP_BRAND_VALIDATION = qw(
     payment_withdrawal_reversal
     mt5_inactive_notification
     p2p_archived_ad
+    p2p_advertiser_cancel_at_fault
+    p2p_advertiser_temp_banned
     identity_verification_rejected
     risk_disclaimer_resubmission
 );
@@ -229,6 +235,7 @@ sub signup {
     my $properties = $args->{properties};
 
     my $client = _validate_params($loginid, 'signup');
+
     return Future->done unless $client;
     my $customer = _create_customer($client);
 
@@ -507,7 +514,6 @@ sub app_registered {
         loginid    => $args->{loginid},
         properties => $args
     );
-
 }
 
 =head2 app_updated
@@ -845,6 +851,54 @@ sub p2p_archived_ad {
     );
 }
 
+=head2 p2p_advert_created
+
+It is triggered for each B<p2p_advert_created> event emitted, delivering it to Segment.
+
+=cut
+
+sub p2p_advert_created {
+    my ($args) = @_;
+
+    return track_event(
+        event      => 'p2p_advert_created',
+        loginid    => $args->{loginid},
+        properties => $args
+    );
+}
+
+=head2 p2p_advertiser_cancel_at_fault
+
+It is triggered for each B<p2p_advertiser_cancel_at_fault> event emitted, delivering it to Segment.
+
+=cut
+
+sub p2p_advertiser_cancel_at_fault {
+    my ($args) = @_;
+
+    return track_event(
+        event      => 'p2p_advertiser_cancel_at_fault',
+        loginid    => $args->{loginid},
+        properties => $args
+    );
+}
+
+=head2 p2p_advertiser_temp_banned
+
+It is triggered for each B<p2p_advertiser_temp_banned> event emitted, delivering it to Segment.
+
+=cut
+
+sub p2p_advertiser_temp_banned {
+    my ($args) = @_;
+
+    return track_event(
+        event      => 'p2p_advertiser_temp_banned',
+        loginid    => $args->{loginid},
+        properties => $args
+    );
+}
+
 =head2 _p2p_dispute_resolution
 
 Since the p2p_order_dispute family of subs are identical, we will refactor them
@@ -878,7 +932,6 @@ sub _p2p_dispute_resolution {
             dispute_reason => $order->{dispute_details}->{dispute_reason},
             disputer       => $disputer
         });
-
 }
 
 =head2 _p2p_order_track

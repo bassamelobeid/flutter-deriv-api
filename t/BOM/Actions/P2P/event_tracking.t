@@ -2,6 +2,7 @@ use strict;
 use warnings;
 
 use Test::More;
+use Test::Deep;
 use Date::Utility;
 use Time::Moment;
 
@@ -10,10 +11,20 @@ use BOM::Event::Process;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::AuthTestDatabase qw(:init);
 use BOM::Platform::Context qw(request);
+use BOM::Platform::Context::Request;
+use Brands;
 
 my (@identify_args, @track_args);
 my $mock_segment = new Test::MockModule('WebService::Async::Segment::Customer');
-my $brand        = request()->brand->name;
+
+my $brand    = Brands->new->name;
+my ($app_id) = Brands->new->whitelist_apps->%*;
+my $req      = BOM::Platform::Context::Request->new(
+    brand_name => $brand,
+    app_id     => $app_id
+);
+request($req);
+
 $mock_segment->redefine(
     'identify' => sub {
         @identify_args = @_;
@@ -24,6 +35,8 @@ $mock_segment->redefine(
         push @track_args, ($customer, \%args);
         return Future->done(1);
     });
+
+my $mock_events = Test::MockModule->new('BOM::Platform::Event::Emitter');
 
 BOM::Test::Helper::P2P::bypass_sendbird();
 my $escrow = BOM::Test::Helper::P2P::create_escrow();
@@ -440,7 +453,66 @@ subtest 'confirmed order expired' => sub {
         user_role => 'seller'
         },
         'properties are set properly for p2p_order_expired event (seller)';
+};
 
+subtest 'p2p_advert_created' => sub {
+    my $handler = BOM::Event::Process::get_action_mappings()->{p2p_advert_created};
+    undef @track_args;
+
+    my $event_args;
+    $mock_events->mock(
+        'emit' => sub {
+            if ($_[0] eq 'p2p_advert_created') { $event_args = $_[1]; $handler->($event_args)->get; }
+        });
+
+    my ($advertiser, $advert) = BOM::Test::Helper::P2P::create_advert;
+    cmp_deeply $track_args[1]->{properties},
+        {
+        %$event_args,
+        brand => ignore(),
+        lang  => ignore()
+        },
+        'track event properties';
+};
+
+subtest 'p2p_advertiser_cancel_at_fault' => sub {
+    my $handler = BOM::Event::Process::get_action_mappings()->{p2p_advertiser_cancel_at_fault};
+
+    undef @track_args;
+    my %args = (
+        loginid           => $client->loginid,
+        order_id          => 123,
+        cancels_remaining => 2
+    );
+    $handler->(\%args)->get;
+
+    cmp_deeply $track_args[1]->{properties},
+        {
+        %args,
+        brand => ignore(),
+        lang  => ignore()
+        },
+        'track event properties';
+};
+
+subtest 'p2p_advertiser_temp_banned' => sub {
+    my $handler = BOM::Event::Process::get_action_mappings()->{p2p_advertiser_temp_banned};
+
+    undef @track_args;
+    my %args = (
+        loginid        => $client->loginid,
+        order_id       => 789,
+        block_end_time => '2030-01-01 00:00:00'
+    );
+    $handler->(\%args)->get;
+
+    cmp_deeply $track_args[1]->{properties},
+        {
+        %args,
+        brand => ignore(),
+        lang  => ignore()
+        },
+        'track event properties';
 };
 
 done_testing()

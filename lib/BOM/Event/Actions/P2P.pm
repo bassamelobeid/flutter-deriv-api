@@ -87,15 +87,14 @@ sub advertiser_updated {
 
 =head2 advert_created
 
-An advertiser has created a new advert. This is always triggered
-even if the advertiser has marked themselves as inactive, so
-it's important to check advertiser status before sending
-any client notifications here.
+An advert has been created.
 
 =cut
 
 sub advert_created {
-    return 1;
+    my $data = shift;
+
+    return BOM::Event::Services::Track::p2p_advert_created($data);
 }
 
 =head2 advert_updated
@@ -450,6 +449,30 @@ sub p2p_adverts_updated {
     }
 
     return 1;
+}
+
+=head2 advertiser_cancel_at_fault
+
+An order has been manually cancelled or expired without paying.
+
+=cut
+
+sub advertiser_cancel_at_fault {
+
+    my $data = shift;
+    return BOM::Event::Services::Track::p2p_advertiser_cancel_at_fault($data);
+}
+
+=head2 advertiser_temp_banned
+
+An advertiser has temporarily banned for too many manual cancels or creating too many orders which expired.
+
+=cut
+
+sub advertiser_temp_banned {
+
+    my $data = shift;
+    return BOM::Event::Services::Track::p2p_advertiser_temp_banned($data);
 }
 
 =head2 _track_p2p_order_event

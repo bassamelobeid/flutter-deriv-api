@@ -80,7 +80,6 @@ my $action_mapping = {
     send_email                                       => \&BOM::Event::Actions::Email::send_email_generic,
     affiliate_sync_initiated                         => \&BOM::Event::Actions::MyAffiliate::affiliate_sync_initiated,
     withdrawal_limit_reached                         => \&BOM::Event::Actions::Client::withdrawal_limit_reached,
-    p2p_advert_created                               => \&BOM::Event::Actions::P2P::advert_created,
     p2p_advert_updated                               => \&BOM::Event::Actions::P2P::advert_updated,
     p2p_order_created                                => \&BOM::Event::Actions::P2P::order_created,
     p2p_order_updated                                => \&BOM::Event::Actions::P2P::order_updated,
@@ -119,6 +118,9 @@ my $action_mapping = {
     fraud_address                                    => \&BOM::Event::Actions::CryptoSubscription::fraud_address,
     p2p_adverts_updated                              => \&BOM::Event::Actions::P2P::p2p_adverts_updated,
     affiliate_loginids_sync                          => \&BOM::Event::Actions::MyAffiliate::affiliate_loginids_sync,
+    p2p_advert_created                               => \&BOM::Event::Actions::P2P::advert_created,
+    p2p_advertiser_cancel_at_fault                   => \&BOM::Event::Actions::P2P::advertiser_cancel_at_fault,
+    p2p_advertiser_temp_banned                       => \&BOM::Event::Actions::P2P::advertiser_temp_banned,
 };
 
 =head1 METHODS
@@ -167,8 +169,9 @@ sub process {
     }
 
     my $context_info = $event_to_be_processed->{context} // {};
-    my @req_args     = map { $_ => $context_info->{$_} } grep { $context_info->{$_} } qw(brand_name language app_id);
-    my $req          = BOM::Platform::Context::Request->new(@req_args);
+
+    my @req_args = map { $_ => $context_info->{$_} } grep { $context_info->{$_} } qw(brand_name language app_id);
+    my $req      = BOM::Platform::Context::Request->new(@req_args);
     request($req);
 
     my $response = 0;
