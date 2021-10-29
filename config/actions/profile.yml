@@ -31,7 +31,7 @@ set_settings:
           - landing_company.required_fields_are_non_empty
           - profile.valid_profile_countries
           - profile.date_of_birth_complies_minimum_age
-          - profile.secret_question_with_answer
+          - profile.both_secret_question_and_answer_required
           - profile.copier_cannot_allow_copiers
           - profile.tax_information_is_not_cleared
           - profile.professional_request_allowed

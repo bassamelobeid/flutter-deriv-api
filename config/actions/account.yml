@@ -16,7 +16,7 @@ new_account:
     - landing_company.p2p_availability
     - client.signup_immitable_fields_not_changed
     - profile.date_of_birth_complies_minimum_age
-    - profile.secret_question_with_answer
+    - profile.both_secret_question_and_answer_required
     - profile.valid_profile_countries
     - profile.valid_promo_code
     - profile.valid_non_pep_declaration_time

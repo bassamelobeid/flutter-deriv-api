@@ -43,13 +43,13 @@ rule 'profile.date_of_birth_complies_minimum_age' => {
     },
 };
 
-rule 'profile.secret_question_with_answer' => {
-    description => "Secret question must always come with an answer",
+rule 'profile.both_secret_question_and_answer_required' => {
+    description => "Secret question must always come with an answer and vice versa",
     code        => sub {
         my ($self, $context, $args) = @_;
 
         $self->fail("NeedBothSecret")
-            if ($args->{secret_question} && !($args->{secret_answer} // ''));
+            if !$args->{secret_question} ^ !$args->{secret_answer};
 
         return 1;
     },

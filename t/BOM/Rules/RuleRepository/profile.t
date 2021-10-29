@@ -72,12 +72,17 @@ subtest 'rule profile.date_of_birth_complies_minimum_age' => sub {
     $mock_countries->unmock_all;
 };
 
-subtest 'rule profile.secret_question_with_answer' => sub {
-    my $rule_name = 'profile.secret_question_with_answer';
+subtest 'rule profile.both_secret_question_and_answer_required' => sub {
+    my $rule_name = 'profile.both_secret_question_and_answer_required';
 
     lives_ok { $rule_engine->apply_rules($rule_name) } 'rule apples with empty args.';
 
-    lives_ok { $rule_engine->apply_rules($rule_name, secret_answer => 'dummy') } 'rule apples with secret answer alone.';
+    is_deeply exception { $rule_engine->apply_rules($rule_name, secret_answer => 'dummy') },
+        {
+        error_code => 'NeedBothSecret',
+        rule       => $rule_name
+        },
+        'Secret answer without question will fail.';
 
     is_deeply exception { $rule_engine->apply_rules($rule_name, secret_question => 'dummy') },
         {
@@ -90,7 +95,7 @@ subtest 'rule profile.secret_question_with_answer' => sub {
 subtest 'rule profile.valid_profile_countries' => sub {
     my $rule_name = 'profile.valid_profile_countries';
 
-    lives_ok { $rule_engine->apply_rules($rule_name) } 'rule apples with empty args.';
+    lives_ok { $rule_engine->apply_rules($rule_name) } 'rule applies with empty args.';
 
     my %errors = (
         place_of_birth => 'InvalidPlaceOfBirth',
