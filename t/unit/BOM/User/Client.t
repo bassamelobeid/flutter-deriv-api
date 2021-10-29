@@ -85,6 +85,11 @@ subtest validate_common_account_details => sub {
         };
         is $client->validate_common_account_details($args)->{error}, 'NeedBothSecret', 'empty secret answer';
         $args = {
+            'secret_question' => '',
+            'secret_answer'   => 'sg'
+        };
+        is $client->validate_common_account_details($args)->{error}, 'NeedBothSecret', 'empty secret question';
+        $args = {
             'secret_question'  => 'what is your favorite city?',
             'secret_answer'    => 'sg',
             'address_postcode' => 'test address'

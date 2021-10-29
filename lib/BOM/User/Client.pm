@@ -1857,12 +1857,8 @@ sub validate_common_account_details {
         die "Secret answer cannot be set to empty\n"
             if (defined $args->{secret_answer} && !$args->{secret_answer} && length($self->secret_answer));
 
-        ## Question must always come with an answer
-        ## Due to the way we decrypt and send the answer to backoffice,
-        ## it is common that secret_answer is set in $args but not the secret_question,
-        ## so we do not want to check for that combination
-        die "NeedBothSecret\n"
-            if ($args->{secret_question} && !($args->{secret_answer} // ''));
+        ## Question must always come with an answer and vice versa
+        die "NeedBothSecret\n" if !$args->{secret_question} ^ !$args->{secret_answer};
 
         die "InvalidPlaceOfBirth\n" if ($args->{place_of_birth} and not Locale::Country::code2country($args->{place_of_birth}));
 
