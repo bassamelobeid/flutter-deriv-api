@@ -819,9 +819,10 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/ and not $skip_loop_all_clients) {
     # Perform additional checks, but only for non-virtual accounts
     if (not $error and not $client->is_virtual) {
         $error = $client->validate_common_account_details({
-            secret_answer => $secret_answer // '',
-            %input
-        });
+                secret_answer => $secret_answer,
+                secret_question =>  $client->secret_question,
+                %input
+            });
     }
 
     if ($error) {
