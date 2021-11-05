@@ -12,6 +12,7 @@ use BOM::Database::ClientDB;
 
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Backoffice::Form;
+use Date::Utility;
 
 use f_brokerincludeall;
 use BOM::Backoffice::Sysinit ();
@@ -89,25 +90,30 @@ get values required for creating self-exclusion table
 
 =over
 
-=item * C<name> - required. Name of a limit.
-
-=item * C<values> - required. List of values including amount and expiration date for each limit
+=item * C<values>: name, value, expiration, changed_stamp, changed_by
 
 =back
 
 =cut
 
 sub make_row {
-    my ($name, @values) = @_;
-    my $expiration_date = $values[2] // '';
+    my @values = @_;
+
+    my $val =
+        defined $values[1]
+        ? '<td><strong>' . $values[1] . '</strong><td>' . $values[2] . '</td>'
+        : '<td colspan=2><i>none</i></td>';
+
     return
           '<tr><td>'
-        . $name
-        . '</td><td><strong>'
-        . (join ' ', @values[0 .. 1])
-        . '</strong></td><td><strong>'
-        . $expiration_date
-        . '</strong></td></tr>';
+        . $values[0] . '</td>'
+        . $val . '<td>'
+        . $values[3]
+        . '</td><td>'
+        . ($values[4] // '<i>none</i>')
+        . '</td><td>'
+        . $values[5]
+        . '</td></tr>';
 }
 
 if (request()->http_method eq 'POST') {
@@ -185,71 +191,109 @@ if (request()->http_method eq 'POST') {
 
 # to generate existing limits
 if (my $self_exclusion = $client->get_self_exclusion) {
+    my $audit = +{map { (delete $_->{field} => $_) } $client->get_self_exclusion_audit->@*};
+
     my $info;
-    $info .= '<thead><tr><th>Limit name</th><th>Limit value</th><th>Expiration date</th></tr></thead><tbody>';
+    $info .=
+        '<thead><tr><th>Limit name</th><th>Limit value</th><th>Expiration date</th><th>Self-exclusion set date</th><th>Previous limit</th><th>Set by</th></tr></thead><tbody>';
     $info .= make_row(
         'Maximum account cash balance',
-        $client->currency,
-        $self_exclusion->max_balance,
-        get_limit_expiration_date($db, $loginid, 'max_balance', 30)) if defined $self_exclusion->max_balance;
+        $self_exclusion->max_balance ? $self_exclusion->max_balance . ' ' . $client->currency : undef,
+        get_limit_expiration_date($db, $loginid, 'max_balance', 30),
+        $audit->{max_balance}->{changed_stamp},
+        $audit->{max_balance}->{prev_value},
+        $audit->{max_balance}->{changed_by}) if exists $audit->{max_balance};
     $info .= make_row(
         'Daily turnover limit',
-        $client->currency,
-        $self_exclusion->max_turnover,
-        get_limit_expiration_date($db, $loginid, 'max_turnover', 1)) if defined $self_exclusion->max_turnover;
-    $info .=
-        make_row('Daily limit on losses', $client->currency, $self_exclusion->max_losses, get_limit_expiration_date($db, $loginid, 'max_losses', 1))
-        if defined $self_exclusion->max_losses;
+        $self_exclusion->max_turnover ? $self_exclusion->max_turnover . ' ' . $client->currency : undef,
+        get_limit_expiration_date($db, $loginid, 'max_turnover', 1),
+        $audit->{max_turnover}->{changed_stamp},
+        $audit->{max_turnover}->{prev_value},
+        $audit->{max_turnover}->{changed_by}) if exists $audit->{max_turnover};
+    $info .= make_row(
+        'Daily limit on losses',
+        $self_exclusion->max_losses ? $self_exclusion->max_losses . ' ' . $client->currency : undef,
+        get_limit_expiration_date($db, $loginid, 'max_losses', 1),
+        $audit->{max_losses}->{changed_stamp},
+        $audit->{max_losses}->{prev_value},
+        $audit->{max_losses}->{changed_by}) if exists $audit->{max_losses};
     $info .= make_row(
         'Daily deposit limit',
-        $client->currency,
-        $self_exclusion->max_deposit_daily,
-        get_limit_expiration_date($db, $loginid, 'max_deposit_daily', 1)) if $deposit_limit_enabled and defined $self_exclusion->max_deposit_daily;
+        $self_exclusion->max_deposit_daily ? $self_exclusion->max_deposit_daily . ' ' . $client->currency : undef,
+        get_limit_expiration_date($db, $loginid, 'max_deposit_daily', 1),
+        $audit->{max_deposit_daily}->{changed_stamp},
+        $audit->{max_deposit_daily}->{prev_value},
+        $audit->{max_deposit_daily}->{changed_by}) if $deposit_limit_enabled and exists $audit->{max_deposit_daily};
     $info .= make_row(
         '7-Day turnover limit',
-        $client->currency,
-        $self_exclusion->max_7day_turnover,
-        get_limit_expiration_date($db, $loginid, 'max_7day_turnover', 7)) if defined $self_exclusion->max_7day_turnover;
+        $self_exclusion->max_7day_turnover ? $self_exclusion->max_7day_turnover . ' ' . $client->currency : undef,
+        get_limit_expiration_date($db, $loginid, 'max_7day_turnover', 7),
+        $audit->{max_7day_turnover}->{changed_stamp},
+        $audit->{max_7day_turnover}->{prev_value},
+        $audit->{max_7day_turnover}->{changed_by}) if exists $audit->{max_7day_turnover};
     $info .= make_row(
         '7-Day limit on losses',
-        $client->currency,
-        $self_exclusion->max_7day_losses,
-        get_limit_expiration_date($db, $loginid, 'max_7day_losses', 7)) if defined $self_exclusion->max_7day_losses;
+        $self_exclusion->max_7day_losses ? $self_exclusion->max_7day_losses . ' ' . $client->currency : undef,
+        get_limit_expiration_date($db, $loginid, 'max_7day_losses', 7),
+        $audit->{max_7day_losses}->{changed_stamp},
+        $audit->{max_7day_losses}->{prev_value},
+        $audit->{max_7day_losses}->{changed_by}) if exists $audit->{max_7day_losses};
     $info .= make_row(
         '7-Day deposit limit',
-        $client->currency,
-        $self_exclusion->max_deposit_7day,
-        get_limit_expiration_date($db, $loginid, 'max_deposit_7day', 7)) if $deposit_limit_enabled and defined $self_exclusion->max_deposit_7day;
+        $self_exclusion->max_deposit_7day ? $self_exclusion->max_deposit_7day . ' ' . $client->currency : undef,
+        get_limit_expiration_date($db, $loginid, 'max_deposit_7day', 7),
+        $audit->{max_deposit_7day}->{changed_stamp},
+        $audit->{max_deposit_7day}->{prev_value},
+        $audit->{max_deposit_7day}->{changed_by}) if $deposit_limit_enabled and exists $audit->{max_deposit_7day};
     $info .= make_row(
         '30-Day turnover limit',
-        $client->currency,
-        $self_exclusion->max_30day_turnover,
-        get_limit_expiration_date($db, $loginid, 'max_30day_turnover', 30)) if defined $self_exclusion->max_30day_turnover;
+        $self_exclusion->max_30day_turnover ? $self_exclusion->max_30day_turnover . ' ' . $client->currency : undef,
+        get_limit_expiration_date($db, $loginid, 'max_30day_turnover', 30),
+        $audit->{max_30day_turnover}->{changed_stamp},
+        $audit->{max_30day_turnover}->{prev_value},
+        $audit->{max_30day_turnover}->{changed_by}) if exists $audit->{max_30day_turnover};
     $info .= make_row(
         '30-Day limit on losses',
-        $client->currency,
-        $self_exclusion->max_30day_losses,
-        get_limit_expiration_date($db, $loginid, 'max_30day_losses', 30)) if defined $self_exclusion->max_30day_losses;
+        $self_exclusion->max_30day_losses ? $self_exclusion->max_30day_losses . ' ' . $client->currency : undef,
+        get_limit_expiration_date($db, $loginid, 'max_30day_losses', 30),
+        $audit->{max_30day_losses}->{changed_stamp},
+        $audit->{max_30day_losses}->{prev_value},
+        $audit->{max_30day_losses}->{changed_by}) if exists $audit->{max_30day_losses};
     $info .= make_row(
         '30-Day deposit limit',
-        $client->currency,
-        $self_exclusion->max_deposit_30day,
-        get_limit_expiration_date($db, $loginid, 'max_deposit_30day', 30)) if $deposit_limit_enabled and defined $self_exclusion->max_deposit_30day;
-
-    $info .=
-        make_row('Maximum number of open positions', $self_exclusion->max_open_bets, '', get_limit_expiration_date($db, $loginid, 'max_open_bets', 1))
-        if defined $self_exclusion->max_open_bets;
-
+        $self_exclusion->max_deposit_30day ? $self_exclusion->max_deposit_30day . ' ' . $client->currency : undef,
+        get_limit_expiration_date($db, $loginid, 'max_deposit_30day', 30),
+        $audit->{max_deposit_30day}->{changed_stamp},
+        $audit->{max_deposit_30day}->{prev_value},
+        $audit->{max_deposit_30day}->{changed_by}) if $deposit_limit_enabled and exists $audit->{max_deposit_30day};
+    $info .= make_row(
+        'Maximum number of open positions',
+        $self_exclusion->max_open_bets,
+        get_limit_expiration_date($db, $loginid, 'max_open_bets', 1),
+        $audit->{max_open_bets}->{changed_stamp},
+        $audit->{max_open_bets}->{prev_value},
+        $audit->{max_open_bets}->{changed_by}) if exists $audit->{max_open_bets};
     $info .= make_row(
         'Session duration limit',
-        $self_exclusion->session_duration_limit,
-        'minutes', get_limit_expiration_date($db, $loginid, 'session_duration_limit', 1)) if defined $self_exclusion->session_duration_limit;
-
-    $info .= make_row('Website exclusion', '', '', Date::Utility->new($self_exclusion->exclude_until)->date)
-        if defined $self_exclusion->exclude_until;
-
-    $info .= make_row('Website Timeout until', '', '', Date::Utility->new($self_exclusion->timeout_until)->datetime_yyyymmdd_hhmmss)
-        if defined $self_exclusion->timeout_until;
+        $self_exclusion->session_duration_limit ? $self_exclusion->session_duration_limit . ' minutes' : undef,
+        get_limit_expiration_date($db, $loginid, 'session_duration_limit', 1),
+        $audit->{session_duration_limit}->{changed_stamp},
+        $audit->{session_duration_limit}->{prev_value},
+        $audit->{session_duration_limit}->{changed_by}) if exists $audit->{session_duration_limit};
+    $info .= make_row(
+        'Website exclusion',
+        $self_exclusion->exclude_until ? ''                                                       : undef,
+        $self_exclusion->exclude_until ? Date::Utility->new($self_exclusion->exclude_until)->date : '',
+        $audit->{exclude_until}->{changed_stamp},
+        $audit->{exclude_until}->{prev_value} ? Date::Utility->new($audit->{exclude_until}->{prev_value})->date : undef,
+        $audit->{exclude_until}->{changed_by}) if exists $audit->{exclude_until};
+    $info .= make_row(
+        'Website Timeout until',
+        $self_exclusion->timeout_until ? ''                                                                           : undef,
+        $self_exclusion->timeout_until ? Date::Utility->new($self_exclusion->timeout_until)->datetime_yyyymmdd_hhmmss : '',
+        $audit->{timeout_until}->{changed_stamp},
+        $audit->{timeout_until}->{prev_value} ? Date::Utility->new($audit->{timeout_until}->{prev_value})->datetime_yyyymmdd_hhmmss : undef,
+        $audit->{timeout_until}->{changed_by}) if exists $audit->{timeout_until};
 
     if ($info) {
         $page .= '<p>Currently set values are:</p><table class="border alternate">' . $info . '</tbody></table><br>';

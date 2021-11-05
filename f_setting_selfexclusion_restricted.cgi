@@ -93,48 +93,55 @@ if (request()->http_method eq 'POST') {
 # to generate existing limits
 if ($self_exclusion) {
     my $info;
+    my $audit = +{map { (delete $_->{field} => $_) } $client->get_self_exclusion_audit->@*};
 
     $info .= make_row(
-        'Maximum account cash balance',
-        $client->currency,
-        $self_exclusion->max_balance,
-        get_limit_expiration_date($db, $loginid, 'max_balance', 30)) if $self_exclusion->max_balance;
-    $info .= make_row(
-        'Daily limit on losses   ',    # extra spaces are added to get a correct result from perltidy
-        $client->currency,
-        $self_exclusion->max_losses,
-        get_limit_expiration_date($db, $loginid, 'max_losses', 1)) if $self_exclusion->max_losses;
-    $info .= make_row(
-        '7-Day limit on losses',
-        $client->currency,
-        $self_exclusion->max_7day_losses,
-        get_limit_expiration_date($db, $loginid, 'max_7day_losses', 7)) if $self_exclusion->max_7day_losses;
-    $info .= make_row(
-        '30-Day limit on losses',
-        $client->currency,
-        $self_exclusion->max_30day_losses,
-        get_limit_expiration_date($db, $loginid, 'max_30day_losses', 30)) if $self_exclusion->max_30day_losses;
-
+        'Daily limit on losses',
+        $self_exclusion->max_losses ? $self_exclusion->max_losses . ' ' . $client->currency : undef,
+        get_limit_expiration_date($db, $loginid, 'max_losses', 1),
+        $audit->{max_losses}->{changed_stamp},
+        $audit->{max_losses}->{prev_value},
+        $audit->{max_losses}->{changed_by}) if exists $audit->{max_losses};
     $info .= make_row(
         'Daily limit on deposits',
-        $client->currency,
-        $self_exclusion->max_deposit_daily,
-        get_limit_expiration_date($db, $loginid, 'max_deposit_daily', 1)) if $deposit_limit_enabled and $self_exclusion->max_deposit_daily;
+        $self_exclusion->max_deposit_daily ? $self_exclusion->max_deposit_daily . ' ' . $client->currency : undef,
+        get_limit_expiration_date($db, $loginid, 'max_deposit_daily', 1),
+        $audit->{max_deposit_daily}->{changed_stamp},
+        $audit->{max_deposit_daily}->{prev_value},
+        $audit->{max_deposit_daily}->{changed_by}) if $deposit_limit_enabled and exists $audit->{max_deposit_daily};
+    $info .= make_row(
+        '7-Day limit on losses',
+        $self_exclusion->max_7day_losses ? $self_exclusion->max_7day_losses . ' ' . $client->currency : undef,
+        get_limit_expiration_date($db, $loginid, 'max_7day_losses', 7),
+        $audit->{max_7day_losses}->{changed_stamp},
+        $audit->{max_7day_losses}->{prev_value},
+        $audit->{max_7day_losses}->{changed_by}) if exists $audit->{max_7day_losses};
     $info .= make_row(
         '7-day limit on deposits',
-        $client->currency,
-        $self_exclusion->max_deposit_7day,
-        get_limit_expiration_date($db, $loginid, 'max_deposit_7day', 7)) if $deposit_limit_enabled and $self_exclusion->max_deposit_7day;
+        $self_exclusion->max_deposit_7day ? $self_exclusion->max_deposit_7day . ' ' . $client->currency : undef,
+        get_limit_expiration_date($db, $loginid, 'max_deposit_7day', 7),
+        $audit->{max_deposit_7day}->{changed_stamp},
+        $audit->{max_deposit_7day}->{prev_value},
+        $audit->{max_deposit_7day}->{changed_by}) if $deposit_limit_enabled and exists $audit->{max_deposit_7day};
     $info .= make_row(
-        '30-day limit on deposits',
-        $client->currency,
-        $self_exclusion->max_deposit_30day,
-        get_limit_expiration_date($db, $loginid, 'max_deposit_30day', 30)) if $deposit_limit_enabled and $self_exclusion->max_deposit_30day;
+        '30-Day limit on losses',
+        $self_exclusion->max_30day_losses ? $self_exclusion->max_30day_losses . ' ' . $client->currency : undef,
+        get_limit_expiration_date($db, $loginid, 'max_30day_losses', 30),
+        $audit->{max_30day_losses}->{changed_stamp},
+        $audit->{max_30day_losses}->{prev_value},
+        $audit->{max_30day_losses}->{changed_by}) if exists $audit->{max_30day_losses};
+    $info .= make_row(
+        '30-Day limit on deposits',
+        $self_exclusion->max_deposit_30day ? $self_exclusion->max_deposit_30day . ' ' . $client->currency : undef,
+        get_limit_expiration_date($db, $loginid, 'max_deposit_30day', 30),
+        $audit->{max_deposit_30day}->{changed_stamp},
+        $audit->{max_deposit_30day}->{prev_value},
+        $audit->{max_deposit_30day}->{changed_by}) if $deposit_limit_enabled and exists $audit->{max_deposit_30day};
 
     if ($info) {
         $page .=
               '<p>Currently set values are:</p><table class="alternate border">'
-            . '<thead><tr><th>Limit name</th><th>Limit value</th><th>Expiration date</th></tr></thead><tbody>'
+            . '<thead><tr><th>Limit name</th><th>Limit value</th><th>Expiration date</th><th>Self-exclusion set date</th><th>Previous limit</th><th>Set by</th></tr></thead><tbody>'
             . $info
             . '</tbody></table><br>';
     }
