@@ -28,7 +28,7 @@ my $actions = {
 };
 
 my $usage = "
-Usage: $0 
+Usage: $0
     -a, --action               One of " . (join ', ', keys %$actions) . "
     -e, --endpoint             Doughflow api url
     -s, --secret_key           Secret key
@@ -46,10 +46,11 @@ Usage: $0
 
 require Log::Any::Adapter;
 GetOptions(
-    'a|action=s'              => \my $action,
-    'e|endpoint=s'            => \my $endpoint_url,
-    's|secret_key=s'          => \my $secret_key,
-    'c|client_loginid=s'      => \my $client_loginid,
+    'a|action=s'         => \my $action,
+    'e|endpoint=s'       => \my $endpoint_url,     # 127.0.0.1:8110
+    's|secret_key=s'     => \my $secret_key,       # perl -e 'use BOM::Config; warn BOM::Config::paymentapi_config()->{secret}'
+    'c|client_loginid=s' => \my $client_loginid,
+
     'l|log=s'                 => \my $log_level,
     't|trace_id=i'            => \my $trace_id,
     'amount=f'                => \my $amount,

@@ -46,9 +46,11 @@ my @test_cases = ({
         expected_value => '',
     });
 
-my $mocked_datadog = Test::MockModule->new('DataDog::DogStatsd::Helper');
+my $mocked_datadog = Test::MockModule->new('BOM::API::Payment::Metric');
 my @datadog_args;
-$mocked_datadog->mock('stats_inc', sub { @datadog_args = @_ });
+my @stats_timing;
+$mocked_datadog->mock('stats_inc',    sub { @datadog_args = @_ });
+$mocked_datadog->mock('stats_timing', sub { @stats_timing = @_ });
 
 subtest 'test datadog metric collection' => sub {
     foreach my $test_case (@test_cases) {
@@ -56,6 +58,16 @@ subtest 'test datadog metric collection' => sub {
         like($datadog_args[0], qr/$test_case->{expected_value}/, 'datadog should collect the correct metrics');
         @datadog_args = [];
     }
+};
+
+subtest 'test datadog metric collection with request_millisec' => sub {
+    my $test_case = $test_cases[0];
+    BOM::API::Payment::Metric::collect_metric($test_case->{type}, $test_case->{response}, ['tag'], 1234);
+    is_deeply(
+        \@stats_timing,
+        ['bom.paymentapi.doughflow.request_time', 1234, {tags => ["request_type:validate"]}],
+        'datadog should collect the request_millisec'
+    );
 };
 
 done_testing();

@@ -14,7 +14,7 @@ use BOM::User;
 use APIHelper qw/ balance deposit request decode_json /;
 
 # mock datadog
-my $mocked_datadog = Test::MockModule->new('DataDog::DogStatsd::Helper');
+my $mocked_datadog = Test::MockModule->new('BOM::API::Payment::Metric');
 my @datadog_args;
 $mocked_datadog->mock('stats_inc', sub { @datadog_args = @_ });
 

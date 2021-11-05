@@ -6,7 +6,7 @@ use Moo;
 with 'BOM::API::Payment::Role::Plack';
 
 use Scalar::Util qw/blessed/;
-
+use Time::HiRes qw(gettimeofday tv_interval);
 use BOM::API::Payment::DoughFlow::Backend;
 use BOM::Database::DataMapper::Payment;
 use BOM::API::Payment::Metric;
@@ -21,13 +21,17 @@ repeat code to collect metrics.
 
 sub _process_doughflow_request {
     my ($c, $type) = @_;
-    my $tags = [
-        "payment_processor:$c->request_parameters->{payment_processor}", "payment_method:$c->request_parameters->{payment_method}",
-        "language:$c->request_parameters->{udef1}",                      "brand:$c->request_parameters->{udef2}",
+    my $param = $c->request_parameters;
+    my $tags  = [
+        "payment_processor:" . ($param->{payment_processor} // ''),
+        "payment_method:" .    ($param->{payment_method}    // ''),
+        "language:" .          ($param->{udef1}             // ''),
+        "brand:" .             ($param->{udef2}             // ''),
     ];
-
-    my $response = _doughflow_backend($c, $type);
-    BOM::API::Payment::Metric::collect_metric($type, $response, $tags);
+    my $start            = [Time::HiRes::gettimeofday];
+    my $response         = _doughflow_backend($c, $type);
+    my $request_millisec = 1000 * Time::HiRes::tv_interval($start);
+    BOM::API::Payment::Metric::collect_metric($type, $response, $tags, $request_millisec);
     return $response;
 }
 

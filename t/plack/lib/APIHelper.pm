@@ -249,7 +249,7 @@ sub balance {
         });
     my $account = decode_json($r->content);
 
-    return $account->{balance} * 1.0;
+    return ($account->{balance} // 0) * 1.0;
 }
 
 =pod
