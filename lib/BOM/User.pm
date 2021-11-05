@@ -23,6 +23,7 @@ use BOM::User::Utility;
 use BOM::User::Client;
 use BOM::User::Wallet;
 use BOM::User::Onfido;
+use BOM::User::RiskScreen;
 use BOM::TradingPlatform;
 use BOM::Config::Runtime;
 use ExchangeRates::CurrencyConverter qw(in_usd);
@@ -1604,6 +1605,38 @@ sub get_edd_status {
     } catch {
         return 0;
     }
+}
+
+=head2 risk_screen
+
+Gets the RiskScreen information of the current user.
+
+=cut
+
+sub risk_screen {
+    my $self = shift;
+
+    my ($risk_screen) = BOM::User::RiskScreen->find(binary_user_id => $self->id);
+
+    return $risk_screen;
+}
+
+=head2 set_risk_screen
+
+Prepares the current user to be monitored in RiskScreen.
+
+=cut
+
+sub set_risk_screen {
+    my ($self, %args) = @_;
+
+    my $old_values = $self->risk_screen // {};
+
+    my $risk_screen = BOM::User::RiskScreen->new(%$old_values, %args, binary_user_id => $self->id);
+
+    $risk_screen->save;
+
+    return $risk_screen;
 }
 
 =head2 affiliate
