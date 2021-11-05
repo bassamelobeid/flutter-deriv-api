@@ -3,6 +3,8 @@ package BOM::Config::Quants;
 use strict;
 use warnings;
 
+use DataDog::DogStatsd::Helper qw(stats_inc);
+
 use Exporter qw(import);
 our @EXPORT_OK = qw(market_pricing_limits minimum_payout_limit maximum_payout_limit minimum_stake_limit maximum_stake_limit);
 
@@ -29,8 +31,10 @@ sub market_pricing_limits {
             for my $currency (@$currencies) {
                 my $min_stake  = $cat_min->{$currency};
                 my $max_payout = $cat_max->{$currency};
-                warn "Unsupported currency $currency query params [landing company: $lc, market: $market, contract category: $contract_category]"
-                    if (not defined $min_stake or not defined $max_payout);
+
+                if (not defined $min_stake or not defined $max_payout) {
+                    stats_inc('bom_config.quants.market_pricing_limits.unsupported_currency', {tags => ['currency:' . $currency]});
+                }
 
                 $limits->{$market}->{$currency}->{max_payout} = $max_payout + 0
                     if defined $max_payout;    #add plus 0 to ensure it will always be a number instead of string
