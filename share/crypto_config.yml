@@ -1,7 +1,6 @@
 BTC:
     withdrawal:
         timeout: "3d"
-        min_usd: 25
     subscription:
         rpc_timeout: 100
     protocol_cost: 0
@@ -28,7 +27,6 @@ BTC:
 LTC:
     withdrawal:
         timeout: "3d"
-        min_usd: 5
     subscription:
         rpc_timeout: 100
     protocol_cost: 0
@@ -49,7 +47,6 @@ LTC:
 ETH:
     withdrawal:
         timeout: "5d"
-        min_usd: 30
     subscription:
         rpc_timeout: 100
     protocol_cost: 0
@@ -61,43 +58,36 @@ ETH:
 BUSD:
     withdrawal:
         timeout: "3d"
-        min_usd: 25
     protocol_cost: 0
     decimal_places: 18
 DAI:
     withdrawal:
         timeout: "3d"
-        min_usd: 25
     protocol_cost: 0
     decimal_places: 18
 EURS:
     withdrawal:
         timeout: "3d"
-        min_usd: 25
     protocol_cost: 0
     decimal_places: 2
 IDK:
     withdrawal:
         timeout: "3d"
-        min_usd: 5
     protocol_cost: 0
     decimal_places: 8
 PAX:
     withdrawal:
         timeout: "3d"
-        min_usd: 25
     protocol_cost: 0
     decimal_places: 18
 TUSD:
     withdrawal:
         timeout: "3d"
-        min_usd: 25
     protocol_cost: 0
     decimal_places: 18
 USB:
     withdrawal:
         timeout: "3d"
-        min_usd: 25
     subscription:
         rpc_timeout: 100
     protocol_cost: 0
@@ -105,7 +95,6 @@ USB:
 USDC:
     withdrawal:
         timeout: "3d"
-        min_usd: 25
     protocol_cost: 0
     decimal_places: 6
     sweep:
@@ -113,13 +102,11 @@ USDC:
 USDK:
     withdrawal:
         timeout: "3d"
-        min_usd: 25
     protocol_cost: 0
     decimal_places: 18
 UST:
     withdrawal:
         timeout: "3d"
-        min_usd: 25
     subscription:
         rpc_timeout: 100
     protocol_cost: 0.00000546
@@ -129,7 +116,6 @@ UST:
 eUSDT:
     withdrawal:
         timeout: "3d"
-        min_usd: 25
     protocol_cost: 0
     decimal_places: 6
     sweep:

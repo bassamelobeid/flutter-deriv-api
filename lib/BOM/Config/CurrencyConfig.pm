@@ -894,4 +894,26 @@ sub get_crypto_batch_withdrawal_fee_config {
     };
 }
 
+=head2 get_crypto_withdrawal_min_usd
+
+To get the minimum withdrawal amount for currency.
+
+=over 4
+
+=item * C<currency> - Currency code
+
+=back
+
+Returns the C<crypto_withdrawal_min_usd> for the currency.
+
+=cut
+
+sub get_crypto_withdrawal_min_usd {
+    my $currency = shift;
+
+    my $minimum_withdrawal_config = JSON::MaybeUTF8::decode_json_utf8(app_config()->get('payments.crypto.withdrawal.min_usd'));
+
+    return $minimum_withdrawal_config->{$currency};
+}
+
 1;
