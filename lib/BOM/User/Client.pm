@@ -764,7 +764,27 @@ sub get_self_exclusion {
 
     $excl = $self->self_exclusion;
     $self->self_exclusion_cache([$excl]);
+
     return $excl;
+}
+
+=head2 get_self_exclusion_audit
+
+Get the latest details from audit tables about self exclusion for each field.
+
+It returns an arrayref of information for each self exclusion field.
+
+=cut
+
+sub get_self_exclusion_audit {
+    my ($self) = @_;
+
+    my $audit = $self->db->dbic->run(
+        fixup => sub {
+            $_->selectall_arrayref("SELECT * from audit.get_self_exclusion_audit(?);", {Slice => {}}, $self->loginid);
+        });
+
+    return $audit;
 }
 
 =head2 get_deposit_limits
