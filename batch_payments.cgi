@@ -43,12 +43,13 @@ my $payments_csv_file = $cgi->param('payments_csv_file') || sprintf '/tmp/batch_
 my $skip_validation   = $cgi->param('skip_validation')   || 0;
 my $format            = $confirm                         || $preview || die "either preview or confirm";
 my $now               = Date::Utility->new;
+my $payments_csv      = $cgi->param('payments_csv');
 
 Bar('Batch Credit/Debit to Clients Accounts');
 
 if ($preview) {
-    if ($cgi->param('payments_csv') !~ /csv$/) {
-        print "<h3 class=\"error\">ERROR: The provided file \"", encode_entities($cgi->param('payments_csv')),
+    if ($payments_csv !~ /csv$/) {
+        print "<h3 class=\"error\">ERROR: The provided file \"", encode_entities($payments_csv),
             "\" is not a CSV file.</h3><p>Please save it as <b>CSV (comma-separated values) file</b> in Excel first.</p>";
         code_exit_BO();
     }
