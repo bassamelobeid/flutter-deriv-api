@@ -1,0 +1,84 @@
+<p>Commission configuration</p>
+
+<form id='configuration_update'>
+    <fieldset  [% IF disabled %] disabled title='no write access' [% END %]>
+    <table>
+        <tr>
+            <td>Commission type for <b>financial</b> asset: </td>
+            <td>
+                <select name="commission_type_financial">
+                    [% FOREACH type IN commission_type %]
+                        <option value="[% type %]" [% IF selected_financial == type %]selected="selected"[% END %]>[% type %]</option>
+                    [% END %]
+                </select>
+            </td>
+        </tr>
+        <tr>
+            <td>Commission type for <b>synthetic</b> asset: </td>
+            <td>
+                <select name="commission_type_synthetic">
+                    [% FOREACH type IN commission_type %]
+                        <option value="[% type %]" [% IF selected_synthetic == type %]selected="selected"[% END %]>[% type %]</option>
+                    [% END %]
+                </select>
+            </td>
+        </tr>
+        <tr>
+            <td>Commission Calculation Script's Status: </td>
+            <td>
+                <select name="status">
+                    <option value="1" [% IF enable %] selected [% END %]>enable</option>
+                    <option value="0" [% IF !enable %] selected [% END %]>disable</option>
+                </select>
+            </td>
+        </tr>
+        <tr>
+            <td>Commission Auto Payment: </td>
+            <td>
+                <select name="payment_status">
+                    <option value="1" [% IF enable_auto_payment %] selected [% END %]>enable</option>
+                    <option value="0" [% IF !enable_auto_payment %] selected [% END %]>disable</option>
+                </select>
+            </td>
+        </tr>
+        <tr>
+            <td><input type="button" class="btn btn--primary" onClick="SaveCommissionConfig()" value="Update Configuration"></td>
+            <td class="config_update"></td>
+        </tr>
+    </table>
+</form>
+
+
+<script>
+var upload_url = "[% upload_url | none %]";
+var provider = "[% provider | none %]";
+
+function SaveCommissionConfig(){
+
+    var el = \$('#configuration_update');
+
+    var result = el.find('.config_update');
+
+    result.text('processing ...').css('color', 'black');
+
+    \$.ajax({
+        url: upload_url,
+        data: {
+            commission_config_update: 1,
+            provider: provider,
+            commission_type_financial:  el.find('select[name="commission_type_financial"]').val(),
+            commission_type_synthetic:  el.find('select[name="commission_type_synthetic"]').val(),
+            status:  el.find('select[name="status"]').val(),
+            payment_status:  el.find('select[name="payment_status"]').val()
+        },
+        success: function(data) {
+            var config = \$.parseJSON(data);
+            if (config.error) {
+                result.text(config.error).css('color', 'var(--color-red)');
+            } else {
+                result.text('saved').css('color', 'var(--color-green)');
+            }
+        }
+    });
+}
+</script>

@@ -12,6 +12,7 @@ use BOM::Config;
 use BOM::Config::Runtime;
 use BOM::Backoffice::Auth0;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
+use BOM::Backoffice::CommissionTool;
 use LandingCompany;
 
 use BOM::Backoffice::Sysinit ();
@@ -38,6 +39,13 @@ my $brokerselection = 'Broker code : '
     name          => 'broker',
     items         => [request()->param('only') || LandingCompany::Registry::all_broker_codes],
     selected_item => $broker,
+    );
+
+my $provider_selection = 'CFDs provider : '
+    . create_dropdown(
+    name          => 'provider',
+    items         => BOM::Backoffice::CommissionTool::get_enum_type('affiliate.client_provider'),
+    selected_item => 'dxtrade',
     );
 
 # TRANSACTION REPORTS
@@ -298,6 +306,13 @@ if (BOM::Backoffice::Auth0::has_authorisation(['Quants'])) {
             <div class="card__content">
                 <h3>Multiplier risk management tool</h3>
                 <form action="~ . request()->url_for('backoffice/quant/multiplier_risk_management.cgi') . qq~" method="post">
+                    <input type="submit" class="btn btn--primary" value="Go">
+                </form>
+            </div>
+            <div class="card__content">
+                <h3>Affiliate commission tool</h3>
+                <form action="~ . request()->url_for('backoffice/quant/commission_management.cgi') . qq~" method="get">
+                    <label>$provider_selection</label>
                     <input type="submit" class="btn btn--primary" value="Go">
                 </form>
             </div>
