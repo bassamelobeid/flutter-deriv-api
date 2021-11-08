@@ -257,7 +257,8 @@ sub _crypto_config {
 
         # To check if Exchange Rate is present currently [ Ex: IDK ]
         my $converted = eval {
-            ExchangeRates::CurrencyConverter::convert_currency(BOM::Config::crypto()->{$currency}->{'withdrawal'}->{min_usd}, 'USD', $currency);
+            ExchangeRates::CurrencyConverter::convert_currency(BOM::Config::CurrencyConfig::get_crypto_withdrawal_min_usd($currency),
+                'USD', $currency);
         } or undef;
         $crypto_config{$currency}->{minimum_withdrawal} = 0 + financialrounding('amount', $currency, $converted) if $converted;
     }

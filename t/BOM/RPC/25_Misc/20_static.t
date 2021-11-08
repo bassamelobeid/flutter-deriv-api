@@ -186,7 +186,8 @@ subtest 'crypto_config' => sub {
 
     cmp_ok(
         0 + financialrounding(
-            'amount', $_, ExchangeRates::CurrencyConverter::convert_currency(BOM::Config::crypto()->{$_}->{'withdrawal'}->{min_usd}, 'USD', $_)
+            'amount', $_,
+            ExchangeRates::CurrencyConverter::convert_currency(BOM::Config::CurrencyConfig::get_crypto_withdrawal_min_usd($_), 'USD', $_)
         ),
         '==',
         $result->{crypto_config}->{$_}->{minimum_withdrawal},
