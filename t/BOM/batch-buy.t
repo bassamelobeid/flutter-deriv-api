@@ -571,8 +571,6 @@ subtest 'batch-buy with exception', sub {
             $mock_validation->mock(_validate_trade_pricing_adjustment =>
                     sub { note "mocked Transaction::Validation->_validate_trade_pricing_adjustment returning nothing"; undef });
             $mock_validation->mock(validate_tnc => sub { note "mocked Transaction::Validation->validate_tnc returning nothing"; undef });
-            #$mock_validation->mock(
-            #    _validate_offerings_buy => sub { note "mocked Transaction::Validation->_validate_offerings_buy returning nothing"; undef });
 
             my $mock_transaction = Test::MockModule->new('BOM::Transaction');
             $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning '[]'"; [] });
@@ -865,6 +863,69 @@ subtest 'batch_buy multiplier contract' => sub {
             ok $err, 'unsuccessful multisell';
             is $err->{'-mesg'},              'Multiplier not supported in sell_by_shortcode', 'correct -mesg';
             is $err->{'-message_to_client'}, 'MULTUP and MULTDOWN are not supported.',        'correct -message_to_client';
+        };
+    }
+    'survived';
+};
+
+subtest 'batch buy slippage failure' => sub {
+    lives_ok {
+        my $clm = create_client;    # manager
+        my $cl1 = create_client;
+        my $cl2 = create_client;
+
+        $clm->account('USD');
+        $cl1->account('USD');
+        $cl2->account('USD');
+        $clm->save;
+        top_up $cl1, 'USD', 5000;
+        top_up $cl2, 'USD', 5000;
+
+        isnt + (my $acc1 = $cl1->account), 'USD', 'got USD account #1';
+        isnt + (my $acc2 = $cl2->account), 'USD', 'got USD account #2';
+
+        my $bal;
+        is + ($bal = $acc1->balance + 0), 5000, 'USD balance #1 is 5000 got: ' . $bal;
+        is + ($bal = $acc2->balance + 0), 5000, 'USD balance #2 is 5000 got: ' . $bal;
+
+        my $contract = produce_contract({
+            underlying => 'R_100',
+            bet_type   => 'CALL',
+            currency   => 'USD',
+            payout     => 100,
+            duration   => '1h',
+            barrier    => 'S0P',
+        });
+
+        my $txn = BOM::Transaction->new({
+            client        => $clm,
+            contract      => $contract,
+            price         => 45,
+            amount_type   => 'payout',
+            multiple      => [{loginid => $cl2->loginid}, {code => 'ignore'}, {loginid => $cl1->loginid}],
+            purchase_date => $contract->date_start,
+        });
+
+        subtest 'batch_buy' => sub {
+            my $error = do {
+                my $mock_contract = Test::MockModule->new('BOM::Product::Contract');
+                $mock_contract->mock(is_valid_to_buy => sub { note "mocked Contract->is_valid_to_buy returning true"; 1 });
+
+                my $mock_validation = Test::MockModule->new('BOM::Transaction::Validation');
+                #$mock_validation->mock(_validate_trade_pricing_adjustment =>
+                #        sub { note "mocked Transaction::Validation->_validate_trade_pricing_adjustment returning nothing"; undef });
+                $mock_validation->mock(
+                    _validate_offerings_buy => sub { note "mocked Transaction::Validation->_validate_offerings_buy returning nothing"; undef });
+                $mock_validation->mock(validate_tnc => sub { note "mocked Transaction::Validation->validate_tnc returning nothing"; undef });
+
+                my $mock_transaction = Test::MockModule->new('BOM::Transaction');
+                $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning '[]'"; [] });
+
+                $txn->batch_buy;
+            };
+            ok $error, 'unsuccessful batch_buy';
+            is $error->{'-type'}, 'PriceMoved', '-type = PriceMoved';
+            is $error->{'-mesg'}, 'Difference between submitted and newly calculated bet price: currency USD, amount: 45, recomputed amount: 50.99';
         };
     }
     'survived';

@@ -109,11 +109,8 @@ Validate identical contract purchase for multiple clients.
 sub validate_trx_batch_buy {
     my $self = shift;
 
-    CLI: for my $c ($self->clients->@*) {
-        my $client = $c->{client};
-        next unless $client;
-
-        if (my $error = $self->validate_trx_buy($client)) {
+    CLI: for my $c ($self->get_clients()->@*) {
+        if (my $error = $self->validate_trx_buy($c)) {
             if ($self->_bailout_early($error)) {
                 return $error;
             } else {
@@ -138,7 +135,7 @@ sub _bailout_early {
 
     my $type = $error->get_type;
     # contract related error, bailout now
-    if ($type eq 'InvalidDatePricing' or $type eq 'BetExpired' or $type eq 'slippage') {
+    if ($type eq 'InvalidDatePricing' or $type eq 'BetExpired' or $type eq 'PriceMoved') {
         return 1;
     }
 
@@ -375,7 +372,7 @@ sub _slippage {
         );
 
     #Record failed transaction here.
-    for my $c (@{$self->clients}) {
+    for my $c ($self->get_clients()->@*) {
         my $rejected_trade = BOM::Database::Helper::RejectedTrade->new({
             login_id => $c->loginid,
             ($p->{action} eq 'sell') ? (financial_market_bet_id => $self->transaction->contract_id) : (),
@@ -438,7 +435,7 @@ sub _invalid_contract {
     # validation error message to them without storing them into rejected trade table
     unless ($contract->invalid_user_input) {
         #Record failed transaction here.
-        for my $c (@{$self->clients}) {
+        for my $c ($self->get_clients()->@*) {
             my $rejected_trade = BOM::Database::Helper::RejectedTrade->new({
                 login_id => $c->loginid,
                 ($p->{action} eq 'sell') ? (financial_market_bet_id => $self->transaction->contract_id) : (),
@@ -962,6 +959,28 @@ sub synthetic_age_verification_check {
     }
 
     return undef;
+}
+
+=head2 get_clients
+
+There seems to be multiple ways where clients can be provided. This should be refactored by separating batch and single contract buy.
+But, for now, we will keep this method to parse client objects
+
+=cut
+
+sub get_clients {
+    my $self = shift;
+
+    my @clients;
+    foreach my $cl ($self->clients->@*) {
+        if (ref $cl eq 'BOM::User::Client') {
+            push @clients, $cl;
+        } elsif (ref $cl eq 'HASH' and $cl->{client}) {
+            push @clients, $cl->{client};
+        }
+    }
+
+    return \@clients;
 }
 
 1;
