@@ -913,6 +913,73 @@ system:
       description: "Configuration for MT5"
       isa: section
       contains:
+        load_balance:
+          description: "Load balancer for MT5 trader servers for regions."
+          isa: section
+          contains:
+            demo:
+              description: "Demo trade server load balancer configuration"
+              isa: section
+              contains:
+                all:
+                  description: "Demo trade server load balancer configuration for both synthetic and financial"
+                  isa: section
+                  contains:
+                    p01_ts01:
+                      description: "Weight for demo p01_ts01"
+                      isa: Num
+                      default: 20
+                      global: 1
+                    p01_ts02:
+                      description: "Weight for demo p01_ts02"
+                      isa: Num
+                      default: 80
+                      global: 1
+            real:
+              description: "Real trade server load balancer configuration financial (contains old synthetic accounts too)"
+              isa: section
+              contains:
+                all:
+                  description: "Real trade server load balancer configuration for Europe financial and synthetic"
+                  isa: section
+                  contains:
+                    p01_ts01:
+                      description: "Weight for real p01_ts01"
+                      isa: Num
+                      default: 50
+                      global: 1
+                europe_synthetic:
+                  description: "Real trade server load balancer configuration for Europe synthetic"
+                  isa: section
+                  contains:
+                    p01_ts04:
+                      description: "Weight for real p01_ts04"
+                      isa: Num
+                      default: 50
+                      global: 1
+                africa_synthetic:
+                  description: "Real trade server load balancer configuration for Africa"
+                  isa: section
+                  contains:
+                    p01_ts02:
+                      description: "Weight for real p01_ts02"
+                      isa: Num
+                      default: 50
+                      global: 1
+                    p02_ts02:
+                      description: "Weight for real p02_ts02"
+                      isa: Num
+                      default: 50
+                      global: 1
+                asia_synthetic:
+                  description: "Real trade server load balancer configuration for asia"
+                  isa: section
+                  contains:
+                    p01_ts03:
+                      description: "Weight for real p01_ts03"
+                      isa: Num
+                      default: 100
+                      global: 1
         http_proxy:
           description: "HTTP Proxy API swith config for MT5"
           isa: section
@@ -923,6 +990,11 @@ system:
               contains:
                 p01_ts01:
                   description: "Demo p01_ts01 HTTP Proxy API swith config for MT5"
+                  isa: Bool
+                  default: 0
+                  global: 1
+                p01_ts02:
+                  description: "Demo p01_ts02 HTTP Proxy API swith config for MT5"
                   isa: Bool
                   default: 0
                   global: 1
@@ -989,6 +1061,15 @@ system:
                   contains:
                     all:
                       description: "Suspend MT5 API calls on p01_ts01"
+                      isa: Bool
+                      default: 0
+                      global: 1
+                p01_ts02:
+                  description: "Configuration to suspend mt5 p01_ts02"
+                  isa: section
+                  contains:
+                    all:
+                      description: "Suspend MT5 API calls on p01_ts02"
                       isa: Bool
                       default: 0
                       global: 1
@@ -1091,11 +1172,6 @@ system:
                       isa: Bool
                       default: 0
                       global: 1
-        new_trade_server:
-          description: "This configuration is used to help with the launch of new trade server. E.g. to only route synthetic account from indonesia to p01_ts03 '{\"real\":{\"p01_ts03\":{\"id\":{\"synthetic\":\"p01_ts03\"}}}}' or to define p01_ts03 as a new trade server '{\"real\":{\"p01_ts03\":{\"all\":\"p01_ts03\"}}}'."
-          isa: json_string
-          default: '{}'
-          global: 1
     dxtrade:
       description: "Configuration for DXTrade"
       isa: section

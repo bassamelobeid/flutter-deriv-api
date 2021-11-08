@@ -166,7 +166,7 @@ sub _generate_server_info {
     my ($self, $group_type, $servers) = @_;
 
     my $webapi_config     = $self->webapi_config;
-    my @exclusive_servers = ('p01_ts01');
+    my @exclusive_servers = $group_type eq 'real' ? ('p01_ts01') : ('p01_ts01', 'p01_ts02');
     my $app_config        = BOM::Config::Runtime->instance->app_config->system->mt5;
     my @response;
 
@@ -257,6 +257,7 @@ sub create_server_structure {
                 location => $args{server}->{geolocation}{location},
                 region   => $args{server}->{geolocation}{region},
                 sequence => $args{server}->{geolocation}{sequence},
+                group    => $args{server}->{geolocation}{group},
             },
             environment => $args{server}->{environment},
         },
@@ -318,17 +319,22 @@ Europe region is exception. There would be no symmetrical server for p01_ts01 (I
 sub symmetrical_servers {
     my $self = shift;
 
-    my %servers   = ();
-    my $config    = $self->webapi_config->{$self->{group_type}};
-    my $exception = 'p01_ts01';
+    my %servers = ();
+    my $config  = $self->webapi_config->{$self->{group_type}};
+    # This exception is mainly for a few reasons:
+    # - p01_ts01 is the only trade server with financial trading setup. Having it in other region that is further away from our feed introduces latency.
+    # - some regulatory body require us to have trade server setup within their jurisdiction
+    #
+    # So, we have an exception when $self->{group_type} eq real
+    my $exception = $self->{group_type} eq 'real' ? 'p01_ts01' : '';
 
-    return {$exception => $config->{$exception}} if $self->{server_type} eq $exception;
+    return {$exception => $config->{$exception}} if $exception and $self->{server_type} eq $exception;
 
     foreach my $srv (keys %$config) {
         $servers{$srv} = $config->{$srv}
             if defined $srv
             and $srv ne $exception
-            and $config->{$srv}{geolocation}{region} eq $config->{$self->{server_type}}{geolocation}{region};
+            and $config->{$srv}{geolocation}{group} eq $config->{$self->{server_type}}{geolocation}{group};
     }
 
     return \%servers;

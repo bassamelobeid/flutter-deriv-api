@@ -26,7 +26,8 @@ subtest 'create server structure' => sub {
             'geolocation' => {
                 'location' => 'Ireland',
                 'region'   => 'Europe',
-                'sequence' => 2
+                'sequence' => 1,
+                group      => 'all'
             },
         },
     };
@@ -51,7 +52,7 @@ subtest 'server geolocation' => sub {
     );
     is $mt5_obj->server_geolocation()->{region},   'Europe',  'correct server region';
     is $mt5_obj->server_geolocation()->{location}, 'Ireland', 'correct server location';
-    is $mt5_obj->server_geolocation()->{sequence}, 2,         'correct server sequence';
+    is $mt5_obj->server_geolocation()->{sequence}, 1,         'correct server sequence';
 
     $mt5_obj = BOM::Config::MT5->new(
         group_type  => 'real',
@@ -97,7 +98,18 @@ subtest 'servers' => sub {
                 'geolocation' => {
                     'location' => 'Ireland',
                     'region'   => 'Europe',
-                    'sequence' => 1
+                    'sequence' => 1,
+                    group      => 'all',
+                }}
+        },
+        {
+            'p01_ts02' => {
+                'environment' => 'Deriv-Demo',
+                'geolocation' => {
+                    'location' => 'N. Virginia',
+                    'region'   => 'US East',
+                    'sequence' => 2,
+                    group      => 'all',
                 }}
         },
         {
@@ -106,7 +118,8 @@ subtest 'servers' => sub {
                 'geolocation' => {
                     'location' => 'Ireland',
                     'region'   => 'Europe',
-                    'sequence' => 2
+                    'sequence' => 1,
+                    group      => 'all',
                 }}
         },
         {
@@ -115,7 +128,8 @@ subtest 'servers' => sub {
                 'geolocation' => {
                     'location' => 'South Africa',
                     'region'   => 'Africa',
-                    'sequence' => 1
+                    'sequence' => 1,
+                    group      => 'africa_synthetic',
                 }}
         },
         {
@@ -124,7 +138,8 @@ subtest 'servers' => sub {
                 'geolocation' => {
                     'location' => 'Singapore',
                     'region'   => 'Asia',
-                    'sequence' => 1
+                    'sequence' => 1,
+                    group      => 'asia_synthetic',
                 }}
         },
         {
@@ -133,7 +148,8 @@ subtest 'servers' => sub {
                 'geolocation' => {
                     'location' => 'Frankfurt',
                     'region'   => 'Europe',
-                    'sequence' => 1
+                    'sequence' => 1,
+                    group      => 'europe_synthetic',
                 },
             },
         },
@@ -143,7 +159,8 @@ subtest 'servers' => sub {
                 'geolocation' => {
                     'location' => 'South Africa',
                     'region'   => 'Africa',
-                    'sequence' => 2
+                    'sequence' => 2,
+                    'group'    => 'africa_synthetic',
                 },
             },
         },
@@ -152,10 +169,10 @@ subtest 'servers' => sub {
     cmp_bag($all_servers, $expected_structure, 'Correct structure for servers');
 
     $mt5_obj = BOM::Config::MT5->new(group_type => 'demo');
-    is scalar @{$mt5_obj->servers()}, 1, 'correct number of demo servers';
+    is scalar @{$mt5_obj->servers()}, 2, 'correct number of demo servers';
 
     $mt5_obj = BOM::Config::MT5->new(group => 'demo\p01_ts01\synthetic\svg_std_usd');
-    is scalar @{$mt5_obj->servers()}, 1, 'correct number of demo servers with group';
+    is scalar @{$mt5_obj->servers()}, 2, 'correct number of demo servers with group';
 
     $mt5_obj = BOM::Config::MT5->new(group_type => 'real');
     is scalar @{$mt5_obj->servers()}, 5, 'correct number of demo servers retrieved with group_type';
@@ -172,7 +189,7 @@ subtest 'symmetrical servers' => sub {
         next if ref $mt5webapi->{$account_type} ne 'HASH';
 
         foreach my $srv (keys $mt5webapi->{$account_type}->%*) {
-            my $key = sprintf("%s-%s", $account_type, $mt5webapi->{$account_type}{$srv}{geolocation}{region});
+            my $key = sprintf("%s-%s", $account_type, $mt5webapi->{$account_type}{$srv}{geolocation}{group});
 
             $symmetrical_tracker{$key} = 0 if not defined $symmetrical_tracker{$key};
             $symmetrical_tracker{$key} += 1;
@@ -183,15 +200,13 @@ subtest 'symmetrical servers' => sub {
         next if ref $mt5webapi->{$account_type} ne 'HASH';
 
         foreach my $srv (keys $mt5webapi->{$account_type}->%*) {
-            my $key         = sprintf("%s-%s", $account_type, $mt5webapi->{$account_type}{$srv}{geolocation}{region});
+            my $key         = sprintf("%s-%s", $account_type, $mt5webapi->{$account_type}{$srv}{geolocation}{group});
             my $sym_servers = BOM::Config::MT5->new(
                 group_type  => $account_type,
                 server_type => $srv
             )->symmetrical_servers();
             my $got      = scalar keys %$sym_servers;
             my $expected = ($account_type eq 'real' and $srv eq 'p01_ts01') ? 1 : $symmetrical_tracker{$key};
-
-            $expected -= 1 if $mt5webapi->{$account_type}{$srv}{geolocation}{region} eq 'Europe' and $srv ne 'p01_ts01';
 
             is $got, $expected, "${account_type}-${srv}: valid number of symmetrical servers: ${got} (Expected ${expected})";
         }
@@ -206,11 +221,25 @@ subtest 'server by country' => sub {
                     'geolocation' => {
                         'sequence' => 1,
                         'region'   => 'Europe',
-                        'location' => 'Ireland'
+                        'location' => 'Ireland',
+                        group      => 'all',
                     },
                     'supported_accounts' => ['gaming', 'financial', 'financial_stp'],
                     'recommended'        => 1,
                     'id'                 => 'p01_ts01',
+                    'disabled'           => 0,
+                    'environment'        => 'Deriv-Demo'
+                },
+                {
+                    'geolocation' => {
+                        'sequence' => 2,
+                        'region'   => 'US East',
+                        'location' => 'N. Virginia',
+                        group      => 'all',
+                    },
+                    'supported_accounts' => ['gaming', 'financial', 'financial_stp'],
+                    'recommended'        => 0,
+                    'id'                 => 'p01_ts02',
                     'disabled'           => 0,
                     'environment'        => 'Deriv-Demo'
                 }
@@ -223,9 +252,24 @@ subtest 'server by country' => sub {
                     'geolocation' => {
                         'sequence' => 1,
                         'region'   => 'Europe',
-                        'location' => 'Ireland'
+                        'location' => 'Ireland',
+                        group      => 'all',
                     },
-                    'supported_accounts' => ['gaming', 'financial', 'financial_stp']}]}};
+                    'supported_accounts' => ['gaming', 'financial', 'financial_stp'],
+                },
+                {
+                    'geolocation' => {
+                        'sequence' => 2,
+                        'region'   => 'US East',
+                        'location' => 'N. Virginia',
+                        group      => 'all',
+                    },
+                    'supported_accounts' => ['gaming', 'financial', 'financial_stp'],
+                    'recommended'        => 0,
+                    'id'                 => 'p01_ts02',
+                    'disabled'           => 0,
+                    'environment'        => 'Deriv-Demo'
+                }]}};
     my $result = $mt5->server_by_country('id', {group_type => 'demo'});
     is_deeply($result, $expected, 'output expected for demo server on Indonesia');
 
@@ -243,9 +287,10 @@ subtest 'server by country' => sub {
                     'environment' => 'Deriv-Server',
                     'disabled'    => 0,
                     'geolocation' => {
-                        'sequence' => 2,
+                        'sequence' => 1,
                         'region'   => 'Europe',
-                        'location' => 'Ireland'
+                        'location' => 'Ireland',
+                        group      => 'all',
                     },
                     'supported_accounts' => ['gaming', 'financial', 'financial_stp'],
                     'recommended'        => 1,
@@ -258,7 +303,8 @@ subtest 'server by country' => sub {
                     'geolocation' => {
                         'sequence' => 1,
                         'region'   => 'Asia',
-                        'location' => 'Singapore'
+                        'location' => 'Singapore',
+                        group      => 'asia_synthetic'
                     },
                     'supported_accounts' => ['gaming'],
                     'environment'        => 'Deriv-Server',
@@ -273,7 +319,8 @@ subtest 'server by country' => sub {
                     'geolocation'        => {
                         'sequence' => 1,
                         'location' => 'South Africa',
-                        'region'   => 'Africa'
+                        'region'   => 'Africa',
+                        group      => 'africa_synthetic'
                     }
                 },
                 {
@@ -281,7 +328,8 @@ subtest 'server by country' => sub {
                     'geolocation'        => {
                         'sequence' => 2,
                         'location' => 'South Africa',
-                        'region'   => 'Africa'
+                        'region'   => 'Africa',
+                        group      => 'africa_synthetic'
                     },
                     'id'          => 'p02_ts02',
                     'recommended' => 0,
@@ -294,7 +342,8 @@ subtest 'server by country' => sub {
                     'geolocation' => {
                         'region'   => 'Europe',
                         'location' => 'Frankfurt',
-                        'sequence' => 1
+                        'sequence' => 1,
+                        group      => 'europe_synthetic'
                     },
                     'supported_accounts' => ['gaming'],
                     'recommended'        => 0,

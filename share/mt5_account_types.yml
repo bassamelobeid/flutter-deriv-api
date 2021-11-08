@@ -106,6 +106,114 @@ demo_bvi_financial_financial_stp: &demo_bvi_financial_financial_stp
 demo\bvi_financial_stp: *demo_bvi_financial_financial_stp
 demo01\financial\bvi_stp_usd: *demo_bvi_financial_financial_stp
 
+# Demo trade server 02
+
+demo\p01_ts02\financial\labuan_stp_usd:
+  account_type: demo
+  landing_company_short: labuan
+  market_type: financial
+  sub_account_type: financial_stp
+  server: p01_ts02
+
+demo\p01_ts02\financial\bvi_stp_usd:
+  account_type: demo
+  landing_company_short: bvi
+  market_type: financial
+  sub_account_type: financial_stp
+  server: p01_ts02
+
+demo\p01_ts02\financial\maltainvest_sf_eur: &demo_maltainvest_financial_swap_free
+  account_type: demo
+  landing_company_short: maltainvest
+  market_type: financial
+  sub_account_type: swap_free
+  server: p01_ts02
+demo\p01_ts02\financial\maltainvest_sf_gbp: *demo_maltainvest_financial_swap_free
+
+demo\p01_ts02\financial\maltainvest_std_gbp: &demo_maltainvest_financial_financial
+  account_type: demo
+  landing_company_short: maltainvest
+  market_type: financial
+  sub_account_type: financial
+  server: p01_ts02
+demo\p01_ts02\financial\maltainvest_std_eur: *demo_maltainvest_financial_financial
+
+demo\p01_ts02\financial\samoa_std_btc: &demo_samoa_financial_financial
+  account_type: demo
+  landing_company_short: samoa
+  market_type: financial
+  sub_account_type: financial
+  server: p01_ts02
+demo\p01_ts02\financial\samoa_std_ust: *demo_samoa_financial_financial
+
+demo\p01_ts02\financial\svg_sf_usd: &demo_svg_financial_swap_free
+  account_type: demo
+  landing_company_short: svg
+  market_type: financial
+  sub_account_type: swap_free
+  server: p01_ts02
+demo\p01_ts02\financial\svg_sf-lim_usd: *demo_svg_financial_swap_free
+
+demo\p01_ts02\financial\svg_std_usd: &demo_svg_financial_financial
+  account_type: demo
+  landing_company_short: svg
+  market_type: financial
+  sub_account_type: financial
+  server: p01_ts02
+demo\p01_ts02\financial\svg_std-lim_usd: *demo_svg_financial_financial
+
+demo\p01_ts02\financial\vanuatu_std_usd:
+  account_type: demo
+  landing_company_short: vanuatu
+  market_type: financial
+  sub_account_type: financial
+  server: p01_ts02
+
+demo\p01_ts02\synthetic\malta_sf_eur:
+  account_type: demo
+  landing_company_short: malta
+  market_type: synthetic
+  sub_account_type: swap_free
+  server: p01_ts02
+
+demo\p01_ts02\synthetic\malta_std_eur:
+  account_type: demo
+  landing_company_short: malta
+  market_type: synthetic
+  sub_account_type: financial
+  server: p01_ts02
+
+demo\p01_ts02\synthetic\samoa_std_btc: &demo_samoa_gaming_financial
+  account_type: demo
+  landing_company_short: samoa
+  market_type: synthetic
+  sub_account_type: financial
+  server: p01_ts02
+demo\p01_ts02\synthetic\samoa_std_ust: *demo_samoa_gaming_financial
+
+demo\p01_ts02\synthetic\svg_sf_usd:
+  account_type: demo
+  landing_company_short: svg
+  market_type: synthetic
+  sub_account_type: swap_free
+  server: p01_ts02
+
+demo\p01_ts02\synthetic\svg_std_usd:
+  account_type: demo
+  landing_company_short: svg
+  market_type: synthetic
+  sub_account_type: financial
+  server: p01_ts02
+
+demo\p01_ts02\financial\bvi_stp_usd:
+  account_type: demo
+  landing_company_short: bvi
+  market_type: financial
+  sub_account_type: financial_stp
+  server: p01_ts02
+
+# Real trade server
+
 real\p01_ts01\financial\bvi_stp_usd:
   account_type: real
   landing_company_short: bvi

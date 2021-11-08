@@ -6,6 +6,7 @@ demo:
     financial:
       servers:
         - 'p01_ts01'
+        - 'p01_ts02'
   im: # Isle of Man
     synthetic:
       servers: []
@@ -15,9 +16,11 @@ demo:
     synthetic:
       servers:
         - 'p01_ts01'
+        - 'p01_ts02'
     financial:
       servers:
         - 'p01_ts01'
+        - 'p01_ts02'
   cz: *demo # Czechia
   dk: *demo # Denmark
   ee: *demo # Estonia
@@ -38,6 +41,7 @@ demo:
     synthetic:
       servers:
         - 'p01_ts01'
+        - 'p01_ts02'
     financial:
       servers: []
   de: *demo_financial_only # Germany
