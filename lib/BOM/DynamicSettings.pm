@@ -216,12 +216,19 @@ sub get_settings_by_group {
                 system.suspend.onfido
                 system.suspend.p2p
                 system.suspend.wallets
-                system.mt5.new_trade_server
+                system.mt5.load_balance.demo.all.p01_ts01
+                system.mt5.load_balance.demo.all.p01_ts02
+                system.mt5.load_balance.real.all.p01_ts01
+                system.mt5.load_balance.real.europe_synthetic.p01_ts04
+                system.mt5.load_balance.real.africa_synthetic.p02_ts02
+                system.mt5.load_balance.real.africa_synthetic.p01_ts02
+                system.mt5.load_balance.real.asia_synthetic.p01_ts03
                 system.mt5.suspend.all
                 system.mt5.suspend.deposits
                 system.mt5.suspend.withdrawals
                 system.mt5.suspend.auto_Bbook_svg_financial
                 system.mt5.suspend.demo.p01_ts01.all
+                system.mt5.suspend.demo.p01_ts02.all
                 system.mt5.suspend.real.p01_ts01.all
                 system.mt5.suspend.real.p01_ts01.deposits
                 system.mt5.suspend.real.p01_ts01.withdrawals
