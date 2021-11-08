@@ -13,8 +13,13 @@ use BOM::Test::Helper::Client qw(create_client top_up);
 use BOM::MT5::User::Async;
 use BOM::Platform::Token;
 use BOM::User;
+use BOM::Config::Runtime;
 
 use Test::BOM::RPC::Accounts;
+
+# disable routing to demo p01_ts02
+my $orig = BOM::Config::Runtime->instance->app_config->system->mt5->load_balance->demo->all->p01_ts02;
+BOM::Config::Runtime->instance->app_config->system->mt5->load_balance->demo->all->p01_ts02(0);
 
 my $c = BOM::Test::RPC::QueueClient->new();
 
@@ -858,5 +863,8 @@ subtest 'country=au, financial account' => sub {
         ->error_message_is(
         'An account already exists with the information you provided. If you\'ve forgotten your username or password, please contact us.');
 };
+
+# reset
+BOM::Config::Runtime->instance->app_config->system->mt5->load_balance->demo->all->p01_ts02($orig);
 
 done_testing();

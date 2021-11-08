@@ -25,7 +25,9 @@ my %ACCOUNTS       = %Test::BOM::RPC::Accounts::MT5_ACCOUNTS;
 my %DETAILS        = %Test::BOM::RPC::Accounts::ACCOUNT_DETAILS;
 my %financial_data = %Test::BOM::RPC::Accounts::FINANCIAL_DATA;
 
-BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real->p01_ts03->all(0);
+my $mt5_config = BOM::Config::Runtime->instance->app_config->system->mt5;
+$mt5_config->suspend->real->p01_ts03->all(0);
+$mt5_config->load_balance->demo->all->p01_ts02(0);
 subtest 'create mt5 client with different currency' => sub {
     subtest 'svg' => sub {
         my $new_email  = $DETAILS{email};
@@ -53,6 +55,7 @@ subtest 'create mt5 client with different currency' => sub {
                 leverage     => 100,
             },
         };
+
         my $result = $c->call_ok($method, $params)->has_no_error('gaming account successfully created')->result;
         is $result->{account_type}, 'gaming';
         is $result->{login},        'MTR' . $ACCOUNTS{'real\p01_ts03\synthetic\svg_std_usd\01'};

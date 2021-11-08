@@ -36,6 +36,9 @@ scope_guard { restore_time() };
 
 # Unlimited daily transfer
 BOM::Config::Runtime->instance->app_config->payments->transfer_between_accounts->limits->between_accounts(999);
+# disable routing to demo p01_ts02
+my $orig = BOM::Config::Runtime->instance->app_config->system->mt5->load_balance->demo->all->p01_ts02;
+BOM::Config::Runtime->instance->app_config->system->mt5->load_balance->demo->all->p01_ts02(0);
 
 populate_exchange_rates({BTC => 5500});
 
@@ -1114,5 +1117,8 @@ subtest 'Transfer between virtual accounts' => sub {
         }
     };
 };
+
+# reset
+BOM::Config::Runtime->instance->app_config->system->mt5->load_balance->demo->all->p01_ts02($orig);
 
 done_testing();

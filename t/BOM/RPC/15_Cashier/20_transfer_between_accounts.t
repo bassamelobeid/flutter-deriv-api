@@ -30,6 +30,10 @@ use Test::BOM::RPC::Accounts;
 
 use utf8;
 
+# disable routing to demo p01_ts02
+my $orig = BOM::Config::Runtime->instance->app_config->system->mt5->load_balance->demo->all->p01_ts02;
+BOM::Config::Runtime->instance->app_config->system->mt5->load_balance->demo->all->p01_ts02(0);
+
 my $test_binary_user_id = 65000;
 my $rpc_ct;
 
@@ -2254,6 +2258,9 @@ subtest 'crypto to crypto limits' => sub {
 };
 
 $documents_mock->unmock_all;
+
+#reset
+BOM::Config::Runtime->instance->app_config->system->mt5->load_balance->demo->all->p01_ts02(0);
 
 done_testing();
 

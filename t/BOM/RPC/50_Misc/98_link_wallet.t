@@ -11,8 +11,13 @@ use BOM::RPC;
 use BOM::RPC::Registry;
 use BOM::Platform::Token::API;
 use BOM::Test::Script::DevExperts;
+use BOM::Config::Runtime;
 
 use Test::BOM::RPC::Accounts;
+
+# disable routing to demo p01_ts02
+my $orig = BOM::Config::Runtime->instance->app_config->system->mt5->load_balance->demo->all->p01_ts02;
+BOM::Config::Runtime->instance->app_config->system->mt5->load_balance->demo->all->p01_ts02(0);
 
 @BOM::MT5::User::Async::MT5_WRAPPER_COMMAND = ($^X, 't/lib/mock_binary_mt5.pl');
 
@@ -179,5 +184,7 @@ subtest 'link_wallet' => sub {
 };
 
 BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend->all(1);
+# reset
+BOM::Config::Runtime->instance->app_config->system->mt5->load_balance->demo->all->p01_ts02($orig);
 
 done_testing();

@@ -18,6 +18,11 @@ use BOM::Test::Script::DevExperts;
 use BOM::Config::Runtime;
 
 BOM::Test::Helper::Token::cleanup_redis_tokens();
+# disable routing to demo p01_ts02
+my $orig = BOM::Config::Runtime->instance->app_config->system->mt5->load_balance->demo->all->p01_ts02;
+
+BOM::Config::Runtime->instance->app_config->system->mt5->load_balance->demo->all->p01_ts02(0);
+
 my $password = 'jskjd8292922';
 my $hash_pwd = BOM::User::Password::hashpw($password);
 
@@ -532,5 +537,8 @@ subtest 'Account closure DXTrader' => sub {
     ok $account_closure->{status}, 'Account closure status 1';
     ok($test_client->status->disabled, 'Account disabled');
 };
+
+# reset
+BOM::Config::Runtime->instance->app_config->system->mt5->load_balance->demo->all->p01_ts02($orig);
 
 done_testing();

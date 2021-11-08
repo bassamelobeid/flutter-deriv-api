@@ -243,7 +243,7 @@ subtest 'trading_servers' => sub {
         is $response->[0]->{id}, 'p01_ts01', 'correct id for the server';
         is $response->[0]->{geolocation}{region},   'Europe',  'correct region for the server';
         is $response->[0]->{geolocation}{location}, 'Ireland', 'correct location for the server';
-        is $response->[0]->{geolocation}{sequence}, '2',       'correct sequence for the server';
+        is $response->[0]->{geolocation}{sequence}, '1',       'correct sequence for the server';
         is $response->[1], undef, 'no additional server';
     };
 

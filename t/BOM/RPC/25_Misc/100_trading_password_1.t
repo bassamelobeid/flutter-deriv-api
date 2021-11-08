@@ -21,6 +21,9 @@ $mock_events->mock('emit', sub { $last_event->{$_[0]} = $_[1] });
 
 BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real->p01_ts03->all(0);
 BOM::Config::Runtime->instance->app_config->system->mt5->suspend->real->p02_ts02->all(0);
+# disable routing to demo p01_ts02
+my $orig = BOM::Config::Runtime->instance->app_config->system->mt5->load_balance->demo->all->p01_ts02;
+BOM::Config::Runtime->instance->app_config->system->mt5->load_balance->demo->all->p01_ts02(0);
 # no dxtrade accounts are used in this test, we want to make sure everything
 # works with dxtrade fully suspended
 BOM::Config::Runtime->instance->app_config->system->dxtrade->suspend->all(1);
@@ -701,5 +704,7 @@ subtest 'investor password change' => sub {
     undef $last_event;
 
 };
+# reset
+BOM::Config::Runtime->instance->app_config->system->mt5->load_balance->demo->all->p01_ts02($orig);
 
 done_testing();

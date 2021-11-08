@@ -7,7 +7,7 @@ no indirect;
 
 use YAML::XS;
 use Date::Utility;
-use List::Util qw(any first all);
+use List::Util qw(any first all sum);
 use Syntax::Keyword::Try;
 use File::ShareDir;
 use Locale::Country::Extra;
@@ -360,9 +360,8 @@ sub _mt5_group {
 
     my ($server_type, $sub_account_type, $group_type);
     if ($account_type eq 'demo') {
-        $group_type = $account_type;
-        # $server_type is defaulted to 01 for demo since we do not have demo trade server cluster
-        $server_type      = $DEFAULT_TRADING_SERVER_KEY;
+        $group_type       = $account_type;
+        $server_type      = _get_server_type($account_type, $country, $market_type);
         $sub_account_type = _get_sub_account_type($mt5_account_type, $account_category);
     } else {
         # real group mapping
@@ -429,6 +428,8 @@ Returns key of trading server that corresponds to the account type(demo/real) an
 
 =item * country
 
+=item * market_type
+
 =back
 
 Takes the following parameters:
@@ -468,7 +469,7 @@ sub _get_server_type {
         server_type => $server_type
     )->symmetrical_servers();
 
-    return _select_server($servers, $country, $account_type, $market_type);
+    return _select_server($servers, $account_type);
 }
 
 =head2 _select_server
@@ -479,11 +480,7 @@ Based on the runtime config file, select one server from servers hashref
 
 =item * C<$servers> - A hashref contains servers as keys such as p01_ts01
 
-=item * C<$country>
-
 =item * C<$account_type>
-
-=item * C<$market_type>
 
 =back
 
@@ -492,56 +489,55 @@ Returns string containing the selected server key
 =cut
 
 sub _select_server {
-    my ($servers, $country, $account_type, $market_type) = @_;
+    my ($servers, $account_type) = @_;
 
     # Flexible rollback plan for future new trade server
-    my $mt5_app_config            = BOM::Config::Runtime->instance->app_config->system->mt5;
-    my $new_server_config         = decode_json_utf8($mt5_app_config->new_trade_server);
-    my %selected_servers          = ();
-    my $new_server_config_matched = 0;
+    my $mt5_app_config = BOM::Config::Runtime->instance->app_config->system->mt5;
+    my @selected_servers;
 
-    foreach my $srv (keys %$servers) {
-        if (my $new = $new_server_config->{$account_type}{$srv}) {
-
-            my $srv_type;
-
-            if ($new->{all}) {    # according to $server_routing_config
-                $srv_type = $new->{all};
-            } elsif ($new->{$country} and $new->{$country}{$market_type}) {    # just this country & market tyep
-                $srv_type = $new->{$country}{$market_type};
-            }
-
-            $new_server_config_matched = 1;
-            $selected_servers{$srv_type} = 1 if $srv_type;
-        } else {
-            $selected_servers{$srv} = 1;
+    foreach my $server_key (keys %$servers) {
+        my $group  = lc $servers->{$server_key}{geolocation}{group};
+        my $weight = $mt5_app_config->load_balance->$account_type->$group->$server_key;
+        unless (defined $weight) {
+            $log->warnf("load balance weight is not defined for %s for account type %s", $server_key, $account_type);
+            next;
         }
+        push @selected_servers, [$server_key, $weight] if not $mt5_app_config->suspend->$account_type->$server_key->all;
     }
 
-    # Remove all suspended servers
-    foreach my $ss (keys %selected_servers) {
-        # Allow one items to remain in the list - we should select at least one server
-        last if scalar keys %selected_servers == 1;
-
-        delete $selected_servers{$ss} if $mt5_app_config->suspend->$account_type->$ss->all;
+    # if none of the trade servers are available, we will return the default trade server key,
+    # this could be unavailable as well but this method cannot returns undef
+    unless (@selected_servers) {
+        return $DEFAULT_TRADING_SERVER_KEY;
     }
 
-    my $lucky_number      = 0;
-    my @available_servers = keys %selected_servers;
-
-    # We have to return at least one server key in this sub.
-    # If we have only one server left in our pool here, and client has face new server runtime configuration
-    #       we want to redirect them to the default server if the only selected server for them is in suspend mode (business logic)
-    if (scalar @available_servers == 1 and $new_server_config_matched) {
-        my $first_server = $available_servers[0];
-        @available_servers = ($DEFAULT_TRADING_SERVER_KEY) if $mt5_app_config->suspend->$account_type->$first_server->all;
+    # just return if this is the only trade server available
+    return $selected_servers[0][0] if @selected_servers == 1;
+    # if we have more than on trade servers, we distribute the load according to the weight specified
+    # in the backoffice settings
+    my @servers;
+    foreach my $server (sort { $a->[1] <=> $b->[1] } @selected_servers) {
+        push @servers, map { $server->[0] } (1 .. $server->[1]);
     }
 
-    if ($#available_servers > 0) {
-        $lucky_number = int rand($#available_servers);
-    }
+    return $servers[int(_rand(@servers))] if @servers;
 
-    return $available_servers[$lucky_number];
+    $log->warnf("something is wrong with mt5 server selection, returning default trade server.");
+
+    return $DEFAULT_TRADING_SERVER_KEY;
+}
+
+=head2 _rand
+
+Returns a random number from 0 to 1.
+
+Mainly for testing
+
+=cut
+
+sub _rand {
+    my @servers = @_;
+    return rand(@servers);
 }
 
 =head2 _get_sub_account_type
