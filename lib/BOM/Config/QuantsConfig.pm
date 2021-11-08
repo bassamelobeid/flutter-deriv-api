@@ -67,6 +67,8 @@ sub save_config {
         $config = $self->_process_commission_config($args);
     } elsif ($config_type =~ /multiplier_config/) {
         $config = $self->_process_multiplier_config($args);
+    } elsif ($config_type =~ /deal_cancellation/) {
+        $config = $args;
     } else {
         die "unregconized config type [$config_type]";
     }
@@ -304,6 +306,31 @@ sub _validate {
 
     return 0 unless $valid_inputs{$value};
     return 1;
+}
+
+=head2 custom_deal_cancellation
+
+custom_deal_cancellation will return the custom deal cancellation set on backoffice
+
+->custom_deal_cancellation(underlying_symbol, landing_company_short, date_pricing)
+
+=cut
+
+sub custom_deal_cancellation {
+    my ($self, $underlying_symbol, $landing_company_short, $date_pricing) = @_;
+
+    my $custom_deal_cancellation_configs = $self->chronicle_reader->get(CONFIG_NAMESPACE, "deal_cancellation", $self->for_date) // {};
+    my $dc_config_id                     = join('_', $underlying_symbol, $landing_company_short);
+
+    if ($custom_deal_cancellation_configs->{$dc_config_id}) {
+        my $start_dt = Date::Utility->new($custom_deal_cancellation_configs->{$dc_config_id}{"start_datetime_limit"});
+        my $end_dt   = Date::Utility->new($custom_deal_cancellation_configs->{$dc_config_id}{"end_datetime_limit"});
+
+        if ($date_pricing >= $start_dt->epoch and $date_pricing < $end_dt->epoch) {
+            my @dc_type = split(',', $custom_deal_cancellation_configs->{$dc_config_id}{"dc_types"});
+            return \@dc_type;
+        }
+    }
 }
 
 =head2 get_mt5_symbols_mapping

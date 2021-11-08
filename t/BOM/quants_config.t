@@ -185,6 +185,48 @@ subtest 'multiplier_config' => sub {
     ok !BOM::Config::Chronicle::clear_connections(), 'clear_connections';
 };
 
+subtest 'create custom deal cancellation config' => sub {
+    my $now = Date::Utility->new('2020-06-10');
+
+    my $custom_dc_config = {
+        underlying_symbol    => 'R_100',
+        landing_companies    => 'virtual',
+        dc_types             => '5m,10m,15m',
+        start_datetime_limit => $now->date . "T" . $now->time_hhmm,
+        end_datetime_limit   => $now->date . "T" . $now->plus_time_interval('1h')->time_hhmm,
+        dc_comment           => "test create"
+    };
+
+    my $key  = "deal_cancellation";
+    my $name = $custom_dc_config->{underlying_symbol} . "_" . $custom_dc_config->{landing_companies};
+    $custom_dc_config->{id} = $name;
+    my $dc_config->{"$name"} = $custom_dc_config;
+    my $result = $qc->save_config($key, $dc_config);
+
+    ok $result, "Custom deal cancellation config created Successfully";
+
+    my $get_custom_dc =
+        $qc->custom_deal_cancellation($custom_dc_config->{underlying_symbol}, $custom_dc_config->{landing_companies}, $now->epoch);
+    $get_custom_dc = join(',', @$get_custom_dc);
+
+    ok $get_custom_dc eq $custom_dc_config->{dc_types}, "Custom dc set is equal to custom dc retrieve from ->custom_deal_cancellation";
+};
+
+subtest 'delete custom deal cancellation config' => sub {
+    my $now = Date::Utility->new('2020-06-10');
+
+    my $custom_dc_config = {
+        underlying_symbol => 'R_100',
+        landing_companies => 'virtual',
+    };
+
+    my $key    = "deal_cancellation";
+    my $name   = $custom_dc_config->{underlying_symbol} . "_" . $custom_dc_config->{landing_companies};
+    my $result = $qc->delete_config($key, $name);
+
+    ok $result, "Custom deal cancellation config deleted Successfully";
+};
+
 sub clear_config {
     $qc->chronicle_writer->set('quants_config', 'commission', +{}, Date::Utility->new);
 }
