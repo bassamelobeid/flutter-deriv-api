@@ -12,6 +12,8 @@ use BOM::User::Client;
 use BOM::Config;
 use BOM::Backoffice::Sysinit ();
 use BOM::Config::Chronicle;
+use LandingCompany::Registry;
+use LandingCompany::Utility;
 
 BOM::Backoffice::Sysinit::init();
 
@@ -25,6 +27,20 @@ my @currencies = sort keys %{$limit_defs->{no_business}{multiplier}};
 my @stake_rows;
 for my $key (sort keys %{$limit_defs}) {
     push @stake_rows, [$key, @{$limit_defs->{$key}{multiplier}}{@currencies}];
+}
+
+my $offerings_config = {
+    action          => 'buy',
+    loaded_revision => 1,
+};
+
+my $offerings          = LandingCompany::Registry::get('virtual')->basic_offerings($offerings_config);
+my @underlying_symbols = sort $offerings->values_for_key('underlying_symbol');
+my $lc_yml             = LandingCompany::Registry::get_loaded_landing_companies;
+my @landing_companies_short;
+
+foreach my $landing_company (keys %{$lc_yml}) {
+    push @landing_companies_short, $lc_yml->{$landing_company}->{"short"};
 }
 
 my $disabled_write = not BOM::Backoffice::Auth0::has_quants_write_access();
@@ -85,6 +101,16 @@ BOM::Backoffice::Request::template()->process(
         multiplier_upload_url                  => request()->url_for('backoffice/quant/market_data_mgmt/update_multiplier_config.cgi'),
         existing_custom_multiplier_commissions => encode_json_utf8($existing_custom_multiplier_config),
         disabled                               => $disabled_write,
+    }) || die BOM::Backoffice::Request::template()->error;
+Bar("Deal Cancellation");
+
+BOM::Backoffice::Request::template()->process(
+    'backoffice/quant/deal_cancellation.html.tt',
+    {
+        dc_upload_url      => request()->url_for('backoffice/quant/market_data_mgmt/update_multiplier_config.cgi'),
+        underlying_symbols => \@underlying_symbols,
+        landing_companies  => \@landing_companies_short,
+        dc_configs         => _get_existing_dc_configs(),
     }) || die BOM::Backoffice::Request::template()->error;
 
 sub _get_existing_commission_config {
@@ -185,6 +211,13 @@ sub _get_existing_market_and_symbol_volume_limits {
         market_limits         => \@market_limits,
         symbol_limits         => \@symbol_limits
     };
+}
+
+sub _get_existing_dc_configs {
+    my $reader     = BOM::Config::Chronicle::get_chronicle_reader();
+    my $dc_configs = $reader->get("quants_config", "deal_cancellation");
+
+    return $dc_configs;
 }
 
 code_exit_BO();

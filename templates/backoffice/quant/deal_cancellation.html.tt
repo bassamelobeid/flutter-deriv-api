@@ -1,0 +1,161 @@
+<p>
+    <b>Deal Cancellation Tool</b>
+</p>
+
+<hr>
+<p style="color: red;">NOTE:</p>
+<p>
+    <b>DEAL CANCELLATION DURATION:</b><br>
+    In the "Allowed Deal Cancellation duration" text field, the entered DC duration here indicates the ALLOWED DC duration.<br>
+    Example (5m,10m,15m) here shows that only the typed DC duration will be available to the customer.<br>
+    We can leave the input box empty to indicate all DC duration are disabled.
+</p>
+<hr>
+
+<form id='deal_cancellation' class="scrollable">
+    <table>
+        <tr>
+            <td>Underlying Symbol</td>
+            <td>
+                <select id="underlying_symbol" data-lpignore="true">
+                    [% FOREACH underlying_symbol IN underlying_symbols%]
+                        <option value='[% underlying_symbol %]'>[% underlying_symbol %]</option>
+                    [% END %]
+                </select>
+            </td>
+        </tr>
+        <tr>
+            <td>Landing Company </td>
+            <td>
+                <select id="landing_company" data-lpignore="true" multiple>
+                    [% FOREACH landing_company IN landing_companies.sort %]
+                        <option value='[% landing_company %]'>[% landing_company %]</option>
+                    [% END %]
+                </select>
+            </td>
+        </tr>
+        <tr>
+            <td>Allowed Deal Cancellation duration</td>
+            <td><input type="text" name="dc_types" data-lpignore="true" value="5m,10m,15m,30m,60m" /></td>
+            <td>REMINDER: Please include "," after each DC duration (e.g 5m, 10m, 60m)</td>
+        </tr>
+        <tr>
+            <td>Duration of the limit(GMT):</td>
+            <td>Start date and time</td>
+            <td><input type="datetime-local" name="start_datetime_limit" data-lpignore="true" style="color:black;"/></td>
+            <td>End date and time</td>
+            <td><input type="datetime-local" name="end_datetime_limit" data-lpignore="true" style="color:black;"/></td>
+        </tr>
+        <tr>
+            <td>Comment</td>
+            <td><input type="text" name="dc_comment" data-lpignore="true" /></td>
+        </tr>
+        <tr>
+            <td><input type="button" class="btn btn--primary" onClick="saveDCConfig()" value="Add New Limit / Override Existing Limit"></td>
+            <td class="create_error_message"></td>
+        </tr>
+    </table>
+</form>
+
+<hr/>
+
+<p><b>EXISTING CONFIG</b></p>
+<form>
+    <br>
+    <table class="small hover alternate">
+        <thead>
+        <tr>
+            <th>Underlying</th>
+            <th>Landing Company</th>
+            <th>Deal Cancellation Type</th>
+            <th>Start Time</th>
+            <th>End Time</th>
+            <th>Comment</th>
+        </tr>
+        </thead>
+        <tbody>
+        [% FOREACH id IN dc_configs.keys %]
+            [% dc_config = dc_configs.$id %]
+            <tr id='dc-config-[% dc_config.id %]'>
+                <td>[% dc_config.underlying_symbol %]</td>
+                <td>[% dc_config.landing_companies %]</td>
+                <td>[% dc_config.dc_types %]</td>
+                <td>[% dc_config.start_datetime_limit %]</td>
+                <td>[% dc_config.end_datetime_limit %]</td>
+                <td>[% dc_config.dc_comment %]</td>
+                <td><button
+                    onClick="deleteDCConfig('[% dc_config.id %]')"
+                    type="button" class="btn btn--secondary">Delete</button>
+                </td>
+                <td class='delete_error_message'></td>
+            </tr>
+        [% END %]
+        </tbody>
+    </table>
+</form>
+
+<script>
+    var dc_upload_url = "[% dc_upload_url | none %]";
+
+    function saveDCConfig(){
+        var el = \$('#deal_cancellation');
+        var result = el.find('.create_error_message');
+
+        var underlying_symbol = \$('#underlying_symbol').val();
+        var landing_company = \$('#landing_company').val();
+        var dc_types = el.find('input[name="dc_types"]').val();
+        var start_datetime_limit = el.find('input[name="start_datetime_limit"]').val();
+        var end_datetime_limit = el.find('input[name="end_datetime_limit"]').val();
+        var dc_comment = el.find('input[name="dc_comment"]').val();
+
+        result.text('processing ...').css('color', 'black');
+        var data = {
+            save_dc_config: 1,
+            underlying_symbol: underlying_symbol,
+            landing_company: landing_company.toString(),
+            dc_types: dc_types,
+            start_datetime_limit: start_datetime_limit,
+            end_datetime_limit: end_datetime_limit,
+            dc_comment: dc_comment,
+        };
+        
+        \$.ajax({
+            url: dc_upload_url,
+            data: data,
+            success: function(data) {
+                var config = \$.parseJSON(data);
+                if (config.error) {
+                    result.text(config.error).css('color', 'var(--color-red)');
+                } else {
+                    result.text('saved').css('color', 'var(--color-green)');
+                }
+            }
+        });
+    }
+
+    function deleteDCConfig(dc_id) {
+        var el = \$('tr#dc-config-' + dc_id);
+        var result = el.find('td.delete_error_message');
+        var data = {
+            destroy_dc_config: 1,
+            dc_id: dc_id,
+        };
+
+        result.text('processing ...');
+
+        \$.ajax({
+            url: dc_upload_url,
+            data: data,
+            success: function(data) {
+                var config = \$.parseJSON(data);
+                if (config.error) {
+                    result.text(config.error).css('color', 'var(--color-red)');
+                } else {
+                    result.text('removed').css('color', 'var(--green-2)');
+                    el.remove();
+                }
+            }
+        });
+    }
+</script>
+

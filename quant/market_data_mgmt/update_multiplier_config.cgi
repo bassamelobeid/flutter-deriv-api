@@ -23,6 +23,7 @@ use LandingCompany::Registry;
 use BOM::Config::Runtime;
 use BOM::Backoffice::QuantsAuditEmail qw(send_trading_ops_email);
 use Log::Any qw($log);
+use BOM::Backoffice::MultiplierRiskManagementTool;
 
 BOM::Backoffice::Sysinit::init();
 my $staff = BOM::Backoffice::Auth0::get_staffname();
@@ -403,4 +404,57 @@ if ($r->param('delete_multiplier_custom_commission')) {
         }
         send_trading_ops_email("Multiplier risk management tool: deleted custom multiplier commission", $deleted,);
     }
+}
+
+if ($r->param('save_dc_config')) {
+    my $underlying_symbol    = $r->param('underlying_symbol');
+    my $landing_companies    = $r->param('landing_company');
+    my $dc_types             = $r->param('dc_types');
+    my $start_datetime_limit = $r->param('start_datetime_limit');
+    my $end_datetime_limit   = $r->param('end_datetime_limit');
+    my $dc_comment           = $r->param('dc_comment');
+
+    my $args = {
+        underlying_symbol    => $underlying_symbol,
+        landing_companies    => $landing_companies,
+        dc_types             => $dc_types,
+        end_datetime_limit   => $end_datetime_limit,
+        start_datetime_limit => $start_datetime_limit,
+        dc_comment           => $dc_comment,
+    };
+
+    my $validated_dc_arg = BOM::Backoffice::MultiplierRiskManagementTool::validate_deal_cancellation_args($args);
+    if (defined $validated_dc_arg->{error}) {
+        return print encode_json_utf8({error => $validated_dc_arg->{error}});
+    }
+
+    my @landing_companies_multiple = split(',', $landing_companies);
+    my ($output, @errors);
+    foreach my $landing_company (@landing_companies_multiple) {
+        my $key  = "deal_cancellation";
+        my $name = $underlying_symbol . "_" . $landing_company;
+        $args->{id}                = $name;
+        $args->{landing_companies} = $landing_company;
+        my $result = BOM::Backoffice::MultiplierRiskManagementTool::save_deal_cancellation($key, $name, $validated_dc_arg);
+
+        if ($result->{success} == 1) {
+            $output = {success => 1};
+        } else {
+            push @errors, $result->{error};
+        }
+    }
+
+    if (@errors) {
+        my $error = join ', ', @errors;
+        $output = {error => $error};
+    }
+
+    print encode_json_utf8($output);
+}
+
+if ($r->param('destroy_dc_config')) {
+    my $dc_id = $r->param('dc_id');
+    my $key   = "deal_cancellation";
+
+    print encode_json_utf8(BOM::Backoffice::MultiplierRiskManagementTool::destroy_deal_cancellation($key, $dc_id));
 }
