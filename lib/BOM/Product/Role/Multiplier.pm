@@ -970,6 +970,20 @@ sub _validate_cancellation {
         };
     }
 
+    # with the Deal Cancellation Tool added we have to make sure contract cancellation is within the available_range
+    my $cancellation = $cancellation_interval->minutes;
+    my $custom_deal_cancellation =
+        $self->_quants_config->custom_deal_cancellation($self->underlying->symbol, $self->landing_company, $self->date_pricing->epoch);
+    if ($custom_deal_cancellation) {
+        if ((not grep { /$cancellation/ } @$custom_deal_cancellation) or $custom_deal_cancellation eq []) {
+            return {
+                message           => 'deal cancellation not available',
+                message_to_client => $ERROR_MAPPING->{DealCancellationNotAvailable},
+                details           => {field => 'cancellation'},
+            };
+        }
+    }
+
     return;
 }
 
