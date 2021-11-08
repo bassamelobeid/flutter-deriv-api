@@ -161,6 +161,36 @@ window.addEventListener('DOMContentLoaded', init_text_validations, false);
     </tr>
     [% END %]
     <tr>
+        <td class="bg-lightgrey" colspan="2">#AML SCREENING</td>
+    </tr>
+    [% IF risk_screen %]
+        <tr>
+            <td class="label">Interface Reference</td>
+            <td>: 
+            [% IF risk_screen.client_entity_id %] 
+                <a href="https://batch.riskscreen.com/entity/view/[% risk_screen.client_entity_id %]">[% risk_screen.interface_reference %]</a>
+            [% ELSE %]
+                [% risk_screen.interface_reference %]
+            [% END %]
+            </td>
+        </tr>
+        <tr><td class="label">Status</td><td>:                [% risk_screen.status %]<td></tr>
+        [% IF risk_screen.match_potential_volume %] <tr><td class="label">Potential Matches</td><td>:   [% risk_screen.match_potential_volume %]<td></tr> [% END %]
+        [% IF risk_screen.match_discounted_volume %] <tr><td class="label">Discounted Matches</td><td>: [% risk_screen.match_discounted_volume %]<td></tr> [% END %]
+        [% IF risk_screen.match_flagged_volume %] <tr><td class="label">Flagged Matches</td><td>:       [% risk_screen.match_flagged_volume %]<td></tr> [% END %]
+        [% IF risk_screen.flags_str %]            <tr><td class="label">Flags</td><td>:                 [% risk_screen.flags_str %]<td></tr> [% END %]
+        <tr><td class="label">Update date</td><td>: [% risk_screen.date_updated %]<td></tr> 
+    [% ELSE %]
+        <tr>
+        <td class="label"></td>
+        <td>
+            <button name="request_risk_screen" type="submit" class="btn btn--primary" value="1"
+                [% IF !is_compliance || client.is_virtual %] disabled=1 [% END %]
+            > Request Screening </button>
+        </td>
+        </tr>
+    [% END %]
+    <tr>
         <td class="bg-lightgrey" colspan="2">#Identity</td>
     </tr>
     <tr>

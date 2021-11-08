@@ -189,6 +189,26 @@ if (defined $input{run_idv_check}) {
     code_exit_BO(qq[<p><a href="$self_href">&laquo; Return to client details<a/></p>]);
 }
 
+my $is_compliance = BOM::Backoffice::Auth0::has_authorisation(['Compliance']);
+
+if (defined $input{request_risk_screen}) {
+    code_exit_BO(qq[<p><a href="$self_href">&laquo; This feature is for real accounts only.<a/></p>])
+        if $client->is_virtual;
+
+    code_exit_BO(qq[<p><a href="$self_href">&laquo; This feature is available for compliance team only.<a/></p>])
+        unless $is_compliance;
+
+    code_exit_BO(qq[<p><a href="$self_href">&laquo; Screening is not possible without proof of identity.<a/></p>])
+        unless $client->status->age_verification();
+    $client->user->set_risk_screen(
+        interface_reference => $client->loginid,
+        status              => 'requested'
+    );
+
+    print "<p class=\"notify\">Screening requested. It will be enabled within 24 hours.</p>";
+    code_exit_BO(qq[<p><a href="$self_href">&laquo; Return to client details<a/></p>]);
+}
+
 if ($input{document_list}) {
     my $new_doc_status;
     $new_doc_status = 'rejected' if $input{reject_checked_documents};

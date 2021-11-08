@@ -563,6 +563,8 @@ SQL
             });
     }
 
+    my $risk_screen = $client->user->risk_screen;
+    $risk_screen->{flags_str} = join(',', $risk_screen->flags->@*) if $risk_screen && $risk_screen->flags;
     my $key = RISK_DISCLAIMER_RESUBMISSION_KEY_PREFIX . $client->user->id;
     my $risk_disclaimer_resubmission_updated_at;
     my $risk_disclaimer_resubmission_updated_by;
@@ -639,6 +641,8 @@ SQL
         expired_poi_docs                   => $client->documents->expired(1),
         login_locked_until                 => $login_locked_until ? $login_locked_until->datetime_ddmmmyy_hhmmss_TZ : undef,
         too_many_attempts                  => $too_many_attempts,
+        risk_screen                        => $risk_screen,
+        is_compliance                      => BOM::Backoffice::Auth0::has_authorisation(['Compliance']),
         risk_disclaimer_updated_at         => $risk_disclaimer_resubmission_updated_at,
         risk_disclaimer_updated_by         => $risk_disclaimer_resubmission_updated_by
     };
