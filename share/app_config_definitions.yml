@@ -94,6 +94,119 @@ payments:
       isa: json_string
       default: '{}'
       global: 1
+    autoapproval:
+      description: 'Payment autoapproval rules parameters'
+      isa: section
+      contains:
+        max_pending_total_enabled:
+          description: 'Enable Rule 1.2, to check the total amount of payouts'
+          isa: Bool
+          global: 1
+          default: 1
+        max_pending_total:
+          description: 'Value of x in: Rule 1.2: Total amount of payouts must be < x'
+          isa: Num
+          global: 1
+          default: 1000
+        grouped_allowed_payment_methods:
+          description: 'Grouped allowed payment methods (used in Rule 6.0 and 7.0).'
+          isa: json_string
+          global: 1
+          default: '[["AirTM"],["AstroPay"],["FasaPay"],["Jeton","JetonWL"],["NETeller","NETellerDT","NETellerPS"],["NganLuong"],["Onlinenaira"],["PayLivre"],["paysafe"],["PerfectM"],["QIWI"],["Skrill","Skrill1tap"],["SticPay"],["WebMoney"],["ZingPay"]]'
+        check_most_used_payment_method_enabled:
+          description: 'Check the withdrawal payment method to match the one used to deposit the most in the past'
+          isa: Bool
+          global: 1
+          default: 1
+        payment_methods_withdrawal_unsupported:
+          description: 'Unsupported payment methods for withdrawals (used in Rule 7.0).'
+          isa: ArrayRef
+          global: 1
+          default:
+            - CardPayAPM
+            - Directa24S
+            - DragonPay
+            - DragonPhoenix
+            - Help2Pay
+            - OneRoadAPM
+            - OneVoucher
+            - PayTrust
+        restricted_client_statuses:
+          description: 'Restricted client statuses (used in Rule 2.1).'
+          isa: ArrayRef
+          global: 1
+          default:
+            - disabled
+            - unwelcome
+            - cashier_locked
+            - withdrawal_locked
+            - no_withdrawal_or_trading
+            - only_pa_withdrawals_allowed
+        disabled_sportsbooks:
+          description: 'Sportsbooks that are not enabled for autoapprovals, denoted by frontend name.'
+          isa: ArrayRef
+          global: 1
+          default: []
+        max_profit_day_enabled:
+          description: 'Enable Rule 4.0, to check total profit in the last 24 hours'
+          isa: Bool
+          global: 1
+          default: 1
+        max_profit_day:
+          description: 'Value of x in: Rule 4.0: Total profit in the last 24 hours must be < x.'
+          isa: Num
+          global: 1
+          default: 2000
+        max_profit_month_enabled:
+          description: 'Enable Rule 4.1, to check total profit in the last 30 days'
+          isa: Bool
+          global: 1
+          default: 1
+        max_profit_month:
+          description: 'Value of x in: Rule 4.1: Total profit in the last 30 days must be < x.'
+          isa: Num
+          global: 1
+          default: 5000
+        min_pending_total_to_check_rule_5_enabled:
+          description: 'Enable to check the minimum total payouts needed to check rule 5 (note this does not disable rule 5)'
+          isa: Bool
+          global: 1
+          default: 1
+        min_pending_total_to_check_rule_5:
+          description: 'Value x to of total payouts needed to check rule 5. Where total payout must be <= x'
+          isa: Num
+          global: 1
+          default: 100
+        min_last_doughflow_deposit_percent_vs_mt5_transfers_enabled:
+          description: 'Enable Rule 5.0 (mt5): the sum of transfers to MT5 should be at least some percentage of the doughflow deposit amount'
+          isa: Bool
+          global: 1
+          default: 1
+        min_last_doughflow_deposit_percent_vs_mt5_transfers:
+          description: 'Minium ratio between the doughflow deposit and the mt5 transfers. (note 25% should be specifed as 0.25, therefore any x in x%, should be computed as x/100)'
+          isa: Num
+          global: 1
+          default: 0.25
+        min_last_doughflow_deposit_percent_vs_contracts_bought_enabled:
+          description: 'Enable Rule 5.0 (contracts bought): the sum of contracts bought should be at least some percentage of the last doughflow deposit amount'
+          isa: Bool
+          global: 1
+          default: 1
+        min_last_doughflow_deposit_percent_vs_contracts_bought:
+          description: 'Minimum ratio between the last doughflow deposit and the contracts bought. (note 25% should be specifed as 0.25, therefore any x in x%, should be computed as x/100)'
+          isa: Num
+          global: 1
+          default: 0.25
+        max_mt5_net_transfer_enabled:
+          description: 'Enable Rule 5.2, to check MT5 net transfers'
+          isa: Bool
+          global: 1
+          default: 1
+        max_mt5_net_transfer:
+          description: 'Value of x in: Rule 5.2: MT5 net transfer must be < x.'
+          isa: Num
+          global: 1
+          default: 5000
     p2p:
       description: 'Peer-to-peer payment system'
       isa: section
