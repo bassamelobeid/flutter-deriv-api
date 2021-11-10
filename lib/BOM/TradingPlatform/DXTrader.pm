@@ -454,16 +454,13 @@ sub deposit {
         min_fee                   => $tx_amounts->{min_fee},
         fee_calculated_by_percent => $tx_amounts->{fee_calculated_by_percent});
 
-    my $remark = sprintf(
-        'Transfer from %s to dxtrade account %s (account id %s)',
-        $self->client->loginid,
-        $args{to_account}, $account->{attributes}{account_code});
+    my $remark = sprintf('Transfer from %s to dxtrade account %s', $self->client->loginid, $args{to_account});
 
     my $txn;
     try {
         $txn = $self->client_payment(
             payment_type => 'dxtrade_transfer',
-            amount       => -$args{amount},        # negative!
+            amount       => -$args{amount},                                     # negative!
             fees         => $tx_amounts->{fees},
             remark       => $remark,
             txn_details  => \%txn_details,
@@ -577,12 +574,7 @@ sub withdraw {
         min_fee                   => $tx_amounts->{min_fee},
         fee_calculated_by_percent => $tx_amounts->{fee_calculated_by_percent});
 
-    my $remark = sprintf(
-        'Transfer from dxtrade account %s (account id %s) to %s',
-        $args{from_account},
-        $account->{attributes}{account_code},
-        $self->client->loginid
-    );
+    my $remark = sprintf('Transfer from dxtrade account %s to %s', $args{from_account}, $self->client->loginid);
 
     my $txn;
     try {
