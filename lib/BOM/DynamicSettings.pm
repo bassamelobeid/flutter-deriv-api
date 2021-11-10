@@ -302,25 +302,6 @@ sub get_settings_by_group {
                 payments.reversible_balance_limits.p2p
                 payments.reversible_deposits_lookback
                 payments.custom_payment_accounts_limit_per_user
-                payments.autoapproval.max_pending_total_enabled
-                payments.autoapproval.max_pending_total
-                payments.autoapproval.grouped_allowed_payment_methods
-                payments.autoapproval.check_most_used_payment_method_enabled
-                payments.autoapproval.payment_methods_withdrawal_unsupported
-                payments.autoapproval.restricted_client_statuses
-                payments.autoapproval.max_profit_day_enabled
-                payments.autoapproval.max_profit_day
-                payments.autoapproval.max_profit_month_enabled
-                payments.autoapproval.max_profit_month
-                payments.autoapproval.min_pending_total_to_check_rule_5_enabled
-                payments.autoapproval.min_pending_total_to_check_rule_5
-                payments.autoapproval.min_last_doughflow_deposit_percent_vs_mt5_transfers_enabled
-                payments.autoapproval.min_last_doughflow_deposit_percent_vs_mt5_transfers
-                payments.autoapproval.min_last_doughflow_deposit_percent_vs_contracts_bought_enabled
-                payments.autoapproval.min_last_doughflow_deposit_percent_vs_contracts_bought
-                payments.autoapproval.max_mt5_net_transfer_enabled
-                payments.autoapproval.max_mt5_net_transfer
-                payments.autoapproval.disabled_sportsbooks
                 )
         ],
         crypto => [qw(
