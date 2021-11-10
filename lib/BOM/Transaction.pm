@@ -417,20 +417,23 @@ sub stats_start {
 
     # End of 2019 we found out that we are stacking IO loops on top of each other. At the time, the
     # normal stack depth at this point during a buy transaction was 49. But sometimes we saw stack
-    # depths of up to 600. The following code allows sysadmins to create a directory
-    # (/var/lib/binary/BOM::Transaction) to turn on logging of the stack depth to datadog. If the
-    # directory is also writable and the stack depth exceeds 70, a stack trace is written to a file
-    # in that directory. At the time of this writing, each file uses on average 10kb of disk space.
-    # This code generates at most 1000 files depending on the PID. Older files will be overwritten.
+    # depths of up to 600. The following code logs the stack depth to datadog in 1% of cases. If
+    # the /var/lib/binary/BOM::Transaction directory is writable and the stack depth exceeds 70, a
+    # stack trace is written to a file in that directory. At the time of this writing, each file
+    # uses on average 10kb of disk space. This code generates at most 1000 files depending on the
+    # PID. Older files will be overwritten.
     # So, the file system needs to provide about 10MB of free space.
-    if (-d (my $fn = '/var/lib/binary/BOM::Transaction')) {
+    if (rand() < 0.01) {    # enter this in 1% of cases
         my $stack_depth = 1;
         1 while defined scalar caller($stack_depth += 10);
         1 until defined scalar caller --$stack_depth;
 
-        if ($stack_depth > 70 and -w $fn) {
+        # For a given set of tags these curves should be absolutely flat!
+        DataDog::DogStatsd::Helper::stats_gauge("transaction.$what.stack_depth", $stack_depth, $tags);
+
+        if ($stack_depth > 70) {
             my $basename = $$ % 1000;
-            $fn .= "/$basename.stacktrace";
+            my $fn       = "/var/lib/binary/BOM::Transaction/$basename.stacktrace";
             if (open my $fh, '>', $fn) {
                 $stack_depth = 1;
                 my ($buf, $pack, $file, $line) = ('');
