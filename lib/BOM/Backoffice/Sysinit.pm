@@ -111,7 +111,6 @@ my $permissions = {
     'f_bbdl_upload_request_files.cgi'                                         => ['QuantsWrite'],
     'quant/market_data_mgmt/update_economic_events.cgi'                       => ['QuantsWrite'],
     'quant/market_data_mgmt/update_price_preview.cgi'                         => ['QuantsWrite'],
-    'quant/market_data_mgmt/update_commission.cgi'                            => ['QuantsWrite'],
     'quant/market_data_mgmt/update_custom_commission.cgi'                     => ['QuantsWrite'],
     'quant/market_data_mgmt/update_tentative_events.cgi'                      => ['QuantsWrite'],
     'quant/market_data_mgmt/update_used_interest_rates.cgi'                   => ['QuantsWrite'],
@@ -136,13 +135,14 @@ my $permissions = {
     'quant/client_limit.cgi'                                                  => ['Quants'],
     'p2p_band_management.cgi'                                                 => ['QuantsWrite'],
     'quant/multiplier_risk_management.cgi'                                    => ['Quants'],
-    'quant/commission_management.cgi'                                         => ['Quants'],
-    'doughflow_method_manage.cgi'                                             => ['IT'],
-    'dividend_scheduler_tool.cgi'                                             => ['Quants'],
-    'quant/dividend_schedulers/new_dividend_scheduler.cgi'                    => ['Quants'],
-    'quant/dividend_schedulers/edit_dividend_scheduler.cgi'                   => ['Quants'],
-    'quant/dividend_schedulers/dividend_scheduler_controller.cgi'             => ['Quants'],
-    'quant/dividend_schedulers/index_dividend_scheduler.cgi'                  => ['Quants'],
+
+    'dividend_scheduler_tool.cgi'                                 => ['Quants'],
+    'quant/dividend_schedulers/new_dividend_scheduler.cgi'        => ['Quants'],
+    'quant/dividend_schedulers/edit_dividend_scheduler.cgi'       => ['Quants'],
+    'quant/dividend_schedulers/dividend_scheduler_controller.cgi' => ['Quants'],
+    'quant/dividend_schedulers/index_dividend_scheduler.cgi'      => ['Quants'],
+
+    'doughflow_method_manage.cgi' => ['IT'],
 };
 
 sub init {
