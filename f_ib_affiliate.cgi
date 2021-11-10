@@ -41,10 +41,11 @@ if (request()->http_method eq 'POST') {
     $active_affiliate = $input->{affiliate_id};
     my $mt5_login = $input->{mt5_login};
     $action = $input->{action};
-    if ($action eq 'sync_to_mt5') {
+    if ($action =~ /^(sync|clear)$/) {
         $action_result = BOM::Platform::Event::Emitter::emit(
             affiliate_sync_initiated => {
                 affiliate_id => $active_affiliate,
+                action       => $input->{action},
                 email        => $input->{email},
             },
         ) ? 'success' : 'fail';
@@ -66,7 +67,6 @@ if (request()->http_method eq 'POST') {
     code_exit_BO(_get_display_error_message('Client isn\'t an affiliate')) unless @affiliates;
 
     for my $affiliate (@affiliates) {
-
         my @user_variables =
             $affiliate->{USER_VARIABLES} && ref $affiliate->{USER_VARIABLES}{VARIABLE} eq 'ARRAY'
             ? @{$affiliate->{USER_VARIABLES}{VARIABLE}}

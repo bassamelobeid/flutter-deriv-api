@@ -11,9 +11,9 @@
 
 [% IF active_affiliate %]
     [% WRAPPER layout title='SYNCING AFFILIATE ' _ active_affiliate _ ' TO MT5' %]
-        [% IF action == 'sync_to_mt5' && action_result == 'success' %]
+        [% IF action_result == 'success' %]
             <p class="success">Sync proccess was started. Wait for email with result</p>
-        [% ELSIF action == 'sync_to_mt5' && action == 'fail' %]
+        [% ELSIF action_result == 'fail' %]
             <p class="error">Fail to start sync process. try again later</p>
         [% END %]
     [% END %]
@@ -35,6 +35,13 @@
         </p>
         <form action="[% request.url_for('backoffice/f_ib_affiliate.cgi') | url %]?loginid=[% loginid | url %]" method='post'>
             <p>
+                <label>Action:</label>
+                <select name='action'>
+                    <option value="sync">Set affiliate to MT5 accounts of all affiliated clients</option>
+                    <option value="clear">Remove affiliate from MT5 accounts of all affiliated clients</option>
+                </select>
+            </p>            
+            <p>
                 <label>Notify when done:</label>
                 <input type='email' name='email' value='[% email %]'>
             </p>
@@ -42,7 +49,6 @@
             <input type='hidden' name='affiliate_id' value='[% sync_acc.affiliate_id %]'>
             <input type='hidden' name='loginid' value='[% loginid %]'>
             <input type='hidden' name='_csrf' value='[% csrf %]'>
-            <input type='hidden' name='action' value='sync_to_mt5'>
             <input type='submit' class="btn btn--primary" value='Start sync process'>
         </form>
     [% END %]
