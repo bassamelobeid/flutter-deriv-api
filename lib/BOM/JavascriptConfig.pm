@@ -30,7 +30,7 @@ sub bo_js_files_for {
             'external/syntaxhighlighter/shAutoloader.js', 'external/syntaxhighlighter/shBrushYaml.js'
             if /view_192_raw_response/;
         push @js_files, 'external/excellentexport.min.js'
-            if /(f_manager_crypto|crypto_fraudulent_addresses)/;
+            if /(f_manager_crypto|crypto_fraudulent_addresses|ip_search)/;
     }
 
     return map { request()->url_for('js/' . $_) } @js_files;

@@ -42,7 +42,7 @@
                 <td width='150'>[% date %] GMT</td>
                 <td>[% l.action %]</td>
                 <td>[% status %]</td>
-                <td>[% ip %]</td>
+                <td> <a class="link" href="[% request.url_for('backoffice/ip_search.cgi', ip => ip , search_type => 'ip') %]">[% ip %]</a></td>
                 <td [% is_company_ip_style | none %]>[% is_company_ip_text %]</td>
                 <td>[% cc %]</td>
                 <td>[% env %]</td>

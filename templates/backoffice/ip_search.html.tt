@@ -26,7 +26,7 @@ Can be useful in finding duplicates.</p>
 [% IF logins %]
 <hr>
 <h3>Emails who have logged in over the last [% days %] days from [% ip %]</h3>
-<table class="hover alternate">
+<table id="ip-search-table" class="hover alternate">
     <thead>
         <th>Date and time</th>
         <th>Action</th>
@@ -42,6 +42,10 @@ Can be useful in finding duplicates.</p>
     [% END %]
     </tbody>
 </table>
+<div class="[% logins.size ? 'row' : 'invisible' %]">
+<a class="btn btn--primary" download="[% filename %].xls" href="#" onclick="return ExcellentExport.excel(this, 'ip-search-table', '$filename')">Export to Excel</a>
+<a class="btn btn--primary" download="[% filename %].csv" href="#" onclick="return ExcellentExport.csv(this, 'ip-search-table')">Export to CSV</a>
+</div>
 [% ELSE %]
 <p>No logins found for IP address [% ip %] in the last [% days %] days</p>
 [% END %]

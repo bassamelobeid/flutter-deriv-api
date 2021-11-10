@@ -10,6 +10,7 @@ use f_brokerincludeall;
 use BOM::User;
 use BOM::Backoffice::PlackHelpers qw( PrintContentType );
 use BOM::Backoffice::Sysinit ();
+use Date::Utility;
 BOM::Backoffice::Sysinit::init();
 
 PrintContentType();
@@ -70,6 +71,9 @@ if ($search_type eq 'ip') {
 
 Bar($title);
 
+my $current_date = Date::Utility->new->date_yyyymmdd;
+$current_date =~ s/-//g;
+my $filename = 'ip-search-'.$current_date;
 BOM::Backoffice::Request::template()->process(
     'backoffice/ip_search.html.tt',
     {
@@ -80,6 +84,7 @@ BOM::Backoffice::Request::template()->process(
         suspected_logins => $suspected_logins,
         date_from        => $date_from,
         date_to          => $date_to,
+        filename         => $filename
     }) || die BOM::Backoffice::Request::template()->error(), "\n";
 
 code_exit_BO();
