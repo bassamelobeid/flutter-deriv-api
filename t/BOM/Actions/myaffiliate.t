@@ -40,18 +40,23 @@ $test_client_deriv->set_default_account('USD');
 my $mock_myaffiliate = Test::MockModule->new('BOM::MyAffiliates');
 
 # at MyAffiliates we are maintaining separate CLIENT_ID for deriv & binary.
-#the affiliates that are associated with deriv have CLIENT_ID prefixed with deriv_
+# the affiliates that are associated with deriv have CLIENT_ID prefixed with deriv_
+# Sometimes it will send duplicates, they should be removed.
 my $mtr_loginid = $test_client->loginid;
 $mtr_loginid =~ s/^CR/MTR/;
-my $customers    = [{"CLIENT_ID" => $test_client->loginid}, {"CLIENT_ID" => 'deriv_' . $test_client_deriv->loginid}, {"CLIENT_ID" => $mtr_loginid}];
+my $customers = [
+    {"CLIENT_ID" => $test_client->loginid},
+    {"CLIENT_ID" => 'deriv_' . $test_client_deriv->loginid},
+    {"CLIENT_ID" => $mtr_loginid},
+    {"CLIENT_ID" => $test_client->loginid}];
 my $affiliate_id = 1234;
 $mock_myaffiliate->mock(
     'get_customers' => sub {
         return $customers;
     });
 subtest "clean loginids" => sub {
-    my $expected_result = [$test_client->loginid, $test_client_deriv->loginid];
-    is_deeply BOM::Event::Actions::MyAffiliate::_get_clean_loginids($affiliate_id), $expected_result, 'correct loginids after clean';
+    my $expected_result = set($test_client->loginid, $test_client_deriv->loginid);
+    cmp_deeply BOM::Event::Actions::MyAffiliate::_get_clean_loginids($affiliate_id), $expected_result, 'correct loginids after clean';
 };
 
 my $emitter_mock = Test::MockModule->new('BOM::Platform::Event::Emitter');
@@ -88,7 +93,8 @@ subtest "affiliate_sync_initiated" => sub {
         BOM::Event::Actions::MyAffiliate::affiliate_sync_initiated({
                 affiliate_id => $affiliate_id,
                 mt5_login    => undef,
-                email        => $test_client->email
+                email        => $test_client->email,
+                action       => 'sync',
             })->get;
     }
     "affiliate_sync_initiated no exception";
@@ -101,7 +107,8 @@ subtest "affiliate_sync_initiated" => sub {
             {
             affiliate_id => $affiliate_id,
             email        => $test_client->email,
-            login_ids    => [(map { $_->{CLIENT_ID} } splice $customers->@*, 0, $chunk_size)],
+            loginids     => [(map { $_->{CLIENT_ID} } splice $customers->@*, 0, $chunk_size)],
+            action       => 'sync',
             },
             'Expected data emitted for this chunk';
     }
@@ -110,7 +117,8 @@ subtest "affiliate_sync_initiated" => sub {
         {
         affiliate_id => $affiliate_id,
         email        => $test_client->email,
-        login_ids    => [(map { $_->{CLIENT_ID} } splice $customers->@*, 0, $chunk_size)],
+        loginids     => [(map { $_->{CLIENT_ID} } splice $customers->@*, 0, $chunk_size)],
+        action       => 'sync',
         },
         'Expected last chunk of data processed';
 
@@ -134,7 +142,8 @@ subtest "affiliate_sync_initiated" => sub {
             BOM::Event::Actions::MyAffiliate::affiliate_sync_initiated({
                     affiliate_id => $affiliate_id,
                     mt5_login    => undef,
-                    email        => $test_client->email
+                    email        => $test_client->email,
+                    action       => 'clear',
                 })->get;
         }
         "affiliate_sync_initiated no exception";
@@ -144,7 +153,8 @@ subtest "affiliate_sync_initiated" => sub {
             {
             affiliate_id => $affiliate_id,
             email        => $test_client->email,
-            login_ids    => [map { $_->{CLIENT_ID} } $customers->@*],
+            loginids     => [map { $_->{CLIENT_ID} } $customers->@*],
+            action       => 'clear',
             },
             'Expected data processed';
 
@@ -166,6 +176,7 @@ subtest "affiliate_loginids_sync" => sub {
                 affiliate_id => $affiliate_id,
                 email        => $test_client->email,
                 login_ids    => [map { $_->{CLIENT_ID} } $customers->@*],
+                action       => 'sync',
             })->get;
     }
     "affiliate_loginids_sync no exception";
