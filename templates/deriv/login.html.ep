@@ -17,8 +17,8 @@
         </div>
         <form novalidate id="frmLogin" method="POST">
             <div class='input-group'>
-                <div class="input-wrapper">
-                    <input type="email" id="txtEmail" name="email" placeholder="<%= l('example@email.com') %>" required autocomplete="off" <% unless (stash('error')) { %> autofocus="autofocus" <% } %> maxlength="254" />
+                <div class="input-wrapper <% if (stash('error')) { %>has_error<% } %>">
+                    <input type="email" id="txtEmail" name="email" placeholder="<%= l('example@email.com') %>" required autocomplete="off" <% unless (stash('error')) { %> autofocus="autofocus" <% } %> maxlength="254" <% if (stash('error')) { %>autofocus="autofocus"<% } %> />
                     <label for="txtEmail"><%= l('Email') %></label>
                     <span class="bar"></span>
                 </div>
