@@ -1302,4 +1302,48 @@ subtest 'delay threshold for synthetic' => sub {
         'message to client - Trading is suspended due to missing market (old) data.';
 };
 
+subtest 'dc commision on low leverage indices - Vol200' => sub {
+    $mocked->unmock_all;
+    BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks([1000, $now->epoch, '1HZ300V']);
+
+    my $args = {
+        date_start   => $now,
+        date_pricing => $now,
+        bet_type     => 'MULTUP',
+        underlying   => '1HZ200V',
+        amount_type  => 'stake',
+        amount       => 1000,
+        multiplier   => 5,
+        currency     => 'USD',
+        cancellation => '5m',
+        current_spot => 1,
+    };
+
+    my $c = produce_contract($args);
+    is $c->cancellation_price, '12.00', 'deal cancellation price is as expected.';
+
+};
+
+subtest 'dc commision on low leverage indices - Vol300' => sub {
+    $mocked->unmock_all;
+    BOM::Test::Data::Utility::FeedTestDatabase::flush_and_create_ticks([1000, $now->epoch, '1HZ300V']);
+
+    my $args = {
+        date_start   => $now,
+        date_pricing => $now,
+        bet_type     => 'MULTUP',
+        underlying   => '1HZ300V',
+        amount_type  => 'stake',
+        amount       => 1000,
+        multiplier   => 5,
+        currency     => 'USD',
+        cancellation => '5m',
+        current_spot => 1,
+    };
+
+    my $c = produce_contract($args);
+    is $c->cancellation_price, '18.03', 'deal cancellation price is as expected.';
+
+};
+
 done_testing();
