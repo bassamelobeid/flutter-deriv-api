@@ -1129,7 +1129,7 @@ subtest $method => sub {
         $auth_token = BOM::Platform::Token::API->new->create_token($result->{client_id}, 'test token');
     };
 
-    subtest 'Create new account malta from MF' => sub {
+    subtest 'Create new gaming account from MF - not available' => sub {
         $params->{args}->{accept_risk} = 1;
         $params->{token}               = $auth_token;
         $params->{args}->{residence}   = 'at';
@@ -1145,8 +1145,7 @@ subtest $method => sub {
         delete $params->{args}->{secret_question};
         delete $params->{args}->{secret_answer};
 
-        my $result = $rpc_ct->call_ok($method, $params)->has_no_error->result;
-        ok $result->{client_id}, "Create MLT with MF token";
+        $rpc_ct->call_ok($method, $params)->has_error->error_code_is('InvalidAccount')->error_message_is('Sorry, account opening is unavailable.');
     };
 };
 

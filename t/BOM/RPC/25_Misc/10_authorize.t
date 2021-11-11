@@ -556,7 +556,7 @@ subtest 'upgradeable_landing_companies' => sub {
 
     # Test 1
     my $result = $c->call_ok($method, $params)->has_no_error->result;
-    is_deeply $result->{upgradeable_landing_companies}, ['malta', 'maltainvest'], 'Client can upgrade to malta and maltainvest.';
+    is_deeply $result->{upgradeable_landing_companies}, ['maltainvest'], 'Client can upgrade to malta and maltainvest.';
 
     # Create MLT account
     my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
@@ -612,20 +612,6 @@ subtest 'upgradeable_landing_companies' => sub {
     });
 
     $user2->add_client($client2);
-    $params->{token} = BOM::Database::Model::OAuth->new->store_access_token_only(1, $client2->loginid);
-
-    # Test 5
-    $result = $c->call_ok($method, $params)->has_no_error->result;
-    is_deeply $result->{upgradeable_landing_companies}, ['malta'], 'Client can upgrade to malta.';
-
-    $client2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code => 'MLT',
-        residence   => 'be',
-        email       => $email2
-    });
-
-    $user2->add_client($client2);
-
     $params->{token} = BOM::Database::Model::OAuth->new->store_access_token_only(1, $client2->loginid);
 
     # Test 6
@@ -742,105 +728,6 @@ subtest 'upgradeable_landing_companies' => sub {
     # Test 13
     $result = $c->call_ok($method, $params)->has_no_error->result;
     is_deeply $result->{upgradeable_landing_companies}, ['svg'], 'Client has upgraded all accounts.';
-
-};
-
-subtest 'upgradeable_landing_companies clients have not selected currency & disabled MLT' => sub {
-
-    my $params = {};
-    my $email  = 'hungary@binary.com';
-
-    my $user = BOM::User->create(
-        email    => $email,
-        password => '1234',
-    );
-
-    # Create VRTC account (Hungary)
-    my $client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code    => 'VRTC',
-        residence      => 'hu',
-        email          => $email,
-        binary_user_id => $user->id,
-    });
-    $client_vr->account('USD');
-
-    $user->add_client($client_vr);
-
-    $params->{token} = BOM::Database::Model::OAuth->new->store_access_token_only(1, $client_vr->loginid);
-
-    my $result = $c->call_ok($method, $params)->has_no_error->result;
-    is_deeply $result->{upgradeable_landing_companies}, ['malta', 'maltainvest'], 'Not disabled Virtual Client can upgrade to malta and maltainvest.';
-
-    # duplicate account
-    my $client_mlt_duplicate = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code    => 'MLT',
-        residence      => 'hu',
-        email          => $email,
-        binary_user_id => $user->id,
-    });
-    $user->add_client($client_mlt_duplicate);
-    $client_mlt_duplicate->status->set('duplicate_account', 1, 'test duplicate');
-    $client_mlt_duplicate->save;
-
-    $params->{token} = BOM::Database::Model::OAuth->new->store_access_token_only(1, $client_vr->loginid);
-    $result = $c->call_ok($method, $params)->has_no_error->result;
-    is_deeply $result->{upgradeable_landing_companies}, ['malta', 'maltainvest'],
-        'Real malta client is marked as duplicate, so we can upgrade to both malta and maltainvest.';
-
-    $client_mlt_duplicate->account('USD');
-    $result = $c->call_ok($method, $params)->has_no_error->result;
-    is_deeply $result->{upgradeable_landing_companies}, ['malta', 'maltainvest'],
-        'We can upgrade to both malta and maltainvest, even if the duplicate account has currency.';
-
-    # Create MLT account
-    my $client_mlt = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code    => 'MLT',
-        residence      => 'hu',
-        email          => $email,
-        binary_user_id => $user->id,
-    });
-    $user->add_client($client_mlt);
-    $params->{token} = BOM::Database::Model::OAuth->new->store_access_token_only(1, $client_mlt->loginid);
-    $result = $c->call_ok($method, $params)->has_no_error->result;
-    is_deeply $result->{upgradeable_landing_companies}, ['maltainvest'],
-        'Real malta Client have not selected currency yet but not disabled so can upgrade to maltainvest.';
-
-    # make client disabled
-    $client_mlt->status->set('disabled', 1, 'test disabled');
-    $params->{token} = BOM::Database::Model::OAuth->new->store_access_token_only(1, $client_vr->loginid);
-
-    $result = $c->call_ok($method, $params)->has_no_error->result;
-    is_deeply $result->{upgradeable_landing_companies}, ['maltainvest'],
-        'Real client is disabled & has not selected currency - it suffices to remove malta from upgradeable list.';
-    $client_mlt->account('USD');
-
-    $result = $c->call_ok($method, $params)->has_no_error->result;
-    is_deeply $result->{upgradeable_landing_companies}, ['maltainvest'], 'Client has selected currency so cannot upgrade to malta in this case.';
-
-    $client_mlt->status->clear_disabled;
-
-    $params->{token} = BOM::Database::Model::OAuth->new->store_access_token_only(1, $client_mlt->loginid);
-    $result = $c->call_ok($method, $params)->has_no_error->result;
-    is_deeply $result->{upgradeable_landing_companies}, ['maltainvest'],
-        'Client has mlt account already and is not disabled so can upgrade to maltainvest.';
-
-    my $client_mf = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        broker_code    => 'MF',
-        residence      => 'hu',
-        email          => $email,
-        binary_user_id => $user->id,
-    });
-    $user->add_client($client_mf);
-    $client_mf->status->set('disabled', 1, 'test disabled');
-    $params->{token} = BOM::Database::Model::OAuth->new->store_access_token_only(1, $client_mlt->loginid);
-    $result = $c->call_ok($method, $params)->has_no_error->result;
-    is_deeply $result->{upgradeable_landing_companies}, [],
-        'Maltainvest account is disabled & currency not selected - client cannot upgrade to maltainvest.';
-    $client_mf->status->clear_disabled;
-
-    $params->{token} = BOM::Database::Model::OAuth->new->store_access_token_only(1, $client_mlt->loginid);
-    $result = $c->call_ok($method, $params)->has_no_error->result;
-    is_deeply $result->{upgradeable_landing_companies}, [], 'Client has already upgraded to maltainvest.';
 
 };
 

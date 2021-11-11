@@ -168,10 +168,12 @@ subtest 'landing company' => sub {
         "no such landing company"
     );
     my $ag_lc = $c->tcall($method, {args => {landing_company => 'ag'}});
-    ok($ag_lc->{gaming_company},                                                      "ag have gaming company");
-    ok($ag_lc->{financial_company},                                                   "ag have financial company");
-    ok($c->tcall($method, {args => {landing_company => 'de'}})->{gaming_company},     "de have gaming_company");
-    ok(!$c->tcall($method, {args => {landing_company => 'hk'}})->{financial_company}, "hk have no financial_company");
+    ok($ag_lc->{gaming_company},                                                      "ag has gaming company");
+    ok($ag_lc->{financial_company},                                                   "ag has financial company");
+    ok(!$c->tcall($method, {args => {landing_company => 'de'}})->{gaming_company},    "de has no gaming_company");
+    ok($c->tcall($method, {args => {landing_company => 'id'}})->{gaming_company},     "id has a gaming_company");
+    ok($c->tcall($method, {args => {landing_company => 'id'}})->{financial_company},  "id has a financial_company");
+    ok(!$c->tcall($method, {args => {landing_company => 'hk'}})->{financial_company}, "hk has no financial_company");
 };
 
 $method = 'landing_company_details';

@@ -111,33 +111,24 @@ test_sendrecv_params 'get_self_exclusion/test_send.json', 'get_self_exclusion/te
 fail_test_sendrecv_params 'get_self_exclusion/test_send.json', 'get_self_exclusion/test_receive_to_fail.json',
     _get_stashed('new_account_real/oauth_token');
 
-# VIRTUAL ACCOUNT OPENING FOR (MLT)
-test_sendrecv_params 'verify_email/test_send.json', 'verify_email/test_receive.json', 'test+mlt@binary.com', 'account_opening';
+# VIRTUAL ACCOUNT OPENING FOR (MF)
+test_sendrecv_params 'verify_email/test_send.json', 'verify_email/test_receive.json', 'test+mf@binary.com', 'account_opening';
 test_sendrecv_params 'new_account_virtual/test_send.json', 'new_account_virtual/test_receive.json',
-    _get_token('test+mlt@binary.com'), 'cz', 'test\\\\+mlt@binary.com';
+    _get_token('test+mf@binary.com'), 'cz', 'test\\\\+mf@binary.com';
 test_sendrecv_params 'authorize/test_send.json', 'authorize/test_receive_vrtc.json',
-    _get_stashed('new_account_virtual/oauth_token'), 'cz', 'test\\\\+mlt@binary.com';
+    _get_stashed('new_account_virtual/oauth_token'), 'cz', 'test\\\\+mf@binary.com';
 
-# REAL ACCOUNT OPENING (MLT)
-test_sendrecv_params 'new_account_real/test_send.json', 'new_account_real/test_receive_mlt.json',
-    _get_stashed('authorize/stash/token'), 'Example First Name MLT', 'cz';
-test_sendrecv_params 'authorize/test_send.json', 'authorize/test_receive_mlt.json',
-    _get_stashed('new_account_real/oauth_token'), 'cz', 'test\\\\+mlt@binary.com';
-test_sendrecv_params 'payout_currencies/test_send.json', 'payout_currencies/test_receive.json',
-    _get_stashed('authorize/stash/token'), '(USD|EUR|GBP)', 3;
-test_sendrecv_params 'set_self_exclusion/test_send.json', 'set_self_exclusion/test_receive.json', _get_stashed('authorize/stash/token');
-
-# READ SCOPE CALLS (MLT)
-test_sendrecv_params 'reality_check/test_send.json',      'reality_check/test_receive.json',      _get_stashed('authorize/stash/token');
-test_sendrecv_params 'get_self_exclusion/test_send.json', 'get_self_exclusion/test_receive.json', _get_stashed('authorize/stash/token');
+# GAMING ACCOUNT OPENING ERROR - EU COUNTRY
+test_sendrecv_params 'new_account_real/test_send.json', 'new_account_real/test_receive_eu_error.json',
+    _get_stashed('authorize/stash/token'), 'Example First Name', 'cz';
 
 # FINANCIAL ACCOUNT OPENING (MF)
 test_sendrecv_params 'new_account_maltainvest/test_send.json', 'new_account_maltainvest/test_receive_error.json',
-    _get_stashed('authorize/stash/token'), 'Example First Name MLT', 'cz', '0';
+    _get_stashed('authorize/stash/token'), 'Example First Name MF', 'cz', '0';
 test_sendrecv_params 'new_account_maltainvest/test_send.json', 'new_account_maltainvest/test_receive.json',
-    _get_stashed('authorize/stash/token'), 'Example First Name MLT', 'cz', '1';
+    _get_stashed('authorize/stash/token'), 'Example First Name MF', 'cz', '1';
 test_sendrecv_params 'authorize/test_send.json', 'authorize/test_receive_mf.json',
-    _get_stashed('new_account_maltainvest/oauth_token'), 'cz', 'test\\\\+mlt@binary.com';
+    _get_stashed('new_account_maltainvest/oauth_token'), 'cz', 'test\\\\+mf@binary.com';
 test_sendrecv_params 'payout_currencies/test_send.json', 'payout_currencies/test_receive.json',
     _get_stashed('authorize/stash/token'), '(USD|EUR|GBP)', 3;
 
@@ -151,7 +142,7 @@ test_sendrecv_params 'change_password/test_send.json', 'change_password/test_rec
 test_sendrecv_params 'change_password/test_send.json', 'change_password/test_receive.json',
     _get_stashed('new_account_maltainvest/oauth_token'), 'Binary@1', 'Binary@12';
 
-test_sendrecv_params 'verify_email/test_send.json', 'verify_email/test_receive.json', 'test+mlt@binary.com', 'reset_password';
-test_sendrecv_params 'reset_password/test_send_real.json', 'reset_password/test_receive.json', _get_token('test+mlt@binary.com'), 'Binary@123';
+test_sendrecv_params 'verify_email/test_send.json', 'verify_email/test_receive.json', 'test+mf@binary.com', 'reset_password';
+test_sendrecv_params 'reset_password/test_send_real.json', 'reset_password/test_receive.json', _get_token('test+mf@binary.com'), 'Binary@123';
 
 finish;

@@ -39,7 +39,7 @@
       },
       "fullname" : {
          "type" : "string",
-         "pattern" : "^Ms Example First Name MLT Example Last Name$"
+         "pattern" : "^Ms Example First Name MF Last Name Example$"
       },
       "email" : {
          "pattern" : "^[_3]$",
