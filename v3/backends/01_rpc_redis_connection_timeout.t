@@ -50,60 +50,60 @@ $mock_http_backend->mock(
 
 SKIP: {
     skip "skip running time sensitive tests for code coverage tests", 1 if $ENV{DEVEL_COVER_OPTIONS};
-subtest 'Consumer service unavailability' => sub {
-    # switch to rpc backend
-    my $rpc_redis = BOM::Test::Script::RpcRedis->new();
+    subtest 'Consumer service unavailability' => sub {
+        # switch to rpc backend
+        my $rpc_redis = BOM::Test::Script::RpcRedis->new();
 
-    my $request = {states_list => 'be'};
-    ok my $response = send_request($request, 'states_list'), 'Response is recieved after switching to consumer groups';
-    ok !$response->{error}, 'There is no error in response';
-    ok $response = pop @queue_requests, 'Request was handled via consumer groups backend';
-    is_deeply $response->{args}, $request, "Request and Response's args are equal";
-    ok !@http_requests, 'No request is handled by http backend';
+        my $request = {states_list => 'be'};
+        ok my $response = send_request($request, 'states_list'), 'Response is recieved after switching to consumer groups';
+        ok !$response->{error}, 'There is no error in response';
+        ok $response = pop @queue_requests, 'Request was handled via consumer groups backend';
+        is_deeply $response->{args}, $request, "Request and Response's args are equal";
+        ok !@http_requests, 'No request is handled by http backend';
 
-    my $pid = $rpc_redis->pid;
-    ok looks_like_number($pid), "Valid consumer worker process id: $pid";
-    $rpc_redis->stop_script();
-    ok !kill(0, $pid), 'Consumer worker process killed successfully';
+        my $pid = $rpc_redis->pid;
+        ok looks_like_number($pid), "Valid consumer worker process id: $pid";
+        $rpc_redis->stop_script();
+        ok !kill(0, $pid), 'Consumer worker process killed successfully';
 
-    $redis->flushdb();
+        $redis->flushdb();
 
-    ok $response = send_request($request, 'states_list'), 'Response received after stopping Consumer';
-    ok $response->{error}, 'Response contains error paramater';
-    is $response->{error}->{code}, 'WrongResponse', 'Response error is WrongResponse because of timeout and as our expectation';
+        ok $response = send_request($request, 'states_list'), 'Response received after stopping Consumer';
+        ok $response->{error}, 'Response contains error paramater';
+        is $response->{error}->{code}, 'WrongResponse', 'Response error is WrongResponse because of timeout and as our expectation';
 
-    my $stream_len = $redis->execute("XLEN", "general");
-    is $stream_len, 1, 'Request streamed by Producer even without Consumer presence';
+        my $stream_len = $redis->execute("XLEN", "general");
+        is $stream_len, 1, 'Request streamed by Producer even without Consumer presence';
 
-    $rpc_redis->start_script();
-    ok looks_like_number($pid = $rpc_redis->pid), "Valid consumer worker process id: $pid";
+        $rpc_redis->start_script();
+        ok looks_like_number($pid = $rpc_redis->pid), "Valid consumer worker process id: $pid";
 
-    my $timeout = 0;
-    Mojo::IOLoop->timer(BOOT_TIMEOUT + 1 => sub { ++$timeout });
-    Mojo::IOLoop->one_tick while !($timeout or scalar($api->{messages}->@*));
-    ok $timeout, 'No message is recieved for the expired request after rpc workers are restarted';
+        my $timeout = 0;
+        Mojo::IOLoop->timer(BOOT_TIMEOUT + 1 => sub { ++$timeout });
+        Mojo::IOLoop->one_tick while !($timeout or scalar($api->{messages}->@*));
+        ok $timeout, 'No message is recieved for the expired request after rpc workers are restarted';
 
-    $rpc_redis->stop_script();
-    ok !kill(0, $pid), 'Consumer worker process killed successfully';
+        $rpc_redis->stop_script();
+        ok !kill(0, $pid), 'Consumer worker process killed successfully';
 
-    ok send_request($request, 'states_list', 0), 'Send another request while Consumer is stopped';
+        ok send_request($request, 'states_list', 0), 'Send another request while Consumer is stopped';
 
-    $rpc_redis->start_script();
-    ok looks_like_number($pid = $rpc_redis->pid), "Valid consumer worker process id: $pid";
+        $rpc_redis->start_script();
+        ok looks_like_number($pid = $rpc_redis->pid), "Valid consumer worker process id: $pid";
 
-    $timeout = 0;
-    Mojo::IOLoop->timer(BOOT_TIMEOUT + 1 => sub { ++$timeout });
-    Mojo::IOLoop->one_tick while !($timeout or scalar($api->{messages}->@*));
-    ok scalar($api->{messages}->@*), 'Message is received for not expired request immedietly after running Cosnumer';
+        $timeout = 0;
+        Mojo::IOLoop->timer(BOOT_TIMEOUT + 1 => sub { ++$timeout });
+        Mojo::IOLoop->one_tick while !($timeout or scalar($api->{messages}->@*));
+        ok scalar($api->{messages}->@*), 'Message is received for not expired request immedietly after running Cosnumer';
 
-    is_deeply call_instrospection('backend', ['states_list', 'http'])->{error}, "Backend 'http' was not found. Available backends: rpc_redis",
-        'Backend swithed back to http';
+        is_deeply call_instrospection('backend', ['states_list', 'http'])->{error}, "Backend 'http' was not found. Available backends: rpc_redis",
+            'Backend swithed back to http';
 
-    $rpc_redis->stop_script();
-    ok !kill(0, $pid), 'Consumer worker process killed successfully';
+        $rpc_redis->stop_script();
+        ok !kill(0, $pid), 'Consumer worker process killed successfully';
 
-    $redis->flushdb();
-};
+        $redis->flushdb();
+    };
 }
 
 subtest 'redis connnection loss' => sub {

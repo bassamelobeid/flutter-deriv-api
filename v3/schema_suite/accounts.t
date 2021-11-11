@@ -153,35 +153,12 @@ test_sendrecv_params 'authorize/test_send.json', 'authorize/test_receive_error.j
 test_sendrecv 'balance/test_send.json',            'balance/test_receive_error.json';
 test_sendrecv 'get_account_status/test_send.json', 'get_account_status/test_receive_error.json';
 
-# VIRTUAL ACCOUNT OPENING FOR (MLT)
-test_sendrecv_params 'verify_email/test_send.json', 'verify_email/test_receive.json', 'test-mlt@binary.com', 'account_opening';
+# VIRTUAL ACCOUNT OPENING FOR (MF)
+test_sendrecv_params 'verify_email/test_send.json', 'verify_email/test_receive.json', 'mf@binary.com', 'account_opening';
 test_sendrecv_params 'new_account_virtual/test_send.json', 'new_account_virtual/test_receive.json',
-    $suite->get_token('test-mlt@binary.com'), 'test-mlt@binary.com', 'dk';
+    $suite->get_token('mf@binary.com'), 'mf@binary.com', 'dk';
 test_sendrecv_params 'authorize/test_send.json', 'authorize/test_receive_vrtc.json',
-    $suite->get_stashed('new_account_virtual/new_account_virtual/oauth_token'), 'test-mlt@binary.com';
-
-# REAL ACCOUNT OPENING (MLT)
-test_sendrecv_params 'new_account_real/test_send.json', 'new_account_real/test_receive_mlt.json', 'Jack', 'dk', '+61234567005';
-test_sendrecv_params 'authorize/test_send.json', 'authorize/test_receive_mlt.json',
-    $suite->get_stashed('new_account_real/new_account_real/oauth_token'), 'test-mlt@binary.com', 'Jack';
-test_sendrecv_params 'balance/test_send.json', 'balance/test_receive.json', '0', '', $suite->get_stashed('authorize/authorize/loginid');
-test_sendrecv_params 'payout_currencies/test_send.json',      'payout_currencies/test_receive_vrt.json', '(USD|EUR|GBP)', 3;
-fail_test_sendrecv_params 'payout_currencies/test_send.json', 'payout_currencies/test_receive_vrt.json', '(USD|EUR|JPY)', 3;
-
-# READ SCOPE CALLS (MLT) BEFORE CHANGE
-test_sendrecv_params 'reality_check/test_send.json', 'reality_check/test_receive.json', '';
-
-# PAYMENT SCOPE CALLS (MLT)
-test_sendrecv_params 'set_account_currency/test_send.json',   'set_account_currency/test_receive.json',       'EUR';
-test_sendrecv_params 'set_account_currency/test_send.json',   'set_account_currency/test_receive_error.json', 'XXX';
-test_sendrecv_params 'payout_currencies/test_send.json',      'payout_currencies/test_receive_vrt.json',      'EUR', 1;
-fail_test_sendrecv_params 'payout_currencies/test_send.json', 'payout_currencies/test_receive_vrt.json',      'USD', 1;
-# set_self_exclusion for max_30day_turnover should remove max_turnover_limit_not_set status
-test_sendrecv 'set_self_exclusion/test_send.json', 'set_self_exclusion/test_receive.json';
-
-# READ SCOPE CALLS (MLT) AFTER CHANGE
-fail_test_sendrecv_params 'reality_check/test_send.json', 'reality_check/test_receive.json', 'GBP';
-test_sendrecv_params 'reality_check/test_send.json',      'reality_check/test_receive.json', 'EUR';
+    $suite->get_stashed('new_account_virtual/new_account_virtual/oauth_token'), 'mf@binary.com';
 
 # FINANCIAL ACCOUNT OPENING (MF)
 test_sendrecv_params 'new_account_maltainvest/test_send.json', 'new_account_maltainvest/test_receive_error.json', '0', 'Jack', 'dk', '+61234567006',
@@ -189,7 +166,7 @@ test_sendrecv_params 'new_account_maltainvest/test_send.json', 'new_account_malt
 test_sendrecv_params 'new_account_maltainvest/test_send.json', 'new_account_maltainvest/test_receive.json', '1', 'Jack', 'dk', '+61234567008',
     '1112223334';
 test_sendrecv_params 'authorize/test_send.json', 'authorize/test_receive_mf.json',
-    $suite->get_stashed('new_account_maltainvest/new_account_maltainvest/oauth_token'), 'test-mlt@binary.com', 'Jack';
+    $suite->get_stashed('new_account_maltainvest/new_account_maltainvest/oauth_token'), 'mf@binary.com', 'Jack';
 test_sendrecv_params 'balance/test_send.json', 'balance/test_receive.json', '0', '', $suite->get_stashed('authorize/authorize/loginid');
 test_sendrecv_params 'payout_currencies/test_send.json',      'payout_currencies/test_receive_vrt.json', '(USD|EUR|GBP)', 3;
 fail_test_sendrecv_params 'payout_currencies/test_send.json', 'payout_currencies/test_receive_vrt.json', '(USD|EUR|JPY)', 3;

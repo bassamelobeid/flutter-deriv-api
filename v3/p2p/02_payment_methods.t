@@ -66,12 +66,12 @@ subtest 'sell ads' => sub {
 
     $resp = $t->await::p2p_advertiser_payment_methods({
             p2p_advertiser_payment_methods => 1,
-            create => [{
-                method    => 'bank_transfer',
-                bank_name => 'maybank',
-                branch    => '001',
-                account   => '1234',
-    }]});
+            create                         => [{
+                    method    => 'bank_transfer',
+                    bank_name => 'maybank',
+                    branch    => '001',
+                    account   => '1234',
+                }]});
     test_schema('p2p_advertiser_payment_methods', $resp);
     my $method = $resp->{p2p_advertiser_payment_methods};
     my ($method_id) = keys $method->%*;
@@ -122,13 +122,13 @@ subtest 'sell ads' => sub {
 
     $resp = $t->await::p2p_advertiser_payment_methods({
             p2p_advertiser_payment_methods => 1,
-            create => [{
-                method    => 'bank_transfer',
-                bank_name => 'hsbc',
-                branch    => '002',
-                account   => '4321',
-            }]});
-    $method = $resp->{p2p_advertiser_payment_methods};
+            create                         => [{
+                    method    => 'bank_transfer',
+                    bank_name => 'hsbc',
+                    branch    => '002',
+                    account   => '4321',
+                }]});
+    $method    = $resp->{p2p_advertiser_payment_methods};
     $method_id = first { $resp->{p2p_advertiser_payment_methods}{$_}{fields}{bank_name}{value} eq 'hsbc' } keys $method->%*;
 
     $resp = $t->await::p2p_advert_update({
@@ -139,18 +139,17 @@ subtest 'sell ads' => sub {
     test_schema('p2p_advert_update', $resp);
 
     $t->await::authorize({authorize => $client_token});
-    
+
     $resp = $t->await::p2p_advert_info({
-        p2p_advert_info  => 1,
-        id               => $advert->{id}
-    });
+            p2p_advert_info => 1,
+            id              => $advert->{id}});
     cmp_deeply $resp->{p2p_advert_info}{payment_method_names}, ['Bank Transfer'], 'payment method names for client';
 
     $resp = $t->await::p2p_order_info({
         p2p_order_info => 1,
         id             => $order->{id},
     });
-    cmp_deeply $resp->{p2p_order_info}{payment_method_details}, { $method_id => $method->{$method_id} }, 'method details updated for client';
+    cmp_deeply $resp->{p2p_order_info}{payment_method_details}, {$method_id => $method->{$method_id}}, 'method details updated for client';
 
     $t->await::p2p_order_confirm({
         p2p_order_confirm => 1,
@@ -237,12 +236,12 @@ subtest 'sell orders' => sub {
     $resp = $t->await::p2p_advertiser_payment_methods({
             p2p_advertiser_payment_methods => 1,
             create                         => [{
-        method    => 'bank_transfer',
-        bank_name => 'cimb',
-        branch    => '001',
-        account   => '1234',
-    }]});
-    
+                    method    => 'bank_transfer',
+                    bank_name => 'cimb',
+                    branch    => '001',
+                    account   => '1234',
+                }]});
+
     my $method = $resp->{p2p_advertiser_payment_methods};
     my ($method_id) = keys $method->%*;
 
@@ -258,11 +257,11 @@ subtest 'sell orders' => sub {
     cmp_deeply $order->{payment_method_details}, $method, 'got method details in from order_create';
 
     $resp = $t->await::p2p_order_list({
-        p2p_order_list   => 1,
+        p2p_order_list => 1,
     });
-    
+
     cmp_deeply $resp->{p2p_order_list}{list}[0]{payment_method_names}, ['Bank Transfer'], 'payment method names in order list';
-    
+
     $t->await::authorize({authorize => $advertiser_token});
 
     $resp = $t->await::p2p_order_info({

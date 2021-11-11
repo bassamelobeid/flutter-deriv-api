@@ -61,32 +61,6 @@ subtest 'new CR real account' => sub {
     };
 };
 
-subtest 'new MLT real account' => sub {
-    # create VR acc
-    my ($vr_client, $user) = create_vr_account({
-        email           => 'test+nl@binary.com',
-        client_password => 'abc123',
-        residence       => 'nl',
-    });
-    # authorize
-    my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $vr_client->loginid);
-    $t->await::authorize({authorize => $token});
-
-    # create real acc
-    my %details = %client_details;
-    $details{residence}  = 'nl';
-    $details{first_name} = 'first\'name';
-    $details{citizen}    = 'nl';
-    $details{phone}      = '+31205551111';
-
-    my $res = $t->await::new_account_real(\%details);
-    ok($res->{new_account_real});
-    test_schema('new_account_real', $res);
-
-    my $loginid = $res->{new_account_real}->{client_id};
-    like($loginid, qr/^MLT\d+$/, "got MLT client - $loginid");
-};
-
 subtest 'create account failed' => sub {
     # create VR acc
     my ($vr_client, $user) = create_vr_account({

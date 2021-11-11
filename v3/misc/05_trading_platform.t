@@ -330,12 +330,12 @@ subtest 'generate token' => sub {
         service       => 'dxtrade',
         server        => 'real',
     });
-    
+
     cmp_deeply(
         $res->{service_token},
         {
             dxtrade => {
-              token => re('_dummy_token$'),
+                token => re('_dummy_token$'),
             }
         },
         'correct response'

@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More;
+use Test::Most;
 
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
@@ -99,55 +99,6 @@ subtest 'trying to create duplicate accounts' => sub {
         is($res->{msg_type}, 'new_account_real');
         is($res->{error}->{code}, 'DuplicateAccount', "Duplicate account detected correctly");
     };
-};
-
-subtest 'MLT upgrade to MF account' => sub {
-    # create VR acc, authorize
-    my ($vr_client, $user) = create_vr_account({
-        email           => 'test+nl@binary.com',
-        client_password => 'abc123',
-        residence       => 'nl',
-    });
-
-    my ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $vr_client->loginid);
-    $t->await::authorize({authorize => $token});
-
-    my $mlt_loginid;
-    subtest 'create MLT account, authorize' => sub {
-        my $res = $t->await::new_account_real(\%client_details);
-        ok($res->{new_account_real});
-        test_schema('new_account_real', $res);
-
-        $mlt_loginid = $res->{new_account_real}->{client_id};
-        like($mlt_loginid, qr/^MLT\d+$/, "got MLT client $mlt_loginid");
-
-        ($token) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $mlt_loginid);
-        $t->await::authorize({authorize => $token});
-
-        my $mlt_client = BOM::User::Client->new({loginid => $mlt_loginid});
-        is($mlt_client->financial_assessment, undef, 'doesn\'t have financial assessment');
-
-        $res = $t->await::get_settings({get_settings => 1});
-        ok($res->{get_settings});
-        is($res->{get_settings}->{address_line_1}, 'Jalan Usahawan', 'address line 1 set as expected');
-        is($res->{get_settings}->{citizen},        'at',             'citizen set as expected');
-
-    };
-
-    subtest 'upgrade to MF' => sub {
-        my %details = (%client_details, %$mf_details);
-        delete $details{new_account_real};
-        note explain %details;
-        my $res = $t->await::new_account_maltainvest(\%details);
-        ok($res->{new_account_maltainvest});
-        test_schema('new_account_maltainvest', $res);
-        my $loginid = $res->{new_account_maltainvest}->{client_id};
-        like($loginid, qr/^MF\d+$/, "got MF client $loginid");
-
-        my $client = BOM::User::Client->new({loginid => $loginid});
-        isnt($client->financial_assessment->data, undef, 'has financial assessment');
-    };
-
 };
 
 subtest 'VR upgrade to MF - Germany' => sub {
@@ -276,6 +227,7 @@ subtest 'validate whitespace in required fields for maltainvest account' => sub 
         my %details = (%client_details, %$mf_details);
         delete $details{new_account_real};
         $details{address_city}              = '    ';
+        $details{address_line_1}            = 'PO Box 1234';
         $details{residence}                 = 'de';
         $details{phone}                     = '+442072343457';
         $details{tax_identification_number} = '11122233344';
@@ -291,6 +243,7 @@ subtest 'validate whitespace in required fields for maltainvest account' => sub 
         my %details = (%client_details, %$mf_details);
         delete $details{new_account_real};
         $details{address_city}              = 'Taumatawhakatangihangakoauauotamateaturipukakapikimaungahoronukupokaiwhenuakitanatahu';
+        $details{address_line_1}            = 'PO Box 1234';
         $details{residence}                 = 'de';
         $details{phone}                     = '+442072343457';
         $details{tax_identification_number} = '11122233344';
@@ -298,7 +251,12 @@ subtest 'validate whitespace in required fields for maltainvest account' => sub 
         test_schema('new_account_maltainvest', $res);
 
         is($res->{msg_type}, 'new_account_maltainvest');
-        is($res->{error}->{code}, 'DuplicateAccount', "Input field is valid so it will fail for DuplicateAccount");
+        is_deeply $res->{error},
+            {
+            message => 'P.O. Box is not accepted in address.',
+            code    => 'PoBoxInAddress'
+            },
+            "Input field is valid so it fails with PO Box error";
     };
 
     subtest 'validate character count in address_city failed' => sub {

@@ -86,14 +86,16 @@ subtest 'POI Attempts' => sub {
 
     my $res = $t->await::get_account_status({get_account_status => 1});
     test_schema('get_account_status', $res);
-    cmp_deeply $res->{get_account_status}->{authentication}->{attempts}, {
+    cmp_deeply $res->{get_account_status}->{authentication}->{attempts},
+        {
         count   => 0,
         history => [],
         latest  => undef,
-    }, 'expected result for empty history';
+        },
+        'expected result for empty history';
 
     # TODO: Add more test cases when IDV is implemented
-    
+
 };
 
 sub create_vr_account {

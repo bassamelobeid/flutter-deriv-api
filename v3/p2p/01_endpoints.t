@@ -527,7 +527,7 @@ subtest 'p2p_advert_update' => sub {
     $resp = $t->await::p2p_advert_update({
         p2p_advert_update => 1,
         id                => $advert->{id},
-        delete         => 1,
+        delete            => 1,
     });
     test_schema('p2p_advert_update', $resp, 'delete ad');
 };
