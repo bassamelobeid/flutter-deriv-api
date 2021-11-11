@@ -67,10 +67,6 @@ subtest 'residence_list' => sub {
                                 display_name => 'Drivers License',
                                 format       => '^[a-zA-Z]{3}([ -]{1})?[A-Z0-9]{6,12}$',
                             },
-                            voter_id => {
-                                display_name => 'Voter ID',
-                                format       => '^[a-zA-Z0-9 ]{9,19}$',
-                            },
                         },
                     },
                     onfido => {
