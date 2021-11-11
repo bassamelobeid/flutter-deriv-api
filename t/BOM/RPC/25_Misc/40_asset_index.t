@@ -29,32 +29,15 @@ my ($token_mlt) = BOM::Database::Model::OAuth->new->store_access_token_only(1, $
 
 use constant {
     NUM_TOTAL_SYMBOLS      => 88,    # Total number of symbols listed in underlyings.yml
-    NUM_VOLATILITY_SYMBOLS => 17,    # Total number of volatility symbols listed in underlyings.yml
+    NUM_VOLATILITY_SYMBOLS => 0,     # Total number of volatility symbols listed in underlyings.yml
 };
 
 # These numbers may differ from actual production output due to symbols being
 #   suspended in the live platform config, which won't be included in the return.
 my $entry_count_mlt = NUM_VOLATILITY_SYMBOLS;
 my $entry_count_cr  = NUM_TOTAL_SYMBOLS;
-my $first_entry_mlt = [
-    "1HZ10V",
-    "Volatility 10 (1s) Index",
-    [
-        ["callput",       "Higher/Lower",               "5t",  "365d"],
-        ["callput",       "Rise/Fall",                  "1t",  "365d"],
-        ["touchnotouch",  "Touch/No Touch",             "5t",  "365d"],
-        ["endsinout",     "Ends Between/Ends Outside",  "2m",  "365d"],
-        ["staysinout",    "Stays Between/Goes Outside", "2m",  "365d"],
-        ["digits",        "Digits",                     "1t",  "10t"],
-        ["asian",         "Asians",                     "5t",  "10t"],
-        ["reset",         "Reset Call/Reset Put",       "5t",  "2h"],
-        ["callputspread", "Call Spread/Put Spread",     "15s", "1d"],
-        ["highlowticks",  "High/Low Ticks",             "5t",  "5t"],
-        ["lookback",      "Lookbacks",                  "1m",  "30m"],
-        ["callputequal",  "Rise/Fall Equal",            "1t",  "1d"],
-        ["runs",          "Only Ups/Only Downs",        "2t",  "5t"],
-    ]];
-my $first_entry_cr = [
+my $first_entry_mlt = [];
+my $first_entry_cr  = [
     "frxAUDJPY",
     "AUD/JPY",
     [
@@ -89,7 +72,7 @@ sub _test_asset_index {
         is(0 + @$result,    $count,            'correct number of entries');
         is($result->[0][0], $first_entry->[0], 'First entry item 1 is asset code');
         is($result->[0][1], $first_entry->[1], 'First entry item 2 is asset name/description');
-        cmp_deeply($result->[0][2], bag(@{$first_entry->[2]}), 'First entry item 3 lists available contract types');
+        cmp_deeply($result->[0][2] // [], bag(@{$first_entry->[2]}), 'First entry item 3 lists available contract types');
         return undef;
     };
 }
