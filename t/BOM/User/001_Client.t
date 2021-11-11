@@ -441,8 +441,8 @@ subtest "check duplicate accounts" => sub {
     $result = $third_client->check_duplicate_account($modified_details);
     is $result, undef, 'No duplicated account found, same phone number alone doesn\'t consider duplicate account';
 
-    my $client_mf = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        email         => 'mf@test.com',
+    my $client_mf1 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        email         => 'mf1@test.com',
         residence     => 'at',
         broker_code   => 'MF',
         first_name    => 'robert',
@@ -450,23 +450,23 @@ subtest "check duplicate accounts" => sub {
         date_of_birth => '2000-01-01',
     });
 
-    my $client_mlt = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-        email         => 'mlt@test.com',
+    my $client_mf2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        email         => 'mf2@test.com',
         residence     => 'at',
-        broker_code   => 'MLT',
+        broker_code   => 'MF',
         first_name    => 'bob',
         last_name     => 'smith',
         date_of_birth => '2000-01-01',
     });
 
-    $result = $client_mf->check_duplicate_account({first_name => 'bob'});
+    $result = $client_mf1->check_duplicate_account({first_name => 'bob'});
     cmp_deeply(
         $result,
         {
             error   => 'DuplicateAccount',
             details => bag(
-                $client_mlt->loginid,     $client_mlt->first_name, $client_mlt->last_name, $client_mlt->date_of_birth,
-                $client_mlt->date_joined, $client_mlt->email,      $client_mlt->phone,
+                $client_mf2->loginid,     $client_mf2->first_name, $client_mf2->last_name, $client_mf2->date_of_birth,
+                $client_mf2->date_joined, $client_mf2->email,      $client_mf2->phone,
             ),
         },
         'duplicate in upgradeable landing company'
