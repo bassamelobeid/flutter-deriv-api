@@ -133,7 +133,7 @@ subtest 'Validate legal allowed contract types' => sub {
 };
 
 subtest 'Validate Jurisdiction Restriction' => sub {
-    plan tests => 33;
+    plan tests => 32;
     lives_ok { $client->residence('') } 'set residence to null to test jurisdiction validation';
     lives_ok { $client->save({'log' => 0, 'clerk' => 'raunak'}); } "Can save residence changes back to the client";
 
@@ -353,8 +353,7 @@ subtest 'Validate Jurisdiction Restriction' => sub {
             clients     => [$client],
             transaction => $new_transaction
         })->_validate_jurisdictional_restrictions($client);
-    ok $error, 'has error';
-    is $error->get_type, 'RandomRestrictedCountry', 'correct error type - RandomRestrictedCountry';
+    ok !$error, 'no error, can buy random';
 
     lives_ok { $client->residence('be') } 'set residence to Belgium to test jurisdiction validation for random and financial binaries contracts';
 
@@ -369,7 +368,11 @@ subtest 'Validate Jurisdiction Restriction' => sub {
             transaction => $new_transaction
         })->_validate_jurisdictional_restrictions($client);
 
-    is($error, undef, 'Belgium clients are allowed to trade random underlyings');
+    is(
+        $error->{'-mesg'},
+        'Clients are not allowed to place Volatility Index contracts as their country is restricted.',
+        'Belgium clients are not allowed to trade random underlyings'
+    );
 
     $new_transaction = BOM::Transaction->new({
         purchase_date => $contract->date_start,

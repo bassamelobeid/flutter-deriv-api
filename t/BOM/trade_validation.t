@@ -431,49 +431,9 @@ subtest 'Purchase Sell Contract' => sub {
     $mock_validation->mock(check_trade_status => sub { note "mocked Transaction::Validation->check_trade_status returning nothing"; undef });
 
     $error = $bpt->buy;
-    is($error, undef, 'Able to purchase the contract successfully');
-
-    my $trx = $bpt->transaction_record;
-    my $fmb = $trx->financial_market_bet;
-
-    ok($trx->account_id, 'can retrieve the trx db record');
-    ok($fmb->account_id, 'can retrieve the fmb db record');
-
-    my $exit_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-        epoch      => $now->epoch + 1,
-        underlying => 'R_50',
-    });
-    my $current_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-        epoch      => $now->epoch + 60,
-        underlying => 'R_50',
-    });
-    $contract = produce_contract({
-        underlying  => 'R_50',
-        bet_type    => $bet_type,
-        currency    => $currency,
-        payout      => 100,
-        date_start  => $now,
-        date_expiry => $expiry,
-        # Opposite contract can now be used to purchase. To simulate sellback behaviour,
-        # set date_pricing to date_start + 1
-        date_pricing => $now->epoch + 1,
-        entry_tick   => $random_tick,
-        current_tick => $current_tick,
-        exit_tick    => $exit_tick,
-        barrier      => 'S0P',
-    });
-    my $mocked = Test::MockModule->new('BOM::Transaction::Validation');
-    $mocked->mock('_validate_sell_pricing_adjustment', sub { });
-    $error = BOM::Transaction->new({
-            purchase_date => $contract->date_start,
-            client        => $client,
-            contract      => $contract,
-            price         => $contract->bid_price,
-            contract_id   => $bpt->contract_id,
-            amount_type   => 'payout'
-        })->sell;
-
-    is($error, undef, 'Able to sell the contract successfully');
+    ok $error, 'error thrown when trying to buy contract with malta';
+    is($error->{'-mesg'},              'Invalid underlying symbol',              'Invalid underlying symbol');
+    is($error->{'-message_to_client'}, 'Trading is not offered for this asset.', 'message to client - Trading is not offered for this asset.');
 };
 
 subtest 'validate stake limit' => sub {
