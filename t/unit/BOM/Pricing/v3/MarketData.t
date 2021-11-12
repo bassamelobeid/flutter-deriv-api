@@ -39,32 +39,15 @@ sub _test_asset_index {
     my $result = BOM::Pricing::v3::MarketData::asset_index($params);
 
     # dd($result->[0][2]);
-    is($result->[0][0], $first_entry->[0], "first asset code is $first_entry->[0]");
-    is($result->[0][1], $first_entry->[1], "first asset name is $first_entry->[1]");
-    cmp_deeply($result->[0][2], bag(@{$first_entry->[2]}), 'contract types list match');
+    is($result->[0][0], $first_entry->[0], "first asset code is " . ($first_entry->[0] // 'undefined'));
+    is($result->[0][1], $first_entry->[1], "first asset name is " . ($first_entry->[1] // 'undefined'));
+    cmp_deeply($result->[0][2] // [], bag(@{$first_entry->[2]}), 'contract types list match');
     my $contract_count = scalar @{$first_entry->[2]};
     is(scalar @{$result->[0][2]}, $contract_count, "$contract_count contract types");
 }
 
 subtest "asset_index" => sub {
-    my $first_entry_malta = [
-        "1HZ10V",
-        "Volatility 10 (1s) Index",
-        [
-            ["callput",       "Higher/Lower",               "5t",  "365d"],
-            ["callput",       "Rise/Fall",                  "1t",  "365d"],
-            ["touchnotouch",  "Touch/No Touch",             "5t",  "365d"],
-            ["endsinout",     "Ends Between/Ends Outside",  "2m",  "365d"],
-            ["staysinout",    "Stays Between/Goes Outside", "2m",  "365d"],
-            ["digits",        "Digits",                     "1t",  "10t"],
-            ["asian",         "Asians",                     "5t",  "10t"],
-            ["reset",         "Reset Call/Reset Put",       "5t",  "2h"],
-            ["callputspread", "Call Spread/Put Spread",     "15s", "1d"],
-            ["highlowticks",  "High/Low Ticks",             "5t",  "5t"],
-            ["lookback",      "Lookbacks",                  "1m",  "30m"],
-            ["callputequal",  "Rise/Fall Equal",            "1t",  "1d"],
-            ["runs",          "Only Ups/Only Downs",        "2t",  "5t"],
-        ]];
+    my $first_entry_malta = [];
 
     my $first_entry_cr = [
         "frxAUDJPY",
@@ -137,55 +120,16 @@ subtest "trading_durations" => sub {
                         },
                     }]}]};
 
-    my $trade_durations_malta = {
-        market    => {name => 'synthetic_index'},
-        submarket => {name => 'random_index'},
-        data      => [{
-                trade_durations => [{
-                        durations => [{
-                                display_name => "Ticks",
-                                max          => 10,
-                                min          => 1,
-                                name         => "ticks"
-                            },
-                            {
-                                display_name => "Seconds",
-                                max          => 86400,
-                                min          => 15,
-                                name         => "s"
-                            },
-                            {
-                                display_name => "Minutes",
-                                max          => 1440,
-                                min          => 1,
-                                name         => "m"
-                            },
-                            {
-                                display_name => "Hours",
-                                max          => 24,
-                                min          => 1,
-                                name         => "h"
-                            },
-                            {
-                                display_name => "Days",
-                                max          => 365,
-                                min          => 1,
-                                name         => "days"
-                            },
-                        ],
-                        trade_type => {
-                            display_name => "Rise/Fall",
-                            name         => "rise_fall"
-                        },
-                    }]}]};
+    my $trade_durations_malta = {};
 
     note 'trading_durations for malta landing_company';
 
     my $result = BOM::Pricing::v3::MarketData::trading_durations({
             language      => 'en',
             token_details => {loginid => 'dummy_malta'}});
-    is $result->[0]{market}{name},    $trade_durations_malta->{market}{name},    "market name $trade_durations_malta->{market}{name}";
-    is $result->[0]{submarket}{name}, $trade_durations_malta->{submarket}{name}, "submarket name $trade_durations_malta->{submarket}{name}";
+    is $result->[0]{market}{name}, $trade_durations_malta->{market}{name}, "market name " . ($trade_durations_malta->{market}{name} // 'undefined');
+    is $result->[0]{submarket}{name}, $trade_durations_malta->{submarket}{name},
+        "submarket name " . ($trade_durations_malta->{submarket}{name} // 'undefined');
     cmp_deeply($result->[0]{data}[0]{trade_durations}[0], $trade_durations_malta->{data}[0]{trade_durations}[0], 'compare trading_durations');
 
     note 'trading_durations for default svg landing_company';
