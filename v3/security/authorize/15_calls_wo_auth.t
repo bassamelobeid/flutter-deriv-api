@@ -35,7 +35,7 @@ $res = $t->await::landing_company({landing_company => 'de'});
 ok $res->{landing_company};
 is $res->{landing_company}->{name}, 'Germany';
 is $res->{landing_company}->{financial_company}->{shortcode}, 'maltainvest';
-is $res->{landing_company}->{gaming_company}->{shortcode},    'maltainvest';
+is $res->{landing_company}->{gaming_company}->{shortcode},    undef;
 test_schema('landing_company', $res);
 
 $res = $t->await::landing_company({landing_company => 'im'});
