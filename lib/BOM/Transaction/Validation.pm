@@ -712,29 +712,6 @@ sub _validate_jurisdictional_restrictions {
         );
     }
 
-    my $countries_instance = Brands->new(name => request()->brand)->countries_instance;
-    if ($residence && $market_name eq 'synthetic_index' && $countries_instance->synthetic_index_restricted_country($residence)) {
-        return Error::Base->cuss(
-            -quiet             => 1,
-            -type              => 'RandomRestrictedCountry',
-            -mesg              => 'Clients are not allowed to place Volatility Index contracts as their country is restricted.',
-            -message_to_client => localize('Sorry, contracts on Synthetic Indices are not available in your country of residence'),
-        );
-    }
-
-    # For certain countries such as Belgium, we are not allow to sell financial product to them.
-    if (   $residence
-        && $market_name ne 'synthetic_index'
-        && $countries_instance->financial_binaries_restricted_country($residence))
-    {
-        return Error::Base->cuss(
-            -quiet             => 1,
-            -type              => 'FinancialBinariesRestrictedCountry',
-            -mesg              => 'Clients are not allowed to place financial products contracts as their country is restricted.',
-            -message_to_client => localize('Sorry, contracts on Financial Products are not available in your country of residence'),
-        );
-    }
-
     return undef;
 }
 
