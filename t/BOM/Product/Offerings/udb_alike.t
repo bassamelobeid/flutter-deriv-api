@@ -20,7 +20,6 @@ subtest 'Sets match' => sub {
         'contract_category' => 'available_contract_categories',
         'expiry_type'       => 'available_expiry_types',
         'start_type'        => 'available_start_types',
-        'barrier_category'  => 'available_barrier_categories',
     );
 
     subtest 'Virtual' => sub {
