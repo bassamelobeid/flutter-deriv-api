@@ -10,7 +10,7 @@ use open qw[ :encoding(UTF-8) ];
 
 use f_brokerincludeall;
 use CGI;
-use Auth::DuoWeb;
+use Duo::Web;
 use BOM::Config::Runtime;
 use BOM::Backoffice::Auth0;
 use BOM::Backoffice::PlackHelpers qw( http_redirect PrintContentType check_browser_version );
@@ -27,7 +27,7 @@ if (!check_browser_version(BOM::Config::Runtime->instance->app_config->system->b
 my $try_to_login;
 
 if (request()->param('sig_response')) {
-    my $email = Auth::DuoWeb::verify_response(
+    my $email = Duo::Web::verify_response(
         BOM::Config::third_party()->{duosecurity}->{ikey}, BOM::Config::third_party()->{duosecurity}->{skey},
         BOM::Config::third_party()->{duosecurity}->{akey}, request()->param('sig_response'),
     );
