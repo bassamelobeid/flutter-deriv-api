@@ -4,6 +4,9 @@ use strict;
 use warnings;
 
 use Clone::PP qw(clone);
+use BOM::Config::Runtime;
+use List::Util qw(any);
+use Brands::Countries;
 
 =head1 NAME
 
@@ -122,6 +125,61 @@ sub extract_valid_params {
 
     %filtered_params = (%filtered_params, map { $_ => $args->{$_} } @remaining_params);
     return \%filtered_params;
+}
+
+=head2 is_idv_disabled
+
+Checks if IDV has been dynamically disabled.
+
+=over 4
+
+=item C<args>: hash containing country and provider
+
+=back
+
+Returns bool
+
+=cut
+
+sub is_idv_disabled {
+    my %args = @_;
+    # Is IDV disabled
+    return 1 if BOM::Config::Runtime->instance->app_config->system->suspend->idv;
+    # Is IDV country disabled
+    my $disabled_idv_countries = BOM::Config::Runtime->instance->app_config->system->suspend->idv_countries;
+    if (defined $args{country}) {
+        return 1 if any { $args{country} eq $_ } @$disabled_idv_countries;
+    }
+    # Is IDV provider disabled
+    my $disabled_idv_providers = BOM::Config::Runtime->instance->app_config->system->suspend->idv_providers;
+    if (defined $args{provider}) {
+        return 1 if any { $args{provider} eq $_ } @$disabled_idv_providers;
+    }
+    return 0;
+}
+
+=head2 has_idv
+
+Checks if IDV is enabled and supported for the given country + provider
+
+=over 4
+
+=item C<args>: hash containing country and provider
+
+=back
+
+Returns bool
+
+=cut
+
+sub has_idv {
+    my %args            = @_;
+    my $country_configs = Brands::Countries->new();
+    return 0 unless $country_configs->is_idv_supported($args{country} // '');
+
+    return 0 if is_idv_disabled(%args);
+
+    return 1;
 }
 
 1;
