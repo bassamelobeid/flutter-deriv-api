@@ -1880,12 +1880,14 @@ sub _validate_transfer_between_accounts {
     ) if (($amount > $max_allowed_amount) and ($from_currency_type ne $to_currency_type));
 
     # this check is only for svg and unauthenticated clients
+    # fiat to crypto || crypto to fiat || crypto to crypto
+    my $limit_field = lc(sprintf '%s_to_%s', $from_currency_type, $to_currency_type);
     if (    $current_client->landing_company->short eq 'svg'
         and not($current_client->status->age_verification or $current_client->fully_authenticated)
         and $from_currency_type =~ /^(fiat|crypto)$/
-        and $to_currency_type eq 'crypto')
+        and $to_currency_type   =~ /^(fiat|crypto)$/
+        and $limit_field ne 'fiat_to_fiat')
     {
-        my $limit_field  = $from_currency_type . '_to_crypto';
         my $limit_amount = BOM::Config::Runtime->instance->app_config->payments->transfer_between_accounts->limits->$limit_field;
 
         $limit_amount = convert_currency($limit_amount, 'USD', $from_currency) if $from_currency ne 'USD';
@@ -1906,8 +1908,7 @@ sub _validate_transfer_between_accounts {
 
         if ($is_over_transfer_limit) {
 
-            $current_client->status->upsert('allow_document_upload', 'system', uc($from_currency_type) . '_TO_CRYPTO_TRANSFER_OVERLIMIT');
-
+            $current_client->status->upsert('allow_document_upload', 'system', sprintf('%s_TRANSFER_OVERLIMIT', uc($limit_field)));
             my $message_to_client = localize(
                 'You have exceeded [_1] [_2] in cumulative transactions. To continue, you will need to verify your identity.',
                 formatnumber('amount', $from_currency, $limit_amount),
@@ -1915,7 +1916,7 @@ sub _validate_transfer_between_accounts {
             );
 
             return BOM::RPC::v3::Utility::create_error({
-                code              => ucfirst($from_currency_type) . '2CryptoTransferOverLimit',
+                code              => sprintf('%s2%sTransferOverLimit', ucfirst($from_currency_type), ucfirst($to_currency_type)),
                 message_to_client => $message_to_client,
             });
         }

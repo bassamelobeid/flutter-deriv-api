@@ -2489,7 +2489,9 @@ subtest 'get account status' => sub {
                 'idv_disallowed if client has allow_poi_resubmission');
             $test_client->status->clear_allow_poi_resubmission;
 
-            for my $reason (qw/FIAT_TO_CRYPTO_TRANSFER_OVERLIMIT CRYPTO_TO_CRYPTO_TRANSFER_OVERLIMIT P2P_ADVERTISER_CREATED/) {
+            for my $reason (
+                qw/FIAT_TO_CRYPTO_TRANSFER_OVERLIMIT CRYPTO_TO_CRYPTO_TRANSFER_OVERLIMIT CRYPTO_TO_FIAT_TRANSFER_OVERLIMIT P2P_ADVERTISER_CREATED/)
+            {
                 $test_client->status->upsert('allow_document_upload', 'system', $reason);
                 $result = $c->tcall($method, {token => $token});
                 cmp_deeply($result->{status}, noneof(qw(idv_disallowed)), 'no idv_disallowed if allow_document_upload with allowed reason');
