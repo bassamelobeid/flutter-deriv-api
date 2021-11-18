@@ -1,4 +1,5 @@
 #!/etc/rmg/bin/perl
+
 package main;
 use strict;
 use warnings;
@@ -63,6 +64,10 @@ use constant REJECTION_REASONS => {
     default => {
         reason => 'contact CS',
         remark => 'contact CS'
+    },
+    other => {
+        reason => 'other',
+        remark => 'others'
     }};
 
 BOM::Backoffice::Sysinit::init();
@@ -73,7 +78,6 @@ BrokerPresentation('CRYPTO CASHIER MANAGEMENT');
 sub notify_crypto_withdrawal_rejected {
     my ($loginid, $reason, $app_id) = @_;
     $reason //= "unknown";
-
     my $client = BOM::User::Client->new({loginid => $loginid});
 
     my $brand = defined $app_id ? Brands->new_from_app_id($app_id) : request->brand;
@@ -87,7 +91,9 @@ sub notify_crypto_withdrawal_rejected {
         reason         => $reason,
         client_loginid => $client->loginid,
         brand_name     => ucfirst $brand->name,
+        other_reason   => request()->param('other_reason'),
     };
+
     send_email({
         to                    => $client->email,
         subject               => $email_subject,
@@ -723,7 +729,11 @@ sub withdrawal_reject {
     code_exit_BO('Unexpected rejection reason')
         unless defined REJECTION_REASONS->{$rejection_reason};
 
-    $remark .= "[@{[ REJECTION_REASONS->{$rejection_reason}->{remark} ]}]";
+    if ($rejection_reason eq "other") {
+        $remark .= request()->param('other_reason');
+    } else {
+        $remark .= "[@{[ REJECTION_REASONS->{$rejection_reason}->{remark} ]}]";
+    }
 
     my $error = $dbic->run(
         ping => sub {
@@ -737,3 +747,4 @@ sub withdrawal_reject {
 
     return $error;
 }
+

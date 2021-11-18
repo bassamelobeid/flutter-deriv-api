@@ -273,11 +273,11 @@
                             [% IF trx.source %]
                                 <input type="hidden" name="app_id" value="[% trx.source %]"/>
                             [% END %]
-                            <br/>
                             <label>Set Remark:</label>
-                            <br/>
-                            <textarea name="remark" placeholder="Replaces current remark" data-trxid="[% trx.id %]" oninput="bulkUpdateRemark(this)"></textarea>
-                            <br/>
+                            <div class="row">
+                                <textarea style="width:100%;" name="remark" placeholder="Replaces current remark" data-trxid="[% trx.id %]" oninput="bulkUpdateRemark(this)"></textarea>
+                            </div>
+                            <div class="row" >
                             <input class="btn btn--primary" type="submit" name="action" value="Save"/>
                             [% IF trx.is_withdrawal_locked %]
                                 <span class="warning_tag">The client withdrawal is locked</span>
@@ -286,14 +286,18 @@
                             [% ELSE %]
                                 <input class="btn btn--primary" type="submit" name="action" value="Verify"/>
                             [% END %]
-                            <br/>
-                            <select name="rejection_reason" data-trxid="[% trx.id %]" onchange="bulkUpdateReason(this)">
+                            </div>
+                
+                            <select class="row"  name="rejection_reason" data-trxid="[% trx.id %]" onchange="bulkUpdateReason(this)">
                                 <option value="">--- Select Rejection Reason ---</option>
                                 [% FOREACH option IN rejection_reasons %]
                                     <option value="[% option.index %]">[% option.reason %]</option>
                                 [% END %]
                             </select>
-                            <input class="btn btn--secondary" type="submit" name="action" value="Reject"/>
+                            <div id="custom_rejection_remark" class="row" style="display:none;"> 
+                                     <textarea style="width:100%;"  placeholder="Write your reason" name="other_reason" id="other_reason_id" value="other" required></textarea>
+                            </div>
+                                <input class="btn btn--secondary" type="submit" name="action" value="Reject"/>   
                         </form>
                         [% END %]
                     </td>
@@ -374,7 +378,6 @@ function bulkToggleSelected(el_chk) {
 
 function bulkUpdateRemark(el_remark) {
     const trx_id = el_remark.getAttribute('data-trxid');
-
     if (selected_transactions[trx_id]) {
         selected_transactions[trx_id].remark = el_remark.value.trim();
         bulkUpdateForm();
@@ -384,6 +387,14 @@ function bulkUpdateRemark(el_remark) {
 function bulkUpdateReason(el_rejection_reason) {
     const trx_id = el_rejection_reason.getAttribute('data-trxid');
 
+    if(el_rejection_reason.value == "other"){
+        document.getElementById("custom_rejection_remark").style.display= 'block';
+        document.getElementById("other_reason_id").required = true;
+    }else{
+        document.getElementById("custom_rejection_remark").style.display= 'none';
+        document.getElementById("other_reason_id").required = false;
+    }
+    
     if (selected_transactions[trx_id]) {
         selected_transactions[trx_id].rejection_reason = el_rejection_reason.value;
         bulkUpdateForm();
@@ -465,5 +476,6 @@ function bulkConfirm() {
   - Total Amount: \${bulk_data.total_amount} [% currency %]`
     );
 }
+
 
 </script>
