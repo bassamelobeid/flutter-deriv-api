@@ -132,9 +132,10 @@ async sub handle_http_request {
         die "Invalid method: $method\n" unless $self->{clients}{$server}->can($method);
         $log->debugf('Got request for method %s with params %s', $method, $params);
 
-        my $data = await $self->call_api($server, $method, $params);
+        my ($data, $timing) = await $self->call_api($server, $method, $params);
 
         my $response = HTTP::Response->new(200);
+        $response->header(timing => $timing);
         my $response_content;
 
         if (ref $data) {
@@ -196,9 +197,11 @@ async sub call_api {
 
     my $start_time = [Time::HiRes::gettimeofday];
     my $resp       = await $self->{clients}{$server}->$method($params->%*);
-    stats_timing($self->{datadog_prefix} . 'timing', 1000 * Time::HiRes::tv_interval($start_time), {tags => ["server:$server", "method:$method"]},);
+    my $timing     = 1000 * Time::HiRes::tv_interval($start_time);
 
-    return $resp;
+    stats_timing($self->{datadog_prefix} . 'timing', $timing, {tags => ["server:$server", "method:$method"]},);
+
+    return $resp, $timing;
 }
 
 =head2 start
