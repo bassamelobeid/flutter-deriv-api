@@ -86,6 +86,25 @@ subtest 'residence_list' => sub {
         },
         'ng is correct'
     );
+
+    BOM::Config::Runtime->instance->app_config->system->suspend->idv(1);
+    $result = $c->call_ok('residence_list', {language => 'EN'})->has_no_system_error->result;
+    $index  = +{map { (delete $_->{value} => $_) } $result->@*};
+    is_deeply($index->{ng}->{identity}->{services}->{idv}->{is_country_supported}, 0, 'IDV disabled');
+
+    BOM::Config::Runtime->instance->app_config->system->suspend->idv(0);
+    BOM::Config::Runtime->instance->app_config->system->suspend->idv_countries([qw/ng/]);
+    $result = $c->call_ok('residence_list', {language => 'EN'})->has_no_system_error->result;
+    $index  = +{map { (delete $_->{value} => $_) } $result->@*};
+    is_deeply($index->{ng}->{identity}->{services}->{idv}->{is_country_supported}, 0, 'IDV disabled for Nigeria');
+    is_deeply($index->{cn}->{identity}->{services}->{idv}->{is_country_supported}, 0, 'IDV not disabled for China');
+
+    BOM::Config::Runtime->instance->app_config->system->suspend->idv_countries([qw//]);
+    BOM::Config::Runtime->instance->app_config->system->suspend->idv_providers([qw/smile_identity/]);
+    $result = $c->call_ok('residence_list', {language => 'EN'})->has_no_system_error->result;
+    $index  = +{map { (delete $_->{value} => $_) } $result->@*};
+    is_deeply($index->{ng}->{identity}->{services}->{idv}->{is_country_supported}, 0, 'IDV disabled for smile_identity');
+    BOM::Config::Runtime->instance->app_config->system->suspend->idv_providers([qw//]);
 };
 
 subtest 'states_list' => sub {

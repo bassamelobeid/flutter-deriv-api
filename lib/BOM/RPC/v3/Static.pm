@@ -32,6 +32,7 @@ use BOM::RPC::Registry '-dsl';
 use BOM::Config::Runtime;
 use BOM::Platform::Locale;
 use BOM::Platform::Context qw (request);
+use BOM::Platform::Utility;
 use BOM::Database::ClientDB;
 use BOM::RPC::v3::Utility;
 use BOM::Config::CurrencyConfig;
@@ -97,8 +98,11 @@ rpc residence_list => sub {
                                     })
                             } keys $idv_docs_supported->%*
                         },
-                        is_country_supported => $countries_instance->is_idv_supported($country_code) // 0,
-                        has_visual_sample    => $has_visual_sample
+                        is_country_supported => BOM::Platform::Utility::has_idv(
+                            country  => $country_code,
+                            provider => $idv_config->{provider}
+                        ),
+                        has_visual_sample => $has_visual_sample
                     },
                     onfido => {
                         documents_supported =>

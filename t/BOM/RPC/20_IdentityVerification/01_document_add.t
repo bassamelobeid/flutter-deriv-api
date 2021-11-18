@@ -13,6 +13,7 @@ use BOM::Platform::Token::API;
 use BOM::Test::RPC::QueueClient;
 use BOM::Test::Helper::Client;
 use BOM::User;
+use BOM::Config::Runtime;
 
 my $c = BOM::Test::RPC::QueueClient->new();
 
@@ -112,6 +113,11 @@ subtest 'identity_verification_document_add' => sub {
         ->has_no_system_error->has_error->error_code_is('AlreadyAgeVerified', 'age already verified');
 
     $client_cr->status->clear_age_verification();
+
+    BOM::Config::Runtime->instance->app_config->system->suspend->idv(1);
+    $c->call_ok('identity_verification_document_add', $params)
+        ->has_no_system_error->has_error->error_code_is('IdentityVerificationDisabled', 'IDV is currently disabled');
+    BOM::Config::Runtime->instance->app_config->system->suspend->idv(0);
 
     $client_cr->status->setnx('unwelcome', 'system', 'reason');
 
