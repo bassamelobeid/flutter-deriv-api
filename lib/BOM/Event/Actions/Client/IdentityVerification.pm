@@ -33,9 +33,9 @@ use BOM::Event::Services;
 use BOM::Event::Services::Track;
 use BOM::Event::Utility qw( exception_logged );
 use BOM::Platform::Context qw( localize request );
+use BOM::Platform::Utility;
 use BOM::User::IdentityVerification;
 use BOM::User::Client;
-
 use Brands::Countries;
 
 use constant TRIGGER_MAP => {
@@ -414,9 +414,12 @@ sub _get_provider {
     my ($client, $document) = @_;
 
     my $country_configs = Brands::Countries->new();
-
-    return 'onfido' unless $country_configs->is_idv_supported($document->{issuing_country});
-    return $country_configs->get_idv_config($document->{issuing_country})->{provider};
+    my $country         = $document->{issuing_country};
+    my $idv_config      = $country_configs->get_idv_config($country);
+    return 'onfido' unless BOM::Platform::Utility::has_idv(
+        country  => $country,
+        provider => $idv_config->{provider});
+    return $idv_config->{provider};
 }
 
 =head2 _generate_smile_identity_secret_key
