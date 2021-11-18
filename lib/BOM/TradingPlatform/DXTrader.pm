@@ -790,10 +790,14 @@ sub call_api {
     try {
         my $start_time = [Time::HiRes::gettimeofday];
         $resp = $self->http->post($self->config->{dxweb_service_url}, {content => $payload});
-        stats_timing(
-            'devexperts.rpc.timing',
-            1000 * Time::HiRes::tv_interval($start_time),
-            {tags => ['server:' . $args{server}, 'method:' . $args{method}]});
+
+        if (my $service_timing = $resp->{headers}{timing}) {
+            stats_timing(
+                'devexperts.rpc_service.timing',
+                (1000 * Time::HiRes::tv_interval($start_time)) - $service_timing,
+                {tags => ['server:' . $args{server}, 'method:' . $args{method}]});
+        }
+
         $resp->{content} = decode_json_utf8($resp->{content} || '{}')
             if ($resp->{headers}{'content-type'} // '') eq 'application/javascript';
         die unless $resp->{success} or $quiet;    # we expect some calls to fail, eg. client_get
@@ -812,8 +816,8 @@ Called when an unexpcted Devexperts API error occurs. Dies with generic error co
 sub handle_api_error {
     my ($self, $resp, $error_code) = @_;
 
-    stats_inc('devexperts.rpc.api_call_fail', {tags => [map { "$_:" . $dxapi_log->context->{request}{$_} } qw/method server/]});
-    $dxapi_log->info($resp->{content} // sprintf('No content, HTTP code %s, reason %s', $resp->{status}, $resp->{reason}));
+    stats_inc('devexperts.rpc_service.api_call_fail', {tags => [map { "$_:" . $dxapi_log->context->{request}{$_} } qw/method server/]});
+    $dxapi_log->info($resp->{content} // sprintf('No content, HTTP code %s, reason %s', $resp->{status} // 'unknown', $resp->{reason} // 'unknown'));
     die +{error_code => $error_code // 'DXGeneral'};
 }
 
