@@ -216,6 +216,9 @@ sub get_settings_by_group {
                 system.suspend.onfido
                 system.suspend.p2p
                 system.suspend.wallets
+                system.suspend.idv
+                system.suspend.idv_countries
+                system.suspend.idv_providers
                 system.mt5.load_balance.demo.all.p01_ts01
                 system.mt5.load_balance.demo.all.p01_ts02
                 system.mt5.load_balance.real.all.p01_ts01
