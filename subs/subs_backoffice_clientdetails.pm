@@ -2208,6 +2208,7 @@ sub _get_detailed_reason {
     state $status_reason_map = {
         FIAT_TO_CRYPTO_TRANSFER_OVERLIMIT   => 'Client reached the fiat to crypto internal transfer limit',
         CRYPTO_TO_CRYPTO_TRANSFER_OVERLIMIT => 'Client reached the crypto to crypto internal transfer limit',
+        CRYPTO_TO_FIAT_TRANSFER_OVERLIMIT   => 'Client reached the crypto to fiat internal transfer limit',
         P2P_ADVERTISER_CREATED              => 'Client applied to P2P',
         BECOME_HIGH_RISK                    => 'Client become high risk',
         MT5_ACCOUNT_IS_CREATED              => 'Client created MT5 account',
