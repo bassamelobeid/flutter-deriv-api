@@ -15,7 +15,7 @@ use warnings;
 use feature 'state';
 no indirect;
 
-use Syntax::Keyword::Try;
+use Try::Tiny;
 use JSON::MaybeUTF8;
 use Log::Any qw($log);
 use Format::Util::Numbers qw(get_min_unit financialrounding);
@@ -57,9 +57,17 @@ our %LOCAL_CURRENCY_FOR_COUNTRY = do {
     # those countries is different from its database we need to silence those here
     local $SIG{__WARN__} = sub { };
 
+    # locale.db is not updated with antarctica dollar currency then instead of change it we create a hash for
+    # saving rare currencies like AAD (antarctica dollar)
+    my %rare_country_currencies = (aq => 'AAD');
+
     map {
-        $_ => eval { Locale::Object::Currency->new(country_code => $_)->code }
-            // undef
+        $_ => $rare_country_currencies{lc($_)} // try {
+            Locale::Object::Currency->new(country_code => $_)->code;
+        } catch {
+            $log->warnf('unsupported country provided: %s', $_);
+            return undef;
+        }
     } Locale::Country::all_country_codes();
 };
 

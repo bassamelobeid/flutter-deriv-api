@@ -515,6 +515,14 @@ subtest 'currency config' => sub {
         'correct empty address as no external sweep address set for USDK';
 };
 
+subtest 'antarctic dollar currency test (aq => AAD)' => sub {
+    is BOM::Config::CurrencyConfig::local_currency_for_country('aq'), 'AAD', 'local_currency_for_antarctic';
+};
+
+subtest 'undefined currency' => sub {
+    is BOM::Config::CurrencyConfig::local_currency_for_country('wrong'), undef, 'undefined_currency_check';
+};
+
 subtest 'get_currency_internal_sweep_config' => sub {
     my $app_config                 = BOM::Config::Runtime->instance->app_config();
     my $amounts_original           = $app_config->payments->crypto->internal_sweep->amounts();
