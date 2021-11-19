@@ -24,12 +24,13 @@ use BOM::Database::ClientDB;
 use JSON::MaybeUTF8 qw(encode_json_utf8);
 use BOM::Config::Redis;
 use BOM::Config::Runtime;
-use BOM::Platform::Context qw(request);
+use BOM::Platform::Context qw(localize request);
 use BOM::Platform::Event::Emitter;
 use BOM::User::Utility;
 use BOM::Platform::Email qw(send_email);
 use BOM::User::Client;
 use BOM::Event::Services::Track;
+use BOM::Event::Actions::Common;
 
 use Syntax::Keyword::Try;
 use Format::Util::Numbers qw/financialrounding formatnumber/;
@@ -37,6 +38,8 @@ use Date::Utility;
 use DataDog::DogStatsd::Helper qw(stats_timing stats_inc);
 use BOM::Event::Utility qw(exception_logged);
 use List::Util qw(first);
+use Template::AutoFilter;
+use Encode;
 
 #TODO: Put here id for special bom-event application
 # May be better to move it to config rather than keep it here.
@@ -66,12 +69,12 @@ be relevant to anyone with an active order.
 sub advertiser_updated {
     my $data = shift;
 
-    unless ($data->{client_loginid}) {
+    unless ($data->{client_loginid} or $data->{client}) {
         $log->info('Fail to process advertiser_updated: Invalid event data', $data);
         return 0;
     }
 
-    my $client = BOM::User::Client->new({loginid => $data->{client_loginid}});
+    my $client = $data->{client} // BOM::User::Client->new({loginid => $data->{client_loginid}});
 
     my $details = $client->p2p_advertiser_info or return 0;
     return 0 if $client->p2p_is_advertiser_blocked;
@@ -451,6 +454,64 @@ sub p2p_adverts_updated {
     return 1;
 }
 
+=head2 p2p_advertiser_approval_changed
+
+Handle event fired from backoffice, and called from bom-events code after a client
+becomes age verified.
+
+=over 4
+
+=item * C <client> client object .
+
+=back
+
+=cut
+
+sub p2p_advertiser_approval_changed {
+    my $data = shift;
+
+    my $client = $data->{client} // BOM::User::Client->new({loginid => $data->{client_loginid}});
+
+    # to push FE notification when advertiser becomes approved/unapproved via db trigger
+    advertiser_updated({client => $client});
+
+    return unless ($client->status->reason('allow_document_upload') // '') eq 'P2P_ADVERTISER_CREATED';
+    return unless $client->_p2p_advertiser_cached and $client->_p2p_advertiser_cached->{is_approved};
+
+    my $brand = request->brand;
+
+    my $data_tt = {
+        l           => \&localize,
+        contact_url => $brand->contact_url,
+    };
+    my $tt = Template->new(ABSOLUTE => 1);
+
+    try {
+        $tt->process(BOM::Event::Actions::Common::TEMPLATE_PREFIX_PATH() . 'age_verified_p2p.html.tt', $data_tt, \my $html);
+
+        die "Template error: @{[$tt->error]}" if $tt->error;
+        send_email({
+                from          => $brand->emails('no-reply'),
+                to            => $client->email,
+                subject       => localize('You can now use Deriv P2P'),
+                message       => [$html],
+                template_args => {
+                    name  => $client->first_name,
+                    title => localize('You can now use Deriv P2P'),
+                },
+                use_email_template    => 1,
+                email_content_is_html => 1,
+                skip_text2html        => 1,
+            });
+    } catch ($e) {
+        $log->warn($e);
+    }
+
+    BOM::Event::Services::Track::p2p_advertiser_approved({
+            loginid => $client->loginid,
+        })->get;
+}
+
 =head2 advertiser_cancel_at_fault
 
 An order has been manually cancelled or expired without paying.
@@ -458,7 +519,6 @@ An order has been manually cancelled or expired without paying.
 =cut
 
 sub advertiser_cancel_at_fault {
-
     my $data = shift;
     return BOM::Event::Services::Track::p2p_advertiser_cancel_at_fault($data);
 }
@@ -470,7 +530,6 @@ An advertiser has temporarily banned for too many manual cancels or creating too
 =cut
 
 sub advertiser_temp_banned {
-
     my $data = shift;
     return BOM::Event::Services::Track::p2p_advertiser_temp_banned($data);
 }

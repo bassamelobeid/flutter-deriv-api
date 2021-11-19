@@ -64,8 +64,9 @@ my %EVENT_PROPERTIES = (
             binary_options_trading_frequency cfd_trading_experience cfd_trading_frequency employment_status forex_trading_experience forex_trading_frequency other_instruments_trading_experience
             other_instruments_trading_frequency source_of_wealth brand)
     ],
-    self_exclude      => [qw(loginid unsubscribed brand)],
-    p2p_order_created => [
+    self_exclude            => [qw(loginid unsubscribed brand)],
+    p2p_advertiser_approved => [qw(loginid brand)],
+    p2p_order_created       => [
         qw(loginid user_role order_type  order_id amount currency local_currency buyer_user_id buyer_nickname seller_user_id seller_nickname order_created_at exchange_rate brand)
     ],
     p2p_order_buyer_has_paid => [
@@ -122,6 +123,7 @@ my %EVENT_PROPERTIES = (
 # P2P events are a good start
 
 my @SKIP_BRAND_VALIDATION = qw(
+    p2p_advertiser_approved
     p2p_order_created
     p2p_order_buyer_has_paid
     p2p_order_seller_has_released
@@ -649,6 +651,32 @@ It is triggered for each B<payment_withdrawal_reversal> event emitted, deliverin
 sub payment_withdrawal_reversal {
     my ($args) = @_;
     return _payment_track($args, 'payment_withdrawal_reversal');
+}
+
+=head2 p2p_advertiser_approved
+
+Sends to rudderstack a tracking event when an advertiser becomes age verified.
+
+It takes the following arguments:
+
+=over 4
+
+=item * C<advert> - a B<p2p.p2p_advert> record from database.
+
+=back
+
+Returns a Future representing the track event request.
+
+=cut
+
+sub p2p_advertiser_approved {
+    my $params = shift;
+
+    return track_event(
+        event      => 'p2p_advertiser_approved',
+        loginid    => $params->{loginid},
+        properties => $params
+    );
 }
 
 sub p2p_order_created {

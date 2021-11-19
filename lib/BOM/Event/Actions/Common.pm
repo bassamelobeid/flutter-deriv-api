@@ -24,6 +24,7 @@ use BOM::Platform::Context qw( localize request );
 use BOM::Platform::Email qw( send_email );
 use BOM::Platform::Event::Emitter;
 use BOM::User::Client;
+use BOM::Event::Actions::P2P;
 
 use Brands;
 
@@ -70,9 +71,6 @@ sub set_age_verification {
 
     $log->debugf('Updating status on %s to %s (%s)', $client->loginid, $status_code, $reason);
 
-    # to push FE notification when advertiser becomes approved via db trigger
-    BOM::Platform::Event::Emitter::emit('p2p_advertiser_updated', {client_loginid => $client->loginid});
-
     _email_client_age_verified($client);
 
     $setter->($client);
@@ -93,6 +91,8 @@ sub set_age_verification {
     $setter->($_) foreach (@clients_to_update);
 
     $client->update_status_after_auth_fa($reason);
+
+    BOM::Event::Actions::P2P::p2p_advertiser_approval_changed({client => $client});
 
     return undef;
 }
@@ -151,6 +151,9 @@ sub _email_client_age_verified {
     return unless $client->landing_company()->{actions}->{account_verified}->{email_client};
 
     return if $client->status->age_verification;
+
+    # p2p will handle notification for this case
+    return if ($client->status->reason('allow_document_upload') // '') eq 'P2P_ADVERTISER_CREATED';
 
     my $from_email   = $brand->emails('no-reply');
     my $website_name = $brand->website_name;

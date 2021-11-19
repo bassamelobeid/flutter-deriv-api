@@ -118,6 +118,7 @@ my $action_mapping = {
     fraud_address                                    => \&BOM::Event::Actions::CryptoSubscription::fraud_address,
     p2p_adverts_updated                              => \&BOM::Event::Actions::P2P::p2p_adverts_updated,
     affiliate_loginids_sync                          => \&BOM::Event::Actions::MyAffiliate::affiliate_loginids_sync,
+    p2p_advertiser_approval_changed                  => \&BOM::Event::Actions::P2P::p2p_advertiser_approval_changed,
     p2p_advert_created                               => \&BOM::Event::Actions::P2P::advert_created,
     p2p_advertiser_cancel_at_fault                   => \&BOM::Event::Actions::P2P::advertiser_cancel_at_fault,
     p2p_advertiser_temp_banned                       => \&BOM::Event::Actions::P2P::advertiser_temp_banned,
