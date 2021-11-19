@@ -99,6 +99,7 @@ sub _build_brand_name {
         # when we add new brand
         ($domain) = ($domain =~ /\.([a-z]+).*?\./);
         # for qa return deriv
+        return Brands::DEFAULT_BRAND unless defined $domain;
         return ($domain =~ /^binaryqa/ ? Brands::DEFAULT_BRAND : $domain);
     }
 

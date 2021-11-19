@@ -1,7 +1,7 @@
 use strict;
 use warnings;
 use Test::More;
-#use Test::Warnings;
+use Test::Warn;
 use Test::MockObject;
 use Test::MockModule;
 use Mojo::URL;
@@ -58,6 +58,21 @@ subtest 'brand' => sub {
         BOM::Platform::Context::Request::from_mojo({mojo_request => mock_request_for("https://www.dummy.com", {app_id => 1}, 'GET')});
     is($mojo_request->brand_name,  'binary', 'brand name matches app_id param');
     is($mojo_request->brand->name, 'binary', 'brand name matches app_id param');
+
+    warning_is {
+        my $localhost_request = BOM::Platform::Context::Request->new;
+        my $request_mock      = Test::MockModule->new('BOM::Platform::Context::Request');
+        $request_mock->mock(
+            'domain_name',
+            sub {
+                return '127.0.0.1';
+            });
+
+        is $localhost_request->brand->name, 'deriv', 'default brand for 127.0.0.1';
+
+        $request_mock->unmock_all;
+    }
+    undef, 'No warning for 127.0.0.1';
 };
 
 subtest 'http method' => sub {
