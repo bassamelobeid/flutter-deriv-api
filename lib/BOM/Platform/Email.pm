@@ -129,6 +129,13 @@ sub process_send_email {
         }
     }
 
+    my $relocalize = sub {
+        my $text = shift // return;
+        # re-escape previously localized special characters for Locale::Maketext
+        $text =~ s/([\[\]~])/~$1/g;
+        return localize($text);
+    };
+
     local $BOM::Platform::Context::current_request = request();
     if (my $language = delete $args_ref->{language}) {
         $BOM::Platform::Context::current_request = BOM::Platform::Context::Request->new({
@@ -144,7 +151,7 @@ sub process_send_email {
     }
 
     # Email subject, and title passed as args needs to be localized again
-    $subject = localize($subject);
+    $subject = $relocalize->($subject);
     my $message = join "\n", @message;
     my $mail_message = $message;
     if ($use_email_template) {
@@ -152,7 +159,8 @@ sub process_send_email {
         $mail_message                        = '';
         $template_args->{'help_centre_url'}  = $brand->help_centre_url({language => $request->language});
         $template_args->{'tnc_approval_url'} = $brand->tnc_approval_url({language => $request->language});
-        my $vars = {
+        my $title = $relocalize->($template_args->{'title'});
+        my $vars  = {
             # Allows inline HTML, default is off - be very, very careful when setting this #
             email_content_is_html => $args_ref->{'email_content_is_html'},
             skip_text2html        => $skip_text2html,
@@ -160,7 +168,7 @@ sub process_send_email {
             content_template      => $template_name,
             l                     => \&localize,
             $template_args->%*,
-            title => localize($template_args->{'title'}),
+            title => $title,
 
             # If email subject weren't explicitly passed,
             # try to get the email subject from email template
