@@ -12,7 +12,7 @@ Tests touch no touch tick trade
 use Test::MockTime qw/:all/;
 use Test::MockModule;
 use Test::Warnings;
-use Test::More tests => 8;
+use Test::More tests => 9;
 use Test::Exception;
 use Guard;
 use Crypt::NamedKeys;
@@ -74,27 +74,13 @@ BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     {
         symbol        => $_,
         recorded_date => $now
-    }) for ('frxEURUSD', 'frxEURJPY');
+    }) for ('frxEURUSD', 'frxEURJPY frxUSDJPY');
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'index',
     {
-        symbol => 'WLDUSD',
+        symbol => $_,
         date   => Date::Utility->new,
-    });
-
-BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
-    'index',
-    {
-        symbol => 'R_100',
-        date   => Date::Utility->new,
-    });
-
-BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
-    'index',
-    {
-        symbol => 'OTC_GDAXI',
-        date   => Date::Utility->new,
-    });
+    }) for qw(WLDUSD R_100 OTC_GDAXI);
 
 BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
     'currency',
@@ -459,6 +445,56 @@ subtest 'sell_expired_contracts', sub {
             failures            => [],
             },
             'sold the two requested contracts';
+
+    }
+    'survived';
+};
+
+subtest 'buy a bet after friday close', sub {
+    plan tests => 4;
+
+    my $date = Date::Utility->new('2021-11-12 22:00:00');
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+        'volsurface_delta',
+        {
+            symbol        => $_,
+            recorded_date => $date->minus_time_interval('1h'),
+        }) for ('frxUSDJPY');
+
+    BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+        'currency',
+        {
+            symbol        => $_,
+            recorded_date => $date->minus_time_interval('1h'),
+        }) for (qw/USD JPY JPY-USD/);
+
+    lives_ok {
+        my $contract = produce_contract({
+            underlying   => 'frxUSDJPY',
+            bet_type     => 'CALL',
+            currency     => 'USD',
+            payout       => 100,
+            duration     => '10h',
+            date_start   => $date,
+            date_pricing => $date,
+            current_tick => $tick,
+            barrier      => 'S0P'
+        });
+
+        my $txn = BOM::Transaction->new({
+            client        => $cl,
+            contract      => $contract,
+            price         => $contract->ask_price,
+            payout        => $contract->payout,
+            amount_type   => 'payout',
+            source        => 19,
+            purchase_date => $contract->date_start,
+        });
+
+        my $error = $txn->buy;
+        ok $error, 'invalid to buy';
+        is $error->get_type, 'InvalidtoBuy', 'InvalidtoBuy';
+        is $error->{'-message_to_client'}, 'This market is presently closed. Try out the Synthetic Indices which are always open.';
 
     }
     'survived';

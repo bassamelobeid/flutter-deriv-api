@@ -799,7 +799,7 @@ sub prepare_buy {
 
     my $error_status = BOM::Transaction::Validation->new({
             transaction => $self,
-            clients     => [$self->client],
+            clients     => [{client => $self->client}],
         })->validate_trx_buy();
 
     return $error_status if $error_status;
@@ -1205,9 +1205,9 @@ sub prepare_sell {
     return $self->prepare_bet_data_for_sell if $skip;
 
     ### Prepare clients list, get uniq only...
-    my @clients = ($self->client);
+    my @clients = ({client => $self->client});
     if ($self->multiple) {
-        @clients = map { $_->{client} } grep { ref $_->{client} } @{$self->multiple};
+        @clients = map { {client => $_->{client}} } grep { ref $_->{client} } @{$self->multiple};
     }
 
     my $error_status = BOM::Transaction::Validation->new({

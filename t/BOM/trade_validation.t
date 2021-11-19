@@ -185,7 +185,7 @@ subtest 'Is contract valid to buy' => sub {
     is(
         BOM::Transaction::Validation->new({
                 transaction => $transaction,
-                clients     => [$client]}
+                clients     => [{client => $client}]}
         )->_is_valid_to_buy($client),
         undef,
         'Contract is valid to buy'
@@ -201,7 +201,7 @@ subtest 'Is contract valid to buy' => sub {
 
     my $error = BOM::Transaction::Validation->new({
             transaction => $transaction,
-            clients     => [$client]})->_is_valid_to_buy($client);
+            clients     => [{client => $client}]})->_is_valid_to_buy($client);
     is($error->get_type, 'InvalidtoBuy', 'Contract is invalid to buy as it contains errors: _is_valid_to_buy - error type');
     my $db     = BOM::Database::ClientDB->new({broker_code => $client->broker_code})->db;
     my @output = $db->dbh->selectrow_array("select * from data_collection.rejected_trades where action_type = ?", undef, 'buy');
@@ -234,7 +234,7 @@ subtest 'Is contract valid to sell' => sub {
     is(
         BOM::Transaction::Validation->new({
                 transaction => $transaction,
-                clients     => [$client]}
+                clients     => [{client => $client}]}
         )->_is_valid_to_sell($client),
         undef,
         'Contract is valid to sell'
@@ -253,7 +253,7 @@ subtest 'Is contract valid to sell' => sub {
 
     my $error = BOM::Transaction::Validation->new({
             transaction => $transaction,
-            clients     => [$client]})->_is_valid_to_sell($client);
+            clients     => [{client => $client}]})->_is_valid_to_sell($client);
     is($error->get_type, 'InvalidtoSell', 'Contract is invalid to sell as expiry is too low: _is_valid_to_sell - error type');
 
     my $db     = BOM::Database::ClientDB->new({broker_code => $client->broker_code})->db;

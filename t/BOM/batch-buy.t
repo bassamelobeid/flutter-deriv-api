@@ -902,7 +902,7 @@ subtest 'batch buy slippage failure' => sub {
             contract      => $contract,
             price         => 45,
             amount_type   => 'payout',
-            multiple      => [{loginid => $cl2->loginid}, {code => 'ignore'}, {loginid => $cl1->loginid}],
+            multiple      => [{loginid => $cl2->loginid}, {loginid => $cl1->loginid}],
             purchase_date => $contract->date_start,
         });
 
@@ -927,6 +927,73 @@ subtest 'batch buy slippage failure' => sub {
             is $error->{'-type'}, 'PriceMoved', '-type = PriceMoved';
             is $error->{'-mesg'}, 'Difference between submitted and newly calculated bet price: currency USD, amount: 45, recomputed amount: 50.99';
         };
+    }
+    'survived';
+};
+
+subtest 'batch buy forex after friday close' => sub {
+    lives_ok {
+        my $clm = create_client;    # manager
+        my $cl1 = create_client;
+        my $cl2 = create_client;
+
+        $clm->account('USD');
+        $cl1->account('USD');
+        $cl2->account('USD');
+        $clm->save;
+        top_up $cl1, 'USD', 5000;
+        top_up $cl2, 'USD', 5000;
+
+        isnt + (my $acc1 = $cl1->account), 'USD', 'got USD account #1';
+        isnt + (my $acc2 = $cl2->account), 'USD', 'got USD account #2';
+
+        my $bal;
+        is + ($bal = $acc1->balance + 0), 5000, 'USD balance #1 is 5000 got: ' . $bal;
+        is + ($bal = $acc2->balance + 0), 5000, 'USD balance #2 is 5000 got: ' . $bal;
+
+        my $date = Date::Utility->new('2021-11-12 22:00:00');
+        BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+            'volsurface_delta',
+            {
+                symbol        => $_,
+                recorded_date => $date->minus_time_interval('1h'),
+            }) for ('frxUSDJPY');
+
+        BOM::Test::Data::Utility::UnitTestMarketData::create_doc(
+            'currency',
+            {
+                symbol        => $_,
+                recorded_date => $date->minus_time_interval('1h'),
+            }) for (qw/USD JPY JPY-USD/);
+
+        my $contract = produce_contract({
+            underlying   => 'frxUSDJPY',
+            bet_type     => 'CALL',
+            currency     => 'USD',
+            payout       => 100,
+            duration     => '10h',
+            date_start   => $date,
+            date_pricing => $date,
+            current_tick => $tick,
+            barrier      => 'S0P'
+        });
+
+        my $txn = BOM::Transaction->new({
+            client        => $clm,
+            contract      => $contract,
+            price         => $contract->ask_price,
+            payout        => $contract->payout,
+            amount_type   => 'payout',
+            source        => 19,
+            multiple      => [{loginid => $cl2->loginid}, {loginid => $cl1->loginid}],
+            purchase_date => $contract->date_start,
+        });
+
+        my $error = $txn->batch_buy;
+        ok $error, 'invalid to buy';
+        is $error->get_type, 'InvalidtoBuy', 'InvalidtoBuy';
+        is $error->{'-message_to_client'}, 'This market is presently closed. Try out the Synthetic Indices which are always open.';
+
     }
     'survived';
 };

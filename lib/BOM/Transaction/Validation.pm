@@ -63,9 +63,7 @@ sub validate_trx_cancel {
 sub validate_trx_sell {
     my $self = shift;
     ### Client-depended checks
-    my $clients;
-    $clients = $self->transaction->multiple if $self->transaction;
-    $clients = [map { +{client => $_} } @{$self->clients}] unless $clients;
+    my $clients = $self->clients;
 
     my @extra_validation_methods = qw/ _validate_offerings_sell /;
 
@@ -109,8 +107,8 @@ Validate identical contract purchase for multiple clients.
 sub validate_trx_batch_buy {
     my $self = shift;
 
-    CLI: for my $c ($self->get_clients()->@*) {
-        if (my $error = $self->validate_trx_buy($c)) {
+    CLI: for my $c ($self->clients->@*) {
+        if ($c->{client} and my $error = $self->validate_trx_buy($c->{client})) {
             if ($self->_bailout_early($error)) {
                 return $error;
             } else {
@@ -135,7 +133,7 @@ sub _bailout_early {
 
     my $type = $error->get_type;
     # contract related error, bailout now
-    if ($type eq 'InvalidDatePricing' or $type eq 'BetExpired' or $type eq 'PriceMoved') {
+    if ($type eq 'InvalidDatePricing' or $type eq 'BetExpired' or $type eq 'PriceMoved' or $type eq 'InvalidtoBuy') {
         return 1;
     }
 
@@ -372,15 +370,16 @@ sub _slippage {
         );
 
     #Record failed transaction here.
-    for my $c ($self->get_clients()->@*) {
+    for my $c ($self->clients->@*) {
+        next unless $c->{client};
         my $rejected_trade = BOM::Database::Helper::RejectedTrade->new({
-            login_id => $c->loginid,
+            login_id => $c->{client}->loginid,
             ($p->{action} eq 'sell') ? (financial_market_bet_id => $self->transaction->contract_id) : (),
             shortcode   => $contract->shortcode,
             action_type => $p->{action},
             reason      => 'SLIPPAGE',
             details     => $self->_get_rejected_contract_details('slippage'),
-            db          => BOM::Database::ClientDB->new({broker_code => $c->broker_code})->db,
+            db          => BOM::Database::ClientDB->new({broker_code => $c->{client}->broker_code})->db,
         });
         $rejected_trade->record_fail_txn();
     }
@@ -435,15 +434,16 @@ sub _invalid_contract {
     # validation error message to them without storing them into rejected trade table
     unless ($contract->invalid_user_input) {
         #Record failed transaction here.
-        for my $c ($self->get_clients()->@*) {
+        for my $c ($self->clients->@*) {
+            next unless $c->{client};
             my $rejected_trade = BOM::Database::Helper::RejectedTrade->new({
-                login_id => $c->loginid,
+                login_id => $c->{client}->loginid,
                 ($p->{action} eq 'sell') ? (financial_market_bet_id => $self->transaction->contract_id) : (),
                 shortcode   => $contract->shortcode,
                 action_type => $p->{action},
                 reason      => $message_to_client,
                 details     => $self->_get_rejected_contract_details('invalid'),
-                db          => BOM::Database::ClientDB->new({broker_code => $c->broker_code})->db,
+                db          => BOM::Database::ClientDB->new({broker_code => $c->{client}->broker_code})->db,
             });
             $rejected_trade->record_fail_txn();
         }
@@ -936,28 +936,6 @@ sub synthetic_age_verification_check {
     }
 
     return undef;
-}
-
-=head2 get_clients
-
-There seems to be multiple ways where clients can be provided. This should be refactored by separating batch and single contract buy.
-But, for now, we will keep this method to parse client objects
-
-=cut
-
-sub get_clients {
-    my $self = shift;
-
-    my @clients;
-    foreach my $cl ($self->clients->@*) {
-        if (ref $cl eq 'BOM::User::Client') {
-            push @clients, $cl;
-        } elsif (ref $cl eq 'HASH' and $cl->{client}) {
-            push @clients, $cl->{client};
-        }
-    }
-
-    return \@clients;
 }
 
 1;
